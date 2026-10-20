@@ -79,6 +79,14 @@ export function jaSecs(t) {
   for (const ch of String(t)) { const o = ch.codePointAt(0); if (JA_PAUSES[ch]) p += JA_PAUSES[ch]; else if (JA_SMALL.includes(ch)) continue; else if (o >= 0x3040 && o <= 0x30ff) m += 1; else if ((o >= 0x4e00 && o <= 0x9fff) || (o >= 0x3400 && o <= 0x4dbf)) m += 1.7; else if (/[A-Za-z0-9]/.test(ch)) m += 1 / 3; }
   return m / 6.5 + p + 0.5;
 }
+export function eventSecs(ev, story) { return +ev.secs || (ev.type === "choose" && story && (story.format || 2) >= 3 ? 30 : 3); }
+export function karmaOf(d) { if (d === undefined || d === null) return {}; return typeof d === "number" ? { karma: d } : Object.assign({}, d); }
+export function addKarma(into, d) { for (const [k, v] of Object.entries(karmaOf(d))) into[k] = (into[k] || 0) + +v; return into; }
+export function karmaPick(n, karma, story) {             // a flow choice by karma: the first option whose min/max holds
+  const axes = Object.keys(((story.game || {}).karma || {}).axes || { karma: 1 });
+  for (const o of n.options || []) { const v = karma[o.axis || (axes.includes("karma") ? "karma" : axes[0])] || 0; if ((o.min === undefined || v >= o.min) && (o.max === undefined || v <= o.max)) return o; }
+  return (n.options || [])[n.options.length - 1];
+}
 export function clipSecs(c) {
   if (c.dur) { const tr = c.trim || {}; return Math.max(0.1, +c.dur - +(tr.in || 0) - +(tr.out || 0)); }
   if (c.dur_tts) return +c.dur_tts;
@@ -239,7 +247,7 @@ export class Stage {
       const d = clipSecs(c);
       segs.push({ type: "clip", start: t, end: t + d, dur: d, clip: c, i }); t += d;
       const ev = c.event;
-      if (ev) { segs.push({ type: "event", start: t, end: t + (+ev.secs || 3), event: ev, clip: c, i }); t += +ev.secs || 3; }
+      if (ev) { const es = eventSecs(ev, this.story); segs.push({ type: "event", start: t, end: t + es, event: ev, clip: c, i }); t += es; }
     });
     const hold = (v.hold && +v.hold.max) ? +v.hold.max / 2 : 0;
     if (hold) { segs.push({ type: "hold", start: t, end: t + hold }); t += hold; }
