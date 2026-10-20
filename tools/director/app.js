@@ -29,6 +29,7 @@ async function api(path, opt) { const r = await fetch(path, opt); const j = awai
 async function boot() {
   try {
     LIB = M.loadLibrary(await api("/api/poses"));
+    try { Stage.SOMA = await api("/api/soma"); } catch (e) { }
     const g = await api("/api/games");
     fillGames(g.games);
     GAME = localStorage.getItem("dd.game"); if (!g.games.includes(GAME)) GAME = g.games[0];
@@ -281,6 +282,8 @@ function sceneEditor(box, sc, sid) {
   box.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
     " cone ", el("input", { type: "number", value: (sc.camera.cone || [30, 18])[0], style: "width:52px", on: { change: e => { sc.camera.cone = [+e.target.value, (sc.camera.cone || [30, 18])[1]]; touch(); } } }), "°×",
     el("input", { type: "number", value: (sc.camera.cone || [30, 18])[1], style: "width:52px", on: { change: e => { sc.camera.cone = [(sc.camera.cone || [30, 18])[0], +e.target.value]; touch(); } } }), "°"),
+    field("look", jsonArea(sc, "look", "the head's look for the whole scene, per actor: {\"mari\": {\"at\": \"player\", \"limit\": [70, 20, 30], \"past\": \"hold\"}} (a clip's own look wins)", { small: true, compact: true })),
+    field("trackers", jsonArea(sc, "trackers", "invisible trackers a head can follow: {\"t_shadow\": {\"height\": 1.6, \"keys\": [{\"clip\": \"c1\", \"at\": 0, \"to\": \"a_spot\"}, {\"clip\": \"c2\", \"at\": 1, \"to\": [x, y, z]}]}} (keys ride clip edges)", { small: true, compact: true })),
     field("through", el("input", { value: (sc.camera.through || []).join(","), placeholder: "props the camera sees through (a locker's slats), comma list", style: "width:320px",
       on: { change: e => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); if (v.length) sc.camera.through = v; else delete sc.camera.through; touch(); } } })),
     field("in / out", sel(sc.enter = sc.enter || { kind: "fade", secs: 0.6 }, "kind", TRANS, { blank: false }), txt(sc.enter, "secs", { num: true }), " → ", sel(sc.exit = sc.exit || { kind: "fade", secs: 0.6 }, "kind", TRANS, { blank: false }), txt(sc.exit, "secs", { num: true })),
@@ -366,6 +369,12 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
   if ((S.format || 2) >= 3) card.append(takeSec(c));
   card.append(takeRow(sc, c, sid));
+  const lk = c.look || {}, looks = ["player", ...Object.keys(sc.trackers || {}), ...castIds().filter(x => x !== c.who), ...placed(lvl)];
+  card.append(el("div", { class: "sec row" }, el("span", { class: "lab" }, "look"),
+    sel({ at: c.look ? lk.at || "player" : "" }, "at", looks, { blank: "(the scene's, or none)", after: () => {}, title: "what the head follows: the player, a tracker, someone, a thing" }),
+    "yaw ±", el("input", { type: "number", value: (lk.limit || [70])[0], style: "width:50px" }), "up", el("input", { type: "number", value: (lk.limit || [70, 20])[1], style: "width:46px" }), "down", el("input", { type: "number", value: (lk.limit || [70, 20, 30])[2], style: "width:46px" }),
+    "past", sel({ past: lk.past || "hold" }, "past", ["hold", "snap"], { blank: false }),
+    el("button", { title: "set this clip's look", on: { click: e => { const r = e.target.parentNode, s = r.querySelectorAll("select"), n = r.querySelectorAll("input"); if (!s[0].value) delete c.look; else c.look = { at: s[0].value, limit: [+n[0].value, +n[1].value, +n[2].value], past: s[1].value }; touch(); renderInspector(); } } }, c.look ? "update" : "set")));
   // seam, shot, camera
   const look = [...castIds(), ...placed(lvl)];
   const sec1 = el("div", { class: "sec row" });

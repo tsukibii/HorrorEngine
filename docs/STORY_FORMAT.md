@@ -541,5 +541,34 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
 | segment `loop` | the demo's Loop checkbox (idles, walk cycles) |
 | segment `file` | the made motion (`motion.py import` writes it) |
 
+### 9.6 The look and the trackers (where a head points)
+
+Kimodo can't aim a head, so the look is a layer on top of whatever body plays (desk now, Control Rig in Unreal):
+
+```json
+"look": {"mari": {"at": "player", "limit": [70, 20, 30], "past": "hold"}},
+"trackers": {"t_noise": {"height": 1.0, "keys": [{"clip": "c1", "at": 0, "to": "hall_mari_spot"}, {"clip": "c1", "at": 1, "to": "hall_walk_spot"}]}}
+```
+
+| Field | Meaning |
+|---|---|
+| scene `look` | per actor on stage, for the whole scene; a clip's own `look` (same fields) wins while it plays |
+| `at` | `player` (the eye at the view spot), a tracker, someone on stage, or a placed thing |
+| `limit` | `[yaw, up, down]` degrees the head may turn from the chest's facing (70, 20, 30 by default) |
+| `past` | beyond the limit: `hold` at the edge (still trying to see you) or `snap` back to forward |
+| `lag` | seconds the head trails a moving tracker (0.25) |
+| `w` | 0..1, how much of the turn to apply |
+| scene `trackers` | invisible boxes a head can follow: `height` above the floor, and `keys` that **ride clip edges** (`clip`, `at` 0..1 of it, `to` a spot, a thing or `[x, y, z]`), eased between keys; never scene time |
+
+The turn is shared down the body: spine 10%, chest 15%, neck 25%, head 50% (on Kimodo's skeleton: neck 25%, head
+25%). The desk shows trackers as small blue wire boxes.
+
+### 9.7 The procedural idle
+
+Nothing is a statue: under every pose the desk adds breathing (faster in `panic` and `chase`), a slow weight shift
+and small head moves, seeded per cast member and slowed by the scene's mood (`dread`, `grief`, `intimate`). It runs
+at full strength while an actor holds still (between lines, during a 30 s choice, while a scene holds) and at 40%
+under a moving body. Unreal gets the same layer (plan W9); no field is needed.
+
 The checks: every karma route is played (the kind, the cruel and the silent player at every timed choice, each
 with secrets missed and found) and each one's ending and karma are printed; every ending must be reachable.

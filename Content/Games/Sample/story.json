@@ -1222,6 +1222,17 @@
    "enter": {
     "kind": "fade",
     "secs": 0.6
+   },
+   "look": {
+    "mari": {
+     "at": "player",
+     "limit": [
+      70,
+      20,
+      30
+     ],
+     "past": "hold"
+    }
    }
   },
   "s_cellar": {
@@ -1536,7 +1547,36 @@
      }
     }
    ],
-   "stance": "hide"
+   "stance": "hide",
+   "trackers": {
+    "t_noise": {
+     "height": 1.0,
+     "keys": [
+      {
+       "clip": "c1",
+       "at": 0,
+       "to": "hall_mari_spot"
+      },
+      {
+       "clip": "c1",
+       "at": 1,
+       "to": "hall_walk_spot"
+      }
+     ]
+    }
+   },
+   "look": {
+    "mari": {
+     "at": "t_noise",
+     "limit": [
+      80,
+      20,
+      30
+     ],
+     "past": "snap",
+     "lag": 0.4
+    }
+   }
   },
   "s_doll": {
    "title": "Put her back",

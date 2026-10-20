@@ -273,6 +273,37 @@ def check_spoken(where, ln, cast, r, clip_max=None):
             r.warn(f"{where}: about {secs:.0f} s at speaking pace, over {clip_max} s: split it before recording")
 
 
+def check_look(where, spec, stage, trackers, things, r):
+    """A head's look (format 3): {at: player | a tracker | someone on stage | a placed thing, limit, past, lag, w}."""
+    if not isinstance(spec, dict):
+        r.err(f"{where}: look is {{\"at\": ..., \"limit\": [yaw, up, down], \"past\": \"hold\"|\"snap\"}}")
+        return
+    at = spec.get("at", "player")
+    if at != "player" and at not in trackers and at not in stage and at not in things:
+        r.err(f"{where}: look at {at!r}: the player, a tracker, someone on stage or a placed thing")
+    lim = spec.get("limit", [70, 20, 30])
+    if not (isinstance(lim, list) and len(lim) == 3 and all(isinstance(x, (int, float)) and 0 <= x <= 120 for x in lim)):
+        r.err(f"{where}: look limit {lim!r}: [yaw, up, down] in degrees, 0 to 120")
+    if spec.get("past", "hold") not in ("hold", "snap"):
+        r.err(f"{where}: look past {spec.get('past')!r} (hold or snap)")
+
+
+def check_trackers(where, trackers, ids, things, lvl, r):
+    for tid, tr in (trackers or {}).items():
+        tw = f"{where} tracker {tid}"
+        keys = tr.get("keys") or []
+        if not keys and not tr.get("at"):
+            r.err(f"{tw}: needs keys (or a fixed `at`)")
+        for k in keys:
+            if k.get("clip") not in ids:
+                r.err(f"{tw}: a key rides clip {k.get('clip')!r}, not in this scene (keys ride clip edges, never scene time)")
+            if not 0 <= float(k.get("at", 0)) <= 1:
+                r.err(f"{tw}: key at {k.get('at')} (0..1 of its clip)")
+            to = k.get("to")
+            if not (isinstance(to, list) and len(to) in (2, 3)) and to not in things:
+                r.err(f"{tw}: key to {to!r}: a spot or thing, or [x, y, z]")
+
+
 def check_body_v3(cw, sid, c, body, story, things, lvl, r):
     """Format 3's body fields: the tier (the animation budget) and the Kimodo segments (docs/KIMODO.md §2)."""
     tier = body.get("tier")
@@ -483,6 +514,15 @@ def check_scene(sid, sc, story, things, r):
                 for edge in ("start", "end"):
                     if body.get(edge) and body[edge] not in story.get("motions", {}) and body[edge] not in ("idle", "tpose"):
                         r.warn(f"{cw}: body {edge} pose {body[edge]!r} isn't in motions (idle and tpose are built in)")
+        trackers = ver.get("trackers", sc.get("trackers")) or {}
+        check_trackers(where, trackers, ids, things, lvl, r)
+        for who, spec in (ver.get("look", sc.get("look")) or {}).items():
+            if who not in stage:
+                r.err(f"{where}: look for {who!r}, who isn't on stage")
+            check_look(f"{where} look {who}", spec, stage, trackers, things, r)
+        for c in clips:
+            if c.get("look"):
+                check_look(f"{where} clip {c.get('id')} look", c["look"], stage, trackers, things, r)
         for cue in ver.get("cues", []):
             at = cue.get("at", {})
             if at.get("clip") not in ids:

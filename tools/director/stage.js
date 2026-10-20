@@ -123,6 +123,8 @@ export class Figure {
     }
     this.headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), this.mat);
     this.group.add(this.headMesh);
+    this.nose = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.07), this.mat);
+    this.group.add(this.nose);
     this.pos = null;
   }
   setColor(c) { this.mat.color.set(c); }
@@ -139,6 +141,11 @@ export class Figure {
       m.quaternion.setFromUnitVectors(up, d.normalize());
     }
     if (pos.head && pos.head_end) this.headMesh.position.copy(pos.head).lerp(pos.head_end, 0.45);
+    if (pos.head_side && pos.head) {              // the nose points where the head looks
+      const f = new THREE.Vector3().crossVectors(pos.head_side.clone().sub(pos.head).setY(0), up).normalize();
+      this.nose.position.copy(this.headMesh.position).addScaledVector(f, 0.11);
+      this.nose.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), f); this.nose.visible = true;
+    } else this.nose.visible = false;
   }
   jointWorld(name) { const p = this.pos && this.pos[name]; return p ? this.group.localToWorld(p.clone()) : null; }
   headWorld() { return this.jointWorld("head") ? this.jointWorld("head").lerp(this.jointWorld("head_end"), 0.4) : this.group.position.clone().setY(1.55); }
@@ -146,6 +153,8 @@ export class Figure {
 
 // ---- the stage --------------------------------------------------------------------------------------------------
 export class Stage {
+  static SOMA = null;            // Kimodo's skeleton (names, parents): the look layer turns SOMA joints too
+  static showTrackers = true;
   constructor(container, lib) {
     this.lib = lib;
     this.container = container;
@@ -368,6 +377,10 @@ export class Stage {
           pos = M.blendPositions(this.lib, from, pos, w, +(this.story.cast[who] || {}).height || 1.7);
         }
       }
+      const moving = cur && T < cur.start + cur.dur && ((cur.clip.body || {}).segments || (cur.clip.body || {}).file || ((cur.clip.body || {}).block || []).length > 1);
+      pos = this.idleLayer(pos, who, T, moving ? 0.4 : 1, v.mood);             // the procedural idle: never a statue
+      const spec = (cur && cur.clip.look) || (v.look || {})[who];
+      if (spec) pos = this.lookLayer(pos, who, spec, tl, T, v);                  // the head follows the player or a tracker
       out.poses[who] = pos;
       const r = cur && (cur.clip.body || {}).reach;   // a hand locked onto something: the IK layer over the animation
       if (r && r.to) {
@@ -378,6 +391,8 @@ export class Stage {
         if (tg && w > 0) out.reach[who] = { hand: r.hand || "right", target: tg, w, offset: r.offset };
       }
     }
+    out.trackers = {};
+    for (const id of Object.keys(v.trackers || {})) { const p = this.trackerAt(tl, id, T); if (p) out.trackers[id] = p; }
     if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; }
     if (seg.type === "seam") {
       const k = seg.seam.kind, u = (T - seg.start) / (seg.end - seg.start);
@@ -399,6 +414,93 @@ export class Stage {
     return out;
   }
 
+  // ---- the layers over the animation: the look (head toward a target, clamped) and the procedural idle ----------
+  // joints below a pivot, per skeleton (the previs one, SOMA's): rotating them about the pivot turns that part of the body
+  below(pivot) {
+    this._below = this._below || {};
+    if (this._below[pivot]) return this._below[pivot];
+    const kids = {};
+    for (const j of this.lib.joints) if (j.parent) (kids[j.parent] = kids[j.parent] || []).push(j.name);
+    (kids.head = kids.head || []).push("head_side");
+    const sp = Stage.SOMA;
+    if (sp) sp.names.forEach((n, i) => { const pi = sp.parents[i]; if (pi >= 0) (kids["soma:" + sp.names[pi]] = kids["soma:" + sp.names[pi]] || []).push("soma:" + n); });
+    const out = [], todo = [...(kids[pivot] || [])];
+    while (todo.length) { const n = todo.pop(); out.push(n); todo.push(...(kids[n] || [])); }
+    return this._below[pivot] = out;
+  }
+  turnFrom(pos, pivot, q) {      // rotate everything below a pivot about it
+    const P = pos[pivot]; if (!P) return;
+    for (const n of this.below(pivot)) if (pos[n]) pos[n] = pos[n].clone().sub(P).applyQuaternion(q).add(P);
+  }
+  facing(pos) {                  // the chest's forward (character space, y up): across the shoulders, crossed with up
+    const l = pos["soma:LeftShoulder"] || pos.clavicle_l, r = pos["soma:RightShoulder"] || pos.clavicle_r;
+    if (!l || !r) return new THREE.Vector3(0, 0, 1);
+    const f = new THREE.Vector3().crossVectors(new THREE.Vector3().subVectors(l, r).setY(0), new THREE.Vector3(0, 1, 0));
+    return f.lengthSq() > 1e-8 ? f.normalize() : new THREE.Vector3(0, 0, 1);
+  }
+  toActor(v, who, w) {           // a world point -> the actor's own frame (where its stage spot puts it)
+    const spot = this.things[(v.stage || {})[who]]; if (!spot) return null;
+    return w.clone().sub(s2t(spot.pos[0], spot.pos[1], spot.pos[2])).applyAxisAngle(new THREE.Vector3(0, 1, 0), -yawToThree(spot.yaw));
+  }
+  trackerAt(tl, id, T) {         // an invisible tracker's world position: its keys ride clip edges, never scene time
+    const tr = (tl.v.trackers || {})[id]; if (!tr) return null;
+    const h = +(tr.height ?? 1.5), at = to => Array.isArray(to) ? s2t(to[0], to[1], (to[2] ?? 0) + h) : this.things[to] ? s2t(this.things[to].pos[0], this.things[to].pos[1], this.things[to].pos[2] + h) : null;
+    const keys = (tr.keys || []).map(k => { const sg = tl.segs.find(s => s.type === "clip" && s.clip.id === k.clip); return { t: sg ? sg.start + (+k.at || 0) * sg.dur : 0, p: at(k.to) }; }).filter(k => k.p).sort((a, b) => a.t - b.t);
+    if (!keys.length) return at(tr.at);
+    if (T <= keys[0].t) return keys[0].p.clone();
+    for (let i = 1; i < keys.length; i++) if (T < keys[i].t) { const a = keys[i - 1], b = keys[i]; return a.p.clone().lerp(b.p, M.EASES.inout((T - a.t) / Math.max(1e-3, b.t - a.t))); }
+    return keys[keys.length - 1].p.clone();
+  }
+  lookLayer(pos, who, spec, tl, T, v) {
+    const at = spec.at || "player", lag = +(spec.lag ?? 0.25);
+    const w = at === "player" ? this.eyeOf(v) : (v.trackers || {})[at] ? this.trackerAt(tl, at, Math.max(0, T - lag)) : this.targetPos(at);
+    const tgt = w && this.toActor(v, who, w); if (!tgt) return pos;
+    const head = pos["soma:Head"] || pos.head; if (!head) return pos;
+    const fwd = this.facing(pos), dir = tgt.clone().sub(head);
+    let yaw = Math.atan2(fwd.z * dir.x - fwd.x * dir.z, fwd.x * dir.x + fwd.z * dir.z) * 180 / Math.PI;
+    let pitch = Math.atan2(dir.y, Math.hypot(dir.x, dir.z)) * 180 / Math.PI;
+    const [ly, up, down] = spec.limit || [70, 20, 30], amt = +(spec.w ?? 1);
+    if (Math.abs(yaw) > ly) {                                   // past the limit: hold at the edge, or ease back to forward
+      if (spec.past === "snap") { const k = Math.max(0, 1 - (Math.abs(yaw) - ly) / 20); yaw = Math.sign(yaw) * ly * k; pitch *= k; }
+      else yaw = Math.sign(yaw) * ly;
+    }
+    pitch = Math.max(-down, Math.min(up, pitch));
+    const out = this.withHeadSide(pos), Y = new THREE.Vector3(0, 1, 0);
+    const chains = [[["spine_02", 0.10], ["spine_03", 0.15], ["neck_01", 0.25], ["head", 0.5]],
+                    [["soma:Spine2", 0.10], ["soma:Chest", 0.15], ["soma:Neck1", 0.25], ["soma:Neck2", 0.25], ["soma:Head", 0.25]]];
+    for (const chain of chains) {
+      if (!out[chain[0][0]]) continue;
+      let f = fwd.clone();
+      for (const [j, k] of chain) {
+        const qy = new THREE.Quaternion().setFromAxisAngle(Y, yaw * k * amt * Math.PI / 180);
+        f.applyQuaternion(qy);
+        const qp = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3().crossVectors(f, Y).normalize(), pitch * k * amt * Math.PI / 180);
+        this.turnFrom(out, j, qp.multiply(qy));
+      }
+    }
+    return out;
+  }
+  withHeadSide(pos) {            // the previs skeleton has no eyes: a point to the head's left carries its turn
+    if (!pos.head || pos.head_side) return pos;
+    const l = pos.clavicle_l || pos["soma:LeftShoulder"], r = pos.clavicle_r || pos["soma:RightShoulder"];
+    const left = l && r ? l.clone().sub(r).setY(0).normalize() : new THREE.Vector3(1, 0, 0);
+    return Object.assign({}, pos, { head_side: pos.head.clone().addScaledVector(left, 0.1) });
+  }
+  idleLayer(pos, who, T, amount, mood) {                        // breathing, a weight shift, the head's small moves
+    pos = this.withHeadSide(pos);
+    if (!amount) return pos;
+    const seed = [...who].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 97, calm = { dread: 0.7, intimate: 0.8, panic: 1.6, chase: 1.8, grief: 0.6 }[mood] || 1;
+    const n = (f, ph) => Math.sin(T * f * calm + seed * 1.7 + ph) * 0.6 + Math.sin(T * f * 2.3 * calm + seed + ph * 2) * 0.4;
+    const out = Object.assign({}, pos), Y = new THREE.Vector3(0, 1, 0), fwd = this.facing(pos), right = new THREE.Vector3().crossVectors(fwd, Y).normalize();
+    const breath = Math.sin(T * 2 * Math.PI * 0.24 * calm + seed) * 0.9 * amount * (mood === "panic" || mood === "chase" ? 1.8 : 1);
+    for (const j of ["spine_03", "soma:Chest"]) this.turnFrom(out, j, new THREE.Quaternion().setFromAxisAngle(right, breath * Math.PI / 180));
+    const sway = n(0.45, 1) * 1.1 * amount;
+    for (const j of ["spine_01", "soma:Spine1"]) this.turnFrom(out, j, new THREE.Quaternion().setFromAxisAngle(fwd, sway * Math.PI / 180));
+    const hy = n(0.7, 3) * 2.2 * amount, hp = n(0.55, 5) * 1.4 * amount;
+    for (const j of ["neck_01", "soma:Neck1"]) this.turnFrom(out, j, new THREE.Quaternion().setFromAxisAngle(right, hp * Math.PI / 180).multiply(new THREE.Quaternion().setFromAxisAngle(Y, hy * Math.PI / 180)));
+    return out;
+  }
+
   eyeOf(v) {                     // the player's eye for a scene version: its view spot at its stance's eye height
     const view = this.things[v.view], h = EYES[v.stance || "stand"] || EYE;
     return view ? s2t(view.pos[0], view.pos[1], view.pos[2] + h) : new THREE.Vector3(0, h, 0);
@@ -417,6 +519,12 @@ export class Stage {
 
   apply(tl, state, T) {          // pose the figures, aim the camera, set the lights
     const v = tl.v;
+    this._trk = this._trk || {};
+    for (const [id, m] of Object.entries(this._trk)) m.visible = !!(state.trackers || {})[id] && Stage.showTrackers;
+    for (const [id, p] of Object.entries(state.trackers || {})) {   // the invisible trackers, shown in the desk only
+      if (!this._trk[id]) { this._trk[id] = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshBasicMaterial({ color: 0x6fb3d9, wireframe: true })); this.scene.add(this._trk[id]); }
+      this._trk[id].position.copy(p); this._trk[id].visible = Stage.showTrackers;
+    }
     for (const [cid, f] of Object.entries(this.cast)) {
       const spot = this.things[(v.stage || {})[cid]];
       f.group.visible = !!spot;
