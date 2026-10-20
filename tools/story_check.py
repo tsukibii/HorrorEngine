@@ -1,0 +1,1123 @@
+#!/usr/bin/env python3
+"""The offline story check: no editor needed, runs in a second.
+
+    python tools/story_check.py [--game Pilot] [-v] [--route Saved/Story/<game>/route.json]
+
+Checks every reference (world, scenes, stitches, flow), walls and doors, scenes' clips (each fits one take of
+game.clip_max seconds; every cut between takes has a seam to hide it), subtitles' reading speed, combination codes
+written somewhere, the directing rules. Then plays the story down every path (each player choice and struggle
+result both ways; flag choices as the flags fall) with a greedy player in the stitches, proving every path reaches
+an ending with no softlock, and estimates the playtime per ending. Ends `STORY ok (...)` or `STORY FAILED (n errors)`.
+"""
+import copy
+import math
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Content" / "Python"))
+from storykit import storylib as L  # noqa: E402
+from storykit import library as LIB  # noqa: E402
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
+
+TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught"}
+TRIGGER_EXTRA = {"secs", "within"}
+ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
+           "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done"}
+MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
+LIGHT_SET = {"on", "off", "flicker", "dim"}
+DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
+STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
+TRICKS = {  # name: (required fields, seconds it takes)
+    "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": ({"room"}, 3),
+    "glimpse": ({"figure"}, 2), "knock": ({"at"}, 3), "whisper": ({"line", "at"}, 0),
+    "jumpscare": ({"figure"}, 3), "loop_hall": ({"trigger", "back_to"}, 0), "cut_away": ({"lookat", "then"}, 2),
+}
+SEAMS = {  # kind: (fields it needs, seconds it adds)
+    "none": (set(), 0.0), "blink": (set(), 0.2), "glance": ({"look"}, 1.0), "flicker": (set(), 0.4),
+    "occlude": (set(), 0.8), "cutaway": ({"look"}, 1.5), "turn": (set(), 0.0), "stumble": (set(), 1.0),
+    "dip": (set(), 2.0), "jcut": (set(), 0.0), "heartbeat": (set(), 0.6),
+}
+CAMERA = {"free", "soft", "hard", "held"}
+PULLS = {"back", "left", "right", "down", "any"}
+EVENTS = {"struggle", "press", "mash", "hold", "breath", "aim", "choose"}
+TRANSITIONS = {"fade", "cut", "blink", "dip"}
+CAM_KEYS = {"push": (0, L.LEAN), "zoom": (0, L.ZOOM), "roll": (-30, 30), "shake": (0, 2), "lag": (0, 2)}
+FAST = {"walking": 0.625, "looking round": 8 / 30, "searching": 0.3, "reading": 0.55, "puzzles": 0.35}  # a fast player
+GAME_DIR = None
+POSES = set()
+ENDINGS = {"good", "bad", "secret", "other"}
+STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move"}
+MAX_CPS = 17.0
+WALK = 1.4 / 1.6            # metres a second, with looking around (x 1.6)
+ROOM_FIRST = 30             # seconds: the first look round a room
+SEARCH = 20                 # seconds a prop, in a room that holds a pickup
+PUZZLE = {"combo": 180, "use_on": 60}
+NOTE_WPM = 180
+CUES = {"sound", "light", "door", "music"}
+REVEALS = {"glimpse", "jumpscare"}
+MINOR = {"glimpse", "slam_behind", "knock", "whisper", "lights_die", "swap"}
+SCARE_GAP, MINOR_GAP = 240, 60
+MAX_HOLD = 2.5
+MAX_PATHS = 256
+
+
+def verbs(a):
+    """An action's verb. A trick's fields (door, lookat...) and say's "wait": false share names with verbs."""
+    if "trick" in a:
+        return ["trick"]
+    return [k for k in a if k in ACTIONS and not (k == "wait" and isinstance(a[k], bool))]
+
+
+class Report:
+    def __init__(self):
+        self.errors, self.warnings = [], []
+
+    def err(self, m):
+        if m not in self.errors:
+            self.errors.append(m)
+
+    def warn(self, m):
+        if m not in self.warnings:
+            self.warnings.append(m)
+
+
+# ---- static checks ----------------------------------------------------------------------------------------------
+
+def check_library(story, r):
+    """Library refs (docs/ASSETS.md): a bad one is an error; ones not fetched yet are one warning (the blocks stand in)."""
+    missing = []
+    for kind, ref, where in LIB.refs(story):
+        try:
+            if kind == "mesh" and not LIB.mesh_info(ref) and not LIB.mesh_file(ref).exists():
+                r.err(f"{where}: {ref} isn't a known mesh (`python tools/cc0.py props <word>`)")
+            elif not LIB.fetched(ref, kind) and ref not in missing:
+                missing.append(ref)
+        except ValueError as e:
+            r.err(f"{where}: {e}")
+    if missing:
+        r.warn(f"{len(missing)} library assets not fetched yet ({', '.join(missing[:4])}{' ...' if len(missing) > 4 else ''}): "
+               f"`python tools/cc0.py fetch`")
+    bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
+    for who, f in bodies:
+        if f and not (L.STUDIO / "Bodies" / f).exists():
+            r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
+
+
+def check_world(story, things, r):
+    check_library(story, r)
+    cast, items, notes, lines = (story.get(k, {}) for k in ("cast", "items", "notes", "lines"))
+    for k, it in items.items():
+        if "shape" in it:
+            try:
+                L.parse_shape(it["shape"])
+            except ValueError as e:
+                r.err(f"item {k}: {e}")
+    for k, ln in lines.items():
+        check_spoken(f"line {k}", ln, cast, r)
+    for lid, lvl in story.get("levels", {}).items():
+        rooms = {rm["id"]: rm for rm in lvl.get("rooms", [])}
+        start = things.get(lvl.get("start"))
+        if not start or start.use != "spot" or start.level != lid:
+            r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
+        for rm in rooms.values():
+            if len(rm.get("size", [])) != 3 or len(rm.get("at", [])) != 3:
+                r.err(f"room {rm['id']}: needs at [x, y, z] and size [w, d, h]")
+                continue
+            for wl in rm.get("skip", []):
+                if wl not in L.WALLS:
+                    r.err(f"room {rm['id']}: skip {wl!r} isn't one of n e s w")
+            for op in rm.get("openings", []):
+                if op.get("wall") not in L.WALLS:
+                    r.err(f"room {rm['id']}: opening wall {op.get('wall')!r}")
+                    continue
+                length = L.wall_length(rm, op["wall"])
+                if op["at"] - op["w"] / 2 < 0.05 or op["at"] + op["w"] / 2 > length - 0.05:
+                    r.err(f"room {rm['id']}: opening at {op['at']} (w {op['w']}) runs off the {op['wall']} wall ({length} m)")
+                if op.get("sill", 0) + op["h"] > rm["size"][2]:
+                    r.err(f"room {rm['id']}: opening on {op['wall']} is taller than the room")
+                if op.get("door") and op["door"].get("locked_by"):
+                    lb = op["door"]["locked_by"]
+                    if not lb.startswith("flag:") and lb not in items:
+                        r.err(f"door {op['door']['id']}: locked_by {lb!r} is neither an item nor 'flag:<name>'")
+        rl = list(rooms.values())
+        for i, a in enumerate(rl):
+            for b in rl[i + 1:]:
+                if a["at"][2] != b["at"][2]:
+                    continue
+                for wa in L.WALLS:
+                    for wb in L.WALLS:
+                        la, lb_ = L.wall_line(a, wa), L.wall_line(b, wb)
+                        if la[0] != lb_[0] or abs(la[1] - lb_[1]) > 0.01:
+                            continue
+                        if min(la[3], lb_[3]) - max(la[2], lb_[2]) <= 0.05:
+                            continue
+                        sa, sb = wa in a.get("skip", []), wb in b.get("skip", [])
+                        if not sa and not sb:
+                            r.err(f"rooms {a['id']} ({wa}) and {b['id']} ({wb}) both build their shared wall: skip it on one")
+                        if sa and sb:
+                            r.warn(f"rooms {a['id']} and {b['id']} both skip their shared wall: there's a gap")
+        for ln in lvl.get("links", []):
+            for side in ("a", "b"):
+                if ln.get(side) not in rooms:
+                    r.err(f"level {lid}: link {ln} names {ln.get(side)!r}, not a room here")
+            v = ln.get("via")
+            if v and (v not in things or things[v].kind != "door"):
+                r.err(f"level {lid}: link via {v!r} isn't a door")
+            elif v and things[v].room not in (ln.get("a"), ln.get("b")):
+                r.err(f"level {lid}: door {v} is in {things[v].room}, not on the link's rooms")
+
+    texts = [n.get("text", "") for n in notes.values()] + [ln.get("en", "") for ln in lines.values()]
+    for sc in story.get("scenes", {}).values():
+        for ver in [sc] + list((sc.get("variants") or {}).values()):
+            texts += [c.get("en", "") for c in ver.get("clips", [])]
+    for t in things.values():
+        if t.kind != "prop":
+            continue
+        p, u = t.d, t.use
+        if u is None and "shape" not in p:
+            r.err(f"{t.id}: needs a shape or a use")
+        if u is not None and u not in L.USES:
+            r.err(f"{t.id}: unknown use {u!r}")
+        if p.get("shape", "").startswith("person"):
+            cid = L.parse_shape(p["shape"])[1][0]
+            if cid not in cast:
+                r.err(f"{t.id}: person {cid!r} isn't in cast")
+        need = {"pickup": ("item", items), "note": ("note", notes)}
+        if u in need:
+            f, table = need[u]
+            if p.get(f) not in table:
+                r.err(f"{t.id}: {f} {p.get(f)!r} doesn't exist")
+        if u == "switch" and (p.get("light") not in things or things[p["light"]].use != "light"):
+            r.err(f"{t.id}: switch light {p.get('light')!r} isn't a light")
+        if u == "use_on":
+            if p.get("needs") not in items:
+                r.err(f"{t.id}: needs {p.get('needs')!r} isn't an item")
+            if not p.get("then"):
+                r.err(f"{t.id}: use_on needs 'then' (the flag it sets)")
+        if u == "combo":
+            if not p.get("code"):
+                r.err(f"{t.id}: combo needs a code")
+            if not p.get("then") and not p.get("opens"):
+                r.err(f"{t.id}: combo needs 'then' (a flag) or 'opens' (a door)")
+            if p.get("opens") and (p["opens"] not in things or things[p["opens"]].kind != "door"):
+                r.err(f"{t.id}: opens {p['opens']!r} isn't a door")
+            flat = [re.sub(r"[\s\-.,:]", "", x) for x in texts + [q.d.get("text", "") for q in things.values()]]
+            if not any(str(p.get("code", "")) in x for x in flat):
+                r.warn(f"{t.id}: the code {p.get('code')} isn't written in any note, line or inspect text")
+        if u == "inspect" and p.get("line") and p["line"] not in lines:
+            r.err(f"{t.id}: line {p['line']!r} doesn't exist")
+        if u == "light" and p.get("kind", "bulb") not in ("bulb", "candle", "lamp", "fire"):
+            r.err(f"{t.id}: light kind {p.get('kind')!r}")
+
+
+def check_spoken(where, ln, cast, r, clip_max=None):
+    if ln.get("who") not in cast and ln.get("who") != "player":
+        r.err(f"{where}: who {ln.get('who')!r} isn't in cast")
+    if not ln.get("en"):
+        r.err(f"{where}: no 'en' subtitle")
+    if not ln.get("ja"):
+        r.warn(f"{where}: no 'ja' text to record")
+    if ln.get("dur"):
+        cps = len(ln.get("en", "")) / float(ln["dur"])
+        if cps > MAX_CPS:
+            r.err(f"{where}: subtitle at {cps:.0f} characters a second (max {MAX_CPS:.0f}): split it")
+    if clip_max:
+        secs = L.clip_secs(ln)
+        if ln.get("dur") and secs > clip_max + 0.01:
+            r.err(f"{where}: the take is {secs:.1f} s, over the {clip_max} s a clip can be: split it into two clips")
+        elif not ln.get("dur") and secs > clip_max:
+            r.warn(f"{where}: about {secs:.0f} s at speaking pace, over {clip_max} s: split it before recording")
+
+
+def check_scene(sid, sc, story, things, r):
+    cast = story.get("cast", {})
+    lvl = L.level_of(story, sc)
+    if lvl not in story.get("levels", {}):
+        r.err(f"scene {sid}: level {lvl!r} doesn't exist")
+    variants = sc.get("variants") or {}
+    if variants and sc.get("pick") not in variants:
+        r.err(f"scene {sid}: pick {sc.get('pick')!r} isn't one of its variants ({', '.join(variants)})")
+    if sc.get("mood") and sc["mood"] not in L.MOODS:
+        r.err(f"scene {sid}: mood {sc['mood']!r} (one of {', '.join(L.MOODS)})")
+    for edge in ("enter", "exit"):
+        if sc.get(edge) and sc[edge].get("kind") not in TRANSITIONS:
+            r.err(f"scene {sid}: {edge} kind {sc[edge].get('kind')!r} (one of {', '.join(sorted(TRANSITIONS))})")
+    cam = sc.get("camera", {"mode": "free"})
+    for t in cam.get("through", []):
+        if t not in things:
+            r.err(f"scene {sid}: camera through {t!r} isn't a placed thing")
+    if cam.get("mode", "free") not in CAMERA:
+        r.err(f"scene {sid}: camera mode {cam.get('mode')!r} (one of {', '.join(sorted(CAMERA))})")
+    if sc.get("view") and (sc["view"] not in things or things[sc["view"]].use != "spot"):
+        r.err(f"scene {sid}: view {sc['view']!r} isn't a spot")
+    if sc.get("stance", "stand") not in L.EYES:
+        r.err(f"scene {sid}: stance {sc.get('stance')!r} (one of {', '.join(L.EYES)})")
+    if sc.get("view") in things:                  # the camera is the player: it stands where a player can stand
+        v = things[sc["view"]]
+        room = things.get(v.room)
+        if room and not (room.pos[0] - room.size[0] / 2 + 0.15 <= v.pos[0] <= room.pos[0] + room.size[0] / 2 - 0.15 and
+                         room.pos[1] - room.size[1] / 2 + 0.15 <= v.pos[1] <= room.pos[1] + room.size[1] / 2 - 0.15):
+            r.err(f"scene {sid}: view {v.id} is in a wall or outside its room: the player's eye can't be there")
+        for t in things.values():
+            if t.kind != "prop" or t.room != v.room or t.use in ("spot", "light", "trigger") or t.id in cam.get("through", []):
+                continue
+            if not t.d.get("shape") or t.size[2] < 0.5:
+                continue
+            dx, dy = v.pos[0] - t.pos[0], v.pos[1] - t.pos[1]
+            a = -math.radians(t.yaw); lx, ly = dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a)
+            if abs(lx) < t.size[0] / 2 and abs(ly) < t.size[1] / 2:
+                r.err(f"scene {sid}: view {v.id} is inside {t.id}: the player can't stand there"
+                      f" (hiding in it? list it in camera.through and set stance 'hide')")
+    versions = [(f"scene {sid}", sc)] if not variants else \
+        [(f"scene {sid} variant {k}", L.scene_version(dict(sc, pick=k))) for k in variants]
+    clip_max = story["game"].get("clip_max", 10)
+    for where, ver in versions:
+        stage = ver.get("stage", {})
+        for who, spot in stage.items():
+            if who not in cast:
+                r.err(f"{where}: stage names {who!r}, not in cast")
+            if spot not in things or things[spot].use != "spot" or things[spot].level != lvl:
+                r.err(f"{where}: stage spot {spot!r} isn't a spot in level {lvl}")
+        vcam = ver.get("camera", cam)
+        look = vcam.get("look")
+        if look and look not in things and look not in stage and vcam.get("mode") != "free":
+            if look in cast:
+                r.warn(f"{where}: the camera looks at {look}, who isn't on stage in this version")
+            else:
+                r.err(f"{where}: camera look {look!r} is neither a thing nor someone on stage")
+        clips = ver.get("clips", [])
+        if not clips:
+            r.err(f"{where}: no clips")
+        ids = [c.get("id") for c in clips]
+        if len(set(ids)) != len(ids) or None in ids:
+            r.err(f"{where}: clip ids must be present and unique")
+        for i, c in enumerate(clips):
+            cw = f"{where} clip {c.get('id')}"
+            check_spoken(cw, c, cast, r, clip_max)
+            seam = c.get("seam")
+            if i > 0:
+                if not seam:
+                    r.err(f"{cw}: a cut from {clips[i - 1].get('id')} with no seam: pick one (blink, glance, flicker, "
+                          f"occlude, cutaway, turn, stumble, dip, jcut, heartbeat; none only for the same take)")
+                elif seam.get("kind") not in SEAMS:
+                    r.err(f"{cw}: seam {seam.get('kind')!r} isn't a seam")
+                else:
+                    missing = SEAMS[seam["kind"]][0] - set(seam)
+                    if missing:
+                        r.err(f"{cw}: seam {seam['kind']} needs {', '.join(sorted(missing))}")
+                    lk = seam.get("look")
+                    if lk and lk not in things and lk not in stage:
+                        r.err(f"{cw}: seam look {lk!r} isn't a thing or someone on stage")
+                    if seam["kind"] == "glance" and cam.get("mode") == "hard":
+                        r.warn(f"{cw}: a glance needs the player's look (soft or free camera); with a hard camera use blink or cutaway")
+            if c.get("shot") and c["shot"] not in L.SHOT_TYPES:
+                r.err(f"{cw}: shot {c['shot']!r} (one of {', '.join(L.SHOT_TYPES)})")
+            for k, v in (c.get("cam") or {}).items():
+                if k in CAM_KEYS:
+                    lo, hi = CAM_KEYS[k]
+                    if not isinstance(v, (int, float)) or not lo <= v <= hi:
+                        r.err(f"{cw}: cam {k} {v!r} (a number from {lo} to {hi})")
+                elif k == "fov":
+                    r.err(f"{cw}: cam fov: the camera is the player's eye and never changes lens. Frame by distance "
+                          f"(bring the actor in, `push` to lean in up to {L.LEAN} m) or `zoom` up to {L.ZOOM} for a held focus "
+                          f"(DIRECTING.md §1)")
+                elif k in ("look", "focus"):
+                    if v not in things and v not in stage:
+                        r.err(f"{cw}: cam {k} {v!r} isn't a thing or someone on stage")
+                else:
+                    r.err(f"{cw}: unknown cam field {k!r} (push, zoom, roll, shake, lag, look, focus)")
+            if c.get("struggle"):
+                r.err(f"{cw}: `struggle` is an event now: \"event\": {{\"type\": \"struggle\", \"secs\": 4, \"pull\": \"back\", \"need\": 0.6}}")
+            ev = c.get("event")
+            if ev:
+                t = ev.get("type")
+                if t not in EVENTS:
+                    r.err(f"{cw}: event type {t!r} (one of {', '.join(sorted(EVENTS))})")
+                if not isinstance(ev.get("secs"), (int, float)) or ev["secs"] <= 0:
+                    r.err(f"{cw}: event needs secs (how long the player has)")
+                if t == "struggle":
+                    if ev.get("pull", "any") not in PULLS:
+                        r.err(f"{cw}: struggle pull {ev.get('pull')!r} (one of {', '.join(sorted(PULLS))})")
+                    if vcam.get("mode") != "held":
+                        r.warn(f"{cw}: a struggle wants camera mode 'held'")
+                if t in ("struggle", "mash") and not 0 < float(ev.get("need", 0.5)) <= 1:
+                    r.err(f"{cw}: event need is 0..1")
+                if t == "choose":
+                    ids = [o.get("id") for o in ev.get("options", [])]
+                    if len(ids) < 2 or None in ids or len(set(ids)) != len(ids):
+                        r.err(f"{cw}: a timed choice needs two options or more, each with a unique id and a label")
+                    if ev.get("default") not in ids:
+                        r.err(f"{cw}: a timed choice needs `default`: the option taken when the time runs out (silence is a choice)")
+                for res, acts in (ev.get("on") or {}).items():
+                    if res not in L.event_results(ev):
+                        r.err(f"{cw}: event on {res!r} isn't a result of {t} ({', '.join(map(str, L.event_results(ev)))})")
+                    for a in acts:
+                        check_action(f"{cw} event on {res}", a, story, things, r, stage)
+            body = c.get("body")
+            if body:
+                block = body.get("block") or []
+                if not block and not body.get("prompt") and not body.get("file"):
+                    r.err(f"{cw}: body needs blocking keys, a prompt or a file")
+                elif not body.get("prompt"):
+                    r.warn(f"{cw}: body has no prompt: motion.py won't generate it (the blocking plays)")
+                for k in block:
+                    if k.get("pose") not in POSES:
+                        r.err(f"{cw}: block pose {k.get('pose')!r} isn't in Content/Studio/poses.json")
+                    if k.get("ease", "inout") not in L.EASES:
+                        r.err(f"{cw}: block ease {k.get('ease')!r} (one of {', '.join(L.EASES)})")
+                    if "s" not in k and not 0 <= float(k.get("at", 0)) <= 1:
+                        r.err(f"{cw}: block key at {k.get('at')} (0..1 of the clip, or `s` in seconds)")
+                    if k.get("move") and (k["move"] not in things or things[k["move"]].use != "spot"):
+                        r.err(f"{cw}: block key moves to {k['move']!r}, not a spot")
+                for m in body.get("mods") or []:
+                    if m.get("type") not in L.MODS:
+                        r.err(f"{cw}: modifier {m.get('type')!r} (one of {', '.join(L.MODS)})")
+                    elif set(m) - {"type"} - set(L.MODS[m["type"]]):
+                        r.err(f"{cw}: modifier {m['type']} takes {', '.join(L.MODS[m['type']]) or 'nothing'}")
+                if body.get("fit", "stretch") not in L.FITS:
+                    r.err(f"{cw}: fit {body.get('fit')!r} (one of {', '.join(L.FITS)})")
+                if body.get("file") and GAME_DIR and not (GAME_DIR / "Motion" / body["file"]).exists():
+                    r.warn(f"{cw}: body file Motion/{body['file']} isn't there yet (the blocking plays meanwhile)")
+                for spot in body.get("path", []):
+                    if spot not in things or things[spot].use != "spot" or things[spot].level != lvl:
+                        r.err(f"{cw}: body path spot {spot!r} isn't a spot in level {lvl}")
+                rc = body.get("reach")
+                if rc:
+                    if rc.get("hand", "right") not in ("right", "left"):
+                        r.err(f"{cw}: reach hand {rc.get('hand')!r} (right or left)")
+                    if rc.get("to") not in ("player_collar", "player_face") and rc.get("to") not in things:
+                        r.err(f"{cw}: reach to {rc.get('to')!r} (player_collar, player_face or a placed thing)")
+                    if rc.get("to", "").startswith("player") and not sc.get("view"):
+                        r.err(f"{cw}: reaching for the player needs the scene's view spot (where the player stands)")
+                for edge in ("start", "end"):
+                    if body.get(edge) and body[edge] not in story.get("motions", {}) and body[edge] not in ("idle", "tpose"):
+                        r.warn(f"{cw}: body {edge} pose {body[edge]!r} isn't in motions (idle and tpose are built in)")
+        for cue in ver.get("cues", []):
+            at = cue.get("at", {})
+            if at.get("clip") not in ids:
+                r.err(f"{where}: a cue anchors to clip {at.get('clip')!r}, not in this version")
+            if at.get("edge", "start") not in ("start", "end"):
+                r.err(f"{where}: cue edge {at.get('edge')!r} (start or end)")
+            check_action(f"{where} cue", cue.get("do", {}), story, things, r, stage)
+    for a in sc.get("sets", []):
+        check_action(f"scene {sid} sets", a, story, things, r)
+
+
+def check_trigger(bid, w, story, things, beats, r):
+    keys = set(w) - TRIGGER_EXTRA
+    if len(keys) != 1:
+        r.err(f"{bid}: 'when' needs exactly one trigger, has {sorted(keys)}")
+        return
+    k = keys.pop()
+    v = w[k]
+    if k not in TRIGGERS:
+        r.err(f"{bid}: unknown trigger {k!r}")
+    elif k in ("all", "any"):
+        for sub in v:
+            check_trigger(bid, sub, story, things, beats, r)
+    elif k in ("enter", "exit"):
+        if v not in things or things[v].kind != "room" and things[v].use != "trigger":
+            r.err(f"{bid}: {k} {v!r} isn't a room or a trigger")
+    elif k in ("use", "look") and v not in things:
+        r.err(f"{bid}: {k} {v!r} isn't placed anywhere")
+    elif k == "pickup" and v not in story.get("items", {}):
+        r.err(f"{bid}: pickup {v!r} isn't an item")
+    elif k == "read" and v not in story.get("notes", {}):
+        r.err(f"{bid}: read {v!r} isn't a note")
+    elif k == "after" and v not in beats:
+        r.err(f"{bid}: after {v!r} isn't a beat in this stitch")
+
+
+def check_action(bid, a, story, things, r, stage=None):
+    keys = verbs(a)
+    if len(keys) != 1:
+        r.err(f"{bid}: an action needs exactly one verb, has {sorted(a)}")
+        return
+    k = keys[0]
+    v = a[k]
+    stage = stage or {}
+
+    def placed(x, what="thing"):
+        if x not in things and x not in stage:
+            r.err(f"{bid}: {k} names {x!r}, which isn't a placed {what}")
+            return False
+        return x in things
+
+    lines, sounds, items, cast = (story.get(t, {}) for t in ("lines", "sounds", "items", "cast"))
+    if k == "say" and v not in lines:
+        r.err(f"{bid}: say {v!r} isn't a line")
+    elif k == "sound":
+        if v not in sounds:
+            r.err(f"{bid}: sound {v!r} isn't in sounds")
+        if a.get("at"):
+            placed(a["at"])
+    elif k == "music" and v not in MUSIC:
+        r.err(f"{bid}: music {v!r} (one of {', '.join(sorted(MUSIC))})")
+    elif k == "light":
+        if a.get("room"):
+            placed(a["room"], "room")
+        elif placed(v, "light") and things[v].use != "light":
+            r.err(f"{bid}: light {v!r} isn't a light")
+        if a.get("set") not in LIGHT_SET:
+            r.err(f"{bid}: light set {a.get('set')!r}")
+    elif k == "door":
+        if placed(v, "door") and things[v].kind != "door":
+            r.err(f"{bid}: door {v!r} isn't a door")
+        if a.get("set") not in DOOR_SET:
+            r.err(f"{bid}: door set {a.get('set')!r}")
+    elif k in ("show", "hide", "anim", "lookat"):
+        placed(v)
+    elif k == "move":
+        placed(v)
+        if placed(a.get("to"), "spot") and things[a["to"]].use != "spot":
+            r.err(f"{bid}: move to {a['to']!r} isn't a spot")
+    elif k in ("give", "take") and v not in items:
+        r.err(f"{bid}: {k} {v!r} isn't an item")
+    elif k == "shot":
+        if a.get("who") not in cast:
+            r.err(f"{bid}: shot who {a.get('who')!r} isn't in cast")
+        if a.get("line") and a["line"] not in lines:
+            r.err(f"{bid}: shot line {a['line']!r} isn't a line")
+    elif k == "stalker":
+        if v not in STALKER:
+            r.err(f"{bid}: stalker {v!r}")
+        for s in [a.get("at")] + list(a.get("route", [])):
+            if s:
+                placed(s, "spot")
+    elif k == "trick":
+        if v not in TRICKS:
+            r.err(f"{bid}: unknown trick {v!r}")
+            return
+        missing = TRICKS[v][0] - set(a)
+        if missing:
+            r.err(f"{bid}: trick {v} needs {', '.join(sorted(missing))}")
+        for f in ("hide", "show", "door", "room", "figure", "at", "trigger", "back_to", "lookat"):
+            if f in a:
+                placed(a[f])
+        if v == "whisper" and a.get("line") not in lines:
+            r.err(f"{bid}: whisper line {a.get('line')!r} isn't a line")
+        if v in ("glimpse", "jumpscare") and a.get("figure") in things and \
+                not things[a["figure"]].d.get("shape", "").startswith("person"):
+            r.err(f"{bid}: {v} figure {a['figure']!r} isn't a person")
+        for sub in a.get("then", []):
+            check_action(bid, sub, story, things, r, stage)
+
+
+def check_stitch(tid, st, story, things, r):
+    if L.level_of(story, st) not in story.get("levels", {}):
+        r.err(f"stitch {tid}: level {st.get('level')!r} doesn't exist")
+    beats = {b["id"] for b in st.get("beats", [])}
+    has_done = False
+    for b in st.get("beats", []):
+        check_trigger(b["id"], b.get("when", {}), story, things, beats, r)
+        if b.get("secret") and b["secret"] not in story.get("secrets", {}):
+            r.err(f"{b['id']}: secret {b['secret']!r} isn't in secrets")
+        cued = "look" in b.get("when", {})
+        for act in b.get("do", []):
+            check_action(b["id"], act, story, things, r)
+            v = verbs(act)
+            if v and v[0] == "done":
+                has_done = True
+            if v and v[0] in CUES or act.get("trick") in ("knock", "whisper"):
+                cued = True
+            if act.get("trick") in REVEALS and not cued:
+                r.warn(f"{b['id']}: {act['trick']} with no cue before it (a sound, light or door in the same beat "
+                       f"first): lead the eye to where the reveal is")
+            if "lookat" in act and "trick" not in act and float(act.get("secs", 1)) > MAX_HOLD:
+                r.warn(f"{b['id']}: lookat holds {act['secs']} s without control (max {MAX_HOLD})")
+    if not has_done:
+        r.err(f"stitch {tid}: no beat ends it ({{\"done\": true}})")
+
+
+def check_motions(story, r):
+    for k, m in story.get("motions", {}).items():
+        if not m.get("prompt"):
+            r.err(f"motion {k}: needs a prompt")
+        if m.get("who") and m["who"] not in story.get("cast", {}):
+            r.err(f"motion {k}: who {m['who']!r} isn't in cast")
+
+
+def scene_event(story, n):
+    """The event a result choice reads: clip `event` of scene node `of` (the last clip with an event by default)."""
+    src = story["flow"].get(n.get("of"), {})
+    sc = story.get("scenes", {}).get(src.get("ref")) if src.get("type") == "scene" else None
+    if not sc:
+        return None
+    clips = [c for c in L.scene_version(sc).get("clips", []) if c.get("event")]
+    if n.get("event"):
+        clips = [c for c in clips if c["id"] == n["event"]]
+    return clips[-1]["event"] if clips else None
+
+
+def check_flow(story, things, r):
+    flow, scenes, stitches = story.get("flow", {}), story.get("scenes", {}), story.get("stitches", {})
+    if story["game"].get("start") not in flow:
+        r.err(f"game.start {story['game'].get('start')!r} isn't a flow node")
+    for nid, n in flow.items():
+        t = n.get("type")
+        if t in ("scene", "stitch"):
+            table = scenes if t == "scene" else stitches
+            if n.get("ref") not in table:
+                r.err(f"flow {nid}: {t} {n.get('ref')!r} doesn't exist")
+            if n.get("next") not in flow:
+                r.err(f"flow {nid}: next {n.get('next')!r} isn't a flow node")
+        elif t == "choice":
+            by, opts = n.get("by"), n.get("options", [])
+            if by not in ("act", "flag", "result"):
+                r.err(f"flow {nid}: choice by {by!r} (act, flag or result)")
+            if len(opts) < 2:
+                r.err(f"flow {nid}: a choice needs two options or more")
+            for o in opts:
+                if o.get("to") not in flow:
+                    r.err(f"flow {nid}: option goes to {o.get('to')!r}, not a flow node")
+                if by == "act":
+                    check_trigger(nid, o.get("when", {}), story, things, set(), r)
+            if by == "flag" and any("if" not in o for o in opts[:-1]):
+                r.err(f"flow {nid}: every option but the last needs 'if'")
+            if by == "result":
+                ev = scene_event(story, n)
+                if ev is None:
+                    r.err(f"flow {nid}: 'of' {n.get('of')!r} isn't a scene node with an event")
+                else:
+                    results = L.event_results(ev)
+                    for o in opts:
+                        if o.get("result") not in results:
+                            r.err(f"flow {nid}: result {o.get('result')!r} (the event's results: {', '.join(map(str, results))})")
+                    missing = set(results) - {o.get("result") for o in opts}
+                    if missing:
+                        r.err(f"flow {nid}: no option for result {', '.join(sorted(map(str, missing)))}")
+        elif t == "ending":
+            if n.get("kind") not in ENDINGS:
+                r.err(f"flow {nid}: ending kind {n.get('kind')!r}")
+        else:
+            r.err(f"flow {nid}: type {t!r} (scene, stitch, choice, ending)")
+    for sid, sc in scenes.items():
+        evs = [c["event"] for c in L.scene_version(sc).get("clips", []) if c.get("event")]
+        if evs:
+            for k in [k for k, n in flow.items() if n.get("ref") == sid and n.get("type") == "scene"]:
+                nxt = flow.get(flow[k].get("next"), {})
+                if (nxt.get("type") != "choice" or nxt.get("by") != "result") and not any(e.get("on") for e in evs):
+                    r.warn(f"flow {k}: scene {sid} has an event, but nothing uses its result (a result choice next, or `on`)")
+    for tid, st in stitches.items():
+        tm = st.get("timer")
+        if tm:
+            if not isinstance(tm.get("secs"), (int, float)) or tm["secs"] <= 0:
+                r.err(f"stitch {tid}: timer needs secs")
+            if tm.get("fail") not in flow:
+                r.err(f"stitch {tid}: timer fail {tm.get('fail')!r} isn't a flow node")
+    for it in story.get("interrupts", []):
+        w = f"interrupt {it.get('id')}"
+        check_trigger(w, it.get("when", {}), story, things, set(), r)
+        if it.get("to") not in flow:
+            r.err(f"{w}: to {it.get('to')!r} isn't a flow node")
+        during = it.get("during", "all")
+        if during != "all" and any(t not in stitches for t in during):
+            r.err(f"{w}: during names something that isn't a stitch")
+    for k, s in story.get("secrets", {}).items():
+        sets = json.dumps(story.get("stitches", {})) + json.dumps(story.get("scenes", {}))
+        if f'"flag": "{s.get("flag")}"' not in sets:
+            r.warn(f"secret {k}: nothing sets its flag {s.get('flag')!r}")
+
+
+# ---- the playthrough: a greedy player down every path -----------------------------------------------------------
+
+class World:
+    def __init__(self, story, things, r, verbose=False):
+        self.story, self.things, self.r, self.verbose = story, things, r, verbose
+        self.flags, self.inv, self.done_events, self.fired = set(), set(), set(), set()
+        self.hidden = {t.id for t in things.values() if t.d.get("hidden")}
+        self.taken, self.used = set(), set()
+        self.locked = {t.id for t in things.values() if t.kind == "door" and t.d.get("locked_by")}
+        self.visited, self.pos, self.room, self.level = set(), None, None, None
+        self.cur, self.clock = None, 0.0
+        self.secs = {}           # node -> {what: seconds}  (a typical first-time player)
+        self.fast = {}           # node -> seconds          (a fast player who knows what to do)
+        self.bait = set()        # things the greedy player leaves alone (they trigger interrupts)
+        for it in story.get("interrupts", []):
+            w = it.get("when", {})
+            for t in things.values():
+                if t.id == w.get("use") or (t.use == "pickup" and t.d.get("item") == w.get("pickup")):
+                    self.bait.add(t.id)
+        self.scares = []         # (clock, trick, where)
+        self.route = []
+        self.path = []           # node ids
+        self.results = {}        # scene node -> escape/caught
+        self.seek_secrets = False  # the second sweep fires `secret` beats; the first plays past them
+        self.dev = 0               # how far this path strays from the spine (later options, interrupts, timeouts)
+
+    def fork(self):
+        story, things, r = self.story, self.things, self.r
+        self.story = self.r = None
+        w = copy.deepcopy(self)
+        self.story, self.r = story, r
+        w.story, w.r = story, r
+        return w
+
+    # where the player can be
+    def door_locked(self, did):
+        if did not in self.locked:
+            return False
+        lb = self.things[did].d.get("locked_by", "")
+        return not (lb.startswith("flag:") and lb[5:] in self.flags)
+
+    def reachable_rooms(self):
+        lvl = self.story["levels"][self.level]
+        seen, todo = {self.room}, [self.room]
+        while todo:
+            rm = todo.pop()
+            for ln in lvl.get("links", []):
+                if rm not in (ln["a"], ln["b"]):
+                    continue
+                other = ln["b"] if rm == ln["a"] else ln["a"]
+                if other in seen or (ln.get("via") and self.door_locked(ln["via"])):
+                    continue
+                seen.add(other)
+                todo.append(other)
+        return seen
+
+    def can_reach(self, tid):
+        t = self.things.get(tid)
+        if not t or t.level != self.level or tid in self.hidden:
+            return False
+        rooms = self.reachable_rooms()
+        if t.kind == "door":
+            for ln in self.story["levels"][self.level].get("links", []):
+                if ln.get("via") == tid and (ln["a"] in rooms or ln["b"] in rooms):
+                    return True
+        return t.room in rooms
+
+    def enter_level(self, level):
+        if level != self.level:
+            self.level = level
+            st = self.things[self.story["levels"][level]["start"]]
+            self.pos, self.room = st.pos, st.room
+            self.visited.add(st.room)
+
+    # time
+    def add(self, what, secs):
+        c = self.secs.setdefault(self.cur, {})
+        c[what] = c.get(what, 0) + secs
+        self.fast[self.cur] = self.fast.get(self.cur, 0) + secs * FAST.get(what, 1.0)
+        self.clock += secs
+
+    def go(self, tid):
+        t = self.things[tid]
+        self.route.append({"node": self.cur, "do": "go", "id": tid})
+        if self.pos is not None:
+            self.add("walking", L.dist(self.pos, t.pos) / WALK)
+        self.pos = t.pos
+        if t.kind != "door":
+            self.room = t.room
+        if t.room not in self.visited:
+            self.visited.add(t.room)
+            self.add("looking round", ROOM_FIRST)
+            props = [q for q in self.things.values() if q.room == t.room and q.kind == "prop" and q.d.get("shape")]
+            if any(q.use == "pickup" for q in props):
+                self.add("searching", SEARCH * len(props))
+
+    # triggers
+    def can_fire(self, w):
+        k = next(iter(set(w) - TRIGGER_EXTRA))
+        v = w[k]
+        if k == "start":
+            return ("start", self.cur) in self.done_events
+        if k in ("enter", "exit", "look"):
+            return self.can_reach(v)
+        if k == "use":
+            t = self.things[v]
+            if t.use == "pickup":
+                return ("pickup", t.d["item"]) in self.done_events
+            if t.use == "note":
+                return ("read", t.d["note"]) in self.done_events
+            if t.kind == "door" and self.door_locked(v):
+                return False
+            return self.can_reach(v)
+        if k in ("pickup", "read"):
+            return (k, v) in self.done_events
+        if k == "after":
+            return v in self.fired
+        if k == "flag":
+            return v in self.flags
+        if k == "all":
+            return all(self.can_fire(s) for s in v)
+        if k == "any":
+            return any(self.can_fire(s) for s in v)
+        return False
+
+    def where(self, w):
+        k = next(iter(set(w) - TRIGGER_EXTRA))
+        v = w[k]
+        return v if k in ("enter", "exit", "use", "look") and v in self.things else None
+
+    def apply_state(self, a):
+        k = verbs(a)[0]
+        v = a[k]
+        if k == "flag":
+            self.flags.add(v)
+        elif k == "unflag":
+            self.flags.discard(v)
+        elif k == "give":
+            self.inv.add(v)
+        elif k == "take":
+            self.inv.discard(v)
+        elif k == "show":
+            self.hidden.discard(v)
+        elif k == "hide":
+            self.hidden.add(v)
+        elif k == "move" and v in self.things:
+            t, s = self.things[v], self.things[a["to"]]
+            t.room, t.pos, t.level = s.room, s.pos, s.level
+        elif k == "door":
+            if a["set"] == "lock":
+                self.locked.add(v)
+            elif a["set"] in ("unlock", "open"):
+                self.locked.discard(v)
+
+    def run_actions(self, where, acts):
+        """Returns True when a `done` ends the stitch."""
+        lines = self.story.get("lines", {})
+        for a in acts:
+            k = verbs(a)[0]
+            v = a[k]
+            if k in STATE_VERBS:
+                self.apply_state(a)
+            elif k == "say":
+                self.add("dialogue", L.line_secs(lines[v]) if a.get("wait", True) else 0)
+            elif k == "think":
+                self.add("dialogue", max(1.5, len(v) / 15))
+            elif k == "wait":
+                self.add("scripted", float(v))
+            elif k in ("fade", "lookat"):
+                self.add("scripted", float(a.get("secs", 1)))
+            elif k == "shot":
+                self.add("dialogue", L.line_secs(lines[a["line"]]) if a.get("line") else 2)
+            elif k == "seq":
+                self.add("scripted", float(a.get("secs", 3)))
+            elif k == "stalker":
+                self.secs.setdefault(self.cur, {})["_stalker"] = 1
+            elif k == "trick":
+                if v in MINOR or v == "jumpscare":
+                    self.scares.append((self.clock, v, where))
+                self.add("scripted", TRICKS[v][1] + float(a.get("secs", 0)))
+                if v == "swap":
+                    self.hidden.add(a["hide"])
+                    self.hidden.discard(a["show"])
+                elif v == "whisper":
+                    self.add("dialogue", L.line_secs(lines[a["line"]]))
+                elif v == "cut_away":
+                    if self.run_actions(where, a["then"]):
+                        return True
+            elif k == "done":
+                return True
+        return False
+
+    def player_move(self):
+        for t in self.things.values():
+            if t.level != self.level or t.id in self.bait or not self.can_reach(t.id):
+                continue
+            u = t.use
+            if u == "pickup" and t.id not in self.taken:
+                self.go(t.id)
+                self.route.append({"node": self.cur, "do": "use", "id": t.id})
+                self.taken.add(t.id)
+                self.hidden.add(t.id)
+                self.inv.add(t.d["item"])
+                self.done_events.add(("pickup", t.d["item"]))
+                return f"picks up {t.d['item']}"
+            if u == "note" and ("read", t.d["note"]) not in self.done_events:
+                self.go(t.id)
+                self.route.append({"node": self.cur, "do": "use", "id": t.id})
+                n = self.story["notes"][t.d["note"]]
+                self.add("reading", L.words(n.get("text", "")) / NOTE_WPM * 60 + 10)
+                self.done_events.add(("read", t.d["note"]))
+                return f"reads {t.d['note']}"
+            if u in ("combo", "use_on") and t.id not in self.used:
+                if u == "use_on" and t.d["needs"] not in self.inv:
+                    continue
+                self.go(t.id)
+                step = {"node": self.cur, "do": "use", "id": t.id}
+                if u == "combo":
+                    step["code"] = t.d["code"]
+                self.route.append(step)
+                self.used.add(t.id)
+                self.add("puzzles", PUZZLE[u])
+                if u == "use_on" and t.d.get("consume", True):
+                    self.inv.discard(t.d["needs"])
+                if t.d.get("then"):
+                    self.flags.add(t.d["then"])
+                if t.d.get("opens"):
+                    self.locked.discard(t.d["opens"])
+                return f"solves {t.id}"
+        for did in sorted(self.locked):
+            lb = self.things[did].d.get("locked_by", "")
+            if lb in self.inv and self.can_reach(did):
+                self.go(did)
+                self.route.append({"node": self.cur, "do": "use", "id": did, "with": lb})
+                self.locked.discard(did)
+                return f"unlocks {did} with {lb}"
+        return None
+
+    # the node kinds
+    def play_stitch(self, nid, st):
+        self.enter_level(L.level_of(self.story, st))
+        self.done_events.add(("start", self.cur))
+        beats = st.get("beats", [])
+        for _ in range(10000):
+            fired_one = True
+            while fired_one:
+                fired_one = False
+                for b in beats:
+                    if b["id"] in self.fired or (b.get("secret") and not self.seek_secrets):
+                        continue
+                    if not all((f[1:] not in self.flags) if f.startswith("!") else (f in self.flags) for f in b.get("if", [])):
+                        continue
+                    if not self.can_fire(b["when"]):
+                        continue
+                    at = self.where(b["when"])
+                    if at:
+                        self.go(at)
+                        k = next(iter(set(b["when"]) - TRIGGER_EXTRA))
+                        if k in ("use", "look"):
+                            self.route.append({"node": nid, "do": k, "id": at, "secs": b["when"].get("secs", 1.0)})
+                    self.route.append({"node": nid, "do": "expect", "beat": b["id"]})
+                    self.fired.add(b["id"])
+                    fired_one = True
+                    if self.verbose:
+                        print(f"  [{nid}] beat {b['id']}")
+                    if self.run_actions(b["id"], b.get("do", [])):
+                        return True
+            move = self.player_move()
+            if self.verbose and move:
+                print(f"  [{nid}] player {move}")
+            if not move:
+                left = [b["id"] for b in beats if b["id"] not in self.fired]
+                self.r.err(f"SOFTLOCK in {nid} (path {' > '.join(self.path)}): nothing left to do and no `done`. "
+                           f"Unfired: {', '.join(left)}; holding {sorted(self.inv) or 'nothing'}; flags "
+                           f"{sorted(self.flags) or 'none'}; locked {sorted(d for d in self.locked if self.door_locked(d)) or 'none'}")
+                return False
+        self.r.err(f"{nid}: the play ran 10000 steps without ending")
+        return False
+
+    def play_scene(self, nid, sc):
+        self.enter_level(L.level_of(self.story, sc))
+        ver = L.scene_version(sc)
+        if sc.get("view") and sc["view"] in self.things:
+            self.go(sc["view"])
+        for i, c in enumerate(ver.get("clips", [])):
+            self.add("scenes", L.clip_secs(c))
+            if i and c.get("seam"):
+                self.add("scenes", SEAMS.get(c["seam"].get("kind"), (None, 0))[1])
+            if c.get("event"):
+                self.add("scenes", float(c["event"].get("secs", 3)))
+        self.add("scenes", float((sc.get("hold") or {}).get("max", 0)) / 2)
+        for cue in ver.get("cues", []):
+            a = cue.get("do", {})
+            v = verbs(a)
+            if v and v[0] in STATE_VERBS:
+                self.apply_state(a)
+            if a.get("trick") in MINOR or a.get("trick") == "jumpscare":
+                self.scares.append((self.clock, a["trick"], nid))
+        self.route.append({"node": nid, "do": "scene", "id": sc.get("title", nid)})
+        self.run_actions(nid, sc.get("sets", []))
+        return True
+
+
+def explore(w, nid, done_paths, visited_nodes):
+    flow, story = w.story["flow"], w.story
+    while True:
+        if len(done_paths) >= MAX_PATHS:
+            return
+        if nid in w.path and flow[nid]["type"] != "ending":
+            w.r.err(f"flow loops back to {nid} (path {' > '.join(w.path)}): loops need a flag choice to leave")
+            return
+        w.path.append(nid)
+        visited_nodes.add(nid)
+        n = flow[nid]
+        w.cur = nid
+        t = n["type"]
+        if t == "stitch":
+            st = story["stitches"][n["ref"]]
+            before = w.fork()
+            if not w.play_stitch(nid, st):
+                return
+            spent_fast, spent = w.fast.get(nid, 0), sum(v for k, v in w.secs.get(nid, {}).items() if k != "_stalker")
+            tm = st.get("timer")
+            if tm:
+                if spent_fast > tm["secs"]:
+                    w.r.err(f"{nid}: even a fast player needs {spent_fast:.0f} s, but the timer gives {tm['secs']} s")
+                elif spent > tm["secs"]:
+                    w.r.warn(f"{nid}: a typical player needs {spent:.0f} s against the {tm['secs']} s timer (fast {spent_fast:.0f} s): many will fail it")
+                    w.secs[nid] = {"timed": float(tm["secs"]) * 0.8}
+                    w.fast[nid] = spent_fast
+                b = before.fork()                     # the timer runs out
+                b.dev += 10
+                b.cur = nid
+                b.add("timed", float(tm["secs"]))
+                b.route.append({"node": nid, "do": "timeout"})
+                explore(b, tm["fail"], done_paths, visited_nodes)
+            for it in story.get("interrupts", []):
+                during = it.get("during", "all")
+                if during != "all" and n["ref"] not in during:
+                    continue
+                k = next(iter(set(it["when"]) - TRIGGER_EXTRA))
+                v = it["when"][k]
+                bait = [t.id for t in w.things.values() if t.id == v or (t.use == "pickup" and t.d.get("item") == v)]
+                if k == "caught" or (bait and w.can_reach(bait[0])) or (k in ("enter", "flag") and w.can_fire(it["when"])):
+                    b = before.fork()                 # the player takes the bait halfway through
+                    b.dev += 10
+                    b.cur = nid
+                    b.add("scripted", spent / 2)
+                    b.route.append({"node": nid, "do": "interrupt", "id": it.get("id")})
+                    explore(b, it["to"], done_paths, visited_nodes)
+            nid = n["next"]
+        elif t == "scene":
+            w.play_scene(nid, story["scenes"][n["ref"]])
+            nid = n["next"]
+        elif t == "ending":
+            done_paths.append(w)
+            return
+        elif t == "choice":
+            by = n["by"]
+            if by == "flag":
+                opt = next(o for o in n["options"] if all(
+                    (f[1:] not in w.flags) if f.startswith("!") else (f in w.flags) for f in o.get("if", [])))
+                nid = opt["to"]
+                continue
+            if by == "act":              # the player can still act while the choice waits (use a key, read a note)
+                while w.player_move():
+                    pass
+            ok = []
+            for o in n["options"]:
+                if by == "act" and not w.can_fire(o["when"]):
+                    continue
+                ok.append(o)
+            if not ok:
+                w.r.err(f"SOFTLOCK at choice {nid} (path {' > '.join(w.path)}): none of its options can happen here")
+                return
+            for i, o in enumerate(ok):
+                b = w.fork()
+                b.dev += i
+                if by == "act":
+                    at = b.where(o["when"])
+                    if at:
+                        b.go(at)
+                    b.route.append({"node": nid, "do": "choose", "label": o.get("label"), "when": o.get("when")})
+                else:
+                    b.results[n.get("of")] = o["result"]
+                    ev = scene_event(story, n) or {}
+                    b.run_actions(nid, (ev.get("on") or {}).get(o["result"], []))
+                    b.route.append({"node": nid, "do": "event", "result": o["result"]})
+                explore(b, o["to"], done_paths, visited_nodes)
+            return
+
+
+def main():
+    game, argv = L.pick_game(sys.argv[1:])
+    route_out = None
+    if "--route" in argv:
+        i = argv.index("--route")
+        route_out = argv[i + 1]
+        del argv[i:i + 2]
+    verbose = "-v" in argv
+    global GAME_DIR, POSES
+    story, path = L.load(game)
+    GAME_DIR = path.parent
+    POSES = set(L.poses()["poses"])
+    r = Report()
+    if story.get("format") != 2:
+        r.err("this check reads format 2 (scenes, stitches, flow): see docs/STORY_FORMAT.md")
+    things, errs = L.index(story)
+    for e in errs:
+        r.err(e)
+    names = {}
+    for table in ("cast", "items", "notes", "lines", "sounds", "scenes", "stitches", "flow", "secrets", "motions"):
+        for k in story.get(table, {}):
+            names.setdefault(k, []).append(table)
+    for k in things:
+        names.setdefault(k, []).append("placed")
+    for st in story.get("stitches", {}).values():
+        for b in st.get("beats", []):
+            names.setdefault(b["id"], []).append("beat")
+    for k, where in names.items():
+        if len(where) > 1 and set(where) != {"secrets"}:
+            r.err(f"id {k!r} is used by {', '.join(where)}: ids are unique across the file")
+    if not r.errors:
+        check_world(story, things, r)
+        for sid, sc in story.get("scenes", {}).items():
+            check_scene(sid, sc, story, things, r)
+        for tid, st in story.get("stitches", {}).items():
+            check_stitch(tid, st, story, things, r)
+        check_flow(story, things, r)
+        check_motions(story, r)
+    paths = []
+    if not r.errors:
+        visited = set()
+        for seek in (False, True):          # a player who misses every secret, then one who finds them all
+            w = World(story, things, r, verbose)
+            w.seek_secrets = seek
+            explore(w, story["game"]["start"], paths, visited)
+        for nid in story["flow"]:
+            if nid not in visited:
+                (r.err if story["flow"][nid]["type"] == "ending" else r.warn)(f"flow {nid}: no path reaches it")
+        fired = set().union(*(p.fired for p in paths)) if paths else set()
+        for tid, st in story.get("stitches", {}).items():
+            for b in st.get("beats", []):
+                if b["id"] not in fired and not b.get("optional") and paths:
+                    r.warn(f"{b['id']}: never fires on any path (mark it optional if that's fine)")
+    target = story["game"].get("target_min", 150)
+    summary = ""
+    if paths and not r.errors:
+        flow = story["flow"]
+        main_path = min(paths, key=lambda p: (p.seek_secrets, p.dev))   # the spine: first options, nothing taken
+        print(f"main path ({len(paths)} path{'s' if len(paths) > 1 else ''} in all; minutes typical / fast):")
+        for nid in main_path.path:
+            parts = dict(main_path.secs.get(nid, {}))
+            stalk = parts.pop("_stalker", 0)
+            secs = sum(parts.values()) * (1.3 if stalk else 1.0)
+            n = flow[nid]
+            label = n.get("ref") or n.get("kind") or n.get("by")
+            detail = ", ".join(f"{k} {v / 60:.1f}" for k, v in sorted(parts.items(), key=lambda kv: -kv[1]) if v)
+            print(f"  {nid:<16}{n['type']:<8}{str(label):<14}{secs / 60:>5.1f} / {main_path.fast.get(nid, 0) / 60:<4.1f} {detail}")
+        by_end = {}
+        fast_min = story["game"].get("fast_min", round(target * 0.8))
+        for p in paths:
+            mins = sum(sum(v for k, v in d.items() if k != "_stalker") * (1.3 if d.get("_stalker") else 1)
+                       for d in p.secs.values()) / 60
+            fmins = sum(p.fast.values()) / 60
+            by_end.setdefault(p.path[-1], []).append((mins, fmins))
+        print("endings (typical, fast):")
+        for e, ms in by_end.items():
+            lo, flo = min(m for m, _ in ms), min(f for _, f in ms)
+            print(f"  {e:<16}{flow[e]['kind']:<8}{len(ms)} path(s), {lo:.1f} to {max(m for m, _ in ms):.1f} min; fastest {flo:.1f}")
+            if not flow[e].get("short_ok"):
+                if lo < target:
+                    r.err(f"the shortest typical path to {e} is {lo:.0f} min, under target_min {target} (an early death ending: short_ok)")
+                if flo < fast_min:
+                    r.err(f"a fast player reaches {e} in {flo:.0f} min, under fast_min {fast_min}: Steam refunds under 2 hours "
+                          f"(longer cutscenes can't be skipped; add stitches or scenes)")
+        last = None
+        for t, trick, where in main_path.scares:
+            if last is not None and t - last < MINOR_GAP:
+                r.warn(f"{where}: {trick} only {t - last:.0f} s after the last scare (keep {MINOR_GAP} s apart)")
+            last = t
+        if route_out:
+            Path(route_out).parent.mkdir(parents=True, exist_ok=True)
+            Path(route_out).write_text(json.dumps(main_path.route, indent=1), encoding="utf-8")
+            print(f"route: {len(main_path.route)} steps -> {route_out}")
+        summary = f"{len(paths)} paths, main {sum(sum(v for k, v in d.items() if k != '_stalker') for d in main_path.secs.values()) / 60:.0f} min"
+    for w in r.warnings:
+        print("warning:", w)
+    for e in r.errors:
+        print("ERROR:", e)
+    if r.errors:
+        print(f"STORY FAILED ({len(r.errors)} errors)")
+        sys.exit(1)
+    print(f"STORY ok ({story['game'].get('id', path.parent.name)}: {summary}, {len(r.warnings)} warnings)")
+
+
+if __name__ == "__main__":
+    main()

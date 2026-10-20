@@ -1,0 +1,61 @@
+{
+ "_note": "How tools/motion.py talks to Kimodo, built from source by `python setup/setup.py kimodo` (uv, no Docker) and run through tools/kimodo.py, which keeps every cache in KIMODO_HOME. cmd: the generation command ({py} is this Python, {out} an output stem: Kimodo writes {out}.npz). npz: the keys of Kimodo's NPZ (posed_joints [T, 77, 3], Y up, +Z forward, +X the character's left, metres, the joints in Content/Studio/soma77.json's order). joint_map: which SOMA joint stands for each previs joint (poses.json), so blocked poses and generated motions line up; preview also keeps all 77 joints, so the desk drives the whole MHR skeleton (fingers, toes, neck) from them.",
+ "model": "Kimodo-SOMA-RP-v1.2",
+ "cmd": [
+  "{py}",
+  "tools/kimodo.py",
+  "gen",
+  "{prompt}",
+  "--model",
+  "{model}",
+  "--duration",
+  "{secs}",
+  "--output",
+  "{out}",
+  "--seed",
+  "{seed}"
+ ],
+ "constraints_arg": "--constraints",
+ "npz": {
+  "joints": "posed_joints",
+  "contacts": "foot_contacts",
+  "skeleton": "Content/Studio/soma77.json",
+  "axes": [
+   0,
+   1,
+   2
+  ],
+  "signs": [
+   1,
+   1,
+   1
+  ],
+  "joint_map": {
+   "pelvis": "Hips",
+   "spine_01": "Spine1",
+   "spine_02": "Spine2",
+   "spine_03": "Chest",
+   "neck_01": "Neck1",
+   "head": "Head",
+   "head_end": "HeadEnd",
+   "clavicle_l": "LeftShoulder",
+   "upperarm_l": "LeftArm",
+   "lowerarm_l": "LeftForeArm",
+   "hand_l": "LeftHand",
+   "hand_end_l": "LeftHandMiddle2",
+   "clavicle_r": "RightShoulder",
+   "upperarm_r": "RightArm",
+   "lowerarm_r": "RightForeArm",
+   "hand_r": "RightHand",
+   "hand_end_r": "RightHandMiddle2",
+   "thigh_l": "LeftLeg",
+   "calf_l": "LeftShin",
+   "foot_l": "LeftFoot",
+   "ball_l": "LeftToeBase",
+   "thigh_r": "RightLeg",
+   "calf_r": "RightShin",
+   "foot_r": "RightFoot",
+   "ball_r": "RightToeBase"
+  }
+ }
+}

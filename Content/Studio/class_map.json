@@ -1,0 +1,22 @@
+{
+ "_note": "Which Blueprint each story 'use' becomes, for every game in the studio. null = a greybox block tagged use:<kind> (the StoryRunner still drives it). SETUP S6 fills this from the horror template audit: class is a Blueprint class path ending _C; fields maps a story field to the Blueprint's variable; keep_block also spawns the block (for Blueprints with no mesh of their own). stalker: the stalker AI's class. library_yaw: degrees added to every CC0 library mesh (tools/cc0.py) so its front faces the story's way; check once with a chair and fix it here.",
+ "door": null,
+ "pickup": null,
+ "note": null,
+ "inspect": null,
+ "switch": null,
+ "locker": null,
+ "combo": null,
+ "use_on": null,
+ "example": {
+  "class": "/Game/Studio/Horror/Blueprints/BP_Door.BP_Door_C",
+  "fields": {
+   "locked_by": "RequiredKeyId"
+  },
+  "keep_block": false
+ },
+ "stand_in_mesh": "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple",
+ "stand_in_height": 1.8,
+ "stalker": null,
+ "library_yaw": 0
+}

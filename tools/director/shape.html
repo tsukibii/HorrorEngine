@@ -1,0 +1,252 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Body Shape</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header b { color: var(--gold); letter-spacing: .05em; }
+  select, input, button { background: #222327; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 7px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 400px; min-height: 0; }
+  #view { position: relative; min-height: 0; } #view canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+  #measure { position: absolute; left: 10px; bottom: 10px; color: var(--dim); line-height: 1.6; background: #0009; padding: 6px 9px; border-radius: 4px; }
+  aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
+  h3 { margin: 14px 0 4px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .row { display: grid; grid-template-columns: 26px 1fr 42px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row span:first-child { color: var(--dim); } .row small { grid-column: 2 / 4; color: var(--dim); margin-top: -3px; }
+  .row input[type=range] { width: 100%; padding: 0; accent-color: var(--gold); }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 50vh auto; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style></head>
+<body>
+<header>
+  <b>BODY SHAPE</b>
+  <select id="game"></select> <select id="cast"></select>
+  <label>height <input id="height" type="number" step="0.01" min="0.9" max="2.3" style="width:62px"> m</label>
+  <label>pose <select id="pose"></select></label>
+  <button id="random" title="A new random body (body and head)">Random</button>
+  <button id="vary" title="Small changes around this one">Vary</button>
+  <button id="reset">Reset</button>
+  <button id="save" title="Write shape and height into the cast member in story.json">Save to story</button>
+  <button id="objA" title="This body in MHR's A-pose, cm, for MetaHuman (Content/Games/&lt;Game&gt;/Characters)">Export OBJ (A)</button>
+  <button id="objT" title="The same in the T bind pose">Export OBJ (T)</button>
+  <span id="status"></span>
+</header>
+<main><div id="view"><div id="measure"></div></div><aside id="side"></aside></main>
+<script type="module">
+// Shape a cast member's body on Meta's MHR (Apache-2.0): 45 identity sliders (20 body, 20 head, 5 hands), each
+// labelled by what it measurably changes, saved as the cast member's `shape` (the desk plays the blocking on it) and
+// exported as OBJ for MetaHuman's mesh conform (docs/ANIMATION.md §3).
+import * as THREE from "three";
+import * as M from "./motion.js";
+import { BodyFigure, loadBody, shapeMesh, applyShape, SHAPES } from "./bodies.js";
+import * as SkeletonUtils from "./vendor/SkeletonUtils.js";
+const $ = s => document.querySelector(s);
+const api = async (u, o) => { const r = await fetch(u, o); const j = await r.json(); if (!r.ok) throw Object.assign(new Error(j.error || r.status), { status: r.status }); return j; };
+const status = (t, cls = "") => { const s = $("#status"); s.textContent = t; s.className = cls; };
+const lib = M.loadLibrary(await api("/api/poses"));
+const files = (await api("/api/bodies")).bodies;
+let tpl = null, file = null;
+for (const f of [...files.filter(f => /^mhr/i.test(f)), ...files]) {
+  try { const t = await loadBody("/bodies/" + encodeURIComponent(f)); if (shapeMesh(t)) { tpl = t; file = f; break; } } catch (e) { }
+}
+if (!tpl) { status("No MHR body in Content/Studio/Bodies (MHR.fbx ships with the kit: restore it).", "bad"); throw new Error("no MHR"); }
+
+// ---- what each identity shape does, measured on the bind mesh (cm) ---------------------------------------------
+const mesh0 = shapeMesh(tpl), G = mesh0.geometry, P = G.attributes.position, MPOS = G.morphAttributes.position, DICT = mesh0.morphTargetDictionary, NV = P.count;
+const pick = f => { const out = []; for (let i = 0; i < NV; i++) if (f(P.getX(i), P.getY(i), P.getZ(i))) out.push(i); return out; };
+let ymin = 1e9, ymax = -1e9, top = 0, low = 0;
+for (let i = 0; i < NV; i++) { const y = P.getY(i); if (y > ymax) { ymax = y; top = i; } if (y < ymin) { ymin = y; low = i; } }
+const ax = { x: 0, y: 1, z: 2 };
+const MEAS = {   // name: [vertex set, axis, kind, typical cm, words for + and -]
+  height: [[top, low], "y", "span", 2, ["taller", "shorter"]],
+  shoulders: [pick((x, y) => y > 136 && y < 146 && Math.abs(x) < 26), "x", "span", 1, ["broader shoulders", "narrower shoulders"]],
+  chest: [pick((x, y) => y > 118 && y < 128 && Math.abs(x) < 16), "z", "span", 1, ["deeper chest", "flatter chest"]],
+  waist: [pick((x, y) => y > 100 && y < 108 && Math.abs(x) < 22), "x", "span", 1, ["wider waist", "slimmer waist"]],
+  belly: [pick((x, y) => y > 92 && y < 110 && Math.abs(x) < 12), "z", "max", 1, ["belly out", "flatter belly"]],
+  hips: [pick((x, y) => y > 82 && y < 94 && Math.abs(x) < 24), "x", "span", 1, ["wider hips", "narrower hips"]],
+  thighs: [pick((x, y) => y > 66 && y < 74 && x > 2 && x < 22), "x", "span", 0.6, ["thicker thighs", "thinner thighs"]],
+  arms: [pick((x) => Math.abs(x) > 40), "x", "absmax", 1, ["longer arms", "shorter arms"]],
+  head_w: [pick((x, y) => y > 150 && Math.abs(x) < 12), "x", "span", 0.3, ["wider head", "narrower head"]],
+  skull: [pick((x, y) => y > 155 && Math.abs(x) < 10), "z", "span", 0.3, ["longer skull", "shorter skull"]],
+  jaw: [pick((x, y) => y > 146 && y < 151 && Math.abs(x) < 9), "x", "span", 0.3, ["wider jaw", "narrower jaw"]],
+  nose: [pick((x, y) => y > 156 && y < 162 && Math.abs(x) < 2), "z", "max", 0.2, ["nose out", "nose in"]],
+  crown: [[top], "y", "max", 0.3, ["taller head", "flatter head"]],
+  hands: [pick((x) => Math.abs(x) > 58), "z", "span", 0.2, ["bigger hands", "smaller hands"]],
+};
+function measure(name, k, w) {          // the measure with morph k at weight w (k null: the base)
+  const [set, a, kind] = MEAS[name], c = ax[a], A = k === null ? null : MPOS[k];
+  const val = i => P.array[i * 3 + c] + (A ? A.array[i * 3 + c] * w : 0);
+  let lo = 1e9, hi = -1e9; for (const i of set) { const v = val(i); lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  if (name === "height") return val(top) - val(low);
+  return kind === "span" ? hi - lo : kind === "max" ? hi : Math.max(Math.abs(lo), Math.abs(hi));
+}
+const GROUPS = [["Body", 0, 20, ["height", "shoulders", "chest", "waist", "belly", "hips", "thighs", "arms"]],
+                ["Head", 20, 40, ["head_w", "skull", "jaw", "nose", "crown"]], ["Hands", 40, 45, ["hands"]]];
+const LABEL = [];
+for (const [, a, b, names] of GROUPS) for (let i = a; i < b; i++) {
+  const k = DICT["shape_c_" + i];
+  const d = names.map(n => [n, (measure(n, k, 1) - measure(n, null, 0)) / MEAS[n][3]]).sort((p, q) => Math.abs(q[1]) - Math.abs(p[1]));
+  LABEL[i] = d.slice(0, 2).filter(x => Math.abs(x[1]) > 0.15).map(([n, v]) => MEAS[n][4][v > 0 ? 0 : 1]).join(", ") || "subtle";
+}
+
+// ---- state, the story ------------------------------------------------------------------------------------------
+let GAME = null, S = null, MTIME = 0, CID = null, shape = new Array(SHAPES).fill(0), height = 1.7, pose = "idle";
+const games = (await api("/api/games")).games;
+for (const g of games) $("#game").append(new Option(g, g));
+for (const n of lib.names) $("#pose").append(new Option(n, n, false, n === "idle"));
+async function loadGame(g) {
+  GAME = g; const j = await api("/api/story/" + encodeURIComponent(g)); S = j.story; MTIME = j.mtime;
+  $("#cast").innerHTML = ""; for (const [id, c] of Object.entries(S.cast || {})) $("#cast").append(new Option(`${id}${c.name ? " · " + c.name : ""}`, id));
+  if (!Object.keys(S.cast || {}).length) $("#cast").append(new Option("(no cast: add one in the desk's Game panel)", ""));
+  pickCast($("#cast").value);
+}
+function pickCast(id) {
+  CID = id; const c = (S.cast || {})[id] || {};
+  shape = new Array(SHAPES).fill(0).map((_, i) => +((c.shape || [])[i] || 0)); height = +(c.height || 1.7);
+  $("#height").value = height; sliders(); rebuild(); status(c.previs_body && !/^mhr/i.test(c.previs_body) ? `${id} plays on ${c.previs_body} in the desk: set the body to ${file} to see this shape there` : "");
+}
+
+// ---- the view ---------------------------------------------------------------------------------------------------
+const view = $("#view"), R = new THREE.WebGLRenderer({ antialias: true }); view.prepend(R.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x17181b);
+scene.add(new THREE.HemisphereLight(0xc8ccd6, 0x2a2420, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.7); key.position.set(2, 4, 3); scene.add(key);
+const rim = new THREE.DirectionalLight(0x9fb4ff, 0.8); rim.position.set(-3, 2.5, -3); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(1.2, 48), new THREE.MeshStandardMaterial({ color: 0x24252a, roughness: 1 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const cam = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
+const orbit = { yaw: 0.35, pitch: 0.12, dist: 4.4 };
+let fig = null;
+function size() { const w = view.clientWidth, h = view.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); draw(); }
+function draw() {
+  const ty = height * 0.53;
+  cam.position.set(Math.sin(orbit.yaw) * Math.cos(orbit.pitch) * orbit.dist, ty + Math.sin(orbit.pitch) * orbit.dist, Math.cos(orbit.yaw) * Math.cos(orbit.pitch) * orbit.dist);
+  cam.lookAt(0, ty, 0); R.render(scene, cam);
+}
+function posePos() { return M.fk(lib, M.clonePose(lib.poses[pose] || lib.poses.idle), height).pos; }
+function rebuild() {
+  if (fig) scene.remove(fig.group);
+  fig = new BodyFigure(lib, height, tpl, { shape, color: 0xcdbfae });
+  fig.update(posePos()); scene.add(fig.group); readout(); draw();
+}
+function live(i) {                     // while dragging: the morph only (the skeleton refits on release)
+  const m = shapeMesh(fig.model); m.morphTargetInfluences[m.morphTargetDictionary["shape_c_" + i]] = shape[i]; draw();
+}
+function readout() {
+  const k = height / (measure("height", null, 0) / 100), m = n => {
+    let v = measure(n, null, 0); for (let i = 0; i < SHAPES; i++) if (shape[i]) v += measure(n, DICT["shape_c_" + i], shape[i]) - measure(n, null, 0);
+    return (v * k).toFixed(0);
+  };
+  $("#measure").innerHTML = `${CID || "(no cast)"} · ${height.toFixed(2)} m<br>widths: shoulders ${m("shoulders")} cm · waist ${m("waist")} cm · hips ${m("hips")} cm<br><span style="opacity:.7">drag to turn, wheel to zoom · ${file}</span>`;
+}
+let drag = null;
+R.domElement.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY]; R.domElement.setPointerCapture(e.pointerId); });
+R.domElement.addEventListener("pointermove", e => { if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.01; orbit.pitch = Math.max(-0.3, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; draw(); });
+R.domElement.addEventListener("pointerup", () => { drag = null; });
+R.domElement.addEventListener("wheel", e => { e.preventDefault(); orbit.dist = Math.max(1.2, Math.min(9, orbit.dist * (e.deltaY > 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
+new ResizeObserver(size).observe(view);
+
+// ---- the sliders ------------------------------------------------------------------------------------------------
+function current(n) { let v = measure(n, null, 0); for (let i = 0; i < SHAPES; i++) if (shape[i]) v += measure(n, DICT["shape_c_" + i], shape[i]) - measure(n, null, 0); return v; }
+function fit(T) {                      // body sliders for target widths (cm at the cast height): ridge least squares
+  const k = height / (measure("height", null, 0) / 100), names = Object.keys(T), K = 20, lam = 0.6;
+  const J = names.map(n => Array.from({ length: K }, (_, i) => measure(n, DICT["shape_c_" + i], 1) - measure(n, null, 0)));
+  const want = names.map(n => T[n] / k - measure(n, null, 0));       // from the average body, in its own cm
+  const A = Array.from({ length: K }, (_, i) => Array.from({ length: K }, (_, j) => J.reduce((t, r) => t + r[i] * r[j], 0) + (i === j ? lam : 0)));
+  const b = Array.from({ length: K }, (_, i) => J.reduce((t, r, q) => t + r[i] * want[q], 0));
+  for (let i = 0; i < K; i++) {
+    let mx = i; for (let r = i + 1; r < K; r++) if (Math.abs(A[r][i]) > Math.abs(A[mx][i])) mx = r;
+    [A[i], A[mx]] = [A[mx], A[i]]; [b[i], b[mx]] = [b[mx], b[i]];
+    for (let r = 0; r < K; r++) if (r !== i) { const f = A[r][i] / A[i][i]; for (let c = i; c < K; c++) A[r][c] -= f * A[i][c]; b[r] -= f * b[i]; }
+  }
+  for (let i = 0; i < K; i++) shape[i] = +Math.max(-3, Math.min(3, b[i] / A[i][i])).toFixed(2);
+}
+function sliders() {
+  const side = $("#side"); side.innerHTML = "";
+  const k = height / (measure("height", null, 0) / 100), fitBox = document.createElement("div");
+  fitBox.innerHTML = `<h3>Fit to widths (cm)</h3><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">` +
+    ["shoulders", "waist", "hips"].map(n => `<label>${n} <input data-m="${n}" type="number" step="1" style="width:48px" value="${(current(n) * k).toFixed(0)}"></label>`).join("") +
+    `<button id="fitBtn">Fit</button></div><small style="color:var(--dim)">Front widths across the deltoids, the waist and the hips. Sets the body sliders as close as they go; the average body at this height is ${["shoulders", "waist", "hips"].map(n => (measure(n, null, 0) * k).toFixed(0)).join(" / ")}.</small>`;
+  side.append(fitBox);
+  fitBox.querySelector("#fitBtn").onclick = () => { const T = {}; fitBox.querySelectorAll("input[data-m]").forEach(i => T[i.dataset.m] = +i.value); fit(T); sliders(); rebuild(); };
+  for (const [name, a, b] of GROUPS) {
+    side.append(Object.assign(document.createElement("h3"), { textContent: name }));
+    for (let i = a; i < b; i++) {
+      const row = document.createElement("div"); row.className = "row";
+      row.innerHTML = `<span>${i - a + 1}</span><input type="range" min="-3" max="3" step="0.05" value="${shape[i]}"><output>${shape[i].toFixed(2)}</output><small>→ ${LABEL[i]}</small>`;
+      const [inp, out] = [row.querySelector("input"), row.querySelector("output")];
+      inp.oninput = () => { shape[i] = +inp.value; out.textContent = shape[i].toFixed(2); live(i); };
+      inp.onchange = () => rebuild();
+      inp.ondblclick = () => { shape[i] = 0; inp.value = 0; out.textContent = "0.00"; rebuild(); };
+      side.append(row);
+    }
+  }
+  side.append(Object.assign(document.createElement("p"), { innerHTML: "<span style='color:var(--dim)'>Each slider is one of MHR's identity shapes (zero is the average body; ±3 is rare). Labels say what it changes most when moved right. Double-click a slider to zero it. Height is set apart: the body is scaled to it.</span>" }));
+}
+const gauss = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+$("#random").onclick = () => { shape = shape.map((_, i) => +(gauss() * (i < 40 ? 0.8 : 0.5)).toFixed(2)); sliders(); rebuild(); };
+$("#vary").onclick = () => { shape = shape.map(v => +Math.max(-3, Math.min(3, v + gauss() * 0.25)).toFixed(2)); sliders(); rebuild(); };
+$("#reset").onclick = () => { shape.fill(0); sliders(); rebuild(); };
+$("#height").onchange = e => { height = Math.max(0.9, Math.min(2.3, +e.target.value || 1.7)); rebuild(); };
+$("#pose").onchange = e => { pose = e.target.value; fig.update(posePos()); draw(); };
+$("#game").onchange = e => loadGame(e.target.value);
+$("#cast").onchange = e => pickCast(e.target.value);
+
+$("#save").onclick = async () => {
+  if (!CID) return status("no cast member to save to", "bad");
+  try {
+    const j = await api("/api/story/" + encodeURIComponent(GAME)); S = j.story; MTIME = j.mtime;   // fresh: the desk may have saved
+    const c = S.cast[CID]; const keep = shape.map(v => +v.toFixed(2)); while (keep.length && !keep[keep.length - 1]) keep.pop();
+    if (keep.length) c.shape = keep; else delete c.shape;
+    c.height = +height.toFixed(2);
+    if (!c.previs_body && !/^mhr/i.test(S.game.previs_body || "")) c.previs_body = file;
+    const r = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME }) });
+    MTIME = r.mtime; status(`saved ${CID}'s body to ${GAME}/story.json (reload the desk to see it)`, "ok");
+  } catch (e) { status("save failed: " + e.message, "bad"); }
+};
+
+// ---- export: the shaped mesh as OBJ in MHR's units (cm), for MetaHuman's mesh conform --------------------------
+let HI = undefined;                    // MHR_hi.fbx (LOD 2, about 4x the triangles) when it's there: exports only
+async function exportTemplate() {
+  if (HI === undefined) { HI = null; if (files.includes("MHR_hi.fbx")) try { const t = await loadBody("/bodies/MHR_hi.fbx"); if (shapeMesh(t)) HI = t; } catch (e) { } }
+  return HI || tpl;
+}
+function objText(posed, from = tpl) {
+  const root = SkeletonUtils.clone(from); applyShape(root, shape);
+  const m = shapeMesh(root);
+  if (!posed) m.skeleton.pose();
+  root.updateMatrixWorld(true); m.skeleton.update();
+  const g = m.geometry, B = g.attributes.position, uv = g.attributes.uv, n = B.count, v = new THREE.Vector3();
+  // FBX meshes arrive as a triangle soup: weld corners that share a rest position (MetaHuman wants a closed surface)
+  const key = i => `${Math.round(B.getX(i) * 1000)},${Math.round(B.getY(i) * 1000)},${Math.round(B.getZ(i) * 1000)}`;
+  const weld = new Map(), vid = new Int32Array(n), vs = [];
+  for (let i = 0; i < n; i++) { const k = key(i); if (!weld.has(k)) { weld.set(k, vs.length + 1); vs.push(i); } vid[i] = weld.get(k); }
+  const lines = [`# ${CID || "body"}: MHR (Meta, Apache-2.0) identity ${JSON.stringify(shape.map(x => +x.toFixed(2)))}, ${posed ? "A" : "T"}-pose, ${height.toFixed(2)} m tall, cm, Y up, ${vs.length} vertices`];
+  const pts = vs.map(i => m.getVertexPosition(i, v).applyMatrix4(m.matrixWorld).clone());
+  let lo = Infinity, hi = -Infinity; for (const p of pts) { lo = Math.min(lo, p.y); hi = Math.max(hi, p.y); }
+  const k = height * 100 / (hi - lo);   // the cast member's height, feet on the ground
+  for (const p of pts) lines.push(`v ${(p.x * k).toFixed(3)} ${((p.y - lo) * k).toFixed(3)} ${(p.z * k).toFixed(3)}`);
+  if (uv) for (let i = 0; i < n; i++) lines.push(`vt ${uv.getX(i).toFixed(5)} ${uv.getY(i).toFixed(5)}`);
+  const idx = g.index ? g.index.array : null, at = i => idx ? idx[i] : i, tris = idx ? idx.length : n;
+  for (let i = 0; i < tris; i += 3) {
+    const c = [at(i), at(i + 1), at(i + 2)];
+    lines.push("f " + c.map(k => uv ? `${vid[k]}/${k + 1}` : `${vid[k]}`).join(" "));
+  }
+  return lines.join("\n") + "\n";
+}
+async function exportObj(posed) {
+  const name = `${CID || "body"}_body_${posed ? "A" : "T"}.obj`;
+  status("exporting...");
+  try { const r = await api(`/api/character/${encodeURIComponent(GAME)}/${name}`, { method: "POST", body: objText(posed, await exportTemplate()) }); status("wrote " + r.path, "ok"); }
+  catch (e) { status("export failed: " + e.message, "bad"); }
+}
+$("#objA").onclick = () => exportObj(true);
+$("#objT").onclick = () => exportObj(false);
+
+await loadGame(games.includes(new URLSearchParams(location.search).get("game")) ? new URLSearchParams(location.search).get("game") : games[0]);
+size();
+window.__shape = { measure, DICT, get fig() { return fig; }, get shape() { return shape; }, set: (s, h) => { shape = s.slice(); if (h) height = h; sliders(); rebuild(); }, objText, LABEL, setPose: p => { pose = p; fig.update(posePos()); draw(); }, orbit, draw };
+</script></body></html>

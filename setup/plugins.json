@@ -1,0 +1,107 @@
+{
+ "_note": "Engine plugins the project turns on. 'names' are the .uplugin names to try in order; 'find' are words for `setup.py plugins` when none exists (the names here are from Epic's docs and community notes: S4 confirms them against your engine).",
+ "plugins": [
+  {
+   "want": "UnrealClaude (Claude's hands in the editor)",
+   "names": [
+    "UnrealClaude"
+   ],
+   "find": [
+    "Claude"
+   ]
+  },
+  {
+   "want": "Python scripting",
+   "names": [
+    "PythonScriptPlugin"
+   ],
+   "find": [
+    "Python"
+   ]
+  },
+  {
+   "want": "Editor scripting utilities",
+   "names": [
+    "EditorScriptingUtilities"
+   ],
+   "find": [
+    "Scripting"
+   ]
+  },
+  {
+   "want": "Python automation tests",
+   "names": [
+    "PythonAutomationTest"
+   ],
+   "find": [
+    "Automation"
+   ]
+  },
+  {
+   "want": "Subtitles and closed captions",
+   "names": [
+    "Subtitles",
+    "SubtitlesAndClosedCaptions"
+   ],
+   "find": [
+    "Subtitle",
+    "Caption"
+   ]
+  },
+  {
+   "want": "Enhanced Input",
+   "names": [
+    "EnhancedInput"
+   ],
+   "find": [
+    "Enhanced Input"
+   ]
+  },
+  {
+   "want": "MetaHuman",
+   "names": [
+    "MetaHumanCharacter",
+    "MetaHuman"
+   ],
+   "find": [
+    "MetaHuman"
+   ]
+  },
+  {
+   "want": "Live Link (for face capture)",
+   "names": [
+    "LiveLink"
+   ],
+   "find": [
+    "Live Link"
+   ]
+  },
+  {
+   "want": "Movie Render Queue (scene reviews)",
+   "names": [
+    "MovieRenderPipeline"
+   ],
+   "find": [
+    "Movie Render"
+   ]
+  },
+  {
+   "want": "Control Rig (IK for grabs)",
+   "names": [
+    "ControlRig"
+   ],
+   "find": [
+    "Control Rig"
+   ]
+  },
+  {
+   "want": "Full Body IK",
+   "names": [
+    "FullBodyIK"
+   ],
+   "find": [
+    "Full Body"
+   ]
+  }
+ ]
+}

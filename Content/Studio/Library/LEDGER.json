@@ -1,0 +1,23 @@
+{
+ "basemesh/food_prep_table": {
+  "date": "2026-10-20",
+  "kind": "mesh",
+  "licence": "CC0-1.0",
+  "source": "The Base Mesh (M3-org/base-meshes)",
+  "url": "https://raw.githubusercontent.com/M3-org/base-meshes/main/models/food_prep_table/food_prep_table.glb"
+ },
+ "basemesh/office_desk": {
+  "date": "2026-10-20",
+  "kind": "mesh",
+  "licence": "CC0-1.0",
+  "source": "The Base Mesh (M3-org/base-meshes)",
+  "url": "https://raw.githubusercontent.com/M3-org/base-meshes/main/models/office_desk/office_desk.glb"
+ },
+ "basemesh/wooden_chair_01": {
+  "date": "2026-10-20",
+  "kind": "mesh",
+  "licence": "CC0-1.0",
+  "source": "The Base Mesh (M3-org/base-meshes)",
+  "url": "https://raw.githubusercontent.com/M3-org/base-meshes/main/models/wooden_chair_01/wooden_chair_01.glb"
+ }
+}

@@ -1,0 +1,101 @@
+# Assets: the CC0 library, texturing and replacing textures
+
+Every game shares one library of public-domain (CC0) meshes and textures in `Content/Studio/Library/`. Claude picks
+from it by name, fetches what a story needs, and swaps grey blocks and grey walls for real props and surfaces: first in
+the director (so the storyboard looks like the room), then in Unreal (the same story fields). CC0 means no credit is
+owed and commercial use is fine; we record where each file came from anyway (`LEDGER.json`), which is the proof if a
+store or a buyer asks.
+
+## 1. Where to look: the awesome-cc0 list
+
+`docs/assets/awesome-cc0.md` is a copy of [madjin/awesome-cc0](https://github.com/madjin/awesome-cc0) (itself CC0):
+about 35 sources of CC0 models, textures, sound and more. `python tools/cc0.py list [section] [word]` reads it
+(`list textures`, `list sound`, `list 3d psx`). To refresh it: `python setup/setup.py fetch awesome-cc0`, then copy
+`vendor/awesome-cc0/README.md` over the copy (keep its header line).
+
+What we use from it, and how:
+
+| Source | What | How it gets in |
+| --- | --- | --- |
+| **The Base Mesh** (glTF copy: M3-org/base-meshes) | 900 props at real-world scale with basic UVs: furniture, tools, headstones, chandeliers, pottery | `cc0.py get basemesh/<name>` (the index ships, so Claude can place one by name before it's fetched) |
+| **ambientCG** | 1500+ PBR materials (colour, normal, roughness, AO, height) | `cc0.py textures <word>`, then `cc0.py get ambientcg/<AssetId> --tile <m>` |
+| **Poly Haven** | textures, HDRIs, models | CC0, but its **API** asks commercial projects for a licence: download from the site by hand, then `cc0.py add <zip or folder> polyhaven/<name> --tile <m> --url <page>` |
+| **Texture Ninja**, Wikimedia (unrestricted) | photos: grime, stains, wallpaper, signs | download by hand, `cc0.py add <image> local/<name>` (a colour map only: fine for decals and walls seen in the dark) |
+| **Kenney**, **Quaternius**, itch.io CC0, Smithsonian 3D | models | download by hand, convert to `.glb` if needed (Blender), `cc0.py add <file.glb> local/<name>` |
+| **freesound** (CC0 filter only), Free Music Archive (public domain) | sound | by hand into the game's Audio folder; note each one in `LEDGER.json` the same way (`cc0.py` doesn't fetch sound yet) |
+
+Not in the library: Megascans (no longer free), Mixamo and Epic content (licensed for use, not redistributable: they
+stay in your own project, see `Content/Studio/Bodies/README.md`), anything marked CC-BY or "free for personal use".
+**Check the licence on the page you download from**: a CC0 site can host one CC-BY pack.
+
+## 2. The story fields
+
+```json
+{"id": "chair_a", "shape": "asset basemesh/wooden_chair_01", "at": [1.4, 1.2], "rot": 0, "tag": "chair"}
+{"id": "kitchen_table", "shape": "box 1.6 0.9 0.76", "art": "basemesh/food_prep_table", "at": [2, 2]}
+{"id": "crate", "shape": "box 0.6 0.6 0.6", "mat": "ambientcg/Wood049", "at": [3, 1]}
+{"id": "kitchen", "at": [0, 6, 0], "size": [4, 4, 2.8], "look": {"floor": "ambientcg/WoodFloor041", "walls": "ambientcg/Plaster003", "ceiling": "ambientcg/Plaster003"}}
+```
+
+- `shape: "asset <ref> [scale]"`: the library mesh itself, at its **real size** (from the index). Its box stands in
+  until it's fetched, and the level check, `on`, shots and visibility all use that box.
+- `art: "<ref>"` (or an Unreal path `/Game/...`): replaces a block, **scaled evenly to fit** it, centred, on the block's
+  base. Use it when the block's size matters to the layout and the mesh is close.
+- `mat: "<ref>"`: a texture set on a block (boxes only).
+- a room's `look`: texture sets for its `floor`, `walls` and `ceiling`. `floor` (wood, stone...) still sets the
+  footsteps.
+- A ref is `<lib>/<name>`: `basemesh/...`, `ambientcg/...`, `polyhaven/...`, `local/...`.
+- **Facing:** a library mesh's front (glTF +Z) faces the prop's `rot` the same way a block does. If they come out
+  turned in Unreal, set `library_yaw` in `Content/Studio/class_map.json` once (SETUP S8).
+
+## 3. The commands (`tools/cc0.py`)
+
+```
+python tools/cc0.py props chair                 # library meshes named like it: size w d h, triangles, fetched or not
+python tools/story.py art                       # every prop still a block, with library meshes named like its tag
+python tools/cc0.py textures rusty metal        # ambientCG search (falls back to the site's search link)
+python tools/cc0.py get basemesh/headstone_01 ambientcg/Rust004 --res 2K --tile 1
+python tools/cc0.py needs                       # what the story uses from the library, fetched or not
+python tools/cc0.py fetch                       # get all that's missing (ambientCG, The Base Mesh); prints the rest
+python tools/cc0.py add ~/Downloads/rough_plaster_brick_2k polyhaven/rough_plaster_brick --tile 2 --url https://polyhaven.com/a/rough_plaster_brick
+python tools/cc0.py ledger Builds/<Game>/THIRD_PARTY.md   # the credits list
+```
+
+- `--tile` is the metres one repeat of the texture covers (a plank floor about 1 to 2, bricks 1 to 1.5, a plaster wall
+  2 to 3). The director and Unreal both tile by real size, so a texture looks the same on a 1 m crate and a 6 m wall.
+- `add` sorts maps by their file names (`_Color`, `_diff`, `_NormalGL`, `_nor_gl`, `_Roughness`, `_AO`, `_disp`...);
+  GL normals are preferred, DirectX ones are kept and flagged. Packed ARM maps aren't split: fetch the separate maps.
+- `story_check` errors on a ref that doesn't exist and warns (once) about what isn't fetched yet.
+- The fetch commands for ambientCG were written against its documented download links but couldn't be tried from the
+  session that wrote them (its network blocked the site): the first run on your machine is the test, and Claude fixes
+  `cc0.py` if the site disagrees. The Base Mesh fetch was tested.
+
+## 4. Texturing a room (Claude's routine)
+
+1. `story.py rooms <level>` and `story.py art`: the rooms, the blocks still grey.
+2. For each room, pick a `look` that fits its mood and age (`light`, the scene notes, DIRECTING.md): a dread room
+   wants worn, darker, rougher surfaces; avoid bright, clean, saturated ones. Floors read most from a first-person
+   eye: spend the care there, then walls; ceilings are mostly in the dark.
+3. Props: `shape: asset` where a library mesh fits (chairs, tables, desks, lamps, tools, headstones); `art` where the
+   block's size must stay; leave interactables as blocks until the class map gives them Blueprints.
+4. `cc0.py fetch`, then open the director: the storyboard and Watch show the real props and surfaces. Look at the
+   frames, not just the checks (DIRECTING.md: does the subject still read against the new walls?).
+5. In Unreal: rebuild the level (`importer.build`): it imports each library file once into `/Game/Studio/Library/`
+   and reuses it. Take one screenshot per room from the player's start and compare with the director's frame.
+6. `cc0.py ledger` before packaging; `package_game.py` only copies the assets the game uses.
+
+**Replacing a texture:** change the ref in the story (or `cc0.py add` a better file under the same ref with `--tile`
+corrected) and rebuild; the material instance is remade when its folder is deleted from `/Game/Studio/Library/Textures`.
+
+## 5. In Unreal (`storykit/surfaces.py`)
+
+- Meshes import with Unreal's glTF importer into `/Game/Studio/Library/Meshes/<lib>/<name>/`.
+- Textures import into `/Game/Studio/Library/Textures/<lib>/<name>/` (normal maps as normal maps with the green
+  channel flipped for GL files, data maps linear), and get a material instance `MI_<name>` of **M_StudioSurface**.
+- **M_StudioSurface** (`/Game/Studio/Materials/`) is the one master: world-aligned (so blocks' stretched UVs don't
+  matter), with texture parameters `Albedo`, `Normal`, `Rough`, `AO` and a scalar `TileCm` (one repeat, in cm).
+  `surfaces.master_material()` builds it from the engine's `WorldAlignedTexture` and `WorldAlignedNormal` functions
+  (normals in world space: the material's Tangent Space Normal is off). It was written without an editor to try it
+  in: if it fails, build it by hand (or ask Claude in the editor to) with exactly those names, and the rest works.
+- Later, for final art: real meshes get their own UVs and materials (a Blender pass or bought packs); the library is
+  for greybox-plus and for props that are fine as they are.

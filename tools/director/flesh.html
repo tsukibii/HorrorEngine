@@ -1,0 +1,490 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Fat Suit</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header b { color: var(--gold); letter-spacing: .05em; }
+  select, button, label { background: #222327; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 7px; font: inherit; }
+  label { border: 0; background: none; padding: 0; } button { cursor: pointer; } button:hover { border-color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 380px; min-height: 0; }
+  #view { position: relative; min-height: 0; } #view canvas { width: 100%; height: 100%; display: block; }
+  aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px; }
+  h3 { margin: 12px 0 4px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  table { border-collapse: collapse; width: 100%; } td, th { padding: 2px 4px; text-align: right; } td:first-child, th:first-child { text-align: left; }
+  th { color: var(--dim); font-weight: normal; }
+  .row { display: grid; grid-template-columns: 90px 1fr 46px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row input { width: 100%; accent-color: var(--gold); }
+  p { color: var(--dim); line-height: 1.5; }
+  #ring { position: absolute; left: 0; top: 0; border: 1.5px solid var(--gold); border-radius: 50%; pointer-events: none; display: none; box-shadow: 0 0 0 1px #0008; }
+  .tools { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+  .tools button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+  .row.n { grid-template-columns: 70px 1fr 58px; } .row.n input[type=number] { width: 100%; background: #222327; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; font: inherit; padding: 2px 4px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 55vh auto; } }
+</style></head>
+<body>
+<header>
+  <b>FAT SUIT</b>
+  <select id="mode"><option value="suit">fat suit</option><option value="balloons">water balloons</option></select>
+  <select id="solver" title="soft bones: each region a short spring chain the mesh is skinned to (EZSoftBone, Kawaii Physics); per-point springs: the first experiment"><option value="soft">soft bones</option><option value="points">per-point springs</option></select>
+  <select id="body"><option value="heavy">heavy</option><option value="average">average</option><option value="mari">Mari (Pilot)</option><option value="hourglass">chubby hourglass (Mari)</option></select>
+  <span id="bopts" style="display:none">bust <input id="bust" type="number" step="0.1" min="0.1" max="3" value="0.9" style="width:52px"> L ·
+    buttocks <input id="butt" type="number" step="0.1" min="0.2" max="4" value="0.6" style="width:52px"> L ·
+    <select id="support"><option value="1">no bra</option><option value="2.5">everyday bra</option><option value="7">sports bra</option></select></span>
+  <label title="soft bones: how loose the flesh is (medium = the presets; applies at once)">jiggle <input id="jiggle" type="range" min="0" max="2" step="0.05" value="1" style="width:90px;vertical-align:middle"> <output id="jigout">medium</output></label>
+  <select id="lod" title="the mesh's level of detail (vertices): more points, rounder shapes, slower"><option value="auto">mesh: auto</option><option value="4">LOD 4 (2.5k)</option><option value="2">LOD 2 (10.7k)</option><option value="1">LOD 1 (18k)</option><option value="0">LOD 0 (74k)</option></select>
+  <select id="scen"></select> <button id="play">Play</button>
+  <label><input type="checkbox" id="cut"> cutaway</label>
+  <label><input type="checkbox" id="heat" checked> colour: thickness</label>
+  <label title="soft bones: how much each point follows its region's bone (red all, blue none): the spread"><input type="checkbox" id="wts"> colour: spread</label>
+  <label><input type="checkbox" id="ghost"> ghost suit</label>
+  <label title="the mesh's lines: how the skin stretches"><input type="checkbox" id="wire"> wireframe</label>
+  <button id="exp" title="Soft bones: the bones to add, their skin weights and settings (for Kawaii Physics); per-point springs: the thickness map. JSON in Content/Games/Pilot/Characters, for the Unreal side">Export</button>
+  <button id="obj" title="The body as shown at rest (sliders and sculpted volumes), T bind pose, cm, feet on the ground: for MetaHuman's body conform (docs/ANIMATION.md §3); Content/Games/Pilot/Characters">Export OBJ</button>
+  <span id="status" style="color:var(--dim)"></span>
+</header>
+<main><div id="view"><div id="ring"></div></div><aside><div id="tools"></div><div id="side"></div></aside></main>
+<script type="module">
+// The fat-suit experiment (docs/FLESH.md): the character as a lean body (dark red, inside) wearing its fat (the
+// suit). Thickness comes from the gap between them; the physics from thickness (flesh.js).
+import * as THREE from "three";
+import * as M from "./motion.js";
+import { BodyFigure, loadBody, shapeMesh, SHAPES } from "./bodies.js";
+import { FleshSim, leanShape, flatShape, balloonSculpt, hourglassShape, HOURGLASS_SCULPT, FLESH_DEFAULTS } from "./flesh.js";
+import { SoftBoneSim, SOFT_MATERIALS, supported } from "./softbone.js";
+// water balloons: denser than fat (about 1000 kg/m3), damped about 0.2 of critical (Chen et al.'s FE study of breast
+// motion), shear tuned so a D cup (about 0.55 L) moves about 15 cm relative to the torso running at 2.8 m/s with no
+// bra and about 4 cm walking (Scurr, White and Hedger 2011)
+const BALLOON_PHYS = { density: 1000, damping: 0.2, shear: 250, skin: 0.01, coupling: 0.3, holdRamp: 0.006, maxStretch: 2.5, maxSquash: 0.7 };
+const $ = s => document.querySelector(s);
+const status = t => $("#status").textContent = t;
+const lib = M.loadLibrary(await (await fetch("/api/poses")).json());
+const tpl = await loadBody("/bodies/MHR.fbx");
+// MHR's levels of detail (vertices): 4 2,461 (MHR.fbx, the desk's), 2 10,661 (MHR_hi.fbx), 1 18,437 and 0 73,639
+// (MHR_lod1.fbx, MHR_lod0.fbx: optional, from MHR's release). Round shapes need points: auto takes LOD 2 for the
+// balloons and the hourglass, LOD 4 for the other fat suits
+const LODS = { 4: "MHR.fbx", 2: "MHR_hi.fbx", 1: "MHR_lod1.fbx", 0: "MHR_lod0.fbx" }, tplLod = { 4: tpl };
+async function lodTemplate(l) { if (!tplLod[l]) try { tplLod[l] = await loadBody("/bodies/" + LODS[l]); } catch (e) { status(`no ${LODS[l]} in Content/Studio/Bodies`); tplLod[l] = tplLod[2] || tpl; } return tplLod[l]; }
+async function hiTemplate() { return lodTemplate(2); }
+const SHAPES_BY = {
+  heavy: Array.from({ length: SHAPES }, (_, i) => i === 0 ? 2.8 : i === 1 ? 1.5 : 0),
+  average: new Array(SHAPES).fill(0),
+};
+try { const st = (await (await fetch("/api/story/Pilot")).json()).story; SHAPES_BY.mari = (st.cast.mari.shape || []).concat(new Array(SHAPES).fill(0)).slice(0, SHAPES); } catch (e) { SHAPES_BY.mari = SHAPES_BY.average; }
+
+// ---- scenarios: a pose and where the body is, over time ----------------------------------------------------
+// the trunk's height while running: a ballistic flight (60 % of each step), then a stance that compresses about 4 cm
+// at about 2 g (2.8 steps a second); together about 9 cm up and down, as in runners
+function runBounce(t) {
+  const T = 1 / 2.8, ph = (t % T) / T, tf = 0.6 * T, g = 9.81, v0 = g * tf / 2;
+  if (ph < 0.6) { const u = ph * T; return 0.04 + v0 * u - g * u * u / 2; }
+  return 0.04 - 0.04 * Math.sin(Math.PI * (ph - 0.6) / 0.4);
+}
+const smooth = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+const SCEN = {
+  bounce: { dur: 3.5, at: t => ({ pose: "idle", y: t < 2 ? 0.06 * Math.abs(Math.sin(Math.PI * 2 * t)) : 0 }), note: "small hops at 2 Hz for 2 s, then still: how it rings and settles" },
+  jump: { dur: 3, at: t => {
+      if (t < 0.5) return { pose: "crouch", w: smooth(t / 0.4), y: 0 };
+      if (t < 1.1) { const u = (t - 0.5) / 0.6; return { pose: "crouch", w: 1 - smooth(u * 3), y: 0.35 * 4 * u * (1 - u) }; }
+      if (t < 1.4) return { pose: "crouch", w: Math.sin(Math.PI * (t - 1.1) / 0.3) * 0.6, y: 0 };
+      return { pose: "idle", y: 0 }; }, note: "crouch, jump 35 cm, land: the landing is the big jolt" },
+  walkstop: { dur: 3.5, at: t => {
+      const walking = t < 2, ph = (t * 1.8) % 1;
+      return { pose: walking ? (ph < 0.5 ? "walk_a" : "walk_b") : "idle", mix: walking ? ["walk_a", "walk_b", 0.5 - 0.5 * Math.cos(ph * 2 * Math.PI)] : null,
+               z: Math.min(t, 2) * 1.3, y: walking ? 0.025 * Math.abs(Math.sin(ph * 2 * Math.PI)) : 0 }; }, note: "walks at 1.3 m/s, stops dead at 2 s" },
+  turn: { dur: 2.5, at: t => ({ pose: "idle", yaw: 2.2 * smooth((t - 0.5) / 0.3) }), note: "a sharp 125° turn in 0.3 s" },
+  lie: { dur: 4, at: t => ({ pose: "idle", tilt: -Math.PI / 2 * smooth((t - 0.5) / 1.2), y: 0.13 * smooth((t - 0.5) / 1.2) }), note: "lies on the back on the floor: gravity now pulls the fat sideways (the sag), the backside presses flat" },
+  run: { dur: 4.5, at: t => {
+      const running = t < 3, ph = (t * 1.4) % 1;                        // 2.8 steps a second, 2.8 m/s
+      return { pose: "idle", mix: running ? ["walk_a", "walk_b", 0.5 - 0.5 * Math.cos(ph * 2 * Math.PI)] : null, z: Math.min(t, 3) * 2.8,
+               // the trunk also sways side to side (about 2.5 cm) and twists with the arms (about 10 degrees) each stride
+               y: running ? runBounce(t) : 0, x: running ? 0.025 * Math.sin(ph * 2 * Math.PI) : 0, yaw: running ? 0.17 * Math.sin(ph * 2 * Math.PI) : 0 }; }, note: "runs at 2.8 m/s for 3 s (the breast-motion studies' speed), then stops" },
+  walk: { dur: 3, at: t => { const ph = (t * 0.9) % 1; return { pose: "idle", mix: ["walk_a", "walk_b", 0.5 - 0.5 * Math.cos(ph * 2 * Math.PI)], z: t * 1.3,
+      y: 0.045 * (0.5 - 0.5 * Math.cos(Math.PI * 2 * 1.8 * t)), x: 0.02 * Math.sin(ph * 2 * Math.PI), yaw: 0.08 * Math.sin(ph * 2 * Math.PI) }; }, note: "walks at 1.3 m/s (4.5 cm of trunk rise each step, sway and twist)" },
+};
+// with things to touch: ctx has the body's front (how far its soft front stands ahead of its feet), the soft regions'
+// tips at rest (ctx.tip("breast L")) and the floor; setup returns the colliders (and draws them)
+function walkInto(t, stop, hold = 2.4, back = 0.35) {      // walk to a stop, hold, step back
+  const v = 1.1, reach = stop / v;
+  if (t < reach) { const ph = (t * 0.9) % 1; return { mix: ["walk_a", "walk_b", 0.5 - 0.5 * Math.cos(ph * 2 * Math.PI)], z: t * v, y: 0.03 * (0.5 - 0.5 * Math.cos(Math.PI * 2 * 1.8 * t)) }; }
+  if (t < hold) return { pose: "idle", z: stop };
+  return { pose: "idle", z: stop - back * smooth((t - hold) / 0.5) };
+}
+Object.assign(SCEN, {
+  wall: { dur: 4, setup: ctx => { const Z = 1.4; ctx.stop = Z - ctx.front + 0.035; return [{ type: "plane", p: new THREE.Vector3(0, 0, Z), n: new THREE.Vector3(0, 0, -1), show: { w: 3, h: 2.4 } }]; },
+          at: (t, ctx) => walkInto(t, ctx.stop), note: "walks into a wall and leans 3.5 cm on it, then steps back: what's in front flattens" },
+  ball: { dur: 3, setup: ctx => { const tip = ctx.tip(ctx.balloons ? "breast L" : "belly"); ctx.ball = { r: 0.11, x: tip.x, y: tip.y, z: tip.z + 0.11 - 0.06 }; return [{ type: "sphere", c: new THREE.Vector3(), r: 0.11, show: true, move: t => { const d = 2.5 * Math.abs(t - 1); return new THREE.Vector3(ctx.ball.x, ctx.ball.y + 0.1 * (t - 1), ctx.ball.z + d); } }]; },
+          at: () => ({ pose: "idle" }), note: "a ball (22 cm, tossed at 2.5 m/s) hits the chest or belly, sinks in 6 cm and bounces off" },
+  prone: { dur: 4, setup: ctx => [], at: (t, ctx) => ({ pose: "idle", tilt: Math.PI / 2 * smooth((t - 0.5) / 1.2), y: (ctx.front - 0.03) * smooth((t - 0.5) / 1.2) }), note: "lies face down on the floor: the front presses flat and spreads" },
+  arms: { dur: 4, setup: ctx => [], at: t => ({ pose: "arms_crossed", w: smooth((t - 0.4) / 0.6) * (1 - smooth((t - 2.6) / 0.5)) }), note: "crosses the arms and lets go: the arms push the chest" },
+  counter: { dur: 4, setup: ctx => { const tip = ctx.tip(ctx.balloons ? "breast L" : "belly"), top = tip.y + 0.05, Z = 1.4; ctx.stop = Z - ctx.front + 0.04;
+             const m = new THREE.Matrix4().makeTranslation(0, top / 2, Z + 0.3); return [{ type: "box", m, half: new THREE.Vector3(1, top / 2, 0.3), show: true }]; },
+          at: (t, ctx) => walkInto(t, ctx.stop), note: "walks into a counter as high as the chest or belly and leans on it" },
+});
+for (const [k, v] of Object.entries(SCEN)) $("#scen").append(new Option(`${k}: ${v.note}`, k));
+
+// ---- the scene ------------------------------------------------------------------------------------------------
+const view = $("#view"), R = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); view.append(R.domElement);
+R.localClippingEnabled = true;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x17181b);
+scene.add(new THREE.HemisphereLight(0xc8ccd6, 0x2a2420, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(2, 4, 3); scene.add(key);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(3, 48), new THREE.MeshStandardMaterial({ color: 0x24252a, roughness: 1 })); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const cam = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
+const orbit = { yaw: 0.9, pitch: 0.1, dist: 4.4, ty: 1.0, follow: true };
+const cut = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+let wireMesh = null;
+let fig = null, sim = null, outerMesh = null, innerMesh = null, report = null, colours = null;
+function size() { const w = view.clientWidth, h = view.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); draw(); }
+function draw() {
+  const c = fig ? fig.group.position : new THREE.Vector3();
+  const tx = (orbit.follow ? c.x : 0) + (orbit.ox || 0), tz = (orbit.follow ? c.z : 0) + (orbit.oz || 0);   // ox, oz: look off the feet (lying down)
+  cam.position.set(tx + Math.sin(orbit.yaw) * Math.cos(orbit.pitch) * orbit.dist, orbit.ty + Math.sin(orbit.pitch) * orbit.dist, tz + Math.cos(orbit.yaw) * Math.cos(orbit.pitch) * orbit.dist);
+  cam.lookAt(tx, orbit.ty, tz);
+  cut.constant = c.x;
+  R.render(scene, cam);
+}
+new ResizeObserver(size).observe(view);
+
+const REGIONS = { belly: ["c_spine0", "c_spine1"], chest: ["c_spine2", "c_spine3"], butt: ["root"], thighs: ["upleg_twist"], "upper arms": ["uparm_twist"], face: ["c_head", "c_jaw"] };
+function regionOf(sim) {                          // each point's region, from its strongest skin weight
+  const G = sim.mesh.geometry, SI = G.attributes.skinIndex, SW = G.attributes.skinWeight, bones = sim.mesh.skeleton.bones;
+  return sim.rep.map((r, v) => {
+    let best = -1, bw = 0; for (let k = 0; k < 4; k++) if (SW.getComponent(r, k) > bw) { bw = SW.getComponent(r, k); best = SI.getComponent(r, k); }
+    const name = bones[best] ? bones[best].name : "";
+    if (name === "root") return sim.outerBind[v * 3 + 2] < 0 ? "butt" : "belly";
+    for (const [reg, keys] of Object.entries(REGIONS)) if (keys.some(k => name.includes(k))) return reg;
+    return null;
+  });
+}
+
+async function build(which) {
+  status("building...");
+  if (fig) { scene.remove(fig.group); scene.remove(outerMesh); scene.remove(innerMesh); }
+  const balloons = $("#mode").value === "balloons";
+  $("#bopts").style.display = balloons ? "" : "none";
+  let outer = SHAPES_BY[which], lean, rep;
+  const hourglass = !balloons && which === "hourglass";
+  const lod = $("#lod").value, T = lod !== "auto" ? await lodTemplate(+lod) : balloons || hourglass ? await hiTemplate() : tpl;   // round curves need points
+  if (lod !== "auto") SHAPES_BY.hourglass = null;    // the fit is per mesh
+  // the chubby hourglass: MHR's body sliders fitted to fuller bust, hips, backside and thighs at Mari's waist, then
+  // sculpted (bust and backside volumes, a cinched waist: HOURGLASS_SCULPT); a fat suit over its own lean body
+  if (hourglass) outer = SHAPES_BY.hourglass = SHAPES_BY.hourglass || hourglassShape(shapeMesh(T), SHAPES_BY.mari).lean;
+  if (balloons) { const f = flatShape(shapeMesh(T), SHAPES_BY.mari); outer = lean = f.lean; rep = f.report; }
+  else ({ lean, report: rep } = leanShape(shapeMesh(T), outer));
+  fig = new BodyFigure(lib, 1.7, T, { shape: outer });
+  fig.noUnclip = true;
+  shapeMesh(fig.model).visible = false;
+  scene.add(fig.group);
+  fig.update(M.fk(lib, M.clonePose(lib.poses.idle), 1.7).pos);
+  fig.group.updateMatrixWorld(true);
+  const soft = $("#solver").value === "soft", Sim = soft ? SoftBoneSim : FleshSim, sup = +$("#support").value;
+  const sc0 = sculptFor(balloons, hourglass), sculpt = sc0 ? { sculpt: sc0 } : {};
+  sim = new Sim(fig, outer, lean, Object.assign(sculpt, balloons ? BALLOON_PHYS : {}));
+  sim.jiggle = +$("#jiggle").value;
+  if (soft && balloons && sup > 1) { sim.support = sup; sim.setupChains(); }
+  if (soft) Object.assign(sim.amount, AMOUNT);
+  if (!soft && balloons) { const sup = +$("#support").value; for (let i = 0; i < sim.N; i++) if (sim.region[i] === 1 || sim.region[i] === 2) sim.k[i] *= sup; sim.bulk[1].k = sim.bulk[2].k = sup; }
+  sim.step(1 / 60);
+  // render meshes on the welded points
+  const mk = (mat) => { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(sim.N * 3), 3)); g.setIndex(sim.index); const m = new THREE.Mesh(g, mat); m.frustumCulled = false; scene.add(m); return m; };
+  colours = new Float32Array(sim.N * 3); sync.wts = false;
+  const maxH = Math.max(...sim.h);
+  for (let i = 0; i < sim.N; i++) { const t = Math.min(1, sim.h[i] / Math.max(0.03, maxH)); const c = new THREE.Color().setHSL(0.6 - 0.6 * t, 0.65, 0.35 + 0.25 * t); colours.set([c.r, c.g, c.b], i * 3); }
+  outerMesh = mk(new THREE.MeshStandardMaterial({ color: 0xcdbfae, roughness: 0.75, side: THREE.DoubleSide, transparent: true, opacity: 1, clippingPlanes: [] }));
+  outerMesh.geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+  innerMesh = mk(new THREE.MeshStandardMaterial({ color: 0x8a2f2f, roughness: 0.6, side: THREE.DoubleSide }));
+  if (wireMesh) scene.remove(wireMesh);
+  { const g = new THREE.BufferGeometry(); g.setAttribute("position", outerMesh.geometry.attributes.position); g.setIndex(sim.index);
+    wireMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x1a1410, wireframe: true, transparent: true, opacity: 0.35, depthWrite: false })); wireMesh.frustumCulled = false; wireMesh.renderOrder = 3; scene.add(wireMesh); }
+  report = { lean: rep, regions: sim.region ? Array.from(sim.region, r => sim.regionNames[r] || null) : regionOf(sim), balloons, soft, body: which };
+  if (soft) { loadPaint(); sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R); }
+  sync(); summary(); if (soft) makeOverlay(); else if (overlay) overlay.visible = false;
+  status(`${which}: ${sim.N} points`);
+}
+function sync() {
+  outerMesh.geometry.attributes.position.array.set(sim.x); outerMesh.geometry.attributes.position.needsUpdate = true; outerMesh.geometry.computeVertexNormals();
+  innerMesh.geometry.attributes.position.array.set(sim.leanX || sim.A); innerMesh.geometry.attributes.position.needsUpdate = true; innerMesh.geometry.computeVertexNormals();
+  const wts = $("#wts").checked && !!sim.chains, heat = $("#heat").checked || wts;
+  if (wts !== sync.wts) {                          // swap the colours: thickness or the soft bones' spread
+    const col = outerMesh.geometry.attributes.color;
+    if (wts) for (let i = 0; i < sim.N; i++) { let w = 0; for (const c of sim.chains) w += c.w[i]; const cc = new THREE.Color().setHSL(0.66 - 0.66 * Math.min(1, w), 0.7, 0.32 + 0.2 * Math.min(1, w)); col.array.set([cc.r, cc.g, cc.b], i * 3); }
+    else col.array.set(colours);
+    col.needsUpdate = true; sync.wts = wts;
+  }
+  outerMesh.material.vertexColors = heat; outerMesh.material.color.set(heat ? 0xffffff : 0xcdbfae); outerMesh.material.needsUpdate = true;
+  outerMesh.material.opacity = $("#ghost").checked ? 0.35 : 1; outerMesh.material.depthWrite = !$("#ghost").checked;
+  outerMesh.material.clippingPlanes = $("#cut").checked ? [cut] : [];
+  innerMesh.visible = $("#cut").checked || $("#ghost").checked;
+  if (wireMesh) wireMesh.visible = $("#wire").checked;   // the lean body is a diagnostic: shown cut open or through the ghost
+}
+function perRegion(fn) {
+  const acc = {}; report.regions.forEach((r, i) => { if (!r) return; (acc[r] = acc[r] || []).push(fn(i)); });
+  return Object.fromEntries(Object.entries(acc).map(([r, a]) => [r, a.reduce((s, x) => s + x, 0) / a.length]));
+}
+function summary(last) {
+  const th = perRegion(i => sim.h[i] * 100), fq = perRegion(i => sim.h[i] > 0.004 ? sim.freq(i) : NaN), sg = perRegion(i => sim.sag90(i) * 100);
+  const rows = Object.keys(th).map(r => `<tr><td>${r}</td><td>${th[r].toFixed(1)}</td><td>${isNaN(fq[r]) ? "–" : fq[r].toFixed(1)}</td><td>${sg[r].toFixed(1)}</td>${last ? `<td>${(last.peak[r] || 0).toFixed(1)}</td><td>${(last.end[r] || 0).toFixed(1)}</td>` : ""}</tr>`).join("");
+  $("#side").innerHTML = `<h3>The fat suit, by region</h3><table><tr><th>region</th><th>fat cm</th><th>rings Hz</th><th>sag 90° cm</th>${last ? "<th>peak cm</th><th>end cm</th>" : ""}</tr>${rows}</table>
+    <p>fat: mean thickness (the suit over the lean body). rings: its own wobble frequency (thicker = slower). sag 90°: how far it slides when gravity turns sideways (lying down).${last ? ` peak / end: the largest and the final mean jiggle offset in <b>${last.name}</b>.` : ""}</p>
+    <h3>Lean body (cm, bind)</h3><table><tr><th>measure</th><th>suit</th><th>lean</th><th>average</th></tr>${Object.entries(report.lean).map(([k, v]) => `<tr><td>${k}</td><td>${v.outer}</td><td>${v.lean}</td><td>${v.average}</td></tr>`).join("")}</table>
+    ${report.soft ? softPanel() : `<h3>Physics</h3>${Object.entries(FLESH_DEFAULTS).filter(([k]) => ["shear", "damping", "coupling"].includes(k)).map(([k, v]) => `<div class="row"><span>${k}</span><input type="range" data-k="${k}" min="${k === "shear" ? 200 : 0}" max="${k === "shear" ? 3000 : 1}" step="${k === "shear" ? 50 : 0.01}" value="${sim.o[k]}"><output>${sim.o[k]}</output></div>`).join("")}
+`}
+    <p>Drag to turn (when not playing). Physics changes apply on the next Play.</p>`;
+  document.querySelectorAll("#side input[data-m]").forEach(inp => inp.oninput = () => { const [k, j] = inp.dataset.m.split(":"); sim.mat[k][+j] = +inp.value; inp.nextElementSibling.textContent = inp.value; });
+  document.querySelectorAll("#side input[type=range]").forEach(inp => inp.oninput = () => { sim.o[inp.dataset.k] = +inp.value; inp.nextElementSibling.textContent = inp.value; if (inp.dataset.k === "shear") { /* rebuild stiffness */ for (let i = 0; i < sim.N; i++) sim.k[i] *= +inp.value / (sim._g || FLESH_DEFAULTS.shear); sim._g = +inp.value; } });
+}
+function softPanel() {                           // the soft bones: the chains, and EZSoftBone's four numbers (root, tip)
+  const m = sim.mat, rows = ["damping", "stiffness", "resistance", "slackness"].flatMap(k => [0, 1].map(j =>
+    `<div class="row"><span>${k} ${j ? "tip" : "root"}</span><input type="range" data-m="${k}:${j}" min="0" max="1" step="0.01" value="${m[k][j]}"><output>${m[k][j]}</output></div>`)).join("");
+  return `<h3>Soft bones (${sim.chains.length} chains)</h3><table><tr><th>chain</th><th>hangs from</th><th>depth cm</th></tr>${sim.chains.map(c => `<tr><td>${c.name}</td><td>${c.anchor}</td><td>${(c.hMax * 100).toFixed(1)}</td></tr>`).join("")}</table>
+    <p>Per 60 Hz tick, as in EZSoftBone and Kawaii Physics. damping: motion lost (relative to the body); stiffness: pull back to the animated shape; resistance: how little gravity it feels; slackness: how far it may stretch.</p>${rows}`;
+}
+function apexMotion() {                          // each balloon's tip: how far it has moved from where the body would carry it
+  const out = {};
+  for (let r = 1; r < sim.regionNames.length; r++) { const i = sim.apex(r); if (i >= 0) out[sim.regionNames[r]] = sim.offset(i) * 100; }
+  return out;
+}
+function poseAt(st) {
+  const lp = lib.poses;
+  let pose;
+  if (st.mix) pose = M.mixPose(lp[st.mix[0]], lp[st.mix[1]], st.mix[2]);
+  else if (st.w !== undefined) pose = M.mixPose(lp.idle, lp[st.pose], Math.max(0, Math.min(1, st.w)));
+  else pose = M.clonePose(lp[st.pose]);
+  return M.fk(lib, pose, 1.7).pos;
+}
+let ctx = {};
+function frameAt(name, t) {                       // put the body where the scenario has it at time t
+  const st = SCEN[name].at(t, ctx);
+  fig.group.position.set(st.x || 0, st.y || 0, st.z || 0);
+  fig.group.rotation.set(st.tilt || 0, st.yaw || 0, 0, "YXZ");
+  fig.group.updateMatrixWorld(true);
+  fig.update(poseAt(st));
+}
+async function run(name, { onFrame, realtime = true } = {}) {
+  const sc = SCEN[name], dt = 1 / 60, n = Math.round(sc.dur / dt), peak = {}, end = {};
+  setProps(name);
+  sim.first = true; frameAt(name, 0); sim.step(dt);
+  for (let f = 1; f <= n; f++) {
+    const t = f * dt;
+    frameAt(name, t); moveProps(t); sim.step(dt);
+    const now = report.balloons ? apexMotion() : perRegion(i => sim.offset(i) * 100);
+    for (const [r, v] of Object.entries(now)) { peak[r] = Math.max(peak[r] || 0, v); if (f === n) end[r] = v; }
+    if (onFrame) await onFrame(t, f);
+    if (realtime && f % 2 === 0) { sync(); draw(); await new Promise(r => requestAnimationFrame(r)); }
+  }
+  sync(); draw();
+  const last = { name, peak, end }; summary(last); return last;
+}
+// ---- things to touch ----------------------------------------------------------------------------------------------
+const props = new THREE.Group(); scene.add(props);
+const propMat = new THREE.MeshStandardMaterial({ color: 0x5a6070, roughness: 0.9, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+function restMeasure() {                         // standing at the origin in the rest pose: the soft front and the tips
+  fig.group.position.set(0, 0, 0); fig.group.rotation.set(0, 0, 0); fig.group.updateMatrixWorld(true); fig.update(poseAt({ pose: "idle" }));
+  sim.first = true; sim.step(1 / 60);
+  const P = sim.R; let front = 0;
+  for (let i = 0; i < sim.N; i++) { const y = P[i * 3 + 1], x = P[i * 3]; if (y > 0.75 && y < 1.5 && Math.abs(x) < 0.2) front = Math.max(front, P[i * 3 + 2]); }
+  const tips = {};
+  if (sim.chains) for (const c of sim.chains) tips[c.name] = c.tip.clone();
+  else if (sim.regionNames) for (let r = 1; r < sim.regionNames.length; r++) { const i = sim.apex(r); if (i >= 0) tips[sim.regionNames[r]] = new THREE.Vector3(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); }
+  return { front, tips };
+}
+function setProps(name) {
+  props.clear(); ctx = { balloons: report.balloons };
+  const m = restMeasure(); ctx.front = m.front;
+  ctx.tip = n => m.tips[n] || Object.values(m.tips)[0] || new THREE.Vector3(0, 1.1, m.front);
+  const cols = (SCEN[name].setup ? SCEN[name].setup(ctx) : []).concat([{ type: "plane", p: new THREE.Vector3(0, 0, 0), n: new THREE.Vector3(0, 1, 0) }]);
+  for (const c of cols) {
+    if (!c.show) continue;
+    let mesh;
+    if (c.type === "plane") { mesh = new THREE.Mesh(new THREE.PlaneGeometry(c.show.w, c.show.h), propMat); mesh.position.copy(c.p).add(new THREE.Vector3(0, c.show.h / 2, 0)); mesh.lookAt(mesh.position.clone().add(c.n)); }
+    if (c.type === "sphere") mesh = new THREE.Mesh(new THREE.SphereGeometry(c.r, 32, 16), new THREE.MeshStandardMaterial({ color: 0xb04a3a, roughness: 0.6 }));
+    if (c.type === "box") { mesh = new THREE.Mesh(new THREE.BoxGeometry(c.half.x * 2, c.half.y * 2, c.half.z * 2), propMat); mesh.applyMatrix4(c.m); }
+    c.mesh = mesh; props.add(mesh);
+  }
+  ctx.cols = cols;
+  if (sim.colliders) sim.colliders = cols;
+  moveProps(0);
+}
+function moveProps(t) { for (const c of ctx.cols || []) if (c.move) { c.c.copy(c.move(t)); if (c.mesh) c.mesh.position.copy(c.c); } }
+// ---- the refiner: paint volume and jiggle on the body (soft bones), and jiggle by area ---------------------------
+// Like the creator's 3D brush (creator/src/js/80-paint.js): strokes are measured on the body in its bind pose (cm),
+// so they don't care about the pose; mirror is x -> -x; "through" paints the far side too. Left drag paints while a
+// tool is on (right drag turns the view); Shift inverts; Ctrl+Z undoes a stroke. The painted maps show as a
+// transparent overlay (red adds, blue takes away; orange more jiggle, teal less) and are kept per body in this
+// browser. Values aren't capped (for testing): type any number in the boxes.
+const PT = { tool: "off", size: 6, soft: 0.5, strength: 0.5, mirror: true, through: false, overlay: "auto" };
+const AMOUNT = { bust: 1, butt: 1, thighs: 1, belly: 1, arms: 1 };
+try { Object.assign(AMOUNT, JSON.parse(localStorage.getItem("flesh-amount") || "{}")); } catch (e) { }
+const TOOLS = [["off", "turn view", "no brush: drag turns the view"], ["vol+", "add volume", "fat thickness out along the skin (cm a dab x strength)"],
+  ["vol-", "remove volume", "thinner, down to the lean body and past it"], ["jig+", "more jiggle", "this skin follows its soft bone more"],
+  ["jig-", "less jiggle", "this skin follows less (0: stays with the body)"], ["smooth", "smooth", "evens out both maps"], ["reset", "reset", "back toward no paint"]];
+let undo = [], stroke = null, overlay = null;
+function toolsPanel() {
+  const num = (id, label, val, min, max, step, title) => `<div class="row n" title="${title || ""}"><span>${label}</span><input type="range" data-pt="${id}" min="${min}" max="${max}" step="${step}" value="${Math.max(min, Math.min(max, val))}"><input type="number" data-ptn="${id}" step="${step}" value="${val}"></div>`;
+  $("#tools").innerHTML = `<h3>Refine (soft bones)</h3>
+    <div class="tools">${TOOLS.map(([k, l, t]) => `<button data-tool="${k}" title="${t}" aria-pressed="${PT.tool === k}">${l}</button>`).join("")}</div>
+    ${num("size", "size cm", PT.size, 1, 40, 0.5)}${num("soft", "softness", PT.soft, 0, 1, 0.05, "0: a hard edge, 1: soft all the way in")}${num("strength", "strength", PT.strength, 0, 2, 0.05, "any value in the box")}
+    <div class="tools"><label><input type="checkbox" id="ptmirror" ${PT.mirror ? "checked" : ""}> mirror</label> <label><input type="checkbox" id="ptthrough" ${PT.through ? "checked" : ""}> through</label>
+      <select id="ptoverlay"><option value="auto">overlay: the tool's</option><option value="vol">overlay: volume</option><option value="jig">overlay: jiggle</option><option value="none">overlay: off</option></select>
+      <button id="ptundo" title="Ctrl+Z">undo</button> <button id="ptclear">clear paint</button></div>
+    <h3>Jiggle by area</h3>${Object.keys(AMOUNT).map(k => num("amt_" + k, k, AMOUNT[k], 0, 3, 0.05, "how far this area's jiggle shows: 1 as simulated, 0 none; any value in the box (absurd ones too)")).join("")}
+    <p>Left drag paints (right drag turns), Shift inverts. Volume changes rebuild the soft bones when the stroke ends.</p>`;
+  $("#ptoverlay").value = PT.overlay;
+  document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { PT.tool = b.dataset.tool; toolsPanel(); paintOverlay(); });
+  const setv = (id, v) => {
+    if (id.startsWith("amt_")) { AMOUNT[id.slice(4)] = v; if (sim && sim.amount) sim.amount[id.slice(4)] = v; try { localStorage.setItem("flesh-amount", JSON.stringify(AMOUNT)); } catch (e) { } } else PT[id] = v;
+    const rg = document.querySelector(`[data-pt="${id}"]`), nb = document.querySelector(`[data-ptn="${id}"]`);
+    if (rg && document.activeElement !== rg) rg.value = v; if (nb && document.activeElement !== nb) nb.value = v;
+  };
+  document.querySelectorAll("[data-pt]").forEach(i => i.oninput = () => setv(i.dataset.pt, +i.value));
+  document.querySelectorAll("[data-ptn]").forEach(i => i.oninput = () => { if (i.value !== "" && isFinite(+i.value)) setv(i.dataset.ptn, +i.value); });
+  $("#ptmirror").onchange = e => PT.mirror = e.target.checked;
+  $("#ptthrough").onchange = e => PT.through = e.target.checked;
+  $("#ptoverlay").onchange = e => { PT.overlay = e.target.value; paintOverlay(); };
+  $("#ptundo").onclick = undoStroke;
+  $("#ptclear").onclick = () => { if (!sim.vol) return; pushUndo(); sim.vol.fill(0); sim.jig.fill(1); afterPaint(true); };
+}
+function makeOverlay() {                          // shares the body's positions; its own colours with alpha
+  if (overlay) { scene.remove(overlay); overlay.geometry.dispose(); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", outerMesh.geometry.attributes.position); g.setIndex(sim.index);
+  g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(sim.N * 4), 4));
+  overlay = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  overlay.frustumCulled = false; overlay.renderOrder = 2; scene.add(overlay);
+  paintOverlay();
+}
+function paintOverlay() {
+  if (!overlay || !sim.vol) return;
+  const which = PT.overlay === "auto" ? (PT.tool.startsWith("jig") ? "jig" : PT.tool === "off" ? "both" : "vol") : PT.overlay;
+  const C = overlay.geometry.attributes.color.array; let any = false;
+  for (let i = 0; i < sim.N; i++) {
+    let r = 0, g = 0, b = 0, a = 0;
+    const v = sim.vol[i], j = sim.jig[i] - 1;
+    if ((which === "vol" || which === "both") && Math.abs(v) > 0.01) { a = Math.min(0.75, Math.abs(v) / 3); [r, g, b] = v > 0 ? [0.95, 0.25, 0.2] : [0.2, 0.4, 1]; }
+    if ((which === "jig" || which === "both") && Math.abs(j) > 0.01 && Math.min(0.75, Math.abs(j)) >= a) { a = Math.min(0.75, Math.abs(j)); [r, g, b] = j > 0 ? [1, 0.65, 0.1] : [0.1, 0.85, 0.75]; }
+    C[i * 4] = r; C[i * 4 + 1] = g; C[i * 4 + 2] = b; C[i * 4 + 3] = a; if (a) any = true;
+  }
+  // unpainted points take their painted neighbours' colour (at no opacity), so the edge fades instead of darkening
+  for (let i = 0; i < sim.N; i++) if (!C[i * 4 + 3]) { const nb = sim.nb[i]; let r = 0, g = 0, b = 0, n = 0; for (let k = 0; k < nb.length; k++) { const q = nb[k] * 4; if (C[q + 3]) { r += C[q]; g += C[q + 1]; b += C[q + 2]; n++; } } if (n) { C[i * 4] = r / n; C[i * 4 + 1] = g / n; C[i * 4 + 2] = b / n; } }
+  overlay.geometry.attributes.color.needsUpdate = true;
+  overlay.visible = any && which !== "none";
+  draw();
+}
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function pick(e) {                                // the body point under the cursor (the nearest corner of the hit face)
+  const rc = R.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - rc.left) / rc.width) * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+  ray.setFromCamera(ndc, cam);
+  outerMesh.geometry.computeBoundingSphere();
+  const hit = ray.intersectObject(outerMesh, false)[0]; if (!hit) return null;
+  const P = outerMesh.geometry.attributes.position.array;
+  let best = -1, bd = Infinity;
+  for (const k of [hit.face.a, hit.face.b, hit.face.c]) { const d = Math.hypot(P[k * 3] - hit.point.x, P[k * 3 + 1] - hit.point.y, P[k * 3 + 2] - hit.point.z); if (d < bd) { bd = d; best = k; } }
+  return { v: best, point: hit.point };
+}
+function ring(e, hit) {                           // the brush's size on screen
+  const el = $("#ring");
+  if (!hit || PT.tool === "off") { el.style.display = "none"; return; }
+  const rc = R.domElement.getBoundingClientRect(), right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0);
+  const a = hit.point.clone().project(cam), b = hit.point.clone().addScaledVector(right, PT.size / 100).project(cam);
+  const px = Math.abs(b.x - a.x) * rc.width / 2;
+  el.style.display = "block"; el.style.width = el.style.height = px * 2 + "px";
+  el.style.transform = `translate(${e.clientX - rc.left - px}px, ${e.clientY - rc.top - px}px)`;
+}
+function dab(v0, invert) {                        // one dab, measured in the bind pose (cm), mirrored if asked
+  const B = sim.outerBase, n = sim.nrm0, N = sim.N, rad = PT.size / (sim.sc * 100);   // cm -> mesh units
+  const centres = [[B[v0 * 3], B[v0 * 3 + 1], B[v0 * 3 + 2], n[v0 * 3], n[v0 * 3 + 1], n[v0 * 3 + 2]]];
+  if (PT.mirror) centres.push([-B[v0 * 3], B[v0 * 3 + 1], B[v0 * 3 + 2], -n[v0 * 3], n[v0 * 3 + 1], n[v0 * 3 + 2]]);
+  const f = new Float32Array(N);
+  for (const [cx, cy, cz, nx, ny, nz] of centres) for (let i = 0; i < N; i++) {
+    const d = Math.hypot(B[i * 3] - cx, B[i * 3 + 1] - cy, B[i * 3 + 2] - cz); if (d >= rad) continue;
+    if (!PT.through && n[i * 3] * nx + n[i * 3 + 1] * ny + n[i * 3 + 2] * nz < 0.1) continue;   // not the far side
+    const inner = rad * (1 - PT.soft), u = d <= inner ? 1 : 1 - (d - inner) / Math.max(1e-6, rad - inner);
+    f[i] = Math.max(f[i], u * u * (3 - 2 * u));
+  }
+  const s = PT.strength * (invert ? -1 : 1), t = PT.tool;
+  const smooth = arr => { const c = Float32Array.from(arr); for (let i = 0; i < N; i++) if (f[i]) { const nb = sim.nb[i]; let m = 0; for (let k = 0; k < nb.length; k++) m += c[nb[k]]; if (nb.length) arr[i] += (m / nb.length - c[i]) * Math.min(1, f[i] * Math.abs(s)); } };
+  for (let i = 0; i < N; i++) if (f[i]) {
+    if (t === "vol+") sim.vol[i] += 0.6 * s * f[i];
+    else if (t === "vol-") sim.vol[i] -= 0.6 * s * f[i];
+    else if (t === "jig+") sim.jig[i] += 0.15 * s * f[i];
+    else if (t === "jig-") sim.jig[i] -= 0.15 * s * f[i];
+    else if (t === "reset") { const k = Math.min(1, 0.3 * Math.abs(s) * f[i]); sim.vol[i] -= sim.vol[i] * k; sim.jig[i] += (1 - sim.jig[i]) * k; }
+  }
+  if (t === "smooth") { smooth(sim.vol); smooth(sim.jig); }
+  if (t.startsWith("vol") || t === "smooth" || t === "reset") {   // the shape now, the physics when the stroke ends
+    for (let i = 0; i < N; i++) if (f[i]) for (let a = 0; a < 3; a++) sim.outerBind[i * 3 + a] = sim.outerBase[i * 3 + a] + n[i * 3 + a] * sim.vol[i];
+    sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R);
+    sync();
+  }
+  paintOverlay();
+}
+function pushUndo() { undo.push([Float32Array.from(sim.vol), Float32Array.from(sim.jig)]); if (undo.length > 30) undo.shift(); }
+function undoStroke() { const u = undo.pop(); if (!u || !sim.vol) return; sim.vol.set(u[0]); sim.jig.set(u[1]); afterPaint(true); }
+function afterPaint(rebuild) {
+  if (rebuild) { sim.refine(); sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R); sync(); summary(); }
+  paintOverlay(); savePaint();
+}
+const paintKey = () => `flesh-paint:${report.balloons ? "balloons" : report.body}:${sim.N}`;   // per body and mesh (points differ per LOD)
+function savePaint() {                            // this browser only (per body): the painted points
+  try { const o = { vol: [], jig: [] }; for (let i = 0; i < sim.N; i++) { if (sim.vol[i]) o.vol.push([i, +sim.vol[i].toFixed(3)]); if (sim.jig[i] !== 1) o.jig.push([i, +sim.jig[i].toFixed(3)]); } localStorage.setItem(paintKey(), JSON.stringify(o)); } catch (e) { }
+}
+function loadPaint() {
+  undo = [];
+  let o = null; try { o = JSON.parse(localStorage.getItem(paintKey()) || "null"); } catch (e) { }
+  if (o && (o.vol.length || o.jig.length)) { for (const [i, v] of o.vol) if (i < sim.N) sim.vol[i] = v; for (const [i, v] of o.jig) if (i < sim.N) sim.jig[i] = v; sim.refine(); }
+}
+function sculptFor(balloons, hourglass) {
+  return balloons ? balloonSculpt({ bust: +$("#bust").value, butt: +$("#butt").value }) : hourglass ? balloonSculpt(HOURGLASS_SCULPT) : null;
+}
+R.domElement.addEventListener("contextmenu", e => e.preventDefault());
+R.domElement.addEventListener("pointerdown", e => {
+  if (PT.tool === "off" || e.button !== 0 || !sim || !sim.chains) return;
+  const hit = pick(e); if (!hit) return;
+  e.stopImmediatePropagation(); pushUndo(); stroke = { invert: e.shiftKey }; dab(hit.v, e.shiftKey);
+}, true);
+addEventListener("pointermove", e => {
+  if (PT.tool === "off" || !sim || !sim.chains || e.target !== R.domElement && !stroke) { if (!stroke) $("#ring").style.display = "none"; return; }
+  const hit = pick(e); ring(e, hit);
+  if (stroke && hit) dab(hit.v, stroke.invert);
+});
+addEventListener("pointerup", () => { if (!stroke) return; const vol = PT.tool !== "jig+" && PT.tool !== "jig-"; stroke = null; afterPaint(vol); });
+addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); undoStroke(); } });
+toolsPanel();
+$("#body").onchange = e => build(e.target.value);
+$("#jiggle").oninput = () => { const j = +$("#jiggle").value; $("#jigout").textContent = j < 0.35 ? "firm" : j < 0.8 ? "soft" : j <= 1.2 ? "medium" : j <= 1.6 ? "loose" : "very loose"; if (sim) sim.jiggle = j; };
+for (const id of ["mode", "solver", "lod", "bust", "butt", "support"]) $("#" + id).onchange = () => build($("#body").value);
+$("#exp").onclick = async () => {
+  const soft = !!sim.softBones, name = `${report.balloons ? "balloons" : report.body}_${soft ? "softbones" : "fat"}.json`;
+  const data = soft ? sim.softBones() : Object.assign(sim.thicknessMap(), { regions: summaryData() });
+  const r = await fetch(`/api/character/Pilot/${name}`, { method: "POST", body: JSON.stringify(data) });
+  status(r.ok ? "wrote " + (await r.json()).path : "export failed");
+};
+// the sculpted body as a closed OBJ (the welded points, MHR's bind pose, cm): what the Shape page's export can't
+// carry, since the volumes and the cinch exist only here
+function objText() {
+  const B = sim.outerBind; let lo = Infinity; for (let i = 0; i < sim.N; i++) lo = Math.min(lo, B[i * 3 + 1]);
+  const lines = [`# ${report.balloons ? "balloons" : report.body}: MHR (Meta, Apache-2.0) body, sculpted on the Fat suit page, T bind pose, cm, Y up, ${sim.N} vertices`];
+  for (let i = 0; i < sim.N; i++) lines.push(`v ${B[i * 3].toFixed(3)} ${(B[i * 3 + 1] - lo).toFixed(3)} ${B[i * 3 + 2].toFixed(3)}`);
+  for (let t = 0; t < sim.index.length; t += 3) lines.push(`f ${sim.index[t] + 1} ${sim.index[t + 1] + 1} ${sim.index[t + 2] + 1}`);
+  return lines.join("\n") + "\n";
+}
+$("#obj").onclick = async () => {
+  const name = `${report.balloons ? "balloons" : report.body}_sculpted_T.obj`;
+  const r = await fetch(`/api/character/Pilot/${name}`, { method: "POST", body: objText() });
+  status(r.ok ? "wrote " + (await r.json()).path : "export failed");
+};
+function summaryData() { return { fat_cm: perRegion(i => sim.h[i] * 100), rings_hz: perRegion(i => sim.h[i] > 0.004 ? sim.freq(i) : 0), sag90_cm: perRegion(i => sim.sag90(i) * 100) }; }
+$("#play").onclick = () => run($("#scen").value);
+for (const id of ["cut", "heat", "wts", "ghost", "wire"]) $("#" + id).onchange = () => { sync(); draw(); };
+let drag = null;
+R.domElement.addEventListener("pointerdown", e => { if (PT.tool !== "off" && e.button === 0) return; drag = [e.clientX, e.clientY]; });
+addEventListener("pointermove", e => { if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.01; orbit.pitch = Math.max(-0.3, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; draw(); });
+addEventListener("pointerup", () => { drag = null; });
+R.domElement.addEventListener("wheel", e => { e.preventDefault(); orbit.dist = Math.max(1, Math.min(9, orbit.dist * (e.deltaY > 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
+await build(new URLSearchParams(location.search).get("body") || "heavy");
+size();
+window.__flesh = { SCEN, build, run, setMode: (m, o = {}) => { $("#mode").value = m; for (const [k, v] of Object.entries(o)) $("#" + k).value = v; }, apexMotion, frameAt, sync, draw, orbit, get sim() { return sim; }, get fig() { return fig; }, get report() { return report; }, set: (o) => { for (const id of ["cut", "heat", "wts", "ghost", "wire"]) if (id in o) $("#" + id).checked = o[id]; sync(); draw(); } };
+Object.assign(window.__flesh, { screen: i => { const v = new THREE.Vector3(sim.x[i * 3], sim.x[i * 3 + 1], sim.x[i * 3 + 2]).project(cam), rc = R.domElement.getBoundingClientRect(); return [rc.left + (v.x + 1) / 2 * rc.width, rc.top + (1 - v.y) / 2 * rc.height]; }, PT, AMOUNT, dab, afterPaint, pushUndo, undoStroke, pick, paintOverlay, toolsPanel, get overlay() { return overlay; } });
+</script></body></html>
