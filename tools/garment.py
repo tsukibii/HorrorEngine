@@ -101,7 +101,7 @@ def cmd_body(a):
 def cmd_pattern(a):
     home = home_dir(a); src = home / "src"; py = py_of(home)
     body = cmd_body(a)
-    design = Path(a.design) if a.design.endswith((".yaml", ".yml")) else src / "assets" / "design_params" / f"{a.design}.yaml"
+    design = Path(a.design).resolve() if a.design.endswith((".yaml", ".yml")) else src / "assets" / "design_params" / f"{a.design}.yaml"
     if not design.exists(): sys.exit(f"no design {design}")
     name = design.stem
     script = f'''
