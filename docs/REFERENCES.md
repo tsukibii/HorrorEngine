@@ -47,13 +47,43 @@ Use them as shapes, never as material.
   answer for it.
 - **Sound first:** a sound tells you where to look before anything appears (DIRECTING.md: a cue before every reveal).
 
-## 5. How a draft is reviewed (Claude, against this page)
+## 5. Roblox horror: the mechanics the young players know
+
+The games most played by the Roblox generation (DOORS, Piggy, The Mimic, Evade, Pressure, Apeirophobia) are loved
+for simple, readable rules, not hard puzzles. What we take:
+- **A warning, then seconds to act:** the lights flicker, a sound grows; hide now (DOORS' Rush). The same entity
+  can come back several times (Ambush): leave the hiding place when it fades, hide again when it returns.
+- **Don't hide too long:** a hiding place that turns on you if you stay (DOORS' Hide): hiding is a choice, not a
+  rest.
+- **Rules a child can say in one line:** it's blind, so crouch and be quiet (Figure); look at it to make it leave
+  (Screech); don't move while it's looking.
+- **Find the items, then escape** while something patrols (Piggy): a short list, ticked one by one.
+- **Chapters with save stations** (The Mimic): a death sends you back a little, never far. Our branch map is that.
+- **Chases** through rooms you already know (Evade): run to a door you've seen.
+
+Our versions are `play` mechanics (STORY_FORMAT §9.8): `hide`, `run`, `collect`, `sneak`, `hold`, `search`,
+`escape`, each with a one-line rule, a warning before, and results that branch.
+
+Sources: [DOORS (Wikipedia)](https://en.wikipedia.org/wiki/Doors_(game)), [DOORS entities (Pocket
+Tactics)](https://www.pockettactics.com/roblox/doors), [Best Roblox horror games 2026
+(games.gg)](https://games.gg/news/best-roblox-horror-games-2026/), [The Mimic: Jealousy chapter
+(Dot Esports)](https://dotesports.com/?p=1557855).
+
+## 6. Yandere and obsession (the romance turned)
+
+- **Devotion first:** she is sweet, attentive, remembers everything you said; the player should like her.
+- **The tells:** she knows things she shouldn't; your phone, your friends, your past come up; a smile that holds.
+- **The turn is about you:** jealousy of someone else, fear you'll leave; the same staging that was tender
+  (a hand on your cheek, her face close) becomes a threat (the hand on your throat, the door locked behind her).
+- **She is never only a monster:** the good ending exists because you can reach her; the bad one because you didn't.
+
+## 7. How a draft is reviewed (Claude, against this page)
 
 1. The shape: does it follow §1's beats and shares for its length? Is there quiet after each scare?
 2. The wrongness: is the first one small enough, and does each scene add one thing?
 3. The choices: three replies, one silent, each with a different karma; does each one change how the next scene
    plays, even slightly?
-4. The no-death rule: every missed task guides the player on; only the final bad ending kills.
+4. The deaths: each one is earned (warned, then repeated), names its branch to return to, and the branch map shows what was missed.
 5. The lines: one beat each (12 words of English), pauses written as clips, nothing explained that could be shown.
 6. The bodies: one plain action per clip at most, simple 80% of the time (docs/KIMODO.md).
 7. The ending: earned by the karma, each of the three different in the final image, not only the words.

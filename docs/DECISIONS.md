@@ -2,6 +2,29 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (horror romance, deaths back, the branch map, replies, simple gameplay)
+
+These change the 2026-10-20 entries below where they disagree.
+- **The player can die again** (no dying took the gameplay out). Instead of game over, **a death opens the branch
+  map**: the player picks which branch to return to, and sees which branches they've missed. It works like
+  *Five Hearts Under One Roof*'s scene and branch viewer (jump, skip, replay), **without its stat gates**. The
+  desk works the same way.
+- **The genre is horror romance:** obsession and yandere, as in Japanese anime and games (others may be prompted).
+  First person is shaped by it: the intimate moments are written and staged for the player's eye.
+- **Replies:** dialogue choices that mostly change the line she says back (left or right, the English with the
+  Japanese over it, as the desk shows them). Each one can be just immersion (she answers, then the scene goes on with
+  the line it was always going to say) or set something that opens a branch later.
+- **Hanging lines:** she asks and waits, with her face, for the answer; not forever: past a few seconds her answer to
+  your reply is skipped and the scene carries on with the next line it would have said anyway. The writing has to
+  feel like a conversation even when the player's replies are the quiet guy's short ones: it has to feel like you.
+- **Simple gameplay, for the Roblox generation:** hide or run, tick boxes, nothing that needs a hard decision or a
+  hard puzzle. Hide and seek where being found is cute the first times and then not (found three times and it's
+  over), chases, collect-while-she-patrols, sneak while she isn't looking. On the desk it's a card before the next
+  scene ("did you manage to hide?"); in Unreal the built-in tools and Claude flesh it out.
+- **Unreal later:** reverb that sounds like real houses and rooms, for immersion.
+- **Later, not now:** lift the music tool from the woohill repo (live procedural orchestration) and make it part
+  procedural per game: each game gets its chords, flourishes and a mini soundtrack that reacts to what the player does.
+
 ## 2026-10-20 (pipeline v2: the user's answers)
 
 - **Endings are good, neutral and bad**; "evil" is the bad one. **Easter eggs** aren't karma: they come from what the

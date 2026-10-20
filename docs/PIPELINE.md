@@ -1,11 +1,12 @@
 # Making a game: the pipeline (v2)
 
-One studio project, many games (STUDIO.md). The kind of game we make: **a dark anthology in first person**,
-Resident Evil 7's point of view meets Japanese monster and psychological horror. Mood carries it. The player feels
-they are the one making the choices, and **how they respond and react decides the ending**, through karma, rather
-than what they found. There is no dying in the usual sense: a missed task guides the player gently on to the next
-scene, never a "You lose" screen. Only the final ending may kill the hero, and it plays as the story's end, not a
-game over. The branching and simple acting scenes follow *Five Hearts Under One Roof*.
+One studio project, many games (STUDIO.md). The kind of game we make: **horror romance in first person**,
+obsession and yandere as in Japanese anime and games, with Resident Evil 7's point of view: she is close, she talks
+to you, she waits for your answer. Mood carries it. The player feels they are the one making the choices: **how they
+respond and react decides the ending** through karma; small **replies** change what she says back; **simple
+gameplay** (hide, run, tick boxes) sits between the scenes. **The player can die**, and a death opens the **branch
+map** (*Five Hearts Under One Roof*'s scene viewer, without its stat gates): pick the branch to return to, and see
+the ones you've missed. docs/WRITING.md has the craft (DECISIONS 2026-10-21).
 
 The build plan for the tools this needs is `docs/PIPELINE_V2_PLAN.md` (branch `pipeline-v2`). This page is how a
 game goes once they're built. The first game is small, a **15 to 20 minute itch.io game**, to test every stage once
@@ -38,9 +39,9 @@ the cast entries, the blocking bodies and, later, the MetaHumans (METAHUMAN_ROUT
 - Claude reviews and glues it, using reference games (Resident Evil 7 and others, `docs/REFERENCES.md`) for
   structure, pacing and scares, and writes the result into `story.json`:
   - the scenes and their clips, in English (`en`)
-  - the choices, timed (30 s by default) with their karma
-  - the tasks between scenes (puzzles and timed tasks, each failure guided onward)
-  - the endings, decided by karma (good, neutral, bad)
+  - the choices, timed (30 s by default) with their karma, and the **replies** (left or right: what she says back)
+  - the **gameplay** between scenes (hide, run, collect, sneak: simple, `play` mechanics), with its deaths
+  - the endings, decided by karma (good, neutral, bad), and the deaths that send the player to the branch map
   - each clip's body as **simple life-to-life acting** (the animation budget below)
 - **Done:** `CHECKS ok`, and the story plays on the desk as blocks, cards and timed choices.
 
