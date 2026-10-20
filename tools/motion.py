@@ -241,10 +241,14 @@ def main():
             done = (mdir / f"{g['name']}.json").exists()
             made += done
             secs = float(g.get("secs", 0))
-            where = f"{sid}/{c['id']}" if sid else f"motions.{i}"
+            where = (f"{sid}/{k + '/' if k else ''}{c['id']}") if sid else f"motions.{i}"
             extra = [f"path {' > '.join(g['path'])}"] if g.get("path") else []
             extra += [f"keys {', '.join(kk['pose'] + '@' + str(kk.get('at', 0)) for kk in g['keys'])}"] if g.get("keys") else []
             extra += ["Loop"] if g.get("loop") else []
+            extra += ["In place (the game moves it)"] if g.get("in_place") else []
+            roles = [f"{st.get('title', tid)}: {role}" for tid, st in story.get("stitches", {}).items()
+                     for role, mid in ((st.get("play") or {}).get("loops") or {}).items() if c is None and mid == i]
+            extra += [f"gameplay ({'; '.join(sorted(set(roles))[:2])})"] if roles else []
             print(f"{'done' if done else '    '}  {g['name']:<40}{secs:>5.1f} s (frames 0-{int(round(secs * FPS)) - 1})  {where}")
             print(f"      {g.get('prompt', '')}{'   [' + '; '.join(extra) + ']' if extra else ''}")
         print(f"MOTION shotlist: {made}/{len(rows)} made. Save each from the demo as its name (NPZ), then: motion.py --game {game} import")

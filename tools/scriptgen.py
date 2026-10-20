@@ -83,7 +83,8 @@ CARD = {"type": "object", "required": ["id", "kind", "title", "where", "who", "p
         "type": "object", "required": ["label", "karma"], "properties": {"label": {"type": "string"}, "karma": {"type": "integer"}}}}}},
     "task": {"type": "object", "properties": {"goal": {"type": "string"}, "secs": {"type": "number"}, "guide_back": {"type": "string"}}},
     "play": {"type": "object", "properties": {"type": {"type": "string", "enum": list(L.PLAYS)}, "rule": {"type": "string"},
-        "warn": {"type": "string"}, "secs": {"type": "number"}, "death": {"type": "string"}}}}}
+        "warn": {"type": "string"}, "secs": {"type": "number"}, "death": {"type": "string"},
+        "barks": {"type": "object", "properties": {m: {"type": "array", "items": {"type": "string"}} for m in L.BARK_MOMENTS}}}}}}
 CARDS_SCHEMA = {"type": "object", "required": ["cards"], "properties": {"cards": {"type": "array", "items": CARD}}}
 
 SCENE_SCHEMA = {"type": "object", "required": ["clips", "summary"], "properties": {
@@ -145,7 +146,9 @@ def fake(kind, ctx):
                                                   {"label": "(Say nothing)", "karma": -1}]}},
             {"id": "hide", "kind": "play", "title": "Hide and seek", "where": "room", "who": ["aya"], "purpose": "a game from when you were small",
              "minutes": 1, "play": {"type": "hide", "rule": "Hide before she counts to ten", "warn": "she counts out loud", "secs": 40,
-                                    "death": "She finds you, and keeps you"}},
+                                    "death": "She finds you, and keeps you",
+                                    "barks": {"count": ["One... two... three..."], "search": ["Where are you?", "I can hear you breathing."],
+                                              "near": ["...Here?", "Found y- no. Not yet."]}}},
             {"id": "tea", "kind": "task", "title": "Make the tea", "where": "room", "who": ["aya"], "purpose": "find the cups",
              "minutes": 3, "task": {"goal": "Find two cups", "secs": 240, "guide_back": "she hands you a cup herself"}},
             {"id": "truth", "kind": "scene", "title": "The photo", "where": "room", "who": ["aya"], "purpose": "she knows",
@@ -287,7 +290,8 @@ def step_cards(game, a):
                 "alone: search, solve, hide, carry; a timer in seconds and how you're guided on if you're too slow). "
                 "Most scenes end in a choice of three short replies with karma -3 to 3 (one silent). Some cards are play: one round of "
                 "simple gameplay (hide, run, collect, sneak, hold, search, escape) with a one-line rule, a warning, 30 to 60 secs, "
-                "and `death` (what happens if you're caught) when being caught kills you. Ids are lower case.")
+                "and `death` (what happens if you're caught) when being caught kills you, and `barks`: what she calls out while "
+                "hunting (two or three short lines, six words or fewer, for moments like count, search, near, lost). Ids are lower case.")
         part = ask("cards", STYLE, user, CARDS_SCHEMA, lambda d: check_cards({"cards": cards + d.get("cards", [])}, bible) if d.get("cards") else ["no cards"],
                    {"act": name}, a)
         new = [c for c in part["cards"] if c["id"] not in {x["id"] for x in cards}]
@@ -358,6 +362,14 @@ def step_scenes(game, a, only=None):
 # ---- assembling the story ---------------------------------------------------------------------------------------
 
 ROOM_W, ROOM_D = 6.0, 5.0
+LOOPS = {   # a play type's default seeker loops (in place, Loop on): role, Kimodo prompt
+    "hide": [("count", "A person stands facing a wall covering their eyes with their hands"), ("search", "A person walks slowly while looking around")],
+    "run": [("chase", "An angry person runs forward fast")],
+    "sneak": [("patrol", "A person walks slowly and steadily")],
+    "search": [("patrol", "A person walks slowly while looking around")],
+    "collect": [("patrol", "A person walks slowly while looking around")],
+    "escape": [("chase", "An angry person runs forward fast")],
+    "hold": [("search", "A person stands still and looks around slowly")]}
 
 
 def greybox(bible, game):
@@ -461,6 +473,20 @@ def step_assemble(game, a):
             kind = pl.get("type", "hide")
             S["stitches"][tid] = {"title": card["title"], "level": "main", "template": kind, "target_min": card.get("minutes", 1), "beats": [],
                                   "play": {"type": kind, "secs": float(pl.get("secs", 40)), "rule": pl.get("rule", ""), "warn": pl.get("warn", "")}}
+            if card.get("who"):                        # the seeker: her loops by role (made once per cast member) and her barks
+                g, plays = card["who"][0], S["stitches"][tid]["play"]
+                plays["seeker"], plays["loops"], plays["barks"] = g, {}, {}
+                for role, prompt in LOOPS.get(kind, LOOPS["search"]):
+                    mid = f"{g}_{role}"
+                    S["motions"].setdefault(mid, {"who": g, "name": f"{game.lower()}_{g}_{role}", "prompt": prompt, "secs": 4, "loop": True, "in_place": True})
+                    plays["loops"][role] = mid
+                for moment, texts in (pl.get("barks") or {}).items():
+                    if moment not in L.BARK_MOMENTS:
+                        continue
+                    for j, t in enumerate(texts[:3]):
+                        lid = f"{cid}_{moment}{j + 1}"
+                        S["lines"][lid] = {"who": g, "en": t, "en_draft": t, "face": False}
+                        plays["barks"].setdefault(moment, []).append(lid)
             order.append(f"n_{cid}")
             S["flow"][f"n_{cid}"] = {"type": "stitch", "ref": tid}
             if pl.get("death") and card.get("who"):

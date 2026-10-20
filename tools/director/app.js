@@ -71,6 +71,7 @@ function allClips() {                            // every take: the clips, and t
     out.push({ sid, k, c, id: takeId(sid, k, c.id) });
     for (const o of (c.reply && c.reply.options) || []) if (o.then) out.push({ sid, k, c: o.then, id: takeId(sid, k, `${c.id}_${o.id}`), answer: true });
   }
+  for (const [lid, ln] of Object.entries(S.lines || {})) out.push({ sid: null, k: null, c: ln, id: lid, line: true });   // barks and one-off lines
   return out;
 }
 // the auto-clean: each take's length and dead air (Web Audio), into the clip's dur and trim (storykit/takes.py's numbers)
@@ -109,6 +110,13 @@ function playTake(box, sid, k, c, showVideo) {
   v.currentTime = +((c.trim || {}).in || 0); v.play().catch(() => { });
   return true;
 }
+function playLine(lid) {                         // a line outside the scenes (a bark): its take if loaded, else the browser's voice
+  const ln = (S.lines || {})[lid], t = TAKES[lid]; if (!ln) return;
+  if (t) { const v = takePip("#watchBox"); if (v.dataset.src !== t.url) { v.src = t.url; v.dataset.src = t.url; } v.style.display = "none"; v.currentTime = 0; v.play().catch(() => { }); }
+  else speak(ln.ja);
+  const sub = el("div", { class: "barksub" }, `${ln.en || ""}`); $("#watchBox").append(sub); setTimeout(() => sub.remove(), 2600);
+}
+const pickOne = a => a && a.length ? a[Math.floor(Math.random() * a.length)] : null;
 function stopTakes() { for (const v of Object.values(PIPS)) { v.pause(); v.style.display = "none"; } }
 async function replan() { try { PLAN = await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }); } catch (e) { status(e.message); } }
 let replanTimer = null;
@@ -775,12 +783,21 @@ async function watchStitch(st, nid, n) {
       const card = el("div", { class: "wcard" }, el("div", { class: "muted" }, `GAMEPLAY · ${pl.type}${st.template ? " · " + st.template : ""}`), el("div", { class: "big" }, st.title || ""),
         el("div", {}, pl.rule || ""), pl.warn ? el("div", { class: "muted" }, "warning: " + pl.warn) : null, (pl.spots || []).length ? el("div", { class: "muted" }, "where: " + pl.spots.join(", ")) : null,
         bar, el("div", { class: "muted" }, `${pl.secs} s · how did it go?`),
+        pl.seeker ? el("div", { class: "muted" }, `seeker: ${pl.seeker}${pl.loops ? " · loops: " + Object.entries(pl.loops).map(([r, m]) => `${r} ${m}`).join(", ") : ""}`) : null,
         el("div", {}, ...results.map((r, i) => el("button", { class: i ? "" : "primary", style: "margin:4px", on: { click: () => done(r) } }, r.replace(/_/g, " ")))));
       $("#watchBox").append(card);
-      const tk = () => { if (!RUN || !card.isConnected) return; const u = (performance.now() - t0) / 1000 / +pl.secs; bar.firstChild.style.width = Math.max(0, 100 - u * 100) + "%"; if (u >= 1) return done(results[0]); requestAnimationFrame(tk); }; tk();
+      const bk = pl.barks || {}, said = new Set();       // her lines through the round: counting, searching, close
+      const tk = () => { if (!RUN || !card.isConnected) return; const u = (performance.now() - t0) / 1000 / +pl.secs; bar.firstChild.style.width = Math.max(0, 100 - u * 100) + "%";
+        for (const [at, m] of [[0, "start"], [0.02, "count"], [0.35, "search"], [0.7, "near"]]) if (u >= at && !said.has(m) && bk[m]) { said.add(m); playLine(pickOne(bk[m])); }
+        if (u >= 1) return done(results[0]); requestAnimationFrame(tk); }; tk();
       if ($("#wFast").checked) sleep(2000).then(() => done(results[0]));
     });
     wclear(); RUN.results[nid] = res; karmaAct((pl.on || {})[res]); RUN.answers.push(`${st.title || nid}: ${res}`);
+    if (res === results[0] && (pl.barks || {}).lost) playLine(pickOne(pl.barks.lost));
+    if (res !== results[0] && (pl.spots || []).length > 1) {          // where she caught you: a death can depend on it (pick_by found_at)
+      RUN.foundAt = await new Promise(done => { const c2 = el("div", { class: "wcard" }, el("div", { class: "muted" }, "WHERE DID SHE FIND YOU?"),
+        ...pl.spots.map(sp => el("button", { class: "primary", style: "margin:4px", on: { click: () => { c2.remove(); done(sp); } } }, sp.replace(/_/g, " ")))); $("#watchBox").append(c2); });
+    } else if (res !== results[0] && (pl.spots || []).length === 1) RUN.foundAt = pl.spots[0];
     RUN.secs += +pl.secs; wclock(); await fade(1, 0.4);
     return n.next;
   }
@@ -824,7 +841,9 @@ async function watch(fromNid, snap) {
   let nid = fromNid || S.game.start, guard = 0;
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
     const n = S.flow[nid]; reach(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
-    if (n.type === "scene") { const sc0 = S.scenes[n.ref] || {}; await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next; }
+    if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
+      if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
+      await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next; }
     else if (n.type === "stitch") nid = await watchStitch(S.stitches[n.ref] || {}, nid, n);
     else if (n.type === "choice") {
       if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }
@@ -888,6 +907,13 @@ function renderClips() {
         el("td", { class: c.dur ? "ok" : "muted", title: TAKES[`${GAME}_${sid}_${k || "main"}_${c.id}`] ? "take loaded" : "" }, (TAKES[`${GAME}_${sid}_${k || "main"}_${c.id}`] ? "▶ " : "") + clipSecs(c).toFixed(1) + (c.dur ? "" : " est") + (c.trim ? ` (trim ${c.trim.in || 0}/${c.trim.out || 0})` : "")), el("td", {}, ANS.has(c) ? "answer" : i ? (c.seam ? c.seam.kind : "MISSING") : "—"),
         ...(v3 ? (() => { const p = minimaxPrompt(c, S.cast); prompts.push(`${GAME}_${sid}_${k || "main"}_${c.id}\n${p}`); return [el("td", { style: "font-size:12px" }, p), el("td", {}, el("button", { on: { click: e => copyText(p, e.target) } }, "copy"))]; })() : [])));
     });
+  }
+  for (const [lid, ln] of Object.entries(S.lines || {})) {        // barks and one-off lines: takes named by the line id
+    all++; if (ln.dur) rec++;
+    const pr = minimaxPrompt(ln, S.cast); if (v3) prompts.push(`${lid}\n${pr}`);
+    tb.append(el("tr", {}, el("td", {}, lid), el("td", { class: "muted" }, "(line)"), el("td", {}), el("td", {}), el("td", {}, ln.who || ""), el("td", {}, ln.ja || ""), el("td", {}, ln.en || ""),
+      el("td", { class: "muted" }, ln.ja_note || ""), el("td", {}), el("td", {}, ln.face === false ? "heard" : ""), el("td", { class: ln.dur ? "ok" : "muted" }, (TAKES[lid] ? "▶ " : "") + (ln.dur ? (+ln.dur).toFixed(1) : "est")), el("td", {}, "—"),
+      ...(v3 ? [el("td", { style: "font-size:12px" }, pr), el("td", {}, el("button", { on: { click: e => copyText(pr, e.target) } }, "copy"))] : [])));
   }
   v.append(el("h2", {}, `Takes · ${rec}/${all} recorded`), el("p", { class: "muted" }, "Record each row as one MiniMax clip, named by its take id (.wav and .mp4), starting and ending on the anchor frame. Then: python tools/intake.py --game " + GAME + " <folder>."),
     v3 ? el("div", { class: "row" }, el("button", { on: { click: e => copyText(prompts.join("\n\n"), e.target) } }, "copy every prompt"), el("span", { class: "muted" }, "or python tools/story.py --game " + GAME + " minimax")) : null,

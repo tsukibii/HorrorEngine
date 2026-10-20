@@ -90,6 +90,8 @@ function segRow(g, ctx) {
   if (path.length) cons.push(el("div", {}, el("b", {}, "root path "), path.map((p, i) => `${i + 1}: ${where(p)}`).join(" · ")));
   for (const k of g.keys || []) cons.push(el("div", {}, el("b", {}, "full-body key "), `${k.pose} at frame ${Math.round(+(k.at || 0) * (frames - 1))}`));
   if (g.loop) cons.push(el("div", {}, el("b", {}, "Loop "), "on (the first full-body key repeats at the last frame)"));
+  if (g.in_place) cons.push(el("div", {}, el("b", {}, "In place "), "on: export without the root's travel (the game moves her along her route)"));
+  if (ctx.roles) cons.push(el("div", {}, el("b", {}, "used in "), ctx.roles));
   if (!cons.length) cons.push(el("div", {}, "no constraints: the prompt alone"));
   const savePath = `${ST.inbox}/${g.name}`;
   return el("div", { class: "seg " + st, "data-status": st },
@@ -105,11 +107,11 @@ function render() {
   let all = 0, made = 0;
   const only = $("#todo").checked;
   for (const [sid, sc] of Object.entries(S.scenes || {})) {
-    const vers = sc.variants ? Object.entries(sc.variants).filter(([k]) => k === sc.pick) : [[null, sc]];
+    const vers = sc.variants ? Object.entries(sc.variants).filter(([k]) => k === sc.pick || sc.pick_by) : [[null, sc]];   // per-spot variants all need making
     for (const [k, ver] of vers) {
       const stage = Object.assign({}, sc.stage || {}, ver.stage || {}), clips = (ver.clips || []).filter(c => ((c.body || {}).segments || []).length);
       if (!clips.length) continue;
-      const view = TH[sc.view], box = el("div", { class: "scene" }, el("h2", {}, `${sc.title || sid}`), el("div", { class: "kv" }, `${sid}${k ? " · variant " + k : ""} · ${sc.mood || "no mood"} · camera ${(sc.camera || {}).mode || "free"}`));
+      const view = TH[ver.view || sc.view], box = el("div", { class: "scene" }, el("h2", {}, `${sc.title || sid}${ver.label ? " · " + ver.label : ""}`), el("div", { class: "kv" }, `${sid}${k ? " · variant " + k : ""}${sc.pick_by ? " (played when you're caught here)" : ""} · ${sc.mood || "no mood"} · camera ${(sc.camera || {}).mode || "free"}`));
       const rules = el("ul", { class: "rules" });
       for (const [who, spot] of Object.entries(stage)) {
         const t = TH[spot]; if (!t) continue;
@@ -132,8 +134,10 @@ function render() {
   }
   const mots = Object.entries(S.motions || {}).filter(([, mo]) => mo.name);
   if (mots.length) {
-    const box = el("div", { class: "scene" }, el("h2", {}, "Reusable motions (idles, walk cycles)"), el("div", { class: "kv" }, "made once, looped while a scene holds or a character waits"));
-    for (const [mid, mo] of mots) { all++; const st = statusOf(mo.name); if (st === "made") made++; if (only && st === "made") continue; box.append(segRow(mo, { o: [0, 0, 0], yaw: 0, eye: null, tier: "simple" })); }
+    const box = el("div", { class: "scene" }, el("h2", {}, "Reusable and gameplay motions (idles, walk cycles, the seeker's loops)"), el("div", { class: "kv" }, "made once, looped while a scene holds or a character waits"));
+    for (const [mid, mo] of mots) { all++; const st = statusOf(mo.name); if (st === "made") made++; if (only && st === "made") continue;
+      const roles = [...new Set(Object.values(S.stitches || {}).flatMap(t => Object.entries((t.play || {}).loops || {}).filter(([, m]) => m === mid).map(([role]) => `${t.play.type} · ${role}`)))].join(", ");
+      box.append(segRow(mo, { o: [0, 0, 0], yaw: 0, eye: null, tier: "simple", roles })); }
     if (box.querySelector(".seg")) list.append(box);
   }
   $("#prog").textContent = `${made} / ${all} made`;

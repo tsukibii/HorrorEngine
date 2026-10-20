@@ -41,7 +41,7 @@ never silently.
 | choice `result` | the event result recorded by scene node `of` (and its clip, if `event` is given) |
 | choice `karma` | (format 3) the first option whose `min`/`max` holds for its `axis` (default `karma`); the last is the fallback |
 | choice `count` | (format 3) the same for a counter (`game.counters`) |
-| stitch with `play` | (format 3) start the mechanic's template (hide, run, collect, sneak, hold, search, escape: `/Game/Studio/Horror/Play/BP_Play_<type>`) with its `secs`, `rule`, `warn` and `spots`; its result ends the stitch and is stored like an event's |
+| stitch with `play` | (format 3) start the mechanic's template (the `seeker` plays her `loops` by role, moved by the AI along her route; her `barks` play by moment, one picked at random, through the round; on a catch the spot is remembered for `pick_by: found_at`) (hide, run, collect, sneak, hold, search, escape: `/Game/Studio/Horror/Play/BP_Play_<type>`) with its `secs`, `rule`, `warn` and `spots`; its result ends the stitch and is stored like an event's |
 | ending `death` | (format 3) the death card, then **the branch map**: the flow drawn as chapters, every node reached (from its checkpoint) and the missed ones as locked silhouettes; `retry` highlighted; returning restores that node's checkpoint |
 | ending | the ending card (title, kind), credits, back to the menu; it records that the ending was seen (for secret-ending hints) |
 

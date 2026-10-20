@@ -209,7 +209,8 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 ```
 
 - A variant overrides any of `stage`, `camera`, `clips` and `cues`.
-- `pick` is the one that plays.
+- `pick` is the one that plays, unless `pick_by: "found_at"` names it by where the player was caught (§9.8); such
+  variants may also set `view` and `stance`.
 - The checks prove every variant, and `story.py clips --all` lists every variant's takes, so all of them can be
   recorded and compared in the game before choosing.
 
@@ -602,6 +603,17 @@ its result branches like an event's.
 
 - `secs` is the round's length; `rule` the one line a child could say; `warn` what tells the player it's coming;
   `spots` the hiding places or targets (placed things); `on` runs actions per result.
+- **The seeker and her assets** (what the round needs made, beyond the scenes):
+  - `seeker`: the cast member hunting.
+  - `loops`: `{role: motions id}`, her non-cinematic motions by role (`wait count search patrol chase found idle`):
+    Kimodo motions in the `motions` table with a `name` (on the shot list), usually `loop: true` and
+    `in_place: true` (exported without the root's travel; the game moves her along her route).
+  - `barks`: `{moment: [lines ids]}`, what she calls out (`start count search near found lost taunt chase`): lines in
+    the `lines` table (each a take named by its id; `face: false` when heard from hiding, an off-screen voice for
+    MiniMax). Give a moment two or three lines so it doesn't repeat; the runner picks one at random.
+- **Deaths by hiding spot:** a death scene with `"pick_by": "found_at"` and a variant per spot (named by the spot's
+  id; each can set its own `stage`, `view`, `stance`, `camera` and `clips`) plays the variant for where the player
+  was caught, else `pick`. Every variant is checked, listed for takes and on the Kimodo shot list.
 - A play stitch needs no beats and no `done`: its result ends it. A result choice after it branches; without one,
   the first result (the player's success) plays on.
 - On the desk it's a card before the next scene: the rule, the timer, and buttons for each result ("did you manage

@@ -4,6 +4,13 @@ Every game records the engine and format it was built with (`game.built_with`), 
 use and an old game knows what changed under it. Bump the version when a mechanic, a runner verb, a format word or a
 desk tool lands; the minor number for additions, the major for anything an old game must be changed to keep working.
 
+## 0.5.0 (2026-10-21): gameplay assets
+
+- A play's `seeker`, her `loops` by role (in-place looped Kimodo motions, `motions.in_place`) and her `barks` by
+  moment (lines, heard not seen); deaths by hiding spot (`pick_by: "found_at"` variants that set their own view).
+- The MiniMax sheet and the desk's takes list the lines; the Kimodo page and shot list show every per-spot variant
+  and each loop's role; Watch plays the barks through a round, asks where you were caught and plays that death.
+
 ## 0.4.0 (2026-10-21): horror romance, deaths and the branch map, replies, gameplay
 
 - **Format 3 additions:** endings of kind `death` with a `retry` (no dying is now opt-in, `game.no_death`); replies

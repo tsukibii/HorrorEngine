@@ -38,6 +38,7 @@ Built on this branch (DECISIONS 2026-10-21), waiting for your look:
 | The writing | docs/WRITING.md; REFERENCES.md §5 (Roblox horror mechanics) and §6 (yandere) |
 | Script generator | writes replies and gameplay cards with deaths (`--fake` shows the shape) |
 | Reverb | room `acoustics`, the importer's AudioVolumes (untested in the editor) |
+| Gameplay assets | Sample's hide and seek: the seeker's in-place loops and barks (the Kimodo page lists the loops, the MiniMax sheet the barks); caught in the study wardrobe plays that spot's death |
 | Later | the music tool from woohill, per game and part procedural (not started, as asked) |
 
 ## W0. The workflow written down (here)

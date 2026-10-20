@@ -274,6 +274,17 @@ def main():
                             print(f"  delivery: {c['ja_note']}")
                         print(f"  en: {c.get('en', '')}" + (f"   zh: {c['zh']}" if c.get("zh") else ""))
                         print(f"  {prompt}\n")
+        if not only:                                   # the lines outside scenes: gameplay barks and one-off voice lines
+            for lid, ln in story.get("lines", {}).items():
+                prompt = L.minimax_prompt(ln, story.get("cast"))
+                rows.append([lid, "(line)", "", ln.get("who"), f"{L.line_secs(ln):.1f}", ln.get("expr", ""), ln.get("voice", ""), ln.get("ja", ""),
+                             ln.get("ja_note", ""), ln.get("en", ""), ln.get("zh", ""), prompt])
+                if not out:
+                    print(f"{lid}.mp4  (line{', heard not seen' if ln.get('face') is False else ''})")
+                    if ln.get("ja_note"):
+                        print(f"  delivery: {ln['ja_note']}")
+                    print(f"  en: {ln.get('en', '')}" + (f"   zh: {ln['zh']}" if ln.get("zh") else ""))
+                    print(f"  {prompt}\n")
         if out:
             write_rows(rows, out)
         else:

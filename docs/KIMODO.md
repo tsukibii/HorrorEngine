@@ -54,6 +54,11 @@ Anything outside that (sports, unusual poses) comes out poor.
 - **Poses it doesn't know get a keyframe**, from the blocking, with a plain prompt that agrees with it.
 - **Travel gets a root path** from the stage marks; the prompt says the kind of walk, not the route.
 - **Idles loop** (the Loop checkbox), one per character and mood, and the procedural idle (plan W9) keeps them alive.
+- **Gameplay loops are in place:** the seeker's walk, search, patrol and run cycles (a play's `loops`) are made with
+  Loop on and exported In place (no root travel: the game moves her along her route and blends the cycles), 3 to 4 s
+  so the cycle doesn't show, starting and ending on the same foot.
+- **Deaths per hiding spot** are scene variants (`pick_by: "found_at"`): each spot's catch is its own motion (she
+  opens the locker; she was sitting outside the wardrobe and stands up; she lies down to look under the bed).
 - **The budget per game:** 80% simple (stand, sit, turn, walk over, small gestures, idles), 15% activity, 5% action
   and horror, plus a few hero moments and the final ending's animation. `story_check` reports the split.
 - **Hits and falls** (a slap, a kick, a shove) are in the training data as videogame combat: one motion for the

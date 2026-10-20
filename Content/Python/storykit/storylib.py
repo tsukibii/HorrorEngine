@@ -283,6 +283,8 @@ def line_secs(line):
     """A voice line's length: its measured 'dur' once the audio exists, else a placeholder at 15 characters a second."""
     if line.get("dur"):
         return float(line["dur"])
+    if line.get("ja") and any(ord(ch) > 0x3000 for ch in line["ja"]):
+        return max(1.0, ja_secs(line["ja"]))
     return max(1.5, len(line.get("en", "")) / 15.0)
 
 
@@ -319,6 +321,9 @@ REPLY_ANSWER = 2.5                                   # how long a player takes t
 PLAYS = {"hide": ["hidden", "found"], "run": ["escaped", "caught"], "collect": ["done", "failed"],
          "sneak": ["made_it", "spotted"], "hold": ["held", "broke"], "search": ["found", "out_of_time"],
          "escape": ["out", "caught"]}
+# a play's gameplay assets: the seeker's looped motions by role, and the lines she calls out by moment (barks)
+PLAY_ROLES = ("wait", "count", "search", "patrol", "chase", "found", "idle")
+BARK_MOMENTS = ("start", "count", "search", "near", "found", "lost", "taunt", "chase")
 # how a room sounds (format 3 room `acoustics`; the importer gives each room a reverb, docs/UNREAL_FLOW.md)
 ACOUSTICS = ("closet", "bathroom", "bedroom", "small_room", "kitchen", "living_room", "hallway", "stairwell",
              "basement", "large_hall", "church", "outdoors", "car")

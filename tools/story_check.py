@@ -382,6 +382,14 @@ def check_scene(sid, sc, story, things, r):
     variants = sc.get("variants") or {}
     if variants and sc.get("pick") not in variants:
         r.err(f"scene {sid}: pick {sc.get('pick')!r} isn't one of its variants ({', '.join(variants)})")
+    if sc.get("pick_by") is not None:
+        if sc["pick_by"] != "found_at":
+            r.err(f"scene {sid}: pick_by {sc['pick_by']!r} (found_at: the variant named by where the player was caught)")
+        else:
+            spots = {sp for st in story.get("stitches", {}).values() for sp in (st.get("play") or {}).get("spots", [])}
+            for k in variants:
+                if k not in spots:
+                    r.warn(f"scene {sid}: variant {k!r} isn't a hiding spot of any play (pick_by found_at): it only plays as the pick")
     if sc.get("mood") and sc["mood"] not in L.MOODS:
         r.err(f"scene {sid}: mood {sc['mood']!r} (one of {', '.join(L.MOODS)})")
     for edge in ("enter", "exit"):
@@ -711,6 +719,26 @@ def check_stitch(tid, st, story, things, r):
         for sp in pl.get("spots", []):
             if sp not in things:
                 r.err(f"stitch {tid}: play spot {sp!r} isn't a placed thing")
+        cast, motions, lines = story.get("cast", {}), story.get("motions", {}), story.get("lines", {})
+        if pl.get("seeker") and pl["seeker"] not in cast:
+            r.err(f"stitch {tid}: play seeker {pl['seeker']!r} isn't in cast")
+        for role, mid in (pl.get("loops") or {}).items():
+            if role not in L.PLAY_ROLES:
+                r.err(f"stitch {tid}: play loop role {role!r} (one of {', '.join(L.PLAY_ROLES)})")
+            if mid not in motions:
+                r.err(f"stitch {tid}: play loop {role} {mid!r} isn't in motions")
+            elif FORMAT >= 3 and not motions[mid].get("name"):
+                r.warn(f"stitch {tid}: motion {mid} has no Kimodo `name`: it won't be on the shot list")
+        for moment, ids in (pl.get("barks") or {}).items():
+            if moment not in L.BARK_MOMENTS:
+                r.err(f"stitch {tid}: play bark moment {moment!r} (one of {', '.join(L.BARK_MOMENTS)})")
+            for lid in ids:
+                if lid not in lines:
+                    r.err(f"stitch {tid}: play bark {lid!r} isn't a line")
+                elif pl.get("seeker") and lines[lid].get("who") != pl["seeker"]:
+                    r.warn(f"stitch {tid}: bark {lid} is {lines[lid].get('who')}'s, not the seeker's")
+            if len(ids) == 1 and moment in ("search", "near", "taunt"):
+                r.warn(f"stitch {tid}: one {moment} bark repeats every time: give it two or three to pick from")
         for res, acts in (pl.get("on") or {}).items():
             if res not in L.PLAYS.get(pl.get("type"), []):
                 r.err(f"stitch {tid}: play on {res!r} isn't a result of {pl.get('type')} ({', '.join(L.PLAYS.get(pl.get('type'), []))})")
@@ -722,6 +750,8 @@ def check_stitch(tid, st, story, things, r):
 
 def check_motions(story, r):
     for k, m in story.get("motions", {}).items():
+        if m.get("in_place") and not m.get("loop"):
+            r.warn(f"motion {k}: in_place without loop: in-place motions are cycles the game moves (walks, runs, searches)")
         if not m.get("prompt"):
             r.err(f"motion {k}: needs a prompt")
         if m.get("who") and m["who"] not in story.get("cast", {}):

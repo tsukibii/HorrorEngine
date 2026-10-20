@@ -65,6 +65,12 @@ staging.
   third is a death. Count it (`count`) and let her say the number.
 - **Ticking boxes:** collect a short list, flip the breakers, close every window: visible progress, no puzzles.
 - **Often, and short:** a round every 3 to 5 minutes, 30 to 60 seconds each.
+- **Barks:** what she calls out while hunting, heard from your hiding place: short (six words or fewer), two or
+  three per moment (counting, searching, close, giving up) so they don't repeat, playful at first and colder by the
+  third round. The close ones are the scariest: a whisper right outside the door.
+- **Every hiding place has its own catch:** if she can find you in three places, write three deaths (or three
+  "found you" moments): the locker torn open, the wardrobe she was sitting outside all along, under the bed where
+  she's already lying, looking at you. Each is a variant of the death scene, named by the spot.
 - **She remembers:** a result changes her next lines (a counter or a flag), so the gameplay is part of the story.
 
 ## 5. Deaths

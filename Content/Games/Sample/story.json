@@ -28,7 +28,7 @@
    }
   },
   "built_with": {
-   "engine": "0.4.0",
+   "engine": "0.5.0",
    "format": 3
   },
   "note": "The format 3 sample (pipeline v2): lines with the Japanese pass and MiniMax fields, a reply (how was your day), timed choices with karma, endings by karma, hide and seek (found three times and it is over), deaths that open the branch map, an easter egg that blends back, Kimodo segments and tiers, the look, room acoustics. Built from the Pilot's house. A real game's script comes from tools/scriptgen.py."
@@ -108,6 +108,78 @@
    "ja_note": "low, almost fond; the last word trails off",
    "expr": "faint smile that doesn't reach her eyes",
    "voice": "murmurs"
+  },
+  "mari_count1": {
+   "who": "mari",
+   "ja": "いーち、にーい、さーん……",
+   "en": "One... two... three...",
+   "zh": "一……二……三……",
+   "voice": "says",
+   "ja_note": "sing-song, slow, from behind her hands",
+   "face": false
+  },
+  "mari_count2": {
+   "who": "mari",
+   "ja": "……きゅーう、じゅう。もういいかい？",
+   "en": "...Nine, ten. Ready or not?",
+   "zh": "……九，十。藏好了吗？",
+   "voice": "says",
+   "ja_note": "the last question bright and loud, the old game",
+   "face": false
+  },
+  "mari_search1": {
+   "who": "mari",
+   "ja": "どこかなー？",
+   "en": "Where are you~?",
+   "zh": "你在哪里呀～？",
+   "voice": "sings softly",
+   "ja_note": "playful, drawn out",
+   "face": false
+  },
+  "mari_search2": {
+   "who": "mari",
+   "ja": "隠れても、わかるよ。",
+   "en": "Hiding won't help. I always know.",
+   "zh": "躲也没用，我都知道。",
+   "voice": "says softly",
+   "ja_note": "calm, matter-of-fact",
+   "face": false
+  },
+  "mari_search3": {
+   "who": "mari",
+   "ja": "ねえ、出てきて。怒らないから。",
+   "en": "Come out. I won't be angry.",
+   "zh": "出来吧。我不会生气的。",
+   "voice": "pleads",
+   "ja_note": "sweet, and a lie",
+   "face": false
+  },
+  "mari_near1": {
+   "who": "mari",
+   "ja": "……ここ、かな？",
+   "en": "...Here, maybe?",
+   "zh": "……是这里吗？",
+   "voice": "whispers",
+   "ja_note": "right outside, barely a breath",
+   "face": false
+  },
+  "mari_near2": {
+   "who": "mari",
+   "ja": "いい匂いがする。",
+   "en": "I can smell you.",
+   "zh": "我闻到你的味道了。",
+   "voice": "whispers",
+   "ja_note": "close, pleased",
+   "face": false
+  },
+  "mari_lost": {
+   "who": "mari",
+   "ja": "もう……ずるい。",
+   "en": "Mean... you cheated.",
+   "zh": "真是的……你耍赖。",
+   "voice": "says",
+   "ja_note": "pouting, then it goes flat",
+   "face": false
   }
  },
  "sounds": {
@@ -616,6 +688,34 @@
         1.5
        ],
        "tag": "shelf"
+      },
+      {
+       "id": "study_wardrobe",
+       "shape": "box 1.0 0.6 1.9",
+       "at": [
+        1.0,
+        0.35
+       ],
+       "use": "locker",
+       "tag": "wardrobe"
+      },
+      {
+       "id": "study_wardrobe_view",
+       "use": "spot",
+       "at": [
+        1.0,
+        0.35
+       ],
+       "rot": 90
+      },
+      {
+       "id": "study_mari_spot",
+       "use": "spot",
+       "at": [
+        1.0,
+        1.5
+       ],
+       "rot": 270
       }
      ],
      "acoustics": "small_room"
@@ -730,6 +830,28 @@
     }
    ],
    "name": "sample_mari_idle"
+  },
+  "mari_count_wall": {
+   "who": "mari",
+   "name": "sample_mari_count_wall",
+   "prompt": "A person stands facing a wall covering their eyes with their hands",
+   "secs": 4,
+   "loop": true,
+   "in_place": true
+  },
+  "mari_search_walk": {
+   "who": "mari",
+   "name": "sample_mari_search_walk",
+   "prompt": "A person walks slowly while looking around",
+   "secs": 4,
+   "loop": true,
+   "in_place": true
+  },
+  "mari_peek": {
+   "who": "mari",
+   "name": "sample_mari_peek",
+   "prompt": "A person bends down and peeks under something",
+   "secs": 3
   }
  },
  "stitches": {
@@ -940,8 +1062,33 @@
     "rule": "Hide before she finishes counting to ten",
     "warn": "she counts out loud, eyes covered",
     "spots": [
-     "hall_locker"
+     "hall_locker",
+     "study_wardrobe"
     ],
+    "seeker": "mari",
+    "loops": {
+     "count": "mari_count_wall",
+     "search": "mari_search_walk",
+     "found": "mari_peek"
+    },
+    "barks": {
+     "count": [
+      "mari_count1",
+      "mari_count2"
+     ],
+     "search": [
+      "mari_search1",
+      "mari_search2",
+      "mari_search3"
+     ],
+     "near": [
+      "mari_near1",
+      "mari_near2"
+     ],
+     "lost": [
+      "mari_lost"
+     ]
+    },
     "on": {
      "found": [
       {
@@ -963,8 +1110,33 @@
     "rule": "Hide before she finishes counting to ten",
     "warn": "she counts out loud, eyes covered",
     "spots": [
-     "hall_locker"
+     "hall_locker",
+     "study_wardrobe"
     ],
+    "seeker": "mari",
+    "loops": {
+     "count": "mari_count_wall",
+     "search": "mari_search_walk",
+     "found": "mari_peek"
+    },
+    "barks": {
+     "count": [
+      "mari_count1",
+      "mari_count2"
+     ],
+     "search": [
+      "mari_search1",
+      "mari_search2",
+      "mari_search3"
+     ],
+     "near": [
+      "mari_near1",
+      "mari_near2"
+     ],
+     "lost": [
+      "mari_lost"
+     ]
+    },
     "on": {
      "found": [
       {
@@ -986,8 +1158,33 @@
     "rule": "Hide before she finishes counting to ten",
     "warn": "she counts out loud, eyes covered",
     "spots": [
-     "hall_locker"
+     "hall_locker",
+     "study_wardrobe"
     ],
+    "seeker": "mari",
+    "loops": {
+     "count": "mari_count_wall",
+     "search": "mari_search_walk",
+     "found": "mari_peek"
+    },
+    "barks": {
+     "count": [
+      "mari_count1",
+      "mari_count2"
+     ],
+     "search": [
+      "mari_search1",
+      "mari_search2",
+      "mari_search3"
+     ],
+     "near": [
+      "mari_near1",
+      "mari_near2"
+     ],
+     "lost": [
+      "mari_lost"
+     ]
+    },
     "on": {
      "found": [
       {
@@ -2104,49 +2301,93 @@
   "s_caught": {
    "title": "Caught",
    "level": "house",
+   "mood": "panic",
+   "stance": "hide",
+   "pick": "hall_locker",
+   "pick_by": "found_at",
    "stage": {
     "mari": "hall_mari_close_spot"
    },
    "view": "hall_locker_view",
-   "mood": "panic",
-   "stance": "hide",
    "camera": {
     "mode": "held",
     "look": "mari",
     "through": [
-     "hall_locker"
+     "hall_locker",
+     "study_wardrobe"
     ]
    },
-   "clips": [
-    {
-     "id": "c1",
-     "who": "mari",
-     "act": "hand on your throat, forehead to yours",
-     "shot": "ecu",
-     "body": {
-      "tier": "action",
-      "reach": {
-       "hand": "right",
-       "to": "player_collar",
-       "at": 0.4
-      },
-      "segments": [
-       {
-        "name": "sample_caught_c1_01_grab",
-        "prompt": "An angry person grabs forward with the right hand",
-        "secs": 2
-       }
-      ]
+   "variants": {
+    "hall_locker": {
+     "label": "in the hall locker",
+     "stage": {
+      "mari": "hall_mari_close_spot"
      },
-     "ja": "三回目。……もう、どこにも行かせない。",
-     "en": "Three times... Now you're not going anywhere.",
-     "zh": "第三次了。……你哪儿也别想去了。",
-     "ja_note": "a whisper with the warmth gone, then nothing",
-     "expr": "wide, unblinking eyes, a fixed smile",
-     "voice": "whispers",
-     "en_draft": "Three times... Now you're not going anywhere."
+     "view": "hall_locker_view",
+     "clips": [
+      {
+       "id": "c1",
+       "who": "mari",
+       "act": "hand on your throat, forehead to yours",
+       "shot": "ecu",
+       "body": {
+        "tier": "action",
+        "reach": {
+         "hand": "right",
+         "to": "player_collar",
+         "at": 0.4
+        },
+        "segments": [
+         {
+          "name": "sample_caught_c1_01_grab",
+          "prompt": "An angry person grabs forward with the right hand",
+          "secs": 2
+         }
+        ]
+       },
+       "ja": "三回目。……もう、どこにも行かせない。",
+       "en": "Three times... Now you're not going anywhere.",
+       "zh": "第三次了。……你哪儿也别想去了。",
+       "ja_note": "a whisper with the warmth gone, then nothing",
+       "expr": "wide, unblinking eyes, a fixed smile",
+       "voice": "whispers",
+       "en_draft": "Three times... Now you're not going anywhere."
+      }
+     ]
+    },
+    "study_wardrobe": {
+     "label": "in the study wardrobe",
+     "stage": {
+      "mari": "study_mari_spot"
+     },
+     "view": "study_wardrobe_view",
+     "clips": [
+      {
+       "id": "c1",
+       "who": "mari",
+       "act": "she was sitting outside the wardrobe all along; stands, opens it",
+       "shot": "mcu",
+       "body": {
+        "tier": "simple",
+        "segments": [
+         {
+          "name": "sample_caught_wardrobe_c1_01_standup",
+          "prompt": "A person sitting on the floor stands up slowly",
+          "secs": 3
+         }
+        ]
+       },
+       "ja": "ずっと、ここにいたよ。扉の前に。",
+       "en": "I was right here the whole time. Outside the door.",
+       "zh": "我一直都在这里。就在门外。",
+       "ja_note": "patient, almost bored; 扉の前に like a lullaby",
+       "expr": "a calm, patient smile, eyes half closed",
+       "voice": "says softly",
+       "en_draft": "I was right here the whole time. Outside the door."
+      }
+     ]
     }
-   ]
+   }
   },
   "s_dragged": {
    "title": "Dragged back",
