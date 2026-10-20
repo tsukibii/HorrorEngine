@@ -90,7 +90,7 @@ try:
         if isinstance(SKIN, dict):
             skin.skin.u, skin.skin.v = float(SKIN["u"]), float(SKIN["v"])    # the tone map coordinates
         else:
-            unreal.log_warning("skin %s is a hex colour: Creator's tone is a (u, v) on its tone map; pick the nearest and put {\"u\":..,\"v\":..} in cast.skin (VERIFY the mapping on the first run)" % SKIN)
+            unreal.log_warning("skin %s is a hex colour: Creator's tone is a (u, v) on its tone map; pick the nearest and put u and v in cast.skin (VERIFY the mapping on the first run)" % SKIN)
         sub.commit_skin_settings(char, skin)
         unreal.log("skin committed: %s" % SKIN)
 
