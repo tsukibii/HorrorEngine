@@ -99,7 +99,7 @@ The second pass makes the script sound right in Japanese, as it would be said in
 them chained (bridges between them), with the look-at and the procedural idle on top: the characters act out the
 whole game. **Done:** `MOTION ok`, and you've watched it through, every choice and ending.
 
-## 9. Into Unreal (Claude, then you)
+## 9. Into Unreal (Claude, then you): docs/UNREAL_FLOW.md has the steps
 
 1. **The blocked game, playable as blocks:** the importer builds the levels from the story; the scenes play with
    the desk's blocking and motions on stand-ins; choices, timers, karma and endings work. You can play the whole

@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-20 (pipeline v2: the user's answers)
+
+- **Endings are good, neutral and bad**; "evil" is the bad one. **Easter eggs** aren't karma: they come from what the
+  player found and blend back into the main story.
+- **The MiniMax prompt** is `she makes a <expression> while she <voice> <d>[Japanese] <line> </d>` (`[Japanese]`
+  written literally). Claude supplies the expression and the voice; the user handles the rest of MiniMax's format.
+- **Voices:** try more than says, whispers, says angrily and screams; keep a list of what's been tested and works
+  (docs/VOICES.md).
+- **The blocking loader into Kimodo's demo and the Loop tool are the user's** (built locally): nothing to build here.
+- "Work on it until you can't do anything else without me": the branch builds everything that can be built and
+  checked without the editor, the RTX 3090 or the user's takes.
+
 ## 2026-10-20 (pipeline v2: how a game is made from now on)
 
 - **The workflow** (docs/PIPELINE.md v2, built on branch `pipeline-v2` by docs/PIPELINE_V2_PLAN.md):

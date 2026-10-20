@@ -6,6 +6,26 @@ GPU, no editor); **local** = needs the user's machine (local Claude: Kimodo's de
 
 The first game, the 15 to 20 minute itch.io game, is the test bed: each phase is tried on it as soon as it lands.
 
+## Status (2026-10-20): built on this branch, waiting for your look
+
+Nothing below is ticked until you've tried it and said so. Built and checked here (CHECKS ok; the desk tested in a
+headless browser; `Content/Games/Sample/story.json` uses every part):
+
+| Phase | What to try |
+|---|---|
+| W1 format 3 | `python tools/check_all.py --game Sample`: the karma report per answer style, the animation budget |
+| W2 MiniMax | `python tools/story.py --game Sample minimax`; the desk: any clip's MiniMax row and copy button; Takes → copy every prompt |
+| W3 karma on the desk | Watch → Play from the start: the 30 s choices, the karma meter, the ending it picks |
+| W4 takes | Takes → Load takes folder… (your MiniMax mp4s named by take id) → Auto-clean; ▶ scene plays them; or `intake.py` |
+| W5 Kimodo shot list | the desk's Kimodo button: work a motion through the demo, save it by its path, Import |
+| W7 script generator | `python tools/scriptgen.py setup`, then `--game <New> new outline.md` with Ollama running |
+| W8, W9 look and idle | Sample's hall scene (her head follows you) and the locker scene (a tracker); the idle under every pose |
+| W13 versioning | `Content/Studio/VERSION`, `CHANGELOG.md`; games record `built_with` |
+| W10 to W12 | written as `docs/UNREAL_FLOW.md`; the editor side is the first run on your machine |
+
+Not done: dragging trackers as gizmos in the 3D view (their keys are typed for now, on the scene's trackers field);
+the runner's format 3 parts and the look's Control Rig (Unreal, local).
+
 ## W0. The workflow written down (here)
 
 - [x] docs/PIPELINE.md v2, docs/KIMODO.md (the prompting rules, the shot list rules, the names), this plan, the
@@ -73,8 +93,8 @@ demo (viser can draw boxes and meshes with opacity) loads it as see-through bloc
 motion is framed for the scene. Also: the root path and key poses from the shot list prefilled as constraints, where
 the demo can take them (`tools/kimodo_constrain.py` already writes them for the CLI).
 
-- [ ] The overlay export from the desk (here).
-- [ ] The demo patch (local).
+- [x] **Done by the user** (2026-10-20): a blocking loader into Kimodo's demo, and a Loop tool for looped walk cycles
+  (passing NPCs and other non-cinematic motion). Nothing to build here.
 
 ## W7. The script generator (here, run local)
 
@@ -126,8 +146,10 @@ the demo can take them (`tools/kimodo_constrain.py` already writes them for the 
 - [ ] `Content/Studio/VERSION` and `CHANGELOG.md`: the engine, the format and each mechanic, versioned; each game
   records the versions it was built with.
 
-## Open questions for the user
+## Answered (DECISIONS 2026-10-20)
 
-- The endings: good, neutral and bad, or is there a separate "evil" ending as well (two axes)?
-- The MiniMax prompt: is `[Japanese]` written literally before the line inside `<d>`?
-- `voice` beyond the four (`says`, `whispers`, `says angrily`, `screams`): add sobs, laughs, murmurs?
+- Endings: good, neutral, bad ("evil" is the bad one). Easter eggs come from what's found, not karma, and blend back
+  into the main story.
+- The MiniMax prompt writes `[Japanese]` literally inside `<d>`; Claude gives only the expression and the voice, the
+  user handles the rest of MiniMax's format.
+- Voices: a list to try in docs/VOICES.md, with a log of what's been tested.
