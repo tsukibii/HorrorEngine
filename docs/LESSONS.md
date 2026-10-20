@@ -12,6 +12,10 @@ the fix.
 
 ## This project
 
+- **A box of absolutely placed cards has no height of its own:** the branch map's cards sat in a zero-height box and
+  the page took the clicks; size the box to the cards (the map does now).
+- **Merge the other session's push before building on the same file:** the local session's `motion.py import` (one
+  file) landed on main while this branch had its own (every shot-list name); both forms now live under one command.
 - **Playwright's own Chromium can't decode H.264 or AAC:** the desk's take test read nothing from a MiniMax-style
   mp4 until it used a WebM copy. Test takes with WebM; your Chrome or Edge plays the real mp4s.
 - **A running desk server keeps the old serve.py:** new routes 404 until it's restarted (find its PID in one
