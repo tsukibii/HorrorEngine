@@ -361,7 +361,7 @@ index 0000000..95bf6ee
 +    return _bridge
 diff --git a/kimodo/demo/studio_web/pose.html b/kimodo/demo/studio_web/pose.html
 new file mode 100644
-index 0000000..440e559
+index 0000000..993dd79
 --- /dev/null
 +++ b/kimodo/demo/studio_web/pose.html
 @@ -0,0 +1,54 @@
@@ -400,7 +400,7 @@ index 0000000..440e559
 +</head>
 +<body>
 +<div id="view"></div>
-+<div id="hint">Drag a dot to pose · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
++<div id="hint">Drag a dot to pose · click a hand, foot or the head to rotate it · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
 +<div id="legend"></div>
 +<div id="bar">
 +  <button id="load" title="The generated pose at the playhead">Load frame</button>
@@ -421,10 +421,10 @@ index 0000000..440e559
 +</html>
 diff --git a/kimodo/demo/studio_web/pose.js b/kimodo/demo/studio_web/pose.js
 new file mode 100644
-index 0000000..9d1db32
+index 0000000..11c438c
 --- /dev/null
 +++ b/kimodo/demo/studio_web/pose.js
-@@ -0,0 +1,287 @@
+@@ -0,0 +1,356 @@
 +// The pose window: an OpenPose-style figure over Kimodo's full skeleton. Dots are handles: hands and feet move with
 +// two-bone IK (elbows and knees steer the bend), the hips move the body (feet pinned or not), the neck bends the spine,
 +// the top of the head tilts the neck. Rotations are kept relative to each parent's global one, so the pose goes back
@@ -608,8 +608,10 @@ index 0000000..9d1db32
 +    const big = HANDLES[m.userData.name] !== "pole" ? 0.034 : 0.026;
 +    m.scale.setScalar(m === hover || m === dragging?.dot ? big * 1.35 : big);
 +  }
-+  if (hover || dragging) { const m = dragging?.dot || hover; ring.visible = true; ring.position.copy(m.position); ring.scale.setScalar(m.scale.x); ring.quaternion.copy(camera.quaternion); }
++  const m = dragging?.dot || hover || (selected && dots.find((d) => d.userData.name === selected));
++  if (m) { ring.visible = true; ring.position.copy(m.position); ring.scale.setScalar(m.scale.x); ring.quaternion.copy(camera.quaternion); }
 +  else ring.visible = false;
++  drawRings();
 +}
 +
 +// ---- camera: orbit around a target ----
@@ -618,6 +620,7 @@ index 0000000..9d1db32
 +  const { target, theta, phi, r } = orbit;
 +  camera.position.set(target.x + r * Math.sin(phi) * Math.sin(theta), target.y + r * Math.cos(phi), target.z + r * Math.sin(phi) * Math.cos(theta));
 +  camera.lookAt(target);
++  if (selected) drawRings();
 +}
 +function resize() {
 +  const w = host.clientWidth, h = host.clientHeight;
@@ -625,24 +628,69 @@ index 0000000..9d1db32
 +}
 +new ResizeObserver(resize).observe(host);
 +
++// ---- rotation rings: click a hand, a foot or the head, then drag a ring (twist, and two bends) ----
++const SPIN = { RightHand: ["RightHand", "RightHandMiddle1"], LeftHand: ["LeftHand", "LeftHandMiddle1"],
++  RightFoot: ["RightFoot", "RightToeBase"], LeftFoot: ["LeftFoot", "LeftToeBase"], HeadEnd: ["Head", "HeadEnd"] };
++for (const k of Object.keys(SPIN)) if (!SPIN[k].every((n) => n in ix)) delete SPIN[k];
++let selected = null;
++const ringGeo = new THREE.TorusGeometry(1, 0.07, 8, 64);
++const rings = [0xff5a5a, 0x5adc78, 0x5a8cff].map((c, k) => {
++  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85, depthTest: false }));
++  m.renderOrder = 11; m.visible = false; m.userData.k = k; scene.add(m);
++  return m;
++});
++function spinAxes(name) {                           // twist along the bone, then the joint's own axis most square to it
++  const [j, tip] = SPIN[name], a = P[ix[tip]].clone().sub(P[ix[j]]).normalize();
++  const cand = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)].map((v) => v.applyQuaternion(G[ix[j]]));
++  cand.sort((u, v) => Math.abs(u.dot(a)) - Math.abs(v.dot(a)));
++  const b = cand[0].sub(a.clone().multiplyScalar(cand[0].dot(a))).normalize();
++  return [a, b, a.clone().cross(b)];
++}
++function drawRings() {
++  rings.forEach((r) => { r.visible = !!selected; });
++  if (!selected) return;
++  const axes = dragging?.axes || spinAxes(selected), z = new THREE.Vector3(0, 0, 1);
++  rings.forEach((r, k) => {
++    r.position.copy(P[ix[SPIN[selected][0]]]);
++    r.scale.setScalar(Math.max(0.06, camera.position.distanceTo(r.position) * 0.045));   // about the same size on screen
++    r.quaternion.setFromUnitVectors(z, axes[k]);
++    r.material.opacity = dragging?.axes && dragging.ring !== k ? 0.25 : 0.85;
++  });
++}
++function toScreen(v) {
++  const r = el.getBoundingClientRect(), p = v.clone().project(camera);
++  return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
++}
++
 +// ---- interaction ----
 +const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), el = renderer.domElement;
-+let hover = null, dragging = null, orbiting = null;
-+function pick(e) {
++let hover = null, dragging = null, orbiting = null, downAt = null;
++function pick(e) {                                  // a ring first (when shown), else a dot
 +  const r = el.getBoundingClientRect();
 +  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
 +  ray.setFromCamera(ndc, camera);
++  const shown = rings.filter((m) => m.visible);
++  shown.forEach((m) => m.updateMatrixWorld());
++  const ringHit = ray.intersectObjects(shown)[0];
++  if (ringHit) return { ring: ringHit.object };
 +  const grow = (k) => dots.forEach((d) => { d.scale.multiplyScalar(k); d.updateMatrixWorld(); });
 +  grow(1.8);                                         // a forgiving target
 +  const hits = ray.intersectObjects(dots);
 +  grow(1 / 1.8);
-+  return hits.length ? hits[0].object : null;
++  return hits.length ? { dot: hits[0].object } : null;
 +}
 +el.addEventListener("contextmenu", (e) => e.preventDefault());
 +el.addEventListener("pointerdown", (e) => {
 +  el.setPointerCapture(e.pointerId);
-+  const dot = e.button === 0 ? pick(e) : null;
-+  if (dot) {
++  downAt = { x: e.clientX, y: e.clientY };
++  const hit = e.button === 0 ? pick(e) : null;
++  if (hit?.ring) {
++    push();
++    const c = toScreen(P[ix[SPIN[selected][0]]]);
++    dragging = { ring: hit.ring.userData.k, axes: spinAxes(selected), c, last: Math.atan2(e.clientY - c.y, e.clientX - c.x) };
++    el.className = "drag";
++  } else if (hit?.dot) {
++    const dot = hit.dot;
 +    push();
 +    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), dot.position);
 +    const feet = { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() };
@@ -650,8 +698,18 @@ index 0000000..9d1db32
 +    el.className = "drag";
 +  } else orbiting = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey };
 +});
++const moved = (e) => downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4;
 +el.addEventListener("pointermove", (e) => {
-+  if (dragging) {
++  if (dragging?.axes) {
++    const ang = Math.atan2(e.clientY - dragging.c.y, e.clientX - dragging.c.x);
++    const d = Math.atan2(Math.sin(ang - dragging.last), Math.cos(ang - dragging.last));
++    dragging.last = ang;
++    const j = ix[SPIN[selected][0]], axis = dragging.axes[dragging.ring];
++    const facing = axis.dot(camera.position.clone().sub(P[j])) > 0 ? -1 : 1;   // screen clockwise = clockwise
++    rotateGlobal(j, new THREE.Quaternion().setFromAxisAngle(axis, d * facing));
++    redraw();
++  } else if (dragging) {
++    if (!moved(e)) return;                           // a click selects; only a drag moves
 +    const r = el.getBoundingClientRect();
 +    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
 +    ray.setFromCamera(ndc, camera);
@@ -670,10 +728,21 @@ index 0000000..9d1db32
 +    placeCamera();
 +  } else {
 +    const h = pick(e);
-+    if (h !== hover) { hover = h; el.className = h ? "over" : ""; redraw(); }
++    el.className = h ? "over" : "";
++    if ((h?.dot || null) !== hover) { hover = h?.dot || null; redraw(); }
 +  }
 +});
-+el.addEventListener("pointerup", () => { dragging = null; orbiting = null; el.className = hover ? "over" : ""; redraw(); });
++el.addEventListener("pointerup", (e) => {
++  if (!moved(e)) {                                   // a click: on a hand, foot or the head shows its rings; elsewhere hides them
++    if (dragging?.dot) {
++      const n = dragging.dot.userData.name;
++      selected = n in SPIN && selected !== n ? n : null;
++      undo.pop();                                    // nothing changed
++    } else if (orbiting) selected = null;
++  }
++  dragging = null; orbiting = null; downAt = null;
++  el.className = hover ? "over" : ""; redraw();
++});
 +el.addEventListener("wheel", (e) => { e.preventDefault(); orbit.r = THREE.MathUtils.clamp(orbit.r * Math.exp(e.deltaY * 0.001), 0.6, 30); placeCamera(); }, { passive: false });
 +
 +// ---- undo, load, arm ----
@@ -711,7 +780,7 @@ index 0000000..9d1db32
 +resize();
 +useFrame(first, first.armed || first.current);
 +renderer.setAnimationLoop(() => renderer.render(scene, camera));
-+window.__pose = { payload, solve: (n, t) => { solve(n, new THREE.Vector3(...t), { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() }); redraw(); return P[ix[n]].toArray(); }, mirror, P, ix };
++window.__pose = { screenOf: (n) => toScreen(P[ix[n]]), ringPoint: (k) => toScreen(P[ix[SPIN[selected][0]]].clone().addScaledVector(spinAxes(selected)[(k + 1) % 3], rings[0].scale.x)), selected: () => selected, select: (n) => { selected = n; redraw(); }, spin: (k, deg) => { const j = ix[SPIN[selected][0]]; rotateGlobal(j, new THREE.Quaternion().setFromAxisAngle(spinAxes(selected)[k], THREE.MathUtils.degToRad(deg))); redraw(); }, G, payload, solve: (n, t) => { solve(n, new THREE.Vector3(...t), { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() }); redraw(); return P[ix[n]].toArray(); }, mirror, P, ix };
 diff --git a/kimodo/demo/ui.py b/kimodo/demo/ui.py
 index 7d9f5e3..a78e8b2 100644
 --- a/kimodo/demo/ui.py

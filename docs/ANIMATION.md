@@ -172,6 +172,7 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   with an OpenPose-style figure over Kimodo's full skeleton, starting from the playhead's pose (or the armed one), the
   stage around it. Drag the hand and foot dots (two-bone IK; elbows and knees steer the bend), the hips (Pin feet keeps
   the feet planted: crouch, kneel, lie down), the neck (bends the spine) and the top of the head (tilts the neck);
+  click a hand, a foot or the head (no drag) for three rings, twist and two bends, and drag one to turn it;
   orbit, pan, zoom; Load frame, Reset, Undo, Mirror, Turn. **Arm** closes it, and from then on a click on the
   Full-Body track drops that pose instead of the generated one (Ctrl+drag holds it over a range) until **Disarm**;
   **Drop at playhead** places it once. The window works in rotations relative to each parent's global one, so the
