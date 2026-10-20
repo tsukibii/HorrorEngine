@@ -1,0 +1,347 @@
+diff --git i/kimodo/demo/generation.py w/kimodo/demo/generation.py
+index 00282e6..38fabf7 100644
+--- i/kimodo/demo/generation.py
++++ w/kimodo/demo/generation.py
+@@ -21,6 +21,38 @@ from .embedding_cache import CachedTextEncoder
+ from .state import ClientSession, ModelBundle
+ 
+ 
++def loop_first_pose(session: ClientSession, constraint_info: dict, last_frame: int, device: str) -> dict:
++    """Loop: the earliest Full-Body keyframe again at the last frame, so the motion ends in the pose it starts in.
++
++    The copy moves along the 2D root path (from its point at the first keyframe to its point at the last frame, or
++    its last waypoint before it), and stays in place without a path. A keyframe already at the last frame wins.
++    """
++    frames = [int(f) for f in constraint_info["frame_idx"]]
++    if not frames or last_frame in frames or min(frames) >= last_frame:
++        return constraint_info
++    i = frames.index(min(frames))
++    joints_pos = constraint_info["joints_pos"][i].clone()
++    joints_rot = constraint_info["joints_rot"][i]
++
++    root = session.constraints.get("2D Root")
++    if root is not None and root.keyframes:
++        info = root.get_constraint_info(device=device)
++        path = {int(f): info["root_pos"][k] for k, f in enumerate(info["frame_idx"])}
++        before = [f for f in path if f <= last_frame]
++        if before:
++            start = path.get(frames[i], joints_pos[session.skeleton.root_idx])
++            end = path[max(before)]
++            joints_pos[:, 0] += end[0] - start[0]
++            joints_pos[:, 2] += end[2] - start[2]
++
++    return {
++        **constraint_info,
++        "frame_idx": frames + [last_frame],
++        "joints_pos": torch.cat([constraint_info["joints_pos"], joints_pos[None]], dim=0),
++        "joints_rot": torch.cat([constraint_info["joints_rot"], joints_rot[None]], dim=0),
++    }
++
++
+ def compute_model_constraints_lst(
+     session: ClientSession,
+     model_bundle: ModelBundle,
+@@ -47,6 +79,8 @@ def compute_model_constraints_lst(
+     model_constraints = []
+     for track_name, constraint in session.constraints.items():
+         constraint_info = constraint.get_constraint_info(device=device)
++        if track_name == "Full-Body" and session.loop_first_pose:
++            constraint_info = loop_first_pose(session, constraint_info, num_frames - 1, device)
+         frame_idx = constraint_info["frame_idx"]
+         # drop any constraints outside the generation range
+         valid_info = [(i, fi) for i, fi in enumerate(frame_idx) if fi < num_frames]
+diff --git i/kimodo/demo/state.py w/kimodo/demo/state.py
+index e158b99..34dd040 100644
+--- i/kimodo/demo/state.py
++++ w/kimodo/demo/state.py
+@@ -57,3 +57,4 @@ class ClientSession:
+     edit_mode_snapshot: Optional[dict[int, dict[str, object]]] = None
+     undo_drag_snapshot: Optional[dict[str, object]] = None
+     show_only_current_constraint: bool = False  # False = Show All, True = Show only Current
++    loop_first_pose: bool = False  # Loop: repeat the first Full-Body keyframe at the last frame
+diff --git i/kimodo/demo/studio.py w/kimodo/demo/studio.py
+new file mode 100644
+index 0000000..7b7c578
+--- /dev/null
++++ w/kimodo/demo/studio.py
+@@ -0,0 +1,110 @@
++"""HorrorStudio additions to the demo (kept in the studio repo as setup/kimodo_studio.patch).
++
++- Exports: In place (the root's travel taken out, its sway kept, for NPC and player rigs) and Drop last frame (a
++  Loop's last frame repeats its first: drop it so the wrap doesn't hold a frame).
++- The stage: a story's rooms, doors, furniture and marks as see-through boxes, written by the studio's
++  `python tools/kimodo.py stage`, already in Kimodo's axes (x left, y up, z forward, the character starting at the
++  origin) and scaled to the cast member's height.
++"""
++import json
++import math
++from types import SimpleNamespace
++
++import numpy as np
++import torch
++
++COLORS = {"floor": (110, 110, 120), "wall": (205, 205, 215), "door": (235, 145, 40), "mesh": (70, 140, 230),
++          "use": (60, 200, 120), "mark": (240, 220, 60), "player": (230, 70, 70)}
++
++
++def travel(root_xz: np.ndarray, fps: float, secs: float = 0.25) -> np.ndarray:
++    """The root's travel without its sway: the path smoothed over `secs`, pinned to the real root at both ends (so an
++    in-place Loop ends exactly where it starts). [T, 2], zero at the first frame."""
++    sigma = max(1.0, secs * fps)
++    r = int(3 * sigma)
++    k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2)
++    k /= k.sum()
++    padded = np.pad(root_xz, ((r, r), (0, 0)), mode="edge")
++    smooth = np.stack([np.convolve(padded[:, a], k, mode="valid") for a in range(2)], axis=1)
++    u = np.linspace(0.0, 1.0, len(root_xz))[:, None]
++    smooth += (root_xz[0] - smooth[0]) * (1 - u) + (root_xz[-1] - smooth[-1]) * u
++    return smooth - smooth[0]
++
++
++def for_export(motion, fps: float, in_place: bool = False, drop_last: bool = False):
++    """The motion as the exporters read it (joints_pos, joints_rot, joints_local_rot, foot_contacts, skeleton)."""
++    if not in_place and not drop_last:
++        return motion
++    pos = motion.joints_pos.detach().clone()
++    rot, local, contacts = motion.joints_rot, motion.joints_local_rot, motion.foot_contacts
++    if in_place:
++        root = pos[:, motion.skeleton.root_idx][:, [0, 2]].cpu().numpy()
++        off = torch.as_tensor(travel(root, fps), dtype=pos.dtype, device=pos.device)
++        pos[:, :, 0] -= off[:, None, 0]
++        pos[:, :, 2] -= off[:, None, 1]
++    if drop_last and pos.shape[0] > 1:
++        pos, rot, local = pos[:-1], rot[:-1], local[:-1]
++        contacts = contacts[:-1] if contacts is not None else None
++    return SimpleNamespace(skeleton=motion.skeleton, joints_pos=pos, joints_rot=rot, joints_local_rot=local,
++                           foot_contacts=contacts)
++
++
++def yaw_wxyz(deg: float):
++    a = math.radians(deg) / 2
++    return (math.cos(a), 0.0, math.sin(a), 0.0)
++
++
++def load_stage(scene, path: str, opacity: float, labels: bool = True) -> dict:
++    """Draws a stage file under /stage; returns the handles for place_stage, set_opacity and clear_stage."""
++    with open(path, encoding="utf-8") as f:
++        data = json.load(f)
++    st = {"frame": scene.add_frame("/stage", show_axes=False), "boxes": [], "labels": [], "data": data}
++    for b in data.get("boxes", []):
++        alpha = float(b.get("alpha", 1.0))
++        h = scene.add_box(f"/stage/{b['id']}", color=tuple(COLORS.get(b.get("kind"), (180, 180, 180))),
++                          dimensions=tuple(b["size"]), position=tuple(b["center"]), wxyz=yaw_wxyz(b.get("yaw", 0.0)),
++                          opacity=min(1.0, opacity * alpha), side="double", cast_shadow=False, receive_shadow=False)
++        st["boxes"].append((h, alpha))
++        if b.get("label"):
++            top = (b["center"][0], b["center"][1] + b["size"][1] / 2 + 0.05, b["center"][2])
++            st["labels"].append(scene.add_label(f"/stage/{b['id']}_label", text=b["label"], position=top,
++                                                font_size_mode="screen", font_screen_scale=0.6, visible=labels))
++    for m in data.get("marks", []):
++        kind = m.get("kind", "mark")
++        x, y, z = m["pos"]
++        h = scene.add_box(f"/stage/mark_{m['id']}", color=COLORS[kind], dimensions=(0.06, 0.01, 0.4),
++                          position=(x + 0.2 * math.sin(math.radians(m["yaw"])), y + 0.005,
++                                    z + 0.2 * math.cos(math.radians(m["yaw"]))),
++                          wxyz=yaw_wxyz(m["yaw"]), cast_shadow=False, receive_shadow=False)
++        st["boxes"].append((h, None))
++        if m.get("eye"):
++            st["boxes"].append((scene.add_icosphere(f"/stage/eye_{m['id']}", radius=0.06, color=COLORS[kind],
++                                                    position=(x, m["eye"], z), cast_shadow=False), None))
++        st["labels"].append(scene.add_label(f"/stage/mark_{m['id']}_label", text=m["id"], position=(x, y + 0.08, z),
++                                            font_size_mode="screen", font_screen_scale=0.5, visible=labels))
++    return st
++
++
++def place_stage(st: dict, x: float, z: float, turn: float) -> None:
++    st["frame"].position = (x, 0.0, z)
++    st["frame"].wxyz = yaw_wxyz(turn)
++
++
++def set_opacity(st: dict, opacity: float) -> None:
++    for h, alpha in st["boxes"]:
++        if alpha is not None:
++            h.opacity = min(1.0, opacity * alpha)
++
++
++def set_labels(st: dict, visible: bool) -> None:
++    for h in st["labels"]:
++        h.visible = visible
++
++
++def clear_stage(st: dict) -> None:
++    for h, _ in st["boxes"]:
++        h.remove()
++    for h in st["labels"]:
++        h.remove()
++    st["frame"].remove()
++    st.clear()
+diff --git i/kimodo/demo/ui.py w/kimodo/demo/ui.py
+index 7d9f5e3..bee817a 100644
+--- i/kimodo/demo/ui.py
++++ w/kimodo/demo/ui.py
+@@ -25,7 +25,7 @@ import torch
+ import viser
+ from viser._timeline_api import PROMPT_COLORS
+ 
+-from . import generation
++from . import generation, studio
+ from .config import (
+     DEFAULT_CUR_DURATION,
+     DEMO_UI_INSTRUCTIONS_TAB_MD,
+@@ -447,6 +447,72 @@ def create_gui(
+                 )
+ 
+             gui_generate_button = client.gui.add_button("Generate", color="green")
++        with client.gui.add_folder("Stage", expand_by_default=False):
++            gui_stage_path_text = client.gui.add_text(
++                "Stage File",
++                initial_value=os.environ.get("KIMODO_STAGE", "stage.json"),
++                hint="A story's rooms and furniture, written by the studio: python tools/kimodo.py stage --game <Game> --at <spot>",
++            )
++            gui_stage_load_button = client.gui.add_button("Load Stage")
++            gui_stage_clear_button = client.gui.add_button("Clear Stage", disabled=True)
++            gui_stage_opacity_slider = client.gui.add_slider("Opacity", min=0.05, max=1.0, step=0.05, initial_value=0.3)
++            gui_stage_x_slider = client.gui.add_slider("Move X", min=-10.0, max=10.0, step=0.05, initial_value=0.0)
++            gui_stage_z_slider = client.gui.add_slider("Move Z", min=-10.0, max=10.0, step=0.05, initial_value=0.0)
++            gui_stage_turn_slider = client.gui.add_slider("Turn", min=-180.0, max=180.0, step=5.0, initial_value=0.0)
++            gui_stage_labels_checkbox = client.gui.add_checkbox("Labels", initial_value=True)
++            gui_stage_info = client.gui.add_markdown("")
++
++        stage_state: dict = {}
++
++        @gui_stage_load_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            try:
++                if stage_state:
++                    studio.clear_stage(stage_state)
++                stage_state.update(
++                    studio.load_stage(
++                        client.scene,
++                        gui_stage_path_text.value,
++                        gui_stage_opacity_slider.value,
++                        gui_stage_labels_checkbox.value,
++                    )
++                )
++                studio.place_stage(
++                    stage_state, gui_stage_x_slider.value, gui_stage_z_slider.value, gui_stage_turn_slider.value
++                )
++                gui_stage_clear_button.disabled = False
++                gui_stage_info.content = stage_state["data"].get("info", "")
++            except Exception as e:
++                event.client.add_notification(
++                    title="Failed to load the stage!", body=str(e), auto_close_seconds=10.0, color="red"
++                )
++
++        @gui_stage_clear_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            if stage_state:
++                studio.clear_stage(stage_state)
++            gui_stage_clear_button.disabled = True
++            gui_stage_info.content = ""
++
++        @gui_stage_opacity_slider.on_update
++        def _(event: viser.GuiEvent) -> None:
++            if stage_state:
++                studio.set_opacity(stage_state, gui_stage_opacity_slider.value)
++
++        @gui_stage_labels_checkbox.on_update
++        def _(event: viser.GuiEvent) -> None:
++            if stage_state:
++                studio.set_labels(stage_state, gui_stage_labels_checkbox.value)
++
++        def _place_stage(event: viser.GuiEvent) -> None:
++            if stage_state:
++                studio.place_stage(
++                    stage_state, gui_stage_x_slider.value, gui_stage_z_slider.value, gui_stage_turn_slider.value
++                )
++
++        for _slider in (gui_stage_x_slider, gui_stage_z_slider, gui_stage_turn_slider):
++            _slider.on_update(_place_stage)
++
+         with client.gui.add_folder("Constraints", expand_by_default=False):
+             gui_gizmo_space_dropdown = client.gui.add_dropdown(
+                 "Gizmo space",
+@@ -475,6 +541,12 @@ def create_gui(
+                     visible=True,
+                 )
+ 
++            gui_loop_checkbox = client.gui.add_checkbox(
++                "Loop",
++                initial_value=False,
++                hint="Repeat the first Full-Body keyframe at the last frame, moved along the 2D root path (in place without one), so the motion ends in the pose it starts in.",
++            )
++
+             gui_show_only_current_constraint_checkbox = client.gui.add_checkbox(
+                 "Show only Current",
+                 initial_value=False,
+@@ -772,9 +844,17 @@ def create_gui(
+                     return name + ext
+                 return name
+ 
+-            def save_motion(client, save_path, fmt):
++            def _export_motion(session: ClientSession):
++                return studio.for_export(
++                    _get_primary_motion(session),
++                    float(session.model_fps),
++                    in_place=gui_export_in_place_checkbox.value,
++                    drop_last=gui_export_drop_last_checkbox.value,
++                )
++
++            def save_motion(client, save_path, fmt, raw=False):
+                 session = demo.client_sessions[client.client_id]
+-                motion = _get_primary_motion(session)
++                motion = _get_primary_motion(session) if raw else _export_motion(session)
+                 motion_data = _motion_to_numpy_dict(motion)
+ 
+                 if fmt == "BVH":
+@@ -987,6 +1067,7 @@ def create_gui(
+ 
+             def save_constraints(client, save_path):
+                 session = demo.client_sessions[client.client_id]
++                session.loop_first_pose = gui_loop_checkbox.value
+                 # Keep save behavior aligned with demo frame convention:
+                 # valid frame indices are [0, max_frame_idx], so count is +1.
+                 num_frames = session.max_frame_idx + 1
+@@ -1268,6 +1349,16 @@ def create_gui(
+                     hint="For BVH export, use the standard T-pose rest skeleton.",
+                     visible=False,
+                 )
++                gui_export_in_place_checkbox = client.gui.add_checkbox(
++                    "In place",
++                    initial_value=False,
++                    hint="Take out the root's travel (its sway stays): a walk that plays on the spot, for NPC and player rigs. Also used by Save Motion.",
++                )
++                gui_export_drop_last_checkbox = client.gui.add_checkbox(
++                    "Drop last frame",
++                    initial_value=False,
++                    hint="For a Loop: its last frame repeats the first, so drop it and the wrap doesn't hold a frame. Also used by Save Motion.",
++                )
+                 gui_download_button = client.gui.add_button(
+                     "Download",
+                     hint="Download the current motion (format + name above).",
+@@ -1561,7 +1652,7 @@ def create_gui(
+                 session = get_active_session(event_client)
+                 if session is None:
+                     return
+-                motion = _get_primary_motion(session)
++                motion = _export_motion(session)
+                 try:
+                     fmt = str(gui_download_format_dropdown.value).upper()
+                     raw_name = str(gui_download_name_text.value)
+@@ -1640,7 +1731,7 @@ def create_gui(
+                 save_constraints(event_client, constraint_path)
+                 # save the motion
+                 motion_path = os.path.join(save_dir, "motion.npz")
+-                save_motion(event_client, motion_path, "NPZ")
++                save_motion(event_client, motion_path, "NPZ", raw=True)
+                 # save the gui metadata
+                 meta_path = os.path.join(save_dir, "meta.json")
+                 prompt_texts = []
+@@ -2820,6 +2911,7 @@ def create_gui(
+             )
+             gui_generate_button.disabled = True
+             client.timeline.disable_constraints()
++            session.loop_first_pose = gui_loop_checkbox.value
+ 
+             num_samples = gui_num_samples_slider.value
+             timeline = session.client.timeline
