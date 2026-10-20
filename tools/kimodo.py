@@ -8,6 +8,7 @@ encoder, about 20 GB; torch; temp files). Nothing goes to the user's profile on 
 
     python tools/kimodo.py check                  CUDA, VRAM, the token, access to the gated text encoder: KIMODO ok
     python tools/kimodo.py login                  store a Hugging Face token (in cache/hf, not your profile)
+    python tools/kimodo.py encoder                or skip the token: the same Llama weights from a public copy, in encoders/
     python tools/kimodo.py gen "<prompt>" [kimodo_gen flags...]   one generation (kimodo_gen --help for the flags)
     python tools/kimodo.py demo                   NVIDIA's timeline demo on http://127.0.0.1:7860
     python tools/kimodo.py py <script> [args]     any Python inside the environment (motion.py preview uses it)
@@ -24,6 +25,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = ROOT / "setup" / "env.json"
 TEXT_ENCODER = "meta-llama/Meta-Llama-3-8B-Instruct"     # gated: ask for access on its Hugging Face page
+ENCODER_COPY = "unsloth/llama-3-8b-Instruct"              # the same weights, public (Meta's Llama 3 license still applies)
+LLM2VEC = ["McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp", "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised"]
 
 
 def settings():
@@ -55,6 +58,9 @@ def environ(home, k=None):
     out = {key: str(v) for key, v in e.items()}
     if (k or {}).get("text_encoder_device"):
         out["TEXT_ENCODER_DEVICE"] = k["text_encoder_device"]
+    if (k or {}).get("text_encoders_dir"):
+        out["TEXT_ENCODERS_DIR"] = k["text_encoders_dir"]
+        out["TEXT_ENCODER_MODE"] = "local"    # no text-encoder server to try first
     return out
 
 
@@ -95,7 +101,13 @@ except Exception as e:
     print("kimodo: not importable:", e); ok = False
 try:
     from huggingface_hub import auth_check, get_token
-    if not get_token():
+    local = os.environ.get("TEXT_ENCODERS_DIR")
+    if local:
+        base = os.path.join(local, "{MODEL}")
+        found = os.path.isdir(base) and any(n.endswith(".safetensors") for n in os.listdir(base))
+        print(f"text encoder: local, {base}" if found else f"text encoder: NOT in {local}: `python tools/kimodo.py encoder`")
+        ok &= found
+    elif not get_token():
         print("no Hugging Face token: `python tools/kimodo.py login`"); ok = False
     else:
         auth_check("{MODEL}")
@@ -105,6 +117,24 @@ except Exception as e:
 print("HF_HOME", os.environ.get("HF_HOME"))
 print("KIMODO ok" if ok else "KIMODO not ready")
 '''.replace("{MODEL}", TEXT_ENCODER)
+
+# The text encoder without the gated repo: Kimodo joins TEXT_ENCODERS_DIR to each repo name, so the folder mirrors them;
+# the adapters' base is pointed at the local copy (their config keeps Meta's name, which picks the chat template).
+ENCODER = r'''
+import json, sys
+from pathlib import Path
+from huggingface_hub import snapshot_download
+d = Path(sys.argv[1])
+base = d / "{MODEL}"
+snapshot_download("{COPY}", local_dir=base, allow_patterns=["*.json", "*.safetensors"])
+for repo in {LLM2VEC}:
+    snapshot_download(repo, local_dir=d / repo)
+    f = d / repo / "adapter_config.json"
+    c = json.loads(f.read_text(encoding="utf-8"))
+    c["base_model_name_or_path"] = str(base)
+    f.write_text(json.dumps(c, indent=2), encoding="utf-8")
+print("ENCODER ok", d)
+'''.replace("{MODEL}", TEXT_ENCODER).replace("{COPY}", ENCODER_COPY).replace("{LLM2VEC}", repr(LLM2VEC))
 
 
 def main(argv):
@@ -121,6 +151,14 @@ def main(argv):
         return 0
     if cmd == "check":
         return run_in(home, k, [str(p["python"]), "-c", CHECK])
+    if cmd == "encoder":
+        d = Path(rest[0]).resolve() if rest else home / "encoders"
+        r = run_in(home, k, [str(p["python"]), "-c", ENCODER, str(d)])
+        if r == 0:
+            env = json.loads(ENV_FILE.read_text(encoding="utf-8")) if ENV_FILE.exists() else {}
+            env.setdefault("kimodo", {})["text_encoders_dir"] = str(d)
+            ENV_FILE.write_text(json.dumps(env, indent=1), encoding="utf-8")
+        return r
     if cmd == "login":
         return run_in(home, k, [exe("hf"), "auth", "login"])
     if cmd == "gen":

@@ -188,7 +188,9 @@ fix; use 48.
   `--text-cpu` if the GPU has under 17 GB). It clones Kimodo into `<home>/src`, installs Python 3.11, PyTorch with
   CUDA and Kimodo into `<home>/.venv`, and compiles its motion correction with Visual Studio's C++. Every cache (uv,
   Python, about 20 GB of models, torch, temp files) stays under `<home>/cache`. Rerun it to repair.
-- [ ] `python tools/kimodo.py login` (the token, stored in `<home>/cache/hf`), then `python tools/kimodo.py check`:
+- [ ] `python tools/kimodo.py login` (the token, stored in `<home>/cache/hf`), or skip step 2 and the token with
+  `python tools/kimodo.py encoder` (the same Llama weights from the public `unsloth/llama-3-8b-Instruct`, about 16 GB
+  in `<home>/encoders`, which Kimodo uses through `TEXT_ENCODERS_DIR`); then `python tools/kimodo.py check`:
   `KIMODO ok` (CUDA, VRAM, the package, access to the text encoder). `python tools/kimodo.py demo` opens NVIDIA's
   timeline demo.
 - [ ] `motion.py jobs`, `motion.py constrain` (the blocking as Kimodo full-body keyframes and root paths, solved on
