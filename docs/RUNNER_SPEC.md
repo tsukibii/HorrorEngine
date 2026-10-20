@@ -39,6 +39,7 @@ never silently.
 | choice `act` | wait until one option's trigger fires (the player keeps playing meanwhile); take its `to` |
 | choice `flag` | the first option whose `if` holds |
 | choice `result` | the event result recorded by scene node `of` (and its clip, if `event` is given) |
+| choice `karma` | (format 3) the first option whose `min`/`max` holds for its `axis` (default `karma`); the last is the fallback |
 | ending | the ending card (title, kind), credits, back to the menu; it records that the ending was seen (for secret-ending hints) |
 
 ## The scene player (the elastic timeline)
@@ -93,6 +94,11 @@ scene: a camera fade, and control taken and given back softly.
   `warn` seconds of "!" before.
 - The result is stored for the scene node, and the event's `on` actions run.
 - Inputs map to Enhanced Input actions (Interact, mouse delta).
+- **Format 3:** a `choose` gives 30 s unless it says otherwise; the options show in the player's subtitle language
+  (`label`, `ja`, `zh`); the chosen option's `karma` is added to the run's karma (kept per axis, saved with the
+  checkpoint); the idle and the look-at keep the character alive while the player decides. A `karma` verb in beats,
+  cues and `sets` adds to it too. A missed timer, a lost struggle and an interrupt never end the game (the check
+  enforces it): the flow goes on to the guide-back scene the story names.
 - A settings option turns timers off (accessibility): the event waits, then takes `default`, or success for
   press-type events.
 

@@ -219,13 +219,40 @@ def scene_version(scene):
     return merged
 
 
+JA_MORAE = 6.5        # morae a second: a film's unhurried delivery (everyday speech runs 7 to 8)
+JA_PAUSES = {"…": 0.25, "‥": 0.2, "、": 0.25, "。": 0.45, "？": 0.4, "！": 0.3, "?": 0.4, "!": 0.3, "—": 0.3, "―": 0.3}
+_SMALL = set("ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ")
+
+
+def ja_secs(text):
+    """How long a Japanese line takes to say: kana count a mora each (small ゃ ゅ ょ ride on the one before), a kanji
+    about 1.7, Latin letters and digits a third each; punctuation adds its pause; plus half a second of breath."""
+    morae, pause = 0.0, 0.0
+    for ch in str(text):
+        o = ord(ch)
+        if ch in JA_PAUSES:
+            pause += JA_PAUSES[ch]
+        elif ch in _SMALL:
+            continue
+        elif 0x3040 <= o <= 0x30ff:                   # hiragana, katakana (ー and っ count: they're held)
+            morae += 1
+        elif 0x4e00 <= o <= 0x9fff or 0x3400 <= o <= 0x4dbf:
+            morae += 1.7
+        elif ch.isalnum():
+            morae += 1 / 3
+    return morae / JA_MORAE + pause + 0.5
+
+
 def clip_secs(clip, line_fallback=12.0):
-    """A clip's length: its measured `dur` (from the take), else the placeholder voice's `dur_tts`, else an estimate:
-    12 characters a second plus a breath."""
+    """A clip's length: its measured `dur` (from the take, after its trim), else the placeholder voice's `dur_tts`,
+    else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath."""
     if clip.get("dur"):
-        return float(clip["dur"])
+        tr = clip.get("trim") or {}
+        return max(0.1, float(clip["dur"]) - float(tr.get("in", 0)) - float(tr.get("out", 0)))
     if clip.get("dur_tts"):
         return float(clip["dur_tts"])
+    if clip.get("ja") and any(ord(ch) > 0x3000 for ch in clip["ja"]):
+        return max(1.5, ja_secs(clip["ja"]))
     return max(1.5, len(clip.get("en", "")) / line_fallback + 0.6)
 
 
@@ -265,6 +292,26 @@ MODS = {"ease": ("in", "out"), "speed": ("x",), "ramp": ("from", "to"), "hold": 
         "twitch": ("amount",), "trim": ("in", "out"), "loop": ("from", "to", "times"), "mirror": ()}
 FITS = ("stretch", "hold", "loop", "pad", "trim")
 MOODS = ("intimate", "dread", "panic", "reveal", "calm", "grief", "chase", "aftermath")
+VOICES = ("says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly",
+          "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums")   # docs/VOICES.md
+TIERS = ("simple", "activity", "action")            # the animation budget: 80 / 15 / 5 (docs/KIMODO.md §2)
+TIER_SHARE = {"simple": 0.80, "activity": 0.15, "action": 0.05}
+SEG_MIN, SEG_MAX = 2.0, 10.0                         # a Kimodo motion: one behaviour, 2 to 10 seconds
+CHOOSE_SECS = 30                                     # a timed choice's default (format 3)
+
+
+def karma_of(delta, axis="karma"):
+    """A karma delta as {axis: n}: an int is the default axis."""
+    if delta is None:
+        return {}
+    if isinstance(delta, (int, float)):
+        return {axis: float(delta)}
+    return {k: float(v) for k, v in delta.items()}
+
+
+def karma_axes(story):
+    k = story.get("game", {}).get("karma") or {}
+    return k.get("axes") or {"karma": {"min": -10, "max": 10}}
 
 
 def event_results(ev):

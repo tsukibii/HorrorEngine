@@ -1,0 +1,2026 @@
+{
+ "format": 3,
+ "game": {
+  "id": "Sample",
+  "title": "The Lantern House (format 3 sample)",
+  "start": "n_arrive",
+  "target_min": 5,
+  "fast_min": 3,
+  "voice": "ja",
+  "text": "en",
+  "subtitles": [
+   "en",
+   "zh"
+  ],
+  "clip_max": 8,
+  "no_death": true,
+  "karma": {
+   "axes": {
+    "karma": {
+     "min": -10,
+     "max": 10,
+     "label": "how you treat Mari"
+    }
+   }
+  },
+  "note": "The format 3 sample (pipeline v2): lines with the Japanese pass and MiniMax fields, timed choices with karma, endings by karma, missed tasks that guide you on, an easter egg that blends back, Kimodo segments and tiers. Built from the Pilot's house. A real game's script comes from tools/scriptgen.py."
+ },
+ "cast": {
+  "mari": {
+   "name": "Mari",
+   "metahuman": null,
+   "height": 1.62,
+   "shape": [
+    -1.1,
+    1.58,
+    1.07,
+    -2.01,
+    -2.14,
+    0.29,
+    2.87,
+    -0.94,
+    0.49,
+    -0.4,
+    -0.19,
+    1.12,
+    0.22,
+    -0.28,
+    -0.88,
+    0.42,
+    -0.01,
+    0.81,
+    0.14,
+    -0.59
+   ],
+   "measures": {
+    "height": 162.1,
+    "shoulders": 44.2,
+    "chest": 24.2,
+    "waist": 31.2,
+    "belly": 13.7,
+    "hips": 38.9,
+    "thighs": 15,
+    "arms": 61.3
+   },
+   "skin": "#b98a6a",
+   "previs_body": "MHR.fbx",
+   "subject": "she"
+  }
+ },
+ "items": {
+  "cellar_key": {
+   "name": "Cellar key",
+   "shape": "box 0.08 0.03 0.01",
+   "inspect": true
+  },
+  "doll": {
+   "name": "Porcelain doll",
+   "shape": "box 0.12 0.08 0.25",
+   "inspect": true
+  }
+ },
+ "notes": {
+  "letter_mari": {
+   "title": "Mari's letter",
+   "text": "I left the door open for you. Don't be angry about the house, it's only dusty. If I'm not home, Father's diary is in the study. He wrote everything down. Everything."
+  },
+  "diary_03": {
+   "title": "Diary, 14 March",
+   "text": "She left today. I locked the drawer with the day she went, so I never forget it: 03 14. The children must not go down to the cellar. Whatever knocks, they must not answer."
+  }
+ },
+ "lines": {
+  "mari_002": {
+   "who": "mari",
+   "ja": "鍵、見つけたんだね……",
+   "en": "So you found the key...",
+   "mood": "eerie",
+   "shot": null,
+   "zh": "钥匙……你找到了啊。",
+   "ja_note": "low, almost fond; the last word trails off",
+   "expr": "faint smile that doesn't reach her eyes",
+   "voice": "murmurs"
+  }
+ },
+ "sounds": {
+  "door_slam": {
+   "file": "SFX/door_slam"
+  },
+  "knock3": {
+   "file": "SFX/knock_three"
+  },
+  "sting": {
+   "file": "SFX/sting_short"
+  },
+  "hum_cut": {
+   "file": "SFX/power_hum_cut"
+  },
+  "machine_beep": {
+   "file": "SFX/answering_machine_beep"
+  },
+  "creak": {
+   "file": "SFX/floorboard_creak"
+  },
+  "steps": {
+   "file": "SFX/steps_upstairs"
+  },
+  "grab": {
+   "file": "SFX/grab_sting"
+  },
+  "sting_big": {
+   "file": "SFX/sting_big"
+  },
+  "breath": {
+   "file": "SFX/breath_close"
+  }
+ },
+ "levels": {
+  "house": {
+   "start": "start",
+   "rooms": [
+    {
+     "id": "porch",
+     "at": [
+      0,
+      -3,
+      0
+     ],
+     "size": [
+      4,
+      3,
+      2.6
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "skip": [
+      "n",
+      "e",
+      "s",
+      "w"
+     ],
+     "ceiling": false,
+     "props": [
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        2,
+        1
+       ],
+       "rot": 90
+      },
+      {
+       "id": "porch_light",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "flicker": 0.1,
+       "at": [
+        2,
+        2.6
+       ],
+       "z": 2.4
+      },
+      {
+       "id": "welcome_mat",
+       "shape": "box 1 0.6 0.01",
+       "at": [
+        2,
+        2.5
+       ]
+      }
+     ]
+    },
+    {
+     "id": "hall",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      4,
+      6,
+      2.8
+     ],
+     "floor": "wood",
+     "light": "dark",
+     "openings": [
+      {
+       "wall": "s",
+       "at": 2,
+       "w": 1,
+       "h": 2.1,
+       "door": {
+        "id": "front_door",
+        "swing": "in",
+        "creak": true
+       }
+      },
+      {
+       "wall": "n",
+       "at": 2,
+       "w": 1.2,
+       "h": 2.2
+      },
+      {
+       "wall": "e",
+       "at": 3,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "study_door",
+        "swing": "in"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 2,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "cellar_door",
+        "locked_by": "cellar_key",
+        "swing": "out"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "hall_table",
+       "shape": "box 1.2 0.5 0.8",
+       "at": [
+        3.2,
+        5.2
+       ],
+       "tag": "table"
+      },
+      {
+       "id": "answering_machine",
+       "shape": "box 0.25 0.2 0.1",
+       "on": "hall_table",
+       "at": [
+        3,
+        5.2
+       ],
+       "use": "inspect",
+       "text": "An old answering machine. One message."
+      },
+      {
+       "id": "letter_hall",
+       "shape": "box 0.21 0.3 0.005",
+       "on": "hall_table",
+       "at": [
+        3.5,
+        5.2
+       ],
+       "use": "note",
+       "note": "letter_mari"
+      },
+      {
+       "id": "coat_rack",
+       "shape": "cyl 0.2 1.8",
+       "at": [
+        0.4,
+        0.5
+       ]
+      },
+      {
+       "id": "hall_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "flicker": 0.3,
+       "at": [
+        2,
+        3
+       ],
+       "z": 2.6
+      },
+      {
+       "id": "hall_enter",
+       "use": "trigger",
+       "size": [
+        4,
+        1.5,
+        2.5
+       ],
+       "at": [
+        2,
+        1.5
+       ]
+      },
+      {
+       "id": "hall_mari_spot",
+       "use": "spot",
+       "at": [
+        2,
+        5.4
+       ],
+       "rot": 270
+      },
+      {
+       "id": "hall_view_spot",
+       "use": "spot",
+       "at": [
+        2,
+        2.2
+       ],
+       "rot": 90
+      },
+      {
+       "id": "hall_locker",
+       "shape": "box 0.5 0.5 1.9",
+       "at": [
+        0.35,
+        4.3
+       ],
+       "rot": 0,
+       "use": "locker",
+       "tag": "locker"
+      },
+      {
+       "id": "hall_mari_back_spot",
+       "use": "spot",
+       "at": [
+        2,
+        5.75
+       ],
+       "rot": 270
+      },
+      {
+       "id": "hall_locker_view",
+       "use": "spot",
+       "at": [
+        0.35,
+        4.3
+       ],
+       "rot": 0
+      },
+      {
+       "id": "hall_walk_spot",
+       "use": "spot",
+       "at": [
+        2.3,
+        1.2
+       ],
+       "rot": 270
+      },
+      {
+       "id": "hall_mari_near_spot",
+       "use": "spot",
+       "at": [
+        2,
+        3.6
+       ],
+       "rot": 270
+      },
+      {
+       "id": "hall_mari_close_spot",
+       "use": "spot",
+       "at": [
+        2,
+        2.72
+       ],
+       "rot": 270,
+       "note": "face to face: her head about 0.4 m from the player's eye (CU)"
+      }
+     ]
+    },
+    {
+     "id": "kitchen",
+     "at": [
+      0,
+      6,
+      0
+     ],
+     "size": [
+      4,
+      4,
+      2.8
+     ],
+     "floor": "tile",
+     "light": "dark",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 2,
+       "w": 1,
+       "h": 1,
+       "sill": 1,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "kitchen_table",
+       "shape": "box 1.6 0.9 0.76",
+       "at": [
+        2,
+        2
+       ],
+       "tag": "table",
+       "art": "basemesh/food_prep_table"
+      },
+      {
+       "id": "chair_a",
+       "shape": "asset basemesh/wooden_chair_01",
+       "at": [
+        1.4,
+        1.2
+       ],
+       "tag": "chair"
+      },
+      {
+       "id": "chair_b",
+       "shape": "asset basemesh/wooden_chair_01",
+       "at": [
+        2.6,
+        2.8
+       ],
+       "rot": 180,
+       "tag": "chair"
+      },
+      {
+       "id": "stove",
+       "shape": "box 0.8 0.6 0.9",
+       "at": [
+        0.5,
+        3.6
+       ],
+       "tag": "stove"
+      },
+      {
+       "id": "kitchen_photo",
+       "shape": "box 0.2 0.02 0.25",
+       "on": "kitchen_table",
+       "at": [
+        2.3,
+        2.1
+       ],
+       "use": "inspect",
+       "text": "Mari and Mother, years ago. On the back: 14 March."
+      },
+      {
+       "id": "kitchen_candle",
+       "use": "light",
+       "kind": "candle",
+       "lit": true,
+       "flicker": 0.6,
+       "on": "kitchen_table",
+       "at": [
+        1.8,
+        2
+       ]
+      },
+      {
+       "id": "mari_figure",
+       "shape": "person mari stand",
+       "at": [
+        3.5,
+        3.3
+       ],
+       "rot": 180,
+       "hidden": true
+      },
+      {
+       "id": "kitchen_window_spot",
+       "use": "spot",
+       "at": [
+        3.8,
+        2
+       ]
+      },
+      {
+       "id": "doll_on_table",
+       "shape": "box 0.12 0.08 0.25",
+       "on": "kitchen_table",
+       "at": [
+        1.5,
+        2.2
+       ],
+       "use": "pickup",
+       "item": "doll",
+       "tag": "doll"
+      },
+      {
+       "id": "kitchen_behind_spot",
+       "use": "spot",
+       "at": [
+        1.6,
+        2.12
+       ],
+       "rot": 90
+      },
+      {
+       "id": "kitchen_view_spot",
+       "use": "spot",
+       "at": [
+        1.6,
+        2.6
+       ],
+       "rot": 270
+      }
+     ]
+    },
+    {
+     "id": "study",
+     "at": [
+      4,
+      1,
+      0
+     ],
+     "size": [
+      4,
+      4,
+      2.8
+     ],
+     "floor": "carpet",
+     "light": "dark",
+     "skip": [
+      "w"
+     ],
+     "props": [
+      {
+       "id": "desk",
+       "shape": "asset basemesh/office_desk",
+       "at": [
+        2.2,
+        3.4
+       ],
+       "tag": "desk"
+      },
+      {
+       "id": "desk_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "on": "desk",
+       "at": [
+        1.7,
+        3.5
+       ]
+      },
+      {
+       "id": "diary",
+       "shape": "box 0.15 0.2 0.03",
+       "on": "desk",
+       "at": [
+        2.2,
+        3.3
+       ],
+       "use": "note",
+       "note": "diary_03"
+      },
+      {
+       "id": "desk_lock",
+       "shape": "box 0.15 0.1 0.15",
+       "on": "desk",
+       "at": [
+        2.7,
+        3.1
+       ],
+       "use": "combo",
+       "code": "0314",
+       "then": "drawer_open"
+      },
+      {
+       "id": "cellar_key_pickup",
+       "shape": "box 0.08 0.03 0.01",
+       "on": "desk",
+       "at": [
+        2.7,
+        3.3
+       ],
+       "use": "pickup",
+       "item": "cellar_key",
+       "hidden": true
+      },
+      {
+       "id": "bookshelf",
+       "shape": "box 0.35 1.6 2.0",
+       "at": [
+        3.75,
+        1.5
+       ],
+       "tag": "shelf"
+      }
+     ]
+    },
+    {
+     "id": "cellar_stairs",
+     "at": [
+      -3,
+      1,
+      0
+     ],
+     "size": [
+      3,
+      2,
+      2.8
+     ],
+     "floor": "stone",
+     "light": "off",
+     "skip": [
+      "e"
+     ],
+     "props": [
+      {
+       "id": "cellar_hatch",
+       "shape": "box 1 1 0.05",
+       "at": [
+        1.2,
+        1
+       ]
+      },
+      {
+       "id": "cellar_mari_spot",
+       "use": "spot",
+       "at": [
+        0.6,
+        1
+       ],
+       "rot": 0
+      },
+      {
+       "id": "cellar_behind_spot",
+       "use": "spot",
+       "at": [
+        2.6,
+        1
+       ],
+       "rot": 180
+      },
+      {
+       "id": "cellar_grab_spot",
+       "use": "spot",
+       "at": [
+        2.05,
+        1
+       ],
+       "rot": 0
+      }
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "porch",
+     "b": "hall",
+     "via": "front_door"
+    },
+    {
+     "a": "hall",
+     "b": "kitchen",
+     "via": null
+    },
+    {
+     "a": "hall",
+     "b": "study",
+     "via": "study_door"
+    },
+    {
+     "a": "hall",
+     "b": "cellar_stairs",
+     "via": "cellar_door"
+    }
+   ]
+  }
+ },
+ "secrets": {
+  "photo_back": {
+   "flag": "found_photo",
+   "hint": "the back of the kitchen photo"
+  }
+ },
+ "motions": {
+  "mari_idle": {
+   "who": "mari",
+   "prompt": "stands still, breathing slowly, slight sway, head a little lowered",
+   "secs": 6,
+   "loop": true,
+   "block": [
+    {
+     "at": 0,
+     "pose": "idle"
+    },
+    {
+     "at": 0.5,
+     "pose": "idle_shift",
+     "ease": "inout"
+    },
+    {
+     "at": 1,
+     "pose": "idle",
+     "ease": "inout"
+    }
+   ],
+   "name": "sample_mari_idle"
+  }
+ },
+ "stitches": {
+  "t_arrive": {
+   "title": "Arrival",
+   "level": "house",
+   "target_min": 1,
+   "beats": [
+    {
+     "id": "b_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "think": "Mari said she'd leave the door open."
+      },
+      {
+       "objective": "Go inside"
+      }
+     ]
+    },
+    {
+     "id": "b_enter_hall",
+     "when": {
+      "enter": "hall_enter"
+     },
+     "do": [
+      {
+       "trick": "slam_behind",
+       "door": "front_door"
+      },
+      {
+       "door": "front_door",
+       "set": "lock"
+      },
+      {
+       "music": "uneasy"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_search": {
+   "title": "The diary and the key",
+   "level": "house",
+   "target_min": 6,
+   "beats": [
+    {
+     "id": "b_letter",
+     "when": {
+      "read": "letter_mari"
+     },
+     "optional": true,
+     "do": [
+      {
+       "think": "Her handwriting. Shakier than I remember."
+      }
+     ]
+    },
+    {
+     "id": "b_glimpse",
+     "when": {
+      "enter": "kitchen"
+     },
+     "do": [
+      {
+       "sound": "creak",
+       "at": "mari_figure"
+      },
+      {
+       "wait": 0.8
+      },
+      {
+       "trick": "glimpse",
+       "figure": "mari_figure"
+      },
+      {
+       "think": "Mari?"
+      }
+     ]
+    },
+    {
+     "id": "b_photo",
+     "when": {
+      "use": "kitchen_photo"
+     },
+     "optional": true,
+     "secret": "photo_back",
+     "do": [
+      {
+       "think": "Fourteenth of March. The day Mother left."
+      },
+      {
+       "flag": "found_photo"
+      }
+     ]
+    },
+    {
+     "id": "b_drawer",
+     "when": {
+      "flag": "drawer_open"
+     },
+     "do": [
+      {
+       "sound": "sting"
+      },
+      {
+       "show": "cellar_key_pickup"
+      },
+      {
+       "lookat": "cellar_key_pickup",
+       "secs": 1
+      }
+     ]
+    },
+    {
+     "id": "b_key",
+     "when": {
+      "pickup": "cellar_key"
+     },
+     "do": [
+      {
+       "trick": "knock",
+       "at": "cellar_door",
+       "count": 3
+      },
+      {
+       "wait": 3
+      },
+      {
+       "trick": "whisper",
+       "line": "mari_002",
+       "at": "cellar_door"
+      },
+      {
+       "objective": null
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ],
+   "timer": {
+    "secs": 600,
+    "label": "Before she comes looking",
+    "fail": "n_found"
+   }
+  },
+  "t_flee": {
+   "title": "Get out",
+   "level": "house",
+   "goal": "Reach the front door before she gets up",
+   "target_min": 1,
+   "template": "escape",
+   "timer": {
+    "secs": 25,
+    "label": "Before she gets up",
+    "fail": "n_shut"
+   },
+   "beats": [
+    {
+     "id": "b_flee",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "music": "chase"
+      },
+      {
+       "objective": "Get out of the house"
+      }
+     ]
+    },
+    {
+     "id": "b_out",
+     "when": {
+      "enter": "porch"
+     },
+     "do": [
+      {
+       "music": "calm"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "scenes": {
+  "s_message": {
+   "title": "Mari in the hall",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_spot"
+   },
+   "view": "hall_view_spot",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "ja": "……来てくれたんだ。",
+     "en": "...You came.",
+     "act": "lifts her head slowly, eyes on the player",
+     "body": {
+      "prompt": "slowly raises her head and looks straight ahead, otherwise still",
+      "start": "mari_idle",
+      "end": "mari_idle",
+      "block": [
+       {
+        "at": 0,
+        "pose": "head_down"
+       },
+       {
+        "at": 0.75,
+        "pose": "idle",
+        "ease": "inout"
+       }
+      ],
+      "mods": [
+       {
+        "type": "ease",
+        "in": 0.3,
+        "out": 0.2
+       }
+      ],
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_message_c1_01_raisehead",
+        "prompt": "A sad person standing with their head lowered slowly raises their head",
+        "secs": 3
+       }
+      ]
+     },
+     "shot": "ws",
+     "cam": {
+      "push": 0.06
+     },
+     "zh": "……你来了啊。",
+     "ja_note": "barely above a breath; a long pause before the first word, relief she doesn't trust",
+     "expr": "slow, wide-eyed stare that softens into relief",
+     "voice": "whispers",
+     "en_draft": "...You came."
+    },
+    {
+     "id": "c2",
+     "who": "mari",
+     "seam": {
+      "kind": "glance",
+      "look": "hall_lamp"
+     },
+     "ja": "お父さんの書斎に日記がある。地下室の鍵のことが書いてある。",
+     "en": "Father's diary is in the study. It says where the cellar key is.",
+     "act": "steady, quiet, coming closer; glances toward the study door at the end",
+     "shot": "ms",
+     "body": {
+      "prompt": "walks slowly toward the viewer while talking quietly, then glances to her left",
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       },
+       {
+        "at": 0.85,
+        "pose": "idle_shift",
+        "ease": "inout",
+        "walk": true,
+        "move": "hall_mari_near_spot"
+       },
+       {
+        "at": 1,
+        "pose": "look_left",
+        "ease": "inout"
+       }
+      ],
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_message_c2_01_walkforward",
+        "prompt": "A tired person walks forward slowly",
+        "secs": 4,
+        "path": [
+         "hall_mari_spot",
+         "hall_mari_near_spot"
+        ]
+       },
+       {
+        "name": "sample_message_c2_02_glanceleft",
+        "prompt": "A person standing still glances to the left",
+        "secs": 2
+       }
+      ]
+     },
+     "zh": "爸爸的书房里有本日记。上面写着地下室钥匙的事。",
+     "ja_note": "even and quiet, like reciting something she rehearsed; a small catch on 地下室",
+     "expr": "calm face, eyes flicking aside on the second sentence",
+     "voice": "says softly",
+     "en_draft": "Father's diary is in the study. It says where the cellar key is."
+    },
+    {
+     "id": "c3",
+     "who": "mari",
+     "seam": {
+      "kind": "blink"
+     },
+     "ja": "でも、ノックが聞こえても……開けないで。",
+     "en": "But even if you hear knocking... don't open it.",
+     "act": "steps right up to you to whisper it, then backs away into the dark",
+     "shot": "cu",
+     "cam": {
+      "push": 0.15
+     },
+     "body": {
+      "prompt": "steps in close until her face is a hand's width from the viewer's, whispers, then steps backward into the dark, eyes on the viewer",
+      "block": [
+       {
+        "at": 0,
+        "pose": "look_left"
+       },
+       {
+        "at": 0.3,
+        "pose": "lean_in",
+        "ease": "inout",
+        "walk": true,
+        "move": "hall_mari_close_spot"
+       },
+       {
+        "at": 0.62,
+        "pose": "lean_in",
+        "ease": "hold"
+       },
+       {
+        "at": 1,
+        "pose": "idle",
+        "ease": "inout",
+        "walk": true,
+        "move": "hall_mari_back_spot"
+       }
+      ],
+      "blend": 0.3,
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_message_c3_01_leanin",
+        "prompt": "A person steps forward and leans in close",
+        "secs": 2.5,
+        "path": [
+         "hall_mari_near_spot",
+         "hall_mari_close_spot"
+        ]
+       },
+       {
+        "name": "sample_message_c3_02_backaway",
+        "prompt": "A scared person backs away slowly",
+        "secs": 3,
+        "path": [
+         "hall_mari_close_spot",
+         "hall_mari_back_spot"
+        ]
+       }
+      ]
+     },
+     "zh": "但是，就算听到敲门声……也别开门。",
+     "ja_note": "close and urgent, the last three words almost soundless",
+     "expr": "eyes widen, lips tremble as she leans in",
+     "voice": "whispers",
+     "en_draft": "But if you hear knocking... don't open it."
+    },
+    {
+     "id": "c4",
+     "who": "mari",
+     "seam": {
+      "kind": "turn"
+     },
+     "act": "half turned away, looking back over her shoulder",
+     "shot": "ms",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_message_c4_01_lookback",
+        "prompt": "A shy person standing turned away looks back over their shoulder",
+        "secs": 2.5
+       }
+      ]
+     },
+     "event": {
+      "type": "choose",
+      "prompt": "",
+      "default": "o_silent",
+      "options": [
+       {
+        "id": "o_kind",
+        "label": "No. I came for you.",
+        "ja": "ううん。君に会いに来た。",
+        "zh": "没有。我是来见你的。",
+        "karma": 1
+       },
+       {
+        "id": "o_ask",
+        "label": "Why did you call me here?",
+        "ja": "どうして呼んだの？",
+        "zh": "你为什么叫我来？",
+        "karma": 0
+       },
+       {
+        "id": "o_silent",
+        "label": "(Say nothing)",
+        "ja": "（黙っている）",
+        "zh": "（沉默）",
+        "karma": -1
+       }
+      ]
+     },
+     "ja": "……怒ってる？",
+     "en": "...Are you angry?",
+     "zh": "……你生气了吗？",
+     "ja_note": "small and childlike, rising at the end; she's afraid of the answer",
+     "expr": "uncertain half-smile, eyes searching yours",
+     "voice": "says softly",
+     "en_draft": "...Are you angry?"
+    }
+   ],
+   "cues": [
+    {
+     "at": {
+      "clip": "c2",
+      "edge": "start",
+      "offset": 0
+     },
+     "do": {
+      "light": "hall_lamp",
+      "set": "flicker"
+     }
+    },
+    {
+     "at": {
+      "clip": "c3",
+      "edge": "end",
+      "offset": 0.4
+     },
+     "do": {
+      "trick": "lights_die",
+      "room": "hall",
+      "secs": 1
+     }
+    },
+    {
+     "at": {
+      "clip": "c3",
+      "edge": "end",
+      "offset": 2
+     },
+     "do": {
+      "light": null,
+      "room": "hall",
+      "set": "on"
+     }
+    }
+   ],
+   "hold": {
+    "min": 0,
+    "max": 2
+   },
+   "sets": [
+    {
+     "flag": "heard_mari"
+    },
+    {
+     "objective": "Find Father's diary"
+    }
+   ],
+   "notes": [
+    {
+     "by": "claude",
+     "text": "Soft lock keeps her in view; the c1-c2 seam hides on the lamp flicker (a glance), c2-c3 on a blink.",
+     "at": "2026-10-20"
+    }
+   ],
+   "mood": "dread",
+   "enter": {
+    "kind": "fade",
+    "secs": 0.6
+   }
+  },
+  "s_cellar": {
+   "title": "Who knocked",
+   "level": "house",
+   "pick": "a",
+   "view": "cellar_behind_spot",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     40,
+     20
+    ]
+   },
+   "variants": {
+    "a": {
+     "label": "from the dark",
+     "stage": {
+      "mari": "cellar_mari_spot"
+     },
+     "clips": [
+      {
+       "id": "c1",
+       "who": "mari",
+       "ja": "開けないでって、言ったのに。",
+       "en": "I told you not to open it.",
+       "act": "half in shadow, very still",
+       "body": {
+        "prompt": "stands in shadow, head down, then lifts the head unnaturally slowly",
+        "block": [
+         {
+          "at": 0,
+          "pose": "head_down"
+         },
+         {
+          "at": 0.9,
+          "pose": "idle",
+          "ease": "in"
+         }
+        ],
+        "mods": [
+         {
+          "type": "twitch",
+          "amount": 0.25
+         }
+        ],
+        "tier": "simple"
+       },
+       "shot": "fs",
+       "zh": "我说过别开门的。",
+       "ja_note": "flat, no anger left, just tired",
+       "expr": "blank stare, head tilted slightly",
+       "voice": "says flatly",
+       "en_draft": "I told you not to open it."
+      }
+     ]
+    },
+    "b": {
+     "label": "behind you",
+     "stage": {
+      "mari": "cellar_behind_spot"
+     },
+     "clips": [
+      {
+       "id": "c1",
+       "who": "mari",
+       "ja": "後ろだよ。",
+       "en": "Behind you.",
+       "act": "whispered close; player turns (forced lookat)",
+       "body": {
+        "prompt": "leans in close behind the viewer and whispers",
+        "block": [
+         {
+          "at": 0,
+          "pose": "lean_in"
+         }
+        ],
+        "tier": "simple"
+       },
+       "shot": "cu",
+       "zh": "在你后面。",
+       "ja_note": "right at the ear, a smile in it",
+       "expr": "slow grin",
+       "voice": "whispers",
+       "en_draft": "Behind you."
+      }
+     ],
+     "cues": [
+      {
+       "at": {
+        "clip": "c1",
+        "edge": "start",
+        "offset": 0.3
+       },
+       "do": {
+        "lookat": "mari",
+        "secs": 1
+       }
+      }
+     ]
+    },
+    "c": {
+     "label": "only the voice",
+     "stage": {},
+     "clips": [
+      {
+       "id": "c1",
+       "who": "mari",
+       "ja": "まだ、ここにいるよ。",
+       "en": "I'm still here.",
+       "act": "voice only from below",
+       "face": false,
+       "zh": "我还在这里。",
+       "ja_note": "from below, muffled, gentle",
+       "expr": "",
+       "voice": "says softly",
+       "en_draft": "I'm still here."
+      }
+     ],
+     "camera": {
+      "mode": "soft",
+      "look": "cellar_hatch",
+      "cone": [
+       40,
+       20
+      ]
+     }
+    }
+   },
+   "sets": [
+    {
+     "flag": "met_in_cellar"
+    }
+   ],
+   "notes": [
+    {
+     "by": "claude",
+     "text": "Three takes to try; pick decides which one plays. b is the scariest on paper, c the cheapest.",
+     "at": "2026-10-20"
+    }
+   ],
+   "mood": "reveal"
+  },
+  "s_grab": {
+   "title": "She grabs you",
+   "level": "house",
+   "stage": {
+    "mari": "cellar_mari_spot"
+   },
+   "view": "cellar_behind_spot",
+   "camera": {
+    "mode": "held",
+    "look": "mari"
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "ja": "一緒にいて。",
+     "en": "Stay with me.",
+     "act": "lunges, grabs the player's collar, pulls",
+     "body": {
+      "prompt": "lunges forward two quick steps and grabs at chest height with the right hand, then pulls back hard",
+      "start": "mari_idle",
+      "path": [
+       "cellar_mari_spot",
+       "cellar_grab_spot"
+      ],
+      "reach": {
+       "hand": "right",
+       "to": "player_collar",
+       "at": 0.5,
+       "until": 0.55
+      },
+      "block": [
+       {
+        "at": 0,
+        "pose": "head_down"
+       },
+       {
+        "at": 0.5,
+        "pose": "lunge",
+        "ease": "snap",
+        "move": "cellar_grab_spot"
+       },
+       {
+        "at": 0.85,
+        "pose": "grab_pull",
+        "ease": "out"
+       }
+      ],
+      "tier": "action",
+      "segments": [
+       {
+        "name": "sample_grab_c1_01_lunge",
+        "prompt": "An angry person lunges forward and grabs with the right hand",
+        "secs": 2
+       }
+      ]
+     },
+     "shot": "pov_down",
+     "cam": {
+      "shake": 0.4
+     },
+     "event": {
+      "type": "struggle",
+      "secs": 4,
+      "pull": "back",
+      "need": 0.6,
+      "prompt": "Pull free!",
+      "warn": 0.6,
+      "on": {
+       "escape": [
+        {
+         "door": "front_door",
+         "set": "unlock"
+        },
+        {
+         "objective": "Get out of the house"
+        }
+       ]
+      }
+     },
+     "zh": "陪着我。",
+     "ja_note": "desperate, through clenched teeth on the pull",
+     "expr": "teeth bared, eyes wide and wet",
+     "voice": "says angrily",
+     "en_draft": "Stay with me."
+    }
+   ],
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start",
+      "offset": 0
+     },
+     "do": {
+      "sound": "grab"
+     }
+    }
+   ],
+   "mood": "panic"
+  },
+  "s_hidden": {
+   "title": "She walks past the locker",
+   "level": "house",
+   "mood": "dread",
+   "view": "hall_locker_view",
+   "stage": {
+    "mari": "hall_mari_spot"
+   },
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     18,
+     10
+    ],
+    "through": [
+     "hall_locker"
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "ja": "どこにいるの……？",
+     "en": "Where are you...?",
+     "act": "walks slowly down the hall, searching",
+     "shot": "fs",
+     "body": {
+      "prompt": "walks slowly forward down a corridor, searching, head turning side to side",
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       },
+       {
+        "at": 1,
+        "pose": "look_left",
+        "ease": "linear",
+        "walk": true,
+        "move": "hall_walk_spot"
+       }
+      ],
+      "tier": "simple"
+     },
+     "event": {
+      "type": "breath",
+      "secs": 5,
+      "prompt": "Keep still",
+      "warn": 0.8
+     },
+     "zh": "你在哪里……？",
+     "ja_note": "sing-song, drawn out, searching",
+     "expr": "eyes darting side to side",
+     "voice": "says softly",
+     "en_draft": "Where are you...?"
+    }
+   ],
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start",
+      "offset": 0
+     },
+     "do": {
+      "sound": "breath"
+     }
+    }
+   ],
+   "stance": "hide"
+  },
+  "s_doll": {
+   "title": "Put her back",
+   "level": "house",
+   "mood": "panic",
+   "view": "kitchen_view_spot",
+   "enter": {
+    "kind": "cut"
+   },
+   "stage": {
+    "mari": "kitchen_behind_spot"
+   },
+   "camera": {
+    "mode": "hard",
+    "look": "mari"
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "ja": "返して。",
+     "en": "Put her back.",
+     "act": "right behind the player, close, flat voice",
+     "shot": "cu",
+     "body": {
+      "prompt": "stands right behind the viewer, then lunges with both hands",
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       },
+       {
+        "at": 0.7,
+        "pose": "reach_both",
+        "ease": "snap"
+       }
+      ],
+      "mods": [
+       {
+        "type": "snap",
+        "at": 0.6,
+        "secs": 0.15
+       }
+      ],
+      "tier": "action"
+     },
+     "zh": "放回去。",
+     "ja_note": "flat and cold, right behind you",
+     "expr": "expressionless, unblinking",
+     "voice": "says coldly",
+     "en_draft": "Put her back."
+    }
+   ],
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start",
+      "offset": 0
+     },
+     "do": {
+      "lookat": "kitchen_behind_spot",
+      "secs": 0.6
+     }
+    },
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "end",
+      "offset": -0.3
+     },
+     "do": {
+      "sound": "sting_big"
+     }
+    }
+   ],
+   "sets": [
+    {
+     "karma": -2
+    },
+    {
+     "door": "cellar_door",
+     "set": "open"
+    }
+   ]
+  },
+  "s_found": {
+   "title": "She found you first",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_spot"
+   },
+   "view": "hall_view_spot",
+   "mood": "calm",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "act": "holding the key up between two fingers",
+     "shot": "ms",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_found_c1_01_holdup",
+        "prompt": "A person holds up a small object in front of them",
+        "secs": 3
+       }
+      ]
+     },
+     "ja": "……遅いよ。鍵、ここにあるのに。",
+     "en": "...You're slow. The key was here all along.",
+     "zh": "……你好慢。钥匙明明就在这里。",
+     "ja_note": "teasing, then the tease goes cold",
+     "expr": "small smirk that fades",
+     "voice": "says",
+     "en_draft": "...You're slow. The key was here all along."
+    }
+   ],
+   "sets": [
+    {
+     "give": "cellar_key"
+    },
+    {
+     "karma": -1
+    },
+    {
+     "objective": "Open the cellar"
+    }
+   ]
+  },
+  "s_held": {
+   "title": "She won't let go",
+   "level": "house",
+   "stage": {
+    "mari": "cellar_grab_spot"
+   },
+   "view": "cellar_behind_spot",
+   "mood": "intimate",
+   "camera": {
+    "mode": "held",
+    "look": "mari"
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "act": "holding the player's collar, forehead almost touching",
+     "shot": "cu",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_held_c1_01_hold",
+        "prompt": "A sad person stands holding someone close",
+        "secs": 4
+       }
+      ]
+     },
+     "event": {
+      "type": "choose",
+      "default": "o_still",
+      "options": [
+       {
+        "id": "o_hold",
+        "label": "Hold her",
+        "ja": "抱きしめる",
+        "zh": "抱住她",
+        "karma": 2
+       },
+       {
+        "id": "o_push",
+        "label": "Push her away",
+        "ja": "突き放す",
+        "zh": "推开她",
+        "karma": -2
+       },
+       {
+        "id": "o_still",
+        "label": "(Go still)",
+        "ja": "（動かない）",
+        "zh": "（一动不动）",
+        "karma": 0
+       }
+      ]
+     },
+     "ja": "ねえ……逃げないで。",
+     "en": "Hey... don't run.",
+     "zh": "喂……别逃。",
+     "ja_note": "a plea, breaking in the middle",
+     "expr": "eyes glistening, brow pinched",
+     "voice": "pleads",
+     "en_draft": "Hey... don't run."
+    }
+   ],
+   "sets": [
+    {
+     "door": "front_door",
+     "set": "unlock"
+    },
+    {
+     "objective": "Get out of the house"
+    }
+   ]
+  },
+  "s_shut": {
+   "title": "The door shuts",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_spot"
+   },
+   "view": "hall_walk_spot",
+   "mood": "grief",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     40,
+     20
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "act": "sitting against the front door, knees up",
+     "shot": "fs",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_shut_c1_01_sitdown",
+        "prompt": "A sad person sits down on the floor and hugs their knees",
+        "secs": 4
+       }
+      ]
+     },
+     "ja": "……行かないで。お願い。",
+     "en": "...Don't go. Please.",
+     "zh": "……别走。求你了。",
+     "ja_note": "hollow, the please almost swallowed",
+     "expr": "tear-streaked, looking up",
+     "voice": "sobs",
+     "en_draft": "...Don't go. Please."
+    }
+   ],
+   "sets": [
+    {
+     "door": "front_door",
+     "set": "unlock"
+    },
+    {
+     "karma": -1
+    }
+   ]
+  },
+  "s_photo": {
+   "title": "Mother's Day",
+   "level": "house",
+   "stage": {
+    "mari": "kitchen_window_spot"
+   },
+   "view": "kitchen_view_spot",
+   "mood": "grief",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "act": "by the window, the photo held to her chest",
+     "shot": "ms",
+     "body": {
+      "tier": "activity",
+      "segments": [
+       {
+        "name": "sample_photo_c1_01_holdphoto",
+        "prompt": "A sad person holds a photo to their chest",
+        "secs": 3.5
+       }
+      ]
+     },
+     "ja": "母の日の写真……覚えててくれたんだ。",
+     "en": "The Mother's Day photo... you remembered.",
+     "zh": "母亲节的照片……你还记得啊。",
+     "ja_note": "warm for the first time, then it cracks",
+     "expr": "soft smile, eyes wet",
+     "voice": "says softly",
+     "en_draft": "The Mother's Day photo... you remembered."
+    }
+   ],
+   "sets": [
+    {
+     "flag": "egg_photo"
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_arrive": {
+   "type": "stitch",
+   "ref": "t_arrive",
+   "next": "n_message"
+  },
+  "n_message": {
+   "type": "scene",
+   "ref": "s_message",
+   "next": "n_search"
+  },
+  "n_search": {
+   "type": "stitch",
+   "ref": "t_search",
+   "next": "n_knock"
+  },
+  "n_found": {
+   "type": "scene",
+   "ref": "s_found",
+   "next": "n_knock"
+  },
+  "n_doll": {
+   "type": "scene",
+   "ref": "s_doll",
+   "next": "n_knock"
+  },
+  "n_knock": {
+   "type": "choice",
+   "by": "act",
+   "prompt": "The knocking: open the cellar, or hide?",
+   "options": [
+    {
+     "label": "Open the cellar door",
+     "when": {
+      "enter": "cellar_stairs"
+     },
+     "to": "n_cellar"
+    },
+    {
+     "label": "Hide in the locker",
+     "when": {
+      "use": "hall_locker"
+     },
+     "to": "n_hidden"
+    }
+   ]
+  },
+  "n_cellar": {
+   "type": "scene",
+   "ref": "s_cellar",
+   "next": "n_grab"
+  },
+  "n_grab": {
+   "type": "scene",
+   "ref": "s_grab",
+   "next": "n_grab_result"
+  },
+  "n_grab_result": {
+   "type": "choice",
+   "by": "result",
+   "of": "n_grab",
+   "options": [
+    {
+     "result": "escape",
+     "to": "n_flee"
+    },
+    {
+     "result": "caught",
+     "to": "n_held"
+    }
+   ]
+  },
+  "n_held": {
+   "type": "scene",
+   "ref": "s_held",
+   "next": "n_flee"
+  },
+  "n_hidden": {
+   "type": "scene",
+   "ref": "s_hidden",
+   "next": "n_hidden_result"
+  },
+  "n_hidden_result": {
+   "type": "choice",
+   "by": "result",
+   "of": "n_hidden",
+   "options": [
+    {
+     "result": "success",
+     "to": "n_cellar"
+    },
+    {
+     "result": "fail",
+     "to": "n_grab"
+    }
+   ]
+  },
+  "n_flee": {
+   "type": "stitch",
+   "ref": "t_flee",
+   "next": "n_egg"
+  },
+  "n_shut": {
+   "type": "scene",
+   "ref": "s_shut",
+   "next": "n_egg"
+  },
+  "n_egg": {
+   "type": "choice",
+   "by": "flag",
+   "options": [
+    {
+     "if": [
+      "found_photo"
+     ],
+     "to": "n_photo"
+    },
+    {
+     "to": "n_end"
+    }
+   ]
+  },
+  "n_photo": {
+   "type": "scene",
+   "ref": "s_photo",
+   "next": "n_end"
+  },
+  "n_end": {
+   "type": "choice",
+   "by": "karma",
+   "options": [
+    {
+     "min": 2,
+     "to": "e_good"
+    },
+    {
+     "max": -2,
+     "to": "e_bad"
+    },
+    {
+     "to": "e_neutral"
+    }
+   ]
+  },
+  "e_good": {
+   "type": "ending",
+   "kind": "good",
+   "title": "Out of the house, together"
+  },
+  "e_neutral": {
+   "type": "ending",
+   "kind": "neutral",
+   "title": "The door stays open"
+  },
+  "e_bad": {
+   "type": "ending",
+   "kind": "bad",
+   "title": "Stay with me",
+   "note": "the final ending: the hero doesn't leave"
+  }
+ },
+ "interrupts": [
+  {
+   "id": "i_doll",
+   "label": "Takes the doll",
+   "when": {
+    "pickup": "doll"
+   },
+   "during": [
+    "t_search"
+   ],
+   "to": "n_doll"
+  }
+ ]
+}

@@ -26,7 +26,8 @@ if hasattr(sys.stdout, "reconfigure"):
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught"}
 TRIGGER_EXTRA = {"secs", "within"}
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
-           "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done"}
+           "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
+           "karma"}
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
@@ -49,7 +50,14 @@ CAM_KEYS = {"push": (0, L.LEAN), "zoom": (0, L.ZOOM), "roll": (-30, 30), "shake"
 FAST = {"walking": 0.625, "looking round": 8 / 30, "searching": 0.3, "reading": 0.55, "puzzles": 0.35}  # a fast player
 GAME_DIR = None
 POSES = set()
-ENDINGS = {"good", "bad", "secret", "other"}
+ENDINGS = {"good", "neutral", "bad", "secret", "other"}
+FORMAT = 2                  # the file's format; 3 adds the v2 pipeline (docs/STORY_FORMAT.md §9)
+STYLES = ("kind", "cruel", "silent")     # how the karma sweeps answer every timed choice
+SEG_NAME = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)+$")
+PERSON = re.compile(r"^(A|An) ([A-Za-z-]+ ){0,3}person\b")
+LOOK_WORDS = re.compile(r"\b(at|toward|towards) (the )?(player|viewer|camera|you)\b|\blooks? at (him|her|them)\b", re.I)
+TIER_SECS = {}              # tier -> seconds of motion (the animation budget report)
+SEG_NAMES = {}              # segment name -> where
 STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move"}
 MAX_CPS = 17.0
 WALK = 1.4 / 1.6            # metres a second, with looking around (x 1.6)
@@ -62,7 +70,7 @@ REVEALS = {"glimpse", "jumpscare"}
 MINOR = {"glimpse", "slam_behind", "knock", "whisper", "lights_die", "swap"}
 SCARE_GAP, MINOR_GAP = 240, 60
 MAX_HOLD = 2.5
-MAX_PATHS = 256
+MAX_PATHS = 4096            # format 3 sweeps three answer styles and both secret modes
 
 
 def verbs(a):
@@ -214,6 +222,29 @@ def check_world(story, things, r):
             r.err(f"{t.id}: light kind {p.get('kind')!r}")
 
 
+STORY = None
+
+
+def story_subs():
+    return (STORY or {}).get("game", {}).get("subtitles", ["en"])
+
+
+def check_karma(where, delta, story, r):
+    axes = L.karma_axes(story)
+    if isinstance(delta, (int, float)):
+        if "karma" not in axes:
+            r.err(f"{where}: karma {delta} names no axis (the game's axes: {', '.join(axes)})")
+        return
+    if not isinstance(delta, dict):
+        r.err(f"{where}: karma is a number or {{axis: number}}")
+        return
+    for k, v in delta.items():
+        if k not in axes:
+            r.err(f"{where}: karma axis {k!r} isn't in game.karma.axes ({', '.join(axes)})")
+        if not isinstance(v, (int, float)):
+            r.err(f"{where}: karma {k} {v!r} isn't a number")
+
+
 def check_spoken(where, ln, cast, r, clip_max=None):
     if ln.get("who") not in cast and ln.get("who") != "player":
         r.err(f"{where}: who {ln.get('who')!r} isn't in cast")
@@ -221,8 +252,17 @@ def check_spoken(where, ln, cast, r, clip_max=None):
         r.err(f"{where}: no 'en' subtitle")
     if not ln.get("ja"):
         r.warn(f"{where}: no 'ja' text to record")
+    if FORMAT >= 3 and ln.get("ja") and ln.get("face", True) is not False and "voice" in ln:
+        if ln["voice"] not in L.VOICES:
+            r.warn(f"{where}: voice {ln['voice']!r} isn't in the list (docs/VOICES.md): fine if you've tested it, then add it")
+        if not ln.get("expr"):
+            r.warn(f"{where}: no `expr`: the MiniMax prompt needs the expression (docs/VOICES.md)")
+    if FORMAT >= 3 and ln.get("ja"):
+        for lang in [x for x in story_subs() if x != "en"]:
+            if not ln.get(lang):
+                r.warn(f"{where}: no {lang!r} subtitle (game.subtitles has it)")
     if ln.get("dur"):
-        cps = len(ln.get("en", "")) / float(ln["dur"])
+        cps = len(ln.get("en", "")) / L.clip_secs(ln)
         if cps > MAX_CPS:
             r.err(f"{where}: subtitle at {cps:.0f} characters a second (max {MAX_CPS:.0f}): split it")
     if clip_max:
@@ -231,6 +271,45 @@ def check_spoken(where, ln, cast, r, clip_max=None):
             r.err(f"{where}: the take is {secs:.1f} s, over the {clip_max} s a clip can be: split it into two clips")
         elif not ln.get("dur") and secs > clip_max:
             r.warn(f"{where}: about {secs:.0f} s at speaking pace, over {clip_max} s: split it before recording")
+
+
+def check_body_v3(cw, sid, c, body, story, things, lvl, r):
+    """Format 3's body fields: the tier (the animation budget) and the Kimodo segments (docs/KIMODO.md §2)."""
+    tier = body.get("tier")
+    if tier is not None and tier not in L.TIERS:
+        r.err(f"{cw}: body tier {tier!r} (one of {', '.join(L.TIERS)})")
+    segs = body.get("segments") or []
+    secs = sum(float(g.get("secs", 0)) for g in segs) or L.clip_secs(c)
+    if FORMAT >= 3 and not tier:
+        r.warn(f"{cw}: body has no tier (simple, activity, action): the animation budget can't count it")
+    TIER_SECS[tier or "simple"] = TIER_SECS.get(tier or "simple", 0) + secs
+    for i, g in enumerate(segs):
+        gw = f"{cw} segment {i + 1}"
+        name, prompt = g.get("name", ""), g.get("prompt", "")
+        if not SEG_NAME.match(name):
+            r.err(f"{gw}: name {name!r}: lower case words joined by _ (<game>_<scene>_<clip>_<nn>_<verb>, docs/KIMODO.md §3)")
+        elif name in SEG_NAMES and SEG_NAMES[name] != gw:
+            if (story.get("motions") or {}).get(name) is None and not g.get("reuse"):
+                r.err(f"{gw}: name {name!r} is also {SEG_NAMES[name]} (mark the second `reuse: true` if it's the same motion)")
+        else:
+            SEG_NAMES[name] = gw
+        if not PERSON.match(prompt):
+            r.err(f"{gw}: the prompt starts \"A person ...\" (or \"A scared person ...\"): {prompt!r}")
+        if LOOK_WORDS.search(prompt):
+            r.warn(f"{gw}: the prompt says where to look ({prompt!r}): Kimodo can't aim the head; the look layer does it")
+        if prompt.lower().startswith(("then", "and then")) or " then " in prompt.lower():
+            r.warn(f"{gw}: one behaviour per motion, standing alone (no \"then\"): split it into two segments")
+        n = g.get("secs")
+        if not isinstance(n, (int, float)) or not L.SEG_MIN <= n <= L.SEG_MAX:
+            r.err(f"{gw}: secs {n!r}: a Kimodo motion is {L.SEG_MIN:g} to {L.SEG_MAX:g} s (a stand-up is one, the walk after it the next)")
+        for spot in g.get("path", []):
+            if spot not in things or things[spot].use != "spot" or things[spot].level != lvl:
+                r.err(f"{gw}: path spot {spot!r} isn't a spot in level {lvl}")
+        for k in g.get("keys", []):
+            if k.get("pose") not in POSES:
+                r.err(f"{gw}: key pose {k.get('pose')!r} isn't in Content/Studio/poses.json")
+    if segs and not c.get("dur") and abs(secs - L.clip_secs(c)) > max(2.0, 0.35 * L.clip_secs(c)):
+        r.warn(f"{cw}: its segments run {secs:.1f} s against the clip's {L.clip_secs(c):.1f} s (fit will stretch, hold or trim)")
 
 
 def check_scene(sid, sc, story, things, r):
@@ -274,7 +353,7 @@ def check_scene(sid, sc, story, things, r):
                       f" (hiding in it? list it in camera.through and set stance 'hide')")
     versions = [(f"scene {sid}", sc)] if not variants else \
         [(f"scene {sid} variant {k}", L.scene_version(dict(sc, pick=k))) for k in variants]
-    clip_max = story["game"].get("clip_max", 10)
+    clip_max = story["game"].get("clip_max", 8 if FORMAT >= 3 else 10)
     for where, ver in versions:
         stage = ver.get("stage", {})
         for who, spot in stage.items():
@@ -337,7 +416,9 @@ def check_scene(sid, sc, story, things, r):
                 t = ev.get("type")
                 if t not in EVENTS:
                     r.err(f"{cw}: event type {t!r} (one of {', '.join(sorted(EVENTS))})")
-                if not isinstance(ev.get("secs"), (int, float)) or ev["secs"] <= 0:
+                if t == "choose" and FORMAT >= 3 and "secs" not in ev:
+                    pass                                    # format 3: a timed choice gives 30 s
+                elif not isinstance(ev.get("secs"), (int, float)) or ev["secs"] <= 0:
                     r.err(f"{cw}: event needs secs (how long the player has)")
                 if t == "struggle":
                     if ev.get("pull", "any") not in PULLS:
@@ -347,11 +428,16 @@ def check_scene(sid, sc, story, things, r):
                 if t in ("struggle", "mash") and not 0 < float(ev.get("need", 0.5)) <= 1:
                     r.err(f"{cw}: event need is 0..1")
                 if t == "choose":
-                    ids = [o.get("id") for o in ev.get("options", [])]
-                    if len(ids) < 2 or None in ids or len(set(ids)) != len(ids):
+                    oids = [o.get("id") for o in ev.get("options", [])]
+                    if len(oids) < 2 or None in oids or len(set(oids)) != len(oids):
                         r.err(f"{cw}: a timed choice needs two options or more, each with a unique id and a label")
-                    if ev.get("default") not in ids:
+                    if ev.get("default") not in oids:
                         r.err(f"{cw}: a timed choice needs `default`: the option taken when the time runs out (silence is a choice)")
+                    for o in ev.get("options", []):
+                        if not o.get("label"):
+                            r.err(f"{cw}: option {o.get('id')!r} needs a label")
+                        if "karma" in o:
+                            check_karma(f"{cw} option {o.get('id')}", o["karma"], story, r)
                 for res, acts in (ev.get("on") or {}).items():
                     if res not in L.event_results(ev):
                         r.err(f"{cw}: event on {res!r} isn't a result of {t} ({', '.join(map(str, L.event_results(ev)))})")
@@ -359,10 +445,11 @@ def check_scene(sid, sc, story, things, r):
                         check_action(f"{cw} event on {res}", a, story, things, r, stage)
             body = c.get("body")
             if body:
+                check_body_v3(cw, sid, c, body, story, things, lvl, r)
                 block = body.get("block") or []
-                if not block and not body.get("prompt") and not body.get("file"):
+                if not block and not body.get("prompt") and not body.get("file") and not body.get("segments"):
                     r.err(f"{cw}: body needs blocking keys, a prompt or a file")
-                elif not body.get("prompt"):
+                elif not body.get("prompt") and not body.get("segments"):
                     r.warn(f"{cw}: body has no prompt: motion.py won't generate it (the blocking plays)")
                 for k in block:
                     if k.get("pose") not in POSES:
@@ -448,6 +535,9 @@ def check_action(bid, a, story, things, r, stage=None):
         return x in things
 
     lines, sounds, items, cast = (story.get(t, {}) for t in ("lines", "sounds", "items", "cast"))
+    if k == "karma":
+        check_karma(bid, v, story, r)
+        return
     if k == "say" and v not in lines:
         r.err(f"{bid}: say {v!r} isn't a line")
     elif k == "sound":
@@ -567,8 +657,17 @@ def check_flow(story, things, r):
                 r.err(f"flow {nid}: next {n.get('next')!r} isn't a flow node")
         elif t == "choice":
             by, opts = n.get("by"), n.get("options", [])
-            if by not in ("act", "flag", "result"):
-                r.err(f"flow {nid}: choice by {by!r} (act, flag or result)")
+            if by not in ("act", "flag", "result", "karma"):
+                r.err(f"flow {nid}: choice by {by!r} (act, flag, result or karma)")
+            if by == "karma":
+                axes = L.karma_axes(story)
+                for o in opts[:-1]:
+                    if "min" not in o and "max" not in o:
+                        r.err(f"flow {nid}: every karma option but the last needs `min` or `max` (the last is the fallback)")
+                    if o.get("axis", "karma" if "karma" in axes else next(iter(axes))) not in axes:
+                        r.err(f"flow {nid}: karma axis {o.get('axis')!r} isn't in game.karma.axes")
+                if "min" in opts[-1] or "max" in opts[-1]:
+                    r.err(f"flow {nid}: the last karma option is the fallback: no `min` or `max`")
             if len(opts) < 2:
                 r.err(f"flow {nid}: a choice needs two options or more")
             for o in opts:
@@ -600,7 +699,8 @@ def check_flow(story, things, r):
         if evs:
             for k in [k for k, n in flow.items() if n.get("ref") == sid and n.get("type") == "scene"]:
                 nxt = flow.get(flow[k].get("next"), {})
-                if (nxt.get("type") != "choice" or nxt.get("by") != "result") and not any(e.get("on") for e in evs):
+                karma = any("karma" in o for e in evs for o in e.get("options", []))
+                if (nxt.get("type") != "choice" or nxt.get("by") != "result") and not any(e.get("on") for e in evs) and not karma:
                     r.warn(f"flow {k}: scene {sid} has an event, but nothing uses its result (a result choice next, or `on`)")
     for tid, st in stitches.items():
         tm = st.get("timer")
@@ -609,6 +709,9 @@ def check_flow(story, things, r):
                 r.err(f"stitch {tid}: timer needs secs")
             if tm.get("fail") not in flow:
                 r.err(f"stitch {tid}: timer fail {tm.get('fail')!r} isn't a flow node")
+    if FORMAT >= 3:
+        check_no_death(story, r)
+        check_eggs(story, r)
     for it in story.get("interrupts", []):
         w = f"interrupt {it.get('id')}"
         check_trigger(w, it.get("when", {}), story, things, set(), r)
@@ -621,6 +724,88 @@ def check_flow(story, things, r):
         sets = json.dumps(story.get("stitches", {})) + json.dumps(story.get("scenes", {}))
         if f'"flag": "{s.get("flag")}"' not in sets:
             r.warn(f"secret {k}: nothing sets its flag {s.get('flag')!r}")
+
+
+def flow_edges(story):
+    """Every edge of the flow: (from, to, why)."""
+    flow, out = story.get("flow", {}), []
+    for nid, n in flow.items():
+        if n.get("next"):
+            out.append((nid, n["next"], "next"))
+        for o in n.get("options", []):
+            why = "karma" if n.get("by") == "karma" else ("result " + str(o.get("result")) if n.get("by") == "result" else n.get("by"))
+            out.append((nid, o.get("to"), why))
+        if n.get("type") == "stitch":
+            tm = (story.get("stitches", {}).get(n.get("ref")) or {}).get("timer")
+            if tm:
+                out.append((nid, tm.get("fail"), "timer"))
+    for it in story.get("interrupts", []):
+        for nid, n in flow.items():
+            during = it.get("during", "all")
+            if n.get("type") == "stitch" and (during == "all" or n.get("ref") in during):
+                out.append((nid, it.get("to"), "interrupt " + str(it.get("id"))))
+    return out
+
+
+def is_final(story, nid):
+    n = story["flow"].get(nid, {})
+    ref = (story.get("scenes", {}).get(n.get("ref")) or story.get("stitches", {}).get(n.get("ref")) or {}) if n.get("ref") else {}
+    return bool(n.get("final") or ref.get("final"))
+
+
+def check_no_death(story, r):
+    """No dying (game.no_death, on by default in format 3): an ending comes only from a karma choice or a node marked
+    final. A missed task, a lost struggle or an interrupt leads on to a scene or a task: the player is guided back."""
+    if not story["game"].get("no_death", True):
+        return
+    flow = story["flow"]
+    for a, b, why in flow_edges(story):
+        if flow.get(b, {}).get("type") != "ending":
+            continue
+        n = flow.get(a, {})
+        if why == "karma" or is_final(story, a):
+            continue
+        if n.get("type") == "choice" and n.get("by") == "flag" and is_final_branch(story, a):
+            continue
+        r.err(f"flow {a} -> {b} ({why}): an ending outside the final act. No dying: guide the player on to a scene or "
+              f"a task (they're found, wake, are pulled along), or mark the node `final: true` if this is the end")
+
+
+def is_final_branch(story, nid):
+    """A flag choice in the final act: every node leading into it is final."""
+    preds = [a for a, b, _ in flow_edges(story) if b == nid]
+    return bool(preds) and all(is_final(story, a) or story["flow"][a].get("type") == "choice" for a in preds)
+
+
+def reach(story, start, stop=None):
+    flow, seen, todo = story["flow"], set(), [start]
+    succ = {}
+    for a, b, _ in flow_edges(story):
+        succ.setdefault(a, []).append(b)
+    while todo:
+        n = todo.pop()
+        if n in seen or n not in flow:
+            continue
+        seen.add(n)
+        if n == stop:
+            continue
+        todo.extend(succ.get(n, []))
+    return seen
+
+
+def check_eggs(story, r):
+    """Easter eggs (a flag choice on a secret's flag) blend back into the main story: their branch reaches the
+    fallback's node again."""
+    secret_flags = {s.get("flag") for s in story.get("secrets", {}).values()}
+    for nid, n in story["flow"].items():
+        if n.get("type") != "choice" or n.get("by") != "flag" or is_final(story, nid) or is_final_branch(story, nid):
+            continue
+        main = n["options"][-1].get("to")
+        for o in n["options"][:-1]:
+            if not secret_flags & {f.lstrip("!") for f in o.get("if", [])}:
+                continue
+            if main not in reach(story, o.get("to"), stop=main):
+                r.warn(f"flow {nid}: the easter egg to {o.get('to')} never rejoins the main story at {main}: let it blend back")
 
 
 # ---- the playthrough: a greedy player down every path -----------------------------------------------------------
@@ -648,6 +833,21 @@ class World:
         self.results = {}        # scene node -> escape/caught
         self.seek_secrets = False  # the second sweep fires `secret` beats; the first plays past them
         self.dev = 0               # how far this path strays from the spine (later options, interrupts, timeouts)
+        self.karma = {}            # axis -> total
+        self.style = "kind"        # how this sweep answers timed choices (STYLES)
+        self.answers = []          # (scene node, clip, option) for the report
+
+    def add_karma(self, delta):
+        for k, v in L.karma_of(delta).items():
+            self.karma[k] = self.karma.get(k, 0.0) + v
+
+    def answer(self, ev):
+        """The option this sweep's player takes at a timed choice: the kindest, the cruellest, or silence (the default)."""
+        opts = ev.get("options", [])
+        if self.style == "silent" or not any("karma" in o for o in opts):
+            return next((o for o in opts if o.get("id") == ev.get("default")), opts[0] if opts else {})
+        score = lambda o: sum(L.karma_of(o.get("karma")).values())
+        return max(opts, key=score) if self.style == "kind" else min(opts, key=score)
 
     def fork(self):
         story, things, r = self.story, self.things, self.r
@@ -811,6 +1011,8 @@ class World:
                 elif v == "cut_away":
                     if self.run_actions(where, a["then"]):
                         return True
+            elif k == "karma":
+                self.add_karma(v)
             elif k == "done":
                 return True
         return False
@@ -911,8 +1113,17 @@ class World:
             self.add("scenes", L.clip_secs(c))
             if i and c.get("seam"):
                 self.add("scenes", SEAMS.get(c["seam"].get("kind"), (None, 0))[1])
-            if c.get("event"):
-                self.add("scenes", float(c["event"].get("secs", 3)))
+            ev = c.get("event")
+            if ev and ev.get("type") == "choose":
+                secs = float(ev.get("secs", L.CHOOSE_SECS if FORMAT >= 3 else 3))
+                o = self.answer(ev)
+                self.add("choices", secs if self.style == "silent" else min(secs, 8.0))
+                self.results[nid] = o.get("id")
+                self.add_karma(o.get("karma"))
+                self.answers.append((nid, c.get("id"), o.get("id")))
+                self.route.append({"node": nid, "do": "answer", "clip": c.get("id"), "option": o.get("id")})
+            elif ev:
+                self.add("scenes", float(ev.get("secs", 3)))
         self.add("scenes", float((sc.get("hold") or {}).get("max", 0)) / 2)
         for cue in ver.get("cues", []):
             a = cue.get("do", {})
@@ -998,6 +1209,14 @@ def explore(w, nid, done_paths, visited_nodes):
             if not ok:
                 w.r.err(f"SOFTLOCK at choice {nid} (path {' > '.join(w.path)}): none of its options can happen here")
                 return
+            if by == "karma":
+                for o in n["options"]:
+                    axis = o.get("axis") or ("karma" if "karma" in L.karma_axes(story) else next(iter(L.karma_axes(story))))
+                    v = w.karma.get(axis, 0.0)
+                    if ("min" not in o or v >= o["min"]) and ("max" not in o or v <= o["max"]):
+                        nid = o["to"]
+                        break
+                continue
             for i, o in enumerate(ok):
                 b = w.fork()
                 b.dev += i
@@ -1007,8 +1226,13 @@ def explore(w, nid, done_paths, visited_nodes):
                         b.go(at)
                     b.route.append({"node": nid, "do": "choose", "label": o.get("label"), "when": o.get("when")})
                 else:
-                    b.results[n.get("of")] = o["result"]
                     ev = scene_event(story, n) or {}
+                    if ev.get("type") == "choose":             # this branch answers differently from the sweep
+                        was = next((x for x in ev.get("options", []) if x.get("id") == b.results.get(n.get("of"))), {})
+                        now = next((x for x in ev.get("options", []) if x.get("id") == o["result"]), {})
+                        b.add_karma({k: -v for k, v in L.karma_of(was.get("karma")).items()})
+                        b.add_karma(now.get("karma"))
+                    b.results[n.get("of")] = o["result"]
                     b.run_actions(nid, (ev.get("on") or {}).get(o["result"], []))
                     b.route.append({"node": nid, "do": "event", "result": o["result"]})
                 explore(b, o["to"], done_paths, visited_nodes)
@@ -1023,13 +1247,14 @@ def main():
         route_out = argv[i + 1]
         del argv[i:i + 2]
     verbose = "-v" in argv
-    global GAME_DIR, POSES
+    global GAME_DIR, POSES, FORMAT, STORY
     story, path = L.load(game)
+    FORMAT, STORY = story.get("format"), story
     GAME_DIR = path.parent
     POSES = set(L.poses()["poses"])
     r = Report()
-    if story.get("format") != 2:
-        r.err("this check reads format 2 (scenes, stitches, flow): see docs/STORY_FORMAT.md")
+    if story.get("format") not in (2, 3):
+        r.err("this check reads formats 2 and 3 (scenes, stitches, flow): see docs/STORY_FORMAT.md")
     things, errs = L.index(story)
     for e in errs:
         r.err(e)
@@ -1056,10 +1281,12 @@ def main():
     paths = []
     if not r.errors:
         visited = set()
-        for seek in (False, True):          # a player who misses every secret, then one who finds them all
-            w = World(story, things, r, verbose)
-            w.seek_secrets = seek
-            explore(w, story["game"]["start"], paths, visited)
+        styles = STYLES if FORMAT >= 3 else ("kind",)
+        for style in styles:                # format 3: the kind, the cruel and the silent player
+            for seek in (False, True):      # a player who misses every secret, then one who finds them all
+                w = World(story, things, r, verbose)
+                w.seek_secrets, w.style = seek, style
+                explore(w, story["game"]["start"], paths, visited)
         for nid in story["flow"]:
             if nid not in visited:
                 (r.err if story["flow"][nid]["type"] == "ending" else r.warn)(f"flow {nid}: no path reaches it")
@@ -1099,6 +1326,20 @@ def main():
                 if flo < fast_min:
                     r.err(f"a fast player reaches {e} in {flo:.0f} min, under fast_min {fast_min}: Steam refunds under 2 hours "
                           f"(longer cutscenes can't be skipped; add stitches or scenes)")
+        if FORMAT >= 3:
+            print("karma (each sweep's player answers every timed choice the same way):")
+            for style in STYLES:
+                ends = sorted({(p.path[-1], tuple(sorted((k, round(v, 1)) for k, v in p.karma.items())))
+                               for p in paths if p.style == style and not p.seek_secrets})
+                print(f"  {style:<8}" + "; ".join(f"{e} {dict(k) or '{}'}" for e, k in ends))
+            total = sum(TIER_SECS.values())
+            if total:
+                share = {t: TIER_SECS.get(t, 0) / total for t in L.TIERS}
+                print("animation budget: " + ", ".join(f"{t} {share[t] * 100:.0f}% (aim {L.TIER_SHARE[t] * 100:.0f}%)" for t in L.TIERS))
+                if share["simple"] < 0.65:
+                    r.warn(f"only {share['simple'] * 100:.0f}% of the motion is simple: aim for 80% (the face carries the acting)")
+                if share["action"] > 0.10:
+                    r.warn(f"{share['action'] * 100:.0f}% of the motion is action: aim for 5%")
         last = None
         for t, trick, where in main_path.scares:
             if last is not None and t - last < MINOR_GAP:

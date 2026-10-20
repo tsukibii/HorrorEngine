@@ -1,4 +1,4 @@
-# The story format (format 2)
+# The story format (formats 2 and 3)
 
 A game is one file: **`Content/Games/<Game>/story.json`**. The importer builds its levels, the StoryRunner plays
 it, the director's desk edits and previews it, and the offline checks prove it before any of them run. Every word
@@ -6,6 +6,8 @@ below is something the code reads. A word that isn't here doesn't exist: add it 
 page in one commit, or don't use it.
 
 The worked example is `Content/Games/Pilot/story.json`. `python tools/story.py --game Pilot flow` shows its shape.
+**Format 3** (§9, pipeline v2) adds the Japanese pass, karma, endings by karma, no dying, the animation budget and
+Kimodo segments; its worked example is `Content/Games/Sample/story.json`.
 
 A game has three layers:
 - **The world:** levels, rooms, props. Blocks first, art later.
@@ -353,7 +355,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 **Branching and rejoining:** branches may rejoin (`n_hide` → `n_cellar`). Loops need a flag choice to leave.
 
-**Endings:** `kind` is `good bad secret other`. `short_ok` exempts an early death ending from `target_min` and
+**Endings:** `kind` is `good neutral bad secret other`. `short_ok` exempts an early death ending from `target_min` and
 `fast_min`.
 
 ### 5.1 Timed tasks and trigger cutscenes
@@ -455,3 +457,88 @@ sheet per stitch, scene and level (`Saved/Story/<G>/Shots/`).
 
 Report failures as `s_message/s_message.c2.1: rule 4: hall_lamp too dark`, fix them in story.json, rebuild, and
 re-shoot that beat only (`storykit.shots.take(G, beat=...)`).
+
+## 9. Format 3: the v2 pipeline (docs/PIPELINE.md)
+
+`"format": 3` keeps everything above and adds the fields below. `Content/Games/Sample/story.json` uses all of them.
+
+### 9.1 The game
+
+| Field | Meaning |
+|---|---|
+| `clip_max` | **8** by default: MiniMax's audio holds for 7 to 9 s |
+| `subtitles` | the subtitle languages, `["en", "zh"]`: every clip with `ja` needs each |
+| `karma` | `{"axes": {"karma": {"min": -10, "max": 10, "label": "..."}}}`: one axis by default; more if the story needs them |
+| `no_death` | **true** by default: an ending only comes from a karma choice or a node marked `final` (§9.4) |
+
+### 9.2 Lines (a clip after the Japanese pass)
+
+```json
+{"id": "c3", "who": "mari", "en_draft": "But if you hear knocking... don't open it.",
+ "ja": "でも、ノックが聞こえても……開けないで。", "ja_note": "close and urgent, the last three words almost soundless",
+ "en": "But even if you hear knocking... don't open it.", "zh": "但是，就算听到敲门声……也别开门。",
+ "expr": "eyes widen, lips tremble as she leans in", "voice": "whispers"}
+```
+
+| Field | Meaning |
+|---|---|
+| `en_draft` | the English as you refined it (the first pass); kept for reference |
+| `ja` | the line as recorded, written for Japanese (register, endings, silences), not translated word for word |
+| `ja_note` | how it's said, as a film director would give it: breath, pace, where the pause falls, what's held back |
+| `en`, `zh` | the subtitles, **translated from the Japanese** |
+| `expr` | the facial expression for MiniMax, as visible movement (docs/VOICES.md) |
+| `voice` | how it's said for MiniMax: `says`, `whispers`, `says angrily`, `screams`... (docs/VOICES.md keeps the list and what's been tested) |
+| `trim` | `{"in": s, "out": s}`: dead air cut from the take's start and end (the auto-clean writes it); the clip's length is `dur` minus the trim |
+
+Cast members get `subject` (`she` or `he`) for the prompts. Without `dur`, a clip's length is estimated from the
+Japanese (about 6.5 morae a second, plus its pauses: `storylib.ja_secs`). `python tools/story.py --game G minimax`
+prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <ja> </d>`.
+
+### 9.3 Timed choices and karma
+
+```json
+"event": {"type": "choose", "default": "o_silent", "options": [
+  {"id": "o_kind", "label": "No. I came for you.", "ja": "ううん。君に会いに来た。", "zh": "没有。我是来见你的。", "karma": 1},
+  {"id": "o_ask", "label": "Why did you call me here?", "ja": "どうして呼んだの？", "zh": "你为什么叫我来？", "karma": 0},
+  {"id": "o_silent", "label": "(Say nothing)", "ja": "（黙っている）", "zh": "（沉默）", "karma": -1}]}
+```
+
+- `secs` is **30** unless given. The timeout takes `default`: silence is an answer, and can carry karma.
+- `karma` on an option is a number (the default axis) or `{"axis": n}`. A `karma` action does the same from beats,
+  cues and `sets`: reactions count (`{"karma": -2}` for taking the doll).
+- A karma choice needs no result choice after it: the karma is what it's for. It can still branch with one.
+
+### 9.4 Endings by karma, no dying, easter eggs
+
+```json
+"n_end": {"type": "choice", "by": "karma", "options": [{"min": 2, "to": "e_good"}, {"max": -2, "to": "e_bad"}, {"to": "e_neutral"}]}
+```
+
+- **Endings:** good, neutral, bad (the bad one may kill the hero: it's the story's end, not a game over).
+- **No dying:** a timer's `fail`, a struggle's `caught`, an interrupt and every other edge into an ending is an
+  error unless it comes from a karma choice or a node (or its scene or stitch) marked `"final": true`. Guide the
+  player on instead: they're found, they wake, they're pulled along (the sample's `s_found`, `s_held`, `s_shut`).
+- **Easter eggs** come from what the player found, not karma: a flag choice on a secret's flag leads to its scene,
+  which **blends back** into the main story (the check warns when an egg's branch never rejoins the fallback's node).
+
+### 9.5 Bodies: the animation budget and Kimodo segments
+
+```json
+"body": {"tier": "simple", "segments": [
+  {"name": "sample_message_c2_01_walkforward", "prompt": "A tired person walks forward slowly", "secs": 4,
+   "path": ["hall_mari_spot", "hall_mari_near_spot"]},
+  {"name": "sample_message_c2_02_glanceleft", "prompt": "A person standing still glances to the left", "secs": 2}]}
+```
+
+| Field | Meaning |
+|---|---|
+| `tier` | `simple` (80% of the game's motion), `activity` (15%), `action` (5%); `hero: true` for the detailed few. The check reports the split |
+| `segments` | the Kimodo motions that make this clip's body, in order: each one behaviour, **2 to 10 s**, its prompt starting "A person" (or "A scared person"...), never saying where to look |
+| segment `name` | what you save it as in Kimodo: `<game>_<scene>_<clip>_<nn>_<verb>` (docs/KIMODO.md §3); unique, or `reuse: true` |
+| segment `path` | stage marks the root travels through (a 2D root path constraint) |
+| segment `keys` | `[{"at": 0..1, "pose": ...}]`: full-body keyframes from the pose library for poses Kimodo doesn't know |
+| segment `loop` | the demo's Loop checkbox (idles, walk cycles) |
+| segment `file` | the made motion (`motion.py import` writes it) |
+
+The checks: every karma route is played (the kind, the cruel and the silent player at every timed choice, each
+with secrets missed and found) and each one's ending and karma are printed; every ending must be reachable.
