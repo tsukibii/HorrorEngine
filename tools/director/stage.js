@@ -311,12 +311,12 @@ export class Stage {
       let pos;
       if (!cur) pos = this.clipPose({ who, body: { block: [{ at: 0, pose: "idle" }] } }, T, 1, files);
       else {
-        const lt = Math.min(cur.dur, Math.max(0, T - cur.start));
-        pos = this.clipPose(cur.clip, lt, cur.dur, files);
+        const bd = cur.clip.body || {}, bs = +bd.secs || cur.dur, lt = Math.min(bs, Math.max(0, T - cur.start - (+bd.delay || 0)));
+        pos = this.clipPose(cur.clip, lt, bs, files);     // the action plays over its own length (body.secs), after its delay
         const prev = mine[mine.indexOf(cur) - 1];
         const b = cur.clip.body || {}, win = b.bridge ? +(b.bridge.secs || 0.6) : (b.blend ?? 0.25);
         if (prev && T - cur.start < win && win > 0) {
-          const from = this.clipPose(prev.clip, prev.dur, prev.dur, files);
+          const ps = +(prev.clip.body || {}).secs || prev.dur, from = this.clipPose(prev.clip, ps, ps, files);
           const w = M.EASES.inout(Math.max(0, (T - cur.start)) / win);
           pos = M.blendPositions(this.lib, from, pos, w, +(this.story.cast[who] || {}).height || 1.7);
         }

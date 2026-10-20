@@ -70,6 +70,7 @@ The second pass makes the script sound right in Japanese, as it would be said in
 
 - You generate each take in MiniMax and save it under its take id.
 - The desk's timeline takes the videos. The video preview can be switched off to keep only the audio.
+- Two ways in: `python tools/intake.py --game G <folder>` (copies them to `Footage/<G>/`, measures and cleans them; needs ffmpeg) or the desk's Takes tab → **Load takes folder…** (straight from disk, nothing copied).
 - **The auto-clean** fits the director's parts (subtitles, the body, cues, the next clip's start) to each take's real
   length, and trims dead air at either end. You can adjust both by hand: the take's own trim, and the length of the
   director's action against it.

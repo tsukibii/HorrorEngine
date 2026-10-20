@@ -25,6 +25,8 @@ STATIC = {".html": "text/html", ".js": "text/javascript", ".json": "application/
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 BODIES = L.STUDIO / "Bodies"
+FOOTAGE = L.ROOT / "Footage"          # the takes, as intake.py copies them (Footage/<Game>/<take id>.mp4)
+MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4"}
 
 PORT = 8780
 KEEP = 50
@@ -46,6 +48,27 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype + "; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def send_media(self, f):
+        """A take, with byte ranges so the browser can seek in it."""
+        size, ctype = f.stat().st_size, MEDIA[f.suffix.lower()]
+        rng = self.headers.get("Range", "")
+        start, end = 0, size - 1
+        if rng.startswith("bytes="):
+            a, _, b = rng[6:].partition("-")
+            start = int(a) if a else max(0, size - int(b or 0))
+            end = min(size - 1, int(b)) if a and b else size - 1
+        with open(f, "rb") as fh:
+            fh.seek(start)
+            data = fh.read(end - start + 1)
+        self.send_response(206 if rng else 200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(len(data)))
+        if rng:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
         self.end_headers()
         self.wfile.write(data)
 
@@ -93,6 +116,15 @@ class Handler(BaseHTTPRequestHandler):
             if not mf or ".." in parts or not mf.is_file():
                 return self.send(404, {"error": "no such motion"})
             return self.send(200, mf.read_bytes())
+        if parts[:2] == ["api", "takes"] and len(parts) == 3 and self.game_path(parts[2]):
+            d = FOOTAGE / parts[2]
+            files = sorted(f.name for f in d.iterdir() if f.suffix.lower() in MEDIA) if d.is_dir() else []
+            return self.send(200, {"takes": files})
+        if parts[0] == "takes" and len(parts) == 3 and self.game_path(parts[1]) and ".." not in parts:
+            tf = FOOTAGE / parts[1] / parts[2]
+            if not tf.is_file() or tf.suffix.lower() not in MEDIA:
+                return self.send(404, {"error": "no such take"})
+            return self.send_media(tf)
         if parts[:2] == ["api", "games"]:
             return self.send(200, {"games": L.games()})
         if parts[:2] == ["api", "story"] and len(parts) == 3:

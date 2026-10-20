@@ -254,6 +254,7 @@ motions and estimates follow.
 |---|---|
 | `block` | pose keys along the clip: `at` 0..1 (or `s` seconds), a `pose` from the library, the `ease` into it (`linear in out inout snap hold overshoot`), `walk` (stride while travelling), `move` (travel to a spot by this key) |
 | `mods` | time modifiers, applied in order: `ease {in, out}`, `speed {x}`, `ramp {from, to}`, `hold {at, secs}`, `snap {at, secs}`, `twitch {amount}`, `trim {in, out}`, `loop {from, to, times}`, `mirror` |
+| `secs`, `delay` | the action's own length against the take (default: the clip's length) and how long after the take starts it begins: set by hand in the desk when the director's action and the take don't line up |
 | `fit` | when a generated motion's length differs from the take: `stretch` (×0.8 to ×1.25), `hold`, `loop`, `pad`, `trim` |
 | `blend` | seconds of crossfade from this actor's previous clip (default 0.25) |
 | `bridge` | an in-between from the previous clip's last pose to this one's first: the desk blends it, `motion.py` makes a Kimodo job for it |

@@ -20,7 +20,7 @@ const MOODS = {
   chase: { text: "Free camera, the player runs; shake, music `chase`; the threat behind and to the side, never in front, closing the distance.", cone: [60, 30], shot: "fs", push: 0, shake: 0.3 },
   aftermath: { text: "Wide, quiet, the room after: WS, slow drift, ringing ears, a dip to black when it's done.", cone: [40, 24], shot: "ws", push: 0 },
 };
-let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {};
+let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {}, TAKES = {};
 let flowStage = null, watchStage = null, PLAY = null, BODIES = [];
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -48,8 +48,60 @@ async function load() {
   S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none";
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
-  await replan(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); renderAll(); showStage();
+  await replan(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
 }
+/* ---------- the takes (MiniMax videos) on the timeline ---------- */
+const takeId = (sid, k, cid) => `${GAME}_${sid}_${k || "main"}_${cid}`;
+const isVideo = n => /\.(mp4|mov|webm)$/i.test(n);
+function addTake(stem, url, name, file) { const old = TAKES[stem]; if (old && old.video && !isVideo(name)) return; TAKES[stem] = { url, name, video: isVideo(name), file }; }
+async function loadTakes() {                       // what intake.py copied to Footage/<Game>/
+  for (const k of Object.keys(TAKES)) if (!TAKES[k].file) delete TAKES[k];
+  try { const j = await api("/api/takes/" + encodeURIComponent(GAME)); for (const f of j.takes) addTake(f.replace(/\.[^.]+$/, ""), `/takes/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`, f); } catch (e) { }
+}
+function pickTakes() {                             // or straight from a folder on disk
+  const inp = el("input", { type: "file", multiple: true, webkitdirectory: true, accept: "video/*,audio/*", style: "display:none", on: { change: () => {
+    let n = 0; for (const f of inp.files) if (/\.(mp4|mov|webm|wav|mp3|m4a)$/i.test(f.name)) { addTake(f.name.replace(/\.[^.]+$/, ""), URL.createObjectURL(f), f.name, f); n++; }
+    inp.remove(); status(`${n} take files loaded`); renderAll(); } } });
+  document.body.append(inp); inp.click();
+}
+function allClips() { const out = []; for (const [sid, sc] of Object.entries(S.scenes || {})) for (const [k, ver] of (sc.variants ? Object.entries(sc.variants) : [[null, sc]])) for (const c of ver.clips || []) out.push({ sid, k, c, id: takeId(sid, k, c.id) }); return out; }
+// the auto-clean: each take's length and dead air (Web Audio), into the clip's dur and trim (storykit/takes.py's numbers)
+const TK = { win: 0.02, floor: -38, padIn: 0.08, padOut: 0.15, min: 0.05 };
+async function measureTake(t) {
+  const buf = await (t.file ? t.file.arrayBuffer() : fetch(t.url).then(r => r.arrayBuffer()));
+  const ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 16000, 16000);
+  const ab = await ctx.decodeAudioData(buf), d = ab.getChannelData(0), w = Math.max(1, Math.round(ab.sampleRate * TK.win)), loud = [];
+  for (let i = 0; i + w <= d.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += d[j] * d[j]; const rms = Math.sqrt(s / w); loud.push(rms > 0 && 20 * Math.log10(rms) > TK.floor); }
+  const first = loud.indexOf(true), last = loud.lastIndexOf(true);
+  return { dur: +ab.duration.toFixed(2), lead: first < 0 ? 0 : +(first * TK.win).toFixed(2), tail: first < 0 ? 0 : +Math.max(0, ab.duration - (last + 1) * TK.win).toFixed(2) };
+}
+async function autoClean(keepTrim) {
+  const rows = [];
+  for (const { c, id } of allClips()) {
+    const t = TAKES[id]; if (!t) continue;
+    try {
+      const m = await measureTake(t); c.dur = m.dur;
+      if (!(keepTrim && c.trim)) { const tr = {}, a = +(m.lead - TK.padIn).toFixed(2), b = +(m.tail - TK.padOut).toFixed(2); if (a >= TK.min) tr.in = a; if (b >= TK.min) tr.out = b; if (Object.keys(tr).length) c.trim = tr; else delete c.trim; }
+      rows.push(`${id}: ${m.dur} s${c.trim ? `, trimmed ${c.trim.in || 0} in / ${c.trim.out || 0} out` : ""} → ${clipSecs(c).toFixed(2)} s`);
+    } catch (e) { rows.push(`${id}: couldn't read (${e.message})`); }
+  }
+  if (rows.length) touch(); renderAll(); showStage();
+  return rows;
+}
+const PIPS = {};
+function takePip(box) {                            // a take's video in the corner of a stage (hidden, audio only, when Video is off)
+  if (PIPS[box]) return PIPS[box];
+  const v = el("video", { class: "takepip", playsinline: true }); $(box).append(v); return PIPS[box] = v;
+}
+function playTake(box, sid, k, c, showVideo) {
+  const t = TAKES[takeId(sid, k, c.id)], v = takePip(box);
+  if (!t) { v.pause(); v.style.display = "none"; return false; }
+  if (v.dataset.src !== t.url) { v.src = t.url; v.dataset.src = t.url; }
+  v.style.display = t.video && showVideo ? "block" : "none";
+  v.currentTime = +((c.trim || {}).in || 0); v.play().catch(() => { });
+  return true;
+}
+function stopTakes() { for (const v of Object.values(PIPS)) { v.pause(); v.style.display = "none"; } }
 async function replan() { try { PLAN = await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }); } catch (e) { status(e.message); } }
 let replanTimer = null;
 function scheduleReplan() { clearTimeout(replanTimer); replanTimer = setTimeout(async () => { await replan(); showStage(); }, 700); }
@@ -289,6 +341,18 @@ function takeSec(c) {
   sec.append(el("div", { class: "row" }, el("code", { style: "flex:1;white-space:normal;font-size:12px" }, p), b));
   return sec;
 }
+function takeRow(sc, c, sid) {             // the take against the director's action: trim the dead air, set the action's length
+  const k = sc.variants ? (VTAB[sid] || sc.pick) : null, t = TAKES[takeId(sid, k, c.id)];
+  c.trim = c.trim || {}; c.body = c.body || {};
+  const r = el("div", { class: "sec row" }, el("span", { class: "lab" }, "take"), el("span", { class: t ? "ok" : "muted", title: takeId(sid, k, c.id) }, t ? "✓ " + t.name : "none yet"),
+    t ? el("button", { on: { click: () => { const v = takePip("#stageBox"); playTake("#stageBox", sid, k, c, true); const end = clipSecs(c); setTimeout(() => v.pause(), end * 1000); } } }, "▶ take") : null,
+    "trim in", txt(c.trim, "in", { num: true, step: "0.05", style: "width:56px", title: "seconds of dead air cut from the take's start", after: renderInspector }),
+    "out", txt(c.trim, "out", { num: true, step: "0.05", style: "width:56px", title: "seconds cut from the take's end", after: renderInspector }),
+    el("span", { class: "lab" }, "action"), txt(c.body, "secs", { num: true, step: "0.1", ph: clipSecs(c).toFixed(1), style: "width:56px", title: "the body's length against the take (empty: the clip's length)" }),
+    "delay", txt(c.body, "delay", { num: true, step: "0.1", ph: "0", style: "width:52px", title: "the body starts this long after the take" }));
+  if (!Object.keys(c.trim).length) delete c.trim;
+  return r;
+}
 function clipCard(sc, ver, c, i, lvl, sid) {
   const max = S.game.clip_max || 10, over = clipSecs(c) > max;
   const card = el("div", { class: "clip" + (over ? " over" : "") });
@@ -299,6 +363,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     el("button", { title: "delete", on: { click: () => { if (confirm("Delete clip " + c.id + "?")) { ver.clips.splice(i, 1); touch(); renderInspector(); } } } }, "×")));
   card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
   if ((S.format || 2) >= 3) card.append(takeSec(c));
+  card.append(takeRow(sc, c, sid));
   // seam, shot, camera
   const look = [...castIds(), ...placed(lvl)];
   const sec1 = el("div", { class: "sec row" });
@@ -425,6 +490,8 @@ function showStage() {
 function scrubTo(T) {
   const sc = currentScene(); if (!sc) return;
   const st = flowStage.frame(sc, T, FILES);
+  if (PLAY && st.clipSeg && st.seg && st.seg.type === "clip" && PLAY.clip !== st.clipSeg.clip) { PLAY.clip = st.clipSeg.clip; const n = S.flow[SEL]; playTake("#stageBox", n.ref, sc.variants ? sc.pick : null, PLAY.clip, $("#wVideo").checked); }
+  if (PLAY && st.seg && st.seg.type !== "clip" && PLAY.clip) { PLAY.clip = null; stopTakes(); }
   const tl = flowStage.timeline(sc);
   $("#sTime").textContent = `${T.toFixed(1)} / ${tl.total.toFixed(1)} s`;
   const ph = $("#playhead"); if (ph) ph.style.left = (T / tl.total * 100) + "%";
@@ -445,7 +512,7 @@ function playScene(sc, ver, fromClip) {
   const loop = now => { if (!PLAY || PLAY.stop) return; T += (now - last) / 1000; last = now; if (T > endT) { stopPlay(); return; } $("#scrub").value = T; scrubTo(T); requestAnimationFrame(loop); };
   requestAnimationFrame(loop);
 }
-function stopPlay() { if (PLAY) PLAY.stop = true; PLAY = null; }
+function stopPlay() { if (PLAY) PLAY.stop = true; PLAY = null; stopTakes(); }
 function wireFreeCam() {
   const c = flowStage.renderer.domElement; let drag = null;
   c.addEventListener("mousedown", e => { if (flowStage.free) drag = [e.clientX, e.clientY]; });
@@ -586,7 +653,7 @@ function wireLook() {
   const box = $("#watchBox");
   box.addEventListener("mousemove", e => { const r = box.getBoundingClientRect(); LOOK.yaw = ((e.clientX - r.left) / r.width - 0.5) * 70; LOOK.pitch = -((e.clientY - r.top) / r.height - 0.5) * 40; LOOK.moved = performance.now(); });
 }
-async function watchScene(sc, nid) {
+async function watchScene(sc, nid, sid, k) {
   watchStage.setWorld(PLAN, S, sc.level || Object.keys(S.levels)[0]);
   const tl = watchStage.timeline(sc);
   const en = sc.enter || { kind: "fade", secs: 0.6 };
@@ -604,9 +671,11 @@ async function watchScene(sc, nid) {
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); watchStage.render();
     paintOv("#watchOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
-    if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; speak(st.clipSeg.clip.ja); }
+    if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
+    if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => s.type === "event" && s.start > T && !RUN.done.has(s)); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event, else the scene's end
   }
+  stopTakes();
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
   karmaAct(sc.sets);
@@ -675,7 +744,7 @@ async function watch() {
   let nid = S.game.start, guard = 0;
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
     const n = S.flow[nid]; RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
-    if (n.type === "scene") { await watchScene(version(S.scenes[n.ref] || {}), nid); nid = n.next; }
+    if (n.type === "scene") { const sc0 = S.scenes[n.ref] || {}; await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next; }
     else if (n.type === "stitch") nid = await watchStitch(S.stitches[n.ref] || {}, nid, n);
     else if (n.type === "choice") {
       if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }
@@ -689,13 +758,13 @@ async function watch() {
     }
   }
 }
-function stopWatch() { if (RUN) { RUN.timers.forEach(clearTimeout); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {}); }
+function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {}); }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked) RUN.skip = true; });
 
 /* ---------- takes and notes ---------- */
 function renderClips() {
   const v = $("#clipsView"); v.innerHTML = ""; if (!S) return; const max = S.game.clip_max || 10; let rec = 0, all = 0;
-  const v3 = (S.format || 2) >= 3, prompts = [];
+  const v3 = (S.format || 2) >= 3, prompts = [], loaded = allClips().filter(x => TAKES[x.id]).length;
   const tb = el("table", {}, el("tr", {}, ...["take id", "scene", "ver", "clip", "who", "ja", "en", "act", "shot", "event", "secs", "seam in", ...(v3 ? ["MiniMax prompt", ""] : [])].map(h => el("th", {}, h))));
   for (const [sid, sc] of Object.entries(S.scenes || {})) {
     const vers = sc.variants ? Object.entries(sc.variants) : [[null, sc]];
@@ -703,12 +772,16 @@ function renderClips() {
       all++; if (c.dur) rec++;
       tb.append(el("tr", { style: clipSecs(c) > max ? "background:#4a1f1c" : "" }, el("td", {}, `${GAME}_${sid}_${k || "main"}_${c.id}`), el("td", {}, sid), el("td", {}, (k || "main") + (k && k === sc.pick ? " ★" : "")), el("td", {}, c.id), el("td", {}, c.who || ""),
         el("td", {}, c.ja || ""), el("td", {}, c.en || ""), el("td", { class: "muted" }, c.act || ""), el("td", {}, c.shot || ""), el("td", {}, c.event ? c.event.type : ""),
-        el("td", { class: c.dur ? "ok" : "muted" }, clipSecs(c).toFixed(1) + (c.dur ? "" : " est")), el("td", {}, i ? (c.seam ? c.seam.kind : "MISSING") : "—"),
+        el("td", { class: c.dur ? "ok" : "muted", title: TAKES[`${GAME}_${sid}_${k || "main"}_${c.id}`] ? "take loaded" : "" }, (TAKES[`${GAME}_${sid}_${k || "main"}_${c.id}`] ? "▶ " : "") + clipSecs(c).toFixed(1) + (c.dur ? "" : " est") + (c.trim ? ` (trim ${c.trim.in || 0}/${c.trim.out || 0})` : "")), el("td", {}, i ? (c.seam ? c.seam.kind : "MISSING") : "—"),
         ...(v3 ? (() => { const p = minimaxPrompt(c, S.cast); prompts.push(`${GAME}_${sid}_${k || "main"}_${c.id}\n${p}`); return [el("td", { style: "font-size:12px" }, p), el("td", {}, el("button", { on: { click: e => copyText(p, e.target) } }, "copy"))]; })() : [])));
     });
   }
   v.append(el("h2", {}, `Takes · ${rec}/${all} recorded`), el("p", { class: "muted" }, "Record each row as one MiniMax clip, named by its take id (.wav and .mp4), starting and ending on the anchor frame. Then: python tools/intake.py --game " + GAME + " <folder>."),
-    v3 ? el("div", { class: "row" }, el("button", { on: { click: e => copyText(prompts.join("\n\n"), e.target) } }, "copy every prompt"), el("span", { class: "muted" }, "or python tools/story.py --game " + GAME + " minimax")) : null, tb);
+    v3 ? el("div", { class: "row" }, el("button", { on: { click: e => copyText(prompts.join("\n\n"), e.target) } }, "copy every prompt"), el("span", { class: "muted" }, "or python tools/story.py --game " + GAME + " minimax")) : null,
+    el("div", { class: "row" }, el("button", { on: { click: pickTakes } }, "Load takes folder…"), el("span", { class: loaded ? "ok" : "muted" }, `${loaded} take files on the timeline`),
+      el("button", { class: "primary", disabled: !loaded, title: "measure each take: its length and the dead air at either end, into dur and trim; the subtitles, body and cues follow", on: { click: async () => { const out = $("#cleanOut"); out.textContent = "measuring…"; const rows = await autoClean(false); $("#cleanOut") && ($("#cleanOut").textContent = rows.join("\n") || "no takes matched a take id"); } } }, "Auto-clean"),
+      el("button", { disabled: !loaded, title: "measure the lengths again, keeping trims you set by hand", on: { click: async () => { const rows = await autoClean(true); $("#cleanOut") && ($("#cleanOut").textContent = rows.join("\n")); } } }, "re-measure (keep my trims)")),
+    el("pre", { id: "cleanOut", class: "muted", style: "white-space:pre-wrap" }), tb);
 }
 function renderNotes() {
   const v = $("#notesView"); v.innerHTML = ""; if (!S) return; S.board = S.board || []; const all = [];

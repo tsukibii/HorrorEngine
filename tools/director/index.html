@@ -67,6 +67,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 .sb-frame img{width:100%;display:block}.sb-frame div{padding:4px 6px;font-size:11px}.sb-frame .line{font-size:12px;color:var(--text)}
 .sb-card{width:250px;min-height:120px;border:1px dashed var(--line);border-radius:5px;padding:8px;font-size:12px;background:#17171b}
 #watchView{flex-direction:column}
+.takepip{position:absolute;right:10px;top:10px;width:240px;border:1px solid var(--line);border-radius:4px;background:#000;z-index:5;display:none}
 #watchBox{flex:1;position:relative;background:#000;overflow:hidden;cursor:crosshair}
 #watchBar{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
 .wcard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(0,0,0,.72);pointer-events:auto}
@@ -127,6 +128,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
     <div id="watchBar">
       <button id="wStart" class="primary">▶ Play from the start</button>
       <button id="wStop">■ Stop</button>
+      <label title="the takes' video in the corner; off keeps their audio only"><input type="checkbox" id="wVideo" checked> take video</label>
       <label><input type="checkbox" id="wSpeak"> speak the Japanese</label>
       <label><input type="checkbox" id="wSecrets"> finds the secrets</label>
       <label><input type="checkbox" id="wFast" checked> tasks auto-finish after 2 s</label>
