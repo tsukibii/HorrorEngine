@@ -30,6 +30,8 @@ Footage/
 
 # Kimodo's environment, its models and caches (setup.py kimodo: 25 GB or so; rebuildable)
 vendor/kimodo/
+# GarmentCode's checkout and environment (tools/garment.py setup; rebuildable)
+vendor/garmentcode/
 
 # generated: package_game.py's copies and builds; the UnrealClaude source checkout (the plugin copy is tracked)
 Content/StoryData/

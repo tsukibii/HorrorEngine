@@ -128,3 +128,51 @@ Sources: Epic's MetaHuman 5.8 release notes, "MetaHuman Creator Python Scripting
 BuildMetaHuman), "MetaHuman Creator Body Params Tool", "Body Model Controls", "The MetaHuman Component" (body
 correctives), "MetaHuman Body RigLogic Unpacking", the MetaHuman-DNA-Calibration repository and its docs, the Epic
 forum threads on jiggle physics for MetaHumans and Kawaii Physics, the Unreal EULA change log.
+
+## 6. Clothing: generated on the go, physics at runtime, a bake only when we want it (2026-10-20)
+
+The user's point: MetaHuman ships almost no clothes, and we want to make clothing as we go and redo its physics when
+a body changes. What Unreal has, and the route:
+
+**What's there.**
+- **The Outfit Asset (5.6, Chaos Cloth):** a garment as a Dataflow graph (panels, seams, skin weights, collision from
+  the body, simulation settings), simulated by Chaos Cloth **at runtime** (CPU). **Parametric resizing**
+  ("Sized Outfit Source"): the garment is made for two or more source bodies (Epic recommends at least a masculine
+  and a feminine one and gives the preset bodies as FBX) and is interpolated to the character's parametric body;
+  change the body, re-evaluate the graph, the outfit fits. So there is **no bake to redo**: the physics is live.
+- **The Chaos Dataflow Cloth Editor** (beta 5.7, the default and production-ready in 5.8): builds a cloth asset from
+  2D panels (USD from Marvelous Designer or CLO, or OBJ/static-mesh panels), sews them, paints weights and
+  collisions, previews the simulation on a timeline. It assembles garments; it doesn't draw patterns.
+- **A bake, when wanted:** **ML Cloth**: the Chaos Cloth Generator simulates the garment over a pose set into a
+  geometry cache, an ML Deformer is trained on it, and the garment then costs a deformer instead of a simulation
+  (experimental). Rebaking after a change is rerunning that generator and training: a scripted step.
+- **Wardrobe:** Fab sells outfits in MetaHuman's format (`.mhpkg`); Epic's own Techwear outfit and four Clothing
+  Construction Presets are free. The 5.8 Crowd plugin treats clothing as modular parts.
+- **Pattern generation, open source:** **GarmentCode** (`pygarment`, SIGGRAPH Asia 2023; GarmentCodeData, ECCV 2024):
+  parametric sewing patterns as Python programs (edges, panels, components, interfaces), a configurator, export of
+  the pattern (panels and stitches) and a draping simulation (NVIDIA Warp). **ChatGarment** on top of it: text or
+  an image to a pattern. This is the "make clothing on the go" generator: a garment described in the story, sized
+  by the cast member's measures (the same numbers we send Creator).
+
+**The route.**
+1. **Garments as programs:** a GarmentCode design per garment (shirt, skirt, coat...), its parameters from the cast
+   member's `measures`. **`tools/garment.py`** (built and tested here on Mari's t-shirt): `setup` installs
+   GarmentCode from its repo with uv (Python 3.11, under `vendor/garmentcode`), `body` writes the cast member's
+   measures as its body file (widths to circumferences), `pattern <cast> <design>` makes the pattern
+   (`Content/Games/<G>/Garments/<cast>_<design>/`: the svg and png, the 3D placement, the specification) and
+   `panels` turns the specification into the panels as flat triangulated meshes placed in 3D round the body (OBJ,
+   cm, Y up: 8 panels, 220 vertices for the t-shirt) plus a `.seams.json` (each panel's edge vertices and the 16
+   stitches). Its curves (quadratic and cubic Beziers, circle arcs) were checked against GarmentCode's own render.
+2. **Into Unreal:** the panels as OBJ/USD into a kept **template Dataflow graph** (seams, weights, collision, sim
+   settings), as an Outfit Asset with sized sources, so it resizes with the parametric body.
+3. **Physics at runtime,** nothing baked; a body or garment change is a re-evaluation. The ML Cloth bake is an
+   optimisation pass per game, scripted, run again after changes.
+4. **First person:** clothing matters on the cast up close; the player's own is barely seen.
+
+**Honest gaps.** Epic's parametric-outfit docs still assume a DCC made the panels (Marvelous/CLO USD): the OBJ
+panels from `garment.py` into the Dataflow editor (a static-mesh panel import, the seams from the `.seams.json` as
+stitch nodes) is the untried half; GarmentCode's own body file wants circumferences the desk doesn't measure
+(they're estimated from widths: good enough for a first fit, a tape measure is better). One forum report (6 months old) of outfits losing their simulation
+data at assembly. Chaos Cloth is CPU: a few simulated garments in a scene, not a crowd. GarmentCode's licence and its
+export formats need checking on the first run.
+

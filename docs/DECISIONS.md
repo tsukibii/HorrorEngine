@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-20 (clothing: generated, live physics)
+
+- **Clothing is made on the go and its physics stays live:** garments as GarmentCode programs sized by the cast
+  member's measures, into Unreal's Outfit Asset (Chaos Cloth, parametric resizing) through a template Dataflow
+  graph; simulated at runtime, so a body change is a re-evaluation, not a rebake; ML Cloth is the optional bake,
+  scripted (docs/METAHUMAN_ROUTE.md §6). `tools/garment.py` makes the pattern and the placed panels (tested on
+  Mari's t-shirt); the Unreal import is the first run's job.
+
 ## 2026-10-20 (the MetaHuman route: design here, make it there)
 
 - **We don't compete with MetaHuman; the desk edits MetaHumans.** A body is designed in the desk (the Shape page,
