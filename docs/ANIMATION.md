@@ -140,24 +140,48 @@ along the 2D root path, in place without one; a keyframe you put on the last fra
 then the first one again: play frames 0 to N-1 so the wrap doesn't hold a frame, and blend the last 0.3 s into the
 start if the direction turns at the seam.
 
-**The studio's additions to Kimodo's demo** (`setup/kimodo_studio.patch`, which `setup.py kimodo` reapplies after the
-clone; the code is `kimodo/demo/studio.py` there):
-- **Loop** (Constraints), above.
+Epic's free Game Animation Sample covers the player and ordinary locomotion.
+
+**The studio's additions to Kimodo's demo.** They live in `setup/kimodo_studio.patch` (its first line names the
+Kimodo commit it was made on), which `setup.py kimodo` puts in after the clone. By hand:
+`python setup/setup.py kimodo-patch check | apply | remove | refresh`. `refresh` saves the checkout's changes (new
+files too) back into the patch: run it after changing the demo, then commit. A newer Kimodo gets the patch by a
+three-way merge; if that conflicts, the checkout is left as it was and you either build the Kimodo it was made on
+(`setup.py kimodo --rev <that commit>`) or port it with this map. Everything that isn't a hook into Kimodo's own code
+is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), so a port is mostly re-adding hooks:
+- **Loop** (Constraints panel), above. Code: `generation.loop_first_pose`, called by `compute_model_constraints_lst` for
+  the Full-Body track when the checkbox sets `session.loop_first_pose`.
 - **In place** (Exports, Motion; Save Motion uses it too): the root's travel taken out, its sway and bob kept, so a walk
   plays on the spot for an NPC or player rig. The travel is the root's path smoothed over 0.25 s and pinned at both
-  ends, so an in-place Loop still ends exactly where it starts.
-- **Drop last frame** (Exports): a Loop's last frame repeats its first; drop it and the wrap doesn't hold a frame.
+  ends, so an in-place Loop still ends exactly where it starts. **Drop last frame** (Exports): a Loop's last frame
+  repeats its first; drop it and the wrap doesn't hold a frame. Hook: `ui.save_motion` and the Download button export
+  `studio.for_export(motion, ...)` instead of the motion.
 - **Stage** (its own panel): a story's rooms as see-through boxes around the character, to plan a motion in the room
   it plays in. `python tools/kimodo.py stage --game G --at <spot>` writes it (`Saved/Kimodo/stage.json`, the panel's
   default): the floors, walls, doors (orange), furniture (blue; green if it's used), and the marks (red ones are the
   player's, with a sphere at eye height), placed so the character starts on `--at` facing its way. It's scaled by
   Kimodo's body height over the cast member's (`--who`, or the one named in the spot, or the only one), so after the
   retarget onto them a hand on a door handle stays on it. `--rooms a,b` or `--level` for more than the spot's room and
-  its neighbours; Move X, Move Z and Turn shift it in the viewer.
+  its neighbours; Move X, Move Z and Turn shift it in the viewer. Code: `studio.load_stage` and friends.
+- **Path** (its own panel): tick **Draw Path** (or press **P**), click the floor to add a waypoint, click a waypoint to
+  remove it. Each lands on the 2D Root track (the start at frame 0), timed by **Pace** (even over the clip, or sneak,
+  walk, jog, run speeds); changing the pace retimes them; a waypoint deleted on the timeline leaves the path. The camera
+  can't orbit while drawing (viser's click mode), so P toggles it. Code: `studio.floor_hit`, `studio.pace_frames`,
+  `ui.path_sync`.
+- **Pose** (its own panel): **Pose…** opens a window (an iframe in a modal, served by `studio.PoseBridge` on port 7861)
+  with an OpenPose-style figure over Kimodo's full skeleton, starting from the playhead's pose (or the armed one), the
+  stage around it. Drag the hand and foot dots (two-bone IK; elbows and knees steer the bend), the hips (Pin feet keeps
+  the feet planted: crouch, kneel, lie down), the neck (bends the spine) and the top of the head (tilts the neck);
+  click a hand, a foot or the head (no drag) for three rings, twist and two bends, and drag one to turn it;
+  orbit, pan, zoom; Load frame, Reset, Undo, Mirror, Turn. **Arm** closes it, and from then on a click on the
+  Full-Body track drops that pose instead of the generated one (Ctrl+drag holds it over a range) until **Disarm**;
+  **Drop at playhead** places it once. The window works in rotations relative to each parent's global one, so the
+  pose round-trips exactly (`studio.effective_locals`, `studio.pose_fk`). Hook: `ui.add_constraint_callback` uses
+  `session.armed_pose` for Full-Body.
+- **A Kimodo fix:** Make Smooth Path with no 2D Root waypoints no longer crashes generation.
 - Back to the studio: Download as NPZ, then `python tools/motion.py --game G import <file.npz> <name> [--clip
   <scene>:<clip>]` writes the director file (`Motion/<name>.json`) and points the clip's `body.file` at it, so the
-  desk plays it on the real body in the blocking. Epic's free Game Animation Sample covers the player and
-ordinary locomotion.
+  desk plays it on the real body in the blocking.
 
 ## 1a. The shot list: making the motions in the demo (format 3)
 

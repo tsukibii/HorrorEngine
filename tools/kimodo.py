@@ -62,6 +62,7 @@ def environ(home, k=None):
     if (k or {}).get("text_encoder_device"):
         out["TEXT_ENCODER_DEVICE"] = k["text_encoder_device"]
     out["KIMODO_STAGE"] = str(STAGE_FILE)      # the demo's Stage panel starts with the last one written
+    out["KIMODO_THREE_DIR"] = str(ROOT / "tools" / "director" / "vendor")   # three.js for the demo's pose window
     if (k or {}).get("text_encoders_dir"):
         out["TEXT_ENCODERS_DIR"] = k["text_encoders_dir"]
         out["TEXT_ENCODER_MODE"] = "local"    # no text-encoder server to try first

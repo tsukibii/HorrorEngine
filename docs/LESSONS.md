@@ -55,3 +55,7 @@ the fix.
   chest up, waist up) as a share of the frame. The pilot's "MS" at 3.2 m read as a wide shot until it was measured.
 - **`--no-build-isolation` means every build backend is ours to install:** Kimodo's demo pulls NVIDIA's `viser` fork
   from git, which builds with hatchling; `setup.py kimodo --demo` failed until hatchling joined the build tools.
+- **A patch meant for other machines needs `--src-prefix=a/ --dst-prefix=b/`:** this machine's git has
+  `diff.mnemonicprefix`, which writes `i/` and `w/`, and the patch refresh's own parsing broke on it.
+- **Kimodo's demo keeps its skeleton on the GPU:** tensors made to run its FK (the pose window's rest pose) must be
+  created on `skeleton.neutral_joints.device`, or TorchScript refuses the indexing.
