@@ -12,6 +12,10 @@ what's already done.
     python setup/setup.py kimodo [--home DIR] [--cuda cu128|cu126|cpu|none] [--python 3.11] [--demo] [--text-cpu] [--rev REV]
                                                  NVIDIA Kimodo from source with uv (no Docker): repo, Python, torch, models and
                                                  caches all in one folder (default vendor/kimodo); then `tools/kimodo.py check`
+    python setup/setup.py kimodo-patch [apply|check|refresh|remove]
+                                                 our additions to Kimodo's demo (setup/kimodo_studio.patch: Loop, In place,
+                                                 Drop last frame, Stage, Path, Pose): put them in, see if they fit, save the
+                                                 checkout's changes back into the patch, or take them out
     python setup/setup.py configure              ini lines (packaging story.json, Python), .gitignore, .gitattributes
     python setup/setup.py build                  compile the editor target (C++ projects), via the engine's Build.bat
     python setup/setup.py editor [args]          open the editor on the project (extra args pass through)
@@ -275,6 +279,87 @@ INI = {
 KIMODO_REPO = "https://github.com/nv-tlabs/kimodo"
 
 
+KIMODO_PATCH = ROOT / "setup" / "kimodo_studio.patch"
+
+
+def kimodo_src():
+    sys.path.insert(0, str(ROOT / "tools"))
+    import kimodo as K
+    home, _ = K.settings()
+    src = K.paths(home)["src"]
+    if not (src / ".git").exists():
+        sys.exit(f"no Kimodo checkout at {src}: run `python setup/setup.py kimodo` first")
+    return src
+
+
+def patch_base(patch=KIMODO_PATCH):
+    """The Kimodo commit the patch was made on (its first line), or None."""
+    first = patch.read_text(encoding="utf-8").split("\n", 1)[0] if patch.exists() else ""
+    return first.split("base ", 1)[1].split()[0] if first.startswith("Kimodo base ") else None
+
+
+def patch_state(src, patch=KIMODO_PATCH):
+    """applied, clean (applies as it is), 3way (applies by merging into a newer Kimodo) or conflict."""
+    ok = lambda *a: (r := run(["git", "apply", *a, str(patch)], cwd=src)) is not None and r.returncode == 0   # noqa: E731
+    if ok("--reverse", "--check"):
+        return "applied"
+    if ok("--check"):
+        return "clean"
+    return "3way" if ok("--3way", "--check") else "conflict"
+
+
+def apply_kimodo_patch(src, patch=KIMODO_PATCH):
+    """Our demo additions into the checkout; a newer Kimodo gets them by a three-way merge where the lines moved."""
+    if not patch.exists():
+        return "no patch"
+    state = patch_state(src, patch)
+    if state == "applied":
+        return "already in"
+    if state in ("clean", "3way"):
+        r = run(["git", "apply", *(["--3way"] if state == "3way" else []), str(patch)], cwd=src)
+        if r and r.returncode == 0:
+            return "applied" + (" (merged into a newer Kimodo)" if state == "3way" else "")
+        files = [ln.split(" b/", 1)[1] for ln in patch.read_text(encoding="utf-8").splitlines() if ln.startswith("diff --git")]
+        for name in files:                        # a merge that conflicted: put those files back as they were
+            run(["git", "reset", "-q", "--", name], cwd=src)
+            known = run(["git", "cat-file", "-e", f"HEAD:{name}"], cwd=src)
+            if known and known.returncode == 0:
+                run(["git", "checkout", "HEAD", "--", name], cwd=src)
+            else:
+                (Path(src) / name).unlink(missing_ok=True)
+    base = patch_base(patch)
+    sys.exit(f"{patch.name} doesn't fit this Kimodo. Either build the Kimodo it was made on:\n"
+             f"  python setup/setup.py kimodo --rev {base or '<the commit on its first line>'}\n"
+             "or port it by hand: docs/ANIMATION.md, 'The studio's additions to Kimodo's demo', says what each piece "
+             "does and where it lives; then `python setup/setup.py kimodo-patch refresh`.")
+
+
+def cmd_kimodo_patch(args):
+    src, what = kimodo_src(), (args[0] if args else "apply")
+    head = (run(["git", "rev-parse", "HEAD"], cwd=src) or subprocess.CompletedProcess([], 0, "")).stdout.strip()
+    if what == "check":
+        print(f"KIMODO_PATCH {patch_state(src)} (made on {(patch_base() or '?')[:10]}, this checkout {head[:10]})")
+    elif what == "apply":
+        print(f"KIMODO_PATCH {apply_kimodo_patch(src)}")
+    elif what == "remove":
+        if patch_state(src) != "applied":
+            sys.exit("KIMODO_PATCH isn't in this checkout (or the files changed since): nothing removed")
+        r = run(["git", "apply", "--reverse", str(KIMODO_PATCH)], cwd=src)
+        print("KIMODO_PATCH removed: stock Kimodo" if r and r.returncode == 0 else f"failed: {r.stderr if r else ''}")
+    elif what == "refresh":                       # the checkout's changes (new files too) become the patch
+        new = (run(["git", "ls-files", "--others", "--exclude-standard", "--", "kimodo"], cwd=src).stdout or "").split()
+        if new:
+            run(["git", "add", "-N", *new], cwd=src)
+        diff = run(["git", "diff", "--src-prefix=a/", "--dst-prefix=b/", "--", "kimodo"], cwd=src).stdout   # portable whatever the git config
+        if not diff.strip():
+            sys.exit("no changes in the checkout: nothing to save")
+        KIMODO_PATCH.write_text(f"Kimodo base {head}\n\n{diff}", encoding="utf-8", newline="\n")
+        files = [ln.split(" b/", 1)[1] for ln in diff.splitlines() if ln.startswith("diff --git")]
+        print(f"KIMODO_PATCH refreshed: {len(files)} files ({', '.join(files)}), base {head[:10]}")
+    else:
+        sys.exit("kimodo-patch apply | check | refresh | remove")
+
+
 def cmd_kimodo(args):
     """Kimodo built from its repo in a uv environment: everything (Python, torch, the 20 GB of models, caches, temp
     files) under one folder, so nothing lands on the system drive. Rerun to repair or update; it skips what's done."""
@@ -307,10 +392,7 @@ def cmd_kimodo(args):
         step("clone Kimodo", ["git", "clone", KIMODO_REPO, str(p["src"])])
     if rev:
         step(f"check out {rev}", ["git", "checkout", rev], cwd=p["src"])
-    for patch in sorted((ROOT / "setup").glob("kimodo_*.patch")):    # our changes to Kimodo's demo (Loop, In place, Stage)
-        done = run(["git", "apply", "--reverse", "--check", str(patch)], cwd=p["src"])
-        if not done or done.returncode:
-            step(f"apply {patch.name}", ["git", "apply", str(patch)], cwd=p["src"])
+    print(f"--> {KIMODO_PATCH.name}: {apply_kimodo_patch(p['src'])}")
     k["commit"] = (run(["git", "rev-parse", "HEAD"], cwd=p["src"]) or subprocess.CompletedProcess([], 0, "")).stdout.strip()
     if not p["python"].exists():
         step(f"Python {py} (uv, inside {home})", [uv, "python", "install", py])
@@ -389,7 +471,8 @@ def cmd_editor(args):
 
 def main():
     cmds = {"env": cmd_env, "plugins": cmd_plugins, "enable": cmd_enable, "fetch": cmd_fetch, "unrealclaude": cmd_unrealclaude,
-            "configure": cmd_configure, "build": cmd_build, "editor": cmd_editor, "kimodo": cmd_kimodo}
+            "configure": cmd_configure, "build": cmd_build, "editor": cmd_editor, "kimodo": cmd_kimodo,
+            "kimodo-patch": cmd_kimodo_patch}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         print(__doc__)
         return
