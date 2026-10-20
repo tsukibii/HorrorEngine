@@ -138,7 +138,25 @@ once, they loop while a scene holds or a stand-in waits. **Looping in Kimodo's d
 and the first Full-Body keyframe is repeated at the last frame when you generate (or save the constraints), moved
 along the 2D root path, in place without one; a keyframe you put on the last frame yourself wins. The last frame is
 then the first one again: play frames 0 to N-1 so the wrap doesn't hold a frame, and blend the last 0.3 s into the
-start if the direction turns at the seam. The change is `setup/kimodo_loop.patch`, which `setup.py kimodo` reapplies. Epic's free Game Animation Sample covers the player and
+start if the direction turns at the seam.
+
+**The studio's additions to Kimodo's demo** (`setup/kimodo_studio.patch`, which `setup.py kimodo` reapplies after the
+clone; the code is `kimodo/demo/studio.py` there):
+- **Loop** (Constraints), above.
+- **In place** (Exports, Motion; Save Motion uses it too): the root's travel taken out, its sway and bob kept, so a walk
+  plays on the spot for an NPC or player rig. The travel is the root's path smoothed over 0.25 s and pinned at both
+  ends, so an in-place Loop still ends exactly where it starts.
+- **Drop last frame** (Exports): a Loop's last frame repeats its first; drop it and the wrap doesn't hold a frame.
+- **Stage** (its own panel): a story's rooms as see-through boxes around the character, to plan a motion in the room
+  it plays in. `python tools/kimodo.py stage --game G --at <spot>` writes it (`Saved/Kimodo/stage.json`, the panel's
+  default): the floors, walls, doors (orange), furniture (blue; green if it's used), and the marks (red ones are the
+  player's, with a sphere at eye height), placed so the character starts on `--at` facing its way. It's scaled by
+  Kimodo's body height over the cast member's (`--who`, or the one named in the spot, or the only one), so after the
+  retarget onto them a hand on a door handle stays on it. `--rooms a,b` or `--level` for more than the spot's room and
+  its neighbours; Move X, Move Z and Turn shift it in the viewer.
+- Back to the studio: Download as NPZ, then `python tools/motion.py --game G import <file.npz> <name> [--clip
+  <scene>:<clip>]` writes the director file (`Motion/<name>.json`) and points the clip's `body.file` at it, so the
+  desk plays it on the real body in the blocking. Epic's free Game Animation Sample covers the player and
 ordinary locomotion.
 
 ## 1b. Kimodo's motions onto your MetaHumans (`tools/retarget.py`)
