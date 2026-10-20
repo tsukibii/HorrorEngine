@@ -1,7 +1,9 @@
-diff --git i/kimodo/demo/generation.py w/kimodo/demo/generation.py
-index 00282e6..38fabf7 100644
---- i/kimodo/demo/generation.py
-+++ w/kimodo/demo/generation.py
+Kimodo base e1c219c99b4b94ba48be1fb6a1cbc64ecee4c954
+
+diff --git a/kimodo/demo/generation.py b/kimodo/demo/generation.py
+index 00282e6..49165fc 100644
+--- a/kimodo/demo/generation.py
++++ b/kimodo/demo/generation.py
 @@ -21,6 +21,38 @@ from .embedding_cache import CachedTextEncoder
  from .state import ClientSession, ModelBundle
  
@@ -41,6 +43,15 @@ index 00282e6..38fabf7 100644
  def compute_model_constraints_lst(
      session: ClientSession,
      model_bundle: ModelBundle,
+@@ -38,7 +70,7 @@ def compute_model_constraints_lst(
+     skel_slice = model_skeleton.get_skel_slice(session.skeleton) if use_skel_slice else None
+ 
+     dense_smooth_root_pos_2d = None
+-    if session.constraints["2D Root"].dense_path:
++    if session.constraints["2D Root"].dense_path and session.constraints["2D Root"].keyframes:  # no waypoints, no path
+         # get the full 2d root
+         dense_smooth_root_pos_2d = session.constraints["2D Root"].get_constraint_info(device=device)["root_pos"][
+             :, [0, 2]
 @@ -47,6 +79,8 @@ def compute_model_constraints_lst(
      model_constraints = []
      for track_name, constraint in session.constraints.items():
@@ -50,31 +61,38 @@ index 00282e6..38fabf7 100644
          frame_idx = constraint_info["frame_idx"]
          # drop any constraints outside the generation range
          valid_info = [(i, fi) for i, fi in enumerate(frame_idx) if fi < num_frames]
-diff --git i/kimodo/demo/state.py w/kimodo/demo/state.py
-index e158b99..34dd040 100644
---- i/kimodo/demo/state.py
-+++ w/kimodo/demo/state.py
-@@ -57,3 +57,4 @@ class ClientSession:
+diff --git a/kimodo/demo/state.py b/kimodo/demo/state.py
+index e158b99..766268d 100644
+--- a/kimodo/demo/state.py
++++ b/kimodo/demo/state.py
+@@ -57,3 +57,7 @@ class ClientSession:
      edit_mode_snapshot: Optional[dict[int, dict[str, object]]] = None
      undo_drag_snapshot: Optional[dict[str, object]] = None
      show_only_current_constraint: bool = False  # False = Show All, True = Show only Current
 +    loop_first_pose: bool = False  # Loop: repeat the first Full-Body keyframe at the last frame
-diff --git i/kimodo/demo/studio.py w/kimodo/demo/studio.py
++    path_points: list = field(default_factory=list)  # Draw Path: the clicked waypoints [x, z], after the start
++    path_keys: list = field(default_factory=list)  # their 2D Root keyframe ids (the start's first)
++    armed_pose: Optional[dict] = None  # the pose window's pose: Full-Body clicks drop it instead of the generated one
+diff --git a/kimodo/demo/studio.py b/kimodo/demo/studio.py
 new file mode 100644
-index 0000000..7b7c578
+index 0000000..95bf6ee
 --- /dev/null
-+++ w/kimodo/demo/studio.py
-@@ -0,0 +1,110 @@
++++ b/kimodo/demo/studio.py
+@@ -0,0 +1,280 @@
 +"""HorrorStudio additions to the demo (kept in the studio repo as setup/kimodo_studio.patch).
 +
 +- Exports: In place (the root's travel taken out, its sway kept, for NPC and player rigs) and Drop last frame (a
 +  Loop's last frame repeats its first: drop it so the wrap doesn't hold a frame).
++- Draw Path: click the floor to add root waypoints (click one to remove it), paced into 2D Root keyframes.
++- The pose window: an OpenPose-style figure to pose by dragging (studio_web/), armed so that clicks on the Full-Body
++  track drop it, or dropped at the playhead.
 +- The stage: a story's rooms, doors, furniture and marks as see-through boxes, written by the studio's
 +  `python tools/kimodo.py stage`, already in Kimodo's axes (x left, y up, z forward, the character starting at the
 +  origin) and scaled to the cast member's height.
 +"""
 +import json
 +import math
++import os
 +from types import SimpleNamespace
 +
 +import numpy as np
@@ -175,10 +193,529 @@ index 0000000..7b7c578
 +        h.remove()
 +    st["frame"].remove()
 +    st.clear()
-diff --git i/kimodo/demo/ui.py w/kimodo/demo/ui.py
-index 7d9f5e3..bee817a 100644
---- i/kimodo/demo/ui.py
-+++ w/kimodo/demo/ui.py
++
++
++# --- Draw Path: waypoints clicked on the floor, paced into 2D Root keyframes ---------------------------------------
++
++PACES = {"Even over clip": None, "Sneak (0.8 m/s)": 0.8, "Walk (1.4 m/s)": 1.4, "Jog (2.5 m/s)": 2.5, "Run (3.5 m/s)": 3.5}
++
++
++def floor_hit(ray_origin, ray_direction):
++    """Where a click's ray meets the floor (y = 0), as [x, z], or None if it looks up."""
++    o, d = np.asarray(ray_origin, float), np.asarray(ray_direction, float)
++    if d[1] > -1e-6:
++        return None
++    p = o + d * (-o[1] / d[1])
++    return [float(p[0]), float(p[2])]
++
++
++def pace_frames(points, pace, fps, last_frame):
++    """A frame for each waypoint (the first is the start, frame 0): by distance at the pace's speed, or spread over
++    the clip. Frames only increase, and stop at the clip's last frame (`over` says the path was longer)."""
++    pts = np.asarray(points, float)
++    if len(pts) < 2:
++        return [0] * len(pts), False
++    cum = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1))])
++    speed = PACES.get(pace)
++    raw = cum / cum[-1] * last_frame if speed is None or cum[-1] == 0 else cum / speed * fps
++    frames, over = [], bool(raw[-1] > last_frame + 0.5)
++    for f in raw:
++        f = int(round(min(f, last_frame)))
++        frames.append(max(f, frames[-1] + 1) if frames else 0)
++    return frames, over or frames[-1] > last_frame
++
++
++# --- The pose window: an OpenPose-style figure in its own page, talking to the demo over a small local server -------
++
++def effective_locals(global_rots: np.ndarray, parents) -> np.ndarray:
++    """Each joint's rotation relative to its parent's global one (the root's is its global): FK with these and the
++    skeleton's neutral offsets gives back the same pose, whatever rest rotations the skeleton bakes in."""
++    return np.stack([global_rots[j] if parents[j] < 0 else global_rots[parents[j]].T @ global_rots[j]
++                     for j in range(len(parents))])
++
++
++def pose_fk(local_rots: np.ndarray, root_pos, parents, offsets):
++    """Global rotations [J, 3, 3] and positions [J, 3] from effective local rotations."""
++    J = len(parents)
++    G, P = np.zeros((J, 3, 3), np.float32), np.zeros((J, 3), np.float32)
++    for j in range(J):
++        p = parents[j]
++        if p < 0:
++            G[j], P[j] = local_rots[j], root_pos
++        else:
++            G[j], P[j] = G[p] @ local_rots[j], P[p] + G[p] @ offsets[j]
++    return G, P
++
++
++def skeleton_layout(skeleton):
++    """What the pose page needs to draw and pose the skeleton: names, parents, offsets from the parent."""
++    parents = [int(p) for p in skeleton.joint_parents.tolist()]
++    n = skeleton.neutral_joints.detach().cpu().numpy()
++    off = n - n[[max(p, 0) for p in parents]]
++    off[[j for j, p in enumerate(parents) if p < 0]] = 0
++    from kimodo.skeleton.kinematics import fk
++    dev = skeleton.neutral_joints.device
++    eye = torch.eye(3, device=dev).repeat(1, len(parents), 1, 1)
++    rest = fk(eye, torch.zeros(1, 3, device=dev), skeleton)[0][0].cpu().numpy()   # the rest pose's global rotations (for Mirror)
++    return {"names": list(skeleton.bone_order_names), "parents": parents, "offsets": off.round(5).tolist(),
++            "rest_quats": rots_to_quats(rest)}
++
++
++def rots_to_quats(R: np.ndarray) -> list:
++    from scipy.spatial.transform import Rotation
++    return Rotation.from_matrix(np.asarray(R, float)).as_quat().round(6).tolist()      # x, y, z, w
++
++
++def quats_to_rots(q) -> np.ndarray:
++    from scipy.spatial.transform import Rotation
++    return Rotation.from_quat(np.asarray(q, float)).as_matrix().astype(np.float32)
++
++
++class PoseBridge:
++    """A local HTTP server for the pose window (an iframe in a modal): the page and three.js, and per browser tab
++    (viser client) the hooks `layout()`, `frame()`, `arm(pose)` and `drop(pose)` registered by the UI."""
++
++    def __init__(self, port: int):
++        import threading
++        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++        from pathlib import Path
++
++        self.port, self.hooks = port, {}
++        web = Path(__file__).resolve().parent / "studio_web"
++        three = [Path(p) for p in (os.environ.get("KIMODO_THREE_DIR"),) if p]
++        three.append(Path(viser_client_dir()) / "node_modules" / "three" / "build")
++        bridge = self
++
++        class Handler(BaseHTTPRequestHandler):
++            def log_message(self, *a):
++                pass
++
++            def reply(self, code, body, ctype="application/json"):
++                data = body if isinstance(body, bytes) else json.dumps(body).encode()
++                self.send_response(code)
++                self.send_header("Content-Type", ctype)
++                self.send_header("Content-Length", str(len(data)))
++                self.send_header("Cache-Control", "no-store")
++                self.end_headers()
++                self.wfile.write(data)
++
++            def route(self):
++                from urllib.parse import parse_qs, urlparse
++                u = urlparse(self.path)
++                q = {k: v[0] for k, v in parse_qs(u.query).items()}
++                return u.path.strip("/"), bridge.hooks.get(q.get("c", ""))
++
++            def do_GET(self):
++                path, hooks = self.route()
++                if path in ("pose.html", "pose.js"):
++                    f = web / path
++                    return self.reply(200, f.read_bytes(), "text/html" if path.endswith("html") else "text/javascript")
++                if path == "three.module.min.js":
++                    for d in three:
++                        for name in ("three.module.min.js", "three.module.js"):
++                            if (d / name).exists():
++                                return self.reply(200, (d / name).read_bytes(), "text/javascript")
++                    return self.reply(404, {"error": "three.js not found (set KIMODO_THREE_DIR)"})
++                if hooks is None:
++                    return self.reply(404, {"error": "this demo tab is gone: reopen the pose window"})
++                if path in ("api/layout", "api/frame"):
++                    try:
++                        return self.reply(200, hooks[path[4:]]())
++                    except Exception as e:
++                        import traceback
++                        traceback.print_exc()
++                        return self.reply(409, {"error": str(e)})
++                self.reply(404, {"error": path})
++
++            def do_POST(self):
++                path, hooks = self.route()
++                if hooks is None:
++                    return self.reply(404, {"error": "this demo tab is gone: reopen the pose window"})
++                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
++                if path in ("api/arm", "api/drop"):
++                    try:
++                        return self.reply(200, {"ok": True, "message": hooks[path[4:]](body)})
++                    except Exception as e:
++                        return self.reply(400, {"ok": False, "message": str(e)})
++                self.reply(404, {"error": path})
++
++        self.server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
++        threading.Thread(target=self.server.serve_forever, daemon=True).start()
++
++    def url(self, client_id) -> str:
++        return f"http://127.0.0.1:{self.port}/pose.html?c={client_id}"
++
++
++def viser_client_dir() -> str:
++    import viser
++    return os.path.join(os.path.dirname(viser.__file__), "client")
++
++
++_bridge = None
++
++
++def pose_bridge() -> PoseBridge:
++    global _bridge
++    if _bridge is None:
++        _bridge = PoseBridge(int(os.environ.get("KIMODO_POSE_PORT", "7861")))
++    return _bridge
+diff --git a/kimodo/demo/studio_web/pose.html b/kimodo/demo/studio_web/pose.html
+new file mode 100644
+index 0000000..440e559
+--- /dev/null
++++ b/kimodo/demo/studio_web/pose.html
+@@ -0,0 +1,54 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Pose</title>
++<style>
++  :root { --bg: #0e1013; --panel: #171a1f; --line: #2a2f37; --text: #e6e8eb; --dim: #8b93a0; --accent: #4c8dff; --ok: #3ccf7a; }
++  * { box-sizing: border-box; }
++  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 Inter, system-ui, sans-serif; overflow: hidden; }
++  #view { position: absolute; inset: 0 0 52px 0; }
++  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
++  canvas.over { cursor: pointer; }
++  canvas.drag { cursor: grabbing; }
++  #hint { position: absolute; left: 12px; top: 10px; color: var(--dim); font-size: 12px; pointer-events: none; }
++  #legend { position: absolute; right: 12px; top: 10px; color: var(--dim); font-size: 12px; text-align: right; pointer-events: none; }
++  #legend b { color: var(--text); font-weight: 600; }
++  #bar { position: absolute; left: 0; right: 0; bottom: 0; height: 52px; display: flex; align-items: center; gap: 6px;
++         padding: 0 10px; background: var(--panel); border-top: 1px solid var(--line); }
++  button { height: 30px; padding: 0 11px; border-radius: 6px; border: 1px solid var(--line); background: #20242b; color: var(--text);
++           font: inherit; cursor: pointer; white-space: nowrap; }
++  button:hover { border-color: #3a414c; background: #262b33; }
++  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
++  button.primary:hover { filter: brightness(1.08); }
++  button.ghost { background: transparent; }
++  label { display: flex; align-items: center; gap: 5px; color: var(--dim); cursor: pointer; white-space: nowrap; }
++  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
++  .grow { flex: 1; }
++  #toast { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); background: #20242b; border: 1px solid var(--line);
++           padding: 7px 12px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
++  #toast.show { opacity: 1; }
++</style>
++</head>
++<body>
++<div id="view"></div>
++<div id="hint">Drag a dot to pose · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
++<div id="legend"></div>
++<div id="bar">
++  <button id="load" title="The generated pose at the playhead">Load frame</button>
++  <button id="reset" class="ghost" title="Back to the pose this window opened with">Reset</button>
++  <button id="undo" class="ghost" title="Ctrl+Z">Undo</button>
++  <div class="sep"></div>
++  <button id="mirror" title="Swap left and right">Mirror</button>
++  <button id="turnL" title="Turn the body 15° left">Turn ◂</button>
++  <button id="turnR" title="Turn the body 15° right">Turn ▸</button>
++  <label title="Moving the hips keeps the feet where they are (crouch, kneel, lie down)"><input id="pin" type="checkbox" checked> Pin feet</label>
++  <div class="grow"></div>
++  <button id="drop" title="Put this pose on the Full-Body track at the playhead">Drop at playhead</button>
++  <button id="arm" class="primary" title="Close, then every click on the Full-Body track drops this pose">Arm ▸</button>
++</div>
++<div id="toast"></div>
++<script type="module" src="pose.js"></script>
++</body>
++</html>
+diff --git a/kimodo/demo/studio_web/pose.js b/kimodo/demo/studio_web/pose.js
+new file mode 100644
+index 0000000..9d1db32
+--- /dev/null
++++ b/kimodo/demo/studio_web/pose.js
+@@ -0,0 +1,287 @@
++// The pose window: an OpenPose-style figure over Kimodo's full skeleton. Dots are handles: hands and feet move with
++// two-bone IK (elbows and knees steer the bend), the hips move the body (feet pinned or not), the neck bends the spine,
++// the top of the head tilts the neck. Rotations are kept relative to each parent's global one, so the pose goes back
++// to the demo exactly (studio.py: effective_locals, pose_fk).
++import * as THREE from "./three.module.min.js";
++
++const C = new URLSearchParams(location.search).get("c");
++const api = (path, body) => fetch(`${path}?c=${C}`, body === undefined ? {} : {
++  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
++
++const L = await api("api/layout");
++const N = L.names, PAR = L.parents, J = N.length, ix = Object.fromEntries(N.map((n, i) => [n, i]));
++const OFF = L.offsets.map((o) => new THREE.Vector3(...o));
++const REST = L.rest_quats.map((q) => new THREE.Quaternion(...q));
++const ROOT = PAR.indexOf(-1);
++
++// OpenPose's 18 limb colours, on Kimodo's joints
++const OP = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], [0, 255, 85],
++  [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], [170, 0, 255], [255, 0, 255],
++  [255, 0, 170], [255, 0, 85]].map(([r, g, b]) => new THREE.Color(r / 255, g / 255, b / 255));
++const LIMBS = [["Neck1", "RightArm"], ["Neck1", "LeftArm"], ["RightArm", "RightForeArm"], ["RightForeArm", "RightHand"],
++  ["LeftArm", "LeftForeArm"], ["LeftForeArm", "LeftHand"], ["Neck1", "RightLeg"], ["RightLeg", "RightShin"],
++  ["RightShin", "RightFoot"], ["Neck1", "LeftLeg"], ["LeftLeg", "LeftShin"], ["LeftShin", "LeftFoot"], ["Neck1", "Head"],
++  ["RightFoot", "RightToeBase"], ["Head", "RightEye"], ["LeftFoot", "LeftToeBase"], ["Head", "LeftEye"], ["Head", "HeadEnd"]]
++  .filter(([a, b]) => a in ix && b in ix);
++const HANDLES = {
++  RightHand: "ik", LeftHand: "ik", RightFoot: "ik", LeftFoot: "ik",
++  RightForeArm: "pole", LeftForeArm: "pole", RightShin: "pole", LeftShin: "pole",
++  Hips: "hips", Neck1: "spine", HeadEnd: "head",
++};
++const CHAIN = { RightHand: ["RightArm", "RightForeArm"], LeftHand: ["LeftArm", "LeftForeArm"],
++  RightFoot: ["RightLeg", "RightShin"], LeftFoot: ["LeftLeg", "LeftShin"],
++  RightForeArm: ["RightArm", "RightForeArm", "RightHand"], LeftForeArm: ["LeftArm", "LeftForeArm", "LeftHand"],
++  RightShin: ["RightLeg", "RightShin", "RightFoot"], LeftShin: ["LeftLeg", "LeftShin", "LeftFoot"] };
++const AIM = { Neck1: ["Spine1", "Spine2", "Chest"], HeadEnd: ["Neck1", "Neck2", "Head"] };
++
++// ---- the pose: effective local rotations and the root position; FK fills G (global) and P (positions) ----
++let E = [], root = new THREE.Vector3();
++const G = Array.from({ length: J }, () => new THREE.Quaternion()), P = Array.from({ length: J }, () => new THREE.Vector3());
++function fk() {
++  for (let j = 0; j < J; j++) {
++    const p = PAR[j];
++    if (p < 0) { G[j].copy(E[j]); P[j].copy(root); }
++    else { G[j].multiplyQuaternions(G[p], E[j]); P[j].copy(OFF[j]).applyQuaternion(G[p]).add(P[p]); }
++  }
++}
++function setGlobal(j, q) {
++  const p = PAR[j];
++  E[j] = p < 0 ? q.clone() : G[p].clone().invert().multiply(q);
++  fk();
++}
++const rotateGlobal = (j, q) => setGlobal(j, q.clone().multiply(G[j]));
++const snapshot = () => ({ E: E.map((q) => q.clone()), root: root.clone() });
++function restore(s) { E = s.E.map((q) => q.clone()); root.copy(s.root); fk(); redraw(); }
++const fromQuats = (qs, r) => ({ E: qs.map((q) => new THREE.Quaternion(...q)), root: new THREE.Vector3(...r) });
++
++// ---- solvers ----
++function twoBone(a, b, c, target, pole) {
++  const Gc = G[c].clone(), A = P[a].clone(), B = P[b].clone(), Cp = P[c].clone();
++  const la = A.distanceTo(B), lb = B.distanceTo(Cp), toT = target.clone().sub(A), dist = toT.length();
++  if (dist < 1e-5) return;
++  const dir = toT.divideScalar(dist), d = THREE.MathUtils.clamp(dist, Math.abs(la - lb) + 1e-3, la + lb - 1e-3);
++  const pv = (pole || B).clone().sub(A);
++  let bend = pv.sub(dir.clone().multiplyScalar(pv.dot(dir)));
++  if (bend.lengthSq() < 1e-10) bend = new THREE.Vector3(0, 0, 1).cross(dir);
++  bend.normalize();
++  const cosA = THREE.MathUtils.clamp((la * la + d * d - lb * lb) / (2 * la * d), -1, 1), sinA = Math.sqrt(1 - cosA * cosA);
++  const Bn = A.clone().addScaledVector(dir, cosA * la).addScaledVector(bend, sinA * la);
++  rotateGlobal(a, new THREE.Quaternion().setFromUnitVectors(B.clone().sub(A).normalize(), Bn.clone().sub(A).normalize()));
++  const Tn = A.clone().addScaledVector(dir, d);
++  rotateGlobal(b, new THREE.Quaternion().setFromUnitVectors(P[c].clone().sub(P[b]).normalize(), Tn.sub(P[b]).normalize()));
++  setGlobal(c, Gc);                                   // the hand or foot keeps its orientation
++}
++function aim(chain, tip, target) {
++  const base = P[ix[chain[0]]].clone();
++  const q = new THREE.Quaternion().setFromUnitVectors(P[tip].clone().sub(base).normalize(), target.clone().sub(base).normalize());
++  const part = new THREE.Quaternion().slerp(q, 1 / chain.length);
++  for (const n of chain) rotateGlobal(ix[n], part);
++}
++function solve(name, target, start) {
++  const kind = HANDLES[name], j = ix[name];
++  if (kind === "ik") { const [a, b] = CHAIN[name]; twoBone(ix[a], ix[b], j, target, null); }
++  else if (kind === "pole") { const [a, b, c] = CHAIN[name]; twoBone(ix[a], ix[b], ix[c], P[ix[c]].clone(), target); }
++  else if (kind === "spine" || kind === "head") aim(AIM[name], j, target);
++  else if (kind === "hips") {
++    root.add(target.clone().sub(P[j])); fk();
++    if (pin.checked && start) for (const [foot, [a, b]] of [["LeftFoot", CHAIN.LeftFoot], ["RightFoot", CHAIN.RightFoot]]) {
++      const kneeAhead = P[ix[b]].clone().add(new THREE.Vector3(0, 0, 0.3).applyQuaternion(G[ROOT]));
++      twoBone(ix[a], ix[b], ix[foot], start[foot], kneeAhead);
++    }
++  }
++}
++function turn(deg) {                               // the whole body, feet too, about the hips
++  push();
++  setGlobal(ROOT, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(deg)).multiply(G[ROOT]));
++  redraw();
++}
++function mirror() {
++  // mirror the global rotations across the body's own side-to-side plane, fixing for rest frames that aren't mirrored
++  push();
++  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(G[ROOT].clone().multiply(REST[ROOT].clone().invert()));
++  const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(fwd.x, fwd.z)), yawInv = yaw.clone().invert();
++  const refl = (q) => new THREE.Quaternion(q.x, -q.y, -q.z, q.w);
++  const other = (n) => n.startsWith("Left") ? "Right" + n.slice(4) : n.startsWith("Right") ? "Left" + n.slice(5) : n;
++  const Gn = new Array(J);
++  for (let j = 0; j < J; j++) {
++    const m = ix[other(N[j])] ?? j;
++    const local = yawInv.clone().multiply(G[j]);                       // facing +Z
++    const mirrored = refl(local).multiply(refl(REST[j]).invert()).multiply(REST[m]);
++    Gn[m] = yaw.clone().multiply(mirrored);
++  }
++  const keep = root.clone();
++  for (let j = 0; j < J; j++) E[j] = PAR[j] < 0 ? Gn[j].clone() : Gn[PAR[j]].clone().invert().multiply(Gn[j]);
++  root.copy(keep); fk(); redraw();
++}
++
++// ---- the view ----
++const host = document.getElementById("view");
++const renderer = new THREE.WebGLRenderer({ antialias: true });
++renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
++host.appendChild(renderer.domElement);
++const scene = new THREE.Scene();
++scene.background = new THREE.Color(0x0e1013);
++const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 200);
++const grid = new THREE.GridHelper(20, 40, 0x2c323b, 0x1b1f25);
++scene.add(grid);
++
++const stage = new THREE.Group();
++scene.add(stage);
++const KIND = { floor: 0x6e6e78, wall: 0xcdcdd7, door: 0xeb9128, mesh: 0x468ce6, use: 0x3cc878, mark: 0xf0dc3c, player: 0xe64646 };
++function drawStage(st) {
++  stage.clear();
++  if (!st) return;
++  stage.position.set(st.place.x, 0, st.place.z);
++  stage.rotation.set(0, THREE.MathUtils.degToRad(st.place.turn), 0);
++  for (const b of st.boxes || []) {
++    const geo = new THREE.BoxGeometry(...b.size), col = KIND[b.kind] ?? 0xb4b4b4;
++    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: b.kind === "floor" ? 0.05 : 0.09, depthWrite: false }));
++    const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.35 }));
++    for (const o of [m, e]) { o.position.set(...b.center); o.rotation.set(0, THREE.MathUtils.degToRad(b.yaw || 0), 0); stage.add(o); }
++  }
++}
++
++const bones = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x59606b }));
++const ghost = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.13 }));
++scene.add(bones, ghost);
++const pairs = [];
++for (let j = 0; j < J; j++) if (PAR[j] >= 0) pairs.push([PAR[j], j]);
++function fillLines(line, pts) {
++  const a = new Float32Array(pairs.length * 6);
++  pairs.forEach(([p, j], k) => { a.set([pts[p].x, pts[p].y, pts[p].z, pts[j].x, pts[j].y, pts[j].z], k * 6); });
++  line.geometry.setAttribute("position", new THREE.BufferAttribute(a, 3));
++  line.geometry.computeBoundingSphere();
++}
++const cyl = new THREE.CylinderGeometry(1, 1, 1, 10);
++const limbs = LIMBS.map(([a, b], k) => {
++  const m = new THREE.Mesh(cyl, new THREE.MeshBasicMaterial({ color: OP[k % OP.length], transparent: true, opacity: 0.85 }));
++  scene.add(m);
++  return { a: ix[a], b: ix[b], m };
++});
++const dotGeo = new THREE.SphereGeometry(1, 16, 12);
++const dots = Object.keys(HANDLES).filter((n) => n in ix).map((n) => {
++  const m = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
++  m.userData.name = n;
++  scene.add(m);
++  return m;
++});
++const ring = new THREE.Mesh(new THREE.RingGeometry(1.35, 1.75, 32), new THREE.MeshBasicMaterial({ color: 0x4c8dff, side: THREE.DoubleSide, depthTest: false }));
++ring.renderOrder = 10; ring.visible = false; scene.add(ring);
++const Y = new THREE.Vector3(0, 1, 0);
++function redraw() {
++  fillLines(bones, P);
++  for (const { a, b, m } of limbs) {
++    const d = P[b].clone().sub(P[a]), len = d.length();
++    m.position.copy(P[a]).addScaledVector(d, 0.5);
++    m.quaternion.setFromUnitVectors(Y, d.normalize());
++    m.scale.set(0.018, Math.max(len, 1e-4), 0.018);
++  }
++  for (const m of dots) {
++    m.position.copy(P[ix[m.userData.name]]);
++    const big = HANDLES[m.userData.name] !== "pole" ? 0.034 : 0.026;
++    m.scale.setScalar(m === hover || m === dragging?.dot ? big * 1.35 : big);
++  }
++  if (hover || dragging) { const m = dragging?.dot || hover; ring.visible = true; ring.position.copy(m.position); ring.scale.setScalar(m.scale.x); ring.quaternion.copy(camera.quaternion); }
++  else ring.visible = false;
++}
++
++// ---- camera: orbit around a target ----
++const orbit = { target: new THREE.Vector3(), theta: 0.45, phi: 1.2, r: 3.4 };
++function placeCamera() {
++  const { target, theta, phi, r } = orbit;
++  camera.position.set(target.x + r * Math.sin(phi) * Math.sin(theta), target.y + r * Math.cos(phi), target.z + r * Math.sin(phi) * Math.cos(theta));
++  camera.lookAt(target);
++}
++function resize() {
++  const w = host.clientWidth, h = host.clientHeight;
++  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
++}
++new ResizeObserver(resize).observe(host);
++
++// ---- interaction ----
++const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), el = renderer.domElement;
++let hover = null, dragging = null, orbiting = null;
++function pick(e) {
++  const r = el.getBoundingClientRect();
++  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
++  ray.setFromCamera(ndc, camera);
++  const grow = (k) => dots.forEach((d) => { d.scale.multiplyScalar(k); d.updateMatrixWorld(); });
++  grow(1.8);                                         // a forgiving target
++  const hits = ray.intersectObjects(dots);
++  grow(1 / 1.8);
++  return hits.length ? hits[0].object : null;
++}
++el.addEventListener("contextmenu", (e) => e.preventDefault());
++el.addEventListener("pointerdown", (e) => {
++  el.setPointerCapture(e.pointerId);
++  const dot = e.button === 0 ? pick(e) : null;
++  if (dot) {
++    push();
++    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), dot.position);
++    const feet = { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() };
++    dragging = { dot, plane, feet, grab: dot.position.clone() };
++    el.className = "drag";
++  } else orbiting = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey };
++});
++el.addEventListener("pointermove", (e) => {
++  if (dragging) {
++    const r = el.getBoundingClientRect();
++    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
++    ray.setFromCamera(ndc, camera);
++    const hit = ray.ray.intersectPlane(dragging.plane, new THREE.Vector3());
++    if (hit) { solve(dragging.dot.userData.name, hit, dragging.feet); redraw(); }
++  } else if (orbiting) {
++    const dx = e.clientX - orbiting.x, dy = e.clientY - orbiting.y;
++    orbiting.x = e.clientX; orbiting.y = e.clientY;
++    if (orbiting.pan) {
++      const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0), up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
++      orbit.target.addScaledVector(right, -dx * orbit.r * 0.0016).addScaledVector(up, dy * orbit.r * 0.0016);
++    } else {
++      orbit.theta -= dx * 0.008;
++      orbit.phi = THREE.MathUtils.clamp(orbit.phi - dy * 0.008, 0.08, Math.PI - 0.08);
++    }
++    placeCamera();
++  } else {
++    const h = pick(e);
++    if (h !== hover) { hover = h; el.className = h ? "over" : ""; redraw(); }
++  }
++});
++el.addEventListener("pointerup", () => { dragging = null; orbiting = null; el.className = hover ? "over" : ""; redraw(); });
++el.addEventListener("wheel", (e) => { e.preventDefault(); orbit.r = THREE.MathUtils.clamp(orbit.r * Math.exp(e.deltaY * 0.001), 0.6, 30); placeCamera(); }, { passive: false });
++
++// ---- undo, load, arm ----
++const undo = [];
++function push() { undo.push(snapshot()); if (undo.length > 100) undo.shift(); }
++let opened = null;
++const legend = document.getElementById("legend"), toastEl = document.getElementById("toast");
++function toast(t) { toastEl.textContent = t; toastEl.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => toastEl.classList.remove("show"), 2400); }
++function useFrame(f, from) {
++  const s = fromQuats(from.quats, from.root);
++  E = s.E; root.copy(s.root); fk();
++  opened = snapshot();
++  fillLines(ghost, P.map((p) => p.clone()));
++  legend.innerHTML = `<b>${from === f.armed ? "Armed pose" : "Frame " + f.frame}</b> · ${f.fps} fps<br>${f.armed ? "a pose is armed" : "no pose armed"}`;
++  orbit.target.copy(P[ix.Hips]); placeCamera(); redraw();
++}
++const payload = () => ({ quats: E.map((q) => [q.x, q.y, q.z, q.w]), root: root.toArray() });
++async function send(path) {
++  const r = await api(path, payload());
++  toast(r.message || (r.ok ? "Done" : "Failed"));
++}
++document.getElementById("load").onclick = async () => { push(); const f = await api("api/frame"); useFrame(f, f.current); };
++document.getElementById("reset").onclick = () => { if (opened) { push(); restore(opened); } };
++document.getElementById("undo").onclick = () => { if (undo.length) restore(undo.pop()); };
++document.getElementById("mirror").onclick = mirror;
++document.getElementById("turnL").onclick = () => turn(15);
++document.getElementById("turnR").onclick = () => turn(-15);
++document.getElementById("arm").onclick = () => send("api/arm");
++document.getElementById("drop").onclick = () => send("api/drop");
++const pin = document.getElementById("pin");
++addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); if (undo.length) restore(undo.pop()); } });
++
++const first = await api("api/frame");
++drawStage(first.stage);
++resize();
++useFrame(first, first.armed || first.current);
++renderer.setAnimationLoop(() => renderer.render(scene, camera));
++window.__pose = { payload, solve: (n, t) => { solve(n, new THREE.Vector3(...t), { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() }); redraw(); return P[ix[n]].toArray(); }, mirror, P, ix };
+diff --git a/kimodo/demo/ui.py b/kimodo/demo/ui.py
+index 7d9f5e3..a78e8b2 100644
+--- a/kimodo/demo/ui.py
++++ b/kimodo/demo/ui.py
 @@ -25,7 +25,7 @@ import torch
  import viser
  from viser._timeline_api import PROMPT_COLORS
@@ -188,7 +725,7 @@ index 7d9f5e3..bee817a 100644
  from .config import (
      DEFAULT_CUR_DURATION,
      DEMO_UI_INSTRUCTIONS_TAB_MD,
-@@ -447,6 +447,72 @@ def create_gui(
+@@ -447,6 +447,267 @@ def create_gui(
                  )
  
              gui_generate_button = client.gui.add_button("Generate", color="green")
@@ -258,10 +795,205 @@ index 7d9f5e3..bee817a 100644
 +        for _slider in (gui_stage_x_slider, gui_stage_z_slider, gui_stage_turn_slider):
 +            _slider.on_update(_place_stage)
 +
++        with client.gui.add_folder("Path", expand_by_default=False):
++            gui_path_draw_checkbox = client.gui.add_checkbox(
++                "Draw Path (P)",
++                initial_value=False,
++                hint="Click the floor to add a waypoint, click a waypoint to remove it. The camera stays still while drawing: press P or untick to orbit again.",
++            )
++            gui_path_pace_dropdown = client.gui.add_dropdown("Pace", tuple(studio.PACES), initial_value="Walk (1.4 m/s)")
++            gui_path_clear_button = client.gui.add_button("Clear Path")
++            gui_path_info = client.gui.add_markdown("Waypoints land on the 2D Root track, timed by the pace.")
++
++        path_drawing = [False]
++
++        def path_sync(session: ClientSession) -> None:
++            """Our waypoints onto the 2D Root track: the start at frame 0, then each click at the pace's frame."""
++            constraint = session.constraints["2D Root"]
++            track_id = session.timeline_data["tracks_ids"]["2D Root"]
++            keys = session.timeline_data["keyframes"]
++            with session.timeline_data["keyframe_update_lock"]:
++                # a waypoint whose keyframe was deleted on the timeline is gone
++                gone = {i - 1 for i, kid in enumerate(session.path_keys) if i > 0 and kid not in keys}
++                session.path_points = [p for i, p in enumerate(session.path_points) if i not in gone]
++                for kid in session.path_keys:
++                    if kid in keys:
++                        constraint.remove_keyframe(kid, keys[kid]["frame"])
++                        client.timeline.remove_keyframe(kid)
++                        del keys[kid]
++                session.path_keys = []
++                if not session.path_points:
++                    gui_path_info.content = "Waypoints land on the 2D Root track, timed by the pace."
++                    return
++                motion = list(session.motions.values())[0] if session.motions else None
++                start = motion.get_projected_root_pos(0)[[0, 2]].tolist() if motion is not None else [0.0, 0.0]
++                points = [start] + session.path_points
++                frames, over = studio.pace_frames(points, gui_path_pace_dropdown.value, session.model_fps, session.max_frame_idx)
++                taken = set(constraint.keyframes)
++                for (x, z), frame in zip(points, frames):
++                    if frame in taken:  # someone else's waypoint at this frame: leave it
++                        continue
++                    kid = client.timeline.add_keyframe(track_id, frame)
++                    keys[kid] = {"track_id": track_id, "frame": frame, "locked": False, "opacity": 1.0, "value": None}
++                    constraint.add_keyframe(kid, frame, np.array([x, 0.0, z], dtype=np.float32))
++                    session.path_keys.append(kid)
++            length = float(sum(np.linalg.norm(np.subtract(b, a)) for a, b in zip(points, points[1:])))
++            secs = frames[-1] / session.model_fps
++            gui_path_info.content = (
++                f"{len(session.path_points)} waypoint{'s' if len(session.path_points) != 1 else ''}, {length:.1f} m, "
++                f"the last at {secs:.1f} s." + (" **Longer than the clip at this pace:** squeezed into it." if over else "")
++            )
++            apply_constraint_overlay_visibility(session)
++
++        def path_click(event: viser.ScenePointerEvent) -> None:
++            session = get_active_session(event.client)
++            if session is None or event.ray_origin is None:
++                return
++            hit = studio.floor_hit(event.ray_origin, event.ray_direction)
++            if hit is None:
++                return
++            near = [i for i, p in enumerate(session.path_points) if math.dist(p, hit) < 0.3]
++            if near:
++                session.path_points.pop(near[0])
++            else:
++                session.path_points.append(hit)
++            path_sync(session)
++
++        def set_path_drawing(on: bool) -> None:
++            if on == path_drawing[0]:
++                return
++            path_drawing[0] = on
++            if on:
++                client.scene.on_pointer_event("click")(path_click)
++            else:
++                client.scene.remove_pointer_callback()
++            if gui_path_draw_checkbox.value != on:
++                gui_path_draw_checkbox.value = on
++
++        @gui_path_draw_checkbox.on_update
++        def _(event: viser.GuiEvent) -> None:
++            set_path_drawing(gui_path_draw_checkbox.value)
++
++        @gui_path_pace_dropdown.on_update
++        def _(event: viser.GuiEvent) -> None:
++            session = get_active_session(event.client)
++            if session is not None and session.path_points:
++                path_sync(session)
++
++        @gui_path_clear_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            session = get_active_session(event.client)
++            if session is not None:
++                session.path_points = []
++                path_sync(session)
++
++        with client.gui.add_folder("Pose", expand_by_default=False):
++            gui_pose_open_button = client.gui.add_button(
++                "Pose…", hint="A window with an OpenPose-style figure to pose by dragging, starting from the playhead's pose."
++            )
++            gui_pose_info = client.gui.add_markdown("No pose armed: Full-Body clicks take the generated pose.")
++            gui_pose_drop_button = client.gui.add_button("Drop at Playhead", disabled=True)
++            gui_pose_disarm_button = client.gui.add_button("Disarm", disabled=True)
++
++        pose_modal = [None]
++
++        def pose_session() -> ClientSession:
++            session = demo.client_sessions.get(client_id)
++            if session is None:
++                raise RuntimeError("this demo tab is gone")
++            return session
++
++        def pose_layout() -> dict:
++            return {**studio.skeleton_layout(pose_session().skeleton), "fps": float(pose_session().model_fps)}
++
++        def pose_frame() -> dict:
++            session = pose_session()
++            motion = list(session.motions.values())[0]
++            frame = int(min(session.frame_idx, motion.length - 1))
++            parents = [int(p) for p in session.skeleton.joint_parents.tolist()]
++            G = motion.joints_rot[frame].detach().cpu().numpy()
++            root = motion.joints_pos[frame, session.skeleton.root_idx].detach().cpu().numpy()
++            out = {"frame": frame, "fps": float(session.model_fps),
++                   "current": {"quats": studio.rots_to_quats(studio.effective_locals(G, parents)), "root": root.round(5).tolist()},
++                   "armed": None, "stage": None}
++            if session.armed_pose is not None:
++                out["armed"] = {"quats": session.armed_pose["quats"], "root": session.armed_pose["root"]}
++            if stage_state:
++                out["stage"] = {**stage_state["data"], "place": {"x": gui_stage_x_slider.value, "z": gui_stage_z_slider.value,
++                                                                  "turn": gui_stage_turn_slider.value}}
++            return out
++
++        def pose_arm(body: dict) -> str:
++            session = pose_session()
++            layout = studio.skeleton_layout(session.skeleton)
++            G, P = studio.pose_fk(studio.quats_to_rots(body["quats"]), np.asarray(body["root"], np.float32),
++                                  layout["parents"], np.asarray(layout["offsets"], np.float32))
++            session.armed_pose = {"joints_pos": P, "joints_rot": G, "quats": body["quats"], "root": body["root"]}
++            gui_pose_info.content = (
++                "**Pose armed.** Click the Full-Body track to drop it (Ctrl+drag holds it over a range). "
++                "Disarm to place generated poses again."
++            )
++            gui_pose_drop_button.disabled = False
++            gui_pose_disarm_button.disabled = False
++            if pose_modal[0] is not None:
++                pose_modal[0].close()
++                pose_modal[0] = None
++            return "Armed: click the Full-Body track to drop it"
++
++        def pose_drop_at(session: ClientSession, frame: int) -> None:
++            pose = session.armed_pose
++            constraint = session.constraints["Full-Body"]
++            with session.timeline_data["keyframe_update_lock"]:
++                if frame in constraint.keyframes:  # replace the pose already there
++                    kid = constraint.frame2keyid[frame][0]
++                    constraint.add_keyframe(kid, frame, pose["joints_pos"], pose["joints_rot"], exists_ok=True)
++                else:
++                    track_id = session.timeline_data["tracks_ids"]["Full-Body"]
++                    kid = client.timeline.add_keyframe(track_id, frame)
++                    session.timeline_data["keyframes"][kid] = {
++                        "track_id": track_id, "frame": frame, "locked": False, "opacity": 1.0, "value": None,
++                    }
++                    constraint.add_keyframe(kid, frame, pose["joints_pos"], pose["joints_rot"])
++            apply_constraint_overlay_visibility(session)
++
++        def pose_drop(body: dict) -> str:
++            pose_arm(body)
++            session = pose_session()
++            pose_drop_at(session, int(session.frame_idx))
++            return f"Dropped at frame {int(session.frame_idx)} (and armed)"
++
++        @gui_pose_open_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            if get_active_session(event.client) is None:
++                return
++            bridge = studio.pose_bridge()
++            bridge.hooks[str(client_id)] = {"layout": pose_layout, "frame": pose_frame, "arm": pose_arm, "drop": pose_drop}
++            with event.client.gui.add_modal("Pose", size="90%", show_close_button=True) as modal:
++                event.client.gui.add_html(
++                    f'<iframe src="{bridge.url(client_id)}" style="width:100%;height:68vh;min-height:480px;border:0;'
++                    'border-radius:8px;display:block"></iframe>'
++                )
++            pose_modal[0] = modal
++
++        @gui_pose_drop_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            session = get_active_session(event.client)
++            if session is not None and session.armed_pose is not None:
++                pose_drop_at(session, int(session.frame_idx))
++
++        @gui_pose_disarm_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            session = get_active_session(event.client)
++            if session is not None:
++                session.armed_pose = None
++            gui_pose_info.content = "No pose armed: Full-Body clicks take the generated pose."
++            gui_pose_drop_button.disabled = True
++            gui_pose_disarm_button.disabled = True
++
          with client.gui.add_folder("Constraints", expand_by_default=False):
              gui_gizmo_space_dropdown = client.gui.add_dropdown(
                  "Gizmo space",
-@@ -475,6 +541,12 @@ def create_gui(
+@@ -475,6 +736,12 @@ def create_gui(
                      visible=True,
                  )
  
@@ -274,7 +1006,7 @@ index 7d9f5e3..bee817a 100644
              gui_show_only_current_constraint_checkbox = client.gui.add_checkbox(
                  "Show only Current",
                  initial_value=False,
-@@ -772,9 +844,17 @@ def create_gui(
+@@ -772,9 +1039,17 @@ def create_gui(
                      return name + ext
                  return name
  
@@ -294,7 +1026,7 @@ index 7d9f5e3..bee817a 100644
                  motion_data = _motion_to_numpy_dict(motion)
  
                  if fmt == "BVH":
-@@ -987,6 +1067,7 @@ def create_gui(
+@@ -987,6 +1262,7 @@ def create_gui(
  
              def save_constraints(client, save_path):
                  session = demo.client_sessions[client.client_id]
@@ -302,7 +1034,7 @@ index 7d9f5e3..bee817a 100644
                  # Keep save behavior aligned with demo frame convention:
                  # valid frame indices are [0, max_frame_idx], so count is +1.
                  num_frames = session.max_frame_idx + 1
-@@ -1268,6 +1349,16 @@ def create_gui(
+@@ -1268,6 +1544,16 @@ def create_gui(
                      hint="For BVH export, use the standard T-pose rest skeleton.",
                      visible=False,
                  )
@@ -319,7 +1051,7 @@ index 7d9f5e3..bee817a 100644
                  gui_download_button = client.gui.add_button(
                      "Download",
                      hint="Download the current motion (format + name above).",
-@@ -1561,7 +1652,7 @@ def create_gui(
+@@ -1561,7 +1847,7 @@ def create_gui(
                  session = get_active_session(event_client)
                  if session is None:
                      return
@@ -328,7 +1060,7 @@ index 7d9f5e3..bee817a 100644
                  try:
                      fmt = str(gui_download_format_dropdown.value).upper()
                      raw_name = str(gui_download_name_text.value)
-@@ -1640,7 +1731,7 @@ def create_gui(
+@@ -1640,7 +1926,7 @@ def create_gui(
                  save_constraints(event_client, constraint_path)
                  # save the motion
                  motion_path = os.path.join(save_dir, "motion.npz")
@@ -337,7 +1069,19 @@ index 7d9f5e3..bee817a 100644
                  # save the gui metadata
                  meta_path = os.path.join(save_dir, "meta.json")
                  prompt_texts = []
-@@ -2820,6 +2911,7 @@ def create_gui(
+@@ -2376,6 +2662,11 @@ def create_gui(
+             if constraint_type in ["Full-Body", "End-Effectors"]:
+                 constraint_kwargs["joints_pos"] = motion.get_joints_pos(start_frame_idx, end_frame_idx)
+                 constraint_kwargs["joints_rot"] = motion.get_joints_rot(start_frame_idx, end_frame_idx)
++                if constraint_type == "Full-Body" and session.armed_pose is not None:  # the pose window's pose
++                    count = end_frame_idx - start_frame_idx + 1
++                    for key in ("joints_pos", "joints_rot"):
++                        armed = session.armed_pose[key]
++                        constraint_kwargs[key] = np.repeat(armed[None], count, axis=0) if is_interval else armed.copy()
+                 if constraint_type == "End-Effectors":
+                     constraint_kwargs["joint_names"] = joint_names
+                     constraint_kwargs["end_effector_type"] = end_effector_type
+@@ -2820,6 +3111,7 @@ def create_gui(
              )
              gui_generate_button.disabled = True
              client.timeline.disable_constraints()
@@ -345,3 +1089,14 @@ index 7d9f5e3..bee817a 100644
  
              num_samples = gui_num_samples_slider.value
              timeline = session.client.timeline
+@@ -3214,6 +3506,10 @@ def create_gui(
+                 play_pause_button_callback(session)
+             return
+ 
++        elif event.key in ("p", "P"):
++            set_path_drawing(not path_drawing[0])
++            return
++
+         # Handle arrow keys: frame navigation (fast OS repeat with 50ms debounce).
+         elif event.key == "ArrowLeft":
+             prev_frame_callback(session)
