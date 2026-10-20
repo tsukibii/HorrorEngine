@@ -58,6 +58,25 @@ a rival body. The ideal workflow they asked for, and what the research says each
 - **Jiggle in Unreal, tuned in the desk:** the Fat suit page's soft bones stay the tuning tool (they show the look
   at once); their export is the recipe for Kawaii on the MetaHuman body (§4).
 
+## 2a. Editing after the rig (the user's question, 2026-10-20)
+
+The character stays editable at every stage; what differs is what each edit regenerates:
+
+| Change after the auto-rig | Allowed | What it triggers |
+| --- | --- | --- |
+| body proportions (the parametric sliders, our measures) | yes | the parametric body regenerates its shape and rig locally, at once; no cloud call |
+| skin tone, textures | yes | texture synthesis again (cloud); the rig is untouched |
+| eyes, hair, wardrobe, make-up | yes | nothing on the rig |
+| the face (sculpt, landmarks) | yes | the face rig is outdated: auto-rig again (cloud) |
+| anything, once assembled | yes | re-assemble (`BuildMetaHuman`): the Blueprint and the body mesh are regenerated |
+
+Cautions: a **conformed** body is fixed (no sliders after; the parametric fit back is an approximation), so send
+measures first and conform only when the model refuses; the **jiggle bones** live on the assembled mesh and vanish
+on every re-assembly, so the Kawaii setup runs last, scripted to rerun after each build; a 5.8.3 report says fitting
+the head to custom body proportions misplaced facial bones, so set the body before the face auto-rig. Epic doesn't
+state which stages are cloud; the 5.6 announcement names autorigging and texture synthesis as the cloud services,
+the parametric body is a local model, and the first run (SETUP S12) will show the exact behaviour.
+
 ## 3. `tools/metahuman.py`: the desk's body as an editor script
 
 `python tools/metahuman.py --game Pilot mari` writes `Saved/Story/Pilot/metahuman_mari.py`, a script for the
