@@ -29,7 +29,8 @@
   <button id="random" title="A new random body (body and head)">Random</button>
   <button id="vary" title="Small changes around this one">Vary</button>
   <button id="reset">Reset</button>
-  <button id="save" title="Write shape and height into the cast member in story.json">Save to story</button>
+  <label title="the skin tone, for MetaHuman Creator (tools/metahuman.py); the desk's clay stays clay">skin <input id="skin" type="color" value="#c9a287"></label>
+  <button id="save" title="Write shape, height, the measures (cm) and the skin tone into the cast member in story.json">Save to story</button>
   <button id="objA" title="This body in MHR's A-pose, cm, for MetaHuman (Content/Games/&lt;Game&gt;/Characters)">Export OBJ (A)</button>
   <button id="objT" title="The same in the T bind pose">Export OBJ (T)</button>
   <span id="status"></span>
@@ -106,7 +107,7 @@ async function loadGame(g) {
 function pickCast(id) {
   CID = id; const c = (S.cast || {})[id] || {};
   shape = new Array(SHAPES).fill(0).map((_, i) => +((c.shape || [])[i] || 0)); height = +(c.height || 1.7);
-  $("#height").value = height; sliders(); rebuild(); status(c.previs_body && !/^mhr/i.test(c.previs_body) ? `${id} plays on ${c.previs_body} in the desk: set the body to ${file} to see this shape there` : "");
+  $("#height").value = height; $("#skin").value = c.skin || "#c9a287"; sliders(); rebuild(); status(c.previs_body && !/^mhr/i.test(c.previs_body) ? `${id} plays on ${c.previs_body} in the desk: set the body to ${file} to see this shape there` : "");
 }
 
 // ---- the view ---------------------------------------------------------------------------------------------------
@@ -135,11 +136,13 @@ function rebuild() {
 function live(i) {                     // while dragging: the morph only (the skeleton refits on release)
   const m = shapeMesh(fig.model); m.morphTargetInfluences[m.morphTargetDictionary["shape_c_" + i]] = shape[i]; draw();
 }
+function measuresCm() {                        // the body's measures at the cast member's height (cm): what MetaHuman Creator is given
+  const k = height / (measure("height", null, 0) / 100), out = {};
+  for (const n of GROUPS[0][3]) { let v = measure(n, null, 0); for (let i = 0; i < SHAPES; i++) if (shape[i]) v += measure(n, DICT["shape_c_" + i], shape[i]) - measure(n, null, 0); out[n] = +(v * k).toFixed(1); }
+  return out;
+}
 function readout() {
-  const k = height / (measure("height", null, 0) / 100), m = n => {
-    let v = measure(n, null, 0); for (let i = 0; i < SHAPES; i++) if (shape[i]) v += measure(n, DICT["shape_c_" + i], shape[i]) - measure(n, null, 0);
-    return (v * k).toFixed(0);
-  };
+  const mm = measuresCm(), m = n => mm[n].toFixed(0);
   $("#measure").innerHTML = `${CID || "(no cast)"} · ${height.toFixed(2)} m<br>widths: shoulders ${m("shoulders")} cm · waist ${m("waist")} cm · hips ${m("hips")} cm<br><span style="opacity:.7">drag to turn, wheel to zoom · ${file}</span>`;
 }
 let drag = null;
@@ -202,6 +205,7 @@ $("#save").onclick = async () => {
     const c = S.cast[CID]; const keep = shape.map(v => +v.toFixed(2)); while (keep.length && !keep[keep.length - 1]) keep.pop();
     if (keep.length) c.shape = keep; else delete c.shape;
     c.height = +height.toFixed(2);
+    c.measures = measuresCm(); c.skin = $("#skin").value;
     if (!c.previs_body && !/^mhr/i.test(S.game.previs_body || "")) c.previs_body = file;
     const r = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME }) });
     MTIME = r.mtime; status(`saved ${CID}'s body to ${GAME}/story.json (reload the desk to see it)`, "ok");

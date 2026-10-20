@@ -204,9 +204,13 @@ fix; use 48.
 
 ## S12. Faces and takes (user, then Claude)
 
-- [ ] Mari's body from the desk: on the Shape page, Export OBJ (A) and (T) → `Content/Games/Pilot/Characters/`.
-  Find in the 5.8 MetaHuman docs how Creator conforms to a template mesh (body and head), try the A-pose OBJ, and
-  write what worked (pose, scale, parts) in docs/LESSONS.md and ANIMATION.md §3.
+- [ ] Mari's body from the desk, by numbers (docs/METAHUMAN_ROUTE.md): `python tools/metahuman.py --game Pilot mari`
+  writes `Saved/Story/Pilot/metahuman_mari.py`; run it in the editor (UnrealClaude `unreal_execute_script`). It's
+  untested: fix the lines marked VERIFY against `Engine/Plugins/MetaHuman/MetaHumanCharacter/Content/Python/examples`,
+  put the real constraint names in the tool's `MEASURES`, and write what worked in docs/LESSONS.md. Then the rigged
+  body's FBX is in `Content/Studio/Bodies/mari.fbx` and `previs_body` points at it: the storyboard plays on her.
+  The conform (Export OBJ (A) on the Shape page → Creator's body conform) is the fallback for a shape the parametric
+  body refuses.
 - [ ] **(user)** Make Mari's MetaHuman (from that conform, then the face and finer detail by hand). Record `Pilot_s_message_main_c1` to `c3` (MiniMax, from
   `story.py clips`): the Japanese voice as `.wav`, a close-up face video as `.mp4`, starting and ending on her
   anchor frame. Put them in one folder.

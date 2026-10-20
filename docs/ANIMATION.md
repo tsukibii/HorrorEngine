@@ -168,6 +168,9 @@ with MHR's mesh, the fallback is Epic's **MetaHuman Conform Topology** pack (Fab
 MHR export (Blender or Wrap), then conform to that. Then do the fine work in Creator: face, skin, hair. Not tried yet:
 the first time (SETUP S12), write what worked in LESSONS.md.
 
+**The route, decided 2026-10-20: docs/METAHUMAN_ROUTE.md** (the desk designs, MetaHuman Creator's Python API makes
+and rigs, the rigged body comes back as the previs body, Kawaii Physics for the jiggle). Below, the earlier notes.
+
 **Faces in MetaHuman, bodies from the desk (the blend):** a MetaHuman is a head and a body, and Creator works on
 them separately. So the face is made there: sculpted from its presets, or from a head mesh sculpted elsewhere
 (Blender, ZBrush) through Mesh to MetaHuman. The body is conformed to the desk's export: the Shape page's OBJ for a

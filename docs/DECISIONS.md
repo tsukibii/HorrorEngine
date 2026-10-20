@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-20 (the MetaHuman route: design here, make it there)
+
+- **We don't compete with MetaHuman; the desk edits MetaHumans.** A body is designed in the desk (the Shape page,
+  the Lines tool, a skin tone) and sent to MetaHuman Creator as *numbers* through its 5.8 Python API (parametric
+  body constraints, skin settings, auto-rig, assembly), not as a mesh; only a shape the parametric model can't make
+  goes as a conform from the desk's OBJ. The rigged body comes back as the desk's previs body (no face rig in the
+  desk). Jiggle is Kawaii Physics on the MetaHuman body, set up from the Fat suit page's export; the sculpt tools are
+  not ported into Unreal (docs/METAHUMAN_ROUTE.md). `tools/metahuman.py` writes the editor script; untested until the
+  user runs it (SETUP S12).
+
 ## 2026-10-20 (sculpting lines)
 
 - **Sculpt the fat suit by its silhouette:** vertical lines over every soft part with points to pull in or out,
