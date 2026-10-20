@@ -32,3 +32,5 @@ the fix.
   actor's `move` keys across clips and measures a moving clip halfway.
 - **"Medium shot" names a body part, not a distance:** the framing check measures the part a shot is about (face,
   chest up, waist up) as a share of the frame. The pilot's "MS" at 3.2 m read as a wide shot until it was measured.
+- **`--no-build-isolation` means every build backend is ours to install:** Kimodo's demo pulls NVIDIA's `viser` fork
+  from git, which builds with hatchling; `setup.py kimodo --demo` failed until hatchling joined the build tools.

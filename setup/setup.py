@@ -318,7 +318,7 @@ def cmd_kimodo(args):
         step("PyTorch (CPU only: slow, for testing)", [uv, "pip", "install", "--python", vp, "torch", "--index-url", "https://download.pytorch.org/whl/cpu"])
     else:
         step(f"PyTorch with CUDA ({cuda})", [uv, "pip", "install", "--python", vp, "torch", "--index-url", f"https://download.pytorch.org/whl/{cuda}"])
-    step("build tools (CMake, for Kimodo's motion correction)", [uv, "pip", "install", "--python", vp, "cmake", "setuptools", "wheel"])
+    step("build tools (CMake for Kimodo's motion correction, hatchling for the demo's viser)", [uv, "pip", "install", "--python", vp, "cmake", "setuptools", "wheel", "hatchling"])
     # NVIDIA's own pinned versions (docker_requirements.txt) as constraints, so this matches what they test
     pins = [ln.strip() for ln in (p["src"] / "docker_requirements.txt").read_text(encoding="utf-8").splitlines()
             if re.match(r"^[A-Za-z0-9_.\-]+==", ln.strip())]
