@@ -12,6 +12,15 @@ the fix.
 
 ## This project
 
+- **Blender joins bones when it reads an FBX, and a joined bone can't move:** the first round-trip check of a
+  Kimodo FBX was off by the whole walk, because the hips' travel was dropped on Blender's re-import, not in the file.
+  Disconnect the bones before measuring (Unreal has no such rule).
+- **Kimodo's skin is bound in an A-pose; its motions rest in a T-pose:** the first SK_SOMA put the A-pose mesh on the
+  T-pose skeleton (64 cm apart at the hands). Kimodo's own skinning with identity local rotations puts the mesh in
+  the T-pose first (`retarget.py` TPOSE). Its `from_standard_tpose` is the other way (to the BONES-SEED rest).
+- **A Blender FBX in metres can say UnitScaleFactor 100 even with "FBX All":** for Unreal's own kind (centimetre
+  values, factor 1) keep the scene unit at 0.01 m, import the centimetre BVH at scale 1, and export with
+  `FBX_SCALE_NONE`. Read the header to be sure (`fbx_unit_scale`).
 - **Walls are centred on the room edge (0.1 m thick):** a prop against a wall sits d/2 + 0.05 m from the edge.
   The pilot's bookshelf was 2 cm into the study wall until level_check caught it.
 - **The greedy playthrough walks from where the player is, not from the level's start:** the first version

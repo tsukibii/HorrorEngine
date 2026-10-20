@@ -137,6 +137,31 @@ humanoid motion out.
 once, they loop while a scene holds or a stand-in waits. Epic's free Game Animation Sample covers the player and
 ordinary locomotion.
 
+## 1b. Kimodo's motions onto your MetaHumans (`tools/retarget.py`)
+
+Kimodo makes its motions on its own 77-joint skeleton (SOMA). Unreal moves them onto a MetaHuman by **retargeting**:
+an IK Rig on each skeleton (named chains: spine, neck, head, arms, legs, fingers) and an IK Retargeter between them
+that copies each chain's motion and lets IK keep the feet planted and the hands on target, whatever the body's
+proportions. It's set up once; then every motion goes onto every MetaHuman in a batch.
+
+1. `python tools/retarget.py setup` (once): Blender's Python module (bpy 4.2, a tool we run, nothing of it ships).
+2. `python tools/retarget.py --game G fbx`: each motion in `Saved/Story/G/motion/*.npz` -> BVH (Kimodo's
+   `kimodo_convert`, standard T-pose) -> `fbx/<job>.fbx` in centimetres, plus `fbx/SK_SOMA.fbx` once (Kimodo's
+   skinned body in that T-pose: Unreal makes a Skeleton only from a mesh). Each FBX is read back and every joint
+   compared with the NPZ (0.00 cm in the test, a walk with a wave and a twist).
+3. `python tools/retarget.py --game G unreal [--cast mari] [--body /Game/.../SKM_Body]` writes
+   `Saved/Story/G/retarget_unreal.py`; run it in the editor (UnrealClaude `unreal_execute_script`). It imports
+   SK_SOMA to `/Game/Studio/Kimodo` and the motions to `/Game/Games/G/Motion/Kimodo`; makes `IK_SOMA` (the editor's
+   auto chains and full-body IK) and `RTG_SOMA_to_MetaHuman` (target: Epic's MetaHuman IK Rig; chains auto-mapped,
+   SOMA's T-pose aligned to MetaHuman's A-pose); then retargets every motion onto each rigged MetaHuman's body into
+   `/Game/Games/G/Motion/MetaHuman/<cast id>/`. Your MetaHumans share one body skeleton, so any of them can play any
+   result; one pass per body keeps the feet and hands right for that body.
+4. Look at a few on the character (feet sliding, hands crossing the body): fix it once in the retargeter (the IK
+   goals, a chain's settings) and rerun step 3.
+
+The talking stays apart: faces come from the takes (§2) and play on the face while the body plays the retargeted
+motion. Contacts that must be exact (the grab) are the runtime IK's job (§4), not the retarget's.
+
 ## 2. Faces: MetaHuman Animator (yours)
 
 - The takes come back named by take id (`intake.py`). Claude imports the voices and queues the face videos.

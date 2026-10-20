@@ -30,6 +30,8 @@ Footage/
 
 # Kimodo's environment, its models and caches (setup.py kimodo: 25 GB or so; rebuildable)
 vendor/kimodo/
+# Blender's Python module for tools/retarget.py (rebuildable)
+vendor/blender/
 # GarmentCode's checkout and environment (tools/garment.py setup; rebuildable)
 vendor/garmentcode/
 

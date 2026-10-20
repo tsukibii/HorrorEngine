@@ -213,6 +213,12 @@ fix; use 48.
   body's FBX is in `Content/Studio/Bodies/mari.fbx` and `previs_body` points at it: the storyboard plays on her.
   The conform (Export OBJ (A) on the Shape page → Creator's body conform) is the fallback for a shape the parametric
   body refuses.
+- [ ] Kimodo's motions onto Mari's MetaHuman (docs/ANIMATION.md §1b): `python tools/retarget.py setup`, then
+  `python tools/retarget.py --game Pilot fbx` and `python tools/retarget.py --game Pilot unreal --body <her body's
+  skeletal mesh>`; run `Saved/Story/Pilot/retarget_unreal.py` in the editor. It's untested there: fix the lines marked
+  VERIFY (the IK Rig and retargeter controller calls in 5.8, the MetaHuman IK Rig's path, the batch call), check the
+  chains `IK_SOMA` got (Hips the retarget root; LeftLeg is SOMA's thigh, LeftShin its calf), look at a walk on her,
+  and write what worked in docs/LESSONS.md.
 - [ ] Mari's t-shirt into Unreal (docs/METAHUMAN_ROUTE.md §6): `python tools/garment.py setup`, then
   `python tools/garment.py --game Pilot pattern mari t-shirt`; import `Content/Games/Pilot/Garments/mari_t-shirt/
   mari_t-shirt_panels.obj` into a Chaos Cloth Asset (the Dataflow editor's static-mesh panel import), add the

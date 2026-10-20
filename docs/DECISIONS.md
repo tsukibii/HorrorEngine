@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-20 (Kimodo's motions onto the MetaHumans)
+
+- **The body motions made with Kimodo in the desk go onto the user's rigged MetaHumans in Unreal** (no talking: the
+  faces come from the takes). Unreal's IK Retargeter does it: Kimodo's SOMA skeleton and its skinned body as FBX,
+  one IK Rig and one retargeter to MetaHuman made once, then every motion batch-retargeted onto each MetaHuman's
+  body by a generated script (`tools/retarget.py`, docs/ANIMATION.md §1b). The FBX side is tested exact; the editor
+  side is the first run's job (SETUP S12).
+
 ## 2026-10-20 (clothing: generated, live physics)
 
 - **Clothing is made on the go and its physics stays live:** garments as GarmentCode programs sized by the cast
