@@ -2,6 +2,32 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-20 (pipeline v2: how a game is made from now on)
+
+- **The workflow** (docs/PIPELINE.md v2, built on branch `pipeline-v2` by docs/PIPELINE_V2_PLAN.md):
+  1. The user's outline and rough cast in the desk.
+  2. A local model drafts the English script; Claude reviews and glues.
+  3. The user refines.
+  4. Claude's Japanese pass (as a professional film would say it), with English and Chinese subtitles translated
+     from the Japanese, and a MiniMax image-to-video prompt per take.
+  5. The takes on the desk's timeline, with an auto-clean that fits the director's parts to them.
+  6. The motions made by the user in Kimodo's demo from Claude's shot list, imported back by name.
+  7. Unreal: the blocked game playable, the MetaHumans, the face mocap, the gameplay with a crosshair.
+  8. Art, QA, ship. The engine and its mechanics are versioned so each game is quicker than the last.
+- **The kind of game:** a dark anthology in first person (Resident Evil 7 meets Japanese monster and psychological
+  horror), carried by mood. The ending comes from **karma**: how the player responded and reacted, in timed choices
+  (30 s), not what they found. **No dying**: a missed task guides the player gently on; only the final ending may
+  kill the hero. Branching and simple acting scenes after *Five Hearts Under One Roof*.
+- **Takes are 7 to 8 seconds** (MiniMax's audio holds for 7 to 9): the Japanese is written in beats that stitch (a
+  line, a pause or an expression, a short question). `clip_max` 8.
+- **Motions:** 80% simple life-to-life, 15% activity, 5% action and horror, a few detailed ones and the final
+  ending's; the detail comes from the face mocap. Each Kimodo motion is one behaviour of at least 2 seconds
+  (docs/KIMODO.md). The head's look is a layer on top (trackers, clamped), not Kimodo's job.
+- **The first game is a 15 to 20 minute itch.io game**, to test every stage once.
+- **Extras:** a procedural idle so characters stay alive outside the interactive parts; a script generator on a
+  local model (Qwen3.6-27B on the RTX 3090) with Claude for the reviews and the glue.
+- The work runs on its own branch beside SETUP (which continues on the user's machine).
+
 ## 2026-10-20 (Kimodo's motions onto the MetaHumans)
 
 - **The body motions made with Kimodo in the desk go onto the user's rigged MetaHumans in Unreal** (no talking: the

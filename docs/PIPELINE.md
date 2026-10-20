@@ -1,100 +1,129 @@
-# Making a game: the pipeline
+# Making a game: the pipeline (v2)
 
-One studio project, many games (STUDIO.md). Each game goes **spine first**:
-1. the performed story scenes, plotted and timed
-2. a greybox where those scenes play
-3. the player's tasks stitched between them
-4. the polish layers (takes, faces, bodies, art) swapped in by name
+One studio project, many games (STUDIO.md). The kind of game we make: **a dark anthology in first person**,
+Resident Evil 7's point of view meets Japanese monster and psychological horror. Mood carries it. The player feels
+they are the one making the choices, and **how they respond and react decides the ending**, through karma, rather
+than what they found. There is no dying in the usual sense: a missed task guides the player gently on to the next
+scene, never a "You lose" screen. Only the final ending may kill the hero, and it plays as the story's end, not a
+game over. The branching and simple acting scenes follow *Five Hearts Under One Roof*.
 
-Nothing downstream breaks when a layer changes, because timing is elastic (STORY_FORMAT §3.4) and everything is
-found by id.
+The build plan for the tools this needs is `docs/PIPELINE_V2_PLAN.md` (branch `pipeline-v2`). This page is how a
+game goes once they're built. The first game is small, a **15 to 20 minute itch.io game**, to test every stage once
+(DECISIONS 2026-10-20).
 
-Who does what: **you** write the rough story and make the MetaHumans, the takes (MiniMax, Japanese) and the face
-mocap, then fine-tune. **Claude** is co-lead engineer and assistant artist: story structure, story.json, the
-greybox, the systems, the animation passes, the checks and the reviews.
+**Who does what:**
+- **You:** the outline, the cast's rough design, refining the dialogue and the flow, the takes (MiniMax image to
+  video), the Kimodo motions (prompting in the demo), the MetaHumans, the face mocap, and the final say.
+- **Claude:** the script around the local model's drafts (reviews and glue), the Japanese pass, the MiniMax prompts,
+  the animation shot list, the blocking, the checks, the Unreal flow, the systems.
+- **The local model** (on your RTX 3090): the first drafts of the script, scene by scene, so prompting Claude is
+  for reviews and glue.
 
-## P1. The story → the spine (a day)
+Nothing downstream breaks when a layer changes: timing is elastic (STORY_FORMAT §3.4), everything is found by id.
 
-- **You:** a rough story on the board (director's desk → Notes) or in chat.
-- **Claude:**
-  - writes `docs/games/<Game>.md`: premise, the twist, the cast, the 8 to 12 spine scenes, where the quiet goes, the
-    endings (good, bad, secret) and what decides them
-  - creates the game (`story.py new <Game>`)
-  - writes **only the scenes, the flow and the endings**: every scene with stage marks in a rough level, a mood,
-    clips already cut to 10 s or less with shot sizes, seams, cues, events, variants where a moment is worth trying
-    several ways, trigger cutscenes and timers where the tension wants them
-  - **blocks every body** in the desk (pose keys, eases, modifiers) and runs the body check on every scene
-  - leaves stitches as placeholders (one `done` beat with a `goal` and a `target_min`)
-- **Done:** `CHECKS ok`, and you've **watched** it on the desk:
-  - scenes from the player's eye with the blocked bodies, seams and camera moves
-  - tasks as cards with their timers and trigger deaths
-  - events playable (drag, hold still, timed choices)
-  - the Japanese read by the browser's voice if you like
+## 1. The outline (you)
 
-  You've looked through the **storyboard**, and changed the order, lines, shots and bodies there (or in notes) until
-  it plays like the finished storyboard. **Anything that needs fixing is fixed in the desk, before Unreal.**
+A rough outline of the horror story: the premise, who's in it, how it should feel, roughly how it ends. On the desk's
+board (Notes) or in chat.
 
-## P2. The scene greybox (a day or two)
+## 2. The cast in the desk (you)
 
-- **Claude:**
-  - blocks the rooms the scenes need (world §2) and imports them
-  - exports each scene's blocking as glTF from the desk, imports it, retargets it onto the stand-ins: the greybox
-    plays exactly what the desk showed
-  - stages the stand-ins
-  - makes placeholder voices (`voice_placeholder.py`), so the scenes play in the engine with honest timing,
-    soft-lock cameras and seams
-  - shot review of every scene start and seam (`storykit.shots`, then `shots_sheet.py`)
-- **Done:** every scene plays in PIE in flow order (debug `Story.Goto`), `SHOTS ok`, and you've walked it.
+A rough design of each character on the Shape page (body, proportions, skin), saved to the story. These become
+the cast entries, the blocking bodies and, later, the MetaHumans (METAHUMAN_ROUTE.md).
 
-## P3. The stitches (two to four days)
+## 3. The draft script in English (the local model, then Claude)
 
-- **Claude:**
-  - fills each stitch from the templates (TRICKS.md §4): the tasks, the item-and-lock chains, notes that carry the
-    lore, the scares on the scare budget
-  - widens the levels to hold them
-  - keeps going until the estimator says the shortest normal path is at least 150 minutes
-  - the bot plays it through
-- **Done:** `CHECKS ok` (playtime included), `PLAYTHROUGH ok`, `SHOTS ok`, and you've played the greybox start to
-  finish.
+- `tools/scriptgen.py` (plan W7) breaks the outline into a story bible and scene cards, and the local model
+  drafts each scene's dialogue and action in English, one scene at a time, inside its context window.
+- Claude reviews and glues it, using reference games (Resident Evil 7 and others, `docs/REFERENCES.md`) for
+  structure, pacing and scares, and writes the result into `story.json`:
+  - the scenes and their clips, in English (`en`)
+  - the choices, timed (30 s by default) with their karma
+  - the tasks between scenes (puzzles and timed tasks, each failure guided onward)
+  - the endings, decided by karma (good, neutral, bad)
+  - each clip's body as **simple life-to-life acting** (the animation budget below)
+- **Done:** `CHECKS ok`, and the story plays on the desk as blocks, cards and timed choices.
 
-## P4. Takes (you, then Claude)
+## 4. You refine (you)
 
-- **Claude:** `story.py clips <csv>` gives the shooting script. Each row is one take: the Japanese, the English, the
-  acting note, the start and end frames (bookends: TRICKS.md §1), the seam either side, the length budget.
-- **You:** record and generate the takes and face videos, named by take id.
-- **Claude:** `intake.py <folder>` measures them, flags anything over length or far off the estimate, and
-  rechecks. The scenes stretch to the real takes by themselves.
+You rewrite the dialogue, change the flow, cut and add scenes, on the desk or in the story file. Notes for Claude go
+on the board.
 
-## P5. Faces (you, with Claude's help)
+## 5. The Japanese pass (Claude)
 
-- **You:** MetaHumans for the cast (ANIMATION.md §3).
-- **Claude:** imports the takes (`storykit.media.import_takes`).
-- **You:** solve each face with MetaHuman Animator (mono video or audio-driven, whichever won the pilot's face
-  test).
-- **Claude:** puts the face animations on the scene tracks by take id, and swaps stand-ins for MetaHumans
-  (`cast.<id>.metahuman`).
+The second pass makes the script sound right in Japanese, as it would be said in a professional film:
+- **`ja`:** rewritten for Japanese, not translated word for word: register, sentence endings, what's left unsaid,
+  silences.
+- **`ja_note`:** how it's said: the delivery as a film director would give it (breathy, flat, a catch in the voice,
+  the pause before the last word).
+- **`en` and `zh`:** the subtitles, translated from the Japanese (so all three say the same thing). Your English
+  draft is kept as `en_draft`.
+- **The takes are cut to 7 to 8 seconds.** MiniMax's audio is only good for 7 to 9 s, so every clip is written as a
+  beat that stands alone, and the clips stitch: a line, a pause or an expression, a short question the player answers.
+  `clip_max` is 8.
+- **A MiniMax prompt per take**, ready to paste (image to video):
+  `she makes a worried expression while she whispers <d> [Japanese] ……来てくれたんだ。 </d>`. The form is
+  `<she|he> makes <a|an> <expression> while <she|he> <says | whispers | says angrily | screams> <d> [Japanese] <the
+  line> </d>`. `python tools/story.py --game G minimax` prints them all, with each take's name.
 
-## P6. Bodies (Claude)
+## 6. The takes on the timeline (you, then the auto-clean)
 
-- `motion.py jobs`, then generate them with Kimodo (the Fab plugin, or the local CLI), then `motion.py check`
-  (durations, hand on target, no foot sliding).
-- The shot review again, now with bodies.
-- The grabs get the hybrid IK pass (ANIMATION.md §4).
-- **Done:** `MOTION ok`, `SHOTS ok`. You fine-tune the hero moments.
+- You generate each take in MiniMax and save it under its take id.
+- The desk's timeline takes the videos. The video preview can be switched off to keep only the audio.
+- **The auto-clean** fits the director's parts (subtitles, the body, cues, the next clip's start) to each take's real
+  length, and trims dead air at either end. You can adjust both by hand: the take's own trim, and the length of the
+  director's action against it.
 
-## P7. Art and sound (you buy, Claude places)
+## 7. The motions in Kimodo (you, with Claude's shot list)
 
-- `story.py art` gives the shopping list (every block with its size).
-- Kits from Fab; the `art` fields swap them in.
-- Lights get their final pass.
-- Sounds get named in `sounds`.
-- The shot review catches what the art broke (clipping, a subject gone dark).
+- The animation budget: **80% simple** life-to-life acting (stand, sit, turn, walk over, small gestures; the face
+  does the acting), **15% activity** (an interesting thing done: cooking, searching a drawer, carrying something),
+  **5% action and horror** (a slap, a kick, a fall, a lunge), plus a few detailed hero moments and the final ending's
+  animation.
+- **The Kimodo helper** (`tools/director/kimodo.html`, plan W5) lists every motion the scenes need, scene by scene:
+  - the prompt ("A person ..."), its length in seconds and frames
+  - the name to save it under
+  - the constraints to set (the root path from the stage marks, the key poses from the blocking)
+  - the scene's rules
+- **Each motion is one behaviour of at least 2 seconds.** Standing up is one; walking right is the next. Chains are
+  several motions, joined in the desk. `docs/KIMODO.md` has the prompting rules and the limits.
+- Kimodo is poor at choosing where to look: the head follows the player (or an invisible tracker) by a look-at
+  layer on top, clamped, snapping back past its limit (plan W8).
+- You go through the demo and make them. A blocking overlay in the demo (plan W6) shows the room and the marks as
+  see-through blocks, so the framing is right.
 
-## P8. Polish and ship
+## 8. The motions back in the desk (Claude)
 
-- Play-tests (yours), the bot (Claude's), the refund maths (the shortest normal path at 150 minutes or more).
-- `package_game.py --game <Game>` builds only that game.
-- Steam: the store page, the AI disclosure (the voices and faces are AI-made; see the research notes), the build.
+`python tools/motion.py --game G import` finds the saved motions by name and puts each on its clip. The desk plays
+them chained (bridges between them), with the look-at and the procedural idle on top: the characters act out the
+whole game. **Done:** `MOTION ok`, and you've watched it through, every choice and ending.
+
+## 9. Into Unreal (Claude, then you)
+
+1. **The blocked game, playable as blocks:** the importer builds the levels from the story; the scenes play with
+   the desk's blocking and motions on stand-ins; choices, timers, karma and endings work. You can play the whole
+   thing as it was on the desk.
+2. **The MetaHumans in their roles** (`cast.<id>.metahuman`), the motions retargeted onto them
+   (`tools/retarget.py`, ANIMATION.md §1b).
+3. **The face mocap** from the take videos (MetaHuman Animator), on the scene tracks by take id.
+4. **The gameplay made real:** the tasks you actually do, with a crosshair as the interaction point (a
+   first-person hand comes later, not in the first game).
+
+## 10. Art, atmosphere, polish (you buy, Claude places)
+
+Rooms, props, materials, lighting, atmosphere, camera shakes and effects. `story.py art` gives the shopping list; the
+shot review catches what the art broke.
+
+## 11. QA and ship
+
+Play-tests (yours), the bot's playthroughs (Claude's), the checks. `package_game.py --game <Game>` builds only that
+game. The first game goes to itch.io.
+
+## 12. Versioning the engine
+
+Everything a game adds that another game could use (a mechanic, a runner verb, a desk tool) goes into the studio
+and is versioned (`Content/Studio/VERSION`, `CHANGELOG.md`). Each game records the engine and format versions it
+was built with, so the next game starts from more and takes less time.
 
 ## The rhythm of a session
 
