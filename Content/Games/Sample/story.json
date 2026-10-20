@@ -23,7 +23,11 @@
     }
    }
   },
-  "note": "The format 3 sample (pipeline v2): lines with the Japanese pass and MiniMax fields, timed choices with karma, endings by karma, missed tasks that guide you on, an easter egg that blends back, Kimodo segments and tiers. Built from the Pilot's house. A real game's script comes from tools/scriptgen.py."
+  "note": "The format 3 sample (pipeline v2): lines with the Japanese pass and MiniMax fields, timed choices with karma, endings by karma, missed tasks that guide you on, an easter egg that blends back, Kimodo segments and tiers. Built from the Pilot's house. A real game's script comes from tools/scriptgen.py.",
+  "built_with": {
+   "engine": "0.3.0",
+   "format": 3
+  }
  },
  "cast": {
   "mari": {

@@ -119,8 +119,9 @@ def flow_view(story):
 
 
 NEW = {
-    "format": 2,
-    "game": {"id": "", "title": "", "start": "n_start", "target_min": 0, "voice": "ja", "text": "en", "clip_max": 10},
+    "format": 3,
+    "game": {"id": "", "title": "", "start": "n_start", "target_min": 0, "voice": "ja", "text": "en", "clip_max": 8,
+             "subtitles": ["en", "zh"], "no_death": True},
     "cast": {"someone": {"name": "Someone", "metahuman": None, "height": 1.7}},
     "items": {}, "notes": {}, "lines": {}, "sounds": {},
     "levels": {"main": {"start": "start", "rooms": [
@@ -135,7 +136,7 @@ NEW = {
     "stitches": {"t_start": {"title": "Start", "level": "main", "beats": [
         {"id": "b_start", "when": {"start": True}, "do": [{"fade": "in", "secs": 2}, {"done": True}]}]}},
     "flow": {"n_start": {"type": "stitch", "ref": "t_start", "next": "n_first"},
-             "n_first": {"type": "scene", "ref": "s_first", "next": "e_end"},
+             "n_first": {"type": "scene", "ref": "s_first", "next": "e_end", "final": True},
              "e_end": {"type": "ending", "kind": "good", "title": "The end"}},
     "secrets": {},
 }
@@ -154,7 +155,7 @@ def main():
             sys.exit(f"{d} already has a story")
         d.mkdir(parents=True, exist_ok=True)
         s = json.loads(json.dumps(NEW))
-        s["game"].update(id=name, title=name)
+        s["game"].update(id=name, title=name, built_with={"engine": L.engine_version(), "format": 3})
         (d / "story.json").write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"made {d / 'story.json'}: check it with python tools/check_all.py --game {name}")
         return

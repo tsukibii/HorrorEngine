@@ -219,6 +219,12 @@ def scene_version(scene):
     return merged
 
 
+def engine_version():
+    """The studio engine's version (Content/Studio/VERSION): games record it in game.built_with."""
+    f = STUDIO / "VERSION"
+    return f.read_text(encoding="utf-8").strip() if f.exists() else "0.0.0"
+
+
 JA_MORAE = 6.5        # morae a second: a film's unhurried delivery (everyday speech runs 7 to 8)
 JA_PAUSES = {"…": 0.25, "‥": 0.2, "、": 0.25, "。": 0.45, "？": 0.4, "！": 0.3, "?": 0.4, "!": 0.3, "—": 0.3, "―": 0.3}
 _SMALL = set("ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ")

@@ -1300,6 +1300,12 @@ def main():
     r = Report()
     if story.get("format") not in (2, 3):
         r.err("this check reads formats 2 and 3 (scenes, stitches, flow): see docs/STORY_FORMAT.md")
+    if FORMAT >= 3:
+        bw, eng = story["game"].get("built_with") or {}, L.engine_version()
+        if not bw:
+            r.warn(f"game.built_with is missing: {{\"engine\": \"{eng}\", \"format\": 3}} (Content/Studio/CHANGELOG.md)")
+        elif str(bw.get("engine", "0")).split(".")[0] != eng.split(".")[0]:
+            r.warn(f"built with engine {bw.get('engine')}, the studio is {eng}: read Content/Studio/CHANGELOG.md for what changed")
     things, errs = L.index(story)
     for e in errs:
         r.err(e)

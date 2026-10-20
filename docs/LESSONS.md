@@ -12,6 +12,14 @@ the fix.
 
 ## This project
 
+- **Playwright's own Chromium can't decode H.264 or AAC:** the desk's take test read nothing from a MiniMax-style
+  mp4 until it used a WebM copy. Test takes with WebM; your Chrome or Edge plays the real mp4s.
+- **A running desk server keeps the old serve.py:** new routes 404 until it's restarted (find its PID in one
+  command, kill it in the next, start it again).
+- **A dev skip mustn't skip the thing being tested:** the desk's Esc skip jumped past timed choices, so the karma
+  test saw none; it now jumps to the next event instead.
+- **A room with no doorway in had its entrance shot from its middle, looking straight down:** the planner now stands
+  at the level's start spot (or just inside the south wall), so a new game's template passes the shot check.
 - **Blender joins bones when it reads an FBX, and a joined bone can't move:** the first round-trip check of a
   Kimodo FBX was off by the whole walk, because the hips' travel was dropped on Blender's re-import, not in the file.
   Disconnect the bones before measuring (Unreal has no such rule).

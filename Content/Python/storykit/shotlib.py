@@ -99,7 +99,11 @@ def _entrance(story, things, room_id):
                           rm.pos[1] - rm.size[1] / 2 - 0.01 <= wy <= rm.pos[1] + rm.size[1] / 2 + 0.01)
                 if inside and op["h"] >= 1.8 and op.get("sill", 0) < 0.3:
                     return _toward((wx, wy, rm.pos[2]), rm.pos, 0.6)
-    return rm.pos
+    for lv in story["levels"].values():               # no doorway in: the player starts here (the level's start spot)
+        st = things.get(lv.get("start"))
+        if st and st.room == room_id:
+            return st.pos
+    return (rm.pos[0], rm.pos[1] - rm.size[1] / 2 + 0.6, rm.pos[2])   # else just inside its south wall, not its middle
 
 
 def _eye_for(story, things, when, target):

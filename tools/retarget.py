@@ -193,8 +193,8 @@ def motion_dir(game):
 
 
 def jobs_of(a):
-    d = motion_dir(a.game)
-    npz = sorted(d.glob("*.npz"))
+    d = motion_dir(a.game)                        # motion.py run's results, and the shot list's motions saved from the demo
+    npz = sorted(d.glob("*.npz")) + sorted((ROOT / "Saved" / "Story" / a.game / "kimodo").glob("*.npz"))
     if a.job:
         npz = [p for p in npz if p.stem == a.job]
     if not npz:
