@@ -6,6 +6,8 @@
     python tools/story.py rooms [level]         rooms, openings and props, one line each
     python tools/story.py stats                 counts, words, minutes of performance
     python tools/story.py clips [out.csv] [--all]   the takes to record (MiniMax): one row per clip, picked variants (or all)
+    python tools/story.py minimax [--scene S] [--csv out.csv] [--all]   each take's MiniMax prompt, ready to paste, with
+                                                its take id (the file name), the Japanese, the delivery note and subtitles
     python tools/story.py lines [out.csv]       one-off voice lines (say, whisper) outside scenes
     python tools/story.py cast                  each cast member's clips, lines and scenes
     python tools/story.py art                   every prop still a block, with library meshes named like its tag
@@ -247,6 +249,34 @@ def main():
                                  c.get("en", ""), c.get("act", ""), f"{L.clip_secs(c):.1f}", cmax, prev_seam or "-",
                                  start, end, "no" if c.get("face") is False else "yes"])
         write_rows(rows, args[0] if args else None)
+    elif cmd == "minimax":
+        every = "--all" in args
+        only = args[args.index("--scene") + 1] if "--scene" in args else None
+        out = args[args.index("--csv") + 1] if "--csv" in args else None
+        cmax = story["game"].get("clip_max", 8 if story.get("format", 2) >= 3 else 10)
+        rows = [["take", "scene", "clip", "speaker", "est_secs", "expr", "voice", "ja", "ja_note", "en", "zh", "prompt"]]
+        for sid, sc in story.get("scenes", {}).items():
+            if only and sid != only:
+                continue
+            for k, ver in versions(sc, every):
+                for c in ver.get("clips", []):
+                    tid, secs = take_id(game, sid, k, c["id"]), L.clip_secs(c)
+                    prompt = L.minimax_prompt(c, story.get("cast"))
+                    rows.append([tid, sid, c["id"], c.get("who"), f"{secs:.1f}", c.get("expr", ""), c.get("voice", ""), c.get("ja", ""),
+                                 c.get("ja_note", ""), c.get("en", ""), c.get("zh", ""), prompt])
+                    if not out:
+                        flag = f"  SPLIT IT: over {cmax} s" if secs > cmax else ""
+                        missing = [f for f in ("expr", "voice") if not c.get(f) and c.get("face") is not False]
+                        print(f"{tid}.mp4  ({secs:.1f} s{'' if c.get('dur') else ' est'}){flag}"
+                              f"{'  (no ' + ', '.join(missing) + ')' if missing else ''}")
+                        if c.get("ja_note"):
+                            print(f"  delivery: {c['ja_note']}")
+                        print(f"  en: {c.get('en', '')}" + (f"   zh: {c['zh']}" if c.get("zh") else ""))
+                        print(f"  {prompt}\n")
+        if out:
+            write_rows(rows, out)
+        else:
+            print(f"{len(rows) - 1} takes. Save each MiniMax video as its take id (.mp4) in one folder for the timeline.")
     elif cmd == "lines":
         rows = [["id", "speaker", "mood", "ja", "en"]]
         for k, ln in story.get("lines", {}).items():

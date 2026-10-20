@@ -1034,7 +1034,7 @@
      },
      "zh": "爸爸的书房里有本日记。上面写着地下室钥匙的事。",
      "ja_note": "even and quiet, like reciting something she rehearsed; a small catch on 地下室",
-     "expr": "calm face, eyes flicking aside on the second sentence",
+     "expr": "calm, faraway expression, eyes flicking aside on the second sentence",
      "voice": "says softly",
      "en_draft": "Father's diary is in the study. It says where the cellar key is."
     },
@@ -1103,7 +1103,7 @@
      },
      "zh": "但是，就算听到敲门声……也别开门。",
      "ja_note": "close and urgent, the last three words almost soundless",
-     "expr": "eyes widen, lips tremble as she leans in",
+     "expr": "frightened expression, eyes wide and lips trembling",
      "voice": "whispers",
      "en_draft": "But if you hear knocking... don't open it."
     },
@@ -1448,7 +1448,7 @@
      },
      "zh": "陪着我。",
      "ja_note": "desperate, through clenched teeth on the pull",
-     "expr": "teeth bared, eyes wide and wet",
+     "expr": "desperate grimace, teeth bared and eyes wet",
      "voice": "says angrily",
      "en_draft": "Stay with me."
     }
@@ -1519,7 +1519,7 @@
      },
      "zh": "你在哪里……？",
      "ja_note": "sing-song, drawn out, searching",
-     "expr": "eyes darting side to side",
+     "expr": "searching look, eyes darting side to side",
      "voice": "says softly",
      "en_draft": "Where are you...?"
     }
@@ -1585,7 +1585,7 @@
      },
      "zh": "放回去。",
      "ja_note": "flat and cold, right behind you",
-     "expr": "expressionless, unblinking",
+     "expr": "blank, unblinking stare",
      "voice": "says coldly",
      "en_draft": "Put her back."
     }
@@ -1735,7 +1735,7 @@
      "en": "Hey... don't run.",
      "zh": "喂……别逃。",
      "ja_note": "a plea, breaking in the middle",
-     "expr": "eyes glistening, brow pinched",
+     "expr": "pleading look, eyes glistening and brow pinched",
      "voice": "pleads",
      "en_draft": "Hey... don't run."
     }
@@ -1786,7 +1786,7 @@
      "en": "...Don't go. Please.",
      "zh": "……别走。求你了。",
      "ja_note": "hollow, the please almost swallowed",
-     "expr": "tear-streaked, looking up",
+     "expr": "tear-streaked face, looking up at you",
      "voice": "sobs",
      "en_draft": "...Don't go. Please."
     }

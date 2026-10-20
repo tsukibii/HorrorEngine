@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH } from "./stage.js";
+import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 
@@ -275,6 +275,19 @@ function applyMood(sc) {
   }
   touch(); renderInspector();
 }
+function copyText(t, btn) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { if (btn) { const o = btn.textContent; btn.textContent = "copied"; setTimeout(() => btn.textContent = o, 900); } }, () => prompt("Copy:", t)); }
+// format 3: the Japanese pass and the MiniMax take (docs/STORY_FORMAT.md §9.2, docs/VOICES.md)
+function takeSec(c) {
+  const sec = el("div", { class: "sec" });
+  sec.append(txt(c, "ja_note", { w: true, ph: "delivery: how it's said, as a film director would give it", drop: true }),
+    txt(c, "zh", { w: true, ph: "中文字幕 (from the Japanese)", drop: true }),
+    txt(c, "en_draft", { w: true, ph: "the English draft (kept for reference)", drop: true }),
+    el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(c, "expr", { ph: "expression, as visible movement: a frightened expression, eyes wide…", drop: true, style: "flex:1", after: renderInspector }),
+      sel(c, "voice", VOICES, { blank: "says", drop: true, after: renderInspector })));
+  const p = minimaxPrompt(c, S.cast), b = el("button", { title: "copy the prompt for MiniMax", on: { click: e => copyText(p, e.target) } }, "copy");
+  sec.append(el("div", { class: "row" }, el("code", { style: "flex:1;white-space:normal;font-size:12px" }, p), b));
+  return sec;
+}
 function clipCard(sc, ver, c, i, lvl, sid) {
   const max = S.game.clip_max || 10, over = clipSecs(c) > max;
   const card = el("div", { class: "clip" + (over ? " over" : "") });
@@ -283,7 +296,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     el("button", { on: { click: () => playScene(sc, ver, c.id) } }, "▶ clip"),
     el("button", { title: "move up", on: { click: () => { if (i) { [ver.clips[i - 1], ver.clips[i]] = [ver.clips[i], ver.clips[i - 1]]; touch(); renderInspector(); } } } }, "↑"),
     el("button", { title: "delete", on: { click: () => { if (confirm("Delete clip " + c.id + "?")) { ver.clips.splice(i, 1); touch(); renderInspector(); } } } }, "×")));
-  card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)" }), txt(c, "act", { w: true, ph: "acting note for the take" }));
+  card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
+  if ((S.format || 2) >= 3) card.append(takeSec(c));
   // seam, shot, camera
   const look = [...castIds(), ...placed(lvl)];
   const sec1 = el("div", { class: "sec row" });
@@ -673,17 +687,20 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("
 /* ---------- takes and notes ---------- */
 function renderClips() {
   const v = $("#clipsView"); v.innerHTML = ""; if (!S) return; const max = S.game.clip_max || 10; let rec = 0, all = 0;
-  const tb = el("table", {}, el("tr", {}, ...["take id", "scene", "ver", "clip", "who", "ja", "en", "act", "shot", "event", "secs", "seam in"].map(h => el("th", {}, h))));
+  const v3 = (S.format || 2) >= 3, prompts = [];
+  const tb = el("table", {}, el("tr", {}, ...["take id", "scene", "ver", "clip", "who", "ja", "en", "act", "shot", "event", "secs", "seam in", ...(v3 ? ["MiniMax prompt", ""] : [])].map(h => el("th", {}, h))));
   for (const [sid, sc] of Object.entries(S.scenes || {})) {
     const vers = sc.variants ? Object.entries(sc.variants) : [[null, sc]];
     for (const [k, ver] of vers) (ver.clips || []).forEach((c, i) => {
       all++; if (c.dur) rec++;
       tb.append(el("tr", { style: clipSecs(c) > max ? "background:#4a1f1c" : "" }, el("td", {}, `${GAME}_${sid}_${k || "main"}_${c.id}`), el("td", {}, sid), el("td", {}, (k || "main") + (k && k === sc.pick ? " ★" : "")), el("td", {}, c.id), el("td", {}, c.who || ""),
         el("td", {}, c.ja || ""), el("td", {}, c.en || ""), el("td", { class: "muted" }, c.act || ""), el("td", {}, c.shot || ""), el("td", {}, c.event ? c.event.type : ""),
-        el("td", { class: c.dur ? "ok" : "muted" }, clipSecs(c).toFixed(1) + (c.dur ? "" : " est")), el("td", {}, i ? (c.seam ? c.seam.kind : "MISSING") : "—")));
+        el("td", { class: c.dur ? "ok" : "muted" }, clipSecs(c).toFixed(1) + (c.dur ? "" : " est")), el("td", {}, i ? (c.seam ? c.seam.kind : "MISSING") : "—"),
+        ...(v3 ? (() => { const p = minimaxPrompt(c, S.cast); prompts.push(`${GAME}_${sid}_${k || "main"}_${c.id}\n${p}`); return [el("td", { style: "font-size:12px" }, p), el("td", {}, el("button", { on: { click: e => copyText(p, e.target) } }, "copy"))]; })() : [])));
     });
   }
-  v.append(el("h2", {}, `Takes · ${rec}/${all} recorded`), el("p", { class: "muted" }, "Record each row as one MiniMax clip, named by its take id (.wav and .mp4), starting and ending on the anchor frame. Then: python tools/intake.py --game " + GAME + " <folder>."), tb);
+  v.append(el("h2", {}, `Takes · ${rec}/${all} recorded`), el("p", { class: "muted" }, "Record each row as one MiniMax clip, named by its take id (.wav and .mp4), starting and ending on the anchor frame. Then: python tools/intake.py --game " + GAME + " <folder>."),
+    v3 ? el("div", { class: "row" }, el("button", { on: { click: e => copyText(prompts.join("\n\n"), e.target) } }, "copy every prompt"), el("span", { class: "muted" }, "or python tools/story.py --game " + GAME + " minimax")) : null, tb);
 }
 function renderNotes() {
   const v = $("#notesView"); v.innerHTML = ""; if (!S) return; S.board = S.board || []; const all = [];

@@ -72,7 +72,27 @@ export const SEAM_SECS = { none: 0, blink: 0.2, glance: 1, flicker: 0.4, occlude
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);       // story (x east, y north, z up) -> three (y up)
 const yawToThree = rot => (rot + 90) * Math.PI / 180;               // character +Z faces the spot's rot
 
-export function clipSecs(c) { return c.dur ? +c.dur : c.dur_tts ? +c.dur_tts : Math.max(1.5, (c.en || "").length / 12 + 0.6); }
+// how long a Japanese line takes (storylib.ja_secs): kana a mora, kanji about 1.7, pauses for punctuation, at 6.5 morae a second
+const JA_PAUSES = { "…": 0.25, "‥": 0.2, "、": 0.25, "。": 0.45, "？": 0.4, "！": 0.3, "?": 0.4, "!": 0.3, "—": 0.3, "―": 0.3 }, JA_SMALL = "ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ";
+export function jaSecs(t) {
+  let m = 0, p = 0;
+  for (const ch of String(t)) { const o = ch.codePointAt(0); if (JA_PAUSES[ch]) p += JA_PAUSES[ch]; else if (JA_SMALL.includes(ch)) continue; else if (o >= 0x3040 && o <= 0x30ff) m += 1; else if ((o >= 0x4e00 && o <= 0x9fff) || (o >= 0x3400 && o <= 0x4dbf)) m += 1.7; else if (/[A-Za-z0-9]/.test(ch)) m += 1 / 3; }
+  return m / 6.5 + p + 0.5;
+}
+export function clipSecs(c) {
+  if (c.dur) { const tr = c.trim || {}; return Math.max(0.1, +c.dur - +(tr.in || 0) - +(tr.out || 0)); }
+  if (c.dur_tts) return +c.dur_tts;
+  if (c.ja && /[\u3000-\u9fff]/.test(c.ja)) return Math.max(1.5, jaSecs(c.ja));
+  return Math.max(1.5, (c.en || "").length / 12 + 0.6);
+}
+// the MiniMax image-to-video prompt for a take (storylib.minimax_prompt, docs/VOICES.md)
+export function minimaxPrompt(c, cast) {
+  const subj = ((cast || {})[c.who] || {}).subject || "she", voice = c.voice || "says", line = `<d>[Japanese] ${c.ja || ""} </d>`;
+  if (c.face === false) return `an off-screen voice ${voice}, no one on screen speaks ${line}`;
+  const expr = (c.expr || "neutral expression").trim(), art = /^(a|an|the|her|his) /i.test(expr) ? "" : (/^[aeiou]/i.test(expr) ? "an " : "a ");
+  return `${subj} makes ${art}${expr} while ${subj} ${voice} ${line}`;
+}
+export const VOICES = ["says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly", "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums"];
 export function version(sc) { const v = sc && sc.variants && sc.pick && sc.variants[sc.pick]; return v ? Object.assign({}, sc, v) : (sc || {}); }
 
 // ---- the figure -------------------------------------------------------------------------------------------------

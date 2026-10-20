@@ -477,7 +477,7 @@ re-shoot that beat only (`storykit.shots.take(G, beat=...)`).
 {"id": "c3", "who": "mari", "en_draft": "But if you hear knocking... don't open it.",
  "ja": "でも、ノックが聞こえても……開けないで。", "ja_note": "close and urgent, the last three words almost soundless",
  "en": "But even if you hear knocking... don't open it.", "zh": "但是，就算听到敲门声……也别开门。",
- "expr": "eyes widen, lips tremble as she leans in", "voice": "whispers"}
+ "expr": "frightened expression, eyes wide and lips trembling", "voice": "whispers"}
 ```
 
 | Field | Meaning |

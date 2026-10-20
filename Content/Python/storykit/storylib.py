@@ -300,6 +300,21 @@ SEG_MIN, SEG_MAX = 2.0, 10.0                         # a Kimodo motion: one beha
 CHOOSE_SECS = 30                                     # a timed choice's default (format 3)
 
 
+def minimax_prompt(clip, cast=None):
+    """The MiniMax image-to-video prompt for a take (docs/VOICES.md): the expression and the voice around the line.
+    `<subject> makes <a|an> <expr> while <subject> <voice> <d>[Japanese] <ja> </d>`; an unseen speaker is an
+    off-screen voice with the lips still."""
+    who = (cast or {}).get(clip.get("who"), {})
+    subj = who.get("subject", "she")
+    voice = clip.get("voice") or "says"
+    line = f"<d>[Japanese] {clip.get('ja', '')} </d>"
+    if clip.get("face") is False:
+        return f"an off-screen voice {voice}, no one on screen speaks {line}"
+    expr = (clip.get("expr") or "neutral expression").strip()
+    art = "" if expr.lower().startswith(("a ", "an ", "the ", "her ", "his ")) else ("an " if expr[0].lower() in "aeiou" else "a ")
+    return f"{subj} makes {art}{expr} while {subj} {voice} {line}"
+
+
 def karma_of(delta, axis="karma"):
     """A karma delta as {axis: n}: an int is the default axis."""
     if delta is None:
