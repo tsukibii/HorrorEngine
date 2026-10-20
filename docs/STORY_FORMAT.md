@@ -509,16 +509,21 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
   cues and `sets`: reactions count (`{"karma": -2}` for taking the doll).
 - A karma choice needs no result choice after it: the karma is what it's for. It can still branch with one.
 
-### 9.4 Endings by karma, no dying, easter eggs
+### 9.4 Endings by karma, deaths and the branch map, easter eggs
 
 ```json
-"n_end": {"type": "choice", "by": "karma", "options": [{"min": 2, "to": "e_good"}, {"max": -2, "to": "e_bad"}, {"to": "e_neutral"}]}
+"n_end": {"type": "choice", "by": "karma", "options": [{"min": 2, "to": "e_good"}, {"max": -2, "to": "e_bad"}, {"to": "e_neutral"}]},
+"e_caught": {"type": "ending", "kind": "death", "title": "Found three times", "retry": "n_hide1"}
 ```
 
-- **Endings:** good, neutral, bad (the bad one may kill the hero: it's the story's end, not a game over).
-- **No dying:** a timer's `fail`, a struggle's `caught`, an interrupt and every other edge into an ending is an
-  error unless it comes from a karma choice or a node (or its scene or stitch) marked `"final": true`. Guide the
-  player on instead: they're found, they wake, they're pulled along (the sample's `s_found`, `s_held`, `s_shut`).
+- **Endings:** good, neutral, bad, decided by karma (DECISIONS 2026-10-20).
+- **Deaths** (DECISIONS 2026-10-21): an ending of kind `death` is a game over that opens the **branch map** (the
+  desk and the game alike): every node the player has reached, the ones they've missed shown as locked silhouettes,
+  and `retry`, the branch it suggests returning to (it must lie on the way to the death). The player can return to
+  any reached node; the state there (flags, karma, counters) is what it was when they first arrived. Deaths don't
+  count for `target_min` or `fast_min`.
+- `game.no_death: true` brings back the old rule for a game that wants it (an ending only from a karma choice or a
+  node marked `final`; missed tasks guide the player on).
 - **Easter eggs** come from what the player found, not karma: a flag choice on a secret's flag leads to its scene,
   which **blends back** into the main story (the check warns when an egg's branch never rejoins the fallback's node).
 
@@ -572,3 +577,67 @@ under a moving body. Unreal gets the same layer (plan W9); no field is needed.
 
 The checks: every karma route is played (the kind, the cruel and the silent player at every timed choice, each
 with secrets missed and found) and each one's ending and karma are printed; every ending must be reachable.
+
+### 9.8 Gameplay between scenes (`play`)
+
+Simple rules the Roblox generation knows (REFERENCES.md §5): a stitch with `play` is one round of a mechanic, and
+its result branches like an event's.
+
+```json
+"t_hide1": {"title": "Hide and seek, round 1", "level": "house", "template": "hide", "beats": [],
+            "play": {"type": "hide", "secs": 40, "rule": "Hide before she finishes counting to ten",
+                     "warn": "she counts out loud, eyes covered", "spots": ["hall_locker"], "on": {"found": [{"count": "found"}]}}},
+"n_hide1_r": {"type": "choice", "by": "result", "of": "n_hide1", "options": [{"result": "hidden", "to": "n_hide2"}, {"result": "found", "to": "n_r1_cute"}]}
+```
+
+| `type` | Results | The round |
+|---|---|---|
+| `hide` | hidden, found | a warning, seconds to get into a hiding place; staying too long can turn on you |
+| `run` | escaped, caught | a chase to a door the player has seen |
+| `collect` | done, failed | tick a short list (items, chores) while she's around |
+| `sneak` | made_it, spotted | move only while she isn't looking (or while she can't hear) |
+| `hold` | held, broke | keep still, hold the breath, hold the door |
+| `search` | found, out_of_time | find one thing before the time's up |
+| `escape` | out, caught | get out by a route, against the clock |
+
+- `secs` is the round's length; `rule` the one line a child could say; `warn` what tells the player it's coming;
+  `spots` the hiding places or targets (placed things); `on` runs actions per result.
+- A play stitch needs no beats and no `done`: its result ends it. A result choice after it branches; without one,
+  the first result (the player's success) plays on.
+- On the desk it's a card before the next scene: the rule, the timer, and buttons for each result ("did you manage
+  to hide?"). In Unreal each type is a template Blueprint the runner starts (RUNNER_SPEC.md).
+
+### 9.9 Replies and hanging lines
+
+A reply is a small dialogue choice that mostly changes what she says back: two options (left and right), shown with
+the Japanese over the English. The clip it's on is a **hanging line**: she asks, then waits, her face doing the
+waiting.
+
+```json
+{"id": "c1r", "who": "mari", "ja": "今日、どうだった？", "en": "How was your day?", "wait_expr": "hopeful, expectant expression",
+ "reply": {"wait": 6, "timeout": null, "options": [
+   {"id": "good", "label": "Good.", "ja": "よかったよ。", "then": {"ja": "そう……よかった。", "en": "Good...", "expr": "...", "voice": "says softly"}},
+   {"id": "bad", "label": "Bad.", "ja": "最悪だった。", "sets": [{"flag": "told_bad_day"}], "then": {"ja": "かわいそう。", "en": "Poor thing."}}]}}
+```
+
+- `then` is her answer to that reply: a clip (its own take, `<take id>_<option id>`), the same `who` unless it says.
+  After it, the scene goes on with its next clip: the line it was always going to say.
+- `wait` (6 s by default, 2 to 15): how long she waits. Past it her answer is skipped (`timeout: null`), or a
+  `timeout` option's answer plays (an answer to your silence).
+- `sets`: actions when the reply is picked (a flag, karma, a count), so a reply can open a branch later through a
+  flag choice; most set nothing and are there so it feels like you.
+- `wait_expr`: the face she holds while she waits, for the take's end (MiniMax).
+
+### 9.10 Counters
+
+`game.counters: {"found": {"label": "times she found you"}}`; the `count` action (`{"count": "found"}` adds 1;
+`"add"` or `"set"` for others) from beats, cues, `sets`, replies and plays; and a flow choice `by: "count"`
+(`{"count": "found", "min": 3, "to": "n_caught"}`, the last option the fallback). The sample's hide and seek: cute
+the first time she finds you, a tease the second, the third is a death.
+
+### 9.11 Room acoustics
+
+`"acoustics"` on a room: one of `closet bathroom bedroom small_room kitchen living_room hallway stairwell basement
+large_hall church outdoors car`. Without it the room's size, floor and ceiling pick one (`storylib.acoustics_of`).
+The importer puts an AudioVolume with that preset's reverb in each room, so voices and steps sound like the place
+(docs/UNREAL_FLOW.md).

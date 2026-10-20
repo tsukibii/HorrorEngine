@@ -13,7 +13,11 @@
    "zh"
   ],
   "clip_max": 8,
-  "no_death": true,
+  "counters": {
+   "found": {
+    "label": "times she found you"
+   }
+  },
   "karma": {
    "axes": {
     "karma": {
@@ -23,11 +27,11 @@
     }
    }
   },
-  "note": "The format 3 sample (pipeline v2): lines with the Japanese pass and MiniMax fields, timed choices with karma, endings by karma, missed tasks that guide you on, an easter egg that blends back, Kimodo segments and tiers. Built from the Pilot's house. A real game's script comes from tools/scriptgen.py.",
   "built_with": {
    "engine": "0.3.0",
    "format": 3
-  }
+  },
+  "note": "The format 3 sample (pipeline v2): lines with the Japanese pass and MiniMax fields, a reply (how was your day), timed choices with karma, endings by karma, hide and seek (found three times and it is over), deaths that open the branch map, an easter egg that blends back, Kimodo segments and tiers, the look, room acoustics. Built from the Pilot's house. A real game's script comes from tools/scriptgen.py."
  },
  "cast": {
   "mari": {
@@ -389,7 +393,8 @@
        "rot": 270,
        "note": "face to face: her head about 0.4 m from the player's eye (CU)"
       }
-     ]
+     ],
+     "acoustics": "hallway"
     },
     {
      "id": "kitchen",
@@ -612,7 +617,8 @@
        ],
        "tag": "shelf"
       }
-     ]
+     ],
+     "acoustics": "small_room"
     },
     {
      "id": "cellar_stairs",
@@ -667,7 +673,8 @@
        ],
        "rot": 0
       }
-     ]
+     ],
+     "acoustics": "stairwell"
     }
    ],
    "links": [
@@ -889,7 +896,7 @@
    "timer": {
     "secs": 25,
     "label": "Before she gets up",
-    "fail": "n_shut"
+    "fail": "n_dragged"
    },
    "beats": [
     {
@@ -921,6 +928,75 @@
      ]
     }
    ]
+  },
+  "t_hide1": {
+   "title": "Hide and seek, round 1",
+   "level": "house",
+   "target_min": 1,
+   "template": "hide",
+   "play": {
+    "type": "hide",
+    "secs": 40,
+    "rule": "Hide before she finishes counting to ten",
+    "warn": "she counts out loud, eyes covered",
+    "spots": [
+     "hall_locker"
+    ],
+    "on": {
+     "found": [
+      {
+       "count": "found"
+      }
+     ]
+    }
+   },
+   "beats": []
+  },
+  "t_hide2": {
+   "title": "Hide and seek, round 2",
+   "level": "house",
+   "target_min": 1,
+   "template": "hide",
+   "play": {
+    "type": "hide",
+    "secs": 40,
+    "rule": "Hide before she finishes counting to ten",
+    "warn": "she counts out loud, eyes covered",
+    "spots": [
+     "hall_locker"
+    ],
+    "on": {
+     "found": [
+      {
+       "count": "found"
+      }
+     ]
+    }
+   },
+   "beats": []
+  },
+  "t_hide3": {
+   "title": "Hide and seek, round 3",
+   "level": "house",
+   "target_min": 1,
+   "template": "hide",
+   "play": {
+    "type": "hide",
+    "secs": 40,
+    "rule": "Hide before she finishes counting to ten",
+    "warn": "she counts out loud, eyes covered",
+    "spots": [
+     "hall_locker"
+    ],
+    "on": {
+     "found": [
+      {
+       "count": "found"
+      }
+     ]
+    }
+   },
+   "beats": []
   }
  },
  "scenes": {
@@ -986,6 +1062,66 @@
      "expr": "slow, wide-eyed stare that softens into relief",
      "voice": "whispers",
      "en_draft": "...You came."
+    },
+    {
+     "id": "c1r",
+     "who": "mari",
+     "seam": {
+      "kind": "blink"
+     },
+     "act": "head tilted, waiting for your answer",
+     "shot": "ws",
+     "wait_expr": "hopeful, expectant expression, lips pressed together",
+     "reply": {
+      "wait": 6,
+      "timeout": null,
+      "options": [
+       {
+        "id": "good",
+        "label": "Good.",
+        "ja": "よかったよ。",
+        "zh": "挺好的。",
+        "then": {
+         "act": "a small, pleased nod",
+         "ja": "そう……よかった。私はね、ずっと待ってた。",
+         "en": "Good... I waited for you all day.",
+         "zh": "是吗……太好了。我一直在等你。",
+         "ja_note": "warm, then the last words a little too intense",
+         "expr": "pleased smile that lingers too long",
+         "voice": "says softly",
+         "en_draft": "Good... I waited for you all day."
+        }
+       },
+       {
+        "id": "bad",
+        "label": "Bad.",
+        "ja": "最悪だった。",
+        "zh": "糟透了。",
+        "sets": [
+         {
+          "flag": "told_bad_day"
+         }
+        ],
+        "then": {
+         "act": "steps closer, concerned",
+         "ja": "かわいそう。でも、もう大丈夫。私がいるから。",
+         "en": "Poor thing. It's all right now. I'm here.",
+         "zh": "好可怜。不过没事了，有我在。",
+         "ja_note": "soothing, almost a lullaby; 私がいるから too sure of itself",
+         "expr": "soft, pitying smile, eyes fixed on you",
+         "voice": "murmurs",
+         "en_draft": "Poor thing. It's all right now. I'm here."
+        }
+       }
+      ]
+     },
+     "ja": "今日、どうだった？",
+     "en": "How was your day?",
+     "zh": "今天过得怎么样？",
+     "ja_note": "light and bright, the question left hanging",
+     "expr": "bright, curious smile",
+     "voice": "says",
+     "en_draft": "How was your day?"
     },
     {
      "id": "c2",
@@ -1794,54 +1930,259 @@
     }
    ]
   },
-  "s_shut": {
-   "title": "The door shuts",
+  "s_game": {
+   "title": "Let's play",
    "level": "house",
    "stage": {
     "mari": "hall_mari_spot"
    },
-   "view": "hall_walk_spot",
-   "mood": "grief",
+   "view": "hall_view_spot",
+   "mood": "intimate",
    "camera": {
     "mode": "soft",
     "look": "mari",
     "cone": [
-     40,
-     20
+     30,
+     18
+    ]
+   },
+   "look": {
+    "mari": {
+     "at": "player",
+     "limit": [
+      70,
+      20,
+      30
+     ],
+     "past": "hold"
+    }
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "act": "claps once, delighted",
+     "shot": "ms",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_game_c1_01_clap",
+        "prompt": "A happy person claps their hands once",
+        "secs": 2
+       }
+      ]
+     },
+     "ja": "ねえ、かくれんぼしよう。昔みたいに。",
+     "en": "Let's play hide and seek. Like when we were little.",
+     "zh": "我们来玩捉迷藏吧。像小时候那样。",
+     "ja_note": "childlike excitement; 昔みたいに softer, wistful",
+     "expr": "excited, childlike grin",
+     "voice": "says",
+     "en_draft": "Let's play hide and seek. Like when we were little."
+    },
+    {
+     "id": "c2",
+     "who": "mari",
+     "seam": {
+      "kind": "turn"
+     },
+     "act": "turns to the wall, covers her eyes",
+     "shot": "ms",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_game_c2_01_turn",
+        "prompt": "A person turns around and covers their eyes",
+        "secs": 2.5
+       }
+      ]
+     },
+     "ja": "十数えるね。……いーち。",
+     "en": "I'll count to ten... One.",
+     "zh": "我数到十哦。……一。",
+     "ja_note": "sing-song, the count drawn out",
+     "expr": "eyes covered, smiling",
+     "voice": "says",
+     "en_draft": "I'll count to ten... One."
+    }
+   ]
+  },
+  "s_found_cute": {
+   "title": "Found you",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_near_spot"
+   },
+   "view": "hall_locker_view",
+   "mood": "intimate",
+   "stance": "hide",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     30,
+     18
+    ],
+    "through": [
+     "hall_locker"
     ]
    },
    "clips": [
     {
      "id": "c1",
      "who": "mari",
-     "act": "sitting against the front door, knees up",
-     "shot": "fs",
+     "act": "pulls the locker open, grinning",
+     "shot": "mcu",
      "body": {
       "tier": "simple",
       "segments": [
        {
-        "name": "sample_shut_c1_01_sitdown",
-        "prompt": "A sad person sits down on the floor and hugs their knees",
-        "secs": 4
+        "name": "sample_found_cute_c1_01_lean",
+        "prompt": "A playful person leans forward with hands behind their back",
+        "secs": 2.5
        }
       ]
      },
-     "ja": "……行かないで。お願い。",
-     "en": "...Don't go. Please.",
-     "zh": "……别走。求你了。",
-     "ja_note": "hollow, the please almost swallowed",
-     "expr": "tear-streaked face, looking up at you",
-     "voice": "sobs",
-     "en_draft": "...Don't go. Please."
+     "ja": "みーつけた♪",
+     "en": "Found you~",
+     "zh": "找到你啦♪",
+     "ja_note": "delighted, the last note sung",
+     "expr": "beaming, playful grin",
+     "voice": "giggles",
+     "en_draft": "Found you~"
     }
-   ],
-   "sets": [
+   ]
+  },
+  "s_found_tease": {
+   "title": "Found you again",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_near_spot"
+   },
+   "view": "hall_locker_view",
+   "mood": "dread",
+   "stance": "hide",
+   "camera": {
+    "mode": "soft",
+    "look": "mari",
+    "cone": [
+     30,
+     18
+    ],
+    "through": [
+     "hall_locker"
+    ]
+   },
+   "clips": [
     {
-     "door": "front_door",
-     "set": "unlock"
-    },
+     "id": "c1",
+     "who": "mari",
+     "act": "stands in the locker's doorway, too still",
+     "shot": "mcu",
+     "body": {
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "sample_found_tease_c1_01_lean",
+        "prompt": "A playful person leans forward with hands behind their back",
+        "secs": 2.5
+       }
+      ]
+     },
+     "ja": "また見つけた。……下手だね。",
+     "en": "Found you again... You're bad at this.",
+     "zh": "又找到你了。……你真不会躲。",
+     "ja_note": "teasing, but the smile is gone by the last word",
+     "expr": "a smile that fades into a flat stare",
+     "voice": "says flatly",
+     "en_draft": "Found you again... You're bad at this."
+    }
+   ]
+  },
+  "s_caught": {
+   "title": "Caught",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_close_spot"
+   },
+   "view": "hall_locker_view",
+   "mood": "panic",
+   "stance": "hide",
+   "camera": {
+    "mode": "held",
+    "look": "mari",
+    "through": [
+     "hall_locker"
+    ]
+   },
+   "clips": [
     {
-     "karma": -1
+     "id": "c1",
+     "who": "mari",
+     "act": "hand on your throat, forehead to yours",
+     "shot": "ecu",
+     "body": {
+      "tier": "action",
+      "reach": {
+       "hand": "right",
+       "to": "player_collar",
+       "at": 0.4
+      },
+      "segments": [
+       {
+        "name": "sample_caught_c1_01_grab",
+        "prompt": "An angry person grabs forward with the right hand",
+        "secs": 2
+       }
+      ]
+     },
+     "ja": "三回目。……もう、どこにも行かせない。",
+     "en": "Three times... Now you're not going anywhere.",
+     "zh": "第三次了。……你哪儿也别想去了。",
+     "ja_note": "a whisper with the warmth gone, then nothing",
+     "expr": "wide, unblinking eyes, a fixed smile",
+     "voice": "whispers",
+     "en_draft": "Three times... Now you're not going anywhere."
+    }
+   ]
+  },
+  "s_dragged": {
+   "title": "Dragged back",
+   "level": "house",
+   "stage": {
+    "mari": "hall_mari_spot"
+   },
+   "view": "hall_walk_spot",
+   "mood": "panic",
+   "camera": {
+    "mode": "held",
+    "look": "mari"
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "mari",
+     "act": "her hand closes on your ankle",
+     "shot": "pov_down",
+     "body": {
+      "tier": "action",
+      "segments": [
+       {
+        "name": "sample_dragged_c1_01_crawl",
+        "prompt": "An injured person crawls forward on the floor",
+        "secs": 3
+       }
+      ]
+     },
+     "ja": "おかえり。",
+     "en": "Welcome home.",
+     "zh": "欢迎回家。",
+     "ja_note": "tender, final",
+     "expr": "a sweet, empty smile",
+     "voice": "whispers",
+     "en_draft": "Welcome home."
     }
    ]
   },
@@ -1902,7 +2243,141 @@
   "n_message": {
    "type": "scene",
    "ref": "s_message",
+   "next": "n_game"
+  },
+  "n_game": {
+   "type": "scene",
+   "ref": "s_game",
+   "next": "n_hide1"
+  },
+  "n_hide1": {
+   "type": "stitch",
+   "ref": "t_hide1",
+   "next": "n_hide1_r"
+  },
+  "n_hide1_r": {
+   "type": "choice",
+   "by": "result",
+   "of": "n_hide1",
+   "options": [
+    {
+     "result": "hidden",
+     "to": "n_hide2"
+    },
+    {
+     "result": "found",
+     "to": "n_r1_cute"
+    }
+   ]
+  },
+  "n_r1_cute": {
+   "type": "scene",
+   "ref": "s_found_cute",
+   "next": "n_hide2"
+  },
+  "n_hide2": {
+   "type": "stitch",
+   "ref": "t_hide2",
+   "next": "n_hide2_r"
+  },
+  "n_hide2_r": {
+   "type": "choice",
+   "by": "result",
+   "of": "n_hide2",
+   "options": [
+    {
+     "result": "hidden",
+     "to": "n_hide3"
+    },
+    {
+     "result": "found",
+     "to": "n_r2_check"
+    }
+   ]
+  },
+  "n_r2_check": {
+   "type": "choice",
+   "by": "count",
+   "options": [
+    {
+     "count": "found",
+     "min": 2,
+     "to": "n_r2_tease"
+    },
+    {
+     "to": "n_r2_cute"
+    }
+   ]
+  },
+  "n_r2_tease": {
+   "type": "scene",
+   "ref": "s_found_tease",
+   "next": "n_hide3"
+  },
+  "n_r2_cute": {
+   "type": "scene",
+   "ref": "s_found_cute",
+   "next": "n_hide3"
+  },
+  "n_hide3": {
+   "type": "stitch",
+   "ref": "t_hide3",
+   "next": "n_hide3_r"
+  },
+  "n_hide3_r": {
+   "type": "choice",
+   "by": "result",
+   "of": "n_hide3",
+   "options": [
+    {
+     "result": "hidden",
+     "to": "n_search"
+    },
+    {
+     "result": "found",
+     "to": "n_r3_check"
+    }
+   ]
+  },
+  "n_r3_check": {
+   "type": "choice",
+   "by": "count",
+   "options": [
+    {
+     "count": "found",
+     "min": 3,
+     "to": "n_caught"
+    },
+    {
+     "count": "found",
+     "min": 2,
+     "to": "n_r3_tease"
+    },
+    {
+     "to": "n_r3_cute"
+    }
+   ]
+  },
+  "n_r3_tease": {
+   "type": "scene",
+   "ref": "s_found_tease",
    "next": "n_search"
+  },
+  "n_r3_cute": {
+   "type": "scene",
+   "ref": "s_found_cute",
+   "next": "n_search"
+  },
+  "n_caught": {
+   "type": "scene",
+   "ref": "s_caught",
+   "next": "e_caught"
+  },
+  "e_caught": {
+   "type": "ending",
+   "kind": "death",
+   "title": "Found three times",
+   "retry": "n_hide1"
   },
   "n_search": {
    "type": "stitch",
@@ -1995,10 +2470,16 @@
    "ref": "t_flee",
    "next": "n_egg"
   },
-  "n_shut": {
+  "n_dragged": {
    "type": "scene",
-   "ref": "s_shut",
-   "next": "n_egg"
+   "ref": "s_dragged",
+   "next": "e_dragged"
+  },
+  "e_dragged": {
+   "type": "ending",
+   "kind": "death",
+   "title": "Welcome home",
+   "retry": "n_flee"
   },
   "n_egg": {
    "type": "choice",

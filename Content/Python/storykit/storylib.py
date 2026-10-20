@@ -249,6 +249,15 @@ def ja_secs(text):
     return morae / JA_MORAE + pause + 0.5
 
 
+def reply_secs(clip):
+    """What a reply adds after its clip: the player's answer, then her answer back (the first option's), typically."""
+    rp = clip.get("reply")
+    if not rp:
+        return 0.0
+    then = next((o.get("then") for o in rp.get("options", []) if o.get("then")), None)
+    return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (clip_secs(then) if then else 0.0)
+
+
 def clip_secs(clip, line_fallback=12.0):
     """A clip's length: its measured `dur` (from the take, after its trim), else the placeholder voice's `dur_tts`,
     else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath."""
@@ -304,6 +313,34 @@ TIERS = ("simple", "activity", "action")            # the animation budget: 80 /
 TIER_SHARE = {"simple": 0.80, "activity": 0.15, "action": 0.05}
 SEG_MIN, SEG_MAX = 2.0, 10.0                         # a Kimodo motion: one behaviour, 2 to 10 seconds
 CHOOSE_SECS = 30                                     # a timed choice's default (format 3)
+REPLY_SECS = 6                                       # how long she waits for a reply before she carries on
+REPLY_ANSWER = 2.5                                   # how long a player takes to pick a reply, typically
+# the gameplay between scenes (format 3 `play`): simple rules the Roblox generation knows; each type's results
+PLAYS = {"hide": ["hidden", "found"], "run": ["escaped", "caught"], "collect": ["done", "failed"],
+         "sneak": ["made_it", "spotted"], "hold": ["held", "broke"], "search": ["found", "out_of_time"],
+         "escape": ["out", "caught"]}
+# how a room sounds (format 3 room `acoustics`; the importer gives each room a reverb, docs/UNREAL_FLOW.md)
+ACOUSTICS = ("closet", "bathroom", "bedroom", "small_room", "kitchen", "living_room", "hallway", "stairwell",
+             "basement", "large_hall", "church", "outdoors", "car")
+
+
+def acoustics_of(room):
+    """A room's acoustics: its own `acoustics`, else a guess from its size, floor and ceiling."""
+    if room.get("acoustics"):
+        return room["acoustics"]
+    w, d = float(room["size"][0]), float(room["size"][1])
+    area, long_ = w * d, max(w, d) / max(0.1, min(w, d))
+    if room.get("ceiling") is False:
+        return "outdoors"
+    if area < 3:
+        return "closet"
+    if room.get("floor") == "tile":
+        return "bathroom" if area < 8 else "kitchen"
+    if long_ > 2.5:
+        return "hallway"
+    if area > 60:
+        return "large_hall"
+    return "small_room" if area < 14 else "living_room"
 
 
 def minimax_prompt(clip, cast=None):
@@ -336,6 +373,8 @@ def karma_axes(story):
 
 
 def event_results(ev):
+    if ev.get("play"):                                # a gameplay stitch read as an event (format 3)
+        return PLAYS.get(ev["play"].get("type"), ["success", "fail"])
     if ev.get("type") == "choose":
         return [o.get("id") for o in ev.get("options", [])]
     return EVENT_RESULTS.get(ev.get("type"), ["success", "fail"])
