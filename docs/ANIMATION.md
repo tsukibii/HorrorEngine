@@ -141,6 +141,17 @@ then the first one again: play frames 0 to N-1 so the wrap doesn't hold a frame,
 start if the direction turns at the seam. The change is `setup/kimodo_loop.patch`, which `setup.py kimodo` reapplies. Epic's free Game Animation Sample covers the player and
 ordinary locomotion.
 
+## 1a. The shot list: making the motions in the demo (format 3)
+
+Each clip's body lists its Kimodo **segments** (STORY_FORMAT §9.5): one behaviour each, 2 to 10 s, named by
+`<game>_<scene>_<clip>_<nn>_<verb>`. The desk's **Kimodo** page (`tools/director/kimodo.html`, or
+`python tools/motion.py --game G shotlist`) lists every one, scene by scene: the prompt, the length in seconds and
+frames, the constraints (the root path in metres ahead and left of where the motion starts, with a top-down sketch
+and where the player stands; the full-body keys; Loop), the save path, and whether it's made. You make them in the
+demo (`python tools/kimodo.py demo`) and save each as NPZ under its name; **Import** (or `motion.py import`) turns
+them into director files on their segments. The desk chains a clip's segments: each starts where the last one
+ended, turned to its facing, blending in over 0.25 s, and the clip's `fit` stretches the chain to the take.
+
 ## 1b. Kimodo's motions onto your MetaHumans (`tools/retarget.py`)
 
 Kimodo makes its motions on its own 77-joint skeleton (SOMA). Unreal moves them onto a MetaHuman by **retargeting**:

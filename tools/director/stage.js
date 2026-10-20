@@ -279,7 +279,11 @@ export class Stage {
     const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
     let pos;
     const file = body.file && files && files[body.file];
-    if (file) {
+    const segs = (body.segments || []).length && body.segments.every(g => g.file && files && files[g.file]) ? body.segments : null;
+    if (segs) {                                                    // the Kimodo motions made from the shot list, chained
+      pos = this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);
+      if (c._startMove) for (const n in pos) pos[n].add(c._startMove);
+    } else if (file) {
       const src = M.fitTime(body.fit, M.remap(body.mods, u, dur), dur, file.pos.length / (file.fps || 30));
       pos = M.sampleBaked(file, src).pos;
       const k = file.height ? h / file.height : 1;                 // Kimodo's body is 1.76 m: scale to the cast member
@@ -294,6 +298,49 @@ export class Stage {
     }
     if ((body.mods || []).some(m => m.type === "mirror")) pos = M.mirrorPositions(pos);
     return pos;
+  }
+
+  // a clip's segments played one after another: each starts where the last ended (its root moved there and turned
+  // to the last one's facing), blending in over its first 0.25 s; `fit` stretches the chain over the clip
+  chainPose(segs, u, dur, files, fit, h) {
+    const BL = 0.25, Y = new THREE.Vector3(0, 1, 0);
+    const key = segs.map(g => g.file).join("|");
+    let ch = this._chains && this._chains[key];
+    if (!ch) {
+      const facing = p => { const l = p["soma:LeftLeg"], r = p["soma:RightLeg"]; const lv = new THREE.Vector3().subVectors(l, r); lv.y = 0; const f = new THREE.Vector3().crossVectors(lv, Y); return Math.atan2(f.x, f.z); };
+      const parts = []; let t = 0, off = new THREE.Vector3(), yaw = 0;
+      for (const g of segs) {
+        const f = files[g.file], len = f.pos.length / (f.fps || 30), k = f.height ? h / f.height : 1;
+        const first = M.sampleBaked(f, 0).pos, last = M.sampleBaked(f, 1).pos;
+        for (const n in first) { first[n].multiplyScalar(k); last[n].multiplyScalar(k); }
+        const part = { f, k, start: t, len, yaw: 0, origin: new THREE.Vector3(), off: new THREE.Vector3() };
+        if (parts.length) {                                    // line this one's first frame up with the last one's end
+          const r0 = first["soma:Hips"].clone(); r0.y = 0;
+          part.yaw = yaw - facing(first); part.origin = r0; part.off = off.clone();
+        } else { part.origin = new THREE.Vector3(); part.off = new THREE.Vector3(); }
+        const end = this._place(part, last);                    // where this one ends, placed
+        const re = end["soma:Hips"].clone(); re.y = 0; off = re; yaw = facing(end);
+        parts.push(part); t += len;
+      }
+      ch = { parts, total: t }; (this._chains = this._chains || {})[key] = ch;
+    }
+    const src = M.fitTime(fit, u, dur, ch.total) * ch.total;
+    const i = Math.max(0, ch.parts.findIndex((p, j) => src < p.start + p.len || j === ch.parts.length - 1));
+    const p = ch.parts[i], lu = Math.min(1, Math.max(0, (src - p.start) / p.len));
+    const raw = M.sampleBaked(p.f, lu).pos; for (const n in raw) raw[n].multiplyScalar(p.k);
+    let pos = this._place(p, raw);
+    if (i > 0 && src - p.start < BL) {                         // blend in from the last one's final pose
+      const q = ch.parts[i - 1], last = M.sampleBaked(q.f, 1).pos; for (const n in last) last[n].multiplyScalar(q.k);
+      const a = this._place(q, last), w = M.EASES.inout((src - p.start) / BL);
+      for (const n in pos) if (a[n]) pos[n] = a[n].clone().lerp(pos[n], w);     // every joint, SOMA's too
+    }
+    return pos;
+  }
+  _place(part, pos) {                                          // a segment's frame -> the chain's frame
+    if (!part.yaw && !part.off.lengthSq() && !part.origin.lengthSq()) return pos;
+    const out = {}, Y = new THREE.Vector3(0, 1, 0);
+    for (const n in pos) out[n] = pos[n].clone().sub(part.origin).applyAxisAngle(Y, part.yaw).add(part.off);
+    return out;
   }
 
   // everything at scene time T: who stands where in what pose, the camera, the cover (black), the subtitle

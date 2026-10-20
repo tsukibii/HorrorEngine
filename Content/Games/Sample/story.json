@@ -699,7 +699,7 @@
  "motions": {
   "mari_idle": {
    "who": "mari",
-   "prompt": "stands still, breathing slowly, slight sway, head a little lowered",
+   "prompt": "A tired person stands still breathing slowly with their head lowered",
    "secs": 6,
    "loop": true,
    "block": [

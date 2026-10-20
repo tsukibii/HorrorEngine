@@ -125,6 +125,13 @@ class Handler(BaseHTTPRequestHandler):
             if not tf.is_file() or tf.suffix.lower() not in MEDIA:
                 return self.send(404, {"error": "no such take"})
             return self.send_media(tf)
+        if parts[:2] == ["api", "kimodo"] and len(parts) == 3 and self.game_path(parts[2]):   # the Kimodo helper's status
+            inbox = L.ROOT / "Saved" / "Story" / parts[2] / "kimodo"
+            inbox.mkdir(parents=True, exist_ok=True)
+            mdir = L.GAMES / parts[2] / "Motion"
+            return self.send(200, {"inbox": str(inbox.relative_to(L.ROOT)).replace("\\", "/"),
+                                   "saved": sorted(f.stem for f in inbox.glob("*.npz")) + sorted(f.stem for f in L.ROOT.glob("*.npz")),
+                                   "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else []})
         if parts[:2] == ["api", "games"]:
             return self.send(200, {"games": L.games()})
         if parts[:2] == ["api", "story"] and len(parts) == 3:
@@ -192,6 +199,10 @@ class Handler(BaseHTTPRequestHandler):
             out.mkdir(parents=True, exist_ok=True)
             (out / name).write_bytes(self.body())
             return self.send(200, {"ok": True, "path": str((out / name).relative_to(ROOT))})
+        if parts[:2] == ["api", "import"] and len(parts) == 3 and self.game_path(parts[2]):     # motion.py import
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "motion.py"), "--game", parts[2], "import"],
+                               capture_output=True, text=True, encoding="utf-8")
+            return self.send(200 if r.returncode == 0 else 500, {"output": r.stdout + r.stderr})
         if parts[:2] == ["api", "check"] and len(parts) == 3 and self.game_path(parts[2]):
             out = []
             for tool in ("story_check.py", "level_check.py"):

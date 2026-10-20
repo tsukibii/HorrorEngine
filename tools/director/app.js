@@ -107,8 +107,10 @@ let replanTimer = null;
 function scheduleReplan() { clearTimeout(replanTimer); replanTimer = setTimeout(async () => { await replan(); showStage(); }, 700); }
 async function loadFiles() {
   for (const sc of Object.values(S.scenes || {})) for (const ver of [sc, ...Object.values(sc.variants || {})]) for (const c of ver.clips || []) {
-    const f = c.body && c.body.file; if (!f || FILES[f]) continue;
-    try { FILES[f] = await api(`/api/motion/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`); } catch (e) { }
+    for (const f of [c.body && c.body.file, ...((c.body && c.body.segments) || []).map(g => g.file)]) {
+      if (!f || FILES[f]) continue;
+      try { FILES[f] = await api(`/api/motion/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`); } catch (e) { }
+    }
   }
 }
 async function loadBodies() {

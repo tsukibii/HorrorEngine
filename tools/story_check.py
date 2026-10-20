@@ -629,6 +629,11 @@ def check_motions(story, r):
             r.err(f"motion {k}: needs a prompt")
         if m.get("who") and m["who"] not in story.get("cast", {}):
             r.err(f"motion {k}: who {m['who']!r} isn't in cast")
+        if FORMAT >= 3 and m.get("name"):
+            if not PERSON.match(m.get("prompt", "")):
+                r.err(f"motion {k}: the prompt starts \"A person ...\" (docs/KIMODO.md): {m.get('prompt')!r}")
+            if not SEG_NAME.match(m["name"]):
+                r.err(f"motion {k}: name {m['name']!r}: <game>_<cast>_<motion id>, lower case (docs/KIMODO.md §3)")
 
 
 def scene_event(story, n):

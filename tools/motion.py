@@ -8,6 +8,12 @@ clip's real length, pinned to the scene's marks (docs/ANIMATION.md).
     python tools/motion.py --game Pilot check           compare what came back with what the job asked for
     python tools/motion.py --game Pilot preview [job]   turn results into director files (Content/Games/<Game>/Motion/<take>.json)
                                                         and point each clip's body.file at them (the director plays them)
+    python tools/motion.py --game Pilot shotlist        (format 3) every Kimodo motion to make, by its save name: the
+                                                        prompt, seconds and frames, constraints, done or not
+    python tools/motion.py --game Pilot import [folder ...]   (format 3) the motions you saved from Kimodo's demo (.npz,
+                                                        named by the shot list): from Saved/Story/<Game>/kimodo/, the
+                                                        project folder and any folder given; each becomes a director
+                                                        file and its segment's `file`, so the desk plays them chained
 
 Blocking keys (body.block, posed in the director) go into each job as full-body pose keyframes, so the generated
 motion follows the staging the director approved; a clip with `bridge` also gets an in-between job from the
@@ -55,6 +61,44 @@ def key_frames(lib, keys, secs, height):
         pos = L.pose_positions(lib, k["pose"], height)
         out.append({"frame": int(round(t * FPS)), "pose": k["pose"], "joints": {n: [round(v, 3) for v in p] for n, p in pos.items()}})
     return out
+
+
+def soma_conf():
+    conf = json.loads((ROOT / "setup" / "kimodo.json").read_text(encoding="utf-8"))["npz"]
+    soma = json.loads((ROOT / conf.get("skeleton", "Content/Studio/soma77.json")).read_text(encoding="utf-8"))
+    return conf, soma
+
+
+def npz_to_director(npz, out_json, fps=FPS):
+    """A Kimodo NPZ (posed_joints) -> a director file: the previs joints (joint_map), then all 77 of SOMA's."""
+    import numpy as np
+    conf, soma = soma_conf()
+    names77 = soma["names"]
+    jmap = {k: (names77.index(v) if isinstance(v, str) else v) for k, v in (conf.get("joint_map") or {}).items()}
+    axes, sign = conf.get("axes", [0, 1, 2]), conf.get("signs", [1, 1, 1])
+    height = soma["rest"][names77.index("HeadEnd")][1]
+    d = np.load(npz)
+    joints = d[conf["joints"]]
+    if joints.ndim == 4:                         # several samples: the first
+        joints = joints[0]
+    cols = list(jmap.values()) + list(range(len(names77)))
+    names = list(jmap) + ["soma:" + nm for nm in names77]
+    frames = [[[round(float(joints[fi, c, axes[a]]) * sign[a], 4) for a in range(3)] for c in cols] for fi in range(joints.shape[0])]
+    Path(out_json).write_text(json.dumps({"fps": fps, "height": height, "joints": names, "pos": frames}, separators=(",", ":")),
+                              encoding="utf-8")
+    return joints.shape[0]
+
+
+def segments(story):
+    """Every Kimodo segment in a format 3 story: (scene, variant, clip, index, segment), plus the motions table's."""
+    for sid, sc in story.get("scenes", {}).items():
+        for k, ver in ([(None, sc)] if not sc.get("variants") else list(sc["variants"].items())):
+            for c in ver.get("clips", []):
+                for i, g in enumerate((c.get("body") or {}).get("segments") or []):
+                    yield sid, k, c, i, g
+    for mid, m in story.get("motions", {}).items():
+        if m.get("name"):
+            yield None, None, None, mid, m
 
 
 def build_jobs(story, game):
@@ -200,6 +244,57 @@ def main():
             n += 1
         spath.write_text(json.dumps(story, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"MOTION preview: {n} files -> {mdir}; clips point at them (fit them in the director if the take is longer)")
+    elif cmd == "shotlist":
+        mdir = spath.parent / "Motion"
+        rows = list(segments(story))
+        if not rows:
+            sys.exit("no Kimodo segments: format 3 bodies carry `segments` (docs/STORY_FORMAT.md §9.5)")
+        made = 0
+        for sid, k, c, i, g in rows:
+            done = (mdir / f"{g['name']}.json").exists()
+            made += done
+            secs = float(g.get("secs", 0))
+            where = f"{sid}/{c['id']}" if sid else f"motions.{i}"
+            extra = [f"path {' > '.join(g['path'])}"] if g.get("path") else []
+            extra += [f"keys {', '.join(kk['pose'] + '@' + str(kk.get('at', 0)) for kk in g['keys'])}"] if g.get("keys") else []
+            extra += ["Loop"] if g.get("loop") else []
+            print(f"{'done' if done else '    '}  {g['name']:<40}{secs:>5.1f} s (frames 0-{int(round(secs * FPS)) - 1})  {where}")
+            print(f"      {g.get('prompt', '')}{'   [' + '; '.join(extra) + ']' if extra else ''}")
+        print(f"MOTION shotlist: {made}/{len(rows)} made. Save each from the demo as its name (NPZ), then: motion.py --game {game} import")
+    elif cmd == "import":
+        try:
+            import numpy  # noqa: F401
+        except ImportError:
+            sys.exit("pip install numpy")
+        inbox = ROOT / "Saved" / "Story" / game / "kimodo"
+        inbox.mkdir(parents=True, exist_ok=True)
+        dirs = [inbox, ROOT] + [Path(a) for a in args[1:]]
+        mdir = spath.parent / "Motion"
+        mdir.mkdir(exist_ok=True)
+        rows = list(segments(story))
+        found, missing = 0, []
+        for sid, k, c, i, g in rows:
+            src = next((d / f"{g['name']}.npz" for d in dirs if (d / f"{g['name']}.npz").exists()), None)
+            if not src:
+                if not (mdir / f"{g['name']}.json").exists():
+                    missing.append(g["name"])
+                continue
+            if src.parent != inbox:                      # keep the raw NPZ with the game's other Kimodo files
+                dst = inbox / src.name
+                src.replace(dst) if src.parent == ROOT else dst.write_bytes(src.read_bytes())
+                src = dst
+            n = npz_to_director(src, mdir / f"{g['name']}.json")
+            g["file"] = f"{g['name']}.json"
+            if c is None:
+                g["file"] = f"{g['name']}.json"          # a motions-table entry (an idle)
+            want = float(g.get("secs", 0)) * FPS
+            note = f"  ({n / FPS:.1f} s, the shot list says {g.get('secs')} s)" if want and abs(n - want) > 0.2 * FPS else ""
+            print(f"ok    {g['name']}  {n} frames{note}")
+            found += 1
+        spath.write_text(json.dumps(story, ensure_ascii=False, indent=1), encoding="utf-8")
+        if missing:
+            print(f"not made yet ({len(missing)}): {', '.join(missing[:12])}{' ...' if len(missing) > 12 else ''}")
+        print(f"MOTION import: {found} motions -> {mdir} (the desk chains each clip's segments)")
     elif cmd == "check":
         try:
             import numpy as np
