@@ -2,6 +2,12 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-20 (sculpting lines)
+
+- **Sculpt the fat suit by its silhouette:** vertical lines over every soft part with points to pull in or out,
+  proportional editing with a scroll-set radius, cut to add points, grouped by part; only the fat suit moves, never
+  inside the lean body (docs/FLESH.md §5, the Lines tool).
+
 ## 2026-10-20 (breast shape: shelved)
 
 - **The teardrop shape is shelved:** the desk's mesh has too few points across a breast for a real crease and

@@ -219,6 +219,21 @@ in Woohill).
 - **Where it's kept:** in the browser, per body and mesh. The Export (soft bones) carries the painted jiggle in its
   weights; Export OBJ carries the painted volume.
 
+**The Lines tool** (the refiner's `lines` button, `lines.js`): the fat suit's silhouette as vertical lines, the way a
+modeller works a figure (the user's reference, 2026-10-20).
+- **The lines:** over each soft part (breasts or chest, belly, love handles, buttocks, thighs, upper arms; the
+  volumes in balloon mode), a few lines spread round it, each the cut of a vertical plane through the part's centre
+  line with the part's triangles: a clean curve that stops where the fat attaches to the body (the part's edge: fat
+  under 6 mm, or a volume's rim). Red lines are a part's outer ones, green the inner.
+- **The points:** five per line to start, as positions along it. Drag one in or out along the skin: the skin round it
+  follows with a smooth falloff (Blender's proportional editing); **scroll** sets the grab radius (the ring).
+  **Cut** adds a point where a line is clicked; **Shift-click** removes one. Mirror and undo are the refiner's.
+- **Only the fat suit moves:** the lean body is a hard floor (`FleshSim.volMin`, also on the brush now): nothing goes
+  inside the skinniest version. A pull is the refiner's volume map, so it rebuilds the soft bones on release, shows in
+  the overlay, exports with the OBJ and the soft bones, and is kept per body and mesh in the browser; the points
+  added with cut are kept too.
+- **Retrace** draws the lines again from the body as it is (points reset).
+
 **Jiggle by area:** bust, butt, thighs, belly, arms. Each multiplies how far its region's swing shows (the tip's
 offset from where the animation puts it, before the mesh follows). It isn't capped, for testing: in a run with bust
 6, butt -2 and belly 25, the belly swung 78 cm and nothing broke. The values are kept in the browser.

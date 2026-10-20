@@ -53,6 +53,7 @@ import * as M from "./motion.js";
 import { BodyFigure, loadBody, shapeMesh, SHAPES } from "./bodies.js";
 import { FleshSim, leanShape, flatShape, balloonSculpt, hourglassShape, HOURGLASS_SCULPT, FLESH_DEFAULTS } from "./flesh.js";
 import { SoftBoneSim, SOFT_MATERIALS, supported } from "./softbone.js";
+import { traceLines, pullAt, curveAt, nearestT } from "./lines.js";
 // water balloons: denser than fat (about 1000 kg/m3), damped about 0.2 of critical (Chen et al.'s FE study of breast
 // motion), shear tuned so a D cup (about 0.55 L) moves about 15 cm relative to the torso running at 2.8 m/s with no
 // bra and about 4 cm walking (Scurr, White and Hedger 2011)
@@ -201,6 +202,7 @@ async function build(which) {
   report = { lean: rep, regions: sim.region ? Array.from(sim.region, r => sim.regionNames[r] || null) : regionOf(sim), balloons, soft, body: which };
   if (soft) { loadPaint(); sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R); }
   sync(); summary(); if (soft) makeOverlay(); else if (overlay) overlay.visible = false;
+  LN.lines = []; if (PT.tool === "lines") traceNow();
   status(`${which}: ${sim.N} points`);
 }
 function sync() {
@@ -317,7 +319,7 @@ function moveProps(t) { for (const c of ctx.cols || []) if (c.move) { c.c.copy(c
 const PT = { tool: "off", size: 6, soft: 0.5, strength: 0.5, mirror: true, through: false, overlay: "auto" };
 const AMOUNT = { bust: 1, butt: 1, thighs: 1, belly: 1, arms: 1 };
 try { Object.assign(AMOUNT, JSON.parse(localStorage.getItem("flesh-amount") || "{}")); } catch (e) { }
-const TOOLS = [["off", "turn view", "no brush: drag turns the view"], ["vol+", "add volume", "fat thickness out along the skin (cm a dab x strength)"],
+const TOOLS = [["off", "turn view", "no brush: drag turns the view"], ["lines", "lines", "sculpt the fat suit's silhouette: vertical lines over each soft part, with points to pull in or out (scroll: the grab radius; cut: add a point; Shift-click: remove one)"], ["vol+", "add volume", "fat thickness out along the skin (cm a dab x strength)"],
   ["vol-", "remove volume", "thinner, down to the lean body and past it"], ["jig+", "more jiggle", "this skin follows its soft bone more"],
   ["jig-", "less jiggle", "this skin follows less (0: stays with the body)"], ["smooth", "smooth", "evens out both maps"], ["reset", "reset", "back toward no paint"]];
 let undo = [], stroke = null, overlay = null;
@@ -329,10 +331,11 @@ function toolsPanel() {
     <div class="tools"><label><input type="checkbox" id="ptmirror" ${PT.mirror ? "checked" : ""}> mirror</label> <label><input type="checkbox" id="ptthrough" ${PT.through ? "checked" : ""}> through</label>
       <select id="ptoverlay"><option value="auto">overlay: the tool's</option><option value="vol">overlay: volume</option><option value="jig">overlay: jiggle</option><option value="none">overlay: off</option></select>
       <button id="ptundo" title="Ctrl+Z">undo</button> <button id="ptclear">clear paint</button></div>
+    ${PT.tool === "lines" ? linesPanel() : ""}
     <h3>Jiggle by area</h3>${Object.keys(AMOUNT).map(k => num("amt_" + k, k, AMOUNT[k], 0, 3, 0.05, "how far this area's jiggle shows: 1 as simulated, 0 none; any value in the box (absurd ones too)")).join("")}
     <p>Left drag paints (right drag turns), Shift inverts. Volume changes rebuild the soft bones when the stroke ends.</p>`;
   $("#ptoverlay").value = PT.overlay;
-  document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { PT.tool = b.dataset.tool; toolsPanel(); paintOverlay(); });
+  document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { PT.tool = b.dataset.tool; if (PT.tool === "lines") { toRest(); if (!LN.lines.length) traceNow(); } toolsPanel(); paintOverlay(); drawLines(); });
   const setv = (id, v) => {
     if (id.startsWith("amt_")) { AMOUNT[id.slice(4)] = v; if (sim && sim.amount) sim.amount[id.slice(4)] = v; try { localStorage.setItem("flesh-amount", JSON.stringify(AMOUNT)); } catch (e) { } } else PT[id] = v;
     const rg = document.querySelector(`[data-pt="${id}"]`), nb = document.querySelector(`[data-ptn="${id}"]`);
@@ -344,6 +347,12 @@ function toolsPanel() {
   $("#ptthrough").onchange = e => PT.through = e.target.checked;
   $("#ptoverlay").onchange = e => { PT.overlay = e.target.value; paintOverlay(); };
   $("#ptundo").onclick = undoStroke;
+  if (PT.tool === "lines") {
+    $("#lncut").onclick = () => { LN.cut = !LN.cut; $("#lncut").setAttribute("aria-pressed", String(LN.cut)); };
+    $("#lnretrace").onclick = () => { LN.saved = {}; traceNow(); };
+    document.querySelectorAll("[data-lnpart]").forEach(c => c.onchange = () => { LN.hidden[c.dataset.lnpart] = !c.checked; drawLines(); });
+    const rg = document.querySelector('[data-ln="radius"]'); if (rg) rg.oninput = () => { LN.radius = +rg.value; rg.nextElementSibling.textContent = rg.value; };
+  }
   $("#ptclear").onclick = () => { if (!sim.vol) return; pushUndo(); sim.vol.fill(0); sim.jig.fill(1); afterPaint(true); };
 }
 function makeOverlay() {                          // shares the body's positions; its own colours with alpha
@@ -413,6 +422,7 @@ function dab(v0, invert) {                        // one dab, measured in the bi
     else if (t === "reset") { const k = Math.min(1, 0.3 * Math.abs(s) * f[i]); sim.vol[i] -= sim.vol[i] * k; sim.jig[i] += (1 - sim.jig[i]) * k; }
   }
   if (t === "smooth") { smooth(sim.vol); smooth(sim.jig); }
+  for (let i = 0; i < N; i++) if (f[i] && sim.vol[i] < sim.volMin[i]) sim.vol[i] = sim.volMin[i];   // never inside the lean body
   if (t.startsWith("vol") || t === "smooth" || t === "reset") {   // the shape now, the physics when the stroke ends
     for (let i = 0; i < N; i++) if (f[i]) for (let a = 0; a < 3; a++) sim.outerBind[i * 3 + a] = sim.outerBase[i * 3 + a] + n[i * 3 + a] * sim.vol[i];
     sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R);
@@ -424,7 +434,7 @@ function pushUndo() { undo.push([Float32Array.from(sim.vol), Float32Array.from(s
 function undoStroke() { const u = undo.pop(); if (!u || !sim.vol) return; sim.vol.set(u[0]); sim.jig.set(u[1]); afterPaint(true); }
 function afterPaint(rebuild) {
   if (rebuild) { sim.refine(); sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R); sync(); summary(); }
-  paintOverlay(); savePaint();
+  paintOverlay(); savePaint(); if (PT.tool === "lines") drawLines();
 }
 const paintKey = () => `flesh-paint:${report.balloons ? "balloons" : report.body}:${sim.N}`;   // per body and mesh (points differ per LOD)
 function savePaint() {                            // this browser only (per body): the painted points
@@ -438,14 +448,117 @@ function loadPaint() {
 function sculptFor(balloons, hourglass) {
   return balloons ? balloonSculpt({ bust: +$("#bust").value, butt: +$("#butt").value }) : hourglass ? balloonSculpt(HOURGLASS_SCULPT) : null;
 }
+// ---- the Lines tool: the fat suit's silhouette as vertical lines with control points (lines.js) ------------------
+// A line runs over a soft part from where the fat attaches above to where it attaches below; its points are
+// mesh vertices. Dragging a point pulls the skin there in or out along its normal, with a proportional falloff
+// (the grab radius: scroll). Cut adds a point on a line; Shift-click removes one. Mirror and undo are the brush's.
+const LN = { lines: [], radius: 6, cut: false, hidden: {}, saved: {}, sel: null, hover: null };
+try { Object.assign(LN, { radius: +(localStorage.getItem("flesh-lines-radius") || 6) }); } catch (e) { }
+const linesGroup = new THREE.Group(); scene.add(linesGroup);
+const ptGeo = new THREE.SphereGeometry(0.01, 12, 8);
+const ptMat = { pt: new THREE.MeshBasicMaterial({ color: 0xfff3d6, depthTest: false }), sel: new THREE.MeshBasicMaterial({ color: 0xffb020, depthTest: false }) };
+function toRest() {                               // the body standing at the origin in the rest pose: the shape is edited there
+  if (!fig || !sim) return;
+  fig.group.position.set(0, 0, 0); fig.group.rotation.set(0, 0, 0); fig.group.updateMatrixWorld(true); fig.update(poseAt({ pose: "idle" }));
+  sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R); sim.skin(sim.A, sim.leanBind, null); sim.first = true;
+  sync(); draw();
+}
+const linesKey = () => `flesh-lines:${report.balloons ? "balloons" : report.body}:${sim.N}`;
+function traceNow() {
+  LN.lines = sim.chains ? traceLines(sim) : [];
+  try { const sv = JSON.parse(localStorage.getItem(linesKey()) || "{}"); for (const l of LN.lines) if (sv[l.name]) l.ctrl = sv[l.name]; } catch (e) { }
+  LN.sel = null; toolsPanel(); drawLines();
+}
+function saveLines() { try { const o = {}; for (const l of LN.lines) o[l.name] = l.ctrl; localStorage.setItem(linesKey(), JSON.stringify(o)); localStorage.setItem("flesh-lines-radius", LN.radius); } catch (e) { } }
+function linesPanel() {
+  const parts = [...new Set(LN.lines.map(l => l.part))];
+  return `<h3>Lines</h3><div class="tools"><button id="lncut" aria-pressed="${LN.cut}" title="click a line to add a point there">cut</button> <button id="lnretrace" title="lines again from the body as it is now (points reset)">retrace</button></div>
+    <div class="row n"><span>grab cm</span><input type="range" data-ln="radius" min="1" max="60" step="0.5" value="${LN.radius}"><output>${LN.radius}</output></div>
+    <div class="tools">${parts.map(p => `<label><input type="checkbox" data-lnpart="${p}" ${LN.hidden[p] ? "" : "checked"}> ${p}</label>`).join(" ")}</div>
+    <p>Drag a point in or out (scroll changes the grab radius, Shift-click removes a point). Lines stop where the fat attaches to the body; nothing goes inside the lean body.</p>`;
+}
+function drawLines() {
+  linesGroup.clear();
+  if (PT.tool !== "lines" || !sim) { draw(); return; }
+  const X = sim.x;
+  for (const l of LN.lines) {
+    if (LN.hidden[l.part]) continue;
+    const pts = l.pts.map(c => new THREE.Vector3(X[c.a * 3], X[c.a * 3 + 1], X[c.a * 3 + 2]).lerp(new THREE.Vector3(X[c.b * 3], X[c.b * 3 + 1], X[c.b * 3 + 2]), c.s));
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: l.edge ? 0xff4a5a : 0x5cff7a, depthTest: false, transparent: true, opacity: 0.9 }));
+    line.renderOrder = 8; line.userData = { line: l }; linesGroup.add(line);
+    for (const t of l.ctrl) {
+      const m = new THREE.Mesh(ptGeo, LN.sel && LN.sel.line === l && LN.sel.t === t ? ptMat.sel : ptMat.pt);
+      m.position.copy(curveAt(l, t, X)); m.renderOrder = 9; m.userData = { line: l, t, point: true }; linesGroup.add(m);
+    }
+  }
+  draw();
+}
+function castLines(e, what) {                     // what: "points" or "lines"
+  const rc = R.domElement.getBoundingClientRect(); ndc.set(((e.clientX - rc.left) / rc.width) * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1); ray.setFromCamera(ndc, cam);
+  ray.params.Line.threshold = 0.012;
+  const objs = linesGroup.children.filter(o => what === "points" ? o.userData.point : o.isLine);
+  return ray.intersectObjects(objs, false)[0] || null;
+}
+function lineRing(e, P) {                         // the grab radius on screen, round a point
+  const el = $("#ring"), rc = R.domElement.getBoundingClientRect(), right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0);
+  const a = P.clone().project(cam), b = P.clone().addScaledVector(right, LN.radius / 100).project(cam), px = Math.abs(b.x - a.x) * rc.width / 2;
+  const sx = rc.left + (a.x + 1) / 2 * rc.width, sy = rc.top + (1 - a.y) / 2 * rc.height;
+  el.style.display = "block"; el.style.width = el.style.height = px * 2 + "px"; el.style.transform = `translate(${sx - rc.left - px}px, ${sy - rc.top - px}px)`;
+}
+let lnDrag = null;
+R.domElement.addEventListener("pointerdown", e => {
+  if (PT.tool !== "lines" || e.button !== 0 || !sim || !sim.chains) return;
+  e.stopImmediatePropagation();
+  if (LN.cut) {                                   // a new point where the line was clicked
+    const hit = castLines(e, "lines"); if (!hit) return;
+    const l = hit.object.userData.line, t = +nearestT(l, hit.point, sim.x).toFixed(4);
+    if (!l.ctrl.some(c => Math.abs(c - t) < 0.02)) { l.ctrl.push(t); l.ctrl.sort((a, b) => a - b); saveLines(); drawLines(); }
+    return;
+  }
+  const hit = castLines(e, "points"); if (!hit) return;
+  const { line: l, t } = hit.object.userData;
+  if (e.shiftKey) { if (t !== l.ctrl[0] && t !== l.ctrl[l.ctrl.length - 1]) { l.ctrl = l.ctrl.filter(x => x !== t); saveLines(); drawLines(); } return; }
+  LN.sel = { line: l, t };
+  // the point in bind space (the pull's centre) and its normal on the body as shown
+  const P = hit.object.position.clone(), centre = curveAt(l, t, sim.outerBase), nrm = outerMesh.geometry.attributes.normal;
+  const nAt = (c) => new THREE.Vector3(nrm.getX(c.a), nrm.getY(c.a), nrm.getZ(c.a)).lerp(new THREE.Vector3(nrm.getX(c.b), nrm.getY(c.b), nrm.getZ(c.b)), c.s);
+  const seg = l.pts.reduce((best, c) => Math.abs(c.t - t) < Math.abs(best.t - t) ? c : best, l.pts[0]), n = nAt(seg).normalize();
+  const rc = R.domElement.getBoundingClientRect(), a = P.clone().project(cam), b = P.clone().addScaledVector(n, 0.05).project(cam);
+  const sdir = new THREE.Vector2((b.x - a.x) * rc.width / 2, -(b.y - a.y) * rc.height / 2), len = sdir.length() || 1;   // 5 cm of normal, in pixels
+  pushUndo();
+  lnDrag = { line: l, t, centre, start: new THREE.Vector2(e.clientX, e.clientY), sdir: sdir.divideScalar(len), cmPerPx: 5 / len, vol0: Float32Array.from(sim.vol) };
+  drawLines();
+}, true);
+addEventListener("pointermove", e => {
+  if (PT.tool !== "lines" || !sim || !sim.chains) return;
+  if (lnDrag) {
+    const d = new THREE.Vector2(e.clientX, e.clientY).sub(lnDrag.start), amount = d.dot(lnDrag.sdir) * lnDrag.cmPerPx;
+    pullAt(sim, lnDrag.centre, amount, LN.radius, PT.mirror, lnDrag.vol0);
+    sim.mesh.updateMatrixWorld(true); sim.skin(sim.R, sim.outerBind, null); sim.x.set(sim.R); sync(); drawLines();
+    lineRing(e, curveAt(lnDrag.line, lnDrag.t, sim.x));
+    return;
+  }
+  if (e.target !== R.domElement) { $("#ring").style.display = "none"; return; }
+  const hit = castLines(e, "points"); LN.hover = hit ? hit.object.userData : null;
+  if (hit) lineRing(e, hit.object.position); else $("#ring").style.display = "none";
+});
+addEventListener("pointerup", () => { if (lnDrag) { lnDrag = null; afterPaint(true); drawLines(); } });
+R.domElement.addEventListener("wheel", e => {
+  if (PT.tool !== "lines") return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  LN.radius = +Math.max(1, Math.min(60, LN.radius * (e.deltaY > 0 ? 1 / 1.15 : 1.15))).toFixed(1);
+  const rg = document.querySelector('[data-ln="radius"]'); if (rg) { rg.value = LN.radius; rg.nextElementSibling.textContent = LN.radius; }
+  if (LN.hover) lineRing(e, curveAt(LN.hover.line, LN.hover.t, sim.x));
+  saveLines();
+}, { passive: false, capture: true });
 R.domElement.addEventListener("contextmenu", e => e.preventDefault());
 R.domElement.addEventListener("pointerdown", e => {
-  if (PT.tool === "off" || e.button !== 0 || !sim || !sim.chains) return;
+  if (PT.tool === "off" || PT.tool === "lines" || e.button !== 0 || !sim || !sim.chains) return;
   const hit = pick(e); if (!hit) return;
   e.stopImmediatePropagation(); pushUndo(); stroke = { invert: e.shiftKey }; dab(hit.v, e.shiftKey);
 }, true);
 addEventListener("pointermove", e => {
-  if (PT.tool === "off" || !sim || !sim.chains || e.target !== R.domElement && !stroke) { if (!stroke) $("#ring").style.display = "none"; return; }
+  if (PT.tool === "off" || PT.tool === "lines" || !sim || !sim.chains || e.target !== R.domElement && !stroke) { if (!stroke && PT.tool !== "lines") $("#ring").style.display = "none"; return; }
   const hit = pick(e); ring(e, hit);
   if (stroke && hit) dab(hit.v, stroke.invert);
 });
@@ -486,5 +599,5 @@ R.domElement.addEventListener("wheel", e => { e.preventDefault(); orbit.dist = M
 await build(new URLSearchParams(location.search).get("body") || "heavy");
 size();
 window.__flesh = { SCEN, build, run, setMode: (m, o = {}) => { $("#mode").value = m; for (const [k, v] of Object.entries(o)) $("#" + k).value = v; }, apexMotion, frameAt, sync, draw, orbit, get sim() { return sim; }, get fig() { return fig; }, get report() { return report; }, set: (o) => { for (const id of ["cut", "heat", "wts", "ghost", "wire"]) if (id in o) $("#" + id).checked = o[id]; sync(); draw(); } };
-Object.assign(window.__flesh, { screen: i => { const v = new THREE.Vector3(sim.x[i * 3], sim.x[i * 3 + 1], sim.x[i * 3 + 2]).project(cam), rc = R.domElement.getBoundingClientRect(); return [rc.left + (v.x + 1) / 2 * rc.width, rc.top + (1 - v.y) / 2 * rc.height]; }, PT, AMOUNT, dab, afterPaint, pushUndo, undoStroke, pick, paintOverlay, toolsPanel, get overlay() { return overlay; } });
+Object.assign(window.__flesh, { screen: i => { const v = new THREE.Vector3(sim.x[i * 3], sim.x[i * 3 + 1], sim.x[i * 3 + 2]).project(cam), rc = R.domElement.getBoundingClientRect(); return [rc.left + (v.x + 1) / 2 * rc.width, rc.top + (1 - v.y) / 2 * rc.height]; }, curveAt, project: v => { const q = v.clone().project(cam), rc = R.domElement.getBoundingClientRect(); return [rc.left + (q.x + 1) / 2 * rc.width, rc.top + (1 - q.y) / 2 * rc.height]; }, castDebug: (x, y) => { const e = { clientX: x, clientY: y }; const hl = castLines(e, "lines"), hp = castLines(e, "points"); const objs = linesGroup.children.filter(o => o.isLine).length; return { lines: objs, hitLine: hl ? hl.object.userData.line.name : null, dist: hl ? hl.distance : null, hitPoint: hp ? hp.object.userData.line.name : null, thr: ray.params.Line.threshold }; }, PT, AMOUNT, LN, traceNow, drawLines, toRest, dab, afterPaint, pushUndo, undoStroke, pick, paintOverlay, toolsPanel, get overlay() { return overlay; } });
 </script></body></html>

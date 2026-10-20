@@ -246,6 +246,9 @@ export class FleshSim {
     this.nrm0 = new Float32Array(N * 3); for (let v = 0; v < N; v++) { const nn = v3(nrm, v).normalize(); this.nrm0.set([nn.x, nn.y, nn.z], v * 3); }
     this.areaM = area; this.outerBase = Float32Array.from(this.outerBind);
     this.vol = new Float32Array(N); this.jig = new Float32Array(N).fill(1);
+    // the floor: no edit may put the skin inside the lean body (the skinniest version); vol can go down to -thickness
+    this.volMin = new Float32Array(N);
+    for (let v = 0; v < N; v++) { const n = this.nrm0; this.volMin[v] = -Math.max(0, (this.outerBase[v * 3] - this.leanBind[v * 3]) * n[v * 3] + (this.outerBase[v * 3 + 1] - this.leanBind[v * 3 + 1]) * n[v * 3 + 1] + (this.outerBase[v * 3 + 2] - this.leanBind[v * 3 + 2]) * n[v * 3 + 2]); }
     if (this.region) {                             // balloons swing as a whole: one damped mass each (the bulk mode)
       const nR = this.regionNames.length;
       this.bulk = Array.from({ length: nR }, () => ({ hApex: 0, mass: 0, U: new THREE.Vector3(), V: new THREE.Vector3(), T: new THREE.Vector3(), Tp: new THREE.Vector3(), w: 0 }));
@@ -265,6 +268,7 @@ export class FleshSim {
   refine() {                                     // after painting volume: the shape, the thickness and the physics follow
     const N = this.N, o = this.o, sc = this.sc, B = this.outerBind, L = this.leanBind, n = this.nrm0;
     for (let v = 0; v < N; v++) {
+      if (this.vol[v] < this.volMin[v]) this.vol[v] = this.volMin[v];
       for (let a = 0; a < 3; a++) B[v * 3 + a] = this.outerBase[v * 3 + a] + n[v * 3 + a] * this.vol[v];
       const hm = this.thick(v, { x: n[v * 3], y: n[v * 3 + 1], z: n[v * 3 + 2] });
       const h = this.h[v] = hm * sc, A = Math.max(1e-6, this.areaM[v] * sc * sc), hh = Math.max(h, 0.003);
