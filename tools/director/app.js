@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick } from "./stage.js";
+import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 
@@ -145,7 +145,8 @@ const spots = lvl => Object.entries(things()).filter(([k, v]) => v.use === "spot
 const placed = lvl => Object.entries(things()).filter(([k, v]) => v.kind !== "room" && (!lvl || v.level === lvl)).map(([k]) => k);
 const castIds = () => Object.keys(S.cast || {});
 const poseNames = () => (LIB ? LIB.names : ["idle"]);
-function sceneSecs(sc) { const v = version(sc); let t = 0; (v.clips || []).forEach((c, i) => { t += clipSecs(c) + (i && c.seam ? SEAM_SECS[c.seam.kind] || 0 : 0) + (c.event ? eventSecs(c.event, S) : 0); }); return t; }
+function sceneSecs(sc) { const v = version(sc); let t = 0; (v.clips || []).forEach((c, i) => { t += clipSecs(c) + (i && c.seam ? SEAM_SECS[c.seam.kind] || 0 : 0) + (c.event ? eventSecs(c.event, S) : 0) + replySecs(c); }); return t; }
+function replySecs(c) { const rp = c.reply; if (!rp) return 0; const o = (rp.options || []).find(x => x.then); return Math.min(+(rp.wait || REPLY_SECS), 2.5) + (o ? clipSecs(o.then) : 0); }
 function nodeRef(n) { return n.type === "scene" ? S.scenes[n.ref] : n.type === "stitch" ? S.stitches[n.ref] : null; }
 function notesHost(nid) { const n = S.flow[nid]; return nodeRef(n) || n; }
 function openNotes(obj) { return (obj && obj.notes || []).filter(x => !x.done).length; }
@@ -165,7 +166,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<":
 function karmaLabel(o) { const a = o.axis && o.axis !== "karma" ? o.axis + " " : ""; return o.min !== undefined && o.max !== undefined ? `${a}${o.min}..${o.max}` : o.min !== undefined ? `${a}≥ ${o.min}` : o.max !== undefined ? `${a}≤ ${o.max}` : "else"; }
 function outs(id) {
   const n = S.flow[id]; if (!n) return [];
-  const o = n.options ? n.options.map(o => ({ to: o.to, label: o.label || o.result || (o.if ? o.if.join("&") : n.by === "karma" ? karmaLabel(o) : "else") })) : n.next ? [{ to: n.next, label: "" }] : [];
+  const o = n.options ? n.options.map(o => ({ to: o.to, label: o.label || o.result || (o.if ? o.if.join("&") : n.by === "karma" ? karmaLabel(o) : n.by === "count" ? (o.count ? o.count + " " : "") + karmaLabel(o) : "else") })) : n.next ? [{ to: n.next, label: "" }] : [];
   if (n.type === "stitch" && S.stitches[n.ref]) {
     const st = S.stitches[n.ref];
     if (st.timer && st.timer.fail) o.push({ to: st.timer.fail, label: "⏱ " + (st.timer.secs || "") + " s", kind: "timer" });
@@ -309,6 +310,7 @@ function sceneEditor(box, sc, sid) {
   const bar = el("div", { class: "timeline", id: "tlbar" });
   for (const s of tl.segs) {
     if (s.type === "seam") bar.append(el("div", { class: "seam", style: `left:${s.start / total * 100}%`, title: "seam: " + s.seam.kind }));
+    if (s.type === "reply") bar.append(el("div", { class: "seg", style: `left:${s.start / total * 100}%;width:${(s.end - s.start) / total * 100}%;background:#2c3f4d`, title: "reply: she waits for your answer" }, "↔"));
     if (s.type === "clip") bar.append(el("div", { class: "seg" + (s.clip.dur ? "" : " est"), style: `left:${s.start / total * 100}%;width:${s.dur / total * 100}%`, title: `${s.clip.id}: ${s.dur.toFixed(1)} s` }, s.clip.id + (s.clip.shot ? " · " + s.clip.shot : "")));
     if (s.type === "event") bar.append(el("div", { class: "seg ev", style: `left:${s.start / total * 100}%;width:${(s.end - s.start) / total * 100}%`, title: "event " + s.event.type }, "⚡" + s.event.type));
   }
@@ -369,6 +371,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
   if ((S.format || 2) >= 3) card.append(takeSec(c));
   card.append(takeRow(sc, c, sid));
+  card.append(el("div", { class: "sec" }, jsonArea(c, "reply", "reply (left and right): {\"wait\": 6, \"timeout\": null, \"options\": [{\"id\": \"good\", \"label\": \"Good.\", \"ja\": \"よかったよ。\", \"then\": {\"ja\": \"…\", \"en\": \"…\", \"expr\": \"…\", \"voice\": \"says softly\"}, \"sets\": []}, {…}]}", { small: true, compact: true }),
+    c.reply ? txt(c, "wait_expr", { w: true, ph: "the face she holds while she waits (MiniMax): a hopeful, expectant expression", drop: true }) : null));
   const lk = c.look || {}, looks = ["player", ...Object.keys(sc.trackers || {}), ...castIds().filter(x => x !== c.who), ...placed(lvl)];
   card.append(el("div", { class: "sec row" }, el("span", { class: "lab" }, "look"),
     sel({ at: c.look ? lk.at || "player" : "" }, "at", looks, { blank: "(the scene's, or none)", after: () => {}, title: "what the head follows: the player, a tracker, someone, a thing" }),
@@ -428,7 +432,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
 function stitchEditor(box, st, tid) {
   box.append(el("h2", {}, "Stitch (player task)"), field("title", txt(st, "title", { w: true })), field("goal", txt(st, "goal", { w: true, ph: "what the player is doing" })),
     field("level", sel(st, "level", Object.keys(S.levels || {}), { after: showStage })), field("target", txt(st, "target_min", { num: true }), " min of play (typical)"),
-    field("template", sel(st, "template", ["fetch", "code", "power", "hide", "escape", "explore", "loop", "ritual"], { drop: true })));
+    field("template", sel(st, "template", ["fetch", "code", "power", "hide", "escape", "explore", "loop", "ritual", "run", "collect", "sneak", "hold", "search"], { drop: true })));
   const hasT = !!st.timer;
   box.append(field("timer", el("label", { class: "kv" }, el("input", { type: "checkbox", checked: hasT, on: { change: e => { if (e.target.checked) st.timer = { secs: 30, label: "", fail: S.game.start }; else delete st.timer; touch(); renderInspector(); } } }), " timed"),
     hasT ? txt(st.timer, "secs", { num: true }) : null, hasT ? "s, on timeout go to" : null, hasT ? sel(st.timer, "fail", Object.keys(S.flow), { blank: false }) : null, hasT ? txt(st.timer, "label", { ph: "on-screen label" }) : null));
@@ -436,6 +440,7 @@ function stitchEditor(box, st, tid) {
   if (its.length) box.append(el("div", { class: "kv" }, "trigger cutscenes here: " + its.map(i => `${i.label || i.id} → ${i.to}`).join("; ")));
   const list = el("div", {});
   for (const b of st.beats || []) list.append(el("div", { class: "muted" }, `• ${b.id}: when ${JSON.stringify(b.when)} → ${(b.do || []).map(a => Object.keys(a)[0]).join(", ")}${b.optional ? " (optional)" : ""}${b.secret ? " (secret)" : ""}`));
+  box.append(el("h2", {}, "Gameplay"), jsonArea(st, "play", `play: {"type": "${Object.keys(PLAYS).join("|")}", "secs": 40, "rule": "one line a child could say", "warn": "what tells you it's coming", "spots": [...], "on": {"found": [{"count": "found"}]}} (a result choice after it branches)`, { small: true, compact: true }));
   box.append(el("h2", {}, "Beats"), list, jsonArea(st, "beats", "beats (STORY_FORMAT §4)"));
 }
 function choiceEditor(box, n, nodeIds) {
@@ -658,7 +663,22 @@ function wclear() { $("#watchBox").querySelectorAll(".wcard,.qte,.warnmark").for
 async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.opacity || 0, t0 = performance.now(), d = Math.max(0.05, secs) * 1000; while (RUN) { const u = Math.min(1, (performance.now() - t0) / d); b.style.opacity = from + (to - from) * u; if (u >= 1) break; await new Promise(r => requestAnimationFrame(r)); } }
 function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
-function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); } wclock(); }
+function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); } wclock(); }
+// a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
+function runReply(rp, frame) {
+  return new Promise(resolve => {
+    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
+    const box = el("div", { class: "reply" }), bar = el("div", { class: "rbar" }, el("div", {}));
+    let done = false;
+    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", kd); box.remove(); resolve(id); };
+    const kd = e => { const k = e.key.toLowerCase(); if ((k === "arrowleft" || k === "a") && opts[0]) finish(opts[0].id); if ((k === "arrowright" || k === "d") && opts[1]) finish(opts[1].id); };
+    opts.forEach((o, i) => box.append(el("button", { class: "ropt " + (i ? "right" : "left"), title: o.sets && o.sets.length ? "sets " + JSON.stringify(o.sets) : "", on: { click: () => finish(o.id) } },
+      el("div", { class: "rja" }, o.ja || ""), el("div", { class: "ren" }, o.label || o.id))));
+    box.append(bar); $("#watchBox").append(box); window.addEventListener("keydown", kd);
+    const tick = () => { if (done) return; if (!RUN) return finish(null); const u = (performance.now() - t0) / 1000; frame(u); bar.firstChild.style.width = Math.max(0, 100 - u / secs * 100) + "%"; if (u >= secs) return finish(null); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+}
 const LOOK = { yaw: 0, pitch: 0, moved: 0 };
 function wireLook() {
   const box = $("#watchBox");
@@ -666,7 +686,8 @@ function wireLook() {
 }
 async function watchScene(sc, nid, sid, k) {
   watchStage.setWorld(PLAN, S, sc.level || Object.keys(S.levels)[0]);
-  const tl = watchStage.timeline(sc);
+  const picks = {}, replied = new Set();
+  let tl = watchStage.timeline(sc, picks);
   const en = sc.enter || { kind: "fade", secs: 0.6 };
   watchStage.apply(tl, watchStage.stateAt(tl, 0, FILES), 0); watchStage.render();
   if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0;
@@ -678,13 +699,25 @@ async function watchScene(sc, nid, sid, k) {
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
       if (ev.type === "choose") { const o = (ev.options || []).find(x => x.id === res); if (o && o.karma !== undefined) { addKarma(RUN.karma, o.karma); RUN.answers.push(`${o.label} (${JSON.stringify(o.karma)})`); } }
       RUN.secs += eventSecs(ev, S); wclock(); T = st.seg.end; last = performance.now(); continue; }
+    if (st.seg && st.seg.type === "reply" && !replied.has(st.seg.clip.id)) {
+      const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
+      const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
+      const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
+        paintOv("#watchOv", { sub: c.en, ja: c.ja, who: `${sc.title || ""} · ${c.who || ""}` }); });                 // the question stays up while she waits
+      picks[c.id] = id;
+      const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
+      if (o) karmaAct(o.sets);
+      RUN.answers.push(`${c.id}: ${o ? o.label : "(silence)"}`);
+      tl = watchStage.timeline(sc, picks);
+      const rs = tl.segs.find(s => s.type === "reply" && s.clip.id === c.id); T = rs ? rs.end : T; last = performance.now(); continue;
+    }
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); watchStage.render();
     paintOv("#watchOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
     if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
-    if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => s.type === "event" && s.start > T && !RUN.done.has(s)); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event, else the scene's end
+    if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
   stopTakes();
   if (!RUN) return;
@@ -728,6 +761,22 @@ async function watchStitch(st, nid, n) {
   const mins = +(st.target_min || 3);
   for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); }
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(n.ref));
+  if (st.play) {                                   // a round of gameplay: did it go your way?
+    const pl = st.play, results = PLAYS[pl.type] || ["success", "fail"];
+    const res = await new Promise(done => {
+      const bar = el("div", { class: "rbar", style: "width:320px;margin:8px auto" }, el("div", {})), t0 = performance.now();
+      const card = el("div", { class: "wcard" }, el("div", { class: "muted" }, `GAMEPLAY · ${pl.type}${st.template ? " · " + st.template : ""}`), el("div", { class: "big" }, st.title || ""),
+        el("div", {}, pl.rule || ""), pl.warn ? el("div", { class: "muted" }, "warning: " + pl.warn) : null, (pl.spots || []).length ? el("div", { class: "muted" }, "where: " + pl.spots.join(", ")) : null,
+        bar, el("div", { class: "muted" }, `${pl.secs} s · how did it go?`),
+        el("div", {}, ...results.map((r, i) => el("button", { class: i ? "" : "primary", style: "margin:4px", on: { click: () => done(r) } }, r.replace(/_/g, " ")))));
+      $("#watchBox").append(card);
+      const tk = () => { if (!RUN || !card.isConnected) return; const u = (performance.now() - t0) / 1000 / +pl.secs; bar.firstChild.style.width = Math.max(0, 100 - u * 100) + "%"; if (u >= 1) return done(results[0]); requestAnimationFrame(tk); }; tk();
+      if ($("#wFast").checked) sleep(2000).then(() => done(results[0]));
+    });
+    wclear(); RUN.results[nid] = res; karmaAct((pl.on || {})[res]); RUN.answers.push(`${st.title || nid}: ${res}`);
+    RUN.secs += +pl.secs; wclock(); await fade(1, 0.4);
+    return n.next;
+  }
   const result = await new Promise(res => {
     const timer = el("div", { class: "timer" });
     const card = el("div", { class: "wcard" }, el("div", { class: "muted" }, "PLAYER TASK" + (st.template ? " · " + st.template : "")), el("div", { class: "big" }, st.title || ""),
@@ -747,27 +796,72 @@ async function watchStitch(st, nid, n) {
 function watchChoice(n) {
   return new Promise(res => { const card = el("div", { class: "wcard" }, el("div", { class: "muted" }, "THE PLAYER DECIDES (by acting)"), el("div", { class: "big" }, n.prompt || ""), ...(n.options || []).map(o => el("button", { class: "primary", on: { click: () => { card.remove(); res(o); } } }, o.label || JSON.stringify(o.when)))); $("#watchBox").append(card); });
 }
-async function watch() {
+/* ---------- the branch map: every node reached keeps its checkpoint; a death lets the player return to one ---------- */
+const PKEY = () => `dd.progress.${GAME}`;
+function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{}"); } catch (e) { return {}; } }
+function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
+function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail }; }
+function reach(nid) {                              // the first arrival's state is the checkpoint
+  const p = progress(); p.visited = p.visited || {};
+  if (!p.visited[nid]) p.visited[nid] = snapOf(RUN);
+  if (S.flow[nid].type === "ending") p.endings = [...new Set([...(p.endings || []), nid])];
+  saveProgress(p);
+}
+async function watch(fromNid, snap) {
   if (!S) return;
   stopWatch();
-  RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, answers: [] }; wclock();
+  RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, counters: {}, answers: [] };
+  if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])] });
+  wclock();
   $("#watchOv .black").style.opacity = 1;
-  let nid = S.game.start, guard = 0;
+  let nid = fromNid || S.game.start, guard = 0;
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
-    const n = S.flow[nid]; RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
+    const n = S.flow[nid]; reach(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
     if (n.type === "scene") { const sc0 = S.scenes[n.ref] || {}; await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next; }
     else if (n.type === "stitch") nid = await watchStitch(S.stitches[n.ref] || {}, nid, n);
     else if (n.type === "choice") {
       if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }
       else if (n.by === "result") nid = (n.options.find(o => o.result === RUN.results[n.of]) || n.options[0]).to;
       else if (n.by === "karma") nid = karmaPick(n, RUN.karma, S).to;
+      else if (n.by === "count") nid = (n.options.find(o => { const v = RUN.counters[o.count] || 0; return (o.min === undefined || v >= o.min) && (o.max === undefined || v <= o.max); }) || n.options[n.options.length - 1]).to;
       else nid = (n.options.find(o => (o.if || []).every(f => f.startsWith("!") ? !RUN.flags.has(f.slice(1)) : RUN.flags.has(f))) || n.options[n.options.length - 1]).to;
     } else {
-      $("#watchOv .black").style.opacity = 0.6; paintOv("#watchOv", { sub: "", who: "" });
-      $("#watchBox").append(el("div", { class: "wcard" }, el("div", { class: "muted" }, "ENDING · " + (n.kind || "")), el("div", { class: "big" }, n.title || nid), el("div", { class: "muted" }, `${(RUN.secs / 60).toFixed(1)} min of story time on this path`), el("div", { class: "muted" }, "karma " + JSON.stringify(RUN.karma) + (RUN.answers.length ? " · answers: " + RUN.answers.join("; ") : ""))));
+      const death = n.kind === "death", rt = n.retry && S.flow[n.retry];
+      $("#watchOv .black").style.opacity = death ? 0.8 : 0.6; paintOv("#watchOv", { sub: "", who: "" });
+      $("#watchBox").append(el("div", { class: "wcard" + (death ? " death" : "") }, el("div", { class: "muted" }, death ? "YOU DIED" : "ENDING · " + (n.kind || "")), el("div", { class: "big" }, n.title || nid),
+        el("div", { class: "muted" }, `${(RUN.secs / 60).toFixed(1)} min of story time on this path`), el("div", { class: "muted" }, "karma " + JSON.stringify(RUN.karma) + (Object.keys(RUN.counters).length ? " · " + JSON.stringify(RUN.counters) : "") + (RUN.answers.length ? " · " + RUN.answers.join("; ") : "")),
+        el("div", {}, rt ? el("button", { class: "primary", style: "margin:4px", on: { click: () => { const p = progress(); watch(n.retry, (p.visited || {})[n.retry]); } } }, "Return to: " + ((nodeRef(rt) || {}).title || rt.title || n.retry)) : null,
+          el("button", { style: "margin:4px", on: { click: () => openBranches(n.retry || nid) } }, "Branch map"))));
       window.__watchEnd = n.title || nid; break;
     }
   }
+}
+function openBranches(hl) { document.querySelector('nav button[data-v="branchView"]').click(); renderBranches(hl); }
+function renderBranches(hl) {
+  const v = $("#branchView"); v.innerHTML = ""; if (!S) return;
+  const p = progress(), seen = p.visited || {}, ends = new Set(p.endings || []);
+  const ids = Object.keys(S.flow), allEnds = ids.filter(k => S.flow[k].type === "ending");
+  v.append(el("div", { class: "row" }, el("h2", { style: "margin:0" }, "Branch map"),
+    el("span", { class: "muted" }, `${ids.filter(k => seen[k]).length} / ${ids.length} reached · endings ${allEnds.filter(k => ends.has(k)).length} / ${allEnds.length} · click a reached node to play from it (its state as you first got there)`),
+    el("button", { on: { click: () => { if (confirm("Forget every branch reached in " + GAME + "?")) { saveProgress({}); renderBranches(); } } } }, "Reset progress")));
+  const pos = layout(), wrap = el("div", { class: "bmap" }); let W = 0, Hh = 0;
+  for (const q of Object.values(pos)) { W = Math.max(W, q.x + 220); Hh = Math.max(Hh, q.y + 90); }
+  let svg = `<svg width="${W}" height="${Hh}" style="position:absolute;left:0;top:0">`;
+  for (const id of ids) for (const o of outs(id)) { const a = pos[id], t = pos[o.to]; if (!a || !t) continue; const both = seen[id] && seen[o.to];
+    svg += `<path d="M${a.x + 176},${a.y + 27} C${a.x + 206},${a.y + 27} ${t.x - 30},${t.y + 27} ${t.x},${t.y + 27}" stroke="${both ? "#9a978f" : "#3a3a42"}" fill="none" stroke-width="${both ? 2 : 1.2}" ${both ? "" : 'stroke-dasharray="4 4"'}/>`; }
+  wrap.innerHTML = svg + "</svg>"; wrap.style.width = W + "px"; wrap.style.height = Hh + "px";
+  for (const id of ids) {
+    const n = S.flow[id], q = pos[id], got = !!seen[id], ref = nodeRef(n);
+    const choiceName = { result: "what happened", karma: "who you've been (karma)", count: "how many times", flag: "what you found", act: "what you do" }[n.by];
+    const title = got ? ((ref && ref.title) || n.title || n.prompt || (n.type === "choice" ? choiceName : "") || id) : "?";
+    const kind = n.type === "ending" ? (n.kind === "death" ? "death" : "ending · " + n.kind) : n.type === "stitch" && ref && ref.play ? "gameplay · " + ref.play.type : n.type;
+    const card = el("div", { class: `bcard ${n.type}${got ? " got" : " locked"}${id === hl ? " hl" : ""}${n.kind === "death" ? " deathc" : ""}`, style: `left:${q.x}px;top:${q.y}px`, title: got ? "play from here" : "not reached yet",
+      on: { click: () => { if (!got) return; document.querySelector('nav button[data-v="watchView"]').click(); watch(id, seen[id]); } } },
+      el("div", { class: "t" }, kind), el("div", { class: "n" }, title), got && n.type === "ending" && ends.has(id) ? el("div", { class: "m" }, "seen") : null);
+    wrap.append(card);
+  }
+  v.append(wrap);
+  window.__branchDone = true;
 }
 function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {}); }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked) RUN.skip = true; });
@@ -811,7 +905,7 @@ function renderAll() { renderBoard(); renderInspector(); if ($("#clipsView").cla
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === b.dataset.v));
-  if (b.dataset.v === "clipsView") renderClips(); if (b.dataset.v === "notesView") renderNotes(); if (b.dataset.v === "boardView") renderStoryboard();
+  if (b.dataset.v === "branchView") renderBranches(); if (b.dataset.v === "clipsView") renderClips(); if (b.dataset.v === "notesView") renderNotes(); if (b.dataset.v === "boardView") renderStoryboard();
   if (b.dataset.v !== "watchView") stopWatch(); if (b.dataset.v === "flowView") { flowStage.resize(); showStage(); } if (b.dataset.v === "watchView") watchStage.resize();
 }));
 $("#save").onclick = () => save();

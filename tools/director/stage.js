@@ -79,6 +79,15 @@ export function jaSecs(t) {
   for (const ch of String(t)) { const o = ch.codePointAt(0); if (JA_PAUSES[ch]) p += JA_PAUSES[ch]; else if (JA_SMALL.includes(ch)) continue; else if (o >= 0x3040 && o <= 0x30ff) m += 1; else if ((o >= 0x4e00 && o <= 0x9fff) || (o >= 0x3400 && o <= 0x4dbf)) m += 1.7; else if (/[A-Za-z0-9]/.test(ch)) m += 1 / 3; }
   return m / 6.5 + p + 0.5;
 }
+export const PLAYS = { hide: ["hidden", "found"], run: ["escaped", "caught"], collect: ["done", "failed"], sneak: ["made_it", "spotted"],
+  hold: ["held", "broke"], search: ["found", "out_of_time"], escape: ["out", "caught"] };   // storylib.PLAYS
+export const REPLY_SECS = 6, REPLY_ANSWER = 2.5;   // storylib's: she waits this long; a player answers in about this
+export function thenClip(c, o) {                     // her answer to a reply, as a clip of its own (its take: <take id>_<option>)
+  if (!c._then) Object.defineProperty(c, "_then", { value: {}, enumerable: false, writable: true });
+  const key = JSON.stringify(o.then) + c.who, hit = c._then[o.id];        // the same object while it's unchanged
+  if (hit && hit.key === key) return hit.clip;
+  return (c._then[o.id] = { key, clip: Object.assign({ who: c.who }, o.then, { id: `${c.id}_${o.id}` }) }).clip;
+}
 export function eventSecs(ev, story) { return +ev.secs || (ev.type === "choose" && story && (story.format || 2) >= 3 ? 30 : 3); }
 export function karmaOf(d) { if (d === undefined || d === null) return {}; return typeof d === "number" ? { karma: d } : Object.assign({}, d); }
 export function addKarma(into, d) { for (const [k, v] of Object.entries(karmaOf(d))) into[k] = (into[k] || 0) + +v; return into; }
@@ -248,7 +257,8 @@ export class Stage {
   }
 
   // ---- a scene's timeline (elastic: every length comes from its clip) ----------------------------------------
-  timeline(sc) {
+  // picks: {clip id: reply option id, or null for silence}; without a pick a reply shows its first option's answer
+  timeline(sc, picks = {}) {
     const v = version(sc), clips = v.clips || [], segs = [];
     let t = 0;
     clips.forEach((c, i) => {
@@ -257,6 +267,17 @@ export class Stage {
       segs.push({ type: "clip", start: t, end: t + d, dur: d, clip: c, i }); t += d;
       const ev = c.event;
       if (ev) { const es = eventSecs(ev, this.story); segs.push({ type: "event", start: t, end: t + es, event: ev, clip: c, i }); t += es; }
+      const rp = c.reply;
+      if (rp) {                                       // the hanging line's wait, then her answer to the reply picked
+        const picked = c.id in picks ? picks[c.id] : ((rp.options || [])[0] || {}).id;
+        const o = (rp.options || []).find(x => x.id === (picked === null ? rp.timeout : picked));
+        const ws = picked === null ? +(rp.wait || REPLY_SECS) : Math.min(+(rp.wait || REPLY_SECS), REPLY_ANSWER);
+        segs.push({ type: "reply", start: t, end: t + ws, reply: rp, clip: c, i, picked }); t += ws;
+        if (o && o.then) {
+          const th = thenClip(c, o), td = clipSecs(th);
+          segs.push({ type: "clip", start: t, end: t + td, dur: td, clip: th, i, answer: o.id }); t += td;
+        }
+      }
     });
     const hold = (v.hold && +v.hold.max) ? +v.hold.max / 2 : 0;
     if (hold) { segs.push({ type: "hold", start: t, end: t + hold }); t += hold; }

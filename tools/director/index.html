@@ -72,6 +72,18 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 #watchBar{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
 .wcard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(0,0,0,.72);pointer-events:auto}
 .wcard .big{font-size:24px}.wcard .timer{font-size:30px;color:var(--warn);font-variant-numeric:tabular-nums}
+.reply{position:absolute;left:0;right:0;bottom:70px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 8%;pointer-events:none}
+.reply .ropt{pointer-events:auto;min-width:220px;max-width:38%;background:rgba(10,10,12,.72);border:1px solid rgba(217,164,65,.55);border-radius:6px;padding:8px 16px;text-align:center}
+.reply .ropt:hover{border-color:var(--accent);background:rgba(40,30,12,.85)}.reply .rja{font-size:13px;color:var(--dim)}.reply .ren{font-size:19px}
+.reply .rbar{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);width:200px}
+.rbar{height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}.rbar div{height:100%;background:var(--accent);width:100%}
+.wcard.death{border-color:var(--bad)}.wcard.death .muted:first-child{color:var(--bad);letter-spacing:.2em}
+.bmap{position:relative;margin-top:10px;overflow:auto}
+.bcard{position:absolute;width:176px;min-height:54px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);cursor:pointer}
+.bcard .t{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}.bcard .n{font-size:13px}.bcard .m{font-size:10px;color:var(--good)}
+.bcard.locked{background:#141417;border-style:dashed;color:#4a4a52;cursor:default}.bcard.locked .n{font-size:18px;color:#4a4a52}
+.bcard.got.scene{border-left:3px solid var(--scene)}.bcard.got.stitch{border-left:3px solid var(--stitch)}.bcard.got.choice{border-left:3px solid var(--choice)}.bcard.got.ending{border-left:3px solid var(--ending)}
+.bcard.got.deathc{background:#2a1416}.bcard.hl{box-shadow:0 0 0 2px var(--accent)}
 .qte{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);text-align:center;pointer-events:auto}
 .qte .key{display:inline-block;border:2px solid var(--accent);border-radius:6px;padding:6px 14px;font-size:20px;color:var(--accent);margin:6px}
 .qte .bar{width:320px;height:10px;border:1px solid var(--accent);border-radius:5px;overflow:hidden;margin:6px auto}.qte .bar div{height:100%;background:var(--accent);width:0}
@@ -103,6 +115,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
   <button data-v="flowView" class="on">Flow</button>
   <button data-v="boardView">Storyboard</button>
   <button data-v="watchView">Watch</button>
+  <button data-v="branchView" title="every branch reached, and the ones missed; play from any reached node">Branches</button>
   <button data-v="clipsView">Takes</button>
   <button data-v="notesView">Notes</button>
 </nav>
@@ -137,6 +150,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
       <span id="wClock" class="muted"></span><span id="wKarma" class="muted" title="the run's karma (a debug meter: the player never sees it)"></span><span id="wTrail" class="muted"></span>
     </div>
   </section>
+  <section id="branchView" class="view page"></section>
   <section id="clipsView" class="view page"></section>
   <section id="notesView" class="view page"></section>
 </main>
