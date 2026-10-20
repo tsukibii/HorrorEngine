@@ -162,7 +162,9 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   player's, with a sphere at eye height), placed so the character starts on `--at` facing its way. It's scaled by
   Kimodo's body height over the cast member's (`--who`, or the one named in the spot, or the only one), so after the
   retarget onto them a hand on a door handle stays on it. `--rooms a,b` or `--level` for more than the spot's room and
-  its neighbours; Move X, Move Z and Turn shift it in the viewer. Code: `studio.load_stage` and friends.
+  its neighbours; Move X, Move Z and Turn shift it in the viewer. **Player's Eye**: the camera at a player mark's
+  eye (View From), the game's lens (`game.fov`, 90 degrees across), looking at the character's head and following it
+  as it plays (Keep Aiming); Free Camera puts your view back. Code: `studio.load_stage` and friends, `ui.aim_eye`.
 - **Path** (its own panel): tick **Draw Path** (or press **P**), click the floor to add a waypoint, click a waypoint to
   remove it. Each lands on the 2D Root track (the start at frame 0), timed by **Pace** (even over the clip, or sneak,
   walk, jog, run speeds); changing the pace retimes them; a waypoint deleted on the timeline leaves the path. The camera
@@ -173,13 +175,20 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   stage around it. Drag the hand and foot dots (two-bone IK; elbows and knees steer the bend), the hips (Pin feet keeps
   the feet planted: crouch, kneel, lie down), the neck (bends the spine) and the top of the head (tilts the neck);
   click a hand, a foot or the head (no drag) for three rings, twist and two bends, and drag one to turn it;
-  orbit, pan, zoom; Load frame, Reset, Undo, Mirror, Turn. **Arm** closes it, and from then on a click on the
+  orbit, pan, zoom; Load frame, Reset, Undo, Mirror, Turn. **Poses ▾** is the library shared with the desk
+  (`tools/kimodo_poses.py`): Load puts a pose where and facing the way the figure is (desk poses through
+  kimodo_constrain's solver); Save writes it exactly into `Content/Studio/kimodo_poses.json` and a previs copy
+  (bone directions matched) into `poses.json`, so the desk can block with it; a desk pose's name isn't overwritten.
+  `python tools/kimodo.py py -P tools/kimodo_poses.py check` compares every saved pose with its desk copy. **Arm** closes it, and from then on a click on the
   Full-Body track drops that pose instead of the generated one (Ctrl+drag holds it over a range) until **Disarm**;
   **Drop at playhead** places it once. The window works in rotations relative to each parent's global one, so the
   pose round-trips exactly (`studio.effective_locals`, `studio.pose_fk`). Hook: `ui.add_constraint_callback` uses
   `session.armed_pose` for Full-Body.
 - **A Kimodo fix:** Make Smooth Path with no 2D Root waypoints no longer crashes generation.
-- Back to the studio: Download as NPZ, then `python tools/motion.py --game G import <file.npz> <name> [--clip
+- **Send to Studio** (Exports): Game, Name and Clip, then Send: the motion as exported (In place, Drop last frame)
+  goes through `motion.py import` into `Content/Games/<Game>/Motion/<Name>.json`, and the clip (every version of
+  it) plays it, so the desk shows it on the real body in the blocking at once.
+- Or by hand: Download as NPZ, then `python tools/motion.py --game G import <file.npz> <name> [--clip
   <scene>:<clip>]` writes the director file (`Motion/<name>.json`) and points the clip's `body.file` at it, so the
   desk plays it on the real body in the blocking.
 

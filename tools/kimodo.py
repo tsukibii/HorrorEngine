@@ -63,6 +63,7 @@ def environ(home, k=None):
         out["TEXT_ENCODER_DEVICE"] = k["text_encoder_device"]
     out["KIMODO_STAGE"] = str(STAGE_FILE)      # the demo's Stage panel starts with the last one written
     out["KIMODO_THREE_DIR"] = str(ROOT / "tools" / "director" / "vendor")   # three.js for the demo's pose window
+    out["KIMODO_STUDIO_ROOT"] = str(ROOT)      # the demo's pose library and Send to Studio
     if (k or {}).get("text_encoders_dir"):
         out["TEXT_ENCODERS_DIR"] = k["text_encoders_dir"]
         out["TEXT_ENCODER_MODE"] = "local"    # no text-encoder server to try first
@@ -220,7 +221,8 @@ def stage(argv):
             f"({height:.2f} m; Kimodo's body {body:.2f} m). Orange doors, green things to use, red player marks.")
     out = Path(opt("--out") or STAGE_FILE)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"info": info, "game": game, "at": at, "who": who, "scale": round(s, 4),
+    fov = float((story.get("game") or {}).get("fov", L.FOV_H))   # the player's lens, for the demo's Player's Eye
+    out.write_text(json.dumps({"info": info, "game": game, "at": at, "who": who, "scale": round(s, 4), "fov": fov,
                                "boxes": boxes, "marks": marks}, indent=1), encoding="utf-8")
     print(f"STAGE {out}: {len(boxes)} boxes, {len(marks)} marks, rooms {', '.join(sorted(rooms))}, x{s:.3f} for {who}")
     return 0
