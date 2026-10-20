@@ -134,7 +134,11 @@ humanoid motion out.
 6. You fine-tune the hero moments by hand (Control Rig in Sequencer). Everything else ships as generated.
 
 **Reusable motions** (`motions` in story.json): idles per cast member, walks, sits, a few gestures. Generated
-once, they loop while a scene holds or a stand-in waits. Epic's free Game Animation Sample covers the player and
+once, they loop while a scene holds or a stand-in waits. **Looping in Kimodo's demo:** tick **Loop** (Constraints panel)
+and the first Full-Body keyframe is repeated at the last frame when you generate (or save the constraints), moved
+along the 2D root path, in place without one; a keyframe you put on the last frame yourself wins. The last frame is
+then the first one again: play frames 0 to N-1 so the wrap doesn't hold a frame, and blend the last 0.3 s into the
+start if the direction turns at the seam. The change is `setup/kimodo_loop.patch`, which `setup.py kimodo` reapplies. Epic's free Game Animation Sample covers the player and
 ordinary locomotion.
 
 ## 1b. Kimodo's motions onto your MetaHumans (`tools/retarget.py`)

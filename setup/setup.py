@@ -307,6 +307,10 @@ def cmd_kimodo(args):
         step("clone Kimodo", ["git", "clone", KIMODO_REPO, str(p["src"])])
     if rev:
         step(f"check out {rev}", ["git", "checkout", rev], cwd=p["src"])
+    for patch in sorted((ROOT / "setup").glob("kimodo_*.patch")):    # our changes to Kimodo (the demo's Loop), kept here
+        done = run(["git", "apply", "--reverse", "--check", str(patch)], cwd=p["src"])
+        if not done or done.returncode:
+            step(f"apply {patch.name}", ["git", "apply", str(patch)], cwd=p["src"])
     k["commit"] = (run(["git", "rev-parse", "HEAD"], cwd=p["src"]) or subprocess.CompletedProcess([], 0, "")).stdout.strip()
     if not p["python"].exists():
         step(f"Python {py} (uv, inside {home})", [uv, "python", "install", py])

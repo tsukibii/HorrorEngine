@@ -1,0 +1,94 @@
+diff --git i/kimodo/demo/generation.py w/kimodo/demo/generation.py
+index 00282e6..38fabf7 100644
+--- i/kimodo/demo/generation.py
++++ w/kimodo/demo/generation.py
+@@ -21,6 +21,38 @@ from .embedding_cache import CachedTextEncoder
+ from .state import ClientSession, ModelBundle
+ 
+ 
++def loop_first_pose(session: ClientSession, constraint_info: dict, last_frame: int, device: str) -> dict:
++    """Loop: the earliest Full-Body keyframe again at the last frame, so the motion ends in the pose it starts in.
++
++    The copy moves along the 2D root path (from its point at the first keyframe to its point at the last frame, or
++    its last waypoint before it), and stays in place without a path. A keyframe already at the last frame wins.
++    """
++    frames = [int(f) for f in constraint_info["frame_idx"]]
++    if not frames or last_frame in frames or min(frames) >= last_frame:
++        return constraint_info
++    i = frames.index(min(frames))
++    joints_pos = constraint_info["joints_pos"][i].clone()
++    joints_rot = constraint_info["joints_rot"][i]
++
++    root = session.constraints.get("2D Root")
++    if root is not None and root.keyframes:
++        info = root.get_constraint_info(device=device)
++        path = {int(f): info["root_pos"][k] for k, f in enumerate(info["frame_idx"])}
++        before = [f for f in path if f <= last_frame]
++        if before:
++            start = path.get(frames[i], joints_pos[session.skeleton.root_idx])
++            end = path[max(before)]
++            joints_pos[:, 0] += end[0] - start[0]
++            joints_pos[:, 2] += end[2] - start[2]
++
++    return {
++        **constraint_info,
++        "frame_idx": frames + [last_frame],
++        "joints_pos": torch.cat([constraint_info["joints_pos"], joints_pos[None]], dim=0),
++        "joints_rot": torch.cat([constraint_info["joints_rot"], joints_rot[None]], dim=0),
++    }
++
++
+ def compute_model_constraints_lst(
+     session: ClientSession,
+     model_bundle: ModelBundle,
+@@ -47,6 +79,8 @@ def compute_model_constraints_lst(
+     model_constraints = []
+     for track_name, constraint in session.constraints.items():
+         constraint_info = constraint.get_constraint_info(device=device)
++        if track_name == "Full-Body" and session.loop_first_pose:
++            constraint_info = loop_first_pose(session, constraint_info, num_frames - 1, device)
+         frame_idx = constraint_info["frame_idx"]
+         # drop any constraints outside the generation range
+         valid_info = [(i, fi) for i, fi in enumerate(frame_idx) if fi < num_frames]
+diff --git i/kimodo/demo/state.py w/kimodo/demo/state.py
+index e158b99..34dd040 100644
+--- i/kimodo/demo/state.py
++++ w/kimodo/demo/state.py
+@@ -57,3 +57,4 @@ class ClientSession:
+     edit_mode_snapshot: Optional[dict[int, dict[str, object]]] = None
+     undo_drag_snapshot: Optional[dict[str, object]] = None
+     show_only_current_constraint: bool = False  # False = Show All, True = Show only Current
++    loop_first_pose: bool = False  # Loop: repeat the first Full-Body keyframe at the last frame
+diff --git i/kimodo/demo/ui.py w/kimodo/demo/ui.py
+index 7d9f5e3..8f58e49 100644
+--- i/kimodo/demo/ui.py
++++ w/kimodo/demo/ui.py
+@@ -475,6 +475,12 @@ def create_gui(
+                     visible=True,
+                 )
+ 
++            gui_loop_checkbox = client.gui.add_checkbox(
++                "Loop",
++                initial_value=False,
++                hint="Repeat the first Full-Body keyframe at the last frame, moved along the 2D root path (in place without one), so the motion ends in the pose it starts in.",
++            )
++
+             gui_show_only_current_constraint_checkbox = client.gui.add_checkbox(
+                 "Show only Current",
+                 initial_value=False,
+@@ -987,6 +993,7 @@ def create_gui(
+ 
+             def save_constraints(client, save_path):
+                 session = demo.client_sessions[client.client_id]
++                session.loop_first_pose = gui_loop_checkbox.value
+                 # Keep save behavior aligned with demo frame convention:
+                 # valid frame indices are [0, max_frame_idx], so count is +1.
+                 num_frames = session.max_frame_idx + 1
+@@ -2820,6 +2827,7 @@ def create_gui(
+             )
+             gui_generate_button.disabled = True
+             client.timeline.disable_constraints()
++            session.loop_first_pose = gui_loop_checkbox.value
+ 
+             num_samples = gui_num_samples_slider.value
+             timeline = session.client.timeline
