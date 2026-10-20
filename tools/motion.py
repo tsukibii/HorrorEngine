@@ -8,6 +8,10 @@ clip's real length, pinned to the scene's marks (docs/ANIMATION.md).
     python tools/motion.py --game Pilot check           compare what came back with what the job asked for
     python tools/motion.py --game Pilot preview [job]   turn results into director files (Content/Games/<Game>/Motion/<take>.json)
                                                         and point each clip's body.file at them (the director plays them)
+    python tools/motion.py --game Pilot import <file.npz> <name> [--clip <scene>:<clip>]
+                                                        a motion made by hand in Kimodo's demo (Exports, NPZ) as a director
+                                                        file, Motion/<name>.json; --clip points that clip's body.file at it
+                                                        (in every variant of the scene; a bare clip id must be unique)
 
 Blocking keys (body.block, posed in the director) go into each job as full-body pose keyframes, so the generated
 motion follows the staging the director approved; a clip with `bridge` also gets an in-between job from the
@@ -126,6 +130,33 @@ def build_jobs(story, game):
     return jobs
 
 
+def desk_motion(npz, fps):
+    """A Kimodo NPZ as a director file: the previs joints (setup/kimodo.json's joint_map), then all 77 of SOMA's."""
+    import numpy as np
+    conf = json.loads((ROOT / "setup" / "kimodo.json").read_text(encoding="utf-8"))["npz"]
+    soma = json.loads((ROOT / conf.get("skeleton", "Content/Studio/soma77.json")).read_text(encoding="utf-8"))
+    names77 = soma["names"]
+    jmap = {k: (names77.index(v) if isinstance(v, str) else v) for k, v in (conf.get("joint_map") or {}).items()}
+    if not jmap or any(v is None for v in jmap.values()):
+        sys.exit("setup/kimodo.json npz.joint_map needs a SOMA joint for every previs joint")
+    axes, sign = conf.get("axes", [0, 1, 2]), conf.get("signs", [1, 1, 1])
+    joints = np.load(npz)[conf["joints"]]
+    if joints.ndim == 4:                         # several samples: the first
+        joints = joints[0]
+    cols = list(jmap.values()) + list(range(len(names77)))     # the previs joints, then all of SOMA's
+    names = list(jmap) + ["soma:" + nm for nm in names77]
+    frames = [[[round(float(joints[fi, c, axes[a]]) * sign[a], 4) for a in range(3)] for c in cols]
+              for fi in range(joints.shape[0])]
+    return {"fps": fps, "height": soma["rest"][names77.index("HeadEnd")][1], "joints": names, "pos": frames}
+
+
+def clips_of(story):
+    for sid, sc in story.get("scenes", {}).items():
+        for k, ver in ([(None, sc)] if not sc.get("variants") else list(sc["variants"].items())):
+            for c in ver.get("clips", []):
+                yield sid, k, c
+
+
 def main():
     game, args = L.pick_game(sys.argv[1:])
     story, spath = L.load(game)
@@ -165,14 +196,6 @@ def main():
             import numpy as np
         except ImportError:
             sys.exit("pip install numpy")
-        conf = json.loads((ROOT / "setup" / "kimodo.json").read_text(encoding="utf-8"))["npz"]
-        soma = json.loads((ROOT / conf.get("skeleton", "Content/Studio/soma77.json")).read_text(encoding="utf-8"))
-        names77 = soma["names"]
-        jmap = {k: (names77.index(v) if isinstance(v, str) else v) for k, v in (conf.get("joint_map") or {}).items()}
-        if not jmap or any(v is None for v in jmap.values()):
-            sys.exit("setup/kimodo.json npz.joint_map needs a SOMA joint for every previs joint")
-        axes, sign = conf.get("axes", [0, 1, 2]), conf.get("signs", [1, 1, 1])
-        height = soma["rest"][names77.index("HeadEnd")][1]
         jobs = json.loads((out / "jobs.json").read_text(encoding="utf-8"))
         mdir = spath.parent / "Motion"
         mdir.mkdir(exist_ok=True)
@@ -183,23 +206,40 @@ def main():
             f = out / f"{j['id']}.npz"
             if not f.exists():
                 continue
-            joints = np.load(f)[conf["joints"]]
-            if joints.ndim == 4:                         # several samples: the first
-                joints = joints[0]
-            cols = list(jmap.values()) + list(range(len(names77)))     # the previs joints, then all of SOMA's
-            names = list(jmap) + ["soma:" + nm for nm in names77]
-            frames = [[[round(float(joints[fi, c, axes[a]]) * sign[a], 4) for a in range(3)] for c in cols]
-                      for fi in range(joints.shape[0])]
-            (mdir / f"{j['id']}.json").write_text(json.dumps({"fps": j["fps"], "height": height, "joints": names, "pos": frames},
-                                                             separators=(",", ":")), encoding="utf-8")
-            for sid, sc in story.get("scenes", {}).items():
-                for k, ver in ([(None, sc)] if not sc.get("variants") else list(sc["variants"].items())):
-                    for c in ver.get("clips", []):
-                        if f"{game}_{sid}_{k or 'main'}_{c['id']}" == j["id"] and c.get("body"):
-                            c["body"]["file"] = f"{j['id']}.json"
+            (mdir / f"{j['id']}.json").write_text(json.dumps(desk_motion(f, j["fps"]), separators=(",", ":")), encoding="utf-8")
+            for sid, k, c in clips_of(story):
+                if f"{game}_{sid}_{k or 'main'}_{c['id']}" == j["id"] and c.get("body"):
+                    c["body"]["file"] = f"{j['id']}.json"
             n += 1
         spath.write_text(json.dumps(story, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"MOTION preview: {n} files -> {mdir}; clips point at them (fit them in the director if the take is longer)")
+    elif cmd == "import":
+        try:
+            import numpy as np  # noqa: F401
+        except ImportError:
+            sys.exit("pip install numpy")
+        if len(args) < 3 or not Path(args[1]).exists():
+            sys.exit("motion.py --game G import <file.npz> <name> [--clip <scene>:<clip>]")
+        name = args[2].removesuffix(".json")
+        mdir = spath.parent / "Motion"
+        mdir.mkdir(exist_ok=True)
+        (mdir / f"{name}.json").write_text(json.dumps(desk_motion(args[1], FPS), separators=(",", ":")), encoding="utf-8")
+        msg = f"MOTION import: {mdir / name}.json"
+        if "--clip" in args:
+            clip = args[args.index("--clip") + 1]
+            scene, _, cid = clip.rpartition(":")
+            found = [(sid, c) for sid, _, c in clips_of(story) if c["id"] == cid and scene in ("", sid)]
+            scenes = sorted({sid for sid, _ in found})
+            if not found:
+                sys.exit(f"{msg}, but no clip {clip!r}")
+            if len(scenes) > 1:
+                sys.exit(f"{msg}, but {cid!r} is in several scenes: say which, " + ", ".join(f"{sid}:{cid}" for sid in scenes))
+            hit = [c for _, c in found]
+            for c in hit:
+                c.setdefault("body", {})["file"] = f"{name}.json"
+            spath.write_text(json.dumps(story, ensure_ascii=False, indent=1), encoding="utf-8")
+            msg += f"; clip {clip} plays it ({len(hit)} version{'s' if len(hit) > 1 else ''})"
+        print(msg)
     elif cmd == "check":
         try:
             import numpy as np
