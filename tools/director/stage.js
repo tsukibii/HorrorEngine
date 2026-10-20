@@ -107,7 +107,9 @@ export function minimaxPrompt(c, cast) {
   const subj = ((cast || {})[c.who] || {}).subject || "she", voice = c.voice || "says", line = `<d>[Japanese] ${c.ja || ""} </d>`;
   if (c.face === false) return `an off-screen voice ${voice}, no one on screen speaks ${line}`;
   const expr = (c.expr || "neutral expression").trim(), art = /^(a|an|the|her|his) /i.test(expr) ? "" : (/^[aeiou]/i.test(expr) ? "an " : "a ");
-  return `${subj} makes ${art}${expr} while ${subj} ${voice} ${line}`;
+  let out = `${subj} makes ${art}${expr} while ${subj} ${voice} ${line}`;
+  if (c.reply || c.wait_expr) { const w = (c.wait_expr || "hopeful, expectant expression").trim(); out += `, then ${subj} makes ${/^(a|an) /i.test(w) ? "" : /^[aeiou]/i.test(w) ? "an " : "a "}${w} and waits silently`; }
+  return out;
 }
 export const VOICES = ["says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly", "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums"];
 export function version(sc) { const v = sc && sc.variants && sc.pick && sc.variants[sc.pick]; return v ? Object.assign({}, sc, v) : (sc || {}); }

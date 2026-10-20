@@ -62,6 +62,8 @@ The second pass makes the script sound right in Japanese, as it would be said in
 - **The takes are cut to 7 to 8 seconds.** MiniMax's audio is only good for 7 to 9 s, so every clip is written as a
   beat that stands alone, and the clips stitch: a line, a pause or an expression, a short question the player answers.
   `clip_max` is 8.
+- **Replies and hanging lines:** the Japanese pass writes the reply labels in Japanese too (shown over the English),
+  her answers as their own takes (`<take id>_<option>`), and the face she holds while she waits (`wait_expr`).
 - **A MiniMax prompt per take**, ready to paste (image to video):
   `she makes a worried expression while she whispers <d> [Japanese] ……来てくれたんだ。 </d>`. The form is
   `<she|he> makes <a|an> <expression> while <she|he> <says | whispers | says angrily | screams> <d> [Japanese] <the

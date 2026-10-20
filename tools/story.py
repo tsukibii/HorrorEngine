@@ -121,7 +121,7 @@ def flow_view(story):
 NEW = {
     "format": 3,
     "game": {"id": "", "title": "", "start": "n_start", "target_min": 0, "voice": "ja", "text": "en", "clip_max": 8,
-             "subtitles": ["en", "zh"], "no_death": True},
+             "subtitles": ["en", "zh"]},
     "cast": {"someone": {"name": "Someone", "metahuman": None, "height": 1.7}},
     "items": {}, "notes": {}, "lines": {}, "sounds": {},
     "levels": {"main": {"start": "start", "rooms": [
@@ -260,7 +260,7 @@ def main():
             if only and sid != only:
                 continue
             for k, ver in versions(sc, every):
-                for c in ver.get("clips", []):
+                for c in [x for c0 in ver.get("clips", []) for x in [c0] + [rc for _, rc in L.reply_clips(c0)]]:
                     tid, secs = take_id(game, sid, k, c["id"]), L.clip_secs(c)
                     prompt = L.minimax_prompt(c, story.get("cast"))
                     rows.append([tid, sid, c["id"], c.get("who"), f"{secs:.1f}", c.get("expr", ""), c.get("voice", ""), c.get("ja", ""),

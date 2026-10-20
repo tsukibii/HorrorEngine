@@ -355,7 +355,18 @@ def minimax_prompt(clip, cast=None):
         return f"an off-screen voice {voice}, no one on screen speaks {line}"
     expr = (clip.get("expr") or "neutral expression").strip()
     art = "" if expr.lower().startswith(("a ", "an ", "the ", "her ", "his ")) else ("an " if expr[0].lower() in "aeiou" else "a ")
-    return f"{subj} makes {art}{expr} while {subj} {voice} {line}"
+    out = f"{subj} makes {art}{expr} while {subj} {voice} {line}"
+    if clip.get("reply") or clip.get("wait_expr"):    # a hanging line: the take ends on her waiting for the answer
+        w = (clip.get("wait_expr") or "hopeful, expectant expression").strip()
+        out += f", then {subj} makes {'' if w.lower().startswith(('a ', 'an ')) else ('an ' if w[0].lower() in 'aeiou' else 'a ')}{w} and waits silently"
+    return out
+
+
+def reply_clips(clip):
+    """A clip's reply answers as clips of their own: (option id, clip); their takes are <take id>_<option id>."""
+    for o in (clip.get("reply") or {}).get("options", []):
+        if o.get("then"):
+            yield o["id"], dict({"who": clip.get("who")}, **o["then"], id=f"{clip.get('id')}_{o['id']}")
 
 
 def karma_of(delta, axis="karma"):

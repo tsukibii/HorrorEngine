@@ -39,14 +39,24 @@ CONF_FILE = ROOT / "setup" / "scriptgen.json"
 DEFAULT_CONF = {"url": "http://127.0.0.1:11434", "model": "qwen3.6:27b", "num_ctx": 32768, "temperature": 0.8,
                 "tries": 3, "timeout": 600}
 
-STYLE = """You write for HorrorStudio: short first-person horror games, a dark anthology (Resident Evil 7's point of view
-meets Japanese monster and psychological horror). Mood carries everything: silence, the ordinary gone wrong, what is
-left unsaid. The player is "you": characters speak to you, face to face. Rules you never break:
-- Nobody dies in the usual game sense. A missed task leads gently on (you are found, you wake, you are pulled along).
-  Only the final, bad ending may kill the hero, and it plays as the story's end.
-- The ending comes from karma: how the player answered and reacted (kind, cruel, silent), not what they found.
+STYLE = """You write for HorrorStudio: short first-person horror romance games: obsession and yandere, as in Japanese anime
+and games, with Resident Evil 7's point of view. She is close, she talks to you, she waits for your answer. Mood
+carries everything: silence, the ordinary gone wrong, devotion that is a little too much. The player is "you", the
+quiet one: characters speak to you face to face. Rules you never break:
+- She is likeable first: sweet, attentive, remembering everything. Small tells, then the turn, and the turn is
+  about you (jealousy, fear you'll leave). The tender staging (her face close, a hand on your cheek) becomes the
+  threat (the hand on your throat, the door locked behind her).
 - Every spoken line is one beat of at most 12 English words: one sentence, said in about 7 seconds once it is
   Japanese. Longer speech is several lines, with pauses and expressions between them.
+- Replies: some lines hang, a question she waits on; the player picks one of two short replies (one to four words,
+  both believable: warm or cool, honest or evasive); she answers that reply in one line; the next line must work
+  after either reply and after silence. Now and then a reply is remembered later.
+- The ending comes from karma: how the player answered and reacted (kind, cruel, silent).
+- Gameplay between scenes is simple, for players raised on Roblox: hide, run, collect, sneak, hold still, search,
+  escape. One-line rules ("hide before I count to ten"), a warning before, 30 to 60 seconds. Being caught can kill
+  you: each death is a short scene, and the player returns to the round just before. Strikes escalate: cute,
+  then a tease, then the death.
+- Intimacy is distance, gaze, touch, breath and whispers; nothing explicit, the tension is the point.
 - Bodies stay simple (80%: standing, sitting, turning, walking over, small gestures; 15% an activity; 5% action
   like a slap or a fall). The face and voice do the acting.
 - Choices are short replies the player picks in 30 seconds; silence is always an answer."""
@@ -66,18 +76,24 @@ BIBLE_SCHEMA = {"type": "object", "required": ["title", "logline", "tone", "loca
     "eggs": {"type": "array", "items": {"type": "object", "properties": {"find": {"type": "string"}, "scene": {"type": "string"}}}}}}
 
 CARD = {"type": "object", "required": ["id", "kind", "title", "where", "who", "purpose", "minutes"], "properties": {
-    "id": {"type": "string"}, "kind": {"type": "string", "enum": ["scene", "task"]}, "title": {"type": "string"},
+    "id": {"type": "string"}, "kind": {"type": "string", "enum": ["scene", "task", "play"]}, "title": {"type": "string"},
     "where": {"type": "string"}, "who": {"type": "array", "items": {"type": "string"}}, "purpose": {"type": "string"},
     "beats": {"type": "array", "items": {"type": "string"}}, "minutes": {"type": "number"},
     "choice": {"type": "object", "properties": {"prompt": {"type": "string"}, "options": {"type": "array", "items": {
         "type": "object", "required": ["label", "karma"], "properties": {"label": {"type": "string"}, "karma": {"type": "integer"}}}}}},
-    "task": {"type": "object", "properties": {"goal": {"type": "string"}, "secs": {"type": "number"}, "guide_back": {"type": "string"}}}}}
+    "task": {"type": "object", "properties": {"goal": {"type": "string"}, "secs": {"type": "number"}, "guide_back": {"type": "string"}}},
+    "play": {"type": "object", "properties": {"type": {"type": "string", "enum": list(L.PLAYS)}, "rule": {"type": "string"},
+        "warn": {"type": "string"}, "secs": {"type": "number"}, "death": {"type": "string"}}}}}
 CARDS_SCHEMA = {"type": "object", "required": ["cards"], "properties": {"cards": {"type": "array", "items": CARD}}}
 
 SCENE_SCHEMA = {"type": "object", "required": ["clips", "summary"], "properties": {
     "clips": {"type": "array", "items": {"type": "object", "required": ["who", "en", "act"], "properties": {
         "who": {"type": "string"}, "en": {"type": "string"}, "act": {"type": "string"}, "expr": {"type": "string"},
-        "voice": {"type": "string"}, "body": {"type": "string"}, "tier": {"type": "string", "enum": ["simple", "activity", "action"]}}}},
+        "voice": {"type": "string"}, "body": {"type": "string"}, "tier": {"type": "string", "enum": ["simple", "activity", "action"]},
+        "wait_expr": {"type": "string"},
+        "reply": {"type": "array", "items": {"type": "object", "required": ["label", "answer"], "properties": {
+            "label": {"type": "string"}, "answer": {"type": "string"}, "act": {"type": "string"}, "expr": {"type": "string"},
+            "voice": {"type": "string"}, "flag": {"type": "string"}}}}}}},
     "summary": {"type": "string"}}}
 
 
@@ -127,6 +143,9 @@ def fake(kind, ctx):
              "beats": ["she opens the door", "she is too happy"], "minutes": 1,
              "choice": {"prompt": "", "options": [{"label": "I missed you.", "karma": 1}, {"label": "You look different.", "karma": 0},
                                                   {"label": "(Say nothing)", "karma": -1}]}},
+            {"id": "hide", "kind": "play", "title": "Hide and seek", "where": "room", "who": ["aya"], "purpose": "a game from when you were small",
+             "minutes": 1, "play": {"type": "hide", "rule": "Hide before she counts to ten", "warn": "she counts out loud", "secs": 40,
+                                    "death": "She finds you, and keeps you"}},
             {"id": "tea", "kind": "task", "title": "Make the tea", "where": "room", "who": ["aya"], "purpose": "find the cups",
              "minutes": 3, "task": {"goal": "Find two cups", "secs": 240, "guide_back": "she hands you a cup herself"}},
             {"id": "truth", "kind": "scene", "title": "The photo", "where": "room", "who": ["aya"], "purpose": "she knows",
@@ -138,6 +157,10 @@ def fake(kind, ctx):
         who = (card.get("who") or ["aya"])[0]
         return {"clips": [{"who": who, "en": "...You came.", "act": "a long look, then a small smile", "expr": "a small, tired smile",
                            "voice": "whispers", "body": "", "tier": "simple"},
+                          {"who": who, "en": "Did you miss me?", "act": "head tilted, waiting", "expr": "a hopeful smile", "voice": "says softly",
+                           "wait_expr": "a hopeful, expectant expression", "reply": [
+                               {"label": "Yeah.", "answer": "I knew it. I always know.", "expr": "a delighted, knowing smile", "voice": "says softly"},
+                               {"label": "...Not really.", "answer": "Liar. You're blushing.", "expr": "a teasing smile that doesn't move", "voice": "says flatly", "flag": "denied_her"}]},
                           {"who": who, "en": "I kept everything the way you left it.", "act": "turns to the room",
                            "expr": "a proud, fragile smile", "voice": "says softly", "body": "turns around slowly", "tier": "simple"}],
                 "summary": f"{card['title']}: she is glad you came, too glad."}
@@ -238,6 +261,8 @@ def check_cards(cards, bible):
             errs.append(f"card {cid}: a scene needs someone in it")
         if c.get("kind") == "task" and not (c.get("task") or {}).get("goal"):
             errs.append(f"card {cid}: a task needs task.goal")
+        if c.get("kind") == "play" and ((c.get("play") or {}).get("type") not in L.PLAYS or not (c.get("play") or {}).get("rule")):
+            errs.append(f"card {cid}: a play needs play.type ({', '.join(L.PLAYS)}) and a one-line play.rule")
         for o in (c.get("choice") or {}).get("options", []):
             if not -3 <= int(o.get("karma", 0)) <= 3:
                 errs.append(f"card {cid}: karma {o.get('karma')} (keep it -3 to 3)")
@@ -260,7 +285,9 @@ def step_cards(game, a):
         user = (f"{compact_bible(bible)}\n\nCards so far: {prev or 'none'}\n\nWrite the cards for {name}, about "
                 f"{a.minutes * share:.0f} minutes. Alternate scenes (people talking to you) and tasks (things you do "
                 "alone: search, solve, hide, carry; a timer in seconds and how you're guided on if you're too slow). "
-                "Most scenes end in a choice of three short replies with karma -3 to 3 (one silent). Ids are lower case.")
+                "Most scenes end in a choice of three short replies with karma -3 to 3 (one silent). Some cards are play: one round of "
+                "simple gameplay (hide, run, collect, sneak, hold, search, escape) with a one-line rule, a warning, 30 to 60 secs, "
+                "and `death` (what happens if you're caught) when being caught kills you. Ids are lower case.")
         part = ask("cards", STYLE, user, CARDS_SCHEMA, lambda d: check_cards({"cards": cards + d.get("cards", [])}, bible) if d.get("cards") else ["no cards"],
                    {"act": name}, a)
         new = [c for c in part["cards"] if c["id"] not in {x["id"] for x in cards}]
@@ -286,6 +313,14 @@ def check_scene(d, card, bible):
             errs.append(f"clip {i + 1}: {words} words: one beat is 12 words at most; split it into two clips")
         if c.get("body") and len(c["body"].split()) > 10:
             errs.append(f"clip {i + 1}: body {c['body']!r}: one plain action, a few words")
+        rp = c.get("reply") or []
+        if rp and len(rp) != 2:
+            errs.append(f"clip {i + 1}: a reply has exactly two options (left and right)")
+        for o in rp:
+            if len(o.get("label", "").split()) > 5:
+                errs.append(f"clip {i + 1}: reply {o.get('label')!r}: the player says one to four words")
+            if len(o.get("answer", "").split()) > 14:
+                errs.append(f"clip {i + 1}: her answer {o.get('answer')!r}: one beat, 12 words at most")
     return errs
 
 
@@ -308,7 +343,10 @@ def step_scenes(game, a, only=None):
                 "like 'a frightened expression, eyes wide'), how it's said (voice: says, whispers, says angrily, screams, "
                 "murmurs, sobs, says softly, says coldly, says flatly, pleads), the body's one plain action if it moves "
                 "(body, like 'sits down on the bed'; empty if still) and its tier. Leave pauses: a short line, a look, "
-                "then the next. 4 to 10 clips." + (" The last clip leads into the player's choice: " + "; ".join(
+                "then the next. 4 to 10 clips. One or two of them may hang: a question she waits on, with wait_expr (the face "
+                "she holds) and `reply`: two short replies (label: what you say, one to four words) and her one-line answer to "
+                "each (answer, with act, expr, voice; flag if the story should remember it). The clip after a reply must work "
+                "after either answer and after silence." + (" The last clip leads into the player's choice: " + "; ".join(
                     o["label"] for o in ch.get("options", [])) if ch.get("options") else "") +
                 " Then a one-sentence summary of what happened.")
         d = ask("scene", STYLE, user, SCENE_SCHEMA, lambda x: check_scene(x, card, bible), {"card": card}, a)
@@ -361,7 +399,7 @@ def step_assemble(game, a):
         return
     S = {"format": 3, "game": {"id": game, "title": bible["title"], "start": "n_start", "target_min": a.minutes,
                                "fast_min": round(a.minutes * 0.7), "voice": "ja", "text": "en", "subtitles": ["en", "zh"],
-                               "clip_max": 8, "no_death": True, "karma": {"axes": {"karma": {"min": -10, "max": 10,
+                               "clip_max": 8, "karma": {"axes": {"karma": {"min": -10, "max": 10,
                                "label": f"kind: {bible['karma']['kind_means']}; cruel: {bible['karma']['cruel_means']}"}}},
                                "logline": bible["logline"], "tone": bible["tone"],
                                "built_with": {"engine": L.engine_version(), "format": 3}},
@@ -370,7 +408,7 @@ def step_assemble(game, a):
          "items": {}, "notes": {}, "lines": {}, "sounds": {}, "levels": greybox(bible, game),
          "scenes": {}, "stitches": {}, "flow": {}, "secrets": {}, "motions": {},
          "board": [{"by": "claude", "at": "", "text": "Drafted by tools/scriptgen.py from the outline: the English is a draft "
-                    "for you to refine; then the Japanese pass. Tasks are placeholders (a clue to read) until they're designed."}]}
+                    "for you to refine; then the Japanese pass. Tasks are placeholders (a clue to read) and plays are cards until they're built."}]}
     first = bible["locations"][0]["id"]
     S["stitches"]["t_start"] = {"title": "Start", "level": "main", "beats": [
         {"id": "b_start", "when": {"start": True}, "do": [{"fade": "in", "secs": 2}, {"done": True}]}]}
@@ -396,6 +434,16 @@ def step_assemble(game, a):
                 b = body_of(game, sid, clip["id"], c, L.clip_secs(clip))
                 if b:
                     clip["body"] = b
+                if c.get("reply"):                     # a hanging line: two replies, her answer to each
+                    clip["wait_expr"] = c.get("wait_expr") or "a hopeful, expectant expression"
+                    clip["reply"] = {"wait": L.REPLY_SECS, "timeout": None, "options": []}
+                    for j, o in enumerate(c["reply"][:2]):
+                        then = {"en": o["answer"], "en_draft": o["answer"], "act": o.get("act", "")}
+                        then.update({k: o[k] for k in ("expr", "voice") if o.get(k)})
+                        opt = {"id": f"r{j + 1}", "label": o["label"], "then": then}
+                        if o.get("flag"):
+                            opt["sets"] = [{"flag": o["flag"]}]
+                        clip["reply"]["options"].append(opt)
                 clips.append(clip)
             ch = card.get("choice") or {}
             if ch.get("options") and clips:
@@ -408,6 +456,24 @@ def step_assemble(game, a):
                                 "notes": [{"by": "claude", "text": f"purpose: {card['purpose']}; beats: {'; '.join(card.get('beats', []))}"}]}
             order.append(f"n_{cid}")
             S["flow"][f"n_{cid}"] = {"type": "scene", "ref": sid}
+        elif card["kind"] == "play":                 # a round of gameplay; being caught can be a death
+            pl, tid = card.get("play") or {}, f"t_{cid}"
+            kind = pl.get("type", "hide")
+            S["stitches"][tid] = {"title": card["title"], "level": "main", "template": kind, "target_min": card.get("minutes", 1), "beats": [],
+                                  "play": {"type": kind, "secs": float(pl.get("secs", 40)), "rule": pl.get("rule", ""), "warn": pl.get("warn", "")}}
+            order.append(f"n_{cid}")
+            S["flow"][f"n_{cid}"] = {"type": "stitch", "ref": tid}
+            if pl.get("death") and card.get("who"):
+                g = card["who"][0]
+                win, lose = L.PLAYS[kind]
+                S["scenes"][f"s_{cid}_death"] = {"title": f"{card['title']}: caught", "level": "main", "view": f"{where}_view", "mood": "panic",
+                                                 "stage": {g: f"{where}_{g}_spot"}, "camera": {"mode": "held", "look": g},
+                                                 "clips": [{"id": "c1", "who": g, "en": "...", "en_draft": "...", "act": pl["death"]}],
+                                                 "notes": [{"by": "claude", "text": f"the death: {pl['death']} (to write with the user)"}]}
+                S["flow"][f"n_{cid}_r"] = {"type": "choice", "by": "result", "of": f"n_{cid}", "options": [{"result": win, "to": None}, {"result": lose, "to": f"n_{cid}_death"}]}
+                S["flow"][f"n_{cid}_death"] = {"type": "scene", "ref": f"s_{cid}_death", "next": f"e_{cid}_death"}
+                S["flow"][f"e_{cid}_death"] = {"type": "ending", "kind": "death", "title": pl["death"], "retry": f"n_{cid}"}
+                order.append(f"n_{cid}_r")
         else:
             t = card.get("task") or {}
             tid, note = f"t_{cid}", f"{cid}_clue"
@@ -444,6 +510,9 @@ def step_assemble(game, a):
                                                                        {"to": "n_end_neutral"}]}
     order.append("n_end")
     for x, y in zip(order, order[1:]):
+        if S["flow"][x].get("type") == "choice" and S["flow"][x].get("by") == "result":   # a play's result: the winner goes on
+            S["flow"][x]["options"][0]["to"] = y
+            continue
         S["flow"][x]["next"] = y
         if x.endswith("_guide") is False and f"{x}_guide" in S["flow"]:
             S["flow"][f"{x}_guide"]["next"] = y      # guided on, then where the task would have led

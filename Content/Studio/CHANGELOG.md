@@ -4,6 +4,20 @@ Every game records the engine and format it was built with (`game.built_with`), 
 use and an old game knows what changed under it. Bump the version when a mechanic, a runner verb, a format word or a
 desk tool lands; the minor number for additions, the major for anything an old game must be changed to keep working.
 
+## 0.4.0 (2026-10-21): horror romance, deaths and the branch map, replies, gameplay
+
+- **Format 3 additions:** endings of kind `death` with a `retry` (no dying is now opt-in, `game.no_death`); replies
+  on clips (two options, her answer back as its own take, silence skips it); `wait_expr` for hanging lines; `play`
+  stitches (hide, run, collect, sneak, hold, search, escape) whose results branch; counters, `count` and choices by
+  count; room `acoustics`.
+- **Desk:** replies in Watch (left and right, Japanese over English, she waits); gameplay cards; YOU DIED with return
+  to the retry; the Branches tab (every node reached with its checkpoint, the missed ones as silhouettes); answers
+  in the takes list.
+- **Tools:** MiniMax prompts end hanging lines on the waiting face; answer takes in `story.py minimax` and
+  `intake.py`; `scriptgen.py` writes horror romance with replies and gameplay cards with deaths; the importer gives
+  each room a reverb (AudioVolume).
+- **Docs:** WRITING.md (the craft), REFERENCES.md §5 and §6 (Roblox horror mechanics, yandere).
+
 ## 0.3.0 (2026-10-20): pipeline v2
 
 - **Format 3:** the Japanese pass (ja_note, zh, expr, voice), 30 s timed choices with karma, a `karma` verb, endings

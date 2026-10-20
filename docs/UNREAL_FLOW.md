@@ -55,6 +55,18 @@ setup these steps rely on.
    split), and the procedural idle under every pose.
 4. **Done when:** `PLAYTHROUGH ok` (the bot) and you've played it through, every ending.
 
+## 4b. Replies, gameplay, deaths and sound (format 3, 0.4)
+
+- **Replies:** the runner's two prompts, left and right (the Japanese over the English), while her face holds; her
+  answer's take plays after, or nothing on time out (RUNNER_SPEC.md). **To do, local.**
+- **Gameplay:** one template Blueprint per `play` type in `/Game/Studio/Horror/Play/` (`BP_Play_hide` and so on),
+  started with the stitch's `secs`, `rule`, `warn` and `spots`, ending with a result; built with the engine's own
+  tools and fleshed out with Claude through UnrealClaude. **To do, local.**
+- **Deaths and the branch map:** checkpoints at every flow node; the death card, then the map (pause menu too).
+  **To do, local.**
+- **Reverb:** the importer gives each room an AudioVolume with its `acoustics` preset (**built, untested**); the
+  ReverbEffect assets `/Game/Studio/Audio/Reverb/RV_<preset>` are made once (SETUP), tuned by ear in real rooms.
+
 ## 5. Then
 
 Art, atmosphere and polish (PIPELINE.md §10), QA and the itch.io build (§11). Each new mechanic goes into the studio

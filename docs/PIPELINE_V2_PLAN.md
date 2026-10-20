@@ -26,6 +26,20 @@ headless browser; `Content/Games/Sample/story.json` uses every part):
 Not done: dragging trackers as gizmos in the 3D view (their keys are typed for now, on the scene's trackers field);
 the runner's format 3 parts and the look's Control Rig (Unreal, local).
 
+## Round 2 (2026-10-21): horror romance, deaths and the branch map, replies, gameplay
+
+Built on this branch (DECISIONS 2026-10-21), waiting for your look:
+
+| What | Try it |
+|---|---|
+| Deaths and the branch map | Sample in Watch: get found three times in hide and seek; YOU DIED → Return to round 1, or Branch map; the Branches tab |
+| Replies and hanging lines | Sample's hall scene: "How was your day?" with Good. / Bad. (Japanese over English); wait it out to hear nothing |
+| Gameplay cards | Sample's hide and seek rounds: the rule, a timer, did you hide or not |
+| The writing | docs/WRITING.md; REFERENCES.md §5 (Roblox horror mechanics) and §6 (yandere) |
+| Script generator | writes replies and gameplay cards with deaths (`--fake` shows the shape) |
+| Reverb | room `acoustics`, the importer's AudioVolumes (untested in the editor) |
+| Later | the music tool from woohill, per game and part procedural (not started, as asked) |
+
 ## W0. The workflow written down (here)
 
 - [x] docs/PIPELINE.md v2, docs/KIMODO.md (the prompting rules, the shot list rules, the names), this plan, the
