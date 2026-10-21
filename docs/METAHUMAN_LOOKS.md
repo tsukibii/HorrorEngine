@@ -178,7 +178,33 @@ the archetype, and every cast member's head wears it. Cards, not strands, for th
 in the groom asset; strands are for the cutscene close-ups). 5.7 gave the Groom plugin a joint-based strand workflow
 (hair that can be animated by bones), useful for a ponytail the player grabs (docs/TRICKS.md, the grab).
 
-### 3.3 In our pipeline
+### 3.3 Tools that make the hairstyle itself (the "easy hair" question, 2026-10-21)
+
+§3.2 is how a groom gets onto a MetaHuman. This is who has made the *making* of a hairstyle easy: draw a few guides
+or pick a preset, get strands. Everything below ends in an Alembic groom, which binds to the archetype head like any
+other (§3.1), so the fit is the same. Easiest first; "unverified" means a vendor's page, no independent test found.
+
+| Tool | What it is | Output | Cost | Notes |
+|---|---|---|---|---|
+| **Sisir** (standalone, Windows, July 2026) | import a head OBJ, draw guide curves on it, a non-destructive procedural stack (clump, frizz, curl, cut) grows the full groom | Alembic and PLY (no FBX or USD) | free; the licence was being updated for commercial use (CG Channel), 80.lv says free for commercial already: check its site | the closest thing to "easy hair" today; its Unreal import is untested in print (Unreal's Alembic groom schema is informal), so the first run is a test |
+| **Unreal's own Groom Dataflow** (5.7, Hair Data Flow section in the groom asset) | templates build a node graph on an imported groom: guides, interpolation, cards, joint-based deformation and painting on strands (the "hair art directability" docs) | the groom itself | free, in the engine | edits an existing groom; it doesn't draw one from nothing |
+| **Epic's Hair Card Generator** (experimental plugin, Geometry category; a Dataflow "Cards" template in 5.7) | strands to card LODs with textures, inside the editor | card meshes and textures on the groom | free | the ship step for a game: strands for the close-ups, cards everywhere else |
+| **MetaHuman for Houdini + Houdini Groom Starter Kit** (Epic, free assets) | procedural grooming on the MetaHuman head in Houdini, with an exporter | Alembic | the assets are free; Houdini isn't (Indie is cheap) | the official procedural route |
+| **StrandKit** (Blender, Superhive, paid) | 22 procedural hairstyle setups by hair type (1A to 4C), 13 hair-card generators, 1000+ baked cards | Blender hair curves, then Alembic | paid | unverified; the nearest thing to "pick a style, adjust" |
+| **Medusa Nodes** (Blender, free) | a procedural hair add-on on geometry nodes: generator, deformers, a hierarchy panel | hair curves | free | unverified |
+| **Hair Wrangler** (Blender 4.1+), **Hair Painter / Hair Lab** (4.2+), **Hair Brick Pro**, **Tube Hair Generator** | draw Bezier curves or tubes, the add-on builds the geometry-node hair; Stylized Hair Pro (4.5+) for anime clumps | hair curves | paid, cheap | the anime route for a stylised cast: Stylized Hair Pro, then Alembic |
+| **GroomForge Pro** (Blender, paid) and the free **Groom Exporter** | the pipeline end: guides, Unreal attributes (groom_id, groups), binding, cards, export | Unreal-ready Alembic | paid / free | pairs with any of the Blender tools above |
+| **MetaBridge Forge** (Unreal plugin, Chamiseul) | one action: import a groom Alembic, clone the archetype head and materials, create the binding and the Wardrobe Item | a `.mhpkg`-style wardrobe item | paid | what the Blender starter kit does by hand, automated; unverified |
+| **Hair-card texture makers:** Fiber Card Gen (free, browser), HairShop, HairTG, Houdini's Hair Card Texture | the strip textures for cards | PNG colour, normal, depth | free to paid | only if you make cards outside Unreal |
+| **AI, from one photo: DiffLocks** (Max Planck, 2025) | a diffusion model that predicts 3D strands from one frontal image, trained on 40K Blender hairstyles; code on its project page, weights on registration | strands (to export yourself) | free, research | the real "photo of a K-pop cut to strands" route, but it's a research repo: a weekend to run, and the strands need a Blender pass to become a groom. Newer papers (HairLRM, CGHair, 2026) have no code yet; Digital Salon (AI plus physics grooming) has no code found |
+| **Ready-made grooms on Fab** | Korean collarbone waves, anime twin-tails ("Venice", verified on 5.6 and up), broccoli fades, beards | `.mhpkg` | mostly paid, some free | still the fastest when the style exists |
+
+**What I'd do for this studio:** Fab for the styles that exist (the Korean and anime ones do), Sisir for a cut of our
+own (draw ten guides on the archetype head, export Alembic, bind in Unreal), Stylized Hair Pro when a game wants the
+anime read, and Epic's card generator before shipping. The Blender starter kit's project is the reference for the
+`.mhpkg` packaging whichever tool drew the strands. Write the first Sisir-to-Unreal result in LESSONS.md.
+
+### 3.4 In our pipeline
 
 Hair is Creator's: nothing in the desk (the storyboard's bodies are clay). Record the wardrobe item or the `.mhpkg`
 name per cast member in `docs/games/<Game>.md` next to the face recipe. Custom grooms live in `/Game/Studio/Grooms/`
@@ -223,3 +249,18 @@ Community: [5.6 lacks a roughness override (T_Head_SRMF)](https://forums.unreale
 [Fab Asian female preset](https://www.fab.com/listings/0aa4265d-d6ad-47ab-bf06-3fc1ecfb4916),
 [Lumelle Yue preset](https://forums.unrealengine.com/t/lumelle-studio-yue-editable-metahuman-character/2666217),
 [Subsurface Profile shading](https://dev.epicgames.com/documentation/unreal-engine/subsurface-profile-shading-model-in-unreal-engine).
+Hair tools (§3.3): [Sisir (CG Channel)](https://www.cgchannel.com/2026/07/sisir-is-a-promising-new-free-standalone-hair-grooming-tool/),
+[Sisir (80.lv)](https://80.lv/articles/sisir-new-guide-based-hair-grooming-tool),
+[Hair Card Generator (Epic)](https://dev.epicgames.com/documentation/unreal-engine/hair-card-generator-for-grooms-in-unreal-engine),
+[cards and LODs with the generator](https://dev.epicgames.com/documentation/unreal-engine/creating-hair-cards-and-lods-using-hair-card-generator),
+[Hair art directability (Epic)](https://dev.epicgames.com/documentation/metahuman/hair-art-directability),
+[Groom Dataflow in 5.7 (community)](https://wiki.kwonsh.duckdns.org/Advanced-Groom-Dataflow-Setup-in-UE-5-7-/Advanced-Groom-Dataflow-Setup-in-UE-5-7-.html),
+[MetaHuman for Houdini](https://digitalproduction.com/2025/09/01/metahuman-meets-houdini/),
+[StrandKit](https://superhivemarket.com/products/strandkit), [Medusa Nodes](https://medusa-nodes-documentation.readthedocs.io/),
+[Hair Wrangler](https://dannymac.gumroad.com/l/hairwrangler), [Hair Painter](https://superhivemarket.com/products/hair-painter),
+[Stylized Hair Pro](https://superhivemarket.com/products/stylized-hair-pro), [LS Hair Card Tool](https://superhivemarket.com/products/ls-hair-card-tool),
+[MetaBridge Forge](https://forums.unrealengine.com/t/chamiseul-studio-ci-metabridge-forge-metahuman-outfit-groom-automation/2745720),
+[Fiber Card Gen](https://eperson.itch.io/fiber-card-gen), [HairTG-Cards](https://olif.artstation.com/blog/category/2),
+[DiffLocks](https://difflocks.is.tue.mpg.de/), [HairLRM](https://arxiv.org/abs/2606.15238), [CGHair](https://arxiv.org/abs/2604.03716),
+[Digital Salon](https://digital-salon.github.io/), [anime twin-tail groom](https://forums.unrealengine.com/t/venice-real-time-anime-twin-tail-hair-for-metahuman/2743782),
+[best grooming tools for Unreal (overview)](https://yelzkizi.org/best-hair-grooming-tools-for-unreal-engine/).
