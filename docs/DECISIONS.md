@@ -11,6 +11,7 @@ The user's answers, newest first. They override the plan, the research and the d
 - **Gameplay is UI selectables for now,** as in the desk's Watch (task cards, results and choices as buttons); the
   real gameplay is refined later.
 - `scene-builder` is merged into `main` (it changes the desk -> Unreal flow).
+
 ## 2026-10-21 (animation first, the dialogue fits the motion, and Claude asks)
 
 - **The default order is the draft script, then the Kimodo motions, then the Japanese and English dialogue.** The user
