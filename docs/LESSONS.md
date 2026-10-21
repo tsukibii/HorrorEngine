@@ -73,3 +73,6 @@ the fix.
 - **UnrealClaude's bridge lists only its simple tools:** taking the script tools out of `HIDDEN_TOOL_NAMES` made
   them "mega" tools, which aren't listed either (16 of 28 shown). `setup.py unrealclaude --show-scripts` now adds
   them to `SIMPLE_TOOL_NAMES`; after a router change, restart Claude Code so the bridge reloads.
+- **Start the editor before Claude Code:** the bridge gives its tool list once, when Claude Code starts, and never
+  says it changed; started before the editor, Claude saw only `unreal_status`. Check the editor runs *this*
+  `.uproject` too (`pgrep -a UnrealEditor`): it once reopened a stray template and the bridge never came up.

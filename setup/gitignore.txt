@@ -50,6 +50,8 @@ Makefile
 .vscode/
 /.ignore
 Content/Developers/
+# the scripts UnrealClaude runs (generated; get_script_history and the editor log keep the record)
+Content/UnrealClaude/
 
 # Epic's First Person template (its content, maps and C++): Epic's, so never in this public repo (CLAUDE.md, assets).
 # A fresh clone makes it again: SETUP.md S2 (the Project Browser, then `setup.py adopt`).

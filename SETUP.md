@@ -83,13 +83,13 @@ fix; use 48.
 - [x] **(user)** If the editor asks to rebuild modules: Yes.
 - [x] With the editor open: `curl http://localhost:3000/mcp/status` returns JSON.
 - [x] **(user)** Restart Claude Code in the folder and approve the `unreal` MCP server.
-- [ ] Prove the hands and eyes:
+- [x] Prove the hands and eyes:
   - `unreal_status`
   - spawn a cube, then delete it
   - `unreal_capture_viewport`
   - `unreal_get_output_log`
   - run Python through `unreal_execute_script`: `import storykit.storylib as L; print(L.games())`
-- [ ] Write `docs/MCP_TOOLS.md`: the tools that exist, one line each, and any quirks met.
+- [x] Write `docs/MCP_TOOLS.md`: the tools that exist, one line each, and any quirks met.
 - **Done:** all of the above work, and MCP_TOOLS.md is committed.
 
 ## S5. The studio layout (Claude)
