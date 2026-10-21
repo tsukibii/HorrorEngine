@@ -21,7 +21,8 @@ export class Hud {
     this.timerEl = mk("div", "ph-timer");
     this.hint = mk("div", "ph-hint", "Click to look around · WASD walk · E use · C crouch · Esc frees the mouse");
     this.stance = mk("div", "ph-stance");
-    this.root.append(this.obj, this.timerEl, this.logEl, this.cursor, this.prompt, this.lineEl, this.stance, this.hint);
+    this.seenEl = mk("div", "ph-seen"); this.seenEl.append(mk("div", "ph-seen-fill"));
+    this.root.append(this.obj, this.timerEl, this.logEl, this.cursor, this.prompt, this.lineEl, this.stance, this.seenEl, this.hint);
     box.append(this.root);
     this.lineUntil = 0; this.panelEl = null;
   }
@@ -42,6 +43,10 @@ export class Hud {
     while (this.logEl.children.length > 6) this.logEl.firstChild.remove();
   }
   timer(secs) { this.timerEl.textContent = secs === null ? "" : Math.max(0, secs).toFixed(1); }
+  seen(k) {                                         // the suspicion meter: 0 hidden, 1 caught
+    this.seenEl.classList.toggle("on", k > 0.01);
+    this.seenEl.firstChild.style.width = Math.round(Math.min(1, k) * 100) + "%";
+  }
   setStance(s) { this.stance.textContent = s; this.root.dataset.stance = s; }
   locked(on) { this.hint.classList.toggle("on", !on && !this.panelEl); this.root.classList.toggle("free", !on); }
   press() {                                         // the cursor and the key press in when E is used

@@ -1,6 +1,7 @@
 // Play mode in a headless browser (docs/GAMEPLAY_PLAN.md §8 step 1): the Pilot walked from the start to the good
 // ending with the keys and the cursor, as a player would: a wall stops you, the front door opens with E, the hall's
-// trigger ends the arrival, Mari walks her route in the hall, the letter reads, E hides in the locker and gets out, the kitchen's glimpse fires, the drawer's code is typed on the panel,
+// trigger ends the arrival, Mari walks her route in the hall, the letter reads, E hides in the locker and gets out, her eyes catch
+// you in the open but not hidden or in a safe zone, the kitchen's glimpse fires, the drawer's code is typed on the panel,
 // the key shows and is taken, the locked cellar door opens with it, the struggle is mashed free (E), and the timed run
 // out of the house ends on the porch. Ends "PLAY ok".
 //
@@ -29,6 +30,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.stitches.t_search.beats.push({ id: "b_sit", when: { use: "chair_b" }, do: [{ scene: "s_message" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "big_die", shape: "box 0.3 0.3 0.3", at: [2.6, 4.2], use: "roll" });
     S.stitches.t_search.beats.push({ id: "b_roll", when: { rolled: "big_die", at_least: 1 }, optional: true, do: [{ flag: "rolled_once" }] });
+    S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_safe", use: "trigger", at: [3.3, 3.5], size: [0.8, 0.8, 2.4], safe: true });
     S.levels.house.routes = { r_hall: { points: [{ at: "hall_mari_back_spot", wait: 1, pose: "look_left" }, "hall_mari_near_spot"], mode: "pingpong" } };
     S.stitches.t_search.beats.push({ id: "b_walk", when: { start: true }, do: [{ behave: "mari", as: "path", route: "r_hall" }] });
     await window.__dd.replan();
@@ -171,6 +173,25 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await press("KeyE");
     await page.waitForFunction(() => { const rt = window.__dd.play; return !rt.player.hiding && !rt.moving; }, null, { timeout: 5000 });
     const c = await inside(); if (c.slats || Math.hypot(c.x - 0.35, c.y - 4.3) < 0.5) throw new Error("not out " + JSON.stringify(c));
+  });
+  await step("being seen: in her cone the meter fills and caught fires; hidden or in a safe zone she doesn't see you", async () => {
+    const rt = () => window.__dd.play;
+    await page.evaluate(() => window.__dd.play.behave("mari", { as: "idle", at: "hall_mari_spot", sees: { calm: 0.3 } }));   // at the hall's end, facing the front door
+    const stand = (x, y) => page.evaluate(([x, y]) => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(x, 0, -y), 90, 0); }, [x, y]);
+    await stand(2, 2.6);
+    await page.waitForFunction(() => { const c = window.__dd.play.lastCaught; return c && c.by === "mari"; }, null, { timeout: 4000 });
+    const quiet = async (what, ms = 2000) => {
+      const c0 = await page.evaluate(() => window.__dd.play.lastCaught.clock);
+      await page.waitForTimeout(ms);
+      const st = await page.evaluate(() => ({ c: window.__dd.play.lastCaught.clock, k: window.__dd.play.suspicion }));
+      if (st.c !== c0 || st.k > 0.05) throw new Error(`${what}: seen ${JSON.stringify(st)}`);
+    };
+    await stand(3.3, 3.5); await quiet("in the safe zone");
+    await goTo("hall_locker", 0.8); await press("KeyE");
+    await page.waitForFunction(() => window.__dd.play.player.hiding === "hall_locker", null, { timeout: 3000 });
+    await quiet("in the locker");
+    await press("KeyE"); await page.waitForFunction(() => !window.__dd.play.player.hiding && !window.__dd.play.moving, null, { timeout: 3000 });
+    await page.evaluate(() => window.__dd.play.behave("mari", { as: "path", route: "r_hall" }));            // back to her walk, not looking
   });
   await step("crouch (toggle) lowers the eye", async () => {
     await press("KeyC"); await page.waitForTimeout(700);

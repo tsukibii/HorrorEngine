@@ -57,3 +57,7 @@
 .play-hud .ph-key.press{box-shadow:var(--ph-inset)}
 .play-hud .shake{animation:ph-shake .38s ease-in-out}
 @keyframes ph-shake{0%,100%{translate:0}20%{translate:-6px}40%{translate:6px}60%{translate:-4px}80%{translate:3px}}
+/* the suspicion meter: under the cursor, filling while someone sees you */
+.play-hud .ph-seen{position:absolute;left:50%;top:calc(50% + 34px);width:90px;height:6px;margin-left:-45px;border-radius:var(--ph-radius);background:var(--ph-surface);box-shadow:var(--ph-inset);opacity:0;transition:opacity .2s;overflow:hidden}
+.play-hud .ph-seen.on{opacity:1}
+.play-hud .ph-seen-fill{height:100%;width:0;background:var(--ph-bad);border-radius:var(--ph-radius)}

@@ -18,6 +18,9 @@ const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
 const THEME = "neumorph";                          // the HUD theme when a game names none (game.ui_theme)
 const LIT = 2.2;                                   // a lamp that starts off: its strength when it's switched on (stage.js's bulb)
 const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
+// a cast member who `sees` (behave): her cone (degrees, full width), its reach (m), how much of it a crouched player
+// is seen at, the seconds the suspicion meter takes to fill and to drain, and how long she's calm after a catch
+export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1.5, calm: 3 };
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 export class PlayRuntime {
@@ -32,6 +35,7 @@ export class PlayRuntime {
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
+    this.suspicion = 0; this.calm = 0; this.lastCaught = null;
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
     this.listener = null; this.ray = new THREE.Raycaster();
     this.on = {
@@ -94,7 +98,7 @@ export class PlayRuntime {
     this.physics = movers.length ? new Physics(this.stage, movers) : null;
     this.triggers = this.plan.pieces.filter(p => p.level === level && p.kind === "trigger").map(p => {
       const rv = p.tags.find(t => t.startsWith("room_volume:")), [w, d, h] = p.size, [x, y, z] = p.pos;
-      return { id: rv ? rv.slice(12) : p.id, min: [x - w / 2, y - d / 2, z - h / 2], max: [x + w / 2, y + d / 2, z + h / 2] };
+      return { id: rv ? rv.slice(12) : p.id, safe: !!(p.d || {}).safe, min: [x - w / 2, y - d / 2, z - h / 2], max: [x + w / 2, y + d / 2, z + h / 2] };
     });
   }
   placeAt(level, spot) {                               // the player on a spot (story coordinates and its yaw)
@@ -306,7 +310,7 @@ export class PlayRuntime {
       const q = typeof p === "string" ? { at: p } : p, t = this.plan.things[q.at];
       if (!t) { this.hud.log(`route ${ref}: no spot ${q.at}`); continue; }
       level = level || t.level;
-      points.push({ pos: s2t(t.pos[0], t.pos[1], t.pos[2] || 0), yaw: t.yaw || 0, wait: +(q.wait || 0), pose: q.pose || null });
+      points.push({ pos: s2t(t.pos[0], t.pos[1], t.pos[2] || 0), yaw: t.yaw || 0, wait: +(q.wait || 0), pose: q.pose || null, check: q.check || null });
     }
     return points.length ? { level, mode: r.mode || "loop", points } : null;
   }
@@ -330,6 +334,37 @@ export class PlayRuntime {
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(X, Math.sin(this.clock * 2.2) * 0.012));   // breathing
       f.update(M.fk(lib, p, +((this.story.cast || {})[n.cid] || {}).height || 1.7).pos);
     }
+  }
+
+  // ---- being seen (GAMEPLAY_PLAN §3): a cast member who `sees` fills the suspicion meter while the player is in her
+  // cone, in reach (shorter crouched) and in her line of sight, and not hidden or in a safe zone; full, it's `caught`
+  sightOf(n) { return n.s.sees ? Object.assign({}, SIGHT, n.s.sees === true ? {} : n.s.sees) : null; }
+  sees(n) {
+    const c = this.sightOf(n), p = this.player;
+    if (!c || !n.pos || n.level !== this.level || p.hiding) return false;
+    if (this.triggers.some(t => t.safe && this.isIn(t))) return false;
+    const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7;
+    const eye = n.pos.clone().setY(n.pos.y + h * 0.93), at = p.pos.clone().setY(p.pos.y + p.eye * 0.9), d = at.clone().sub(eye), dist = d.length();
+    if (dist > c.range * (p.crouched ? c.crouched : 1)) return false;
+    const a = n.yaw * Math.PI / 180, fwd = new THREE.Vector3(Math.cos(a), 0, -Math.sin(a)), flat = d.clone().setY(0).normalize();
+    if (Math.acos(Math.max(-1, Math.min(1, fwd.dot(flat)))) * 180 / Math.PI > c.angle / 2) return false;
+    this.ray.set(eye, d.clone().normalize()); this.ray.far = dist;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0];
+    return !(hit && hit.distance < dist - 0.3);
+  }
+  watch(dt) {
+    if (this.calm > 0) { this.calm -= dt; this.suspicion = Math.max(0, this.suspicion - dt / SIGHT.drain); this.hud.seen(this.suspicion); return; }
+    const by = Object.values(this.npcs).find(n => this.sees(n));
+    if (by) { this.suspicion += dt / this.sightOf(by).meter; if (this.suspicion >= 1) return this.caught(by.cid, null); }
+    else this.suspicion = Math.max(0, this.suspicion - dt / SIGHT.drain);
+    this.hud.seen(this.suspicion);
+  }
+  caught(by, at) {                                   // at: the hiding place she found the player in (a route point's check)
+    const n = this.npcs[by], c = (n && this.sightOf(n)) || SIGHT;
+    this.suspicion = 0; this.calm = c.calm; this.hud.seen(0);
+    this.lastCaught = { by, at, clock: this.clock };
+    this.hud.log(`caught by ${by}${at ? " in " + at : ""}`);
+    this.emit({ type: "caught", by, at });
   }
 
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
@@ -441,6 +476,7 @@ export class PlayRuntime {
       l.intensity = (u.base || 1) * k;
     }
     this.drawNpcs(dt);
+    this.watch(dt);
     if (!this.busy) this.updateCursor(dt);
     this.emit({ type: "tick" });
     this.hud.tick();

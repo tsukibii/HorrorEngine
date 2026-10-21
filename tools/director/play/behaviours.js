@@ -1,4 +1,5 @@
 // Behaviours: what a cast member does during play (docs/GAMEPLAY_PLAN.md §2), set by the `behave` action. Not AI:
+// (whether she sees the player is the runtime's, for any behaviour: the `sees` setting, runtime.sees)
 // each is a small routine with settings. `start(npc, rt, s)` sets it up, `update(npc, rt, dt, s)` moves it on; both
 // write the npc's state, which the runtime draws: `level`, `pos` (feet, three's space), `yaw` (story degrees),
 // `pose` (a pose library name) and `walking`. A route is a level's named list of spots (STORY_FORMAT §2,
@@ -48,6 +49,7 @@ function walkRoute(npc, rt, dt, s, r, onEnd) {
   const pt = r.points[st.i], d = pt.pos.clone().sub(npc.pos).setY(0), dist = d.length();
   if (dist <= ARRIVE) {
     if (pt.wait) { st.wait = pt.wait; st.pose = pt.pose; st.faceYaw = pt.yaw; npc.walking = false; npc.pose = pt.pose || s.pose; }
+    if (pt.check && rt.player.hiding === pt.check) rt.caught(npc.cid, pt.check);   // she looks in that hiding place
     const n = r.points.length, mode = s.mode || r.mode;
     if (mode === "pingpong" && n > 1) { if (st.i + st.dir >= n || st.i + st.dir < 0) st.dir = -st.dir; st.i += st.dir; }
     else if (st.i + 1 < n) st.i += 1;

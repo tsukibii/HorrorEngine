@@ -61,7 +61,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
   `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
   `mode`: `loop` (the default), `pingpong`, `once`. She walks straight from point to point, so place the spots where
-  the line between them is clear.
+  the line between them is clear. A point's `check` (a locker) is a hiding place she looks in there (`behave` sees).
 
 **A room:**
 
@@ -181,7 +181,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `sit` | (a chair, a sofa, a bed's edge: E sits the player down, the eye at sitting height, E stands them up; a beat's `{"use": id}` hears it) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
-| `trigger` | `size [w, d, h]` |
+| `trigger` | `size [w, d, h]`; `safe: true` makes it a safe zone (no one sees the player in it) |
 | `spot` | `rot` (start points, stage marks, look targets, routes) |
 
 Every room also gets an invisible volume, so `enter <room>` works.
@@ -369,7 +369,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `{"after": beat, "secs": 5}` | another beat ended, plus a delay |
 | `{"flag": name}` | the flag is set |
 | `{"all": [...]}`, `{"any": [...]}` | a combination |
-| `{"caught": true}` | the stalker catches the player |
+| `{"caught": true}`, `{"caught": "mari"}` | the player is caught (by anyone, or by that cast member): a cast member who `sees` (`behave`) filled the suspicion meter, or found them in a hiding place her route `check`s |
 | `{"hidden": true}`, `{"hidden": locker}` | the player is in any hiding place, or in that one (`use: locker`); holds while they stay |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
@@ -386,6 +386,11 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
   member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,
   `from`: `nearest` or `first` point), `patrol` (`routes`: walks each once, then the next; `pick`: `order` or
   `random`), `off` (gone). Not AI: the same steps every time, so a player can learn them.
+  `sees`: she watches for the player (`true`, or some of `angle` 90 (the cone's full width), `range` 9 m,
+  `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
+  catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,
+  `caught` fires. Hidden (a locker) or in a safe zone, she doesn't see the player, unless a route point `check`s
+  that locker (`{"at": "hall_back", "wait": 2, "check": "hall_locker"}`): there, she finds them.
 - `trick` (TRICKS.md §2), `checkpoint`
 - `scene`: a **triggered scene**. It plays a scene in the middle of the stitch, started by what the player does
   (walking into a place, sitting down, using a thing), blended in from where they are and back out to play, and the

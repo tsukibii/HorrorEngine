@@ -35,6 +35,7 @@ DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
 BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "off": ()}   # a cast member in play: what each needs
 ROUTE_MODES = {"loop", "pingpong", "once"}
+SIGHT = {"angle", "range", "crouched", "meter", "drain", "calm"}      # behave sees: the play runtime's SIGHT
 TRICKS = {  # name: (required fields, seconds it takes)
     "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": ({"room"}, 3),
     "glimpse": ({"figure"}, 2), "knock": ({"at"}, 3), "whisper": ({"line", "at"}, 0),
@@ -147,6 +148,9 @@ def check_world(story, things, r):
                     r.err(f"level {lid}: route {rid} point {q.get('at')!r} isn't a spot in it")
                 if not isinstance(q.get("wait", 0), (int, float)) or q.get("wait", 0) < 0:
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: wait {q.get('wait')!r} (seconds)")
+                ck = q.get("check")                    # she looks in that hiding place at this point
+                if ck is not None and (ck not in things or things[ck].use != "locker" or things[ck].level != lid):
+                    r.err(f"level {lid}: route {rid} at {q.get('at')}: check {ck!r} isn't a locker in it")
                 if q.get("pose") is not None and q["pose"] not in POSES:
                     r.err(f"level {lid}: route {rid} at {q.get('at')}: pose {q['pose']!r} isn't in Content/Studio/poses.json")
         for k, v in (lvl.get("trim") or {}).items():
@@ -271,6 +275,8 @@ def check_world(story, things, r):
             ins = p.get("inside")
             if ins is not None and (ins not in things or things[ins].use != "spot" or things[ins].level != t.level):
                 r.err(f"{t.id}: inside {ins!r} isn't a spot on its level")
+        if "safe" in p and not (u == "trigger" and isinstance(p["safe"], bool)):
+            r.err(f"{t.id}: safe is for a trigger: true when the player can't be seen in it")
         if "see_through" in p and not (u == "locker" and isinstance(p["see_through"], (int, float)) and 0 <= p["see_through"] <= 1):
             r.err(f"{t.id}: see_through is for a locker, a number 0..1 (how much of its slats are gaps)")
 
@@ -653,6 +659,8 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: read {v!r} isn't a note")
     elif k == "after" and v not in beats:
         r.err(f"{bid}: after {v!r} isn't a beat in this stitch")
+    elif k == "caught" and v is not True and v not in story.get("cast", {}):
+        r.err(f"{bid}: caught {v!r}: true (by anyone) or a cast member")
     elif k == "hidden" and v is not True and (v not in things or things[v].use != "locker"):
         r.err(f"{bid}: hidden {v!r}: true (in any hiding place) or a locker's id")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
@@ -751,6 +759,9 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(x, "spot")
         if a.get("pose") is not None and a["pose"] not in POSES:
             r.err(f"{bid}: behave pose {a['pose']!r} isn't in Content/Studio/poses.json")
+        sees = a.get("sees", False)
+        if not (isinstance(sees, bool) or isinstance(sees, dict) and set(sees) <= SIGHT and all(isinstance(x, (int, float)) and x >= 0 for x in sees.values())):
+            r.err(f"{bid}: behave sees {sees!r}: true, or some of {', '.join(sorted(SIGHT))} as numbers")
         if a.get("pick", "order") not in ("order", "random") or a.get("mode", "loop") not in ROUTE_MODES:
             r.err(f"{bid}: behave pick (order random) or mode (loop pingpong once)")
     elif k == "stalker":

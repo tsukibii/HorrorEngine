@@ -120,8 +120,10 @@ playback; Generate stays the one button.
    `path`, `patrol`, `off` by the `behave` action; `levels.<id>.routes`; a scene takes the actor and play hands them
    back where they were; still to do: talk lines, drawing routes in the builder, the blend when a scene takes them):
    idle, sit, path on routes; talk lines; routes in the builder.
-4. **Stealth**: crouch, hiding places with see-through (**built 2026-10-21**), safe zones, the view cone and
-   suspicion, caught.
+4. **Stealth** (**built on the desk 2026-10-21**: hiding places with slats, `behave` `sees` (cone, reach shorter
+   crouched, line of sight), the suspicion meter under the cursor (1.2 s, drains), `caught` by whom, safe zones
+   (`trigger` `safe`), route points that `check` a locker; still to do: drawing safe zones and routes in the builder,
+   footstep noise): crouch, hiding places with see-through, safe zones, the view cone and suspicion, caught.
 5. **The registry and the checks** (grown alongside 1 to 4, not after).
 6. **Unreal**: the same parts in the StoryRunner, a group at a time, Generate carrying routes, zones and hiding
    places across.
