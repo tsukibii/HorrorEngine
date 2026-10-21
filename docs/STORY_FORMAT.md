@@ -172,6 +172,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `switch` | `light` |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
 | `locker` | (hide inside) |
+| `sit` | (a chair, a sofa, a bed's edge: E sits the player down, the eye at sitting height, E stands them up; a beat's `{"use": id}` hears it) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
 | `trigger` | `size [w, d, h]` |
@@ -210,7 +211,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `view` | the spot where we expect the player: **the camera, since the camera is the player's eye**. It must be a place the player can stand (in its room, not inside a prop, unless that prop is in `camera.through`). It's for the desk, the shot review, the motion jobs (the `player_collar` target) and the playtime estimate; the runner never moves the player there |
 | `stance` | the player's eye height in this scene: `stand` (1.65 m, the default) `crouch` (1.05) `kneel` (1.2) `sit` (1.15) `lie` (0.3) `hide` (1.6, in a locker or wardrobe): first person's low and high angles |
 | `mood` | `intimate dread panic reveal calm grief chase aftermath`: the recipe (DIRECTING.md §2); the desk can apply its camera and shot defaults |
-| `enter`, `exit` | `{"kind": "fade"|"cut"|"blink"|"dip", "secs": 0.6}`: how the scene comes in from the game and goes back to it (default fade 0.6 s; `cut` for a scare) |
+| `enter`, `exit` | `{"kind": "blend"|"fade"|"cut"|"blink"|"dip", "secs": 0.8}`: how the scene comes in from the game and goes back to it. The default is `blend` (0.8 s): the view eases from wherever the player's eye is into the scene's framing, and at the end the player carries on from the scene's last view, with no black between (GAMEPLAY_PLAN §1). `fade` goes through black; `cut` is for a scare |
 | `camera.mode` | `free` (the player walks and looks), `soft` (movement stops; the look stays inside a cone round `look`, with a spring back), `hard` (a cinematic camera), `held` (an actor has hold of the player: struggles) |
 | `camera.through` | props the camera sees through (a locker's slats): the shot review and the visibility test ignore them |
 | `camera.look` | a cast id on stage, or a placed thing |
@@ -373,6 +374,10 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 - `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)
 - `stalker` (`spawn despawn patrol hunt chase`, `at`, `route`)
 - `trick` (TRICKS.md §2), `checkpoint`
+- `scene`: a **triggered scene**. It plays a scene in the middle of the stitch, started by what the player does
+  (walking into a place, sitting down, using a thing), blended in from where they are and back out to play, and the
+  stitch goes on. `{"when": {"use": "sofa"}, "do": [{"scene": "s_talk"}]}`. Its `sets` and events count as usual. A
+  scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
 - `done`, which ends the stitch
 
 ## 5. The flow

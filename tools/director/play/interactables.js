@@ -2,6 +2,7 @@
 // its look and the prompt's label, and every use sends a `use` event (beats and act choices hear it) before its own.
 // `cursor` is a name the HUD's theme draws (play/ui/themes/*.css).
 import { register, part } from "./parts.js";
+import { EYES } from "../stage.js";
 
 export function interactableOf(thing) {
   const u = thing.userData;
@@ -64,6 +65,11 @@ register("interactable", "switch", {
   settings: { cursor: "use", label: "Switch" },
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
   use: (t, rt) => rt.light(null, t.userData.piece.room, "toggle"),
+});
+register("interactable", "sit", {                 // a chair, a sofa, a bed's edge: E sits, E stands (runtime.sit)
+  settings: { cursor: "sit", label: "Sit", stand: "Stand up", eye: EYES.sit, secs: 0.6 },
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.seat === t ? s.stand : s.label }),
+  use: (t, rt, s) => (rt.player.seat === t ? rt.stand(s) : rt.sit(t, s)),
 });
 register("interactable", "locker", {              // hiding comes with stealth (GAMEPLAY_PLAN §8 step 4); the use is heard now
   settings: { cursor: "hide", label: "Hide" },

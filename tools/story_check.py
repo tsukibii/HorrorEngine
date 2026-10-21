@@ -28,7 +28,7 @@ TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", 
 TRIGGER_EXTRA = {"secs", "within"}
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count"}
+           "karma", "count", "scene"}
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
@@ -46,7 +46,7 @@ SEAMS = {  # kind: (fields it needs, seconds it adds)
 CAMERA = {"free", "soft", "hard", "held"}
 PULLS = {"back", "left", "right", "down", "any"}
 EVENTS = {"struggle", "press", "mash", "hold", "breath", "aim", "choose"}
-TRANSITIONS = {"fade", "cut", "blink", "dip"}
+TRANSITIONS = {"blend", "fade", "cut", "blink", "dip"}   # blend: the view eases from the player's eye (the default)
 CAM_KEYS = {"push": (0, L.LEAN), "zoom": (0, L.ZOOM), "roll": (-30, 30), "shake": (0, 2), "lag": (0, 2)}
 FAST = {"walking": 0.625, "looking round": 8 / 30, "searching": 0.3, "reading": 0.55, "puzzles": 0.35}  # a fast player
 GAME_DIR = None
@@ -657,6 +657,12 @@ def check_action(bid, a, story, things, r, stage=None):
         if not isinstance(a.get("add", 1), (int, float)) or ("set" in a and not isinstance(a["set"], (int, float))):
             r.err(f"{bid}: count takes `add` (a number, 1 by default) or `set`")
         return
+    if k == "scene":                                   # a triggered scene: plays from where the player is, then play goes on
+        if v not in story.get("scenes", {}):
+            r.err(f"{bid}: scene {v!r} isn't a scene")
+        elif any(n.get("type") == "scene" and n.get("ref") == v for n in story.get("flow", {}).values()):
+            r.warn(f"{bid}: scene {v!r} is also a flow node: it will play twice")
+        return
     if k == "say" and v not in lines:
         r.err(f"{bid}: say {v!r} isn't a line")
     elif k == "sound":
@@ -1193,6 +1199,8 @@ class World:
                 elif v == "cut_away":
                     if self.run_actions(where, a["then"]):
                         return True
+            elif k == "scene":
+                self.play_scene(v, self.story["scenes"][v])
             elif k == "karma":
                 self.add_karma(v)
             elif k == "count":

@@ -855,11 +855,7 @@
      "at": "2026-10-20"
     }
    ],
-   "mood": "dread",
-   "enter": {
-    "kind": "fade",
-    "secs": 0.6
-   }
+   "mood": "dread"
   },
   "s_cellar": {
    "title": "Who knocked",

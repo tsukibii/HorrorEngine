@@ -110,7 +110,9 @@ playback; Generate stays the one button.
    the neumorphic theme and the physics die next): walk the built level (WASD, mouse look, collision with walls and furniture, stance), the
    CSS UI and its first theme (§10), the physics die,
    the interaction point and prompt, doors, pickups, notes, objectives, beats firing from `enter` and `use`.
-2. **Scenes from play**: a beat starts a scene; blended in and out on the ladder (§1); interactive cinematics (walk
+2. **Scenes from play** (**built 2026-10-21**: `blend` is the default enter and exit, a beat's `scene` action plays a
+   triggered scene and play goes on, `use: sit`; still to do: interactive cinematics where you walk while she talks,
+   and Unreal's preview, which fades a blend for now): a beat starts a scene; blended in and out on the ladder (§1); interactive cinematics (walk
    while she talks); timed choices.
 3. **NPC behaviours**: idle, sit, path on routes; talk lines; routes in the builder.
 4. **Stealth**: crouch, hiding places with see-through, safe zones, the view cone and suspicion, caught.

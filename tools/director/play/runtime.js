@@ -43,7 +43,7 @@ export class PlayRuntime {
     this.hud.locked(false);
   }
   stop() {
-    this.active = false; this.listener = null;
+    this.active = false; this.listener = null; this.stopped = true;
     for (const w of this.waits) w.res(); this.waits = [];
     this.box.removeEventListener("click", this.on.click);
     document.removeEventListener("pointerlockchange", this.on.lock);
@@ -219,6 +219,33 @@ export class PlayRuntime {
     return v;
   }
   finish() { if (this.end) this.end({ to: this.next }); }
+  // a triggered scene (the `scene` action): blended in from where the player is; afterwards they carry on from its last
+  // view, still seated if it left the eye at the seat
+  async scene(id) {
+    if (!this.opts.playScene) { this.hud.log(`scene ${id}: not from here`); return; }
+    const seat = this.player.seat, eye0 = this.eyePos();
+    this.pause(); this.moving = null;
+    const r = await this.opts.playScene(id);
+    if (this.stopped || !r) return;
+    if (!(seat && r.cam.position.distanceTo(eye0) < 0.4)) { this.player.seat = null; this.placeFromCamera(r.level, r.cam); }
+    else { this.enterLevel(r.level); const f = new THREE.Vector3(0, 0, -1).applyQuaternion(r.cam.quaternion); this.player.yaw = Math.atan2(-f.z, f.x) * 180 / Math.PI; }
+    this.go();
+  }
+  // sitting: the player eases onto the seat facing out (the way they came), the eye at sitting height; standing eases
+  // back to where they stood
+  sit(t, s) {
+    const p = this.player, at = t.getWorldPosition(new THREE.Vector3());
+    p.seat = t; p.stood = { pos: p.pos.clone(), eye: p.eye };
+    return this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: s.eye, yaw: p.yaw + 180, pitch: 0, secs: s.secs });
+  }
+  stand(s) {
+    const p = this.player, st = p.stood; p.seat = null;
+    if (st) return this.tween({ pos: st.pos, eye: st.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs });
+  }
+  tween(to) {
+    const p = this.player;
+    return new Promise(done => { this.moving = { from: { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw, pitch: p.pitch }, to, t: 0, done }; });
+  }
 
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
@@ -226,11 +253,13 @@ export class PlayRuntime {
     return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible), false)[0] || null;
   }
   async use() {
+    const seat = this.player.seat;
+    if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // E stands you up
     const t = this.target; if (!t) return;
     const ip = interactableOf(t);
     this.hud.press();
+    if (ip) await ip.use(t, this, this.set(ip.name));     // the use is done (seated, the door open, the note read) before the story hears it
     this.emit({ type: "use", id: t.userData.id });
-    if (ip) await ip.use(t, this, this.set(ip.name));
   }
   updateCursor(dt) {
     this.ray.setFromCamera(new THREE.Vector2(0, 0), this.stage.camera);
@@ -240,7 +269,7 @@ export class PlayRuntime {
     if (hit) this.look.dist = hit.distance;
     const ip = o && hit.distance <= USE_RANGE ? interactableOf(o) : null;
     this.target = ip ? o : null;
-    if (!ip) { this.hud.setCursor("none", ""); return; }
+    if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
     const pr = ip.prompt(o, this, this.set(ip.name));
     this.hud.setCursor(pr.cursor, pr.label);
   }
@@ -275,8 +304,9 @@ export class PlayRuntime {
       this.go();
     });
   }
-  pause() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (document.pointerLockElement === this.box) document.exitPointerLock(); }
+  pause() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it
   go() {
+    if (this.stopped) return;
     this.hud.root.style.display = "";
     if (this.active) return;
     this.active = true; this.last = performance.now();
@@ -286,11 +316,17 @@ export class PlayRuntime {
   tick(dt) {
     this.clock += dt;
     const p = this.player;
+    if (this.moving) {
+      const M = this.moving; M.t += dt; const u = Math.min(1, M.t / Math.max(0.05, M.to.secs)), k = u * u * (3 - 2 * u);
+      p.pos.lerpVectors(M.from.pos, M.to.pos, k); p.eye = M.from.eye + (M.to.eye - M.from.eye) * k;
+      p.yaw = M.from.yaw + (M.to.yaw - M.from.yaw) * k; p.pitch = M.from.pitch + (M.to.pitch - M.from.pitch) * k;
+      if (u >= 1) { this.moving = null; M.done(); }
+    }
     if (this.lookTween) {
       const L = this.lookTween; L.t += dt; const u = Math.min(1, L.t / L.secs), k = u * u * (3 - 2 * u);
       p.yaw = L.y0 + (L.y1 - L.y0) * k; p.pitch = L.p0 + (L.p1 - L.p0) * k; if (u >= 1) this.lookTween = null;
     }
-    if (!this.busy) for (const a of ABILITIES) this.ability(a, "update", dt);
+    if (!this.busy && !p.seat && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
     this.hud.setStance(p.crouched ? "crouched" : "");
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {
       d.t = Math.min(1, d.t + dt / d.secs); const k = 1 - (1 - d.t) * (1 - d.t);

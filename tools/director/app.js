@@ -11,7 +11,7 @@ const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
 const SEAMS = ["blink", "glance", "flicker", "occlude", "cutaway", "turn", "stumble", "dip", "jcut", "heartbeat", "none"];
 const CAMS = ["free", "soft", "hard", "held"], PULLS = ["back", "left", "right", "down", "any"], ENDS = ["good", "bad", "secret", "other"];
-const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], TRANS = ["fade", "cut", "blink", "dip"];
+const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], TRANS = ["blend", "fade", "cut", "blink", "dip"];
 const MOODS = {
   intimate: { text: "Close and slow: they come into your space (CU: under 0.55 m) and stay there, the player leans in a little (push 0.1 to 0.2 m), eye contact into the lens, little or no shake, warm practical light, breath under the line, long clips, seams on turns and blinks.", cone: [20, 12], shot: "cu", push: 0.15 },
   dread: { text: "Far and still: the figure over 3 m away (WS), negative space where something could be, a held look, low hum; make the player wait. Coming closer is the scare.", cone: [30, 18], shot: "ws", push: 0 },
@@ -329,7 +329,7 @@ function sceneEditor(box, sc, sid) {
     field("trackers", jsonArea(sc, "trackers", "invisible trackers a head can follow: {\"t_shadow\": {\"height\": 1.6, \"keys\": [{\"clip\": \"c1\", \"at\": 0, \"to\": \"a_spot\"}, {\"clip\": \"c2\", \"at\": 1, \"to\": [x, y, z]}]}} (keys ride clip edges)", { small: true, compact: true })),
     field("through", el("input", { value: (sc.camera.through || []).join(","), placeholder: "props the camera sees through (a locker's slats), comma list", style: "width:320px",
       on: { change: e => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); if (v.length) sc.camera.through = v; else delete sc.camera.through; touch(); } } })),
-    field("in / out", sel(sc.enter = sc.enter || { kind: "fade", secs: 0.6 }, "kind", TRANS, { blank: false }), txt(sc.enter, "secs", { num: true }), " → ", sel(sc.exit = sc.exit || { kind: "fade", secs: 0.6 }, "kind", TRANS, { blank: false }), txt(sc.exit, "secs", { num: true })),
+    field("in / out", sel(sc.enter = sc.enter || Object.assign({}, BLEND), "kind", TRANS, { blank: false }), txt(sc.enter, "secs", { num: true }), " → ", sel(sc.exit = sc.exit || Object.assign({}, BLEND), "kind", TRANS, { blank: false }), txt(sc.exit, "secs", { num: true })),
     field("hold", "min ", txt(sc.hold = sc.hold || {}, "min", { num: true }), " max ", txt(sc.hold, "max", { num: true }), " s after the last clip"));
   // versions
   const vs = sc.variants ? Object.keys(sc.variants) : [];
@@ -708,6 +708,7 @@ function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.flo
 function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); } wclock(); }
 // a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
 function runReply(rp, frame) {
+  freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
     const box = el("div", { class: "reply" }), bar = el("div", { class: "rbar" }, el("div", {}));
@@ -724,15 +725,22 @@ function runReply(rp, frame) {
 const LOOK = { yaw: 0, pitch: 0, moved: 0 };
 function wireLook() {
   const box = $("#watchBox");
-  box.addEventListener("mousemove", e => { const r = box.getBoundingClientRect(); LOOK.yaw = ((e.clientX - r.left) / r.width - 0.5) * 70; LOOK.pitch = -((e.clientY - r.top) / r.height - 0.5) * 40; LOOK.moved = performance.now(); });
+  box.addEventListener("mousemove", e => {
+    if (document.pointerLockElement === box) {        // walking's locked pointer: the look follows the mouse's moves
+      LOOK.yaw = Math.max(-35, Math.min(35, LOOK.yaw + e.movementX * 0.12)); LOOK.pitch = Math.max(-20, Math.min(20, LOOK.pitch - e.movementY * 0.12)); LOOK.moved = performance.now(); return; }
+    const r = box.getBoundingClientRect(); LOOK.yaw = ((e.clientX - r.left) / r.width - 0.5) * 70; LOOK.pitch = -((e.clientY - r.top) / r.height - 0.5) * 40; LOOK.moved = performance.now(); });
 }
+const BLEND = { kind: "blend", secs: 0.8 };        // a scene's enter and exit when it names none (STORY_FORMAT §3.1)
 async function watchScene(sc, nid, sid, k) {
-  watchStage.setWorld(PLAN, S, sc.level || Object.keys(S.levels)[0]);
+  const lvl = sc.level || Object.keys(S.levels)[0];
+  if (watchStage.level !== lvl) watchStage.setWorld(PLAN, S, lvl);   // a scene on the level you're in keeps it as play left it
   const picks = {}, replied = new Set();
   let tl = watchStage.timeline(sc, picks);
-  const en = sc.enter || { kind: "fade", secs: 0.6 };
-  watchStage.apply(tl, watchStage.stateAt(tl, 0, FILES), 0); watchStage.render();
-  if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0;
+  const en = sc.enter || BLEND, cam = watchStage.camera;
+  const from = { p: cam.position.clone(), q: cam.quaternion.clone(), fov: cam.fov, black: +$("#watchOv .black").style.opacity || 0 };
+  watchStage.apply(tl, watchStage.stateAt(tl, 0, FILES), 0);
+  if (en.kind === "blend") await blendIn(tl, from, +(en.secs || 0.8));
+  else { watchStage.render(); if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0; }
   let T = 0, last = performance.now(), spoken = null, warned = null;
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
@@ -765,10 +773,26 @@ async function watchScene(sc, nid, sid, k) {
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
   karmaAct(sc.sets);
-  const ex = sc.exit || { kind: "fade", secs: 0.6 };
-  await fade(1, ex.kind === "cut" ? 0.05 : ex.secs || 0.6);
+  const ex = sc.exit || BLEND;
+  if (ex.kind !== "blend") await fade(1, ex.kind === "cut" ? 0.05 : ex.secs || 0.6);   // a blend: what follows carries on from this view
 }
+// the view eases from where the eye was (the player walking, or the last scene) into the scene's first framing; the
+// figures hold their first pose meanwhile; any black lifts with it
+async function blendIn(tl, from, secs) {
+  const c = watchStage.camera, t0 = performance.now();
+  while (RUN) {
+    const u = Math.min(1, (performance.now() - t0) / 1000 / Math.max(0.05, secs)), k = u * u * (3 - 2 * u);
+    watchStage.apply(tl, watchStage.stateAt(tl, 0, FILES, LOOK), 0);
+    const to = { p: c.position.clone(), q: c.quaternion.clone(), fov: c.fov };
+    c.position.lerpVectors(from.p, to.p, k); c.quaternion.slerpQuaternions(from.q, to.q, k); c.fov = from.fov + (to.fov - from.fov) * k; c.updateProjectionMatrix();
+    watchStage.render(); $("#watchOv .black").style.opacity = from.black * (1 - k);
+    if (u >= 1) break;
+    await new Promise(r => requestAnimationFrame(r));
+  }
+}
+const freePointer = () => { if (document.pointerLockElement) document.exitPointerLock(); };     // a card or a QTE needs the pointer
 function runEvent(ev) {
+  freePointer();
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), box = el("div", { class: "qte" }), bar = el("div", { class: "bar" }, el("div", {})), key = (ev.key || "E").toUpperCase();
     let done = false, score = 0, held = false, t0 = performance.now(), lastMove = null;
@@ -848,7 +872,7 @@ async function watchStitch(st, nid, n) {
 // Play mode (play/runtime.js): the tasks walked. One runtime for the whole run, so what you carry and the doors you
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
-  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
+  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, playScene: sid => playTriggered(sid), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
   return RUN.play;
 }
 function playPlace(rt, lvl) {
@@ -856,6 +880,11 @@ function playPlace(rt, lvl) {
   if (a && a.level === lvl) rt.placeFromCamera(lvl, a.cam);
   else if (rt.level !== lvl) rt.placeAt(lvl, S.levels[lvl].start);
   else rt.enterLevel(lvl);
+}
+async function playTriggered(sid) {                 // a beat's `scene`: blended in from the player, then back to play
+  const sc0 = S.scenes[sid]; if (!sc0 || !RUN) return;
+  await watchScene(version(sc0), sid, sid, sc0.variants ? sc0.pick : null);
+  return { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera };
 }
 async function playStitch(st, n, lvl) {
   const rt = playRt(), t0 = performance.now();
@@ -866,7 +895,8 @@ async function playStitch(st, n, lvl) {
   const r = await go;
   rt.pause();
   RUN.secs += (performance.now() - t0) / 1000; wclock();
-  await fade(1, 0.4);
+  const nx = S.flow[r.to];
+  if (r.timeout || !nx || nx.type === "ending" || (nx.type === "stitch" && (S.stitches[nx.ref] || {}).play)) await fade(1, 0.4);   // a scene blends from here, walking goes on
   return r.to;
 }
 async function playChoice(n) {
@@ -916,6 +946,7 @@ async function watch(fromNid, snap) {
       else nid = (n.options.find(o => (o.if || []).every(f => f.startsWith("!") ? !RUN.flags.has(f.slice(1)) : RUN.flags.has(f))) || n.options[n.options.length - 1]).to;
     } else {
       const death = n.kind === "death", rt = n.retry && S.flow[n.retry];
+      freePointer();
       $("#watchOv .black").style.opacity = death ? 0.8 : 0.6; paintOv("#watchOv", { sub: "", who: "" });
       $("#watchBox").append(el("div", { class: "wcard" + (death ? " death" : "") }, el("div", { class: "muted" }, death ? "YOU DIED" : "ENDING · " + (n.kind || "")), el("div", { class: "big" }, n.title || nid),
         el("div", { class: "muted" }, `${(RUN.secs / 60).toFixed(1)} min of story time on this path`), el("div", { class: "muted" }, "karma " + JSON.stringify(RUN.karma) + (Object.keys(RUN.counters).length ? " · " + JSON.stringify(RUN.counters) : "") + (RUN.answers.length ? " · " + RUN.answers.join("; ") : "")),
@@ -1057,5 +1088,5 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

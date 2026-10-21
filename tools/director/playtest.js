@@ -23,6 +23,12 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   page.on("response", r => { if (r.status() >= 400 && !OPTIONAL.test(r.url())) errors.push(`${r.status()} ${r.url()}`); });
   await page.goto(URL);
   await page.waitForFunction(() => window.__dd && window.__dd.S && window.__dd.PLAN, null, { timeout: 30000 });
+  await page.evaluate(async () => {                 // in memory only: two chairs to sit on, one starts a triggered scene
+    const S = window.__dd.S, k = S.levels.house.rooms.find(r => r.id === "kitchen");
+    for (const id of ["chair_a", "chair_b"]) k.props.find(p => p.id === id).use = "sit";
+    S.stitches.t_search.beats.push({ id: "b_sit", when: { use: "chair_b" }, do: [{ scene: "s_message" }] });
+    await window.__dd.replan();
+  });
   await page.click('nav button[data-v="watchView"]');
   await page.check("#wPlay"); await page.check("#wSkip");
   await page.click("#wStart");
@@ -88,7 +94,31 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await playing(false, 10000);
     if (!(await page.evaluate(() => window.__dd.play.doors.front_door.locked))) throw new Error("the slam didn't lock it");
   });
+  await step("the message scene blends in from the eye: no black", async () => {
+    const most = await page.evaluate(async () => { let m = 0; const t0 = performance.now(); while (performance.now() - t0 < 900) { m = Math.max(m, +document.querySelector("#watchOv .black").style.opacity || 0); await new Promise(r => requestAnimationFrame(r)); } return m; });
+    if (most > 0.15) throw new Error(`black went to ${most.toFixed(2)}`);
+  });
   await step("the message scene, then the search", () => scenesUntilPlay());
+  await step("sitting: E sits (the eye at sitting height), E stands", async () => {
+    const r = await goTo("chair_a", 0.8);
+    if (r.cursor !== "sit") throw new Error("cursor " + r.cursor);
+    await press("KeyE"); await page.waitForTimeout(900);
+    const e = await page.evaluate(() => [window.__dd.play.player.eye, !!window.__dd.play.player.seat]);
+    if (!e[1] || Math.abs(e[0] - 1.15) > 0.05) throw new Error("seated " + e);
+    const p = await page.textContent(".ph-prompt"); if (!/Stand up/.test(p)) throw new Error("prompt " + p);
+    await press("KeyE"); await page.waitForTimeout(900);
+    const s = await page.evaluate(() => [window.__dd.play.player.eye, !!window.__dd.play.player.seat]);
+    if (s[1] || s[0] < 1.6) throw new Error("standing " + s);
+  });
+  await step("a triggered scene: sitting on the other chair plays one, then walking goes on", async () => {
+    await goTo("chair_b", 0.8);
+    await press("KeyE");
+    await playing(false, 5000);
+    await scenesUntilPlay();
+    const st = await page.evaluate(() => { const rt = window.__dd.play; return { seat: !!rt.player.seat, stitch: !!rt.end, y: -rt.player.pos.z }; });
+    if (st.seat || !st.stitch) throw new Error(JSON.stringify(st));
+    if (Math.abs(st.y - 2.2) > 0.6) throw new Error(`carried on from y=${st.y.toFixed(2)}, the scene's eye is at 2.2`);
+  });
   await step("the letter: the cursor says read, the note opens", async () => {
     const r = await goTo("letter_hall", 0.7);
     if (r.cursor !== "read") throw new Error("cursor " + r.cursor);

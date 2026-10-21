@@ -14,7 +14,7 @@ STUDIO = ROOT / "Content" / "Studio"                # shared by every game: clas
 WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
-USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot"}
+USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit"}
 WALLS = ("n", "e", "s", "w")
 # what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
 ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",

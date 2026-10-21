@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (scenes blend; triggered scenes)
+
+- **Scenes blend in and out by default** (the view eases from the player's eye, no black). A hard cut or a fade is
+  still allowed when a scene needs one (`enter`/`exit` kind).
+- **A new kind of scene, triggered by what the player does** (walking into a place, sitting down, using a thing):
+  the `scene` action in a stitch's beat. It blends in from where the player is, and play goes on after it.
+
 ## 2026-10-21 (what to borrow, gaze, parts that extend)
 
 - **Borrow Chilla's Art's mechanics** (short first-person Japanese horror: everyday chores as the tasks, the same place

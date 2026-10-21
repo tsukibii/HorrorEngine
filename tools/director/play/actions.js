@@ -31,6 +31,7 @@ register("action", "sound", { run: (v, a, rt) => rt.hud.log(`♪ ${v}${a.at ? " 
 register("action", "music", { run: (v, a, rt) => rt.hud.log(`music: ${v}`) });
 register("action", "checkpoint", { run: (v, a, rt) => rt.hud.log("checkpoint") });
 register("action", "done", { run: (v, a, rt) => rt.finish() });
+register("action", "scene", { run: (v, a, rt) => rt.scene(v) });          // a triggered scene, then play goes on
 
 // tricks (docs/TRICKS.md §2): the ones Play can show now; the rest are logged
 const TRICKS = {

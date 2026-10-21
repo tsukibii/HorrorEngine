@@ -131,7 +131,7 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
   const mode = (v.camera || {}).mode || "free";                 // how far the player may look round the recorded view (stage.apply)
   const look = mode === "hard" ? [0, 0] : mode === "free" ? [180, 80] : (v.camera || {}).cone || [30, 18];
   return { level, title: v.title || "", total: +tl.total.toFixed(3), fps, cast, frames, subs, events, lights, look,
-           enter: v.enter || { kind: "fade", secs: 0.6 }, exit: v.exit || { kind: "fade", secs: 0.6 }, pick: sc.pick || null };
+           enter: v.enter || { kind: "blend", secs: 0.8 }, exit: v.exit || { kind: "blend", secs: 0.8 }, pick: sc.pick || null };   // Unreal's preview fades a blend: it has no walking to blend from yet
 }
 
 function stitchOf(st, n, story) {
