@@ -4,7 +4,8 @@
 `MHR_LICENSE.txt`), LOD 4, with its 45 identity shapes as morph targets. The desk's **Shape** page shapes it per cast
 member (`cast.<id>.shape`) and exports it for MetaHuman. `MHR_hi.fbx` (LOD 2, 10,661 vertices) is used for those exports and
 the Fat suit page's balloons and hourglass; `MHR_lod1.fbx` (18,437) and `MHR_lod0.fbx` (73,639) are the page's finer
-meshes, for round soft volumes (slower in the browser).
+meshes, for round soft volumes (slower in the browser). `MHR_head.obj` is the head of `MHR_lod0.fbx`, cut
+0.245 m under its top (Y up, facing +Z, metres): `tools/face_mesh.py`'s default head template.
 
 You can also drop other rigged human models here (`.glb`, `.gltf` with its files, or `.fbx`): the desk drives them with the blocking,
 from the player's eye, instead of the capsule figure. Bones are found by name: Unreal mannequin (`pelvis`,

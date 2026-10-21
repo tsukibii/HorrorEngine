@@ -122,3 +122,7 @@ the fix.
 - **The desk's server sends only the file types it lists** (`serve.py` STATIC): Play's CSS came back 404 until `.css`
   was added. A new kind of file in `tools/director/` needs its type there. A test can run its own desk beside the
   open one: `DESK_PORT=8781 python tools/director/serve.py`.
+- **Mesh to MetaHuman needs a head, not a face:** the face-only mesh from `face_mesh.py` (MediaPipe's 468 points)
+  traced badly: with no skull or ears the tracker struggled to place things, and MediaPipe's eye openings are too
+  soft to read as eyelids. Bend a whole head template to the points instead (the template's own eyelids, shaped by
+  the photo's), best the MetaHuman base head itself, so the result is already lined up.
