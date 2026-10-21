@@ -10,12 +10,16 @@ traces and auto-matches).
                                                        Landmarker model and the canonical face, under DIR (default vendor/face_mesh)
     python tools/face_mesh.py make <photo|video|folder>... [--name N] [--out DIR] [--frames 40]
                                    [--max-turn 30] [--max-expression 0.4] [--head mhr|none|<head.obj>]
-                                   [--depth 0.6] [--follow 1] [--detail 1] [--smooth 0.01] [--symmetry 0.5] [--units m|cm]
+                                   [--depth 0.4] [--follow 0.5] [--detail 1] [--smooth 0.01] [--symmetry 0.5] [--units m|cm]
                                                        writes <out>/<name>.obj, <name>.json (what was used and dropped,
                                                        and why, and the settings) and <name>_sheet.png (the pictures used,
                                                        the result from the front and the side); out defaults to Content/Studio/Heads/
-    python tools/face_mesh.py check                    the fit on the canonical face posed, scaled, noised, talking; the
-                                                       head template bent to itself and to a wider jaw (FACEMESH ok)
+    python tools/face_mesh.py check                    the fit on the canonical face posed, scaled, noised, talking, with
+                                                       full lips; the head template bent to itself and to a wider jaw (FACEMESH ok)
+    python tools/face_mesh.py worker                   the desk's face page (tools/director/face.html) through serve.py
+
+The page: python tools/director/serve.py, then http://127.0.0.1:8780/face.html (./studio: Pages). Drop pictures, see
+each with its points and why it was used or dropped, every setting as a slider, the head turning in 3D, Save.
 
 The head: the template is rendered from each side it might face (Y or Z up) and MediaPipe finds its face, so any head
 works without marking it up (kept per file in vendor/face_mesh/bindings/). The result keeps the template's
@@ -24,7 +28,8 @@ comes out already lined up with it, no scaling by hand. MHR's head (Content/Stud
 up, facing +Z) is the default; --head none gives the face alone (Y up, facing +Z, --units, an average adult's size).
 
 The settings: --depth is how much of MediaPipe's depth the face takes (its learned guess, the weakest part: the profile);
---follow how much the whole head takes the face's proportions; --detail the fine pass (eyelids, lips, nostrils);
+--follow how much the whole head takes the face's proportions (from a face alone, all of it over-reaches: a tall
+crown); --detail the fine pass (eyelids, lips, nostrils);
 --smooth damps it; --symmetry blends the face toward its mirror image (a photo's asymmetry is mostly its pose).
 One frontal, evenly lit, neutral photo is enough; several (or a video, a few seconds turning a little) average out
 each picture's error. A phone's wide lens close up swells the nose: take the photo from further away and crop.
@@ -48,6 +53,7 @@ EXPRESSIONS = ["jawOpen", "mouthSmileLeft", "mouthSmileRight", "mouthFrownLeft",
                "mouthFunnel", "mouthStretchLeft", "mouthStretchRight", "cheekPuff", "eyeBlinkLeft", "eyeBlinkRight",
                "eyeSquintLeft", "eyeSquintRight", "eyeWideLeft", "eyeWideRight", "browInnerUp", "browDownLeft",
                "browDownRight"]
+MOUTH_OPEN = 0.04          # the inner lips this far apart (of the face's height, brow to chin) is an open mouth
 
 
 def home_dir(a):
@@ -113,30 +119,47 @@ def turn_of(r):
     return float(np.degrees(np.arccos(np.clip(r.T[2, 2], -1, 1))))
 
 
-def fit(frames, canon, max_turn=30.0, max_expression=0.4):
+def fit(frames, canon, max_turn=30.0, max_expression=0.4, relative=True, skip=()):
     """frames: [{"name", "points" (468x3, any pose and scale), "expression" ({blendshape: score})}]. Each is fitted to
-    the canonical face; the turned and the expressive are dropped (unless nothing else is left), the outliers of the
-    rest after a generalised Procrustes too, and the mean is returned at the canonical face's size with a report."""
+    the canonical face; the turned, the open-mouthed and the expressive are dropped (unless nothing else is left), the
+    outliers of the rest after a generalised Procrustes too, and the mean is returned at the canonical face's size
+    with a report. relative: an expression is read against the person's own most neutral picture, not an average
+    face's (full lips read as a pout to MediaPipe in every picture; only a picture more expressive than the rest is
+    dropped). skip: the names left out by hand."""
     import numpy as np
     seen = []
     for f in frames:
         s, r, t = similarity(f["points"], canon)
-        expr = max(((k, v) for k, v in f.get("expression", {}).items() if k in EXPRESSIONS), key=lambda kv: kv[1],
-                   default=("", 0.0))
-        seen.append(dict(name=f["name"], aligned=(s * (r @ f["points"].T)).T + t, turn=round(turn_of(r), 1),
-                         expression=[expr[0], round(float(expr[1]), 2)]))
+        aligned = (s * (r @ f["points"].T)).T + t
+        gap = float(np.linalg.norm(aligned[13] - aligned[14]) / np.linalg.norm(aligned[10] - aligned[152]))
+        seen.append(dict(name=f["name"], aligned=aligned, turn=round(turn_of(r), 1), mouth=round(gap, 3),
+                         scores={k: float(v) for k, v in f.get("expression", {}).items() if k in EXPRESSIONS}))
     if not seen: raise ValueError("no face found in any picture")
-    good = [x for x in seen if x["turn"] <= max_turn and x["expression"][1] <= max_expression]
+    pool = [x for x in seen if x["name"] not in skip]
+    if not pool: raise ValueError("every picture is left out")
+    base = {k: (min(x["scores"].get(k, 0.0) for x in pool) if relative else 0.0) for k in EXPRESSIONS}
+    for x in seen:
+        k, v = max(((k, v - base[k]) for k, v in x["scores"].items()), key=lambda kv: kv[1], default=("", 0.0))
+        if x["mouth"] > MOUTH_OPEN: k, v = "mouth open", max(v, 1.0)
+        x["expression"] = [k, round(float(v), 2)]
     warn = []
+    if relative:
+        held = sorted(((v, k) for k, v in base.items() if v > max_expression), reverse=True)
+        if held:
+            v, k = held[0]
+            warn.append(f"every picture reads {k} {v:.2f} or more: taken as this face at rest (MediaPipe reads some "
+                        f"faces that way, full lips as a pout); if it's an expression in all of them, add a relaxed picture")
+    good = [x for x in pool if x["turn"] <= max_turn and x["expression"][1] <= max_expression]
     if not good:                                         # nothing neutral: the frontal ones closest to it
-        pool = [x for x in seen if x["turn"] <= max_turn] or [min(seen, key=lambda x: x["turn"])]
-        least = min(x["expression"][1] for x in pool)
-        good = [x for x in pool if x["expression"][1] <= least + 0.1]
+        front = [x for x in pool if x["turn"] <= max_turn] or [min(pool, key=lambda x: x["turn"])]
+        least = min(x["expression"][1] for x in front)
+        good = [x for x in front if x["expression"][1] <= least + 0.1]
         warn.append(f"no picture was frontal and neutral; used the {len(good)} closest (from "
-                    f"{least:.2f} {min(pool, key=lambda x: x['expression'][1])['expression'][0]}): the face carries "
+                    f"{least:.2f} {min(front, key=lambda x: x['expression'][1])['expression'][0]}): the face carries "
                     f"that expression")
     for x in seen:
-        if not any(x is g for g in good):
+        if x["name"] in skip: x["dropped"] = "by hand"
+        elif not any(x is g for g in good):
             x["dropped"] = ("turned" if x["turn"] > max_turn else "expression")
     mean = np.mean([x["aligned"] for x in good], axis=0)
     for _ in range(3):                                   # generalised Procrustes: align to the mean, re-average
@@ -159,8 +182,8 @@ def fit(frames, canon, max_turn=30.0, max_expression=0.4):
         s, r, t = similarity(mean, canon)
         mean = (s * (r @ mean.T)).T + t
     report = dict(pictures=len(frames), faces=len(seen), used=len(good), warnings=warn,
-                  each=[{k: (round(v, 3) if isinstance(v, float) else v) for k, v in x.items() if k != "aligned"}
-                        for x in seen])
+                  each=[{k: (round(v, 3) if isinstance(v, float) else v) for k, v in x.items()
+                         if k not in ("aligned", "scores")} for x in seen])
     return mean, report
 
 
@@ -329,15 +352,29 @@ def bend(tpl, bnd, face, depth=1.0, follow=1.0, detail=1.0, smooth=0.01):
     A = ident + follow * (A - ident)
     out = np.hstack([v, np.ones((len(v), 1))]) @ A
     res = target - X @ A
-    width = np.linalg.norm(b[234] - b[454])                   # cheek to cheek
-    d2 = lambda p, q: (p * p).sum(1)[:, None] + (q * q).sum(1)[None, :] - 2 * p @ q.T
-    bb = d2(b, b); vb = d2(v, b)
-    for sig, gain in ((0.25 * width, 1.0), (0.07 * width, detail)):
-        K = np.exp(-bb / (2 * sig * sig))
+    for (K, KV), gain in zip(kernels(tpl, bnd, v, b), (1.0, detail)):
         w = np.linalg.solve(K + smooth * np.eye(len(b)), res)
-        out += gain * (np.exp(-np.maximum(vb, 0) / (2 * sig * sig)) @ w)
+        out += gain * (KV @ w)
         res = res - K @ w
     return out @ rot
+
+
+_KERNELS = {}
+
+
+def kernels(tpl, bnd, v, b):
+    """the Gaussians at both sizes between the bound points (K) and from every point to them (KV): they only depend
+    on the template and its binding, so they're kept (the page refits on every slider)"""
+    import numpy as np
+    key = (id(tpl), id(bnd))
+    if key not in _KERNELS:
+        width = np.linalg.norm(b[234] - b[454])               # cheek to cheek
+        d2 = lambda p, q: np.maximum((p * p).sum(1)[:, None] + (q * q).sum(1)[None, :] - 2 * p @ q.T, 0)
+        bb, vb = d2(b, b), d2(v, b)
+        _KERNELS.clear()                                      # one template at a time; it's held so its id stays its own
+        _KERNELS[key] = (tpl, bnd, [(np.exp(-bb / (2 * sig * sig)), np.exp(-vb / (2 * sig * sig)).astype(np.float32))
+                                    for sig in (0.25 * width, 0.07 * width)])
+    return _KERNELS[key][2]
 
 
 # --- the pictures (MediaPipe, OpenCV) ---
@@ -430,54 +467,150 @@ def sheet(path, thumbs, report, verts, tris, rot):
     cv2.imwrite(str(path), np.concatenate(tiles, axis=1))
 
 
-def head_path(a):
-    return None if a.head == "none" else (ROOT / "Content" / "Studio" / "Bodies" / "MHR_head.obj" if a.head == "mhr"
-                                          else Path(a.head))
+def head_path(head):
+    return None if head in (None, "", "none") else (
+        ROOT / "Content" / "Studio" / "Bodies" / "MHR_head.obj" if head == "mhr" else Path(head))
+
+
+DEFAULTS = dict(head="mhr", max_turn=30.0, max_expression=0.4, relative=True, depth=0.4, follow=0.5, detail=1.0,
+                smooth=0.01, symmetry=0.5, units="m")
+
+
+class Session:
+    """what make and the desk's page share: MediaPipe, the canonical face, the head templates and their bindings,
+    loaded once"""
+    def __init__(self, home):
+        self.home = home
+        self.canon, self.faces = load_canonical(home / "canonical_face_model.obj")
+        self.lm, self.heads = None, {}
+
+    def landmarker(self):
+        if self.lm is None: self.lm = landmarker(self.home)
+        return self.lm
+
+    def head(self, head):
+        """(template, binding) for a head (mhr, an OBJ's path), or None for the face alone"""
+        hp = head_path(head)
+        if not hp: return None
+        if not hp.exists(): raise ValueError(f"no head template at {hp}")
+        key = (str(hp), hp.stat().st_mtime)
+        if key not in self.heads:
+            tpl = load_template(hp)
+            self.heads[key] = (tpl, binding(self.home, tpl, self.canon, self.landmarker()))
+        return self.heads[key]
+
+    def shape(self, frames, st, skip=()):
+        """the averaged face and, with a head, the head bent to it: (points, triangles, the view's rotation, report,
+        the template or None)"""
+        import numpy as np
+        st = {**DEFAULTS, **st}
+        face, report = fit(frames, self.canon, st["max_turn"], st["max_expression"], st["relative"], set(skip))
+        face = symmetric(face, self.canon, st["symmetry"])
+        report["settings"] = st
+        head = self.head(st["head"])
+        if not head: return face, self.faces, np.eye(3), report, None
+        tpl, bnd = head
+        return bend(tpl, bnd, face, st["depth"], st["follow"], st["detail"], st["smooth"]), tpl["tris"], \
+            np.array(bnd["rot"]), report, tpl
+
+    def save(self, out, name, frames, thumbs, st, skip=(), source=""):
+        import numpy as np
+        st = {**DEFAULTS, **st}
+        verts, tris, rot, report, tpl = self.shape(frames, st, skip)
+        out.mkdir(parents=True, exist_ok=True)
+        if tpl:
+            write_template(out / f"{name}.obj", tpl, verts, f"# face_mesh.py: {Path(tpl['path']).name} bent to {source}")
+            report.update(head=Path(tpl["path"]).name, units="the template's",
+                          size=[round(float(x), 4) for x in np.ptp(verts, 0)])
+        else:
+            write_obj(out / f"{name}.obj", verts, tris, st["units"], source)
+            report.update(head=None, units=st["units"], size_cm=[round(float(x), 1) for x in np.ptp(verts, 0)])
+        (out / f"{name}.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
+        sheet(out / f"{name}_sheet.png", thumbs, report, verts, tris, rot)
+        return out / f"{name}.obj", report
 
 
 def cmd_make(a):
-    import numpy as np
-    home = home_dir(a)
-    canon, faces = load_canonical(home / "canonical_face_model.obj")
-    lm = landmarker(home)
-    frames, thumbs, n = detect(lm, a.inputs, a.frames)
-    try:
-        face, report = fit(frames, canon, a.max_turn, a.max_expression)
-    except ValueError as e:
-        sys.exit(str(e))
-    face = symmetric(face, canon, a.symmetry)
+    ses = Session(home_dir(a))
+    frames, thumbs, n = detect(ses.landmarker(), a.inputs, a.frames)
+    st = dict(head=a.head, max_turn=a.max_turn, max_expression=a.max_expression, relative=not a.absolute,
+              depth=a.depth, follow=a.follow, detail=a.detail, smooth=a.smooth, symmetry=a.symmetry, units=a.units)
     name = a.name or Path(a.inputs[0]).stem
     out = Path(a.out) if a.out else ROOT / "Content" / "Studio" / "Heads"
-    out.mkdir(parents=True, exist_ok=True)
-    source = ", ".join(Path(i).name for i in a.inputs)
-    hp = head_path(a)
-    if hp:
-        tpl = load_template(hp)
-        try:
-            bnd = binding(home, tpl, canon, lm)
-        except ValueError as e:
-            sys.exit(str(e))
-        verts = bend(tpl, bnd, face, a.depth, a.follow, a.detail, a.smooth)
-        write_template(out / f"{name}.obj", tpl, verts, f"# face_mesh.py: {hp.name} bent to {source}")
-        tris, rot = tpl["tris"], np.array(bnd["rot"])
-        report.update(head=hp.name, units="the template's", size=[round(float(x), 4) for x in np.ptp(verts, 0)])
-    else:
-        write_obj(out / f"{name}.obj", face, faces, a.units, source)
-        verts, tris, rot = face, faces, np.eye(3)
-        report.update(head=None, units=a.units, size_cm=[round(float(x), 1) for x in np.ptp(face, 0)])
-    report.update(depth=a.depth, follow=a.follow, detail=a.detail, smooth=a.smooth, symmetry=a.symmetry)
-    lm.close()
-    (out / f"{name}.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
-    sheet(out / f"{name}_sheet.png", thumbs, report, verts, tris, rot)
+    try:
+        path, report = ses.save(out, name, frames, thumbs, st, source=", ".join(Path(i).name for i in a.inputs))
+    except ValueError as e:
+        sys.exit(str(e))
     for w in report["warnings"]: print("WARNING:", w)
     drops = {}
     for x in report["each"]:
         if "dropped" in x: drops[x["dropped"]] = drops.get(x["dropped"], 0) + 1
     print(f"{n} pictures, {report['faces']} faces, {report['used']} used"
           + (" (dropped: " + ", ".join(f"{v} {k}" for k, v in drops.items()) + ")" if drops else "")
-          + (f"; bent {hp.name}" if hp else "; the face only"))
-    print(f"wrote {out / name}.obj (+ .json, _sheet.png)")
+          + (f"; bent {report['head']}" if report["head"] else "; the face only"))
+    print(f"wrote {path} (+ .json, _sheet.png)")
     print("FACEMESH ok")
+
+
+def thumb(img, pts, size=200):
+    """a picture cropped to its face with the points on it, as a JPEG in base64 (the page's list)"""
+    import base64
+    import cv2
+    import numpy as np
+    img = img.copy(); h = img.shape[0]
+    for x, y, _ in pts: cv2.circle(img, (int(x), int(-y)), max(1, h // 300), (60, 220, 90), -1)
+    cx, cy = pts[:, 0].mean(), -pts[:, 1].mean()
+    r = 0.7 * max(np.ptp(pts[:, 0]), np.ptp(pts[:, 1]))
+    crop = img[max(0, int(cy - r)):int(cy + r), max(0, int(cx - r)):int(cx + r)]
+    ok, jpg = cv2.imencode(".jpg", cv2.resize(crop, (size, size)), [cv2.IMWRITE_JPEG_QUALITY, 82])
+    return base64.b64encode(jpg.tobytes()).decode("ascii")
+
+
+def cmd_worker(a):
+    """the desk's face page (tools/director/face.html) through serve.py: one JSON request a line on stdin, one answer
+    a line on stdout, prefixed @@ (anything else on stdout is MediaPipe talking). Ops:
+      detect {name, files, frames}        the pictures' points; a thumbnail of each with them on it
+      template {head}                     the head's points and triangles and the rotation that faces it to the view
+      fit {name, settings, skip}          the head bent with those settings, its points flat, the report
+      save {name, settings, skip, out}    <out>/<name>.obj, .json, _sheet.png"""
+    ses, pics = Session(home_dir(a)), {}
+
+    def flat(v, nd=5):
+        return [round(float(x), nd) for x in v.reshape(-1)]
+
+    def handle(q):
+        import numpy as np
+        op = q.get("op")
+        if op == "detect":
+            frames, thumbs, n = detect(ses.landmarker(), q["files"], int(q.get("frames", 40)))
+            pics[q["name"]] = (frames, thumbs)
+            found = {f["name"] for f in frames}
+            return dict(pictures=[dict(name=k, thumb=thumb(*thumbs[k])) for k in thumbs],
+                        missed=[Path(f).name for f in q["files"] if Path(f).name not in found
+                                and not any(k.startswith(Path(f).name + "#") for k in found)], seen=n)
+        if op == "template":
+            head = ses.head(q.get("head"))
+            if not head: return dict(verts=flat(ses.canon), tris=ses.faces.reshape(-1).tolist(), rot=flat(np.eye(3)))
+            tpl, bnd = head
+            return dict(verts=flat(tpl["verts"]), tris=tpl["tris"].reshape(-1).tolist(), rot=flat(np.array(bnd["rot"])))
+        if op in ("fit", "save"):
+            if q["name"] not in pics: raise ValueError("detect the pictures first")
+            frames, thumbs = pics[q["name"]]
+            if op == "fit":
+                verts, tris, rot, report, tpl = ses.shape(frames, q.get("settings", {}), q.get("skip", []))
+                return dict(verts=flat(verts), report=report)
+            path, report = ses.save(Path(q["out"]), q["name"], frames, thumbs, q.get("settings", {}), q.get("skip", []),
+                                    source=", ".join(sorted({k.split("#")[0] for k in thumbs})))
+            return dict(path=str(path), report=report)
+        raise ValueError(f"no op {op!r}")
+
+    for line in sys.stdin:
+        try:
+            res = handle(json.loads(line))
+        except (Exception, SystemExit) as e:  # noqa: BLE001 - the page shows why; the worker keeps going
+            res = {"error": str(e) if isinstance(e, (ValueError, SystemExit)) else f"{type(e).__name__}: {e}"}
+        sys.stdout.write("@@" + json.dumps(res) + "\n")
+        sys.stdout.flush()
 
 
 def cmd_check(a):
@@ -492,6 +625,7 @@ def cmd_check(a):
     face = canon.copy()
     face[:, 2] += 0.6 * np.exp(-((face[:, 0] ** 2 + (face[:, 1] + 0.5) ** 2) / 4))      # a nose 6 mm longer
     face[:, 0] *= np.where(face[:, 1] < -4, 1.08, 1.0)                                  # a wider jaw
+    face[14] = face[13]                                                                 # lips closed (the canonical's part)
 
     def rot(yaw, pitch, roll):
         y, p, r = np.radians([yaw, pitch, roll])
@@ -508,13 +642,25 @@ def cmd_check(a):
     frames = [pic(f"p{i}", face, rng.uniform(-20, 20)) for i in range(8)]
     frames.append(pic("turned", face, 55))
     frames.append(pic("talking", face, 0, {"jawOpen": 0.8}))
-    bad = face.copy(); bad[:, 1] *= 1.4
+    bad = face.copy(); bad[:, 0] *= np.where(bad[:, 1] > 0, 1.3, 1.0)                   # a wrong detection
     frames.append(pic("bad", bad, 0))
-    verts, report = fit(frames, canon)
+    gaping = face.copy(); gaping[14, 1] -= 1.2                                          # lips 1.2 cm apart, no score
+    frames.append(pic("gaping", gaping, 0))
+    verts, report = fit(frames, canon, skip={"p7"})
     fails = []
     dropped = {x["name"]: x.get("dropped") for x in report["each"]}
-    for name, why in (("turned", "turned"), ("talking", "expression"), ("bad", "outlier")):
+    for name, why in (("turned", "turned"), ("talking", "expression"), ("bad", "outlier"), ("gaping", "expression"),
+                      ("p7", "by hand")):
         if dropped.get(name) != why: fails.append(f"{name} should be dropped as {why}, got {dropped.get(name)}")
+    lips = [pic(f"l{i}", face, rng.uniform(-10, 10), {"mouthPucker": 0.85 + 0.05 * rng.random()}) for i in range(4)]
+    lips.append(pic("pout", face, 0, {"mouthPucker": 0.9, "jawOpen": 0.75}))
+    _, rep2 = fit(lips, canon)
+    d2 = {x["name"]: x.get("dropped") for x in rep2["each"]}
+    if d2.get("pout") != "expression" or any(d2.get(f"l{i}") for i in range(4)):
+        fails.append(f"full lips in every picture: only the real expression should go, got {d2}")
+    if not any("at rest" in w for w in rep2["warnings"]): fails.append("full lips everywhere should be noted")
+    _, rep3 = fit(lips, canon, relative=False)
+    if rep3["used"] > 1 and not rep3["warnings"]: fails.append("against an average face, full lips should read as a pout")
     s, r, t = similarity(face, canon)
     truth = (s * (r @ face.T)).T + t
     err = float(np.sqrt(((verts - truth) ** 2).sum(1).mean()))
@@ -581,12 +727,15 @@ def main():
     m.add_argument("--max-expression", type=float, default=0.4, help="the highest smile, blink or open jaw kept")
     m.add_argument("--head", default="mhr", help="the head to bend to the face: mhr (MHR's, the default), none (the "
                    "face only) or an OBJ of your own (your MetaHuman's base head: the result keeps its topology and place)")
-    m.add_argument("--depth", type=float, default=0.6, help="how much of MediaPipe's depth the head takes (0 to 1)")
-    m.add_argument("--follow", type=float, default=1.0, help="how much the whole head takes the face's proportions")
+    m.add_argument("--depth", type=float, default=0.4, help="how much of MediaPipe's depth the head takes (0 to 1)")
+    m.add_argument("--follow", type=float, default=0.5, help="how much the whole head takes the face's proportions")
     m.add_argument("--detail", type=float, default=1.0, help="the fine pass: eyelids, lips, nostrils (0 to 1.5)")
     m.add_argument("--smooth", type=float, default=0.01, help="damping: more is softer, with fewer bumps")
     m.add_argument("--symmetry", type=float, default=0.5, help="blend toward the face's mirror image (0 to 1)")
+    m.add_argument("--absolute", action="store_true", help="read expressions against an average face, not this one's "
+                   "most neutral picture (full lips then read as a pout)")
     sub.add_parser("check")
+    sub.add_parser("worker", help="the desk's face page through serve.py (JSON lines)")
     a = ap.parse_args()
     if a.cmd == "setup":
         return cmd_setup(a)
@@ -597,7 +746,7 @@ def main():
         py = py_of(home_dir(a))
         if not py.exists(): sys.exit(f"no MediaPipe environment at {py.parent.parent}: python tools/face_mesh.py setup")
         sys.exit(subprocess.run([str(py), *sys.argv]).returncode)
-    {"make": cmd_make, "check": cmd_check}[a.cmd](a)
+    {"make": cmd_make, "check": cmd_check, "worker": cmd_worker}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -73,7 +73,9 @@ a tiny nose) so a manga-leaning face is a sculpt elsewhere brought in through Me
   A face alone isn't enough for the tracker: with no skull or ears it struggles to place things, and MediaPipe's own
   eye openings are too soft (docs/LESSONS.md); the template's eyelids, shaped by the photo's, fix both. Settings:
   depth (MediaPipe's depth is a learned guess, so the profile is the weakest part: check it against a side photo),
-  follow, detail, smooth, symmetry. Faces made from real people's pictures stay in `Content/Studio/Heads/`
+  follow, detail, smooth, symmetry, all sliders on the desk's face page (`face.html`: drop pictures, see why each was
+  used or dropped, turn the head, Save). Expressions are read against the person's own most neutral picture, so full
+  lips (MediaPipe's "pout") don't drop every picture; an open mouth is measured from the lips. Faces made from real people's pictures stay in `Content/Studio/Heads/`
   (git-ignored). Not MICA or FLAME: both need an account and are non-commercial.
 - **A generated reference:** the user already makes close-up face videos; a neutral frontal frame from those is a
   FaceBuilder input, and the mocap takes are the same face, so likeness and animation agree.
