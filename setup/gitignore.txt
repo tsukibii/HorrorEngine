@@ -43,3 +43,10 @@ Plugins/UnrealClaude/Resources/mcp-bridge/node_modules/
 
 # the project's Python environment (uv venv)
 .venv/
+
+# Unreal's generated project files on Linux, and each person's Developers folder
+Makefile
+*.code-workspace
+.vscode/
+/.ignore
+Content/Developers/

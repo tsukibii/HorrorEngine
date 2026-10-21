@@ -533,7 +533,7 @@ def cmd_adopt(args):
     for f in src.glob(f"{ups[0].stem}.png"):        # the project's thumbnail
         shutil.move(str(f), str(ROOT / f.name))
     left = [p.name for p in src.iterdir() if p.name not in ("Binaries", "Intermediate", "Saved", "DerivedDataCache",
-                                                             "Content", ".vs", ".vscode") and p.suffix not in (".sln", ".code-workspace")]
+                                                             "Content", ".vs", ".vscode", "Makefile", ".ignore") and p.suffix not in (".sln", ".code-workspace")]
     if left:
         print(f"kept {src}: it still has {', '.join(left)} (look, then delete it yourself)")
     else:
