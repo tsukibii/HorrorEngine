@@ -32,7 +32,10 @@ The settings: --depth is how much of MediaPipe's depth the face takes (its learn
 crown); --detail the fine pass (eyelids, lips, nostrils);
 --smooth damps it; --symmetry blends the face toward its mirror image (a photo's asymmetry is mostly its pose).
 One frontal, evenly lit, neutral photo is enough; several (or a video, a few seconds turning a little) average out
-each picture's error. A phone's wide lens close up swells the nose: take the photo from further away and crop.
+each picture's error. A side picture (named in `side` by the worker's callers: the body editor's side slot) gives the
+depth of the half it sees instead of MediaPipe's guess; it has to be one MediaPipe finds, about 70 degrees at most.
+A body works as the template too (body_template: the body editor's MHR, tools/body/): bound on its head alone, bent
+with the fit fading out down the neck. A phone's wide lens close up swells the nose: take the photo from further away and crop.
 """
 import argparse
 import json
@@ -119,13 +122,31 @@ def turn_of(r):
     return float(np.degrees(np.arccos(np.clip(r.T[2, 2], -1, 1))))
 
 
-def fit(frames, canon, max_turn=30.0, max_expression=0.4, relative=True, skip=()):
+def side_depth(mean, sides, amount=1.0):
+    """the face's depth taken from side pictures where they see it: each is fitted onto the face, and the half
+    turned to the camera (and the middle) takes its depth, which a side view measures across the picture instead of
+    guessing it. MediaPipe needs a face it can find: about 70 degrees at most, so a three-quarter view works best."""
+    import numpy as np
+    out = mean.copy(); acc = np.zeros(len(mean)); depth = np.zeros(len(mean))
+    for x in sides:
+        s, r, t = similarity(x["aligned"], mean)
+        p = (s * (r @ x["aligned"].T)).T + t
+        cam = x["camera"]                                  # the camera's direction in the face's frame
+        vis = np.clip(0.5 + np.sign(cam[0]) * mean[:, 0] / 2.0, 0, 1) * min(1.0, abs(cam[0]) / 0.5)
+        depth += vis * p[:, 2]; acc += vis
+    k = np.where(acc > 0, amount * np.minimum(acc, 1), 0)
+    out[:, 2] = (1 - k) * mean[:, 2] + k * np.where(acc > 0, depth / np.maximum(acc, 1e-9), mean[:, 2])
+    return out
+
+
+def fit(frames, canon, max_turn=30.0, max_expression=0.4, relative=True, skip=(), side=(), side_amount=1.0):
     """frames: [{"name", "points" (468x3, any pose and scale), "expression" ({blendshape: score})}]. Each is fitted to
     the canonical face; the turned, the open-mouthed and the expressive are dropped (unless nothing else is left), the
     outliers of the rest after a generalised Procrustes too, and the mean is returned at the canonical face's size
     with a report. relative: an expression is read against the person's own most neutral picture, not an average
     face's (full lips read as a pout to MediaPipe in every picture; only a picture more expressive than the rest is
-    dropped). skip: the names left out by hand."""
+    dropped). skip: the names left out by hand. side: the names of side pictures, used for the depth only
+    (side_depth), never dropped for their turn."""
     import numpy as np
     seen = []
     for f in frames:
@@ -133,9 +154,11 @@ def fit(frames, canon, max_turn=30.0, max_expression=0.4, relative=True, skip=()
         aligned = (s * (r @ f["points"].T)).T + t
         gap = float(np.linalg.norm(aligned[13] - aligned[14]) / np.linalg.norm(aligned[10] - aligned[152]))
         seen.append(dict(name=f["name"], aligned=aligned, turn=round(turn_of(r), 1), mouth=round(gap, 3),
+                         camera=r[:, 2] / np.linalg.norm(r[:, 2]),
                          scores={k: float(v) for k, v in f.get("expression", {}).items() if k in EXPRESSIONS}))
     if not seen: raise ValueError("no face found in any picture")
-    pool = [x for x in seen if x["name"] not in skip]
+    sides = [x for x in seen if x["name"] in side and x["name"] not in skip]
+    pool = [x for x in seen if x["name"] not in skip and x["name"] not in side]
     if not pool: raise ValueError("every picture is left out")
     base = {k: (min(x["scores"].get(k, 0.0) for x in pool) if relative else 0.0) for k in EXPRESSIONS}
     for x in seen:
@@ -159,6 +182,7 @@ def fit(frames, canon, max_turn=30.0, max_expression=0.4, relative=True, skip=()
                     f"that expression")
     for x in seen:
         if x["name"] in skip: x["dropped"] = "by hand"
+        elif x["name"] in side: x["side"] = True
         elif not any(x is g for g in good):
             x["dropped"] = ("turned" if x["turn"] > max_turn else "expression")
     mean = np.mean([x["aligned"] for x in good], axis=0)
@@ -181,9 +205,14 @@ def fit(frames, canon, max_turn=30.0, max_expression=0.4, relative=True, skip=()
         mean = np.mean([x["aligned"] for x in good], axis=0)
         s, r, t = similarity(mean, canon)
         mean = (s * (r @ mean.T)).T + t
-    report = dict(pictures=len(frames), faces=len(seen), used=len(good), warnings=warn,
+    if sides:
+        mean = side_depth(mean, sides, side_amount)
+    elif side:
+        warn.append("no face found in the side picture: MediaPipe needs it turned less than about 70 degrees "
+                    "(a three-quarter view works)")
+    report = dict(pictures=len(frames), faces=len(seen), used=len(good), sides=len(sides), warnings=warn,
                   each=[{k: (round(v, 3) if isinstance(v, float) else v) for k, v in x.items()
-                         if k not in ("aligned", "scores")} for x in seen])
+                         if k not in ("aligned", "scores", "camera")} for x in seen])
     return mean, report
 
 
@@ -233,6 +262,16 @@ def load_template(path):
     return dict(path=str(path), lines=lines, verts=np.array(v), tris=np.array(tris))
 
 
+def body_template(points, tris, name="MHR body"):
+    """a whole body as a head template: bound on its head's triangles only (the top 30 cm), and bent with the fit
+    fading out down the neck, so the shoulders never move"""
+    import numpy as np
+    points, tris = np.asarray(points, float), np.asarray(tris)
+    top = points[:, 1].max()
+    head = np.flatnonzero((points[tris][:, :, 1] > top - 0.30).all(1))
+    return dict(path=name, lines=None, verts=points, tris=tris, bind_tris=head, region="head")
+
+
 def write_template(path, tpl, verts, note):
     """the template's OBJ with its points moved: its objects, groups and UVs kept, its normals dropped (they're the
     old shape's; Blender works them out again) and its material file left behind"""
@@ -267,7 +306,8 @@ def render(verts, tris, rot, size=512):
     import cv2
     import numpy as np
     v = verts @ rot.T
-    lo, hi = v[:, :2].min(0), v[:, :2].max(0)
+    used = v[np.unique(tris)]                                            # framed on what's drawn (a body's head alone)
+    lo, hi = used[:, :2].min(0), used[:, :2].max(0)
     k, c = size * 0.9 / (hi - lo).max(), (lo + hi) / 2
     px = np.stack([(v[:, 0] - c[0]) * k + size / 2, size / 2 - (v[:, 1] - c[1]) * k], 1)
     n = np.cross(v[tris[:, 1]] - v[tris[:, 0]], v[tris[:, 2]] - v[tris[:, 0]])
@@ -290,8 +330,10 @@ def bind(tpl, canon, landmarker):
     import mediapipe as mp
     import numpy as np
     best, size = None, 512
+    sub = tpl.get("bind_tris")
+    tris = tpl["tris"] if sub is None else tpl["tris"][sub]
     for rot in orientations():
-        img, ids, px = render(tpl["verts"], tpl["tris"], rot, size)
+        img, ids, px = render(tpl["verts"], tris, rot, size)
         res = landmarker.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)))
         if not res.face_landmarks: continue
         lms = res.face_landmarks[0]
@@ -307,7 +349,8 @@ def bind(tpl, canon, landmarker):
         if not (0 <= y < size and 0 <= x < size) or ids[y, x] < 0:     # off the mesh by a pixel or two: the nearest
             y, x = hit[np.argmin(((hit - [w, u]) ** 2).sum(1))]
         t = int(ids[y, x])
-        a, b, c = px[tpl["tris"][t]]
+        a, b, c = px[tris[t]]
+        if sub is not None: t = int(sub[t])
         m = np.array([[a[0] - c[0], b[0] - c[0]], [a[1] - c[1], b[1] - c[1]]])
         try: l1, l2 = np.linalg.solve(m, [u - c[0], w - c[1]])
         except np.linalg.LinAlgError: l1 = l2 = 1 / 3
@@ -319,7 +362,10 @@ def bind(tpl, canon, landmarker):
 def binding(home, tpl, canon, landmarker):
     """bind(), kept per template file (vendor/face_mesh/bindings/) so a template is only looked at once"""
     import hashlib
-    key = hashlib.sha1(Path(tpl["path"]).read_bytes()).hexdigest()[:16]
+    if tpl.get("lines") is None:                       # made from arrays: the topology and the first shape it came in
+        key = "body-" + hashlib.sha1(tpl["tris"].tobytes() + tpl["verts"].round(4).tobytes()).hexdigest()[:16]
+    else:
+        key = hashlib.sha1(Path(tpl["path"]).read_bytes()).hexdigest()[:16]
     f = home / "bindings" / f"{key}.json"
     if f.exists(): return json.loads(f.read_text(encoding="utf-8"))
     b = bind(tpl, canon, landmarker)
@@ -341,8 +387,11 @@ def bend(tpl, bnd, face, depth=1.0, follow=1.0, detail=1.0, smooth=0.01):
     `smooth` damps the fit (more: softer, fewer bumps from noisy points)."""
     import numpy as np
     rot = np.array(bnd["rot"])
-    v = tpl["verts"] @ rot.T                                  # in the view: x right, y up, z out of the face
+    full = tpl["verts"] @ rot.T                               # in the view: x right, y up, z out of the face
     b = bound_points(tpl, bnd) @ rot.T
+    face_h = np.linalg.norm(b[10] - b[152])
+    near = np.flatnonzero(full[:, 1] > b[152, 1] - 0.6 * face_h) if tpl.get("region") == "head" else slice(None)
+    v = full[near]
     s, r, t = similarity(face, b)
     target = (s * (r @ face.T)).T + t
     target[:, 2] = b[:, 2] + depth * (target[:, 2] - b[:, 2])
@@ -356,7 +405,12 @@ def bend(tpl, bnd, face, depth=1.0, follow=1.0, detail=1.0, smooth=0.01):
         w = np.linalg.solve(K + smooth * np.eye(len(b)), res)
         out += gain * (KV @ w)
         res = res - K @ w
-    return out @ rot
+    if tpl.get("region") == "head":                    # a body: all of it under the chin to none by mid-neck
+        k = np.clip((v[:, 1] - (b[152, 1] - 0.6 * face_h)) / (0.45 * face_h), 0, 1)
+        k = k * k * (3 - 2 * k)
+        out = v + k[:, None] * (out - v)
+    full = full.copy(); full[near] = out
+    return full @ rot
 
 
 _KERNELS = {}
@@ -366,7 +420,7 @@ def kernels(tpl, bnd, v, b):
     """the Gaussians at both sizes between the bound points (K) and from every point to them (KV): they only depend
     on the template and its binding, so they're kept (the page refits on every slider)"""
     import numpy as np
-    key = (id(tpl), id(bnd))
+    key = (id(tpl), id(bnd), len(v))
     if key not in _KERNELS:
         width = np.linalg.norm(b[234] - b[454])               # cheek to cheek
         d2 = lambda p, q: np.maximum((p * p).sum(1)[:, None] + (q * q).sum(1)[None, :] - 2 * p @ q.T, 0)
@@ -473,7 +527,7 @@ def head_path(head):
 
 
 DEFAULTS = dict(head="mhr", max_turn=30.0, max_expression=0.4, relative=True, depth=0.4, follow=0.5, detail=1.0,
-                smooth=0.01, symmetry=0.5, units="m")
+                smooth=0.01, symmetry=0.5, side_depth=1.0, units="m")
 
 
 class Session:
@@ -499,15 +553,26 @@ class Session:
             self.heads[key] = (tpl, binding(self.home, tpl, self.canon, self.landmarker()))
         return self.heads[key]
 
-    def shape(self, frames, st, skip=()):
-        """the averaged face and, with a head, the head bent to it: (points, triangles, the view's rotation, report,
-        the template or None)"""
+    def body(self, points, tris):
+        """(template, binding) for a body's points (the body editor's MHR): bound once per topology"""
+        import numpy as np
+        tpl = body_template(points, tris)
+        key = ("body", len(points), tpl["tris"].tobytes()[:4096])
+        if key not in self.heads:
+            self.heads[key] = binding(self.home, tpl, self.canon, self.landmarker())
+        bnd = self.heads[key]
+        return tpl, bnd
+
+    def shape(self, frames, st, skip=(), side=(), template=None):
+        """the averaged face and, with a head (or a body: template), the head bent to it: (points, triangles, the
+        view's rotation, report, the template or None)"""
         import numpy as np
         st = {**DEFAULTS, **st}
-        face, report = fit(frames, self.canon, st["max_turn"], st["max_expression"], st["relative"], set(skip))
+        face, report = fit(frames, self.canon, st["max_turn"], st["max_expression"], st["relative"], set(skip),
+                           set(side), st["side_depth"])
         face = symmetric(face, self.canon, st["symmetry"])
         report["settings"] = st
-        head = self.head(st["head"])
+        head = template or self.head(st["head"])
         if not head: return face, self.faces, np.eye(3), report, None
         tpl, bnd = head
         return bend(tpl, bnd, face, st["depth"], st["follow"], st["detail"], st["smooth"]), tpl["tris"], \
@@ -572,7 +637,10 @@ def cmd_worker(a):
       detect {name, files, frames}        the pictures' points; a thumbnail of each with them on it
       template {head}                     the head's points and triangles and the rotation that faces it to the view
       fit {name, settings, skip}          the head bent with those settings, its points flat, the report
-      save {name, settings, skip, out}    <out>/<name>.obj, .json, _sheet.png"""
+      save {name, settings, skip, out}    <out>/<name>.obj, .json, _sheet.png
+      body {name, weights, settings, skip, side}   MHR's body (tools/body/mhr.py) with those identity weights and the
+                                          face bent onto its head: the points that moved and by how much
+    (detect, fit, body: a picture named in side is used for the face's depth only)"""
     ses, pics = Session(home_dir(a)), {}
 
     def flat(v, nd=5):
@@ -593,11 +661,26 @@ def cmd_worker(a):
             if not head: return dict(verts=flat(ses.canon), tris=ses.faces.reshape(-1).tolist(), rot=flat(np.eye(3)))
             tpl, bnd = head
             return dict(verts=flat(tpl["verts"]), tris=tpl["tris"].reshape(-1).tolist(), rot=flat(np.array(bnd["rot"])))
+        if op == "body":
+            sys.path.insert(0, str(ROOT / "tools" / "body"))
+            import mhr
+            m = mhr.load()
+            pts = mhr.body(q.get("weights", []), m)
+            if not q.get("name") or q["name"] not in pics: return dict(idx=[], delta=[], report=None)
+            frames, thumbs = pics[q["name"]]
+            tpl, bnd = ses.body(m["points"], m["tris"])
+            shaped = dict(tpl, verts=pts)
+            verts, tris, rot, report, _ = ses.shape(frames, q.get("settings", {}), q.get("skip", []), q.get("side", []),
+                                                    template=(shaped, bnd))
+            d = verts - pts
+            idx = np.flatnonzero(np.abs(d).max(1) > 1e-6)
+            return dict(idx=idx.tolist(), delta=flat(d[idx], 6), report=report)
         if op in ("fit", "save"):
             if q["name"] not in pics: raise ValueError("detect the pictures first")
             frames, thumbs = pics[q["name"]]
             if op == "fit":
-                verts, tris, rot, report, tpl = ses.shape(frames, q.get("settings", {}), q.get("skip", []))
+                verts, tris, rot, report, tpl = ses.shape(frames, q.get("settings", {}), q.get("skip", []),
+                                                          q.get("side", []))
                 return dict(verts=flat(verts), report=report)
             path, report = ses.save(Path(q["out"]), q["name"], frames, thumbs, q.get("settings", {}), q.get("skip", []),
                                     source=", ".join(sorted({k.split("#")[0] for k in thumbs})))
@@ -659,6 +742,15 @@ def cmd_check(a):
     if d2.get("pout") != "expression" or any(d2.get(f"l{i}") for i in range(4)):
         fails.append(f"full lips in every picture: only the real expression should go, got {d2}")
     if not any("at rest" in w for w in rep2["warnings"]): fails.append("full lips everywhere should be noted")
+    flat = face.copy(); flat[:, 2] = face[:, 2].mean() + 0.6 * (face[:, 2] - face[:, 2].mean())   # front depth guessed short
+    fronts = [pic(f"f{i}", flat, rng.uniform(-8, 8)) for i in range(3)]
+    s0, r0, t0 = similarity(face, canon); truth = (s0 * (r0 @ face.T)).T + t0
+    depth_err = lambda m: float(np.abs(m[:, 2] - truth[:, 2])[truth[:, 0] < -1].mean())    # the half a +55 deg turn shows
+    plain, _ = fit(fronts, canon)
+    seen, rep4 = fit(fronts + [pic("side", face, 55)], canon, side={"side"})
+    if rep4["sides"] != 1 or depth_err(seen) > 0.5 * depth_err(plain):
+        fails.append(f"a side picture should fix the depth it sees: {depth_err(plain):.2f} -> {depth_err(seen):.2f} cm")
+    print(f"side picture: depth off {depth_err(plain):.2f} cm from the fronts alone, {depth_err(seen):.2f} cm with it")
     _, rep3 = fit(lips, canon, relative=False)
     if rep3["used"] > 1 and not rep3["warnings"]: fails.append("against an average face, full lips should read as a pout")
     s, r, t = similarity(face, canon)
@@ -705,6 +797,25 @@ def cmd_check(a):
             np.ptp(v[tpl["tris"][chin][:, 0]][:, 0])
         if grew < 1.05: fails.append(f"a 15% wider jaw only widened the head's jaw by {grew - 1:.0%}")
         print(f"head: bound facing {bnd['turn']} deg off, bent to itself {moved:.3%}, jaw +{grew - 1:.0%}")
+        sys.path.insert(0, str(ROOT / "tools" / "body"))
+        import mhr
+        if mhr.BIN.exists():                              # the body: its head bends, nothing under the neck moves
+            m = mhr.load()
+            lm = landmarker(home)
+            btpl = body_template(m["points"], m["tris"])
+            bb = binding(home, btpl, canon, lm); lm.close()
+            pts = bound_points(btpl, bb)
+            s, r, t = similarity(pts, canon)
+            own = (s * (r @ pts.T)).T + t
+            wide = own.copy(); wide[:, 0] *= np.where(own[:, 1] < -4, 1.15, 1.0)
+            bent = bend(btpl, bb, wide)
+            below = m["points"][:, 1] < pts[152, 1] - 0.12
+            low = float(np.abs(bent[below] - m["points"][below]).max())
+            head_moved = float(np.abs(bent - m["points"]).max())
+            if low > 1e-9: fails.append(f"the body moved {low * 1000:.2f} mm below the neck")
+            if head_moved < 0.003: fails.append("the body's head didn't take a wider jaw")
+            print(f"body: bound facing {bb['turn']} deg off, the head moved up to {head_moved * 100:.1f} cm, "
+                  f"under the neck {low * 1000:.3f} mm")
     else:
         print("head: skipped (no MediaPipe or no MHR_head.obj)")
     for x in fails: print("FAIL", x)
