@@ -7,6 +7,7 @@ A ref is `<lib>/<name>`:
   Library/meshes/<lib>/<name>.glb.
 - a texture set: `ambientcg/Planks012`, `polyhaven/rough_plaster_brick`, `local/<name>`, in
   Library/textures/<lib>/<name>/ (albedo, normal, rough, ao, height, meta.json with `tile_m`, the metres one repeat covers).
+- a set on your PBR shelf: `pbr/<category>/<name>` (storykit/pbr.py: Content/Studio/PBR/, in category folders).
 
 LEDGER.json records where every fetched file came from (source, url, licence, date): the credits list and the proof
 that each asset is CC0 when a store asks.
@@ -14,6 +15,7 @@ that each asset is CC0 when a store asks.
 import json
 from pathlib import Path
 
+from . import pbr as PBR
 from . import storylib as L
 
 LIB = L.STUDIO / "Library"
@@ -26,7 +28,9 @@ _cache = {}
 
 
 def split(ref):
-    """'basemesh/headstone_01' -> ('basemesh', 'headstone_01'); raises on a bad ref."""
+    """'basemesh/headstone_01' -> ('basemesh', 'headstone_01'); 'pbr/Wood/old_planks' -> ('pbr', 'Wood/old_planks')."""
+    if str(ref).startswith("pbr/"):
+        return "pbr", PBR.split_ref(ref)
     parts = str(ref).split("/")
     if len(parts) != 2 or not all(parts):
         raise ValueError(f"bad library ref {ref!r}: '<lib>/<name>', like basemesh/headstone_01 or ambientcg/Planks012")
@@ -62,16 +66,19 @@ def mesh_file(ref):
 
 def texture_dir(ref):
     lib, name = split(ref)
-    return TEXTURES / lib / name
+    return PBR.set_dir(ref) if lib == "pbr" else TEXTURES / lib / name
 
 
 def texture_meta(ref):
+    if split(ref)[0] == "pbr":
+        d = texture_dir(ref)
+        return PBR.meta(d) if d.is_dir() else None
     p = texture_dir(ref) / "meta.json"
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
 def is_texture(ref):
-    return split(ref)[0] in ("ambientcg", "polyhaven", "local", "texninja") or texture_meta(ref) is not None
+    return split(ref)[0] in ("ambientcg", "polyhaven", "local", "texninja", "pbr") or texture_meta(ref) is not None
 
 
 def fetched(ref, kind):

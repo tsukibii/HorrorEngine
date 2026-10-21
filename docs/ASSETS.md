@@ -44,7 +44,8 @@ stay in your own project, see `Content/Studio/Bodies/README.md`), anything marke
 - `mat: "<ref>"`: a texture set on a block (boxes only).
 - a room's `look`: texture sets for its `floor`, `walls` and `ceiling`. `floor` (wood, stone...) still sets the
   footsteps.
-- A ref is `<lib>/<name>`: `basemesh/...`, `ambientcg/...`, `polyhaven/...`, `local/...`.
+- A ref is `<lib>/<name>`: `basemesh/...`, `ambientcg/...`, `polyhaven/...`, `local/...`; a set on your PBR shelf is
+  `pbr/<category>/<name>` (§6).
 - **Facing:** a library mesh's front (glTF +Z) faces the prop's `rot` the same way a block does. If they come out
   turned in Unreal, set `library_yaw` in `Content/Studio/class_map.json` once (SETUP S8).
 
@@ -99,3 +100,55 @@ corrected) and rebuild; the material instance is remade when its folder is delet
   in: if it fails, build it by hand (or ask Claude in the editor to) with exactly those names, and the rest works.
 - Later, for final art: real meshes get their own UVs and materials (a Blender pass or bought packs); the library is
   for greybox-plus and for props that are fine as they are.
+
+## 6. The PBR shelf: your own texture sets (`Content/Studio/PBR/`)
+
+The sets you download (Poly Haven, ambientCG, bought ones you may use) live on a shelf of category folders, one folder
+per set; categories can nest:
+
+```
+Content/Studio/PBR/                     ($STUDIO_PBR puts it elsewhere, e.g. another drive)
+  Wood/old_planks/                      the maps as they came: old_planks_diff_2k.jpg, _ao_2k.jpg, _disp_2k.png,
+                                        _nor_dx_2k.png, _rough_2k.jpg
+  Stone/Walls/rough_brick_2k.zip        a ZIP dropped in is unpacked into rough_brick/ on the next scan
+```
+
+- **The download:** Poly Haven's ZIP with Blend and glTF off, MaterialX off, the packed AO/Rough/Metal off, and AO, Diffuse
+  and Rough as JPG, Displacement and Normal (DX) as PNG. Other names work too: the last word of each file name says
+  which map it is (`diff`, `col`, `Color`, `ao`, `AmbientOcclusion`, `rough`, `Roughness`, `disp`, `Displacement`,
+  `nor_dx`, `NormalDX`, `nor_gl`, `NormalGL`, `metal`...); a resolution like `_2k` is ignored. A GL normal is used
+  before a DX one, JPG and PNG before EXR (the desk can't show EXR). A packed `arm` map is noted, not used.
+- **Scanning** (`python tools/pbr.py`, the shelf page, or the desk at start) unpacks new ZIPs (their images only),
+  writes each set's `meta.json` (which file is which map, the normal's convention, `tile_m`, where it came from) and a
+  small `_thumb.jpg` (when Pillow is there). Poly Haven and ambientCG names give the source and its page; what you
+  set by hand (`tile_m`, source, url, licence, note) is kept on every rescan. Nothing here goes into git (only its
+  README): the sets are big and yours.
+- **Using one:** its ref is `pbr/<category>/<name>` (`pbr/Wood/old_planks`): a room's `look` or a prop's `mat`, like
+  any library texture. The scene builder's Look pickers list the shelf. `story_check` warns about a ref that isn't on
+  the shelf.
+- **The shelf page** (http://127.0.0.1:8780/pbr.html, the launcher's *PBR shelf*): the sets by category; each one on a
+  1 m sphere, a 1 m cube, a 3 x 3 m room corner with a 1.7 m figure, or a close-up under a low light, at its real
+  size, with the light turning round it. Click a map to see the set without it; the displacement slider pushes the
+  sphere and the close-up. Set **one repeat** (`tile_m`, the metres one repeat covers: planks 1 to 2.5, bricks 1 to
+  1.5, plaster 2 to 3) and where it came from, and Save.
+- **DX normals:** DirectX is Unreal's own convention, so Unreal takes them as they are (a GL one has its green flipped
+  on import); the desk (three.js, GL) flips the green itself.
+- **Kimodo:** the stage `kimodo.py stage` sends is boxes, and the previs glTF export is the skeleton and its clips:
+  neither carries a material, so nothing from the shelf goes to Kimodo.
+
+**In Unreal** (`storykit/surfaces.py`):
+- A set goes to `/Game/Studio/PBR/<category>/<name>/` (the shelf's folders mirrored; characters Unreal won't take in
+  a path become `_`), with its maps (the displacement as a linear greyscale, kept for Nanite displacement later: the
+  surface material doesn't use it yet) and `MI_<name>`, a material instance of M_StudioSurface (§5).
+- **Checked before it's imported:** when a level is built, each set it uses is looked for in Unreal first. If
+  `MI_<name>` is there and its maps haven't changed since (a stamp of the files, kept as metadata on the instance),
+  it's used as it is (only its `TileCm` follows `tile_m`); if it isn't there, or a map changed, the maps are imported
+  (replacing the old ones) and the instance is made or updated.
+- `storykit.surfaces.sync_pbr()` does the whole shelf at once (or `sync_pbr(["pbr/Wood/old_planks"])` a few), and
+  logs how many Unreal already had, imported and re-imported.
+- Written without an editor to try it in, like §5: the first run is the test. Its logic (import once, reuse, re-import
+  a changed set) was run against a stand-in for Unreal's API.
+
+`python tools/pbr.py demo` puts five made-up sets on the shelf (planks, brick, plaster, tiles, concrete, 1k, in
+Poly Haven's format as ZIPs) to try all this on; `python tools/pbr.py check` (PBR ok; `check_all` runs it) tests the
+names, the ZIPs, the meta and the refs on a temporary shelf.

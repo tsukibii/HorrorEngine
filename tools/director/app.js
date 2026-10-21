@@ -39,8 +39,15 @@ async function boot() {
     watchStage = new Stage($("#watchBox"), LIB);
     $("#watchBox").prepend(watchStage.renderer.domElement);
     wireFreeCam();
+    const q = new URLSearchParams(location.search);
+    if (q.get("game") && g.games.includes(q.get("game"))) { GAME = q.get("game"); $("#game").value = GAME; }
     if (GAME) await load();
     setInterval(poll, 5000);
+    const node = q.get("node");
+    if (node && S && S.flow[node]) {
+      SEL = node; renderAll(); showStage();
+      if (q.get("watch")) { document.querySelector('nav button[data-v="watchView"]').click(); watch(node); }
+    }
   } catch (e) { console.error(e); $("#offline").style.display = "block"; status("no server"); }
 }
 function fillGames(list) { const sel = $("#game"); sel.innerHTML = ""; for (const n of list) sel.append(el("option", { value: n }, n)); }
@@ -147,6 +154,21 @@ async function save(force) {
   try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; dirty(false); status("saved " + new Date().toLocaleTimeString()); }
   catch (e) { if (e.status === 409) { if (confirm(e.message + "\n\nOK = overwrite with your version, Cancel = keep editing (then Reload)")) save(true); } else alert("save failed: " + e.message); }
 }
+// the scene builder (builder.html) says when it saved a level: reload it here unless there are edits to keep, and
+// not in the middle of a playthrough (then right after it)
+let RELOAD_AFTER_WATCH = false;
+function openBuilder(level, node) {
+  window.open(`builder.html?game=${encodeURIComponent(GAME)}&level=${encodeURIComponent(level || "")}&node=${encodeURIComponent(node || "")}`, "scenebuilder");
+}
+try {
+  new BroadcastChannel("horrorstudio-story").onmessage = async e => {
+    const m = e.data || {};
+    if (m.type !== "saved" || m.game !== GAME) return;
+    if (DIRTY) { $("#banner").style.display = "block"; return; }
+    if (RUN) { RELOAD_AFTER_WATCH = true; status("the scene builder saved " + m.level + ": it loads when this playthrough ends"); return; }
+    await load(); status(`environment ${m.level} reloaded from the scene builder`);
+  };
+} catch (e) { }
 async function poll() { if (!GAME) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) $("#banner").style.display = "block"; } catch (e) { } }
 function dirty(d) { DIRTY = d; status(d ? "unsaved changes" : "saved"); $("#status").classList.toggle("dirty", d); }
 function status(t) { $("#status").textContent = (GAME ? GAME + " · " : "") + t; }
@@ -260,6 +282,9 @@ function renderInspector() {
     el("button", { on: { click: () => renameNode(SEL) } }, "Rename"),
     el("button", { on: { click: () => { if (confirm("Delete node " + SEL + "? (its scene or stitch stays in the file)")) { delete S.flow[SEL]; SEL = S.game.start; touch(); renderInspector(); } } } }, "Delete")));
   if (n.type === "scene" || n.type === "stitch") {
+    const cur = nodeRef(n), lvl = (cur && cur.level) || Object.keys(S.levels || {})[0];
+    if (lvl) box.append(el("div", { class: "row" }, el("button", { title: "Open this script's level in the scene builder: its marks shown, the ones this node uses highlighted. Save there and this page reloads it.",
+      on: { click: () => openBuilder(lvl, SEL) } }, `Edit environment (${lvl}) ↗`)));
     const table = n.type === "scene" ? S.scenes : S.stitches;
     box.append(field("ref", sel(n, "ref", Object.keys(table), { after: () => { renderInspector(); showStage(); } })), field("next", sel(n, "next", nodeIds)));
     const ref = table[n.ref];
@@ -889,7 +914,8 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {}); }
+function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
+  if (RELOAD_AFTER_WATCH && !DIRTY) { RELOAD_AFTER_WATCH = false; load().then(() => status("environment reloaded from the scene builder")); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked) RUN.skip = true; });
 
 /* ---------- takes and notes ---------- */
@@ -964,5 +990,5 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
-window.__dd = { get S() { return S; }, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, openBuilder, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

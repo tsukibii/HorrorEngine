@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 from storykit import library as LIB  # noqa: E402
+from storykit import kit as KIT  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
@@ -131,13 +132,25 @@ def check_world(story, things, r):
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
+        for k, v in (lvl.get("trim") or {}).items():
+            if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
+                r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
         for rm in rooms.values():
             if len(rm.get("size", [])) != 3 or len(rm.get("at", [])) != 3:
                 r.err(f"room {rm['id']}: needs at [x, y, z] and size [w, d, h]")
                 continue
             for wl in rm.get("skip", []):
-                if wl not in L.WALLS:
+                if isinstance(wl, list):
+                    if len(wl) != 3 or wl[0] not in L.WALLS or not (0 <= wl[1] < wl[2] <= L.wall_length(rm, wl[0]) + 0.01):
+                        r.err(f"room {rm['id']}: skip {wl!r} isn't [wall, from, to] inside the wall")
+                elif wl not in L.WALLS:
                     r.err(f"room {rm['id']}: skip {wl!r} isn't one of n e s w")
+            if rm.get("trim") not in (None, False):
+                for k, v in (rm["trim"] or {}).items():
+                    if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
+                        r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
+            if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
+                r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
             for op in rm.get("openings", []):
                 if op.get("wall") not in L.WALLS:
                     r.err(f"room {rm['id']}: opening wall {op.get('wall')!r}")
@@ -147,6 +160,18 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: opening at {op['at']} (w {op['w']}) runs off the {op['wall']} wall ({length} m)")
                 if op.get("sill", 0) + op["h"] > rm["size"][2]:
                     r.err(f"room {rm['id']}: opening on {op['wall']} is taller than the room")
+                if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
+                    r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
+                if op.get("door") and op["door"].get("kit") is not None:
+                    try:
+                        if KIT.kind(op["door"]["kit"]) != "door":
+                            r.err(f"door {op['door'].get('id')}: its kit is a {KIT.kind(op['door']['kit'])}, not a door")
+                    except ValueError as e:
+                        r.err(f"door {op['door'].get('id')}: kit: {e}")
+                if op.get("door") and op["door"].get("class") is not None and not str(op["door"]["class"]).endswith("_C"):
+                    r.err(f"door {op['door'].get('id')}: class {op['door']['class']!r} isn't a Blueprint class path (…_C)")
+                if op.get("door") and op["door"].get("swing", "in") not in ("in", "out", "slide"):
+                    r.err(f"door {op['door'].get('id')}: swing {op['door']['swing']!r} isn't in, out or slide")
                 if op.get("door") and op["door"].get("locked_by"):
                     lb = op["door"]["locked_by"]
                     if not lb.startswith("flag:") and lb not in items:
@@ -154,16 +179,19 @@ def check_world(story, things, r):
         rl = list(rooms.values())
         for i, a in enumerate(rl):
             for b in rl[i + 1:]:
-                if a["at"][2] != b["at"][2]:
+                # rooms whose heights overlap share walls (a two-storey stairwell beside an upstairs room too)
+                if min(a["at"][2] + a["size"][2], b["at"][2] + b["size"][2]) - max(a["at"][2], b["at"][2]) <= 0.3:
                     continue
                 for wa in L.WALLS:
                     for wb in L.WALLS:
                         la, lb_ = L.wall_line(a, wa), L.wall_line(b, wb)
                         if la[0] != lb_[0] or abs(la[1] - lb_[1]) > 0.01:
                             continue
-                        if min(la[3], lb_[3]) - max(la[2], lb_[2]) <= 0.05:
+                        o0, o1 = max(la[2], lb_[2]), min(la[3], lb_[3])
+                        if o1 - o0 <= 0.05:
                             continue
-                        sa, sb = wa in a.get("skip", []), wb in b.get("skip", [])
+                        sa = L.wall_skipped(a, wa, o0 - la[2], o1 - la[2])
+                        sb = L.wall_skipped(b, wb, o0 - lb_[2], o1 - lb_[2])
                         if not sa and not sb:
                             r.err(f"rooms {a['id']} ({wa}) and {b['id']} ({wb}) both build their shared wall: skip it on one")
                         if sa and sb:
@@ -186,8 +214,10 @@ def check_world(story, things, r):
         if t.kind != "prop":
             continue
         p, u = t.d, t.use
-        if u is None and "shape" not in p:
-            r.err(f"{t.id}: needs a shape or a use")
+        if u is None and "shape" not in p and "kit" not in p:
+            r.err(f"{t.id}: needs a shape, a kit or a use")
+        if "kit" in p and "shape" in p:
+            r.err(f"{t.id}: a shape or a kit, not both")
         if u is not None and u not in L.USES:
             r.err(f"{t.id}: unknown use {u!r}")
         if p.get("shape", "").startswith("person"):

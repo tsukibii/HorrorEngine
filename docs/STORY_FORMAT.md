@@ -68,7 +68,14 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `size` is `[w (x), d (y), h]`.
 - `floor` is `wood stone carpet tile dirt metal water`: it sets footsteps.
 - `light` is `off dark dim lit`: a mood note for the lighting pass.
-- `skip`: two touching rooms share one wall, and **exactly one of them skips it**.
+- `skip`: two touching rooms share one wall, and **exactly one of them skips it**. A plain letter (`"s"`) skips the whole
+  wall; `["e", 1.0, 3.5]` skips only that stretch (metres along the wall from its west or south end), for a room that
+  shares part of a wall, like a corridor beside several rooms. Rooms whose heights overlap share walls (a two-storey
+  stairwell beside an upstairs room too); the scene builder works all of this out.
+- `kind`: what the room is (optional): `genkan corridor ldk living dining kitchen washitsu bedroom service kids study
+  bath washroom toilet closet walkin oshiire storage stairs balcony engawa common garden garage other`. The scene
+  builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
+  any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`).
 - `ceiling: false` for outdoors.
 - `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
   (docs/ASSETS.md). Grey until fetched.
@@ -82,6 +89,30 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `at` is the opening's centre, measured from the wall's west end (n and s walls) or south end (e and w walls).
 - `window: true` is a hole with a `sill`.
 - `locked_by` is an item, or `flag:<name>`.
+- `swing` is `in` (into the room that holds the door), `out`, or `slide`: a sliding door (fusuma, shoji, a modern
+  sliding door, a glass door onto a balcony), which has no swing.
+- An opening on a wall that also serves an upper floor (a stairwell's door onto the landing) has its `sill` at that
+  floor's height.
+
+**Trim:** `"trim": {"skirting": 0.06, "cornice": 0.03, "casing": 0.06}` on a level (every room) or a room (its own,
+key by key; `"trim": false` for none): a skirting board that height along the foot of every wall, a cornice that
+deep under the ceiling, a casing that wide round every door and opening on both sides. The planner builds them as
+thin boxes (`<room>__skirting_n0`...) wherever a wall stands at that height, its own or its neighbour's, so they stop
+at openings and open sides by themselves; `look.trim` textures them. `"threshold": 0.012` lays a strip that high
+in every walk-through doorway between two rooms whose `floor` differs (`<room>__threshold_n`, tagged
+`trim:threshold`: it may stand proud of the floor).
+
+**Built-ins** (the scene builder, docs/SCENE_BUILDER.md): props with ids `<room>_fx_<what>` are its own, remade on
+every save from the room's `kind` (a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe
+cabinet, a stair's steps), placed clear of every doorway, and its ceiling light (`<room>_fx_light`) with a light
+switch by the door (`<room>_fx_switch`, `use: switch`). Things on its walls are `<room>_wi_<kind>_<n>`: a box against
+the wall with its `tag` (mirror, poster, frame, tv, air_conditioner, clock, calendar, board, shelf, light_switch),
+read back by the builder as wall items. Edit them as any prop; the builder replaces them only while
+the room's built-ins are on. The builder also writes kit props (docs/KIT.md §4):
+- `<room>_kt_<preset>_<n>`: furniture.
+- `<room>_wf_<n>`: wall fittings.
+- `<room>_fx_floor` and `<room>_fx_ceiling`: the room's floor and ceiling step.
+- `<room>_fx_win<n>`: a window's frame. It carries `in_wall: true` and `of`, the window it frames.
 
 **A link:**
 
@@ -102,6 +133,20 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `asset <lib>/<name> [scale]`: a CC0 library mesh at its real size, e.g. `asset basemesh/wooden_chair_01`
   (`python tools/cc0.py props <word>` lists them with sizes). Its box stands in until it's fetched.
 
+**A kit** (in place of a shape, docs/KIT.md): `"kit": "switch_jp_2"` (a preset of `Content/Studio/Kit/presets.json`) or
+`"kit": {"preset": "oak_planks", "seed": 7, "size": [3.9, 2.9, 0.015]}` (a preset with what differs) or `{"type":
+"cabinet", "size": [...], ...}`. Its box is its `size` or the preset's; `rot` is the way its front faces. The plan
+tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs` writes for the importer. Floors,
+rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
+marks a thing that sits in its wall, like a window frame.
+
+**A kit door:** a door's `kit` (a `door` preset, or one with what differs: `{"preset": "door_shaker", "handle":
+"bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a
+handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). The kit's hinge numbers (`hinges`, `hinge_h`, `hinge_w`, `hinge_t`, `barrel`,
+`mortise`, `hinge_model`) and `hinge_art` (your own hinge, split into `<id>__hinge<i>_door|frame`) are there too.
+A door's `class` (a Blueprint
+class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
+
 **A prop:**
 
 ```json
@@ -109,7 +154,8 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
  "tag": "photo", "hidden": false, "art": null, "use": "inspect", "text": "..."}
 ```
 
-- `on`: rests on that prop.
+- `on`: rests on that prop: on its top, or at its own `z` when it has one (a cushion on a sofa's seat, below the
+  back's top).
 - `z`: height above the floor, for things on walls or ceilings, and lights.
 - `art`: the asset that replaces the block, scaled evenly to fit it: an Unreal path (`/Game/...`) or a library ref
   (`basemesh/food_prep_table`).

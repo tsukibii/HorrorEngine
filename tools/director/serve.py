@@ -20,6 +20,9 @@ sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 from storykit import plan as P  # noqa: E402
 from storykit import library as LIB  # noqa: E402
+from storykit import kit as KIT  # noqa: E402
+from storykit import pbr as PBR  # noqa: E402
+sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
 STATIC = {".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".txt": "text/plain"}
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
@@ -42,12 +45,12 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
-    def send(self, code, body, ctype="application/json"):
+    def send(self, code, body, ctype="application/json", cache=False):
         data = body if isinstance(body, bytes) else (body if isinstance(body, str) else json.dumps(body)).encode("utf-8")
         self.send_response(code)
-        self.send_header("Content-Type", ctype + "; charset=utf-8")
+        self.send_header("Content-Type", ctype + ("; charset=utf-8" if ctype.startswith(("text/", "application/json")) else ""))
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", "max-age=86400" if cache else "no-store")   # cached: the URL carries the set's stamp
         self.end_headers()
         self.wfile.write(data)
 
@@ -100,7 +103,21 @@ class Handler(BaseHTTPRequestHandler):
                     tex[f"{m.parent.parent.name}/{m.parent.name}"] = json.loads(m.read_text(encoding="utf-8"))
                 except ValueError:
                     pass
+            for ref, m in PBR.scan().items():       # the PBR shelf: same shape, files from Content/Studio/PBR
+                tex[ref] = dict(m, base="/" + ref)
             return self.send(200, {"meshes": meshes, "textures": tex})
+        if parts[:2] == ["api", "pbr"]:              # the shelf page: every set, scanned (new ZIPs unpacked)
+            sets = PBR.scan()
+            for ref, m in sets.items():
+                m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
+            return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
+        if parts[0] == "pbr" and len(parts) >= 3:
+            import urllib.parse
+            rel = [urllib.parse.unquote(p) for p in parts[1:]]
+            pf = PBR.ROOT.joinpath(*rel) if ".." not in rel else None
+            if pf and pf.is_file() and pf.suffix.lower() in BODY and PBR.ROOT.resolve() in pf.resolve().parents:
+                return self.send(200, pf.read_bytes(), BODY[pf.suffix.lower()], cache=True)
+            return self.send(404, {"error": "not on the PBR shelf"})
         if parts[0] == "library" and len(parts) >= 3 and ".." not in parts:
             lf = LIB.LIB.joinpath(*parts[1:])
             if lf.is_file() and lf.suffix.lower() in BODY and LIB.LIB.resolve() in lf.resolve().parents:
@@ -132,6 +149,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"inbox": str(inbox.relative_to(L.ROOT)).replace("\\", "/"),
                                    "saved": sorted(f.stem for f in inbox.glob("*.npz")) + sorted(f.stem for f in L.ROOT.glob("*.npz")),
                                    "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else []})
+        if parts[:2] == ["api", "kit"]:               # the kit's presets (Content/Studio/Kit/presets.json)
+            return self.send(200, KIT.presets_file())
         if parts[:2] == ["api", "games"]:
             return self.send(200, {"games": L.games()})
         if parts[:2] == ["api", "story"] and len(parts) == 3:
@@ -146,6 +165,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         parts = self.path.strip("/").split("/")
+        if parts[:3] == ["api", "kit", "preset"] and len(parts) == 4:      # the kit maker keeps (or, with null, drops) a preset
+            name = parts[3]
+            if not name.replace("_", "").isalnum() or not name[:1].isalpha() or name.lower() != name:
+                return self.send(400, {"error": "a preset name is lower-case letters, digits and _"})
+            spec = json.loads(self.body().decode("utf-8") or "null")
+            data = KIT.presets_file()
+            data = dict(data, presets=dict(data.get("presets", {})))
+            if spec is None:
+                data["presets"].pop(name, None)
+            else:
+                try:
+                    KIT.size(spec)
+                except ValueError as e:
+                    return self.send(400, {"error": str(e)})
+                data["presets"][name] = spec
+            KIT.PRESETS_FILE.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+            return self.send(200, KIT.presets_file())
         if parts[:2] != ["api", "story"] or len(parts) != 3:
             return self.send(404, {"error": "not found"})
         p = self.game_path(parts[2])
@@ -168,6 +204,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parts = self.path.strip("/").split("/")
+        if parts[:2] == ["api", "pbr"] and len(parts) >= 3:     # /api/pbr/<category>/<name>: its tile, source, url, note
+            import urllib.parse
+            ref = "pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:])
+            try:
+                return self.send(200, PBR.save(ref, json.loads(self.body().decode("utf-8"))))
+            except (ValueError, OSError) as e:
+                return self.send(400, {"error": str(e)})
+        if parts[:3] == ["api", "library", "local"] and len(parts) == 4:   # a mesh of yours (the builder's hinge halves)
+            name = parts[3]
+            if not name.replace("_", "").replace("-", "").isalnum():
+                return self.send(400, {"error": "a mesh name is letters, digits, - and _"})
+            import base64
+            body = json.loads(self.body().decode("utf-8"))
+            out = LIB.MESHES / "local" / f"{name}.glb"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(base64.b64decode(body["glb"]))
+            idx_file = LIB.INDEX / "local.json"
+            idx = json.loads(idx_file.read_text(encoding="utf-8")) if idx_file.exists() else {}
+            idx[name] = {k: body[k] for k in ("size_m", "box_m", "tris") if k in body}
+            idx[name].update(kb=round(out.stat().st_size / 1024), axes="kit", note=body.get("note", ""))
+            idx_file.parent.mkdir(parents=True, exist_ok=True)
+            idx_file.write_text(json.dumps(idx, indent=1), encoding="utf-8")
+            LIB._cache.pop("local", None)
+            return self.send(200, {"ok": True, "ref": f"local/{name}"})
         if parts[:2] == ["api", "plan"] and len(parts) == 3:
             story = json.loads(self.body().decode("utf-8"))
             try:
@@ -178,6 +238,22 @@ class Handler(BaseHTTPRequestHandler):
             th = {k: {"kind": t.kind, "use": t.use, "level": t.level, "room": t.room, "pos": t.pos, "size": t.size,
                       "yaw": t.yaw} for k, t in things.items()}
             return self.send(200, {"pieces": pieces, "things": th})
+        if parts[:2] == ["api", "worldcheck"]:          # the scene builder: the world rules on an unsaved story
+            story = json.loads(self.body().decode("utf-8"))
+            try:
+                import story_check as SC  # noqa: PLC0415 - tools/, on the path below
+                import level_check as LC  # noqa: PLC0415
+                things, errs = L.index(story)
+                r = SC.Report()
+                for e in errs:
+                    r.err(e)
+                if not errs:
+                    SC.check_world(story, things, r)
+                    lerrs, _ = LC.check(story, parts[2] if len(parts) == 3 else None)
+                    r.errors += lerrs
+            except Exception as e:  # noqa: BLE001 - a half-built world: say why
+                return self.send(200, {"errors": [f"the world doesn't plan yet: {e}"], "warnings": []})
+            return self.send(200, {"errors": r.errors, "warnings": r.warnings})
         if parts[:2] == ["api", "new"] and len(parts) == 3:
             name = parts[2]
             if not name.replace("_", "").isalnum() or (L.GAMES / name).exists():

@@ -120,7 +120,7 @@ scene: a camera fade, and control taken and given back softly.
 | sound | at the `at` actor, 2D without it |
 | music | crossfade among `/Game/Studio/Audio/Music/<state>` (two audio components, 2 s) |
 | light | visibility; flicker as intensity × noise; `room` = every light tagged `room:<id>` |
-| door | a class-mapped door through its interface; a greybox door rotates 95° round its hinge edge; locked = a rattle and "Locked" |
+| door | a class-mapped door through its interface; a greybox door rotates 95° round its hinge edge; a kit door's leaf has its pivot on its hinges (docs/KIT.md §8), so it turns about its own Z; locked = a rattle and "Locked" |
 | show, hide | hidden in game, and collision |
 | move | only while unseen (`WasRecentlyRendered(0.2)` false) |
 | objective, flag, unflag, give, take | state and the HUD |

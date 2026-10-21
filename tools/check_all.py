@@ -11,6 +11,7 @@ sys.path.insert(0, str(HERE.parent / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 
 CHECKS = [["story_check.py"], ["level_check.py"], ["shots_sheet.py", "--plan"]]
+STUDIO = [["pbr.py", "check"]]                 # once, not per game
 
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0
@@ -26,5 +27,13 @@ for g in ([game] if game else L.games()):
             for ln in lines[:-1]:
                 if ln.startswith(("ERROR", "FAIL")):
                     print("      " + ln)
+for c in STUDIO:
+    r = subprocess.run([sys.executable, str(HERE / c[0])] + c[1:], capture_output=True, text=True, encoding="utf-8")
+    lines = [ln for ln in r.stdout.splitlines() if ln.strip()]
+    print(f"{'ok  ' if r.returncode == 0 else 'FAIL'}  {'(studio)':<12} {c[0]:<16} {lines[-1] if lines else r.stderr.strip()[-300:]}")
+    if r.returncode:
+        bad += 1
+        for ln in lines[:-1]:
+            print("      " + ln)
 print("CHECKS ok" if not bad else f"CHECKS FAILED ({bad})")
 sys.exit(1 if bad else 0)

@@ -76,3 +76,16 @@ the fix.
 - **Start the editor before Claude Code:** the bridge gives its tool list once, when Claude Code starts, and never
   says it changed; started before the editor, Claude saw only `unreal_status`. Check the editor runs *this*
   `.uproject` too (`pgrep -a UnrealEditor`): it once reopened a stray template and the bridge never came up.
+- **Story ids are unique across the whole file, levels included:** the scene builder's layouts planned on their own
+  but failed beside an existing level (two `start`s, two `front_door`s). Anything added to a story is renamed
+  against `takenIds()` first.
+- **`node --check file.js` passes an ES module with a syntax error:** it reads the file as CommonJS and said nothing
+  about a `const` declared twice, which then stopped the whole desk from loading. Check the desk's modules with
+  `node --input-type=module --check < tools/director/<file>.js`.
+- **A BroadcastChannel never crosses browser contexts:** Playwright's `browser.newPage()` makes a new context per
+  page, so a test of the builder telling the desk it saved has to open both pages from one `newContext()`.
+- **A level check that reads every level's rooms has to keep to the level it checks:** the doorway clearances of
+  one level were tested against another level's furniture standing in the same place, and failed a borrowed level.
+- **The desk's server imports storykit once:** after changing `plan.py`, `level_check.py` or anything it imports,
+  restart `serve.py` (find its PID, kill it, start it again), or the pages plan with the old code. The kit's pieces
+  were missing from the builder's 3D view, and a level check failed on a rule already fixed, both for this reason.

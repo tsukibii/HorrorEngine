@@ -1,5 +1,5 @@
 {
- "_note": "Which Blueprint each story 'use' becomes, for every game in the studio. null = a greybox block tagged use:<kind> (the StoryRunner still drives it). SETUP S6 fills this from the horror template audit: class is a Blueprint class path ending _C; fields maps a story field to the Blueprint's variable; keep_block also spawns the block (for Blueprints with no mesh of their own). stalker: the stalker AI's class. library_yaw: degrees added to every CC0 library mesh (tools/cc0.py) so its front faces the story's way; check once with a chair and fix it here.",
+ "_note": "Which Blueprint each story 'use' becomes, for every game in the studio. null = a greybox block tagged use:<kind> (the StoryRunner still drives it). SETUP S6 fills this from the horror template audit: class is a Blueprint class path ending _C; fields maps a story field to the Blueprint's variable; keep_block also spawns the block (for Blueprints with no mesh of their own). stalker: the stalker AI's class. library_yaw: degrees added to every CC0 library mesh (tools/cc0.py) so its front faces the story's way; check once with a chair and fix it here. kit_yaw: the same for the kit's meshes (docs/KIT.md; their front is glTF's +Z): check once with a cabinet, its handles toward the room.",
  "door": null,
  "pickup": null,
  "note": null,
@@ -18,5 +18,6 @@
  "stand_in_mesh": "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple",
  "stand_in_height": 1.8,
  "stalker": null,
- "library_yaw": 0
+ "library_yaw": 0,
+ "kit_yaw": 0
 }

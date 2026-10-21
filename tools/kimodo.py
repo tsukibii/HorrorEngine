@@ -206,7 +206,7 @@ def stage(argv):
                  "yaw": round(rel - 90.0, 2)}         # the box's x along the piece's own x
             if kind in ("door", "mesh", "use"):
                 b["label"] = p["id"]
-            if kind == "door" and p["room"] in floors:   # the leaf's sweep on the floor (hinge: the leaf's left end)
+            if kind == "door" and p["room"] in floors and (p.get("d") or {}).get("swing") != "slide":   # the leaf's sweep on the floor (hinge: the leaf's left end; a sliding door has none)
                 yaw = math.radians(float(p["yaw"]))
                 ax, pe = (math.cos(yaw), math.sin(yaw)), (-math.sin(yaw), math.cos(yaw))
                 c, rc = p["pos"], floors[p["room"]]["pos"]

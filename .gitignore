@@ -67,3 +67,15 @@ Content/__ExternalActors__/Variant_*/
 Content/__ExternalObjects__/FirstPerson/
 Content/__ExternalObjects__/Variant_*/
 Source/HorrorEngine/
+
+# the kit's meshes: made from the story by `node tools/kit/build.mjs` (the importer runs it), the same every time
+Content/Studio/Library/meshes/kit/
+Content/Studio/Library/index/kit.json
+
+# meshes of yours (the scene builder's split hinges, anything you add as local/): not CC0, so not shared
+Content/Studio/Library/meshes/local/
+Content/Studio/Library/index/local.json
+
+# the PBR shelf (docs/ASSETS.md §6): your texture sets, too big for git; only its README is shared
+Content/Studio/PBR/*
+!Content/Studio/PBR/README.md

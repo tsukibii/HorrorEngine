@@ -16,6 +16,10 @@ EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot"}
 WALLS = ("n", "e", "s", "w")
+# what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
+ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",
+              "study", "bath", "washroom", "toilet", "closet", "walkin", "oshiire", "storage", "stairs", "balcony",
+              "engawa", "common", "garden", "garage", "other")
 
 
 def games():
@@ -109,6 +113,23 @@ def wall_point(room, wall, at):
     return {"n": (at, d), "s": (at, 0.0), "e": (w, at), "w": (0.0, at)}[wall]
 
 
+def skipped_stretches(room, wall):
+    """The stretches of a wall another room builds: `skip` entries [wall, from, to] (metres along the wall from its
+    west or south end). A plain wall letter in `skip` drops the whole wall instead."""
+    return [(float(e[1]), float(e[2])) for e in room.get("skip", []) if isinstance(e, list) and len(e) == 3 and e[0] == wall]
+
+
+def wall_skipped(room, wall, a0, a1):
+    """Is the stretch a0..a1 of this wall built by another room (all of it skipped)?"""
+    if wall in room.get("skip", []):
+        return True
+    cur = a0
+    for s0, s1 in sorted(skipped_stretches(room, wall)):
+        if s0 <= cur + 0.02 and s1 > cur:
+            cur = s1
+    return cur >= a1 - 0.02
+
+
 def wall_line(room, wall):
     """World segment of a wall: ('x' or 'y' = the fixed axis, value, lo, hi)."""
     x0, y0 = room["at"][0], room["at"][1]
@@ -160,8 +181,10 @@ def index(story):
                 if door:
                     x, y = wall_point(room, op["wall"], op["at"])
                     yaw = 0.0 if op["wall"] in ("n", "s") else 90.0   # the panel runs along its wall
-                    add(Thing(door["id"], "door", lid, room["id"], door, room_world(room, x, y, op.get("sill", 0.0)),
-                              (op["w"], WALL_T, op["h"]), yaw))
+                    t = Thing(door["id"], "door", lid, room["id"], door, room_world(room, x, y, op.get("sill", 0.0)),
+                              (op["w"], WALL_T, op["h"]), yaw)
+                    t.wall = op["wall"]                        # which wall: a kit door faces its room from it
+                    add(t)
             props = {p["id"]: p for p in room.get("props", [])}
             placed = {}
 
@@ -175,6 +198,12 @@ def index(story):
                         size = shape_size(story, *parse_shape(p["shape"]))
                     except ValueError as e:
                         errs.append(f"{pid}: {e}")
+                elif "kit" in p:
+                    from . import kit as KIT
+                    try:
+                        size = KIT.size(p["kit"])
+                    except ValueError as e:
+                        errs.append(f"{pid}: {e}")
                 elif p.get("use") == "trigger":
                     size = tuple(p.get("size", (1, 1, 2)))
                 z = p.get("z")
@@ -184,9 +213,11 @@ def index(story):
                         errs.append(f"{pid}: on {on!r}, which isn't a prop in room {room['id']}")
                     elif depth > 8:
                         errs.append(f"{pid}: 'on' loops")
-                    else:
-                        base = place(on, depth + 1)
+                    elif z is None:                     # on its top; with a z of its own, at that height (a cushion
+                        base = place(on, depth + 1)     # on a sofa's seat, below the sofa's back)
                         z = base.pos[2] - room["at"][2] + base.size[2]
+                    else:
+                        place(on, depth + 1)
                 if z is None:
                     z = 0.0
                 x, y = p.get("at", (0, 0))

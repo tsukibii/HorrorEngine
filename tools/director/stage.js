@@ -3,18 +3,22 @@
 // renders storyboard frames; finds which body parts the player can see; exports the blocking as glTF for Unreal.
 import * as THREE from "three";
 import * as M from "./motion.js";
+import * as K3 from "./kit3.js";
+import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 
 // The studio's CC0 library (Content/Studio/Library, docs/ASSETS.md): what's been fetched, from /api/library. A prop
 // tagged art:<ref> shows that mesh in its block (the block stays, invisible, for the visibility test); mat:<ref> puts
-// that texture set on a block, tiled by real metres. Anything not fetched stays a grey block.
-export const LIBRARY = { meshes: new Set(), textures: {} };
+// that texture set on a block, tiled by real metres. Anything not fetched stays a grey block. A prop with a kit
+// (docs/KIT.md) is drawn from its numbers by kit.js, the presets from /api/kit.
+export const LIBRARY = { meshes: new Set(), textures: {}, kit: {} };
 export async function loadAssetLibrary() {
   try {
     const r = await (await fetch("/api/library")).json();
     LIBRARY.meshes = new Set(r.meshes || []); LIBRARY.textures = r.textures || {};
   } catch (e) { /* no library: blocks */ }
+  try { LIBRARY.kit = (await (await fetch("/api/kit")).json()).presets || {}; } catch (e) { /* no kit presets */ }
   return LIBRARY;
 }
 const meshCache = {}, matCache = {};
@@ -22,12 +26,13 @@ function libMesh(ref) {
   if (!meshCache[ref]) meshCache[ref] = new GLTFLoader().loadAsync(`/library/meshes/${ref}.glb`).then(g => g.scene).catch(() => null);
   return meshCache[ref];
 }
+export const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 function libMaterial(ref) {
   if (matCache[ref]) return matCache[ref];
   const meta = LIBRARY.textures[ref], tl = new THREE.TextureLoader(), maps = meta.maps || {};
   const tex = (k, srgb) => {
     if (!maps[k]) return null;
-    const t = tl.load(`/library/textures/${ref}/${maps[k]}`);
+    const t = tl.load(meta.base ? `${encPath(meta.base)}/${encodeURIComponent(maps[k])}?s=${meta.stamp || ""}` : `/library/textures/${ref}/${maps[k]}`);   // base: a PBR shelf set
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;
@@ -204,7 +209,13 @@ export class Stage {
       door: new THREE.MeshStandardMaterial({ color: 0x5a3a20, roughness: 0.8 }),
       prop: new THREE.MeshStandardMaterial({ color: 0x5d6f86, roughness: 0.8 }),
       use: new THREE.MeshStandardMaterial({ color: 0x4f8a5c, roughness: 0.8 }),
+      trim: new THREE.MeshStandardMaterial({ color: 0xcfc8b8, roughness: 0.55 }),                 // skirting, cornice, casings
+      mirror: new THREE.MeshStandardMaterial({ color: 0xb8c4cc, roughness: 0.05, metalness: 0.9 }),
+      screen: new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.2 }),
+      paper: new THREE.MeshStandardMaterial({ color: 0xb59a7a, roughness: 0.9 }),
+      white: new THREE.MeshStandardMaterial({ color: 0xe4e2dc, roughness: 0.5 }),
     };
+    const BY_TAG = { mirror: "mirror", tv: "screen", poster: "paper", calendar: "paper", frame: "paper", board: "white", air_conditioner: "white", light_switch: "white" };
     for (const p of plan.pieces) {
       if (p.level !== level) continue;
       if (["wall", "floor", "ceiling", "door", "mesh"].includes(p.kind)) {
@@ -212,15 +223,25 @@ export class Stage {
         const [w, d, h] = p.size;
         const geo = p.shape === "cyl" ? new THREE.CylinderGeometry(w / 2, w / 2, h, 16) :
                     p.shape === "sphere" ? new THREE.SphereGeometry(w / 2, 16, 12) : new THREE.BoxGeometry(w, h, d);
-        let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
+        const tagged = BY_TAG[(p.tags.find(t => t.startsWith("tag:")) || "").slice(4)];
+        let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
         const m = new THREE.Mesh(geo, mat);
         m.position.copy(s2t(...p.pos));
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null };
-        this.world.add(m); this.solid.push(m);
-        if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
+        m.userData.doorPart = (p.tags.find(t => t.startsWith("door_part:")) || "").slice(10) || null;
+        m.userData.attach = (p.tags.find(t => t.startsWith("attach:")) || "").slice(7) || null;
+        if (p.kind === "door" && p.d && p.d.kit) {          // where a kit door turns: its hinge axis, in the block's space
+          try {
+            const f = KIT.withDefaults(KIT.resolve(p.d.kit, LIBRARY.kit)), pv = KIT.pivotOf(f);
+            m.userData.swing = { pivot: new THREE.Vector3(pv[0], 0, -pv[1]), hinge: f.hinge, slide: f.style === "slide" || f.style === "shoji" || (p.d.swing === "slide"), w: f.size[0] };
+          } catch (e) { }
+        }
+        this.world.add(m); if (!p.tags.includes("hollow")) this.solid.push(m);     // a door frame: you see and walk through it
+        if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
+        else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
       } else if (p.kind === "light") {
         const kind = (p.d && p.d.kind) || "bulb";
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];
@@ -608,6 +629,35 @@ export class Stage {
     g.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.material) o.material = o.material.clone(); } });
     block.add(holder); block.material = block.material.clone(); block.material.visible = false;
     block.userData.dressed = true;
+    this.render();
+  }
+  kitIn(block, spec, h) {                          // a kit thing in its block: built from its numbers, base on the block's
+    try {
+      const g = K3.object(spec, LIBRARY.kit, { shadows: !!this.kitShadows });
+      g.position.y = -h / 2; block.add(g);
+      block.material = block.material.clone(); block.material.visible = false; block.userData.dressed = true;
+    } catch (e) { console.warn("kit " + JSON.stringify(spec) + ": " + e.message); }
+  }
+  // open every kit door by `deg` (0 to 110): a hinged leaf turns on its hinges toward the side it opens to, its handle
+  // and the door's half of each hinge with it; a sliding one slides along its wall
+  swing(deg) {
+    const leaves = this.solid.filter(m => m.userData.swing && m.parent === this.world);
+    for (const d of leaves) {
+      const sw = d.userData.swing, kids = this.world.children.filter(o => o.userData && o.userData.attach === d.userData.id);
+      for (const o of [d, ...kids]) if (!o.userData.base) o.userData.base = { pos: o.position.clone(), rot: o.rotation.y };
+      const b = d.userData.base;
+      if (sw.slide) {
+        const dx = new THREE.Vector3(-(deg / 90) * sw.w * 0.95, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rot);
+        for (const o of [d, ...kids]) { o.position.copy(o.userData.base.pos).add(dx); o.rotation.y = o.userData.base.rot; }
+        continue;
+      }
+      const P = sw.pivot.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rot).add(b.pos);
+      const th = deg * Math.PI / 180 * (sw.hinge === "right" ? 1 : -1);
+      for (const o of [d, ...kids]) {
+        o.position.copy(o.userData.base.pos).sub(P).applyAxisAngle(new THREE.Vector3(0, 1, 0), th).add(P);
+        o.rotation.y = o.userData.base.rot + th;
+      }
+    }
     this.render();
   }
   async assetsReady() { await Promise.all(this.pending || []); this.render(); }
