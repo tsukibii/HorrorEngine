@@ -33,6 +33,7 @@ Unreal build must match. Directing craft: docs/DIRECTING.md.
 | `Content/Studio/poses.json` | the previs skeleton (UE mannequin bone names) and the pose library for blocking |
 | `Content/Studio/soma77.json` | Kimodo's 77-joint SOMA skeleton (names, parents, T-pose): retargeting its motions onto MHR |
 | `Content/Studio/Bodies/` | bodies for the desk: `MHR.fbx` (Meta's MHR, Apache-2.0, ships, the default; `MHR_hi.fbx` for exports) and any local ones (Manny, Mixamo, MetaHuman bodies: never shipped) |
+| `Content/Studio/PBR/` | **the PBR shelf** (docs/ASSETS.md §6): your texture sets in category folders (`<Category>/<name>/`, ZIPs unpacked on a scan), refs `pbr/<Category>/<name>`; git-ignored but its README. `storykit/pbr.py`, `tools/pbr.py` (list, `demo`, `check`: PBR), the shelf page `tools/director/pbr.html`; Unreal imports a set into `/Game/Studio/PBR/...` only when it hasn't got it (or a map changed): `surfaces.sync_pbr()` |
 | `Content/Studio/Library/` | **the CC0 library** (docs/ASSETS.md): `index/` (mesh sizes by name: 900 Base Mesh props), `meshes/`, `textures/` (fetched), `LEDGER.json` (where each came from) |
 | `Content/Studio/Skin/GlassSkin/` | the glass-skin texture set for MetaHuman faces (`tools/glass_skin.py` makes it; docs/METAHUMAN_LOOKS.md §2) |
 | `Content/Games/<Game>/Motion/`, `Previs/` | generated motions as desk files (`motion.py preview`); the desk's glTF blocking exports |
@@ -49,7 +50,7 @@ Unreal build must match. Directing craft: docs/DIRECTING.md.
 ## Checks (each ends `<NAME> ok`)
 
 **Offline:**
-- `python tools/check_all.py [--game G]`: STORY, LEVEL, SHOTS (plan) for every game
+- `python tools/check_all.py [--game G]`: STORY, LEVEL, SHOTS (plan) for every game, and PBR (the shelf) once
 - `node tools/score/check.js`: SCORE (the music cues and the palettes)
 - `node tools/kit/check.mjs`: KIT (the kit's types, presets and every game's kit props)
 - `python tools/motion.py --game G check`: MOTION

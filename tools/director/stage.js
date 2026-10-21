@@ -26,12 +26,13 @@ function libMesh(ref) {
   if (!meshCache[ref]) meshCache[ref] = new GLTFLoader().loadAsync(`/library/meshes/${ref}.glb`).then(g => g.scene).catch(() => null);
   return meshCache[ref];
 }
+export const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 function libMaterial(ref) {
   if (matCache[ref]) return matCache[ref];
   const meta = LIBRARY.textures[ref], tl = new THREE.TextureLoader(), maps = meta.maps || {};
   const tex = (k, srgb) => {
     if (!maps[k]) return null;
-    const t = tl.load(`/library/textures/${ref}/${maps[k]}`);
+    const t = tl.load(meta.base ? `${encPath(meta.base)}/${encodeURIComponent(maps[k])}?s=${meta.stamp || ""}` : `/library/textures/${ref}/${maps[k]}`);   // base: a PBR shelf set
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;

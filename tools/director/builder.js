@@ -1013,7 +1013,7 @@ function lookEditor(r) {
   const opts = [...new Set([...Object.keys(LIBRARY.textures || {}), ...KNOWN_LOOKS, ...Object.values(look)])].filter(Boolean).sort();
   const g = document.createElement("div"); g.className = "prop";
   for (const part of ["floor", "walls", "ceiling", "trim"]) {
-    const sel = pick(look[part] || "", [["", "(grey)"], ...opts.map(o => [o, o.replace(/^ambientcg\//, "") + (LIBRARY.textures && LIBRARY.textures[o] ? "" : " (not fetched)")])], v => {
+    const sel = pick(look[part] || "", [["", "(grey)"], ...opts.map(o => [o, o.replace(/^(ambientcg|pbr)\//, "") + (LIBRARY.textures && LIBRARY.textures[o] ? "" : " (not fetched)")])], v => {
       r.extra.look = Object.assign({}, r.extra.look || {}); if (v) r.extra.look[part] = v; else delete r.extra.look[part];
       if (!Object.keys(r.extra.look).length) delete r.extra.look;
     });
@@ -1021,7 +1021,7 @@ function lookEditor(r) {
   }
   const same = document.createElement("button"); same.textContent = `Same look for every ${(KINDS[r.kind] || KINDS.other).en.toLowerCase()}`;
   same.onclick = () => { pushUndo(); for (const o of B.model.rooms) if (o.kind === r.kind && o !== r) { if (r.extra.look) o.extra.look = JSON.parse(JSON.stringify(r.extra.look)); else delete o.extra.look; } changed(); };
-  const h = document.createElement("div"); h.className = "hint"; h.textContent = "Look (texture sets; fetch more with cc0.py textures <word> and get)";
+  const h = document.createElement("div"); h.className = "hint"; h.innerHTML = 'Look (texture sets: your <a href="pbr.html" target="_blank" style="color:inherit">PBR shelf</a>, and the library: <code>cc0.py textures &lt;word&gt;</code>)';
   wrapEl.append(h, g, same);
   return wrapEl;
 }

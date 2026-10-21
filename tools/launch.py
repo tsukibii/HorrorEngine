@@ -34,6 +34,7 @@ TOOLS = [
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
+    ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
@@ -43,6 +44,7 @@ TOOLS = [
     ("Checks", "Shots review (plan only, no pictures)", "tools/shots_sheet.py --game {game} --plan", {}),
     ("Checks", "Shots review (after the editor took them)", "tools/shots_sheet.py --game {game}", {}),
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
+    ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
@@ -84,6 +86,8 @@ TOOLS = [
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),
     ("Library", "Search props", "tools/cc0.py props {ask:Word}", {}),
     ("Library", "Credits list (ledger)", "tools/cc0.py ledger", {}),
+    ("Library", "PBR shelf: scan and list (unpacks new ZIPs)", "tools/pbr.py", {}),
+    ("Library", "PBR shelf: five made-up sets to try", "tools/pbr.py demo", {}),
 
     ("Ship", "Package a game (dry run)", "tools/package_game.py --game {game} --dry", {}),
     ("Ship", "Package a game", "tools/package_game.py --game {game}", {}),

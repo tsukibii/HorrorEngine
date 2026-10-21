@@ -292,6 +292,29 @@ const SCRATCH = "Zz_builder_test";
     if (JSON.stringify(s1.size) === JSON.stringify(s0) || s1.size[2] !== s0[2]) fail("dragging the kit maker's corner handle: " + JSON.stringify([s0, s1]));
     if (shots) await km.screenshot({ path: path.join(shots, "kit_maker.png") });
     await km.close();
+
+    // the PBR shelf (docs/ASSETS.md §6): when it has sets (`python tools/pbr.py demo`), each one dresses the preview
+    const shelf = await (await fetch(URL + "api/pbr")).json();
+    const refs = Object.keys(shelf.sets || {});
+    if (!refs.length) console.log("pbr shelf: empty, skipped (`python tools/pbr.py demo` makes sets to test on)");
+    else {
+      const pp = await ctx.newPage();
+      pp.on("pageerror", e => errors.push("pbr: " + e.message));
+      await pp.goto(URL + "pbr.html");
+      await pp.waitForFunction(n => window.__pbr && Object.keys(window.__pbr.S.sets).length === n, refs.length, { timeout: 30000 });
+      await pp.evaluate(() => window.__pbr.stop());
+      const out = {};
+      for (const shape of ["sphere", "cube", "room", "plane"]) {
+        await pp.evaluate(([r, s]) => { window.__pbr.select(r); window.__pbr.shape(s); }, [refs[0], shape]);
+        await pp.waitForTimeout(1500);
+        out[shape] = await pp.evaluate(() => { let maps = 0; window.__pbrScene.traverse(o => { if (o.isMesh && o.material.map && o.material.map.image) maps++; }); return maps; });
+      }
+      const cards = await pp.evaluate(() => document.querySelectorAll("#list figure").length);
+      console.log("pbr shelf", refs.length, "sets,", cards, "cards, textured meshes", JSON.stringify(out));
+      if (cards !== refs.length || Object.values(out).some(n => !n)) fail("the PBR shelf: " + JSON.stringify({ cards, out }));
+      if (shots) await pp.screenshot({ path: path.join(shots, "pbr_shelf.png") });
+      await pp.close();
+    }
   } finally {
     for (const f of fs.existsSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) ? fs.readdirSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) : [])
       if (f.startsWith("hinge_test_hinge_")) fs.rmSync(path.join(ROOT, "Content/Studio/Library/meshes/local", f));

@@ -27,7 +27,7 @@ import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Content" / "Python"))
-from storykit import storylib as L, library as LIB  # noqa: E402
+from storykit import storylib as L, library as LIB, pbr as PBR  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -38,13 +38,6 @@ BASEMESH_RAW = "https://raw.githubusercontent.com/M3-org/base-meshes/main/models
 BASEMESH_PAGE = "https://thebasemesh.com/ (glTF: https://github.com/M3-org/base-meshes)"
 AMBIENT_GET = "https://ambientcg.com/get?file={id}_{res}-JPG.zip"
 AMBIENT_SEARCH = "https://ambientcg.com/api/v2/full_json?type=Material&q={q}&limit=20&sort=Popular"
-MAP_WORDS = [("albedo", ("color", "albedo", "diffuse", "diff", "basecolor", "base_color", "col")),
-             ("normal", ("normalgl", "nor_gl", "normal", "nrm", "nor")),
-             ("rough", ("roughness", "rough", "rgh")),
-             ("ao", ("ambientocclusion", "occlusion", "_ao", "ao")),
-             ("height", ("displacement", "height", "disp", "bump")),
-             ("metal", ("metalness", "metallic", "metal")),
-             ("opacity", ("opacity", "alpha", "mask"))]
 IMG = (".jpg", ".jpeg", ".png", ".tga", ".exr", ".tif", ".tiff")
 
 
@@ -164,15 +157,9 @@ def get_basemesh(name):
 
 # ---- textures ---------------------------------------------------------------------------------------------------
 def map_of(filename):
-    n = Path(filename).stem.lower().replace("-", "_")
-    if "normaldx" in n or "nor_dx" in n:
-        return "normal_dx"
-    if "preview" in n or "thumb" in n:
-        return None
-    for key, words in MAP_WORDS:
-        if any(n.endswith(w) or f"_{w}" in n or n == w for w in words):
-            return key
-    return None
+    """The map a file is by its name's last word(s) (storykit/pbr.py): 'x_nor_dx_2k.png' -> 'normal_dx'."""
+    k = PBR.map_of(filename)
+    return None if k == "arm" else k
 
 
 def store_textures(ref, files, tile, source, url, licence="CC0-1.0"):
@@ -288,7 +275,8 @@ def cmd_needs(args, fetch=False):
                 except Exception as e:  # noqa: BLE001
                     print(f"  {ref}: {e}")
             else:
-                print(f"  {ref}: download it by hand, then `cc0.py add <file> {ref}`")
+                print(f"  {ref}: " + (f"not on the PBR shelf ({PBR.ROOT}): put its folder or ZIP there, then `python tools/pbr.py`"
+                                     if lib == "pbr" else f"download it by hand, then `cc0.py add <file> {ref}`"))
 
 
 def cmd_ledger(args):
