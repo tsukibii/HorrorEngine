@@ -1,0 +1,66 @@
+{
+  "what": "glass skin for a MetaHuman face: low even roughness, slightly raised specular, shallow pores; the colour stays Creator's synthesised skin (docs/METAHUMAN_LOOKS.md \u00a72)",
+  "size": 2048,
+  "seed": 7,
+  "pore_spacing_px": 5.12,
+  "params": {
+    "roughness": 0.32,
+    "specular": 0.55,
+    "fuzz": 0.25,
+    "pores": 0.5,
+    "dew": 0.6
+  },
+  "stats": {
+    "roughness": {
+      "mean": 0.312,
+      "min": 0.234,
+      "max": 0.451
+    },
+    "specular": {
+      "mean": 0.554,
+      "min": 0.464,
+      "max": 0.589
+    },
+    "cavity": {
+      "mean": 0.995,
+      "min": 0.819,
+      "max": 1.01
+    },
+    "fuzz": {
+      "mean": 0.243,
+      "min": 0.18,
+      "max": 0.29
+    }
+  },
+  "files": {
+    "T_GlassSkin_Roughness.png": "grey, linear (sRGB off), compression Grayscale: the roughness channel",
+    "T_GlassSkin_Specular.png": "grey, linear: the specular channel",
+    "T_GlassSkin_Cavity.png": "grey, linear: MetaHuman Creator > Materials > Skin > Texture Override > Cavity (face)",
+    "T_GlassSkin_SRMF.png": "RGBA, linear, compression Masks: channels R=Specular, G=Roughness, B=Metallic, A=Fuzz; swap in for T_Head_SRMF after assembly (verify the order on the first run)",
+    "T_GlassSkin_NormalMicro.png": "RGB, Normalmap, DirectX green: optional; only as the face normal override if the synthesised normal shows pores (it also removes every wrinkle)"
+  },
+  "creator": {
+    "skin.roughness": 0.85,
+    "skin.face_texture_index": "the smoothest (youngest) of the texture types",
+    "skin.freckles": "none",
+    "skin.accents": "none, or redness on the cheeks only at 0.1 to 0.2",
+    "makeup.foundation": {
+      "apply": true,
+      "color": "the skin tone, half a step lighter",
+      "intensity": 0.6,
+      "roughness": 0.15,
+      "concealer": 0.8
+    },
+    "makeup.lips": {
+      "roughness": "low (gloss)"
+    },
+    "eyes": "iris dark brown, limbal ring on, sclera brightness up a little"
+  },
+  "material_after_assembly": {
+    "roughness multiplier": 0.8,
+    "specular multiplier": 1.1,
+    "scatter / subsurface multiplier": 1.15,
+    "normal strength": 0.7,
+    "note": "the head material instance's global scalars; names vary by version, storykit.skin prints the ones it finds"
+  }
+}
