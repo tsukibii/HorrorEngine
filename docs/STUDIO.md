@@ -14,7 +14,9 @@ Three kinds of thing, kept apart so each can change on its own: **Epic's templat
 and `Source/HorrorEngine/` are the First Person template as the Project Browser made it. Its maps
 (`Lvl_FirstPerson`, `Lvl_Horror`) stay the editor's start map and the default game, so there's always a level that
 plays. **Nothing in them is edited:** what we want from them is duplicated into `Studio/` (or subclassed in C++),
-so the template can be deleted in one go the day it's no longer needed.
+so the template can be deleted in one go the day it's no longer needed. **It's never in git:** it's Epic's content
+and the repo is public, so `.gitignore` leaves it out, and a fresh clone makes it again (SETUP S2: the Project
+Browser, then `setup.py adopt`). Only the `.uproject`, `Config/` and the `*.Target.cs` files are ours to commit.
 
 ### The studio: `/Game/Studio/` and `Source/StoryRunner/`
 

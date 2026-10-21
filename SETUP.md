@@ -59,7 +59,8 @@ This folder is already the repo (`origin` is GitHub).
 - [ ] `python setup/setup.py configure` (the ini lines, and `.gitattributes`, which sends the binary assets to LFS;
   `.gitignore` is there already).
 - [ ] `git lfs install`; check `.gitattributes` sends `*.uasset` and `*.umap` to LFS, then commit the project
-  (`.uproject`, `Source`, `Config`, the template's `Content`) and push.
+  (`.uproject`, `Config`, the `*.Target.cs` files) and push. Epic's template (its `Content` folders and
+  `Source/HorrorEngine/`) stays out: the repo is public (docs/STUDIO.md).
 - **Done:** a clean `git status`, and the remote has the commit.
 
 ## S4. UnrealClaude, with the UE 5.8 fix (Claude, user approves)

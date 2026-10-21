@@ -1,0 +1,16 @@
+# Unreal's binary assets and video go through Git LFS. The tools' own source files (CC0 meshes, MHR bodies, the score
+# room's samples, previs .glb) were in plain git before the project came, and stay there: putting their extensions
+# here would turn every one of them into a "should have been a pointer" change.
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+*.exr filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+
+# text stays text
+*.json text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.ini text
+*.uproject text

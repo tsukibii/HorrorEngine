@@ -3,8 +3,8 @@
 what's already done.
 
     python setup/setup.py env                    find Unreal, the C++ toolchain, git, git-lfs; write setup/env.json
-    python setup/setup.py adopt <folder>         move a project the Project Browser made elsewhere into this folder
-                                                 (its .uproject, Source, Config, Content merged), then delete what's left
+    python setup/setup.py adopt <folder>         copy a project the Project Browser made elsewhere into this folder
+                                                 (its .uproject, Source, Config, Content merged); the old one stays
     python setup/setup.py plugins [words...]     list the engine's plugins whose name matches (default: setup/plugins.json's words)
     python setup/setup.py enable                 enable setup/plugins.json's plugins in the .uproject (names checked against the engine)
     python setup/setup.py unrealclaude [--show-scripts] [--auto-approve]
@@ -499,14 +499,10 @@ def cmd_editor(args):
     print(f"EDITOR started: {exe} {up.name} {' '.join(args)}")
 
 
-ADOPT = ["Source", "Config", "Content"]               # what a new project brings; the rest (Binaries, Intermediate,
-                                                    # Saved, DerivedDataCache) is rebuilt here
-
-
 def cmd_adopt(args):
     """The Project Browser won't create a project in a folder with files in it, so it makes one elsewhere and this
-    moves it in: its .uproject, Source and Config (which must be new here) and its Content (merged: nothing of ours
-    is overwritten). Then the old folder goes."""
+    copies it in: its .uproject and thumbnail, Source and Config (which must be new here) and its Content (merged:
+    nothing of ours is overwritten). The old folder stays as it was: delete it once the project opens from here."""
     if not args:
         sys.exit("adopt <the folder the Project Browser made>")
     src = Path(args[0]).expanduser().resolve()
@@ -523,23 +519,18 @@ def cmd_adopt(args):
         sys.exit("these Content files exist in both: " + ", ".join(map(str, clash[:10])))
     for name in ("Source", "Config"):
         if (src / name).exists():
-            shutil.move(str(src / name), str(ROOT / name))
+            shutil.copytree(src / name, ROOT / name)
+    n = 0
     for f in sorted((src / "Content").rglob("*")):
         if f.is_file():
             dst = ROOT / f.relative_to(src)
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(f), str(dst))
-    shutil.move(str(ups[0]), str(ROOT / ups[0].name))
-    for f in src.glob(f"{ups[0].stem}.png"):        # the project's thumbnail
-        shutil.move(str(f), str(ROOT / f.name))
-    left = [p.name for p in src.iterdir() if p.name not in ("Binaries", "Intermediate", "Saved", "DerivedDataCache",
-                                                             "Content", ".vs", ".vscode", "Makefile", ".ignore") and p.suffix not in (".sln", ".code-workspace")]
-    if left:
-        print(f"kept {src}: it still has {', '.join(left)} (look, then delete it yourself)")
-    else:
-        shutil.rmtree(src)
-        print(f"removed {src}")
-    print(f"ADOPT ok: {ups[0].name} with {', '.join(ADOPT)} in {ROOT}")
+            shutil.copy2(f, dst)
+            n += 1
+    for f in [ups[0], *src.glob(f"{ups[0].stem}.png")]:
+        shutil.copy2(f, ROOT / f.name)
+    print(f"ADOPT ok: {ups[0].name}, Source, Config and {n} Content files copied into {ROOT}")
+    print(f"the old project is still at {src}: delete it once the editor opens the project from here")
 
 
 def main():

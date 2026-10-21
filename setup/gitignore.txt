@@ -50,3 +50,18 @@ Makefile
 .vscode/
 /.ignore
 Content/Developers/
+
+# Epic's First Person template (its content, maps and C++): Epic's, so never in this public repo (CLAUDE.md, assets).
+# A fresh clone makes it again: SETUP.md S2 (the Project Browser, then `setup.py adopt`).
+Content/Characters/
+Content/FirstPerson/
+Content/Input/
+Content/LevelPrototyping/
+Content/Variant_Horror/
+Content/Variant_Shooter/
+Content/Weapons/
+Content/__ExternalActors__/FirstPerson/
+Content/__ExternalActors__/Variant_*/
+Content/__ExternalObjects__/FirstPerson/
+Content/__ExternalObjects__/Variant_*/
+Source/HorrorEngine/
