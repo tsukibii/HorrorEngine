@@ -149,12 +149,15 @@ files too) back into the patch: run it after changing the demo, then commit. A n
 three-way merge; if that conflicts, the checkout is left as it was and you either build the Kimodo it was made on
 (`setup.py kimodo --rev <that commit>`) or port it with this map. Everything that isn't a hook into Kimodo's own code
 is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), so a port is mostly re-adding hooks:
-- **Loop** (Constraints panel), above. Code: `generation.loop_first_pose`, called by `compute_model_constraints_lst` for
+- **Loop** (Constraints panel), above. On a path that turns, the copy turns with it (the path's heading at its end
+  against its start, about the hips), so a loop around a corner arrives facing the new way. Code: `generation.loop_first_pose`, called by `compute_model_constraints_lst` for
   the Full-Body track when the checkbox sets `session.loop_first_pose`.
 - **In place** (Exports, Motion; Save Motion uses it too): the root's travel taken out, its sway and bob kept, so a walk
   plays on the spot for an NPC or player rig. The travel is the root's path smoothed over 0.25 s and pinned at both
   ends, so an in-place Loop still ends exactly where it starts. **Drop last frame** (Exports): a Loop's last frame
-  repeats its first; drop it and the wrap doesn't hold a frame. Hook: `ui.save_motion` and the Download button export
+  repeats its first; drop it and the wrap doesn't hold a frame. **Mirror** (Exports): left and right swapped across
+  the plane the character starts in, a left-handed copy for NPC variety; rotations are corrected for rest frames that
+  aren't mirror images, so they agree with the mirrored positions to under half a centimetre. Hook: `ui.save_motion` and the Download button export
   `studio.for_export(motion, ...)` instead of the motion.
 - **Stage** (its own panel): a story's rooms as see-through boxes around the character, to plan a motion in the room
   it plays in. `python tools/kimodo.py stage --game G --at <spot>` writes it (`Saved/Kimodo/stage.json`, the panel's
@@ -164,7 +167,9 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   retarget onto them a hand on a door handle stays on it. `--rooms a,b` or `--level` for more than the spot's room and
   its neighbours; Move X, Move Z and Turn shift it in the viewer. **Player's Eye**: the camera at a player mark's
   eye (View From), the game's lens (`game.fov`, 90 degrees across), looking at the character's head and following it
-  as it plays (Keep Aiming); Free Camera puts your view back. Code: `studio.load_stage` and friends, `ui.aim_eye`.
+  as it plays (Keep Aiming); Free Camera puts your view back. **Door swings**: each door's leaf sweeps an orange arc
+  on the floor, into its room for `swing: in`, away for `out`; the format has no hinge side yet, so the arc hinges on
+  the leaf's left end. Code: `studio.load_stage` and friends, `ui.aim_eye`.
 - **Path** (its own panel): tick **Draw Path** (or press **P**), click the floor to add a waypoint, click a waypoint to
   remove it. Each lands on the 2D Root track (the start at frame 0), timed by **Pace** (even over the clip, or sneak,
   walk, jog, run speeds); changing the pace retimes them; a waypoint deleted on the timeline leaves the path. The camera
@@ -175,7 +180,8 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   stage around it. Drag the hand and foot dots (two-bone IK; elbows and knees steer the bend), the hips (Pin feet keeps
   the feet planted: crouch, kneel, lie down), the neck (bends the spine) and the top of the head (tilts the neck);
   click a hand, a foot or the head (no drag) for three rings, twist and two bends, and drag one to turn it;
-  orbit, pan, zoom; Load frame, Reset, Undo, Mirror, Turn. **Poses ▾** is the library shared with the desk
+  orbit, pan, zoom; Load frame, Reset, Undo, Mirror, Turn. Hold **Shift** while dragging a hand or a foot and it
+  sticks to the stage surface under the pointer (2.5 cm off it: a palm on a door, a foot on a step). **Poses ▾** is the library shared with the desk
   (`tools/kimodo_poses.py`): Load puts a pose where and facing the way the figure is (desk poses through
   kimodo_constrain's solver); Save writes it exactly into `Content/Studio/kimodo_poses.json` and a previs copy
   (bone directions matched) into `poses.json`, so the desk can block with it; a desk pose's name isn't overwritten.
@@ -184,6 +190,16 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   **Drop at playhead** places it once. The window works in rotations relative to each parent's global one, so the
   pose round-trips exactly (`studio.effective_locals`, `studio.pose_fk`). Hook: `ui.add_constraint_callback` uses
   `session.armed_pose` for Full-Body.
+- **The scorecard** (under Generate): after each generation, every take's feet sliding (cm while planted), its worst
+  constraint miss (cm), and with Loop its seam (the pose gap and the speed jump at the wrap); ★ marks the best. With
+  Num Samples above 1, click a character to keep that take. Code: `studio.take_report`.
+- **Preset** (Generate): horror prompts in Kimodo's style from `Content/Studio/kimodo_prompts.json`, each with its
+  length and what it should do (`expect`). `python tools/kimodo_presets.py run` generates 3 takes of each and
+  `check` measures them (forward travel, hips height, hands near the head, how far the body turned) and writes the
+  result into the preset, which the dropdown shows: PRESETS ok when every preset makes 2 of 3. Measured so far:
+  all 12 pass (11 of them 3 of 3). What the words can't do goes in the preset's `tip`: Kimodo won't crouch-walk
+  from any wording tried (stalk: arm the crouch pose instead), and it backs away at walking pace however slowly it's
+  asked (draw a Path at Sneak pace).
 - **A Kimodo fix:** Make Smooth Path with no 2D Root waypoints no longer crashes generation.
 - **Send to Studio** (Exports): Game, Name and Clip, then Send: the motion as exported (In place, Drop last frame)
   goes through `motion.py import` into `Content/Games/<Game>/Motion/<Name>.json`, and the clip (every version of
