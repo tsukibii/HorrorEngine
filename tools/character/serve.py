@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""The body editor (tools/body/index.html): MHR's whole body from a base (average, feminine, masculine) and its 45
+"""The body editor (tools/character/index.html): MHR's whole body from a base (average, feminine, masculine) and its 45
 identity sliders, with a face from up to two pictures (front, side) bent onto its head by tools/face_mesh.py, or
 none. Exports the body and the head alone (for Mesh to MetaHuman) as OBJ. Each character keeps its pictures and
 settings in Content/Studio/People/<name>/ (git-ignored: real people's faces).
 
-    python tools/body/serve.py            then open http://127.0.0.1:8793
+    python tools/character/serve.py            then open http://127.0.0.1:8793
 
 Plain Python, no installs (the face fit runs in face_mesh.py's environment: python tools/face_mesh.py setup).
 Listens on 127.0.0.1 only.

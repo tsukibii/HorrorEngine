@@ -34,7 +34,7 @@ crown); --detail the fine pass (eyelids, lips, nostrils);
 One frontal, evenly lit, neutral photo is enough; several (or a video, a few seconds turning a little) average out
 each picture's error. A side picture (named in `side` by the worker's callers: the body editor's side slot) gives the
 depth of the half it sees instead of MediaPipe's guess; it has to be one MediaPipe finds, about 70 degrees at most.
-A body works as the template too (body_template: the body editor's MHR, tools/body/): bound on its head alone, bent
+A body works as the template too (body_template: the body editor's MHR, tools/character/): bound on its head alone, bent
 with the fit fading out down the neck. A phone's wide lens close up swells the nose: take the photo from further away and crop.
 """
 import argparse
@@ -639,7 +639,7 @@ def cmd_worker(a):
       fit {name, settings, skip}          the head bent with those settings, its points flat, the report
       save {name, settings, skip, out}    <out>/<name>.obj, .json, _sheet.png
       mhr {}                              the body editor's sliders: groups, labels, the bases, MHR's measures
-      body {name, weights, settings, skip, side}   MHR's body (tools/body/mhr.py) with those identity weights and the
+      body {name, weights, settings, skip, side}   MHR's body (tools/character/mhr.py) with those identity weights and the
                                           face bent onto its head: the points that moved and by how much
     (detect, fit, body: a picture named in side is used for the face's depth only)"""
     ses, pics = Session(home_dir(a)), {}
@@ -663,14 +663,14 @@ def cmd_worker(a):
             tpl, bnd = head
             return dict(verts=flat(tpl["verts"]), tris=tpl["tris"].reshape(-1).tolist(), rot=flat(np.array(bnd["rot"])))
         if op == "mhr":                                    # the body editor's sliders: groups, labels, the bases
-            sys.path.insert(0, str(ROOT / "tools" / "body"))
+            sys.path.insert(0, str(ROOT / "tools" / "character"))
             import mhr
             m = mhr.load()
             presets = json.loads(mhr.PRESETS_FILE.read_text(encoding="utf-8"))["presets"] if mhr.PRESETS_FILE.exists() else {}
             return dict(groups=m["header"]["groups"], labels=mhr.labels(m), presets=presets,
                         measures=mhr.measures(m["points"], m))
         if op == "body":
-            sys.path.insert(0, str(ROOT / "tools" / "body"))
+            sys.path.insert(0, str(ROOT / "tools" / "character"))
             import mhr
             m = mhr.load()
             pts = mhr.body(q.get("weights", []), m)
@@ -805,7 +805,7 @@ def cmd_check(a):
             np.ptp(v[tpl["tris"][chin][:, 0]][:, 0])
         if grew < 1.05: fails.append(f"a 15% wider jaw only widened the head's jaw by {grew - 1:.0%}")
         print(f"head: bound facing {bnd['turn']} deg off, bent to itself {moved:.3%}, jaw +{grew - 1:.0%}")
-        sys.path.insert(0, str(ROOT / "tools" / "body"))
+        sys.path.insert(0, str(ROOT / "tools" / "character"))
         import mhr
         if mhr.BIN.exists():                              # the body: its head bends, nothing under the neck moves
             m = mhr.load()

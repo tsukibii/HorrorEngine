@@ -1,11 +1,11 @@
-// The body editor (tools/body/index.html) in a headless browser: MHR loads with its 45 sliders; a scratch character;
+// The body editor (tools/character/index.html) in a headless browser: MHR loads with its 45 sliders; a scratch character;
 // the feminine base and a shape slider move the body, the height scales it; a front picture (the page's own head from
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the head OBJ exports; the pictures clear and the face goes. Ends "BODYPAGE ok".
 //
 //   python tools/face_mesh.py setup         (once)
-//   python tools/body/serve.py              (in another shell)
-//   node tools/body/bodytest.js [shot.png]
+//   python tools/character/serve.py              (in another shell)
+//   node tools/character/bodytest.js [shot.png]
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 const { chromium } = require(process.env.PLAYWRIGHT || "playwright");

@@ -7,8 +7,8 @@ the Fat suit page's balloons and hourglass; `MHR_lod1.fbx` (18,437) and `MHR_lod
 meshes, for round soft volumes (slower in the browser). `MHR_head.obj` is the head of `MHR_lod0.fbx`, cut
 0.245 m under its top (Y up, facing +Z, metres): `tools/face_mesh.py`'s default head template.
 `MHR_lod1.bin` is `MHR_lod1.fbx`'s mesh and its 45 identity shapes packed for the body editor and face_mesh.py
-(`tools/body/pack_mhr.py`, run in Blender's module; read with `tools/body/mhr.py`); `MHR_presets.json` holds the
-editor's bases (average, feminine, masculine: fitted to proportions by `python tools/body/mhr.py presets`).
+(`tools/character/pack_mhr.py`, run in Blender's module; read with `tools/character/mhr.py`); `MHR_presets.json` holds the
+editor's bases (average, feminine, masculine: fitted to proportions by `python tools/character/mhr.py presets`).
 
 You can also drop other rigged human models here (`.glb`, `.gltf` with its files, or `.fbx`): the desk drives them with the blocking,
 from the player's eye, instead of the capsule figure. Bones are found by name: Unreal mannequin (`pelvis`,

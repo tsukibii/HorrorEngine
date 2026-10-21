@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (our own characters: MHR first, one app for everything character)
+
+- **Characters are built on MHR, not MetaHuman** (docs/MHR_PIPELINE_RESEARCH.md): MetaHuman Creator proved restricting
+  and slow. This replaces the 2026-10-20 routes that made every final character a MetaHuman (Kimodo onto the
+  MetaHumans, clothing through MetaHuman's Outfit Asset): Kimodo's motions go onto our MHR characters, garments onto
+  MHR bodies. MetaHuman stays only as an optional branch for a hero face if the close-up A/B (T7) says so.
+- **One app for everything character** (`tools/character/`, the Character Studio): body, face from photos, the
+  expressions, hair and clothing as they come, Kimodo's motions played on the character, and the export to Unreal.
+  It grows out of the body editor. Avoid ComfyUI and other outside apps where we can.
+- The work goes on its own branch, `claude/character-studio`, off the face branch.
+
 ## 2026-10-21 (scenes blend; triggered scenes)
 
 - **Scenes blend in and out by default** (the view eases from the player's eye, no black). A hard cut or a fade is

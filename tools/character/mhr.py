@@ -1,5 +1,5 @@
 """MHR's body in plain numpy (the body editor's server, face_mesh.py, the presets): the packed mesh
-(Content/Studio/Bodies/MHR_lod1.bin, tools/body/pack_mhr.py), a body from its 45 identity weights, and its measures.
+(Content/Studio/Bodies/MHR_lod1.bin, tools/character/pack_mhr.py), a body from its 45 identity weights, and its measures.
 Y up, facing +Z, metres; the measures in cm, over the same regions as the desk's shape page (tools/director/shape.html).
 """
 import json
@@ -157,7 +157,7 @@ def make_presets(path=PRESETS_FILE):
         w = fit_measures({k: base[k] + v for k, v in bdy.items()}, groups=("body",), mhr=mhr)
         w = fit_measures({k: base[k] + v for k, v in hd.items()}, start=w, keep=0.3, groups=("head",), mhr=mhr)
         out[name] = [round(float(x), 4) for x in w]
-    path.write_text(json.dumps({"about": "MHR identity weights for the body editor's bases (tools/body/mhr.py presets)",
+    path.write_text(json.dumps({"about": "MHR identity weights for the body editor's bases (tools/character/mhr.py presets)",
                                 "presets": out}, indent=1), encoding="utf-8")
     return out
 
@@ -167,4 +167,4 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["presets"]:
         print({k: max(abs(x) for x in v) for k, v in make_presets().items()}, "->", PRESETS_FILE)
     else:
-        print("python tools/body/mhr.py presets    the bases into Content/Studio/Bodies/MHR_presets.json")
+        print("python tools/character/mhr.py presets    the bases into Content/Studio/Bodies/MHR_presets.json")

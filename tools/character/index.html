@@ -71,7 +71,7 @@
 </main>
 <script type="module">
 // MHR's whole body (Meta's Momentum Human Rig, Apache-2.0) from a base and its 45 identity shapes, computed here from
-// Content/Studio/Bodies/MHR_lod1.bin (tools/body/pack_mhr.py); the face from up to two pictures is fitted in Python
+// Content/Studio/Bodies/MHR_lod1.bin (tools/character/pack_mhr.py); the face from up to two pictures is fitted in Python
 // (tools/face_mesh.py's body op, through serve.py) and laid on top. docs/METAHUMAN_LOOKS.md §1.3.
 import * as THREE from "three";
 const $ = s => document.querySelector(s);
@@ -288,7 +288,7 @@ async function open(name) {
   if (WHO) detect();
 }
 const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked,
-                           weights: weights(), about: "the body editor (tools/body/): MHR identity weights = the base blended in + shape" });
+                           weights: weights(), about: "the body editor (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
   const n = $("#newName").value.trim();
@@ -311,7 +311,7 @@ function objText(head) {                               // metres, Y up, facing +
   let n = 0;
   for (const i of tris) if (keep[i] < 0) { keep[i] = ++n; v.push(`v ${POS[i * 3].toFixed(5)} ${POS[i * 3 + 1].toFixed(5)} ${POS[i * 3 + 2].toFixed(5)}`); }
   for (let t = 0; t < tris.length; t += 3) f.push(`f ${keep[tris[t]]} ${keep[tris[t + 1]]} ${keep[tris[t + 2]]}`);
-  return [`# ${WHO}: MHR (Meta, Apache-2.0) from the body editor (tools/body/); metres, Y up, facing +Z`, `o ${WHO}_${head ? "head" : "body"}`, ...v, ...f].join("\n") + "\n";
+  return [`# ${WHO}: MHR (Meta, Apache-2.0) from the body editor (tools/character/); metres, Y up, facing +Z`, `o ${WHO}_${head ? "head" : "body"}`, ...v, ...f].join("\n") + "\n";
 }
 for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).onclick = async () => {
   if (!WHO) return status("make a character first", "bad");

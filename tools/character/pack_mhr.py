@@ -2,7 +2,7 @@
 +Z, metres; its triangles) and its 45 identity shapes (0-19 body, 20-39 head, 40-44 hands) as float16 offsets.
 Runs inside Blender's module (tools/retarget.py setup puts it in vendor/blender):
 
-    vendor/blender/.venv/bin/python tools/body/pack_mhr.py [lod1] [out]
+    vendor/blender/.venv/bin/python tools/character/pack_mhr.py [lod1] [out]
 
 Writes Content/Studio/Bodies/MHR_<lod>.bin (default lod1: 18,439 points). The file: a uint32 header length, the
 header (JSON: counts, units, the offsets of each block), then the points (float32), the triangles (uint32) and the
