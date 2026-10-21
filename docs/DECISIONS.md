@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (music: the score room)
+
+- **Woohill's music engine comes over as the score room** (`tools/score/`, docs/MUSIC.md), an HTML app now that can
+  be plugged into the director later (no Godot tool). Its job: more horror-style piano and string orchestrations, and
+  K-drama fun cues that score what the character is doing (typical K-drama TV: the sneak, the fall, the blush, the
+  slow-motion look). It makes variations and the user chooses the favourites, which go into a palette per game (and a
+  studio one). Built on research into K-drama and horror scoring and the shows and films whose music fits our
+  instruments (docs/MUSIC_RESEARCH.md). Each game gets its own mini soundtrack, part procedural and reacting to what
+  the player does, when it plugs into the desk and Unreal (docs/MUSIC.md §5).
+
 ## 2026-10-20 (Kimodo's motions onto the MetaHumans)
 
 - **The body motions made with Kimodo in the desk go onto the user's rigged MetaHumans in Unreal** (no talking: the
