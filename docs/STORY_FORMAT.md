@@ -98,7 +98,9 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 key by key; `"trim": false` for none): a skirting board that height along the foot of every wall, a cornice that
 deep under the ceiling, a casing that wide round every door and opening on both sides. The planner builds them as
 thin boxes (`<room>__skirting_n0`...) wherever a wall stands at that height, its own or its neighbour's, so they stop
-at openings and open sides by themselves; `look.trim` textures them.
+at openings and open sides by themselves; `look.trim` textures them. `"threshold": 0.012` lays a strip that high
+in every walk-through doorway between two rooms whose `floor` differs (`<room>__threshold_n`, tagged
+`trim:threshold`: it may stand proud of the floor).
 
 **Built-ins** (the scene builder, docs/SCENE_BUILDER.md): props with ids `<room>_fx_<what>` are its own, remade on
 every save from the room's `kind` (a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe

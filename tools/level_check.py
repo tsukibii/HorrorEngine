@@ -55,6 +55,7 @@ def check(story, level=None):
     solid = [p for p in pieces if p["kind"] in ("mesh", "person")]
     walls = [p for p in pieces if p["kind"] == "wall"]
     rooms = {r["id"]: r for lv in story["levels"].values() for r in lv["rooms"]}
+    level_of = {r["id"]: name for name, lv in story["levels"].items() for r in lv["rooms"]}
 
     def stacked(a, b):
         return f"on:{b['id']}" in a["tags"] or f"on:{a['id']}" in b["tags"]
@@ -72,6 +73,8 @@ def check(story, level=None):
                 errs.append(f"{a['id']} is {o * 100:.0f} cm into a wall of {w['room']}")
         r = rooms[a["room"]]
         x0, y0, z0 = r["at"]
+        if any(t == "trim:threshold" for t in a["tags"]):     # a threshold lies across its doorway, both sides
+            continue
         if ba[0] < x0 - TOL or ba[1] < y0 - TOL or ba[3] > x0 + r["size"][0] + TOL or ba[4] > y0 + r["size"][1] + TOL:
             errs.append(f"{a['id']} pokes out of {a['room']}")
         if ba[5] > z0 + r["size"][2] + TOL:
@@ -79,6 +82,8 @@ def check(story, level=None):
 
     # doorways: a box CLEAR deep on each side of every opening tall enough to walk through
     for r in rooms.values():
+        if level is not None and level_of[r["id"]] != level:
+            continue
         for op in r.get("openings", []):
             if op.get("sill", 0) > 0.3 or op["h"] < 1.8:
                 continue
@@ -89,7 +94,7 @@ def check(story, level=None):
             zone = (wx - (hw if along_x else CLEAR), wy - (CLEAR if along_x else hw), wz + 0.05,
                     wx + (hw if along_x else CLEAR), wy + (CLEAR if along_x else hw), wz + 1.8)
             for s in solid:
-                if "hidden" in s["tags"]:
+                if "hidden" in s["tags"] or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
                     continue
                 o = overlap(zone, aabb(s))
                 if o > TOL:

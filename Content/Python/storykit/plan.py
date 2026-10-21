@@ -82,7 +82,7 @@ def room_pieces(lid, room):
     return out
 
 
-TRIM_DEPTH = {"skirting": 0.012, "cornice": 0.03, "casing": 0.015}   # how far each stands off the wall
+TRIM_DEPTH = {"skirting": 0.012, "cornice": 0.03, "casing": 0.015, "threshold": 0.0}   # how far each stands off the wall
 
 
 def room_trim(lvl, room):
@@ -164,6 +164,39 @@ def trim_pieces(lid, lvl, room, walls, openings):
     return out
 
 
+def threshold_pieces(lid, lvl):
+    """A strip across every doorway where the floor changes (wood to tile at the washroom door), as tall as the
+    level's (or the host room's) `trim.threshold`, as deep as the wall: the host room's own."""
+    out, T = [], L.WALL_T
+    rooms = lvl["rooms"]
+    for room in rooms:
+        th = room_trim(lvl, room).get("threshold")
+        if not th:
+            continue
+        for i, op in enumerate(room.get("openings", [])):
+            if op.get("window") or op.get("sill", 0.0) > 0.05:
+                continue
+            axis, v, lo, _ = L.wall_line(room, op["wall"])
+            a0, a1 = lo + op["at"] - op["w"] / 2, lo + op["at"] + op["w"] / 2
+            other = None
+            for o in rooms:
+                if o is room or abs(o["at"][2] - room["at"][2]) > 0.05:
+                    continue
+                for wl in L.WALLS:
+                    ax2, v2, lo2, hi2 = L.wall_line(o, wl)
+                    if ax2 == axis and abs(v2 - v) < 0.01 and lo2 <= a0 + 0.01 and hi2 >= a1 - 0.01:
+                        other = o
+            if not other or other.get("floor", "wood") == room.get("floor", "wood"):
+                continue
+            z0 = room["at"][2]
+            pos = ((a0 + a1) / 2, v, z0 + th / 2) if axis == "y" else (v, (a0 + a1) / 2, z0 + th / 2)
+            size = (a1 - a0, T, th) if axis == "y" else (T, a1 - a0, th)
+            look = [f"mat:{room['look']['trim']}"] if (room.get("look") or {}).get("trim") else []
+            out.append({"id": f"{room['id']}__threshold_{i}", "kind": "mesh", "level": lid, "room": room["id"], "yaw": 0.0, "shape": "box",
+                        "d": room, "pos": pos, "size": size, "tags": ["story", f"story:{room['id']}", f"room:{room['id']}", "trim:threshold"] + look})
+    return out
+
+
 def plan(story, level=None):
     things, errs = L.index(story)
     if errs:
@@ -184,6 +217,7 @@ def plan(story, level=None):
                             op["h"], bool(op.get("window"))))
         for room in lvl["rooms"]:
             mine += trim_pieces(lid, lvl, room, walls, ops)
+        mine += threshold_pieces(lid, lvl)
         out += mine
         st = things[lvl["start"]]
         out.append({"id": f"{lid}__start", "kind": "start", "level": lid, "room": st.room, "pos": st.pos,
