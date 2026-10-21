@@ -2,7 +2,8 @@
 // the feminine base and a shape slider move the body, the height scales it; a front picture (the page's own head from
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
-// eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; pants are made to the body and worn; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
+// eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; pants are made to the body and worn;
+// twin tails grow from the scalp and stay off the head, with brows and lashes, and export; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup, python tools/garment.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
@@ -103,6 +104,16 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__body.garments.has("pants"), null, { timeout: 180000 });
     const st = await page.textContent("#status");
     if (!/pants: \d+ points, seams within/.test(st)) throw new Error(st);
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("hair: twin tails grown from the scalp, off the head, brows and lashes, exported", async () => {
+    await page.click('#tabs button[data-tab="hair"]');
+    await page.selectOption("#hairRows select", "twin");
+    await page.waitForFunction(() => window.__body.hair && window.__body.st.hair.style === "twin" && window.__body.hair.report.cards > 500, null, { timeout: 30000 });
+    const r = await page.evaluate(() => ({ ...window.__body.hair.report, brows: window.__body.hair.brows.index.length }));
+    if (r.inside_pct > 2 || r.scalp_triangles < 300 || !r.brows) throw new Error(JSON.stringify(r));
+    await page.click("#hairRows > button");
+    await page.waitForFunction(() => /wrote .*_studiotest_hair\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the head OBJ exports", async () => {

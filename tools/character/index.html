@@ -94,13 +94,14 @@
 
     <section data-tab="hair" hidden>
       <h3>Hair, brows, lashes</h3>
-      <p class="note">Coming: hairstyles groomed once on MHR's base head and shared by every character (same topology and UVs), strands for close-ups, cards below; stylised twin tails as mesh on bone chains. docs/MHR_PIPELINE_RESEARCH.md, phase 4.</p>
+      <div id="hairRows"></div>
+      <p class="note">Cards grown from this head's scalp (tools/character/hair.js): a style, then its numbers; they follow the body and the face, and keep off the head and shoulders. Strands for close-ups and a groom brush come later (docs/MHR_PIPELINE_RESEARCH.md, phase 4).</p>
     </section>
 
     <section data-tab="clothes" hidden>
       <h3>Clothes</h3>
       <div id="clothesRows"></div>
-      <p class="note">A design's sewing pattern made to this body by GarmentCode, sewn onto it with Blender's cloth (about 10 to 20 s), worn here. Skirts and trousers drape well; tops sit on the shoulders, but their sleeves still bunch. Change the body, then make the garment again.</p>
+      <p class="note">A design's sewing pattern made to this body by GarmentCode, sewn onto it with Blender's cloth (about 10 to 20 s), worn here. Skirts, trousers and tops drape on; the cloth is still coarse (2 cm triangles). Change the body, then make the garment again.</p>
       <div id="worn"></div>
     </section>
 
@@ -114,6 +115,7 @@
 // Content/Studio/Bodies/MHR_lod1.bin (tools/character/pack_mhr.py); the face from up to two pictures is fitted in Python
 // (tools/face_mesh.py's body op, through serve.py) and laid on top. docs/METAHUMAN_LOOKS.md §1.3.
 import * as THREE from "three";
+import * as HAIR from "./hair.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const api = async (u, body) => {
@@ -382,6 +384,7 @@ function compose() {                                   // POS: RAW + the face, s
     DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
+  hairDirty = true;
 }
 
 // ---- eyes: MHR's closed shell sunk behind an eyeball inside MediaPipe's lid outline -----------------------------------
@@ -456,7 +459,7 @@ for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
 };
 $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
-renderer.setAnimationLoop(() => { if (!EYES_IN) { scene.add(EYES.L, EYES.R); EYES_IN = true; } place(); renderer.render(scene, camera); });
+renderer.setAnimationLoop(() => { if (!EYES_IN) { scene.add(EYES.L, EYES.R); EYES_IN = true; } if (hairDirty && HAIR_OK) growHair(); place(); renderer.render(scene, camera); });
 resize();
 
 // ---- the eyes' controls ---------------------------------------------------------------------------------------------
@@ -467,6 +470,98 @@ resize();
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
   iris.oninput = () => { st.eyes.iris = iris.value; eyeMat.map = eyeTexture(iris.value); eyeMat.needsUpdate = true; };
   eyeMat.map = eyeTexture(st.eyes.iris);
+}
+
+// ---- hair: cards from the scalp (hair.js), brows and lashes, a cap in the hair's colour ---------------------------------
+st.hair = { ...HAIR.DEFAULTS, over: {} };
+function strandTexture() {                              // strands down a card: alpha only
+  const c = document.createElement("canvas"); c.width = 128; c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = "#000"; g.fillRect(0, 0, 128, 256);
+  let seed = 3; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 46; i++) {
+    const x = 6 + r() * 116, end = 140 + r() * 116, a = 0.55 + 0.45 * r();
+    const gr = g.createLinearGradient(0, 0, 0, end); gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(0.8, `rgba(255,255,255,${a})`); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.strokeStyle = gr; g.lineWidth = 1.5 + r() * 2.5; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + (r() - 0.5) * 10, end * 0.4, x + (r() - 0.5) * 14, end * 0.7, x + (r() - 0.5) * 16, end); g.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+const hairMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.55, alphaMap: strandTexture(), alphaTest: 0.35, side: THREE.DoubleSide, vertexColors: true });
+const browMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.7, side: THREE.DoubleSide, vertexColors: true });
+const capMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
+const HM = { hair: new THREE.Mesh(new THREE.BufferGeometry(), hairMat), brows: new THREE.Mesh(new THREE.BufferGeometry(), browMat), cap: new THREE.Mesh(new THREE.BufferGeometry(), capMat) };
+scene.add(HM.hair, HM.brows, HM.cap);
+var HAIRNOW = null, hairDirty = true, HAIR_OK = false;   // var: the render loop starts before this block
+function toGeo(m, G) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(G.position, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(G.shade.flatMap(v => [v, v, v]), 3)); g.setIndex(G.index); g.computeVertexNormals();
+  m.geometry.dispose(); m.geometry = g;
+}
+function growHair() {
+  if (!geo.attributes.normal) return;                  // the body isn't composed yet
+  hairDirty = false;
+  const on = st.hair.style !== "none" && LMK;
+  HM.hair.visible = HM.cap.visible = !!on; HM.brows.visible = !!LMK && (st.hair.brows || st.hair.lashes);
+  if (!LMK) return;
+  const r = HAIR.grow(POS, TRIS, lmk, SCALE, { ...st.hair, ...st.hair.over, style: on ? st.hair.style : "long", cards: on ? st.hair.cards : 0 });
+  HAIRNOW = r; toGeo(HM.hair, r.hair); toGeo(HM.brows, r.brows);
+  const NP = geo.attributes.normal.array, cap = [], off = 0.0015 * SCALE;      // the scalp, a little off the skin
+  for (const t of on ? r.scalp : []) for (let k = 0; k < 3; k++) { const i = TRIS[t * 3 + k] * 3; cap.push(POS[i] + NP[i] * off, POS[i + 1] + NP[i + 1] * off, POS[i + 2] + NP[i + 2] * off); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cap, 3)); g.computeVertexNormals();
+  HM.cap.geometry.dispose(); HM.cap.geometry = g;
+}
+const hairSet = {};
+{
+  const box = $("#hairRows"), styleSel = el("select"), color = el("input", { type: "color", value: st.hair.color });
+  styleSel.append(el("option", { value: "none", textContent: "none (bald)" }), ...Object.entries(HAIR.STYLES).map(([k, v]) => el("option", { value: k, textContent: v.label })));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), styleSel, el("output")), el("div", { className: "row" }, el("span", { textContent: "Colour" }), color, el("output")));
+  const NUM = [   // [key, label, lo, hi, step, help]: a style's own numbers, overridden here
+    ["length", "Length (m)", 0.03, 0.7, 0.01, "Along the strand, at MHR's 1.7 m."], ["volume", "Volume", 0, 0.04, 0.001, "How far the hair stands off the head."],
+    ["wave", "Wave", 0, 1, 0.05, "Waves along the strand."], ["part", "Parting", -1, 1, 0.05, "−1 left, 0 the middle, +1 right."],
+    ["tie", "Tie height", 0, 1, 0.05, "Twin tails and ponytails: how high they're tied."]];
+  const fill = () => { const sty = HAIR.STYLES[st.hair.style] || {}; for (const [k] of NUM) hairSet[k](st.hair.over[k] ?? sty[k] ?? 0); hairSet.bangs(st.hair.over.bangs ?? !!sty.bangs); };
+  for (const [k, label, lo, hi, step, help] of NUM) hairSet[k] = slider(box, "hair_" + k, label, lo, hi, step, 0, help, v => { st.hair.over[k] = v; hairDirty = true; });
+  const bangs = el("input", { type: "checkbox" }); box.append(el("label", { className: "tog" }, bangs, el("span", { textContent: "Bangs" })));
+  hairSet.bangs = v => { bangs.checked = v; }; bangs.onchange = () => { st.hair.over.bangs = bangs.checked; hairDirty = true; };
+  hairSet.bangsAt = slider(box, "hair_bangsAt", "Bangs end (m)", -0.03, 0.03, 0.002, 0, "Below the brows (+) or above them (−).", v => { st.hair.bangsAt = v; hairDirty = true; });
+  hairSet.hairline = slider(box, "hair_hairline", "Hairline", -0.03, 0.03, 0.002, 0, "Where the hair starts on the forehead, up (+) or down (−).", v => { st.hair.hairline = v; hairDirty = true; });
+  hairSet.cards = slider(box, "hair_cards", "Cards", 200, 2500, 50, st.hair.cards, "How many cards: thicker hair, slower.", v => { st.hair.cards = v; hairDirty = true; });
+  hairSet.width = slider(box, "hair_width", "Card width (m)", 0.004, 0.03, 0.001, st.hair.width, "", v => { st.hair.width = v; hairDirty = true; });
+  const brows = el("input", { type: "checkbox", checked: true }), lashes = el("input", { type: "checkbox", checked: true });
+  box.append(el("label", { className: "tog" }, brows, el("span", { textContent: "Brows" })), el("label", { className: "tog" }, lashes, el("span", { textContent: "Lashes" })));
+  brows.onchange = () => { st.hair.brows = brows.checked; hairDirty = true; }; lashes.onchange = () => { st.hair.lashes = lashes.checked; hairDirty = true; };
+  const tint = () => { hairMat.color.set(st.hair.color); capMat.color.set(st.hair.color); browMat.color.set(st.hair.color).multiplyScalar(0.8); };
+  color.oninput = () => { st.hair.color = color.value; tint(); };
+  styleSel.onchange = () => { st.hair.style = styleSel.value; st.hair.over = {}; fill(); hairDirty = true; };
+  const exp = el("button", { textContent: "Export hair OBJ", title: "the cards, brows and lashes (with UVs for the strand texture) and the scalp cap" });
+  box.append(exp);
+  exp.onclick = async () => {
+    if (!WHO || !HAIRNOW) return status("make a character first", "bad");
+    const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_hair.obj`)}`, hairObj()); status(`wrote ${r.path}`, "ok");
+  };
+  hairSet.all = () => { styleSel.value = st.hair.style; color.value = st.hair.color; brows.checked = st.hair.brows; lashes.checked = st.hair.lashes;
+    hairSet.bangsAt(st.hair.bangsAt); hairSet.hairline(st.hair.hairline); hairSet.cards(st.hair.cards); hairSet.width(st.hair.width); fill(); tint(); };
+  hairSet.all(); HAIR_OK = true;
+}
+function hairObj() {                                   // metres, Y up, facing +Z; o hair (cards), o brows (and lashes), o scalp
+  const out = [`# ${WHO}: hair cards from the Character Studio (tools/character/hair.js); metres, Y up, facing +Z`];
+  let base = 0;
+  const part = (name, G) => {
+    out.push(`o ${WHO}_${name}`);
+    for (let i = 0; i < G.position.length; i += 3) out.push(`v ${G.position[i].toFixed(5)} ${G.position[i + 1].toFixed(5)} ${G.position[i + 2].toFixed(5)}`);
+    if (G.uv) for (let i = 0; i < G.uv.length; i += 2) out.push(`vt ${G.uv[i].toFixed(4)} ${G.uv[i + 1].toFixed(4)}`);
+    for (let i = 0; i < G.index.length; i += 3) { const [a, b, c] = [0, 1, 2].map(k => base + G.index[i + k] + 1); out.push(G.uv ? `f ${a}/${a} ${b}/${b} ${c}/${c}` : `f ${a} ${b} ${c}`); }
+    base += G.position.length / 3;
+  };
+  part("hair", HAIRNOW.hair); part("brows", HAIRNOW.brows);
+  const cap = HM.cap.geometry.attributes.position;
+  if (cap && cap.count) {   // the cap's own vertices, with the uv indices (one per hair vertex) already used, so no vt
+    const G = { position: [...cap.array], index: [...Array(cap.count).keys()] };
+    out.push(`o ${WHO}_scalp`);
+    for (let i = 0; i < G.position.length; i += 3) out.push(`v ${G.position[i].toFixed(5)} ${G.position[i + 1].toFixed(5)} ${G.position[i + 2].toFixed(5)}`);
+    for (let i = 0; i < G.index.length; i += 3) out.push(`f ${base + i + 1} ${base + i + 2} ${base + i + 3}`);
+  }
+  return out.join("\n") + "\n";
 }
 
 // ---- changes: the body here at once, the face from the worker after a pause ----------------------------------------
@@ -560,10 +655,11 @@ async function open(name) {
   Object.assign(st.eyes, { on: true, iris: "#3b2618" }, c.eyes || {});
   $("#eyeRows input[type=checkbox]").checked = st.eyes.on; $("#eyeRows input[type=color]").value = st.eyes.iris;
   eyeMat.map = eyeTexture(st.eyes.iris); eyeMat.needsUpdate = true;
+  Object.assign(st.hair, HAIR.DEFAULTS, { over: {} }, c.hair || {}); hairSet.all();
   computeBody(); compose(); hud();
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, hair: st.hair,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -600,7 +696,7 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 $("#raking").onchange = place;
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, growHair, POS, N };   // bodytest.js
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);
