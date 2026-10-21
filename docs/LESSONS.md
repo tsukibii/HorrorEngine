@@ -67,3 +67,6 @@ the fix.
   audition after one card. Ending a take (`endPlay`) and stopping what the user started (`stopAll`) are two calls.
 - **A compressor and limiter on the music bus make every cue the same loudness:** a dread bed rendered as loud as
   the jump scare (both about -14 dB RMS). Cue levels go after the limiter (the master), never on the notes.
+- **A server started from a script must not keep the script's output:** the launcher's page servers inherited its
+  stdout, so anything reading the launcher's output (a pipe, a test) waited for the server to end. Windows gets its
+  own console window; elsewhere the server's output goes to Saved/launch/<name>.log.
