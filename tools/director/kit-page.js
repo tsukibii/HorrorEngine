@@ -40,14 +40,19 @@ function place() {
   camera.lookAt(orbit.target);
 }
 function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); render(); }
-function render() { place(); renderer.render(scene, camera); }
+function render() { place(); placeHandles(); renderer.render(scene, camera); }
 window.addEventListener("resize", resize);
 let drag = null;
 view.addEventListener("contextmenu", e => e.preventDefault());
-view.addEventListener("mousedown", e => { drag = { x: e.clientX, y: e.clientY, b: e.button, yaw: orbit.yaw, pitch: orbit.pitch, t: orbit.target.clone() }; });
-window.addEventListener("mouseup", () => { drag = null; });
+view.addEventListener("mousedown", e => {
+  const hd = e.button === 0 && pickHandle(e);
+  if (hd) { startResize(hd, e); return; }
+  drag = { x: e.clientX, y: e.clientY, b: e.button, yaw: orbit.yaw, pitch: orbit.pitch, t: orbit.target.clone() };
+});
+window.addEventListener("mouseup", () => { drag = null; if (resizing) endResize(); });
 window.addEventListener("mousemove", e => {
-  if (!drag) return;
+  if (resizing) { moveResize(e); return; }
+  if (!drag) { hoverHandle(e); return; }
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (drag.b === 2 || e.shiftKey) {
     const k = orbit.dist / 600, right = new THREE.Vector3().subVectors(camera.position, orbit.target).cross(camera.up).normalize();
@@ -79,7 +84,7 @@ function show(spec, name) {
   boxHelper.box.set(new THREE.Vector3(-w / 2, 0, -d / 2), new THREE.Vector3(w / 2, h, d / 2)); boxHelper.visible = $("#box").checked;
   person.position.set(-w / 2 - 0.45, 0, 0); person.visible = $("#person").checked;
   const p = K.name && K.presets[K.name], T = KIT.TYPES[b.spec.type];
-  $("#title").textContent = p ? `${p.label}  ·  ${K.name}` : `New ${T.label.toLowerCase()}`;
+  $("#title").textContent = p ? `${p.label}  ·  ${K.name}` : K.varOf && K.presets[K.varOf] ? `A variation of ${K.presets[K.varOf].label.toLowerCase()}` : `New ${T.label.toLowerCase()}`;
   $("#form").innerHTML = ""; $("#form").append(form(b.spec, s => show(s)));
   $("#warn").textContent = [...new Set(b.warn)].join("; ");
   const G = KIT.mesh(b.parts), st = KIT.stats(G);
@@ -90,7 +95,7 @@ function show(spec, name) {
   lights(); render();
   try { history.replaceState(null, "", "#" + encodeURIComponent(JSON.stringify(K.name && JSON.stringify(spec) === JSON.stringify(KIT.withDefaults(KIT.resolve(K.name, K.presets))) ? { preset: K.name } : spec))); } catch (e) { }
 }
-function openPreset(name) { show(KIT.withDefaults(KIT.resolve(name, K.presets)), name); fit(); }
+function openPreset(name) { K.varOf = null; show(KIT.withDefaults(KIT.resolve(name, K.presets)), name); fit(); if ($("#vars").style.display === "block") showVariations(1); }
 
 function renderList() {
   const q = $("#search").value.trim().toLowerCase(), box = $("#presets"); box.innerHTML = "";
@@ -148,11 +153,11 @@ function setTab(t) {
 
 // ---- actions -------------------------------------------------------------------------------------------------------
 async function savePreset() {
-  const name = prompt("Preset name (letters, digits, _):", K.name && K.presets[K.name] && K.presets[K.name].user ? K.name : (K.name ? K.name + "_2" : K.spec.type + "_mine"));
+  const name = prompt("Preset name (letters, digits, _):", K.name && K.presets[K.name] && K.presets[K.name].user ? K.name : (K.name ? K.name + "_2" : K.varOf ? K.varOf + "_v" + K.varSeed : K.spec.type + "_mine"));
   if (!name) return;
   if (!/^[a-z][a-z0-9_]*$/.test(name)) { status("a preset name is lower-case letters, digits and _", true); return; }
   if (K.presets[name] && !K.presets[name].user && !confirm(`${name} is one of the studio's presets. Replace it?`)) return;
-  const old = K.name && K.presets[K.name];
+  const old = (K.name && K.presets[K.name]) || (K.varOf && K.presets[K.varOf]);
   const label = prompt("Its label:", old ? old.label + (name !== K.name ? " (mine)" : "") : KIT.TYPES[K.spec.type].label) || name;
   const body = Object.assign({ label, cat: (old && old.cat) || KIT.TYPES[K.spec.type].cat, user: true }, old && old.mount ? { mount: old.mount } : {}, old && old.z !== undefined ? { z: old.z } : {}, K.spec);
   const j = await api("/api/kit/preset/" + name, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -185,6 +190,11 @@ async function boot() {
   $("#rake").onchange = () => { lights(); render(); };
   $("#fit").onclick = fit; $("#savePreset").onclick = () => savePreset().catch(e => status(e.message, true));
   $("#glb").onclick = exportGlb; $("#explode").onclick = explode;
+  $("#varsBtn").onclick = () => showVariations(1);
+  $("#vMore").onclick = () => showVariations(K.varSeed + 1);
+  $("#vClose").onclick = () => { $("#vars").style.display = "none"; };
+  for (const id of ["#vSize", "#vLayout", "#vLook"]) $(id).onchange = () => showVariations(K.varSeed);
+  $("#handles").onchange = () => render();
   $("#apply").onclick = () => { try { const s = JSON.parse($("#json").value); const r = KIT.resolve(s, K.presets); show(KIT.withDefaults(r), s.preset || null); } catch (e) { status(e.message, true); } };
   $("#copy").onclick = () => { navigator.clipboard && navigator.clipboard.writeText($("#json").value); status("copied"); };
   renderList(); resize();
@@ -196,5 +206,102 @@ async function boot() {
   status(`${Object.keys(K.presets).length} presets, ${Object.keys(KIT.TYPES).length} types`);
   window.__kitReady = true;
 }
-window.kitmaker = { K, show, openPreset, catalogue, setTab, explode, render };
+window.kitmaker = { K, show, openPreset, catalogue, setTab, explode, render, resizeTo, showVariations, handleAt,
+  screenOf: m => { const v = m.position.clone().project(camera), r = view.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; } };
 boot().catch(e => { status("no server: " + e.message, true); console.error(e); });
+
+// ---- handles: drag the corners and edges of the size box to resize it ---------------------------------------------
+// top corners: width and depth together; the right and front edges' middles: one each; the top's middle: height.
+// The thing stays centred on its base, so a corner moves both its sides. Shift drags by the millimetre.
+const HANDLES = [];
+const hMat = new THREE.MeshBasicMaterial({ color: 0xd9a441, depthTest: false, transparent: true, opacity: 0.95 });
+const hHot = new THREE.MeshBasicMaterial({ color: 0xffe2a0, depthTest: false });
+for (const [mode, sx, sz, ty] of [["xz", -1, -1], ["xz", 1, -1], ["xz", 1, 1], ["xz", -1, 1], ["x", 1, 0], ["x", -1, 0], ["z", 0, 1], ["z", 0, -1], ["y", 0, 0]]) {
+  const m = new THREE.Mesh(mode === "y" ? new THREE.ConeGeometry(0.5, 1, 4) : mode === "xz" ? new THREE.BoxGeometry(1, 1, 1) : new THREE.SphereGeometry(0.55, 10, 8), hMat);
+  m.renderOrder = 999; m.userData = { mode, sx, sz }; scene.add(m); HANDLES.push(m);
+}
+let resizing = null, hot = null;
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function placeHandles() {
+  const on = $("#handles") && $("#handles").checked && K.obj && $("#cat").style.display !== "block";
+  const [w, d, h] = on ? K.obj.userData.built.spec.size : [0, 0, 0], k = orbit.dist * 0.012;
+  for (const m of HANDLES) {
+    m.visible = !!on; if (!on) continue;
+    const { mode, sx, sz } = m.userData;
+    m.position.set(sx * w / 2, h + (mode === "y" ? k * 1.4 : 0), sz * d / 2);
+    m.scale.setScalar(k);
+    m.material = m === hot ? hHot : hMat;
+  }
+}
+function rayAt(e) { const r = view.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); return ray; }
+function pickHandle(e) { const hits = rayAt(e).intersectObjects(HANDLES.filter(m => m.visible)); return hits.length ? hits[0].object : null; }
+function hoverHandle(e) { const h = pickHandle(e); if (h !== hot) { hot = h; view.style.cursor = h ? (h.userData.mode === "y" ? "ns-resize" : "move") : "default"; render(); } }
+function handleAt(mode, sx = 1, sz = 1) { return HANDLES.find(m => m.userData.mode === mode && (mode === "y" || ((m.userData.sx === sx || !m.userData.sx) && (m.userData.sz === sz || !m.userData.sz)))); }
+function startResize(hd, e) {
+  const [w, d, h] = K.obj.userData.built.spec.size;
+  const plane = hd.userData.mode === "y"
+    ? new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(camera.position.x, 0, camera.position.z).normalize(), new THREE.Vector3(0, 0, 0))
+    : new THREE.Plane(new THREE.Vector3(0, 1, 0), -h);
+  resizing = { hd, plane, start: [w, d, h], spec: JSON.parse(JSON.stringify(K.spec)) };
+  moveResize(e);
+}
+function moveResize(e) {
+  const p = new THREE.Vector3();
+  if (!rayAt(e).ray.intersectPlane(resizing.plane, p)) return;
+  const { mode } = resizing.hd.userData, snap = e.shiftKey ? 0.001 : 0.01, q = v => Math.max(0.01, Math.round(v / snap) * snap);
+  const [w, d, h] = resizing.start, size = [w, d, h];
+  if (mode === "xz" || mode === "x") size[0] = q(Math.abs(p.x) * 2);
+  if (mode === "xz" || mode === "z") size[1] = q(Math.abs(p.z) * 2);
+  if (mode === "y") size[2] = q(p.y);
+  resizeTo(size, true);
+}
+// a new size: parts scale with it (free parts), every other type fills it; live = rebuild the mesh only
+function resizeTo(size, live) {
+  const base = resizing ? resizing.spec : K.spec, spec = JSON.parse(JSON.stringify(base));
+  spec.size = size.map(v => +v.toFixed(4));
+  if (spec.type === "parts") { const f = spec.size.map((v, k) => v / base.size[k]); spec.parts = (base.parts || []).map(q => KIT.scalePart(q, f)); }
+  if (live) {
+    K.spec = spec;
+    if (K.obj) { scene.remove(K.obj); K3.dispose(K.obj); }
+    K.obj = K3.object(spec, K.presets, { shadows: true }); scene.add(K.obj);
+    const [w, d, h] = spec.size;
+    boxHelper.box.set(new THREE.Vector3(-w / 2, 0, -d / 2), new THREE.Vector3(w / 2, h, d / 2));
+    person.position.set(-w / 2 - 0.45, 0, 0);
+    $("#hud").textContent = `${(w * 100).toFixed(1)} × ${(d * 100).toFixed(1)} × ${(h * 100).toFixed(1)} cm`;
+    lights(); render();
+  } else show(spec);
+}
+function endResize() { const s = K.spec; resizing = null; $("#hud").textContent = ""; show(s); }
+
+// ---- variations: six other takes on the thing being edited --------------------------------------------------------
+let thumbR = null;
+function thumb(spec) {
+  if (!thumbR) { thumbR = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); thumbR.setSize(260, 190); thumbR.shadowMap.enabled = true; }
+  const cam = new THREE.PerspectiveCamera(35, 260 / 190, 0.01, 100), keep = K.obj;
+  const o = K3.object(spec, K.presets, { shadows: true }); if (keep) keep.visible = false; scene.add(o);
+  const vis = HANDLES.map(m => m.visible); HANDLES.forEach(m => { m.visible = false; }); const pv = person.visible, bv = boxHelper.visible; person.visible = false; boxHelper.visible = false;
+  const [w, d, h] = o.userData.built.spec.size, r = Math.max(w, d, h, 0.05), ceil = KIT.TYPES[spec.type].mount.includes("ceiling");
+  cam.position.set(-r * 0.9, ceil ? h - r * 0.5 : h * 0.6 + r * 0.55, r * 1.3); cam.lookAt(0, h * 0.45, 0);
+  K.obj = o; lights(); K.obj = keep;
+  thumbR.render(scene, cam);
+  scene.remove(o); K3.dispose(o); if (keep) keep.visible = true;
+  HANDLES.forEach((m, i) => { m.visible = vis[i]; }); person.visible = pv; boxHelper.visible = bv; lights();
+  return thumbR.domElement.toDataURL("image/jpeg", 0.85);
+}
+function showVariations(seed) {
+  K.varSeed = seed;
+  const groups = [["#vSize", "size"], ["#vLayout", "layout"], ["#vLook", "look"]].filter(([id]) => $(id).checked).map(([, g]) => g);
+  const from = K.spec, of = K.name || K.varOf;
+  const vs = KIT.variations(from, 6, seed, groups);
+  const strip = $("#vStrip"); strip.innerHTML = "";
+  $("#vars").style.display = "block";
+  if (!vs.length) { strip.innerHTML = `<span class="hint">Nothing of this kind varies with those ticked.</span>`; return vs; }
+  vs.forEach((v, i) => {
+    const f = document.createElement("figure"), [w, d, h] = v.size;
+    f.innerHTML = `<img src="${thumb(v)}"><figcaption>${(w * 100).toFixed(0)}×${(d * 100).toFixed(0)}×${(h * 100).toFixed(0)} cm${v.cols ? " · " + v.cols.map(c => c.k).join(", ") : v.seats ? " · " + v.seats + " seats" : v.pattern ? " · " + v.pattern : ""}</figcaption>`;
+    f.onclick = () => { K.varOf = of; show(v, null); fit(); status(`a variation of ${of || "this"}: change it, then Save as preset to keep it`); };
+    f.dataset.i = i; strip.append(f);
+  });
+  render();
+  return vs;
+}

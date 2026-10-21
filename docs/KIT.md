@@ -23,12 +23,25 @@ Anything made of boxes and cylinders is made here, from presets you change.
     deep enough to show.
   - **Person:** 1.62 m tall, for scale.
   - **Size box:** the box the plan and the checks see. Every part stays inside it.
+  - **Handles** on the size box: drag a top corner to change width and depth together, the middle of a side for
+    one of them, the cone on top for the height. Sizes snap to 1 cm (hold Shift for 1 mm), the thing stays centred
+    on its base, and the size shows as you drag. A cabinet re-plans its columns to the new width; free parts scale
+    with their box.
 - **Right:**
   - The type's numbers. Gaps and bevels are in millimetres; sizes are in metres.
   - Its material slots.
   - Its triangle count.
   - The `kit` text a story prop carries (only what differs from the preset).
 - **Catalogue:** every preset rendered once, as a contact sheet. Click one to edit it.
+- **Variations:** six other takes on what you're editing, as pictures. Tick what may change:
+  - **size:** within about a quarter either way. A sofa grows by its seats; beds come in single, semi-double,
+    double and queen.
+  - **layout:** a cabinet's columns (doors, pairs, drawers, open shelves, glass, uppers; a void, such as the TV's
+    place, stays where it is), a floor's pattern, a window's panes, a curtain's panels.
+  - **details:** handles, gaps, bevels, tones, frames, arms, legs, the seed.
+
+  Click one to keep working from it, then *Save as preset* (it offers `<preset>_v<n>`); *More 🎲* rolls six more.
+  The same roll always gives the same six (`variations()` in `kit.js`, the rules in its `VARY` table).
 - **Save as preset:** writes it into `Content/Studio/Kit/presets.json` (marked yours). The scene builder lists it
   once reloaded.
 - **Explode to parts:** turns any thing into a list of free parts, one card each: shape, base position, size,

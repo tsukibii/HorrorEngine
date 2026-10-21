@@ -35,7 +35,7 @@ export function geometries(G) {
 }
 // a spec (or a build) as a Group; {shadows} casts and takes them; userData.built is the build
 export function object(specOrBuilt, presets, o = {}) {
-  const b = specOrBuilt && specOrBuilt.parts ? specOrBuilt : KIT.build(specOrBuilt, presets);
+  const b = specOrBuilt && specOrBuilt.parts && specOrBuilt.spec ? specOrBuilt : KIT.build(specOrBuilt, presets);   // a build has both
   const grp = new THREE.Group();
   for (const [slot, geo] of Object.entries(geometries(KIT.mesh(b.parts)))) {
     const m = new THREE.Mesh(geo, material(slot));

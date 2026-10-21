@@ -142,7 +142,18 @@ const SCRATCH = "Zz_builder_test";
       await new Promise(r => setTimeout(r, 1500));
       const lvl = B.exported.level, props = lvl.rooms.flatMap(r => (r.props || []).map(p => Object.assign({ room: r.id }, p)));
       const back = BMm.levelToModel({ levels: { t: lvl } }, "t");
-      return { sofa: [+(ldk.w - sofa.x).toFixed(3), sofa.rot], dl: [dl.z, dl.size[2], ldk.h], problems: B.exported.problems,
+      // its front corner dragged 30 cm out into the room: deeper, its back still at the wall; then a variation, same size
+      const back0 = +(ldk.w - sofa.x - sofa.size[1] / 2).toFixed(3), w0 = sofa.size[0];
+      const a = sofa.rot * Math.PI / 180, fx = ldk.x + sofa.x + Math.sin(a) * (sofa.size[1] / 2 + 0.3) + Math.cos(a) * sofa.size[0] / 2;
+      const fy = ldk.y + sofa.y - Math.cos(a) * (sofa.size[1] / 2 + 0.3) + Math.sin(a) * sofa.size[0] / 2;
+      bu.resizeKitBy(sofa.id, 1, -1, fx, fy);
+      const resized = { d: sofa.size[1], w: sofa.size[0], back: +(ldk.w - sofa.x - sofa.size[1] / 2).toFixed(3), back0, w0 };
+      const spec0 = JSON.stringify(sofa.spec), size0 = JSON.stringify(sofa.size);
+      bu.varyKit(sofa);
+      const varied = { changed: JSON.stringify(sofa.spec) !== spec0, sameSize: JSON.stringify(sofa.size) === size0 };
+      bu.changed();
+      await new Promise(r => setTimeout(r, 1200));
+      return { resized, varied, sofa: [+(ldk.w - sofa.x).toFixed(3), sofa.rot], dl: [dl.z, dl.size[2], ldk.h], problems: B.exported.problems,
                kitProps: props.filter(p => p.kit).length, floors: props.filter(p => /_fx_floor$/.test(p.id)).length, frames: props.filter(p => /_fx_win\d+$/.test(p.id)).length,
                pieces: B.plan.pieces.filter(q => q.tags.some(t => t.startsWith("kit:"))).length,
                back: { kits: back.kits.length, fits: back.items.filter(i => i.kind === "fit").length, floors: back.rooms.filter(r => r.floorKit).length,
@@ -154,7 +165,9 @@ const SCRATCH = "Zz_builder_test";
     console.log("kit", JSON.stringify(Object.assign({}, kt, { chk: kt.chk.errors.length + " errors" })));
     if (kt.chk.errors.length) fail("the kit: " + kt.chk.errors.slice(0, 3).join("; "));
     if (kt.problems.length) fail("the kit's problems: " + kt.problems.join("; "));
-    if (kt.sofa[0] > 0.6 || kt.sofa[1] !== 270) fail("the sofa didn't go back to the east wall facing west: " + kt.sofa);
+    if (Math.abs(kt.resized.d - 1.22) > 0.011 || kt.resized.back !== kt.resized.back0 || kt.resized.w !== kt.resized.w0) fail("dragging the sofa's front corner: " + JSON.stringify(kt.resized));
+    if (!kt.varied.changed || !kt.varied.sameSize) fail("varying the sofa: " + JSON.stringify(kt.varied));
+    if (kt.sofa[0] > 0.9 || kt.sofa[1] !== 270) fail("the sofa didn't go back to the east wall facing west: " + kt.sofa);
     if (Math.abs(kt.dl[0] + kt.dl[1] - kt.dl[2]) > 0.001) fail("the downlight isn't on the ceiling: " + kt.dl);
     if (!kt.floors || !kt.frames || kt.pieces < kt.kitProps) fail("floors, frames or kit pieces missing: " + JSON.stringify(kt));
     if (JSON.stringify(kt.back) !== JSON.stringify(kt.model)) fail("the level doesn't read back the same: " + JSON.stringify(kt.back) + " vs " + JSON.stringify(kt.model));
@@ -221,12 +234,22 @@ const SCRATCH = "Zz_builder_test";
     const kr = await km.evaluate(() => {
       const KM = window.kitmaker, out = { types: 0, parts: 0 };
       for (const o of [...document.querySelectorAll("#newType option")].filter(o => o.value)) { const s = document.querySelector("#newType"); s.value = o.value; s.onchange(); out.types++; }
+      KM.openPreset("vanity_drawers"); out.vars = KM.showVariations(1).length; out.thumbs = document.querySelectorAll("#vStrip figure").length;
+      document.querySelector("#vStrip figure").click(); out.varOf = KM.K.varOf;
       KM.openPreset("vanity_drawers"); KM.explode(); out.parts = KM.K.spec.parts.length; out.type = KM.K.spec.type;
       out.rows = document.querySelectorAll(".kf-card").length;
       return out;
     });
     console.log("kit maker", JSON.stringify(kr));
-    if (kr.types < 18 || kr.type !== "parts" || !kr.parts || kr.rows !== kr.parts) fail("the kit maker: " + JSON.stringify(kr));
+    if (kr.types < 18 || kr.type !== "parts" || !kr.parts || kr.rows !== kr.parts || kr.vars !== 6 || kr.thumbs !== 6 || kr.varOf !== "vanity_drawers") fail("the kit maker: " + JSON.stringify(kr));
+    // a corner handle dragged with the mouse: the box grows, the parts with it
+    await km.evaluate(() => { const K = window.kitmaker; K.openPreset("dining_chair"); K.render(); });
+    const [hx, hy] = await km.evaluate(() => window.kitmaker.screenOf(window.kitmaker.handleAt("xz", 1, 1)));
+    const s0 = await km.evaluate(() => window.kitmaker.K.spec.size);
+    await km.mouse.move(hx, hy); await km.mouse.down(); await km.mouse.move(hx + 25, hy + 10); await km.mouse.move(hx + 50, hy + 20); await km.mouse.up();
+    const s1 = await km.evaluate(() => ({ size: window.kitmaker.K.spec.size, leg: window.kitmaker.K.spec.parts[0].size[0] }));
+    console.log("kit handle", JSON.stringify(s0), "->", JSON.stringify(s1));
+    if (JSON.stringify(s1.size) === JSON.stringify(s0) || s1.size[2] !== s0[2]) fail("dragging the kit maker's corner handle: " + JSON.stringify([s0, s1]));
     if (shots) await km.screenshot({ path: path.join(shots, "kit_maker.png") });
     await km.close();
   } finally {

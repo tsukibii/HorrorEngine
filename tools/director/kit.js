@@ -652,6 +652,105 @@ export function explode(built) {
     if (p.b) o.b = +p.b.toFixed(5); if (p.rz) o.rz = +p.rz.toFixed(3); if (p.axis) o.axis = p.axis; if (p.ri) o.ri = +p.ri.toFixed(5); return o; });
 }
 
+// ---- variations: the same kind of thing, other numbers (the kit maker's Variations, the builder's Vary) -------------
+// per type: [key, group, mode, a, b]. group: size, layout or look (what the person chose to vary). mode: r a real in
+// [a, b]; i a whole number in [a, b]; p one of a (or the param's own choices); f flip (a: the chance); s the size,
+// each side scaled by up to a[k] either way; seed a new seed; cols, holes: cabinets' columns, a build-out's recesses.
+const SURF_VARY = [["pattern", "layout", "p"], ["gap", "look", "r", 0.001, 0.004], ["gap_var", "look", "r", 0.1, 0.6], ["tones", "look", "i", 1, 4], ["seed", "look", "seed"]];
+export const VARY = {
+  tiles: [["tile", "layout", "p", [[0.3, 0.3], [0.45, 0.45], [0.6, 0.6], [0.6, 1.2], [0.3, 0.6], [0.2, 0.2]]], ...SURF_VARY, ["bevel", "look", "r", 0.0003, 0.0015]],
+  planks: [["board", "layout", "r", 0.09, 0.22], ["pattern", "layout", "p", ["random", "random", "half", "third", "herringbone"]], ["gap", "look", "r", 0.0008, 0.003],
+           ["gap_var", "look", "r", 0.1, 0.6], ["tones", "look", "i", 2, 4], ["seed", "look", "seed"], ["bevel", "look", "r", 0.0004, 0.0012]],
+  tatami: [["mat", "layout", "p", [[0.88, 1.76], [0.91, 1.82], [0.955, 1.91]]], ["heri", "look", "r", 0.02, 0.04], ["seed", "look", "seed"]],
+  rug: [["size", "size", "s", [0.2, 0.2, 0]], ["border", "look", "r", 0, 0.12], ["fringe", "look", "p", [0, 0, 0.04, 0.06, 0.08]]],
+  cabinet: [["size", "size", "s", [0.25, 0.1, 0.12]], ["cols", "layout", "cols"], ["handle", "look", "p"], ["kick", "look", "p", [0, 0.06, 0.08, 0.1]], ["reveal", "look", "r", 0.002, 0.004]],
+  buildout: [["size", "size", "s", [0.15, 0.2, 0]], ["holes", "layout", "holes"]],
+  plate: [["gangs", "layout", "i", 1, 4], ["layout", "layout", "p"], ["margin", "look", "r", 0.005, 0.012]],
+  panel: [["size", "size", "s", [0.2, 0, 0.2]], ["frame", "look", "p", [0, 0.01, 0.015, 0.025]], ["mat", "look", "p", [0, 0, 0.03, 0.05]]],
+  downlight: [["size", "size", "s", [0.3, 0.3, 0]], ["shape", "look", "p"], ["trim", "look", "r", 0.006, 0.02]],
+  window: [["cols", "layout", "i", 1, 3], ["rows", "layout", "i", 1, 2], ["slide", "layout", "f", 0.5], ["frame", "look", "r", 0.04, 0.08], ["sash", "look", "p", [0, 0.04, 0.05]]],
+  curtain: [["size", "size", "s", [0.2, 0, 0]], ["panels", "layout", "i", 1, 2], ["open", "layout", "r", 0, 0.6], ["pitch", "look", "r", 0.07, 0.15], ["seed", "look", "seed"]],
+  slats: [["size", "size", "s", [0.2, 0, 0.2]], ["n", "layout", "i", 5, 24], ["dir", "layout", "p"], ["frame", "look", "r", 0, 0.03]],
+  table: [["size", "size", "s", [0.2, 0.15, 0.05]], ["leg", "look", "r", 0.03, 0.08], ["leg_in", "look", "r", 0, 0.08], ["apron", "layout", "p", [0, 0.05, 0.08, 0.1]], ["shelf", "layout", "p", [0, 0, 0.1, 0.15]], ["top_t", "look", "r", 0.02, 0.045]],
+  bed: [["size", "size", "p", [[0.97, 2.0], [1.2, 2.0], [1.4, 2.05], [1.6, 2.05]]], ["headboard", "layout", "f", 0.3], ["pillows", "layout", "i", 1, 2], ["duvet", "look", "r", 0.5, 0.85], ["bevel", "look", "r", 0.015, 0.05]],
+  sofa: [["seats", "size", "i", 2, 4], ["arm", "look", "p", [0, 0.1, 0.16, 0.22]], ["arm_h", "look", "r", 0.5, 0.68], ["back_t", "look", "r", 0.08, 0.2], ["legs", "look", "p", [0.02, 0.06, 0.12, 0.15]],
+         ["chaise", "layout", "p", ["none", "none", "left", "right"]], ["bevel", "look", "r", 0.015, 0.05]],
+  bulkhead: [["border", "layout", "border"], ["pocket", "layout", "p"]],
+  block: [["size", "size", "s", [0.2, 0.2, 0.2]], ["nosing", "look", "p", [0, 0, 0.02, 0.03]], ["bevel", "look", "r", 0.001, 0.02]],
+  parts: [["size", "size", "s", [0.2, 0.2, 0.15]]],
+};
+const COL_PICK = ["door", "doors", "doors", "drawers", "open", "glass"];
+// a variation of a full spec (withDefaults) from a seed: only the groups asked for change; the result is a full spec
+export function variation(full, seed, groups = ["size", "layout", "look"]) {
+  const R = rng((seed | 0) * 7919 + 13), s = clone(full), T = TYPES[s.type], P = Object.fromEntries(T.params.map(p => [p[0], p]));
+  const step = (v, k) => P[k] && P[k][3] === "mm" ? Math.round(v * 2000) / 2000 : Math.round(v * 200) / 200;
+  const pick = a => a[Math.floor(R() * a.length) % a.length];
+  const base = s.size.slice();
+  for (const [key, group, mode, a, b] of VARY[s.type] || []) {
+    if (!groups.includes(group)) continue;
+    if (mode === "r") s[key] = step(a + R() * (b - a), key);
+    else if (mode === "i") s[key] = a + Math.floor(R() * (b - a + 1));
+    else if (mode === "p") { const opts = a || (P[key] && P[key][4]) || [s[key]]; s[key] = clone(pick(opts)); }
+    else if (mode === "f") { if (R() < (a ?? 0.5)) s[key] = !s[key]; }
+    else if (mode === "seed") s[key] = 1 + Math.floor(R() * 9999);
+    else if (mode === "s") s.size = s.size.map((v, k) => Math.max(0.01, Math.round(v * (1 + (a[k] || 0) * (2 * R() - 1)) * 100) / 100));
+    else if (mode === "cols") {
+      // a gap left on purpose (a void: the TV's place, an appliance's) stays where it is; the other columns change
+      const tall = s.size[2] > 1.5, fresh = () => {
+        const k = pick(COL_PICK), c = { k, w: 0, n: k === "drawers" ? 2 + Math.floor(R() * 3) : k === "open" ? 2 + Math.floor(R() * 4) : 0 };
+        if (tall && R() < 0.35) { c.split = Math.round((0.35 + R() * 0.25) * 100) / 100; c.up = pick(["door", "doors", "open"]); }
+        return c;
+      };
+      const cols = (s.cols && s.cols.length ? s.cols : [{ k: "doors" }]).map(c => c.k === "void" ? Object.assign({}, c, c.split ? { up: pick(["door", "doors", "open"]) } : {}) : Object.assign(fresh(), c.w ? { w: c.w } : {}));
+      const free = cols.filter(c => c.k !== "void" && !c.w).length, more = R();
+      if (more < 0.25 && cols.length < 6) cols.splice(Math.floor(R() * (cols.length + 1)), 0, fresh());
+      else if (more > 0.8 && free > 1) cols.splice(cols.findIndex(c => c.k !== "void" && !c.w), 1);
+      s.cols = cols;
+      if (s.slide) for (const c of s.cols) { c.k = "door"; delete c.split; }
+    } else if (mode === "holes") {
+      const [W, , H] = s.size;
+      s.holes = (s.holes && s.holes.length ? s.holes : [{ x: W / 4, z: H / 3, w: W / 2, h: H / 3, depth: s.size[1] * 0.6, shelves: 0 }]).map(o => {
+        const w = Math.min(W - 0.1, Math.round(o.w * (0.8 + 0.4 * R()) * 100) / 100), h = Math.min(H, Math.round(o.h * (0.8 + 0.4 * R()) * 100) / 100);
+        return { x: Math.round((W - w) / 2 * 100) / 100, z: Math.min(o.z, H - h), w, h, depth: Math.min(s.size[1] - 0.01, o.depth), shelves: Math.floor(R() * 3) };
+      });
+    } else if (mode === "border") s.border = s.border.map(() => pick([0, 0.25, 0.35, 0.45]));
+    else s[key] = clone(a);
+  }
+  if (s.type === "bed" && groups.includes("size") && s.size.length === 2) s.size = [s.size[0], s.size[1], full.size[2]];
+  const sized = groups.includes("size");
+  if (s.type === "sofa" && !sized) { s.seats = full.seats; s.chaise = full.chaise; }
+  else if (s.type === "sofa" && s.seats !== full.seats) {           // a sofa grows by its seats
+    const per = (full.size[0] - 2 * (full.arm || 0)) / Math.max(1, full.seats);
+    s.size[0] = Math.round((s.seats * per + 2 * (s.arm || 0)) * 100) / 100;
+  } else if (s.type === "sofa" && s.arm !== full.arm) s.size[0] = Math.round((full.size[0] - 2 * full.arm + 2 * s.arm) * 100) / 100;
+  if (s.type === "sofa" && sized && s.chaise !== "none" && s.size[1] < 1.4) { s.depth = s.size[1]; s.size[1] = 1.55; }
+  if (s.type === "sofa" && sized && s.chaise === "none" && full.chaise !== "none") s.size[1] = full.depth || 0.92;
+  if (s.type === "parts" && s.size.some((v, k) => v !== base[k])) {   // free parts scale with their box
+    const f = s.size.map((v, k) => v / base[k]);
+    s.parts = (s.parts || []).map(q => scalePart(q, f));
+  }
+  return s;
+}
+// a part scaled with its box, per axis: a cylinder stays round (its width takes the smaller of the two across)
+export function scalePart(q, f) {
+  const o = Object.assign({}, q, { at: q.at.map((v, k) => v * f[k]) });
+  if (q.s !== "cyl") { o.size = q.size.map((v, k) => v * f[k]); return o; }
+  const along = q.axis === "-y" ? 1 : 2, across = [0, 1, 2].filter(k => k !== along), r = Math.min(...across.map(k => f[k]));
+  o.size = [q.size[0] * r, q.size[1] * r, q.size[2] * f[along]];
+  if (q.ri) o.ri = q.ri * r;
+  return o;
+}
+// a few variations at once, all different from each other and from the start
+export function variations(full, n, seed = 1, groups) {
+  const out = [], seen = new Set([canon(full)]);
+  for (let i = 0; out.length < n && i < n * 8; i++) {
+    const v = variation(full, seed * 1000 + i, groups), c = canon(v);
+    if (seen.has(c)) continue;
+    seen.add(c); out.push(v);
+  }
+  return out;
+}
+
 // the box the parts fill (for checks: every part inside the size box)
 export function bounds(parts) {
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];

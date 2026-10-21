@@ -197,6 +197,8 @@ function draw() {
     drawOpening(op);
   }
   for (const k of B.model.kits || []) drawKit(k);
+  const selKit = B.sel && B.sel.kit && (B.model.kits || []).find(q => q.id === B.sel.kit);
+  if (selKit && onFloor(roomOf(selKit.room) || {})) kitHandles(selKit);
   for (const it of B.model.items || []) drawItem(it);
   if ($("#marks").checked) drawMarks();
   drawPeople();
@@ -318,6 +320,8 @@ svg.addEventListener("mousedown", e => {
   if (B.tool === "fit" && e.button === 0) { addItem(x, y, B.fitPreset); return; }
   if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
   if (t.dataset.item) { B.sel = { item: t.dataset.item }; const it = B.model.items.find(i => i.id === t.dataset.item); pushUndo(); drag = { kind: "item", it, a0: it.a, p: wallCoord(it, x, y) }; changed(false); return; }
+  if (t.dataset.khandle) { const k = B.model.kits.find(q => q.id === B.sel.kit); const [su, sv] = t.dataset.khandle.split(",").map(Number); pushUndo();
+    drag = { kind: "kresize", k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }; return; }
   if (t.dataset.kit) { B.sel = { kit: t.dataset.kit }; const k = B.model.kits.find(q => q.id === t.dataset.kit); pushUndo(); drag = { kind: "kit", k, x0: k.x, y0: k.y, x, y }; changed(false); return; }
   if (t.dataset.handle) { const r = roomOf(B.sel.room); pushUndo(); drag = { kind: "resize", h: t.dataset.handle, r, start: { x: r.x, y: r.y, w: r.w, d: r.d }, x, y }; return; }
   if (t.dataset.turn) { pushUndo(); drag = { kind: "turn", who: t.dataset.turn }; return; }
@@ -343,6 +347,8 @@ window.addEventListener("mousemove", e => {
     magnetResize(r, h);
   } else if (drag.kind === "measure") {
     B.measure.b = snapPt(x, y); draw(); return;
+  } else if (drag.kind === "kresize") {
+    resizeKit(drag, x, y, e.shiftKey);
   } else if (drag.kind === "kit") {
     const k = drag.k; k.x = r2(Math.round((drag.x0 + x - drag.x) / 0.05) * 0.05); k.y = r2(Math.round((drag.y0 + y - drag.y) / 0.05) * 0.05);
     if (BM.mountOf(k.spec) === "back" && !e.altKey) snapKit(k, 0.3);
@@ -755,7 +761,8 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM;
-window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
+window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit,
+  resizeKitBy: (id, su, sv, x, y) => { const k = B.model.kits.find(q => q.id === id); pushUndo(); resizeKit({ k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }, x, y); changed(); return k; }, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
 
 // ---- wall items ----
@@ -1078,10 +1085,12 @@ function kitPanel(box, grid, k) {
   }
   const row = document.createElement("div"); row.style.cssText = "display:flex;gap:4px;margin-top:6px;flex-wrap:wrap";
   const sn = document.createElement("button"); sn.textContent = "Back to the wall"; sn.onclick = () => { pushUndo(); snapKit(k, 99); changed(); };
+  const vy = document.createElement("button"); vy.textContent = "🎲 Vary"; vy.title = "another layout and other details, the same size (Ctrl+Z goes back)";
+  vy.onclick = () => varyKit(k);
   const mk = document.createElement("button"); mk.textContent = "Open in the kit maker ↗";
   mk.onclick = () => window.open("kit.html#" + encodeURIComponent(JSON.stringify(Object.assign({}, k.spec, { size: k.size }))), "kitmaker");
   const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel();
-  row.append(sn, mk, del); box.append(row);
+  row.append(vy, sn, mk, del); box.append(row);
 }
 // a room's floor (a pattern of tiles, planks or tatami with real gaps) and its ceiling step
 function surfaceEditor(r) {
@@ -1138,4 +1147,41 @@ function addCurtains(op) {
 function kitBox(title, ...els) {
   const box = $("#kitbox"), h = document.createElement("h2"); h.textContent = title;
   box.append(h, ...els);
+}
+
+// the selected kit thing's handles: its corners resize width and depth together, its sides' middles one each; the
+// opposite corner or side stays where it is (so one against a wall keeps its back there). Shift: by the millimetre.
+function kitHandles(k) {
+  const r = roomOf(k.room), a = k.rot * Math.PI / 180, ax = [Math.cos(a), Math.sin(a)], ay = [-Math.sin(a), Math.cos(a)], [w, d] = k.size;
+  for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const u = su * w / 2, v = sv * d / 2, X = sx(r.x + k.x + ax[0] * u + ay[0] * v), Y = sy(r.y + k.y + ax[1] * u + ay[1] * v);
+    const corner = su && sv, cur = corner ? "nwse-resize" : "ew-resize";
+    if (corner) el("rect", { x: X - 4.5, y: Y - 4.5, width: 9, height: 9, fill: "#d9a441", stroke: "#111", "data-khandle": `${su},${sv}`, style: `cursor:${cur}` });
+    else el("circle", { cx: X, cy: Y, r: 4.5, fill: "#d9a441", stroke: "#111", "data-khandle": `${su},${sv}`, style: `cursor:${cur}` });
+  }
+}
+function resizeKit(dr, x, y, fine) {
+  const k = dr.k, r = roomOf(k.room), a = k.rot * Math.PI / 180, ax = [Math.cos(a), Math.sin(a)], ay = [-Math.sin(a), Math.cos(a)];
+  const cx = r.x + dr.x0, cy = r.y + dr.y0, px = x - cx, py = y - cy, u = px * ax[0] + py * ax[1], v = px * ay[0] + py * ay[1];
+  const [w0, d0] = dr.size, q = val => Math.max(0.05, Math.round(val / (fine ? 0.001 : 0.01)) * (fine ? 0.001 : 0.01));
+  let cu = 0, cv = 0, w = w0, d = d0;
+  if (dr.su) { const uf = -dr.su * w0 / 2; w = q(Math.abs(u - uf)); cu = uf + dr.su * w / 2; }
+  if (dr.sv) { const vf = -dr.sv * d0 / 2; d = q(Math.abs(v - vf)); cv = vf + dr.sv * d / 2; }
+  k.size = [+w.toFixed(3), +d.toFixed(3), dr.size[2]];
+  k.x = +(dr.x0 + ax[0] * cu + ay[0] * cv).toFixed(3); k.y = +(dr.y0 + ax[1] * cu + ay[1] * cv).toFixed(3);
+  try {                                                  // free parts scale with their box
+    const full = KIT.withDefaults(KIT.resolve(Object.assign({}, dr.spec, { size: dr.size }), LIBRARY.kit));
+    if (full.type === "parts") { const f = k.size.map((v2, i) => v2 / dr.size[i]); k.spec = Object.assign({}, dr.spec, { parts: full.parts.map(p => KIT.scalePart(p, f)) }); }
+  } catch (e) { }
+}
+// another take on a kit thing: its layout and details from a new seed, its size kept
+function varyKit(k) {
+  let full; try { full = KIT.withDefaults(KIT.resolve(Object.assign({}, k.spec, { size: k.size }), LIBRARY.kit)); } catch (e) { status(e.message, "bad"); return; }
+  k._vary = (k._vary || 0) + 1;
+  const v = KIT.variations(full, 1, k._vary, ["layout", "look"])[0];
+  if (!v) { status("nothing of this kind varies but its size", "bad"); return; }
+  pushUndo();
+  const o = kitOverrides(v, (k.spec || {}).preset, LIBRARY.kit); delete o.size;
+  k.spec = o; changed();
+  status(`a variation of ${(LIBRARY.kit[(k.spec || {}).preset] || {}).label || "it"} (🎲 again for another, Ctrl+Z to go back)`);
 }

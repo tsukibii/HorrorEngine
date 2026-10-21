@@ -57,6 +57,10 @@ rooms that can change between chapters. The panel under the 3D view counts what 
     ceiling.
   - Drag one to move it: against a wall it slides along it (hold Alt to pull it free). **R** turns it; the arrows
     nudge it 5 cm.
+  - **Resize it by its handles:** a corner changes width and depth, a side's middle one of them. The opposite
+    corner or side stays put, so a cabinet against a wall keeps its back there. Sizes snap to 1 cm (Shift: 1 mm).
+  - **🎲 Vary** gives it another layout and other details at the same size (another cabinet column layout, other
+    handles, other cushions); press again for another, Ctrl+Z to go back.
   - Select one to set its size, height and facing. Its numbers show under the 3D view: columns, drawers, handles,
     gaps, cushions...
   - *Open in the kit maker* edits it there and keeps the result as a preset.

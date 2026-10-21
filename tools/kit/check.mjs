@@ -1,4 +1,4 @@
-// The kit's check: every type at its defaults and every preset builds, stays inside its size box, has no stray
+// The kit's check: every type at its defaults, every preset and four variations of each build, stays inside its size box, has no stray
 // numbers, and is the same from the same seed; a seed changes the gaps; the glb is well formed; the mesh refs agree
 // with storykit/kit.py; every kit prop in every game builds. Ends "KIT ok".
 import { execFileSync } from "child_process";
@@ -30,6 +30,17 @@ for (const [name, p] of Object.entries(PR.presets)) {
   if (!p.label) errs.push(`preset ${name}: no label`);
   if (r.st.tris > 60000) errs.push(`preset ${name}: ${r.st.tris} triangles`);
 }
+// variations: every preset's build and stay in their boxes, the same from the same seed, each one different
+let nv = 0;
+for (const name of Object.keys(PR.presets)) {
+  const full = KIT.withDefaults(KIT.resolve(name, PR.presets));
+  const vs = KIT.variations(full, 4, 3);
+  if (!vs.length && (KIT.VARY[full.type] || []).length) errs.push(`preset ${name}: no variations`);
+  if (JSON.stringify(vs) !== JSON.stringify(KIT.variations(full, 4, 3))) errs.push(`preset ${name}: variations differ from the same seed`);
+  vs.forEach((v, i) => { nv++; tryOne(`preset ${name} variation ${i + 1}`, v); });
+  const keep = KIT.variations(full, 2, 5, ["layout", "look"]);
+  if (keep.some(v => JSON.stringify(v.size) !== JSON.stringify(full.size))) errs.push(`preset ${name}: a variation without "size" changed the size`);
+}
 // a seed moves the gaps: the same floor from two seeds differs, with the same number of boards
 for (const name of ["oak_planks", "tile_600"]) {
   const a = KIT.build({ preset: name, seed: 1 }, PR.presets).parts, b = KIT.build({ preset: name, seed: 2 }, PR.presets).parts;
@@ -48,4 +59,4 @@ let props = 0;
 for (const g of games()) for (const it of storySpecs(story(g))) { props++; tryOne(`${g} ${it.id}`, it.kit); }
 for (const e of errs.slice(0, 40)) console.log("ERROR:", e);
 if (errs.length) { console.log(`KIT FAILED (${errs.length})`); process.exit(1); }
-console.log(`KIT ok (${Object.keys(KIT.TYPES).length} types, ${Object.keys(PR.presets).length} presets, ${tris} triangles in all, ${props} props in the games)`);
+console.log(`KIT ok (${Object.keys(KIT.TYPES).length} types, ${Object.keys(PR.presets).length} presets, ${nv} variations, ${tris} triangles in all, ${props} props in the games)`);
