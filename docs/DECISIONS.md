@@ -2,6 +2,12 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (UnrealClaude's scripts)
+
+- **Claude sees UnrealClaude's Python tools, and scripts in this project run without asking** (`--show-scripts
+  --auto-approve`: `execute_script`, `cleanup_scripts`, `get_script_history` listed; `bAutoApproveScripts=True` in
+  `Config/DefaultEditor.ini`; the editor logs each script). `run_console_command` stays hidden.
+
 ## 2026-10-21 (the studio runs on Linux)
 
 - **Everything runs on the user's Omarchy machine** (Arch Linux, Hyprland, RTX 3090): Unreal 5.8.3's Linux prebuilt

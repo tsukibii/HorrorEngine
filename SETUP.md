@@ -8,9 +8,9 @@ Work the phases in order, and tick each (`- [x]`) in the commit that finishes it
 
 ## S0. Read and ask (Claude)
 
-- [ ] Read `CLAUDE.md`, `docs/DECISIONS.md`, `docs/PIPELINE.md`, then skim `docs/STORY_FORMAT.md` and
+- [x] Read `CLAUDE.md`, `docs/DECISIONS.md`, `docs/PIPELINE.md`, then skim `docs/STORY_FORMAT.md` and
   `docs/TOOLBOX.md`.
-- [ ] Ask the user, in one message:
+- [x] Ask the user, in one message:
   1. **the project's name:** `HorrorStudio` unless they prefer another neutral name; it becomes every game's executable
      name
   2. **git hosting:** GitHub (`origin`) unless they want another (Git LFS quotas apply)
@@ -24,8 +24,8 @@ The studio runs on Linux (DECISIONS 2026-10-21): Omarchy, Unreal 5.8.3's Linux p
 `../unreal-omarchy/`, started with `ue`), and Epic's bundled clang for C++ (no Visual Studio). Python is the user's
 uv.
 
-- [ ] `python setup/setup.py env`. It finds the engine through `ue`'s `UE_ROOT` (or `UE_ROOT`, or a folder you pass).
-- [ ] For each `MISS`, give the one command, and rerun until `ENV ok`. The usual misses:
+- [x] `python setup/setup.py env`. It finds the engine through `ue`'s `UE_ROOT` (or `UE_ROOT`, or a folder you pass).
+- [x] For each `MISS`, give the one command, and rerun until `ENV ok`. The usual misses:
   - `sudo pacman -S git-lfs`, then `git lfs install`
   - `sudo pacman -S nodejs npm` (UnrealClaude's MCP bridge)
   - Pillow and numpy: `uv pip install pillow numpy` into the Python that runs the tools
@@ -38,27 +38,27 @@ The project lives in this repo's folder, next to `Content/Studio`, `Content/Game
 (`vendor/kimodo`). The Project Browser refuses a folder that already has files in it, so it makes the project
 somewhere else and `setup.py adopt` moves it in.
 
-- [ ] **(user)** `ue` → Games → **First Person**, then:
+- [x] **(user)** `ue` → Games → **First Person**, then:
   - **C++** (the C++ version carries every variant's code and content, Horror included)
   - Desktop, Maximum quality
   - Starter Content off
   - folder: `/run/media/hal/Derick/Unreal/UnrealProjects`
   - name: the S0 answer (`HorrorStudio`)
   - Create
-- [ ] **(user)** Let it open (the first shader compile takes 10 to 40 minutes), then close the editor.
-- [ ] `python setup/setup.py adopt /run/media/hal/Derick/Unreal/UnrealProjects/HorrorStudio`: the `.uproject`, its
+- [x] **(user)** Let it open (the first shader compile takes 10 to 40 minutes), then close the editor.
+- [x] `python setup/setup.py adopt /run/media/hal/Derick/Unreal/UnrealProjects/HorrorStudio`: the `.uproject`, its
   thumbnail, `Source`, `Config` and `Content` (merged; nothing of ours is overwritten) come into this folder, and the
   old folder goes (its Binaries, Intermediate and caches are rebuilt here).
-- [ ] `python setup/setup.py build`, then `python setup/setup.py editor`: it opens here (through `ue`), on the
+- [x] `python setup/setup.py build`, then `python setup/setup.py editor`: it opens here (through `ue`), on the
   template's map.
 - **Done:** `python setup/setup.py env` shows the `.uproject` as ok, and the editor opens it from this folder.
 
 ## S3. Git (Claude)
 
 This folder is already the repo (`origin` is GitHub).
-- [ ] `python setup/setup.py configure` (the ini lines, and `.gitattributes`, which sends the binary assets to LFS;
+- [x] `python setup/setup.py configure` (the ini lines, and `.gitattributes`, which sends the binary assets to LFS;
   `.gitignore` is there already).
-- [ ] `git lfs install`; check `.gitattributes` sends `*.uasset` and `*.umap` to LFS, then commit the project
+- [x] `git lfs install`; check `.gitattributes` sends `*.uasset` and `*.umap` to LFS, then commit the project
   (`.uproject`, `Config`, the `*.Target.cs` files) and push. Epic's template (its `Content` folders and
   `Source/HorrorEngine/`) stays out: the repo is public (docs/STUDIO.md).
 - **Done:** a clean `git status`, and the remote has the commit.
@@ -70,19 +70,19 @@ UnrealClaude (github.com/Natfii/UnrealClaude, MIT) is built for UE 5.7. On 5.8 i
 5.7, and was verified on 5.8 by its author: the module loads and serves all 28 tools. Pull request 46 is the same
 fix; use 48.
 
-- [ ] `python setup/setup.py unrealclaude` plus the S0 flags (`--show-scripts`, `--auto-approve`). It:
+- [x] `python setup/setup.py unrealclaude` plus the S0 flags (`--show-scripts`, `--auto-approve`). It:
   - clones the source to `vendor/UnrealClaude-src` with its MCP-bridge submodule
   - merges pull request 48
   - copies the plugin to `Plugins/UnrealClaude` and sets its EngineVersion to your engine's
   - runs `npm install` for the bridge
   - writes `.mcp.json` (server `unreal` → `node Plugins/UnrealClaude/Resources/mcp-bridge/index.js`, at
     `http://localhost:3000`)
-- [ ] `python setup/setup.py plugins`, fix names in `setup/plugins.json` if your engine differs, then
+- [x] `python setup/setup.py plugins`, fix names in `setup/plugins.json` if your engine differs, then
   `python setup/setup.py enable`.
-- [ ] `python setup/setup.py build` (5 to 20 minutes with the plugin), then `python setup/setup.py editor`.
-- [ ] **(user)** If the editor asks to rebuild modules: Yes.
-- [ ] With the editor open: `curl http://localhost:3000/mcp/status` returns JSON.
-- [ ] **(user)** Restart Claude Code in the folder and approve the `unreal` MCP server.
+- [x] `python setup/setup.py build` (5 to 20 minutes with the plugin), then `python setup/setup.py editor`.
+- [x] **(user)** If the editor asks to rebuild modules: Yes.
+- [x] With the editor open: `curl http://localhost:3000/mcp/status` returns JSON.
+- [x] **(user)** Restart Claude Code in the folder and approve the `unreal` MCP server.
 - [ ] Prove the hands and eyes:
   - `unreal_status`
   - spawn a cube, then delete it

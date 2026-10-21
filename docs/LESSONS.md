@@ -70,3 +70,6 @@ the fix.
 - **A server started from a script must not keep the script's output:** the launcher's page servers inherited its
   stdout, so anything reading the launcher's output (a pipe, a test) waited for the server to end. Windows gets its
   own console window; elsewhere the server's output goes to Saved/launch/<name>.log.
+- **UnrealClaude's bridge lists only its simple tools:** taking the script tools out of `HIDDEN_TOOL_NAMES` made
+  them "mega" tools, which aren't listed either (16 of 28 shown). `setup.py unrealclaude --show-scripts` now adds
+  them to `SIMPLE_TOOL_NAMES`; after a router change, restart Claude Code so the bridge reloads.

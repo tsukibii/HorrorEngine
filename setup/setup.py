@@ -278,8 +278,13 @@ def cmd_unrealclaude(args):
     if "--show-scripts" in args:
         router = bridge / "tool-router.js"
         text = router.read_text(encoding="utf-8")
-        for name in ("execute_script", "cleanup_scripts", "get_script_history"):
+        names = ("execute_script", "cleanup_scripts", "get_script_history")
+        for name in names:
             text = text.replace(f'  "{name}",\n', "")
+        # out of the hidden set alone they fall to "mega", which isn't listed either: list them as simple tools
+        simple = "export const SIMPLE_TOOL_NAMES = new Set([\n"
+        if simple in text and f'  "{names[0]}",' not in text.split(simple, 1)[1].split("]);", 1)[0]:
+            text = text.replace(simple, simple + "".join(f'  "{n}",\n' for n in names), 1)
         router.write_text(text, encoding="utf-8")
         print("show  execute_script, cleanup_scripts, get_script_history to the model (run_console_command stays hidden); "
               "every script still asks in the editor unless auto-approve is on")

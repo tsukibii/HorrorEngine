@@ -11,6 +11,9 @@
 
 // Simple tools: appear in list_tools with full schema
 export const SIMPLE_TOOL_NAMES = new Set([
+  "execute_script",
+  "cleanup_scripts",
+  "get_script_history",
   "spawn_actor",
   "move_actor",
   "delete_actors",
