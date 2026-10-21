@@ -368,3 +368,12 @@ A childish flute tune with snare and claves in the 3-3-7 clap rhythm, bright and
 - **After:** Squid Game's 'Way Back Then' (Jung Jae-il: recorder, snare, claps, the kept wrong note), 'Red Light, Green Light'
 - **Level:** -6 dB; about 20 s at its defaults
 - **Settings:** key ionian / major pent; tempo (bpm) 90 to 132 (112); length (s) 8 to 32 (16); the wrong note 0 to 1 (0.7); the cello under it 0 to 1 (0.3)
+
+### The game's theme (plain) (`theme`)
+
+The game's theme alone: the tune on the piano over plain chords. Try numbers until one sticks; the theme-quoting cues all play it.
+
+- **For:** theme, leitmotif, main theme, title
+- **After:** How a K-drama's one piano theme runs through every cue (Crash Landing on You's 'The Song for My Brother', Goblin's 'Stay With Me')
+- **Level:** -6 dB; about 27 s at its defaults
+- **Settings:** key ionian / aeolian / lydian / dorian / harmonic minor; tempo (bpm) 56 to 110 (76); meter 4/4 / 3/4 / 6/8; left hand block chords / broken chords / bass only

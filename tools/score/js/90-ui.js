@@ -154,6 +154,7 @@ function selectCue(id, params, seed) {
   if (!c) return;
   stopAll();
   UI.cue = c; UI.params = cueParams(c, params || {}); UI.seed = seed != null ? seed : (LS.get("seed." + id, 1));
+  if (!params && c.motif && UI.palette.motif) UI.params.motif = UI.palette.motif;      // fresh settings quote the game's theme
   UI.vars = []; UI.base = null;
   LS.set("cue", id);
   $("cuehead").innerHTML = "";
@@ -282,6 +283,7 @@ async function loadPalette(scope) {
   UI.palette.sequences = UI.palette.sequences || [];
   UI.seq = [];
   UI.palette.scenes = UI.palette.scenes || [];
+  $("motif").value = UI.palette.motif || 0;
   renderPalette(); renderLib(); renderSeq(); renderScenes();
   if (UI.cue) renderCards();
 }
@@ -378,6 +380,14 @@ async function boot() {
   $("scope").value = [...$("scope").options].some(o => o.value === scope) ? scope : "studio";
   $("scope").onchange = async () => { if (UI.dirty) await savePalette(); loadPalette($("scope").value); };
   await loadPalette($("scope").value);
+  const setMotif = v => {
+    v = clamp(Math.floor(+v || 0), 0, 9999); $("motif").value = v;
+    UI.palette.motif = v; changed();
+    if (UI.cue.motif) { UI.params.motif = v; renderParams(); renderCards(); }
+  };
+  $("motif").onchange = () => setMotif($("motif").value);
+  $("motifdice").onclick = () => setMotif(1 + Math.floor(Math.random() * 9998));
+  $("motifplay").onclick = () => playTake(writeCue("theme", { motif: UI.palette.motif || 1, key: (UI.params.key && UI.cue.motif) ? UI.params.key : undefined }, 1), null, null);
   $("filter").oninput = renderLib;
   $("favfilter").oninput = renderPalette; $("favsort").onchange = renderPalette;
   $("spread").oninput = () => { $("spreadv").textContent = (+$("spread").value).toFixed(2); };

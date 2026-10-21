@@ -154,7 +154,7 @@ CUE("shock", {
 // Slow motion: the romantic look. Piano arpeggios over the "royal road" or I–V–vi–IV, strings swelling in, a
 // glockenspiel sparkle on the downbeat; at the end it can lift a step (the climax key change).
 CUE("slowmo_romance", {
-  family: "kdrama", level: -5, label: "Slow-motion romance", uses: ["romance", "slow motion", "eye contact", "first meeting", "love"],
+  family: "kdrama", level: -5, motif: true, label: "Slow-motion romance", uses: ["romance", "slow motion", "eye contact", "first meeting", "love"],
   desc: "Rolling piano arpeggios over a K-pop ballad progression, strings swelling in under them, a glockenspiel sparkle on the first beat; it may lift a whole step for the last bars.",
   refs: "Goblin, Crash Landing on You, Descendants of the Sun: the OST ballad underscore (piano first, strings rising)",
   params: { key: P.key(5, "ionian"), tempo: P.tempo(72, 58, 86), progression: P.pick("progression", ["royal_road", "pop", "canon", "doo_wop"]), len: P.len(24, 12, 48), lift: P.amt("key change at the end", 0.5), strings: P.amt("strings", 0.7),
@@ -171,6 +171,14 @@ CUE("slowmo_romance", {
       if (b % 2 === 0 || b >= liftAt) t.n("piano", ch[2] + 12, s + t.human(), bar, t.vel(58));
       if (p.strings > 0.1 && b >= 2) { const v = 30 + 40 * p.strings * Math.min(1, b / bars + 0.3); t.n("strings", deg(k, d, 48), s, bar * 1.05, v, { attack: spb, raw: true }); t.n("strings", ch[1] + 12, s, bar * 1.05, v - 6, { attack: spb }); }
       if (b % 4 === 0) t.n("glock", ch[0] + 24, s + t.human(), null, t.vel(54));
+      if (p.motif && b >= 1) {                                       // the couple's theme: piano first, the strings take it over half-way
+        let off = 0;
+        for (const [md, beats] of motifLine(p.motif, 4).filter(x => x[2] === (b - 1) % 8)) {
+          const inst = b >= bars / 2 && p.strings > 0.3 ? "strings" : "piano";
+          t.n(inst, deg(k, md, 72), s + off * spb + t.human(0.01), beats * spb * 0.95, inst === "strings" ? 44 + 20 * p.strings : t.vel(64), inst === "strings" ? { attack: 0.12 } : {});
+          off += beats;
+        }
+      }
     }
     if (p.ending !== "resolve") {
       // Weightlifting Fairy's joke: the swell is at its height and the needle comes off (research §1.3)
@@ -204,7 +212,7 @@ CUE("heart_flutter", {
 
 // The sad flashback: solo piano in a minor key, sparse and rubato, the strings coming in after a few bars.
 CUE("sad_flashback", {
-  family: "kdrama", level: -8, label: "Sad flashback", uses: ["flashback", "sad", "memory", "grief", "regret"],
+  family: "kdrama", level: -8, motif: true, label: "Sad flashback", uses: ["flashback", "sad", "memory", "grief", "regret"],
   desc: "Solo piano in a minor key, sparse and rubato (a melody over broken chords), the strings entering softly after a few bars.",
   refs: "My Mister, Goblin's memory cues, Reply 1988's tender piano themes",
   params: { key: P.key(9, "aeolian"), tempo: P.tempo(64, 50, 76), progression: P.pick("progression", ["ballad_minor", "sad_pop", "lament"]), len: P.len(28, 14, 56), strings: P.amt("strings", 0.5) },
@@ -212,12 +220,16 @@ CUE("sad_flashback", {
     const k = p.key, spb = t.beat(p.tempo, [4, 4]), bar = 4 * spb, prog = PROGS[p.progression], r = t.rng;
     const bars = Math.max(4, Math.round(p.len / bar));
     let mel = 4, s = 0;
+    const line = p.motif ? motifLine(p.motif, 4) : null;
     for (let b = 0; b < bars; b++) {
       const rub = 1 + 0.08 * Math.sin(b * 1.7), barL = bar * rub;         // rubato: bars breathe
       const d = prog[b % prog.length], ch = triad(k, d, 48, 3);
       [deg(k, d, 36), ch[2], ch[1] + 12, ch[2]].forEach((m, i) => t.n("piano", m, s + i * barL / 4 + t.human(0.02), barL / 2, t.vel(i ? 40 : 50), { raw: i === 0 }));
-      const notes = r.int(2, 4);
-      for (let i = 0; i < notes; i++) { mel = clamp(mel + r.pick([-1, -1, 1, -2, 2]), 2, 9); t.n("piano", deg(k, mel, 72), s + (i / notes) * barL + t.human(0.03), barL / notes * 1.3, t.vel(58)); }
+      if (line) { let off = 0; for (const [md, beats] of line.filter(x => x[2] === b % 8)) { t.n("piano", deg(k, md, 72), s + off * barL / 4 + t.human(0.03), beats * barL / 4 * 1.1, t.vel(58)); off += beats; } }
+      else {
+        const notes = r.int(2, 4);
+        for (let i = 0; i < notes; i++) { mel = clamp(mel + r.pick([-1, -1, 1, -2, 2]), 2, 9); t.n("piano", deg(k, mel, 72), s + (i / notes) * barL + t.human(0.03), barL / notes * 1.3, t.vel(58)); }
+      }
       if (p.strings > 0.1 && b >= 4) t.n("strings", deg(k, d, 60), s, barL * 1.05, 24 + 30 * p.strings, { attack: barL * 0.4 });
       s += barL;
     }

@@ -10,6 +10,7 @@
 <header>
   <h1>SCORE ROOM</h1>
   <label>palette</label><select id="scope" title="Where the favourites live: the studio's palette, or a game's own"></select>
+  <label title="The game's theme: the tune the theme-quoting cues play (0: each cue's own tune)">theme</label><input id="motif" type="number" min="0" max="9999" step="1" style="width:64px"><button id="motifdice" title="another theme">&#127922;</button><button id="motifplay" title="hear the theme alone">&#9654;</button>
   <label>played in</label><select id="space" title="The room the music is heard in (the hall the reverb traces)"></select>
   <button id="exportPal" title="Download the palette as JSON">Export</button>
   <button id="importPal" title="Merge a palette JSON file into this one">Import</button>

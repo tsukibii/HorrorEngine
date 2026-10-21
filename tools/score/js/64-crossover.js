@@ -8,14 +8,14 @@
 // time the phrase does: an augmented chord where the IV should be, a flattened note in the tune, or a low cluster
 // under the cadence. Which one, and how loud, is the parameter.
 CUE("her_theme", {
-  family: "crossover", level: -8, label: "Her theme (something off)", uses: ["her theme", "romance", "yandere", "first meeting", "at home with her"],
+  family: "crossover", level: -8, motif: true, label: "Her theme (something off)", uses: ["her theme", "romance", "yandere", "first meeting", "at home with her"],
   desc: "A tender piano love theme over warm chords, with one wrong thing that comes back every phrase: an augmented chord, a flattened note in the tune or a low cluster under the cadence.",
   refs: "Doki Doki Literature Club's 'Your Reality' (sweet piano hiding the wrong), Mirai Nikki's Yuno cues, the 'Ending' piano of Silent Hill 2",
   params: { key: P.key(7, "ionian", ["ionian", "lydian"]), tempo: P.tempo(70, 56, 88), len: P.len(24, 10, 48),
             wrongness: P.pick("the wrong thing", ["augmented chord", "flat note", "low cluster", "all three"]), amount: P.amt("how wrong", 0.4), strings: P.amt("strings", 0.4) },
   gen(t, p) {
     const k = p.key, spb = t.beat(p.tempo, [4, 4]), bar = 4 * spb, r = t.rng;
-    const prog = [0, 5, 3, 4], tune = [[4, 2], [2, 1], [0, 1], [4, 2], [5, 1], [4, 1], [2, 4], [1, 2], [2, 1], [3, 1], [4, 3], [2, 1], [0, 4]];
+    const prog = [0, 5, 3, 4], tune = p.motif ? motifLine(p.motif, 4) : [[4, 2], [2, 1], [0, 1], [4, 2], [5, 1], [4, 1], [2, 4], [1, 2], [2, 1], [3, 1], [4, 3], [2, 1], [0, 4]];
     const bars = Math.max(2, Math.round(p.len / bar)), w = p.wrongness, all = w === "all three";
     // the tune, as many times as fits; its fifth note goes flat on every pass after the first ("flat note")
     let s = 0, pass = 0;
@@ -51,7 +51,7 @@ CUE("her_theme", {
 // Sweet, then wrong: a romance underscore that turns at a point (her smile stays and the music doesn't): the major
 // harmony slides a semitone, the strings bend down, a low piano note lands under it all. The turn is a hit point.
 CUE("sweet_then_wrong", {
-  family: "crossover", level: -6, label: "Sweet, then wrong", uses: ["the turn", "reveal", "her smile", "yandere", "date"],
+  family: "crossover", level: -6, motif: true, label: "Sweet, then wrong", uses: ["the turn", "reveal", "her smile", "yandere", "date"],
   desc: "A warm romance underscore (rolling piano, strings) that turns at the hit: the harmony slides down a semitone, the strings bend down into a cluster, a low note lands.",
   refs: "School Days' last episode, Gone Girl's warm-cold score (Reznor and Ross), the Parasite 'Belt of Faith' turn",
   params: { key: P.key(2, "ionian"), tempo: P.tempo(76, 60, 92), turn_at: P.amt("where it turns (share)", 0.6), len: P.len(16, 8, 32),
@@ -59,6 +59,7 @@ CUE("sweet_then_wrong", {
   gen(t, p) {
     const k = p.key, spb = t.beat(p.tempo, [4, 4]), bar = 4 * spb, prog = PROGS.pop;
     const turn = Math.max(bar * 2, Math.round(p.len * p.turn_at / spb) * spb), end = Math.max(turn + 3, p.len);
+    if (p.motif) { let at = 0; for (const [d, beats] of motifLine(p.motif, 4)) { if (at >= turn - 0.05) break; t.n("piano", deg(k, d, 72), at + t.human(0.01), Math.min(beats * spb, turn - at) * 0.95, t.vel(60)); at += beats * spb; } }
     for (let b = 0; b * bar < turn; b++) {
       const at = b * bar, d = prog[b % 4], ch = triad(k, d, 60, 3);
       [deg(k, d, 48), ch[0], ch[1], ch[2], ch[1], ch[0] + 12, ch[2], ch[1]].forEach((m, i) => { if (at + i * spb / 2 < turn) t.n("piano", m, at + i * spb / 2 + t.human(0.01), spb, t.vel(i ? 46 : 58)); });
@@ -232,7 +233,7 @@ CUE("close_moment", {
 // slowed, resolved warmly (good), left on the IV (neutral, never home), or turned to minor with the low cluster
 // returning and a music-box tag (bad).
 CUE("ending", {
-  family: "crossover", level: -6, align: "start", label: "Ending (good, neutral, bad)", uses: ["ending", "credits", "epilogue", "karma"],
+  family: "crossover", level: -6, align: "start", motif: true, label: "Ending (good, neutral, bad)", uses: ["ending", "credits", "epilogue", "karma"],
   desc: "The love theme's chords slowed down: resolved warmly (good), left hanging on the IV (neutral), or turned minor with the cluster back and a music-box tag (bad).",
   refs: "Silent Hill 2's endings, To the Moon's 'For River', Ringu's closing cues; the K-drama finale montage swell",
   params: { key: P.key(7, "ionian"), ending: P.pick("ending", ["good", "neutral", "bad"]), tempo: P.tempo(58, 44, 72), len: P.len(30, 16, 60), strings: P.amt("strings", 0.7) },
@@ -248,6 +249,11 @@ CUE("ending", {
       ch.forEach((m, i) => t.n("piano", m, at + spb * 0.5 * i + t.human(0.02), bar - spb * 0.5 * i, t.vel(44)));
       t.n("piano", ch[2] + 12, at + 2 * spb + t.human(), 2 * spb, t.vel(52));
       if (p.strings > 0.1) { t.n("strings", deg(k, d, 48), at, bar + 0.1, 26 + 34 * p.strings * (b / bars + 0.4), { attack: spb, raw: true }); t.n("strings", ch[2] + 12, at, bar + 0.1, 24 + 30 * p.strings * (b / bars), { attack: spb * 2 }); }
+    }
+    if (p.motif) {                                                  // the theme, slowed, over the chords: its last statement
+      let at = 0;
+      const line = motifLine(p.motif, 4), mk = { ...p.key };
+      for (const [d, beats, mb] of line) { if (at >= bars * bar) break; const kk = bad && at >= Math.floor(bars / 2) * bar ? { tonic: mk.tonic, mode: "aeolian" } : mk; t.n("piano", deg(kk, d, 72), at + t.human(0.02), beats * spb * 0.95, t.vel(56)); at += beats * spb; }
     }
     const fin = bars * bar;
     if (p.ending === "good") { t.chord("piano", triad(k, 0, 48, 4).concat([deg(k, 0, 72), deg(k, 4, 72)]), fin, null, 58, { roll: 0.12 }); t.n("glock", deg(k, 0, 84), fin + 0.8, null, 40); }
@@ -294,7 +300,7 @@ CUE("obsession_confession", {
 // The ghost lover's lullaby: a tender 6/8 on the nylon guitar with a flute melody and high string harmonics, and
 // every few bars a tubular bell too low and too long. A tender scene with something dead.
 CUE("ghost_lullaby", {
-  family: "crossover", level: -9, label: "Ghost lover's lullaby", uses: ["ghost", "tender", "lullaby", "memory", "she's dead"],
+  family: "crossover", level: -9, motif: true, label: "Ghost lover's lullaby", uses: ["ghost", "tender", "lullaby", "memory", "she's dead"],
   desc: "Nylon guitar arpeggios in 6/8, a flute melody, high quiet strings; every few bars a tubular bell, too low and too long.",
   refs: "Hotel del Luna and Goblin's dark cues, Silent Hill 2's 'Theme of Laura' (reprise), Pan's Labyrinth's lullaby (Navarrete)",
   params: { key: P.key(9, "aeolian", ["aeolian", "dorian", "harmonic_minor"]), tempo: P.tempo(60, 48, 76), len: P.len(24, 12, 48), bell: P.amt("the bell", 0.5), flute: P.amt("flute melody", 0.7) },
@@ -304,13 +310,17 @@ CUE("ghost_lullaby", {
     for (let b = 0; b < bars; b++) {
       const at = b * bar, d = prog[b % 4], ch = triad(k, d, 52, 3);
       [deg(k, d, 40), ch[1], ch[2], ch[0] + 12, ch[2], ch[1]].forEach((m, i) => t.n("guitar", m, at + i * spb + t.human(0.01), spb * 2, t.vel(i ? 50 : 62)));
-      if (p.flute > 0.2 && b >= 1) {
+      if (p.flute > 0.2 && b >= 1 && !p.motif) {
         const a = tune[(2 * b) % 16], c2 = tune[(2 * b + 1) % 16];
         if (a >= -1) t.n("flute", deg(k, a + 7, 60), at, spb * 3 * 0.95, t.vel(50 + 14 * p.flute));
         if (c2 >= -1) t.n("flute", deg(k, c2 + 7, 60), at + spb * 3, spb * 3 * 0.95, t.vel(46 + 14 * p.flute));
       }
       if (b % 2 === 0) t.n("strings", deg(k, d + 4, 72), at, bar * 2, 20, { attack: bar * 0.6 });
       if (b > 1 && r.chance(p.bell * 0.45)) { t.n("bells", 60 + mod(k.tonic + 6, 12), at + spb * r.int(1, 4), null, 40 + 30 * p.bell, { raw: true }); t.mark(at, "the bell"); }
+    }
+    if (p.flute > 0.2 && p.motif) {                                // the game's theme on the flute, a dotted beat a beat
+      let at = bar;
+      while (at < bars * bar - spb) for (const [d, beats] of motifLine(p.motif, 2)) { if (at >= bars * bar - spb) break; t.n("flute", deg(k, d + 7, 60), at, beats * 3 * spb * 0.95, t.vel(50 + 14 * p.flute)); at += beats * 3 * spb; }
     }
     t.n("guitar", deg(k, 0, 52), bars * bar, null, 50); t.n("bells", 60 + k.tonic, bars * bar + 0.3, null, 50, { raw: true });
     t.end(bars * bar + 4);
@@ -344,5 +354,32 @@ CUE("playground_game", {
     for (let s = 0; s < end - 0.1; s += 2 * bar) for (const e of clap) { const c = s + e * spb / 2; if (c < end) { t.hit("claves", c, 84 + (e === 0 || e === 4 || e === 8 ? 20 : 0)); if (e === 0 || e === 4) t.hit("snare", c, 70); } }
     if (p.low > 0.2) for (let s = 0; s < end; s += bar) t.n("strings", deg(k, 0, 36) + (Math.floor(s / bar) % 2 ? 1 : 0), s, bar, 24 + 30 * p.low, { attack: 0.3, raw: true });
     t.end(end + 1);
+  },
+});
+
+// The game's theme, plain: the tune alone on the piano with simple chords under it (each bar's chord holds its first
+// note; a half cadence on the fifth, home at the end). Pick a theme here, then the cues that quote it play it in
+// their own way: the music box, her theme, the romance, the flashback, the lullaby, the ending.
+CUE("theme", {
+  family: "crossover", level: -6, align: "start", motif: true, label: "The game's theme (plain)", uses: ["theme", "leitmotif", "main theme", "title"],
+  desc: "The game's theme alone: the tune on the piano over plain chords. Try numbers until one sticks; the theme-quoting cues all play it.",
+  refs: "How a K-drama's one piano theme runs through every cue (Crash Landing on You's 'The Song for My Brother', Goblin's 'Stay With Me')",
+  params: { key: P.key(7, "ionian", ["ionian", "aeolian", "lydian", "dorian", "harmonic_minor"]), tempo: P.tempo(76, 56, 110), meter: P.pick("meter", ["4/4", "3/4", "6/8"]), voicing: P.pick("left hand", ["block chords", "broken chords", "bass only"]) },
+  gen(t, p) {
+    const k = p.key, beats = { "4/4": 4, "3/4": 3, "6/8": 2 }[p.meter], unit = 60 / p.tempo * (beats === 2 ? 1.5 : 1);
+    t.beat(beats === 2 ? p.tempo * 3 / 1.5 : p.tempo, beats === 2 ? [6, 8] : [beats, 4]);
+    const line = motifLine(p.motif || 1, beats), bar = beats * unit;
+    let at = 0;
+    for (const [d, b] of line) { t.n("piano", deg(k, d, 72), at + t.human(0.008), b * unit * 0.95, t.vel(64)); at += b * unit; }
+    for (let b = 0; b < 8; b++) {
+      const first = line.find(x => x[2] === b)[0];
+      const root = b === 3 ? 4 : b === 7 ? 0 : [0, 3, 4, 5, 1, 2].find(c => [0, 2, 4].some(i => mod(c + i - first, 7) === 0)) ?? 0;
+      const s = b * bar, ch = triad(k, root, 48, 3);
+      if (p.voicing === "block chords") t.chord("piano", ch, s, bar * 0.95, 44);
+      else if (p.voicing === "broken chords") [ch[0], ch[1], ch[2], ch[1]].slice(0, beats).forEach((m, i) => t.n("piano", m, s + i * unit, unit * 1.2, t.vel(42)));
+      t.n("piano", deg(k, root, 36), s, bar * 0.95, t.vel(50), { raw: true });
+    }
+    t.mark(4 * bar, "the second phrase");
+    t.end(8 * bar + 1.5);
   },
 });

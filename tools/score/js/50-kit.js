@@ -53,6 +53,54 @@ class Take {
   end(secs) { this.secs = Math.max(secs, 0.5); }
 }
 
+// ---- the game's theme: one tune the cues can quote ----
+// A K-drama keeps one theme and plays it everywhere (Crash Landing on You's piano theme turning into the orchestra,
+// Goblin's song at every big beat: docs/MUSIC_RESEARCH.md §1.4); our romance horror does the same, sweet first and
+// corrupted later. A theme is a number: its pitches, bar by bar (8 bars: a phrase ending half-way, on the fifth,
+// and one coming home), come from that seed; its rhythm fits the cue's meter, drawn from the same seed, so the tune
+// is recognisably the same in her theme's 4/4, the music box's 3/4 and the lullaby's 6/8.
+function motifBars(seed) {
+  const r = makeRng(Math.imul(seed >>> 0, 2654435761) >>> 0 || 1);
+  const count = () => r.weighted([[2, 3], [3, 4], [4, 2]]);
+  const walk = (start, n) => {
+    const out = [start];
+    let d = start, back = 0;
+    for (let i = 1; i < n; i++) {
+      let step;
+      if (back) { step = -back; back = 0; }                          // a leap is answered by a step back
+      else if (r.chance(0.25)) { step = r.pick([2, 3, -2, -3, 4]); back = Math.sign(step); }
+      else step = r.pick([1, -1, 1, -1, 0]);
+      d = clamp(d + step, -2, 8); out.push(d);
+    }
+    return out;
+  };
+  const a1 = walk(r.pick([0, 2, 4, 4]), count());
+  const a2 = walk(clamp(a1[a1.length - 1] + r.pick([-1, 1, 2]), -2, 8), count());
+  const up = r.pick([1, 2]), a3 = a1.map(d => clamp(d + up, -2, 9));
+  const half = r.chance(0.6) ? [a3[a3.length - 1] > 4 ? 5 : 3, 4] : [4];
+  const a2b = a2.slice(0, -1).concat([clamp(a2[a2.length - 1] + r.pick([-1, -2]), -2, 8)]);
+  // the bar before home walks down by step towards the second degree (a scale run into the cadence, no leap)
+  const s4 = clamp(a2b[a2b.length - 1] + r.pick([0, 1]), 2, 8), n4 = Math.min(count(), s4), st = Math.max(1, Math.round((s4 - 2) / Math.max(1, n4 - 1)));
+  const a4 = range(0, n4).map(i => Math.max(1, s4 - i * Math.min(st, 2)));
+  const home = r.chance(0.6) ? [r.pick([1, 2]), 0] : [0];
+  return [a1, a2, a3, half, a1, a2b, a4, home];
+}
+// The theme as notes for a meter (beats a bar: 4, 3, or 2 dotted beats for 6/8): [[degree, beats, bar], ...]
+const MOTIF_CELLS = {
+  4: { 1: [[4]], 2: [[2, 2], [3, 1], [2, 2]], 3: [[2, 1, 1], [1, 1, 2], [1.5, 0.5, 2]], 4: [[1, 1, 1, 1], [1.5, 0.5, 1, 1]] },
+  3: { 1: [[3]], 2: [[2, 1], [2, 1], [1, 2]], 3: [[1, 1, 1], [1.5, 0.5, 1]], 4: [[1, 0.5, 0.5, 1], [0.5, 0.5, 1, 1]] },
+  2: { 1: [[2]], 2: [[1, 1]], 3: [[1, 0.5, 0.5], [0.5, 0.5, 1]], 4: [[0.5, 0.5, 0.5, 0.5]] },
+};
+function motifLine(seed, beats = 4) {
+  const r = makeRng((seed * 7 + beats) >>> 0), cells = MOTIF_CELLS[beats] || MOTIF_CELLS[4], out = [];
+  motifBars(seed).forEach((bar, b) => {
+    const opts = cells[bar.length] || cells[2];
+    const cell = (b === 3 || b === 7) ? opts[0] : r.pick(opts);      // the cadences keep the plainest rhythm (a long last note)
+    bar.forEach((d, i) => out.push([d, cell[i], b]));
+  });
+  return out;
+}
+
 // ---- the cue registry ----
 // def: {family, label, uses: [tags], desc, refs, params: {name: {kind: "num"|"choice"|"key", ...}}, gen(t, p)}
 const CUES = {};
@@ -69,7 +117,7 @@ function CUE(id, def) {
     gain: { kind: "num", def: def.level ?? -6, min: -24, max: 6, step: 1, label: "level (dB)", fixed: true, shared: true },
     corrupt: { kind: "num", def: 0, min: 0, max: 1, step: 0.05, label: "corruption (any cue)", fixed: true, shared: true },
     watched: { kind: "num", def: 0, min: 0, max: 1, step: 0.05, label: "she's watching (hidden layer)", fixed: true, shared: true },
-  });
+  }, def.motif ? { motif: { kind: "num", def: 0, min: 0, max: 9999, step: 1, label: "the game's theme (0: the cue's own tune)", fixed: true, shared: true } } : {});
   CUES[id] = def;
   return def;
 }

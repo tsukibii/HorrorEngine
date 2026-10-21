@@ -66,13 +66,17 @@ CUE("stalker_ostinato", {
 // The music box gone wrong: a sweet waltz in a major key on the glockenspiel and high piano, drifting out of tune,
 // one wrong note at the cadence, slowing as it winds down. The yandere's lullaby.
 CUE("music_box", {
-  family: "horror", level: -8, label: "Music box gone wrong", uses: ["yandere", "lullaby", "her room", "the turn", "memory"],
+  family: "horror", level: -8, motif: true, label: "Music box gone wrong", uses: ["yandere", "lullaby", "her room", "the turn", "memory"],
   desc: "A sweet music-box waltz (glockenspiel and high piano) that drifts flat, hits a wrong note at the cadence and winds down like a dying spring.",
   refs: "Doki Doki Literature Club's broken lullabies, Higurashi's music box, Silent Hill's lullaby cues",
   params: { key: P.key(5, "ionian", ["ionian", "lydian", "major_pent"]), tempo: P.tempo(80, 60, 104), len: P.len(18, 8, 32), wrongness: P.amt("wrongness", 0.5), winddown: P.amt("wind down", 0.6), strings: P.amt("string bed", 0.3) },
   gen(t, p) {
     const k = p.key, spb0 = t.beat(p.tempo, [3, 4]);
-    const tune = [4, 2, 0, 2, 4, 4, 4, -1, 1, 1, 1, -1, 4, 7, 7, -1];      // degrees; -1 a rest (a little lilt of our own)
+    let tune = [4, 2, 0, 2, 4, 4, 4, -1, 1, 1, 1, -1, 4, 7, 7, -1];      // degrees; -1 a rest (a little lilt of our own)
+    if (p.motif) {                                                  // the game's theme, a beat a slot (held beats ring)
+      tune = [];
+      for (const [d, beats] of motifLine(p.motif, 3)) { tune.push(d); for (let i = 1; i < Math.round(beats); i++) tune.push(-1); }
+    }
     const bars = Math.max(4, Math.round(p.len / (3 * spb0)));
     let s = 0;
     for (let b = 0; b < bars; b++) {

@@ -10,7 +10,7 @@ const ctx = { console, Math, JSON, Object, Array, Set, Map, TextEncoder, Uint8Ar
 vm.createContext(ctx);
 const files = fs.readdirSync(path.join(HERE, "js")).filter(f => /^[0-6]\d-.*\.js$/.test(f) || f === "70-player.js").sort();
 vm.runInContext(files.map(f => fs.readFileSync(path.join(HERE, "js", f), "utf8")).join("\n;\n") +
-  "\n;globalThis.__x = { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake };", ctx, { filename: "score.js" });
+  "\n;globalThis.__x = { motifLine, CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake };", ctx, { filename: "score.js" });
 const { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake } = ctx.__x;
 const index = JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Music/samples/instruments.json"), "utf8"));
 const problems = [];
@@ -59,10 +59,21 @@ for (const id of ids) {
     for (const v of vals) checkTake(id, writeCue(id, { [k]: v }, 77), k + "=" + JSON.stringify(v));
   }
   checkTake(id, writeCue(id, { corrupt: 1, watched: 1 }, 5), "corrupt+watched");
+  if (c.motif) for (let m = 1; m <= 25; m++) checkTake(id, writeCue(id, { motif: m * 37 }, m), "theme " + m * 37);
   const vs = variations(id, {}, 6, 0.8, 42), vs2 = variations(id, {}, 6, 0.8, 42);
   if (JSON.stringify(vs) !== JSON.stringify(vs2)) bad(id, "variations not deterministic");
   vs.forEach((v, i) => checkTake(id, writeCue(id, v.params, v.seed), "variation " + i));
 }
+// the game's theme: the same pitches in every meter, 8 bars, a half cadence on the fifth and home at the end
+for (let m = 1; m <= 200; m++) {
+  const l4 = ctx.__x.motifLine(m, 4), l3 = ctx.__x.motifLine(m, 3), l2 = ctx.__x.motifLine(m, 2);
+  const pit = l => l.map(x => x[0]).join(",");
+  if (pit(l4) !== pit(l3) || pit(l4) !== pit(l2)) bad("theme " + m, "pitches differ between meters");
+  for (const [beats, l] of [[4, l4], [3, l3], [2, l2]]) for (let b = 0; b < 8; b++) { const sum = l.filter(x => x[2] === b).reduce((a, x) => a + x[1], 0); if (Math.abs(sum - beats) > 1e-9) bad("theme " + m, "bar " + b + " has " + sum + " beats in " + beats); }
+  const last = l4[l4.length - 1][0], halfEnd = l4.filter(x => x[2] === 3).pop()[0];
+  if (last !== 0 || halfEnd !== 4) bad("theme " + m, "cadences " + halfEnd + " and " + last);
+}
+
 // a chain and a MIDI file
 const chain = chainTakes([{ take: writeCue("sneak", {}, 1) }, { take: writeCue("slapstick_fall", {}, 2), gap: 0.2 }, { take: writeCue("flustered", {}, 3), gap: -0.3 }]);
 if (chain.parts.length !== 3 || !(chain.secs > 5)) bad("chain", JSON.stringify(chain.parts));

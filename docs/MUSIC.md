@@ -86,10 +86,26 @@ reverb the Woohill engine traces from the room's walls and their materials, and 
   romance or the cute walk.
 - **She's watching (0 to 1)** adds a high tremolo cluster you feel more than hear, with a faint glockenspiel ping
   now and then. It's for a comedy scene she is secretly watching (research X6).
+- **The game's theme (a number, 0 for each cue's own tune).** A K-drama keeps one theme and plays it everywhere
+  (research §1.4: Crash Landing on You's piano theme turning into the orchestra, Goblin's song at every big beat).
+  The header's **theme** sets it for the palette. 🎲 tries another, ▶ plays it alone (the cue "The game's theme
+  (plain)"), and fresh settings of a cue that quotes it take it.
+  - **The tune:** 8 bars. Two phrases with a repeated idea, the first ending on the fifth, the second walking down by
+    step to home.
+  - **The rhythm** fits each meter, so the tune is recognisably the same in 4/4, 3/4 and 6/8.
+  - **Seven cues quote it**, each in its own way:
+    - Music box: in 3/4, drifting and winding down.
+    - Her theme: with its one wrong thing.
+    - Slow-motion romance: piano first, the strings take it over half-way.
+    - Sad flashback: in minor.
+    - Ghost lullaby: on the flute in 6/8.
+    - Sweet, then wrong: until the turn.
+    - Ending: slowed, and turning minor on the bad ending.
+  - Pick one number per game and its whole palette shares a tune.
 - **Hit points.** Each cue marks where the picture's action lands (the fall's thud, the sting, the turn, her
   answer). The desk will line them up with clip edges (§5).
 
-## 4. The cues (40)
+## 4. The cues (41)
 
 The full list, with settings, is in docs/MUSIC_CUES.md. Research §4 designed 32 cues; this is what was built and how
 it differs.
@@ -127,7 +143,8 @@ it differs.
 - Womp womp
 - Punchline (K14: ba-dum-tss, ta-da, bonk, boing)
 
-**Romance horror (11):**
+**Romance horror (12):**
+- The game's theme (plain): the tune alone over plain chords, to choose one by.
 - Her theme: a love theme with one wrong thing in it (an augmented chord, a flat note or a cluster) that comes
   back every phrase.
 - Sweet, then wrong: it slides down, bends, stops dead or turns into a music box.

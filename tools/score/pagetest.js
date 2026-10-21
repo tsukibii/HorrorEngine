@@ -69,6 +69,10 @@ const URL = process.env.SCORE_URL || "http://127.0.0.1:8791/";
   const pos = await page.evaluate(async () => { await playTake(writeCue("sting", {}, 1), null, null); await new Promise(r => setTimeout(r, 400)); const p = Engine.position(); stopAll(); return p; });
   if (!(pos > 0)) fail("playback position " + pos);
 
+  // the game's theme: set in the header, fresh settings of a theme-quoting cue take it
+  const th = await page.evaluate(() => { document.getElementById("motif").value = 321; document.getElementById("motif").onchange(); selectCue("music_box"); const a = UI.params.motif; selectCue("chase"); return { a, chase: UI.params.motif, pal: UI.palette.motif }; });
+  if (th.a !== 321 || th.chase !== undefined || th.pal !== 321) fail("theme " + JSON.stringify(th));
+
   // the scene panel: its example scores with the landing on 4.2 s and nothing missing
   const scene = await page.evaluate(() => { const t = scoreScene(); return { parts: t.parts.map(p => p.cue), missing: t.missing, land: (t.hits.find(h => h.label === "the landing") || {}).t }; });
   if (scene.parts.length !== 5 || scene.missing.length || Math.abs(scene.land - 4.2) > 0.01) fail("scene " + JSON.stringify(scene));
