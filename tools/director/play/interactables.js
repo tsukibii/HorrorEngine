@@ -71,6 +71,11 @@ register("interactable", "sit", {                 // a chair, a sofa, a bed's ed
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.seat === t ? s.stand : s.label }),
   use: (t, rt, s) => (rt.player.seat === t ? rt.stand(s) : rt.sit(t, s)),
 });
+register("interactable", "roll", {                // a die: E throws it from your hand; its face is read when it settles
+  settings: { cursor: "take", label: "Roll", speed: 2.6, lift: 1.2, spin: 14 },  // m/s along the look, m/s up, rad/s
+  prompt: (t, rt, s) => (rt.physics && rt.physics.rolling(t) ? { cursor: "none", label: "" } : { cursor: "roll", label: s.label }),
+  use: (t, rt, s) => { if (!(rt.physics && rt.physics.rolling(t))) rt.roll(t, s); },
+});
 register("interactable", "locker", {              // hiding comes with stealth (GAMEPLAY_PLAN §8 step 4); the use is heard now
   settings: { cursor: "hide", label: "Hide" },
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),

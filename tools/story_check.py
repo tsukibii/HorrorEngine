@@ -24,8 +24,8 @@ from storykit import kit as KIT  # noqa: E402
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
-TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught"}
-TRIGGER_EXTRA = {"secs", "within"}
+TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least"}
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene"}
@@ -630,6 +630,14 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: read {v!r} isn't a note")
     elif k == "after" and v not in beats:
         r.err(f"{bid}: after {v!r} isn't a beat in this stitch")
+    elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
+        if v not in things or things[v].use != "roll":
+            r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
+        sides = int(things[v].d.get("sides", 6)) if v in things else 6
+        for f in ("face", "at_least"):
+            if f in w and not (isinstance(w[f], int) and 1 <= w[f] <= sides):
+                r.err(f"{bid}: rolled {f} {w[f]!r} (a face from 1 to {sides})")
+
 
 
 def check_action(bid, a, story, things, r, stage=None):
@@ -729,6 +737,9 @@ def check_stitch(tid, st, story, things, r):
     has_done = False
     for b in st.get("beats", []):
         check_trigger(b["id"], b.get("when", {}), story, things, beats, r)
+        w = b.get("when", {})
+        if "rolled" in w and ("face" in w or "at_least" in w) and not (b.get("optional") or b.get("secret")):
+            r.warn(f"{b['id']}: a roll is chance: a beat that needs a face should be optional or secret, or the player may never get it")
         if b.get("secret") and b["secret"] not in story.get("secrets", {}):
             r.err(f"{b['id']}: secret {b['secret']!r} isn't in secrets")
         cued = "look" in b.get("when", {})
@@ -1113,7 +1124,7 @@ class World:
         v = w[k]
         if k == "start":
             return ("start", self.cur) in self.done_events
-        if k in ("enter", "exit", "look"):
+        if k in ("enter", "exit", "look", "rolled"):      # rolled: the walker rolls until the face comes up
             return self.can_reach(v)
         if k == "use":
             t = self.things[v]
@@ -1139,7 +1150,7 @@ class World:
     def where(self, w):
         k = next(iter(set(w) - TRIGGER_EXTRA))
         v = w[k]
-        return v if k in ("enter", "exit", "use", "look") and v in self.things else None
+        return v if k in ("enter", "exit", "use", "look", "rolled") and v in self.things else None
 
     def apply_state(self, a):
         k = verbs(a)[0]

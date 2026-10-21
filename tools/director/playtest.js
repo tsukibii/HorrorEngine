@@ -27,6 +27,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const S = window.__dd.S, k = S.levels.house.rooms.find(r => r.id === "kitchen");
     for (const id of ["chair_a", "chair_b"]) k.props.find(p => p.id === id).use = "sit";
     S.stitches.t_search.beats.push({ id: "b_sit", when: { use: "chair_b" }, do: [{ scene: "s_message" }] });
+    S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "big_die", shape: "box 0.3 0.3 0.3", at: [2.6, 4.2], use: "roll" });
+    S.stitches.t_search.beats.push({ id: "b_roll", when: { rolled: "big_die", at_least: 1 }, optional: true, do: [{ flag: "rolled_once" }] });
     await window.__dd.replan();
   });
   await page.click('nav button[data-v="watchView"]');
@@ -118,6 +120,23 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const st = await page.evaluate(() => { const rt = window.__dd.play; return { seat: !!rt.player.seat, stitch: !!rt.end, y: -rt.player.pos.z }; });
     if (st.seat || !st.stitch) throw new Error(JSON.stringify(st));
     if (Math.abs(st.y - 2.2) > 0.6) throw new Error(`carried on from y=${st.y.toFixed(2)}, the scene's eye is at 2.2`);
+  });
+  await step("the die: E throws it, it settles on the floor, its face is heard (rolled)", async () => {
+    const r = await goTo("big_die", 1.1);
+    if (r.cursor !== "roll") throw new Error("cursor " + r.cursor);
+    await press("KeyE");
+    await page.waitForFunction(() => window.__dd.run.flags.has("rolled_once"), null, { timeout: 12000 });
+    const d = await page.evaluate(() => { const m = window.__dd.play.byId.big_die; return { y: m.position.y, log: document.querySelector(".ph-log").textContent }; });
+    if (Math.abs(d.y - 0.15) > 0.04) throw new Error(`the die rests at y=${d.y.toFixed(3)}, not on the floor`);
+    if (!/rolled [1-6]/.test(d.log)) throw new Error("log " + d.log);
+    const faces = await page.evaluate(async () => {     // the face read from known orientations
+      const { topFace } = await import("./play/physics.js"), Q = window.__dd.play.player.pos.constructor;
+      const q = new (window.__dd.play.byId.big_die.quaternion.constructor)();
+      const at = (x, y, z) => { q.setFromAxisAngle(new Q(x, y, z).normalize(), Math.PI / 2); return topFace(q); };
+      q.identity(); const up = topFace(q);
+      return [up, at(1, 0, 0), at(-1, 0, 0), at(0, 0, 1), at(0, 0, -1)];
+    });
+    if (faces.join() !== "1,4,3,2,5") throw new Error("faces " + faces);
   });
   await step("the letter: the cursor says read, the note opens", async () => {
     const r = await goTo("letter_hall", 0.7);

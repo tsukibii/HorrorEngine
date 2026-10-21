@@ -172,6 +172,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `switch` | `light` |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
 | `locker` | (hide inside) |
+| `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): E throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
 | `sit` | (a chair, a sofa, a bed's edge: E sits the player down, the eye at sitting height, E stands them up; a beat's `{"use": id}` hears it) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
@@ -364,6 +365,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `{"flag": name}` | the flag is set |
 | `{"all": [...]}`, `{"any": [...]}` | a combination |
 | `{"caught": true}` | the stalker catches the player |
+| `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
 - `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`)

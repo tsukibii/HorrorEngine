@@ -16,6 +16,7 @@
 .play-hud .ph-cursor[data-cursor="hide"]{--ph-icon:"▣"}
 .play-hud .ph-cursor[data-cursor="talk"]{--ph-icon:"…"}
 .play-hud .ph-cursor[data-cursor="sit"]{--ph-icon:"⌄"}
+.play-hud .ph-cursor[data-cursor="roll"]{--ph-icon:"⚄"}
 .play-hud .ph-cursor[data-cursor="locked"]{--ph-icon:"✕"}
 .play-hud .ph-cursor[data-cursor="locked"]::after{color:var(--ph-bad)}
 .play-hud.free .ph-cursor{opacity:0}

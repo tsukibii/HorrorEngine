@@ -22,5 +22,7 @@ register("condition", "after", {                            // another beat ende
 register("condition", "look", {                             // looked at for `secs`, from within `within` metres
   settings: { secs: 1, within: 8 },
   test: (v, w, ev, rt) => ev.type === "tick" && rt.lookedAt(v, +(w.within ?? 8)) >= +(w.secs ?? 1) });
+register("condition", "rolled", {                         // a die settled: any face, `face`, or `at_least`
+  test: (v, w, ev) => ev.type === "rolled" && ev.id === v && (w.face === undefined || ev.face === w.face) && (w.at_least === undefined || ev.face >= w.at_least) });
 register("condition", "all", { test: (v, w, ev, rt) => v.every(c => matches(c, ev, rt)) });
 register("condition", "any", { test: (v, w, ev, rt) => v.some(c => matches(c, ev, rt)) });

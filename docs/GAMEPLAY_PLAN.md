@@ -122,7 +122,8 @@ playback; Generate stays the one button.
 
 ## 10. Added 2026-10-21: physics things, the cursor, the CSS UI (DECISIONS)
 
-- **Physics things**: an interactable can be `physics` (pushed, picked up and thrown, rolled). The first test is a
+- **Physics things** (**the die built 2026-10-21**: `use: roll`, the `rolled` trigger, `play/physics.js` on cannon-es;
+  dragging doors and drawers next): an interactable can be `physics` (pushed, picked up and thrown, rolled). The first test is a
   large die: `when: rolled` with the face that lands up, so a roll at the right moment can open an easter-egg scene
   or a **side path that rejoins the main line** (a flow branch whose last node's `next` is back on the spine). The
   desk needs a physics engine beside three.js (vendored, like three.js). Drawers and doors dragged with the cursor

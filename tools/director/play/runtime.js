@@ -9,6 +9,7 @@ import { runAll } from "./actions.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { Hud } from "./hud.js";
+import { Physics, dieMaterials } from "./physics.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
 const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
@@ -70,7 +71,7 @@ export class PlayRuntime {
     if (this.stage.level !== level || !this.stage.world.children.length) this.stage.setWorld(this.plan, this.story, level);
     this.stage.setFree(false);
     this.level = level; this.world = this.stage.world.children[0]; this.byId = {}; this.doors = {};
-    const kept = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {} };
+    const kept = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} };
     for (const o of this.stage.world.children) if (o.userData && o.userData.id) this.byId[o.userData.id] = o;
     for (const l of this.stage.lights) { this.byId[l.userData.id] = l; l.userData.on = l.intensity > 0; if (!l.userData.base) l.userData.base = LIT; }
     for (const m of this.stage.world.children) if (m.userData && m.userData.kind === "door") {
@@ -81,6 +82,12 @@ export class PlayRuntime {
     }
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
     for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // NPC behaviours come in step 3
+    const movers = this.stage.world.children.filter(o => o.isMesh && o.userData.use === "roll");   // things that roll: dice
+    for (const m of movers) {
+      m.material = dieMaterials();
+      const k = kept.bodies[m.userData.id]; if (k) { m.position.copy(k.p); m.quaternion.copy(k.q); }
+    }
+    this.physics = movers.length ? new Physics(this.stage, movers) : null;
     this.triggers = this.plan.pieces.filter(p => p.level === level && p.kind === "trigger").map(p => {
       const rv = p.tags.find(t => t.startsWith("room_volume:")), [w, d, h] = p.size, [x, y, z] = p.pos;
       return { id: rv ? rv.slice(12) : p.id, min: [x - w / 2, y - d / 2, z - h / 2], max: [x + w / 2, y + d / 2, z + h / 2] };
@@ -219,6 +226,17 @@ export class PlayRuntime {
     return v;
   }
   finish() { if (this.end) this.end({ to: this.next }); }
+  // a die thrown from the hand along the look; when it settles its top face is heard (`rolled`) and kept
+  roll(t, s) {
+    if (!this.physics) return;
+    const dir = new THREE.Vector3(); this.stage.camera.getWorldDirection(dir);
+    const from = this.eyePos().addScaledVector(dir, 0.45).add(new THREE.Vector3(0, -0.25, 0));
+    this.physics.throw(t, from, dir, s, face => {
+      this.kept[this.level].bodies[t.userData.id] = { p: t.position.clone(), q: t.quaternion.clone() };
+      this.hud.log(`rolled ${face}`);
+      this.emit({ type: "rolled", id: t.userData.id, face });
+    });
+  }
   // a triggered scene (the `scene` action): blended in from where the player is; afterwards they carry on from its last
   // view, still seated if it left the eye at the seat
   async scene(id) {
@@ -316,6 +334,7 @@ export class PlayRuntime {
   tick(dt) {
     this.clock += dt;
     const p = this.player;
+    if (this.physics) this.physics.step(dt);
     if (this.moving) {
       const M = this.moving; M.t += dt; const u = Math.min(1, M.t / Math.max(0.05, M.to.secs)), k = u * u * (3 - 2 * u);
       p.pos.lerpVectors(M.from.pos, M.to.pos, k); p.eye = M.from.eye + (M.to.eye - M.from.eye) * k;
