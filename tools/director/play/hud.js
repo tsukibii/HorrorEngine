@@ -42,7 +42,7 @@ export class Hud {
     while (this.logEl.children.length > 6) this.logEl.firstChild.remove();
   }
   timer(secs) { this.timerEl.textContent = secs === null ? "" : Math.max(0, secs).toFixed(1); }
-  setStance(s) { this.stance.textContent = s; }
+  setStance(s) { this.stance.textContent = s; this.root.dataset.stance = s; }
   locked(on) { this.hint.classList.toggle("on", !on && !this.panelEl); this.root.classList.toggle("free", !on); }
   press() {                                         // the cursor and the key press in when E is used
     for (const e of [this.cursor, this.prompt.querySelector(".ph-key")].filter(Boolean)) { e.classList.add("press"); setTimeout(() => e.classList.remove("press"), 160); }

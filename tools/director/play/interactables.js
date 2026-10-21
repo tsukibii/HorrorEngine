@@ -76,9 +76,9 @@ register("interactable", "roll", {                // a die: E throws it from you
   prompt: (t, rt, s) => (rt.physics && rt.physics.rolling(t) ? { cursor: "none", label: "" } : { cursor: "roll", label: s.label }),
   use: (t, rt, s) => { if (!(rt.physics && rt.physics.rolling(t))) rt.roll(t, s); },
 });
-register("interactable", "locker", {              // hiding comes with stealth (GAMEPLAY_PLAN §8 step 4); the use is heard now
-  settings: { cursor: "hide", label: "Hide" },
-  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
-  use: () => {},
+register("interactable", "hide", {                // a locker, a wardrobe: E gets in (runtime.hide), E gets out
+  settings: { cursor: "hide", label: "Hide", leave: "Get out", eye: EYES.hide, secs: 0.7, look: [70, 35] },   // look: yaw, pitch cone (deg)
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.hiding === t.userData.id ? s.leave : s.label }),
+  use: (t, rt, s) => (rt.player.hiding === t.userData.id ? rt.unhide(s) : rt.hide(t, s)),
 });
-register("interactable", "hide", Object.assign({}, part("interactable", "locker")));
+register("interactable", "locker", Object.assign({}, part("interactable", "hide")));     // the format's word for it

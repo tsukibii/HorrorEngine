@@ -122,3 +122,7 @@ the fix.
 - **The desk's server sends only the file types it lists** (`serve.py` STATIC): Play's CSS came back 404 until `.css`
   was added. A new kind of file in `tools/director/` needs its type there. A test can run its own desk beside the
   open one: `DESK_PORT=8781 python tools/director/serve.py`.
+- **Inside a box you see nothing of it** (three.js draws front faces only), and a flat see-through tint over the
+  whole view doesn't read as "I'm in a locker" either: the Pilot's locker scene looked like standing in the hall.
+  Slats (an alpha map of bars, drawn both sides) read at once and keep the room visible between them
+  (`stage.seeThrough`).

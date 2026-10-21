@@ -16,6 +16,7 @@ register("condition", "use", on("use"));
 register("condition", "pickup", on("pickup", "item"));
 register("condition", "read", on("read", "note"));
 register("condition", "caught", { test: (v, w, ev) => ev.type === "caught" });
+register("condition", "hidden", { test: (v, w, ev, rt) => !!rt.player.hiding && (v === true || v === rt.player.hiding) });   // in any or that hiding place
 register("condition", "flag", { test: (v, w, ev, rt) => rt.flags.has(v) });
 register("condition", "after", {                            // another beat ended, plus `secs`
   test: (v, w, ev, rt) => ev.type === "tick" && rt.ended[v] !== undefined && rt.clock - rt.ended[v] >= +(w.secs || 0) });

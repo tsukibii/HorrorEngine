@@ -60,7 +60,7 @@ export class PlayRuntime {
     if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyC", "Space"].includes(e.code)) e.preventDefault();
     this.keys[e.code] = down;
     if (down && e.code === "KeyE" && !e.repeat) this.use();
-    for (const a of ABILITIES) this.ability(a, "key", e, down);
+    if (!this.player.hiding) for (const a of ABILITIES) this.ability(a, "key", e, down);
   }
 
   // ---- the level ---------------------------------------------------------------------------------------------------
@@ -81,6 +81,7 @@ export class PlayRuntime {
       if (d.deg) this.stage.swingDoor(m, d.deg);
     }
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
+    if (this.player.hiding) this.stage.seeThrough(this.player.hiding, this.stage.seeThroughOf(this.player.hiding));
     for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // NPC behaviours come in step 3
     const movers = this.stage.world.children.filter(o => o.isMesh && o.userData.use === "roll");   // things that roll: dice
     for (const m of movers) {
@@ -94,13 +95,18 @@ export class PlayRuntime {
     });
   }
   placeAt(level, spot) {                               // the player on a spot (story coordinates and its yaw)
+    this.player.seat = null; this.leaveHiding();
     this.enterLevel(level);
     const t = this.plan.things[spot];
     if (t) this.place(s2t(t.pos[0], t.pos[1], 0), t.yaw || 0, 0);
   }
-  placeFromCamera(level, cam) {                        // carry on from where a scene left the eye: no cut back to a spot
+  // carry on from where a scene left the eye: no cut back to a spot. Still seated or hidden when the eye is where it
+  // was (a scene played from the seat or the locker)
+  placeFromCamera(level, cam) {
+    const p = this.player, f = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion), stay = (p.seat || p.hiding) && cam.position.distanceTo(this.eyePos()) < 0.4;
+    if (!stay) { p.seat = null; this.leaveHiding(); }
     this.enterLevel(level);
-    const f = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
+    if (stay) { p.yaw = Math.atan2(-f.z, f.x) * 180 / Math.PI; if (p.hiding) this.stage.seeThrough(p.hiding, this.stage.seeThroughOf(p.hiding)); return; }
     this.place(new THREE.Vector3(cam.position.x, Math.max(0, cam.position.y - EYES.stand), cam.position.z), Math.atan2(-f.z, f.x) * 180 / Math.PI, Math.asin(Math.max(-1, Math.min(1, f.y))) * 180 / Math.PI);
   }
   place(feet, yaw, pitch) {
@@ -238,15 +244,13 @@ export class PlayRuntime {
     });
   }
   // a triggered scene (the `scene` action): blended in from where the player is; afterwards they carry on from its last
-  // view, still seated if it left the eye at the seat
+  // view (placeFromCamera)
   async scene(id) {
     if (!this.opts.playScene) { this.hud.log(`scene ${id}: not from here`); return; }
-    const seat = this.player.seat, eye0 = this.eyePos();
     this.pause(); this.moving = null;
     const r = await this.opts.playScene(id);
     if (this.stopped || !r) return;
-    if (!(seat && r.cam.position.distanceTo(eye0) < 0.4)) { this.player.seat = null; this.placeFromCamera(r.level, r.cam); }
-    else { this.enterLevel(r.level); const f = new THREE.Vector3(0, 0, -1).applyQuaternion(r.cam.quaternion); this.player.yaw = Math.atan2(-f.z, f.x) * 180 / Math.PI; }
+    this.placeFromCamera(r.level, r.cam);
     this.go();
   }
   // sitting: the player eases onto the seat facing out (the way they came), the eye at sitting height; standing eases
@@ -259,6 +263,28 @@ export class PlayRuntime {
   stand(s) {
     const p = this.player, st = p.stood; p.seat = null;
     if (st) return this.tween({ pos: st.pos, eye: st.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs });
+  }
+  // hiding: the player eases inside (its `inside` spot, else its middle facing its front), the eye at hiding height,
+  // the look kept to a cone out of its door, the walls see-through (stage.seeThrough); getting out eases back
+  async hide(t, s) {
+    const p = this.player, id = t.userData.id, piece = t.userData.piece || {}, spot = this.plan.things[(piece.d || {}).inside];
+    const at = spot ? s2t(spot.pos[0], spot.pos[1], 0) : t.getWorldPosition(new THREE.Vector3());
+    const yaw = spot ? spot.yaw || 0 : piece.yaw || 0;
+    p.stood = { pos: p.pos.clone(), eye: p.eye };
+    p.hiding = id; p.limit = { yaw, dy: s.look[0], dp: s.look[1] };
+    this.stage.seeThrough(id, this.stage.seeThroughOf(id));
+    await this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: s.eye, yaw, pitch: 0, secs: s.secs });
+    this.emit({ type: "hidden", id });
+  }
+  async unhide(s) {
+    const p = this.player, st = p.stood;
+    this.leaveHiding();
+    if (st) await this.tween({ pos: st.pos, eye: st.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs });
+  }
+  leaveHiding() {
+    const p = this.player, id = p.hiding; if (!id) return;
+    this.stage.seeThrough(id, 0); p.hiding = null; p.limit = null;
+    this.emit({ type: "unhidden", id });
   }
   tween(to) {
     const p = this.player;
@@ -273,6 +299,7 @@ export class PlayRuntime {
   async use() {
     const seat = this.player.seat;
     if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // E stands you up
+    if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // E gets you out
     const t = this.target; if (!t) return;
     const ip = interactableOf(t);
     this.hud.press();
@@ -345,8 +372,8 @@ export class PlayRuntime {
       const L = this.lookTween; L.t += dt; const u = Math.min(1, L.t / L.secs), k = u * u * (3 - 2 * u);
       p.yaw = L.y0 + (L.y1 - L.y0) * k; p.pitch = L.p0 + (L.p1 - L.p0) * k; if (u >= 1) this.lookTween = null;
     }
-    if (!this.busy && !p.seat && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
-    this.hud.setStance(p.crouched ? "crouched" : "");
+    if (!this.busy && !p.seat && !p.hiding && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
+    this.hud.setStance(p.hiding ? "hidden" : p.crouched ? "crouched" : "");
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {
       d.t = Math.min(1, d.t + dt / d.secs); const k = 1 - (1 - d.t) * (1 - d.t);
       d.deg = d.from + (d.to - d.from) * k; this.stage.swingDoor(d.mesh, d.deg);

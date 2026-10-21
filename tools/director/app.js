@@ -796,14 +796,15 @@ function runEvent(ev) {
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), box = el("div", { class: "qte" }), bar = el("div", { class: "bar" }, el("div", {})), key = (ev.key || "E").toUpperCase();
     let done = false, score = 0, held = false, t0 = performance.now(), lastMove = null;
-    const finish = r => { if (done) return; done = true; window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); window.removeEventListener("mousemove", mv); box.remove(); resolve(r); };
-    const kd = e => { if (e.key.toUpperCase() !== key) return; if (ev.type === "press") finish("success"); if (ev.type === "mash") score += 1 / Math.max(4, (ev.need || 0.6) * 20); if (ev.type === "hold") held = true; };
+    const finish = r => { if (done) return; done = true; window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); window.removeEventListener("mousemove", mv); window.removeEventListener("mousedown", md); box.remove(); resolve(r); };
+    const mash = () => { score += 1 / Math.max(4, (ev.need || 0.6) * 20); };       // mash and struggle: presses, `need` sets how many
+    const kd = e => { if (ev.type === "struggle" && !e.repeat && (e.key.toUpperCase() === key || e.code === "Space")) { e.preventDefault(); return mash(); }
+      if (e.key.toUpperCase() !== key) return; if (ev.type === "press") finish("success"); if (ev.type === "mash" && !e.repeat) mash(); if (ev.type === "hold") held = true; };
+    const md = e => { if (ev.type === "struggle" && e.button === 0) mash(); };       // a struggle: E, Space or the left button, as fast as you can
     const ku = e => { if (ev.type === "hold" && e.key.toUpperCase() === key && held) finish("fail"); };
-    let drag = null;
-    const mv = e => { if (ev.type === "breath") { if (lastMove && Math.hypot(e.movementX, e.movementY) > 6) finish("fail"); lastMove = 1; }
-      if (ev.type === "struggle") { if (e.buttons & 1) { if (drag) { const dir = { back: [0, 1], down: [0, 1], left: [-1, 0], right: [1, 0] }[ev.pull || "back"]; const d = dir ? Math.max(0, (e.clientX - drag[0]) * dir[0] + (e.clientY - drag[1]) * dir[1]) : Math.hypot(e.clientX - drag[0], e.clientY - drag[1]); score += d / 1200; } drag = [e.clientX, e.clientY]; } else drag = null; } };
-    window.addEventListener("keydown", kd); window.addEventListener("keyup", ku); window.addEventListener("mousemove", mv);
-    const label = { press: `Press <${key}>`, mash: `Mash <${key}>`, hold: `Hold <${key}>`, breath: "Keep still (don't move the mouse)", aim: "Click the mark", struggle: `Drag the mouse ${ev.pull || "back"}!`, choose: "" }[ev.type];
+    const mv = e => { if (ev.type === "breath") { if (lastMove && Math.hypot(e.movementX, e.movementY) > 6) finish("fail"); lastMove = 1; } };
+    window.addEventListener("keydown", kd); window.addEventListener("keyup", ku); window.addEventListener("mousemove", mv); window.addEventListener("mousedown", md);
+    const label = { press: `Press <${key}>`, mash: `Mash <${key}>`, hold: `Hold <${key}>`, breath: "Keep still (don't move the mouse)", aim: "Click the mark", struggle: `Mash <${key}> or click!`, choose: "" }[ev.type];
     box.append(el("div", { style: "font-size:20px" }, ev.prompt || ""), ...(label ? [el("div", { class: "key" }, label)] : []), bar);
     if (ev.type === "choose") { const left = el("div", { class: "muted" }); box.append(left); const t1 = performance.now(); const cd = () => { if (done) return; left.textContent = `${Math.max(0, secs - (performance.now() - t1) / 1000).toFixed(0)} s · on time out: ${((ev.options || []).find(o => o.id === ev.default) || {}).label || ev.default}`; requestAnimationFrame(cd); }; cd();
       for (const o of ev.options || []) box.append(el("button", { class: "primary", style: "margin:4px;display:block;width:100%", title: o.karma !== undefined ? "karma " + JSON.stringify(o.karma) : "", on: { click: () => finish(o.id) } }, o.label, o.ja ? el("div", { class: "muted", style: "font-size:12px" }, o.ja) : null)); }
@@ -811,9 +812,9 @@ function runEvent(ev) {
     $("#watchBox").append(box);
     const tick = () => { if (done || !RUN) return finish("fail");
       const u = (performance.now() - t0) / (secs * 1000);
-      bar.firstChild.style.width = (ev.type === "mash" || ev.type === "struggle" ? Math.min(100, score / (ev.type === "struggle" ? +(ev.need || 0.6) : 1) * 100) : Math.max(0, 100 - u * 100)) + "%";
-      if (ev.type === "mash" && score >= 1) return finish("success");
-      if (u >= 1) { if (ev.type === "hold") return finish(held ? "success" : "fail"); if (ev.type === "breath") return finish("success"); if (ev.type === "struggle") return finish(score >= +(ev.need || 0.6) ? "escape" : "caught"); if (ev.type === "choose") return finish(ev.default); return finish("fail"); }
+      bar.firstChild.style.width = (ev.type === "mash" || ev.type === "struggle" ? Math.min(100, score * 100) : Math.max(0, 100 - u * 100)) + "%";
+      if (score >= 1) return finish(ev.type === "struggle" ? "escape" : "success");
+      if (u >= 1) { if (ev.type === "hold") return finish(held ? "success" : "fail"); if (ev.type === "breath") return finish("success"); if (ev.type === "struggle") return finish("caught"); if (ev.type === "choose") return finish(ev.default); return finish("fail"); }
       requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   });

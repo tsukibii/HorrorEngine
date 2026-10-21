@@ -56,6 +56,17 @@ const EYE = 1.65;
 // looks within the neck's reach, and never changes lens (docs/DIRECTING.md §1). A shot size is a framing reached by
 // DISTANCE: how close the actor comes to the eye (Hall's proxemic zones), at the game's one field of view.
 export const EYES = { stand: 1.65, crouch: 1.05, kneel: 1.2, sit: 1.15, lie: 0.3, hide: 1.6 };
+export const SEE_THROUGH = 0.6;                   // how see-through a hiding place is from inside, when nothing says
+const SLAT_PITCH = 0.06;                           // a hiding place's slats, one every 6 cm
+const SLATS = {};
+function slatTexture(amount) {                     // horizontal bars, `amount` of each one a gap (an alpha map: white shows)
+  const k = Math.round(amount * 20) / 20;
+  if (SLATS[k]) return SLATS[k];
+  const c = document.createElement("canvas"); c.width = 4; c.height = 64;
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 4, 64); g.fillStyle = "#000"; g.fillRect(0, 0, 4, Math.round(64 * k));
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter;
+  return (SLATS[k] = t);
+}
 export const FOV_H = 90;               // the game's horizontal field of view (game.fov overrides)
 export const LEAN = 0.35, ZOOM = 0.15, PITCH = 75;   // how far the player leans in (push), the most a held focus narrows, the neck
 export function vfov(hfov, aspect) { return 2 * Math.atan(Math.tan(hfov * Math.PI / 360) / aspect) * 180 / Math.PI; }
@@ -201,7 +212,7 @@ export class Stage {
   setWorld(plan, story, level) {
     this.story = story; this.plan = plan; this.level = level;
     this.things = plan.things;
-    this.world.clear(); this.lights = []; this.solid = []; this.cast = {}; this.pending = [];
+    this.world.clear(); this.lights = []; this.solid = []; this.cast = {}; this.pending = []; this._through = new Set();
     const mats = {
       wall: new THREE.MeshStandardMaterial({ color: 0x55524d, roughness: 0.95 }),
       floor: new THREE.MeshStandardMaterial({ color: 0x3a342d, roughness: 1 }),
@@ -565,6 +576,9 @@ export class Stage {
 
   apply(tl, state, T) {          // pose the figures, aim the camera, set the lights
     const v = tl.v;
+    const through = new Set((v.camera || {}).through || []);           // the props the scene's eye is inside
+    for (const id of [...(this._through || [])]) if (!through.has(id)) this.seeThrough(id, 0);
+    for (const id of through) if (!(this._through || new Set()).has(id)) this.seeThrough(id, this.seeThroughOf(id));
     this._trk = this._trk || {};
     for (const [id, m] of Object.entries(this._trk)) m.visible = !!(state.trackers || {})[id] && Stage.showTrackers;
     for (const [id, p] of Object.entries(state.trackers || {})) {   // the invisible trackers, shown in the desk only
@@ -620,6 +634,23 @@ export class Stage {
     }
   }
   render() { this.renderer.render(this.scene, this.camera); }
+  // a thing the eye is inside (a locker, a wardrobe): its walls drawn from inside too, see-through by `amount` (0..1;
+  // 0 puts it back). The amount: the thing's `see_through`, else the game's, else SEE_THROUGH
+  seeThroughOf(id) { const p = (this.plan.pieces.find(x => x.id === id) || {}).d || {}; return +(p.see_through ?? (this.story.game || {}).see_through ?? SEE_THROUGH); }
+  seeThrough(id, amount) {                         // drawn as slats: the gaps are `amount` of each slat's pitch
+    const m = this.world.children.find(o => o.userData && o.userData.id === id); if (!m) return;
+    m.traverse(o => {
+      if (!o.isMesh) return;
+      if (!o.userData.solidMat) o.userData.solidMat = o.material;
+      if (!amount) { o.material = o.userData.solidMat; return; }
+      const slats = slatTexture(amount).clone(), h = (o.geometry.parameters || {}).height || 1.8;
+      slats.repeat.set(1, Math.max(4, Math.round(h / SLAT_PITCH))); slats.needsUpdate = true;
+      o.material = o.userData.solidMat.clone();
+      Object.assign(o.material, { alphaMap: slats, alphaTest: 0.5, side: THREE.DoubleSide });
+    });
+    this._through = this._through || new Set();
+    if (amount) this._through.add(id); else this._through.delete(id);
+  }
   async dress(block, ref, [w, h, d], real) {       // a library mesh in its block: real size, or scaled evenly to fit
     const src = await libMesh(ref);                // (like the importer's fit_art), centred, resting on the block's base
     if (!src || block.parent !== this.world) return;

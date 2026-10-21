@@ -2,7 +2,7 @@
    the frame with a light shadow up-left and a dark one down-right, press in when used, one blue accent. The world
    behind is dark, so the text sits on the surfaces (dark on light), never straight on the frame. */
 .play-hud[data-theme="neumorph"]{
-  --ph-font:"Nunito","Varela Round",system-ui,sans-serif; --ph-text:#4f5a6b; --ph-muted:#8c96a6; --ph-accent:#4f9bf0; --ph-bad:#e0645a;
+  --ph-font:"Nunito","Varela Round",system-ui,sans-serif; --ph-text:#4f5a6b; --ph-muted:#8c96a6; --ph-hidden:rgba(20,26,38,.7); --ph-accent:#4f9bf0; --ph-bad:#e0645a;
   --ph-surface:#e6e9ef; --ph-veil:rgba(20,22,28,.45);
   --ph-dot:8px; --ph-ring:42px; --ph-cursor:#e6e9ef; --ph-cursor-shadow:0 0 0 1px rgba(0,0,0,.25),0 1px 4px rgba(0,0,0,.6);
   --ph-radius-s:9px; --ph-radius:16px; --ph-radius-l:26px;

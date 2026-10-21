@@ -41,7 +41,7 @@ invisible:
 | `free` | yes | yes | ambient moments, voices from elsewhere |
 | `soft` | off (or slowed to 20 %) | inside a cone round the subject (default 30° × 18°), with a spring that pulls back when the mouse stops; **avoid zones**: directions the look can't reach (a greybox gap, the edge of the set, where a seam is being hidden) | most performed scenes: the player feels free, and we know they're looking at her |
 | `hard` | off | off: a cinematic camera, blended in and out over 0.5 s | rare: an establishing shot, a death |
-| `held` | off; the body is pulled by the actor | small, shaky; the struggle reads the mouse | grabs |
+| `held` | off; the body is pulled by the actor | small, shaky; the struggle reads the presses (E, Space, the left button) | grabs |
 
 **Forced looks (`lookat`):**
 - Eased (0.5 s, or 0.8 s past 120°).
@@ -119,8 +119,8 @@ When a scene's clip has an `event` of type `struggle`, the actor grabs the playe
    there).
 2. At the grab frame, IK takes over the arm. Its target is a socket on the player's camera rig, so the hand stays
    on the player whatever the player does.
-3. The player drags the mouse in the `pull` direction. Their camera pulls back, while the actor's upper body runs
-   physical animation, partly ragdoll and blended in proportion to the pull. She leans, staggers and loses her
+3. The player mashes E (or Space, or the left button). Their camera pulls back in the `pull` direction, while the
+   actor's upper body runs physical animation, partly ragdoll and blended in proportion to the presses. She leans, staggers and loses her
    footing instead of playing a canned clip.
 4. Past `need` within `secs`, she stumbles: a stumble picked by the pull's direction, the physics blend
    peaks, then recovers to her idle. That's `escape`. Otherwise she wins (`caught`).

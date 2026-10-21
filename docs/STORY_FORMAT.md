@@ -171,7 +171,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `inspect` | `text`, optional `line` |
 | `switch` | `light` |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
-| `locker` | (hide inside) |
+| `locker` | (hide inside: E gets in, E gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): E throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
 | `sit` | (a chair, a sofa, a bed's edge: E sits the player down, the eye at sitting height, E stands them up; a beat's `{"use": id}` hears it) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
@@ -326,7 +326,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `press`, `mash`, `hold` | `key` (E), `need` (mash) | success, fail |
 | `breath` | (don't move the mouse) | success, fail |
 | `aim` | | success, fail |
-| `struggle` | `pull` (`back left right down any`), `need` 0..1; camera `held` | escape, caught |
+| `struggle` | `need` 0..1 (how many presses: about `need` × 20), `pull` (`back left right down any`: the way she's thrown off and the camera leans, not an input); camera `held`. The player mashes E (or Space, or the left button); escape as soon as the bar fills | escape, caught |
 | `choose` | `options [{id, label}]`, `default` (taken on timeout: silence is a choice) | the option ids |
 
 - `warn` shows an "!" that many seconds before.
@@ -703,6 +703,8 @@ the first time she finds you, a tease the second, the third is a death.
 **The HUD's theme** (Play mode, docs/GAMEPLAY_PLAN.md §10): `game.ui_theme` names a file in
 `tools/director/play/ui/themes/` (`neumorph`, the light neumorphic kit, when a game names none; `plain`). A theme sets
 only colours, radii, shadows and the font; the layout is the same for every game.
+
+**Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.
 
 ### 9.11 Room acoustics
 

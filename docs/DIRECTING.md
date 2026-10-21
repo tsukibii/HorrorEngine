@@ -124,12 +124,13 @@ with the character's heartbeat to stay hidden.
 | `hold` | holds a key the whole time (holding a door shut) | success, fail |
 | `breath` | keeps still: doesn't move the mouse (hiding) | success, fail |
 | `aim` | clicks a target | success, fail |
-| `struggle` | drags the mouse in a direction (pull free) | escape, caught |
+| `struggle` | mashes E, Space or the left button (pull free) | escape, caught |
 | `choose` | picks a line or an action before the timer ends; `default` is taken on timeout | the option ids |
 
 **The rules:**
 1. **Warn:** `warn` seconds of an "!" before it.
-2. **Make the input mean the action:** drag back to pull back, keep still to hide, hold to hold the door.
+2. **Make the input mean the action:** mash to pull free, keep still to hide, hold to hold the door. Every input is a
+   button (E, Space, a click): no dragging (DECISIONS 2026-10-21).
 3. **Branch, don't retry:** each result goes somewhere, through a result choice or `on` actions. Failing should cost
    something real: a relationship, an item, a life.
 4. **One per scene at most,** and not in every scene. They're spice.

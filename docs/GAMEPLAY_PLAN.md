@@ -45,9 +45,11 @@ last one repeated. A line can instead start a scene, an interactive cinematic or
 ## 3. Stealth for the first game: crouch, hide, safe zones
 
 - **Crouch**: eye height eases from 1.65 to 1.05 m, slower walk, quieter, harder to see. Toggle or hold (§9).
-- **Hiding places**: a prop with `use: hide` (the locker is one): using it moves the player inside to its `inside`
-  spot (blended), stance `hide`, the view through its door. The door (or any props listed) goes **see-through by a
-  set amount, a slider on the desk** (`see_through: 0.6`), so the player can watch the room. Leaving reverses it.
+- **Hiding places** (**built on the desk 2026-10-21**): a prop with `use: locker`: E moves the player inside to its
+  `inside` spot (blended; else its middle, facing its `rot`), stance `hide`, the look held to a cone out of it, no
+  walking; from inside its walls are **slats** you see through, `see_through` of them gaps (a number, no slider: the
+  locker's, else `game.see_through`, else 0.6). E gets out. `{"hidden": true}` holds while inside; a scene played
+  from inside keeps the player hidden after it.
 - **Safe zones**: volumes (drawn in the builder) where the player can't be spotted. A hiding place is one too.
 - **Being seen** (simple, no AI): a view cone (angle, distance; shorter when the player crouches) and a line of
   sight. Outside a safe zone in her cone fills a short suspicion meter, then `caught` fires (the format has it): a
@@ -89,9 +91,9 @@ lacks it. That keeps the rule: a new word grows the runtime, the check and STORY
 ## 6. What changes where
 
 - **The format** (STORY_FORMAT.md): scene `enter` and `exit` blends and the rung; `behave`; `routes` and safe zones
-  in levels; `use: hide` with `inside` and `see_through`; talk lines per state; crouch.
+  in levels; `use: locker` with `inside` and `see_through` (built); talk lines per state; crouch.
 - **The scene builder**: draw routes (spots in order, waits) and safe zones; place hiding places with their inside spot
-  and the see-through slider.
+  and its see-through number.
 - **The desk**: Play mode (§8), the Watch kept as the quick review.
 - **The checks**: the registry; routes reach their spots; every hiding place has an inside spot; no hard cuts unless
   marked.
@@ -115,7 +117,8 @@ playback; Generate stays the one button.
    and Unreal's preview, which fades a blend for now): a beat starts a scene; blended in and out on the ladder (§1); interactive cinematics (walk
    while she talks); timed choices.
 3. **NPC behaviours**: idle, sit, path on routes; talk lines; routes in the builder.
-4. **Stealth**: crouch, hiding places with see-through, safe zones, the view cone and suspicion, caught.
+4. **Stealth**: crouch, hiding places with see-through (**built 2026-10-21**), safe zones, the view cone and
+   suspicion, caught.
 5. **The registry and the checks** (grown alongside 1 to 4, not after).
 6. **Unreal**: the same parts in the StoryRunner, a group at a time, Generate carrying routes, zones and hiding
    places across.
@@ -123,11 +126,11 @@ playback; Generate stays the one button.
 ## 10. Added 2026-10-21: physics things, the cursor, the CSS UI (DECISIONS)
 
 - **Physics things** (**the die built 2026-10-21**: `use: roll`, the `rolled` trigger, `play/physics.js` on cannon-es;
-  dragging doors and drawers next): an interactable can be `physics` (pushed, picked up and thrown, rolled). The first test is a
+  no dragging: DECISIONS 2026-10-21, buttons only): an interactable can be `physics` (thrown, rolled, by E). The first test is a
   large die: `when: rolled` with the face that lands up, so a roll at the right moment can open an easter-egg scene
   or a **side path that rejoins the main line** (a flow branch whose last node's `next` is back on the spine). The
-  desk needs a physics engine beside three.js (vendored, like three.js). Drawers and doors dragged with the cursor
-  (Amnesia's way) are the same part later.
+  desk needs a physics engine beside three.js (vendored, like three.js). Doors and drawers open and close with E,
+  never dragged (the user dropped Amnesia's dragging, 2026-10-21).
 - **The UI is CSS, in themes**: `tools/director/play/ui/` holds the HUD as HTML (cursor, prompt, subtitles,
   objective, choices, notes, pause), and every colour, radius and shadow comes from a theme file
   (`themes/<name>.css`, the first is `neumorph`, light and a dark horror variant); `game.ui_theme` picks one. The
@@ -149,9 +152,9 @@ playback; Generate stays the one button.
 - **The tracker** (after Florence): a named number that interactions add to (`do: {"track": "closeness", "add": 1}`),
   read by conditions (`when: {"track": "closeness", "at_least": 3}`), so it can swap a scene's version, change a
   stitch, or branch the flow. The karma axes already do this for choices; the tracker is the same thing fed by play.
-- **Physical interaction** (after Amnesia): `physics` things are dragged with the free cursor (§10): a door or drawer
-  follows the drag on its hinge or slide, a loose thing is held and thrown. The UI answers in the theme: the cursor
-  presses in, a locked thing shakes.
+- ~~Physical interaction by dragging (after Amnesia)~~: **dropped 2026-10-21.** Every interactable is a button (E or
+  a click); the UI still answers in the theme: the cursor presses in, a locked thing shakes. The grab's struggle is
+  mashed (E, Space or the left button), not dragged.
 - **From Chilla's Art:** chores as stitches (stock the shelf, clean the room, answer the phone) built from the same
   parts, and a place that comes back changed (a level's props and lights swapped by flags between visits).
 - Later: a chat-window panel (Emily Is Away) for a romance horror; per-vignette play (Edith Finch).
@@ -162,4 +165,4 @@ playback; Generate stays the one button.
 - Spotted: straight to `caught`, or a short suspicion meter first (how long)?
 - In an interactive cinematic, if the player walks away: does she keep talking, wait, or follow?
 - Can a patrol check a hiding place (a scripted route point), or is hiding always safe in the first game?
-- See-through: one amount per hiding place (the slider), or one game-wide setting?
+- See-through: one amount per hiding place, or one game-wide setting? (Answered: both, a number each; no slider.)

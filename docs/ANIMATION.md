@@ -325,8 +325,8 @@ The parts are all stock Unreal:
   so she staggers rather than collapses.
 - **The player:**
   - movement locked (camera `held`)
-  - the mouse drag in the `pull` direction is integrated into a 0..1 "pull" value, with decay so she drags them
-    back if they stop
+  - each press (E, Space or the left button) adds to a 0..1 "pull" value (about `need` × 20 presses fill it), with
+    decay so she drags them back if they stop; the camera pulls in the `pull` direction
   - the camera leans with the pull; a small shake
   - the pull value drives her physics blend and a lean additive
 - **The outcome** (the clip's `event` of type `struggle`):

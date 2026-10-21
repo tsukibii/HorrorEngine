@@ -1,7 +1,7 @@
 // Play mode in a headless browser (docs/GAMEPLAY_PLAN.md §8 step 1): the Pilot walked from the start to the good
 // ending with the keys and the cursor, as a player would: a wall stops you, the front door opens with E, the hall's
-// trigger ends the arrival, the letter reads, the kitchen's glimpse fires, the drawer's code is typed on the panel,
-// the key shows and is taken, the locked cellar door opens with it, the struggle is dragged free, and the timed run
+// trigger ends the arrival, the letter reads, E hides in the locker and gets out, the kitchen's glimpse fires, the drawer's code is typed on the panel,
+// the key shows and is taken, the locked cellar door opens with it, the struggle is mashed free (E), and the timed run
 // out of the house ends on the porch. Ends "PLAY ok".
 //
 //   python tools/director/serve.py          (in another shell)
@@ -37,14 +37,13 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
 
   const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "playtest_fail.png" }); fail(`${what}: ${e.message}`); } };
   const playing = (on = true, ms = 60000) => page.waitForFunction(on => { const p = window.__dd.play; return on ? p && p.active : !(p && p.active); }, on, { timeout: ms });
-  const scenesUntilPlay = async (ms = 90000) => {          // skip scenes (dev skip), drag free of any struggle
+  const scenesUntilPlay = async (ms = 90000) => {          // skip scenes (dev skip), mash free of any struggle
     const t0 = Date.now();
     while (Date.now() - t0 < ms) {
       if (await page.evaluate(() => !!(window.__dd.play && window.__dd.play.active))) return;
       if (await page.$(".qte")) {
-        await page.mouse.move(700, 300); await page.mouse.down();
-        for (let y = 300; y < 800; y += 25) await page.mouse.move(700, y);
-        await page.mouse.up();
+        for (let i = 0; i < 6; i++) { await page.keyboard.press("KeyE"); await page.keyboard.press("Space"); }
+        await page.mouse.click(700, 400);
       } else await page.keyboard.press("Escape");
       await page.waitForTimeout(250);
     }
@@ -145,6 +144,23 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const t = await page.textContent(".ph-panel .ph-text"); if (!/door open/.test(t)) throw new Error("note text " + t);
     await page.click(".ph-panel .ph-close");
   });
+  await step("hiding: E gets into the locker (hiding height, its walls slats you see through, no walking), E gets out", async () => {
+    const r = await goTo("hall_locker", 0.8);
+    if (r.cursor !== "hide") throw new Error("cursor " + r.cursor);
+    await press("KeyE");
+    await page.waitForFunction(() => { const rt = window.__dd.play; return rt.player.hiding === "hall_locker" && !rt.moving; }, null, { timeout: 5000 });
+    const inside = () => page.evaluate(() => { const rt = window.__dd.play, m = rt.byId.hall_locker;
+      return { eye: rt.player.eye, x: rt.player.pos.x, y: -rt.player.pos.z, slats: !!m.material.alphaMap, stance: document.querySelector(".ph-stance").textContent,
+               label: document.querySelector(".ph-prompt").textContent }; });
+    const a = await inside();
+    if (Math.abs(a.eye - 1.6) > 0.05 || Math.hypot(a.x - 0.35, a.y - 4.3) > 0.05) throw new Error("not inside " + JSON.stringify(a));
+    if (!a.slats || a.stance !== "hidden" || !/Get out/.test(a.label)) throw new Error(JSON.stringify(a));
+    await press("KeyW", 400);
+    const b = await inside(); if (Math.hypot(b.x - a.x, b.y - a.y) > 1e-3) throw new Error("walked while hidden");
+    await press("KeyE");
+    await page.waitForFunction(() => { const rt = window.__dd.play; return !rt.player.hiding && !rt.moving; }, null, { timeout: 5000 });
+    const c = await inside(); if (c.slats || Math.hypot(c.x - 0.35, c.y - 4.3) < 0.5) throw new Error("not out " + JSON.stringify(c));
+  });
   await step("crouch (toggle) lowers the eye", async () => {
     await press("KeyC"); await page.waitForTimeout(700);
     const e = await page.evaluate(() => window.__dd.play.player.eye); if (e > 1.2) throw new Error("eye " + e);
@@ -182,7 +198,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await walkIn(0.7, 2, 180, 1400);
     await playing(false, 10000);
   });
-  await step("the cellar, the grab (dragged free), then the run", () => scenesUntilPlay());
+  await step("the cellar, the grab (mashed free), then the run", () => scenesUntilPlay());
   await step("the run out has its timer", async () => {
     const t = await page.textContent(".ph-timer"); if (!(+t > 0)) throw new Error("timer " + t);
   });

@@ -8,7 +8,12 @@ register("ability", "look", {
   mouse: (rt, dx, dy, s) => {
     const p = rt.player;
     p.yaw -= dx * s.sens;
-    p.pitch = Math.max(-s.pitch, Math.min(s.pitch, p.pitch - dy * s.sens));
+    let pm = s.pitch;
+    if (p.limit) {                                          // held to a cone (hiding: out of the door)
+      const d = ((p.yaw - p.limit.yaw) % 360 + 540) % 360 - 180;
+      p.yaw = p.limit.yaw + Math.max(-p.limit.dy, Math.min(p.limit.dy, d)); pm = Math.min(pm, p.limit.dp);
+    }
+    p.pitch = Math.max(-pm, Math.min(pm, p.pitch - dy * s.sens));
   },
 });
 

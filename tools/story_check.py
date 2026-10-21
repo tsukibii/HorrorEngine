@@ -250,6 +250,12 @@ def check_world(story, things, r):
             r.err(f"{t.id}: line {p['line']!r} doesn't exist")
         if u == "light" and p.get("kind", "bulb") not in ("bulb", "candle", "lamp", "fire"):
             r.err(f"{t.id}: light kind {p.get('kind')!r}")
+        if u == "locker":                               # Play puts the player inside: its `inside` spot, else its middle
+            ins = p.get("inside")
+            if ins is not None and (ins not in things or things[ins].use != "spot" or things[ins].level != t.level):
+                r.err(f"{t.id}: inside {ins!r} isn't a spot on its level")
+        if "see_through" in p and not (u == "locker" and isinstance(p["see_through"], (int, float)) and 0 <= p["see_through"] <= 1):
+            r.err(f"{t.id}: see_through is for a locker, a number 0..1 (how much of its slats are gaps)")
 
 
 STORY = None
@@ -827,6 +833,9 @@ def scene_event(story, n):
 
 def check_flow(story, things, r):
     flow, scenes, stitches = story.get("flow", {}), story.get("scenes", {}), story.get("stitches", {})
+    st = story["game"].get("see_through")              # the hiding places' default (a locker's own wins)
+    if st is not None and not (isinstance(st, (int, float)) and 0 <= st <= 1):
+        r.err(f"game.see_through {st!r}: a number 0..1")
     th = story["game"].get("ui_theme")                 # the Play HUD's theme: a file in tools/director/play/ui/themes
     if th is not None and not (Path(__file__).resolve().parent / "director" / "play" / "ui" / "themes" / f"{th}.css").is_file():
         r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")

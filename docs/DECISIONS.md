@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
+
+- **Interactables are buttons** (E, or a click): no Amnesia-style dragging of doors and drawers, no sliders. A hiding
+  place's see-through is a number (`see_through` on the locker, `game.see_through` for the game).
+- **The grab's struggle is mashed:** E, Space or the left button as fast as you can, not dragging the mouse away.
+  `pull` stays as the way she's thrown off and the camera leans.
+- **Hiding must work in Play** (the Pilot's locker didn't): E gets in, you watch the room through the slats, E gets
+  out.
+- The Play UI doesn't look its best yet: touch-ups come much later, with the other polish.
+
 ## 2026-10-21 (scenes blend; triggered scenes)
 
 - **Scenes blend in and out by default** (the view eases from the player's eye, no black). A hard cut or a fade is
