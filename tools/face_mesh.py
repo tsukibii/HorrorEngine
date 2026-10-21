@@ -202,7 +202,19 @@ def pictures(inputs, n_frames):
             cap.release()
 
 
+def no_metrics():
+    """MediaPipe's native library posts usage stats to play.googleapis.com/log on every run (about 2 KB, no pictures)
+    and has no switch for it. It goes out through the environment's proxy, so a proxy that isn't there stops it;
+    nothing in make needs the network. Set before MediaPipe loads."""
+    dead = "http://127.0.0.1:9"                          # the discard port: nothing listens there
+    for k in ("https_proxy", "HTTPS_PROXY", "http_proxy", "HTTP_PROXY", "all_proxy", "ALL_PROXY"):
+        os.environ[k] = dead
+    for k in ("no_proxy", "NO_PROXY"):
+        os.environ[k] = ""
+
+
 def detect(home, inputs, n_frames):
+    no_metrics()
     import cv2
     import mediapipe as mp
     from mediapipe.tasks.python import BaseOptions, vision
