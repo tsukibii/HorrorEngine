@@ -30,6 +30,7 @@ struct FPvScene
 {
 	FString Level, Title;
 	float Total = 0, Fps = 30, EnterSecs = 0.6f, ExitSecs = 0.6f;
+	float LookYaw = 0, LookPitch = 0;            // the cone the player may look round the recorded view in (degrees each side)
 	bool bEnterCut = false, bExitCut = false;
 	int32 Frames = 0;
 	TArray<float> Cam;                          // 10 a frame: position (cm), forward, up, horizontal fov
@@ -129,7 +130,10 @@ private:
 	TMap<FString, FString> Results;
 	TArray<FString> Trail;
 	TFunction<void()> Pending;
-	bool bMouse = false;
+	bool bMouse = false, bInScene = false;
+	FVector2D UserLook = FVector2D::ZeroVector;  // the player's own look inside the scene's cone (yaw, pitch)
+	float LookIdle = 0;
+	void UpdateLook(float Dt, const FPvScene& S);
 
 	UPROPERTY(Transient) TObjectPtr<ACameraActor> Camera;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> FigureMat;

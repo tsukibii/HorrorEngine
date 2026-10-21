@@ -154,6 +154,7 @@ bool AStoryPreview::Load()
 			P.Total = S->GetNumberField(TEXT("total"));
 			P.Fps = S->GetNumberField(TEXT("fps"));
 			if (const auto* C = Arr(S, TEXT("cast"))) for (const auto& V : *C) P.Cast.Add(V->AsString());
+			if (const auto* Lk = Arr(S, TEXT("look")); Lk && Lk->Num() == 2) { P.LookYaw = (*Lk)[0]->AsNumber(); P.LookPitch = (*Lk)[1]->AsNumber(); }
 			const TSharedPtr<FJsonObject> En = Obj(S, TEXT("enter")), Ex = Obj(S, TEXT("exit"));
 			P.bEnterCut = Str(En, TEXT("kind")) == TEXT("cut");
 			P.bExitCut = Str(Ex, TEXT("kind")) == TEXT("cut");
@@ -405,6 +406,7 @@ void AStoryPreview::SetMouse(bool bOn)
 	{
 		PC->SetInputMode(FInputModeGameOnly());
 		FSlateApplication::Get().SetAllUserFocusToGameViewport();
+		if (bInScene) PC->SetIgnoreLookInput(true);      // the mouse looks round the scene's cone (UpdateLook), not the hidden pawn
 	}
 }
 
@@ -424,6 +426,7 @@ void AStoryPreview::SetSceneView(bool bScene)
 	if (!PC) return;
 	APawn* Pawn = PC->GetPawn();
 	PC->ResetIgnoreMoveInput();
+	bInScene = bScene;
 	if (bScene)
 	{
 		PC->SetViewTarget(Camera);
@@ -517,7 +520,9 @@ void AStoryPreview::StartScene(const FString& NodeId, const FString& Sid)
 	PhaseT = 0;
 	NextEvent = 0;
 	SetSceneView(true);
-	SetMouse(true);
+	SetMouse(false);                                         // the mouse looks round, inside the scene's cone, as on the desk
+	UserLook = FVector2D::ZeroVector;
+	LookIdle = 0;
 	ShowFigures(true);
 	ApplyFrame(0);
 	Mode = S->bEnterCut ? EMode::Scene : EMode::FadeIn;
@@ -540,7 +545,7 @@ void AStoryPreview::ShowEvent(const FPvEvent& Ev)
 	for (const FPvOption& O : Ev.Options)
 	{
 		const FString Id = O.Id;
-		Buttons.Add({O.Label.Replace(TEXT("_"), TEXT(" ")), [this, NodeId, Id, End]() { Results.Add(NodeId, Id); T = End; Mode = EMode::Scene; }});
+		Buttons.Add({O.Label.Replace(TEXT("_"), TEXT(" ")), [this, NodeId, Id, End]() { Results.Add(NodeId, Id); T = End; Mode = EMode::Scene; SetMouse(false); }});
 	}
 	const FString Kind = FString::Printf(TEXT("EVENT \u00B7 %s \u00B7 %.0f s%s"), *Ev.Type, Ev.End - Ev.T, Ev.Default.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" \u00B7 on time out: %s"), *Ev.Default));
 	Card(Kind, Ev.Prompt.IsEmpty() ? Ev.Type : Ev.Prompt, TEXT("How did it go?"), Buttons);
@@ -813,7 +818,8 @@ void AStoryPreview::ApplyFrame(float Time)
 	const float U = FF - F0;
 	auto C = [&](int32 K) { return FMath::Lerp(S->Cam[F0 * 10 + K], S->Cam[F1 * 10 + K], U); };
 	const FVector Pos(C(0), C(1), C(2)), Fwd(C(3), C(4), C(5)), Up(C(6), C(7), C(8));
-	Camera->SetActorLocationAndRotation(Pos, FRotationMatrix::MakeFromXZ(Fwd, Up).Rotator());
+	const FQuat Base = FRotationMatrix::MakeFromXZ(Fwd, Up).ToQuat();       // then the player's own look, as stage.apply turns it
+	Camera->SetActorLocationAndRotation(Pos, Base * FRotator(UserLook.Y, UserLook.X, 0).Quaternion());
 	Camera->GetCameraComponent()->SetFieldOfView(C(9));
 	BlackAlpha = FMath::Max(BlackAlpha, FMath::Lerp(S->Black[F0], S->Black[F1], U));
 	for (const auto& LP : S->Lights)
@@ -829,6 +835,18 @@ void AStoryPreview::ApplyFrame(float Time)
 		}
 	ApplyFigures(Time);
 	ApplyBodies(Time);
+}
+
+void AStoryPreview::UpdateLook(float Dt, const FPvScene& S)
+{
+	const float Sens = 0.25f, Rest = 1.5f, Back = 2.f;      // degrees a mouse count; idle secs before it eases back; ease rate
+	float Dx = 0, Dy = 0;
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC && !bMouse) PC->GetInputMouseDelta(Dx, Dy);
+	if (FMath::Abs(Dx) + FMath::Abs(Dy) > 0.01f) LookIdle = 0; else LookIdle += Dt;
+	UserLook.X = FMath::Clamp(UserLook.X + Dx * Sens, -S.LookYaw, S.LookYaw);
+	UserLook.Y = FMath::Clamp(UserLook.Y + Dy * Sens, -S.LookPitch, S.LookPitch);
+	if (LookIdle > Rest) UserLook *= FMath::Exp(-Dt * Back);   // the spring back to the framing (GAMEPLAY_PLAN §1)
 }
 
 void AStoryPreview::Tick(float Dt)
@@ -847,6 +865,7 @@ void AStoryPreview::Tick(float Dt)
 		if (TimerLeft <= 0) { const FString Fail = TimerFail; TimerLeft = -1; Later([this, Fail]() { Go(Fail); }); }
 	}
 	const FPvScene* S = Scenes.Find(SceneId);
+	if (S && (Mode == EMode::FadeIn || Mode == EMode::Scene || Mode == EMode::FadeOut)) UpdateLook(Dt, *S);
 	if (!S && (Mode == EMode::FadeIn || Mode == EMode::Scene || Mode == EMode::FadeOut)) Mode = EMode::Idle;
 	switch (Mode)
 	{

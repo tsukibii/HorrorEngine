@@ -128,7 +128,9 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
   }
   for (const s of tl.segs) if (s.type === "event") events.push(Object.assign(eventOf(s.event, story), { t: +s.start.toFixed(3), end: +s.end.toFixed(3) }));
   subs.forEach(s => { delete s.key; s.t0 = +s.t0.toFixed(3); s.t1 = +s.t1.toFixed(3); });
-  return { level, title: v.title || "", total: +tl.total.toFixed(3), fps, cast, frames, subs, events, lights,
+  const mode = (v.camera || {}).mode || "free";                 // how far the player may look round the recorded view (stage.apply)
+  const look = mode === "hard" ? [0, 0] : mode === "free" ? [180, 80] : (v.camera || {}).cone || [30, 18];
+  return { level, title: v.title || "", total: +tl.total.toFixed(3), fps, cast, frames, subs, events, lights, look,
            enter: v.enter || { kind: "fade", secs: 0.6 }, exit: v.exit || { kind: "fade", secs: 0.6 }, pick: sc.pick || null };
 }
 

@@ -255,9 +255,31 @@ def spawn(piece, cmap):
 EXPOSURE_EV100 = 3.5    # held still, for rooms lit by a bulb or a candle (EV100 0 is daylight: everything blown out)
 
 
+FILL = (60, 7500)       # lumens, K: each room's ambient fill, the desk's AmbientLight + HemisphereLight (stage.js)
+
+
+def room_fills(story, lid):
+    """Every room gets a faint, shadowless fill at its centre, as the desk's ambient lights every room, so a room with
+    no lamp (the cellar stairs) is dim rather than black: the sky light can't get through Lumen's walls."""
+    for rm in story["levels"][lid]["rooms"]:
+        x, y, z = rm["at"]
+        w, d, h = rm["size"]
+        a = actors.spawn_actor_from_class(unreal.PointLight, to_ue((x + w / 2, y + d / 2, z + h * 0.8)), rot(0))
+        c = a.get_component_by_class(unreal.PointLightComponent)
+        c.set_mobility(unreal.ComponentMobility.MOVABLE)
+        c.set_editor_property("intensity_units", unreal.LightUnits.LUMENS)
+        c.set_intensity(float(FILL[0]))
+        c.set_attenuation_radius(max(w, d, h) * 100)
+        c.set_use_temperature(True)
+        c.set_temperature(float(FILL[1]))
+        c.set_cast_shadows(False)
+        c.set_editor_property("specular_scale", 0.0)
+        finish(a, {"id": f"{rm['id']}__fill", "tags": ["story", "story:fill"]}, f"{rm['id']}/lights")
+
+
 def environment(lid):
     """A dark interior's basics, rebuilt with the level: exposure held still (auto exposure undoes darkness), a
-    faint sky light so unlit corners aren't pure black."""
+    faint sky light (room_fills does the real ambient indoors)."""
     ppv = actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0), rot(0))
     ppv.set_editor_property("unbound", True)
     try:
@@ -379,6 +401,7 @@ def build(game=None, level=None, bodies=None):
             attach_parts(made)
         cast_standins(story, lid, cmap)
         environment(lid)
+        room_fills(story, lid)
         preview(game, lid, bodies)
         if story.get("format", 2) >= 3:
             acoustics(story, lid)

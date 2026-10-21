@@ -115,3 +115,7 @@ the fix.
   itself, so a Generate ran yesterday's code. The desk's script reloads it first.
 - **FBXLoader's vertices aren't shared:** normals recomputed on them come out flat (a faceted body in Unreal). Keep
   the file's normals.
+- **The desk lights every room with an ambient; Unreal's sky light doesn't get through Lumen's walls:** a room with
+  no lamp (the Pilot's cellar stairs) played black in Unreal while the desk showed it. Each room gets a shadowless
+  fill (`importer.room_fills`). And anything the desk lets the player do during a scene (look round the cone) has to
+  be in the bake, or Unreal locks it.
