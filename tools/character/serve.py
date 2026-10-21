@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""The body editor (tools/character/index.html): MHR's whole body from a base (average, feminine, masculine) and its 45
-identity sliders, with a face from up to two pictures (front, side) bent onto its head by tools/face_mesh.py, or
-none. Exports the body and the head alone (for Mesh to MetaHuman) as OBJ. Each character keeps its pictures and
+"""The Character Studio (tools/character/index.html): MHR's whole body from a base (average, feminine, masculine) and
+its 45 identity sliders, with a face from up to two pictures (front, side) bent onto its head by tools/face_mesh.py,
+or none, and its 72 FACS expressions. Exports the body and the head alone (for Mesh to MetaHuman) as OBJ. Each character keeps its pictures and
 settings in Content/Studio/People/<name>/ (git-ignored: real people's faces).
 
     python tools/character/serve.py            then open http://127.0.0.1:8793
@@ -137,7 +137,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"BODY EDITOR on http://127.0.0.1:{PORT}  (Ctrl+C stops it)")
+    print(f"CHARACTER STUDIO on http://127.0.0.1:{PORT}  (Ctrl+C stops it)")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

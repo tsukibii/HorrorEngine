@@ -1,0 +1,475 @@
+{
+ "about": "ARKit-52 blendshape names (MediaPipe's, Live Link's, Audio2Face's) onto MHR's 72 FACS expression shapes (Meta's names), by name: each ARKit curve drives these MHR shapes by these weights. Left/right are the subject's. Gains are 1 until fitted against renders (docs/MHR_PIPELINE_RESEARCH.md). tongueOut has no shape: MHR's tongue is the c_tongue0-4 joints. The presets are faces in ARKit terms, run through the map.",
+ "map": {
+  "browDownLeft": [
+   [
+    "browLowerer_L",
+    1.0
+   ]
+  ],
+  "browDownRight": [
+   [
+    "browLowerer_R",
+    1.0
+   ]
+  ],
+  "browInnerUp": [
+   [
+    "innerBrowRaiser_L",
+    1
+   ],
+   [
+    "innerBrowRaiser_R",
+    1
+   ]
+  ],
+  "browOuterUpLeft": [
+   [
+    "outerBrowRaiser_L",
+    1.0
+   ]
+  ],
+  "browOuterUpRight": [
+   [
+    "outerBrowRaiser_R",
+    1.0
+   ]
+  ],
+  "eyeBlinkLeft": [
+   [
+    "eyesClosed_L",
+    1.0
+   ]
+  ],
+  "eyeBlinkRight": [
+   [
+    "eyesClosed_R",
+    1.0
+   ]
+  ],
+  "eyeSquintLeft": [
+   [
+    "lidTightener_L",
+    1.0
+   ]
+  ],
+  "eyeSquintRight": [
+   [
+    "lidTightener_R",
+    1.0
+   ]
+  ],
+  "eyeWideLeft": [
+   [
+    "upperLidRaiser_L",
+    1.0
+   ]
+  ],
+  "eyeWideRight": [
+   [
+    "upperLidRaiser_R",
+    1.0
+   ]
+  ],
+  "eyeLookUpLeft": [
+   [
+    "eyesLookUp_L",
+    1.0
+   ]
+  ],
+  "eyeLookUpRight": [
+   [
+    "eyesLookUp_R",
+    1.0
+   ]
+  ],
+  "eyeLookDownLeft": [
+   [
+    "eyesLookDown_L",
+    1.0
+   ]
+  ],
+  "eyeLookDownRight": [
+   [
+    "eyesLookDown_R",
+    1.0
+   ]
+  ],
+  "eyeLookOutLeft": [
+   [
+    "eyesLookLeft_L",
+    1
+   ]
+  ],
+  "eyeLookInLeft": [
+   [
+    "eyesLookRight_L",
+    1
+   ]
+  ],
+  "eyeLookInRight": [
+   [
+    "eyesLookLeft_R",
+    1
+   ]
+  ],
+  "eyeLookOutRight": [
+   [
+    "eyesLookRight_R",
+    1
+   ]
+  ],
+  "cheekSquintLeft": [
+   [
+    "cheekRaiser_L",
+    1.0
+   ]
+  ],
+  "cheekSquintRight": [
+   [
+    "cheekRaiser_R",
+    1.0
+   ]
+  ],
+  "cheekPuff": [
+   [
+    "cheekPuff_L",
+    1
+   ],
+   [
+    "cheekPuff_R",
+    1
+   ]
+  ],
+  "noseSneerLeft": [
+   [
+    "noseWrinkler_L",
+    1.0
+   ]
+  ],
+  "noseSneerRight": [
+   [
+    "noseWrinkler_R",
+    1.0
+   ]
+  ],
+  "jawOpen": [
+   [
+    "jawDrop",
+    1
+   ]
+  ],
+  "jawLeft": [
+   [
+    "jawSidewaysLeft",
+    1
+   ]
+  ],
+  "jawRight": [
+   [
+    "jawSidewaysRight",
+    1
+   ]
+  ],
+  "jawForward": [
+   [
+    "jawThrust",
+    1
+   ]
+  ],
+  "mouthClose": [
+   [
+    "lipsToward_LB",
+    1
+   ],
+   [
+    "lipsToward_LT",
+    1
+   ],
+   [
+    "lipsToward_RB",
+    1
+   ],
+   [
+    "lipsToward_RT",
+    1
+   ]
+  ],
+  "mouthSmileLeft": [
+   [
+    "lipCornerPuller_L",
+    1.0
+   ]
+  ],
+  "mouthSmileRight": [
+   [
+    "lipCornerPuller_R",
+    1.0
+   ]
+  ],
+  "mouthFrownLeft": [
+   [
+    "lipCornerDepressor_L",
+    1.0
+   ]
+  ],
+  "mouthFrownRight": [
+   [
+    "lipCornerDepressor_R",
+    1.0
+   ]
+  ],
+  "mouthStretchLeft": [
+   [
+    "lipStretcher_L",
+    1.0
+   ]
+  ],
+  "mouthStretchRight": [
+   [
+    "lipStretcher_R",
+    1.0
+   ]
+  ],
+  "mouthDimpleLeft": [
+   [
+    "dimpler_L",
+    1.0
+   ]
+  ],
+  "mouthDimpleRight": [
+   [
+    "dimpler_R",
+    1.0
+   ]
+  ],
+  "mouthPressLeft": [
+   [
+    "lipPressor_L",
+    1.0
+   ]
+  ],
+  "mouthPressRight": [
+   [
+    "lipPressor_R",
+    1.0
+   ]
+  ],
+  "mouthPucker": [
+   [
+    "lipPucker_L",
+    1
+   ],
+   [
+    "lipPucker_R",
+    1
+   ]
+  ],
+  "mouthFunnel": [
+   [
+    "lipFunneler_LB",
+    1
+   ],
+   [
+    "lipFunneler_LT",
+    1
+   ],
+   [
+    "lipFunneler_RB",
+    1
+   ],
+   [
+    "lipFunneler_RT",
+    1
+   ]
+  ],
+  "mouthRollUpper": [
+   [
+    "lipSuck_LT",
+    1
+   ],
+   [
+    "lipSuck_RT",
+    1
+   ]
+  ],
+  "mouthRollLower": [
+   [
+    "lipSuck_LB",
+    1
+   ],
+   [
+    "lipSuck_RB",
+    1
+   ]
+  ],
+  "mouthShrugUpper": [
+   [
+    "chinRaiser_T",
+    1
+   ]
+  ],
+  "mouthShrugLower": [
+   [
+    "chinRaiser_B",
+    1
+   ]
+  ],
+  "mouthLowerDownLeft": [
+   [
+    "lowerLipDepressor_L",
+    1.0
+   ]
+  ],
+  "mouthLowerDownRight": [
+   [
+    "lowerLipDepressor_R",
+    1.0
+   ]
+  ],
+  "mouthUpperUpLeft": [
+   [
+    "upperLipRaiser_L",
+    1.0
+   ]
+  ],
+  "mouthUpperUpRight": [
+   [
+    "upperLipRaiser_R",
+    1.0
+   ]
+  ],
+  "mouthLeft": [
+   [
+    "mouthLeft",
+    1
+   ]
+  ],
+  "mouthRight": [
+   [
+    "mouthRight",
+    1
+   ]
+  ],
+  "tongueOut": []
+ },
+ "no_arkit_source": [
+  "cheekSuck_L",
+  "cheekSuck_R",
+  "lipTightener_L",
+  "lipTightener_R",
+  "nasolabialFurrow_L",
+  "nasolabialFurrow_R",
+  "nostrilCompressor_L",
+  "nostrilCompressor_R",
+  "nostrilDilator_L",
+  "nostrilDilator_R"
+ ],
+ "presets": {
+  "neutral": {},
+  "smile": {
+   "mouthSmileLeft": 0.7,
+   "mouthSmileRight": 0.7,
+   "cheekSquintLeft": 0.4,
+   "cheekSquintRight": 0.4,
+   "eyeSquintLeft": 0.2,
+   "eyeSquintRight": 0.2
+  },
+  "big smile": {
+   "mouthSmileLeft": 1.0,
+   "mouthSmileRight": 1.0,
+   "jawOpen": 0.25,
+   "cheekSquintLeft": 0.7,
+   "cheekSquintRight": 0.7,
+   "eyeSquintLeft": 0.4,
+   "eyeSquintRight": 0.4,
+   "mouthUpperUpLeft": 0.3,
+   "mouthUpperUpRight": 0.3
+  },
+  "blink": {
+   "eyeBlinkLeft": 1.0,
+   "eyeBlinkRight": 1.0
+  },
+  "surprise": {
+   "browInnerUp": 0.9,
+   "browOuterUpLeft": 0.9,
+   "browOuterUpRight": 0.9,
+   "eyeWideLeft": 0.8,
+   "eyeWideRight": 0.8,
+   "jawOpen": 0.4
+  },
+  "fear": {
+   "browInnerUp": 0.8,
+   "eyeWideLeft": 1.0,
+   "eyeWideRight": 1.0,
+   "mouthStretchLeft": 0.5,
+   "mouthStretchRight": 0.5,
+   "jawOpen": 0.2
+  },
+  "sad": {
+   "browInnerUp": 0.7,
+   "mouthFrownLeft": 0.6,
+   "mouthFrownRight": 0.6,
+   "mouthShrugLower": 0.3,
+   "eyeLookDownLeft": 0.2,
+   "eyeLookDownRight": 0.2
+  },
+  "angry": {
+   "browDownLeft": 0.9,
+   "browDownRight": 0.9,
+   "noseSneerLeft": 0.5,
+   "noseSneerRight": 0.5,
+   "eyeSquintLeft": 0.4,
+   "eyeSquintRight": 0.4,
+   "mouthPressLeft": 0.5,
+   "mouthPressRight": 0.5
+  },
+  "disgust": {
+   "noseSneerLeft": 0.8,
+   "noseSneerRight": 0.8,
+   "mouthUpperUpLeft": 0.6,
+   "mouthUpperUpRight": 0.6,
+   "browDownLeft": 0.4,
+   "browDownRight": 0.4
+  },
+  "pout": {
+   "mouthPucker": 0.7,
+   "mouthShrugUpper": 0.3
+  },
+  "look left": {
+   "eyeLookOutLeft": 0.8,
+   "eyeLookInRight": 0.8
+  },
+  "look up": {
+   "eyeLookUpLeft": 0.8,
+   "eyeLookUpRight": 0.8
+  },
+  "あ a": {
+   "jawOpen": 0.55
+  },
+  "い i": {
+   "mouthStretchLeft": 0.5,
+   "mouthStretchRight": 0.5,
+   "jawOpen": 0.15
+  },
+  "う u": {
+   "mouthPucker": 0.7,
+   "mouthFunnel": 0.3,
+   "jawOpen": 0.1
+  },
+  "え e": {
+   "mouthStretchLeft": 0.35,
+   "mouthStretchRight": 0.35,
+   "jawOpen": 0.3
+  },
+  "お o": {
+   "mouthFunnel": 0.6,
+   "jawOpen": 0.4
+  },
+  "ん n": {
+   "mouthPressLeft": 0.4,
+   "mouthPressRight": 0.4,
+   "mouthClose": 0.2
+  }
+ }
+}

@@ -1,4 +1,4 @@
-"""MHR's body in plain numpy (the body editor's server, face_mesh.py, the presets): the packed mesh
+"""MHR's body in plain numpy (the Character Studio's server, face_mesh.py, the presets): the packed mesh
 (Content/Studio/Bodies/MHR_lod1.bin, tools/character/pack_mhr.py), a body from its 45 identity weights, and its measures.
 Y up, facing +Z, metres; the measures in cm, over the same regions as the desk's shape page (tools/director/shape.html).
 """
@@ -24,16 +24,28 @@ def load(path=BIN):
         pts = np.frombuffer(data, np.float32, n * 3, h["points_at"]).reshape(n, 3).astype(np.float64)
         tris = np.frombuffer(data, np.uint32, m * 3, h["triangles_at"]).reshape(m, 3).astype(np.int64)
         shapes = np.frombuffer(data, np.float16, k * n * 3, h["shapes_at"]).reshape(k, n, 3).astype(np.float32)
-        _CACHE[path] = dict(points=pts, tris=tris, shapes=shapes, header=h)
+        out = dict(points=pts, tris=tris, shapes=shapes, header=h)
+        if "expr_at" in h:                                # the 72 expressions on the points they move, the UVs
+            e, q = h["expressions"], h["expr_points"]
+            out["expr_idx"] = np.frombuffer(data, np.uint32, q, h["expr_idx_at"]).astype(np.int64)
+            out["expr"] = np.frombuffer(data, np.float16, e * q * 3, h["expr_at"]).reshape(e, q, 3).astype(np.float32)
+            out["expr_names"] = h["expr_names"]
+            out["uv"] = np.frombuffer(data, np.float32, m * 6, h["uv_at"]).reshape(m, 3, 2).astype(np.float64)
+        _CACHE[path] = out
     return _CACHE[path]
 
 
-def body(weights, mhr=None):
-    """the points with the identity weights applied (missing weights are 0)"""
+def body(weights, mhr=None, expressions=None):
+    """the points with the identity weights applied (missing weights are 0), and expressions: {Meta's name or index:
+    weight} of the 72 FACS shapes, on top"""
     mhr = mhr or load()
     w = np.zeros(len(mhr["shapes"]), np.float32)
     w[:min(len(weights), len(w))] = np.asarray(weights, np.float32)[:len(w)]
-    return mhr["points"] + np.tensordot(w, mhr["shapes"], 1)
+    pts = mhr["points"] + np.tensordot(w, mhr["shapes"], 1)
+    for k, v in (expressions or {}).items():
+        i = mhr["expr_names"].index(k) if isinstance(k, str) else int(k)
+        pts[mhr["expr_idx"]] += v * mhr["expr"][i]
+    return pts
 
 
 # the regions, on the neutral body (cm, as the shape page has them): which points each measure reads
@@ -157,7 +169,7 @@ def make_presets(path=PRESETS_FILE):
         w = fit_measures({k: base[k] + v for k, v in bdy.items()}, groups=("body",), mhr=mhr)
         w = fit_measures({k: base[k] + v for k, v in hd.items()}, start=w, keep=0.3, groups=("head",), mhr=mhr)
         out[name] = [round(float(x), 4) for x in w]
-    path.write_text(json.dumps({"about": "MHR identity weights for the body editor's bases (tools/character/mhr.py presets)",
+    path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets)",
                                 "presets": out}, indent=1), encoding="utf-8")
     return out
 
