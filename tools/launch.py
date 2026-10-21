@@ -31,6 +31,71 @@ STATE = ROOT / "Saved" / "launch.json"
 WIN = os.name == "nt"
 PY = sys.executable or "python"
 
+# the look: colours only on a terminal that has them (NO_COLOR turns them off), the banner in the bloody figlet font
+if WIN:
+    os.system("")                                                # turns on the console's colour codes
+COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR") and os.environ.get("TERM") != "dumb"
+
+
+def paint(text, *codes):
+    return "\033[%sm%s\033[0m" % (";".join(map(str, codes)), text) if COLOR and codes else text
+
+
+BLOOD, RED, DARK, BONE, ASH = (38, 5, 196), (38, 5, 160), (38, 5, 88), (38, 5, 252), (38, 5, 242)
+DRIP = [196, 196, 160, 160, 124, 124, 88, 88, 52, 52]           # the banner's rows, bright at the top, dried at the drips
+BANNER_WIDE = """\
+ ██░ ██  ▒█████   ██▀███   ██▀███   ▒█████   ██▀███       ██████ ▄▄▄█████▓ █    ██ ▓█████▄  ██▓ ▒█████
+▓██░ ██▒▒██▒  ██▒▓██ ▒ ██▒▓██ ▒ ██▒▒██▒  ██▒▓██ ▒ ██▒   ▒██    ▒ ▓  ██▒ ▓▒ ██  ▓██▒▒██▀ ██▌▓██▒▒██▒  ██▒
+▒██▀▀██░▒██░  ██▒▓██ ░▄█ ▒▓██ ░▄█ ▒▒██░  ██▒▓██ ░▄█ ▒   ░ ▓██▄   ▒ ▓██░ ▒░▓██  ▒██░░██   █▌▒██▒▒██░  ██▒
+░▓█ ░██ ▒██   ██░▒██▀▀█▄  ▒██▀▀█▄  ▒██   ██░▒██▀▀█▄       ▒   ██▒░ ▓██▓ ░ ▓▓█  ░██░░▓█▄   ▌░██░▒██   ██░
+░▓█▒░██▓░ ████▓▒░░██▓ ▒██▒░██▓ ▒██▒░ ████▓▒░░██▓ ▒██▒   ▒██████▒▒  ▒██▒ ░ ▒▒█████▓ ░▒████▓ ░██░░ ████▓▒░
+ ▒ ░░▒░▒░ ▒░▒░▒░ ░ ▒▓ ░▒▓░░ ▒▓ ░▒▓░░ ▒░▒░▒░ ░ ▒▓ ░▒▓░   ▒ ▒▓▒ ▒ ░  ▒ ░░   ░▒▓▒ ▒ ▒  ▒▒▓  ▒ ░▓  ░ ▒░▒░▒░
+ ▒ ░▒░ ░  ░ ▒ ▒░   ░▒ ░ ▒░  ░▒ ░ ▒░  ░ ▒ ▒░   ░▒ ░ ▒░   ░ ░▒  ░ ░    ░    ░░▒░ ░ ░  ░ ▒  ▒  ▒ ░  ░ ▒ ▒░
+ ░  ░░ ░░ ░ ░ ▒    ░░   ░   ░░   ░ ░ ░ ░ ▒    ░░   ░    ░  ░  ░    ░       ░░░ ░ ░  ░ ░  ░  ▒ ░░ ░ ░ ▒
+ ░  ░  ░    ░ ░     ░        ░         ░ ░     ░              ░              ░        ░     ░      ░ ░
+                                                                                    ░"""
+BANNER = """\
+ ██░ ██  ▒█████   ██▀███   ██▀███   ▒█████   ██▀███
+▓██░ ██▒▒██▒  ██▒▓██ ▒ ██▒▓██ ▒ ██▒▒██▒  ██▒▓██ ▒ ██▒
+▒██▀▀██░▒██░  ██▒▓██ ░▄█ ▒▓██ ░▄█ ▒▒██░  ██▒▓██ ░▄█ ▒
+░▓█ ░██ ▒██   ██░▒██▀▀█▄  ▒██▀▀█▄  ▒██   ██░▒██▀▀█▄
+░▓█▒░██▓░ ████▓▒░░██▓ ▒██▒░██▓ ▒██▒░ ████▓▒░░██▓ ▒██▒
+ ▒ ░░▒░▒░ ▒░▒░▒░ ░ ▒▓ ░▒▓░░ ▒▓ ░▒▓░░ ▒░▒░▒░ ░ ▒▓ ░▒▓░
+ ▒ ░▒░ ░  ░ ▒ ▒░   ░▒ ░ ▒░  ░▒ ░ ▒░  ░ ▒ ▒░   ░▒ ░ ▒░
+ ░  ░░ ░░ ░ ░ ▒    ░░   ░   ░░   ░ ░ ░ ░ ▒    ░░   ░
+ ░  ░  ░    ░ ░     ░        ░         ░ ░     ░"""
+WHISPERS = [
+    "the lights are off. pick a door.",
+    "something is breathing in the build folder.",
+    "every take is ten seconds or less. she isn't.",
+    "don't look behind the locker slats.",
+    "the desk remembers what you left on it.",
+    "she was in the hallway a second ago.",
+]
+
+
+def banner():
+    width = shutil.get_terminal_size((100, 30)).columns
+    art = BANNER_WIDE if width > 105 else BANNER
+    print()
+    for n, row in enumerate(art.split("\n")):
+        print(paint(row, 38, 5, DRIP[min(n, len(DRIP) - 1)]))
+    tag = "s  t  u  d  i  o" if art is BANNER else ""
+    if tag:
+        print(paint(tag.center(53), 1, *BONE))
+    print(paint(("   " + WHISPERS[int(time.time()) % len(WHISPERS)]), 3, *ASH))
+
+
+def rule(title, width):
+    head = "▓▒░ " + title.upper() + " "
+    return " " + paint(head, 1, *RED) + paint("─" * max(4, min(width, 80) - len(head) - 2), *DARK)
+
+
+def say(text, kind="note"):
+    mark, codes = {"ok": ("◉", BLOOD), "stop": ("✝", RED), "warn": ("!", (1,) + BLOOD), "note": ("·", ASH)}[kind]
+    print(paint(mark, *codes) + " " + (paint(text, *ASH) if kind == "note" else text))
+
+
 # (section, label, command, options). In a command: {game} asks for the game; {ask:Prompt} asks for a word or path;
 # {opt:Prompt|--flag} the same, but empty leaves it out (and --flag goes before the answer when there is one).
 # options: url (a page: started in its own window, then opened).
@@ -128,7 +193,8 @@ def games():
 
 def ask(prompt, default=""):
     try:
-        v = input(prompt + (" [" + default + "]" if default else "") + ("" if prompt.endswith(">") else ":") + " ").strip()
+        shown_prompt = paint("\n☠ ❯", 1, *BLOOD) if prompt == ">" else paint(prompt, *BONE) + (paint(" [" + default + "]", *ASH) if default else "") + ":"
+        v = input(shown_prompt + " ").strip()
     except EOFError:
         return None
     return v or default
@@ -137,19 +203,19 @@ def ask(prompt, default=""):
 def pick_game(state, force=False):
     gs = games()
     if not gs:
-        print("No games yet (Content/Games/<Name>/story.json).")
+        say("No games yet (Content/Games/<Name>/story.json).", "warn")
         return None
     last = state.get("game")
     if not force and last in gs:
         return last
     for i, g in enumerate(gs, 1):
-        print("  %d  %s" % (i, g))
+        print("  %s  %s" % (paint("%2d" % i, 1, *BLOOD), g))
     v = ask("Game (number or name)", last if last in gs else gs[0])
     if v is None:
         return None
     g = gs[int(v) - 1] if v.isdigit() and 1 <= int(v) <= len(gs) else v
     if g not in gs:
-        print("No game called %s." % g)
+        say("No game called %s." % g, "warn")
         return None
     state["game"] = g
     save_state(state)
@@ -176,7 +242,7 @@ def build(cmd, state):
         out.append(tok)
     if out[0] == "node":
         if not shutil.which("node"):
-            print("This one needs Node.js (https://nodejs.org).")
+            say("This one needs Node.js (https://nodejs.org).", "warn")
             return None
         return out
     return [PY] + out
@@ -229,13 +295,13 @@ def stop(state, key):
                 os.killpg(r["pid"], signal.SIGKILL)
         except OSError:
             pass
-    print("Stopped %s." % " / ".join(r["labels"]))
+    say("Stopped %s." % " / ".join(r["labels"]), "stop")
 
 
 def close_all(state):
     live = running(state)
     if not live:
-        print("No pages running.")
+        say("No pages running.")
     for k in list(live):
         stop(state, k)
 
@@ -251,9 +317,9 @@ def run(label, args, opts, dry=False, state=None):
             r["labels"].append(label)
             save_state(state)
             webbrowser.open(opts["url"])
-            print("%s: %s (its server is already running)" % (label, opts["url"]))
+            say("%s: %s %s" % (label, paint(opts["url"], 4, *BONE), paint("(its server is already running)", *ASH)), "ok")
             return 0
-    print("\n> " + shown(args) + "\n")
+    print("\n" + paint("❯ ", *RED) + paint(shown(args), *ASH) + "\n")
     if dry:
         return 0
     if opts.get("url"):
@@ -265,21 +331,22 @@ def run(label, args, opts, dry=False, state=None):
             log.parent.mkdir(parents=True, exist_ok=True)
             with open(log, "ab") as f:
                 proc = subprocess.Popen(args, cwd=ROOT, start_new_session=True, stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT)
-            print("its output: " + str(log.relative_to(ROOT)))
+            say("its output: " + str(log.relative_to(ROOT)))
         time.sleep(1.5)
         if proc.poll() is not None:                              # gone already: most often its port is taken
-            print("%s stopped straight away (is it running from somewhere else?)%s" % (label, "" if WIN else "; see its output"))
+            say("%s stopped straight away (is it running from somewhere else?)%s" % (label, "" if WIN else "; see its output"), "warn")
         elif state is not None:
             state.setdefault("running", {})[shown(args)] = {"pid": proc.pid, "args": args, "labels": [label]}
             save_state(state)
         webbrowser.open(opts["url"])
-        print("%s is starting%s: %s" % (label, " in its own window" if WIN else "", opts["url"]))
-        print("(its number again stops it; close stops every page)")
+        say("%s is starting%s: %s" % (label, " in its own window" if WIN else "", paint(opts["url"], 4, *BONE)), "ok")
+        say("its number again stops it; close stops every page")
         return 0
     try:
         return subprocess.call(args, cwd=ROOT)
     except KeyboardInterrupt:
-        print("\n(stopped)")
+        print()
+        say("stopped", "stop")
         return 130
 
 
@@ -290,25 +357,30 @@ def matches(words):
 
 def show_menu(idx, state):
     width = shutil.get_terminal_size((100, 30)).columns
-    print("\n=== HorrorStudio tools" + ("   (game: %s)" % state["game"] if state.get("game") else "") + " ===")
     up = {l for r in running(state).values() for l in r["labels"]}
+    print("\n" + paint(" ━━ HORROR STUDIO ━━", 1, *BLOOD)
+          + (paint("  game ", *ASH) + paint(state["game"], 1, *BONE) if state.get("game") else "")
+          + (paint("  ● %d page%s running" % (len(running(state)), "s" if len(running(state)) > 1 else ""), *BLOOD) if up else ""))
     sec = None
     for i in idx:
         s, label, cmd, opts = TOOLS[i]
         if s != sec:
-            print("\n " + s)
+            print("\n" + rule(s, width))
             sec = s
-        line = "  %2d %s %s" % (i + 1, "*" if label in up else " ", label)
+        line = "  " + paint("%2d" % (i + 1), 1, *BLOOD) + " " + (paint("●", *BLOOD) if label in up else " ") + " " \
+            + (paint(label, 1, *BONE) if label in up else label)
         if width >= 100:
-            line = line.ljust(52) + " " + Path(cmd.split()[1] if cmd.startswith("node ") else cmd.split()[0]).stem
+            stem = Path(cmd.split()[1] if cmd.startswith("node ") else cmd.split()[0]).stem
+            line += " " * max(1, 46 - len(label)) + paint(stem, *ASH)
         print(line)
     recent = state.get("recent", [])
     if recent:
-        print("\n Recent")
+        print("\n" + rule("Recent", width))
         for n, r in enumerate(recent[:5], 1):
-            print("  r%d  %s" % (n, r["label"] + ("  (" + r["shown"] + ")" if width >= 100 else "")))
-    print("\nNumber to run" + (" (* running: its number stops it)" if up else "") + ", words to filter, r1-r5 recent, g game, "
-          + ("close stops the pages, " if up else "") + "q quit.")
+            print("  " + paint("r%d" % n, 1, *RED) + "   " + r["label"] + (paint("  " + r["shown"], *ASH) if width >= 100 else ""))
+    keys = [("number", "run" + (", or stop a ●" if up else "")), ("words", "filter"), ("r1-r5", "recent"), ("g", "game")] \
+        + ([("close", "stop the pages")] if up else []) + [("q", "quit")]
+    print("\n " + paint("  ·  ", *DARK).join(paint(k, 1, *RED) + " " + paint(t, *ASH) for k, t in keys))
 
 
 def remember(state, label, args, opts):
@@ -339,13 +411,15 @@ def main(argv):
             remember(state, label, args, opts)
             return run(label, args, opts, dry, state)
         return 1
+    banner()
     while True:
         show_menu(idx or list(range(len(TOOLS))), state)
         v = ask(">")
         if v is None or v.lower() in ("q", "quit", "exit"):
             n = len(running(state))
             if n:
-                print("%d page%s still running (close, or launch.py --close, stops them)." % (n, "s" if n > 1 else ""))
+                say("%d page%s still running (close, or launch.py --close, stops them)." % (n, "s" if n > 1 else ""))
+            print(paint("  sleep well.", 3, *DARK))
             return 0
         if v.lower() in ("close", "c", "stop"):
             close_all(state)
@@ -370,7 +444,7 @@ def main(argv):
         if v.isdigit():
             n = int(v) - 1
             if not 0 <= n < len(TOOLS):
-                print("No tool %s." % v)
+                say("No tool %s." % v, "warn")
                 continue
             s, label, cmd, opts = TOOLS[n]
             args = build(cmd, state)
@@ -384,7 +458,7 @@ def main(argv):
             continue
         found = matches(v.split())
         if not found:
-            print("Nothing matches %r." % v)
+            say("Nothing matches %r." % v, "warn")
         idx = found
 
 
