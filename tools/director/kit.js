@@ -4,7 +4,7 @@
 // x across, y deep with the FRONT at -y, z up from the base; every part stays inside the size box, so the box the
 // plan and the checks see is the thing. The gaps (between tiles, boards, doors and drawers) and the bevels are real
 // geometry: they're what a light bake turns into the thin dark lines and bright edges of a real room.
-export const VERSION = 3;          // bump when a generator's output changes (presets.json carries the same number)
+export const VERSION = 4;          // bump when a generator's output changes (presets.json carries the same number)
 
 // ---- material slots: one material each in Unreal (kit_<slot>), a flat colour in the desk ----------------------
 // [colour, roughness, metalness, opacity, emissive]
@@ -107,6 +107,7 @@ export const TYPES = {
     ["slot", "material", "fabric", "slot"], ["pipe_slot", "piping material", "fabric_2", "slot"], ["button_slot", "button material", "fabric_2", "slot"]], gen: cushionGen },
   door: { label: "Door", cat: "door", mount: "door", size: [0.8, 0.04, 2.0], pivot: doorPivot, params: [["style", "style", "panels", "pick", ["flush", "panels", "shaker", "glass", "louvre", "shoji", "slide"]],
     ["grid", "panels across × up", [1, 2], "n2"], ["rail", "frame width", 0.1, "m"], ["recess", "panel depth", 0.006, "mm"], ["hinges", "hinges", 3, "int"],
+    ["hinge_h", "hinge height", 0.1, "m"], ["knuckles", "knuckles a hinge", 5, "int"], ["hinge_tip", "hinge tips", "ball", "pick", ["ball", "flat", "none"]],
     ["hinge", "hinged on (seen from the side it opens to)", "left", "pick", ["left", "right"]], ["bevel", "edge bevel", 0.002, "mm"],
     ["handle", "handle", "lever_round", "preset", "handle"], ["handle_z", "handle height", 0.95, "m"], ["handle_in", "handle from the edge", 0.065, "m"],
     ["frame", "frame", "door_frame", "preset", "door_frame"], ["lining", "frame lining", 0.02, "mm"], ["gap", "gap round the leaf", 0.003, "mm"], ["floor_gap", "gap under it", 0.008, "mm"],
@@ -115,7 +116,10 @@ export const TYPES = {
     ["through", "door thickness", 0.04, "m"], ["points", "a lever points", "left", "pick", ["left", "right"]], ["rose", "rose", "round", "pick", ["round", "square", "plate"]],
     ["lock", "keyhole below", false, "bool"], ["style", "style", "modern", "pick", ["modern", "classic"]], ["slot", "material", "metal", "slot"]], gen: handleGen },
   door_frame: { label: "Door frame: lining and stop", cat: "door", mount: "opening", size: [0.84, 0.1, 2.05], params: [["lining", "lining", 0.02, "mm"], ["stop", "door stop", true, "bool"],
-    ["stop_t", "stop", 0.012, "mm"], ["leaf_t", "the door's thickness", 0.04, "m"], ["slot", "material", "body", "slot"]], gen: frameGen },
+    ["stop_t", "stop", 0.012, "mm"], ["leaf_t", "the door's thickness", 0.04, "m"], ["slot", "material", "body", "slot"],
+    ["hinge", "hinges on (the door's: the plan fills these)", "none", "pick", ["none", "left", "right"]], ["hinges", "hinges", 3, "int"], ["hinge_h", "hinge height", 0.1, "m"],
+    ["knuckles", "knuckles", 5, "int"], ["hinge_tip", "hinge tips", "ball", "pick", ["ball", "flat", "none"]], ["leaf_w", "the door's width", 0, "m"],
+    ["leaf_h", "the door's height", 0, "m"], ["leaf_z", "the gap under it", 0.008, "mm"], ["hinge_slot", "hinge material", "metal", "slot"]], gen: frameGen },
   bulkhead: { label: "Ceiling step / curtain pocket", cat: "ceiling", mount: "room-ceiling", size: [3.6, 3.6, 0.12], params: [["border", "step width n, e, s, w", [0.35, 0.35, 0.35, 0.35], "m4"],
     ["pocket", "curtain pocket on", "none", "pick", ["none", "n", "e", "s", "w"]], ["pocket_w", "pocket width", 0.13, "m"], ["slot", "material", "body", "slot"]], gen: bulkheadGen },
   block: { label: "Block: a step, a plinth, a board", cat: "furniture", mount: "floor", size: [1.2, 0.3, 0.18], params: [["bevel", "edge bevel", 0.003, "mm"],
@@ -358,7 +362,7 @@ function lathe(P, x, y, z, prof, m, o = {}) {
 }
 function latheFaces(p, buf) {
   const B = buf(p.m), n = Math.max(8, p.n || 40), prof = p.prof || [], ax = p.axis || "z";
-  const map = ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "y" ? [u, t, v] : ax === "-z" ? [u, v, -t] : [u, v, t];
+  const map = ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "y" ? [u, t, v] : ax === "-z" ? [u, v, -t] : ax === "x" ? [t, u, v] : ax === "-x" ? [-t, u, v] : [u, v, t];
   const xf0 = xform(p), xf = q => xf0(map(q)), a = (p.rz || 0) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
   const segN = i => { const [r0, t0] = prof[i], [r1, t1] = prof[i + 1], L = Math.hypot(r1 - r0, t1 - t0) || 1; return [(t1 - t0) / L, -(r1 - r0) / L]; };
   const same = (i, j) => prof[i] && prof[j] && prof[i][0] === prof[j][0] && prof[i][1] === prof[j][1];
@@ -897,8 +901,32 @@ function cushionGen(s, P) {
 // knuckles stand on its hinge edge, on the face it opens toward (its front, -y); the mesh's pivot is their axis
 // (doorPivot), so in Unreal the leaf turns round its hinges. The handle and the frame are their own things (handle,
 // door_frame): plan.py puts the three together from a story door's kit, and in Unreal they're tagged door_part:*.
-const KNUCKLE = 0.007;
-function doorPivot(s) { const [W, T] = s.size; return s.style === "slide" || s.style === "shoji" ? [0, 0, 0] : [(s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE), -T / 2 + KNUCKLE, 0]; }
+// butt hinges: the barrel on the hinge edge, half proud of the edge and the face (it straddles the gap); its knuckles
+// alternate between the leaf on the door (screwed to its edge) and the leaf on the frame (screwed to the jamb), with
+// the pin through them and a tip at each end. The door's half turns with the door; the frame's half stays.
+const KNUCKLE = 0.0065;
+const hingeAxis = (s, W, T) => [(s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE * 0.5), -T / 2 + KNUCKLE * 0.5];
+function doorPivot(s) { const [W, T] = s.size; return s.style === "slide" || s.style === "shoji" ? [0, 0, 0] : [...hingeAxis(s, W, T), 0]; }
+export function hingeZs(n, H) { return Array.from({ length: Math.max(0, n | 0) }, (_, k) => n === 1 ? H / 2 : k === 0 ? 0.25 : k === n - 1 ? H - 0.2 : 0.25 + (H - 0.45) * k / (n - 1)); }
+// one hinge's half: its knuckles (the door's: 0, 2, 4...; the frame's: 1, 3...), its leaf plate and screws, the tips
+function hingeHalf(P, s, ax, ay, zc, half, plate) {
+  const kr = KNUCKLE, hh = clamp(s.hinge_h ?? 0.1, 0.05, 0.2), nk = Math.max(3, (s.knuckles | 0) || 5), seg = hh / nk, m = s.hinge_slot || "metal", g = 0.0006;
+  for (let i = half; i < nk; i += 2) {
+    const z0 = zc - hh / 2 + i * seg + g / 2, L = seg - g, e = Math.min(0.0008, L / 4);
+    lathe(P, ax, ay, z0, [[0, 0], [kr - e, 0], [kr, e], [kr, L - e], [kr - e, L], [0, L]], m, { n: 32 });
+  }
+  if (half === 0 && s.hinge_tip !== "none") for (const [z, up] of [[zc + hh / 2, true], [zc - hh / 2, false]]) {
+    const tip = s.hinge_tip === "flat" ? [[0, 0], [kr * 0.8, 0], [kr * 0.8, 0.0012], [kr * 0.5, 0.0018], [0, 0.0018]]
+                                       : [[0, 0], [kr * 0.55, 0], [kr * 0.5, 0.001], [kr * 0.75, 0.0035], [kr * 0.6, 0.0065], [kr * 0.3, 0.0078], [0, 0.008]];
+    lathe(P, ax, ay, z, tip, m, { n: 28, axis: up ? "z" : "-z" });
+  }
+  // the plate: [x of the face it's screwed to, which way out of it (+1/-1), its y from, y to]
+  const [fx, out, y0, y1] = plate, t = 0.0006, xa = out > 0 ? fx - 0.0004 : fx - t, xb = out > 0 ? fx + t : fx + 0.0004;
+  bx(P, xa, y0, zc - hh / 2 + 0.002, xb, y1, zc + hh / 2 - 0.002, m, { b: 0.0002 });
+  for (const zs of [-hh * 0.3, 0, hh * 0.3]) {                      // countersunk screws, their heads just proud
+    lathe(P, out > 0 ? xb : xa, (y0 + y1) / 2 + (zs ? 0 : (y1 - y0) * 0.15), zc + zs, [[0, 0], [0.0032, 0], [0.003, 0.0004], [0.0018, 0.0007], [0, 0.0008]], m, { n: 16, axis: out > 0 ? "x" : "-x" });
+  }
+}
 function doorGen(s, P) {
   const [W, T, H] = s.size, st = s.style, b = s.bevel, slab = (xa, xb, za, zb, m, o, t = T) => bx(P, xa, -t / 2, za, xb, t / 2, zb, m, Object.assign({ b }, o || {}));
   if (st === "flush" || st === "slide") slab(-W / 2, W / 2, 0, H, s.slot);
@@ -923,15 +951,9 @@ function doorGen(s, P) {
     }
   }
   if (st === "slide" || st === "shoji") return;
-  const n = Math.max(0, s.hinges | 0), hx = (s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE);
-  for (let k = 0; k < n; k++) {
-    const zc = n === 1 ? H / 2 : k === 0 ? 0.25 : k === n - 1 ? H - 0.2 : 0.25 + (H - 0.45) * k / (n - 1);
-    const kr = KNUCKLE, half = 0.0495, knuckle = [[0, 0], [kr * 0.92, 0], [kr, 0.0012], [kr, half - 0.0012], [kr * 0.92, half], [0, half]];
-    lathe(P, hx, -T / 2 + kr, zc - 0.05, knuckle, s.hinge_slot, { n: 28 });                   // the knuckle, in two halves
-    lathe(P, hx, -T / 2 + kr, zc + 0.0005, knuckle, s.hinge_slot, { n: 28 });
-    for (const [z, sgn] of [[zc + 0.0505, 1], [zc - 0.0505, -1]])                             // the pin's finials
-      lathe(P, hx, -T / 2 + kr, z, [[0, 0], [kr * 0.75, 0], [kr * 0.7, 0.0015], [kr * 0.35, 0.0035], [0, 0.004]], s.hinge_slot, { n: 24, axis: sgn > 0 ? "z" : "-z" });
-  }
+  const [ax, ay] = hingeAxis(s, W, T), side = s.hinge === "right" ? 1 : -1;
+  for (const zc of hingeZs(s.hinges, H))                                          // the door's half of each hinge, on its edge
+    hingeHalf(P, s, ax, ay, zc, 0, [side * W / 2, side, ay + KNUCKLE * 0.6, Math.min(T / 2 - 0.004, ay + KNUCKLE * 0.6 + 0.026)]);
 }
 // a door's handles, both sides of a leaf `through` thick, centred on the box (the plan puts the box's middle where
 // the grip goes). lever, bar (a long pull), knob, pull (a short horizontal one), recess (a sliding door's flush cup)
@@ -996,6 +1018,11 @@ function frameGen(s, P) {
     const st = clamp(s.stop_t, 0.004, 0.03), y0 = Math.min(T / 2 - 0.005, clamp(s.leaf_t, 0.01, T) / 2 + 0.001), y1 = Math.min(T / 2, y0 + 0.025);
     bx(P, -W / 2 + ln, y0, 0, -W / 2 + ln + st, y1, H - ln, m, { b: 0.001 }); bx(P, W / 2 - ln - st, y0, 0, W / 2 - ln, y1, H - ln, m, { b: 0.001 });
     bx(P, -W / 2 + ln + st, y0, H - ln - st, W / 2 - ln - st, y1, H - ln, m, { b: 0.001 });
+  }
+  if ((s.hinge === "left" || s.hinge === "right") && s.leaf_w > 0) {             // the frame's half of each hinge, on the jamb
+    const side = s.hinge === "right" ? 1 : -1, lt = clamp(s.leaf_t, 0.01, T), [ax, ay] = hingeAxis(s, s.leaf_w, lt), jamb = side * (W / 2 - ln);
+    for (const zc of hingeZs(s.hinges, s.leaf_h || H - ln))
+      hingeHalf(P, s, ax, ay, (s.leaf_z || 0) + zc, 1, [jamb, -side, ay + KNUCKLE * 0.6, Math.min(T / 2 - 0.004, ay + KNUCKLE * 0.6 + 0.026)]);
   }
 }
 function bulkheadGen(s, P) {

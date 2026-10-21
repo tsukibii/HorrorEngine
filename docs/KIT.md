@@ -244,5 +244,15 @@ What's out there, for the record:
 - The good ones are paid and can't be redistributed: iMeshh's levers, and the Blender door generators (Procedural
   Openings, ArchNodes) with their hinges and handles. Nothing on GitHub generates handles.
 
+**The hinges** are butt hinges on the rotation axis. The barrel is half proud of the door's edge and its face (it
+sits in the gap, as on a real door), and the leaf's mesh pivots on its pin. Its knuckles alternate:
+- the door's half (knuckles 1, 3, 5, the pin's tips, and a leaf plate screwed to the door's edge) is in the door's
+  mesh and turns with it;
+- the frame's half (knuckles 2 and 4, and a plate screwed to the jamb) is in the frame's mesh and stays.
+
+Open the door and the two plates fold out from the barrel. The door's `hinges` (how many), `hinge_h` (10 cm),
+`knuckles` (3 or 5), `hinge_tip` (ball, flat, none) and `hinge_slot` change both halves together: the plan passes them
+to the frame with the door's size.
+
 The lathe and the sweep are kit parts like any other (`lathe`, `sweep`), so *Explode to parts* keeps them, and a free
 thing can use them.

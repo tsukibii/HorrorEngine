@@ -62,17 +62,20 @@ def door_pieces(p, t):
         tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra
         return dict(p, id=pid, kind=kind, shape="box", pos=pos, size=tuple(spec["size"]), yaw=yaw, d=d or {"kit": spec}, kit=spec, tags=tags)
     out = []
-    fr = g("frame")
-    if fr and fr != "none":
-        fs = {"preset": fr} if isinstance(fr, str) else dict(fr)
-        fs.update({"leaf_t": lt, "stop": not slide})
-        out.append(part(f"{t.id}__frame", "mesh", fs, at(0, 0, h / 2), (w, wall_t, h), ["door_part:frame", "in_wall", "hollow"]))
     leaf = {key: v for key, v in k.items() if key not in ("handle", "frame")}
     if slide:                                           # a sliding leaf hangs on the room's face, wider than its hole
         lw, lh, ly = w + 0.05, h + 0.01, -(wall_t / 2 + lt / 2 + 0.004)
         lz = 0.0
     else:
         lw, lh, ly, lz = w - 2 * ln - 2 * gap, h - ln - gap - fg, 0.0, fg
+    fr = g("frame")
+    if fr and fr != "none":
+        fs = {"preset": fr} if isinstance(fr, str) else dict(fr)
+        fs.update({"leaf_t": lt, "stop": not slide})
+        if not slide:                                   # the frame's half of each hinge: where the door's are
+            fs.update({"hinge": g("hinge"), "hinges": g("hinges"), "hinge_h": g("hinge_h"), "knuckles": g("knuckles"),
+                       "hinge_tip": g("hinge_tip"), "hinge_slot": g("hinge_slot"), "leaf_w": round(lw, 4), "leaf_h": round(lh, 4), "leaf_z": round(lz, 4)})
+        out.append(part(f"{t.id}__frame", "mesh", fs, at(0, 0, h / 2), (w, wall_t, h), ["door_part:frame", "in_wall", "hollow"]))
     leaf_tags = ["door_part:leaf", f"hinge:{g('hinge')}"] + ([f"locked_by:{t.d['locked_by']}"] if t.d.get("locked_by") else [])
     lp = part(t.id, "door", leaf, at(0, ly, lz + lh / 2), (lw, lt, lh), leaf_tags, d=dict(t.d, kit=dict(leaf, size=[round(lw, 4), round(lt, 4), round(lh, 4)])))
     out.append(lp)

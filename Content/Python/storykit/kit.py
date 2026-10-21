@@ -15,7 +15,8 @@ SURFACE = {"tiles", "planks", "tatami", "rug", "bulkhead"}     # lie on a floor 
 # a kit door's assembly (plan.py): the leaf, its handle and its frame. The same defaults as TYPES.door in kit.js
 # (tools/kit/check.mjs compares them)
 DOOR = {"leaf_t": 0.04, "lining": 0.02, "gap": 0.003, "floor_gap": 0.008, "handle": "lever_round", "handle_z": 0.95,
-        "handle_in": 0.065, "frame": "door_frame", "hinge": "left", "style": "panels"}
+        "handle_in": 0.065, "frame": "door_frame", "hinge": "left", "style": "panels", "hinges": 3, "hinge_h": 0.1,
+        "knuckles": 5, "hinge_tip": "ball", "hinge_slot": "metal"}
 _cache = {}
 
 

@@ -1,6 +1,6 @@
 {
  "_note": "The kit's presets (docs/KIT.md): each is a kit spec plus label, cat, mount and z (the height of its base above the floor). The kit maker (tools/director/kit.html) adds yours. version must match VERSION in tools/director/kit.js.",
- "version": 3,
+ "version": 4,
  "presets": {
   "oak_planks": {
    "label": "Oak planks, 150 mm, random lengths",
