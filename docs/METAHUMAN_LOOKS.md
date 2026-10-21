@@ -236,6 +236,42 @@ assume strands only and plan on Epic's card generator); physics guide count if i
 licence allows the groom in a shipped game but not redistribution: it stays in the user's project, never in a
 shared file (the studio rule). Colour is the hair material, not the groom: every one of these goes black.
 
+### 3.6 Changing a groom you already have (length, cut, shape) (2026-10-21)
+
+The user's question: can a bought or built hairstyle be modified, say made longer? Yes, in two tiers: Unreal can
+**shorten, thin, recolour and pose** a groom without leaving the editor; **lengthening and restyling** means the
+strands go out to Blender (or Sisir) and come back as a new Alembic. Buy long, clip short.
+
+**Inside Unreal (no re-export):**
+
+| Control | Where | What it does | Limit |
+|---|---|---|---|
+| **Hair Clip Length** (0 to 1) | Groom component, Strands; per group in the groom asset | clips every strand at that fraction of *its own* length: 0.7 takes 30 percent off everything | shortens only, proportionally: a bob from long hair keeps the long hair's shape, and a blunt line needs Blender |
+| Hair Width, Root Scale, Tip Scale | same | thicker or finer strands, tapered or blunt tips | look, not shape |
+| Decimation and LOD settings | groom asset | fewer strands, fewer points | density, not length |
+| Hair material | the wardrobe item's material instance | colour, melanin, roughness, root-to-tip gradient | every Fab groom goes black here |
+| **Art directability** (5.7, "Deformation" on, simulation off) | the groom's deformer graph plus a skeletal mesh of hair joints | pose and animate strands by joints, selection sets and paint tools, blended with physics: a fringe swept aside, a ponytail held up | moves what exists; it doesn't grow or cut |
+| **Groom Dataflow** (5.7, 5.8) | Hair Data Flow on the groom asset, from a template | nodes that resample curve points, average curves into one, build joints from guides (for the above), and in 5.8 generate the cards | no length or cut node in the docs found |
+
+**Outside Unreal (the real restyle):** the sellers who ship the `.abc` source (Venice and KhitrovArt do; buy only
+those) make this possible.
+
+1. **Blender:** import the Alembic, convert the curves to hair curves on a scalp (the archetype groom head from the
+   starter kit, so the result binds to every MetaHuman), then **Curves Sculpt mode**: **Grow/Shrink** (lengthens by
+   extrapolating each curve's direction, or scales uniformly; a minimum length), Comb, Snake Hook, Puff, Pinch,
+   Smooth, Add, Delete and Density. Extrapolated ends come out straight, so comb after growing, or add curl and
+   clump with geometry nodes. Export Alembic (scale 100, selection only, children off; the free Groom Exporter keeps
+   the group ids), import as a new groom, bind to the archetype head, make the wardrobe item (MetaBridge Forge does
+   the last two in one click). Known traps: a Blender 4.2 export gave radius 0 in Unreal (check the version), and
+   group ids must survive or the materials land on the wrong strands.
+2. **Sisir:** imports PLY curves, not Alembic, so the groom goes through Blender once (`.abc` in, PLY out); then
+   its procedural stack (length, cut, clump, frizz) works on the bought guides and the Alembic comes back. Untested.
+3. **Houdini or Maya** with Epic's starter kits: the heavy route, same result.
+
+Rebind after every change: a new Alembic is a new groom asset, and the wardrobe item points at the binding, so the
+character is re-assembled. Fab's licence allows modifying a groom for your own game; the edited `.abc` is still
+theirs and stays out of shared files.
+
 ## Sources
 
 Epic: [Skin Material Controls](https://dev.epicgames.com/documentation/metahuman/skin-material-controls),
@@ -304,3 +340,13 @@ Fab grooms (§3.5): [Fab MetaHuman grooms](https://www.fab.com/search/channels/m
 [studio TEKATI Broccoli Fade 2 (free)](https://forums.unrealengine.com/t/now-permanently-free-studio-tekati-metahuman-broccoli-fade-2/2732688),
 [KhitrovArt straight eyebrows](https://forums.unrealengine.com/t/khitrovart-medium-natural-straight-eyebrows-groom-for-metahuman/2838687),
 [KhitrovArt hard part slick back (5.6 to 5.8, strands only)](https://forums.unrealengine.com/t/khitrovart-hard-part-slick-back-with-mid-skin-fade-groom-for-metahuman/2739919).
+Editing grooms (§3.6): [Groom component reference: Hair Clip Length, width, root and tip scale](https://docs.unrealengine.com/4.27/en-US/WorkingWithContent/Hair/Reference),
+[Hair art directability (Epic)](https://dev.epicgames.com/documentation/metahuman/hair-art-directability),
+[Skeleton creation from hair guides, Dataflow nodes (Epic)](https://dev.epicgames.com/documentation/metahuman/skeleton-creation-from-hair-waves-in-unreal-engine),
+[Hair card generator in Dataflow, 5.8 (Epic)](https://dev.epicgames.com/documentation/metahuman/hair-card-generator-in-dataflow-in-unreal-engine),
+[Blender Curves Sculpting manual](https://docs.blender.org/manual/en/latest/sculpt_paint/curves_sculpting/index.html),
+[Blender Grow/Shrink brush commit](https://developer.blender.org/rB190334b47df),
+[Blender 3.3 hair system notes](https://wiki.blender.org/release_notes/3.3/nodes_physics/),
+[Blender to Unreal groom guide (iRender, 2026)](https://irendering.net/integrating-blender-hair-into-unreal-engine-groom-system/),
+[Blender 4.2 Alembic radius bug thread](https://blenderartists.org/t/trouble-exporting-importing-alembic-file-to-unreal-5-3/1519878),
+[Daz hair to groom notes (Alembic recipe)](https://www.versluis.com/2024/04/quick-notes-on-turning-daz-hair-into-groom-hair-for-unreal-engine/).
