@@ -6,14 +6,19 @@
     python tools/launch.py --list       every tool and its command, then exit
 
 At the prompt: a number runs that tool, words filter the list (`motion`, `check pilot`...), r1 to r5 rerun a recent
-one, g changes the game, q quits. Tools that need a game ask once (the last game is remembered); tools that need a
-word or a folder ask for it. The pages (the desk, the score room, Kimodo's demo) start in their own window and open
-in the browser, so the launcher stays free. Plain Python, no installs.
+one, g changes the game, close stops every page still running, q quits. Tools that need a game ask once (the last
+game is remembered); tools that need a word or a folder ask for it. The pages (the desk, the score room, Kimodo's
+demo) start in their own window and open in the browser, so the launcher stays free; the menu marks the ones running,
+and the same number again stops that page (pages on one server, like the desk and the builder, share it: another of
+them only opens its page). Running pages are kept in Saved/launch.json, so a new launcher can still stop them.
+
+    python tools/launch.py --close      stop every page the launcher started, then exit
 """
 import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -181,23 +186,95 @@ def shown(args):
     return " ".join(('"%s"' % a if " " in a else a) for a in (["python"] + args[1:] if args[0] == PY else args))
 
 
-def run(label, args, opts, dry=False):
+def alive(pid, args):
+    """Whether the page server started as pid is still that server (not a reused pid)."""
+    if WIN:
+        out = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid, "/NH"], capture_output=True, text=True).stdout
+        return str(pid) in out
+    try:
+        cmdline = Path("/proc/%d/cmdline" % pid).read_bytes().decode("utf-8", "replace")
+    except OSError:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return False
+        return True
+    return Path(args[1]).name in cmdline
+
+
+def running(state):
+    """The page servers still up, by command; the dead ones are forgotten."""
+    live = {k: r for k, r in state.get("running", {}).items() if alive(r["pid"], r["args"])}
+    if live != state.get("running", {}):
+        state["running"] = live
+        save_state(state)
+    return live
+
+
+def stop(state, key):
+    r = state.get("running", {}).pop(key, None)
+    save_state(state)
+    if not r or not alive(r["pid"], r["args"]):
+        return
+    if WIN:                                                      # the whole tree: uv and the like start children
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(r["pid"])], capture_output=True)
+    else:                                                        # its own session: the group is the server and its children
+        try:
+            os.killpg(r["pid"], signal.SIGTERM)
+            for _ in range(30):
+                if not alive(r["pid"], r["args"]):
+                    break
+                time.sleep(0.1)
+            else:
+                os.killpg(r["pid"], signal.SIGKILL)
+        except OSError:
+            pass
+    print("Stopped %s." % " / ".join(r["labels"]))
+
+
+def close_all(state):
+    live = running(state)
+    if not live:
+        print("No pages running.")
+    for k in list(live):
+        stop(state, k)
+
+
+def run(label, args, opts, dry=False, state=None):
+    if opts.get("url") and state is not None and not dry:
+        key = shown(args)
+        r = running(state).get(key)
+        if r and label in r["labels"]:
+            stop(state, key)                                     # the same number again: stop it
+            return 0
+        if r:                                                    # its server is up for another page: just open this one
+            r["labels"].append(label)
+            save_state(state)
+            webbrowser.open(opts["url"])
+            print("%s: %s (its server is already running)" % (label, opts["url"]))
+            return 0
     print("\n> " + shown(args) + "\n")
     if dry:
         return 0
     if opts.get("url"):
         # a page: its server in its own window (Windows) or in the background, then the browser
         if WIN:
-            subprocess.Popen(args, cwd=ROOT, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            proc = subprocess.Popen(args, cwd=ROOT, creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:                                                    # no new window here: its output goes to a log
             log = ROOT / "Saved" / "launch" / (Path(args[1]).parent.name + ".log")
             log.parent.mkdir(parents=True, exist_ok=True)
             with open(log, "ab") as f:
-                subprocess.Popen(args, cwd=ROOT, start_new_session=True, stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT)
+                proc = subprocess.Popen(args, cwd=ROOT, start_new_session=True, stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT)
             print("its output: " + str(log.relative_to(ROOT)))
         time.sleep(1.5)
+        if proc.poll() is not None:                              # gone already: most often its port is taken
+            print("%s stopped straight away (is it running from somewhere else?)%s" % (label, "" if WIN else "; see its output"))
+        elif state is not None:
+            state.setdefault("running", {})[shown(args)] = {"pid": proc.pid, "args": args, "labels": [label]}
+            save_state(state)
         webbrowser.open(opts["url"])
-        print("%s is starting%s: %s" % (label, " in its own window (close it to stop the page)" if WIN else "", opts["url"]))
+        print("%s is starting%s: %s" % (label, " in its own window" if WIN else "", opts["url"]))
+        print("(its number again stops it; close stops every page)")
         return 0
     try:
         return subprocess.call(args, cwd=ROOT)
@@ -214,13 +291,14 @@ def matches(words):
 def show_menu(idx, state):
     width = shutil.get_terminal_size((100, 30)).columns
     print("\n=== HorrorStudio tools" + ("   (game: %s)" % state["game"] if state.get("game") else "") + " ===")
+    up = {l for r in running(state).values() for l in r["labels"]}
     sec = None
     for i in idx:
         s, label, cmd, opts = TOOLS[i]
         if s != sec:
             print("\n " + s)
             sec = s
-        line = "  %2d  %s" % (i + 1, label)
+        line = "  %2d %s %s" % (i + 1, "*" if label in up else " ", label)
         if width >= 100:
             line = line.ljust(52) + " " + Path(cmd.split()[1] if cmd.startswith("node ") else cmd.split()[0]).stem
         print(line)
@@ -229,7 +307,8 @@ def show_menu(idx, state):
         print("\n Recent")
         for n, r in enumerate(recent[:5], 1):
             print("  r%d  %s" % (n, r["label"] + ("  (" + r["shown"] + ")" if width >= 100 else "")))
-    print("\nNumber to run, words to filter, r1-r5 recent, g game, q quit.")
+    print("\nNumber to run" + (" (* running: its number stops it)" if up else "") + ", words to filter, r1-r5 recent, g game, "
+          + ("close stops the pages, " if up else "") + "q quit.")
 
 
 def remember(state, label, args, opts):
@@ -247,6 +326,9 @@ def main(argv):
         except BrokenPipeError:
             pass
         return 0
+    if "--close" in argv:
+        close_all(state)
+        return 0
     dry = "--dry" in argv
     words = [a for a in argv if not a.startswith("--")]
     idx = matches(words) if words else list(range(len(TOOLS)))
@@ -255,13 +337,19 @@ def main(argv):
         args = build(cmd, state)
         if args:
             remember(state, label, args, opts)
-            return run(label, args, opts, dry)
+            return run(label, args, opts, dry, state)
         return 1
     while True:
         show_menu(idx or list(range(len(TOOLS))), state)
         v = ask(">")
         if v is None or v.lower() in ("q", "quit", "exit"):
+            n = len(running(state))
+            if n:
+                print("%d page%s still running (close, or launch.py --close, stops them)." % (n, "s" if n > 1 else ""))
             return 0
+        if v.lower() in ("close", "c", "stop"):
+            close_all(state)
+            continue
         if not v:
             idx = list(range(len(TOOLS)))
             continue
@@ -275,7 +363,7 @@ def main(argv):
                 r = recent[n]
                 args = [PY if a == "{py}" else a for a in r["args"]]
                 remember(state, r["label"], args, {"url": r.get("url")})
-                run(r["label"], args, {"url": r.get("url")}, dry)
+                run(r["label"], args, {"url": r.get("url")}, dry, state)
                 if not r.get("url"):
                     ask("\n(Enter for the menu)")
             continue
@@ -289,7 +377,7 @@ def main(argv):
             if not args:
                 continue
             remember(state, label, args, opts)
-            run(label, args, opts, dry)
+            run(label, args, opts, dry, state)
             if not opts.get("url"):
                 ask("\n(Enter for the menu)")
             idx = list(range(len(TOOLS)))
