@@ -69,3 +69,7 @@ Source/HorrorEngine/
 # the kit's meshes: made from the story by `node tools/kit/build.mjs` (the importer runs it), the same every time
 Content/Studio/Library/meshes/kit/
 Content/Studio/Library/index/kit.json
+
+# meshes of yours (the scene builder's split hinges, anything you add as local/): not CC0, so not shared
+Content/Studio/Library/meshes/local/
+Content/Studio/Library/index/local.json

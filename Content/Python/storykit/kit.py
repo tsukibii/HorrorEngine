@@ -16,7 +16,8 @@ SURFACE = {"tiles", "planks", "tatami", "rug", "bulkhead"}     # lie on a floor 
 # (tools/kit/check.mjs compares them)
 DOOR = {"leaf_t": 0.04, "lining": 0.02, "gap": 0.003, "floor_gap": 0.008, "handle": "lever_round", "handle_z": 0.95,
         "handle_in": 0.065, "frame": "door_frame", "hinge": "left", "style": "panels", "hinges": 3, "hinge_h": 0.1,
-        "knuckles": 5, "hinge_tip": "ball", "hinge_slot": "metal"}
+        "knuckles": 5, "hinge_tip": "ball", "hinge_slot": "metal", "hinge_w": 0.026, "hinge_t": 0.0025, "barrel": 0.013,
+        "mortise": True, "hinge_model": "kit"}
 _cache = {}
 
 
@@ -88,6 +89,12 @@ def ref(spec):
     r = resolve(spec)
     h = hashlib.sha1((f"v{presets_file().get('version', 1)}:" + canon(r)).encode("utf-8")).hexdigest()[:12]
     return f"kit/{r['type']}_{h}"
+
+
+def hinge_zs(n, h):
+    """Where a door's hinges are, up from its foot (kit.js hingeZs)."""
+    n = max(0, int(n))
+    return [h / 2 if n == 1 else 0.25 if k == 0 else h - 0.2 if k == n - 1 else 0.25 + (h - 0.45) * k / (n - 1) for k in range(n)]
 
 
 def specs(story, level=None):

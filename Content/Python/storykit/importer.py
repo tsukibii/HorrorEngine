@@ -101,7 +101,8 @@ def spawn_block(piece, colour):
         if mesh is None:
             unreal.log_warning(f"storykit: {piece['id']}: art {art} not found, keeping the block")
     if mesh:
-        yaw = 0.0 if art.startswith("/") else float(class_map().get("kit_yaw" if art.startswith("kit/") else "library_yaw", 0))
+        kit_axes = art.startswith("kit/") or (not art.startswith("/") and (surfaces.LIB.mesh_info(art) or {}).get("axes") == "kit")
+        yaw = 0.0 if art.startswith("/") else float(class_map().get("kit_yaw" if kit_axes else "library_yaw", 0))
         fit_art(a, c, mesh, piece, yaw)
     else:
         c.set_static_mesh(unreal.load_asset(MESH[piece["shape"] or "box"]))

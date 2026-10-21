@@ -4,7 +4,7 @@
 // x across, y deep with the FRONT at -y, z up from the base; every part stays inside the size box, so the box the
 // plan and the checks see is the thing. The gaps (between tiles, boards, doors and drawers) and the bevels are real
 // geometry: they're what a light bake turns into the thin dark lines and bright edges of a real room.
-export const VERSION = 4;          // bump when a generator's output changes (presets.json carries the same number)
+export const VERSION = 5;          // bump when a generator's output changes (presets.json carries the same number)
 
 // ---- material slots: one material each in Unreal (kit_<slot>), a flat colour in the desk ----------------------
 // [colour, roughness, metalness, opacity, emissive]
@@ -108,6 +108,8 @@ export const TYPES = {
   door: { label: "Door", cat: "door", mount: "door", size: [0.8, 0.04, 2.0], pivot: doorPivot, params: [["style", "style", "panels", "pick", ["flush", "panels", "shaker", "glass", "louvre", "shoji", "slide"]],
     ["grid", "panels across × up", [1, 2], "n2"], ["rail", "frame width", 0.1, "m"], ["recess", "panel depth", 0.006, "mm"], ["hinges", "hinges", 3, "int"],
     ["hinge_h", "hinge height", 0.1, "m"], ["knuckles", "knuckles a hinge", 5, "int"], ["hinge_tip", "hinge tips", "ball", "pick", ["ball", "flat", "none"]],
+    ["hinge_w", "hinge plate width", 0.026, "m"], ["hinge_t", "plate thickness (the mortise's depth)", 0.0025, "mm"], ["barrel", "barrel Ø", 0.013, "mm"],
+    ["mortise", "cut mortises (plates flush)", true, "bool"], ["hinge_model", "hinges drawn", "kit", "pick", ["kit", "none"]],
     ["hinge", "hinged on (seen from the side it opens to)", "left", "pick", ["left", "right"]], ["bevel", "edge bevel", 0.002, "mm"],
     ["handle", "handle", "lever_round", "preset", "handle"], ["handle_z", "handle height", 0.95, "m"], ["handle_in", "handle from the edge", 0.065, "m"],
     ["frame", "frame", "door_frame", "preset", "door_frame"], ["lining", "frame lining", 0.02, "mm"], ["gap", "gap round the leaf", 0.003, "mm"], ["floor_gap", "gap under it", 0.008, "mm"],
@@ -119,6 +121,8 @@ export const TYPES = {
     ["stop_t", "stop", 0.012, "mm"], ["leaf_t", "the door's thickness", 0.04, "m"], ["slot", "material", "body", "slot"],
     ["hinge", "hinges on (the door's: the plan fills these)", "none", "pick", ["none", "left", "right"]], ["hinges", "hinges", 3, "int"], ["hinge_h", "hinge height", 0.1, "m"],
     ["knuckles", "knuckles", 5, "int"], ["hinge_tip", "hinge tips", "ball", "pick", ["ball", "flat", "none"]], ["leaf_w", "the door's width", 0, "m"],
+    ["hinge_w", "hinge plate width", 0.026, "m"], ["hinge_t", "plate thickness (the mortise's depth)", 0.0025, "mm"], ["barrel", "barrel Ø", 0.013, "mm"],
+    ["mortise", "cut mortises", true, "bool"], ["hinge_model", "hinges drawn", "kit", "pick", ["kit", "none"]],
     ["leaf_h", "the door's height", 0, "m"], ["leaf_z", "the gap under it", 0.008, "mm"], ["hinge_slot", "hinge material", "metal", "slot"]], gen: frameGen },
   bulkhead: { label: "Ceiling step / curtain pocket", cat: "ceiling", mount: "room-ceiling", size: [3.6, 3.6, 0.12], params: [["border", "step width n, e, s, w", [0.35, 0.35, 0.35, 0.35], "m4"],
     ["pocket", "curtain pocket on", "none", "pick", ["none", "n", "e", "s", "w"]], ["pocket_w", "pocket width", 0.13, "m"], ["slot", "material", "body", "slot"]], gen: bulkheadGen },
@@ -905,12 +909,34 @@ function cushionGen(s, P) {
 // alternate between the leaf on the door (screwed to its edge) and the leaf on the frame (screwed to the jamb), with
 // the pin through them and a tip at each end. The door's half turns with the door; the frame's half stays.
 const KNUCKLE = 0.0065;
-const hingeAxis = (s, W, T) => [(s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE * 0.5), -T / 2 + KNUCKLE * 0.5];
+const kR = s => clamp((s.barrel ?? 2 * KNUCKLE) / 2, 0.003, 0.012);              // the barrel's radius
+const hingeAxis = (s, W, T) => [(s.hinge === "right" ? 1 : -1) * (W / 2 - kR(s) * 0.5), -T / 2 + kR(s) * 0.5];
+// a hinge's mortise (the thin layer cut away for its plate) and its plate, in y and z: from the barrel's front to the
+// plate's back edge, the hinge's height (plus half a millimetre of clearance)
+function hingeCut(s, T, ay, zc) {
+  const kr = kR(s), hh = clamp(s.hinge_h ?? 0.1, 0.03, 0.25), y0 = ay + kr * 0.6, y1 = Math.min(T / 2 - 0.003, y0 + clamp(s.hinge_w ?? 0.026, 0.008, 0.08));
+  return { y0, y1, z0: zc - hh / 2, z1: zc + hh / 2, cut: [Math.max(-T / 2, ay - kr), y1 + 0.0005, zc - hh / 2 - 0.0005, zc + hh / 2 + 0.0005] };
+}
+// a face's skin (x0..x1 thick) over y0..y1 × z0..z1, with rectangles [ya, yb, za, zb] left open: a mortise's pocket
+function skinWithHoles(P, x0, x1, y0, y1, z0, z1, holes, m) {
+  const ys = [...new Set([y0, y1, ...holes.flatMap(h => [clamp(h[0], y0, y1), clamp(h[1], y0, y1)])])].sort((a, b) => a - b);
+  const zs = [...new Set([z0, z1, ...holes.flatMap(h => [clamp(h[2], z0, z1), clamp(h[3], z0, z1)])])].sort((a, b) => a - b);
+  for (let i = 0; i + 1 < ys.length; i++) {
+    let run = null;
+    const flush = () => { if (run) bx(P, x0, ys[i], run[0], x1, ys[i + 1], run[1], m); run = null; };
+    for (let j = 0; j + 1 < zs.length; j++) {
+      const my = (ys[i] + ys[i + 1]) / 2, mz = (zs[j] + zs[j + 1]) / 2;
+      if (holes.some(h => my > h[0] && my < h[1] && mz > h[2] && mz < h[3])) { flush(); continue; }
+      if (run) run[1] = zs[j + 1]; else run = [zs[j], zs[j + 1]];
+    }
+    flush();
+  }
+}
 function doorPivot(s) { const [W, T] = s.size; return s.style === "slide" || s.style === "shoji" ? [0, 0, 0] : [...hingeAxis(s, W, T), 0]; }
 export function hingeZs(n, H) { return Array.from({ length: Math.max(0, n | 0) }, (_, k) => n === 1 ? H / 2 : k === 0 ? 0.25 : k === n - 1 ? H - 0.2 : 0.25 + (H - 0.45) * k / (n - 1)); }
 // one hinge's half: its knuckles (the door's: 0, 2, 4...; the frame's: 1, 3...), its leaf plate and screws, the tips
 function hingeHalf(P, s, ax, ay, zc, half, plate) {
-  const kr = KNUCKLE, hh = clamp(s.hinge_h ?? 0.1, 0.05, 0.2), nk = Math.max(3, (s.knuckles | 0) || 5), seg = hh / nk, m = s.hinge_slot || "metal", g = 0.0006;
+  const kr = kR(s), hh = clamp(s.hinge_h ?? 0.1, 0.05, 0.2), nk = Math.max(3, (s.knuckles | 0) || 5), seg = hh / nk, m = s.hinge_slot || "metal", g = 0.0006;
   for (let i = half; i < nk; i += 2) {
     const z0 = zc - hh / 2 + i * seg + g / 2, L = seg - g, e = Math.min(0.0008, L / 4);
     lathe(P, ax, ay, z0, [[0, 0], [kr - e, 0], [kr, e], [kr, L - e], [kr - e, L], [0, L]], m, { n: 32 });
@@ -920,8 +946,10 @@ function hingeHalf(P, s, ax, ay, zc, half, plate) {
                                        : [[0, 0], [kr * 0.55, 0], [kr * 0.5, 0.001], [kr * 0.75, 0.0035], [kr * 0.6, 0.0065], [kr * 0.3, 0.0078], [0, 0.008]];
     lathe(P, ax, ay, z, tip, m, { n: 28, axis: up ? "z" : "-z" });
   }
-  // the plate: [x of the face it's screwed to, which way out of it (+1/-1), its y from, y to]
-  const [fx, out, y0, y1] = plate, t = 0.0006, xa = out > 0 ? fx - 0.0004 : fx - t, xb = out > 0 ? fx + t : fx + 0.0004;
+  // the plate: [x of the face it's screwed to, which way out of it (+1/-1), its y from, y to]; in its mortise it's
+  // flush with the face, otherwise just proud of it
+  const [fx, out, y0, y1] = plate, ht = clamp(s.hinge_t ?? 0.0025, 0.0008, 0.006);
+  const [xa, xb] = s.mortise !== false ? [Math.min(fx, fx - out * ht), Math.max(fx, fx - out * ht)] : out > 0 ? [fx - 0.0004, fx + 0.0006] : [fx - 0.0006, fx + 0.0004];
   bx(P, xa, y0, zc - hh / 2 + 0.002, xb, y1, zc + hh / 2 - 0.002, m, { b: 0.0002 });
   for (const zs of [-hh * 0.3, 0, hh * 0.3]) {                      // countersunk screws, their heads just proud
     lathe(P, out > 0 ? xb : xa, (y0 + y1) / 2 + (zs ? 0 : (y1 - y0) * 0.15), zc + zs, [[0, 0], [0.0032, 0], [0.003, 0.0004], [0.0018, 0.0007], [0, 0.0008]], m, { n: 16, axis: out > 0 ? "x" : "-x" });
@@ -929,11 +957,15 @@ function hingeHalf(P, s, ax, ay, zc, half, plate) {
 }
 function doorGen(s, P) {
   const [W, T, H] = s.size, st = s.style, b = s.bevel, slab = (xa, xb, za, zb, m, o, t = T) => bx(P, xa, -t / 2, za, xb, t / 2, zb, m, Object.assign({ b }, o || {}));
-  if (st === "flush" || st === "slide") slab(-W / 2, W / 2, 0, H, s.slot);
+  const hinged = st !== "slide" && st !== "shoji", side = s.hinge === "right" ? 1 : -1, ht = clamp(s.hinge_t ?? 0.0025, 0.0008, 0.006);
+  const mort = hinged && s.mortise !== false && (s.hinges | 0) > 0;
+  // with mortises, the hinge edge's last few millimetres are a skin with the pockets left open (below)
+  const XL = -W / 2 + (mort && side < 0 ? ht : 0), XR = W / 2 - (mort && side > 0 ? ht : 0);
+  if (st === "flush" || st === "slide") slab(XL, XR, 0, H, s.slot);
   else {
     const rw = clamp(s.rail, 0.02, Math.min(W, H) / 3), [gc, gr] = (s.grid || [1, 2]).map(v => Math.max(1, v | 0)), shoji = st === "shoji";
     const bot = shoji ? rw : rw * 1.6, mw = shoji ? 0.014 : rw * 0.75, tb = shoji ? T * 0.7 : T;
-    slab(-W / 2, -W / 2 + rw, 0, H, s.slot); slab(W / 2 - rw, W / 2, 0, H, s.slot);
+    slab(XL, -W / 2 + rw, 0, H, s.slot); slab(W / 2 - rw, XR, 0, H, s.slot);
     slab(-W / 2 + rw, W / 2 - rw, 0, bot, s.slot); slab(-W / 2 + rw, W / 2 - rw, H - rw, H, s.slot);
     const ix0 = -W / 2 + rw, ix1 = W / 2 - rw, iz0 = bot, iz1 = H - rw;
     const pw = (ix1 - ix0 - mw * (gc - 1)) / gc, ph = (iz1 - iz0 - mw * (gr - 1)) / gr;
@@ -950,10 +982,11 @@ function doorGen(s, P) {
       else if (shoji) bx(P, x0, T * 0.2, z0, x1, T * 0.2 + 0.0015, z1, "paper");
     }
   }
-  if (st === "slide" || st === "shoji") return;
-  const [ax, ay] = hingeAxis(s, W, T), side = s.hinge === "right" ? 1 : -1;
-  for (const zc of hingeZs(s.hinges, H))                                          // the door's half of each hinge, on its edge
-    hingeHalf(P, s, ax, ay, zc, 0, [side * W / 2, side, ay + KNUCKLE * 0.6, Math.min(T / 2 - 0.004, ay + KNUCKLE * 0.6 + 0.026)]);
+  if (!hinged) return;
+  const [ax, ay] = hingeAxis(s, W, T), zcs = hingeZs(s.hinges, H), cuts = zcs.map(zc => hingeCut(s, T, ay, zc));
+  if (mort) skinWithHoles(P, side < 0 ? -W / 2 : W / 2 - ht, side < 0 ? -W / 2 + ht : W / 2, -T / 2, T / 2, 0, H, cuts.map(c => c.cut), s.slot);
+  if ((s.hinge_model || "kit") === "kit") zcs.forEach((zc, i) =>                 // the door's half of each hinge, on its edge
+    hingeHalf(P, s, ax, ay, zc, 0, [side * W / 2, side, cuts[i].y0, cuts[i].y1]));
 }
 // a door's handles, both sides of a leaf `through` thick, centred on the box (the plan puts the box's middle where
 // the grip goes). lever, bar (a long pull), knob, pull (a short horizontal one), recess (a sliding door's flush cup)
@@ -1011,8 +1044,16 @@ function handleGen(s, P) {
 }
 // the lining of a doorway (the reveal, sides and head) and the stop the door closes against, behind the leaf
 function frameGen(s, P) {
-  const [W, T, H] = s.size, ln = clamp(s.lining, 0.005, W / 4), m = s.slot;
-  bx(P, -W / 2, -T / 2, 0, -W / 2 + ln, T / 2, H, m, { b: 0.001 }); bx(P, W / 2 - ln, -T / 2, 0, W / 2, T / 2, H, m, { b: 0.001 });
+  const [W, T, H] = s.size, ln = clamp(s.lining, 0.005, W / 4), m = s.slot, hs = s.hinge === "right" ? 1 : s.hinge === "left" ? -1 : 0;
+  const ht = clamp(s.hinge_t ?? 0.0025, 0.0008, Math.min(0.006, ln / 2)), mort = hs && s.leaf_w > 0 && s.mortise !== false && (s.hinges | 0) > 0;
+  for (const sd of [-1, 1]) {
+    const outer = sd * W / 2, inner = sd * (W / 2 - ln);
+    if (!(mort && sd === hs)) { bx(P, Math.min(outer, inner), -T / 2, 0, Math.max(outer, inner), T / 2, H, m, { b: 0.001 }); continue; }
+    const cutAt = inner + sd * ht, lt = clamp(s.leaf_t, 0.01, T), [, ay] = hingeAxis(s, s.leaf_w, lt);
+    bx(P, Math.min(outer, cutAt), -T / 2, 0, Math.max(outer, cutAt), T / 2, H, m, { b: 0.001 });
+    const cuts = hingeZs(s.hinges, s.leaf_h || H - ln).map(z => hingeCut(s, lt, ay, (s.leaf_z || 0) + z).cut);
+    skinWithHoles(P, Math.min(inner, cutAt), Math.max(inner, cutAt), -T / 2, T / 2, 0, H, cuts, m);
+  }
   bx(P, -W / 2 + ln, -T / 2, H - ln, W / 2 - ln, T / 2, H, m, { b: 0.001 });
   if (s.stop) {
     const st = clamp(s.stop_t, 0.004, 0.03), y0 = Math.min(T / 2 - 0.005, clamp(s.leaf_t, 0.01, T) / 2 + 0.001), y1 = Math.min(T / 2, y0 + 0.025);
@@ -1021,8 +1062,8 @@ function frameGen(s, P) {
   }
   if ((s.hinge === "left" || s.hinge === "right") && s.leaf_w > 0) {             // the frame's half of each hinge, on the jamb
     const side = s.hinge === "right" ? 1 : -1, lt = clamp(s.leaf_t, 0.01, T), [ax, ay] = hingeAxis(s, s.leaf_w, lt), jamb = side * (W / 2 - ln);
-    for (const zc of hingeZs(s.hinges, s.leaf_h || H - ln))
-      hingeHalf(P, s, ax, ay, (s.leaf_z || 0) + zc, 1, [jamb, -side, ay + KNUCKLE * 0.6, Math.min(T / 2 - 0.004, ay + KNUCKLE * 0.6 + 0.026)]);
+    const zcs = hingeZs(s.hinges, s.leaf_h || H - ln).map(z => (s.leaf_z || 0) + z), cuts = zcs.map(zc => hingeCut(s, lt, ay, zc));
+    if ((s.hinge_model || "kit") === "kit") zcs.forEach((zc, i) => hingeHalf(P, s, ax, ay, zc, 1, [jamb, -side, cuts[i].y0, cuts[i].y1]));
   }
 }
 function bulkheadGen(s, P) {

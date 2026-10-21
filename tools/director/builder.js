@@ -126,6 +126,7 @@ async function replan() {
     if (j.error) throw new Error(j.error);
     B.plan = j; B.planStory = s;
     stage.setWorld(j, s, B.target);
+    if (+$("#swing").value) stage.swing(+$("#swing").value);
     addLamp(); placeHer(); doors(); placeRefs(); draw(); render3d();
   } catch (e) { status(e.message, "bad"); }
 }
@@ -394,6 +395,7 @@ function magnetResize(r, h) {
 }
 
 function addOpening(x, y) {
+  if (B.tool === "ref" && B.ref && B.ref.type === "hinge") { applyHingeAt(x, y); return; }
   let best = null;
   for (const r of visibleRooms()) for (const wl of BM.WALLS) {
     const ln = BM.wallLine(r, wl), a = ln.axis === "y" ? x : y, off = Math.abs((ln.axis === "y" ? y : x) - ln.v);
@@ -457,7 +459,8 @@ function renderTools() {
   }
   if (B.tool === "ref") {
     const n = document.createElement("div"); n.className = "hint"; n.style.marginTop = "4px";
-    n.textContent = B.ref ? `Cutting ${B.ref.name}: ${r2(B.ref.w * 100)} × ${r2(B.ref.h * 100)} cm${B.ref.type === "window" ? `, sill ${r2(B.ref.sill * 100)} cm` : ""}. Click a wall.` : "Load a model under References first.";
+    n.textContent = !B.ref ? "Load a model under References first." : B.ref.type === "hinge" ? `Hinge ${B.ref.name}: click near a door. Its mortises are cut to the hinge (${r2(B.ref.h * 100)} cm, plates ${r2((B.ref.plate || 0.0025) * 1000)} mm), and the hinge is split at its barrel: the door half turns with the door.`
+      : `Cutting ${B.ref.name}: ${r2(B.ref.w * 100)} × ${r2(B.ref.h * 100)} cm${B.ref.type === "window" ? `, sill ${r2(B.ref.sill * 100)} cm` : ""}. Click a wall.`;
     box.append(n);
   }
   const kb = $("#kinds"); kb.innerHTML = "";
@@ -617,7 +620,7 @@ async function setupFigure() {
   } catch (e) { console.warn("body", e); }
   replan();
 }
-function doors() { stage.world.traverse(o => { if (o.userData && (o.userData.kind === "door" || o.userData.doorPart === "handle")) o.visible = !$("#doorsOpen").checked; }); }
+function doors() { stage.world.traverse(o => { if (o.userData && (o.userData.kind === "door" || o.userData.doorPart === "handle" || o.userData.doorPart === "hinge_door")) o.visible = !$("#doorsOpen").checked; }); }
 function addLamp() {
   lampLight = new THREE.PointLight(0xfff1dc, 1.6, 10, 1.5);
   stage.world.add(lampLight);
@@ -748,6 +751,7 @@ async function boot() {
   $("#undo").onclick = undo; $("#redo").onclick = redo;
   $("#check").onclick = runChecks; $("#save").onclick = () => save(false);
   for (const id of ["#eye", "#lamp", "#showHer", "#doorsOpen"]) $(id).onchange = () => { placeHer(); doors(); draw(); render3d(); };
+  $("#swing").oninput = () => { if (+$("#swing").value && $("#doorsOpen").checked) { $("#doorsOpen").checked = false; doors(); } stage.swing(+$("#swing").value); render3d(); };
   renderTools();
   $("#planImage").onclick = savePlanImage;
   $("#refFile").onchange = e => { for (const f of e.target.files) loadRef(f); e.target.value = ""; };
@@ -761,8 +765,9 @@ async function boot() {
   await loadGames();
   window.__builderReady = true;
 }
-window.B = B; window.BM = BM;
-window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit,
+window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
+window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
+  swing: deg => { $("#swing").value = deg; $("#swing").oninput(); },
   resizeKitBy: (id, su, sv, x, y) => { const k = B.model.kits.find(q => q.id === id); pushUndo(); resizeKit({ k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }, x, y); changed(); return k; }, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
 
@@ -851,11 +856,13 @@ async function loadRef(file) {
     box = new THREE.Box3().setFromObject(obj); size = box.getSize(new THREE.Vector3());
     const name = file.name.replace(/\.[^.]+$/, "");
     const old = B.refs.find(r => r.name === name);
-    const guess = size.y > 1.75 ? (size.x > 1.3 ? "slide" : "door") : "window";
+    const guess = /hinge/i.test(name) || Math.max(size.x, size.y, size.z) < 0.3 ? "hinge" : size.y > 1.75 ? (size.x > 1.3 ? "slide" : "door") : "window";
     const ref = Object.assign(old || { name, type: guess, sill: guess === "window" ? 0.9 : 0, gap: 0 }, { w: r2s(size.x), h: r2s(size.y), d: r2s(size.z), scale, rotY, obj });
+    if (ref.type === "hinge") { ref.plate = ref.plate || 0.0025; ref.barrel = ref.barrel || Math.min(0.02, r2s(size.z)); ref.split = ref.split || 0; ref.doorHalf = ref.doorHalf || "left"; ref.exported = false; }
     if (!old) B.refs.push(ref);
     B.ref = ref; B.tool = "ref"; saveRefs(); renderRefs(); renderTools(); placeRefs(); render3d();
-    status(`${name}: ${ref.w * 100} × ${ref.h * 100} cm, ${ref.d * 100} cm deep${scale !== 1 ? " (read as centimetres)" : ""}. Click a wall to cut it.`);
+    status(ref.type === "hinge" ? `${name}: a hinge ${r2(ref.h * 100)} cm tall, ${r2(ref.w * 100)} cm open. Click near a door: its mortises are cut to it, and it's split at its barrel so its door half turns with the door.`
+                                : `${name}: ${ref.w * 100} × ${ref.h * 100} cm, ${ref.d * 100} cm deep${scale !== 1 ? " (read as centimetres)" : ""}. Click a wall to cut it.`);
   } catch (e) { status("couldn't read " + file.name + ": " + e.message, "bad"); }
 }
 const r2s = v => Math.round(v * 1000) / 1000;
@@ -867,12 +874,21 @@ function renderRefs() {
     const t = document.createElement("div"); t.innerHTML = `<b>${esc(ref.name)}</b> <span class="hint">${ref.obj ? "" : "(size only: load the file again to see it)"}</span>`;
     const g = document.createElement("div"); g.className = "prop";
     const n = (v, on, step = 0.5) => { const i = document.createElement("input"); i.type = "number"; i.step = step; i.value = r2(v * 100); i.onchange = () => { on(+i.value / 100); saveRefs(); renderRefs(); renderTools(); }; return i; };
-    const tp = document.createElement("select"); for (const o of ["window", "door", "slide"]) tp.append(new Option(o, o)); tp.value = ref.type; tp.onchange = () => { ref.type = tp.value; saveRefs(); renderTools(); };
-    g.append(...field("type", tp), ...field("w × h, cm", wrap(n(ref.w, v => { ref.w = v; }), n(ref.h, v => { ref.h = v; }))),
+    const tp = document.createElement("select"); for (const o of ["window", "door", "slide", "hinge"]) tp.append(new Option(o, o)); tp.value = ref.type; tp.onchange = () => { ref.type = tp.value; if (ref.type === "hinge") Object.assign(ref, { plate: ref.plate || 0.0025, barrel: ref.barrel || Math.min(0.02, ref.d), split: ref.split || 0, doorHalf: ref.doorHalf || "left" }); saveRefs(); renderRefs(); renderTools(); };
+    const mm = (v, on, tip) => { const i = document.createElement("input"); i.type = "number"; i.step = 0.1; i.value = r2(v * 1000); if (tip) i.title = tip; i.onchange = () => { on(+i.value / 1000); ref.exported = false; saveRefs(); renderRefs(); }; return i; };
+    if (ref.type === "hinge") g.append(...field("type", tp), ...field("h × open w, cm", wrap(n(ref.h, v => { ref.h = v; }), n(ref.w, v => { ref.w = v; }))),
+      ...field("plate, mm", mm(ref.plate, v => { ref.plate = v; }, "a leaf's thickness: the mortise's depth")),
+      ...field("barrel Ø, mm", mm(ref.barrel, v => { ref.barrel = v; })),
+      ...field("barrel at, mm", mm(ref.split || 0, v => { ref.split = v; }, "where the barrel is, from the model's middle across (the split between its two halves)")),
+      ...field("door half", pick(ref.doorHalf || "left", [["left", "the left of the barrel"], ["right", "the right"]], v => { ref.doorHalf = v; ref.exported = false; saveRefs(); })));
+    else g.append(...field("type", tp), ...field("w × h, cm", wrap(n(ref.w, v => { ref.w = v; }), n(ref.h, v => { ref.h = v; }))),
              ...field("sill, cm", n(ref.sill, v => { ref.sill = v; })), ...field("gap, mm", (() => { const i = document.createElement("input"); i.type = "number"; i.step = 1; i.value = (ref.gap || 0) * 1000; i.title = "clearance all round between the model and the cut (0: a tight fit)"; i.onchange = () => { ref.gap = +i.value / 1000; saveRefs(); renderTools(); }; return i; })()));
     const use = document.createElement("button"); use.textContent = "Cut with it"; use.onclick = () => { B.ref = ref; B.tool = "ref"; renderRefs(); renderTools(); };
     const fit = document.createElement("button"); fit.textContent = "Refit cuts"; fit.title = "every opening cut with this model takes its size again";
-    fit.onclick = () => { pushUndo(); for (const op of B.model.ops) if (op.ref === ref.name) { op.w = r2(ref.w + 2 * (ref.gap || 0)); op.h = r2(ref.h + 2 * (ref.gap || 0)); if (op.type === "window") op.sill = r2(ref.sill - (ref.gap || 0)); } changed(); };
+    fit.onclick = async () => {
+      if (ref.type === "hinge") { const ops = B.model.ops.filter(op => ((op.extra || {}).kit || {}).hinge_art === hingeRef(ref)); if (ops.length && await splitHinge(ref)) { pushUndo(); for (const op of ops) fitHinge(op, ref); changed(); } return; }
+      pushUndo(); for (const op of B.model.ops) if (op.ref === ref.name) { op.w = r2(ref.w + 2 * (ref.gap || 0)); op.h = r2(ref.h + 2 * (ref.gap || 0)); if (op.type === "window") op.sill = r2(ref.sill - (ref.gap || 0)); } changed();
+    };
     const rm = document.createElement("button"); rm.textContent = "×"; rm.onclick = () => { B.refs = B.refs.filter(x => x !== ref); if (B.ref === ref) B.ref = null; saveRefs(); renderRefs(); };
     d.append(t, g, use, fit, rm); box.append(d);
   }
@@ -1229,4 +1245,84 @@ function doorEditor(op) {
   hint.textContent = kit ? "In Unreal: the leaf turns on its hinges, the handle is its own mesh on it, the frame is in the wall; all tagged door:" + op.id : "A door from the kit: panels, glass, louvres, shoji, sliders; hinges and a handle you can swap.";
   d.append(g, hint);
   return d;
+}
+
+// ---- a hinge of yours: the door's mortises cut to it, and the model split at its barrel into two meshes (the door's
+// half, attached to the leaf so it turns with it; the frame's half, on the jamb), folded shut and centred on the pin,
+// for each hand of door (local/<name>_door_l, _frame_l, _door_r, _frame_r: the plan places them, docs/KIT.md §8) ----
+const hingeRef = ref => "local/hinge_" + ref.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+function fitHinge(op, ref) {
+  const kit = Object.assign({ preset: "door_panels" }, (op.extra || {}).kit || {});
+  const barrel = Math.max(0.006, ref.barrel || 0.013);
+  Object.assign(kit, { hinge_h: r2s(ref.h), hinge_w: r2s(Math.max(0.008, (ref.w - barrel) / 2)), hinge_t: Math.round((ref.plate || 0.0025) * 10000) / 10000,
+                       barrel: Math.round(barrel * 10000) / 10000, hinge_art: hingeRef(ref) });
+  op.extra = Object.assign({}, op.extra, { kit });
+}
+async function applyHingeAt(x, y) {
+  const ref = B.ref;
+  let best = null;
+  for (const op of B.model.ops) {
+    if (op.type !== "door" || Math.abs(op.z - floorZ()) > 0.3) continue;
+    const [ox, oy] = op.axis === "y" ? [op.c, op.v] : [op.v, op.c], dd = Math.hypot(x - ox, y - oy);
+    if (dd < 0.9 && (!best || dd < best.dd)) best = { op, dd };
+  }
+  if (!best) { status("click near a hinged door (a sliding door has no hinges)", "bad"); return; }
+  if (!(await splitHinge(ref))) return;
+  pushUndo(); fitHinge(best.op, ref); B.sel = { op: best.op.id };
+  await loadAssetLibrary(); changed();
+  status(`${best.op.id}: mortises cut to ${ref.name}; its door half turns with the door (try "swing" over the 3D view)`);
+}
+async function splitHinge(ref) {
+  if (ref.exported) return true;
+  if (!ref.obj) { status(`load ${ref.name}'s file again (References): it's needed to split it`, "bad"); return false; }
+  const tris = [];
+  ref.obj.updateMatrixWorld(true);
+  ref.obj.traverse(o => {
+    if (!o.isMesh || !o.geometry) return;
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry, pos = g.attributes.position, nrm = g.attributes.normal, uv = g.attributes.uv;
+    const nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld), v = new THREE.Vector3(), n = new THREE.Vector3();
+    for (let i = 0; i + 2 < pos.count; i += 3) {
+      const t = [];
+      for (let k = 0; k < 3; k++) {
+        v.fromBufferAttribute(pos, i + k).applyMatrix4(o.matrixWorld);
+        if (nrm) n.fromBufferAttribute(nrm, i + k).applyMatrix3(nm).normalize(); else n.set(0, 0, 1);
+        t.push({ p: v.toArray(), n: n.toArray(), uv: uv ? [uv.getX(i + k), uv.getY(i + k)] : [0, 0] });
+      }
+      tris.push(t);
+    }
+  });
+  if (!tris.length) { status(`${ref.name} has no triangles`, "bad"); return false; }
+  const all = tris.flat().map(q => q.p), lo = [0, 1, 2].map(k => Math.min(...all.map(p => p[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(p => p[k])));
+  const bxc = (lo[0] + hi[0]) / 2 + (ref.split || 0), ymid = (lo[1] + hi[1]) / 2;
+  const near = all.filter(p => Math.abs(p[0] - bxc) < Math.max(0.002, (ref.barrel || 0.013) / 2));      // the barrel: its depth's middle is the pin
+  const bz = near.length ? (Math.min(...near.map(p => p[2])) + Math.max(...near.map(p => p[2]))) / 2 : (lo[2] + hi[2]) / 2;
+  const halves = { a: [], b: [] };
+  for (const t of tris) halves[(t[0].p[0] + t[1].p[0] + t[2].p[0]) / 3 < bxc ? "a" : "b"].push(t);
+  const doorKey = ref.doorHalf === "right" ? "b" : "a", frameKey = doorKey === "a" ? "b" : "a";
+  // folded shut on the pin: each half's own side of the barrel turns to +y (into the door, the jamb), up stays up
+  const fold = (t, key, mirror) => {
+    const sD = key === "a" ? -1 : 1, mx = mirror ? -1 : 1;
+    const f = (q, isN) => { const X = q[0] - (isN ? 0 : bxc), Y = q[1] - (isN ? 0 : ymid), Z = q[2] - (isN ? 0 : bz); return [mx * sD * Z, sD * X, Y]; };
+    const out = t.map(q => ({ p: f(q.p, false), n: f(q.n, true), uv: q.uv }));
+    return mirror ? [out[0], out[2], out[1]] : out;
+  };
+  const centroidX = (list, key, mirror) => { let s = 0, n = 0; for (const t of list) for (const q of fold(t, key, mirror)) { s += q.p[0]; n++; } return n ? s / n : 0; };
+  const base = hingeRef(ref).slice(6);
+  for (const hand of ["l", "r"]) {
+    // a left-hung door's leaf is on the +x side of its hinges, a right-hung one's on the -x side: mirror to suit
+    const cx = centroidX(halves[doorKey], doorKey, false), mirror = hand === "l" ? cx < 0 : cx > 0;
+    for (const [part, key] of [["door", doorKey], ["frame", frameKey]]) {
+      const G = { metal: { pos: [], nrm: [], uv: [], idx: [] } }, gm = G.metal;
+      for (const t of halves[key]) for (const q of fold(t, key, mirror)) { gm.idx.push(gm.pos.length / 3); gm.pos.push(...q.p); gm.nrm.push(...q.n); gm.uv.push(...q.uv); }
+      if (!gm.idx.length) { status(`${ref.name}: nothing on one side of its barrel (set "barrel at")`, "bad"); return false; }
+      const P3 = [0, 1, 2].map(k => gm.pos.filter((_, i) => i % 3 === k)), blo = P3.map(a => Math.min(...a)), bhi = P3.map(a => Math.max(...a));
+      const bin = KIT.glb(G, `${base}_${part}_${hand}`);
+      let str = ""; for (let i = 0; i < bin.length; i += 0x8000) str += String.fromCharCode.apply(null, bin.subarray(i, i + 0x8000));
+      const r = await api(`/api/library/local/${base}_${part}_${hand}`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ glb: btoa(str), size_m: [bhi[0] - blo[0], bhi[2] - blo[2], bhi[1] - blo[1]], box_m: [...blo, ...bhi].map(v => +v.toFixed(5)), tris: gm.idx.length / 3, note: `${ref.name}: the ${part}'s half, ${hand === "l" ? "left" : "right"}-hung` }) });
+      if (!r.ok) { status(`couldn't save ${base}_${part}_${hand}`, "bad"); return false; }
+    }
+  }
+  ref.exported = true; saveRefs(); renderRefs();
+  return true;
 }

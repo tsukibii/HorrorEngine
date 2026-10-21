@@ -254,5 +254,34 @@ Open the door and the two plates fold out from the barrel. The door's `hinges` (
 `knuckles` (3 or 5), `hinge_tip` (ball, flat, none) and `hinge_slot` change both halves together: the plan passes them
 to the frame with the door's size.
 
+### Mortises, and your own hinges
+
+**Mortises.** A real butt hinge sits in a shallow pocket cut into the door's edge and into the jamb, so its plates
+lie flush and the gap between door and frame stays even. The kit cuts them: the hinge edge of the leaf and the
+hinge side of the lining are a skin as thick as the plate, with a hole where each hinge goes, so each plate sits in
+its pocket. The numbers (on the door, passed to the frame):
+- `hinge_t`: the plate's thickness and the pocket's depth (2.5 mm);
+- `hinge_w`: the plate's width from the barrel (26 mm);
+- `barrel`: the barrel's diameter (13 mm);
+- `mortise`: false for plates screwed on the surface;
+- `hinge_model`: `kit` (the kit's hinges) or `none` (the pockets, no hinges: yours go in them).
+
+**Your own hinge** (the scene builder's References, docs/SCENE_BUILDER.md): load a hinge model (a .glb of an open
+butt hinge, both plates and the barrel) and click near a door. The builder:
+- sets the door's `hinge_h`, `hinge_w`, `hinge_t` and `barrel` from the model, so the mortises fit it, and sets the
+  door's `hinge_art` (`local/hinge_<name>`);
+- **splits it at the barrel**: the plate and knuckles on one side of the split are the door's half, the rest the
+  frame's. Each half is folded shut onto the pin and saved as its own mesh, a pair for each hand
+  (`hinge_<name>_door_l`, `_door_r`, `_frame_l`, `_frame_r`, in `Library/meshes/local/`, git-ignored like any
+  model you don't own; set the split and which half is the door's under References if the guess is wrong).
+
+With `hinge_art` the plan leaves the kit's hinges out (`hinge_model: none`) and places the halves at each hinge:
+`<id>__hinge<i>_door` (`door_part:hinge_door`, attached to the leaf, so it turns with it) and `<id>__hinge<i>_frame`
+(`door_part:hinge_frame`, static, in the jamb's pocket). In Unreal the door half is attached to the leaf like the
+handle, so whatever turns the door turns it.
+
+**Swing** (the builder's *swing* slider, 0 to 110°) turns every kit door's leaf on its hinge axis, with its handle and
+the door halves of its hinges, and slides the sliding ones: check the flaps fold and nothing hits the frame.
+
 The lathe and the sweep are kit parts like any other (`lathe`, `sweep`), so *Explode to parts* keeps them, and a free
 thing can use them.

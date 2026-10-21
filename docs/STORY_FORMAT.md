@@ -142,7 +142,9 @@ marks a thing that sits in its wall, like a window frame.
 
 **A kit door:** a door's `kit` (a `door` preset, or one with what differs: `{"preset": "door_shaker", "handle":
 "bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a
-handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). A door's `class` (a Blueprint
+handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). The kit's hinge numbers (`hinges`, `hinge_h`, `hinge_w`, `hinge_t`, `barrel`,
+`mortise`, `hinge_model`) and `hinge_art` (your own hinge, split into `<id>__hinge<i>_door|frame`) are there too.
+A door's `class` (a Blueprint
 class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 
 **A prop:**

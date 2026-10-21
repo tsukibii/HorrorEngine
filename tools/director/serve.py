@@ -189,6 +189,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parts = self.path.strip("/").split("/")
+        if parts[:3] == ["api", "library", "local"] and len(parts) == 4:   # a mesh of yours (the builder's hinge halves)
+            name = parts[3]
+            if not name.replace("_", "").replace("-", "").isalnum():
+                return self.send(400, {"error": "a mesh name is letters, digits, - and _"})
+            import base64
+            body = json.loads(self.body().decode("utf-8"))
+            out = LIB.MESHES / "local" / f"{name}.glb"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(base64.b64decode(body["glb"]))
+            idx_file = LIB.INDEX / "local.json"
+            idx = json.loads(idx_file.read_text(encoding="utf-8")) if idx_file.exists() else {}
+            idx[name] = {k: body[k] for k in ("size_m", "box_m", "tris") if k in body}
+            idx[name].update(kb=round(out.stat().st_size / 1024), axes="kit", note=body.get("note", ""))
+            idx_file.parent.mkdir(parents=True, exist_ok=True)
+            idx_file.write_text(json.dumps(idx, indent=1), encoding="utf-8")
+            LIB._cache.pop("local", None)
+            return self.send(200, {"ok": True, "ref": f"local/{name}"})
         if parts[:2] == ["api", "plan"] and len(parts) == 3:
             story = json.loads(self.body().decode("utf-8"))
             try:

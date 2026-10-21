@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import * as M from "./motion.js";
 import * as K3 from "./kit3.js";
+import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 
@@ -230,6 +231,13 @@ export class Stage {
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null };
         m.userData.doorPart = (p.tags.find(t => t.startsWith("door_part:")) || "").slice(10) || null;
+        m.userData.attach = (p.tags.find(t => t.startsWith("attach:")) || "").slice(7) || null;
+        if (p.kind === "door" && p.d && p.d.kit) {          // where a kit door turns: its hinge axis, in the block's space
+          try {
+            const f = KIT.withDefaults(KIT.resolve(p.d.kit, LIBRARY.kit)), pv = KIT.pivotOf(f);
+            m.userData.swing = { pivot: new THREE.Vector3(pv[0], 0, -pv[1]), hinge: f.hinge, slide: f.style === "slide" || f.style === "shoji" || (p.d.swing === "slide"), w: f.size[0] };
+          } catch (e) { }
+        }
         this.world.add(m); if (!p.tags.includes("hollow")) this.solid.push(m);     // a door frame: you see and walk through it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
@@ -628,6 +636,28 @@ export class Stage {
       g.position.y = -h / 2; block.add(g);
       block.material = block.material.clone(); block.material.visible = false; block.userData.dressed = true;
     } catch (e) { console.warn("kit " + JSON.stringify(spec) + ": " + e.message); }
+  }
+  // open every kit door by `deg` (0 to 110): a hinged leaf turns on its hinges toward the side it opens to, its handle
+  // and the door's half of each hinge with it; a sliding one slides along its wall
+  swing(deg) {
+    const leaves = this.solid.filter(m => m.userData.swing && m.parent === this.world);
+    for (const d of leaves) {
+      const sw = d.userData.swing, kids = this.world.children.filter(o => o.userData && o.userData.attach === d.userData.id);
+      for (const o of [d, ...kids]) if (!o.userData.base) o.userData.base = { pos: o.position.clone(), rot: o.rotation.y };
+      const b = d.userData.base;
+      if (sw.slide) {
+        const dx = new THREE.Vector3(-(deg / 90) * sw.w * 0.95, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rot);
+        for (const o of [d, ...kids]) { o.position.copy(o.userData.base.pos).add(dx); o.rotation.y = o.userData.base.rot; }
+        continue;
+      }
+      const P = sw.pivot.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rot).add(b.pos);
+      const th = deg * Math.PI / 180 * (sw.hinge === "right" ? 1 : -1);
+      for (const o of [d, ...kids]) {
+        o.position.copy(o.userData.base.pos).sub(P).applyAxisAngle(new THREE.Vector3(0, 1, 0), th).add(P);
+        o.rotation.y = o.userData.base.rot + th;
+      }
+    }
+    this.render();
   }
   async assetsReady() { await Promise.all(this.pending || []); this.render(); }
 

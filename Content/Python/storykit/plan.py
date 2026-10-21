@@ -11,6 +11,7 @@ import math
 
 from . import storylib as L
 from . import kit as KIT
+from . import library as LIB
 
 STEP = 0.18   # a stair's rise
 
@@ -62,7 +63,9 @@ def door_pieces(p, t):
         tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra
         return dict(p, id=pid, kind=kind, shape="box", pos=pos, size=tuple(spec["size"]), yaw=yaw, d=d or {"kit": spec}, kit=spec, tags=tags)
     out = []
-    leaf = {key: v for key, v in k.items() if key not in ("handle", "frame")}
+    leaf = {key: v for key, v in k.items() if key not in ("handle", "frame", "hinge_art")}
+    if k.get("hinge_art"):                              # your own hinge model, split in two (§8): the kit cuts its mortises only
+        leaf["hinge_model"] = "none"
     if slide:                                           # a sliding leaf hangs on the room's face, wider than its hole
         lw, lh, ly = w + 0.05, h + 0.01, -(wall_t / 2 + lt / 2 + 0.004)
         lz = 0.0
@@ -74,11 +77,33 @@ def door_pieces(p, t):
         fs.update({"leaf_t": lt, "stop": not slide})
         if not slide:                                   # the frame's half of each hinge: where the door's are
             fs.update({"hinge": g("hinge"), "hinges": g("hinges"), "hinge_h": g("hinge_h"), "knuckles": g("knuckles"),
-                       "hinge_tip": g("hinge_tip"), "hinge_slot": g("hinge_slot"), "leaf_w": round(lw, 4), "leaf_h": round(lh, 4), "leaf_z": round(lz, 4)})
+                       "hinge_tip": g("hinge_tip"), "hinge_slot": g("hinge_slot"), "leaf_w": round(lw, 4), "leaf_h": round(lh, 4), "leaf_z": round(lz, 4),
+                       "hinge_w": g("hinge_w"), "hinge_t": g("hinge_t"), "barrel": g("barrel"), "mortise": g("mortise"),
+                       "hinge_model": "none" if k.get("hinge_art") else g("hinge_model")})
         out.append(part(f"{t.id}__frame", "mesh", fs, at(0, 0, h / 2), (w, wall_t, h), ["door_part:frame", "in_wall", "hollow"]))
     leaf_tags = ["door_part:leaf", f"hinge:{g('hinge')}"] + ([f"locked_by:{t.d['locked_by']}"] if t.d.get("locked_by") else [])
     lp = part(t.id, "door", leaf, at(0, ly, lz + lh / 2), (lw, lt, lh), leaf_tags, d=dict(t.d, kit=dict(leaf, size=[round(lw, 4), round(lt, 4), round(lh, 4)])))
     out.append(lp)
+    art = k.get("hinge_art")
+    if art and not slide:                               # your own hinge, split at its barrel (the scene builder's Split
+        side_l = g("hinge") != "right"                  # for Unreal): its door half rides the leaf, its frame half stays
+        kr = float(g("barrel")) / 2
+        hx, hy = (-1 if side_l else 1) * (lw / 2 - kr / 2), -lt / 2 + kr / 2
+        for i, zc in enumerate(KIT.hinge_zs(g("hinges"), lh)):
+            for half in ("door", "frame"):
+                ref = f"{art}_{half}_{'l' if side_l else 'r'}"
+                try:
+                    box = (LIB.mesh_info(ref) or {}).get("box_m")
+                except ValueError:
+                    box = None
+                if not box:
+                    continue
+                c = [(box[q] + box[q + 3]) / 2 for q in range(3)]
+                size = tuple(round(box[q + 3] - box[q], 4) for q in range(3))
+                tags = ["story", f"story:{t.id}__hinge{i + 1}_{half}", f"room:{t.room}", f"door:{t.id}", f"art:{ref}", "real",
+                        f"door_part:hinge_{half}"] + ([f"attach:{t.id}"] if half == "door" else [])
+                out.append(dict(p, id=f"{t.id}__hinge{i + 1}_{half}", kind="mesh", shape="box", pos=at(hx + c[0], ly + hy + c[1], lz + zc + c[2]),
+                                size=size, yaw=yaw, d={"art": ref}, tags=tags))
     hd = g("handle")
     if hd and hd != "none":
         hs = {"preset": hd} if isinstance(hd, str) else dict(hd)

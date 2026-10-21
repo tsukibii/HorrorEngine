@@ -90,6 +90,13 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   and click a wall: the hole is that size exactly, its middle snapped to 5 cm. The model shows in the cut in the 3D
   view so you see the fit; it's never saved into the story (you place the real one in Unreal). Change the model's
   size and **Refit cuts** resizes every hole cut with it. The sizes are remembered in this browser.
+- **Hinges from a model:** load a hinge under References (a small model, or one named *hinge*, is typed **hinge**;
+  set its plate thickness, barrel Ø, where the barrel is and which half is the door's), then *Reference cut-out* and
+  click near a door. The door's mortises (the thin pockets in its edge and the jamb) are cut to the hinge's plate,
+  and the hinge is split at its barrel: the door's half turns with the door, the frame's half stays (docs/KIT.md §8).
+  *Refit* splits and fits it again after a change.
+- **Swing:** the *swing* slider (by *doors open*) turns every kit door open on its hinges, its handle and hinge
+  halves with it, to check the fit.
 - **Measure:** drag anywhere: the length in metres and in modules.
 - **Plan image** saves the floor shown as an SVG: a backdrop in Unreal, or a printout.
 - **Check** runs the story and level checks (`story_check` on the world, `level_check`) on the unsaved plan. **Save

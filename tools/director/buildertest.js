@@ -179,6 +179,38 @@ const SCRATCH = "Zz_builder_test";
     if (Math.abs(kt.dl[0] + kt.dl[1] - kt.dl[2]) > 0.001) fail("the downlight isn't on the ceiling: " + kt.dl);
     if (!kt.floors || !kt.frames || kt.pieces < kt.kitProps) fail("floors, frames or kit pieces missing: " + JSON.stringify(kt));
     if (JSON.stringify(kt.back) !== JSON.stringify(kt.model)) fail("the level doesn't read back the same: " + JSON.stringify(kt.back) + " vs " + JSON.stringify(kt.model));
+
+    // a hinge of yours: loaded as a reference, clicked onto a door: its mortises are cut to it, it's split at its
+    // barrel, the door's half rides the leaf when it swings and the frame's half stays
+    const hg = await page.evaluate(async () => {
+      const THREE = await import("three"), { GLTFExporter } = await import("./vendor/GLTFExporter.js");
+      const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0x886633 });
+      for (const sx of [-1, 1]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.0025), mat); pl.position.set(sx * 0.0215, 0, 0.00125); g.add(pl); }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.0065, 0.1, 24), mat); bar.position.set(0, 0, 0.0025); g.add(bar);
+      const buf = await new GLTFExporter().parseAsync(g, { binary: true });
+      const B = window.B, bu = window.builder;
+      await bu.loadRef(new File([buf], "test_hinge.glb"));
+      const ref = B.ref, door = B.model.ops.find(o => o.type === "door" && Math.abs(o.z) < 0.3);
+      const [dx, dy] = door.axis === "y" ? [door.c, door.v] : [door.v, door.c];
+      await bu.applyHingeAt(dx, dy);
+      await new Promise(r => setTimeout(r, 1500));
+      const kit = door.extra.kit, parts = B.plan.pieces.filter(q => q.tags.includes(`door:${door.id}`)).map(q => (q.tags.find(t => t.startsWith("door_part:")) || "").slice(10));
+      const st = window.__stage || null;
+      const chk = await bu.runChecks();
+      bu.swing(0);
+      const objs = () => { const o = {}; window.__builderStage.world.traverse(m => { if (m.userData && m.userData.id && m.userData.id.startsWith(door.id)) o[m.userData.id] = [m.position.x, m.position.z, m.rotation.y]; }); return o; };
+      const before = objs(); bu.swing(90); const after = objs(); bu.swing(0);
+      const moved = id => before[id] && after[id] && Math.hypot(after[id][0] - before[id][0], after[id][1] - before[id][1]) > 0.001;
+      const turned = id => before[id] && after[id] && Math.abs(Math.abs(after[id][2] - before[id][2]) - Math.PI / 2) < 0.01;
+      // the leaf turns about its hinges: its hinge-side edge stays (nearly) put while its other edge sweeps ~a door's width
+      return { type: ref.type, kit: { h: kit.hinge_h, w: kit.hinge_w, t: kit.hinge_t, art: kit.hinge_art }, parts, errors: chk.errors,
+               leaf: turned(door.id), handle: turned(door.id + "__handle"), doorHalf: turned(door.id + "__hinge1_door"), frameHalf: moved(door.id + "__hinge1_frame") || turned(door.id + "__hinge1_frame") };
+    });
+    console.log("hinge", JSON.stringify(hg));
+    if (hg.type !== "hinge" || Math.abs(hg.kit.h - 0.1) > 0.002 || Math.abs(hg.kit.t - 0.0025) > 0.0002 || !/^local\/hinge_test_hinge$/.test(hg.kit.art)) fail("the hinge reference: " + JSON.stringify(hg.kit));
+    if (hg.parts.filter(p => p === "hinge_door").length !== 3 || hg.parts.filter(p => p === "hinge_frame").length !== 3) fail("the split hinge's halves aren't placed: " + JSON.stringify(hg.parts));
+    if (hg.errors.length) fail("with the hinge: " + hg.errors.slice(0, 3).join("; "));
+    if (!hg.leaf || !hg.handle || !hg.doorHalf || hg.frameHalf) fail("swinging the door: " + JSON.stringify(hg));
     if (shots) { await page.evaluate(() => { const B = window.B, r = B.model.rooms.find(r => r.kind === "ldk"); Object.assign(B.model.player, { x: r.x + r.w * 0.75, y: r.y + r.d * 0.8, yaw: 200 }); window.builder.render3d(); }); await page.waitForTimeout(600); await page.screenshot({ path: path.join(shots, "builder_kit.png") }); }
     if (shots) await page.screenshot({ path: path.join(shots, "builder_finish.png") });
 
@@ -261,6 +293,10 @@ const SCRATCH = "Zz_builder_test";
     if (shots) await km.screenshot({ path: path.join(shots, "kit_maker.png") });
     await km.close();
   } finally {
+    for (const f of fs.existsSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) ? fs.readdirSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) : [])
+      if (f.startsWith("hinge_test_hinge_")) fs.rmSync(path.join(ROOT, "Content/Studio/Library/meshes/local", f));
+    const li = path.join(ROOT, "Content/Studio/Library/index/local.json");
+    if (fs.existsSync(li)) { const j = JSON.parse(fs.readFileSync(li, "utf8")); for (const k of Object.keys(j)) if (k.startsWith("hinge_test_hinge_")) delete j[k]; fs.writeFileSync(li, JSON.stringify(j, null, 1)); }
     fs.rmSync(path.join(ROOT, "Content/Games", SCRATCH), { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "Saved/Story", SCRATCH), { recursive: true, force: true });
   }
