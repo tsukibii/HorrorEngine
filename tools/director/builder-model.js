@@ -145,7 +145,7 @@ export function levelToModel(story, levelName) {
     items.push(Object.assign(newItem(m[1], p.id, sr.id, wall, ns ? ax : ay), { w, h, t, z: r3((p.z || 0) + h / 2), extra: clone(p) }));
   }
   const tr = lvl.trim || {};
-  const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0,
+  const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0, threshold: tr.threshold || 0,
                    lights: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_light`)),
                    switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)) };
   return { rooms, ops, items, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
@@ -300,7 +300,7 @@ export function modelToLevel(model, story) {
   }
   const level = Object.assign({}, clone(model.levelExtra || {}), { start: startId, rooms: model.rooms.map(r => out[r.id]), links });
   const trim = {};
-  for (const k of ["skirting", "cornice", "casing"]) if (fin[k] > 0) trim[k] = r3(fin[k]);
+  for (const k of ["skirting", "cornice", "casing", "threshold"]) if (fin[k] > 0) trim[k] = r3(fin[k]);
   if (Object.keys(trim).length) level.trim = trim;
   return { level, problems };
 }
@@ -458,4 +458,17 @@ function switchFor(model, r) {
 // a room renamed: its wall items follow it (their ids carry the room's, so a level reads them back)
 export function renameItems(model, from, to) {
   for (const it of model.items || []) if (it.room === from) { it.room = to; it.id = it.id.replace(new RegExp(`^${from}_wi_`), `${to}_wi_`); }
+}
+
+// A level taken from another game's script, as a start: its rooms, doors, built-ins, trim and wall items, and its
+// plain props; what belongs to that game's story (things you use, people, the start) is left behind.
+export function borrowLevel(story, levelName) {
+  const m = levelToModel(story, levelName);
+  for (const r of m.rooms) {
+    r.extra.props = (r.extra.props || []).filter(p => !p.use && !(p.shape || "").startsWith("person") && !p.on);
+    if (!r.extra.props.length) delete r.extra.props;
+  }
+  for (const o of m.ops) o.locked_by = null;   // its key stays with the other game's script
+  m.startId = "start";
+  return m;
 }

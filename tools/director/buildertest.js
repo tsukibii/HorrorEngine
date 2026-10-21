@@ -14,7 +14,7 @@ const SCRATCH = "Zz_builder_test";
 
 (async () => {
   const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } }), page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/favicon|WebGL|GPU stall/i.test(m.text())) errors.push(m.text()); });
@@ -140,6 +140,40 @@ const SCRATCH = "Zz_builder_test";
       await page.evaluate(() => { document.querySelector("#eye").value = "stand"; window.builder.render3d(); });
       await page.screenshot({ path: path.join(shots, "builder_saved.png") });
     }
+
+    // the round trip: a builder save reloads a desk open on the same game
+    const desk = await ctx.newPage();   // the same context: a BroadcastChannel never crosses contexts
+    desk.on("pageerror", e => errors.push("desk: " + e.message));
+    await desk.goto(URL + "index.html?game=" + SCRATCH);
+    await desk.waitForFunction(() => window.__dd && window.__dd.S && window.__dd.S.levels, null, { timeout: 30000 });
+    await desk.waitForTimeout(500);
+    const before = await desk.evaluate(() => Object.keys(window.__dd.S.levels));
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("1ldk"); });
+    await page.waitForTimeout(600);
+    await page.evaluate(() => window.builder.save(false));
+    await desk.waitForFunction(n => Object.keys(window.__dd.S.levels).length > n, before.length, { timeout: 15000 })
+      .catch(async () => fail("the desk didn't reload after the builder saved: " + JSON.stringify({ builder: await page.evaluate(() => document.querySelector("#status").textContent),
+        desk: await desk.evaluate(() => [document.querySelector("#status").textContent, document.querySelector("#banner").style.display]) })));
+    console.log("desk levels", before.length, "->", (await desk.evaluate(() => Object.keys(window.__dd.S.levels))).join(","));
+    await desk.close();
+
+    // another game's level as a start: Sample's house, with its people and the things it uses left behind
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openOther("Sample", "house"); });
+    await page.waitForTimeout(600);
+    const bor = await page.evaluate(async () => ({ target: window.B.target, rooms: window.B.model.rooms.length, chk: await window.builder.runChecks() }));
+    console.log("borrowed", bor.target, bor.rooms, "rooms");
+    if (!bor.rooms || bor.chk.errors.length) fail("borrowed level: " + JSON.stringify(bor).slice(0, 300));
+
+    // a deep link from the desk: Sample's house with a node's marks, and the script panel
+    const node = Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Games/Sample/story.json"), "utf8")).flow).find(([, n]) => n.type === "scene")[0];
+    await page.goto(URL + `builder.html?game=Sample&level=house&node=${node}`);
+    await page.waitForFunction(() => window.__builderReady && window.B.game === "Sample" && window.B.plan, null, { timeout: 60000 });
+    const mk = await page.evaluate(() => ({ focus: window.B.focus, level: window.B.target, here: window.builder.nodesHere().length,
+      rows: document.querySelectorAll("#script button").length, hot: window.builder.focusIds().size,
+      marks: document.querySelectorAll("#plan path[fill='#ff6b5a'], #plan path[fill='#8fd18f'], #plan path[fill='#6fb3d9']").length }));
+    console.log("deep link", JSON.stringify(mk));
+    if (mk.focus !== node || mk.level !== "house" || !mk.here || !mk.rows || !mk.marks) fail("the deep link and marks: " + JSON.stringify(mk));
+    if (shots) await page.screenshot({ path: path.join(shots, "builder_marks.png") });
   } finally {
     fs.rmSync(path.join(ROOT, "Content/Games", SCRATCH), { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "Saved/Story", SCRATCH), { recursive: true, force: true });

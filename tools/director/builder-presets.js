@@ -263,5 +263,10 @@ export const LIGHT_K = { ldk: 3000, living: 2700, dining: 2700, kitchen: 4000, w
   bath: 4000, washroom: 4000, toilet: 3000, genkan: 3000, corridor: 3000, stairs: 3000, service: 3500 };
 
 // the finish a new plan starts with: skirting 6 cm, door casings 6 cm, no cornice (Japanese rooms often have a thin
-// mawaribuchi: try 3 cm), a ceiling light in each room with its switch by the door
-export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, lights: true, switches: true };
+// mawaribuchi: try 3 cm), a 12 mm threshold where the floor changes, a ceiling light in each room with its switch by
+// the door
+export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, threshold: 0.012, lights: true, switches: true };
+
+// texture sets a room can be given (its `look`): the few the studio already uses, plus whatever has been fetched
+// into the library (python tools/cc0.py textures <word>, then get): the builder lists both
+export const KNOWN_LOOKS = ["ambientcg/WoodFloor041", "ambientcg/Planks012", "ambientcg/Wood049", "ambientcg/Plaster003", "ambientcg/Rust004"];

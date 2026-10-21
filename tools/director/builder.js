@@ -5,11 +5,11 @@
 // builder-model.js. docs/SCENE_BUILDER.md.
 import * as THREE from "three";
 import * as M from "./motion.js";
-import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H } from "./stage.js";
+import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H, loadAssetLibrary, LIBRARY } from "./stage.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
-import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH } from "./builder-presets.js";
+import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS } from "./builder-presets.js";
 import * as BM from "./builder-model.js";
 
 const $ = s => document.querySelector(s);
@@ -24,7 +24,11 @@ const B = {
   view: { cx: 4, cy: 4, s: 60 },            // the plan's centre (m) and its scale (px a metre)
   undo: [], redo: [], plan: null, planStory: null, exported: null, dirty: false,
   itemKind: "poster", refs: [], ref: null, measure: null,
+  focus: null, others: {},                  // the script node whose marks are highlighted; other games' stories
 };
+const Q = new URLSearchParams(location.search);
+let STORY_CH = null;
+try { STORY_CH = new BroadcastChannel("horrorstudio-story"); } catch (e) { }
 let LIB = null, stage = null, herFig = null, lampLight = null;
 
 function status(t, cls) { const s = $("#status"); s.textContent = t; s.className = cls || ""; }
@@ -37,7 +41,7 @@ async function loadGames() {
   const sel = $("#game");
   sel.innerHTML = "";
   for (const name of g.games || g) sel.append(new Option(name, name));
-  const want = localStorage.getItem("builder.game");
+  const want = Q.get("game") || localStorage.getItem("builder.game");
   if (want && [...sel.options].some(o => o.value === want)) sel.value = want;
   await loadGame(sel.value);
 }
@@ -48,8 +52,11 @@ async function loadGame(game) {
   const sel = $("#level"); sel.innerHTML = "";
   for (const l of Object.keys(B.story.levels || {})) sel.append(new Option(l, l));
   sel.append(new Option("+ new level…", "__new"));
-  const lv = Object.keys(B.story.levels || {})[0];
+  const asked = B.game === Q.get("game") && Q.get("level") && B.story.levels[Q.get("level")] ? Q.get("level") : null;
+  const lv = asked || Object.keys(B.story.levels || {})[0];
+  if (Q.get("node") && B.story.flow && B.story.flow[Q.get("node")]) B.focus = Q.get("node");
   if (lv) { sel.value = lv; openLevel(lv); }
+  loadOthers();
   $("#fovNote").textContent = `fov ${B.story.game.fov || FOV_H}° (game.fov)`;
   await setupFigure();
 }
@@ -188,6 +195,7 @@ function draw() {
     drawOpening(op);
   }
   for (const it of B.model.items || []) drawItem(it);
+  if ($("#marks").checked) drawMarks();
   drawPeople();
   if (B.measure) drawMeasure();
   if (B.sel && B.sel.room) handles(B.model.rooms.find(r => r.id === B.sel.room));
@@ -461,6 +469,7 @@ function renderProps() {
     walls.append("open sides:", ...BM.WALLS.map(wl => check(r.open.includes(wl), wl, on => { r.open = on ? [...r.open, wl] : r.open.filter(x => x !== wl); })));
     box.append(walls, check(r.ceiling, "ceiling", v => { r.ceiling = v; }), document.createElement("br"),
       check(r.fixtures, "built-ins (kitchen, bath, toilet, shoe cabinet, stairs)", v => { r.fixtures = v; }));
+    box.append(lookEditor(r));
     const del = document.createElement("button"); del.textContent = "Remove room"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
     const props = (r.extra.props || []).filter(p => !p.id.startsWith(r.id + "_fx_"));
     if (props.length) { const n = document.createElement("div"); n.className = "hint"; n.textContent = `${props.length} props from the story stay in this room (room space: they move with it).`; box.append(n); }
@@ -522,6 +531,7 @@ function renderFloors() {
 
 // ---- stats: what the plan can hold ----
 function renderStats() {
+  renderScript();
   const st = BM.stats(B.model, B.exported.level), box = $("#stats");
   const fl = Object.entries(st.floorArea).sort((a, b) => a[0] - b[0]).map(([z, a], i) => `${i + 1}F ${a.toFixed(0)} m²`).join(", ");
   const rows = [
@@ -557,7 +567,9 @@ async function save(force) {
   if (r._status === 409) { if (confirm(r.error + "\n\nOverwrite?")) return save(true); return; }
   B.story = s; B.mtime = r.mtime; B.dirty = false; B.level = B.target;
   const sel = $("#level"); for (const o of sel.options) if (o.value === B.target) o.textContent = B.target;
-  status(`saved level ${B.target} into ${B.game}/story.json (the previous file is in Saved/Story/${B.game}/history)`);
+  status(`saved level ${B.target} into ${B.game}/story.json (the previous file is in Saved/Story/${B.game}/history); an open desk reloads it`);
+  if (STORY_CH) STORY_CH.postMessage({ type: "saved", game: B.game, level: B.target });
+  renderScript();
 }
 
 // ---- the player's eye (the desk's own stage: the same pieces the importer builds) ----
@@ -676,7 +688,9 @@ document.addEventListener("keydown", e => {
 // ---- boot ----
 async function boot() {
   for (const P of PRESETS) $("#preset").append(new Option(P.name, P.id));
-  $("#preset").onchange = () => { openPreset($("#preset").value); $("#preset").value = ""; };
+  $("#preset").onchange = () => { const v = $("#preset").value; $("#preset").value = ""; if (v.startsWith("other:")) { const [, g, l] = v.split(":"); openOther(g, l); } else openPreset(v); };
+  $("#marks").onchange = () => draw();
+  await loadAssetLibrary().catch(() => { });
   $("#game").onchange = () => loadGame($("#game").value);
   $("#level").onchange = () => {
     const v = $("#level").value;
@@ -707,7 +721,7 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM;
-window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo };
+window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
 
 // ---- wall items ----
@@ -764,7 +778,8 @@ function renderFinish() {
   const grid = document.createElement("div"); grid.className = "prop";
   grid.append(...cm("skirting, cm", "skirting", "the board along the foot of every wall (0: none); Japanese homes: 4 to 8 cm"),
               ...cm("cornice, cm", "cornice", "a moulding where the wall meets the ceiling (mawaribuchi; 0: none)"),
-              ...cm("door casing, cm", "casing", "the frame round every door and opening, both sides (0: none)"));
+              ...cm("door casing, cm", "casing", "the frame round every door and opening, both sides (0: none)"),
+              ...cm("threshold, cm", "threshold", "a strip across a doorway where the floor changes, wood to tile (0: none)"));
   box.append(grid,
     check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
     check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }));
@@ -835,4 +850,111 @@ function savePlanImage() {
   clone.insertBefore(bg, clone.firstChild);
   const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${B.target || "plan"}_${B.floor + 1}F.svg`; a.click();
+}
+
+// ---- the script on this level: its marks on the plan, its scenes and stitches, played in the desk ----
+function nodesHere() {
+  const st = B.story, out = [];
+  const only = Object.keys(st.levels || {}).length === 1 ? Object.keys(st.levels)[0] : null;
+  for (const [nid, n] of Object.entries(st.flow || {})) {
+    const ref = n.type === "scene" ? (st.scenes || {})[n.ref] : n.type === "stitch" ? (st.stitches || {})[n.ref] : null;
+    if (!ref) continue;
+    const lvl = ref.level || only;
+    if (lvl === B.target || (lvl === B.level && B.target === B.level)) out.push({ nid, n, ref, title: ref.title || n.ref });
+  }
+  return out;
+}
+function focusIds() {
+  if (!B.focus || !B.story.flow[B.focus]) return new Set();
+  const n = B.story.flow[B.focus], ref = n.type === "scene" ? B.story.scenes[n.ref] : B.story.stitches[n.ref];
+  const txt = JSON.stringify(ref || {}), ids = new Set();
+  for (const m of txt.matchAll(/"([a-z][a-z0-9_]*)"/g)) ids.add(m[1]);
+  return ids;
+}
+function drawMarks() {
+  if (!B.plan) return;
+  const hot = focusIds(), z0 = floorZ();
+  for (const p of B.plan.pieces) {
+    if (p.level !== B.target || Math.abs(p.pos[2] - (p.kind === "mesh" ? p.size[2] / 2 : 0) - z0) > 1.2) continue;
+    const use = (p.tags.find(t => t.startsWith("use:")) || "").slice(4);
+    const id = p.id;
+    if (p.kind === "spot" || p.kind === "start") {
+      const a = (p.yaw || 0) * Math.PI / 180, x = sx(p.pos[0]), y = sy(p.pos[1]), on = hot.has(id) || hot.has((p.d || {}).id);
+      const col = p.kind === "start" ? "#d9a441" : on ? "#ff6b5a" : "#8fd18f";
+      el("path", { d: `M${x + Math.cos(a) * 9} ${y - Math.sin(a) * 9}L${x + Math.cos(a + 2.5) * 6} ${y - Math.sin(a + 2.5) * 6}L${x + Math.cos(a - 2.5) * 6} ${y - Math.sin(a - 2.5) * 6}Z`, fill: col, "fill-opacity": on ? 1 : 0.8 });
+      if ((B.view.s > 40 || on) && p.kind !== "start") el("text", { x: x + 8, y: y - 6, fill: col, "font-size": on ? 11 : 9 }).textContent = id;
+    } else if (p.kind === "light" && !id.endsWith("_fx_light")) {
+      el("circle", { cx: sx(p.pos[0]), cy: sy(p.pos[1]), r: 5, fill: "none", stroke: "#ffd27a", "stroke-width": 1.5 });
+    } else if (p.kind === "mesh" && use && use !== "spot") {
+      const on = hot.has(id), x = sx(p.pos[0]), y = sy(p.pos[1]);
+      el("path", { d: `M${x} ${y - 6}L${x + 6} ${y}L${x} ${y + 6}L${x - 6} ${y}Z`, fill: on ? "#ff6b5a" : "#6fb3d9", "fill-opacity": 0.9 });
+      if (B.view.s > 60 || on) el("text", { x: x + 8, y: y + 4, fill: on ? "#ff6b5a" : "#6fb3d9", "font-size": 9 }).textContent = `${id} (${use})`;
+    }
+  }
+}
+function renderScript() {
+  const box = $("#script"); if (!box || !B.story) return;
+  const here = nodesHere();
+  box.innerHTML = "";
+  if (!here.length) { box.innerHTML = `<div class="hint">No scene or stitch is set on ${esc(B.target || "this level")} yet${B.target !== B.level ? " (it's new: save it, then give scenes this level)" : ""}.</div>`; return; }
+  for (const { nid, n, title } of here) {
+    const row = document.createElement("div"); row.style.cssText = "display:flex;gap:4px;align-items:center;margin:2px 0";
+    const lab = document.createElement("span"); lab.style.flex = "1"; lab.innerHTML = `<span class="hint">${n.type}</span> ${esc(title)}`;
+    if (B.focus === nid) lab.style.color = "#ff6b5a";
+    const show = document.createElement("button"); show.textContent = "marks"; show.title = "highlight the spots and things this one uses";
+    show.onclick = () => { B.focus = B.focus === nid ? null : nid; renderScript(); draw(); };
+    const play = document.createElement("button"); play.textContent = "▶ in the desk"; play.title = "play it in the director's desk (save first to see your edits there)";
+    play.onclick = async () => {
+      if (B.dirty && B.target === B.level && confirm("Save the level first, so the desk plays your edits?")) await save(false);
+      window.open(`index.html?game=${encodeURIComponent(B.game)}&node=${encodeURIComponent(nid)}&watch=1`, "desk");
+    };
+    row.append(lab, show, play); box.append(row);
+  }
+}
+
+// ---- another game's level as a start ----
+async function loadOthers() {
+  const games = (await api("/api/games")).games.filter(g => g !== B.game);
+  const sel = $("#preset");
+  sel.querySelectorAll("optgroup.other").forEach(o => o.remove());
+  const grp = document.createElement("optgroup"); grp.label = "From another game's script"; grp.className = "other";
+  for (const g of games) {
+    try { const j = await api("/api/story/" + encodeURIComponent(g)); B.others[g] = j.story; for (const l of Object.keys(j.story.levels || {})) grp.append(new Option(`${g}: ${l}`, `other:${g}:${l}`)); } catch (e) { }
+  }
+  if (grp.children.length) sel.append(grp);
+}
+function openOther(game, level) {
+  const st = B.others[game];
+  if (!st || !st.levels[level]) return;
+  if (B.dirty && !confirm("Replace the plan with " + game + "'s " + level + "? (Undo brings it back.)")) return;
+  pushUndo();
+  let name = level, i = 2;
+  while (B.story.levels[name]) name = `${level}_${i++}`;
+  B.model = BM.uniquify(BM.borrowLevel(st, level), BM.takenIds(B.story, name), name);
+  B.target = name;
+  const sel = $("#level");
+  if (![...sel.options].some(o => o.value === name)) sel.insertBefore(new Option(name + " (new)", name), sel.lastChild);
+  sel.value = name;
+  afterLoad(`${game}'s ${level}: its rooms, doors, trim and plain props (what you use, people and the start stay with ${game})`);
+  B.dirty = true;
+}
+
+// ---- a room's look: texture sets for its floor, walls, ceiling and trim ----
+function lookEditor(r) {
+  const wrapEl = document.createElement("div"); wrapEl.style.marginTop = "6px";
+  const look = r.extra.look || {};
+  const opts = [...new Set([...Object.keys(LIBRARY.textures || {}), ...KNOWN_LOOKS, ...Object.values(look)])].filter(Boolean).sort();
+  const g = document.createElement("div"); g.className = "prop";
+  for (const part of ["floor", "walls", "ceiling", "trim"]) {
+    const sel = pick(look[part] || "", [["", "(grey)"], ...opts.map(o => [o, o.replace(/^ambientcg\//, "") + (LIBRARY.textures && LIBRARY.textures[o] ? "" : " (not fetched)")])], v => {
+      r.extra.look = Object.assign({}, r.extra.look || {}); if (v) r.extra.look[part] = v; else delete r.extra.look[part];
+      if (!Object.keys(r.extra.look).length) delete r.extra.look;
+    });
+    g.append(...field(part, sel));
+  }
+  const same = document.createElement("button"); same.textContent = `Same look for every ${(KINDS[r.kind] || KINDS.other).en.toLowerCase()}`;
+  same.onclick = () => { pushUndo(); for (const o of B.model.rooms) if (o.kind === r.kind && o !== r) { if (r.extra.look) o.extra.look = JSON.parse(JSON.stringify(r.extra.look)); else delete o.extra.look; } changed(); };
+  const h = document.createElement("div"); h.className = "hint"; h.textContent = "Look (texture sets; fetch more with cc0.py textures <word> and get)";
+  wrapEl.append(h, g, same);
+  return wrapEl;
 }

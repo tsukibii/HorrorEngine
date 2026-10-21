@@ -52,6 +52,7 @@ svg text{font-family:system-ui,Segoe UI,sans-serif;pointer-events:none}
   <label>layout</label><select id="preset"><option value="">reference layouts…</option></select>
   <span class="floors" id="floors"></span>
   <label title="What a drag snaps to">snap</label><select id="snap"><option value="0.1">10 cm</option><option value="0.2">20 cm</option><option value="0.455">½ module (45.5 cm)</option><option value="0.91">module (91 cm)</option></select>
+  <label title="The script's spots (green arrows; the highlighted scene's in red), the start, and the things you use (blue)"><input type="checkbox" id="marks" checked> marks</label>
   <label title="The grid drawn under the plan">grid</label><select id="grid"><option value="m">1 m, 20 cm (Unreal)</option><option value="jp">91 cm module (Japanese)</option></select>
   <button id="undo" title="Undo (Ctrl+Z)">↶</button><button id="redo" title="Redo (Ctrl+Y)">↷</button>
   <button id="planImage" title="The floor plan as an SVG picture">Plan image</button>
@@ -86,6 +87,7 @@ svg text{font-family:system-ui,Segoe UI,sans-serif;pointer-events:none}
     <div id="view" tabindex="0"><div id="viewHud"></div></div>
     <div id="info">
       <h2>What the plan holds</h2><div id="stats" class="stat"></div>
+      <h2>The script on this level</h2><div id="script"></div>
       <h2>Checks</h2><div id="msgs" class="msgs"><div class="hint">Press Check (or Save) for the story and level checks.</div></div>
       <h2>Scale</h2><div class="hint" id="scaleNote"></div>
     </div>

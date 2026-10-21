@@ -8,7 +8,7 @@ desk's server. What it saves is what the importer builds, and what the 3D view s
 (`storykit.plan`).
 
 Most of a game happens in one home, so the plan has to hold a lot of scenes: places to hide, ways round for a chase,
-rooms that can change between chapters. The panel under the 3D view counts what it holds (§4).
+rooms that can change between chapters. The panel under the 3D view counts what it holds (§5).
 
 ## 1. Using it
 
@@ -64,10 +64,36 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   first if a check fails, and if the file changed on disk since you opened it.
 - **Undo and redo:** Ctrl+Z and Ctrl+Y.
 
+- **Floor thresholds:** where a doorway joins two rooms with different footsteps (wood to tile at the washroom
+  door, the genkan step), a thin strip under the door (1.2 cm to start; *threshold* under Finish, 0 for none).
+- **Looks:** the selected room's floor, walls, ceiling and trim from the texture sets (`cc0.py fetch`ed ones and the
+  ones the stories already use), saved as the room's `look`; *Same look for every <kind>* copies it to each room of
+  that kind on the level.
+
 An existing level opens with its props. They stay in their rooms in room space, so they move with the room. Scenes
 and stitches that name a room id keep working as long as the id does; renaming a room that a scene names asks first.
 
-## 2. Scale: the squares, the bodies, the eye
+## 2. The script and the environment, both ways
+
+The builder edits the environment a script plays in, and the desk plays the script in what the builder saved.
+
+- **From the desk:** select a scene or stitch and press **Edit environment (<level>) ↗**. The builder opens on that
+  game and level (in its own window, reused), with that node's marks lit.
+- **Marks** (the header's checkbox): what the script uses, drawn on the plan. Spots and the start as arrows, the
+  things you use (`use:`) as blue diamonds, the story's own lights as circles. The selected node's ids are red.
+- **The script on this level** (under the stats): each scene and stitch set on this level. *marks* lights its ids;
+  *▶ in the desk* opens the desk on it and plays it in Watch (it offers to save first, so it plays your edits).
+- **Saving reloads the desk:** an open desk on the same game reloads the story as soon as the builder saves, so the
+  next Watch is in the new rooms. If the desk has unsaved edits it shows its "changed on disk" banner instead; if a
+  playthrough is running, it reloads when it ends.
+- **Another game's level as a start:** *layout* lists *From another game's script*: every level of the other
+  games. It comes in as a new level here: rooms, doors, windows, trim, looks and plain props. What that script uses
+  (interactables, spots, people, locks and their keys) stays with it. Ids are renamed against this story's.
+
+Moving or resizing a room carries its props and spots with it (they're in room space). A scene keeps working while
+the ids it names exist: the checks say when a save would break one.
+
+## 3. Scale: the squares, the bodies, the eye
 
 - **The grid:** 1 m squares with 20 cm lines. That's reported to be Unreal's prototype grid in the templates (a
   1 m cell split 5 by 5), but it isn't confirmed in Epic's documentation; on the editor's own grid, 100 units is
@@ -85,7 +111,7 @@ and stitches that name a room id keep working as long as the id does; renaming a
 - **The lens:** the game's one field of view (`game.fov`, 90° across). The view's vertical angle follows its shape,
   as the desk's Watch view does.
 
-## 3. The reference layouts
+## 4. The reference layouts
 
 | Layout | Size | What it's for |
 |---|---|---|
@@ -103,7 +129,7 @@ They are drawn from the common Japanese patterns:
 Room sizes follow listings: a 6帖 room is about 9.7 m², a unit bath about 1.6 × 1.6 m (a "1616"), corridors 0.9 to
 1.1 m, ceilings 2.4 m, a floor-to-floor of 2.85 m.
 
-## 4. What the plan holds
+## 5. What the plan holds
 
 The panel under the 3D view counts:
 - **Floor area:** in m² and in 帖, per floor.
@@ -117,7 +143,7 @@ The panel under the 3D view counts:
 A flat has no loops. A house with a hall and an LDK has some. Sliding doors between rooms make many: that's why the
 traditional house plays best for chases.
 
-## 5. Under the hood
+## 6. Under the hood
 
 | File | What |
 |---|---|
@@ -125,19 +151,21 @@ traditional house plays best for chases.
 | `tools/director/builder-model.js` | the model, without the page: layouts and levels in, story rooms out. Shared walls (the taller, then the larger room builds a wall two rooms share; the other skips that stretch), openings on whichever room builds that wall, links from openings, built-ins and stairs clear of every doorway, the start spot, unique ids, the stats |
 | `tools/director/builder-presets.js` | the room kinds (colours, Japanese names, footsteps, sizes, built-ins), the built-ins' sizes, the opening defaults, the reference layouts |
 | `tools/director/serve.py` | `POST /api/worldcheck/<level>`: the world checks on an unsaved story |
-| `tools/director/buildertest.js` | the test: every layout passes the checks with nothing to fix, walking and walls, adding a room and a door, saving into a scratch game. Ends `BUILDER ok`; needs the desk's server running and Playwright |
+| `tools/director/buildertest.js` | the test: every layout passes the checks with nothing to fix, walking and walls, adding a room and a door, the finish, wall items, a reference cut-out, saving into a scratch game, a desk open on it reloading after the save, another game's level borrowed, and the desk's deep link with its marks and the script panel. Ends `BUILDER ok`; needs the desk's server running and Playwright |
+| `tools/director/app.js` | the desk's side: *Edit environment*, reloading when the builder saves (a `BroadcastChannel`, `horrorstudio-story`), and `index.html?game=&node=&watch=1` to play a node |
 
 The format grew with it (STORY_FORMAT.md §2):
 - a `skip` stretch;
 - room `kind`, `name` and `dir`;
 - door `swing: "slide"`;
 - shared walls between rooms whose heights overlap;
-- the built-ins' ids.
+- the built-ins' ids;
+- the `threshold` trim key.
 
 `plan.py`, `story_check.py` and `level_check.py` read all of it, and `level_check.check()` can be called on a story
 in memory.
 
-## 6. From here to Unreal, semi-photoreal, quickly
+## 7. From here to Unreal, semi-photoreal, quickly
 
 What the builder now hands over, and what to do with it:
 1. **The shell is exact:** walls, holes cut to your window and door models, trim, built-ins at real sizes.
@@ -152,13 +180,19 @@ What the builder now hands over, and what to do with it:
 4. **Lights are placed and warm:** a point light per ceiling light at its colour temperature; swap for rect lights
    (LED panels) and bake (GPU Lightmass) or leave them to Lumen.
 
-## 7. Not done yet
+## 8. Not done yet
 
-- **Floor thresholds** where the floor changes (wood to tile at the washroom door).
-- **Materials by room kind:** a default `look` (tatami for a washitsu, tile in the bath).
+- **Default looks by room kind** (tatami in a washitsu, tile in the bath): *Same look for every <kind>* does it by
+  hand until the texture sets for them are fetched.
 - **Room shapes:** rectangles only. An L-shaped room is two rooms joined by an opening.
 - **Building over a doorway:** a door can't sit on a wall that another room builds, so the builder puts it on the
   room that does.
 - **Doors in the 3D view:** they show open or closed, never part-open.
-- **Rooms changing with the chapters:** not here yet. The plan here is the building; chapter states would be a layer
-  on top: dressing per chapter, and Unreal's Lighting Scenarios for the light.
+- **Rooms changing with the chapters:** not here yet. The plan is the building; chapter states would be a layer on
+  top of it, so the walls stay one set of pieces:
+  - in the format, a level's `states: { "<state>": { "props": {...}, "lights": {...}, "openings": {...} } }`:
+    props added, moved or taken away, lights off or flickering, doors locked or boarded;
+  - a flow node names the state it starts (`state: "ch2_night"`), and the runner swaps the dressing at a seam;
+  - in the builder, a *state* picker over the plan: edits go into the state, the plan shows the building under it;
+  - in Unreal, the dressing per state as data-layers or sublevels, and a Lighting Scenario each when baked.
+  It needs the runner's support first (RUNNER_SPEC.md), so it waits for a game that needs it.
