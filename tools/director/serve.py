@@ -11,7 +11,6 @@ import json
 import os
 import subprocess
 import sys
-import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -36,7 +35,6 @@ MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", 
 HEADS = L.STUDIO / "Heads"           # the face page's pictures and heads (git-ignored: real people's faces)
 FACE_FILES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
 FACE = {"proc": None}
-FACE_LOCK = threading.Lock()
 PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
 
@@ -48,28 +46,12 @@ def history_dir(game):
 
 
 def face_call(req):
-    """one request to tools/face_mesh.py's worker (MediaPipe's environment), started on first use and kept: it holds
-    the pictures' points and the head templates, so a slider's fit takes a fraction of a second"""
-    with FACE_LOCK:
-        p = FACE["proc"]
-        if p is None or p.poll() is not None:
-            home = Path(os.environ.get("FACE_MESH_HOME", ROOT / "vendor" / "face_mesh"))
-            py = home / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-            if not py.exists():
-                return 400, {"error": "MediaPipe isn't set up: python tools/face_mesh.py setup"}
-            (ROOT / "Saved").mkdir(exist_ok=True)
-            log = open(ROOT / "Saved" / "face_mesh_worker.log", "ab")
-            p = FACE["proc"] = subprocess.Popen([str(py), str(ROOT / "tools" / "face_mesh.py"), "--home", str(home), "worker"],
-                                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log, text=True,
-                                                encoding="utf-8", bufsize=1, cwd=str(ROOT))
-        p.stdin.write(json.dumps(req) + "\n")
-        p.stdin.flush()
-        for line in p.stdout:
-            if line.startswith("@@"):
-                res = json.loads(line[2:])
-                return (400 if "error" in res else 200), res
-        FACE["proc"] = None
-        return 500, {"error": "the face worker stopped (Saved/face_mesh_worker.log says why)"}
+    """one request to tools/face_mesh.py's worker (its Worker: MediaPipe's environment, started on first use and kept,
+    holding the pictures' points and the head templates, so a slider's fit takes a fraction of a second)"""
+    if FACE["proc"] is None:
+        import face_mesh  # noqa: PLC0415 - tools/, on the path above
+        FACE["proc"] = face_mesh.Worker(ROOT / "Saved" / "face_mesh_worker.log")
+    return FACE["proc"].call(req)
 
 
 def face_name(n):

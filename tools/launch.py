@@ -34,6 +34,7 @@ TOOLS = [
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
+    ("Pages", "Body editor (MHR body, base, face from pictures)", "tools/body/serve.py", {"url": "http://127.0.0.1:8793"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),

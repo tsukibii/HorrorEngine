@@ -111,6 +111,34 @@ def fit_measures(targets, start=None, keep=0.02, groups=("body", "head"), steps=
     return w
 
 
+# what a shape's slider says it does: the measures it moves most (cm per unit weight, over a typical size)
+WORDS = {"height": (2, "taller", "shorter"), "shoulders": (1, "broader shoulders", "narrower shoulders"),
+         "chest": (1, "deeper chest", "flatter chest"), "bust": (0.6, "fuller bust", "flatter bust"),
+         "waist": (1, "wider waist", "slimmer waist"), "belly": (1, "belly out", "flatter belly"),
+         "hips": (1, "wider hips", "narrower hips"), "seat": (0.6, "flatter seat", "rounder seat"),
+         "thighs": (0.6, "thicker thighs", "thinner thighs"), "arms": (1, "longer arms", "shorter arms"),
+         "neck": (0.4, "thicker neck", "slimmer neck"), "head_w": (0.3, "wider head", "narrower head"),
+         "skull": (0.3, "longer skull", "shorter skull"), "jaw": (0.3, "wider jaw", "narrower jaw"),
+         "brow": (0.2, "brow forward", "brow back"), "nose": (0.2, "nose out", "nose in"),
+         "chin": (0.2, "chin forward", "chin back"), "crown": (0.3, "taller head", "flatter head"),
+         "hands": (0.2, "bigger hands", "smaller hands")}
+GROUP_MEASURES = {"body": ["height", "shoulders", "chest", "bust", "waist", "belly", "hips", "seat", "thighs", "arms", "neck"],
+                  "head": ["head_w", "skull", "jaw", "brow", "nose", "chin", "crown"], "hands": ["hands"]}
+
+
+def labels(mhr=None):
+    """each identity shape's slider label: the two measures it moves most, in words"""
+    mhr = mhr or load()
+    base = measures(mhr["points"], mhr)
+    out = []
+    for g, (a, b) in mhr["header"]["groups"].items():
+        for i in range(a, b):
+            m = measures(mhr["points"] + mhr["shapes"][i], mhr)
+            d = sorted(((n, (m[n] - base[n]) / WORDS[n][0]) for n in GROUP_MEASURES[g]), key=lambda x: -abs(x[1]))
+            out.append(", ".join(WORDS[n][1 if v > 0 else 2] for n, v in d[:2] if abs(v) > 0.15) or "subtle")
+    return out
+
+
 # the bases: changes from MHR's average (cm), the body's and the head's fitted apart (a head pushed hard breaks first)
 PRESETS = {
     "feminine": (dict(height=-10, shoulders=-5, chest=-1.5, bust=1.5, waist=-4, belly=-1, hips=2, seat=-1.5, thighs=0.5,

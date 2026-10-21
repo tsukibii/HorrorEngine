@@ -638,6 +638,7 @@ def cmd_worker(a):
       template {head}                     the head's points and triangles and the rotation that faces it to the view
       fit {name, settings, skip}          the head bent with those settings, its points flat, the report
       save {name, settings, skip, out}    <out>/<name>.obj, .json, _sheet.png
+      mhr {}                              the body editor's sliders: groups, labels, the bases, MHR's measures
       body {name, weights, settings, skip, side}   MHR's body (tools/body/mhr.py) with those identity weights and the
                                           face bent onto its head: the points that moved and by how much
     (detect, fit, body: a picture named in side is used for the face's depth only)"""
@@ -661,13 +662,20 @@ def cmd_worker(a):
             if not head: return dict(verts=flat(ses.canon), tris=ses.faces.reshape(-1).tolist(), rot=flat(np.eye(3)))
             tpl, bnd = head
             return dict(verts=flat(tpl["verts"]), tris=tpl["tris"].reshape(-1).tolist(), rot=flat(np.array(bnd["rot"])))
+        if op == "mhr":                                    # the body editor's sliders: groups, labels, the bases
+            sys.path.insert(0, str(ROOT / "tools" / "body"))
+            import mhr
+            m = mhr.load()
+            presets = json.loads(mhr.PRESETS_FILE.read_text(encoding="utf-8"))["presets"] if mhr.PRESETS_FILE.exists() else {}
+            return dict(groups=m["header"]["groups"], labels=mhr.labels(m), presets=presets,
+                        measures=mhr.measures(m["points"], m))
         if op == "body":
             sys.path.insert(0, str(ROOT / "tools" / "body"))
             import mhr
             m = mhr.load()
             pts = mhr.body(q.get("weights", []), m)
-            if not q.get("name") or q["name"] not in pics: return dict(idx=[], delta=[], report=None)
-            frames, thumbs = pics[q["name"]]
+            frames, thumbs = pics.get(q.get("name"), ([], {}))
+            if not frames: return dict(idx=[], delta=[], report=None)
             tpl, bnd = ses.body(m["points"], m["tris"])
             shaped = dict(tpl, verts=pts)
             verts, tris, rot, report, _ = ses.shape(frames, q.get("settings", {}), q.get("skip", []), q.get("side", []),
@@ -821,6 +829,36 @@ def cmd_check(a):
     for x in fails: print("FAIL", x)
     if fails: sys.exit(1)
     print("FACEMESH ok")
+
+
+class Worker:
+    """the worker from a plain-Python server (the desk's serve.py, the body editor's): started on first use in
+    MediaPipe's environment and kept, one request at a time; FACE_MESH_HOME picks another environment"""
+    def __init__(self, log):
+        import threading
+        self.proc, self.lock, self.log = None, threading.Lock(), Path(log)
+
+    def call(self, req):
+        """(http status, answer)"""
+        with self.lock:
+            p = self.proc
+            if p is None or p.poll() is not None:
+                home = Path(os.environ.get("FACE_MESH_HOME", ROOT / "vendor" / "face_mesh"))
+                py = py_of(home)
+                if not py.exists():
+                    return 400, {"error": "MediaPipe isn't set up: python tools/face_mesh.py setup"}
+                self.log.parent.mkdir(parents=True, exist_ok=True)
+                p = self.proc = subprocess.Popen([str(py), str(Path(__file__).resolve()), "--home", str(home), "worker"],
+                                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(self.log, "ab"),
+                                                 text=True, encoding="utf-8", bufsize=1, cwd=str(ROOT))
+            p.stdin.write(json.dumps(req) + "\n")
+            p.stdin.flush()
+            for line in p.stdout:
+                if line.startswith("@@"):
+                    res = json.loads(line[2:])
+                    return (400 if "error" in res else 200), res
+            self.proc = None
+            return 500, {"error": f"the face worker stopped ({self.log} says why)"}
 
 
 def main():

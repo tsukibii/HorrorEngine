@@ -77,6 +77,12 @@ a tiny nose) so a manga-leaning face is a sculpt elsewhere brought in through Me
   used or dropped, turn the head, Save). Expressions are read against the person's own most neutral picture, so full
   lips (MediaPipe's "pout") don't drop every picture; an open mouth is measured from the lips. Faces made from real people's pictures stay in `Content/Studio/Heads/`
   (git-ignored). Not MICA or FLAME: both need an account and are non-commercial.
+- **The body editor (`tools/body/`, ours):** the same fit on MHR's whole body. Pick a base (feminine, average,
+  masculine, or anywhere between), move any of MHR's 45 identity sliders (each labelled by what it measurably
+  changes), set the height, and drop a front picture and, if you have one, a side or three-quarter one (its depth
+  replaces MediaPipe's guess on the half it sees; MediaPipe has to find the face, so about 70 degrees at most). With
+  no pictures it's a plain body editor. Export the body, or the head alone for Mesh to MetaHuman. Characters stay in
+  `Content/Studio/People/` (git-ignored).
 - **A generated reference:** the user already makes close-up face videos; a neutral frontal frame from those is a
   FaceBuilder input, and the mocap takes are the same face, so likeness and animation agree.
 
