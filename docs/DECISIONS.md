@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (Play mode: the look last, physics things, a cursor, CSS UI)
+
+- **Unreal doesn't have to match the desk's look.** Post-processing and the look come last, per game (a game may go
+  more romance than horror). The desk -> Unreal match is about layout, timing and blocking, not colour.
+- **The Pilot is only the transfer test.** No more work on its story, notes or picks.
+- **Things you can interact with have physics**, tested first with a large die: a roll can unlock an easter-egg scene
+  or a side path that branches off and **rejoins the main line later**. The goal is a narrative with no hard cuts
+  that flows naturally, where the player's choices fill in the gaps.
+- **The in-game UI is made on the desk first** and may move to Unreal if we like it: no hands yet, so a **cursor that
+  changes with what you're looking at**, styled **neumorphic** (buttons that pop out, as if the world were a touch
+  screen you click). The styling stays **CSS**, themed per game, so a game can switch themes. Mini-games can grow
+  out of the same style.
+- Later, not now: the Unreal preview locks the camera; Play mode frees it.
+
 ## 2026-10-21 (gameplay: Resident Evil 7 feel, desk first)
 
 - **Rough gameplay is made in the director's desk first** (a Play mode you walk through), then Unreal. The plan:

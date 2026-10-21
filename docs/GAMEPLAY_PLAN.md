@@ -55,8 +55,9 @@ last one repeated. A line can instead start a scene, an interactive cinematic or
 
 ## 4. What else a game needs (and the first game uses)
 
-- **The interaction point**: a dot at the centre of the screen. What's under it highlights, with a prompt (`E Open`,
-  `E Hide`, `E Talk`). Hold-to-use for some things.
+- **The interaction point is a cursor** that changes with what's under it (look, open, take, hide, talk, roll), and
+  the thing highlights, with a prompt (`E Open`, `E Hide`, `E Talk`). Hold-to-use for some things. Styled by the UI
+  theme (§10).
 - **Doors**: open and close on their hinges or slides (the kit has them), locked by an item, the tricks (slam).
 - **Inventory**: pickups and keys, notes you read; examining an item comes later.
 - **Objectives** on screen, set by beats (the format has `objective`).
@@ -104,7 +105,8 @@ playback; Generate stays the one button.
 
 ## 8. The order
 
-1. **Play mode on the desk**: walk the built level (WASD, mouse look, collision with walls and furniture, stance),
+1. **Play mode on the desk**: walk the built level (WASD, mouse look, collision with walls and furniture, stance), the
+   CSS UI and its first theme (§10), the physics die,
    the interaction point and prompt, doors, pickups, notes, objectives, beats firing from `enter` and `use`.
 2. **Scenes from play**: a beat starts a scene; blended in and out on the ladder (§1); interactive cinematics (walk
    while she talks); timed choices.
@@ -113,6 +115,22 @@ playback; Generate stays the one button.
 5. **The registry and the checks** (grown alongside 1 to 4, not after).
 6. **Unreal**: the same parts in the StoryRunner, a group at a time, Generate carrying routes, zones and hiding
    places across.
+
+## 10. Added 2026-10-21: physics things, the cursor, the CSS UI (DECISIONS)
+
+- **Physics things**: an interactable can be `physics` (pushed, picked up and thrown, rolled). The first test is a
+  large die: `when: rolled` with the face that lands up, so a roll at the right moment can open an easter-egg scene
+  or a **side path that rejoins the main line** (a flow branch whose last node's `next` is back on the spine). The
+  desk needs a physics engine beside three.js (vendored, like three.js). Drawers and doors dragged with the cursor
+  (Amnesia's way) are the same part later.
+- **The UI is CSS, in themes**: `tools/director/play/ui/` holds the HUD as HTML (cursor, prompt, subtitles,
+  objective, choices, notes, pause), and every colour, radius and shadow comes from a theme file
+  (`themes/<name>.css`, the first is `neumorph`, light and a dark horror variant); `game.ui_theme` picks one. The
+  neumorphic buttons pop out of the surface and press in when used. Text keeps enough contrast to read over a dark
+  frame (neumorphism's weak point). Mini-games are small HTML panels in the same theme.
+- **In Unreal later**: either the same HTML through a web widget (CSS stays the truth) or UMG rebuilt from the theme's
+  numbers; decided when we port it.
+- **The look and post-processing come last**, per game; Unreal doesn't have to match the desk's colour.
 
 ## 9. Ask the user first
 
