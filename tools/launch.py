@@ -32,6 +32,7 @@ PY = sys.executable or "python"
 TOOLS = [
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
+    ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),

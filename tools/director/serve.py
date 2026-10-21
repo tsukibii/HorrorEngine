@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 from storykit import plan as P  # noqa: E402
 from storykit import library as LIB  # noqa: E402
+sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
 STATIC = {".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".txt": "text/plain"}
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
@@ -178,6 +179,22 @@ class Handler(BaseHTTPRequestHandler):
             th = {k: {"kind": t.kind, "use": t.use, "level": t.level, "room": t.room, "pos": t.pos, "size": t.size,
                       "yaw": t.yaw} for k, t in things.items()}
             return self.send(200, {"pieces": pieces, "things": th})
+        if parts[:2] == ["api", "worldcheck"]:          # the scene builder: the world rules on an unsaved story
+            story = json.loads(self.body().decode("utf-8"))
+            try:
+                import story_check as SC  # noqa: PLC0415 - tools/, on the path below
+                import level_check as LC  # noqa: PLC0415
+                things, errs = L.index(story)
+                r = SC.Report()
+                for e in errs:
+                    r.err(e)
+                if not errs:
+                    SC.check_world(story, things, r)
+                    lerrs, _ = LC.check(story, parts[2] if len(parts) == 3 else None)
+                    r.errors += lerrs
+            except Exception as e:  # noqa: BLE001 - a half-built world: say why
+                return self.send(200, {"errors": [f"the world doesn't plan yet: {e}"], "warnings": []})
+            return self.send(200, {"errors": r.errors, "warnings": r.warnings})
         if parts[:2] == ["api", "new"] and len(parts) == 3:
             name = parts[2]
             if not name.replace("_", "").isalnum() or (L.GAMES / name).exists():

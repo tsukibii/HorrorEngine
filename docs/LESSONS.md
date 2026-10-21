@@ -73,3 +73,6 @@ the fix.
 - **UnrealClaude's bridge lists only its simple tools:** taking the script tools out of `HIDDEN_TOOL_NAMES` made
   them "mega" tools, which aren't listed either (16 of 28 shown). `setup.py unrealclaude --show-scripts` now adds
   them to `SIMPLE_TOOL_NAMES`; after a router change, restart Claude Code so the bridge reloads.
+- **Story ids are unique across the whole file, levels included:** the scene builder's layouts planned on their own
+  but failed beside an existing level (two `start`s, two `front_door`s). Anything added to a story is renamed
+  against `takenIds()` first.

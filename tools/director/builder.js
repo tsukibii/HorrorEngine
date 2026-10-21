@@ -1,0 +1,662 @@
+// The scene builder: a top-down floor plan of a level (rooms, doors, sliding doors, windows) on a grid the size of
+// Unreal's (1 m squares, 20 cm lines) or a Japanese 910 mm module, with the reference layouts in builder-presets.js,
+// and the same level seen from the player's eye at the game's field of view: walk it before it's built.
+// It reads and writes the story's levels (docs/STORY_FORMAT.md §2) through the desk's server; the model is in
+// builder-model.js. docs/SCENE_BUILDER.md.
+import * as THREE from "three";
+import * as M from "./motion.js";
+import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H } from "./stage.js";
+import { loadBody, BodyFigure } from "./bodies.js";
+import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY } from "./builder-presets.js";
+import * as BM from "./builder-model.js";
+
+const $ = s => document.querySelector(s);
+const SVGNS = "http://www.w3.org/2000/svg";
+const api = async (url, opts) => { const r = await fetch(url, opts); const j = await r.json(); if (!r.ok && r.status !== 409) throw new Error(j.error || r.status); return Object.assign(j, { _status: r.status }); };
+const r2 = v => Math.round(v * 100) / 100;
+const SHOT_NAMES = { ecu: "an extreme close-up", cu: "a close-up", mcu: "a medium close-up", ms: "a medium shot", fs: "a full shot", ws: "a wide shot" };
+
+const B = {
+  game: null, story: null, mtime: 0, level: null, target: null,
+  model: null, floor: 0, sel: null, tool: "select", snap: 0.1, grid: "m",
+  view: { cx: 4, cy: 4, s: 60 },            // the plan's centre (m) and its scale (px a metre)
+  undo: [], redo: [], plan: null, planStory: null, exported: null, dirty: false,
+};
+let LIB = null, stage = null, herFig = null, lampLight = null;
+
+function status(t, cls) { const s = $("#status"); s.textContent = t; s.className = cls || ""; }
+const floorZ = () => B.model.floors[B.floor] ?? 0;
+const snapV = v => Math.round(v / B.snap) * B.snap;
+
+// ---- loading ----
+async function loadGames() {
+  const g = await api("/api/games");
+  const sel = $("#game");
+  sel.innerHTML = "";
+  for (const name of g.games || g) sel.append(new Option(name, name));
+  const want = localStorage.getItem("builder.game");
+  if (want && [...sel.options].some(o => o.value === want)) sel.value = want;
+  await loadGame(sel.value);
+}
+async function loadGame(game) {
+  B.game = game; localStorage.setItem("builder.game", game);
+  const j = await api("/api/story/" + encodeURIComponent(game));
+  B.story = j.story; B.mtime = j.mtime;
+  const sel = $("#level"); sel.innerHTML = "";
+  for (const l of Object.keys(B.story.levels || {})) sel.append(new Option(l, l));
+  sel.append(new Option("+ new level…", "__new"));
+  const lv = Object.keys(B.story.levels || {})[0];
+  if (lv) { sel.value = lv; openLevel(lv); }
+  $("#fovNote").textContent = `fov ${B.story.game.fov || FOV_H}° (game.fov)`;
+  await setupFigure();
+}
+function openLevel(name) {
+  B.level = name; B.target = name;
+  B.model = BM.levelToModel(B.story, name);
+  afterLoad(`level ${name}: ${B.model.rooms.length} rooms`);
+}
+function openPreset(id) {
+  const P = PRESETS.find(p => p.id === id);
+  if (!P) return;
+  if (B.dirty && !confirm("Replace the plan with the layout? (Undo brings it back.)")) return;
+  pushUndo();
+  let name = "home_" + P.id, i = 2;
+  while (B.story.levels[name]) name = "home_" + P.id + "_" + i++;
+  B.model = BM.uniquify(BM.presetToModel(P), BM.takenIds(B.story, name), name);
+  B.target = name;
+  const sel = $("#level");
+  if (![...sel.options].some(o => o.value === name)) sel.insertBefore(new Option(name + " (new)", name), sel.lastChild);
+  sel.value = name;
+  afterLoad(`layout: ${P.name}. ${P.note}`);
+  B.dirty = true;
+}
+function afterLoad(msg) {
+  B.sel = null; B.floor = 0;
+  frame(); renderFloors(); changed(false); status(msg);
+}
+function frame() {                         // fit the plan in view
+  const rs = B.model.rooms;
+  if (!rs.length) return;
+  const x0 = Math.min(...rs.map(r => r.x)), x1 = Math.max(...rs.map(r => r.x + r.w)), y0 = Math.min(...rs.map(r => r.y)), y1 = Math.max(...rs.map(r => r.y + r.d));
+  const box = $("#plan").getBoundingClientRect();
+  B.view.cx = (x0 + x1) / 2; B.view.cy = (y0 + y1) / 2;
+  B.view.s = Math.max(20, Math.min(160, Math.min(box.width / (x1 - x0 + 2.5), box.height / (y1 - y0 + 2.5))));
+}
+
+// ---- undo ----
+const snapshot = () => JSON.stringify({ m: B.model, f: B.floor });
+function pushUndo() { if (!B.model) return; B.undo.push(snapshot()); if (B.undo.length > 120) B.undo.shift(); B.redo = []; }
+function restore(s) { const o = JSON.parse(s); B.model = o.m; B.floor = Math.min(o.f, B.model.floors.length - 1); B.sel = null; renderFloors(); changed(); }
+function undo() { if (!B.undo.length) return; B.redo.push(snapshot()); restore(B.undo.pop()); }
+function redo() { if (!B.redo.length) return; B.undo.push(snapshot()); restore(B.redo.pop()); }
+
+// ---- every change: export, draw, replan (debounced) ----
+let replanTimer = 0;
+function changed(dirty = true) {
+  if (dirty) B.dirty = true;
+  B.exported = BM.modelToLevel(B.model, B.story);
+  draw(); renderProps(); renderStats();
+  clearTimeout(replanTimer); replanTimer = setTimeout(replan, 220);
+  if (B.dirty) status("unsaved: " + (B.exported.problems[0] || "Save to story writes it"), "dirty");
+}
+function storyWithLevel() {
+  const s = JSON.parse(JSON.stringify(B.story));
+  s.levels = Object.assign({}, s.levels, { [B.target]: B.exported.level });
+  return s;
+}
+async function replan() {
+  const s = storyWithLevel();
+  try {
+    const j = await api("/api/plan/" + encodeURIComponent(B.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
+    if (j.error) throw new Error(j.error);
+    B.plan = j; B.planStory = s;
+    stage.setWorld(j, s, B.target);
+    addLamp(); placeHer(); doors(); draw(); render3d();
+  } catch (e) { status(e.message, "bad"); }
+}
+
+// ---- the plan (SVG, drawn in screen pixels: x east, y north is up) ----
+const svg = $("#plan");
+const sx = x => (x - B.view.cx) * B.view.s + svg.clientWidth / 2;
+const sy = y => -(y - B.view.cy) * B.view.s + svg.clientHeight / 2;
+const wx = px => (px - svg.clientWidth / 2) / B.view.s + B.view.cx;
+const wy = py => -(py - svg.clientHeight / 2) / B.view.s + B.view.cy;
+function el(tag, attrs = {}, parent = svg) { const e = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); parent.append(e); return e; }
+const onFloor = r => Math.abs(r.z - floorZ()) < 0.3;
+const spans = r => r.z < floorZ() - 0.3 && r.z + r.h > floorZ() + 1.0;    // a stairwell seen from the floor above
+const visibleRooms = () => B.model.rooms.filter(r => onFloor(r) || spans(r));
+
+function draw() {
+  if (!B.model) return;
+  svg.innerHTML = "";
+  const W = svg.clientWidth, H = svg.clientHeight;
+  // grid: 1 m squares with 20 cm lines (Unreal's prototype grid), or the 910 mm module with its halves
+  const [minor, major] = B.grid === "jp" ? [MODULE / 2, MODULE] : [0.2, 1];
+  const gx0 = wx(0), gx1 = wx(W), gy0 = wy(H), gy1 = wy(0);
+  let d1 = "", d2 = "";
+  if (B.view.s * minor > 5) for (let x = Math.floor(gx0 / minor) * minor; x < gx1; x += minor) d1 += `M${sx(x)} 0V${H}`;
+  if (B.view.s * minor > 5) for (let y = Math.floor(gy0 / minor) * minor; y < gy1; y += minor) d1 += `M0 ${sy(y)}H${W}`;
+  for (let x = Math.floor(gx0 / major) * major; x < gx1; x += major) d2 += `M${sx(x)} 0V${H}`;
+  for (let y = Math.floor(gy0 / major) * major; y < gy1; y += major) d2 += `M0 ${sy(y)}H${W}`;
+  el("path", { d: d1, stroke: "#1d1d23", "stroke-width": 1 });
+  el("path", { d: d2, stroke: "#2a2a33", "stroke-width": 1 });
+  el("path", { d: `M${sx(0)} 0V${H}M0 ${sy(0)}H${W}`, stroke: "#3a3a46", "stroke-width": 1 });
+  // the floor below, faint
+  if (B.floor > 0) for (const r of B.model.rooms.filter(r => Math.abs(r.z - B.model.floors[B.floor - 1]) < 0.3))
+    el("rect", { x: sx(r.x), y: sy(r.y + r.d), width: r.w * B.view.s, height: r.d * B.view.s, fill: "none", stroke: "#3b3b45", "stroke-dasharray": "4 4" });
+  // rooms
+  for (const r of visibleRooms()) {
+    const K = KINDS[r.kind] || KINDS.other, sel = B.sel && B.sel.room === r.id;
+    const g = el("g", { "data-room": r.id, style: "cursor:move" });
+    el("rect", { x: sx(r.x), y: sy(r.y + r.d), width: r.w * B.view.s, height: r.d * B.view.s, fill: K.color, "fill-opacity": spans(r) ? 0.12 : (r.ceiling ? 0.33 : 0.18),
+                 stroke: sel ? "#d9a441" : "none", "stroke-width": 2, "data-room": r.id }, g);
+    if (spans(r)) { el("path", { d: `M${sx(r.x)} ${sy(r.y)}L${sx(r.x + r.w)} ${sy(r.y + r.d)}M${sx(r.x)} ${sy(r.y + r.d)}L${sx(r.x + r.w)} ${sy(r.y)}`, stroke: K.color, "stroke-opacity": 0.5 }, g); }
+    const fs = Math.max(9, Math.min(13, B.view.s * 0.2));
+    if (r.w * B.view.s > 34 && r.d * B.view.s > 22) {
+      const cx = sx(r.x + r.w / 2), cy = sy(r.y + r.d / 2);
+      const roomy = r.w * B.view.s > 120;          // narrow rooms get the short label
+      const t = el("text", { x: cx, y: cy - fs * 0.4, "text-anchor": "middle", fill: "#ece8df", "font-size": fs }, g);
+      t.textContent = roomy ? (r.name || K.en) + " " + K.ja : K.ja;
+      const t2 = el("text", { x: cx, y: cy + fs * 0.85, "text-anchor": "middle", fill: "#b9b4aa", "font-size": fs * 0.85 }, g);
+      t2.textContent = OUT(r) ? `${r2(r.w)} × ${r2(r.d)} m` : roomy ? `約${(BM.jo(r)).toFixed(1)}帖 · ${BM.area(r).toFixed(1)} m²` : `${BM.jo(r).toFixed(1)}帖`;
+    }
+  }
+  // walls and props as the plan builds them (the importer's own pieces)
+  if (B.plan) {
+    const z0 = floorZ() + 1.0;
+    let dw = "";
+    for (const p of B.plan.pieces) {
+      if (p.level !== B.target) continue;
+      const [w, d, h] = p.size, [x, y, z] = p.pos;
+      const rot = Math.abs(((p.yaw % 180) + 180) % 180 - 90) < 1;
+      const ww = rot ? d : w, dd = rot ? w : d;
+      if (p.kind === "wall" && z - h / 2 <= z0 && z + h / 2 >= z0) dw += `M${sx(x - ww / 2)} ${sy(y + dd / 2)}h${ww * B.view.s}v${dd * B.view.s}h${-ww * B.view.s}z`;
+      else if (p.kind === "mesh" && Math.abs(z - h / 2 - floorZ()) < 1.2 && z + h / 2 > floorZ())
+        el("rect", { x: sx(x - ww / 2), y: sy(y + dd / 2), width: ww * B.view.s, height: dd * B.view.s, fill: "#6d7d92", "fill-opacity": 0.55, stroke: "#9fb0c6", "stroke-width": 0.8 });
+    }
+    el("path", { d: dw, fill: "#d8d4ca" });
+  }
+  // openings
+  for (const op of B.model.ops) {
+    if (Math.abs(op.z - floorZ()) > 0.3 && !(op.z < floorZ() && op.z + op.h > floorZ())) continue;
+    drawOpening(op);
+  }
+  drawPeople();
+  if (B.sel && B.sel.room) handles(B.model.rooms.find(r => r.id === B.sel.room));
+  // the scale: a bar and what a square is
+  const bar = B.grid === "jp" ? MODULE : 1;
+  el("path", { d: `M16 ${H - 18}h${bar * B.view.s}M16 ${H - 22}v8M${16 + bar * B.view.s} ${H - 22}v8`, stroke: "#d9a441", "stroke-width": 2 });
+  el("text", { x: 22 + bar * B.view.s, y: H - 14, fill: "#d9a441", "font-size": 12 }).textContent = B.grid === "jp" ? "910 mm (1 module; a tatami is 2)" : "1 m (one square)";
+}
+const OUT = r => ["balcony", "garden", "common", "engawa"].includes(r.kind);
+
+function drawOpening(op) {
+  const sel = B.sel && B.sel.op === op.id;
+  const a0 = op.c - op.w / 2, a1 = op.c + op.w / 2;
+  const P = (a, off = 0) => op.axis === "y" ? [sx(a), sy(op.v + off)] : [sx(op.v + off), sy(a)];
+  const g = el("g", { "data-op": op.id, style: "cursor:pointer" });
+  const [p0, p1] = [P(a0), P(a1)];
+  el("line", { x1: p0[0], y1: p0[1], x2: p1[0], y2: p1[1], stroke: "#141417", "stroke-width": Math.max(5, 0.14 * B.view.s), "data-op": op.id }, g);
+  const col = sel ? "#d9a441" : op.type === "window" ? "#7fc0e6" : op.type === "arch" ? "#9a978f" : "#e0a65a";
+  if (op.type === "window") {
+    for (const o of [-0.03, 0.03]) { const [q0, q1] = [P(a0, o), P(a1, o)]; el("line", { x1: q0[0], y1: q0[1], x2: q1[0], y2: q1[1], stroke: col, "stroke-width": 1.5 }, g); }
+  } else if (op.type === "slide") {
+    const m = (a0 + a1) / 2;
+    for (const [s0, s1, o] of [[a0, m + 0.04, -0.03], [m - 0.04, a1, 0.03]]) { const [q0, q1] = [P(s0, o), P(s1, o)]; el("line", { x1: q0[0], y1: q0[1], x2: q1[0], y2: q1[1], stroke: col, "stroke-width": 3 }, g); }
+  } else if (op.type === "door") {
+    // the leaf swings into the room that holds the door (in) or out of it: its hinge at the low end
+    const host = hostOf(op), side = host ? sideSign(op, host) : 1, way = (op.swing === "out" ? -1 : 1) * side;
+    const h0 = P(a0), tip = P(a0, way * op.w);
+    el("line", { x1: h0[0], y1: h0[1], x2: tip[0], y2: tip[1], stroke: col, "stroke-width": 2 }, g);
+    const rr = op.w * B.view.s;
+    const sweep = (op.axis === "y" ? way > 0 : way < 0) ? 1 : 0;
+    el("path", { d: `M${tip[0]} ${tip[1]}A${rr} ${rr} 0 0 ${sweep} ${p1[0]} ${p1[1]}`, fill: "none", stroke: col, "stroke-width": 1, "stroke-dasharray": "3 3" }, g);
+  } else {
+    el("line", { x1: p0[0], y1: p0[1], x2: p1[0], y2: p1[1], stroke: col, "stroke-width": 1, "stroke-dasharray": "2 3" }, g);
+  }
+  el("line", { x1: p0[0], y1: p0[1], x2: p1[0], y2: p1[1], stroke: "transparent", "stroke-width": 14, "data-op": op.id }, g);
+}
+function hostOf(op) {
+  const lv = B.exported && B.exported.level;
+  if (!lv) return null;
+  for (const r of lv.rooms) for (const o of r.openings || []) if ((o.door && o.door.id === op.id) || (!o.door && Math.abs(BM.wallLine(roomOf(r.id), o.wall).lo + o.at - op.c) < 0.01 && BM.wallLine(roomOf(r.id), o.wall).axis === op.axis && Math.abs(BM.wallLine(roomOf(r.id), o.wall).v - op.v) < 0.01)) return roomOf(r.id);
+  return null;
+}
+const roomOf = id => B.model.rooms.find(r => r.id === id);
+function sideSign(op, room) { return op.axis === "y" ? (room.y + room.d / 2 > op.v ? 1 : -1) : (room.x + room.w / 2 > op.v ? 1 : -1); }
+
+function handles(r) {
+  if (!r || !(onFloor(r) || spans(r))) return;
+  const pts = { nw: [r.x, r.y + r.d], n: [r.x + r.w / 2, r.y + r.d], ne: [r.x + r.w, r.y + r.d], e: [r.x + r.w, r.y + r.d / 2],
+                se: [r.x + r.w, r.y], s: [r.x + r.w / 2, r.y], sw: [r.x, r.y], w: [r.x, r.y + r.d / 2] };
+  for (const [k, [x, y]] of Object.entries(pts)) el("rect", { x: sx(x) - 5, y: sy(y) - 5, width: 10, height: 10, fill: "#d9a441", "data-handle": k,
+    style: `cursor:${{ n: "ns", s: "ns", e: "ew", w: "ew", ne: "nesw", sw: "nesw", nw: "nwse", se: "nwse" }[k]}-resize` });
+  const lab = el("text", { x: sx(r.x + r.w / 2), y: sy(r.y + r.d) - 8, "text-anchor": "middle", fill: "#d9a441", "font-size": 12 });
+  lab.textContent = `${r2(r.w)} m`;
+  const lab2 = el("text", { x: sx(r.x + r.w) + 8, y: sy(r.y + r.d / 2), fill: "#d9a441", "font-size": 12 });
+  lab2.textContent = `${r2(r.d)} m`;
+}
+
+// the player (their field of view, cut by the walls at eye height) and her, with how she'd read from here
+function drawPeople() {
+  const p = B.model.player, h = B.model.her;
+  if (Math.abs(p.z - floorZ()) < 0.6) {
+    const pts = visibility(p);
+    el("path", { d: "M" + pts.map(([x, y]) => `${sx(x)} ${sy(y)}`).join("L") + "Z", fill: "#d9a441", "fill-opacity": 0.13, stroke: "#d9a441", "stroke-opacity": 0.35 });
+    person(p, "#d9a441", "player", "you");
+  }
+  if ($("#showHer").checked && Math.abs(h.z - floorZ()) < 0.6) {
+    person(h, "#e08bb0", "her", herName());
+    if (Math.abs(p.z - h.z) < 0.6) {
+      const dist = Math.hypot(h.x - p.x, h.y - p.y);
+      el("line", { x1: sx(p.x), y1: sy(p.y), x2: sx(h.x), y2: sy(h.y), stroke: "#e08bb0", "stroke-dasharray": "4 4", "stroke-opacity": 0.6 });
+      el("text", { x: (sx(p.x) + sx(h.x)) / 2 + 6, y: (sy(p.y) + sy(h.y)) / 2 - 6, fill: "#e08bb0", "font-size": 12 }).textContent = `${dist.toFixed(1)} m`;
+    }
+  }
+}
+function person(o, col, key, label) {
+  // the body from above at its real size: shoulders 45 cm across, 25 cm deep, the nose showing where it faces
+  const a = o.yaw * Math.PI / 180, g = el("g", { "data-person": key, style: "cursor:grab" });
+  const c = [sx(o.x), sy(o.y)];
+  el("ellipse", { cx: c[0], cy: c[1], rx: 0.225 * B.view.s, ry: 0.125 * B.view.s, transform: `rotate(${-(o.yaw - 90)} ${c[0]} ${c[1]})`, fill: col, "fill-opacity": 0.85, "data-person": key }, g);
+  el("circle", { cx: c[0], cy: c[1], r: 0.1 * B.view.s, fill: "#222", "data-person": key }, g);
+  el("line", { x1: c[0], y1: c[1], x2: c[0] + Math.cos(a) * 0.3 * B.view.s, y2: c[1] - Math.sin(a) * 0.3 * B.view.s, stroke: col, "stroke-width": 2 }, g);
+  el("circle", { cx: c[0] + Math.cos(a) * 0.5 * B.view.s, cy: c[1] - Math.sin(a) * 0.5 * B.view.s, r: 5, fill: col, "data-turn": key, style: "cursor:crosshair" }, g);
+  el("text", { x: c[0] + 10, y: c[1] + 18, fill: col, "font-size": 11 }, g).textContent = label;
+}
+function herName() { const c = Object.entries(B.story.cast || {})[0]; return c ? (c[1].name || c[0]) : "her"; }
+
+// 2D rays against the built walls (and the props tall enough to block the eye)
+function visibility(p) {
+  const fov = (B.story.game.fov || FOV_H), n = 72, eye = p.z + EYES[$("#eye").value];
+  const boxes = (B.plan ? B.plan.pieces : []).filter(q => q.level === B.target && (q.kind === "wall" || q.kind === "mesh") && q.pos[2] - q.size[2] / 2 <= eye && q.pos[2] + q.size[2] / 2 >= eye)
+    .map(q => { const rot = Math.abs(((q.yaw % 180) + 180) % 180 - 90) < 1; const w = rot ? q.size[1] : q.size[0], d = rot ? q.size[0] : q.size[1]; return [q.pos[0] - w / 2, q.pos[1] - d / 2, q.pos[0] + w / 2, q.pos[1] + d / 2]; });
+  const pts = [[p.x, p.y]];
+  for (let i = 0; i <= n; i++) {
+    const a = (p.yaw - fov / 2 + fov * i / n) * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a);
+    let t = 12;
+    for (const [x0, y0, x1, y1] of boxes) {
+      let t0 = 0, t1 = t;
+      for (const [o, dd, lo, hi] of [[p.x, dx, x0, x1], [p.y, dy, y0, y1]]) {
+        if (Math.abs(dd) < 1e-9) { if (o < lo || o > hi) { t0 = 1; t1 = 0; } continue; }
+        let u0 = (lo - o) / dd, u1 = (hi - o) / dd; if (u0 > u1) [u0, u1] = [u1, u0];
+        t0 = Math.max(t0, u0); t1 = Math.min(t1, u1);
+      }
+      if (t0 <= t1 && t0 > 0.02) t = Math.min(t, t0);
+    }
+    pts.push([p.x + dx * t, p.y + dy * t]);
+  }
+  return pts;
+}
+
+// ---- mouse on the plan ----
+let drag = null;
+svg.addEventListener("mousedown", e => {
+  const t = e.target, x = wx(e.offsetX), y = wy(e.offsetY);
+  if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
+  if (t.dataset.handle) { const r = roomOf(B.sel.room); pushUndo(); drag = { kind: "resize", h: t.dataset.handle, r, start: { x: r.x, y: r.y, w: r.w, d: r.d }, x, y }; return; }
+  if (t.dataset.turn) { pushUndo(); drag = { kind: "turn", who: t.dataset.turn }; return; }
+  if (t.dataset.person) { pushUndo(); const o = B.model[t.dataset.person]; drag = { kind: "person", who: t.dataset.person, dx: o.x - x, dy: o.y - y }; return; }
+  if (t.dataset.op) { B.sel = { op: t.dataset.op }; const op = B.model.ops.find(o => o.id === t.dataset.op); pushUndo(); drag = { kind: "op", op, c0: op.c, a: op.axis === "y" ? x : y }; changed(false); return; }
+  if (t.dataset.room) { const r = roomOf(t.dataset.room); B.sel = { room: r.id }; pushUndo(); drag = { kind: "move", r, start: { x: r.x, y: r.y }, x, y }; changed(false); return; }
+  B.sel = null; drag = { kind: "pan", cx: B.view.cx, cy: B.view.cy, px: e.clientX, py: e.clientY }; changed(false);
+});
+window.addEventListener("mousemove", e => {
+  if (!drag) return;
+  const rect = svg.getBoundingClientRect(), x = wx(e.clientX - rect.left), y = wy(e.clientY - rect.top);
+  if (drag.kind === "pan") { B.view.cx = drag.cx - (e.clientX - drag.px) / B.view.s; B.view.cy = drag.cy + (e.clientY - drag.py) / B.view.s; draw(); return; }
+  if (drag.kind === "move") {
+    const r = drag.r;
+    r.x = snapV(drag.start.x + x - drag.x); r.y = snapV(drag.start.y + y - drag.y);
+    magnetMove(r);
+  } else if (drag.kind === "resize") {
+    const r = drag.r, s = drag.start, h = drag.h;
+    if (h.includes("e")) r.w = Math.max(0.5, snapV(s.w + x - drag.x));
+    if (h.includes("n")) r.d = Math.max(0.5, snapV(s.d + y - drag.y));
+    if (h.includes("w")) { const nx = snapV(s.x + x - drag.x); r.w = Math.max(0.5, s.x + s.w - nx); r.x = s.x + s.w - r.w; }
+    if (h.includes("s")) { const ny = snapV(s.y + y - drag.y); r.d = Math.max(0.5, s.y + s.d - ny); r.y = s.y + s.d - r.d; }
+    magnetResize(r, h);
+  } else if (drag.kind === "op") {
+    drag.op.c = Math.round((drag.c0 + (drag.op.axis === "y" ? x : y) - drag.a) / 0.05) * 0.05;
+  } else if (drag.kind === "person") {
+    const o = B.model[drag.who]; o.x = r2(x + drag.dx); o.y = r2(y + drag.dy); o.z = floorZ();
+  } else if (drag.kind === "turn") {
+    const o = B.model[drag.who]; o.yaw = Math.round(Math.atan2(y - o.y, x - o.x) * 180 / Math.PI / 5) * 5;
+  }
+  B.exported = BM.modelToLevel(B.model, B.story);
+  draw(); if (drag.kind === "person" || drag.kind === "turn") { placeHer(); render3d(); }
+});
+window.addEventListener("mouseup", () => { if (!drag) return; const k = drag.kind; drag = null; if (k !== "pan") changed(); });
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  const x = wx(e.offsetX), y = wy(e.offsetY), f = Math.exp(-e.deltaY * 0.0015);
+  B.view.s = Math.max(12, Math.min(260, B.view.s * f));
+  B.view.cx = x - (e.offsetX - svg.clientWidth / 2) / B.view.s; B.view.cy = y + (e.offsetY - svg.clientHeight / 2) / B.view.s;
+  draw();
+}, { passive: false });
+
+// edges snap to other rooms' edges within 20 cm, so rooms meet exactly and share their walls
+function magnetMove(r) {
+  const others = visibleRooms().filter(o => o !== r);
+  let best = [0.2, 0], bestY = [0.2, 0];
+  for (const o of others) {
+    for (const [a, b] of [[r.x, o.x], [r.x, o.x + o.w], [r.x + r.w, o.x], [r.x + r.w, o.x + o.w]]) if (Math.abs(b - a) < best[0]) best = [Math.abs(b - a), b - a];
+    for (const [a, b] of [[r.y, o.y], [r.y, o.y + o.d], [r.y + r.d, o.y], [r.y + r.d, o.y + o.d]]) if (Math.abs(b - a) < bestY[0]) bestY = [Math.abs(b - a), b - a];
+  }
+  r.x = r2(r.x + best[1]); r.y = r2(r.y + bestY[1]);
+}
+function magnetResize(r, h) {
+  const others = visibleRooms().filter(o => o !== r);
+  const near = (v, list) => { let b = null; for (const t of list) if (Math.abs(t - v) < 0.2 && (b === null || Math.abs(t - v) < Math.abs(b - v))) b = t; return b; };
+  const xs = others.flatMap(o => [o.x, o.x + o.w]), ys = others.flatMap(o => [o.y, o.y + o.d]);
+  if (h.includes("e")) { const t = near(r.x + r.w, xs); if (t !== null) r.w = r2(t - r.x); }
+  if (h.includes("w")) { const t = near(r.x, xs); if (t !== null) { r.w = r2(r.x + r.w - t); r.x = t; } }
+  if (h.includes("n")) { const t = near(r.y + r.d, ys); if (t !== null) r.d = r2(t - r.y); }
+  if (h.includes("s")) { const t = near(r.y, ys); if (t !== null) { r.d = r2(r.y + r.d - t); r.y = t; } }
+}
+
+function addOpening(x, y) {
+  let best = null;
+  for (const r of visibleRooms()) for (const wl of BM.WALLS) {
+    const ln = BM.wallLine(r, wl), a = ln.axis === "y" ? x : y, off = Math.abs((ln.axis === "y" ? y : x) - ln.v);
+    if (off > 0.35 || a < ln.lo + 0.1 || a > ln.hi - 0.1) continue;
+    if (!best || off < best.off) best = { ln, a, off, r };
+  }
+  if (!best) { status("click on a wall to put it there", "bad"); return; }
+  const type = B.tool, D = OPENINGS[type];
+  const w = Math.min(D.w, best.ln.hi - best.ln.lo - 0.2);
+  const c = Math.min(Math.max(Math.round(best.a / 0.05) * 0.05, best.ln.lo + w / 2 + 0.06), best.ln.hi - w / 2 - 0.06);
+  let id = type === "arch" ? "arch" : type === "window" ? "window" : "door", i = 1;
+  const base = best.r.id + "_" + id;
+  while (B.model.ops.some(o => o.id === base + "_" + i)) i++;
+  pushUndo();
+  const op = BM.newOpening(type, base + "_" + i, best.ln, r2(c), floorZ(), { w });
+  B.model.ops.push(op);
+  B.sel = { op: op.id };
+  changed();
+}
+
+function addRoom(kind) {
+  const K = KINDS[kind];
+  let i = 1; while (roomOf(kind + (i > 1 ? "_" + i : ""))) i++;
+  const id = kind + (i > 1 ? "_" + i : "");
+  pushUndo();
+  const r = BM.newRoom(kind, id, snapV(B.view.cx - K.size[0] / 2), snapV(B.view.cy - K.size[1] / 2), floorZ());
+  if (kind === "stairs") r.h = r2(STOREY + 2.4);
+  B.model.rooms.push(r); B.sel = { room: id };
+  changed();
+}
+
+// ---- the left panel ----
+function renderTools() {
+  const box = $("#tools"); box.innerHTML = "";
+  for (const [t, label] of [["select", "Select / move"], ["door", "Door"], ["slide", "Sliding door"], ["arch", "Opening"], ["window", "Window"]]) {
+    const b = document.createElement("button"); b.textContent = label; b.className = B.tool === t ? "on" : "";
+    b.onclick = () => { B.tool = t; svg.style.cursor = t === "select" ? "default" : "crosshair"; renderTools(); };
+    box.append(b);
+  }
+  const kb = $("#kinds"); kb.innerHTML = "";
+  for (const [k, K] of Object.entries(KINDS)) {
+    const b = document.createElement("button"); b.style.borderLeftColor = K.color;
+    b.innerHTML = `${K.en}<small>${K.ja}</small>`; b.title = `${K.en} ${K.ja}: ${K.size[0]} × ${K.size[1]} m`;
+    b.onclick = () => addRoom(k); kb.append(b);
+  }
+}
+function field(label, input) { const l = document.createElement("label"); l.textContent = label; return [l, input]; }
+function num(v, on, step = 0.05) { const i = document.createElement("input"); i.type = "number"; i.step = step; i.value = r2(v); i.onchange = () => { pushUndo(); on(+i.value); changed(); }; return i; }
+function txt(v, on) { const i = document.createElement("input"); i.type = "text"; i.value = v || ""; i.onchange = () => { pushUndo(); on(i.value.trim()); changed(); }; return i; }
+function pick(v, opts, on) { const s = document.createElement("select"); for (const o of opts) s.append(new Option(Array.isArray(o) ? o[1] : o, Array.isArray(o) ? o[0] : o)); s.value = v; s.onchange = () => { pushUndo(); on(s.value); changed(); }; return s; }
+function check(v, label, on) { const l = document.createElement("label"); const i = document.createElement("input"); i.type = "checkbox"; i.checked = !!v; i.onchange = () => { pushUndo(); on(i.checked); changed(); }; l.append(i, " " + label); return l; }
+
+function renderProps() {
+  const box = $("#props"); box.innerHTML = ""; box.className = "";
+  const grid = document.createElement("div"); grid.className = "prop";
+  if (B.sel && B.sel.room) {
+    const r = roomOf(B.sel.room);
+    if (!r) { B.sel = null; return renderProps(); }
+    const K = KINDS[r.kind] || KINDS.other;
+    const head = document.createElement("div"); head.innerHTML = `<b>${r.name || K.en}</b> <span class="hint">${K.ja} · 約${BM.jo(r).toFixed(1)}帖 · ${BM.area(r).toFixed(1)} m²</span>`;
+    box.append(head);
+    grid.append(...field("id", txt(r.id, v => renameRoom(r, v))), ...field("kind", pick(r.kind, Object.entries(KINDS).map(([k, K]) => [k, `${K.en} ${K.ja}`]), v => { r.kind = v; r.floor = KINDS[v].floor; })),
+      ...field("name", txt(r.name, v => { r.name = v; })),
+      ...field("x, y", wrap(num(r.x, v => { r.x = v; }), num(r.y, v => { r.y = v; }))), ...field("w × d", wrap(num(r.w, v => { r.w = Math.max(0.3, v); }), num(r.d, v => { r.d = Math.max(0.3, v); }))),
+      ...field("height", num(r.h, v => { r.h = Math.max(0.5, v); })), ...field("floor", pick(r.floor, ["wood", "stone", "carpet", "tile", "dirt", "metal", "water"], v => { r.floor = v; })),
+      ...field("light", pick(r.light, ["off", "dark", "dim", "lit"], v => { r.light = v; })));
+    if (r.kind === "stairs") grid.append(...field("climbs", pick(r.dir, [["n", "north ↑"], ["e", "east →"], ["s", "south ↓"], ["w", "west ←"]], v => { r.dir = v; })));
+    box.append(grid);
+    const walls = document.createElement("div"); walls.className = "walls";
+    walls.append("open sides:", ...BM.WALLS.map(wl => check(r.open.includes(wl), wl, on => { r.open = on ? [...r.open, wl] : r.open.filter(x => x !== wl); })));
+    box.append(walls, check(r.ceiling, "ceiling", v => { r.ceiling = v; }), document.createElement("br"),
+      check(r.fixtures, "built-ins (kitchen, bath, toilet, shoe cabinet, stairs)", v => { r.fixtures = v; }));
+    const del = document.createElement("button"); del.textContent = "Remove room"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
+    const props = (r.extra.props || []).filter(p => !p.id.startsWith(r.id + "_fx_"));
+    if (props.length) { const n = document.createElement("div"); n.className = "hint"; n.textContent = `${props.length} props from the story stay in this room (room space: they move with it).`; box.append(n); }
+  } else if (B.sel && B.sel.op) {
+    const op = B.model.ops.find(o => o.id === B.sel.op);
+    if (!op) { B.sel = null; return renderProps(); }
+    const host = hostOf(op);
+    const head = document.createElement("div"); head.innerHTML = `<b>${{ door: "Door", slide: "Sliding door", arch: "Opening", window: "Window" }[op.type]}</b> <span class="hint">${host ? "on " + host.id : "not on a built wall"}</span>`;
+    box.append(head);
+    grid.append(...field("id", txt(op.id, v => { if (v && !B.model.ops.some(o => o.id === v)) { op.id = v; B.sel.op = v; } })),
+      ...field("type", pick(op.type, ["door", "slide", "arch", "window"], v => { op.type = v; op.swing = v === "slide" ? "slide" : (op.swing === "slide" ? "in" : op.swing); if (v === "window" && !op.sill) { op.sill = 0.9; op.h = 1.1; } if (v !== "window") op.sill = 0; })),
+      ...field("width", num(op.w, v => { op.w = Math.max(0.3, v); })), ...field("height", num(op.h, v => { op.h = Math.max(0.3, v); })));
+    if (op.type === "window") grid.append(...field("sill", num(op.sill, v => { op.sill = Math.max(0, v); })));
+    if (op.type === "door") grid.append(...field("swings", pick(op.swing, [["in", "into its room"], ["out", "out of it"]], v => { op.swing = v; })));
+    if (op.type === "door" || op.type === "slide") grid.append(...field("locked by", txt(op.locked_by, v => { op.locked_by = v || null; })));
+    box.append(grid);
+    if (op.type === "door" || op.type === "slide") box.append(check(op.creak, "creaks", v => { op.creak = v; }));
+    const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
+  } else { box.className = "hint"; box.textContent = "Nothing selected. Click a room or a door."; }
+}
+function wrap(...xs) { const d = document.createElement("div"); d.style.display = "flex"; d.style.gap = "4px"; d.append(...xs); return d; }
+function renameRoom(r, v) {
+  if (!v || !/^[a-z][a-z0-9_]*$/.test(v) || roomOf(v)) { status("ids are snake_case and unique", "bad"); return; }
+  const used = JSON.stringify(Object.assign({}, B.story, { levels: {} })).includes(`"${r.id}"`);
+  if (used && !confirm(`Scenes or stitches name "${r.id}". Rename it anyway? (They'd need changing too.)`)) return;
+  r.id = v; B.sel = { room: v };
+}
+function removeSel() {
+  if (!B.sel) return;
+  pushUndo();
+  if (B.sel.room) B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room);
+  else B.model.ops = B.model.ops.filter(o => o.id !== B.sel.op);
+  B.sel = null; changed();
+}
+
+function renderFloors() {
+  const box = $("#floors"); box.innerHTML = "";
+  B.model.floors.forEach((z, i) => {
+    const b = document.createElement("button"); b.textContent = `${i + 1}F`; b.title = `floor at ${z} m`;
+    b.className = i === B.floor ? "on" : ""; b.onclick = () => { B.floor = i; B.sel = null; renderFloors(); draw(); renderProps(); };
+    box.append(b);
+  });
+  const add = document.createElement("button"); add.textContent = "+"; add.title = `add a floor ${STOREY} m above the top one`;
+  add.onclick = () => { pushUndo(); B.model.floors.push(r2(B.model.floors[B.model.floors.length - 1] + STOREY)); B.floor = B.model.floors.length - 1; renderFloors(); changed(); };
+  box.append(add);
+}
+
+// ---- stats: what the plan can hold ----
+function renderStats() {
+  const st = BM.stats(B.model, B.exported.level), box = $("#stats");
+  const fl = Object.entries(st.floorArea).sort((a, b) => a[0] - b[0]).map(([z, a], i) => `${i + 1}F ${a.toFixed(0)} m²`).join(", ");
+  const rows = [
+    ["Floor area", `${st.total.toFixed(0)} m² indoors (${(st.total / JO).toFixed(0)}帖)${st.floors > 1 ? ": " + fl : ""}`],
+    ["Rooms, doors", `${st.rooms} rooms, ${st.doors} doors`],
+    ["Ways round", st.loops > 0 ? `${st.loops} loop${st.loops > 1 ? "s" : ""}: a chase can circle (hide and seek, being followed)` : "no loop: every chase ends in a dead end (a flat; add a second door between two rooms for one)"],
+    ["Hiding places", `${st.hiding} (closets, oshiire, storage, the bath)`],
+    ["Dead ends", st.dead.length ? st.dead.join(", ") : "none"],
+    ["Unreachable", st.unreachable.length ? st.unreachable.join(", ") : "none: every room is reached from the start"],
+  ];
+  box.innerHTML = rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("");
+  const p = B.exported.problems;
+  if (p.length) box.innerHTML += `<b style="color:var(--warn)">To fix</b><span style="color:var(--warn)">${p.join("; ")}</span>`;
+}
+
+// ---- checks and saving ----
+async function runChecks() {
+  const s = storyWithLevel();
+  const j = await api("/api/worldcheck/" + encodeURIComponent(B.target), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) });
+  const box = $("#msgs"); box.innerHTML = "";
+  for (const e of j.errors) box.innerHTML += `<div class="e">✕ ${esc(e)}</div>`;
+  for (const w of j.warnings.slice(0, 12)) box.innerHTML += `<div class="w">! ${esc(w)}</div>`;
+  if (!j.errors.length) box.innerHTML = `<div class="ok">✓ the story and level checks pass on this plan</div>` + box.innerHTML;
+  window.__lastCheck = j;
+  return j;
+}
+const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+async function save(force) {
+  const j = await runChecks();
+  if (j.errors.length && !force && !confirm(`${j.errors.length} check error(s), the first: ${j.errors[0]}\n\nSave anyway?`)) return;
+  const s = storyWithLevel();
+  const r = await api("/api/story/" + encodeURIComponent(B.game), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: s, mtime: B.mtime, force }) });
+  if (r._status === 409) { if (confirm(r.error + "\n\nOverwrite?")) return save(true); return; }
+  B.story = s; B.mtime = r.mtime; B.dirty = false; B.level = B.target;
+  const sel = $("#level"); for (const o of sel.options) if (o.value === B.target) o.textContent = B.target;
+  status(`saved level ${B.target} into ${B.game}/story.json (the previous file is in Saved/Story/${B.game}/history)`);
+}
+
+// ---- the player's eye (the desk's own stage: the same pieces the importer builds) ----
+async function setupFigure() {
+  if (!BodyFigure.soma) try { BodyFigure.soma = await api("/api/soma"); } catch (e) { }
+  try {
+    const bodies = (await api("/api/bodies")).bodies || [];
+    const def = bodies.find(f => /^default\./i.test(f)) || bodies.find(f => !/_hi\.|_lod/i.test(f));
+    if (def && !stage.bodies[def]) { stage.bodies[def] = await loadBody("/bodies/" + encodeURIComponent(def)); stage.defaultBody = def; }
+  } catch (e) { console.warn("body", e); }
+  replan();
+}
+function doors() { stage.world.traverse(o => { if (o.userData && o.userData.kind === "door") o.visible = !$("#doorsOpen").checked; }); }
+function addLamp() {
+  lampLight = new THREE.PointLight(0xfff1dc, 1.6, 10, 1.5);
+  stage.world.add(lampLight);
+  stage.world.add(new THREE.AmbientLight(0x9aa0aa, 0.35));
+  stage.scene.fog = new THREE.Fog(0x050506, 6, 22);
+}
+function placeHer() {
+  if (!stage || !B.planStory) return;
+  for (const f of Object.values(stage.cast)) f.group.visible = false;
+  const [cid, c] = Object.entries(B.planStory.cast || {})[0] || [];
+  if (!cid || !$("#showHer").checked) return;
+  const f = stage.cast[cid], h = B.model.her;
+  if (!f) return;
+  f.update(M.fk(LIB, M.clonePose(LIB.poses.idle), +(c.height || 1.62)).pos);
+  f.group.position.copy(s2t(h.x, h.y, h.z)); f.group.rotation.y = (h.yaw + 90) * Math.PI / 180;
+  f.group.visible = true;
+}
+const look = { pitch: -4 };
+function render3d() {
+  if (!stage || !B.model) return;
+  const p = B.model.player, eye = EYES[$("#eye").value], aspect = stage.camera.aspect || 16 / 9;
+  stage.camera.fov = vfov(B.story.game.fov || FOV_H, aspect); stage.camera.updateProjectionMatrix();
+  stage.camera.position.copy(s2t(p.x, p.y, p.z + eye));
+  const a = p.yaw * Math.PI / 180, pt = look.pitch * Math.PI / 180;
+  stage.camera.lookAt(s2t(p.x + Math.cos(a) * Math.cos(pt), p.y + Math.sin(a) * Math.cos(pt), p.z + eye + Math.sin(pt)));
+  if (lampLight) { lampLight.visible = $("#lamp").checked; lampLight.position.copy(stage.camera.position); }
+  stage.render();
+  const h = B.model.her, d = Math.hypot(h.x - p.x, h.y - p.y);
+  const v = s2t(h.x, h.y, h.z + 1.5).project(stage.camera), inView = v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1;
+  const room = BM.roomAt(B.model, p.x, p.y, p.z);
+  $("#viewHud").innerHTML = `${room ? (room.name || KINDS[room.kind].en) + " " + KINDS[room.kind].ja : "outside"} · eye ${(eye).toFixed(2)} m · fov ${B.story.game.fov || FOV_H}°` +
+    ($("#showHer").checked && Math.abs(h.z - p.z) < 0.6 ? `<br>${herName()}: ${d.toFixed(1)} m away, ${SHOT_NAMES[shotFor(d)]}${inView ? "" : " (out of view)"}` : "") +
+    `<br><span style="color:#aaa">click here, then WASD or arrows to walk, drag to look</span>`;
+}
+
+// walking: the built walls and props stop you; a step up to 35 cm is taken (stairs), down any height
+const view = $("#view");
+const keys = new Set();
+view.addEventListener("keydown", e => { if (/^(Key[WASDQE]|Arrow)/.test(e.code)) { keys.add(e.code); e.preventDefault(); if (keys.size === 1) requestAnimationFrame(walk); } });
+view.addEventListener("keyup", e => keys.delete(e.code));
+view.addEventListener("blur", () => keys.clear());
+let lastT = 0;
+function walk(t) {
+  if (!keys.size) { lastT = 0; changedPlayer(); return; }
+  const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016; lastT = t;
+  const p = B.model.player, a = p.yaw * Math.PI / 180, sp = 1.4 * dt;
+  let f = 0, s = 0;
+  if (keys.has("KeyW") || keys.has("ArrowUp")) f += 1; if (keys.has("KeyS") || keys.has("ArrowDown")) f -= 1;
+  if (keys.has("KeyA")) s += 1; if (keys.has("KeyD")) s -= 1;
+  if (keys.has("ArrowLeft") || keys.has("KeyQ")) p.yaw += 90 * dt; if (keys.has("ArrowRight") || keys.has("KeyE")) p.yaw -= 90 * dt;
+  const dx = (Math.cos(a) * f - Math.sin(a) * s) * sp, dy = (Math.sin(a) * f + Math.cos(a) * s) * sp;
+  for (const [mx, my] of [[dx, 0], [0, dy]]) {
+    const nx = p.x + mx, ny = p.y + my, z = ground(nx, ny, p.z);
+    if (z !== null && !blocked(nx, ny, z)) { p.x = nx; p.y = ny; p.z = z; }
+  }
+  const fi = B.model.floors.findIndex(z => Math.abs(z - p.z) < 0.6);
+  if (fi >= 0 && fi !== B.floor) { B.floor = fi; renderFloors(); }
+  draw(); render3d();
+  requestAnimationFrame(walk);
+}
+function changedPlayer() { B.exported = BM.modelToLevel(B.model, B.story); renderStats(); B.dirty = true; }
+function solids(z) {
+  return (B.plan ? B.plan.pieces : []).filter(q => q.level === B.target && (q.kind === "wall" || q.kind === "mesh") && q.pos[2] + q.size[2] / 2 > z + 0.36 && q.pos[2] - q.size[2] / 2 < z + 1.7);
+}
+function box2(q) { const rot = Math.abs(((q.yaw % 180) + 180) % 180 - 90) < 1; const w = rot ? q.size[1] : q.size[0], d = rot ? q.size[0] : q.size[1]; return [q.pos[0] - w / 2, q.pos[1] - d / 2, q.pos[0] + w / 2, q.pos[1] + d / 2]; }
+function blocked(x, y, z) {
+  const R = 0.22;
+  return solids(z).some(q => { const [x0, y0, x1, y1] = box2(q); const cx = Math.max(x0, Math.min(x, x1)), cy = Math.max(y0, Math.min(y, y1)); return Math.hypot(x - cx, y - cy) < R; });
+}
+function ground(x, y, z) {
+  let g = null;
+  for (const r of B.model.rooms) if (x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.d && r.z <= z + 0.36) g = g === null ? r.z : Math.max(g, r.z);
+  for (const q of (B.plan ? B.plan.pieces : [])) {
+    if (q.level !== B.target || q.kind !== "mesh") continue;
+    const [x0, y0, x1, y1] = box2(q), top = q.pos[2] + q.size[2] / 2;
+    if (x > x0 && x < x1 && y > y0 && y < y1 && top <= z + 0.36 && (g === null || top > g)) g = top;
+  }
+  return g;
+}
+let lookDrag = null;
+view.addEventListener("mousedown", e => { lookDrag = { x: e.clientX, y: e.clientY, yaw: B.model.player.yaw, pitch: look.pitch }; view.focus(); });
+window.addEventListener("mousemove", e => {
+  if (!lookDrag) return;
+  B.model.player.yaw = lookDrag.yaw - (e.clientX - lookDrag.x) * 0.25;
+  look.pitch = Math.max(-60, Math.min(60, lookDrag.pitch - (e.clientY - lookDrag.y) * 0.25));
+  draw(); render3d();
+});
+window.addEventListener("mouseup", () => { if (lookDrag) { lookDrag = null; changedPlayer(); } });
+
+// ---- keys on the page ----
+document.addEventListener("keydown", e => {
+  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.target === view) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+  if (e.key === "Delete" || e.key === "Backspace") { removeSel(); e.preventDefault(); return; }
+  if (e.key === "Escape") { B.tool = "select"; renderTools(); B.sel = null; changed(false); return; }
+  const r = B.sel && B.sel.room && roomOf(B.sel.room);
+  if (r && e.key.toLowerCase() === "r") { pushUndo(); [r.w, r.d] = [r.d, r.w]; changed(); return; }
+  const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+  if (r && mv) { pushUndo(); r.x = r2(r.x + mv[0] * B.snap); r.y = r2(r.y + mv[1] * B.snap); changed(); e.preventDefault(); }
+});
+
+// ---- boot ----
+async function boot() {
+  for (const P of PRESETS) $("#preset").append(new Option(P.name, P.id));
+  $("#preset").onchange = () => { openPreset($("#preset").value); $("#preset").value = ""; };
+  $("#game").onchange = () => loadGame($("#game").value);
+  $("#level").onchange = () => {
+    const v = $("#level").value;
+    if (v === "__new") {
+      const name = prompt("The new level's id (snake_case):", "home");
+      if (!name || !/^[a-z][a-z0-9_]*$/.test(name) || B.story.levels[name]) { $("#level").value = B.target; return; }
+      B.target = name; BM.uniquify(B.model, BM.takenIds(B.story, name), name);
+      $("#level").insertBefore(new Option(name + " (new)", name), $("#level").lastChild); $("#level").value = name; changed();
+    } else if (B.story.levels[v]) { if (!B.dirty || confirm("Open " + v + "? Unsaved changes here are lost.")) openLevel(v); else $("#level").value = B.target; }
+    else { B.target = v; changed(); }
+  };
+  $("#snap").onchange = () => { B.snap = +$("#snap").value; };
+  $("#grid").onchange = () => { B.grid = $("#grid").value; if (B.grid === "jp" && B.snap < 0.4) { B.snap = 0.455; $("#snap").value = "0.455"; } draw(); };
+  $("#undo").onclick = undo; $("#redo").onclick = redo;
+  $("#check").onclick = runChecks; $("#save").onclick = () => save(false);
+  for (const id of ["#eye", "#lamp", "#showHer", "#doorsOpen"]) $(id).onchange = () => { placeHer(); doors(); draw(); render3d(); };
+  renderTools();
+  LIB = M.loadLibrary(await api("/api/poses"));
+  stage = new Stage($("#view"), LIB);
+  new ResizeObserver(() => { draw(); render3d(); }).observe($("#planBox"));
+  new ResizeObserver(() => render3d()).observe($("#view"));
+  $("#scaleNote").innerHTML = `A square is 1 m with 20 cm lines, as Unreal's prototype grid (or the 910 mm module: two make a tatami's length). The bodies are real size: Kimodo's SOMA skeleton stands 1.76 m with its eyes at 1.65 m, the player's eye here (docs/STORY_FORMAT.md §0); on the plan a person is 45 cm across the shoulders. Rooms read in 帖 at ${JO} m² as Japanese listings give them.`;
+  await loadGames();
+  window.__builderReady = true;
+}
+window.B = B; window.BM = BM;
+window.builder = { openPreset, changed, save, runChecks, addRoom, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo };
+boot().catch(e => { console.error(e); status(e.message, "bad"); });
