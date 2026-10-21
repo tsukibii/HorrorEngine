@@ -96,7 +96,8 @@ def spawn_block(piece, colour):
         if mesh is None:
             unreal.log_warning(f"storykit: {piece['id']}: art {art} not found, keeping the block")
     if mesh:
-        fit_art(a, c, mesh, piece, 0.0 if art.startswith("/") else float(class_map().get("library_yaw", 0)))
+        yaw = 0.0 if art.startswith("/") else float(class_map().get("kit_yaw" if art.startswith("kit/") else "library_yaw", 0))
+        fit_art(a, c, mesh, piece, yaw)
     else:
         c.set_static_mesh(unreal.load_asset(MESH[piece["shape"] or "box"]))
         w, d, h = piece["size"]
@@ -275,10 +276,24 @@ def cast_standins(story, lid, cmap):
         spawn(piece, cmap)
 
 
+def build_kit(game):
+    """The kit's meshes for this game's kit props (node tools/kit/build.mjs: only the missing ones are written)."""
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        unreal.log_warning("storykit: node isn't on PATH, so kit props stay greybox blocks (docs/KIT.md)")
+        return
+    r = subprocess.run([node, str(L.ROOT / "tools" / "kit" / "build.mjs"), "--game", game], capture_output=True, text=True)
+    out = (r.stdout or r.stderr).strip().splitlines()
+    (unreal.log if r.returncode == 0 else unreal.log_warning)("storykit: " + (out[-1] if out else "kit build"))
+
+
 def build(game=None, level=None):
     story, spath = L.load(game)
     game = spath.parent.name
     cmap = class_map()
+    build_kit(game)
     for lid in story["levels"]:
         if level and lid != level:
             continue

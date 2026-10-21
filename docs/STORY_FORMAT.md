@@ -108,7 +108,11 @@ cabinet, a stair's steps), placed clear of every doorway, and its ceiling light 
 switch by the door (`<room>_fx_switch`, `use: switch`). Things on its walls are `<room>_wi_<kind>_<n>`: a box against
 the wall with its `tag` (mirror, poster, frame, tv, air_conditioner, clock, calendar, board, shelf, light_switch),
 read back by the builder as wall items. Edit them as any prop; the builder replaces them only while
-the room's built-ins are on.
+the room's built-ins are on. The builder also writes kit props (docs/KIT.md §4):
+- `<room>_kt_<preset>_<n>`: furniture.
+- `<room>_wf_<n>`: wall fittings.
+- `<room>_fx_floor` and `<room>_fx_ceiling`: the room's floor and ceiling step.
+- `<room>_fx_win<n>`: a window's frame. It carries `in_wall: true` and `of`, the window it frames.
 
 **A link:**
 
@@ -128,6 +132,13 @@ the room's built-ins are on.
   glimpse. Scene actors are staged instead (§3).
 - `asset <lib>/<name> [scale]`: a CC0 library mesh at its real size, e.g. `asset basemesh/wooden_chair_01`
   (`python tools/cc0.py props <word>` lists them with sizes). Its box stands in until it's fetched.
+
+**A kit** (in place of a shape, docs/KIT.md): `"kit": "switch_jp_2"` (a preset of `Content/Studio/Kit/presets.json`) or
+`"kit": {"preset": "oak_planks", "seed": 7, "size": [3.9, 2.9, 0.015]}` (a preset with what differs) or `{"type":
+"cabinet", "size": [...], ...}`. Its box is its `size` or the preset's; `rot` is the way its front faces. The plan
+tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs` writes for the importer. Floors,
+rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
+marks a thing that sits in its wall, like a window frame.
 
 **A prop:**
 

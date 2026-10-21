@@ -196,6 +196,12 @@ def index(story):
                         size = shape_size(story, *parse_shape(p["shape"]))
                     except ValueError as e:
                         errs.append(f"{pid}: {e}")
+                elif "kit" in p:
+                    from . import kit as KIT
+                    try:
+                        size = KIT.size(p["kit"])
+                    except ValueError as e:
+                        errs.append(f"{pid}: {e}")
                 elif p.get("use") == "trigger":
                     size = tuple(p.get("size", (1, 1, 2)))
                 z = p.get("z")

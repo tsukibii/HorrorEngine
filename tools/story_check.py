@@ -205,8 +205,10 @@ def check_world(story, things, r):
         if t.kind != "prop":
             continue
         p, u = t.d, t.use
-        if u is None and "shape" not in p:
-            r.err(f"{t.id}: needs a shape or a use")
+        if u is None and "shape" not in p and "kit" not in p:
+            r.err(f"{t.id}: needs a shape, a kit or a use")
+        if "kit" in p and "shape" in p:
+            r.err(f"{t.id}: a shape or a kit, not both")
         if u is not None and u not in L.USES:
             r.err(f"{t.id}: unknown use {u!r}")
         if p.get("shape", "").startswith("person"):

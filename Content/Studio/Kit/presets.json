@@ -1,0 +1,1708 @@
+{
+ "_note": "The kit's presets (docs/KIT.md): each is a kit spec plus label, cat, mount and z (the height of its base above the floor). The kit maker (tools/director/kit.html) adds yours. version must match VERSION in tools/director/kit.js.",
+ "version": 1,
+ "presets": {
+  "oak_planks": {
+   "label": "Oak planks, 150 mm, random lengths",
+   "type": "planks",
+   "size": [
+    3,
+    3,
+    0.015
+   ],
+   "board": 0.15,
+   "length": [
+    0.9,
+    1.8
+   ],
+   "gap": 0.0015,
+   "bevel": 0.0008,
+   "tones": 3
+  },
+  "wide_planks": {
+   "label": "Wide planks, 190 mm (engineered)",
+   "type": "planks",
+   "size": [
+    3,
+    3,
+    0.015
+   ],
+   "board": 0.19,
+   "length": [
+    1.2,
+    2.2
+   ],
+   "gap": 0.0012,
+   "bevel": 0.001,
+   "tones": 4
+  },
+  "herringbone": {
+   "label": "Herringbone parquet, 90 × 540",
+   "type": "planks",
+   "size": [
+    3,
+    3,
+    0.015
+   ],
+   "board": 0.09,
+   "length": [
+    0.54,
+    0.54
+   ],
+   "pattern": "herringbone",
+   "gap": 0.001,
+   "bevel": 0.0006,
+   "tones": 3
+  },
+  "deck_boards": {
+   "label": "Balcony deck boards (gaps you see through)",
+   "type": "planks",
+   "size": [
+    3,
+    1.2,
+    0.03
+   ],
+   "board": 0.12,
+   "length": [
+    1.8,
+    1.8
+   ],
+   "pattern": "half",
+   "gap": 0.006,
+   "groove": 0.02,
+   "bevel": 0.002,
+   "tones": 3,
+   "slot": "wood_4"
+  },
+  "tile_600": {
+   "label": "Porcelain tiles 600 × 600",
+   "type": "tiles",
+   "size": [
+    3,
+    3,
+    0.012
+   ],
+   "tile": [
+    0.6,
+    0.6
+   ],
+   "gap": 0.002,
+   "bevel": 0.0006,
+   "tones": 2
+  },
+  "tile_600x1200": {
+   "label": "Large tiles 600 × 1200, third offset (the photo's floor)",
+   "type": "tiles",
+   "size": [
+    3,
+    3,
+    0.012
+   ],
+   "tile": [
+    1.2,
+    0.6
+   ],
+   "pattern": "third",
+   "gap": 0.002,
+   "bevel": 0.0006,
+   "tones": 2
+  },
+  "tile_300": {
+   "label": "Bathroom tiles 300 × 300",
+   "type": "tiles",
+   "size": [
+    2,
+    2,
+    0.01
+   ],
+   "tile": [
+    0.3,
+    0.3
+   ],
+   "gap": 0.003,
+   "groove": 0.0025,
+   "bevel": 0.001,
+   "tones": 3
+  },
+  "stone_450": {
+   "label": "Genkan stone 450 × 450",
+   "type": "tiles",
+   "size": [
+    1.5,
+    1.2,
+    0.015
+   ],
+   "tile": [
+    0.45,
+    0.45
+   ],
+   "gap": 0.005,
+   "groove": 0.004,
+   "lip": 0.001,
+   "bevel": 0.002,
+   "tones": 4,
+   "slot": "stone"
+  },
+  "mosaic_50": {
+   "label": "Mosaic 50 × 50",
+   "type": "tiles",
+   "size": [
+    1.2,
+    1.2,
+    0.008
+   ],
+   "tile": [
+    0.05,
+    0.05
+   ],
+   "gap": 0.002,
+   "bevel": 0.0008,
+   "tones": 4,
+   "align": "corner"
+  },
+  "tatami": {
+   "label": "Tatami, Edo size (88 × 176)",
+   "type": "tatami",
+   "size": [
+    3.52,
+    2.64,
+    0.055
+   ],
+   "mat": [
+    0.88,
+    1.76
+   ]
+  },
+  "tatami_kyo": {
+   "label": "Tatami, Kyoto size (95.5 × 191)",
+   "type": "tatami",
+   "size": [
+    3.82,
+    2.865,
+    0.055
+   ],
+   "mat": [
+    0.955,
+    1.91
+   ]
+  },
+  "rug": {
+   "label": "Rug 200 × 140, border and fringe",
+   "type": "rug",
+   "size": [
+    2.0,
+    1.4,
+    0.012
+   ]
+  },
+  "rug_plain": {
+   "label": "Rug 160 × 230, plain",
+   "type": "rug",
+   "size": [
+    2.3,
+    1.6,
+    0.01
+   ],
+   "border": 0,
+   "fringe": 0
+  },
+  "runner": {
+   "label": "Hall runner 70 × 240",
+   "type": "rug",
+   "size": [
+    2.4,
+    0.7,
+    0.008
+   ],
+   "fringe": 0,
+   "border": 0.05
+  },
+  "bath_mat": {
+   "label": "Bath mat 60 × 45",
+   "type": "rug",
+   "size": [
+    0.6,
+    0.45,
+    0.01
+   ],
+   "border": 0,
+   "fringe": 0,
+   "slot": "fabric_2"
+  },
+  "wall_panels": {
+   "label": "Wall panels with reveals (600 wide)",
+   "cat": "wall",
+   "mount": "back",
+   "type": "tiles",
+   "size": [
+    3,
+    0.015,
+    2.4
+   ],
+   "orient": "wall",
+   "tile": [
+    0.6,
+    2.4
+   ],
+   "gap": 0.003,
+   "groove": 0.004,
+   "bevel": 0.001,
+   "tones": 1,
+   "slot": "body",
+   "base": "inner",
+   "align": "corner",
+   "gap_var": 0.1
+  },
+  "wainscot": {
+   "label": "Wainscot (beadboard to 90 cm)",
+   "cat": "wall",
+   "mount": "back",
+   "type": "tiles",
+   "size": [
+    3,
+    0.015,
+    0.9
+   ],
+   "orient": "wall",
+   "tile": [
+    0.1,
+    0.9
+   ],
+   "gap": 0.002,
+   "groove": 0.003,
+   "bevel": 0.001,
+   "tones": 1,
+   "slot": "body",
+   "base": "body",
+   "align": "corner",
+   "gap_var": 0.05
+  },
+  "wall_tiles": {
+   "label": "Wall tiles 300 × 600, half offset",
+   "cat": "wall",
+   "mount": "back",
+   "type": "tiles",
+   "size": [
+    2,
+    0.01,
+    2.2
+   ],
+   "orient": "wall",
+   "tile": [
+    0.6,
+    0.3
+   ],
+   "pattern": "half",
+   "gap": 0.002,
+   "bevel": 0.0008,
+   "tones": 2,
+   "align": "corner"
+  },
+  "subway_tiles": {
+   "label": "Subway tiles 75 × 150",
+   "cat": "wall",
+   "mount": "back",
+   "type": "tiles",
+   "size": [
+    1.8,
+    0.01,
+    0.6
+   ],
+   "orient": "wall",
+   "tile": [
+    0.15,
+    0.075
+   ],
+   "pattern": "half",
+   "gap": 0.002,
+   "bevel": 0.0015,
+   "tones": 3,
+   "align": "corner"
+  },
+  "tv_wall_unit": {
+   "label": "TV wall unit: tall doors, a dark open shelf, uppers over the TV (the photo)",
+   "type": "cabinet",
+   "size": [
+    3.4,
+    0.45,
+    2.4
+   ],
+   "kick": 0.06,
+   "handle": "none",
+   "reveal": 0.003,
+   "cols": [
+    {
+     "k": "doors",
+     "w": 0.9
+    },
+    {
+     "k": "open",
+     "w": 0.45,
+     "n": 4,
+     "split": 0.55,
+     "up": "door"
+    },
+    {
+     "k": "void",
+     "split": 0.55,
+     "up": "doors"
+    }
+   ]
+  },
+  "sliding_wardrobe": {
+   "label": "Sliding wardrobe, floor to ceiling (the photo's hall)",
+   "type": "cabinet",
+   "size": [
+    2.4,
+    0.62,
+    2.35
+   ],
+   "slide": true,
+   "kick": 0.04,
+   "handle": "none",
+   "cols": [
+    {
+     "k": "door"
+    },
+    {
+     "k": "door"
+    },
+    {
+     "k": "door"
+    }
+   ]
+  },
+  "vanity_drawers": {
+   "label": "Vanity: two big drawers and a top (the photo)",
+   "type": "cabinet",
+   "size": [
+    1.0,
+    0.5,
+    0.78
+   ],
+   "kick": 0,
+   "handle": "groove",
+   "top": 0.025,
+   "top_over": 0.015,
+   "cols": [
+    {
+     "k": "drawers",
+     "n": 2
+    }
+   ]
+  },
+  "wardrobe_doors": {
+   "label": "Built-in wardrobe, hinged doors",
+   "type": "cabinet",
+   "size": [
+    1.8,
+    0.6,
+    2.4
+   ],
+   "kick": 0.06,
+   "handle": "bar",
+   "cols": [
+    {
+     "k": "doors"
+    },
+    {
+     "k": "doors"
+    }
+   ]
+  },
+  "kitchen_base": {
+   "label": "Kitchen base unit 600, drawers",
+   "type": "cabinet",
+   "size": [
+    0.6,
+    0.65,
+    0.85
+   ],
+   "kick": 0.1,
+   "handle": "bar",
+   "top": 0.03,
+   "cols": [
+    {
+     "k": "drawers",
+     "n": 3
+    }
+   ]
+  },
+  "kitchen_run": {
+   "label": "Kitchen run 2.4 m: doors, drawers, an appliance gap",
+   "type": "cabinet",
+   "size": [
+    2.4,
+    0.65,
+    0.85
+   ],
+   "kick": 0.1,
+   "handle": "edge",
+   "top": 0.03,
+   "cols": [
+    {
+     "k": "doors"
+    },
+    {
+     "k": "drawers",
+     "n": 3,
+     "w": 0.6
+    },
+    {
+     "k": "void",
+     "w": 0.6
+    },
+    {
+     "k": "door",
+     "w": 0.45
+    }
+   ]
+  },
+  "kitchen_upper": {
+   "label": "Kitchen wall cabinets",
+   "mount": "wall",
+   "z": 1.45,
+   "type": "cabinet",
+   "size": [
+    2.4,
+    0.35,
+    0.7
+   ],
+   "kick": 0,
+   "handle": "edge",
+   "cols": [
+    {
+     "k": "doors"
+    },
+    {
+     "k": "doors"
+    },
+    {
+     "k": "glass"
+    },
+    {
+     "k": "door"
+    }
+   ]
+  },
+  "shoe_cabinet": {
+   "label": "Shoe cabinet (getabako), floating",
+   "type": "cabinet",
+   "size": [
+    1.2,
+    0.38,
+    0.9
+   ],
+   "kick": 0.2,
+   "kick_in": 0.33,
+   "handle": "groove",
+   "cols": [
+    {
+     "k": "doors"
+    },
+    {
+     "k": "door"
+    }
+   ]
+  },
+  "bookshelf": {
+   "label": "Bookshelf, open",
+   "type": "cabinet",
+   "size": [
+    0.9,
+    0.3,
+    1.8
+   ],
+   "kick": 0.05,
+   "handle": "none",
+   "inside": "body",
+   "cols": [
+    {
+     "k": "open",
+     "n": 4
+    },
+    {
+     "k": "open",
+     "n": 4
+    }
+   ]
+  },
+  "tv_board": {
+   "label": "Low TV board",
+   "type": "cabinet",
+   "size": [
+    1.8,
+    0.4,
+    0.4
+   ],
+   "kick": 0.05,
+   "handle": "groove",
+   "cols": [
+    {
+     "k": "drawers",
+     "n": 1
+    },
+    {
+     "k": "open",
+     "n": 0,
+     "w": 0.6
+    },
+    {
+     "k": "drawers",
+     "n": 1
+    }
+   ]
+  },
+  "fridge": {
+   "label": "Fridge (two doors)",
+   "cat": "furniture",
+   "type": "cabinet",
+   "size": [
+    0.68,
+    0.7,
+    1.8
+   ],
+   "kick": 0.03,
+   "handle": "bar",
+   "body": "white",
+   "fronts": "white",
+   "cols": [
+    {
+     "k": "door",
+     "split": 0.62,
+     "up": "door"
+    }
+   ]
+  },
+  "tv_niche_wall": {
+   "label": "Build-out with a TV niche",
+   "type": "buildout",
+   "size": [
+    3.0,
+    0.25,
+    2.4
+   ],
+   "holes": [
+    {
+     "x": 0.5,
+     "z": 0,
+     "w": 2.0,
+     "h": 1.9,
+     "depth": 0.12,
+     "shelves": 0
+    }
+   ]
+  },
+  "display_nook": {
+   "label": "Display nook (a recess with a shelf)",
+   "type": "buildout",
+   "size": [
+    1.2,
+    0.2,
+    2.4
+   ],
+   "holes": [
+    {
+     "x": 0.3,
+     "z": 1.0,
+     "w": 0.6,
+     "h": 0.8,
+     "depth": 0.15,
+     "shelves": 1
+    }
+   ],
+   "hole_slot": "inner"
+  },
+  "tokonoma": {
+   "label": "Tokonoma alcove (a raised floor, a recess)",
+   "type": "buildout",
+   "size": [
+    1.8,
+    0.6,
+    2.4
+   ],
+   "holes": [
+    {
+     "x": 0,
+     "z": 0.12,
+     "w": 1.8,
+     "h": 1.95,
+     "depth": 0.55,
+     "shelves": 0
+    }
+   ],
+   "slot": "wood"
+  },
+  "mirror": {
+   "label": "Mirror, frameless",
+   "z": 0.65,
+   "type": "panel",
+   "size": [
+    0.45,
+    0.02,
+    1.2
+   ],
+   "frame": 0,
+   "face": "mirror"
+  },
+  "vanity_mirror": {
+   "label": "Vanity mirror 90 × 80 (the photo)",
+   "z": 1.0,
+   "type": "panel",
+   "size": [
+    0.9,
+    0.02,
+    0.8
+   ],
+   "frame": 0,
+   "face": "mirror"
+  },
+  "tv_55": {
+   "label": "TV 55\", wall-mounted",
+   "z": 0.8,
+   "type": "panel",
+   "size": [
+    1.23,
+    0.06,
+    0.71
+   ],
+   "face": "screen",
+   "frame": 0.006,
+   "frame_slot": "black",
+   "back": 0.045
+  },
+  "tv_65": {
+   "label": "TV 65\", wall-mounted (the photo)",
+   "z": 0.75,
+   "type": "panel",
+   "size": [
+    1.45,
+    0.06,
+    0.84
+   ],
+   "face": "screen",
+   "frame": 0.006,
+   "frame_slot": "black",
+   "back": 0.045
+  },
+  "poster_b2": {
+   "label": "Poster B2, black frame",
+   "z": 1.15,
+   "type": "panel",
+   "size": [
+    0.545,
+    0.012,
+    0.758
+   ],
+   "face": "paper",
+   "frame": 0.012,
+   "frame_slot": "black",
+   "mat": 0.0
+  },
+  "picture_frame": {
+   "label": "Picture frame with a mount",
+   "z": 1.3,
+   "type": "panel",
+   "size": [
+    0.45,
+    0.025,
+    0.35
+   ],
+   "face": "paper",
+   "frame": 0.02,
+   "frame_slot": "wood",
+   "mat": 0.05
+  },
+  "calendar": {
+   "label": "Calendar",
+   "z": 1.3,
+   "type": "panel",
+   "size": [
+    0.3,
+    0.004,
+    0.45
+   ],
+   "face": "paper",
+   "frame": 0
+  },
+  "whiteboard": {
+   "label": "Whiteboard",
+   "z": 1.1,
+   "type": "panel",
+   "size": [
+    0.9,
+    0.02,
+    0.6
+   ],
+   "face": "white",
+   "frame": 0.015,
+   "frame_slot": "metal"
+  },
+  "wall_shelf": {
+   "label": "Floating wall shelf",
+   "cat": "wall",
+   "mount": "wall",
+   "z": 1.6,
+   "type": "block",
+   "size": [
+    0.8,
+    0.22,
+    0.03
+   ],
+   "bevel": 0.002
+  },
+  "radiator": {
+   "label": "Radiator panel",
+   "z": 0.12,
+   "type": "slats",
+   "size": [
+    1.0,
+    0.1,
+    0.55
+   ],
+   "n": 18
+  },
+  "convector": {
+   "label": "Low convector under a window",
+   "z": 0.05,
+   "type": "slats",
+   "size": [
+    1.6,
+    0.12,
+    0.3
+   ],
+   "n": 7,
+   "dir": "h",
+   "frame": 0.02
+  },
+  "vent": {
+   "label": "Vent grille",
+   "cat": "fitting",
+   "mount": "wall",
+   "z": 2.1,
+   "type": "slats",
+   "size": [
+    0.25,
+    0.02,
+    0.15
+   ],
+   "n": 6,
+   "dir": "h",
+   "frame": 0.012,
+   "back_plate": false
+  },
+  "air_conditioner": {
+   "label": "Air conditioner (エアコン)",
+   "cat": "wall",
+   "mount": "wall",
+   "z": 1.9,
+   "type": "parts",
+   "size": [
+    0.8,
+    0.29,
+    0.25
+   ],
+   "parts": [
+    {
+     "s": "box",
+     "at": [
+      0,
+      0.01,
+      0.04
+     ],
+     "size": [
+      0.8,
+      0.27,
+      0.21
+     ],
+     "m": "white",
+     "b": 0.02
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      -0.02,
+      0.0
+     ],
+     "size": [
+      0.74,
+      0.2,
+      0.045
+     ],
+     "m": "inner"
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      -0.13,
+      0.008
+     ],
+     "size": [
+      0.76,
+      0.016,
+      0.06
+     ],
+     "m": "white",
+     "b": 0.004
+    },
+    {
+     "s": "box",
+     "at": [
+      0.3,
+      -0.127,
+      0.17
+     ],
+     "size": [
+      0.05,
+      0.006,
+      0.012
+     ],
+     "m": "emit"
+    }
+   ]
+  },
+  "wall_clock": {
+   "label": "Wall clock",
+   "cat": "wall",
+   "mount": "wall",
+   "z": 1.75,
+   "type": "parts",
+   "size": [
+    0.3,
+    0.05,
+    0.3
+   ],
+   "parts": [
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0.025,
+      0.15
+     ],
+     "size": [
+      0.3,
+      0.3,
+      0.045
+     ],
+     "axis": "-y",
+     "m": "frame",
+     "ri": 0.14,
+     "m2": "frame"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0.025,
+      0.15
+     ],
+     "size": [
+      0.284,
+      0.284,
+      0.035
+     ],
+     "axis": "-y",
+     "m": "white"
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      -0.012,
+      0.15
+     ],
+     "size": [
+      0.006,
+      0.003,
+      0.09
+     ],
+     "m": "black"
+    },
+    {
+     "s": "box",
+     "at": [
+      0.03,
+      -0.014,
+      0.147
+     ],
+     "size": [
+      0.065,
+      0.003,
+      0.005
+     ],
+     "m": "black"
+    }
+   ]
+  },
+  "switch_jp_1": {
+   "label": "Switch, Japanese wide rocker",
+   "z": 1.14,
+   "type": "plate",
+   "size": [
+    0.07,
+    0.012,
+    0.12
+   ]
+  },
+  "switch_jp_2": {
+   "label": "Switch, two wide rockers",
+   "z": 1.14,
+   "type": "plate",
+   "size": [
+    0.07,
+    0.012,
+    0.12
+   ],
+   "gangs": 2
+  },
+  "switch_jp_3": {
+   "label": "Switch, three rockers",
+   "z": 1.14,
+   "type": "plate",
+   "size": [
+    0.07,
+    0.012,
+    0.12
+   ],
+   "gangs": 3
+  },
+  "switch_kr_3": {
+   "label": "Switch, Korean tall plate, three (the photo)",
+   "z": 1.1,
+   "type": "plate",
+   "size": [
+    0.075,
+    0.014,
+    0.15
+   ],
+   "gangs": 3
+  },
+  "switch_wide_4": {
+   "label": "Switch bank, four across",
+   "z": 1.14,
+   "type": "plate",
+   "size": [
+    0.15,
+    0.012,
+    0.09
+   ],
+   "gangs": 4,
+   "layout": "row"
+  },
+  "socket_jp_2": {
+   "label": "Socket, Japanese double",
+   "z": 0.19,
+   "type": "plate",
+   "size": [
+    0.07,
+    0.012,
+    0.12
+   ],
+   "kind": "socket_jp",
+   "gangs": 2
+  },
+  "socket_eu_1": {
+   "label": "Socket, Korean / European",
+   "z": 0.26,
+   "type": "plate",
+   "size": [
+    0.08,
+    0.014,
+    0.08
+   ],
+   "kind": "socket_eu"
+  },
+  "socket_eu_2": {
+   "label": "Socket, Korean double",
+   "z": 0.26,
+   "type": "plate",
+   "size": [
+    0.15,
+    0.014,
+    0.08
+   ],
+   "kind": "socket_eu",
+   "gangs": 2,
+   "layout": "row"
+  },
+  "thermostat": {
+   "label": "Floor-heating / boiler panel",
+   "z": 1.38,
+   "type": "plate",
+   "size": [
+    0.1,
+    0.02,
+    0.14
+   ],
+   "kind": "screen",
+   "gangs": 3
+  },
+  "intercom": {
+   "label": "Video intercom",
+   "z": 1.35,
+   "type": "plate",
+   "size": [
+    0.13,
+    0.025,
+    0.19
+   ],
+   "kind": "screen",
+   "gangs": 4
+  },
+  "blank_plate": {
+   "label": "Blank plate",
+   "z": 1.14,
+   "type": "plate",
+   "size": [
+    0.07,
+    0.008,
+    0.12
+   ],
+   "kind": "blank"
+  },
+  "downlight_100": {
+   "label": "Downlight 100",
+   "type": "downlight",
+   "size": [
+    0.1,
+    0.1,
+    0.015
+   ]
+  },
+  "downlight_150": {
+   "label": "Downlight 150",
+   "type": "downlight",
+   "size": [
+    0.15,
+    0.15,
+    0.02
+   ],
+   "trim": 0.015
+  },
+  "led_panel_600": {
+   "label": "LED panel 600 × 600",
+   "type": "downlight",
+   "size": [
+    0.6,
+    0.6,
+    0.012
+   ],
+   "shape": "square",
+   "trim": 0.015,
+   "lens_in": 0.004
+  },
+  "ceiling_light": {
+   "label": "Round ceiling light (シーリングライト)",
+   "cat": "ceiling",
+   "mount": "ceiling",
+   "type": "parts",
+   "size": [
+    0.5,
+    0.5,
+    0.1
+   ],
+   "parts": [
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0.1
+     ],
+     "size": [
+      0.5,
+      0.5,
+      0.098
+     ],
+     "axis": "-z",
+     "m": "white"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0.002
+     ],
+     "size": [
+      0.44,
+      0.44,
+      0.002
+     ],
+     "axis": "-z",
+     "m": "emit"
+    }
+   ]
+  },
+  "smoke_alarm": {
+   "label": "Smoke alarm",
+   "cat": "ceiling",
+   "mount": "ceiling",
+   "type": "parts",
+   "size": [
+    0.1,
+    0.1,
+    0.035
+   ],
+   "parts": [
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0.035
+     ],
+     "size": [
+      0.1,
+      0.1,
+      0.035
+     ],
+     "axis": "-z",
+     "m": "white"
+    }
+   ]
+  },
+  "ceiling_step": {
+   "label": "Ceiling step round the room",
+   "type": "bulkhead",
+   "size": [
+    3.6,
+    3.6,
+    0.1
+   ]
+  },
+  "curtain_pocket": {
+   "label": "Curtain pocket and step on one wall (the photo)",
+   "type": "bulkhead",
+   "size": [
+    3.6,
+    3.6,
+    0.1
+   ],
+   "border": [
+    0.35,
+    0,
+    0,
+    0
+   ],
+   "pocket": "n",
+   "pocket_w": 0.13
+  },
+  "window_slide": {
+   "label": "Sliding window, two sashes (引き違い)",
+   "type": "window",
+   "size": [
+    1.6,
+    0.22,
+    1.25
+   ]
+  },
+  "window_big": {
+   "label": "Big window: mullion and transom (the photo)",
+   "type": "window",
+   "size": [
+    1.8,
+    0.24,
+    2.0
+   ],
+   "cols": 2,
+   "rows": 2,
+   "slide": false,
+   "sash": 0,
+   "frame": 0.07,
+   "mullion": 0.06
+  },
+  "window_small": {
+   "label": "Small sliding window (the hall in the photo)",
+   "type": "window",
+   "size": [
+    0.8,
+    0.2,
+    0.9
+   ],
+   "frame": 0.05,
+   "stool": 0.05
+  },
+  "window_fixed": {
+   "label": "Fixed pane",
+   "type": "window",
+   "size": [
+    0.6,
+    0.2,
+    0.6
+   ],
+   "cols": 1,
+   "slide": false,
+   "sash": 0,
+   "stool": 0
+  },
+  "curtain_blackout": {
+   "label": "Curtains, pleated, drawn back",
+   "type": "curtain",
+   "size": [
+    1.8,
+    0.14,
+    2.3
+   ]
+  },
+  "curtain_sheer": {
+   "label": "Sheer curtains, closed",
+   "type": "curtain",
+   "size": [
+    1.8,
+    0.08,
+    2.3
+   ],
+   "open": 0,
+   "pitch": 0.08,
+   "thick": 0.002,
+   "slot": "sheer",
+   "rail": 0.02
+  },
+  "curtain_single": {
+   "label": "One curtain, half drawn",
+   "type": "curtain",
+   "size": [
+    1.2,
+    0.14,
+    2.3
+   ],
+   "panels": 1,
+   "open": 0.5
+  },
+  "dining_table": {
+   "label": "Dining table 140 × 80",
+   "type": "table",
+   "size": [
+    1.4,
+    0.8,
+    0.72
+   ]
+  },
+  "low_table": {
+   "label": "Low table (zataku)",
+   "type": "table",
+   "size": [
+    1.2,
+    0.75,
+    0.35
+   ],
+   "apron": 0.05
+  },
+  "coffee_table": {
+   "label": "Coffee table with a shelf",
+   "type": "table",
+   "size": [
+    1.1,
+    0.55,
+    0.4
+   ],
+   "apron": 0,
+   "shelf": 0.1,
+   "leg": 0.04
+  },
+  "desk": {
+   "label": "Desk 120 × 60",
+   "type": "table",
+   "size": [
+    1.2,
+    0.6,
+    0.72
+   ],
+   "apron": 0.06
+  },
+  "bench": {
+   "label": "Bench",
+   "type": "table",
+   "size": [
+    1.2,
+    0.35,
+    0.45
+   ],
+   "apron": 0,
+   "leg": 0.045
+  },
+  "bed_single": {
+   "label": "Bed, single",
+   "type": "bed",
+   "size": [
+    0.97,
+    2.0,
+    0.9
+   ],
+   "pillows": 1
+  },
+  "bed_double": {
+   "label": "Bed, double",
+   "type": "bed",
+   "size": [
+    1.4,
+    2.05,
+    0.95
+   ]
+  },
+  "futon": {
+   "label": "Futon on the floor",
+   "type": "bed",
+   "size": [
+    1.0,
+    2.1,
+    0.2
+   ],
+   "top": 0.1,
+   "base": 0.06,
+   "headboard": false,
+   "pillows": 1,
+   "slot": "fabric_2",
+   "kick_in": 0
+  },
+  "sofa_3": {
+   "label": "Sofa, three seats",
+   "type": "sofa",
+   "size": [
+    2.1,
+    0.92,
+    0.8
+   ]
+  },
+  "sofa_chaise": {
+   "label": "Sofa with a chaise (the photo)",
+   "type": "sofa",
+   "size": [
+    2.5,
+    1.6,
+    0.8
+   ],
+   "chaise": "left",
+   "seats": 3
+  },
+  "loveseat": {
+   "label": "Loveseat",
+   "type": "sofa",
+   "size": [
+    1.5,
+    0.88,
+    0.78
+   ],
+   "seats": 2
+  },
+  "zabuton": {
+   "label": "Floor cushion (zabuton)",
+   "type": "block",
+   "size": [
+    0.55,
+    0.59,
+    0.06
+   ],
+   "bevel": 0.02,
+   "slot": "fabric"
+  },
+  "genkan_step": {
+   "label": "Genkan step (agari-kamachi)",
+   "type": "block",
+   "size": [
+    1.6,
+    0.3,
+    0.18
+   ],
+   "nosing": 0.02,
+   "bevel": 0.003
+  },
+  "dining_chair": {
+   "label": "Dining chair",
+   "type": "parts",
+   "size": [
+    0.45,
+    0.5,
+    0.82
+   ],
+   "parts": [
+    {
+     "s": "box",
+     "at": [
+      -0.19,
+      -0.215,
+      0
+     ],
+     "size": [
+      0.035,
+      0.035,
+      0.42
+     ],
+     "m": "wood"
+    },
+    {
+     "s": "box",
+     "at": [
+      -0.19,
+      0.215,
+      0
+     ],
+     "size": [
+      0.035,
+      0.035,
+      0.42
+     ],
+     "m": "wood"
+    },
+    {
+     "s": "box",
+     "at": [
+      0.19,
+      -0.215,
+      0
+     ],
+     "size": [
+      0.035,
+      0.035,
+      0.42
+     ],
+     "m": "wood"
+    },
+    {
+     "s": "box",
+     "at": [
+      0.19,
+      0.215,
+      0
+     ],
+     "size": [
+      0.035,
+      0.035,
+      0.42
+     ],
+     "m": "wood"
+    },
+    {
+     "s": "box",
+     "at": [
+      -0.19,
+      0.215,
+      0.42
+     ],
+     "size": [
+      0.035,
+      0.035,
+      0.4
+     ],
+     "m": "wood"
+    },
+    {
+     "s": "box",
+     "at": [
+      0.19,
+      0.215,
+      0.42
+     ],
+     "size": [
+      0.035,
+      0.035,
+      0.4
+     ],
+     "m": "wood"
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      0,
+      0.42
+     ],
+     "size": [
+      0.45,
+      0.5,
+      0.03
+     ],
+     "m": "wood",
+     "b": 0.003
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      0.215,
+      0.6
+     ],
+     "size": [
+      0.345,
+      0.02,
+      0.18
+     ],
+     "m": "wood",
+     "b": 0.003
+    }
+   ]
+  },
+  "floor_lamp": {
+   "label": "Floor lamp",
+   "type": "parts",
+   "size": [
+    0.4,
+    0.4,
+    1.55
+   ],
+   "parts": [
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      0.28,
+      0.28,
+      0.02
+     ],
+     "m": "black"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0.02
+     ],
+     "size": [
+      0.025,
+      0.025,
+      1.25
+     ],
+     "m": "metal"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      1.25
+     ],
+     "size": [
+      0.4,
+      0.4,
+      0.3
+     ],
+     "ri": 0.195,
+     "m": "fabric_2",
+     "m2": "emit"
+    }
+   ]
+  },
+  "plant_pot": {
+   "label": "Plant pot",
+   "type": "parts",
+   "size": [
+    0.3,
+    0.3,
+    0.32
+   ],
+   "parts": [
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      0.3,
+      0.3,
+      0.32
+     ],
+     "ri": 0.13,
+     "m": "white",
+     "m2": "inner"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      0,
+      0.0
+     ],
+     "size": [
+      0.262,
+      0.262,
+      0.28
+     ],
+     "m": "gap"
+    }
+   ]
+  },
+  "washing_machine": {
+   "label": "Washing machine",
+   "type": "parts",
+   "size": [
+    0.6,
+    0.6,
+    0.85
+   ],
+   "parts": [
+    {
+     "s": "box",
+     "at": [
+      0,
+      0.01,
+      0
+     ],
+     "size": [
+      0.6,
+      0.58,
+      0.85
+     ],
+     "m": "white",
+     "b": 0.01
+    },
+    {
+     "s": "box",
+     "at": [
+      0,
+      -0.275,
+      0.72
+     ],
+     "size": [
+      0.56,
+      0.006,
+      0.1
+     ],
+     "m": "screen"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      -0.28,
+      0.42
+     ],
+     "size": [
+      0.38,
+      0.38,
+      0.02
+     ],
+     "axis": "-y",
+     "ri": 0.15,
+     "m": "metal",
+     "m2": "metal"
+    },
+    {
+     "s": "cyl",
+     "at": [
+      0,
+      -0.275,
+      0.42
+     ],
+     "size": [
+      0.31,
+      0.31,
+      0.01
+     ],
+     "axis": "-y",
+     "m": "glass"
+    }
+   ]
+  }
+ }
+}

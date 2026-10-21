@@ -65,3 +65,7 @@ Content/__ExternalActors__/Variant_*/
 Content/__ExternalObjects__/FirstPerson/
 Content/__ExternalObjects__/Variant_*/
 Source/HorrorEngine/
+
+# the kit's meshes: made from the story by `node tools/kit/build.mjs` (the importer runs it), the same every time
+Content/Studio/Library/meshes/kit/
+Content/Studio/Library/index/kit.json

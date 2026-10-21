@@ -60,20 +60,24 @@ def check(story, level=None):
     def stacked(a, b):
         return f"on:{b['id']}" in a["tags"] or f"on:{a['id']}" in b["tags"]
 
+    # a kit floor, rug or ceiling step is walked over or under, not bumped (surface); a window frame sits in its wall
+    flat = lambda q: "surface" in q["tags"]
     for i, a in enumerate(solid):
         ba = aabb(a)
         for b in solid[i + 1:]:
+            if flat(a) or flat(b):
+                continue
             if a["room"] == b["room"] and not stacked(a, b) and a["id"].split("__")[0] != b["id"].split("__")[0]:
                 o = overlap(ba, aabb(b))
                 if o > TOL:
                     errs.append(f"{a['id']} and {b['id']} overlap by {o * 100:.0f} cm")
-        for w in walls:
+        for w in ([] if "in_wall" in a["tags"] else walls):
             o = overlap(ba, aabb(w))
             if o > TOL:
                 errs.append(f"{a['id']} is {o * 100:.0f} cm into a wall of {w['room']}")
         r = rooms[a["room"]]
         x0, y0, z0 = r["at"]
-        if any(t == "trim:threshold" for t in a["tags"]):     # a threshold lies across its doorway, both sides
+        if any(t == "trim:threshold" or t == "in_wall" for t in a["tags"]):     # across a doorway, or in a wall
             continue
         if ba[0] < x0 - TOL or ba[1] < y0 - TOL or ba[3] > x0 + r["size"][0] + TOL or ba[4] > y0 + r["size"][1] + TOL:
             errs.append(f"{a['id']} pokes out of {a['room']}")
@@ -94,7 +98,7 @@ def check(story, level=None):
             zone = (wx - (hw if along_x else CLEAR), wy - (CLEAR if along_x else hw), wz + 0.05,
                     wx + (hw if along_x else CLEAR), wy + (CLEAR if along_x else hw), wz + 1.8)
             for s in solid:
-                if "hidden" in s["tags"] or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
+                if "hidden" in s["tags"] or "in_wall" in s["tags"] or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
                     continue
                 o = overlap(zone, aabb(s))
                 if o > TOL:

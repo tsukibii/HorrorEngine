@@ -10,6 +10,7 @@ kind: wall, floor, ceiling, door, mesh, person, light, trigger, spot, start.
 import math
 
 from . import storylib as L
+from . import kit as KIT
 
 STEP = 0.18   # a stair's rise
 
@@ -242,6 +243,13 @@ def plan(story, level=None):
         elif t.d.get("shape", "").startswith("person"):
             cast, pose = L.parse_shape(t.d["shape"])[1]
             out.append(dict(p, kind="person", pos=t.pos, size=t.size, shape=None, tags=_tags(t, [f"cast:{cast}", f"pose:{pose}"])))
+        elif t.d.get("kit") is not None:            # a kit thing (docs/KIT.md): its box here; its mesh is kit/<type>_<hash>
+            try:
+                ktype, ref = KIT.kind(t.d["kit"]), KIT.ref(t.d["kit"])
+            except ValueError:
+                continue                                # story_check says why
+            extra = [f"kit:{ktype}", f"art:{ref}", "real"] + (["surface"] if ktype in KIT.SURFACE else []) + (["in_wall"] if t.d.get("in_wall") else [])
+            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, tags=_tags(t, extra)))
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])
             if kind == "stairs":
