@@ -57,11 +57,13 @@ CUE("slapstick_fall", {
   family: "kdrama", label: "Slapstick fall", uses: ["trip", "fall", "pratfall", "bonk", "comedy"],
   desc: "A slide down the harp and piano, a thud on the landing (timpani and bass drum, or a wood-block bonk), a beat of silence, then a small sheepish chord.",
   refs: "The pratfall stings of K-drama comedies; cartoon scoring (Carl Stalling) in spirit",
-  params: { key: P.key(0, "ionian"), fall: { kind: "num", def: 0.8, min: 0.3, max: 2, step: 0.1, label: "the fall (s)" }, landing: P.pick("landing", ["thud", "bonk", "crash"]), after: P.amt("sheepish chord", 0.7) },
+  params: { key: P.key(0, "ionian"), fall: { kind: "num", def: 0.8, min: 0.3, max: 2, step: 0.1, label: "the fall (s)" }, landing: P.pick("landing", ["thud", "bonk", "crash"]), slide: P.pick("the slide", ["harp run", "slide whistle", "xylophone"]), after: P.amt("sheepish chord", 0.7) },
   gen(t, p) {
     const k = p.key, n = 12;
     t.beat(120);
-    for (let i = 0; i < n; i++) { const at = p.fall * (i / n) ** 0.8; t.n("harp", deg(k, 14 - i, 60), at, 0.3, t.vel(80)); if (i % 2 === 0) t.n("piano", deg(k, 14 - i, 72), at, 0.2, t.vel(60)); }
+    if (p.slide === "slide whistle") t.n("flute", 90, 0, p.fall, 84, { raw: true, bend: { semis: -22, at: 0.05, dur: p.fall - 0.05 }, release: 0.05 });
+    else if (p.slide === "xylophone") for (let i = 0; i < 16; i++) t.n("xylo", 100 - i, p.fall * i / 16, 0.1, t.vel(78));
+    else for (let i = 0; i < n; i++) { const at = p.fall * (i / n) ** 0.8; t.n("harp", deg(k, 14 - i, 60), at, 0.3, t.vel(80)); if (i % 2 === 0) t.n("piano", deg(k, 14 - i, 72), at, 0.2, t.vel(60)); }
     const land = p.fall;
     if (p.landing === "thud") { t.n("timpani", deg(k, 0, 36), land, null, 118, { raw: true }); t.hit("bass_drum", land, 120); }
     else if (p.landing === "bonk") { t.hit("log_lo", land, 120); t.hit("log_hi", land + 0.12, 90); }
@@ -289,5 +291,23 @@ CUE("womp_womp", {
     t.n("pizz", top - 15, 1.65, 0.3, 70);
     t.point(1.65, "the sulk");
     t.end(3.6);
+  },
+});
+
+// The punchline: under a second. Ba-dum-tss on the kit, a xylophone ta-da, a pizzicato bonk, or a timpani boing
+// (the thud bent down).
+CUE("punchline", {
+  family: "kdrama", label: "Punchline (ba-dum-tss)", uses: ["punchline", "joke", "rimshot", "comedy", "tag"],
+  desc: "A tag under a second: ba-dum-tss on the kit, a xylophone ta-da, a pizzicato bonk or a timpani boing.",
+  refs: "The rimshot; the variety-show sound punctuation K-drama comedy borrows (Running Man, Infinite Challenge captions)",
+  params: { key: P.key(0, "ionian"), kind: P.pick("tag", ["ba-dum-tss", "ta-da", "bonk", "boing"]) },
+  gen(t, p) {
+    const k = p.key;
+    t.beat(120);
+    if (p.kind === "ba-dum-tss") { t.hit("snare", 0, 96); t.hit("tenor", 0.16, 90); t.hit("bass_drum", 0.32, 100); t.hit("crash", 0.32, 90); t.point(0.32, "tss"); }
+    else if (p.kind === "ta-da") { t.n("xylo", deg(k, 4, 72), 0, 0.1, 96); t.chord("xylo", [deg(k, 0, 84), deg(k, 2, 84), deg(k, 4, 84)], 0.2, 0.4, 104); t.n("glock", deg(k, 0, 96), 0.2, null, 70); t.point(0.2, "da"); }
+    else if (p.kind === "bonk") { t.n("pizz", deg(k, 0, 48), 0, 0.2, 120); t.hit("log_lo", 0, 110); t.n("pizz", deg(k, 0, 48) - 1, 0.3, 0.2, 90); t.point(0, "bonk"); }
+    else { t.n("timpani", deg(k, 4, 36), 0, 1, 112, { bend: { semis: -3, at: 0.02, dur: 0.6 } }); t.point(0, "boing"); }
+    t.end(1.2);
   },
 });

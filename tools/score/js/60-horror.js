@@ -284,3 +284,70 @@ CUE("house_creaks", {
     t.end(p.len);
   },
 });
+
+// Found you: the hider is discovered. Shorter than the sting: a falling minor second (or tritone) in the low piano
+// with a snapped pizzicato, then silence, or a lead into the chase. Gentler or sinister.
+CUE("found_you", {
+  family: "horror", label: "Found you", uses: ["found", "hiding", "caught", "hide and seek", "peekaboo"],
+  desc: "Two low piano notes falling a minor second (or a tritone) with a snapped pizzicato and a rim click, then silence or a lead into a chase.",
+  refs: "Jaws' semitone, the J-horror fillip (Ringu, Ju-On), Fatal Frame's jarring bolt after the slow creep",
+  params: { key: P.key(4, "phrygian"), interval: P.pick("interval", ["minor 2nd", "tritone"]), after: P.pick("after", ["silence", "into the chase", "her giggle (glock)"]), weight: P.amt("weight", 0.6) },
+  gen(t, p) {
+    const root = 36 + p.key.tonic, drop = p.interval === "tritone" ? 6 : 1, v = 70 + 50 * p.weight;
+    t.beat(100, [4, 4]);
+    t.n("piano", root + drop, 0, 0.5, v, { raw: true }); t.n("piano", root + drop + 12, 0, 0.5, v - 20, { raw: true });
+    t.n("pizz", root + drop + 24, 0, 0.2, 120); t.hit("rim", 0, 110);
+    t.n("piano", root, 0.42, null, v + 6, { raw: true }); t.n("piano", root + 12, 0.42, null, v - 14, { raw: true });
+    t.n("pizz", root + 24, 0.42, 0.2, 124); t.hit("rim", 0.42, 120);
+    t.point(0.42, "found");
+    if (p.after === "into the chase") { [0, 1, 0, 1, 0, 1, 3, 1].forEach((d, i) => t.n("trem", root + 24 + d, 1.0 + i * 0.18, 0.17, 70 + i * 6)); t.hit("bass_drum", 2.44, 110); t.end(2.6); }
+    else if (p.after === "her giggle (glock)") { [12, 10, 12, 7].forEach((d, i) => t.n("glock", root + 60 + d, 1.3 + i * 0.13, null, 44 - i * 4)); t.end(2.6); }
+    else t.end(2.2);
+  },
+});
+
+// The lull: music falls away to near nothing for a while (never the same length twice), then the outcome: the
+// scare, nothing at all (a false lull), or a harmless sound (the bus hiss: a cat, a pipe). Don't let silence always
+// end in a bang.
+CUE("false_scare", {
+  family: "horror", label: "The lull (scare or not)", uses: ["lull", "silence", "false scare", "before the scare", "fake out"],
+  desc: "A low drone thins to almost nothing, holds for an unpredictable stretch, then: the scare, nothing, or a harmless knock (a false scare).",
+  refs: "Cat People's bus (the Lewton bus), Ringu's ma, the Conjuring's untelegraphed scares",
+  params: { key: P.key(4, "locrian", ["locrian", "phrygian"]), len: P.len(10, 5, 20), outcome: P.pick("outcome", ["scare", "nothing", "harmless knock"]), hold: P.amt("how long the silence holds", 0.5) },
+  gen(t, p) {
+    const root = 28 + p.key.tonic + (p.key.tonic > 7 ? 0 : 12), r = t.rng;
+    t.beat(60, [4, 4]);
+    const fade = p.len * 0.35, at = fade + 0.6 + p.hold * r.range(1, 4);
+    t.n("strings", root + 12, 0, fade, 40, { attack: 1, raw: true, release: 1.2 }); t.n("strings", root + 13, 0.5, fade - 0.5, 28, { attack: 1.5, release: 1.2 });
+    t.mark(fade, "silence");
+    if (p.outcome === "scare") { stingAt(t, root, at, 1); t.end(at + 3); }
+    else if (p.outcome === "harmless knock") { t.hit("log_lo", at, 70); t.hit("log_lo", at + 0.22, 50); t.point(at, "just the pipes"); t.n("piano", root + 36, at + 1.6, null, 26); t.end(at + 3); }
+    else { t.point(at, "nothing comes"); t.n("strings", root + 12, at + 0.8, 3, 22, { attack: 2, raw: true }); t.end(at + 4); }
+  },
+});
+
+// The rite: she shows you the shrine. Low drums and timpani in a pattern that speeds up, a pizzicato ostinato, the
+// horn calling on the flat second, a tremolo rising under it all.
+CUE("ritual", {
+  family: "horror", label: "Ritual (the shrine)", uses: ["ritual", "shrine", "possession", "the reveal", "cult"],
+  desc: "Low toms and timpani in a pattern that speeds up, a pizzicato ostinato, the horn calling on the flat second, a tremolo rising under it.",
+  refs: "The Wailing's shaman rite (Jang Young-gyu, Dalpalan), Kingdom's drums, Midsommar's ritual builds",
+  params: { key: P.key(2, "phrygian", ["phrygian", "phrygian_dominant"]), from: P.tempo(70, 50, 100), to: P.tempo(140, 90, 180), len: P.len(20, 10, 40), horn: P.amt("horn calls", 0.6) },
+  gen(t, p) {
+    const k = p.key, root = 38 + k.tonic, r = t.rng;
+    t.beat(p.from, [4, 4]);
+    let at = 0, i = 0;
+    while (at < p.len) {
+      const spb = 60 / lerp(p.from, p.to, Math.pow(at / p.len, 1.4)), acc = i % 4 === 0;
+      t.hit(acc ? "taiko" : r.chance(0.5) ? "tenor" : "taiko_hand", at, acc ? 108 : 70 + r.int(0, 20));
+      if (i % 2 === 0) t.n("timpani", root - 2 + (i % 8 === 4 ? 1 : 0), at, 0.4, acc ? 90 : 66);
+      t.n("pizz", root + 12 + [0, 1, 0, 3, 0, 1, 5, 1][i % 8], at, 0.2, t.vel(66));
+      if (p.horn > 0.2 && i % 16 === 8) { t.n("horn", root + 12 + 1, at, spb * 3, 60 + 40 * p.horn * at / p.len); t.n("horn", root + 12, at + spb * 3, spb * 2, 56 + 30 * p.horn); }
+      at += spb; i++;
+    }
+    for (let s = 0; s < p.len; s += 5) t.n("trem", root + 12 + Math.floor(s / 5), s, 5.2, 30 + 50 * s / p.len, { attack: 2 });
+    t.hit("gong", p.len, 120); t.n("piano", root - 12, p.len, null, 110, { raw: true }); t.n("piano", root - 11, p.len, null, 96, { raw: true });
+    t.point(p.len, "the rite ends");
+    t.end(p.len + 3);
+  },
+});

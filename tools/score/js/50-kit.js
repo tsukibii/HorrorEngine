@@ -51,7 +51,19 @@ class Take {
 // def: {family, label, uses: [tags], desc, refs, params: {name: {kind: "num"|"choice"|"key", ...}}, gen(t, p)}
 const CUES = {};
 const FAMILIES = { horror: "Horror", kdrama: "K-drama", crossover: "Romance horror" };
-function CUE(id, def) { def.id = id; CUES[id] = def; return def; }
+function CUE(id, def) {
+  def.id = id;
+  // two knobs every cue has (docs/MUSIC_RESEARCH.md §2.8, 2.9; X2 and X6): corruption bends any cue towards wrong
+  // (drifting tuning, dropped notes, a note slipped flat, a tritone drone under it, the tempo sagging), and "she's
+  // watching" lays a barely heard high tremolo cluster under it (a comedy scene she is secretly watching). Variations
+  // leave them where they are set.
+  def.params = Object.assign({}, def.params, {
+    corrupt: { kind: "num", def: 0, min: 0, max: 1, step: 0.05, label: "corruption (any cue)", fixed: true, shared: true },
+    watched: { kind: "num", def: 0, min: 0, max: 1, step: 0.05, label: "she's watching (hidden layer)", fixed: true, shared: true },
+  });
+  CUES[id] = def;
+  return def;
+}
 // shared parameter shapes
 const P = {
   key: (tonic = 9, mode = "aeolian", modes) => ({ kind: "key", def: { tonic, mode }, modes: modes || [mode] }),
@@ -76,10 +88,45 @@ function writeCue(cueId, params, seed) {
   const t = new Take(makeRng(seed), p);
   t.key = p.key ? { tonic: p.key.tonic, mode: p.key.mode } : null;
   cue.gen(t, p);
+  if (p.corrupt > 0) corruptTake(t, p.corrupt, makeRng((seed ^ 0x5bd1e995) >>> 0));
+  if (p.watched > 0) watchedLayer(t, p.watched, makeRng((seed ^ 0x27d4eb2f) >>> 0));
   t.ev.sort((a, b) => a.t - b.t);
   t.secs = Math.max(t.secs, ...t.ev.map(e => e.t + 0.2));
-  if (p.len) t.secs = Math.min(t.secs, p.len + 4);       // a ringing tail past the length, never much more
+  // a ringing tail past the length, never much more (but never cutting off the cue's own last notes)
+  if (p.len) t.secs = Math.min(t.secs, Math.max(p.len + 4, ...t.ev.map(e => e.t + 1.5), ...t.hits.map(x => x.t + 1)));
   return { cue: cueId, params: p, seed, secs: t.secs, tempo: t.tempo, meter: t.meter, key: t.key, ev: t.ev, marks: t.marks, hits: t.hits };
+}
+
+// Corruption, after the cue has written its notes (its own random source, so the cue's notes stay the same):
+// 0.2 a note slipped flat a phrase and a slight drift; 0.4 a tritone drone under it and the tempo sagging; 0.6 notes
+// dropped (missing teeth); 0.8 and over the sustained notes bend apart at their ends.
+function corruptTake(t, w, rng) {
+  const secs = Math.max(1, t.secs), pitched = t.ev.filter(e => e.inst !== "drums");
+  const sag = 0.12 * Math.max(0, w - 0.3);                       // the late notes come later: a spring running down
+  for (const e of t.ev) e.t = e.t * (1 + sag * e.t / secs);
+  for (const p of t.hits) p.t = p.t * (1 + sag * p.t / secs);
+  for (const m of t.marks) m.t = m.t * (1 + sag * m.t / secs);
+  t.secs *= 1 + sag;
+  for (const e of pitched) {
+    e.cents = (e.cents || 0) + rng.gauss(0, 4 + 22 * w);
+    if (rng.chance(0.07 * w) && e.dur != null && e.dur < 1.5) { e.midi -= 1; }
+    if (w > 0.75 && e.dur != null && e.dur > 1.2 && !e.bend && rng.chance(0.4)) e.bend = { semis: rng.pick([-1, -0.5, 0.5]), at: e.dur * 0.6, dur: e.dur * 0.4 };
+  }
+  const drop = Math.max(0, w - 0.45) * 0.3;
+  if (drop > 0) t.ev = t.ev.filter(e => e.inst === "drums" || !rng.chance(drop));
+  if (w >= 0.35) {
+    const tonic = t.key ? t.key.tonic : 9, low = 36 + mod(tonic + 6, 12), end = t.secs;
+    for (let s = 0; s < end - 1; s += 8) t.n("strings", low, s, Math.min(9, end - s), 18 + 30 * w, { attack: Math.min(3, (end - s) / 3), raw: true });
+    t.secs = end;
+    t.mark(0, "corrupted " + w.toFixed(2));
+  }
+}
+// She's watching: a high tremolo cluster you feel more than hear, the whole length, and now and then a far glock ping.
+function watchedLayer(t, w, rng) {
+  const c = 79 + rng.int(0, 4), end = t.secs;
+  for (let s = 0; s < end - 0.5; s += 7) [0, 1, 3].forEach(i => t.n("trem", c + i, s + rng.range(0, 0.4), Math.max(0.5, Math.min(8, end - s - 0.4)), 8 + 22 * w, { attack: Math.min(2.5, (end - s) / 3), raw: true, cents: rng.range(-30, 30) }));
+  if (w > 0.4) for (let s = rng.range(2, 5); s < end - 1; s += rng.range(5, 9)) t.n("glock", 96 + rng.pick([0, 1, 6]), s, null, 14 + 16 * w);
+  t.secs = end;
 }
 
 // Variations around a set of parameters: a fresh seed each, numbers moved by up to `spread` of their range, choices
@@ -104,3 +151,12 @@ function variations(cueId, base, n, spread, seed0) {
 
 // The instruments a take uses (what to load before playing it).
 const takeInstruments = take => uniq(take.ev.map(e => e.inst));
+
+// A take's fingerprint: what its notes are, in eight hex digits. A favourite keeps the one it was kept with, so a
+// changed generator that would change a kept cue's notes is caught (check.js, the palette's "changed" badge).
+function takePrint(take) {
+  let h = 0x811c9dc5;
+  const mix = x => { h ^= x & 0xffff; h = Math.imul(h, 0x01000193) >>> 0; };
+  for (const e of take.ev) { mix(Math.round(e.t * 100)); mix(e.inst === "drums" ? e.piece.length * 31 + e.piece.charCodeAt(0) : e.midi); mix(e.vel); mix(e.inst.charCodeAt(0) * 7 + e.inst.length); }
+  return h.toString(16).padStart(8, "0");
+}

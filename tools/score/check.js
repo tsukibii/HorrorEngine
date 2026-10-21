@@ -1,0 +1,97 @@
+// The score room's check: every cue across many seeds and its variations writes notes that are whole (finite times,
+// notes inside each instrument's samples, real drum pieces, lengths as promised), the same notes twice from the
+// same seed, the corruption and "watched" layers included; then the palettes on disk (the studio's and each game's)
+// name known cues, and a favourite whose notes changed since it was kept is reported. Ends "SCORE ok".
+//
+//   node tools/score/check.js
+const fs = require("fs"), path = require("path"), vm = require("vm");
+const HERE = __dirname, ROOT = path.resolve(HERE, "../..");
+const ctx = { console, Math, JSON, Object, Array, Set, Map, TextEncoder, Uint8Array, DataView, ArrayBuffer, Float32Array, Number, String, isFinite, Error, Promise };
+vm.createContext(ctx);
+const files = fs.readdirSync(path.join(HERE, "js")).filter(f => /^[0-6]\d-.*\.js$/.test(f) || f === "70-player.js").sort();
+vm.runInContext(files.map(f => fs.readFileSync(path.join(HERE, "js", f), "utf8")).join("\n;\n") +
+  "\n;globalThis.__x = { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI };", ctx, { filename: "score.js" });
+const { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI } = ctx.__x;
+const index = JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Music/samples/instruments.json"), "utf8"));
+const problems = [];
+const bad = (id, msg) => { if (problems.length < 60) problems.push(id + ": " + msg); };
+let notes = 0, takes = 0;
+
+function checkTake(id, w, label) {
+  takes++;
+  if (!w.ev.length) bad(id, label + " wrote no notes");
+  if (!(w.secs > 0) || !isFinite(w.secs)) bad(id, label + " length " + w.secs);
+  const len = w.params.len;
+  if (len && w.secs > Math.max(len * 1.5, len + 8)) bad(id, label + " runs " + w.secs.toFixed(1) + " s for a length of " + len);
+  for (const e of w.ev) {
+    notes++;
+    const def = index[e.inst];
+    if (!def) { bad(id, label + " unknown instrument " + e.inst); continue; }
+    if (!isFinite(e.t) || e.t < 0) bad(id, label + " note at " + e.t);
+    if (!(e.vel >= 1 && e.vel <= 127)) bad(id, label + " velocity " + e.vel);
+    if (e.inst === "drums") { if (!def.pieces[e.piece]) bad(id, label + " no drum " + e.piece); continue; }
+    if (!Number.isInteger(e.midi)) bad(id, label + " note " + e.midi);
+    const [lo, hi] = def.range;
+    if (e.midi < lo - 7 || e.midi > hi + 7) bad(id, label + " " + e.inst + " " + e.midi + " outside its samples " + lo + "-" + hi);
+    if (e.dur != null && !(e.dur > 0)) bad(id, label + " duration " + e.dur);
+    if (e.bend && !(isFinite(e.bend.semis) && e.bend.dur > 0)) bad(id, label + " bend " + JSON.stringify(e.bend));
+  }
+  for (const h of w.hits) if (!(h.t >= 0 && h.t <= w.secs + 0.01)) bad(id, label + " hit " + h.label + " at " + h.t + " past the end");
+}
+
+const ids = Object.keys(CUES);
+for (const id of ids) {
+  const c = CUES[id];
+  if (!FAMILIES[c.family]) bad(id, "family " + c.family);
+  for (const f of ["label", "desc", "refs"]) if (!c[f]) bad(id, "no " + f);
+  if (!Array.isArray(c.uses) || !c.uses.length) bad(id, "no uses");
+  for (let s = 0; s < 12; s++) {
+    const seed = 1000 + s * 7919;
+    const a = writeCue(id, {}, seed), b = writeCue(id, {}, seed);
+    if (takePrint(a) !== takePrint(b)) bad(id, "seed " + seed + " not deterministic");
+    checkTake(id, a, "seed " + seed);
+  }
+  // every choice value, the ends of every number, both shared layers
+  for (const [k, sp] of Object.entries(c.params)) {
+    const vals = sp.kind === "choice" ? sp.opts : sp.kind === "num" ? [sp.min, sp.max] : sp.modes.map(m => ({ tonic: 11, mode: m }));
+    for (const v of vals) checkTake(id, writeCue(id, { [k]: v }, 77), k + "=" + JSON.stringify(v));
+  }
+  checkTake(id, writeCue(id, { corrupt: 1, watched: 1 }, 5), "corrupt+watched");
+  const vs = variations(id, {}, 6, 0.8, 42), vs2 = variations(id, {}, 6, 0.8, 42);
+  if (JSON.stringify(vs) !== JSON.stringify(vs2)) bad(id, "variations not deterministic");
+  vs.forEach((v, i) => checkTake(id, writeCue(id, v.params, v.seed), "variation " + i));
+}
+// a chain and a MIDI file
+const chain = chainTakes([{ take: writeCue("sneak", {}, 1) }, { take: writeCue("slapstick_fall", {}, 2), gap: 0.2 }, { take: writeCue("flustered", {}, 3), gap: -0.3 }]);
+if (chain.parts.length !== 3 || !(chain.secs > 5)) bad("chain", JSON.stringify(chain.parts));
+const mid = MIDI.write({ notes: chain.ev.filter(e => e.inst !== "drums").map(e => ({ inst: e.inst, midi: e.midi, vel: e.vel, t: e.t, dur: e.dur || 1 })), tempos: [{ t: 0, bpm: 100, meter: [4, 4] }], marks: chain.marks });
+if (String.fromCharCode(...mid.slice(0, 4)) !== "MThd") bad("midi", "no header");
+
+// the palettes on disk
+const palettes = [path.join(ROOT, "Content/Studio/Music/palette.json")];
+const games = path.join(ROOT, "Content/Games");
+if (fs.existsSync(games)) for (const g of fs.readdirSync(games)) palettes.push(path.join(games, g, "Music/palette.json"));
+let favs = 0;
+const drift = [];
+for (const p of palettes.filter(f => fs.existsSync(f))) {
+  const rel = path.relative(ROOT, p);
+  let pal;
+  try { pal = JSON.parse(fs.readFileSync(p, "utf8")); } catch (e) { bad(rel, "not JSON: " + e.message); continue; }
+  if (pal.format !== "horrorstudio-score-palette") bad(rel, "format " + pal.format);
+  const known = new Set();
+  for (const f of pal.favourites || []) {
+    favs++; known.add(f.id);
+    if (!CUES[f.cue]) { bad(rel, f.name + ": unknown cue " + f.cue); continue; }
+    const w = writeCue(f.cue, f.params, f.seed);
+    checkTake(f.cue, w, rel + " " + f.name);
+    if (f.print && f.print !== takePrint(w)) drift.push(rel + " " + f.name + " (" + f.cue + ")");
+  }
+  for (const s of pal.sequences || []) for (const it of s.items || []) if (!known.has(it.fav)) bad(rel, "sequence " + s.name + " names a missing favourite " + it.fav);
+}
+
+const fams = {};
+for (const c of Object.values(CUES)) fams[c.family] = (fams[c.family] || 0) + 1;
+console.log("cues " + ids.length + " (" + Object.entries(fams).map(([k, v]) => k + " " + v).join(", ") + "), takes " + takes + ", notes " + notes + ", favourites " + favs);
+for (const d of drift) console.log("CHANGED (the generator writes other notes now; re-keep or roll back): " + d);
+if (problems.length) { for (const p of problems) console.log("FAIL " + p); process.exit(1); }
+console.log("SCORE ok");
