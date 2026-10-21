@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (the studio runs on Linux)
+
+- **Everything runs on the user's Omarchy machine** (Arch Linux, Hyprland, RTX 3090): Unreal 5.8.3's Linux prebuilt
+  (stable at level 0, `../unreal-omarchy/docs/RESEARCH.md`), Kimodo, the desk. No Windows: setup.py, SETUP.md and the
+  commands for the user are for Linux (bash, uv, Epic's bundled clang instead of Visual Studio). The `.uproject` goes
+  in this repo's folder.
+
 ## 2026-10-21 (hair: Sisir for our own cuts, Fab for the rest)
 
 - **Sisir is the tool to try for custom hairstyles** (free standalone, Windows: draw guides on the archetype groom

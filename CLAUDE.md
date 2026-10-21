@@ -87,6 +87,8 @@ Before every push: CHECKS ok, and PLAYTHROUGH ok on every game the change can to
   mood needs, and let the user decide in play.
 - **One step per commit, pushed.** The user changes course quickly. When something takes a second try, write the
   lesson in docs/LESSONS.md first.
-- **The user's machine is Windows:** commands for them are PowerShell with full paths. Never `pkill -f` or `pgrep -f`
+- **The user's machine is Omarchy (Arch Linux, Hyprland), RTX 3090:** Unreal 5.8.3 is the Linux prebuilt at
+  `/run/media/hal/Derick/Unreal/UnrealEngine` (started with `ue`; notes in `../unreal-omarchy/`), and the project
+  is this folder. Commands for the user are bash with full paths; Python is uv. Never `pkill -f` or `pgrep -f`
   in the same command line that names the process (it matches and kills your own shell): find the PID in one
   command, kill it in the next.
