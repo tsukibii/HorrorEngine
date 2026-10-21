@@ -104,3 +104,6 @@ the fix.
 - **The editor saves its per-user settings over the project's defaults:** `bMonitorContentDirectories=False` in
   `DefaultEditorPerProjectUserSettings.ini` did nothing while `Saved/Config/LinuxEditor/` said True. Those settings
   aren't visible to Python either; `init_unreal.py` corrects the saved file.
+- **A Slate tick isn't an engine frame:** with the editor in the background Slate ticks many times per frame, so
+  `shots.take` queued all 18 cameras inside one frame and one picture came out. Wait on
+  `SystemLibrary.get_frame_count()` for anything that needs the renderer.

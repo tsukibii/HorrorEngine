@@ -16,7 +16,7 @@ import unreal
 from . import shotlib as S
 from . import storylib as L
 
-TICKS_BETWEEN = 12
+FRAMES_BETWEEN = 6         # engine frames, not Slate ticks: in the background Slate ticks many times per frame
 
 actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
@@ -35,7 +35,7 @@ def _visible_rays(shot):
         return None
     c = [(box[i] + box[i + 3]) / 2 for i in range(3)]
     pts = [c] + [[(c[i] + (box[i] if (k >> i) & 1 else box[i + 3])) / 2 for i in range(3)] for k in range(8)]
-    world = unreal.EditorLevelLibrary.get_editor_world()
+    world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     clear = 0
     for p in pts:
         try:
@@ -57,10 +57,13 @@ def _visible_rays(shot):
     return clear
 
 
+def _frame():
+    return unreal.SystemLibrary.get_frame_count()
+
+
 def _tick(_dt):
     st = _state
-    if st["wait"] > 0:
-        st["wait"] -= 1
+    if _frame() < st["wait"]:
         return
     if st.get("cam"):
         actors.destroy_actor(st["cam"])
@@ -75,7 +78,7 @@ def _tick(_dt):
     if st.get("level") != level:
         levels.load_level(f"/Game/Games/{st['game']}/Maps/L_{level}")
         st["level"] = level
-        st["wait"] = TICKS_BETWEEN
+        st["wait"] = _frame() + FRAMES_BETWEEN * 4
         st["todo"].insert(0, shot)
         return
     yaw, pitch = S.angles(shot["eye"], shot["aim"])
@@ -88,7 +91,7 @@ def _tick(_dt):
     unreal.AutomationLibrary.take_high_res_screenshot(1280, 720, str(st["out"] / shot["file"]), camera=cam)
     st["cam"] = cam
     st["done"].append(shot)
-    st["wait"] = TICKS_BETWEEN
+    st["wait"] = _frame() + FRAMES_BETWEEN
 
 
 def take(game=None, beat=None):
