@@ -68,7 +68,14 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `size` is `[w (x), d (y), h]`.
 - `floor` is `wood stone carpet tile dirt metal water`: it sets footsteps.
 - `light` is `off dark dim lit`: a mood note for the lighting pass.
-- `skip`: two touching rooms share one wall, and **exactly one of them skips it**.
+- `skip`: two touching rooms share one wall, and **exactly one of them skips it**. A plain letter (`"s"`) skips the whole
+  wall; `["e", 1.0, 3.5]` skips only that stretch (metres along the wall from its west or south end), for a room that
+  shares part of a wall, like a corridor beside several rooms. Rooms whose heights overlap share walls (a two-storey
+  stairwell beside an upstairs room too); the scene builder works all of this out.
+- `kind`: what the room is (optional): `genkan corridor ldk living dining kitchen washitsu bedroom service kids study
+  bath washroom toilet closet walkin oshiire storage stairs balcony engawa common garden garage other`. The scene
+  builder colours and labels by it and gives some kinds their built-ins (below); `name` is its label (optional,
+  any text, Japanese welcome); `dir` is the way a `stairs` room climbs (`n e s w`).
 - `ceiling: false` for outdoors.
 - `look`: library texture sets for its surfaces, `{"floor": "ambientcg/WoodFloor041", "walls": "...", "ceiling": "..."}`
   (docs/ASSETS.md). Grey until fetched.
@@ -82,6 +89,15 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `at` is the opening's centre, measured from the wall's west end (n and s walls) or south end (e and w walls).
 - `window: true` is a hole with a `sill`.
 - `locked_by` is an item, or `flag:<name>`.
+- `swing` is `in` (into the room that holds the door), `out`, or `slide`: a sliding door (fusuma, shoji, a modern
+  sliding door, a glass door onto a balcony), which has no swing.
+- An opening on a wall that also serves an upper floor (a stairwell's door onto the landing) has its `sill` at that
+  floor's height.
+
+**Built-ins** (the scene builder, docs/SCENE_BUILDER.md): props with ids `<room>_fx_<what>` are its own, remade on
+every save from the room's `kind` (a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe
+cabinet, a stair's steps), placed clear of every doorway. Edit them as any prop; the builder replaces them only while
+the room's built-ins are on.
 
 **A link:**
 

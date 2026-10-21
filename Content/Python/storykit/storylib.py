@@ -16,6 +16,10 @@ EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot"}
 WALLS = ("n", "e", "s", "w")
+# what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
+ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",
+              "study", "bath", "washroom", "toilet", "closet", "walkin", "oshiire", "storage", "stairs", "balcony",
+              "engawa", "common", "garden", "garage", "other")
 
 
 def games():
@@ -107,6 +111,23 @@ def wall_point(room, wall, at):
     """A point on the wall line, room-local."""
     w, d, _ = room["size"]
     return {"n": (at, d), "s": (at, 0.0), "e": (w, at), "w": (0.0, at)}[wall]
+
+
+def skipped_stretches(room, wall):
+    """The stretches of a wall another room builds: `skip` entries [wall, from, to] (metres along the wall from its
+    west or south end). A plain wall letter in `skip` drops the whole wall instead."""
+    return [(float(e[1]), float(e[2])) for e in room.get("skip", []) if isinstance(e, list) and len(e) == 3 and e[0] == wall]
+
+
+def wall_skipped(room, wall, a0, a1):
+    """Is the stretch a0..a1 of this wall built by another room (all of it skipped)?"""
+    if wall in room.get("skip", []):
+        return True
+    cur = a0
+    for s0, s1 in sorted(skipped_stretches(room, wall)):
+        if s0 <= cur + 0.02 and s1 > cur:
+            cur = s1
+    return cur >= a1 - 0.02
 
 
 def wall_line(room, wall):

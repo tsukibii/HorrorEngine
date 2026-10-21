@@ -136,8 +136,13 @@ def check_world(story, things, r):
                 r.err(f"room {rm['id']}: needs at [x, y, z] and size [w, d, h]")
                 continue
             for wl in rm.get("skip", []):
-                if wl not in L.WALLS:
+                if isinstance(wl, list):
+                    if len(wl) != 3 or wl[0] not in L.WALLS or not (0 <= wl[1] < wl[2] <= L.wall_length(rm, wl[0]) + 0.01):
+                        r.err(f"room {rm['id']}: skip {wl!r} isn't [wall, from, to] inside the wall")
+                elif wl not in L.WALLS:
                     r.err(f"room {rm['id']}: skip {wl!r} isn't one of n e s w")
+            if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
+                r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
             for op in rm.get("openings", []):
                 if op.get("wall") not in L.WALLS:
                     r.err(f"room {rm['id']}: opening wall {op.get('wall')!r}")
@@ -147,6 +152,10 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: opening at {op['at']} (w {op['w']}) runs off the {op['wall']} wall ({length} m)")
                 if op.get("sill", 0) + op["h"] > rm["size"][2]:
                     r.err(f"room {rm['id']}: opening on {op['wall']} is taller than the room")
+                if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
+                    r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
+                if op.get("door") and op["door"].get("swing", "in") not in ("in", "out", "slide"):
+                    r.err(f"door {op['door'].get('id')}: swing {op['door']['swing']!r} isn't in, out or slide")
                 if op.get("door") and op["door"].get("locked_by"):
                     lb = op["door"]["locked_by"]
                     if not lb.startswith("flag:") and lb not in items:
@@ -154,16 +163,19 @@ def check_world(story, things, r):
         rl = list(rooms.values())
         for i, a in enumerate(rl):
             for b in rl[i + 1:]:
-                if a["at"][2] != b["at"][2]:
+                # rooms whose heights overlap share walls (a two-storey stairwell beside an upstairs room too)
+                if min(a["at"][2] + a["size"][2], b["at"][2] + b["size"][2]) - max(a["at"][2], b["at"][2]) <= 0.3:
                     continue
                 for wa in L.WALLS:
                     for wb in L.WALLS:
                         la, lb_ = L.wall_line(a, wa), L.wall_line(b, wb)
                         if la[0] != lb_[0] or abs(la[1] - lb_[1]) > 0.01:
                             continue
-                        if min(la[3], lb_[3]) - max(la[2], lb_[2]) <= 0.05:
+                        o0, o1 = max(la[2], lb_[2]), min(la[3], lb_[3])
+                        if o1 - o0 <= 0.05:
                             continue
-                        sa, sb = wa in a.get("skip", []), wb in b.get("skip", [])
+                        sa = L.wall_skipped(a, wa, o0 - la[2], o1 - la[2])
+                        sb = L.wall_skipped(b, wb, o0 - lb_[2], o1 - lb_[2])
                         if not sa and not sb:
                             r.err(f"rooms {a['id']} ({wa}) and {b['id']} ({wb}) both build their shared wall: skip it on one")
                         if sa and sb:

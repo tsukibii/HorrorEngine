@@ -57,16 +57,17 @@ def room_pieces(lid, room):
         ext = T / 2 if wall in ("n", "s") else 0.0         # n and s walls run past the corners to close them
         spans = []                                          # (a0, a1, z_lo, z_hi) along the wall
         cur = -ext
-        for op in sorted((o for o in room.get("openings", []) if o["wall"] == wall), key=lambda o: o["at"]):
-            a0, a1 = op["at"] - op["w"] / 2, op["at"] + op["w"] / 2
+        # openings cut a hole; a skipped stretch (a neighbour builds that part of the wall) cuts all of it
+        cuts = [(o["at"] - o["w"] / 2, o["at"] + o["w"] / 2, o.get("sill", 0.0), o["h"]) for o in room.get("openings", []) if o["wall"] == wall]
+        cuts += [(a0, a1, 0.0, h) for a0, a1 in L.skipped_stretches(room, wall)]
+        for a0, a1, sill, oh in sorted(cuts):
             if a0 > cur + 0.001:
                 spans.append((cur, a0, 0.0, h))
-            sill = op.get("sill", 0.0)
             if sill > 0.001:
-                spans.append((a0, a1, 0.0, sill))
-            if h - (sill + op["h"]) > 0.001:
-                spans.append((a0, a1, sill + op["h"], h))
-            cur = a1
+                spans.append((max(a0, cur), a1, 0.0, sill))
+            if h - (sill + oh) > 0.001:
+                spans.append((max(a0, cur), a1, sill + oh, h))
+            cur = max(cur, a1)
         if length + ext > cur + 0.001:
             spans.append((cur, length + ext, 0.0, h))
         for i, (a0, a1, lo, hi) in enumerate(spans):

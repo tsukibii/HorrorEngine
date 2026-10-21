@@ -39,7 +39,17 @@ def overlap(a, b):
 def main():
     game, args = L.pick_game(sys.argv[1:])
     story, _ = L.load(game)
-    level = args[0] if args else None
+    errs, pieces = check(story, args[0] if args else None)
+    for e in errs:
+        print("ERROR:", e)
+    if errs:
+        print(f"LEVEL FAILED ({len(errs)})")
+        sys.exit(1)
+    print(f"LEVEL ok ({len(pieces)} pieces)")
+
+
+def check(story, level=None):
+    """The level rules on a story (the desk's scene builder calls it on an unsaved one): (errors, pieces)."""
     pieces = P.plan(story, level)
     errs = []
     solid = [p for p in pieces if p["kind"] in ("mesh", "person")]
@@ -108,12 +118,7 @@ def main():
         if not ok:
             errs.append(f"{t['id']}: nowhere to stand within {REACH} m")
 
-    for e in errs:
-        print("ERROR:", e)
-    if errs:
-        print(f"LEVEL FAILED ({len(errs)})")
-        sys.exit(1)
-    print(f"LEVEL ok ({len(pieces)} pieces)")
+    return errs, pieces
 
 
 if __name__ == "__main__":
