@@ -36,13 +36,13 @@ const newId = p => p + Date.now().toString(36) + Math.floor(Math.random() * 1296
 const today = () => new Date().toISOString().slice(0, 10);
 const fmtParam = (sp, v) => sp.kind === "key" ? keyName(v) : sp.kind === "num" ? (Math.round(v * 100) / 100).toString() : String(v);
 const status = (text, cls) => { const s = $("status"); s.textContent = text; s.className = cls || ""; };
-const emptyPalette = scope => ({ format: "horrorstudio-score-palette", version: 1, scope, favourites: [], sequences: [] });
+const emptyPalette = scope => ({ format: "horrorstudio-score-palette", version: 1, scope, favourites: [], sequences: [], scenes: [] });
 
 // ---- the piano roll ----
 function drawRoll(cv, take, pos = -1) {
   const g = cv.getContext("2d"), W = cv.width, H = cv.height;
   g.clearRect(0, 0, W, H);
-  const notes = take.ev.filter(e => e.inst !== "drums"), drums = take.ev.filter(e => e.inst === "drums");
+  const notes = take.ev.filter(e => e.inst !== "drums" && e.inst !== "fx"), drums = take.ev.filter(e => e.inst === "drums");
   let lo = 127, hi = 0;
   for (const e of notes) { lo = Math.min(lo, e.midi); hi = Math.max(hi, e.midi); }
   if (lo > hi) { lo = 48; hi = 72; }
@@ -281,7 +281,8 @@ async function loadPalette(scope) {
   UI.palette = pal && pal.favourites ? pal : emptyPalette(scope);
   UI.palette.sequences = UI.palette.sequences || [];
   UI.seq = [];
-  renderPalette(); renderLib(); renderSeq();
+  UI.palette.scenes = UI.palette.scenes || [];
+  renderPalette(); renderLib(); renderSeq(); renderScenes();
   if (UI.cue) renderCards();
 }
 function stars(f) {
@@ -345,6 +346,26 @@ function renderSeq() {
       h("button", { onclick: () => { UI.palette.sequences = UI.palette.sequences.filter(x => x !== s); changed(); renderSeq(); } }, "✕"))));
 }
 
+// ---- scoring a scene ----
+function scoreScene() {
+  const acts = parseActions($("scene").value), take = sceneTake(acts, UI.palette.favourites), box = $("scenelist");
+  UI.scene = take;
+  drawRoll($("sceneroll"), take);
+  box.innerHTML = "";
+  for (const p of take.parts) box.append(h("div", {}, p.at.toFixed(2) + " s ", h("b", {}, p.act), " → ", p.fav ? "★ " : "", p.label,
+    p.hit ? " (" + p.hit + " on the action; starts " + p.start.toFixed(2) + " s)" : "", " until " + p.until.toFixed(2) + " s"));
+  for (const m of take.missing) box.append(h("div", { class: "miss" }, "nothing for “" + m + "”: name a cue's use, or keep a favourite with that use"));
+  if (!acts.length) box.append(h("div", { class: "miss" }, "no actions: each line starts with a time, e.g. 4.2 trip"));
+  return take;
+}
+function renderScenes() {
+  const box = $("scenes");
+  box.innerHTML = "";
+  for (const sc of UI.palette.scenes || []) box.append(h("div", { class: "fav" }, h("div", { class: "top" }, h("b", {}, sc.name), h("span", { class: "hint" }, parseActions(sc.text).length + " actions")),
+    h("div", { class: "row" }, h("button", { onclick: () => { $("scene").value = sc.text; $("scenename").value = sc.name; scoreScene(); } }, "Load"),
+      h("button", { onclick: () => { UI.palette.scenes = UI.palette.scenes.filter(x => x !== sc); changed(); renderScenes(); } }, "✕"))));
+}
+
 // ---- wiring ----
 async function boot() {
   for (const id of SPACE_IDS) $("space").append(h("option", { value: id }, SPACES[id].name + " (" + SPACES[id].desc + ")"));
@@ -388,6 +409,11 @@ async function boot() {
   $("seqplay").onclick = () => { const t = seqTake(UI.seq); if (t) playTake(t, $("seqroll"), null); };
   $("seqkeep").onclick = () => { if (!UI.seq.length) return; UI.palette.sequences.unshift({ id: newId("s"), name: $("seqname").value || "sequence " + (UI.palette.sequences.length + 1), items: JSON.parse(JSON.stringify(UI.seq)), made: today() }); changed(); renderSeq(); };
   $("seqclear").onclick = () => { UI.seq = []; renderSeq(); };
+  $("scenego").onclick = scoreScene;
+  $("sceneplay").onclick = () => { const t = scoreScene(); if (t.parts.length) playTake(t, $("sceneroll"), null); };
+  $("scenebake").onclick = e => { const t = scoreScene(); if (t.parts.length) renderWavTo(t, fileBase("", 0, $("scenename").value || "scene") + ".wav", e.target, true); };
+  $("scenekeep").onclick = () => { UI.palette.scenes = UI.palette.scenes || []; UI.palette.scenes.unshift({ id: newId("c"), name: $("scenename").value || "scene " + (UI.palette.scenes.length + 1), text: $("scene").value, made: today() }); changed(); renderScenes(); };
+  scoreScene();
   document.addEventListener("keydown", e => {
     if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     const d = e.code.match(/^Digit([1-9])$/);

@@ -6,7 +6,7 @@
 // Sneaking on tiptoe: staccato pizzicato in a minor key, low on the beat and high off it, flute staccato tiptoes,
 // a freeze now and then (the character stops, listens), then on again.
 CUE("sneak", {
-  family: "kdrama", level: -6, label: "Sneaking (tiptoe)", uses: ["sneak", "tiptoe", "creeping up", "spying", "comedy"],
+  family: "kdrama", level: -6, align: "start", label: "Sneaking (tiptoe)", uses: ["sneak", "tiptoe", "creeping up", "spying", "comedy"],
   desc: "Staccato pizzicato tiptoeing in a minor key, flute staccato on the high steps, and freezes where everything stops (the character listens), then carries on.",
   refs: "The classic 'sneaking' cue of K-drama comedies (Strong Woman Do Bong-soon, What's Wrong with Secretary Kim); Mancini's Pink Panther in spirit",
   params: { key: P.key(9, "aeolian", ["aeolian", "dorian", "harmonic_minor"]), tempo: P.tempo(112, 92, 132), len: P.len(12, 6, 30), cheek: P.amt("chromatic cheek", 0.5), freezes: P.amt("freezes", 0.4) },
@@ -157,7 +157,8 @@ CUE("slowmo_romance", {
   family: "kdrama", level: -5, label: "Slow-motion romance", uses: ["romance", "slow motion", "eye contact", "first meeting", "love"],
   desc: "Rolling piano arpeggios over a K-pop ballad progression, strings swelling in under them, a glockenspiel sparkle on the first beat; it may lift a whole step for the last bars.",
   refs: "Goblin, Crash Landing on You, Descendants of the Sun: the OST ballad underscore (piano first, strings rising)",
-  params: { key: P.key(5, "ionian"), tempo: P.tempo(72, 58, 86), progression: P.pick("progression", ["royal_road", "pop", "canon", "doo_wop"]), len: P.len(24, 12, 48), lift: P.amt("key change at the end", 0.5), strings: P.amt("strings", 0.7) },
+  params: { key: P.key(5, "ionian"), tempo: P.tempo(72, 58, 86), progression: P.pick("progression", ["royal_road", "pop", "canon", "doo_wop"]), len: P.len(24, 12, 48), lift: P.amt("key change at the end", 0.5), strings: P.amt("strings", 0.7),
+            ending: P.pick("ending", ["resolve", "record scratch (the parody)"]) },
   gen(t, p) {
     let k = { ...p.key };
     const spb = t.beat(p.tempo, [4, 4]), bar = 4 * spb, prog = PROGS[p.progression];
@@ -170,6 +171,13 @@ CUE("slowmo_romance", {
       if (b % 2 === 0 || b >= liftAt) t.n("piano", ch[2] + 12, s + t.human(), bar, t.vel(58));
       if (p.strings > 0.1 && b >= 2) { const v = 30 + 40 * p.strings * Math.min(1, b / bars + 0.3); t.n("strings", deg(k, d, 48), s, bar * 1.05, v, { attack: spb, raw: true }); t.n("strings", ch[1] + 12, s, bar * 1.05, v - 6, { attack: spb }); }
       if (b % 4 === 0) t.n("glock", ch[0] + 24, s + t.human(), null, t.vel(54));
+    }
+    if (p.ending !== "resolve") {
+      // Weightlifting Fairy's joke: the swell is at its height and the needle comes off (research §1.3)
+      t.tapeStop(bars * bar - spb, 0.25); t.point(bars * bar - spb, "the scratch");
+      t.n("pizz", deg(k, 0, 48), bars * bar + 0.9, 0.2, 56);
+      t.end(bars * bar + 2);
+      return;
     }
     t.chord("piano", triad(k, 0, 48, 4).concat([deg(k, 0, 72)]), bars * bar, null, 56, { roll: 0.08 });
     t.end(bars * bar + 3);
@@ -241,13 +249,25 @@ CUE("comic_chase", {
 
 // Awkward: a held, slightly wrong chord, one plucked note left hanging, a glockenspiel "ding" into the silence.
 CUE("awkward", {
-  family: "kdrama", level: -6, label: "Awkward silence", uses: ["awkward", "silence", "cringe", "comedy"],
+  family: "kdrama", level: -6, align: "start", label: "Awkward silence", uses: ["awkward", "silence", "cringe", "comedy"],
   desc: "A thin, slightly wrong string chord, one pizzicato note left hanging, and a single glockenspiel ding dropped into the quiet.",
   refs: "The awkward-pause stings of K-drama comedies; the 'cricket' moment in sitcom scoring",
-  params: { key: P.key(5, "lydian"), len: P.len(3, 1.5, 6) },
+  params: { key: P.key(5, "lydian"), len: P.len(3, 1.5, 6), how: P.pick("how it starts", ["the hanging chord", "record scratch"]) },
   gen(t, p) {
     const k = p.key;
     t.beat(60);
+    if (p.how === "record scratch") {
+      // a bright bit of something happy, stopped dead like a needle dragged off the record, then the awkward beat
+      const spb = 0.25;
+      [0, 2, 4, 7, 4, 2].forEach((d, i) => t.n("xylo", deg(k, d, 72), i * spb, spb, t.vel(80)));
+      t.chord("piano", triad(k, 0, 60), 0, 1.6, 62);
+      t.n("strings", deg(k, 4, 72), 0, 1.6, 54, { attack: 0.1 });
+      t.tapeStop(1.3, 0.22); t.point(1.3, "the scratch");
+      t.n("pizz", deg(k, 3, 60), 2.4, 0.2, 54);
+      t.n("glock", deg(k, 4, 84), 2.4 + p.len * 0.5, null, 50);
+      t.end(2.4 + p.len);
+      return;
+    }
     t.n("pizz", deg(k, 3, 60), 0, 0.2, 60);
     t.chord("strings", [deg(k, 0, 60), deg(k, 3, 60) + 1, deg(k, 6, 60)], 0.4, p.len - 0.6, 34, { attack: 0.3 });
     t.n("glock", deg(k, 4, 84), p.len * 0.6, null, 56);

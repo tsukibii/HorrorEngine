@@ -69,6 +69,11 @@ const URL = process.env.SCORE_URL || "http://127.0.0.1:8791/";
   const pos = await page.evaluate(async () => { await playTake(writeCue("sting", {}, 1), null, null); await new Promise(r => setTimeout(r, 400)); const p = Engine.position(); stopAll(); return p; });
   if (!(pos > 0)) fail("playback position " + pos);
 
+  // the scene panel: its example scores with the landing on 4.2 s and nothing missing
+  const scene = await page.evaluate(() => { const t = scoreScene(); return { parts: t.parts.map(p => p.cue), missing: t.missing, land: (t.hits.find(h => h.label === "the landing") || {}).t }; });
+  if (scene.parts.length !== 5 || scene.missing.length || Math.abs(scene.land - 4.2) > 0.01) fail("scene " + JSON.stringify(scene));
+  console.log("scene", scene.parts.join(" > "));
+
   // audition: two short variations and the settings, each cut at 3 s, then it says so
   await page.evaluate(() => { selectCue("punchline"); $("count").value = 2; makeVariations(); $("audsecs").value = 3; $("audition").click(); });
   await page.waitForFunction(() => /auditioned 3/.test(document.getElementById("status").textContent), null, { timeout: 30000 }).catch(() => fail("audition never finished"));

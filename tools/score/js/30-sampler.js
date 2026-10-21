@@ -13,6 +13,19 @@ const wetFor = midi => clamp((midi - 40) / 24, 0, 1);
 // The drums that stay nearly dry (a taiko or a bass drum in the hall is a boom that never ends).
 const DRY_DRUMS = new Set(["taiko", "taiko_hand", "taiko_rim", "bass_drum", "bass_roll", "timp_roll", "rumble", "tenor"]);
 
+// HorrorStudio: string colours the samples don't have, faked with filters on the note (docs/MUSIC_RESEARCH.md §2.5):
+// sul ponticello (glassy, brittle: the high-passed tremolo with a resonant peak), sul tasto (veiled: low-passed),
+// harmonics (pure and thin: only the top), col legno (the wood of the bow: a dry click, played short on pizzicato).
+const TONES = {
+  ponticello: (ctx, n) => { const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 650; hp.Q.value = 0.9;
+    const pk = ctx.createBiquadFilter(); pk.type = "peaking"; pk.frequency.value = 4200; pk.Q.value = 1.4; pk.gain.value = 9; return n.connect(hp).connect(pk); },
+  tasto: (ctx, n) => { const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1700; lp.Q.value = 0.5; return n.connect(lp); },
+  harmonic: (ctx, n) => { const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1400; hp.Q.value = 0.7;
+    const hp2 = ctx.createBiquadFilter(); hp2.type = "highpass"; hp2.frequency.value = 1400; hp2.Q.value = 0.7; return n.connect(hp).connect(hp2); },
+  legno: (ctx, n) => { const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900; hp.Q.value = 0.8;
+    const pk = ctx.createBiquadFilter(); pk.type = "peaking"; pk.frequency.value = 2500; pk.Q.value = 2; pk.gain.value = 6; return n.connect(hp).connect(pk); },
+};
+
 class Sampler {
   constructor(key, def, buffers, mixer) {
     this.key = key; this.def = def; this.buffers = buffers; this.mixer = mixer; this.ctx = mixer.ctx;
@@ -82,10 +95,12 @@ class Sampler {
       const amp = w * dbToGain(inLayer + layerDb + (Math.random() * 2 - 1) * 1.5 + (opts.db || 0) + (opts.out ? (this.def.gain_db || 0) + (this.def.calib_db || 0) : 0));
       g.gain.value = amp;
       let node = src.connect(g);
+      if (opts.tone && TONES[opts.tone]) node = TONES[opts.tone](this.ctx, node);
+      const dryTail = node;
       if (opts.pan) { const p = this.ctx.createStereoPanner(); p.pan.value = clamp(opts.pan, -1, 1); node = node.connect(p); }
       node.connect(opts.out || this.out);
       const wetDest = opts.out ? opts.wetOut : this.wetOut;
-      if (wetDest && wetFor(midi) > 0) { const wg = this.ctx.createGain(); wg.gain.value = wetFor(midi); g.connect(wg).connect(wetDest); }
+      if (wetDest && wetFor(midi) > 0) { const wg = this.ctx.createGain(); wg.gain.value = wetFor(midi); dryTail.connect(wg).connect(wetDest); }
       const t0 = Math.max(when, this.ctx.currentTime);
       const len = buf.duration / src.playbackRate.value;
       if (opts.reverse) {
@@ -134,6 +149,20 @@ class Sampler {
     for (let i = 0; sounding.length - i > this.maxVoices; i++) {
       const v = sounding[i];
       try { v.g.gain.cancelScheduledValues(when); v.g.gain.setTargetAtTime(0, when, 0.015); v.src.stop(when + 0.08); v.end = when + 0.08; } catch (e) { /* already stopped */ }
+    }
+  }
+
+  // A tape stop at `at`: every voice sounding then sags in pitch to a quarter and fades over `dur` (a record scratch
+  // ends a romantic swell; the awkward beat). Voices that start later are the cue's business.
+  tapeStop(at, dur = 0.25) {
+    for (const v of this.voices) {
+      if (!(v.start < at && v.end > at)) continue;
+      try {
+        const r0 = v.src.playbackRate.value;
+        v.src.playbackRate.cancelScheduledValues(at); v.src.playbackRate.setValueAtTime(r0, at); v.src.playbackRate.exponentialRampToValueAtTime(r0 * 0.25, at + dur);
+        v.g.gain.cancelScheduledValues(at); v.g.gain.setValueAtTime(v.g.gain.value, at); v.g.gain.linearRampToValueAtTime(0, at + dur);
+        v.src.stop(at + dur + 0.03); v.end = at + dur + 0.03;
+      } catch (e) { /* already stopped */ }
     }
   }
 

@@ -58,6 +58,23 @@
       <button id="seqclear">Clear</button>
     </div>
     <div id="seqs"></div>
+    <h2>Score a scene</h2>
+    <div class="hint">What the character does, one action a line: the time (s) and what happens. Your favourites are searched first, then the cues; a cue's hit lands on its time (the thud on the landing). End a line with <kbd>@ring</kbd> to let it overlap or <kbd>@scratch</kbd> for a tape stop into the next.</div>
+    <textarea id="scene" rows="6" spellcheck="false">0 sneak
+4.2 trip
+5.4 blush
+9 slow motion romance @scratch
+14 awkward</textarea>
+    <div class="bar">
+      <button id="scenego" class="primary">Score it</button>
+      <button id="sceneplay">&#9654;</button>
+      <button id="scenebake" title="render WAV and MIDI into the palette's Music/renders/">Bake</button>
+      <input id="scenename" placeholder="scene name" style="flex:1">
+      <button id="scenekeep" title="Keep the scene in the palette">Keep</button>
+    </div>
+    <canvas id="sceneroll" width="680" height="140"></canvas>
+    <div id="scenelist" class="hint"></div>
+    <div id="scenes"></div>
   </section>
 </main>
 <script src="js/00-util.js"></script>

@@ -10,8 +10,8 @@ const ctx = { console, Math, JSON, Object, Array, Set, Map, TextEncoder, Uint8Ar
 vm.createContext(ctx);
 const files = fs.readdirSync(path.join(HERE, "js")).filter(f => /^[0-6]\d-.*\.js$/.test(f) || f === "70-player.js").sort();
 vm.runInContext(files.map(f => fs.readFileSync(path.join(HERE, "js", f), "utf8")).join("\n;\n") +
-  "\n;globalThis.__x = { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI };", ctx, { filename: "score.js" });
-const { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI } = ctx.__x;
+  "\n;globalThis.__x = { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake };", ctx, { filename: "score.js" });
+const { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake } = ctx.__x;
 const index = JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Music/samples/instruments.json"), "utf8"));
 const problems = [];
 const bad = (id, msg) => { if (problems.length < 60) problems.push(id + ": " + msg); };
@@ -25,8 +25,10 @@ function checkTake(id, w, label) {
   if (len && w.secs > Math.max(len * 1.5, len + 8)) bad(id, label + " runs " + w.secs.toFixed(1) + " s for a length of " + len);
   for (const e of w.ev) {
     notes++;
+    if (e.inst === "fx") { if (e.fx !== "tapestop" || !(e.dur > 0)) bad(id, label + " fx " + JSON.stringify(e)); continue; }
     const def = index[e.inst];
     if (!def) { bad(id, label + " unknown instrument " + e.inst); continue; }
+    if (e.tone && !["ponticello", "tasto", "harmonic", "legno"].includes(e.tone)) bad(id, label + " tone " + e.tone);
     if (!isFinite(e.t) || e.t < 0) bad(id, label + " note at " + e.t);
     if (!(e.vel >= 1 && e.vel <= 127)) bad(id, label + " velocity " + e.vel);
     if (e.inst === "drums") { if (!def.pieces[e.piece]) bad(id, label + " no drum " + e.piece); continue; }
@@ -66,6 +68,22 @@ const chain = chainTakes([{ take: writeCue("sneak", {}, 1) }, { take: writeCue("
 if (chain.parts.length !== 3 || !(chain.secs > 5)) bad("chain", JSON.stringify(chain.parts));
 const mid = MIDI.write({ notes: chain.ev.filter(e => e.inst !== "drums").map(e => ({ inst: e.inst, midi: e.midi, vel: e.vel, t: e.t, dur: e.dur || 1 })), tempos: [{ t: 0, bpm: 100, meter: [4, 4] }], marks: chain.marks });
 if (String.fromCharCode(...mid.slice(0, 4)) !== "MThd") bad("midi", "no header");
+
+// a scene scored from actions: the K-drama trip (sneak, the fall landing at 4.2 s, the blush), and a romance horror beat
+const acts = parseActions("0 sneak\n4.2 slapstick fall\n5.5 flustered @ring\n# a comment\nnot an action");
+if (acts.length !== 3 || acts[1].t !== 4.2 || acts[2].end !== "ring") bad("scene", "parse " + JSON.stringify(acts));
+const sc = sceneTake(acts, []);
+const fall = sc.parts.find(p => p.cue === "slapstick_fall");
+if (sc.parts.length !== 3 || !fall || Math.abs(sc.hits.find(h => h.label === "the landing").t - 4.2) > 0.01) bad("scene", "the landing isn't on 4.2 s: " + JSON.stringify(sc.parts));
+const sneakEnd = sc.parts[0].until;
+if (Math.abs(sneakEnd - fall.start) > 0.01) bad("scene", "the sneak doesn't end where the fall starts");
+for (const [act, want] of [["trip", "slapstick_fall"], ["blush", "flustered"], ["her theme", "her_theme"], ["jump scare", "sting"], ["hide and seek", null], ["dun dun dun", "shock"]]) {
+  const r = resolveAction(act, []);
+  if (want && (!r || r.cue !== want)) bad("scene", "'" + act + "' resolves to " + (r && r.cue) + ", not " + want);
+}
+const favR = resolveAction("trip", [{ id: "f1", name: "My trip", cue: "slapstick_fall", params: { landing: "bonk" }, seed: 9, uses: ["trip"], stars: 2 }]);
+if (!favR || !favR.fav) bad("scene", "a favourite named for the action isn't preferred");
+checkTake("scene", Object.assign({ params: {} }, sc), "scene");
 
 // the palettes on disk
 const palettes = [path.join(ROOT, "Content/Studio/Music/palette.json")];

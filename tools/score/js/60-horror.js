@@ -22,7 +22,7 @@ CUE("dread_drone", {
       t.n("strings", root + 19, s + 1.5 + t.human(0.3), d - 1.5, 30 + 20 * p.swell, { attack: 3 });
     }
     over.forEach((iv, i) => {                                 // the rub enters late and stays
-      for (let s = L * (0.25 + 0.15 * i); s < L; s += 6) t.n("strings", root + 24 + iv, s + t.human(0.3), Math.min(7, L - s + 1.5), 28 + 25 * p.dissonance, { attack: 3.5 });
+      for (let s = L * (0.25 + 0.15 * i); s < L; s += 6) t.n("strings", root + 24 + iv, s + t.human(0.3), Math.min(7, L - s + 1.5), 28 + 25 * p.dissonance, { attack: 3.5, tone: i === over.length - 1 && p.dissonance > 0.5 ? "harmonic" : undefined });
     });
     t.n("piano", root, 0.05, null, t.vel(60), { raw: true });
     const drips = Math.round(1 + p.drips * 7);
@@ -172,12 +172,17 @@ CUE("hiding_tension", {
   family: "horror", level: -13, label: "Hiding (she's near)", uses: ["hiding", "hide", "search", "near"],
   desc: "A thin high tremolo, sparse low pizzicato taps like creaks, a pedal that wakes and a minor second when she's near.",
   refs: "Alien: Isolation, Outlast's hiding beds, DOORS' Rush warning (the lights' hum)",
-  params: { key: P.key(6, "locrian"), len: P.len(20, 8, 40), near: P.amt("how near she is", 0.5), taps: P.amt("creaks", 0.5) },
+  params: { key: P.key(6, "locrian"), len: P.len(20, 8, 40), near: P.amt("how near she is", 0.5), taps: P.amt("creaks", 0.5),
+            clock: P.pick("pulse", ["none", "col legno clock", "muted piano"]), glass: P.amt("glassy (ponticello)", 0.6) },
   gen(t, p) {
-    const k = p.key, r = t.rng, hi = 76 + mod(k.tonic, 6);
+    const k = p.key, r = t.rng, hi = 76 + mod(k.tonic, 6), tone = p.glass > 0.3 ? "ponticello" : undefined;
     t.beat(60);
-    t.n("trem", hi, 0, p.len, 22 + 20 * p.near, { attack: 3 });
-    if (p.near > 0.3) t.n("trem", hi + 1, p.len * (1 - p.near), p.len * p.near, 20 + 30 * p.near, { attack: 4 });
+    t.n("trem", hi, 0, p.len, 22 + 20 * p.near, { attack: 3, tone });
+    if (p.near > 0.3) t.n("trem", hi + 1, p.len * (1 - p.near), p.len * p.near, 20 + 30 * p.near, { attack: 4, tone });
+    // the pulse drops out when she is closest (research H8): the last stretch is the player's own breathing
+    const quiet = p.len * (1 - 0.35 * p.near);
+    if (p.clock === "col legno clock") for (let s = 0.5; s < quiet; s += 1) t.n("pizz", 67 + k.tonic, s, 0.04, t.vel(54), { tone: "legno" });
+    else if (p.clock === "muted piano") for (let s = 0.5; s < quiet; s += 1) t.n("piano", 50 + k.tonic, s, 0.12, t.vel(40), { release: 0.05 });
     if (p.near > 0.2) t.n("strings", 40 + k.tonic, p.len * 0.3, p.len * 0.7, 30 + 30 * p.near, { attack: 5, raw: true });
     const n = Math.round(2 + p.taps * 10 + p.near * 6);
     for (let i = 0; i < n; i++) t.n("pizz", 43 + k.tonic + r.pick([0, 1, 6, 12, 13]), r.range(1, p.len - 0.5), 0.2, t.vel(40 + 30 * p.near));
@@ -241,8 +246,8 @@ CUE("behind_you", {
     t.beat(60);
     t.n("piano", top - 24, 0, sw, 90, { reverse: true });
     t.n("piano", top - 17, 0, sw, 80, { reverse: true });
-    for (const iv of [0, 1, 2]) t.n("strings", top + iv, sw, p.len - sw + 1, 34, { attack: 0.2 });
-    t.n("trem", top + 6, sw + 0.1, p.len - sw, 28, { attack: 0.5 });
+    for (const iv of [0, 1, 2]) t.n("strings", top + iv, sw, p.len - sw + 1, 34, { attack: 0.2, tone: "harmonic", cents: (iv - 1) * 30 });
+    t.n("trem", top + 6, sw + 0.1, p.len - sw, 28, { attack: 0.5, tone: "ponticello" });
     t.point(sw, "the whisper");
     t.end(p.len + 1);
   },

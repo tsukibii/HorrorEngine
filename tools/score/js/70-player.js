@@ -60,14 +60,18 @@ const Engine = {
 
   // every event of a take onto the mixer's players, from audio time t0; `from` skips what's before it (s)
   schedule(players, take, t0, from = 0, record = false) {
+    const stops = [];
     for (const e of take.ev) {
       if (e.t < from - 0.001) continue;
+      const when = t0 + e.t - from;
+      if (e.inst === "fx") { if (e.fx === "tapestop") stops.push([when, e.dur]); continue; }
       const pl = players[e.inst];
       if (!pl) continue;
-      const when = t0 + e.t - from;
       if (e.inst === "drums") pl.play(e.piece, e.vel, when, { pan: e.pan, db: e.db, cents: e.cents, record });
-      else pl.play(e.midi, e.vel, when, e.dur, { pan: e.pan, db: e.db, cents: e.cents, bend: e.bend, attack: e.attack, release: e.release, reverse: e.reverse, record });
+      else pl.play(e.midi, e.vel, when, e.dur, { pan: e.pan, db: e.db, cents: e.cents, bend: e.bend, attack: e.attack, release: e.release, reverse: e.reverse, tone: e.tone, record });
     }
+    // tape stops last: they act on every voice already scheduled to be sounding then
+    for (const [when, dur] of stops) for (const pl of Object.values(players)) if (pl.tapeStop) pl.tapeStop(when, dur);
   },
 
   // the cue's level, at the master after the limiter (the Mixer's own -3 dB plus the cue's gain)
@@ -122,10 +126,81 @@ const Engine = {
   // the cue's marks and hit points as markers (they line up in a DAW).
   midi(take, name) {
     const kit = this.index && this.index.drums;
-    const notes = take.ev.map(e => e.inst === "drums"
+    const notes = take.ev.filter(e => e.inst !== "fx").map(e => e.inst === "drums"
       ? { inst: "drums", midi: (kit && kit.pieces[e.piece] && kit.pieces[e.piece].gm) || 38, vel: e.vel, t: e.t, dur: 0.25 }
       : { inst: e.inst, midi: e.midi, vel: e.vel, t: e.t, dur: e.dur != null ? e.dur : 2.5 });
     const marks = take.marks.map(m => ({ t: m.t, text: m.text }));
     return MIDI.write({ notes, tempos: [{ t: 0, bpm: take.tempo || 90, meter: take.meter || [4, 4] }], marks, name: name || "HorrorStudio score: " + take.cue });
   },
 };
+
+// ---- scoring a scene: the character's actions with times -> cues lined up on them ----
+// The way the desk will score a scene from its clips (docs/MUSIC.md §5): each action names what happens ("sneak",
+// "trip", "blush", "her theme", a favourite's name); the favourites are searched first (their names and uses), then
+// the cues (ids, labels, uses). A cue with a hit point is placed so its first hit lands on the action's time (the
+// fall's thud on the landing); one without starts there. Each part ends where the next begins: cut (its notes trimmed
+// with a short release), ring (left to overlap) or scratch (a tape stop).
+
+// "4.2 trip @scratch" -> {t: 4.2, act: "trip", end: "scratch"}; lines that don't start with a time are skipped
+function parseActions(text) {
+  const out = [];
+  for (const raw of String(text || "").split(/\n/)) {
+    const line = raw.replace(/#.*/, "").trim();
+    const m = line.match(/^(\d+(?:\.\d+)?)\s*s?\s+(.+?)(?:\s+@(cut|ring|scratch))?$/i);
+    if (m) out.push({ t: +m[1], act: m[2].trim(), end: (m[3] || "cut").toLowerCase() });
+  }
+  return out.sort((a, b) => a.t - b.t);
+}
+
+// what an action means: a favourite ({fav}) or a cue at its defaults; null when nothing matches
+function resolveAction(act, favourites = []) {
+  const q = act.toLowerCase().trim(), words = q.split(/\s+/);
+  const score = (name, tags, extra = "") => {
+    name = (name || "").toLowerCase(); tags = (tags || []).map(x => x.toLowerCase());
+    if (name === q) return 100;
+    if (tags.includes(q)) return 90;
+    if (name.includes(q)) return 70;
+    if (tags.some(x => x.includes(q) || q.includes(x))) return 60;
+    const hay = name + " " + tags.join(" ") + " " + extra.toLowerCase();
+    const hit = words.filter(w => w.length > 2 && hay.includes(w)).length;
+    return hit ? 20 + 10 * hit / words.length : 0;
+  };
+  let best = null, bestS = 0;
+  for (const f of favourites) { if (!CUES[f.cue]) continue; const s = score(f.name, f.uses) + 5 + (f.stars || 0); if (s > bestS) { best = { fav: f, cue: f.cue, params: f.params, seed: f.seed, label: f.name }; bestS = s; } }
+  for (const c of Object.values(CUES)) { const s = Math.max(score(c.id.replace(/_/g, " "), c.uses, c.desc), score(c.label, [])); if (s > bestS) { best = { cue: c.id, params: {}, seed: 1, label: c.label }; bestS = s; } }
+  return bestS >= 20 ? best : null;
+}
+
+function sceneTake(actions, favourites) {
+  const parts = [], missing = [];
+  for (const a of actions) {
+    const r = resolveAction(a.act, favourites);
+    if (!r) { missing.push(a.act); continue; }
+    // the action lands on the cue's first hit, unless the cue starts on its action (a sneak, a waltz, a countdown:
+    // their hits are on the way or at the end) or the hit is far in
+    const take = writeCue(r.cue, r.params, r.seed), h0 = take.hits[0];
+    const hit = h0 && CUES[r.cue].align !== "start" && h0.t <= 6 ? h0 : null;
+    parts.push({ a, r, take, start: Math.max(0, a.t - (hit ? hit.t : 0)), hit });
+  }
+  const top = parts.length ? Math.max(...parts.map(p => p.take.gain ?? 0)) : 0;
+  const out = { cue: "scene", gain: top, ev: [], marks: [], hits: [], secs: 0, tempo: parts[0] ? parts[0].take.tempo : 90, meter: [4, 4], parts: [], missing };
+  parts.forEach((p, i) => {
+    const next = parts[i + 1], until = next ? next.start : Infinity, under = (p.take.gain ?? 0) - top;
+    for (const e of p.take.ev) {
+      const t = e.t + p.start;
+      if (t >= until - 0.01 && p.a.end !== "ring") continue;
+      const ne = Object.assign({}, e, { t, db: (e.db || 0) + under });
+      if (p.a.end === "cut" && until < Infinity && ne.inst !== "drums" && ne.inst !== "fx") ne.dur = Math.max(0.05, Math.min(ne.dur ?? 3, until - t)), ne.release = Math.min(ne.release ?? 0.3, 0.25);
+      out.ev.push(ne);
+    }
+    if (p.a.end === "scratch" && until < Infinity) out.ev.push({ inst: "fx", fx: "tapestop", t: until - 0.02, dur: 0.22, vel: 1 });
+    for (const m of p.take.marks) if (m.t + p.start < until) out.marks.push({ t: m.t + p.start, text: m.text });
+    for (const h of p.take.hits) if (h.t + p.start < until) out.hits.push({ t: h.t + p.start, label: h.label });
+    out.marks.push({ t: p.a.t, text: "action: " + p.a.act + " -> " + p.r.label });
+    const stop = next && p.a.end !== "ring" ? until : p.start + p.take.secs;
+    out.parts.push({ act: p.a.act, at: p.a.t, start: p.start, cue: p.r.cue, label: p.r.label, fav: p.r.fav ? p.r.fav.id : null, hit: p.hit ? p.hit.label : null, until: stop });
+    out.secs = Math.max(out.secs, stop + (next ? 0.3 : 0));
+  });
+  out.ev.sort((a, b) => a.t - b.t);
+  return out;
+}

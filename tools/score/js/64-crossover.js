@@ -55,7 +55,7 @@ CUE("sweet_then_wrong", {
   desc: "A warm romance underscore (rolling piano, strings) that turns at the hit: the harmony slides down a semitone, the strings bend down into a cluster, a low note lands.",
   refs: "School Days' last episode, Gone Girl's warm-cold score (Reznor and Ross), the Parasite 'Belt of Faith' turn",
   params: { key: P.key(2, "ionian"), tempo: P.tempo(76, 60, 92), turn_at: P.amt("where it turns (share)", 0.6), len: P.len(16, 8, 32),
-            how: P.pick("how it turns", ["slide down", "bend", "stop dead", "music box"]), afterglow: P.amt("what's left after", 0.5) },
+            how: P.pick("how it turns", ["slide down", "bend", "stop dead", "music box", "tape stop"]), afterglow: P.amt("what's left after", 0.5) },
   gen(t, p) {
     const k = p.key, spb = t.beat(p.tempo, [4, 4]), bar = 4 * spb, prog = PROGS.pop;
     const turn = Math.max(bar * 2, Math.round(p.len * p.turn_at / spb) * spb), end = Math.max(turn + 3, p.len);
@@ -73,6 +73,9 @@ CUE("sweet_then_wrong", {
       t.n("trem", root + 23, turn + 0.5, end - turn - 0.5, 30 + 30 * p.afterglow, { attack: 2 });
     } else if (p.how === "bend") {
       [root, root + 4, root + 7, root + 12].forEach((m, i) => t.n("strings", m, turn - 0.05, end - turn, 50, { bend: { semis: -(1 + i % 2), at: 0.1, dur: 1.6 } }));
+    } else if (p.how === "tape stop") {
+      t.tapeStop(turn - 0.02, 0.6);                              // the sweet music sags and dies under the low notes
+      t.n("trem", root - 11, turn + 0.8, end - turn - 0.8, 30 + 30 * p.afterglow, { attack: 1.5, tone: "ponticello" });
     } else if (p.how === "stop dead") {
       t.mark(turn, "silence"); if (p.afterglow > 0.2) t.n("piano", deg(k, 6, 84) + 1, turn + 2.2, null, 34);
     } else {
@@ -86,7 +89,7 @@ CUE("sweet_then_wrong", {
 // The yandere waltz: a pretty 3/4 waltz on top (harp or piano, a flute line), and under the floor a low tremolo
 // cluster that never stops, getting louder each phrase: she is dancing, the house is not.
 CUE("yandere_waltz", {
-  family: "crossover", level: -7, label: "Yandere waltz", uses: ["yandere", "dance", "her room", "dinner with her", "obsession"],
+  family: "crossover", level: -7, align: "start", label: "Yandere waltz", uses: ["yandere", "dance", "her room", "dinner with her", "obsession"],
   desc: "A pretty waltz (harp or piano with a flute line) over a low string tremolo cluster that never stops and grows each phrase.",
   refs: "Danganronpa's sweet-menacing waltzes, the Shining ballroom (Al Bowlly over the dread), Mirai Nikki",
   params: { key: P.key(9, "harmonic_minor", ["harmonic_minor", "aeolian", "ionian"]), tempo: P.tempo(132, 100, 168), len: P.len(24, 12, 48),
@@ -147,7 +150,7 @@ CUE("pounding_heart", {
 // The timed choice's clock: pizzicato ticking on the beat (a clock in the room), a string note climbing a semitone
 // every few seconds, the ticking doubling for the last stretch. Under a 30-second timed reply.
 CUE("timed_choice", {
-  family: "crossover", level: -9, label: "Timed choice (the clock)", uses: ["timed choice", "decision", "reply", "countdown", "interrogation"],
+  family: "crossover", level: -9, align: "start", label: "Timed choice (the clock)", uses: ["timed choice", "decision", "reply", "countdown", "interrogation"],
   desc: "Pizzicato ticking like a clock, a string line climbing a semitone every few seconds, the ticks doubling near the end; it stops dead on the hit.",
   refs: "Until Dawn's choice beds, Detroit: Become Human's interrogations, Squid Game's countdown (Jung Jae-il)",
   params: { key: P.key(2, "aeolian"), len: P.len(30, 6, 45), tick: P.tempo(60, 50, 90), climb: P.amt("climb", 0.6), sweet: P.amt("sweetness (a romance over it)", 0.2) },
@@ -229,7 +232,7 @@ CUE("close_moment", {
 // slowed, resolved warmly (good), left on the IV (neutral, never home), or turned to minor with the low cluster
 // returning and a music-box tag (bad).
 CUE("ending", {
-  family: "crossover", level: -6, label: "Ending (good, neutral, bad)", uses: ["ending", "credits", "epilogue", "karma"],
+  family: "crossover", level: -6, align: "start", label: "Ending (good, neutral, bad)", uses: ["ending", "credits", "epilogue", "karma"],
   desc: "The love theme's chords slowed down: resolved warmly (good), left hanging on the IV (neutral), or turned minor with the cluster back and a music-box tag (bad).",
   refs: "Silent Hill 2's endings, To the Moon's 'For River', Ringu's closing cues; the K-drama finale montage swell",
   params: { key: P.key(7, "ionian"), ending: P.pick("ending", ["good", "neutral", "bad"]), tempo: P.tempo(58, 44, 72), len: P.len(30, 16, 60), strings: P.amt("strings", 0.7) },
@@ -263,7 +266,7 @@ CUE("ending", {
 // past where it should stop: up a step, then again, then again, the strings turning to tremolo and a flat-second
 // suspension creeping into the chords. She loves you. Too much.
 CUE("obsession_confession", {
-  family: "crossover", level: -5, label: "Confession (one key change too many)", uses: ["confession", "obsession", "I love you", "too much", "yandere"],
+  family: "crossover", level: -5, align: "start", label: "Confession (one key change too many)", uses: ["confession", "obsession", "I love you", "too much", "yandere"],
   desc: "A ballad swell (royal road, piano arpeggios then strings) that rises a step, then again, then again; the strings turn to tremolo and a flat second creeps into the chords.",
   refs: "The K-drama last-chorus key change, made sinister; Phantom Thread's too-intense romance (Greenwood); School Days",
   params: { key: P.key(5, "ionian"), tempo: P.tempo(70, 60, 80), lifts: { kind: "num", def: 3, min: 1, max: 5, step: 1, label: "key changes" }, phrase: { kind: "num", def: 2, min: 1, max: 8, step: 1, label: "bars a key" }, tremolo: P.amt("tremolo creep", 0.6) },

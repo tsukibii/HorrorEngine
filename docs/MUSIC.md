@@ -43,6 +43,26 @@ The server uses plain Python, no installs, and listens on 127.0.0.1 only. The sa
    `Music/renders/` folder, ready for Unreal.
 7. **The sequence strip** chains favourites the way a scene plays them (sneak, then the fall, then flustered). Each
    cue has a gap before it; a negative gap overlaps. Play it, keep it, bake it.
+8. **Score a scene** works from what the character does. Write one action a line, a time and what happens:
+
+   ```
+   0 sneak
+   4.2 trip
+   5.4 blush
+   9 slow motion romance @scratch
+   14 awkward
+   ```
+
+   Each action finds a favourite first, by its name and uses (more stars win a tie), then a cue by its id, label or
+   uses. The cue's hit lands on the action's time, so the fall's thud falls on 4.2 s.
+   - A cue that starts on its action starts there instead. These are the sneak, the waltz, the countdown and the
+     ending, whose hits come along the way or at the end.
+   - Each part ends where the next begins: cut (trimmed with a short release), `@ring` (it overlaps the next) or
+     `@scratch` (a tape stop).
+   - The list under the roll shows what each line became and where it starts.
+   - Keep the scene in the palette, play it, bake it.
+
+   This is how the desk will score a scene from its clips (§5).
 
 **Palette** (header) chooses the Studio palette, which every game may use, or one game's own palette.
 **Played in** chooses the room the music is heard in: bedroom, hallway, basement, closet and the others. It's the
@@ -121,12 +141,24 @@ it differs.
 - Ghost lover's lullaby (X5).
 - Playground game: Squid Game's childish tune with a kept wrong note.
 
+**String colours and the tape stop** (research §2.5 and §1.3). A note can carry a `tone`, a filter chain on that
+one note:
+- `ponticello`: glassy, brittle; the tremolo high-passed with a resonant peak.
+- `tasto`: veiled.
+- `harmonic`: only the top; pure and thin.
+- `legno`: the wood of the bow; a dry click on a short pizzicato.
+
+The hiding cue's tremolo is ponticello (its "glassy" setting), its clock is col legno, and it drops out when she is
+closest. Behind you uses harmonics and ponticello. The dread drone's top rub turns to harmonics when the dissonance
+is high, and the "she's watching" layer is ponticello.
+
+`t.tapeStop(at, dur)` makes every voice sounding then sag to a quarter of its pitch and fade, like a record dragged
+to a stop. It's the record scratch in Awkward ("record scratch"), the parody ending of Slow-motion romance
+(Weightlifting Fairy's joke: the swell at its height, then the needle comes off) and a "tape stop" turn in Sweet,
+then wrong.
+
 **Not built yet** (from the research):
-- The sul ponticello, harmonics and col legno fakes. They need a filter chain per note (§2.5); today the cues use
-  the plain tremolo and pizzicato.
 - A Shepard-tone riser (§2.7).
-- The tape stop. It needs the playback rate of every sounding voice ramped at once; the awkward cue
-  leaves a thin chord and a hanging note instead.
 - Pre-triggering strings and horn by their attack time, so the perceived onset meets the hit point (§5.4). Today a
   string note starts on the frame and swells after it. Stings use fast-attack instruments (piano, timpani, drums,
   pizzicato), as the research advises.
@@ -144,18 +176,21 @@ The page is built to be lifted into the desk. The engine is plain scripts with n
 
 The desk loads the same scripts and the same palette. The plan:
 
-1. **story.json names favourites.** A scene, a stitch, a reply or an ending gets a `music` cue that names a
+1. **The desk scores a scene the way the scene panel does** (`sceneTake(actions, favourites)` in `70-player.js`).
+   Its actions come from the clips: a clip's motion name or a stitch's mechanic ("hide", "found", "trip", "her
+   answer") at the clip's start, so nothing is anchored to an absolute time.
+2. **story.json names favourites.** A scene, a stitch, a reply or an ending gets a `music` cue that names a
    favourite by id (`{fav: "f…", at: "clip:<id>:start" | "hit:<label>", level}`). Cues ride on clip edges, never on
    absolute times (CLAUDE.md, "timing is elastic"). A hit point lines up with a clip edge: the fall's thud on the
    landing clip's start, the sting on the scare's first frame. The format word and its check come in one commit
    with STORY_FORMAT.md.
-2. **The desk's animatic plays them** with the same engine and the room's acoustics (the story's `acoustics` field
+3. **The desk's animatic plays them** with the same engine and the room's acoustics (the story's `acoustics` field
    maps to a hall: bedroom to `room`, corridor to `corridor`).
-3. **Unreal plays baked stems.** Bake writes WAV and MIDI into `Content/Games/<G>/Music/renders/`, and the importer
+4. **Unreal plays baked stems.** Bake writes WAV and MIDI into `Content/Games/<G>/Music/renders/`, and the importer
    brings them in as Sound Waves. Live procedural music in Unreal (MetaSounds playing the cue generators) is a later
    choice; baked variations already sound different each time if a cue keeps two or three favourites and the game
    picks one.
-4. **The game's rules come from the research** (§5):
+5. **The game's rules come from the research** (§5):
    - Short cues often, each with a cooldown so a theme doesn't wear out.
    - Silence before a scare, of an unpredictable length.
    - Comedy synced tight and horror synced sparse.
@@ -171,7 +206,8 @@ The desk loads the same scripts and the same palette. The plan:
                   "amount": 0.4, "strings": 0.4, "gain": -8, "corrupt": 0, "watched": 0 },
       "seed": 1, "secs": 27.1, "hits": [], "print": "8c1f02aa", "space": "room",
       "uses": ["her theme", "romance"], "stars": 3, "note": "", "made": "2026-10-21" } ],
-  "sequences": [ { "id": "s…", "name": "trip and blush", "items": [ {"fav": "f…", "gap": 0}, {"fav": "f…", "gap": -0.3} ] } ] }
+  "sequences": [ { "id": "s…", "name": "trip and blush", "items": [ {"fav": "f…", "gap": 0}, {"fav": "f…", "gap": -0.3} ] } ],
+  "scenes": [ { "id": "c…", "name": "the cafe trip", "text": "0 sneak\n4.2 trip\n5.4 blush", "made": "2026-10-21" } ] }
 ```
 
 Every palette save keeps the previous file in `Saved/Score/<scope>/history/` (the last 30).

@@ -30,7 +30,7 @@ SAFE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_. -]{0,120}$")
 
 
 def empty_palette(scope):
-    return {"format": "horrorstudio-score-palette", "version": 1, "scope": scope, "favourites": [], "sequences": []}
+    return {"format": "horrorstudio-score-palette", "version": 1, "scope": scope, "favourites": [], "sequences": [], "scenes": []}
 
 
 def music_dir(scope):

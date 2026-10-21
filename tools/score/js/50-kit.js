@@ -40,6 +40,12 @@ class Take {
   chord(inst, notes, t, dur, vel, o = {}) { const roll = o.roll || 0; notes.forEach((m, i) => this.n(inst, m, t + i * roll + this.human(), dur, vel - (o.taper || 0) * i, Object.assign({}, o, { roll: undefined, taper: undefined }))); }
   human(sd = 0.006) { return this.rng.gauss(0, sd); }
   vel(v, sd = 5) { return clamp(Math.round(this.rng.gauss(v, sd)), 1, 127); }
+  // a tape stop: everything sounding at t sags and dies over dur (the engine does it to the voices). Notes already
+  // written that start after t are dropped; notes the cue writes after this call play (what comes after the stop).
+  tapeStop(t, dur = 0.25) {
+    this.ev = this.ev.filter(e => e.t < t);
+    this.ev.push({ inst: "fx", fx: "tapestop", t, dur, vel: 1 }); this.mark(t, "tape stop");
+  }
   mark(t, text) { this.marks.push({ t, text }); }
   // a hit point: where the picture's action lands (a fall's thud, the shock's sting): the desk will line it up with the clip
   point(t, label) { this.hits.push({ t, label }); this.mark(t, "hit: " + label); }
@@ -104,7 +110,7 @@ function writeCue(cueId, params, seed) {
 // 0.2 a note slipped flat a phrase and a slight drift; 0.4 a tritone drone under it and the tempo sagging; 0.6 notes
 // dropped (missing teeth); 0.8 and over the sustained notes bend apart at their ends.
 function corruptTake(t, w, rng) {
-  const secs = Math.max(1, t.secs), pitched = t.ev.filter(e => e.inst !== "drums");
+  const secs = Math.max(1, t.secs), pitched = t.ev.filter(e => e.inst !== "drums" && e.inst !== "fx");
   const sag = 0.12 * Math.max(0, w - 0.3);                       // the late notes come later: a spring running down
   for (const e of t.ev) e.t = e.t * (1 + sag * e.t / secs);
   for (const p of t.hits) p.t = p.t * (1 + sag * p.t / secs);
@@ -116,7 +122,7 @@ function corruptTake(t, w, rng) {
     if (w > 0.75 && e.dur != null && e.dur > 1.2 && !e.bend && rng.chance(0.4)) e.bend = { semis: rng.pick([-1, -0.5, 0.5]), at: e.dur * 0.6, dur: e.dur * 0.4 };
   }
   const drop = Math.max(0, w - 0.45) * 0.3;
-  if (drop > 0) t.ev = t.ev.filter(e => e.inst === "drums" || !rng.chance(drop));
+  if (drop > 0) t.ev = t.ev.filter(e => e.inst === "drums" || e.inst === "fx" || !rng.chance(drop));
   if (w >= 0.35) {
     const tonic = t.key ? t.key.tonic : 9, low = 36 + mod(tonic + 6, 12), end = t.secs;
     for (let s = 0; s < end - 1; s += 8) t.n("strings", low, s, Math.min(9, end - s), 18 + 30 * w, { attack: Math.min(3, (end - s) / 3), raw: true });
@@ -127,7 +133,7 @@ function corruptTake(t, w, rng) {
 // She's watching: a high tremolo cluster you feel more than hear, the whole length, and now and then a far glock ping.
 function watchedLayer(t, w, rng) {
   const c = 79 + rng.int(0, 4), end = t.secs;
-  for (let s = 0; s < end - 0.5; s += 7) [0, 1, 3].forEach(i => t.n("trem", c + i, s + rng.range(0, 0.4), Math.max(0.5, Math.min(8, end - s - 0.4)), 8 + 22 * w, { attack: Math.min(2.5, (end - s) / 3), raw: true, cents: rng.range(-30, 30) }));
+  for (let s = 0; s < end - 0.5; s += 7) [0, 1, 3].forEach(i => t.n("trem", c + i, s + rng.range(0, 0.4), Math.max(0.5, Math.min(8, end - s - 0.4)), 8 + 22 * w, { attack: Math.min(2.5, (end - s) / 3), raw: true, cents: rng.range(-30, 30), tone: "ponticello" }));
   if (w > 0.4) for (let s = rng.range(2, 5); s < end - 1; s += rng.range(5, 9)) t.n("glock", 96 + rng.pick([0, 1, 6]), s, null, 14 + 16 * w);
   t.secs = end;
 }
@@ -153,13 +159,13 @@ function variations(cueId, base, n, spread, seed0) {
 }
 
 // The instruments a take uses (what to load before playing it).
-const takeInstruments = take => uniq(take.ev.map(e => e.inst));
+const takeInstruments = take => uniq(take.ev.filter(e => e.inst !== "fx").map(e => e.inst));
 
 // A take's fingerprint: what its notes are, in eight hex digits. A favourite keeps the one it was kept with, so a
 // changed generator that would change a kept cue's notes is caught (check.js, the palette's "changed" badge).
 function takePrint(take) {
   let h = 0x811c9dc5;
   const mix = x => { h ^= x & 0xffff; h = Math.imul(h, 0x01000193) >>> 0; };
-  for (const e of take.ev) { mix(Math.round(e.t * 100)); mix(e.inst === "drums" ? e.piece.length * 31 + e.piece.charCodeAt(0) : e.midi); mix(e.vel); mix(e.inst.charCodeAt(0) * 7 + e.inst.length); }
+  for (const e of take.ev) { mix(Math.round(e.t * 100)); mix(e.inst === "drums" ? e.piece.length * 31 + e.piece.charCodeAt(0) : e.inst === "fx" ? 999 : e.midi); mix(e.vel); mix(e.inst.charCodeAt(0) * 7 + e.inst.length); }
   return h.toString(16).padStart(8, "0");
 }

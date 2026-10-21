@@ -66,7 +66,7 @@ A thin high tremolo, sparse low pizzicato taps like creaks, a pedal that wakes a
 - **For:** hiding, hide, search, near
 - **After:** Alien: Isolation, Outlast's hiding beds, DOORS' Rush warning (the lights' hum)
 - **Level:** -13 dB; about 20 s at its defaults
-- **Settings:** key locrian; length (s) 8 to 40 (20); how near she is 0 to 1 (0.5); creaks 0 to 1 (0.5)
+- **Settings:** key locrian; length (s) 8 to 40 (20); how near she is 0 to 1 (0.5); creaks 0 to 1 (0.5); pulse none / col legno clock / muted piano; glassy (ponticello) 0 to 1 (0.6)
 
 ### Chase (`chase`)
 
@@ -203,7 +203,7 @@ Rolling piano arpeggios over a K-pop ballad progression, strings swelling in und
 - **For:** romance, slow motion, eye contact, first meeting, love
 - **After:** Goblin, Crash Landing on You, Descendants of the Sun: the OST ballad underscore (piano first, strings rising)
 - **Level:** -5 dB; about 26 s at its defaults
-- **Settings:** key ionian; tempo (bpm) 58 to 86 (72); progression royal_road / pop / canon / doo_wop; length (s) 12 to 48 (24); key change at the end 0 to 1 (0.5); strings 0 to 1 (0.7)
+- **Settings:** key ionian; tempo (bpm) 58 to 86 (72); progression royal_road / pop / canon / doo_wop; length (s) 12 to 48 (24); key change at the end 0 to 1 (0.5); strings 0 to 1 (0.7); ending resolve / record scratch (the parody)
 
 ### Heart flutter (`heart_flutter`)
 
@@ -239,7 +239,7 @@ A thin, slightly wrong string chord, one pizzicato note left hanging, and a sing
 - **For:** awkward, silence, cringe, comedy
 - **After:** The awkward-pause stings of K-drama comedies; the 'cricket' moment in sitcom scoring
 - **Level:** -6 dB; about 4 s at its defaults; hit points: ding
-- **Settings:** key lydian; length (s) 1.5 to 6 (3)
+- **Settings:** key lydian; length (s) 1.5 to 6 (3); how it starts the hanging chord / record scratch
 
 ### Triumph (`triumph`)
 
@@ -286,7 +286,7 @@ A warm romance underscore (rolling piano, strings) that turns at the hit: the ha
 - **For:** the turn, reveal, her smile, yandere, date
 - **After:** School Days' last episode, Gone Girl's warm-cold score (Reznor and Ross), the Parasite 'Belt of Faith' turn
 - **Level:** -6 dB; about 18 s at its defaults; hit points: the turn
-- **Settings:** key ionian; tempo (bpm) 60 to 92 (76); where it turns (share) 0 to 1 (0.6); length (s) 8 to 32 (16); how it turns slide down / bend / stop dead / music box; what's left after 0 to 1 (0.5)
+- **Settings:** key ionian; tempo (bpm) 60 to 92 (76); where it turns (share) 0 to 1 (0.6); length (s) 8 to 32 (16); how it turns slide down / bend / stop dead / music box / tape stop; what's left after 0 to 1 (0.5)
 
 ### Yandere waltz (`yandere_waltz`)
 
