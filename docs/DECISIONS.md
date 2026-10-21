@@ -15,6 +15,12 @@ The user's answers, newest first. They override the plan, the research and the d
   screen you click). The styling stays **CSS**, themed per game, so a game can switch themes. Mini-games can grow
   out of the same style.
 - Later, not now: the Unreal preview locks the camera; Play mode frees it.
+- **GAMEPLAY_PLAN §9 answered:** the cursor sits at the centre and changes with what's under it, and using a thing
+  (the die, a drawer, a note) frees the pointer to click and drag in that close-up (Esc or walking away hands back);
+  crouch is toggle by default, hold in settings; being seen fills a short suspicion meter (about 1 to 1.5 s, drains out
+  of sight) before `caught`; in an interactive cinematic, if the player walks away she pauses, calls them back and picks
+  up where she stopped; a patrol checks a hiding place only where a route point says so; see-through is per hiding
+  place with a game default; the first UI theme is the light neumorphic kit as in the user's image.
 
 ## 2026-10-21 (gameplay: Resident Evil 7 feel, desk first)
 
