@@ -134,3 +134,9 @@ the fix.
   left slivers over one eye (MHR's triangulation differs round each eye); sinking every point inside the outline
   behind the eyeball works whatever the triangles are. The mouth is still open: its visible inside isn't within the
   inner-lip outline at all, so the same trick showed a pale wall (a look at MHR's mouth geometry comes first).
+
+**Sewing springs: gentle, not strong (2026-10-21).** Blender's `sewing_force_max` at 30 closed a GarmentCode t-shirt's
+10 cm seam gaps so hard that it pulled the shirt off the shoulders and crushed the sleeves into rolls up the arms;
+heavier or lighter fabric and stiffer bending didn't help. At 8 the seams still close (0.5 mm), the shirt stays on the
+shoulders with real short sleeves, and skirts and pants drape as before. Try `DRAPE_SET='{"key": value}'` on a few
+settings side by side (renders stacked) before rewriting the drape.

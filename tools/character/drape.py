@@ -10,6 +10,7 @@ sewing spring. The cloth sews with gravity off, then hangs with it on, colliding
 Writes garment.obj (metres) and prints DRAPE {report}: the seams' gap before welding, the points left inside the body.
 """
 import json
+import os
 import math
 import sys
 import time
@@ -183,7 +184,8 @@ def main():
     s = cl.settings
     s.quality = 8; s.mass = 0.25; s.air_damping = 2
     s.tension_stiffness = s.compression_stiffness = 12; s.shear_stiffness = 5; s.bending_stiffness = 0.3
-    s.use_sewing_springs = True; s.sewing_force_max = 30
+    s.use_sewing_springs = True; s.sewing_force_max = 8      # 30 yanked a t-shirt off the shoulders, sleeves crushed
+    for k, v in json.loads(os.environ.get("DRAPE_SET", "{}")).items(): setattr(s, k, v)   # tuning: '{"bending_stiffness": 1}'
     cl.collision_settings.distance_min = 0.004; cl.collision_settings.use_self_collision = False
     sc = bpy.context.scene; sc.frame_start = 1; sc.frame_end = frames
     cl.point_cache.frame_start = 1; cl.point_cache.frame_end = frames
