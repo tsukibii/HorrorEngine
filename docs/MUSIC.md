@@ -105,12 +105,12 @@ reverb the Woohill engine traces from the room's walls and their materials, and 
 - **Hit points.** Each cue marks where the picture's action lands (the fall's thud, the sting, the turn, her
   answer). The desk will line them up with clip edges (§5).
 
-## 4. The cues (41)
+## 4. The cues (42)
 
 The full list, with settings, is in docs/MUSIC_CUES.md. Research §4 designed 32 cues; this is what was built and how
 it differs.
 
-**Horror (15):**
+**Horror (16):**
 - Dread drone (H1)
 - Stalker ostinato (H2: odd metres, a climbing pedal)
 - Music box gone wrong (H3: drift, wrong note, wind-down)
@@ -126,6 +126,7 @@ it differs.
 - Found you (H9)
 - The lull (H12: scare, nothing or a harmless knock, at an unpredictable time)
 - Ritual (H11)
+- Endless rise (§2.7: a Shepard-like climb of staggered string glides, ending in a cut, a sting or nothing)
 
 **K-drama (14):**
 - Sneak (K1, with freezes)
@@ -175,7 +176,6 @@ to a stop. It's the record scratch in Awkward ("record scratch"), the parody end
 then wrong.
 
 **Not built yet** (from the research):
-- A Shepard-tone riser (§2.7).
 - Pre-triggering strings and horn by their attack time, so the perceived onset meets the hit point (§5.4). Today a
   string note starts on the frame and swells after it. Stings use fast-attack instruments (piano, timpani, drums,
   pizzicato), as the research advises.

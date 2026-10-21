@@ -140,6 +140,15 @@ Low toms and timpani in a pattern that speeds up, a pizzicato ostinato, the horn
 - **Level:** -3 dB; about 23 s at its defaults; hit points: the rite ends
 - **Settings:** key phrygian / phrygian dominant; tempo (bpm) 50 to 100 (70); tempo (bpm) 90 to 180 (140); length (s) 10 to 40 (20); horn calls 0 to 1 (0.6)
 
+### Endless rise (Shepard) (`endless_rise`)
+
+String voices gliding up an octave, staggered and crossfaded so the pitch seems to climb forever; ticks speeding up under it; then a cut, a sting or nothing.
+
+- **For:** tension, rising, approach, she's coming, build
+- **After:** Dunkirk (Zimmer's Shepard tone), the Shepard–Risset glissando; Penderecki for the strings
+- **Level:** -4 dB; about 13 s at its defaults; hit points: the cut
+- **Settings:** key phrygian; length (s) 6 to 30 (12); one glide (s) 2 to 8 (4); end cut / sting / nothing; ticks 0 to 1 (0.6)
+
 ## K-drama
 
 ### Sneaking (tiptoe) (`sneak`)

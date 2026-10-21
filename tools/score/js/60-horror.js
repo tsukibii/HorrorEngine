@@ -87,11 +87,13 @@ CUE("music_box", {
         if (d >= 0) {
           let m = deg(k, d, 84);
           if (b === bars - 2 && i === 0 && t.rng.chance(0.4 + p.wrongness * 0.6)) m += t.rng.pick([1, 6, -1]);   // the wrong note
-          t.n("glock", m, s + i * spb + t.human(0.01), spb * 2, t.vel(62), { cents: detune });
-          t.n("piano", m, s + i * spb + t.human(0.01), spb * 1.5, t.vel(40), { cents: detune * 0.5 });
+          let held = 0;                                             // the theme's long notes ring through their beats
+          if (p.motif) while (held < 3 && tune[(b * 3 + i + held + 1) % tune.length] === -1) held++;
+          t.n("glock", m, s + i * spb + t.human(0.01), spb * (2 + held), t.vel(62), { cents: detune });
+          t.n("piano", m, s + i * spb + t.human(0.01), spb * (1.5 + held), t.vel(40), { cents: detune * 0.5 });
         }
       }
-      if (b % 2 === 0) t.chord("piano", triad(k, [0, 3, 4, 0][(b / 2) % 4], 60), s, spb * 3, 34, { cents: detune * 0.3 });
+      if (b % 2 === 0 || p.motif) t.chord("piano", triad(k, p.motif ? [0, 3, 4, 4, 0, 3, 4, 0][b % 8] : [0, 3, 4, 0][(b / 2) % 4], 60), s, spb * 3, 34, { cents: detune * 0.3 });
       if (p.strings > 0.1 && b % 4 === 0) t.n("strings", deg(k, 0, 72), s, spb * 12, 22 + 30 * p.strings, { attack: spb * 4, cents: detune * 0.2 });
       s += 3 * spb;
     }
@@ -358,5 +360,30 @@ CUE("ritual", {
     t.hit("gong", p.len, 120); t.n("piano", root - 12, p.len, null, 110, { raw: true }); t.n("piano", root - 11, p.len, null, 96, { raw: true });
     t.point(p.len, "the rite ends");
     t.end(p.len + 3);
+  },
+});
+
+// The endless rise: a Shepard-like climb (research §2.7: Dunkirk's three rising scales). String voices start low
+// and glide up an octave, fading in at the bottom and out at the top, a new one every third of a glide, so the pitch
+// seems to climb forever; ticks speed up under it and a timpani roll swells. It ends on a cut, a sting or nothing.
+CUE("endless_rise", {
+  family: "horror", level: -4, label: "Endless rise (Shepard)", uses: ["tension", "rising", "approach", "she's coming", "build"],
+  desc: "String voices gliding up an octave, staggered and crossfaded so the pitch seems to climb forever; ticks speeding up under it; then a cut, a sting or nothing.",
+  refs: "Dunkirk (Zimmer's Shepard tone), the Shepard–Risset glissando; Penderecki for the strings",
+  params: { key: P.key(2, "phrygian"), len: P.len(12, 6, 30), glide: { kind: "num", def: 4, min: 2, max: 8, step: 0.5, label: "one glide (s)" }, end: P.pick("end", ["cut", "sting", "nothing"]), ticks: P.amt("ticks", 0.6) },
+  gen(t, p) {
+    const k = p.key, base = 50 + mod(k.tonic, 12), T = p.glide, L = p.len;
+    t.beat(60);
+    for (let s = 0, i = 0; s < L - T * 0.3; s += T / 3, i++) {
+      const dur = Math.min(T, L - s);
+      for (const [inst, oct, v] of [["strings", 0, 46], ["trem", 12, 34], ["strings", 24, 26]]) {
+        t.n(inst, base + oct, s, dur * 0.72, v + 20 * s / L, { raw: true, attack: dur * 0.35, release: dur * 0.3, bend: { semis: 12 * dur / T, at: 0, dur }, cents: (i % 3 - 1) * 6 });
+      }
+    }
+    if (p.ticks > 0.1) { let at = 0.3; while (at < L) { t.n("pizz", base + 12, at, 0.05, t.vel(40 + 40 * at / L), { tone: "legno" }); at += lerp(0.6, 0.09, Math.pow(at / L, 0.8)) / (0.5 + p.ticks); } }
+    for (let s = L * 0.4; s < L; s += 0.11) t.n("timpani", 38 + mod(k.tonic, 12), s, 0.15, 20 + 70 * ((s - L * 0.4) / (L * 0.6)) ** 2, { raw: true });
+    if (p.end === "sting") stingAt(t, base - 12, L, 1);
+    else { t.point(L, p.end === "cut" ? "the cut" : "it just stops"); if (p.end === "cut") t.tapeStop(L, 0.05); }
+    t.end(L + (p.end === "sting" ? 3 : 0.5));
   },
 });
