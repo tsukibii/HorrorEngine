@@ -19,7 +19,8 @@ Unreal build must match. Directing craft: docs/DIRECTING.md.
 
 ## Start every session with
 
-1. `docs/DECISIONS.md`: the user's answers. They override everything, newest first.
+1. `docs/DECISIONS.md`: the user's answers. They override everything, newest first. Then `docs/CONTINUE.md`: where
+   the last session stopped and what could come next.
 2. `python tools/story.py --game <Game> notes`: what the user left on the director's desk. Answer with a note
    (`by: claude`) and tick what you've done.
 3. `SETUP.md` while setup isn't finished; then `docs/games/<Game>.md` for the game in progress.
