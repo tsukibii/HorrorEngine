@@ -8,6 +8,10 @@ The user's answers, newest first. They override the plan, the research and the d
   (stable at level 0, `../unreal-omarchy/docs/RESEARCH.md`), Kimodo, the desk. No Windows: setup.py, SETUP.md and the
   commands for the user are for Linux (bash, uv, Epic's bundled clang instead of Visual Studio). The `.uproject` goes
   in this repo's folder.
+- **The project is `HorrorEngine`** (the user made it so), First Person C++, adopted into this folder. **Epic's
+  template stays as the playable test level**, untouched and the start map, until the user says otherwise; it is never
+  committed (the repo is public). First goals: Claude set up in the project (UnrealClaude), then the Pilot from the
+  desk to Unreal as a 1:1 copy.
 
 ## 2026-10-21 (hair: Sisir for our own cuts, Fab for the rest)
 
