@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (gameplay: Resident Evil 7 feel, desk first)
+
+- **Rough gameplay is made in the director's desk first** (a Play mode you walk through), then Unreal. The plan:
+  docs/GAMEPLAY_PLAN.md; the next session starts there.
+- **Never a hard cut:** gameplay, interactive cinematics (walk around while they talk), soft and full cinematics
+  blend into each other; cinematics can still hold timed moments (choose A or B).
+- **NPCs run simple behaviours, not AI:** idle, sit, walk a route, patrol by cycling set routes the story can change;
+  talking to them gives a few lines (first time, again, a reminder of the task) or starts a scene or a choice.
+  Routes can run in gameplay and in interactive cinematics. Mini-games later.
+- **The first game needs crouch and hide:** hiding places whose door goes see-through by an amount set with a
+  slider, safe zones where the player can't be spotted, patrols on predetermined routes.
+- **Easy to extend:** every gameplay part is a small registered module (conditions, actions, behaviours,
+  interactables, player abilities), so torches, the player's hands and more come later as new parts. The same
+  system must serve a romance game.
+
 ## 2026-10-21 (Generate: the desk to Unreal with no Claude in between)
 
 - **When the user is done on the desk they press Generate, and Unreal has a previewable game with no Claude in
