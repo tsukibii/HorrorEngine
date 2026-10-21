@@ -23,6 +23,8 @@ Unreal build must match. Directing craft: docs/DIRECTING.md.
 2. `python tools/story.py --game <Game> notes`: what the user left on the director's desk. Answer with a note
    (`by: claude`) and tick what you've done.
 3. `SETUP.md` while setup isn't finished; then `docs/games/<Game>.md` for the game in progress.
+4. **Ask the user what they are doing now** (docs/PIPELINE.md is a menu, not a sequence), then do only that step.
+   Don't start the next one on your own.
 
 ## Where things are
 

@@ -20,6 +20,13 @@ game goes once they're built. The first game is small, a **15 to 20 minute itch.
 - **The local model** (on your RTX 3090): the first drafts of the script, scene by scene, so prompting Claude is
   for reviews and glue.
 
+**The steps are a menu, not a sequence** (DECISIONS 2026-10-21). The usual route is the one below, but the user
+chooses what happens next and Claude asks at the start of a session. **Animation-first** (the default for now, since
+the user is not a native Japanese speaker): draft script (§3) → Kimodo motions (§7, §8) → the dialogue written to fit
+each motion (§5) → the takes (§6). Each line is **7 seconds or less**, a beat at a time like game voice acting; a
+motion too short for its line means the line is rewritten, a motion too long gets a waiting loop (`fit: loop` /
+`hold`). Dialogue-first (§5, §6, then §7) is still valid for a scene built around its line.
+
 Nothing downstream breaks when a layer changes: timing is elastic (STORY_FORMAT §3.4), everything is found by id.
 
 ## 1. The outline (you)
@@ -51,6 +58,9 @@ You rewrite the dialogue, change the flow, cut and add scenes, on the desk or in
 on the board.
 
 ## 5. The Japanese pass (Claude)
+
+In the animation-first route this comes after the motions (§7, §8): each clip's line is written to the motion's mood and
+length (`motion.py shotlist` has the seconds), 7 s or less, and rewritten if the motion is shorter.
 
 The second pass makes the script sound right in Japanese, as it would be said in a professional film:
 - **`ja`:** rewritten for Japanese, not translated word for word: register, sentence endings, what's left unsaid,

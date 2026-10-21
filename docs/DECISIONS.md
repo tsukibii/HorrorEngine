@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (animation first, the dialogue fits the motion, and Claude asks)
+
+- **The default order is the draft script, then the Kimodo motions, then the Japanese and English dialogue.** The user
+  is not a native Japanese speaker, so they choreograph to the English draft and the lines are written afterwards to
+  fit each motion's mood and length. The face and voice takes (MiniMax, then the face mocap) come last. Dialogue-first
+  is still allowed for a scene where the line is the point.
+- **Lines are written in increments of 7 seconds or less** (MiniMax gives up to 8 s of audio; 7 leaves padding), the
+  way game voice actors deliver them: a beat at a time, never a whole speech in one go. Set `game.clip_max` to 7.
+- **A motion that runs short is not stretched: the line is rewritten** (an action scene is short anyway). A motion
+  that runs long gets a waiting loop (standing, waiting for a reply) that the user adds, which `fit: loop` / `hold`
+  already carry.
+- **No hard rules about order.** The pipeline is a menu of steps. At the start of a session Claude reads the notes and
+  the story state, asks what the user is doing now, and does only that step. It does not move on by itself.
+
 ## 2026-10-21 (UnrealClaude's scripts)
 
 - **Claude sees UnrealClaude's Python tools, and scripts in this project run without asking** (`--show-scripts
