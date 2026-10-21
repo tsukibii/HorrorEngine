@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# The studio launcher: pick a tool from a list (tools/launch.py). From the project folder: ./studio
+# Uses the project's uv environment (.venv) when there is one, else the Python on the PATH.
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
+if [ -x .venv/bin/python ]; then exec .venv/bin/python tools/launch.py "$@"; else exec python3 tools/launch.py "$@"; fi

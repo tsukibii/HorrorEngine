@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The studio launcher: pick a tool from a list instead of typing its command.
 
-    python tools/launch.py              (or .\\studio from the project folder in PowerShell)
+    python tools/launch.py              (or ./studio from the project folder; .\\studio in PowerShell)
     python tools/launch.py desk         filter straight away: runs it if one tool matches
     python tools/launch.py --list       every tool and its command, then exit
 
