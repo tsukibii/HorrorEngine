@@ -693,6 +693,10 @@ waiting.
 (`{"count": "found", "min": 3, "to": "n_caught"}`, the last option the fallback). The sample's hide and seek: cute
 the first time she finds you, a tease the second, the third is a death.
 
+**The HUD's theme** (Play mode, docs/GAMEPLAY_PLAN.md §10): `game.ui_theme` names a file in
+`tools/director/play/ui/themes/` (`neumorph`, the light neumorphic kit, when a game names none; `plain`). A theme sets
+only colours, radii, shadows and the font; the layout is the same for every game.
+
 ### 9.11 Room acoustics
 
 `"acoustics"` on a room: one of `closet bathroom bedroom small_room kitchen living_room hallway stairwell basement

@@ -44,6 +44,9 @@ export class Hud {
   timer(secs) { this.timerEl.textContent = secs === null ? "" : Math.max(0, secs).toFixed(1); }
   setStance(s) { this.stance.textContent = s; }
   locked(on) { this.hint.classList.toggle("on", !on && !this.panelEl); this.root.classList.toggle("free", !on); }
+  press() {                                         // the cursor and the key press in when E is used
+    for (const e of [this.cursor, this.prompt.querySelector(".ph-key")].filter(Boolean)) { e.classList.add("press"); setTimeout(() => e.classList.remove("press"), 160); }
+  }
   shake() { for (const e of [this.cursor, this.panelEl].filter(Boolean)) { e.classList.remove("shake"); void e.offsetWidth; e.classList.add("shake"); } }
   tick() { if (this.lineUntil && performance.now() > this.lineUntil) { this.lineEl.classList.remove("on"); this.lineUntil = 0; } }
 

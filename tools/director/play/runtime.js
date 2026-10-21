@@ -12,6 +12,7 @@ import { Hud } from "./hud.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
 const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
+const THEME = "neumorph";                          // the HUD theme when a game names none (game.ui_theme)
 const LIT = 2.2;                                   // a lamp that starts off: its strength when it's switched on (stage.js's bulb)
 const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
@@ -24,7 +25,7 @@ export class PlayRuntime {
     this.flags = (this.run && this.run.flags) || new Set();
     this.items = new Set();
     this.settings = opts.settings || {};
-    this.hud = new Hud(box, opts.theme || "plain");
+    this.hud = new Hud(box, opts.theme || (story.game || {}).ui_theme || THEME);
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
@@ -227,6 +228,7 @@ export class PlayRuntime {
   async use() {
     const t = this.target; if (!t) return;
     const ip = interactableOf(t);
+    this.hud.press();
     this.emit({ type: "use", id: t.userData.id });
     if (ip) await ip.use(t, this, this.set(ip.name));
   }

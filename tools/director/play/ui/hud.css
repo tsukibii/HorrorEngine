@@ -19,7 +19,8 @@
 .play-hud .ph-cursor[data-cursor="locked"]::after{color:var(--ph-bad)}
 .play-hud.free .ph-cursor{opacity:0}
 .play-hud .ph-prompt{position:absolute;left:50%;top:calc(50% + var(--ph-ring) * .5 + 12px);transform:translateX(-50%);display:flex;gap:8px;align-items:center;
-  opacity:0;transition:opacity .14s;font-size:14px;text-shadow:var(--ph-text-shadow)}
+  opacity:0;transition:opacity .14s;font-size:14px;text-shadow:var(--ph-text-shadow);background:var(--ph-chip-bg, none);padding:var(--ph-chip-pad, 0);
+  border-radius:999px;box-shadow:var(--ph-chip-shadow, none)}
 .play-hud .ph-prompt.on{opacity:1}
 .play-hud .ph-key{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:var(--ph-radius-s);
   background:var(--ph-surface);color:var(--ph-accent);box-shadow:var(--ph-pop);font-weight:600;text-shadow:none}
@@ -30,11 +31,12 @@
 .play-hud .ph-timer{position:absolute;right:20px;top:16px;font-size:28px;font-variant-numeric:tabular-nums;color:var(--ph-bad);text-shadow:var(--ph-text-shadow)}
 .play-hud .ph-log{position:absolute;right:20px;top:60px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11px;color:var(--ph-muted);text-shadow:var(--ph-text-shadow)}
 .play-hud .ph-line{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);max-width:70%;text-align:center;font-size:19px;opacity:0;transition:opacity .25s;
-  text-shadow:var(--ph-text-shadow)}
+  text-shadow:var(--ph-text-shadow);background:var(--ph-line-bg, none);padding:var(--ph-line-pad, 0);border-radius:var(--ph-radius);box-shadow:var(--ph-line-shadow, none)}
 .play-hud .ph-line.on{opacity:1}
 .play-hud .ph-who{color:var(--ph-accent);margin-right:8px}
 .play-hud .ph-stance{position:absolute;left:20px;bottom:16px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ph-muted)}
-.play-hud .ph-hint{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-size:12px;color:var(--ph-muted);opacity:0;transition:opacity .2s;text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-hint{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-size:12px;color:var(--ph-muted);opacity:0;transition:opacity .2s;text-shadow:var(--ph-text-shadow);
+  background:var(--ph-chip-bg, none);padding:6px 14px;border-radius:999px}
 .play-hud .ph-hint.on{opacity:1}
 .play-hud .ph-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ph-veil);pointer-events:auto;cursor:default}
 .play-hud .ph-card{min-width:280px;max-width:min(520px,80%);padding:24px 28px;border-radius:var(--ph-radius-l);background:var(--ph-surface);box-shadow:var(--ph-pop-l);
@@ -48,5 +50,7 @@
 .play-hud .ph-btn:hover{color:var(--ph-accent)}
 .play-hud .ph-btn:active{box-shadow:var(--ph-inset);transform:scale(.97)}
 .play-hud .ph-close{height:40px;align-self:center;padding:0 28px}
+.play-hud .ph-cursor.press{box-shadow:var(--ph-inset);scale:.88}
+.play-hud .ph-key.press{box-shadow:var(--ph-inset)}
 .play-hud .shake{animation:ph-shake .38s ease-in-out}
 @keyframes ph-shake{0%,100%{translate:0}20%{translate:-6px}40%{translate:6px}60%{translate:-4px}80%{translate:3px}}

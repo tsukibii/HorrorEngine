@@ -810,6 +810,9 @@ def scene_event(story, n):
 
 def check_flow(story, things, r):
     flow, scenes, stitches = story.get("flow", {}), story.get("scenes", {}), story.get("stitches", {})
+    th = story["game"].get("ui_theme")                 # the Play HUD's theme: a file in tools/director/play/ui/themes
+    if th is not None and not (Path(__file__).resolve().parent / "director" / "play" / "ui" / "themes" / f"{th}.css").is_file():
+        r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")
     if story["game"].get("start") not in flow:
         r.err(f"game.start {story['game'].get('start')!r} isn't a flow node")
     for nid, n in flow.items():
