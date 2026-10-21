@@ -1,10 +1,18 @@
 Kimodo base e1c219c99b4b94ba48be1fb6a1cbc64ecee4c954
 
 diff --git a/kimodo/demo/generation.py b/kimodo/demo/generation.py
-index 00282e6..49165fc 100644
+index 00282e6..743e9f5 100644
 --- a/kimodo/demo/generation.py
 +++ b/kimodo/demo/generation.py
-@@ -21,6 +21,38 @@ from .embedding_cache import CachedTextEncoder
+@@ -1,6 +1,7 @@
+ # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ # SPDX-License-Identifier: Apache-2.0
+ 
++import math
+ from collections import defaultdict
+ from typing import Optional
+ 
+@@ -21,6 +22,47 @@ from .embedding_cache import CachedTextEncoder
  from .state import ClientSession, ModelBundle
  
  
@@ -25,10 +33,19 @@ index 00282e6..49165fc 100644
 +    if root is not None and root.keyframes:
 +        info = root.get_constraint_info(device=device)
 +        path = {int(f): info["root_pos"][k] for k, f in enumerate(info["frame_idx"])}
-+        before = [f for f in path if f <= last_frame]
++        before = sorted(f for f in path if f <= last_frame)
 +        if before:
 +            start = path.get(frames[i], joints_pos[session.skeleton.root_idx])
-+            end = path[max(before)]
++            end = path[before[-1]]
++            if len(before) >= 3:                       # a path that turns: the copy turns with it, about its hips
++                d0, d1 = path[before[1]] - path[before[0]], path[before[-1]] - path[before[-2]]
++                turn = math.atan2(float(d1[0]), float(d1[2])) - math.atan2(float(d0[0]), float(d0[2]))
++                c, s_ = math.cos(turn), math.sin(turn)
++                Ry = torch.tensor([[c, 0.0, s_], [0.0, 1.0, 0.0], [-s_, 0.0, c]], dtype=joints_pos.dtype, device=joints_pos.device)
++                hips = joints_pos[session.skeleton.root_idx].clone()
++                hips[1] = 0
++                joints_pos = (joints_pos - hips) @ Ry.T + hips
++                joints_rot = Ry @ joints_rot
 +            joints_pos[:, 0] += end[0] - start[0]
 +            joints_pos[:, 2] += end[2] - start[2]
 +
@@ -43,7 +60,7 @@ index 00282e6..49165fc 100644
  def compute_model_constraints_lst(
      session: ClientSession,
      model_bundle: ModelBundle,
-@@ -38,7 +70,7 @@ def compute_model_constraints_lst(
+@@ -38,7 +80,7 @@ def compute_model_constraints_lst(
      skel_slice = model_skeleton.get_skel_slice(session.skeleton) if use_skel_slice else None
  
      dense_smooth_root_pos_2d = None
@@ -52,7 +69,7 @@ index 00282e6..49165fc 100644
          # get the full 2d root
          dense_smooth_root_pos_2d = session.constraints["2D Root"].get_constraint_info(device=device)["root_pos"][
              :, [0, 2]
-@@ -47,6 +79,8 @@ def compute_model_constraints_lst(
+@@ -47,6 +89,8 @@ def compute_model_constraints_lst(
      model_constraints = []
      for track_name, constraint in session.constraints.items():
          constraint_info = constraint.get_constraint_info(device=device)
@@ -75,10 +92,10 @@ index e158b99..766268d 100644
 +    armed_pose: Optional[dict] = None  # the pose window's pose: Full-Body clicks drop it instead of the generated one
 diff --git a/kimodo/demo/studio.py b/kimodo/demo/studio.py
 new file mode 100644
-index 0000000..95bf6ee
+index 0000000..5c610ab
 --- /dev/null
 +++ b/kimodo/demo/studio.py
-@@ -0,0 +1,280 @@
+@@ -0,0 +1,429 @@
 +"""HorrorStudio additions to the demo (kept in the studio repo as setup/kimodo_studio.patch).
 +
 +- Exports: In place (the root's travel taken out, its sway kept, for NPC and player rigs) and Drop last frame (a
@@ -116,12 +133,50 @@ index 0000000..95bf6ee
 +    return smooth - smooth[0]
 +
 +
-+def for_export(motion, fps: float, in_place: bool = False, drop_last: bool = False):
++def rest_globals(skeleton) -> torch.Tensor:
++    """The rest pose's global rotations [J, 3, 3] (identity local rotations through Kimodo's FK)."""
++    from kimodo.skeleton.kinematics import fk
++    dev = skeleton.neutral_joints.device
++    eye = torch.eye(3, device=dev).repeat(1, skeleton.nbjoints, 1, 1)
++    return fk(eye, torch.zeros(1, 3, device=dev), skeleton)[0][0]
++
++
++def mirror_joints(skeleton):
++    """Each joint's other-side joint (LeftHand <-> RightHand; the spine maps to itself)."""
++    names = list(skeleton.bone_order_names)
++    other = lambda n: "Right" + n[4:] if n.startswith("Left") else "Left" + n[5:] if n.startswith("Right") else n  # noqa: E731
++    return [names.index(other(n)) if other(n) in names else i for i, n in enumerate(names)]
++
++
++def mirror_motion(joints_pos, joints_rot, contacts, skeleton):
++    """Left and right swapped, across the plane the character starts in (x = 0, Kimodo's x is its left). Rotations
++    are reflected, then corrected for rest frames that aren't mirror images of each other, so FK agrees."""
++    perm = mirror_joints(skeleton)
++    M = torch.diag(torch.tensor([-1.0, 1.0, 1.0], device=joints_rot.device, dtype=joints_rot.dtype))
++    R0 = rest_globals(skeleton).to(joints_rot)
++    fix = (M @ R0 @ M).transpose(-1, -2) @ R0[perm]                    # per joint: mirrored rest -> other side's rest
++    rot = (M @ joints_rot @ M)[:, :] @ fix
++    out_rot = torch.empty_like(rot)
++    out_rot[:, perm] = rot
++    pos = joints_pos.clone()
++    pos[..., 0] = -pos[..., 0]
++    out_pos = torch.empty_like(pos)
++    out_pos[:, perm] = pos
++    if contacts is not None:                                           # [left ..., right ...]
++        h = contacts.shape[-1] // 2
++        contacts = torch.cat([contacts[..., h:], contacts[..., :h]], dim=-1)
++    return out_pos, out_rot, contacts
++
++
++def for_export(motion, fps: float, in_place: bool = False, drop_last: bool = False, mirror: bool = False):
 +    """The motion as the exporters read it (joints_pos, joints_rot, joints_local_rot, foot_contacts, skeleton)."""
-+    if not in_place and not drop_last:
++    if not in_place and not drop_last and not mirror:
 +        return motion
 +    pos = motion.joints_pos.detach().clone()
 +    rot, local, contacts = motion.joints_rot, motion.joints_local_rot, motion.foot_contacts
++    if mirror:
++        pos, rot, contacts = mirror_motion(pos, rot.detach(), contacts, motion.skeleton)
++        local = motion.skeleton.global_rots_to_local_rots(rot)
 +    if in_place:
 +        root = pos[:, motion.skeleton.root_idx][:, [0, 2]].cpu().numpy()
 +        off = torch.as_tensor(travel(root, fps), dtype=pos.dtype, device=pos.device)
@@ -154,6 +209,10 @@ index 0000000..95bf6ee
 +            top = (b["center"][0], b["center"][1] + b["size"][1] / 2 + 0.05, b["center"][2])
 +            st["labels"].append(scene.add_label(f"/stage/{b['id']}_label", text=b["label"], position=top,
 +                                                font_size_mode="screen", font_screen_scale=0.6, visible=labels))
++    for a in data.get("arcs", []):                                     # door swings: the leaf's sweep on the floor
++        pts = np.asarray(a["points"], dtype=np.float32)
++        segs = np.stack([pts[:-1], pts[1:]], axis=1)
++        st["boxes"].append((scene.add_line_segments(f"/stage/arc_{a['id']}", segs, colors=COLORS["door"], line_width=2.0), None))
 +    for m in data.get("marks", []):
 +        kind = m.get("kind", "mark")
 +        x, y, z = m["pos"]
@@ -193,6 +252,66 @@ index 0000000..95bf6ee
 +        h.remove()
 +    st["frame"].remove()
 +    st.clear()
++
++
++# --- Takes: a scorecard for samples, and the loop's seam ---------------------------------------------------------
++
++def foot_sliding(joints_pos: np.ndarray, contacts, skeleton) -> float:
++    """Centimetres the feet slide along the floor while they're down (both feet, the whole take)."""
++    if contacts is None:
++        return float("nan")
++    c = np.asarray(contacts) > 0.5
++    h = c.shape[-1] // 2
++    total = 0.0
++    for name, down in (("LeftToeBase", c[:, :h].any(1)), ("RightToeBase", c[:, h:].any(1))):
++        j = skeleton.bone_index.get(name)
++        if j is None:
++            continue
++        step = np.linalg.norm(np.diff(joints_pos[:, j][:, [0, 2]], axis=0), axis=1)
++        total += float((step * (down[1:] & down[:-1])).sum())
++    return total * 100
++
++
++def constraint_miss(joints_pos: np.ndarray, constraints: dict, skeleton) -> float:
++    """The worst miss (cm) of any constraint: Full-Body (mean over joints), End-Effectors (their joints), 2D Root."""
++    worst, T = 0.0, len(joints_pos)
++    for f, kf in getattr(constraints.get("Full-Body"), "keyframes", {}).items():
++        if f < T:
++            worst = max(worst, float(np.linalg.norm(joints_pos[f] - np.asarray(kf["joints_pos"]), axis=-1).mean()))
++    for f, kf in getattr(constraints.get("End-Effectors"), "keyframes", {}).items():
++        idx = [skeleton.bone_index[n] for n in kf.get("joint_names", []) if n in skeleton.bone_index]
++        if f < T and idx:
++            worst = max(worst, float(np.linalg.norm(joints_pos[f, idx] - np.asarray(kf["joints_pos"])[idx], axis=-1).max()))
++    for f, rp in getattr(constraints.get("2D Root"), "keyframes", {}).items():
++        if f < T:
++            r = joints_pos[f, skeleton.root_idx]
++            worst = max(worst, float(np.hypot(r[0] - rp[0], r[2] - rp[2])))
++    return worst * 100
++
++
++def loop_seam(joints_pos: np.ndarray, skeleton) -> tuple:
++    """The wrap of a loop: the pose gap (cm, joints relative to the root's floor position) and the speed jump
++    (cm per frame) from the last frame into the first, against an ordinary frame's step."""
++    rel = joints_pos.copy()
++    rel[..., [0, 2]] -= joints_pos[:, skeleton.root_idx][:, None][..., [0, 2]]
++    gap = float(np.linalg.norm(rel[-1] - rel[0], axis=-1).mean()) * 100
++    jump = float(np.linalg.norm((rel[1] - rel[0]) - (rel[-1] - rel[-2]), axis=-1).mean()) * 100
++    step = float(np.median(np.linalg.norm(np.diff(rel, axis=0), axis=-1).mean(-1))) * 100
++    return gap, jump, step
++
++
++def take_report(takes: list, constraints: dict, skeleton, loop: bool) -> str:
++    """A markdown scorecard: takes = [(label, joints_pos [T, J, 3] at the origin, foot contacts)]."""
++    rows, scores = [], []
++    for label, pos, contacts in takes:
++        slide, miss = foot_sliding(pos, contacts, skeleton), constraint_miss(pos, constraints, skeleton)
++        gap, jump, step = loop_seam(pos, skeleton) if loop else (0.0, 0.0, 0.0)
++        scores.append((0 if np.isnan(slide) else slide) / 10 + miss + (gap + jump * 5 if loop else 0))
++        rows.append([label, f"{slide:.0f}", f"{miss:.1f}" if constraints else "-", f"{gap:.1f}/{jump:.2f}" if loop else "-"])
++    best = int(np.argmin(scores)) if scores else -1
++    head = "| | Slide | Miss | Seam |\n|---|---|---|---|\n"
++    body = "".join(f"| {'★' if i == best else ''}{r[0].replace('Take ', '')} | {r[1]} | {r[2]} | {r[3]} |\n" for i, r in enumerate(rows))
++    return head + body + "\ncm: feet sliding while planted, the worst constraint miss, the loop's gap/jump at the wrap."
 +
 +
 +# --- Draw Path: waypoints clicked on the floor, paced into 2D Root keyframes ---------------------------------------
@@ -303,10 +422,10 @@ index 0000000..95bf6ee
 +                from urllib.parse import parse_qs, urlparse
 +                u = urlparse(self.path)
 +                q = {k: v[0] for k, v in parse_qs(u.query).items()}
-+                return u.path.strip("/"), bridge.hooks.get(q.get("c", ""))
++                return u.path.strip("/"), bridge.hooks.get(q.get("c", "")), q
 +
 +            def do_GET(self):
-+                path, hooks = self.route()
++                path, hooks, q = self.route()
 +                if path in ("pose.html", "pose.js"):
 +                    f = web / path
 +                    return self.reply(200, f.read_bytes(), "text/html" if path.endswith("html") else "text/javascript")
@@ -318,23 +437,23 @@ index 0000000..95bf6ee
 +                    return self.reply(404, {"error": "three.js not found (set KIMODO_THREE_DIR)"})
 +                if hooks is None:
 +                    return self.reply(404, {"error": "this demo tab is gone: reopen the pose window"})
-+                if path in ("api/layout", "api/frame"):
++                key = path[4:].replace("/", "_") if path.startswith("api/") else ""
++                if key in hooks:                       # layout, frame, library, library_load
 +                    try:
-+                        return self.reply(200, hooks[path[4:]]())
++                        return self.reply(200, hooks[key](q))
 +                    except Exception as e:
-+                        import traceback
-+                        traceback.print_exc()
 +                        return self.reply(409, {"error": str(e)})
 +                self.reply(404, {"error": path})
 +
 +            def do_POST(self):
-+                path, hooks = self.route()
++                path, hooks, _ = self.route()
 +                if hooks is None:
 +                    return self.reply(404, {"error": "this demo tab is gone: reopen the pose window"})
 +                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
-+                if path in ("api/arm", "api/drop"):
++                key = path[4:].replace("/", "_") if path.startswith("api/") else ""
++                if key in ("arm", "drop", "library_save"):
 +                    try:
-+                        return self.reply(200, {"ok": True, "message": hooks[path[4:]](body)})
++                        return self.reply(200, {"ok": True, "message": hooks[key](body)})
 +                    except Exception as e:
 +                        return self.reply(400, {"ok": False, "message": str(e)})
 +                self.reply(404, {"error": path})
@@ -344,6 +463,53 @@ index 0000000..95bf6ee
 +
 +    def url(self, client_id) -> str:
 +        return f"http://127.0.0.1:{self.port}/pose.html?c={client_id}"
++
++
++def studio_root():
++    """The HorrorStudio project this demo was started from (tools/kimodo.py sets it), or None."""
++    from pathlib import Path
++    root = os.environ.get("KIMODO_STUDIO_ROOT")
++    return Path(root) if root and (Path(root) / "tools").is_dir() else None
++
++
++def studio_tool(name: str):
++    """A module from the studio's tools/, loaded by its path (tools/ isn't put on sys.path: its kimodo.py would hide
++    the kimodo package)."""
++    import importlib.util
++    root = studio_root()
++    if root is None:
++        raise RuntimeError("not started from the studio (python tools/kimodo.py demo)")
++    spec = importlib.util.spec_from_file_location(f"studio_{name}", root / "tools" / f"{name}.py")
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++def studio_games() -> dict:
++    """Each game's clips as 'scene:clip' (who), for Send to Studio."""
++    root = studio_root()
++    out = {}
++    for story in sorted((root / "Content" / "Games").glob("*/story.json")) if root else []:
++        try:
++            data = json.loads(story.read_text(encoding="utf-8"))
++        except Exception:
++            continue
++        clips = []
++        for sid, sc in data.get("scenes", {}).items():
++            for ver in ([sc] if not sc.get("variants") else list(sc["variants"].values())):
++                for c in ver.get("clips", []):
++                    label = f"{sid}:{c['id']}" + (f" ({c['who']})" if c.get("who") else "")
++                    if label not in clips:
++                        clips.append(label)
++        out[story.parent.name] = clips
++    return out
++
++
++def studio_presets() -> list:
++    """The studio's horror prompt presets (Content/Studio/kimodo_prompts.json), or none."""
++    root = studio_root()
++    f = root / "Content" / "Studio" / "kimodo_prompts.json" if root else None
++    return json.loads(f.read_text(encoding="utf-8")).get("presets", []) if f and f.exists() else []
 +
 +
 +def viser_client_dir() -> str:
@@ -361,10 +527,10 @@ index 0000000..95bf6ee
 +    return _bridge
 diff --git a/kimodo/demo/studio_web/pose.html b/kimodo/demo/studio_web/pose.html
 new file mode 100644
-index 0000000..993dd79
+index 0000000..70cbc20
 --- /dev/null
 +++ b/kimodo/demo/studio_web/pose.html
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,74 @@
 +<!doctype html>
 +<html lang="en">
 +<head>
@@ -393,6 +559,19 @@ index 0000000..993dd79
 +  label { display: flex; align-items: center; gap: 5px; color: var(--dim); cursor: pointer; white-space: nowrap; }
 +  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
 +  .grow { flex: 1; }
++  #lib { position: absolute; left: 10px; bottom: 60px; width: 290px; max-height: 70%; display: none; flex-direction: column;
++         background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.45); }
++  #lib.open { display: flex; }
++  #lib header { padding: 9px 11px 6px; color: var(--dim); font-size: 12px; display: flex; justify-content: space-between; }
++  #lib input { margin: 0 10px 6px; height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--line); background: #0f1216; color: var(--text); font: inherit; }
++  #libList { overflow: auto; padding: 0 6px 6px; min-height: 60px; }
++  .pose { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
++  .pose:hover { background: #222831; }
++  .pose.sel { background: #23314d; }
++  .tag { font-size: 10px; padding: 1px 6px; border-radius: 9px; border: 1px solid var(--line); color: var(--dim); }
++  .tag.kimodo { color: #9ec0ff; border-color: #34528a; }
++  #lib footer { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--line); }
++  #lib footer input { margin: 0; flex: 1; min-width: 0; }
 +  #toast { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); background: #20242b; border: 1px solid var(--line);
 +           padding: 7px 12px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
 +  #toast.show { opacity: 1; }
@@ -400,12 +579,13 @@ index 0000000..993dd79
 +</head>
 +<body>
 +<div id="view"></div>
-+<div id="hint">Drag a dot to pose · click a hand, foot or the head to rotate it · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
++<div id="hint">Drag a dot to pose (Shift sticks a hand or foot to the stage) · click a hand, foot or the head to rotate it · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
 +<div id="legend"></div>
 +<div id="bar">
 +  <button id="load" title="The generated pose at the playhead">Load frame</button>
 +  <button id="reset" class="ghost" title="Back to the pose this window opened with">Reset</button>
 +  <button id="undo" class="ghost" title="Ctrl+Z">Undo</button>
++  <button id="libBtn" title="The pose library, shared with the director's desk">Poses ▾</button>
 +  <div class="sep"></div>
 +  <button id="mirror" title="Swap left and right">Mirror</button>
 +  <button id="turnL" title="Turn the body 15° left">Turn ◂</button>
@@ -415,16 +595,22 @@ index 0000000..993dd79
 +  <button id="drop" title="Put this pose on the Full-Body track at the playhead">Drop at playhead</button>
 +  <button id="arm" class="primary" title="Close, then every click on the Full-Body track drops this pose">Arm ▸</button>
 +</div>
++<div id="lib">
++  <header><span>Pose library · shared with the desk</span><span id="libCount"></span></header>
++  <input id="libFilter" placeholder="Filter…" autocomplete="off">
++  <div id="libList"></div>
++  <footer><button id="libLoad" class="primary" disabled>Load</button><input id="libName" placeholder="name_to_save" autocomplete="off"><button id="libSave">Save</button></footer>
++</div>
 +<div id="toast"></div>
 +<script type="module" src="pose.js"></script>
 +</body>
 +</html>
 diff --git a/kimodo/demo/studio_web/pose.js b/kimodo/demo/studio_web/pose.js
 new file mode 100644
-index 0000000..11c438c
+index 0000000..2aa1cd3
 --- /dev/null
 +++ b/kimodo/demo/studio_web/pose.js
-@@ -0,0 +1,356 @@
+@@ -0,0 +1,433 @@
 +// The pose window: an OpenPose-style figure over Kimodo's full skeleton. Dots are handles: hands and feet move with
 +// two-bone IK (elbows and knees steer the bend), the hips move the body (feet pinned or not), the neck bends the spine,
 +// the top of the head tilts the neck. Rotations are kept relative to each parent's global one, so the pose goes back
@@ -432,7 +618,7 @@ index 0000000..11c438c
 +import * as THREE from "./three.module.min.js";
 +
 +const C = new URLSearchParams(location.search).get("c");
-+const api = (path, body) => fetch(`${path}?c=${C}`, body === undefined ? {} : {
++const api = (path, body, extra = "") => fetch(`${path}?c=${C}${extra}`, body === undefined ? {} : {
 +  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
 +
 +const L = await api("api/layout");
@@ -566,6 +752,21 @@ index 0000000..11c438c
 +    const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.35 }));
 +    for (const o of [m, e]) { o.position.set(...b.center); o.rotation.set(0, THREE.MathUtils.degToRad(b.yaw || 0), 0); stage.add(o); }
 +  }
++  for (const a of st.arcs || []) {                    // door swings
++    const g = new THREE.BufferGeometry().setFromPoints(a.points.map((p) => new THREE.Vector3(...p)));
++    stage.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: KIND.door, transparent: true, opacity: 0.7 })));
++  }
++}
++// Shift-drag a hand or foot: it sticks to the stage surface under the pointer (a touch, a grip, a foot on a step)
++const snapDot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd23c, depthTest: false }));
++snapDot.renderOrder = 12; snapDot.visible = false; scene.add(snapDot);
++function stageHit() {
++  stage.updateMatrixWorld();
++  const hit = ray.intersectObjects(stage.children.filter((o) => o.isMesh), false)[0];
++  if (!hit) return null;
++  const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
++  if (n.dot(ray.ray.direction) > 0) n.negate();       // the side facing the camera
++  return hit.point.clone().addScaledVector(n, 0.025);  // the palm or sole on it, not in it
 +}
 +
 +const bones = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x59606b }));
@@ -713,8 +914,14 @@ index 0000000..11c438c
 +    const r = el.getBoundingClientRect();
 +    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
 +    ray.setFromCamera(ndc, camera);
-+    const hit = ray.ray.intersectPlane(dragging.plane, new THREE.Vector3());
-+    if (hit) { solve(dragging.dot.userData.name, hit, dragging.feet); redraw(); }
++    let hit = ray.ray.intersectPlane(dragging.plane, new THREE.Vector3());
++    const name = dragging.dot.userData.name;
++    snapDot.visible = false;
++    if (e.shiftKey && HANDLES[name] === "ik") {
++      const onStage = stageHit();
++      if (onStage) { hit = onStage; snapDot.position.copy(onStage); snapDot.visible = true; }
++    }
++    if (hit) { solve(name, hit, dragging.feet); redraw(); }
 +  } else if (orbiting) {
 +    const dx = e.clientX - orbiting.x, dy = e.clientY - orbiting.y;
 +    orbiting.x = e.clientX; orbiting.y = e.clientY;
@@ -740,7 +947,7 @@ index 0000000..11c438c
 +      undo.pop();                                    // nothing changed
 +    } else if (orbiting) selected = null;
 +  }
-+  dragging = null; orbiting = null; downAt = null;
++  dragging = null; orbiting = null; downAt = null; snapDot.visible = false;
 +  el.className = hover ? "over" : ""; redraw();
 +});
 +el.addEventListener("wheel", (e) => { e.preventDefault(); orbit.r = THREE.MathUtils.clamp(orbit.r * Math.exp(e.deltaY * 0.001), 0.6, 30); placeCamera(); }, { passive: false });
@@ -775,14 +982,70 @@ index 0000000..11c438c
 +const pin = document.getElementById("pin");
 +addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); if (undo.length) restore(undo.pop()); } });
 +
++// ---- the pose library (Content/Studio: kimodo_poses.json exact, poses.json the desk's) ----
++const lib = document.getElementById("lib"), libList = document.getElementById("libList"), libFilter = document.getElementById("libFilter");
++const libName = document.getElementById("libName"), libLoad = document.getElementById("libLoad");
++let poses = [], chosen = null;
++function heading() {                                // the body's yaw (facing +Z is 0) and a quaternion for it
++  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(G[ROOT].clone().multiply(REST[ROOT].clone().invert()));
++  return new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(fwd.x, fwd.z));
++}
++function listPoses() {
++  const f = libFilter.value.trim().toLowerCase();
++  libList.innerHTML = "";
++  for (const p of poses.filter((p) => p.name.toLowerCase().includes(f))) {
++    const row = document.createElement("div");
++    row.className = "pose" + (p.name === chosen ? " sel" : "");
++    row.innerHTML = `<span>${p.name}</span><span class="tag ${p.src}">${p.src}</span>`;
++    row.onclick = () => { chosen = p.name; libLoad.disabled = false; libName.value = p.src === "kimodo" ? p.name : libName.value; listPoses(); };
++    row.ondblclick = () => { chosen = p.name; loadChosen(); };
++    libList.appendChild(row);
++  }
++  document.getElementById("libCount").textContent = poses.length + " poses";
++}
++async function openLib() {
++  lib.classList.toggle("open");
++  if (!lib.classList.contains("open")) return;
++  const r = await api("api/library");
++  if (r.error) { toast(r.error); lib.classList.remove("open"); return; }
++  poses = r.poses; listPoses(); libFilter.focus();
++}
++async function loadChosen() {                         // the library pose, where and facing the way the figure is now
++  if (!chosen) return;
++  libLoad.disabled = true; libLoad.textContent = "…";
++  const r = await api("api/library/load", undefined, `&name=${encodeURIComponent(chosen)}`);
++  libLoad.disabled = false; libLoad.textContent = "Load";
++  if (r.error) { toast(r.error); return; }
++  push();
++  const yaw = heading(), at = root.clone(), s = fromQuats(r.quats, r.root);
++  E = s.E; E[ROOT] = yaw.clone().multiply(E[ROOT]);
++  root.set(at.x, s.root.y, at.z); fk(); redraw();
++  toast(`Loaded ${chosen}`);
++}
++async function savePose() {                           // in character space: over the origin, facing +Z
++  const name = libName.value.trim();
++  if (!name) { libName.focus(); return; }
++  const inv = heading().invert();
++  const qs = E.map((q, j) => (j === ROOT ? inv.clone().multiply(q) : q)).map((q) => [q.x, q.y, q.z, q.w]);
++  const r = await api("api/library/save", { name, quats: qs, root: [0, root.y, 0] });
++  toast(r.message || "Failed");
++  if (r.ok) { const l = await api("api/library"); poses = l.poses || poses; chosen = name; listPoses(); }
++}
++document.getElementById("libBtn").onclick = openLib;
++libFilter.oninput = listPoses;
++libLoad.onclick = loadChosen;
++document.getElementById("libSave").onclick = savePose;
++libName.addEventListener("keydown", (e) => { if (e.key === "Enter") savePose(); });
++addEventListener("keydown", (e) => { if (e.key === "Escape") lib.classList.remove("open"); });
++
 +const first = await api("api/frame");
 +drawStage(first.stage);
 +resize();
 +useFrame(first, first.armed || first.current);
 +renderer.setAnimationLoop(() => renderer.render(scene, camera));
-+window.__pose = { screenOf: (n) => toScreen(P[ix[n]]), ringPoint: (k) => toScreen(P[ix[SPIN[selected][0]]].clone().addScaledVector(spinAxes(selected)[(k + 1) % 3], rings[0].scale.x)), selected: () => selected, select: (n) => { selected = n; redraw(); }, spin: (k, deg) => { const j = ix[SPIN[selected][0]]; rotateGlobal(j, new THREE.Quaternion().setFromAxisAngle(spinAxes(selected)[k], THREE.MathUtils.degToRad(deg))); redraw(); }, G, payload, solve: (n, t) => { solve(n, new THREE.Vector3(...t), { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() }); redraw(); return P[ix[n]].toArray(); }, mirror, P, ix };
++window.__pose = { lib: { openLib, loadChosen, savePose, choose: (n) => { chosen = n; }, name: (n) => { libName.value = n; } }, screenOf: (n) => toScreen(P[ix[n]]), ringPoint: (k) => toScreen(P[ix[SPIN[selected][0]]].clone().addScaledVector(spinAxes(selected)[(k + 1) % 3], rings[0].scale.x)), selected: () => selected, select: (n) => { selected = n; redraw(); }, spin: (k, deg) => { const j = ix[SPIN[selected][0]]; rotateGlobal(j, new THREE.Quaternion().setFromAxisAngle(spinAxes(selected)[k], THREE.MathUtils.degToRad(deg))); redraw(); }, G, payload, solve: (n, t) => { solve(n, new THREE.Vector3(...t), { LeftFoot: P[ix.LeftFoot].clone(), RightFoot: P[ix.RightFoot].clone() }); redraw(); return P[ix[n]].toArray(); }, mirror, P, ix };
 diff --git a/kimodo/demo/ui.py b/kimodo/demo/ui.py
-index 7d9f5e3..a78e8b2 100644
+index 7d9f5e3..e90fbc2 100644
 --- a/kimodo/demo/ui.py
 +++ b/kimodo/demo/ui.py
 @@ -25,7 +25,7 @@ import torch
@@ -794,10 +1057,42 @@ index 7d9f5e3..a78e8b2 100644
  from .config import (
      DEFAULT_CUR_DURATION,
      DEMO_UI_INSTRUCTIONS_TAB_MD,
-@@ -447,6 +447,267 @@ def create_gui(
+@@ -350,6 +350,30 @@ def create_gui(
+                 set_new_duration(client_id, cur_duration)
+                 update_duration_gui(cur_duration)
+ 
++            presets = studio.studio_presets()
++            gui_preset_dropdown = client.gui.add_dropdown(
++                "Preset",
++                ("—",) + tuple(p["id"] for p in presets),
++                hint="Horror prompts measured on Kimodo (Content/Studio/kimodo_prompts.json): sets the first prompt, and its length when it's the only one.",
++                visible=bool(presets),
++            )
++            gui_preset_info = client.gui.add_markdown("", visible=bool(presets))
++
++            @gui_preset_dropdown.on_update
++            def _(event: viser.GuiEvent) -> None:
++                p = next((p for p in presets if p["id"] == gui_preset_dropdown.value), None)
++                prompts = sorted(timeline._prompts.values(), key=lambda x: x.start_frame)
++                if p is None or not prompts:
++                    gui_preset_info.content = ""
++                    return
++                gui_preset_info.content = "  \n".join(
++                    [f"*{p['prompt']}* · {p['secs']} s"] + [p[k] for k in ("checked", "tip") if p.get(k)]
++                )
++                first, session = prompts[0], demo.client_sessions[client_id]
++                end = first.start_frame + int(round(p["secs"] * session.model_fps)) if len(prompts) == 1 else None
++                timeline.update_prompt(first.uuid, text=p["prompt"], end_frame=end)
++                update_duration_auto()
++
+             gui_num_samples_slider = client.gui.add_slider(
+                 "Num Samples",
+                 min=1,
+@@ -447,6 +471,353 @@ def create_gui(
                  )
  
              gui_generate_button = client.gui.add_button("Generate", color="green")
++            gui_takes_info = client.gui.add_markdown("")
 +        with client.gui.add_folder("Stage", expand_by_default=False):
 +            gui_stage_path_text = client.gui.add_text(
 +                "Stage File",
@@ -811,6 +1106,14 @@ index 7d9f5e3..a78e8b2 100644
 +            gui_stage_z_slider = client.gui.add_slider("Move Z", min=-10.0, max=10.0, step=0.05, initial_value=0.0)
 +            gui_stage_turn_slider = client.gui.add_slider("Turn", min=-180.0, max=180.0, step=5.0, initial_value=0.0)
 +            gui_stage_labels_checkbox = client.gui.add_checkbox("Labels", initial_value=True)
++            gui_stage_view_dropdown = client.gui.add_dropdown(
++                "View From", ("(load a stage)",), hint="A player mark: the camera goes to its eye, with the game's lens."
++            )
++            gui_stage_eye_button = client.gui.add_button("Player's Eye", disabled=True)
++            gui_stage_follow_checkbox = client.gui.add_checkbox(
++                "Keep Aiming", initial_value=True, hint="While in the player's eye, keep looking at the character as it plays."
++            )
++            gui_stage_free_button = client.gui.add_button("Free Camera", disabled=True)
 +            gui_stage_info = client.gui.add_markdown("")
 +
 +        stage_state: dict = {}
@@ -833,6 +1136,9 @@ index 7d9f5e3..a78e8b2 100644
 +                )
 +                gui_stage_clear_button.disabled = False
 +                gui_stage_info.content = stage_state["data"].get("info", "")
++                eyes = [m["id"] for m in stage_state["data"].get("marks", []) if m.get("eye")]
++                gui_stage_view_dropdown.options = tuple(eyes) or ("(no player marks)",)
++                gui_stage_eye_button.disabled = not eyes
 +            except Exception as e:
 +                event.client.add_notification(
 +                    title="Failed to load the stage!", body=str(e), auto_close_seconds=10.0, color="red"
@@ -844,6 +1150,65 @@ index 7d9f5e3..a78e8b2 100644
 +                studio.clear_stage(stage_state)
 +            gui_stage_clear_button.disabled = True
 +            gui_stage_info.content = ""
++
++        eye_view: dict = {}
++
++        def stage_to_world(p):
++            th = math.radians(gui_stage_turn_slider.value)
++            x, y, z = p
++            return np.array([x * math.cos(th) + z * math.sin(th) + gui_stage_x_slider.value, y,
++                             -x * math.sin(th) + z * math.cos(th) + gui_stage_z_slider.value])
++
++        def aim_eye(session: ClientSession) -> None:
++            """The camera at the chosen player mark's eye, looking at the character's head at the playhead."""
++            mark = next((m for m in stage_state.get("data", {}).get("marks", []) if m["id"] == gui_stage_view_dropdown.value), None)
++            if mark is None or not session.motions:
++                return
++            motion = list(session.motions.values())[0]
++            frame = int(min(session.frame_idx, motion.length - 1))
++            head = motion.joints_pos[frame, session.skeleton.bone_index["Head"]].detach().cpu().numpy()
++            eye = stage_to_world([mark["pos"][0], mark["eye"], mark["pos"][2]])
++            fov_h = math.radians(float(stage_state["data"].get("fov", 90)))
++            aspect = float(getattr(client.camera, "aspect", 16 / 9) or 16 / 9)
++            client.camera.up_direction = (0.0, 1.0, 0.0)
++            client.camera.position = tuple(eye)
++            client.camera.look_at = tuple(head)
++            client.camera.fov = 2 * math.atan(math.tan(fov_h / 2) / aspect)
++            eye_view["frame"] = frame
++
++        def follow_eye() -> None:
++            import time
++            while eye_view.get("on") and demo.client_active(client_id):
++                session = demo.client_sessions.get(client_id)
++                if session is not None and gui_stage_follow_checkbox.value and session.frame_idx != eye_view.get("frame"):
++                    aim_eye(session)
++                time.sleep(0.05)
++
++        @gui_stage_eye_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            session = get_active_session(event.client)
++            if session is None or not stage_state:
++                return
++            if not eye_view.get("on"):  # remember the free camera once
++                eye_view.update(on=True, saved=(tuple(client.camera.position), tuple(client.camera.look_at), client.camera.fov))
++                import threading
++                threading.Thread(target=follow_eye, daemon=True).start()
++            aim_eye(session)
++            gui_stage_free_button.disabled = False
++
++        @gui_stage_view_dropdown.on_update
++        def _(event: viser.GuiEvent) -> None:
++            session = get_active_session(event.client)
++            if session is not None and eye_view.get("on"):
++                aim_eye(session)
++
++        @gui_stage_free_button.on_click
++        def _(event: viser.GuiEvent) -> None:
++            if eye_view.get("on"):
++                position, look_at, fov = eye_view["saved"]
++                eye_view.clear()
++                client.camera.position, client.camera.look_at, client.camera.fov = position, look_at, fov
++            gui_stage_free_button.disabled = True
 +
 +        @gui_stage_opacity_slider.on_update
 +        def _(event: viser.GuiEvent) -> None:
@@ -972,10 +1337,10 @@ index 7d9f5e3..a78e8b2 100644
 +                raise RuntimeError("this demo tab is gone")
 +            return session
 +
-+        def pose_layout() -> dict:
++        def pose_layout(q=None) -> dict:
 +            return {**studio.skeleton_layout(pose_session().skeleton), "fps": float(pose_session().model_fps)}
 +
-+        def pose_frame() -> dict:
++        def pose_frame(q=None) -> dict:
 +            session = pose_session()
 +            motion = list(session.motions.values())[0]
 +            frame = int(min(session.frame_idx, motion.length - 1))
@@ -1025,6 +1390,19 @@ index 7d9f5e3..a78e8b2 100644
 +                    constraint.add_keyframe(kid, frame, pose["joints_pos"], pose["joints_rot"])
 +            apply_constraint_overlay_visibility(session)
 +
++        def pose_library(q=None) -> dict:
++            return {"poses": studio.studio_tool("kimodo_poses").listing()}
++
++        def pose_library_load(q) -> dict:
++            return studio.studio_tool("kimodo_poses").load(q.get("name", ""))
++
++        def pose_library_save(body: dict) -> str:
++            layout = studio.skeleton_layout(pose_session().skeleton)
++            err = studio.studio_tool("kimodo_poses").save(
++                body.get("name", "").strip(), body["quats"], body["root"], layout["offsets"], layout["parents"]
++            )
++            return f"Saved {body['name']}" + (f" (the desk's copy is within {err}°)" if err is not None else "")
++
 +        def pose_drop(body: dict) -> str:
 +            pose_arm(body)
 +            session = pose_session()
@@ -1036,7 +1414,9 @@ index 7d9f5e3..a78e8b2 100644
 +            if get_active_session(event.client) is None:
 +                return
 +            bridge = studio.pose_bridge()
-+            bridge.hooks[str(client_id)] = {"layout": pose_layout, "frame": pose_frame, "arm": pose_arm, "drop": pose_drop}
++            bridge.hooks[str(client_id)] = {"layout": pose_layout, "frame": pose_frame, "arm": pose_arm, "drop": pose_drop,
++                                             "library": pose_library, "library_load": pose_library_load,
++                                             "library_save": pose_library_save}
 +            with event.client.gui.add_modal("Pose", size="90%", show_close_button=True) as modal:
 +                event.client.gui.add_html(
 +                    f'<iframe src="{bridge.url(client_id)}" style="width:100%;height:68vh;min-height:480px;border:0;'
@@ -1062,7 +1442,7 @@ index 7d9f5e3..a78e8b2 100644
          with client.gui.add_folder("Constraints", expand_by_default=False):
              gui_gizmo_space_dropdown = client.gui.add_dropdown(
                  "Gizmo space",
-@@ -475,6 +736,12 @@ def create_gui(
+@@ -475,6 +846,12 @@ def create_gui(
                      visible=True,
                  )
  
@@ -1075,7 +1455,7 @@ index 7d9f5e3..a78e8b2 100644
              gui_show_only_current_constraint_checkbox = client.gui.add_checkbox(
                  "Show only Current",
                  initial_value=False,
-@@ -772,9 +1039,17 @@ def create_gui(
+@@ -772,9 +1149,18 @@ def create_gui(
                      return name + ext
                  return name
  
@@ -1086,6 +1466,7 @@ index 7d9f5e3..a78e8b2 100644
 +                    float(session.model_fps),
 +                    in_place=gui_export_in_place_checkbox.value,
 +                    drop_last=gui_export_drop_last_checkbox.value,
++                    mirror=gui_export_mirror_checkbox.value,
 +                )
 +
 +            def save_motion(client, save_path, fmt, raw=False):
@@ -1095,7 +1476,7 @@ index 7d9f5e3..a78e8b2 100644
                  motion_data = _motion_to_numpy_dict(motion)
  
                  if fmt == "BVH":
-@@ -987,6 +1262,7 @@ def create_gui(
+@@ -987,6 +1373,7 @@ def create_gui(
  
              def save_constraints(client, save_path):
                  session = demo.client_sessions[client.client_id]
@@ -1103,7 +1484,7 @@ index 7d9f5e3..a78e8b2 100644
                  # Keep save behavior aligned with demo frame convention:
                  # valid frame indices are [0, max_frame_idx], so count is +1.
                  num_frames = session.max_frame_idx + 1
-@@ -1268,6 +1544,16 @@ def create_gui(
+@@ -1268,10 +1655,72 @@ def create_gui(
                      hint="For BVH export, use the standard T-pose rest skeleton.",
                      visible=False,
                  )
@@ -1111,6 +1492,11 @@ index 7d9f5e3..a78e8b2 100644
 +                    "In place",
 +                    initial_value=False,
 +                    hint="Take out the root's travel (its sway stays): a walk that plays on the spot, for NPC and player rigs. Also used by Save Motion.",
++                )
++                gui_export_mirror_checkbox = client.gui.add_checkbox(
++                    "Mirror",
++                    initial_value=False,
++                    hint="Left and right swapped (a left-handed copy, for NPC variety). Also used by Save Motion and Send to Studio.",
 +                )
 +                gui_export_drop_last_checkbox = client.gui.add_checkbox(
 +                    "Drop last frame",
@@ -1120,7 +1506,58 @@ index 7d9f5e3..a78e8b2 100644
                  gui_download_button = client.gui.add_button(
                      "Download",
                      hint="Download the current motion (format + name above).",
-@@ -1561,7 +1847,7 @@ def create_gui(
+                 )
++            studio_games = studio.studio_games()
++            with client.gui.add_folder("Send to Studio", expand_by_default=False, visible=bool(studio_games)):
++                gui_send_game_dropdown = client.gui.add_dropdown("Game", tuple(studio_games) or ("-",))
++                gui_send_name_text = client.gui.add_text(
++                    "Name", initial_value="", hint="The motion's file: Content/Games/<Game>/Motion/<Name>.json"
++                )
++                gui_send_clip_dropdown = client.gui.add_dropdown(
++                    "Clip", ("(none)",) + tuple(studio_games.get(gui_send_game_dropdown.value, ())),
++                    hint="The clip that plays it (its body.file); (none) only writes the file.",
++                )
++                gui_send_button = client.gui.add_button(
++                    "Send", hint="The motion as exported (In place, Drop last frame) into the game, where the desk plays it."
++                )
++
++            @gui_send_game_dropdown.on_update
++            def _(event: viser.GuiEvent) -> None:
++                gui_send_clip_dropdown.options = ("(none)",) + tuple(studio.studio_games().get(gui_send_game_dropdown.value, ()))
++                gui_send_clip_dropdown.value = "(none)"
++
++            @gui_send_button.on_click
++            def _(event: viser.GuiEvent) -> None:
++                import re
++                import subprocess
++                import sys
++
++                session = get_active_session(event.client)
++                if session is None:
++                    return
++                name = re.sub(r"[^A-Za-z0-9_]+", "_", gui_send_name_text.value.strip()).strip("_")
++                if not name:
++                    event.client.add_notification(title="Name the motion first", body="", auto_close_seconds=5.0, color="red")
++                    return
++                root, game = studio.studio_root(), gui_send_game_dropdown.value
++                out = root / "Saved" / "Kimodo" / f"send_{name}.npz"
++                out.parent.mkdir(parents=True, exist_ok=True)
++                out.write_bytes(_motion_to_npz_bytes(_export_motion(session)))
++                cmd = [sys.executable, str(root / "tools" / "motion.py"), "--game", game, "import", str(out), name]
++                if gui_send_clip_dropdown.value != "(none)":
++                    cmd += ["--clip", gui_send_clip_dropdown.value.split(" ")[0]]
++                r = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
++                lines = (r.stdout + r.stderr).strip().splitlines()
++                event.client.add_notification(
++                    title="Sent to the studio" if r.returncode == 0 else "Couldn't send it",
++                    body=(lines[-1] if lines else "").replace(str(root) + "/", "").replace(str(root) + "\\", ""),
++                    auto_close_seconds=8.0,
++                    color="green" if r.returncode == 0 else "red",
++                )
+ 
+             def _download_bytes_to_browser(
+                 event_client: viser.ClientHandle,
+@@ -1561,7 +2010,7 @@ def create_gui(
                  session = get_active_session(event_client)
                  if session is None:
                      return
@@ -1129,7 +1566,7 @@ index 7d9f5e3..a78e8b2 100644
                  try:
                      fmt = str(gui_download_format_dropdown.value).upper()
                      raw_name = str(gui_download_name_text.value)
-@@ -1640,7 +1926,7 @@ def create_gui(
+@@ -1640,7 +2089,7 @@ def create_gui(
                  save_constraints(event_client, constraint_path)
                  # save the motion
                  motion_path = os.path.join(save_dir, "motion.npz")
@@ -1138,7 +1575,7 @@ index 7d9f5e3..a78e8b2 100644
                  # save the gui metadata
                  meta_path = os.path.join(save_dir, "meta.json")
                  prompt_texts = []
-@@ -2376,6 +2662,11 @@ def create_gui(
+@@ -2376,6 +2825,11 @@ def create_gui(
              if constraint_type in ["Full-Body", "End-Effectors"]:
                  constraint_kwargs["joints_pos"] = motion.get_joints_pos(start_frame_idx, end_frame_idx)
                  constraint_kwargs["joints_rot"] = motion.get_joints_rot(start_frame_idx, end_frame_idx)
@@ -1150,7 +1587,7 @@ index 7d9f5e3..a78e8b2 100644
                  if constraint_type == "End-Effectors":
                      constraint_kwargs["joint_names"] = joint_names
                      constraint_kwargs["end_effector_type"] = end_effector_type
-@@ -2820,6 +3111,7 @@ def create_gui(
+@@ -2820,6 +3274,7 @@ def create_gui(
              )
              gui_generate_button.disabled = True
              client.timeline.disable_constraints()
@@ -1158,7 +1595,28 @@ index 7d9f5e3..a78e8b2 100644
  
              num_samples = gui_num_samples_slider.value
              timeline = session.client.timeline
-@@ -3214,6 +3506,10 @@ def create_gui(
+@@ -2868,6 +3323,20 @@ def create_gui(
+                 if session.frame_idx > session.max_frame_idx:
+                     session.frame_idx = session.max_frame_idx
+ 
++                try:  # the scorecard: each take at the origin (samples are spread 1 m apart along x)
++                    takes, n = [], len(session.motions)
++                    for i, m in enumerate(session.motions.values()):
++                        pos = m.joints_pos.detach().cpu().numpy().copy()
++                        pos[..., 0] -= (i - n // 2) * 1.0
++                        fc = m.foot_contacts.detach().cpu().numpy() if m.foot_contacts is not None else None
++                        takes.append((f"Take {i + 1}", pos, fc))
++                    used = {k: c for k, c in session.constraints.items() if getattr(c, "keyframes", None)}
++                    gui_takes_info.content = studio.take_report(takes, used, session.skeleton, gui_loop_checkbox.value) + (
++                        "\nClick a character to keep that take." if n > 1 else ""
++                    )
++                except Exception as e:
++                    gui_takes_info.content = f"(no scorecard: {e})"
++
+                 if num_samples > 1:
+                     # add mesh selector to choose character to commit
+                     def commit_motion(event: viser.GuiEvent) -> None:
+@@ -3214,6 +3683,10 @@ def create_gui(
                  play_pause_button_callback(session)
              return
  

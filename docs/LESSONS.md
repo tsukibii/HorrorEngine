@@ -59,3 +59,6 @@ the fix.
   `diff.mnemonicprefix`, which writes `i/` and `w/`, and the patch refresh's own parsing broke on it.
 - **Kimodo's demo keeps its skeleton on the GPU:** tensors made to run its FK (the pose window's rest pose) must be
   created on `skeleton.neutral_joints.device`, or TorchScript refuses the indexing.
+- **Measure a prompt before trusting it:** of 12 horror prompts, 4 didn't do what they said on the first wording
+  (no crouch, no cower, no getting up, a fast retreat). Two were fixed by rewording; two can't be (crouch-walking,
+  slowness), and those need a pose or a paced path. `tools/kimodo_presets.py check` is the measure.

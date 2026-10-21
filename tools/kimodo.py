@@ -63,6 +63,7 @@ def environ(home, k=None):
         out["TEXT_ENCODER_DEVICE"] = k["text_encoder_device"]
     out["KIMODO_STAGE"] = str(STAGE_FILE)      # the demo's Stage panel starts with the last one written
     out["KIMODO_THREE_DIR"] = str(ROOT / "tools" / "director" / "vendor")   # three.js for the demo's pose window
+    out["KIMODO_STUDIO_ROOT"] = str(ROOT)      # the demo's pose library and Send to Studio
     if (k or {}).get("text_encoders_dir"):
         out["TEXT_ENCODERS_DIR"] = k["text_encoders_dir"]
         out["TEXT_ENCODER_MODE"] = "local"    # no text-encoder server to try first
@@ -193,7 +194,7 @@ def stage(argv):
         fwd, left = dx * math.cos(th) + dy * math.sin(th), -dx * math.sin(th) + dy * math.cos(th)
         return [round(s * left, 3), round(s * dz, 3), round(s * fwd, 3)]
 
-    boxes, marks = [], []
+    boxes, marks, arcs = [], [], []
     for p in pieces:
         if p["room"] not in rooms or p["level"] != o["level"]:
             continue
@@ -205,6 +206,17 @@ def stage(argv):
                  "yaw": round(rel - 90.0, 2)}         # the box's x along the piece's own x
             if kind in ("door", "mesh", "use"):
                 b["label"] = p["id"]
+            if kind == "door" and p["room"] in floors:   # the leaf's sweep on the floor (hinge: the leaf's left end)
+                yaw = math.radians(float(p["yaw"]))
+                ax, pe = (math.cos(yaw), math.sin(yaw)), (-math.sin(yaw), math.cos(yaw))
+                c, rc = p["pos"], floors[p["room"]]["pos"]
+                inward = 1 if (rc[0] - c[0]) * pe[0] + (rc[1] - c[1]) * pe[1] >= 0 else -1
+                way = inward if ((p.get("d") or {}).get("swing") or "in") == "in" else -inward
+                hinge = (c[0] - ax[0] * w / 2, c[1] - ax[1] * w / 2)
+                pts = [kim((hinge[0] + w * (math.cos(t) * ax[0] + math.sin(t) * way * pe[0]),
+                            hinge[1] + w * (math.cos(t) * ax[1] + math.sin(t) * way * pe[1]), o["pos"][2] + 0.01))
+                       for t in [math.radians(a) for a in range(0, 91, 6)]]
+                arcs.append({"id": p["id"], "points": pts + [kim((hinge[0], hinge[1], o["pos"][2] + 0.01))]})
             if kind == "floor":
                 b["alpha"] = 0.6
             if kind in ("door", "use"):
@@ -217,12 +229,14 @@ def stage(argv):
                 m["eye"] = round(m["pos"][1] + s * L.EYE, 3)
             marks.append(m)
     info = (f"**{game or ''}** from `{at}`: {', '.join(sorted(rooms))}. Scaled x{s:.3f} for {who or 'nobody'} "
-            f"({height:.2f} m; Kimodo's body {body:.2f} m). Orange doors, green things to use, red player marks.")
+            f"({height:.2f} m; Kimodo's body {body:.2f} m). Orange doors (arcs: their swing, hinged on the left "
+            f"as the format doesn't say), green things to use, red player marks.")
     out = Path(opt("--out") or STAGE_FILE)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"info": info, "game": game, "at": at, "who": who, "scale": round(s, 4),
-                               "boxes": boxes, "marks": marks}, indent=1), encoding="utf-8")
-    print(f"STAGE {out}: {len(boxes)} boxes, {len(marks)} marks, rooms {', '.join(sorted(rooms))}, x{s:.3f} for {who}")
+    fov = float((story.get("game") or {}).get("fov", L.FOV_H))   # the player's lens, for the demo's Player's Eye
+    out.write_text(json.dumps({"info": info, "game": game, "at": at, "who": who, "scale": round(s, 4), "fov": fov,
+                               "boxes": boxes, "marks": marks, "arcs": arcs}, indent=1), encoding="utf-8")
+    print(f"STAGE {out}: {len(boxes)} boxes, {len(marks)} marks, {len(arcs)} door swings, rooms {', '.join(sorted(rooms))}, x{s:.3f} for {who}")
     return 0
 
 
