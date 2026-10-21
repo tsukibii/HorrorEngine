@@ -1,0 +1,167 @@
+{
+ "_note": "Horror prompt presets for Kimodo (its demo's Preset dropdown; tools/kimodo_presets.py measures them). Prompt style: 'A person ...', one behaviour, medium detail (docs/ANIMATION.md). 'expect' is what the check measures on each take; 'checked' is the last result; 'tip' says what the words can't do.",
+ "presets": [
+  {
+   "id": "stalk",
+   "prompt": "A stealthy person sneaks forward slowly, looking around.",
+   "secs": 6,
+   "expect": {
+    "forward": [
+     0.8,
+     6
+    ]
+   },
+   "tip": "Kimodo won't crouch from text: for a low stalk, arm the library's crouch pose (Pose window) on the Full-Body track.",
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "limp",
+   "prompt": "An injured person limps forward, dragging their right leg.",
+   "secs": 6,
+   "expect": {
+    "forward": [
+     1.0,
+     8
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "crawl",
+   "prompt": "A person crawls forward on their hands and knees.",
+   "secs": 6,
+   "expect": {
+    "forward": [
+     0.5,
+     6
+    ],
+    "hips_mean": [
+     0.0,
+     0.6
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "cower",
+   "prompt": "A frightened person crouches into a ball on the floor, hands over their head.",
+   "secs": 4,
+   "expect": {
+    "hips_end": [
+     0.0,
+     0.75
+    ],
+    "hands_head_end": [
+     0.0,
+     0.3
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "back_away",
+   "prompt": "A scared person slowly walks backward.",
+   "secs": 5,
+   "expect": {
+    "forward": [
+     -8,
+     -0.5
+    ],
+    "turn": [
+     0,
+     60
+    ]
+   },
+   "tip": "It backs off at walking pace whatever the words: draw a Path at Sneak pace to slow it.",
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "look_around",
+   "prompt": "A scared person stands still and looks around nervously.",
+   "secs": 5,
+   "expect": {
+    "travel": [
+     0.0,
+     0.8
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "lunge_grab",
+   "prompt": "An angry person lunges forward and grabs with both hands.",
+   "secs": 3,
+   "expect": {
+    "forward": [
+     0.4,
+     4
+    ]
+   },
+   "checked": "measured 2 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "stagger",
+   "prompt": "A drunk person staggers forward and almost falls.",
+   "secs": 5,
+   "expect": {
+    "forward": [
+     0.5,
+     6
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "collapse",
+   "prompt": "A person falls down onto the floor and lies still.",
+   "secs": 4,
+   "expect": {
+    "hips_end": [
+     0.0,
+     0.35
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "get_up",
+   "prompt": "A person gets up from lying on the floor and stands up.",
+   "secs": 5,
+   "expect": {
+    "hips_start": [
+     0.0,
+     0.45
+    ],
+    "hips_end": [
+     0.75,
+     1.2
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "shamble",
+   "prompt": "A tired person shuffles forward slowly with their head hanging down.",
+   "secs": 6,
+   "expect": {
+    "forward": [
+     0.5,
+     6
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  },
+  {
+   "id": "recoil",
+   "prompt": "A scared person jumps back in fright.",
+   "secs": 3,
+   "expect": {
+    "forward": [
+     -3,
+     -0.2
+    ]
+   },
+   "checked": "measured 3 of 3 takes as expected (seed 1)"
+  }
+ ]
+}
