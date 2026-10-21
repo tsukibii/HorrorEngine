@@ -216,14 +216,14 @@ export function grow(pos, tris, lm, scale, opts = {}) {
   // brows: short hairs along the band between each brow's two landmark rows, medial hairs up, lateral ones out
   if (o.brows) {
     for (const [upper, lower, sgn] of [[[107, 66, 105, 63, 70], [55, 65, 52, 53, 46], -1], [[336, 296, 334, 293, 300], [285, 295, 282, 283, 276], 1]]) {
-      for (let k = 0; k < 70; k++) {
+      for (let k = 0; k < 150; k++) {
         const s = rand() * (upper.length - 1), i = Math.floor(s), fs = s - i, j = Math.min(i + 1, upper.length - 1);
         const up = mix(lm(upper[i]), lm(upper[j]), fs), dn = mix(lm(lower[i]), lm(lower[j]), fs), q0 = mix(dn, up, 0.15 + 0.6 * rand());
         const along = s / (upper.length - 1), out = norm(sub(q0, fr.C));
         const dir0 = norm(add(mul(fr.U, 1 - along * 0.85), mul(fr.X, sgn * (0.3 + along * 1.2))));
         const dir = norm(sub(dir0, mul(out, dot(dir0, out)))), l = (0.007 + 0.004 * rand()) * S * (1 - 0.4 * along);
         const lift = mul(out, 0.0006 * S), pts = [add(q0, lift), add(add(q0, mul(dir, l * 0.5)), mul(lift, 1.6)), add(add(q0, mul(dir, l)), mul(lift, 1.2))];
-        ribbon(B, pts, pts.map(() => norm(cross(dir, out))), 0.0012 * S, 0.8 + 0.3 * rand(), 0.3);
+        ribbon(B, pts, pts.map(() => norm(cross(dir, out))), 0.0008 * S, 0.8 + 0.3 * rand(), 0.3);
       }
     }
   }
