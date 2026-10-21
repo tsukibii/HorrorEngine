@@ -126,3 +126,7 @@ the fix.
   traced badly: with no skull or ears the tracker struggled to place things, and MediaPipe's eye openings are too
   soft to read as eyelids. Bend a whole head template to the points instead (the template's own eyelids, shaped by
   the photo's), best the MetaHuman base head itself, so the result is already lined up.
+- **Every stitched edge needs the same number of points on both sides:** `garment.py` sampled a straight edge as one
+  point and a curve as twelve, so the drape skipped every straight-to-curved stitch (the skirt's waistband floated,
+  the t-shirt slid off its shoulders). Straight edges now get twelve too. And GarmentCode's flat placement, 30 cm in
+  front and 25 cm behind, sews shoulder seams straight through the shoulders: lay the panels on the body first.

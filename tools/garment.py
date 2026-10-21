@@ -138,7 +138,7 @@ def edge_points(verts, e, n=12):
     (radius, large arc, right)"""
     a, b = (verts[i] for i in e["endpoints"])
     c = e.get("curvature")
-    if c is None: return [a]
+    if c is None: return [[a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n] for i in range(n)]   # straight: as many points as a curve, so stitched edges pair one to one
     if isinstance(c, list): c = {"type": "quadratic", "params": [c]}
     rel = lambda p: [a[0] + (b[0] - a[0]) * p[0] - (b[1] - a[1]) * p[1], a[1] + (b[1] - a[1]) * p[0] + (b[0] - a[0]) * p[1]]
     out = []

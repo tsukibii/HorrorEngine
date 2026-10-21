@@ -97,7 +97,9 @@
 
     <section data-tab="clothes" hidden>
       <h3>Clothes</h3>
-      <p class="note">Coming: GarmentCode patterns made to this character's measures, draped in Blender (GarmentCode's own draping simulator is research-only), worn here. docs/MHR_PIPELINE_RESEARCH.md, phase 5.</p>
+      <div id="clothesRows"></div>
+      <p class="note">A design's sewing pattern made to this body by GarmentCode, sewn onto it with Blender's cloth (about 10 to 20 s), worn here. Skirts and trousers drape well; tops sit on the shoulders, but their sleeves still bunch. Change the body, then make the garment again.</p>
+      <div id="worn"></div>
     </section>
 
     <h3>View</h3>
@@ -276,6 +278,55 @@ photoBtn.onclick = async () => {
   } catch (e) { status(e.message, "bad"); }
 };
 
+// ---- clothes: GarmentCode patterns draped on this body (tools/character/clothes.py) --------------------------------
+st.clothes = [];                                       // [{design, color}]
+const GARMENTS = new Map();                            // design -> mesh
+const designSel = el("select"), makeBtn = el("button", { textContent: "Make and drape" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
+$("#clothesRows").append(el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
+  el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), makeBtn);
+api("api/designs").then(r => designSel.replaceChildren(...r.designs.map(d => el("option", { value: d, textContent: d.replace(/_/g, " ") })))).catch(() => {});
+function parseObj(text) {
+  const v = [], f = [];
+  for (const line of text.split("\n")) {
+    if (line.startsWith("v ")) { const p = line.split(/\s+/); v.push(+p[1], +p[2], +p[3]); }
+    else if (line.startsWith("f ")) { const p = line.split(/\s+/).slice(1).map(x => parseInt(x) - 1); for (let k = 1; k + 1 < p.length; k++) f.push(p[0], p[k], p[k + 1]); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.setIndex(f); g.computeVertexNormals();
+  return g;
+}
+async function wear(design, color) {
+  const r = await fetch(`api/clothes/${encodeURIComponent(WHO)}/${encodeURIComponent(design)}?v=${Date.now()}`);
+  if (!r.ok) return false;
+  const old = GARMENTS.get(design); if (old) { scene.remove(old); old.geometry.dispose(); }
+  const m = new THREE.Mesh(parseObj(await r.text()), new THREE.MeshStandardMaterial({ color, roughness: 0.85, side: THREE.DoubleSide }));
+  GARMENTS.set(design, m); scene.add(m); return true;
+}
+function drawWorn() {
+  $("#worn").replaceChildren(...st.clothes.map(c => {
+    const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
+    col.oninput = () => { c.color = col.value; GARMENTS.get(c.design)?.material.color.set(c.color); };
+    x.onclick = () => { st.clothes = st.clothes.filter(o => o !== c); const m = GARMENTS.get(c.design); if (m) { scene.remove(m); GARMENTS.delete(c.design); } drawWorn(); };
+    return el("div", { className: "row" }, el("span", { textContent: c.design.replace(/_/g, " ") }), col, x);
+  }));
+}
+async function dressAll() {
+  for (const m of GARMENTS.values()) scene.remove(m);
+  GARMENTS.clear();
+  for (const c of st.clothes) await wear(c.design, c.color);
+}
+makeBtn.onclick = async () => {
+  if (!WHO) return status("make or pick a character first", "bad");
+  const design = designSel.value;
+  status(`sewing ${design} onto ${WHO}…`); makeBtn.disabled = true;
+  try {
+    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height });
+    if (!st.clothes.some(c => c.design === design)) st.clothes.push({ design, color: gColor.value });
+    await wear(design, st.clothes.find(c => c.design === design).color); drawWorn();
+    status(`${design}: ${r.drape.points} points, seams within ${r.drape.seam_gap_mm} mm, ${r.drape.seconds} s`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+  makeBtn.disabled = false;
+};
+
 // ---- the body ---------------------------------------------------------------------------------------------------
 const view = $("#view");
 const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(devicePixelRatio);
@@ -432,10 +483,11 @@ async function open(name) {
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin();
+  st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
   computeBody(); compose(); hud();
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -472,7 +524,7 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 $("#raking").onchange = place;
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
+window.__body = { st, fromArkit, ENAMES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);

@@ -180,3 +180,35 @@ if __name__ == "__main__":
         print({k: max(abs(x) for x in v) for k, v in make_presets().items()}, "->", PRESETS_FILE)
     else:
         print("python tools/character/mhr.py presets    the bases into Content/Studio/Bodies/MHR_presets.json")
+
+
+def hull_length(pts):
+    """the perimeter of the convex hull of 2D points (monotone chain): a tape measure round a slice"""
+    p = sorted(set(map(tuple, np.round(np.asarray(pts, float), 6))))
+    if len(p) < 3: return 0.0
+    cross = lambda o, a, b: (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lo, hi = [], []
+    for q in p:
+        while len(lo) >= 2 and cross(lo[-2], lo[-1], q) <= 0: lo.pop()
+        lo.append(q)
+    for q in reversed(p):
+        while len(hi) >= 2 and cross(hi[-2], hi[-1], q) <= 0: hi.pop()
+        hi.append(q)
+    h = np.array(lo[:-1] + hi[:-1])
+    return float(np.linalg.norm(h - np.roll(h, -1, 0), axis=1).sum())
+
+
+def girths(points, band=0.01):
+    """tape-measure girths (cm) of a body standing in MHR's A-pose: the torso's slices with the arms left out (the
+    torso is what lies within the armpits' width), bust the largest round the chest, waist the smallest between bust
+    and hips, hips the largest round the seat"""
+    y = points[:, 1]; H = y.max() - y.min(); y0 = y.min()
+    def at(frac, half=0.19):
+        s = points[(np.abs(y - (y0 + H * frac)) < band) & (np.abs(points[:, 0]) < half)][:, [0, 2]]
+        return hull_length(s) * 100
+    fr = np.arange(0.44, 0.78, 0.005)
+    g = np.array([at(f, 0.16 if f > 0.62 else 0.19) for f in fr])
+    bust_i = np.argmax(np.where(fr > 0.68, g, 0)); hips_i = np.argmax(np.where(fr < 0.56, g, 0))
+    waist_i = hips_i + np.argmin(g[hips_i:bust_i + 1])
+    return {"bust": round(float(g[bust_i]), 1), "waist": round(float(g[waist_i]), 1), "hips": round(float(g[hips_i]), 1),
+            "bust_at": round(float(fr[bust_i]), 3), "waist_at": round(float(fr[waist_i]), 3), "hips_at": round(float(fr[hips_i]), 3)}
