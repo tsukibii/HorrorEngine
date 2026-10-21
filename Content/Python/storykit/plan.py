@@ -37,6 +37,58 @@ def _rot(dx, dy, yaw):
     return dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a)
 
 
+def door_pieces(p, t):
+    """A kit door (docs/KIT.md §5): its leaf (kind door, the mesh's pivot on the hinges), its handle (attached to the
+    leaf) and its frame (the lining and the stop, in the wall). The leaf's front faces the side it opens to; each
+    part is tagged door:<id> and door_part:leaf|handle|frame, and carries its sized spec as `kit`."""
+    k = KIT.resolve(t.d["kit"])
+
+    def g(key):
+        return k.get(key, KIT.DOOR[key])
+    w, wall_t, h = t.size
+    swing = t.d.get("swing", "in")
+    slide = swing == "slide" or g("style") in ("slide", "shoji")
+    yaw = {"n": 0.0, "s": 180.0, "e": 270.0, "w": 90.0}[getattr(t, "wall", "n")] + (180.0 if swing == "out" else 0.0)
+    lt = float((k.get("size") or [0, g("leaf_t"), 0])[1])
+    ln, gap, fg = float(g("lining")), float(g("gap")), float(g("floor_gap"))
+    bx, by, bz = t.pos
+
+    def at(lx, ly, lz):
+        ox, oy = _rot(lx, ly, yaw)
+        return (bx + ox, by + oy, bz + lz)
+
+    def part(pid, kind, spec, pos, size, extra, d=None):
+        spec = dict(spec, size=[round(v, 4) for v in size])
+        tags = ["story", f"story:{pid}", f"room:{t.room}", f"door:{t.id}", f"kit:{KIT.kind(spec)}", f"art:{KIT.ref(spec)}", "real"] + extra
+        return dict(p, id=pid, kind=kind, shape="box", pos=pos, size=tuple(spec["size"]), yaw=yaw, d=d or {"kit": spec}, kit=spec, tags=tags)
+    out = []
+    fr = g("frame")
+    if fr and fr != "none":
+        fs = {"preset": fr} if isinstance(fr, str) else dict(fr)
+        fs.update({"leaf_t": lt, "stop": not slide})
+        out.append(part(f"{t.id}__frame", "mesh", fs, at(0, 0, h / 2), (w, wall_t, h), ["door_part:frame", "in_wall", "hollow"]))
+    leaf = {key: v for key, v in k.items() if key not in ("handle", "frame")}
+    if slide:                                           # a sliding leaf hangs on the room's face, wider than its hole
+        lw, lh, ly = w + 0.05, h + 0.01, -(wall_t / 2 + lt / 2 + 0.004)
+        lz = 0.0
+    else:
+        lw, lh, ly, lz = w - 2 * ln - 2 * gap, h - ln - gap - fg, 0.0, fg
+    leaf_tags = ["door_part:leaf", f"hinge:{g('hinge')}"] + ([f"locked_by:{t.d['locked_by']}"] if t.d.get("locked_by") else [])
+    lp = part(t.id, "door", leaf, at(0, ly, lz + lh / 2), (lw, lt, lh), leaf_tags, d=dict(t.d, kit=dict(leaf, size=[round(lw, 4), round(lt, 4), round(lh, 4)])))
+    out.append(lp)
+    hd = g("handle")
+    if hd and hd != "none":
+        hs = {"preset": hd} if isinstance(hd, str) else dict(hd)
+        hw, hd_all, hh = KIT.size(hs)
+        proj = max(0.0, (hd_all - float(KIT.resolve(hs).get("through", KIT.DOOR["leaf_t"]))) / 2)   # how far it stands off each face
+        side = 1.0 if g("hinge") == "left" else -1.0          # the handle on the edge away from the hinges
+        hs.update({"through": lt, "points": "left" if side > 0 else "right"})
+        hx = side * (lw / 2 - float(g("handle_in")))
+        out.append(part(f"{t.id}__handle", "mesh", hs, at(hx, ly, float(g("handle_z"))), (hw, lt + 2 * proj, hh),
+                        ["door_part:handle", f"attach:{t.id}"]))
+    return out
+
+
 def room_pieces(lid, room):
     out = []
     x0, y0, z0 = room["at"]
@@ -228,6 +280,12 @@ def plan(story, level=None):
             continue
         p = {"id": t.id, "level": t.level, "room": t.room, "yaw": t.yaw, "d": t.d, "shape": "box"}
         if t.kind == "door":
+            if t.d.get("kit") is not None:
+                try:
+                    out += door_pieces(p, t)
+                    continue
+                except ValueError:
+                    pass                                # story_check says why; the slab stands in
             out.append(dict(p, kind="door", pos=t.centre, size=(t.size[0] - 0.02, 0.05, t.size[2] - 0.01),
                             tags=_tags(t, [f"locked_by:{t.d['locked_by']}"] if t.d.get("locked_by") else [])))
             continue
@@ -249,7 +307,7 @@ def plan(story, level=None):
             except ValueError:
                 continue                                # story_check says why
             extra = [f"kit:{ktype}", f"art:{ref}", "real"] + (["surface"] if ktype in KIT.SURFACE else []) + (["in_wall"] if t.d.get("in_wall") else [])
-            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, tags=_tags(t, extra)))
+            out.append(dict(p, kind="mesh", shape="box", pos=t.centre, size=t.size, kit=t.d["kit"], tags=_tags(t, extra)))
         elif t.d.get("shape"):
             kind, args = L.parse_shape(t.d["shape"])
             if kind == "stairs":

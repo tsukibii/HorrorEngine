@@ -140,6 +140,11 @@ tags it `kit:<type>` and `art:kit/<type>_<hash>`, the mesh `tools/kit/build.mjs`
 rugs and ceiling steps are also tagged `surface` (the level check doesn't count them as obstacles). `in_wall: true`
 marks a thing that sits in its wall, like a window frame.
 
+**A kit door:** a door's `kit` (a `door` preset, or one with what differs: `{"preset": "door_shaker", "handle":
+"bar_pull", "hinge": "right"}`) builds it as a frame (`<id>__frame`), a leaf (the door, turning on its hinges) and a
+handle (`<id>__handle`), each tagged `door:<id>` and `door_part:*` (docs/KIT.md §8). A door's `class` (a Blueprint
+class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
+
 **A prop:**
 
 ```json
@@ -147,7 +152,8 @@ marks a thing that sits in its wall, like a window frame.
  "tag": "photo", "hidden": false, "art": null, "use": "inspect", "text": "..."}
 ```
 
-- `on`: rests on that prop.
+- `on`: rests on that prop: on its top, or at its own `z` when it has one (a cushion on a sofa's seat, below the
+  back's top).
 - `z`: height above the floor, for things on walls or ceilings, and lights.
 - `art`: the asset that replaces the block, scaled evenly to fit it: an Unreal path (`/Game/...`) or a library ref
   (`basemesh/food_prep_table`).

@@ -87,6 +87,8 @@ export function form(spec, onChange, o = {}) {
     else if (kind === "bool") input = inp("checkbox", v, x => set(k, x));
     else if (kind === "slot") input = slotSel(v, x => set(k, x));
     else if (kind === "m2") input = nums(v, x => set(k, x), 0.01);
+    else if (kind === "n2") input = nums(v, x => set(k, x.map(q => Math.max(0, Math.round(q)))), 1);
+    else if (kind === "preset") input = sel(v || "none", [["none", "(none)"], ...Object.entries(o.presets || {}).filter(([, p]) => p.type === extra).map(([n, p]) => [n, p.label])], x => set(k, x));
     else if (kind === "m4") input = nums(v, x => set(k, x), 0.01);
     else input = inp("text", v, x => set(k, x));
     if (k === "seed") { const reroll = Object.assign(document.createElement("button"), { textContent: "🎲", title: "a new seed" }); reroll.onclick = () => set("seed", 1 + Math.floor(Math.random() * 9999)); input = row("kf-nums", input, reroll); }

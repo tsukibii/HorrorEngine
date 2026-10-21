@@ -44,7 +44,7 @@ TOOLS = [
     ("Checks", "Shots review (after the editor took them)", "tools/shots_sheet.py --game {game}", {}),
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
-    ("Story", "Kit meshes for Unreal (the importer runs it too)", "node tools/kit/build.mjs --game {game}", {}),
+    ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
     ("Story", "Notes from the desk", "tools/story.py --game {game} notes", {}),
     ("Story", "Flow graph", "tools/story.py --game {game} flow", {}),

@@ -61,7 +61,7 @@ def check(story, level=None):
         return f"on:{b['id']}" in a["tags"] or f"on:{a['id']}" in b["tags"]
 
     # a kit floor, rug or ceiling step is walked over or under, not bumped (surface); a window frame sits in its wall
-    flat = lambda q: "surface" in q["tags"]
+    flat = lambda q: "surface" in q["tags"] or any(t.startswith("door_part:") for t in q["tags"])   # a door's own parts
     for i, a in enumerate(solid):
         ba = aabb(a)
         for b in solid[i + 1:]:
@@ -71,6 +71,8 @@ def check(story, level=None):
                 o = overlap(ba, aabb(b))
                 if o > TOL:
                     errs.append(f"{a['id']} and {b['id']} overlap by {o * 100:.0f} cm")
+        if any(t.startswith("door_part:") for t in a["tags"]):   # a door's frame and handle belong to its doorway
+            continue
         for w in ([] if "in_wall" in a["tags"] else walls):
             o = overlap(ba, aabb(w))
             if o > TOL:
@@ -98,7 +100,7 @@ def check(story, level=None):
             zone = (wx - (hw if along_x else CLEAR), wy - (CLEAR if along_x else hw), wz + 0.05,
                     wx + (hw if along_x else CLEAR), wy + (CLEAR if along_x else hw), wz + 1.8)
             for s in solid:
-                if "hidden" in s["tags"] or "in_wall" in s["tags"] or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
+                if "hidden" in s["tags"] or "in_wall" in s["tags"] or any(t.startswith("door_part:") for t in s["tags"]) or s.get("level", level_of[r["id"]]) != level_of[r["id"]]:
                     continue
                 o = overlap(zone, aabb(s))
                 if o > TOL:

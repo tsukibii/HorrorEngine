@@ -86,10 +86,15 @@ def finish(actor, piece, folder):
 def spawn_block(piece, colour):
     a = actors.spawn_actor_from_class(unreal.StaticMeshActor, to_ue(piece["pos"]), rot(piece["yaw"]))
     c = a.static_mesh_component
-    if piece["kind"] in ("mesh", "door", "person"):
+    tags = piece["tags"]
+    baked = (piece["kind"] == "mesh" and any(t.startswith("kit:") for t in tags) and "hidden" not in tags
+             and not any(t.startswith(("use:", "door_part:leaf", "door_part:handle")) for t in tags))
+    if baked:
+        c.set_mobility(unreal.ComponentMobility.STATIC)        # a kit floor, cabinet or frame: baked with the room
+    elif piece["kind"] in ("mesh", "door", "person"):
         c.set_mobility(unreal.ComponentMobility.MOVABLE)       # the runner may show, hide or move it
     # art: an asset path (/Game/...), or a library ref (basemesh/headstone_01: storykit/surfaces.py imports it once)
-    art = next((t[4:] for t in piece["tags"] if t.startswith("art:")), None) if piece["kind"] == "mesh" else None
+    art = next((t[4:] for t in piece["tags"] if t.startswith("art:")), None) if piece["kind"] in ("mesh", "door") else None
     mesh = None
     if art:
         mesh = unreal.load_asset(art) if art.startswith("/") else surfaces.mesh(art)
@@ -127,6 +132,49 @@ def fit_art(actor, comp, mesh, piece, yaw_fix=0.0):
     base_z = (piece["pos"][2] - piece["size"][2] / 2) * 100 - box.min.z * s
     loc = to_ue(piece["pos"])
     actor.set_actor_location(unreal.Vector(loc.x - ox, loc.y - oy, base_z), False, False)
+
+
+LEAVES = {}     # a kit door's leaf actor by door id: its handle attaches to it
+
+
+def spawn_kit_door(piece, cmap):
+    """A kit door (docs/KIT.md §5): the leaf's mesh has its pivot on the hinges, so the leaf actor turns round them.
+    With a door Blueprint (the door's own `class`, else class_map's "door"), the Blueprint is spawned on the hinge
+    axis as the door (tagged story:<id>, door) and the leaf is attached under it: whatever the Blueprint turns, the
+    leaf and its handle follow. Without one, the leaf is the door. Either way its parts are tagged door:<id> and
+    door_part:leaf|handle|frame, in the outliner's Story/<room>/doors/<id>."""
+    folder = f"{piece['room']}/doors/{piece['id']}"
+    leaf = spawn_block(piece, "door")
+    mapped = cmap.get("door") if isinstance(cmap.get("door"), dict) else {}
+    entry = piece["d"].get("class") or mapped.get("class")
+    tags = [t for t in piece["tags"] if t != f"story:{piece['id']}"] + [f"story:{piece['id']}__leaf"]
+    LEAVES[piece["id"]] = leaf
+    if not entry:
+        return finish(leaf, dict(piece, tags=piece["tags"] + ["door"]), folder)
+    bp = spawn_bp(entry, dict(piece, size=(0, 0, 0)))
+    if bp is None:
+        return finish(leaf, dict(piece, tags=piece["tags"] + ["door"]), folder)
+    bp.set_actor_location(leaf.get_actor_location(), False, False)          # on the hinge axis
+    bp.set_actor_rotation(leaf.get_actor_rotation(), False)
+    finish(leaf, dict(piece, id=piece["id"] + "__leaf", tags=tags), folder)
+    leaf.attach_to_actor(bp, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD,
+                         unreal.AttachmentRule.KEEP_WORLD, False)
+    set_fields(bp, piece, mapped.get("fields"))
+    return finish(bp, dict(piece, tags=[t for t in piece["tags"] if not t.startswith(("art:", "kit:"))] + ["door"]), folder)
+
+
+def attach_parts(made):
+    """Parts tagged attach:<id> (a door's handle) follow that actor (a door's leaf)."""
+    for pid, a in made.items():
+        if a is None:
+            continue
+        for t in a.get_editor_property("tags") or []:
+            t = str(t)
+            if t.startswith("attach:"):
+                parent = LEAVES.get(t[7:]) or made.get(t[7:])
+                if parent:
+                    a.attach_to_actor(parent, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD,
+                                      unreal.AttachmentRule.KEEP_WORLD, False)
 
 
 def spawn_bp(path, piece):
@@ -189,6 +237,8 @@ def spawn(piece, cmap):
             a = spawn_block(piece, "person")
         return finish(a, piece, f"{piece['room']}/people")
     use = next((t[4:] for t in piece["tags"] if t.startswith("use:")), None)
+    if k == "door" and "door_part:leaf" in piece["tags"]:
+        return spawn_kit_door(piece, cmap)
     entry = cmap.get(use or ("door" if k == "door" else ""), None)
     if isinstance(entry, dict) and entry.get("class"):
         a = spawn_bp(entry["class"], piece)
@@ -277,14 +327,17 @@ def cast_standins(story, lid, cmap):
 
 
 def build_kit(game):
-    """The kit's meshes for this game's kit props (node tools/kit/build.mjs: only the missing ones are written)."""
+    """The kit's meshes this game's plan needs (node tools/kit/build.mjs: only the missing ones are written)."""
     import shutil
     import subprocess
     node = shutil.which("node")
     if not node:
         unreal.log_warning("storykit: node isn't on PATH, so kit props stay greybox blocks (docs/KIT.md)")
         return
-    r = subprocess.run([node, str(L.ROOT / "tools" / "kit" / "build.mjs"), "--game", game], capture_output=True, text=True)
+    from . import kit as KIT
+    specs = L.ROOT / "Saved" / "kit" / f"{game}.json"
+    KIT.write_specs(L.load(game)[0], specs)
+    r = subprocess.run([node, str(L.ROOT / "tools" / "kit" / "build.mjs"), "--specs", str(specs)], capture_output=True, text=True)
     out = (r.stdout or r.stderr).strip().splitlines()
     (unreal.log if r.returncode == 0 else unreal.log_warning)("storykit: " + (out[-1] if out else "kit build"))
 
@@ -301,9 +354,11 @@ def build(game=None, level=None):
         pieces = P.plan(story, lid)
         with unreal.ScopedSlowTask(len(pieces), f"Building {lid}") as task:
             task.make_dialog(True)
+            made = {}
             for piece in pieces:
                 task.enter_progress_frame(1)
-                spawn(piece, cmap)
+                made[piece["id"]] = spawn(piece, cmap)
+            attach_parts(made)
         cast_standins(story, lid, cmap)
         environment(lid)
         if story.get("format", 2) >= 3:

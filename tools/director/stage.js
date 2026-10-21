@@ -229,7 +229,8 @@ export class Stage {
         m.position.copy(s2t(...p.pos));
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null };
-        this.world.add(m); this.solid.push(m);
+        m.userData.doorPart = (p.tags.find(t => t.startsWith("door_part:")) || "").slice(10) || null;
+        this.world.add(m); if (!p.tags.includes("hollow")) this.solid.push(m);     // a door frame: you see and walk through it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
       } else if (p.kind === "light") {

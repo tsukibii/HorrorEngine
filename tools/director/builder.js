@@ -449,7 +449,7 @@ function renderTools() {
     box.append(sel);
   }
   if (B.tool === "kit" || B.tool === "fit") {
-    const sel = kitSelect(B.tool === "fit" ? (p, m) => m === "wall" : (p, m) => !["wall", "opening", "room-floor", "room-ceiling"].includes(m),
+    const sel = kitSelect(B.tool === "fit" ? (p, m) => m === "wall" : (p, m) => !["wall", "opening", "room-floor", "room-ceiling", "door"].includes(m),
                           B.tool === "fit" ? B.fitPreset : B.kitPreset, v => { if (B.tool === "fit") B.fitPreset = v; else B.kitPreset = v; });
     sel.style.width = "100%"; sel.style.marginTop = "4px";
     const a = document.createElement("a"); a.href = "kit.html"; a.target = "kitmaker"; a.textContent = "Kit maker ↗"; a.className = "hint"; a.title = "make your own presets (they show here once saved; reload this page)";
@@ -513,6 +513,7 @@ function renderProps() {
     box.append(grid);
     if (op.type === "door" || op.type === "slide") box.append(check(op.creak, "creaks", v => { op.creak = v; }));
     if (op.type === "window") box.append(windowEditor(op));
+    if (op.type === "door" || op.type === "slide") box.append(doorEditor(op));
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
   } else if (B.sel && B.sel.item) {
     const it = (B.model.items || []).find(i => i.id === B.sel.item);
@@ -616,7 +617,7 @@ async function setupFigure() {
   } catch (e) { console.warn("body", e); }
   replan();
 }
-function doors() { stage.world.traverse(o => { if (o.userData && o.userData.kind === "door") o.visible = !$("#doorsOpen").checked; }); }
+function doors() { stage.world.traverse(o => { if (o.userData && (o.userData.kind === "door" || o.userData.doorPart === "handle")) o.visible = !$("#doorsOpen").checked; }); }
 function addLamp() {
   lampLight = new THREE.PointLight(0xfff1dc, 1.6, 10, 1.5);
   stage.world.add(lampLight);
@@ -679,7 +680,7 @@ function walk(t) {
 }
 function changedPlayer() { B.exported = BM.modelToLevel(B.model, B.story); renderStats(); B.dirty = true; }
 function solids(z) {
-  return (B.plan ? B.plan.pieces : []).filter(q => q.level === B.target && (q.kind === "wall" || q.kind === "mesh") && q.pos[2] + q.size[2] / 2 > z + 0.36 && q.pos[2] - q.size[2] / 2 < z + 1.7);
+  return (B.plan ? B.plan.pieces : []).filter(q => q.level === B.target && (q.kind === "wall" || q.kind === "mesh") && !q.tags.includes("hollow") && !q.tags.some(t => t.startsWith("door_part:")) && q.pos[2] + q.size[2] / 2 > z + 0.36 && q.pos[2] - q.size[2] / 2 < z + 1.7);
 }
 function box2(q) { const rot = Math.abs(((q.yaw % 180) + 180) % 180 - 90) < 1; const w = rot ? q.size[1] : q.size[0], d = rot ? q.size[0] : q.size[1]; return [q.pos[0] - w / 2, q.pos[1] - d / 2, q.pos[0] + w / 2, q.pos[1] + d / 2]; }
 function blocked(x, y, z) {
@@ -690,7 +691,7 @@ function ground(x, y, z) {
   let g = null;
   for (const r of B.model.rooms) if (x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.d && r.z <= z + 0.36) g = g === null ? r.z : Math.max(g, r.z);
   for (const q of (B.plan ? B.plan.pieces : [])) {
-    if (q.level !== B.target || q.kind !== "mesh") continue;
+    if (q.level !== B.target || q.kind !== "mesh" || q.tags.includes("hollow") || q.tags.some(t => t.startsWith("door_part:"))) continue;
     const [x0, y0, x1, y1] = box2(q), top = q.pos[2] + q.size[2] / 2;
     if (x > x0 && x < x1 && y > y0 && y < y1 && top <= z + 0.36 && (g === null || top > g)) g = top;
   }
@@ -825,11 +826,14 @@ function renderFinish() {
   const floors = document.createElement("button"); floors.textContent = "Floors by room kind";
   floors.title = "every room without a floor gets its kind's: planks in the living rooms, tatami in a washitsu, tiles in the wet rooms, stone in the genkan";
   floors.onclick = () => { pushUndo(); let n = 0; for (const r of B.model.rooms) if (!r.floorKit && FLOOR_BY_KIND[r.kind]) { r.floorKit = { preset: FLOOR_BY_KIND[r.kind] }; n++; } changed(); status(`${n} rooms got a floor`); };
+  const doorsAll = document.createElement("button"); doorsAll.textContent = "Doors in every doorway";
+  doorsAll.title = "a panelled door on hinges (with its frame and handle) in every hinged doorway, a flush slider in every sliding one; each door's kind and handle are yours to change";
+  doorsAll.onclick = () => { pushUndo(); let n = 0; for (const op of B.model.ops) if ((op.type === "door" || op.type === "slide") && !(op.extra || {}).kit) { op.extra = Object.assign({}, op.extra, { kit: { preset: op.type === "slide" ? "door_slide" : "door_panels" } }); n++; } changed(); status(`${n} doorways got a door`); };
   const frames = document.createElement("button"); frames.textContent = "Frames in every window";
   frames.onclick = () => { pushUndo(); let n = 0; for (const op of B.model.ops) if (op.type === "window" && !op.frame) { op.frame = { preset: "window_slide" }; n++; } changed(); status(`${n} windows got a frame`); };
   box.append(grid,
     check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
-    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", frames);
+    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", frames, " ", doorsAll);
 }
 
 // ---- reference models: a window or a door you'll place in Unreal, measured here so the wall is cut to fit ----
@@ -1034,6 +1038,10 @@ function addKit(x, y) {
   const k = BM.newKit(preset, `${r.id}_kt_${preset}_${i}`, r.id, r2(Math.round((x - r.x) / 0.05) * 0.05), r2(Math.round((y - r.y) / 0.05) * 0.05));
   const mount = BM.mountOf(k.spec);
   if (mount === "ceiling") k.z = +(r.h - k.size[2]).toFixed(4);
+  if (mount === "on") {                                  // a cushion: on whatever's under it, at its seat
+    const under = kitUnder(r, x - r.x, y - r.y, k.id);
+    if (under) { k.z = +restHeight(under).toFixed(3); k.extra = Object.assign({}, k.extra, { on: under.id }); k.rot = under.rot; }
+  }
   if (mount === "back") snapKit(k, 99);
   (B.model.kits = B.model.kits || []).push(k); B.sel = { kit: k.id };
   changed();
@@ -1081,7 +1089,7 @@ function kitPanel(box, grid, k) {
     ...field("w × d × h", wrap(...[0, 1, 2].map(i => Object.assign(num(k.size[i], v => { k.size[i] = Math.max(0.005, v); }, 0.01), { style: "width:50px" })))));
   box.append(grid);
   if (full) {
-    kitBox(`${P ? P.label : KIT.TYPES[full.type].label}: its numbers`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, (k.spec || {}).preset, LIBRARY.kit); delete o.size; k.spec = o; k.size = nf.size.slice(); changed(); }, { noSize: true }));
+    kitBox(`${P ? P.label : KIT.TYPES[full.type].label}: its numbers`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, (k.spec || {}).preset, LIBRARY.kit); delete o.size; k.spec = o; k.size = nf.size.slice(); changed(); }, { noSize: true, presets: LIBRARY.kit }));
   }
   const row = document.createElement("div"); row.style.cssText = "display:flex;gap:4px;margin-top:6px;flex-wrap:wrap";
   const sn = document.createElement("button"); sn.textContent = "Back to the wall"; sn.onclick = () => { pushUndo(); snapKit(k, 99); changed(); };
@@ -1105,7 +1113,7 @@ function surfaceEditor(r) {
     if (full) {
       const same = document.createElement("button"); same.textContent = `This floor in every ${(KINDS[r.kind] || KINDS.other).en.toLowerCase()}`;
       same.onclick = () => { pushUndo(); for (const o of B.model.rooms) if (o.kind === r.kind) o.floorKit = JSON.parse(JSON.stringify(r.floorKit)); changed(); };
-      kitBox(`${r.name || r.id}'s floor: the gaps, the seed, the pattern`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, r.floorKit.preset, LIBRARY.kit); delete o.size; r.floorKit = o; changed(); }, { noSize: true }), same);
+      kitBox(`${r.name || r.id}'s floor: the gaps, the seed, the pattern`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, r.floorKit.preset, LIBRARY.kit); delete o.size; r.floorKit = o; changed(); }, { noSize: true, presets: LIBRARY.kit }), same);
     }
   }
   return d;
@@ -1119,7 +1127,7 @@ function windowEditor(op) {
   if (op.frame) {
     let full = null; try { full = KIT.withDefaults(KIT.resolve(op.frame, LIBRARY.kit)); } catch (e) { }
     if (full) {
-      kitBox(`${op.id}'s frame (its size is the window's)`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, op.frame.preset, LIBRARY.kit); delete o.size; op.frame = o; changed(); }, { noSize: true }));
+      kitBox(`${op.id}'s frame (its size is the window's)`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, op.frame.preset, LIBRARY.kit); delete o.size; op.frame = o; changed(); }, { noSize: true, presets: LIBRARY.kit }));
     }
   }
   const cur = document.createElement("button"); cur.textContent = "Add curtains"; cur.title = "pleated curtains on a rail near the ceiling, wider than the window, in front of its sill";
@@ -1184,4 +1192,41 @@ function varyKit(k) {
   const o = kitOverrides(v, (k.spec || {}).preset, LIBRARY.kit); delete o.size;
   k.spec = o; changed();
   status(`a variation of ${(LIBRARY.kit[(k.spec || {}).preset] || {}).label || "it"} (🎲 again for another, Ctrl+Z to go back)`);
+}
+
+// the kit thing under a point (room space), the highest first: what a cushion lands on
+function kitUnder(r, x, y, not) {
+  let best = null;
+  for (const q of B.model.kits || []) {
+    if (q.room !== r.id || q.id === not || BM.mountOf(q.spec) === "ceiling") continue;
+    const a = -q.rot * Math.PI / 180, dx = x - q.x, dy = y - q.y, u = dx * Math.cos(a) - dy * Math.sin(a), v = dx * Math.sin(a) + dy * Math.cos(a);
+    if (Math.abs(u) <= q.size[0] / 2 && Math.abs(v) <= q.size[1] / 2 && (!best || restHeight(q) > restHeight(best))) best = q;
+  }
+  return best;
+}
+// where things rest on a kit thing: a sofa's seat, a bed's mattress, a table's top...
+function restHeight(q) {
+  let f; try { f = KIT.withDefaults(KIT.resolve(Object.assign({}, q.spec, { size: q.size }), LIBRARY.kit)); } catch (e) { return q.z + q.size[2]; }
+  const top = f.type === "sofa" ? f.seat_h : f.type === "bed" ? f.top : f.size[2];
+  return q.z + top;
+}
+// a doorway's door from the kit: its kind, hinge side and handle; the rest of its numbers under the 3D view
+function doorEditor(op) {
+  const d = document.createElement("div"); d.style.marginTop = "6px";
+  const g = document.createElement("div"); g.className = "prop";
+  const kit = (op.extra || {}).kit || null, set = v => { op.extra = Object.assign({}, op.extra); if (v) op.extra.kit = v; else delete op.extra.kit; };
+  const of = type => Object.entries(LIBRARY.kit || {}).filter(([, p]) => p.type === type).map(([n, p]) => [n, p.label]);
+  g.append(...field("door", pick((kit || {}).preset || "", [["", "(a plain slab)"], ...of("door")], v => set(v ? Object.assign({}, kit || {}, { preset: v }) : null))));
+  if (kit) {
+    let full = null; try { full = KIT.withDefaults(KIT.resolve(kit, LIBRARY.kit)); } catch (e) { }
+    if (full) {
+      g.append(...field("hinges on", pick(full.hinge, [["left", "the left"], ["right", "the right"]], v => set(Object.assign({}, kit, { hinge: v })))),
+               ...field("handle", pick(full.handle || "none", [["none", "(none)"], ...of("handle")], v => set(Object.assign({}, kit, { handle: v })))));
+      kitBox(`${op.id}: the door's numbers (its size is the doorway's)`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, kit.preset, LIBRARY.kit); delete o.size; set(o); changed(); }, { noSize: true, presets: LIBRARY.kit }));
+    }
+  }
+  const hint = document.createElement("div"); hint.className = "hint";
+  hint.textContent = kit ? "In Unreal: the leaf turns on its hinges, the handle is its own mesh on it, the frame is in the wall; all tagged door:" + op.id : "A door from the kit: panels, glass, louvres, shoji, sliders; hinges and a handle you can swap.";
+  d.append(g, hint);
+  return d;
 }

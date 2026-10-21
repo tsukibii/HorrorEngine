@@ -4,7 +4,7 @@
 // x across, y deep with the FRONT at -y, z up from the base; every part stays inside the size box, so the box the
 // plan and the checks see is the thing. The gaps (between tiles, boards, doors and drawers) and the bevels are real
 // geometry: they're what a light bake turns into the thin dark lines and bright edges of a real room.
-export const VERSION = 1;          // bump when a generator's output changes (presets.json carries the same number)
+export const VERSION = 2;          // bump when a generator's output changes (presets.json carries the same number)
 
 // ---- material slots: one material each in Unreal (kit_<slot>), a flat colour in the desk ----------------------
 // [colour, roughness, metalness, opacity, emissive]
@@ -29,7 +29,7 @@ export function rng(seed) {           // mulberry32: the same seed, the same gap
   return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const SL = ["box", "cyl"];
+const SL = ["box", "cyl", "soft", "pipe"];
 
 // a part: {s: "box"|"cyl", at: [x, y, z] (the middle of its base), size: [w, d, h], m: slot, b: bevel, rz: degrees
 // about z, skip: faces to leave out ("-z+y"), uv: [du, dv, swap]}. A cyl's size is [2r, 2r, length] along its axis
@@ -93,18 +93,36 @@ export const TYPES = {
     ["slot", "top material", "wood", "slot"], ["leg_slot", "leg material", "wood", "slot"]], gen: tableGen },
   bed: { label: "Bed", cat: "furniture", mount: "back", size: [1.4, 2.05, 0.95], params: [["top", "mattress top", 0.5, "m"], ["base", "base height", 0.25, "m"],
     ["kick_in", "base set in", 0.05, "m"], ["headboard", "headboard (the full height)", true, "bool"], ["head_t", "headboard thickness", 0.06, "m"], ["pillows", "pillows", 2, "int"], ["duvet", "duvet (0 to 1 of the length)", 0.7, "num"],
-    ["bevel", "softness", 0.03, "m"], ["slot", "frame material", "wood", "slot"], ["mattress", "mattress material", "fabric_2", "slot"], ["duvet_slot", "duvet material", "fabric", "slot"]], gen: bedGen },
+    ["bevel", "softness", 0.03, "m"], ["soft", "soft (filled, piped, wrinkled)", true, "bool"], ["quilted", "quilted mattress", false, "bool"], ["seed", "seed", 1, "int"],
+    ["slot", "frame material", "wood", "slot"], ["mattress", "mattress material", "fabric_2", "slot"], ["duvet_slot", "duvet material", "fabric", "slot"]], gen: bedGen },
   sofa: { label: "Sofa", cat: "furniture", mount: "back", size: [2.1, 0.92, 0.8], params: [["seats", "seat cushions", 3, "int"], ["seat_h", "seat height", 0.42, "m"],
     ["arm", "arm width (0: none)", 0.16, "m"], ["arm_h", "arm height", 0.6, "m"], ["back_t", "back frame", 0.12, "m"], ["legs", "legs", 0.06, "m"],
     ["chaise", "chaise (an end seat run long)", "none", "pick", ["none", "left", "right"]], ["depth", "depth beside a chaise", 0.92, "m"],
-    ["gap", "cushion gap", 0.006, "mm"], ["bevel", "softness", 0.035, "m"], ["slot", "material", "fabric", "slot"], ["leg_slot", "leg material", "black", "slot"]], gen: sofaGen },
+    ["gap", "cushion gap", 0.006, "mm"], ["bevel", "softness", 0.035, "m"], ["soft", "soft cushions (filled, piped)", true, "bool"], ["piping", "piping", 0.004, "mm"],
+    ["wrinkle", "wrinkles", 0.003, "mm"], ["tufts", "buttoned back", false, "bool"], ["seed", "seed", 1, "int"], ["slot", "material", "fabric", "slot"], ["leg_slot", "leg material", "black", "slot"]], gen: sofaGen },
+  cushion: { label: "Cushion, pillow, mattress", cat: "soft", mount: "on", size: [0.45, 0.45, 0.16], params: [["seam", "seam", "knife", "pick", ["knife", "box", "none"]],
+    ["puff", "filling (0 to 0.9)", 0.45, "num"], ["pinch", "pinched at the seam", 0.75, "num"], ["b", "roundness", 0.03, "m"], ["pipe", "piping", 0.004, "mm"],
+    ["tufts", "buttons across × along", [0, 0], "n2"], ["tuft", "button depth", 0.35, "num"], ["wrinkle", "wrinkles", 0.004, "mm"], ["seed", "seed", 1, "int"],
+    ["stand", "stands up (leans on a back)", false, "bool"], ["lean", "leans back", 0, "deg"], ["n", "detail", 16, "int"],
+    ["slot", "material", "fabric", "slot"], ["pipe_slot", "piping material", "fabric_2", "slot"], ["button_slot", "button material", "fabric_2", "slot"]], gen: cushionGen },
+  door: { label: "Door", cat: "door", mount: "door", size: [0.8, 0.04, 2.0], pivot: doorPivot, params: [["style", "style", "panels", "pick", ["flush", "panels", "shaker", "glass", "louvre", "shoji", "slide"]],
+    ["grid", "panels across × up", [1, 2], "n2"], ["rail", "frame width", 0.1, "m"], ["recess", "panel depth", 0.006, "mm"], ["hinges", "hinges", 3, "int"],
+    ["hinge", "hinged on (seen from the side it opens to)", "left", "pick", ["left", "right"]], ["bevel", "edge bevel", 0.002, "mm"],
+    ["handle", "handle", "lever_round", "preset", "handle"], ["handle_z", "handle height", 0.95, "m"], ["handle_in", "handle from the edge", 0.065, "m"],
+    ["frame", "frame", "door_frame", "preset", "door_frame"], ["lining", "frame lining", 0.02, "mm"], ["gap", "gap round the leaf", 0.003, "mm"], ["floor_gap", "gap under it", 0.008, "mm"],
+    ["slot", "material", "front", "slot"], ["hinge_slot", "hinge material", "metal", "slot"]], gen: doorGen },
+  handle: { label: "Door handle (both sides)", cat: "door", mount: "door", size: [0.15, 0.13, 0.07], params: [["kind", "kind", "lever", "pick", ["lever", "bar", "knob", "pull", "recess"]],
+    ["through", "door thickness", 0.04, "m"], ["points", "a lever points", "left", "pick", ["left", "right"]], ["rose", "rose", "round", "pick", ["round", "square", "plate"]],
+    ["lock", "keyhole below", false, "bool"], ["slot", "material", "metal", "slot"]], gen: handleGen },
+  door_frame: { label: "Door frame: lining and stop", cat: "door", mount: "opening", size: [0.84, 0.1, 2.05], params: [["lining", "lining", 0.02, "mm"], ["stop", "door stop", true, "bool"],
+    ["stop_t", "stop", 0.012, "mm"], ["leaf_t", "the door's thickness", 0.04, "m"], ["slot", "material", "body", "slot"]], gen: frameGen },
   bulkhead: { label: "Ceiling step / curtain pocket", cat: "ceiling", mount: "room-ceiling", size: [3.6, 3.6, 0.12], params: [["border", "step width n, e, s, w", [0.35, 0.35, 0.35, 0.35], "m4"],
     ["pocket", "curtain pocket on", "none", "pick", ["none", "n", "e", "s", "w"]], ["pocket_w", "pocket width", 0.13, "m"], ["slot", "material", "body", "slot"]], gen: bulkheadGen },
   block: { label: "Block: a step, a plinth, a board", cat: "furniture", mount: "floor", size: [1.2, 0.3, 0.18], params: [["bevel", "edge bevel", 0.003, "mm"],
     ["nosing", "nosing (front lip)", 0, "m"], ["slot", "material", "wood", "slot"]], gen: blockGen },
   parts: { label: "Free parts (any furniture)", cat: "furniture", mount: "floor", size: [0.6, 0.6, 0.6], params: [["parts", "parts", [{ s: "box", at: [0, 0, 0], size: [0.6, 0.6, 0.6], m: "body", b: 0.003 }], "parts"]], gen: partsGen },
 };
-export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", wall: "On and in the walls", fitting: "Wall fittings",
+export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
   ceiling: "Ceilings", opening: "Windows", curtain: "Curtains" };
 
 // ---- specs: presets merged under a spec, defaults filled ---------------------------------------------------------
@@ -153,7 +171,7 @@ export function build(spec, presets) {
 export function mesh(parts) {
   const G = {};
   const buf = m => G[m] || (G[m] = { pos: [], nrm: [], uv: [], idx: [] });
-  for (const p of parts) (p.s === "cyl" ? cylFaces : boxFaces)(p, buf);
+  for (const p of parts) ({ cyl: cylFaces, soft: softFaces, pipe: pipeFaces }[p.s] || boxFaces)(p, buf);
   return G;
 }
 function xform(p) {              // part space (centred on its at) -> item space
@@ -212,7 +230,7 @@ function boxFaces(p, buf) {
 function cylFaces(p, buf) {
   const B = buf(p.m), Bi = buf(p.m2 || p.m), n = p.n || (p.size[0] > 0.3 ? 32 : 20);
   const r = p.size[0] / 2, ri = clamp(p.ri || 0, 0, r * 0.99), L = p.size[2], ax = p.axis || "z";
-  const map = ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "-z" ? [u, v, -t] : [u, v, t];
+  const map = ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "y" ? [u, t, v] : ax === "-z" ? [u, v, -t] : [u, v, t];
   const xf0 = xform(p), xf = q => xf0(map(q));
   const nm = q => map(q);
   const ring = (rad, t) => Array.from({ length: n }, (_, i) => { const a = i / n * Math.PI * 2; return [Math.cos(a) * rad, Math.sin(a) * rad, t]; });
@@ -228,6 +246,134 @@ function cylFaces(p, buf) {
     if (!ri) { emit(B, ringO.slice(), nm([0, 0, nz]), ringO.map(x => uv(x, [0, 0, nz])), xf, p.rz); continue; }
     for (let i = 0; i < n; i++) { const j = (i + 1) % n; quad(B, [ringO[i], ringO[j], ringI[j], ringI[i]], [0, 0, nz]); }
   }
+}
+
+// ---- soft things: cushions, mattresses, pillows, duvets -----------------------------------------------------------
+// After FurnGen's upholstery (github.com/HumSaw/furngen, MIT): a rounded box; the filling pushing out against its
+// cover (the crown); the cover pinched to a knife-edge seam (a throw pillow) or boxed (a seat cushion); seeded wrinkles,
+// strongest near the seams; piping along the seams; buttons pulling tufts in. Built as a mapping of a cube's surface
+// lattice, welded, with smooth normals: the same few numbers always make the same cushion.
+function noise3(seed) {
+  const hash = (x, y, z) => { let h = (x * 374761393 + y * 668265263 + z * 1274126177 + seed * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  const sm = t => t * t * (3 - 2 * t), lerp = (a, b, t) => a + (b - a) * t;
+  return (x, y, z) => {
+    const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z), fx = sm(x - X), fy = sm(y - Y), fz = sm(z - Z), c = (i, j, k) => hash(X + i, Y + j, Z + k);
+    return lerp(lerp(lerp(c(0, 0, 0), c(1, 0, 0), fx), lerp(c(0, 1, 0), c(1, 1, 0), fx), fy), lerp(lerp(c(0, 0, 1), c(1, 0, 1), fx), lerp(c(0, 1, 1), c(1, 1, 1), fx), fy), fz) * 2 - 1;
+  };
+}
+// a soft part's shape: a point on the cube [-1, 1]³'s surface -> part space (centred on its box)
+export function softMap(p) {
+  const stand = !!p.stand, [W, D0, H0] = p.size, [D, H] = stand ? [H0, D0] : [D0, H0];          // standing: thin along y
+  const pr = Math.max(0, +p.pipe || 0), boxed = p.seam === "box";
+  const hx = W / 2 - pr, hy = D / 2 - pr, hz = H / 2 - (boxed ? pr : 0);
+  const puff = clamp(p.puff ?? 0.25, 0, 0.9), knife = p.seam === "knife" ? clamp(p.pinch ?? 0.75, 0, 0.95) : 0, bz = hz * (1 - puff);
+  const r = clamp(p.b ?? Math.min(hx, hy, bz) * 0.5, 0.001, Math.min(hx, hy, bz) * 0.98);
+  const N = noise3((p.seed | 0) + 7), wr = Math.max(0, +p.wrinkle || 0), f = 3 / Math.max(0.05, Math.min(W, D));
+  const [tx, ty] = (p.tufts || [0, 0]).map(v => Math.max(0, v | 0)), tufts = [];
+  for (let i = 0; i < tx; i++) for (let j = 0; j < ty; j++) tufts.push([((i + 0.5 + (j % 2 ? 0.5 : 0)) / tx * 2 - 1) * 0.86, ((j + 0.5) / ty * 2 - 1) * 0.86]);
+  const tufted = tufts.filter(([u]) => u < 0.9), td = clamp(p.tuft ?? 0.3, 0, 0.8) * hz, s2 = Math.pow(0.55 / Math.max(tx, ty, 1), 2);
+  const lean = Math.tan((p.lean || 0) * Math.PI / 180);
+  return c => {
+    const P = [c[0] * hx, c[1] * hy, c[2] * bz], h = [hx, hy, bz];
+    const inner = P.map((v, k) => clamp(v, -(h[k] - r), h[k] - r));
+    let d = P.map((v, k) => v - inner[k]); const L = Math.hypot(...d) || 1; d = d.map(v => v / L);
+    const q = inner.map((v, k) => v + d[k] * r), u = q[0] / hx, v = q[1] / hy, edge = Math.min(1, Math.max(Math.abs(u), Math.abs(v)));
+    const cz = q[2] < 0 ? -1 : 1, zf = Math.abs(q[2]) / Math.max(1e-6, bz);
+    q[2] += cz * puff * hz * (1 - u * u) * (1 - v * v) * zf;                                  // the filling pushing out
+    if (knife) q[2] *= 1 - knife * Math.pow(edge, 1.8);                                        // pinched to the seam: a dome
+    for (const [tu, tv] of tufted) q[2] -= cz * td * Math.abs(d[2]) * Math.exp(-((u - tu) ** 2 + (v - tv) ** 2) / s2);
+    if (wr) { const n = N(q[0] * f + 3.1, q[1] * f + 1.7, q[2] * f), a = wr * (0.3 + 0.7 * edge * edge); for (let k = 0; k < 3; k++) q[k] += d[k] * n * a; }
+    let o = [clamp(q[0], -W / 2, W / 2), clamp(q[1], -D / 2, D / 2), clamp(q[2], -H / 2, H / 2)];
+    if (stand) o = [o[0], clamp(-o[2] + o[1] * lean, -D0 / 2 + pr, D0 / 2 - pr), o[1]];
+    return o;
+  };
+}
+function softFaces(p, buf) {
+  const B = buf(p.m), f = softMap(p), [W, D, H] = p.stand ? [p.size[0], p.size[2], p.size[1]] : p.size, n = clamp(p.n || 16, 4, 48);
+  const L = Math.max(W, D, H), cnt = a => Math.max(3, Math.round(n * a / L)), N = [cnt(W), cnt(D), Math.max(4, cnt(H) + (p.seam === "knife" ? 2 : 0))];
+  const warp = t => Math.sin(t * Math.PI / 2);                        // more lattice toward the edges, where it curves
+  const idx = new Map(), pos = [];
+  const vid = (i, j, k) => {
+    const key = i + "," + j + "," + k; let id = idx.get(key);
+    if (id === undefined) { id = pos.length; idx.set(key, id); pos.push(f([i / N[0] * 2 - 1, j / N[1] * 2 - 1, k / N[2] * 2 - 1].map(warp))); }
+    return id;
+  };
+  const tris = [];
+  for (let ax = 0; ax < 3; ax++) for (const sd of [0, 1]) {
+    const a1 = (ax + 1) % 3, a2 = (ax + 2) % 3;
+    for (let i = 0; i < N[a1]; i++) for (let j = 0; j < N[a2]; j++) {
+      const g = (di, dj) => { const l = [0, 0, 0]; l[ax] = sd ? N[ax] : 0; l[a1] = i + di; l[a2] = j + dj; return vid(...l); };
+      const a = g(0, 0), b = g(1, 0), c = g(1, 1), e = g(0, 1);
+      if (sd) tris.push([a, b, c], [a, c, e]); else tris.push([a, c, b], [a, e, c]);
+    }
+  }
+  const nrm = pos.map(() => [0, 0, 0]);
+  for (const [a, b, c] of tris) {
+    const A = pos[a], e1 = pos[b].map((v, k) => v - A[k]), e2 = pos[c].map((v, k) => v - A[k]);
+    const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    for (const v of [a, b, c]) for (let k = 0; k < 3; k++) nrm[v][k] += cr[k];
+  }
+  const xf = xform(p), a = (p.rz || 0) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a), hz = p.size[2] / 2, base = B.pos.length / 3;
+  pos.forEach((q, i) => {
+    const L2 = Math.hypot(...nrm[i]) || 1, n0 = nrm[i].map(v => v / L2), local = [q[0], q[1], q[2] + hz];
+    B.pos.push(...xf(local)); B.nrm.push(n0[0] * co - n0[1] * si, n0[0] * si + n0[1] * co, n0[2]); B.uv.push(...uvFor(p, local, n0));
+  });
+  for (const [x, y, z] of tris) B.idx.push(base + x, base + y, base + z);
+}
+// a tube along a closed path (piping): pts in item space
+function pipeFaces(p, buf) {
+  const B = buf(p.m), pts = p.pts || [], n = pts.length, m = 8, r = Math.max(0.0005, p.r || 0.004);
+  if (n < 3) return;
+  const base = B.pos.length / 3; let run = 0;
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n], c = pts[i];
+    let t = b.map((v, k) => v - a[k]); const tl = Math.hypot(...t) || 1; t = t.map(v => v / tl);
+    const up = Math.abs(t[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
+    let n1 = [t[1] * up[2] - t[2] * up[1], t[2] * up[0] - t[0] * up[2], t[0] * up[1] - t[1] * up[0]]; const l1 = Math.hypot(...n1) || 1; n1 = n1.map(v => v / l1);
+    const n2 = [t[1] * n1[2] - t[2] * n1[1], t[2] * n1[0] - t[0] * n1[2], t[0] * n1[1] - t[1] * n1[0]];
+    if (i) run += Math.hypot(...c.map((v, k) => v - pts[i - 1][k]));
+    for (let j = 0; j < m; j++) {
+      const an = j / m * Math.PI * 2, dir = n1.map((v, k) => v * Math.cos(an) + n2[k] * Math.sin(an));
+      B.pos.push(...c.map((v, k) => v + dir[k] * r)); B.nrm.push(...dir); B.uv.push(run, j / m * Math.PI * 2 * r);
+    }
+  }
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    const a = base + i * m + j, b = base + ((i + 1) % n) * m + j, c = base + ((i + 1) % n) * m + (j + 1) % m, d = base + i * m + (j + 1) % m;
+    B.idx.push(a, b, c, a, c, d);
+  }
+  // keep the winding outward: check one triangle against its radial normal
+  const k = B.idx.length - 6, P3 = i => B.pos.slice(i * 3, i * 3 + 3), [ia, ib, ic] = [B.idx[k], B.idx[k + 1], B.idx[k + 2]];
+  const A = P3(ia), e1 = P3(ib).map((v, q) => v - A[q]), e2 = P3(ic).map((v, q) => v - A[q]), nn = B.nrm.slice(ia * 3, ia * 3 + 3);
+  const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+  if (cr[0] * nn[0] + cr[1] * nn[1] + cr[2] * nn[2] < 0) for (let q = base === 0 ? 0 : B.idx.length - n * m * 6; q < B.idx.length; q += 3) { const t2 = B.idx[q + 1]; B.idx[q + 1] = B.idx[q + 2]; B.idx[q + 2] = t2; }
+}
+// a soft part between bounds, with its piping (a tube round each seam) and its tufts' buttons
+function sf(P, x0, y0, z0, x1, y1, z1, m, o = {}) {
+  if (x1 - x0 < 1e-3 || y1 - y0 < 1e-3 || z1 - z0 < 1e-3) return null;
+  const p = Object.assign({ s: "soft", at: [(x0 + x1) / 2, (y0 + y1) / 2, z0], size: [x1 - x0, y1 - y0, z1 - z0], m }, o);
+  delete p.pipe_m; delete p.button_m;
+  P.push(p);
+  const f = softMap(p), c0 = [p.at[0], p.at[1], z0 + (z1 - z0) / 2], k = 14;
+  const loop = cz => {
+    const out = [], side = [[-1, -1, 1, 0], [1, -1, 0, 1], [1, 1, -1, 0], [-1, 1, 0, -1]];
+    for (const [sx, sy, dx, dy] of side) for (let i = 0; i < k; i++) {
+      const t = i / k * 2, c = [sx + dx * t, sy + dy * t, cz].map(v => Math.sin(v * Math.PI / 2));
+      const q = f(p.stand ? [c[0], c[1], c[2]] : c), a = (p.rz || 0) * Math.PI / 180;
+      out.push([c0[0] + q[0] * Math.cos(a) - q[1] * Math.sin(a), c0[1] + q[0] * Math.sin(a) + q[1] * Math.cos(a), c0[2] + q[2]]);
+    }
+    return out;
+  };
+  if (p.pipe > 0 && p.seam !== "none") for (const cz of p.seam === "knife" ? [0] : [-1, 1])
+    P.push({ s: "pipe", at: [0, 0, 0], size: [0, 0, 0], pts: loop(cz), r: p.pipe, m: o.pipe_m || m });
+  const [tx, ty] = (p.tufts || [0, 0]).map(v => Math.max(0, v | 0));
+  for (let i = 0; i < tx; i++) for (let j = 0; j < ty; j++) {
+    const u = ((i + 0.5 + (j % 2 ? 0.5 : 0)) / tx * 2 - 1) * 0.86, v = ((j + 0.5) / ty * 2 - 1) * 0.86;
+    if (u >= 0.9) continue;
+    const q = f([u, v, 1]);
+    if (p.stand) cy(P, p.at[0] + q[0], p.at[1] + q[1] + 0.004, c0[2] + q[2], 0.011, 0.006, o.button_m || "fabric_2", { n: 10, axis: "-y" });
+    else cy(P, p.at[0] + q[0], p.at[1] + q[1], c0[2] + q[2] - 0.004, 0.011, 0.006, o.button_m || "fabric_2", { n: 10 });
+  }
+  return p;
 }
 
 // ---- floors and wall cladding: tiles, planks, tatami ---------------------------------------------------------------
@@ -597,13 +743,18 @@ function bedGen(s, P) {
   if (ht) bx(P, -W / 2, D / 2 - ht, 0, W / 2, D / 2, H, s.slot, { b: 0.004 });
   bx(P, -W / 2 + ki, y0 + ki, 0, W / 2 - ki, y1, base * 0.35, "black");                       // the plinth, in shadow
   bx(P, -W / 2, y0, base * 0.35, W / 2, y1, base, s.slot, { b: 0.004 });
-  bx(P, -W / 2 + 0.01, y0 + 0.01, base, W / 2 - 0.01, y1 - 0.005, top - 0.03, s.mattress, { b: sb });
-  const dv = clamp(s.duvet, 0, 1);
-  if (dv > 0) bx(P, -W / 2, y0, top - 0.05, W / 2, y0 + (y1 - y0) * dv, top, s.duvet_slot, { b: Math.min(sb, 0.024), skip: "-z" });
-  const np = Math.max(0, s.pillows | 0), pz = Math.min(H, top + 0.12);
+  const soft = s.soft !== false, seed = s.seed | 0, dv = clamp(s.duvet, 0, 1), np = Math.max(0, s.pillows | 0), pz = Math.min(H, top + 0.12);
+  if (soft) sf(P, -W / 2 + 0.01, y0 + 0.01, base, W / 2 - 0.01, y1 - 0.005, top - 0.03, s.mattress, { seam: "box", puff: 0.12, b: Math.max(0.02, sb), pipe: 0.005, seed,
+    tufts: s.quilted ? [Math.max(2, Math.round(W / 0.22)), Math.max(4, Math.round((y1 - y0) / 0.22))] : [0, 0], tuft: 0.18, wrinkle: 0.002, n: 24 });
+  else bx(P, -W / 2 + 0.01, y0 + 0.01, base, W / 2 - 0.01, y1 - 0.005, top - 0.03, s.mattress, { b: sb });
+  if (dv > 0) {
+    if (soft) sf(P, -W / 2, y0, top - 0.06, W / 2, y0 + (y1 - y0) * dv, top, s.duvet_slot, { seam: "none", puff: 0.5, b: 0.03, wrinkle: 0.012, seed: seed + 3, n: 26 });
+    else bx(P, -W / 2, y0, top - 0.05, W / 2, y0 + (y1 - y0) * dv, top, s.duvet_slot, { b: Math.min(sb, 0.024), skip: "-z" });
+  }
   for (let i = 0; i < np && pz > top; i++) {
     const pw = (W - 0.08) / np, x0 = -W / 2 + 0.04 + i * pw;
-    bx(P, x0 + 0.01, y1 - 0.42, top - 0.03, x0 + pw - 0.01, y1 - 0.05, pz, "white", { b: Math.min(0.05, sb * 1.5) });
+    if (soft) sf(P, x0 + 0.01, y1 - 0.42, top - 0.03, x0 + pw - 0.01, y1 - 0.05, pz, "white", { seam: "knife", puff: 0.55, pinch: 0.8, b: 0.03, wrinkle: 0.005, seed: seed + 10 + i, pipe: 0 });
+    else bx(P, x0 + 0.01, y1 - 0.42, top - 0.03, x0 + pw - 0.01, y1 - 0.05, pz, "white", { b: Math.min(0.05, sb * 1.5) });
   }
 }
 function sofaGen(s, P) {
@@ -618,10 +769,99 @@ function sofaGen(s, P) {
   for (let i = 0; i < n; i++) bx(P, xa + i * cw, front(i), lg, xa + (i + 1) * cw, yb, plinth, s.slot, { b: 0.01 });
   if (aw) { bx(P, -W / 2, front(0), lg, xa, yb, ah, s.slot, { b: sb * 0.8 }); bx(P, xb, front(n - 1), lg, W / 2, yb, ah, s.slot, { b: sb * 0.8 }); }
   bx(P, xa, yb - bt, plinth, xb, yb, H - 0.16, s.slot, { b: sb * 0.6 });
+  const soft = s.soft !== false, seed = s.seed | 0, pipe = clamp(s.piping, 0, 0.012), wr = clamp(s.wrinkle, 0, 0.02);
   for (let i = 0; i < n; i++) {
     const x0 = xa + i * cw + g / 2, x1 = xa + (i + 1) * cw - g / 2;
-    bx(P, x0, front(i) + 0.005, plinth, x1, yb - bt - cush - g, sh, s.slot, { b: sb });
-    bx(P, x0, yb - bt - cush, sh - 0.005, x1, yb - bt + 0.01, H, s.slot, { b: sb });
+    if (soft) {
+      sf(P, x0, front(i) + 0.005, plinth, x1, yb - bt - cush - g, sh, s.slot, { seam: "box", puff: 0.2, b: Math.max(0.02, sb * 0.8), pipe, wrinkle: wr, seed: seed + i });
+      sf(P, x0, yb - bt - cush, sh - 0.005, x1, yb - bt + 0.01, H, s.slot, { seam: "box", puff: 0.35, b: Math.max(0.025, sb), pipe, wrinkle: wr * 1.3, seed: seed + 20 + i,
+        stand: true, tufts: s.tufts ? [2, 3] : [0, 0], tuft: 0.3 });
+    } else {
+      bx(P, x0, front(i) + 0.005, plinth, x1, yb - bt - cush - g, sh, s.slot, { b: sb });
+      bx(P, x0, yb - bt - cush, sh - 0.005, x1, yb - bt + 0.01, H, s.slot, { b: sb });
+    }
+  }
+}
+function cushionGen(s, P) {
+  const [W, D, H] = s.size;
+  sf(P, -W / 2, -D / 2, 0, W / 2, D / 2, H, s.slot, { seam: s.seam, puff: s.puff, pinch: s.pinch, b: s.b, pipe: s.seam === "none" ? 0 : s.pipe, tufts: s.tufts, tuft: s.tuft,
+    wrinkle: s.wrinkle, seed: s.seed, stand: s.stand, lean: s.lean, n: s.n, pipe_m: s.pipe_slot, button_m: s.button_slot });
+}
+// a door leaf: flush, raised or flat (shaker) panels, glass, louvres, a shoji's lattice, or a sliding slab. Its hinges'
+// knuckles stand on its hinge edge, on the face it opens toward (its front, -y); the mesh's pivot is their axis
+// (doorPivot), so in Unreal the leaf turns round its hinges. The handle and the frame are their own things (handle,
+// door_frame): plan.py puts the three together from a story door's kit, and in Unreal they're tagged door_part:*.
+const KNUCKLE = 0.007;
+function doorPivot(s) { const [W, T] = s.size; return s.style === "slide" || s.style === "shoji" ? [0, 0, 0] : [(s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE), -T / 2 + KNUCKLE, 0]; }
+function doorGen(s, P) {
+  const [W, T, H] = s.size, st = s.style, b = s.bevel, slab = (xa, xb, za, zb, m, o, t = T) => bx(P, xa, -t / 2, za, xb, t / 2, zb, m, Object.assign({ b }, o || {}));
+  if (st === "flush" || st === "slide") slab(-W / 2, W / 2, 0, H, s.slot);
+  else {
+    const rw = clamp(s.rail, 0.02, Math.min(W, H) / 3), [gc, gr] = (s.grid || [1, 2]).map(v => Math.max(1, v | 0)), shoji = st === "shoji";
+    const bot = shoji ? rw : rw * 1.6, mw = shoji ? 0.014 : rw * 0.75, tb = shoji ? T * 0.7 : T;
+    slab(-W / 2, -W / 2 + rw, 0, H, s.slot); slab(W / 2 - rw, W / 2, 0, H, s.slot);
+    slab(-W / 2 + rw, W / 2 - rw, 0, bot, s.slot); slab(-W / 2 + rw, W / 2 - rw, H - rw, H, s.slot);
+    const ix0 = -W / 2 + rw, ix1 = W / 2 - rw, iz0 = bot, iz1 = H - rw;
+    const pw = (ix1 - ix0 - mw * (gc - 1)) / gc, ph = (iz1 - iz0 - mw * (gr - 1)) / gr;
+    for (let i = 1; i < gc; i++) { const x = ix0 + i * pw + (i - 1) * mw; slab(x, x + mw, iz0, iz1, s.slot, { b: 0.0008 }, tb); }
+    for (let i = 0; i < gc; i++) for (let j = 0; j < gr; j++) {
+      const x0 = ix0 + i * (pw + mw), x1 = x0 + pw, z0 = iz0 + j * (ph + mw), z1 = z0 + ph;
+      if (j > 0) slab(x0, x1, z0 - mw, z0, s.slot, { b: 0.0008 }, tb);                       // the rail between panels
+      const rc = clamp(s.recess, 0.001, T / 3);
+      if (st === "panels" || st === "shaker") {
+        slab(x0, x1, z0, z1, s.slot, { b: 0.001 }, T - 2 * rc);                             // the panel, set back each side
+        if (st === "panels") { const e = Math.min(0.04, pw / 5, ph / 5); slab(x0 + e, x1 - e, z0 + e, z1 - e, s.slot, { b: 0.004 }, T - rc); }   // its raised field
+      } else if (st === "glass") bx(P, x0, -0.003, z0, x1, 0.003, z1, "glass");
+      else if (st === "louvre") { const k = Math.max(2, Math.round((z1 - z0) / 0.035)); for (let q = 0; q < k; q++) { const z = z0 + (q + 0.5) * (z1 - z0) / k; bx(P, x0, -T * 0.3, z - 0.009, x1, T * 0.3, z + 0.009, s.slot, { b: 0.001 }); } }
+      else if (shoji) bx(P, x0, T * 0.2, z0, x1, T * 0.2 + 0.0015, z1, "paper");
+    }
+  }
+  if (st === "slide" || st === "shoji") return;
+  const n = Math.max(0, s.hinges | 0), hx = (s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE);
+  for (let k = 0; k < n; k++) {
+    const zc = n === 1 ? H / 2 : k === 0 ? 0.25 : k === n - 1 ? H - 0.2 : 0.25 + (H - 0.45) * k / (n - 1);
+    cy(P, hx, -T / 2 + KNUCKLE, zc - 0.05, KNUCKLE, 0.1, s.hinge_slot, { n: 12 });
+    cy(P, hx, -T / 2 + KNUCKLE, zc + 0.05, KNUCKLE * 0.5, 0.006, s.hinge_slot, { n: 8 });      // the pin's cap
+  }
+}
+// a door's handles, both sides of a leaf `through` thick, centred on the box (the plan puts the box's middle where
+// the grip goes). lever, bar (a long pull), knob, pull (a short horizontal one), recess (a sliding door's flush cup)
+function handleGen(s, P) {
+  const [W, D, H] = s.size, th = clamp(s.through, 0.005, D), pj = (D - th) / 2, zc = H / 2, m = s.slot, dir = s.points === "right" ? 1 : -1;
+  for (const sd of [-1, 1]) {
+    const face = sd * th / 2, ax = sd < 0 ? "-y" : "y", out = (a, b2) => sd < 0 ? [face - b2, face - a] : [face + a, face + b2];
+    const rose = (r, len) => { if (s.rose === "round") cy(P, 0, face, zc, r, len, m, { axis: ax, n: 20 }); else { const [y0, y1] = out(0, len); const hw = s.rose === "plate" ? Math.min(0.025, W / 4) : r, hh = s.rose === "plate" ? Math.min(H / 2 - 0.002, 0.11) : r; bx(P, -hw, y0, zc - hh, hw, y1, zc + hh, m, { b: 0.001 }); } };
+    if (s.lock && s.kind !== "recess" && zc >= 0.085) { cy(P, 0, face, zc - 0.07, 0.012, 0.004, m, { axis: ax, n: 14 }); const [y0, y1] = out(0.004, 0.0045); bx(P, -0.0025, y0, zc - 0.078, 0.0025, y1, zc - 0.062, "hole"); }
+    if (s.kind === "lever") {
+      rose(0.026, Math.min(0.008, pj * 0.2)); cy(P, 0, face, zc, 0.009, pj * 0.6, m, { axis: ax, n: 12 });
+      const [y0, y1] = out(pj * 0.55, pj), L = W / 2 - 0.004;
+      bx(P, dir > 0 ? -0.012 : -L, y0, zc - 0.009, dir > 0 ? L : 0.012, y1, zc + 0.009, m, { b: 0.004 });
+    } else if (s.kind === "bar") {
+      const r = Math.min(0.014, pj * 0.25, W / 2), [ya] = out(pj * 0.45, pj);
+      for (const z of [0.03, H - 0.03]) cy(P, 0, face, z, 0.007, pj * 0.6, m, { axis: ax, n: 10 });
+      cy(P, 0, sd < 0 ? face - pj + r : face + pj - r, 0.005, r, H - 0.01, m, { n: 16 }); void ya;
+    } else if (s.kind === "knob") {
+      rose(0.026, Math.min(0.008, pj * 0.2)); cy(P, 0, face, zc, 0.011, pj * 0.45, m, { axis: ax, n: 12 });
+      cy(P, 0, sd < 0 ? face - pj * 0.4 : face + pj * 0.4, zc, Math.min(0.028, W / 2, H / 2), pj * 0.6, m, { axis: ax, n: 24 });
+    } else if (s.kind === "pull") {
+      for (const x of [-W / 2 + 0.012, W / 2 - 0.012]) cy(P, x, face, zc, 0.006, pj * 0.6, m, { axis: ax, n: 10 });
+      const [y0, y1] = out(pj * 0.55, pj); bx(P, -W / 2, y0, zc - 0.007, W / 2, y1, zc + 0.007, m, { b: 0.003 });
+    } else {                                                                    // recess: a flush cup and its rim
+      const [y0, y1] = out(-0.0005, Math.max(0.001, pj)), outer = sd < 0 ? y0 : y1;
+      bx(P, -W / 2, y0, 0, W / 2, y1, H, m, { b: 0.001 });
+      bx(P, -W / 2 + 0.004, outer - 0.0002, 0.004, W / 2 - 0.004, outer + 0.0002, H - 0.004, "hole");
+    }
+  }
+}
+// the lining of a doorway (the reveal, sides and head) and the stop the door closes against, behind the leaf
+function frameGen(s, P) {
+  const [W, T, H] = s.size, ln = clamp(s.lining, 0.005, W / 4), m = s.slot;
+  bx(P, -W / 2, -T / 2, 0, -W / 2 + ln, T / 2, H, m, { b: 0.001 }); bx(P, W / 2 - ln, -T / 2, 0, W / 2, T / 2, H, m, { b: 0.001 });
+  bx(P, -W / 2 + ln, -T / 2, H - ln, W / 2 - ln, T / 2, H, m, { b: 0.001 });
+  if (s.stop) {
+    const st = clamp(s.stop_t, 0.004, 0.03), y0 = Math.min(T / 2 - 0.005, clamp(s.leaf_t, 0.01, T) / 2 + 0.001), y1 = Math.min(T / 2, y0 + 0.025);
+    bx(P, -W / 2 + ln, y0, 0, -W / 2 + ln + st, y1, H - ln, m, { b: 0.001 }); bx(P, W / 2 - ln - st, y0, 0, W / 2 - ln, y1, H - ln, m, { b: 0.001 });
+    bx(P, -W / 2 + ln + st, y0, H - ln - st, W / 2 - ln - st, y1, H - ln, m, { b: 0.001 });
   }
 }
 function bulkheadGen(s, P) {
@@ -642,14 +882,16 @@ function blockGen(s, P) {
 function partsGen(s, P) {
   for (const q of s.parts || []) {
     if (!SL.includes(q.s) || !Array.isArray(q.at) || !Array.isArray(q.size)) continue;
+    if (q.s === "soft" || q.s === "pipe") { P.push(Object.assign({}, q, { at: q.at.map(Number), size: q.size.map(v => Math.max(0, +v)), m: q.m || "body" })); continue; }
     P.push({ s: q.s, at: q.at.map(Number), size: q.size.map(v => Math.max(0.0005, +v)), m: q.m || "body",
              b: +q.b || 0, rz: +q.rz || 0, axis: q.axis, ri: +q.ri || 0 });
   }
 }
 // a built thing's parts, as a free list (the kit maker's "Explode": start from a preset, then move single boxes)
 export function explode(built) {
-  return built.parts.map(p => { const o = { s: p.s, at: p.at.map(v => +v.toFixed(5)), size: p.size.map(v => +v.toFixed(5)), m: p.m };
-    if (p.b) o.b = +p.b.toFixed(5); if (p.rz) o.rz = +p.rz.toFixed(3); if (p.axis) o.axis = p.axis; if (p.ri) o.ri = +p.ri.toFixed(5); return o; });
+  return built.parts.map(p => { const o = JSON.parse(JSON.stringify(p)); o.at = p.at.map(v => +v.toFixed(5)); o.size = p.size.map(v => +v.toFixed(5));
+    for (const k of ["b", "rz", "ri"]) if (o[k]) o[k] = +o[k].toFixed(5); else delete o[k];
+    if (o.pts) o.pts = o.pts.map(q => q.map(v => +v.toFixed(5))); delete o.uv; if (!o.skip) delete o.skip; return o; });
 }
 
 // ---- variations: the same kind of thing, other numbers (the kit maker's Variations, the builder's Vary) -------------
@@ -678,6 +920,12 @@ export const VARY = {
   bulkhead: [["border", "layout", "border"], ["pocket", "layout", "p"]],
   block: [["size", "size", "s", [0.2, 0.2, 0.2]], ["nosing", "look", "p", [0, 0, 0.02, 0.03]], ["bevel", "look", "r", 0.001, 0.02]],
   parts: [["size", "size", "s", [0.2, 0.2, 0.15]]],
+  cushion: [["size", "size", "s", [0.15, 0.15, 0.2]], ["seam", "layout", "p"], ["puff", "look", "r", 0.25, 0.6], ["pipe", "look", "p", [0, 0.003, 0.005]],
+            ["tufts", "layout", "p", [[0, 0], [0, 0], [1, 1], [2, 2], [3, 3]]], ["wrinkle", "look", "r", 0.002, 0.008], ["seed", "look", "seed"]],
+  door: [["style", "layout", "p", ["flush", "panels", "shaker", "glass", "louvre"]], ["grid", "layout", "p", [[1, 1], [1, 2], [2, 2], [1, 3], [2, 3], [1, 4]]],
+         ["rail", "look", "r", 0.07, 0.13], ["handle", "look", "p", ["lever_round", "lever_square", "bar_pull", "knob_round", "lever_plate_lock"]], ["hinges", "look", "i", 2, 3]],
+  handle: [["rose", "look", "p"], ["points", "layout", "p"], ["lock", "look", "f", 0.3]],
+  door_frame: [["lining", "look", "r", 0.015, 0.03], ["stop_t", "look", "r", 0.008, 0.016]],
 };
 const COL_PICK = ["door", "doors", "doors", "drawers", "open", "glass"];
 // a variation of a full spec (withDefaults) from a seed: only the groups asked for change; the result is a full spec
@@ -734,6 +982,7 @@ export function variation(full, seed, groups = ["size", "layout", "look"]) {
 // a part scaled with its box, per axis: a cylinder stays round (its width takes the smaller of the two across)
 export function scalePart(q, f) {
   const o = Object.assign({}, q, { at: q.at.map((v, k) => v * f[k]) });
+  if (q.s === "pipe") { o.pts = (q.pts || []).map(p => p.map((v, k) => v * f[k])); return o; }
   if (q.s !== "cyl") { o.size = q.size.map((v, k) => v * f[k]); return o; }
   const along = q.axis === "-y" ? 1 : 2, across = [0, 1, 2].filter(k => k !== along), r = Math.min(...across.map(k => f[k]));
   o.size = [q.size[0] * r, q.size[1] * r, q.size[2] * f[along]];
@@ -761,7 +1010,9 @@ export function bounds(parts) {
 export function stats(G) { let tris = 0, verts = 0; for (const g of Object.values(G)) { tris += g.idx.length / 3; verts += g.pos.length / 3; } return { tris, verts, slots: Object.keys(G).length }; }
 
 // ---- glTF binary: one mesh, a primitive per slot, Y up, the front facing +Z (glTF's own front) -----------------------
-export function glb(G, name = "kit") {
+// pivot: the point (item space) that becomes the mesh's origin: a door leaf's hinge axis (TYPES.door.pivot)
+export function pivotOf(spec) { const T = TYPES[spec.type]; return T && T.pivot ? T.pivot(spec) : [0, 0, 0]; }
+export function glb(G, name = "kit", pivot = [0, 0, 0]) {
   const prims = [], mats = [], views = [], accs = [], chunks = [];
   let off = 0;
   const add = (arr, type, comp, target, count, minmax) => {
@@ -777,7 +1028,7 @@ export function glb(G, name = "kit") {
     const pos = new Float32Array(n * 3), nrm = new Float32Array(n * 3), uv = new Float32Array(n * 2);
     const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
     for (let i = 0; i < n; i++) {                         // story (x, y, z up) -> glTF (x, z, -y)
-      const p = [g.pos[i * 3], g.pos[i * 3 + 2], -g.pos[i * 3 + 1]];
+      const p = [g.pos[i * 3] - pivot[0], g.pos[i * 3 + 2] - pivot[2], -(g.pos[i * 3 + 1] - pivot[1])];
       pos.set(p, i * 3); nrm.set([g.nrm[i * 3], g.nrm[i * 3 + 2], -g.nrm[i * 3 + 1]], i * 3);
       uv.set([g.uv[i * 2], 1 - g.uv[i * 2 + 1]], i * 2);
       for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], p[k]); hi[k] = Math.max(hi[k], p[k]); }

@@ -85,7 +85,7 @@ function show(spec, name) {
   person.position.set(-w / 2 - 0.45, 0, 0); person.visible = $("#person").checked;
   const p = K.name && K.presets[K.name], T = KIT.TYPES[b.spec.type];
   $("#title").textContent = p ? `${p.label}  ·  ${K.name}` : K.varOf && K.presets[K.varOf] ? `A variation of ${K.presets[K.varOf].label.toLowerCase()}` : `New ${T.label.toLowerCase()}`;
-  $("#form").innerHTML = ""; $("#form").append(form(b.spec, s => show(s)));
+  $("#form").innerHTML = ""; $("#form").append(form(b.spec, s => show(s), { presets: K.presets }));
   $("#warn").textContent = [...new Set(b.warn)].join("; ");
   const G = KIT.mesh(b.parts), st = KIT.stats(G);
   $("#slots").innerHTML = Object.keys(G).sort().map(sl => `<span><i style="background:#${KIT.SLOTS[KIT.slotOf(sl)][0].toString(16).padStart(6, "0")}"></i>${sl}</span>`).join("");

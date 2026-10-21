@@ -12,6 +12,10 @@ from . import storylib as L
 PRESETS_FILE = L.STUDIO / "Kit" / "presets.json"
 META = {"label", "cat", "mount", "z", "note", "user"}
 SURFACE = {"tiles", "planks", "tatami", "rug", "bulkhead"}     # lie on a floor or under a ceiling: walked over, not bumped
+# a kit door's assembly (plan.py): the leaf, its handle and its frame. The same defaults as TYPES.door in kit.js
+# (tools/kit/check.mjs compares them)
+DOOR = {"leaf_t": 0.04, "lining": 0.02, "gap": 0.003, "floor_gap": 0.008, "handle": "lever_round", "handle_z": 0.95,
+        "handle_in": 0.065, "frame": "door_frame", "hinge": "left", "style": "panels"}
 _cache = {}
 
 
@@ -83,3 +87,25 @@ def ref(spec):
     r = resolve(spec)
     h = hashlib.sha1((f"v{presets_file().get('version', 1)}:" + canon(r)).encode("utf-8")).hexdigest()[:12]
     return f"kit/{r['type']}_{h}"
+
+
+def specs(story, level=None):
+    """Every kit mesh a story needs, once each: [{"ref", "kit"}] from the plan's pieces (props, floors, frames, and
+    each door's leaf, handle and frame), for `node tools/kit/build.mjs --specs`."""
+    from . import plan as P
+    out = {}
+    for q in P.plan(story, level):
+        if q.get("kit") is not None:
+            try:
+                out.setdefault(ref(q["kit"]), q["kit"])
+            except ValueError:
+                pass
+    return [{"ref": r, "kit": k} for r, k in sorted(out.items())]
+
+
+def write_specs(story, path, level=None):
+    import pathlib
+    items = specs(story, level)
+    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
+    pathlib.Path(path).write_text(json.dumps(items), encoding="utf-8")
+    return items

@@ -68,6 +68,10 @@ Anything made of boxes and cylinders is made here, from presets you change.
 | `table` | tables, desks, low tables, benches, with an apron and a low shelf | top, legs, legs in from the edge, apron, shelf |
 | `bed` | a bed or a futon: plinth in shadow, base, mattress, duvet, pillows, headboard | mattress top, base, headboard, pillows, duvet, softness |
 | `sofa` | sofas, loveseats, a chaise end: cushions with gaps between them | seats, seat height, arms, back, legs, chaise, softness |
+| `cushion` | soft upholstery (§7): a throw pillow (knife edge), a boxed and piped seat cushion, a buttoned floor cushion or pouf, a quilted mattress; standing ones lean on a sofa's back | seam (knife, box, none), filling, pinch, roundness, piping, buttons across × along and their depth, wrinkles, seed, stands up and leans |
+| `door` | a door leaf: flush, raised panels, shaker, glass lites, louvres, a shoji's lattice, a sliding slab; hinges on its hinge edge; its mesh turns on them | style, panels across × up, frame width, panel depth, hinges and which side, its **handle** and **frame** (presets of their own), handle height and inset, lining and gaps |
+| `handle` | both sides of a door: a lever on a round or square rose or a long plate (with a keyhole), a bar pull, a knob, a short pull, a sliding door's flush cup | kind, rose, keyhole, the door's thickness, which way a lever points |
+| `door_frame` | a doorway's lining (sides and head, in the wall's thickness) and the stop the door closes against | lining, stop |
 | `bulkhead` | a ceiling step round the room, and the curtain pocket at the window wall | step width per wall, pocket on, pocket width |
 | `block` | a single bevelled box: a genkan step (with a nosing), a zabuton, a plinth, a shelf | bevel, nosing |
 | `parts` | free parts: anything made of boxes and cylinders | the parts |
@@ -126,7 +130,8 @@ frames as part of their wall. Everything else is checked like any prop: overlaps
 
 ## 5. Into Unreal
 
-`storykit.importer.build(G)` first runs `node tools/kit/build.mjs --game G`:
+`storykit.importer.build(G)` first plans the game and runs `node tools/kit/build.mjs --specs` on every kit mesh it
+needs (`python tools/kit_build.py --game G` does the same by hand):
 - Every kit prop's mesh is written once to the library as `Content/Studio/Library/meshes/kit/<type>_<hash>.glb`.
   The hash comes from its resolved numbers, so twenty identical switch plates share one mesh, and changing a number
   makes a new one.
@@ -145,7 +150,8 @@ Then in Unreal:
 4. **Draw calls:** a floor is one mesh with a handful of material slots, not hundreds of boards. Merge each room's
    kit things (Merge Actors) once the layout is locked if the draw calls add up.
 
-`node tools/kit/build.mjs --preset tv_wall_unit --out unit.glb` (or `--spec '{...}'`) writes one mesh anywhere.
+`node tools/kit/build.mjs --preset tv_wall_unit --out unit.glb` (or `--spec '{...}'`) writes one mesh anywhere. A
+door leaf's mesh has its origin on its hinges.
 
 ## 6. Files, and adding to it
 
@@ -163,3 +169,59 @@ Then in Unreal:
 A new type is a generator in `kit.js` (parts inside its size box, front at -y), its params in `TYPES`, and a preset or
 two. When a generator's output changes, bump `VERSION` in `kit.js` and `version` in `presets.json` together, so the
 meshes are made again. Then `node tools/kit/check.mjs` (KIT ok) and `node tools/director/buildertest.js` (BUILDER ok).
+
+## 7. Cushions, mattresses, pillows
+
+Soft things are their own part (`soft`), made the way upholstery is. The filling pushes out against the cover (the
+**crown**), and the cover meets a seam:
+- **knife:** pinched all round, a throw pillow;
+- **box:** a band round the sides, a seat cushion or a mattress;
+- **none:** a duvet.
+
+Wrinkles come from the **seed**, strongest near the seams. **Piping** is a real tube along each seam, and **buttons**
+pull **tufts** in, in a diamond. Each is a welded mesh with smooth normals, about 1,000 to 3,000 triangles a
+cushion (`detail`).
+- The sofa's cushions and back cushions are soft now (piped, wrinkled, and buttoned if you ask). So are a bed's
+  mattress (quilted if you ask), its duvet and its pillows. Turn *soft* off for the old blocks.
+- **Cushions on things:** with *Furniture*, click a cushion onto a sofa, a bed or a table. It lands on the seat, the
+  mattress or the top (`on` the thing, at that height), facing the same way. The standing pillows lean on the back.
+
+Nobody on GitHub has an easy procedural cushion to drop in. The best, FurnGen (3ds Max, MIT), describes exactly
+this recipe in its own modifiers:
+- a ChamferBox;
+- a Push that inflates it, "the filling pressing outward";
+- Noise for folds;
+- TurboSmooth;
+- piping as a spline round the seam.
+
+The kit does the same in its own mesh code, so it works in the desk and exports to Unreal. Infinigen (Princeton,
+Blender, BSD) has procedural indoor furniture but runs inside Blender; the rest are paid Blender assets. For a hero
+close-up, a cloth simulation (Marvelous Designer, Blender cloth) still beats any of them: export the kit's cushion
+as a .glb to start from.
+
+## 8. Doors
+
+A doorway's door can come from the kit: `door: {"id": ..., "swing": "in", "kit": {"preset": "door_shaker", "handle":
+"bar_pull", "hinge": "right"}}` (the scene builder's door panel writes it; *Doors in every doorway* does them all).
+The plan makes three things of it, sized to the doorway:
+- **the frame** (`<id>__frame`): the lining and the stop, in the wall, static;
+- **the leaf** (`<id>`, the door itself): hinges on its hinge edge, its mesh's origin on their axis, so it turns
+  round them. Its front faces the side it opens to; `swing: "out"` turns it round, and a sliding one hangs on the
+  room's face;
+- **the handle** (`<id>__handle`): both sides of the leaf, its own mesh, attached to the leaf. Change the door's
+  `handle` to any handle preset, or swap the mesh in Unreal: it's its own actor.
+
+**In Unreal** (the importer):
+- Every part is tagged `door:<id>` and `door_part:frame|leaf|handle`, and sits in the outliner under
+  `Story/<room>/doors/<id>`.
+- The leaf is tagged `door`, `story:<id>` and `hinge:left|right`. The handle is attached to it.
+- **Door functionality, dropped in:**
+  - Set `"door": {"class": "/Game/Studio/BP_Door.BP_Door_C"}` in `Content/Studio/class_map.json` for every door, or
+    `"class"` on one door for a special one.
+  - The importer spawns that Blueprint on the hinge axis as the door (it gets `story:<id>` and `door`) and attaches
+    the leaf (with its handle) under it, so whatever the Blueprint turns or slides, the door follows.
+  - The Blueprint needs no mesh of its own. A plain rotating actor is enough: turn it about Z, and the leaf turns on
+    its hinges.
+- Without a Blueprint, the leaf is the door (the StoryRunner turns it, RUNNER_SPEC.md).
+- The frame and every other kit thing that doesn't move are **Static**, so they bake. The leaf and handle are
+  Movable.

@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 from storykit import library as LIB  # noqa: E402
+from storykit import kit as KIT  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
@@ -161,6 +162,14 @@ def check_world(story, things, r):
                     r.err(f"room {rm['id']}: opening on {op['wall']} is taller than the room")
                 if L.wall_skipped(rm, op["wall"], op["at"] - op["w"] / 2, op["at"] + op["w"] / 2):
                     r.err(f"room {rm['id']}: opening at {op['at']} on {op['wall']} is on a stretch it skips (put it on the room that builds that wall)")
+                if op.get("door") and op["door"].get("kit") is not None:
+                    try:
+                        if KIT.kind(op["door"]["kit"]) != "door":
+                            r.err(f"door {op['door'].get('id')}: its kit is a {KIT.kind(op['door']['kit'])}, not a door")
+                    except ValueError as e:
+                        r.err(f"door {op['door'].get('id')}: kit: {e}")
+                if op.get("door") and op["door"].get("class") is not None and not str(op["door"]["class"]).endswith("_C"):
+                    r.err(f"door {op['door'].get('id')}: class {op['door']['class']!r} isn't a Blueprint class path (…_C)")
                 if op.get("door") and op["door"].get("swing", "in") not in ("in", "out", "slide"):
                     r.err(f"door {op['door'].get('id')}: swing {op['door']['swing']!r} isn't in, out or slide")
                 if op.get("door") and op["door"].get("locked_by"):

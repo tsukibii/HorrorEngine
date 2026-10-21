@@ -65,6 +65,12 @@ rooms that can change between chapters. The panel under the 3D view counts what 
     gaps, cushions...
   - *Open in the kit maker* edits it there and keeps the result as a preset.
   - The built-ins keep clear of what you place.
+- **Doors:** select a door or a sliding door, and pick its **door** from the kit: panels, shaker, flush, glass,
+  louvred, a front door with a lock, a sliding door, fusuma, shoji. Then pick which side it's **hinged on** and its
+  **handle** (levers, a bar pull, a knob, a flush cup); its other numbers show under the 3D view. *Doors in every
+  doorway* (under Finish) does them all. In Unreal each door's leaf turns on its hinges and is tagged as a door
+  (docs/KIT.md §8).
+- **Cushions:** a cushion or pillow clicked onto a sofa, a bed or a table lands on its seat, mattress or top.
 - **Wall fittings:** pick a switch plate, a socket, a thermostat or intercom panel, or a vent, then click near a
   wall. Each sits at its usual height: switches at 1.2 m, Japanese sockets at 25 cm, Korean ones at 30 cm. The
   built-ins' light switches are kit plates too, and so are the wall items (a framed poster, a TV with its slim back,

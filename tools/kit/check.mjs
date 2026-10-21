@@ -2,7 +2,7 @@
 // numbers, and is the same from the same seed; a seed changes the gaps; the glb is well formed; the mesh refs agree
 // with storykit/kit.py; every kit prop in every game builds. Ends "KIT ok".
 import { execFileSync } from "child_process";
-import { loadKit, loadPresets, refOf, storySpecs, games, story, ROOT } from "./lib.mjs";
+import { loadKit, loadPresets, refOf, games, ROOT } from "./lib.mjs";
 
 const KIT = await loadKit(), PR = loadPresets();
 const errs = [], TOL = 0.004;
@@ -55,8 +55,24 @@ try {
   const py = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps([kit.ref(s) for s in json.loads(sys.argv[1])]))", JSON.stringify(specs)], { cwd: ROOT }).toString());
   specs.forEach((s, i) => { const js = refOf(KIT, s, PR.presets, PR.version); if (js !== py[i]) errs.push(`ref of ${JSON.stringify(s)}: node ${js}, python ${py[i]}`); });
 } catch (e) { errs.push("storykit.kit refs: " + e.message.split("\n")[0]); }
+// every kit mesh every game's plan needs (props, floors, frames, doors' parts), as the importer would build them
 let props = 0;
-for (const g of games()) for (const it of storySpecs(story(g))) { props++; tryOne(`${g} ${it.id}`, it.kit); }
+try {
+  const all = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit, storylib as L; print(json.dumps({g: kit.specs(L.load(g)[0]) for g in json.loads(sys.argv[1])}))", JSON.stringify(games())], { cwd: ROOT, maxBuffer: 1 << 26 }).toString());
+  for (const [g, items] of Object.entries(all)) for (const it of items) {
+    props++; tryOne(`${g} ${it.ref}`, it.kit);
+    if (refOf(KIT, it.kit, PR.presets, PR.version) !== it.ref) errs.push(`${g}: ${it.ref} is named otherwise by node`);
+  }
+} catch (e) { errs.push("the games' kit specs: " + e.message.split("\n")[0]); }
+// a door's assembly: storykit/kit.py's DOOR and kit.js's door type agree on their defaults; the leaf turns on its hinges
+try {
+  const DOOR = JSON.parse(execFileSync("python3", ["-c", "import sys,json; sys.path.insert(0,'Content/Python'); from storykit import kit; print(json.dumps(kit.DOOR))"], { cwd: ROOT }).toString());
+  const d = KIT.withDefaults({ type: "door" });
+  for (const [k, v] of Object.entries(DOOR)) if (k !== "leaf_t" && JSON.stringify(d[k]) !== JSON.stringify(v)) errs.push(`door default ${k}: kit.py ${JSON.stringify(v)}, kit.js ${JSON.stringify(d[k])}`);
+  if (DOOR.leaf_t !== d.size[1]) errs.push(`door thickness: kit.py ${DOOR.leaf_t}, kit.js ${d.size[1]}`);
+  const pv = KIT.pivotOf(KIT.withDefaults(KIT.resolve({ preset: "door_panels", hinge: "right" }, PR.presets)));
+  if (!(pv[0] > 0.35)) errs.push(`a right-hinged door's pivot isn't on its right edge: ${pv}`);
+} catch (e) { errs.push("the door defaults: " + e.message.split("\n")[0]); }
 for (const e of errs.slice(0, 40)) console.log("ERROR:", e);
 if (errs.length) { console.log(`KIT FAILED (${errs.length})`); process.exit(1); }
 console.log(`KIT ok (${Object.keys(KIT.TYPES).length} types, ${Object.keys(PR.presets).length} presets, ${nv} variations, ${tris} triangles in all, ${props} props in the games)`);

@@ -1,6 +1,6 @@
 {
  "_note": "The kit's presets (docs/KIT.md): each is a kit spec plus label, cat, mount and z (the height of its base above the floor). The kit maker (tools/director/kit.html) adds yours. version must match VERSION in tools/director/kit.js.",
- "version": 1,
+ "version": 2,
  "presets": {
   "oak_planks": {
    "label": "Oak planks, 150 mm, random lengths",
@@ -1703,6 +1703,329 @@
      "m": "glass"
     }
    ]
+  },
+  "throw_pillow": {
+   "label": "Throw pillow 45 × 45, knife edge",
+   "type": "cushion",
+   "size": [
+    0.45,
+    0.45,
+    0.16
+   ]
+  },
+  "throw_pillow_standing": {
+   "label": "Throw pillow, standing against a back",
+   "type": "cushion",
+   "size": [
+    0.45,
+    0.17,
+    0.45
+   ],
+   "stand": true,
+   "lean": 10,
+   "puff": 0.5
+  },
+  "lumbar_pillow": {
+   "label": "Lumbar pillow 50 × 30",
+   "type": "cushion",
+   "size": [
+    0.5,
+    0.3,
+    0.13
+   ],
+   "puff": 0.4
+  },
+  "seat_cushion": {
+   "label": "Seat cushion, boxed and piped",
+   "type": "cushion",
+   "size": [
+    0.55,
+    0.55,
+    0.1
+   ],
+   "seam": "box",
+   "puff": 0.18,
+   "b": 0.02,
+   "pinch": 0
+  },
+  "floor_cushion": {
+   "label": "Floor cushion, buttoned (zabuton)",
+   "type": "cushion",
+   "size": [
+    0.6,
+    0.6,
+    0.09
+   ],
+   "seam": "box",
+   "puff": 0.2,
+   "b": 0.02,
+   "tufts": [
+    1,
+    1
+   ],
+   "tuft": 0.4,
+   "pipe": 0
+  },
+  "pouf": {
+   "label": "Pouf, buttoned",
+   "mount": "floor",
+   "type": "cushion",
+   "size": [
+    0.5,
+    0.5,
+    0.4
+   ],
+   "seam": "box",
+   "puff": 0.15,
+   "b": 0.06,
+   "tufts": [
+    2,
+    2
+   ],
+   "tuft": 0.15
+  },
+  "mattress_tufted": {
+   "label": "Mattress, quilted (on the floor or a bed)",
+   "mount": "floor",
+   "type": "cushion",
+   "size": [
+    1.4,
+    2.0,
+    0.22
+   ],
+   "seam": "box",
+   "puff": 0.08,
+   "b": 0.04,
+   "tufts": [
+    6,
+    9
+   ],
+   "tuft": 0.2,
+   "pipe": 0.005,
+   "slot": "fabric_2",
+   "n": 28
+  },
+  "door_panels": {
+   "label": "Door, two raised panels",
+   "type": "door",
+   "size": [
+    0.8,
+    0.04,
+    2.0
+   ]
+  },
+  "door_shaker": {
+   "label": "Door, shaker (three flat panels)",
+   "type": "door",
+   "size": [
+    0.8,
+    0.04,
+    2.0
+   ],
+   "style": "shaker",
+   "grid": [
+    1,
+    3
+   ],
+   "handle": "lever_square"
+  },
+  "door_flush": {
+   "label": "Door, flush (the modern flat one)",
+   "type": "door",
+   "size": [
+    0.8,
+    0.04,
+    2.0
+   ],
+   "style": "flush",
+   "handle": "lever_square",
+   "hinges": 3
+  },
+  "door_glass": {
+   "label": "Door with glass lites",
+   "type": "door",
+   "size": [
+    0.8,
+    0.04,
+    2.0
+   ],
+   "style": "glass",
+   "grid": [
+    1,
+    4
+   ],
+   "rail": 0.09,
+   "handle": "lever_round"
+  },
+  "door_louvre": {
+   "label": "Closet door, louvred",
+   "type": "door",
+   "size": [
+    0.6,
+    0.035,
+    1.9
+   ],
+   "style": "louvre",
+   "grid": [
+    1,
+    2
+   ],
+   "handle": "knob_round",
+   "hinges": 2
+  },
+  "door_front": {
+   "label": "Front door with a lock",
+   "type": "door",
+   "size": [
+    0.9,
+    0.05,
+    2.05
+   ],
+   "style": "flush",
+   "handle": "lever_plate_lock",
+   "hinges": 3,
+   "slot": "frame"
+  },
+  "door_slide": {
+   "label": "Sliding door, flush (a wet room's, a closet's)",
+   "type": "door",
+   "size": [
+    0.8,
+    0.035,
+    2.0
+   ],
+   "style": "slide",
+   "handle": "recess_pull"
+  },
+  "fusuma": {
+   "label": "Fusuma (paper-faced sliding door)",
+   "type": "door",
+   "size": [
+    0.88,
+    0.02,
+    1.8
+   ],
+   "style": "slide",
+   "handle": "recess_pull",
+   "slot": "paper"
+  },
+  "shoji": {
+   "label": "Shoji (a lattice and paper)",
+   "type": "door",
+   "size": [
+    0.88,
+    0.03,
+    1.8
+   ],
+   "style": "shoji",
+   "grid": [
+    3,
+    6
+   ],
+   "rail": 0.03,
+   "handle": "none",
+   "slot": "wood"
+  },
+  "lever_round": {
+   "label": "Lever on a round rose",
+   "type": "handle",
+   "size": [
+    0.14,
+    0.12,
+    0.06
+   ]
+  },
+  "lever_square": {
+   "label": "Lever on a square rose",
+   "type": "handle",
+   "size": [
+    0.14,
+    0.12,
+    0.06
+   ],
+   "rose": "square"
+  },
+  "lever_plate_lock": {
+   "label": "Lever on a long plate, with a keyhole",
+   "type": "handle",
+   "size": [
+    0.14,
+    0.12,
+    0.24
+   ],
+   "rose": "plate",
+   "lock": true
+  },
+  "knob_round": {
+   "label": "Round knob",
+   "type": "handle",
+   "size": [
+    0.06,
+    0.13,
+    0.06
+   ],
+   "kind": "knob"
+  },
+  "bar_pull": {
+   "label": "Bar pull 40 cm",
+   "type": "handle",
+   "size": [
+    0.03,
+    0.14,
+    0.4
+   ],
+   "kind": "bar"
+  },
+  "bar_pull_long": {
+   "label": "Bar pull 80 cm (a front door's)",
+   "type": "handle",
+   "size": [
+    0.035,
+    0.16,
+    0.8
+   ],
+   "kind": "bar"
+  },
+  "pull_short": {
+   "label": "Short pull",
+   "type": "handle",
+   "size": [
+    0.15,
+    0.1,
+    0.03
+   ],
+   "kind": "pull"
+  },
+  "recess_pull": {
+   "label": "Recessed pull (sliding doors)",
+   "type": "handle",
+   "size": [
+    0.04,
+    0.042,
+    0.12
+   ],
+   "kind": "recess",
+   "rose": "square"
+  },
+  "door_frame": {
+   "label": "Door frame: lining and stop",
+   "type": "door_frame",
+   "size": [
+    0.84,
+    0.1,
+    2.05
+   ]
+  },
+  "door_frame_slim": {
+   "label": "Door frame: slim lining, no stop (sliding)",
+   "type": "door_frame",
+   "size": [
+    0.84,
+    0.1,
+    2.05
+   ],
+   "lining": 0.012,
+   "stop": false
   }
  }
 }

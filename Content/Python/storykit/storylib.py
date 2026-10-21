@@ -181,8 +181,10 @@ def index(story):
                 if door:
                     x, y = wall_point(room, op["wall"], op["at"])
                     yaw = 0.0 if op["wall"] in ("n", "s") else 90.0   # the panel runs along its wall
-                    add(Thing(door["id"], "door", lid, room["id"], door, room_world(room, x, y, op.get("sill", 0.0)),
-                              (op["w"], WALL_T, op["h"]), yaw))
+                    t = Thing(door["id"], "door", lid, room["id"], door, room_world(room, x, y, op.get("sill", 0.0)),
+                              (op["w"], WALL_T, op["h"]), yaw)
+                    t.wall = op["wall"]                        # which wall: a kit door faces its room from it
+                    add(t)
             props = {p["id"]: p for p in room.get("props", [])}
             placed = {}
 
@@ -211,9 +213,11 @@ def index(story):
                         errs.append(f"{pid}: on {on!r}, which isn't a prop in room {room['id']}")
                     elif depth > 8:
                         errs.append(f"{pid}: 'on' loops")
-                    else:
-                        base = place(on, depth + 1)
+                    elif z is None:                     # on its top; with a z of its own, at that height (a cushion
+                        base = place(on, depth + 1)     # on a sofa's seat, below the sofa's back)
                         z = base.pos[2] - room["at"][2] + base.size[2]
+                    else:
+                        place(on, depth + 1)
                 if z is None:
                     z = 0.0
                 x, y = p.get("at", (0, 0))

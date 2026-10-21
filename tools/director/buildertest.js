@@ -141,7 +141,6 @@ const SCRATCH = "Zz_builder_test";
       bu.changed();
       await new Promise(r => setTimeout(r, 1500));
       const lvl = B.exported.level, props = lvl.rooms.flatMap(r => (r.props || []).map(p => Object.assign({ room: r.id }, p)));
-      const back = BMm.levelToModel({ levels: { t: lvl } }, "t");
       // its front corner dragged 30 cm out into the room: deeper, its back still at the wall; then a variation, same size
       const back0 = +(ldk.w - sofa.x - sofa.size[1] / 2).toFixed(3), w0 = sofa.size[0];
       const a = sofa.rot * Math.PI / 180, fx = ldk.x + sofa.x + Math.sin(a) * (sofa.size[1] / 2 + 0.3) + Math.cos(a) * sofa.size[0] / 2;
@@ -151,9 +150,16 @@ const SCRATCH = "Zz_builder_test";
       const spec0 = JSON.stringify(sofa.spec), size0 = JSON.stringify(sofa.size);
       bu.varyKit(sofa);
       const varied = { changed: JSON.stringify(sofa.spec) !== spec0, sameSize: JSON.stringify(sofa.size) === size0 };
+      // a cushion clicked onto the sofa lands on its seat; every doorway gets a kit door (leaf, handle, frame)
+      bu.setKitPreset("kit", "throw_pillow"); bu.addKit(ldk.x + sofa.x, ldk.y + sofa.y);
+      const pil = B.model.kits[B.model.kits.length - 1], cushion = { z: pil.z, on: (pil.extra || {}).on, sofa: sofa.id };
+      for (const op of B.model.ops) if (op.type === "door" || op.type === "slide") op.extra = Object.assign({}, op.extra, { kit: { preset: op.type === "slide" ? "door_slide" : "door_shaker", handle: "bar_pull" } });
       bu.changed();
       await new Promise(r => setTimeout(r, 1200));
-      return { resized, varied, sofa: [+(ldk.w - sofa.x).toFixed(3), sofa.rot], dl: [dl.z, dl.size[2], ldk.h], problems: B.exported.problems,
+      const back = BMm.levelToModel({ levels: { t: B.exported.level } }, "t");
+      const parts = B.plan.pieces.filter(q => q.tags.some(t => t.startsWith("door_part:"))).map(q => q.tags.find(t => t.startsWith("door_part:")).slice(10));
+      const doorsN = B.model.ops.filter(o => o.type === "door" || o.type === "slide").length;
+      return { cushion, doors: { n: doorsN, leaves: parts.filter(x => x === "leaf").length, handles: parts.filter(x => x === "handle").length, frames: parts.filter(x => x === "frame").length }, resized, varied, sofa: [+(ldk.w - sofa.x).toFixed(3), sofa.rot], dl: [dl.z, dl.size[2], ldk.h], problems: B.exported.problems,
                kitProps: props.filter(p => p.kit).length, floors: props.filter(p => /_fx_floor$/.test(p.id)).length, frames: props.filter(p => /_fx_win\d+$/.test(p.id)).length,
                pieces: B.plan.pieces.filter(q => q.tags.some(t => t.startsWith("kit:"))).length,
                back: { kits: back.kits.length, fits: back.items.filter(i => i.kind === "fit").length, floors: back.rooms.filter(r => r.floorKit).length,
@@ -167,6 +173,8 @@ const SCRATCH = "Zz_builder_test";
     if (kt.problems.length) fail("the kit's problems: " + kt.problems.join("; "));
     if (Math.abs(kt.resized.d - 1.22) > 0.011 || kt.resized.back !== kt.resized.back0 || kt.resized.w !== kt.resized.w0) fail("dragging the sofa's front corner: " + JSON.stringify(kt.resized));
     if (!kt.varied.changed || !kt.varied.sameSize) fail("varying the sofa: " + JSON.stringify(kt.varied));
+    if (Math.abs(kt.cushion.z - 0.42) > 0.001 || kt.cushion.on !== kt.cushion.sofa) fail("a cushion on the sofa: " + JSON.stringify(kt.cushion));
+    if (!kt.doors.n || kt.doors.leaves !== kt.doors.n || kt.doors.handles !== kt.doors.n || kt.doors.frames !== kt.doors.n) fail("the kit doors: " + JSON.stringify(kt.doors));
     if (kt.sofa[0] > 0.9 || kt.sofa[1] !== 270) fail("the sofa didn't go back to the east wall facing west: " + kt.sofa);
     if (Math.abs(kt.dl[0] + kt.dl[1] - kt.dl[2]) > 0.001) fail("the downlight isn't on the ceiling: " + kt.dl);
     if (!kt.floors || !kt.frames || kt.pieces < kt.kitProps) fail("floors, frames or kit pieces missing: " + JSON.stringify(kt));
