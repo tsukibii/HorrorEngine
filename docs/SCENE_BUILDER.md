@@ -41,6 +41,24 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   - **Eye:** standing (1.65 m), crouching, sitting or hiding.
   - **Work light:** a lamp on your head, since the rooms are dark until the lighting pass.
   - **Doors open:** the doors as built are closed slabs, so this shows the doorways open.
+- **Finish** (left): the **skirting** height (6 cm to start; Japanese homes have 4 to 8), a **cornice** under the
+  ceiling (a thin mawaribuchi: try 3 cm), **door casings** round every door and opening (6 cm), a **ceiling light**
+  in every room (warm 2700 to 3000 K where people live, 4000 K where they wash and cook) and **its switch by the
+  door** (an interactable: the lights go off). They're saved as the level's `trim` and as built-ins, and built by the
+  importer as their own thin pieces, so they show in Unreal from the first import.
+- **Wall items:** pick *Wall item* and a kind, then click inside a room near the wall it hangs on: a mirror, a poster
+  (B2), a picture frame, a 55" TV, a wall air conditioner (エアコン, in every Japanese room), a clock, a calendar, a
+  whiteboard, a shelf, a light switch. Real sizes; drag one along its wall; select it to change its size and how high
+  it hangs. They're props with a `tag`, so the art pass knows what each is, and built-ins keep clear of the ones that
+  hang low. One covering a door or window is flagged under *To fix*.
+- **Reference cut-outs:** under *References*, **load a model** (.glb, .gltf or .fbx: the window or door you'll use
+  in Unreal; a file in centimetres is read as such). It's measured (width, height, depth) and gets a type (window,
+  door, sliding) and a sill; set a **gap** in mm for clearance, or leave 0 for a tight fit. Then *Reference cut-out*
+  and click a wall: the hole is that size exactly, its middle snapped to 5 cm. The model shows in the cut in the 3D
+  view so you see the fit; it's never saved into the story (you place the real one in Unreal). Change the model's
+  size and **Refit cuts** resizes every hole cut with it. The sizes are remembered in this browser.
+- **Measure:** drag anywhere: the length in metres and in modules.
+- **Plan image** saves the floor shown as an SVG: a backdrop in Unreal, or a printout.
 - **Check** runs the story and level checks (`story_check` on the world, `level_check`) on the unsaved plan. **Save
   to story** writes the level into `story.json` (the previous file goes to `Saved/Story/<Game>/history/`). It warns
   first if a check fails, and if the file changed on disk since you opened it.
@@ -119,7 +137,25 @@ The format grew with it (STORY_FORMAT.md §2):
 `plan.py`, `story_check.py` and `level_check.py` read all of it, and `level_check.check()` can be called on a story
 in memory.
 
-Not done yet:
+## 6. From here to Unreal, semi-photoreal, quickly
+
+What the builder now hands over, and what to do with it:
+1. **The shell is exact:** walls, holes cut to your window and door models, trim, built-ins at real sizes.
+   `storykit.importer.build(G)` makes it all; replace the reference cut-outs' holes with the models themselves (they
+   fit by construction).
+2. **Trim and built-ins are separate pieces:** give them one material each (painted wood for trim, white laminate for
+   built-ins) and they read as finished at once. Many small pieces cost draw calls: merge each room's trim (Merge
+   Actors) once the layout is locked.
+3. **Wall items carry their tag:** a `mirror` wants a mirror material (Lumen reflections handle a small one; a
+   bathroom mirror at the player's face may want a planar reflection), a `tv` an emissive screen, posters and frames
+   a texture.
+4. **Lights are placed and warm:** a point light per ceiling light at its colour temperature; swap for rect lights
+   (LED panels) and bake (GPU Lightmass) or leave them to Lumen.
+
+## 7. Not done yet
+
+- **Floor thresholds** where the floor changes (wood to tile at the washroom door).
+- **Materials by room kind:** a default `look` (tatami for a washitsu, tile in the bath).
 - **Room shapes:** rectangles only. An L-shaped room is two rooms joined by an opening.
 - **Building over a doorway:** a door can't sit on a wall that another room builds, so the builder puts it on the
   room that does.

@@ -94,9 +94,18 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - An opening on a wall that also serves an upper floor (a stairwell's door onto the landing) has its `sill` at that
   floor's height.
 
+**Trim:** `"trim": {"skirting": 0.06, "cornice": 0.03, "casing": 0.06}` on a level (every room) or a room (its own,
+key by key; `"trim": false` for none): a skirting board that height along the foot of every wall, a cornice that
+deep under the ceiling, a casing that wide round every door and opening on both sides. The planner builds them as
+thin boxes (`<room>__skirting_n0`...) wherever a wall stands at that height, its own or its neighbour's, so they stop
+at openings and open sides by themselves; `look.trim` textures them.
+
 **Built-ins** (the scene builder, docs/SCENE_BUILDER.md): props with ids `<room>_fx_<what>` are its own, remade on
 every save from the room's `kind` (a kitchen counter, a bath tub, a toilet, a vanity and washing machine, a shoe
-cabinet, a stair's steps), placed clear of every doorway. Edit them as any prop; the builder replaces them only while
+cabinet, a stair's steps), placed clear of every doorway, and its ceiling light (`<room>_fx_light`) with a light
+switch by the door (`<room>_fx_switch`, `use: switch`). Things on its walls are `<room>_wi_<kind>_<n>`: a box against
+the wall with its `tag` (mirror, poster, frame, tv, air_conditioner, clock, calendar, board, shelf, light_switch),
+read back by the builder as wall items. Edit them as any prop; the builder replaces them only while
 the room's built-ins are on.
 
 **A link:**

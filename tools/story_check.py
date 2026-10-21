@@ -131,6 +131,9 @@ def check_world(story, things, r):
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
+        for k, v in (lvl.get("trim") or {}).items():
+            if k not in ("skirting", "cornice", "casing") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
+                r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing: heights or widths in metres, 0 for none)")
         for rm in rooms.values():
             if len(rm.get("size", [])) != 3 or len(rm.get("at", [])) != 3:
                 r.err(f"room {rm['id']}: needs at [x, y, z] and size [w, d, h]")
@@ -141,6 +144,10 @@ def check_world(story, things, r):
                         r.err(f"room {rm['id']}: skip {wl!r} isn't [wall, from, to] inside the wall")
                 elif wl not in L.WALLS:
                     r.err(f"room {rm['id']}: skip {wl!r} isn't one of n e s w")
+            if rm.get("trim") not in (None, False):
+                for k, v in (rm["trim"] or {}).items():
+                    if k not in ("skirting", "cornice", "casing") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
+                        r.err(f"room {rm['id']}: trim {k}: {v!r} (skirting, cornice, casing: heights or widths in metres, 0 for none)")
             if rm.get("kind") is not None and rm["kind"] not in L.ROOM_KINDS:
                 r.warn(f"room {rm['id']}: kind {rm['kind']!r} isn't one of {', '.join(L.ROOM_KINDS)}")
             for op in rm.get("openings", []):

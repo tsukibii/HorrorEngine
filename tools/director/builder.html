@@ -54,6 +54,7 @@ svg text{font-family:system-ui,Segoe UI,sans-serif;pointer-events:none}
   <label title="What a drag snaps to">snap</label><select id="snap"><option value="0.1">10 cm</option><option value="0.2">20 cm</option><option value="0.455">½ module (45.5 cm)</option><option value="0.91">module (91 cm)</option></select>
   <label title="The grid drawn under the plan">grid</label><select id="grid"><option value="m">1 m, 20 cm (Unreal)</option><option value="jp">91 cm module (Japanese)</option></select>
   <button id="undo" title="Undo (Ctrl+Z)">↶</button><button id="redo" title="Redo (Ctrl+Y)">↷</button>
+  <button id="planImage" title="The floor plan as an SVG picture">Plan image</button>
   <button id="check" title="The story and level checks on this plan, before saving">Check</button>
   <button id="save" class="primary" title="Write the plan into the story as the level chosen above">Save to story</button>
   <span id="status">loading…</span>
@@ -62,9 +63,13 @@ svg text{font-family:system-ui,Segoe UI,sans-serif;pointer-events:none}
   <section id="left">
     <h2>Tools</h2>
     <div class="tools" id="tools"></div>
-    <div class="hint" style="margin-top:4px">Doors, sliding doors, openings and windows: pick one, click on a wall. Drag rooms; drag their edges to resize. <kbd>Del</kbd> removes, <kbd>R</kbd> turns a room, arrows nudge.</div>
+    <div class="hint" style="margin-top:4px">Doors, sliding doors, openings, windows, cut-outs and wall items: pick one, click on a wall. Drag rooms; drag their edges to resize. <kbd>Del</kbd> removes, <kbd>R</kbd> turns a room, arrows nudge.</div>
     <h2>Add a room</h2>
     <div class="kinds" id="kinds"></div>
+    <h2>Finish</h2>
+    <div id="finish"></div>
+    <h2>References <label class="hint" style="float:right;text-transform:none;letter-spacing:0;cursor:pointer"><input type="file" id="refFile" accept=".glb,.gltf,.fbx" multiple hidden>+ load model…</label></h2>
+    <div id="refs"></div>
     <h2>Selected</h2>
     <div id="props" class="hint">Nothing selected.</div>
   </section>

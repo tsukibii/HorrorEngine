@@ -26,6 +26,8 @@ def _tags(t, extra=()):
         tags.append(f"art:{t.d['art']}")
     if t.d.get("mat"):                       # a library texture set on the block
         tags.append(f"mat:{t.d['mat']}")
+    if t.d.get("tag"):                       # what it is (a mirror, a poster): the desk colours by it
+        tags.append(f"tag:{t.d['tag']}")
     return tags + list(extra)
 
 
@@ -80,6 +82,88 @@ def room_pieces(lid, room):
     return out
 
 
+TRIM_DEPTH = {"skirting": 0.012, "cornice": 0.03, "casing": 0.015}   # how far each stands off the wall
+
+
+def room_trim(lvl, room):
+    """A room's trim: the level's `trim`, overridden key by key by the room's; `trim: false` has none."""
+    if room.get("trim") is False:
+        return {}
+    t = dict(lvl.get("trim") or {})
+    t.update(room.get("trim") or {})
+    return {k: float(v) for k, v in t.items() if k in TRIM_DEPTH and v}
+
+
+def trim_pieces(lid, lvl, room, walls, openings):
+    """Skirting boards, a cornice and door casings on the room's side of its walls, wherever a wall is built (its
+    own or a neighbour's), so they stop at every opening and open side on their own. walls: this level's wall pieces;
+    openings: (axis, v, a0, a1, z0, h, is_window) in world metres for every opening on the level."""
+    tr = room_trim(lvl, room)
+    if not tr:
+        return []
+    out, T = [], L.WALL_T
+    x0, y0, z0 = room["at"]
+    w, d, h = room["size"]
+    base = {"level": lid, "room": room["id"], "yaw": 0.0, "shape": "box", "d": room}
+    look = [f"mat:{room['look']['trim']}"] if (room.get("look") or {}).get("trim") else []
+    for wall in L.WALLS:
+        axis, v, lo, hi = L.wall_line(room, wall)
+        inward = {"n": -1, "s": 1, "e": -1, "w": 1}[wall]
+        lo_in, hi_in = lo + T / 2, hi - T / 2                # between the faces of the walls at the corners
+
+        def on_line(p):
+            c, sz = p["pos"], p["size"]
+            return abs((c[1] if axis == "y" else c[0]) - v) < 0.01 and (sz[1] if axis == "y" else sz[0]) <= T + 0.001
+
+        def spans(zlo, zhi):
+            got = []
+            for p in walls:
+                if not on_line(p) or p["pos"][2] - p["size"][2] / 2 > zlo + 0.005 or p["pos"][2] + p["size"][2] / 2 < zhi - 0.005:
+                    continue
+                c, half = (p["pos"][0], p["size"][0] / 2) if axis == "y" else (p["pos"][1], p["size"][1] / 2)
+                a0, a1 = max(c - half, lo_in), min(c + half, hi_in)
+                if a1 - a0 > 0.03:
+                    got.append([a0, a1])
+            got.sort()
+            merged = []
+            for a0, a1 in got:
+                if merged and a0 <= merged[-1][1] + 0.005:
+                    merged[-1][1] = max(merged[-1][1], a1)
+                else:
+                    merged.append([a0, a1])
+            return merged
+
+        def piece(name, a0, a1, zc, hh, depth):
+            off = v + inward * (T / 2 + depth / 2)
+            pos = ((a0 + a1) / 2, off, zc) if axis == "y" else (off, (a0 + a1) / 2, zc)
+            size = (a1 - a0, depth, hh) if axis == "y" else (depth, a1 - a0, hh)
+            out.append(dict(base, id=f"{room['id']}__{name}", kind="mesh", pos=pos, size=size,
+                            tags=["story", f"story:{room['id']}", f"room:{room['id']}", f"trim:{name.split('_')[0]}"] + look))
+
+        if tr.get("skirting"):
+            sk = tr["skirting"]
+            for i, (a0, a1) in enumerate(spans(z0, z0 + sk)):
+                piece(f"skirting_{wall}{i}", a0, a1, z0 + sk / 2, sk, TRIM_DEPTH["skirting"])
+        if tr.get("cornice") and room.get("ceiling", True):
+            co = tr["cornice"]
+            for i, (a0, a1) in enumerate(spans(z0 + h - co, z0 + h)):
+                piece(f"cornice_{wall}{i}", a0, a1, z0 + h - co / 2, co, TRIM_DEPTH["cornice"])
+        if tr.get("casing"):
+            cw, cd, i = tr["casing"], TRIM_DEPTH["casing"], 0
+            for ax, ov, a0, a1, oz, oh, win in openings:
+                if win or ax != axis or abs(ov - v) > 0.01 or abs(oz - z0) > 0.3 or a0 < lo - 0.01 or a1 > hi + 0.01:
+                    continue
+                top = min(oz + oh + cw, z0 + h)
+                for b0, b1 in ((a0 - cw, a0), (a1, a1 + cw)):         # the jambs' faces, either side
+                    if b0 >= lo_in - 0.001 and b1 <= hi_in + 0.001:
+                        piece(f"casing_{wall}{i}", b0, b1, (oz + top) / 2, top - oz, cd)
+                        i += 1
+                if top - (oz + oh) > 0.01:                             # the head over it
+                    piece(f"casing_{wall}{i}", max(a0 - cw, lo_in), min(a1 + cw, hi_in), (oz + oh + top) / 2, top - (oz + oh), cd)
+                    i += 1
+    return out
+
+
 def plan(story, level=None):
     things, errs = L.index(story)
     if errs:
@@ -88,8 +172,19 @@ def plan(story, level=None):
     for lid, lvl in story["levels"].items():
         if level and lid != level:
             continue
+        mine = []
         for room in lvl["rooms"]:
-            out += room_pieces(lid, room)
+            mine += room_pieces(lid, room)
+        walls = [p for p in mine if p["kind"] == "wall"]
+        ops = []
+        for room in lvl["rooms"]:
+            for op in room.get("openings", []):
+                axis, v, lo, _ = L.wall_line(room, op["wall"])
+                ops.append((axis, v, lo + op["at"] - op["w"] / 2, lo + op["at"] + op["w"] / 2, room["at"][2] + op.get("sill", 0.0),
+                            op["h"], bool(op.get("window"))))
+        for room in lvl["rooms"]:
+            mine += trim_pieces(lid, lvl, room, walls, ops)
+        out += mine
         st = things[lvl["start"]]
         out.append({"id": f"{lid}__start", "kind": "start", "level": lid, "room": st.room, "pos": st.pos,
                     "size": (0, 0, 0), "yaw": st.yaw, "shape": None, "tags": ["story", "story:start"], "d": st.d})

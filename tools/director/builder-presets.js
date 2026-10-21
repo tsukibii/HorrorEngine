@@ -89,6 +89,7 @@ export const PRESETS = [
       ["ldk", "balcony", "slide", { w: 2.6, at: 0.45 }],
     ],
     windows: [["bedroom", "e", "window", {}], ["ldk", "w", "window", { w: 1.2 }], ["ldk", "e", "window", { w: 1.2 }]],
+    items: [["ldk", "n", "ac", 0.2], ["ldk", "n", "tv", 0.75], ["bedroom", "s", "ac", 0.5], ["bedroom", "w", "mirror", 0.75]],
     start: [2.55, 9.3, 270], her: [3.0, 1.6, 90],
   },
   {
@@ -131,6 +132,7 @@ export const PRESETS = [
       ["washitsu", "balcony", "slide", { w: 1.8 }],
     ],
     windows: [["yoshitsu", "n", "window", { w: 1.2 }], ["service", "n", "window", { w: 1.2 }], ["ldk", "e", "window", { at: 0.4 }]],
+    items: [["ldk", "n", "ac", 0.75], ["ldk", "w", "tv", 0.633], ["yoshitsu", "w", "ac", 0.5], ["service", "e", "clock", 0.5]],
     start: [3.65, 11.3, 270], her: [5.2, 2.0, 90],
   },
   {
@@ -194,6 +196,7 @@ export const PRESETS = [
     ],
     windows: [["ldk", "e", "window", {}], ["ldk", "s", "slide", { w: 2.6, at: 0.6 }], ["kids2", "s", "window", {}],
               ["master", "e", "window", {}], ["study", "w", "window", { w: 0.9 }], ["washitsu", "w", "window", { w: 0.9 }]],
+    items: [["ldk", "e", "ac", 0.2], ["master", "w", "ac", 0.3], ["master", "n", "mirror", 0.85], ["kids1", "w", "poster", 0.5], ["washitsu", "n", "calendar", 0.2]],
     start: [0.91, 9.1, 270], her: [6.4, 2.2, 90],
   },
   {
@@ -239,3 +242,26 @@ export const PRESETS = [
     start: [5.0, -1.9, 90], her: [7.0, 1.4, 270],
   },
 ];
+
+// Things stuck to a wall, real sizes: [w, h, t (out from the wall)] and the height of their middle above the floor.
+// They are ordinary props (`<room>_wi_<kind>_<n>`, a box with its `tag`): the art pass gives each its mesh or texture.
+export const WALL_ITEMS = {
+  poster:   { en: "Poster (B2)", size: [0.515, 0.728, 0.004], z: 1.5, tag: "poster" },
+  frame:    { en: "Picture frame", size: [0.45, 0.35, 0.025], z: 1.5, tag: "frame" },
+  mirror:   { en: "Mirror", size: [0.45, 1.2, 0.02], z: 1.25, tag: "mirror" },
+  tv:       { en: "TV, 55\" on the wall", size: [1.23, 0.71, 0.06], z: 1.15, tag: "tv" },
+  ac:       { en: "Air conditioner (エアコン)", size: [0.8, 0.25, 0.29], z: 2.05, tag: "air_conditioner" },
+  clock:    { en: "Wall clock", size: [0.3, 0.3, 0.05], z: 1.9, tag: "clock" },
+  calendar: { en: "Calendar", size: [0.3, 0.45, 0.003], z: 1.55, tag: "calendar" },
+  board:    { en: "Whiteboard / corkboard", size: [0.9, 0.6, 0.02], z: 1.4, tag: "board" },
+  shelf:    { en: "Wall shelf", size: [0.8, 0.03, 0.22], z: 1.6, tag: "shelf" },
+  switch:   { en: "Light switch", size: [0.07, 0.12, 0.01], z: 1.2, tag: "light_switch" },
+};
+
+// a ceiling light's colour temperature by room: warm where people live, cooler where they wash and cook
+export const LIGHT_K = { ldk: 3000, living: 2700, dining: 2700, kitchen: 4000, washitsu: 2700, bedroom: 2700, kids: 3000, study: 3500,
+  bath: 4000, washroom: 4000, toilet: 3000, genkan: 3000, corridor: 3000, stairs: 3000, service: 3500 };
+
+// the finish a new plan starts with: skirting 6 cm, door casings 6 cm, no cornice (Japanese rooms often have a thin
+// mawaribuchi: try 3 cm), a ceiling light in each room with its switch by the door
+export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, lights: true, switches: true };

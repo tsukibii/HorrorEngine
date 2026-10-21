@@ -7,7 +7,9 @@ import * as THREE from "three";
 import * as M from "./motion.js";
 import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H } from "./stage.js";
 import { loadBody, BodyFigure } from "./bodies.js";
-import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY } from "./builder-presets.js";
+import { GLTFLoader } from "./vendor/GLTFLoader.js";
+import { FBXLoader } from "./vendor/FBXLoader.js";
+import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH } from "./builder-presets.js";
 import * as BM from "./builder-model.js";
 
 const $ = s => document.querySelector(s);
@@ -21,6 +23,7 @@ const B = {
   model: null, floor: 0, sel: null, tool: "select", snap: 0.1, grid: "m",
   view: { cx: 4, cy: 4, s: 60 },            // the plan's centre (m) and its scale (px a metre)
   undo: [], redo: [], plan: null, planStory: null, exported: null, dirty: false,
+  itemKind: "poster", refs: [], ref: null, measure: null,
 };
 let LIB = null, stage = null, herFig = null, lampLight = null;
 
@@ -71,7 +74,10 @@ function openPreset(id) {
   B.dirty = true;
 }
 function afterLoad(msg) {
-  B.sel = null; B.floor = 0;
+  B.sel = null; B.floor = 0; B.measure = null;
+  B.model.items = B.model.items || []; B.model.finish = Object.assign({}, FINISH, B.model.finish || {});
+  for (const op of B.model.ops) if (!op.ref) { const m = B.refs.find(r => r.type === op.type && Math.abs(r.w + 2 * (+r.gap || 0) - op.w) < 0.003 && Math.abs(r.h + 2 * (+r.gap || 0) - op.h) < 0.003); if (m) op.ref = m.name; }
+  renderFinish();
   frame(); renderFloors(); changed(false); status(msg);
 }
 function frame() {                         // fit the plan in view
@@ -111,7 +117,7 @@ async function replan() {
     if (j.error) throw new Error(j.error);
     B.plan = j; B.planStory = s;
     stage.setWorld(j, s, B.target);
-    addLamp(); placeHer(); doors(); draw(); render3d();
+    addLamp(); placeHer(); doors(); placeRefs(); draw(); render3d();
   } catch (e) { status(e.message, "bad"); }
 }
 
@@ -181,7 +187,9 @@ function draw() {
     if (Math.abs(op.z - floorZ()) > 0.3 && !(op.z < floorZ() && op.z + op.h > floorZ())) continue;
     drawOpening(op);
   }
+  for (const it of B.model.items || []) drawItem(it);
   drawPeople();
+  if (B.measure) drawMeasure();
   if (B.sel && B.sel.room) handles(B.model.rooms.find(r => r.id === B.sel.room));
   // the scale: a bar and what a square is
   const bar = B.grid === "jp" ? MODULE : 1;
@@ -293,7 +301,10 @@ function visibility(p) {
 let drag = null;
 svg.addEventListener("mousedown", e => {
   const t = e.target, x = wx(e.offsetX), y = wy(e.offsetY);
+  if (B.tool === "measure" && e.button === 0) { const p = snapPt(x, y); B.measure = { a: p, b: p }; drag = { kind: "measure" }; draw(); return; }
+  if (B.tool === "item" && e.button === 0) { addItem(x, y); return; }
   if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
+  if (t.dataset.item) { B.sel = { item: t.dataset.item }; const it = B.model.items.find(i => i.id === t.dataset.item); pushUndo(); drag = { kind: "item", it, a0: it.a, p: wallCoord(it, x, y) }; changed(false); return; }
   if (t.dataset.handle) { const r = roomOf(B.sel.room); pushUndo(); drag = { kind: "resize", h: t.dataset.handle, r, start: { x: r.x, y: r.y, w: r.w, d: r.d }, x, y }; return; }
   if (t.dataset.turn) { pushUndo(); drag = { kind: "turn", who: t.dataset.turn }; return; }
   if (t.dataset.person) { pushUndo(); const o = B.model[t.dataset.person]; drag = { kind: "person", who: t.dataset.person, dx: o.x - x, dy: o.y - y }; return; }
@@ -316,6 +327,10 @@ window.addEventListener("mousemove", e => {
     if (h.includes("w")) { const nx = snapV(s.x + x - drag.x); r.w = Math.max(0.5, s.x + s.w - nx); r.x = s.x + s.w - r.w; }
     if (h.includes("s")) { const ny = snapV(s.y + y - drag.y); r.d = Math.max(0.5, s.y + s.d - ny); r.y = s.y + s.d - r.d; }
     magnetResize(r, h);
+  } else if (drag.kind === "measure") {
+    B.measure.b = snapPt(x, y); draw(); return;
+  } else if (drag.kind === "item") {
+    drag.it.a = Math.round((drag.a0 + wallCoord(drag.it, x, y) - drag.p) / 0.05) * 0.05;
   } else if (drag.kind === "op") {
     drag.op.c = Math.round((drag.c0 + (drag.op.axis === "y" ? x : y) - drag.a) / 0.05) * 0.05;
   } else if (drag.kind === "person") {
@@ -326,7 +341,7 @@ window.addEventListener("mousemove", e => {
   B.exported = BM.modelToLevel(B.model, B.story);
   draw(); if (drag.kind === "person" || drag.kind === "turn") { placeHer(); render3d(); }
 });
-window.addEventListener("mouseup", () => { if (!drag) return; const k = drag.kind; drag = null; if (k !== "pan") changed(); });
+window.addEventListener("mouseup", () => { if (!drag) return; const k = drag.kind; drag = null; if (k !== "pan" && k !== "measure") changed(); });
 svg.addEventListener("wheel", e => {
   e.preventDefault();
   const x = wx(e.offsetX), y = wy(e.offsetY), f = Math.exp(-e.deltaY * 0.0015);
@@ -363,14 +378,19 @@ function addOpening(x, y) {
     if (!best || off < best.off) best = { ln, a, off, r };
   }
   if (!best) { status("click on a wall to put it there", "bad"); return; }
-  const type = B.tool, D = OPENINGS[type];
-  const w = Math.min(D.w, best.ln.hi - best.ln.lo - 0.2);
+  const ref = B.tool === "ref" ? B.ref : null;
+  if (B.tool === "ref" && !ref) { status("load a reference model first (References, left)", "bad"); return; }
+  const type = ref ? ref.type : B.tool, D = OPENINGS[type];
+  const gap = ref ? (+ref.gap || 0) : 0;
+  const w = ref ? ref.w + 2 * gap : Math.min(D.w, best.ln.hi - best.ln.lo - 0.2);
+  if (w > best.ln.hi - best.ln.lo - 0.12) { status(`the ${r2(w)} m ${type} doesn't fit on that ${r2(best.ln.hi - best.ln.lo)} m wall`, "bad"); return; }
   const c = Math.min(Math.max(Math.round(best.a / 0.05) * 0.05, best.ln.lo + w / 2 + 0.06), best.ln.hi - w / 2 - 0.06);
   let id = type === "arch" ? "arch" : type === "window" ? "window" : "door", i = 1;
   const base = best.r.id + "_" + id;
   while (B.model.ops.some(o => o.id === base + "_" + i)) i++;
   pushUndo();
-  const op = BM.newOpening(type, base + "_" + i, best.ln, r2(c), floorZ(), { w });
+  const op = BM.newOpening(type, base + "_" + i, best.ln, r2(c), floorZ(), ref ? { w: r2(w), h: r2(ref.h + 2 * gap), sill: type === "window" ? r2(ref.sill - gap) : 0 } : { w });
+  if (ref) op.ref = ref.name;
   B.model.ops.push(op);
   B.sel = { op: op.id };
   changed();
@@ -390,10 +410,23 @@ function addRoom(kind) {
 // ---- the left panel ----
 function renderTools() {
   const box = $("#tools"); box.innerHTML = "";
-  for (const [t, label] of [["select", "Select / move"], ["door", "Door"], ["slide", "Sliding door"], ["arch", "Opening"], ["window", "Window"]]) {
-    const b = document.createElement("button"); b.textContent = label; b.className = B.tool === t ? "on" : "";
-    b.onclick = () => { B.tool = t; svg.style.cursor = t === "select" ? "default" : "crosshair"; renderTools(); };
+  for (const [t, label, tip] of [["select", "Select / move"], ["door", "Door"], ["slide", "Sliding door"], ["arch", "Opening"], ["window", "Window"],
+                                  ["ref", "Reference cut-out", "cut a wall to the reference model chosen under References"], ["item", "Wall item", "a mirror, a poster, a TV... on the wall you click"],
+                                  ["measure", "Measure", "drag to measure (it snaps like a room)"]]) {
+    const b = document.createElement("button"); b.textContent = label; b.className = B.tool === t ? "on" : ""; if (tip) b.title = tip;
+    b.onclick = () => { B.tool = t; if (t !== "measure") B.measure = null; svg.style.cursor = t === "select" ? "default" : "crosshair"; renderTools(); draw(); };
     box.append(b);
+  }
+  if (B.tool === "item") {
+    const sel = document.createElement("select"); sel.style.width = "100%"; sel.style.marginTop = "4px";
+    for (const [k, W] of Object.entries(WALL_ITEMS)) sel.append(new Option(`${W.en} (${W.size[0] * 100}×${W.size[1] * 100} cm)`, k));
+    sel.value = B.itemKind; sel.onchange = () => { B.itemKind = sel.value; };
+    box.append(sel);
+  }
+  if (B.tool === "ref") {
+    const n = document.createElement("div"); n.className = "hint"; n.style.marginTop = "4px";
+    n.textContent = B.ref ? `Cutting ${B.ref.name}: ${r2(B.ref.w * 100)} × ${r2(B.ref.h * 100)} cm${B.ref.type === "window" ? `, sill ${r2(B.ref.sill * 100)} cm` : ""}. Click a wall.` : "Load a model under References first.";
+    box.append(n);
   }
   const kb = $("#kinds"); kb.innerHTML = "";
   for (const [k, K] of Object.entries(KINDS)) {
@@ -446,19 +479,31 @@ function renderProps() {
     box.append(grid);
     if (op.type === "door" || op.type === "slide") box.append(check(op.creak, "creaks", v => { op.creak = v; }));
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
-  } else { box.className = "hint"; box.textContent = "Nothing selected. Click a room or a door."; }
+  } else if (B.sel && B.sel.item) {
+    const it = (B.model.items || []).find(i => i.id === B.sel.item);
+    if (!it) { B.sel = null; return renderProps(); }
+    const head = document.createElement("div"); head.innerHTML = `<b>${WALL_ITEMS[it.kind].en}</b> <span class="hint">on ${it.room}'s ${it.wall} wall</span>`;
+    box.append(head);
+    grid.append(...field("kind", pick(it.kind, Object.entries(WALL_ITEMS).map(([k, W]) => [k, W.en]), v => { const W = WALL_ITEMS[v]; it.kind = v; [it.w, it.h, it.t] = W.size; it.z = W.z; it.id = it.id.replace(/_wi_[a-z]+_/, `_wi_${v}_`); B.sel.item = it.id; })),
+      ...field("width", num(it.w, v => { it.w = Math.max(0.02, v); }, 0.01)), ...field("height", num(it.h, v => { it.h = Math.max(0.01, v); }, 0.01)),
+      ...field("off the wall", num(it.t, v => { it.t = Math.max(0.002, v); }, 0.005)), ...field("middle at", num(it.z, v => { it.z = Math.max(it.h / 2, v); }, 0.05)));
+    box.append(grid);
+    const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
+  } else { box.className = "hint"; box.textContent = "Nothing selected. Click a room, a door or a wall item."; }
 }
 function wrap(...xs) { const d = document.createElement("div"); d.style.display = "flex"; d.style.gap = "4px"; d.append(...xs); return d; }
 function renameRoom(r, v) {
   if (!v || !/^[a-z][a-z0-9_]*$/.test(v) || roomOf(v)) { status("ids are snake_case and unique", "bad"); return; }
   const used = JSON.stringify(Object.assign({}, B.story, { levels: {} })).includes(`"${r.id}"`);
   if (used && !confirm(`Scenes or stitches name "${r.id}". Rename it anyway? (They'd need changing too.)`)) return;
+  BM.renameItems(B.model, r.id, v);
   r.id = v; B.sel = { room: v };
 }
 function removeSel() {
   if (!B.sel) return;
   pushUndo();
-  if (B.sel.room) B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room);
+  if (B.sel.room) { B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room); B.model.items = (B.model.items || []).filter(i => i.room !== B.sel.room); }
+  else if (B.sel.item) B.model.items = B.model.items.filter(i => i.id !== B.sel.item);
   else B.model.ops = B.model.ops.filter(o => o.id !== B.sel.op);
   B.sel = null; changed();
 }
@@ -621,7 +666,7 @@ document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
   if (e.key === "Delete" || e.key === "Backspace") { removeSel(); e.preventDefault(); return; }
-  if (e.key === "Escape") { B.tool = "select"; renderTools(); B.sel = null; changed(false); return; }
+  if (e.key === "Escape") { B.tool = "select"; B.measure = null; renderTools(); B.sel = null; changed(false); return; }
   const r = B.sel && B.sel.room && roomOf(B.sel.room);
   if (r && e.key.toLowerCase() === "r") { pushUndo(); [r.w, r.d] = [r.d, r.w]; changed(); return; }
   const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
@@ -649,6 +694,10 @@ async function boot() {
   $("#check").onclick = runChecks; $("#save").onclick = () => save(false);
   for (const id of ["#eye", "#lamp", "#showHer", "#doorsOpen"]) $(id).onchange = () => { placeHer(); doors(); draw(); render3d(); };
   renderTools();
+  $("#planImage").onclick = savePlanImage;
+  $("#refFile").onchange = e => { for (const f of e.target.files) loadRef(f); e.target.value = ""; };
+  try { B.refs = JSON.parse(localStorage.getItem("builder.refs") || "[]"); } catch (e) { B.refs = []; }
+  renderRefs();
   LIB = M.loadLibrary(await api("/api/poses"));
   stage = new Stage($("#view"), LIB);
   new ResizeObserver(() => { draw(); render3d(); }).observe($("#planBox"));
@@ -658,5 +707,132 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM;
-window.builder = { openPreset, changed, save, runChecks, addRoom, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo };
+window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
+
+// ---- wall items ----
+const WALL_T = 0.1;
+function itemRoom(it) { return roomOf(it.room); }
+function wallCoord(it, x, y) { const r = itemRoom(it); return it.wall === "n" || it.wall === "s" ? x - r.x : y - r.y; }
+function itemRect(it) {                 // world x0 y0 x1 y1 of its footprint against the wall
+  const r = itemRoom(it), ln = BM.wallLine(r, it.wall), c = ln.lo + it.a, f = WALL_T / 2, t = Math.max(it.t, 0.03);
+  if (it.wall === "n") return [c - it.w / 2, ln.v - f - t, c + it.w / 2, ln.v - f];
+  if (it.wall === "s") return [c - it.w / 2, ln.v + f, c + it.w / 2, ln.v + f + t];
+  if (it.wall === "e") return [ln.v - f - t, c - it.w / 2, ln.v - f, c + it.w / 2];
+  return [ln.v + f, c - it.w / 2, ln.v + f + t, c + it.w / 2];
+}
+const ITEM_COL = { mirror: "#bfd6e6", tv: "#202228", poster: "#c79a6b", frame: "#c79a6b", calendar: "#e6dcc8", ac: "#f2f2ee", board: "#f2f2ee", clock: "#d9a441", shelf: "#a07a45", switch: "#f2f2ee" };
+function drawItem(it) {
+  const r = itemRoom(it);
+  if (!r || !(onFloor(r))) return;
+  const [x0, y0, x1, y1] = itemRect(it), sel = B.sel && B.sel.item === it.id;
+  const g = el("g", { "data-item": it.id, style: "cursor:pointer" });
+  el("rect", { x: sx(x0), y: sy(y1), width: (x1 - x0) * B.view.s, height: (y1 - y0) * B.view.s, fill: ITEM_COL[it.kind] || "#ccc", stroke: sel ? "#d9a441" : "#111", "stroke-width": sel ? 2 : 1, "data-item": it.id }, g);
+  el("rect", { x: sx(x0) - 4, y: sy(y1) - 4, width: (x1 - x0) * B.view.s + 8, height: (y1 - y0) * B.view.s + 8, fill: "transparent", "data-item": it.id }, g);
+}
+function addItem(x, y) {
+  // the room you clicked in, and its wall nearest the click
+  const r = BM.roomAt(B.model, x, y, floorZ());
+  if (!r) { status("click inside a room, near the wall", "bad"); return; }
+  const d = { s: y - r.y, n: r.y + r.d - y, w: x - r.x, e: r.x + r.w - x };
+  const wall = Object.entries(d).sort((a, b) => a[1] - b[1])[0][0];
+  if (d[wall] > 0.6) { status("click nearer the wall (within 60 cm)", "bad"); return; }
+  if (r.open.includes(wall)) { status("that side is open: no wall to hang it on", "bad"); return; }
+  const a = Math.round(((wall === "n" || wall === "s") ? x - r.x : y - r.y) / 0.05) * 0.05;
+  let i = 1; while ((B.model.items || []).some(it => it.id === `${r.id}_wi_${B.itemKind}_${i}`)) i++;
+  pushUndo();
+  const it = BM.newItem(B.itemKind, `${r.id}_wi_${B.itemKind}_${i}`, r.id, wall, a);
+  B.model.items.push(it); B.sel = { item: it.id };
+  changed();
+}
+
+// ---- measuring ----
+function snapPt(x, y) { return [Math.round(x / 0.05) * 0.05, Math.round(y / 0.05) * 0.05]; }
+function drawMeasure() {
+  const [a, b] = [B.measure.a, B.measure.b], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  el("line", { x1: sx(a[0]), y1: sy(a[1]), x2: sx(b[0]), y2: sy(b[1]), stroke: "#6fb3d9", "stroke-width": 2 });
+  for (const p of [a, b]) el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 3, fill: "#6fb3d9" });
+  const t = el("text", { x: (sx(a[0]) + sx(b[0])) / 2 + 8, y: (sy(a[1]) + sy(b[1])) / 2 - 8, fill: "#6fb3d9", "font-size": 13 });
+  t.textContent = `${L.toFixed(2)} m` + (L > 0.4 ? ` (${(L / MODULE).toFixed(1)} modules)` : "");
+}
+
+// ---- the finish: skirting, cornice, door casings, lights ----
+function renderFinish() {
+  const box = $("#finish"); if (!box || !B.model) return;
+  const f = B.model.finish; box.innerHTML = "";
+  const cm = (label, key, tip) => { const i = num(f[key] * 100, v => { f[key] = Math.max(0, v) / 100; renderFinish(); }, 0.5); i.title = tip; const l = document.createElement("label"); l.textContent = label; l.title = tip; return [l, i]; };
+  const grid = document.createElement("div"); grid.className = "prop";
+  grid.append(...cm("skirting, cm", "skirting", "the board along the foot of every wall (0: none); Japanese homes: 4 to 8 cm"),
+              ...cm("cornice, cm", "cornice", "a moulding where the wall meets the ceiling (mawaribuchi; 0: none)"),
+              ...cm("door casing, cm", "casing", "the frame round every door and opening, both sides (0: none)"));
+  box.append(grid,
+    check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
+    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }));
+}
+
+// ---- reference models: a window or a door you'll place in Unreal, measured here so the wall is cut to fit ----
+function saveRefs() { localStorage.setItem("builder.refs", JSON.stringify(B.refs.map(({ obj, ...r }) => r))); }
+async function loadRef(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const obj = /\.fbx$/i.test(file.name) ? await new FBXLoader().loadAsync(url) : (await new GLTFLoader().loadAsync(url)).scene;
+    let box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3());
+    let scale = Math.max(size.x, size.y, size.z) > 10 ? 0.01 : 1;            // a file in centimetres (Unreal, most FBX)
+    obj.scale.multiplyScalar(scale);
+    let rotY = 0;
+    if (size.z > size.x) { obj.rotation.y = Math.PI / 2; rotY = 90; }        // its width along x, its depth along z
+    obj.updateMatrixWorld(true);
+    box = new THREE.Box3().setFromObject(obj); size = box.getSize(new THREE.Vector3());
+    const name = file.name.replace(/\.[^.]+$/, "");
+    const old = B.refs.find(r => r.name === name);
+    const guess = size.y > 1.75 ? (size.x > 1.3 ? "slide" : "door") : "window";
+    const ref = Object.assign(old || { name, type: guess, sill: guess === "window" ? 0.9 : 0, gap: 0 }, { w: r2s(size.x), h: r2s(size.y), d: r2s(size.z), scale, rotY, obj });
+    if (!old) B.refs.push(ref);
+    B.ref = ref; B.tool = "ref"; saveRefs(); renderRefs(); renderTools(); placeRefs(); render3d();
+    status(`${name}: ${ref.w * 100} × ${ref.h * 100} cm, ${ref.d * 100} cm deep${scale !== 1 ? " (read as centimetres)" : ""}. Click a wall to cut it.`);
+  } catch (e) { status("couldn't read " + file.name + ": " + e.message, "bad"); }
+}
+const r2s = v => Math.round(v * 1000) / 1000;
+function renderRefs() {
+  const box = $("#refs"); if (!box) return; box.innerHTML = "";
+  if (!B.refs.length) { box.innerHTML = '<div class="hint">None yet. A window or door model you\'ll use in Unreal (.glb, .gltf, .fbx): the wall is cut to its exact size; it\'s shown in the 3D view and never saved into the story.</div>'; return; }
+  for (const ref of B.refs) {
+    const d = document.createElement("div"); d.style.cssText = "border:1px solid var(--line);border-radius:4px;padding:4px;margin-bottom:4px" + (B.ref === ref ? ";border-color:var(--accent)" : "");
+    const t = document.createElement("div"); t.innerHTML = `<b>${esc(ref.name)}</b> <span class="hint">${ref.obj ? "" : "(size only: load the file again to see it)"}</span>`;
+    const g = document.createElement("div"); g.className = "prop";
+    const n = (v, on, step = 0.5) => { const i = document.createElement("input"); i.type = "number"; i.step = step; i.value = r2(v * 100); i.onchange = () => { on(+i.value / 100); saveRefs(); renderRefs(); renderTools(); }; return i; };
+    const tp = document.createElement("select"); for (const o of ["window", "door", "slide"]) tp.append(new Option(o, o)); tp.value = ref.type; tp.onchange = () => { ref.type = tp.value; saveRefs(); renderTools(); };
+    g.append(...field("type", tp), ...field("w × h, cm", wrap(n(ref.w, v => { ref.w = v; }), n(ref.h, v => { ref.h = v; }))),
+             ...field("sill, cm", n(ref.sill, v => { ref.sill = v; })), ...field("gap, mm", (() => { const i = document.createElement("input"); i.type = "number"; i.step = 1; i.value = (ref.gap || 0) * 1000; i.title = "clearance all round between the model and the cut (0: a tight fit)"; i.onchange = () => { ref.gap = +i.value / 1000; saveRefs(); renderTools(); }; return i; })()));
+    const use = document.createElement("button"); use.textContent = "Cut with it"; use.onclick = () => { B.ref = ref; B.tool = "ref"; renderRefs(); renderTools(); };
+    const fit = document.createElement("button"); fit.textContent = "Refit cuts"; fit.title = "every opening cut with this model takes its size again";
+    fit.onclick = () => { pushUndo(); for (const op of B.model.ops) if (op.ref === ref.name) { op.w = r2(ref.w + 2 * (ref.gap || 0)); op.h = r2(ref.h + 2 * (ref.gap || 0)); if (op.type === "window") op.sill = r2(ref.sill - (ref.gap || 0)); } changed(); };
+    const rm = document.createElement("button"); rm.textContent = "×"; rm.onclick = () => { B.refs = B.refs.filter(x => x !== ref); if (B.ref === ref) B.ref = null; saveRefs(); renderRefs(); };
+    d.append(t, g, use, fit, rm); box.append(d);
+  }
+}
+function placeRefs() {
+  if (!stage) return;
+  for (const o of stage.world.children.filter(c => c.userData && c.userData.ref)) stage.world.remove(o);
+  for (const op of B.model.ops) {
+    const ref = op.ref && B.refs.find(r => r.name === op.ref && r.obj);
+    if (!ref) continue;
+    const o = ref.obj.clone(true), holder = new THREE.Group();
+    const box = new THREE.Box3().setFromObject(o), c = box.getCenter(new THREE.Vector3());
+    o.position.sub(c); holder.add(o); holder.userData.ref = true;
+    const zc = op.z + (op.type === "window" ? op.sill + (ref.gap || 0) : (ref.gap || 0)) + ref.h / 2;
+    holder.position.copy(op.axis === "y" ? s2t(op.c, op.v, zc) : s2t(op.v, op.c, zc));
+    if (op.axis === "x") holder.rotation.y = Math.PI / 2;
+    stage.world.add(holder);
+  }
+}
+
+// ---- the plan as a picture (SVG: open it anywhere, or as a backdrop in Unreal) ----
+function savePlanImage() {
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", SVGNS); clone.setAttribute("width", svg.clientWidth); clone.setAttribute("height", svg.clientHeight);
+  const bg = document.createElementNS(SVGNS, "rect"); bg.setAttribute("width", "100%"); bg.setAttribute("height", "100%"); bg.setAttribute("fill", "#141417");
+  clone.insertBefore(bg, clone.firstChild);
+  const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${B.target || "plan"}_${B.floor + 1}F.svg`; a.click();
+}

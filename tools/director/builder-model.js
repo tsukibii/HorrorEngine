@@ -2,7 +2,7 @@
 // reference layout and written back as the story's rooms (with the shared walls worked out: the taller, then the
 // larger room builds a wall two rooms share, the other skips that stretch), openings, links, built-ins, stairs and
 // the start spot. docs/SCENE_BUILDER.md has the rules; check.js-style tests run it in the page (builder_test.js).
-import { KINDS, FIXTURES, OPENINGS, JO } from "./builder-presets.js";
+import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH } from "./builder-presets.js";
 
 export const WALLS = ["n", "e", "s", "w"];
 const OPP = { n: "s", s: "n", e: "w", w: "e" };
@@ -74,7 +74,11 @@ export function presetToModel(P) {
     ops.push(newOpening(type, `${rid}_${wall}_${type}`, ln, r3(ln.lo + (ln.hi - ln.lo) * (o.at ?? 0.5)), r.z, Object.assign({}, o, { w })));
   }
   const floors = P.floors || [0];
-  return { rooms, ops, floors, player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
+  const items = (P.items || []).map(([rid, wall, kind, at = 0.5], i) => {
+    const r = byId[rid], ln = wallLine(r, wall), W = WALL_ITEMS[kind];
+    return newItem(kind, `${rid}_wi_${kind}_${i + 1}`, rid, wall, r3((ln.hi - ln.lo) * at));
+  });
+  return { rooms, ops, items, floors, finish: Object.assign({}, FINISH), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
            her: { x: P.her[0], y: P.her[1], yaw: P.her[2], z: 0 }, levelExtra: {}, startId: "start", problems };
 }
 
@@ -129,8 +133,22 @@ export function levelToModel(story, levelName) {
   const big = rooms.filter(r => !OUTDOOR.has(r.kind)).sort((a, b) => area(b) - area(a))[0] || rooms[0];
   const her = { x: big.x + big.w / 2, y: big.y + big.d / 2, yaw: 270, z: big.z };
   const levelExtra = {};
-  for (const [k, v] of Object.entries(lvl)) if (!["rooms", "links", "start"].includes(k)) levelExtra[k] = clone(v);
-  return { rooms, ops, floors: floors.length ? floors : [0], player, her, levelExtra, startId: lvl.start || "start", problems: [] };
+  for (const [k, v] of Object.entries(lvl)) if (!["rooms", "links", "start", "trim"].includes(k)) levelExtra[k] = clone(v);
+  // wall items: the props named <room>_wi_<kind>_<n>, read back to their wall
+  const items = [];
+  for (const sr of lvl.rooms) for (const p of sr.props || []) {
+    const m = p.id.match(new RegExp(`^${sr.id}_wi_([a-z]+)_`));
+    if (!m || !WALL_ITEMS[m[1]] || !/^box /.test(p.shape || "")) continue;
+    const [w, t, h] = p.shape.split(/\s+/).slice(1).map(Number), r = byId[sr.id], [ax, ay] = p.at;
+    const ns = Math.round(((p.rot || 0) % 180 + 180) % 180) !== 90;
+    const wall = ns ? (ay > r.d / 2 ? "n" : "s") : (ax > r.w / 2 ? "e" : "w");
+    items.push(Object.assign(newItem(m[1], p.id, sr.id, wall, ns ? ax : ay), { w, h, t, z: r3((p.z || 0) + h / 2), extra: clone(p) }));
+  }
+  const tr = lvl.trim || {};
+  const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0,
+                   lights: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_light`)),
+                   switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)) };
+  return { rooms, ops, items, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
 }
 
 // ---- the model -> a story level ----
@@ -212,7 +230,7 @@ export function modelToLevel(model, story) {
     }
     if (skip.length) d.skip = skip; else delete d.skip;
     d.openings = [];
-    d.props = (r.extra.props || []).filter(p => !p.id.startsWith(`${r.id}_fx_`)).map(clone);
+    d.props = (r.extra.props || []).filter(p => !p.id.startsWith(`${r.id}_fx_`) && !p.id.startsWith(`${r.id}_wi_`)).map(clone);
     if (!d.props.length) delete d.props;
     out[r.id] = d;
   }
@@ -237,11 +255,18 @@ export function modelToLevel(model, story) {
       if (!seen.has(key)) { seen.add(key); links.push({ a: host.room.id, b: other.room.id, via: o.door ? o.door.id : null }); }
     }
   }
-  // built-ins and stairs, placed clear of every doorway
+  // built-ins and stairs, placed clear of every doorway; ceiling lights and their switches; things on the walls
+  const fin = Object.assign({}, FINISH, model.finish || {});
   for (const r of model.rooms) {
     const d = out[r.id];
     const extra = [];
     if (r.fixtures) extra.push(...placeFixtures(model, r));
+    if (fin.lights && r.ceiling && !OUTDOOR.has(r.kind) && !["closet", "oshiire", "storage"].includes(r.kind)) {
+      extra.push({ id: `${r.id}_fx_light`, use: "light", kind: "bulb", lit: !["off", "dark"].includes(r.light), at: [r3(r.w / 2), r3(r.d / 2)],
+                   z: r3(r.h - 0.08), kelvin: LIGHT_K[r.kind] || 3000, lumens: Math.round(Math.min(4000, 250 * area(r))) });
+      if (fin.switches) { const sw = switchFor(model, r); if (sw) extra.push(sw); }
+    }
+    for (const it of (model.items || []).filter(i => i.room === r.id)) extra.push(itemProp(r, it));
     if (r.kind === "stairs" && r.fixtures) { const st = stairsProp(model, r); if (st) extra.push(st); else problems.push(`${r.id}: stairs need a floor above (add one)`); }
     if (extra.length) d.props = (d.props || []).concat(extra);
   }
@@ -263,7 +288,20 @@ export function modelToLevel(model, story) {
   }
   for (let i = 0; i < model.rooms.length; i++) for (let j = i + 1; j < model.rooms.length; j++)
     if (overlaps(model.rooms[i], model.rooms[j])) problems.push(`${model.rooms[i].id} and ${model.rooms[j].id} overlap`);
+  for (const it of model.items || []) {
+    const r = model.rooms.find(x => x.id === it.room);
+    if (!r) { problems.push(`${it.id}: its room is gone`); continue; }
+    const ln = wallLine(r, it.wall), c = ln.lo + it.a;
+    for (const op of model.ops) {
+      if (op.axis !== ln.axis || Math.abs(op.v - ln.v) > 0.01 || Math.abs(op.c - c) >= (op.w + it.w) / 2) continue;
+      const o0 = op.z + (op.sill || 0) - r.z, o1 = o0 + op.h;
+      if (it.z + it.h / 2 > o0 && it.z - it.h / 2 < o1) problems.push(`${it.id} covers ${op.id}`);
+    }
+  }
   const level = Object.assign({}, clone(model.levelExtra || {}), { start: startId, rooms: model.rooms.map(r => out[r.id]), links });
+  const trim = {};
+  for (const k of ["skirting", "cornice", "casing"]) if (fin[k] > 0) trim[k] = r3(fin[k]);
+  if (Object.keys(trim).length) level.trim = trim;
   return { level, problems };
 }
 
@@ -290,6 +328,12 @@ function placeFixtures(model, r) {
   const want = (KINDS[r.kind] || {}).fx || [];
   if (!want.length) return [];
   const zones = doorZones(model, r), placed = [], out = [];
+  // wall items that hang low (a TV, a mirror) keep their stretch of wall clear: [rect, bottom height]
+  const hung = (model.items || []).filter(i => i.room === r.id).map(i => {
+    const g = 0.05, a0 = i.a - i.w / 2, a1 = i.a + i.w / 2, t = i.t + 0.02;
+    const rect = i.wall === "n" ? [a0, r.d - g - t, a1, r.d] : i.wall === "s" ? [a0, 0, a1, g + t] : i.wall === "w" ? [0, a0, g + t, a1] : [r.w - g - t, a0, r.w, a1];
+    return [rect, i.z - i.h / 2];
+  });
   const winOn = wl => model.ops.filter(op => op.type !== "window" ? false : sides(model, op).some(s => s.room === r && s.wall === wl));
   const walls = WALLS.filter(wl => !r.open.includes(wl)).sort((a, b) => (wallLine(r, b).hi - wallLine(r, b).lo) - (wallLine(r, a).hi - wallLine(r, a).lo));
   for (const fx of want) {
@@ -307,6 +351,7 @@ function placeFixtures(model, r) {
         const rect = wl === "n" ? [a - fw / 2, r.d - g - fd, a + fw / 2, r.d - g] : wl === "s" ? [a - fw / 2, g, a + fw / 2, g + fd]
                    : wl === "w" ? [g, a - fw / 2, g + fd, a + fw / 2] : [r.w - g - fd, a - fw / 2, r.w - g, a + fw / 2];
         if (rect[2] > r.w || rect[3] > r.d || zones.some(z => hit(z, rect)) || placed.some(p => hit(p, rect))) continue;
+        if (hung.some(([hr, bottom]) => bottom < fh + 0.05 && hit(hr, rect))) continue;
         // keep standing room in front of it (0.6 m) clear of the walls opposite
         done = { rect, wl };
       }
@@ -370,9 +415,47 @@ export function takenIds(story, except) {
 }
 export function uniquify(model, taken, levelName) {
   const fresh = id => { if (!taken.has(id)) { taken.add(id); return id; } let i = 2; while (taken.has(`${id}_${i}`)) i++; taken.add(`${id}_${i}`); return `${id}_${i}`; };
-  for (const r of model.rooms) r.id = fresh(r.id);
+  for (const r of model.rooms) { const old = r.id; r.id = fresh(r.id); if (old !== r.id) renameItems(model, old, r.id); }
+  for (const it of model.items || []) it.id = fresh(it.id);
   for (const op of model.ops) if (op.type === "door" || op.type === "slide") op.id = fresh(op.id); else op.id = fresh(op.id);
   if (taken.has(model.startId || "start")) model.startId = fresh(levelName ? `${levelName}_start` : "start");
   else taken.add(model.startId || "start");
   return model;
+}
+
+// ---- things on walls ----
+export function newItem(kind, id, room, wall, a, o = {}) {
+  const W = WALL_ITEMS[kind];
+  return { id, kind, room, wall, a, w: o.w || W.size[0], h: o.h || W.size[1], t: o.t || W.size[2], z: o.z || W.z, extra: o.extra || {} };
+}
+// the prop a wall item becomes: a box against the inside face of its wall, its middle at z
+function itemProp(r, it) {
+  const ln = wallLine(r, it.wall), len = ln.hi - ln.lo, T = 0.1;
+  const a = Math.min(Math.max(it.a, it.w / 2 + 0.06), len - it.w / 2 - 0.06), off = T / 2 + it.t / 2 + 0.001;
+  const at = it.wall === "n" ? [a, r.d - off] : it.wall === "s" ? [a, off] : it.wall === "e" ? [r.w - off, a] : [off, a];
+  const zc = Math.min(it.z, r.h - 0.04 - it.h / 2);
+  const p = Object.assign({}, clone(it.extra || {}), { id: it.id, shape: `box ${r3(it.w)} ${r3(it.t)} ${r3(it.h)}`, at: at.map(r3),
+    rot: it.wall === "n" || it.wall === "s" ? 0 : 90, z: r3(zc - it.h / 2), tag: WALL_ITEMS[it.kind].tag });
+  return p;
+}
+// a light switch by the first doorway into the room, on the room's side, past the door's casing
+function switchFor(model, r) {
+  const T = 0.1;
+  for (const op of model.ops) {
+    if (op.type === "window" || Math.abs(op.z - r.z) > 0.3) continue;
+    const s = sides(model, op).find(x => x.room === r);
+    if (!s || r.open.includes(s.wall)) continue;
+    const ln = wallLine(r, s.wall), len = ln.hi - ln.lo;
+    for (const a of [s.at + op.w / 2 + 0.2, s.at - op.w / 2 - 0.2]) {
+      if (a < 0.2 || a > len - 0.2) continue;
+      if (model.ops.some(o => o !== op && o.axis === ln.axis && Math.abs(o.v - ln.v) < 0.01 && Math.abs(ln.lo + a - o.c) < o.w / 2 + 0.15)) continue;
+      const it = newItem("switch", `${r.id}_fx_switch`, r.id, s.wall, a);
+      return Object.assign(itemProp(r, it), { use: "switch", light: `${r.id}_fx_light` });
+    }
+  }
+  return null;
+}
+// a room renamed: its wall items follow it (their ids carry the room's, so a level reads them back)
+export function renameItems(model, from, to) {
+  for (const it of model.items || []) if (it.room === from) { it.room = to; it.id = it.id.replace(new RegExp(`^${from}_wi_`), `${to}_wi_`); }
 }

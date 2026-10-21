@@ -204,7 +204,13 @@ export class Stage {
       door: new THREE.MeshStandardMaterial({ color: 0x5a3a20, roughness: 0.8 }),
       prop: new THREE.MeshStandardMaterial({ color: 0x5d6f86, roughness: 0.8 }),
       use: new THREE.MeshStandardMaterial({ color: 0x4f8a5c, roughness: 0.8 }),
+      trim: new THREE.MeshStandardMaterial({ color: 0xcfc8b8, roughness: 0.55 }),                 // skirting, cornice, casings
+      mirror: new THREE.MeshStandardMaterial({ color: 0xb8c4cc, roughness: 0.05, metalness: 0.9 }),
+      screen: new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.2 }),
+      paper: new THREE.MeshStandardMaterial({ color: 0xb59a7a, roughness: 0.9 }),
+      white: new THREE.MeshStandardMaterial({ color: 0xe4e2dc, roughness: 0.5 }),
     };
+    const BY_TAG = { mirror: "mirror", tv: "screen", poster: "paper", calendar: "paper", frame: "paper", board: "white", air_conditioner: "white", light_switch: "white" };
     for (const p of plan.pieces) {
       if (p.level !== level) continue;
       if (["wall", "floor", "ceiling", "door", "mesh"].includes(p.kind)) {
@@ -212,7 +218,8 @@ export class Stage {
         const [w, d, h] = p.size;
         const geo = p.shape === "cyl" ? new THREE.CylinderGeometry(w / 2, w / 2, h, 16) :
                     p.shape === "sphere" ? new THREE.SphereGeometry(w / 2, 16, 12) : new THREE.BoxGeometry(w, h, d);
-        let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
+        const tagged = BY_TAG[(p.tags.find(t => t.startsWith("tag:")) || "").slice(4)];
+        let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
         const m = new THREE.Mesh(geo, mat);

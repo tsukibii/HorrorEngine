@@ -79,6 +79,50 @@ const SCRATCH = "Zz_builder_test";
     });
     if (add.links !== 1) fail(`the added closet has ${add.links} links: ${add.problems.join("; ")}`);
 
+    // the finish: skirting and casings in the plan, a light and its switch per room, the trim on the level
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("3ldk"); });
+    await page.waitForFunction(() => window.B.planStory && window.B.planStory.levels[window.B.target], null, { timeout: 30000 });
+    await page.waitForTimeout(500);
+    const fin = await page.evaluate(() => {
+      const P = window.B.plan.pieces, lv = window.B.exported.level;
+      const props = lv.rooms.flatMap(r => r.props || []);
+      return { skirting: P.filter(p => p.tags.includes("trim:skirting")).length, casing: P.filter(p => p.tags.includes("trim:casing")).length,
+               lights: P.filter(p => p.kind === "light").length, switches: props.filter(p => p.use === "switch").length, items: props.filter(p => p.id.includes("_wi_")).length, trim: lv.trim };
+    });
+    console.log("finish", JSON.stringify(fin));
+    if (!(fin.skirting > 20 && fin.casing > 20 && fin.lights >= 8 && fin.switches >= 6 && fin.items >= 4 && fin.trim && fin.trim.skirting)) fail("finish " + JSON.stringify(fin));
+
+    // a wall item clicked into the LDK's south-west corner area
+    const wi = await page.evaluate(() => {
+      const B = window.B, r = B.model.rooms.find(x => x.kind === "ldk");
+      window.builder.addItem(r.x + 0.2, r.y + r.d / 2);                 // near its west wall
+      const it = B.model.items[B.model.items.length - 1];
+      return { wall: it.wall, room: it.room, inLevel: B.exported.level.rooms.find(x => x.id === r.id).props.some(p => p.id === it.id), problems: B.exported.problems };
+    });
+    if (wi.wall !== "w" || !wi.inLevel) fail("wall item " + JSON.stringify(wi));
+
+    // a reference window: a model made here (78 x 117 cm, 7 cm deep, in centimetres as from Unreal), the wall cut to it
+    const ref = await page.evaluate(async () => {
+      const THREE = await import("three");
+      const { GLTFExporter } = await import("./vendor/GLTFExporter.js");
+      const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: 0xffffff });
+      for (const [w, h, d, x, y] of [[78, 5, 7, 0, 56], [78, 5, 7, 0, -56], [5, 117, 7, -36.5, 0], [5, 117, 7, 36.5, 0]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, 0); g.add(b); }
+      const glb = await new GLTFExporter().parseAsync(g, { binary: true });
+      await window.builder.loadRef(new File([glb], "window_test.glb"));
+      const B = window.B, r = B.model.rooms.find(x => x.kind === "bedroom");
+      window.builder.setTool("ref");
+      window.builder.addOpening(r.x + r.w / 2, r.y + 0.05, "ref");    // its south wall
+      const op = B.model.ops[B.model.ops.length - 1];
+      await new Promise(res => setTimeout(res, 1200));
+      const refs = window.B.plan ? 1 : 0;
+      return { ref: { w: B.ref.w, h: B.ref.h, d: B.ref.d, type: B.ref.type }, op: { w: op.w, h: op.h, sill: op.sill, type: op.type, ref: op.ref }, problems: B.exported.problems };
+    });
+    console.log("reference", JSON.stringify(ref));
+    if (Math.abs(ref.op.w - 0.78) > 0.001 || Math.abs(ref.op.h - 1.17) > 0.001 || ref.op.type !== "window" || ref.op.ref !== "window_test") fail("reference cut " + JSON.stringify(ref));
+    const chk = await page.evaluate(() => window.builder.runChecks());
+    if (chk.errors.length) fail("after the finish, the item and the cut-out: " + chk.errors.slice(0, 3).join("; "));
+    if (shots) await page.screenshot({ path: path.join(shots, "builder_finish.png") });
+
     // save the house into the scratch game and read it back
     await page.evaluate(() => { window.builder.openPreset("house"); });
     await page.waitForTimeout(600);
