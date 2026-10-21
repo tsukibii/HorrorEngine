@@ -981,6 +981,28 @@ $("#check").onclick = async () => {
   const okk = /STORY ok/.test(j.output) && /LEVEL ok/.test(j.output);
   box.append(el("h2", {}, "Checks"), el("p", { class: okk ? "ok" : "err" }, okk ? "All checks pass." : "Something to fix:"), el("pre", {}, j.output), el("button", { on: { click: renderInspector } }, "Back to the node"));
 };
+$("#generate").onclick = async () => {
+  if (DIRTY) await save();
+  const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "running the checks…"));
+  const j = await api("/api/unreal/generate/" + encodeURIComponent(GAME), { method: "POST" });
+  box.append(el("pre", {}, (j.checks || []).join("\n")));
+  const st = $("#genState");
+  if (!j.ok) { st.className = "err"; st.textContent = j.error; return; }
+  st.textContent = j.how === "started" ? "Starting the editor with the build (the first open takes a few minutes)…" : "Building in the open editor…";
+  const t0 = Date.now();
+  const poll = async () => {
+    const r = await api("/api/unreal/status/" + encodeURIComponent(GAME));
+    if (r.state === "done") {
+      st.className = r.ok ? "ok" : "err";
+      st.textContent = r.ok ? `Built: ${Object.entries(r.levels || {}).map(([k, v]) => `${k} (${v.pieces} pieces)`).join(", ")}. ${r.open || ""} is open in Unreal.` : "Failed: " + (r.errors || []).join("; ");
+      if (r.trace) box.append(el("pre", {}, r.trace));
+      return;
+    }
+    st.textContent = `${r.state === "building" ? "Building in Unreal" : "Waiting for Unreal"}… ${Math.round((Date.now() - t0) / 1000)} s`;
+    setTimeout(poll, 2000);
+  };
+  poll();
+};
 $("#sPlay").onclick = () => { const sc = currentScene(); if (sc) playScene(sc); };
 $("#sStop").onclick = stopPlay;
 $("#scrub").oninput = e => { stopPlay(); scrubTo(+e.target.value); };

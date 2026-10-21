@@ -1,5 +1,5 @@
 """The CC0 library and the PBR shelf in the editor (docs/ASSETS.md §5, §6): imports a library mesh or texture set once
-(into /Game/Studio/Library, or /Game/Studio/PBR/<category>/<name> for the shelf's sets),
+(into /Game/Studio/Imported/Library, or /Game/Studio/PBR/<category>/<name> for the shelf's sets),
 and gives each texture set a material instance of the studio's one world-aligned surface material, so a texture keeps
 its real size on any block (blocks are scaled cubes: their own UVs stretch).
 
@@ -12,7 +12,7 @@ import unreal
 from . import library as LIB
 from . import pbr as PBR
 
-DEST = "/Game/Studio/Library"
+DEST = "/Game/Studio/Imported/Library"   # not /Game/Studio/Library: that is the CC0 source folder on disk (meshes/ vs Meshes/)
 MASTER = "/Game/Studio/Materials/M_StudioSurface"
 WA_TEX = "/Engine/Functions/Engine_MaterialFunctions01/Texturing/WorldAlignedTexture"
 WA_NOR = "/Engine/Functions/Engine_MaterialFunctions01/Texturing/WorldAlignedNormal"

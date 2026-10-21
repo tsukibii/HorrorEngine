@@ -237,7 +237,7 @@ UC_REPO = "https://github.com/Natfii/UnrealClaude"
 UC_PR = 48            # "Fix compile on UE 5.8: FJsonObject key type changed to FSharedString" (verified on 5.8 by its author)
 UC_SRC = ROOT / "vendor" / "UnrealClaude-src"
 UC_PLUGIN = ROOT / "Plugins" / "UnrealClaude"
-UC_LINUX_PATCH = HERE / "unrealclaude_linux.patch"   # what Linux's clang (warnings as errors) needs on top of it
+UC_LINUX_PATCH = HERE / "unrealclaude_linux.patch"   # Linux's clang (warnings as errors), and the actor count after a script that opens a map
 
 
 def git(*args, cwd=None):
@@ -311,6 +311,11 @@ INI = {
     ],
     "Config/DefaultEngine.ini": [
         ("[/Script/PythonScriptPlugin.PythonScriptPluginSettings]", "bDeveloperMode=True"),
+    ],
+    # Content/ holds the studio's own files (story.json, presets, glb, png): Unreal mustn't offer to import them.
+    # Its prompt is modal, and under XWayland it can open blank and stop the editor (LESSONS).
+    "Config/DefaultEditorPerProjectUserSettings.ini": [
+        ("[/Script/UnrealEd.EditorLoadingSavingSettings]", "bMonitorContentDirectories=False"),
     ],
 }
 
@@ -504,8 +509,11 @@ def cmd_editor(args):
     env = load_env()
     up = Path(env["uproject"] or uproject())
     exe = UE_LAUNCHER if not WINDOWS and UE_LAUNCHER.exists() else editor_exe(env["engine"])
-    subprocess.Popen([str(exe), str(up)] + args)
-    print(f"EDITOR started: {exe} {up.name} {' '.join(args)}")
+    log = ROOT / "Saved" / "launch" / "editor.log"       # not this script's output: a pipe reading it would wait for the editor
+    log.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.Popen([str(exe), str(up)] + args, stdout=open(log, "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                     start_new_session=True)
+    print(f"EDITOR started: {exe} {up.name} {' '.join(args)} (its output: Saved/launch/editor.log)")
 
 
 def cmd_adopt(args):

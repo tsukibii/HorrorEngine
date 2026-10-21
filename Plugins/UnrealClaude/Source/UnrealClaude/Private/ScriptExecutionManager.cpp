@@ -338,10 +338,16 @@ FScriptExecutionResult FScriptExecutionManager::ExecutePython(
 		Output += LogText;
 	}
 
+	// The script may have opened another map (storykit's Generate does): the world from before is gone, so count in
+	// the editor's world as it is now.
+	UWorld* WorldAfter = GEditor->GetEditorWorldContext().World();
 	int32 ActorCountAfter = 0;
-	for (TActorIterator<AActor> It(World); It; ++It)
+	if (WorldAfter)
 	{
-		ActorCountAfter++;
+		for (TActorIterator<AActor> It(WorldAfter); It; ++It)
+		{
+			ActorCountAfter++;
+		}
 	}
 	int32 ActorsCreated = ActorCountAfter - ActorCountBefore;
 

@@ -348,6 +348,7 @@ def build(game=None, level=None):
     game = spath.parent.name
     cmap = class_map()
     build_kit(game)
+    made_levels = {}
     for lid in story["levels"]:
         if level and lid != level:
             continue
@@ -366,4 +367,6 @@ def build(game=None, level=None):
             acoustics(story, lid)
         levels.save_current_level()
         unreal.log(f"IMPORT {lid}: {len(pieces)} pieces -> {path}")
+        made_levels[lid] = {"pieces": len(pieces), "map": path}
     # the runtime reads story.json itself; tools/package_game.py stages only that game's folder
+    return made_levels

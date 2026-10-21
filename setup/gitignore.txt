@@ -79,3 +79,10 @@ Content/Studio/Library/index/local.json
 # the PBR shelf (docs/ASSETS.md §6): your texture sets, too big for git; only its README is shared
 Content/Studio/PBR/*
 !Content/Studio/PBR/README.md
+
+# made by the desk's Generate (storykit.generate) from story.json: rebuilt, never edited (CLAUDE.md, "text is the truth")
+Content/Games/*/Maps/
+Content/Studio/Greybox/
+Content/Studio/Imported/
+# the first imports went to /Game/Studio/Library/Meshes (Unreal's copies, beside the CC0 sources in meshes/)
+Content/Studio/Library/Meshes/

@@ -81,17 +81,17 @@ python tools/cc0.py ledger Builds/<Game>/THIRD_PARTY.md   # the credits list
    block's size must stay; leave interactables as blocks until the class map gives them Blueprints.
 4. `cc0.py fetch`, then open the director: the storyboard and Watch show the real props and surfaces. Look at the
    frames, not just the checks (DIRECTING.md: does the subject still read against the new walls?).
-5. In Unreal: rebuild the level (`importer.build`): it imports each library file once into `/Game/Studio/Library/`
+5. In Unreal: rebuild the level (`importer.build`): it imports each library file once into `/Game/Studio/Imported/Library/`
    and reuses it. Take one screenshot per room from the player's start and compare with the director's frame.
 6. `cc0.py ledger` before packaging; `package_game.py` only copies the assets the game uses.
 
 **Replacing a texture:** change the ref in the story (or `cc0.py add` a better file under the same ref with `--tile`
-corrected) and rebuild; the material instance is remade when its folder is deleted from `/Game/Studio/Library/Textures`.
+corrected) and rebuild; the material instance is remade when its folder is deleted from `/Game/Studio/Imported/Library/Textures`.
 
 ## 5. In Unreal (`storykit/surfaces.py`)
 
-- Meshes import with Unreal's glTF importer into `/Game/Studio/Library/Meshes/<lib>/<name>/`.
-- Textures import into `/Game/Studio/Library/Textures/<lib>/<name>/` (normal maps as normal maps with the green
+- Meshes import with Unreal's glTF importer into `/Game/Studio/Imported/Library/Meshes/<lib>/<name>/`.
+- Textures import into `/Game/Studio/Imported/Library/Textures/<lib>/<name>/` (normal maps as normal maps with the green
   channel flipped for GL files, data maps linear), and get a material instance `MI_<name>` of **M_StudioSurface**.
 - **M_StudioSurface** (`/Game/Studio/Materials/`) is the one master: world-aligned (so blocks' stretched UVs don't
   matter), with texture parameters `Albedo`, `Normal`, `Rough`, `AO` and a scalar `TileCm` (one repeat, in cm).

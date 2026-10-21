@@ -89,3 +89,18 @@ the fix.
 - **The desk's server imports storykit once:** after changing `plan.py`, `level_check.py` or anything it imports,
   restart `serve.py` (find its PID, kill it, start it again), or the pages plan with the old code. The kit's pieces
   were missing from the builder's 3D view, and a level check failed on a rule already fixed, both for this reason.
+- **Unreal mustn't watch `Content/` for new files:** the merge put `Kit/presets.json` there, Unreal offered to import
+  it as a DataTable, and the options dialog opened blank on another workspace and held the editor (and every MCP
+  call) in its modal loop. `bMonitorContentDirectories=False` (setup.py configure), and a Hyprland rule keeps all of
+  Unreal's windows on its workspace (4).
+- **The `.uproject` must be Unreal's first argument:** `ue` put its `-ini:` flag first, and Unreal opened the Project
+  Browser instead of the project (that's how a stray template got opened). The launcher now puts a `.uproject` first.
+- **A script that opens a map crashed UnrealClaude:** it counted the actors afterwards in the world from before the
+  script, which the new map had freed (SIGSEGV). Fixed in `ScriptExecutionManager.cpp`, kept in
+  `setup/unrealclaude_linux.patch`.
+- **`-ExecutePythonScript=` on the editor runs before the project's Python is on the path, and quits the editor
+  after.** The desk's Generate leaves `Saved/Story/<G>/generate/pending` instead, and `init_unreal.py` runs it once
+  the editor has loaded.
+- **The editor saves its per-user settings over the project's defaults:** `bMonitorContentDirectories=False` in
+  `DefaultEditorPerProjectUserSettings.ini` did nothing while `Saved/Config/LinuxEditor/` said True. Those settings
+  aren't visible to Python either; `init_unreal.py` corrects the saved file.

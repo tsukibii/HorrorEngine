@@ -19,8 +19,11 @@ setup these steps rely on.
 ## 1. The blocked game, playable as blocks
 
 1. `python tools/check_all.py --game G`: `CHECKS ok` first; nothing goes to Unreal that the desk hasn't proved.
-2. In the editor (UnrealClaude `unreal_execute_script`): `import storykit.importer as i; i.build("G")`: one map per
-   level, every story actor tagged `story`, a stand-in per cast member.
+2. On the desk, **Generate in Unreal** (or `python tools/unreal_link.py --game G generate`): the checks, then
+   `storykit.generate.run("G")` in the editor: through UnrealClaude's port if it's open, or the desk starts it and
+   `init_unreal.py` runs the build once it has loaded. One map per level (`/Game/Games/<G>/Maps/L_<level>`), every
+   story actor tagged `story`, a stand-in per cast member, the start level left open; the desk shows the result
+   (`Saved/Story/<G>/generate/result.json`). No Claude needed. **(built, run on the Pilot 2026-10-21)**
 3. On the desk, **Export glTF** for each scene; import them (Interchange) onto the stand-ins.
 4. The runner plays the flow with them (RUNNER_SPEC.md): scenes, the 30 s choices with their karma, the karma choice
    at the end, tasks with their timers and guide-backs. **To do, local:** the runner's format 3 parts (karma kept per

@@ -87,6 +87,9 @@ class Handler(BaseHTTPRequestHandler):
         f = HERE.joinpath(*parts) if parts and ".." not in parts else None
         if f and f.suffix in STATIC and f.is_file() and HERE in f.resolve().parents:
             return self.send(200, f.read_bytes(), STATIC[f.suffix])
+        if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
+            import unreal_link as UL  # noqa: PLC0415 - tools/
+            return self.send(200, UL.status(parts[3]))
         if parts[:2] == ["api", "bodies"]:
             files = sorted(f.name for f in BODIES.glob("*") if f.suffix.lower() in (".glb", ".gltf", ".fbx")) if BODIES.exists() else []
             return self.send(200, {"bodies": files})
@@ -279,6 +282,9 @@ class Handler(BaseHTTPRequestHandler):
             r = subprocess.run([sys.executable, str(ROOT / "tools" / "motion.py"), "--game", parts[2], "import"],
                                capture_output=True, text=True, encoding="utf-8")
             return self.send(200 if r.returncode == 0 else 500, {"output": r.stdout + r.stderr})
+        if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
+            import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
+            return self.send(200, UL.generate(parts[3]))
         if parts[:2] == ["api", "check"] and len(parts) == 3 and self.game_path(parts[2]):
             out = []
             for tool in ("story_check.py", "level_check.py"):
