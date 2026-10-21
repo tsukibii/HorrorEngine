@@ -50,3 +50,8 @@ the fix.
 - **Measure a prompt before trusting it:** of 12 horror prompts, 4 didn't do what they said on the first wording
   (no crouch, no cower, no getting up, a fast retreat). Two were fixed by rewording; two can't be (crouch-walking,
   slowness), and those need a pose or a paced path. `tools/kimodo_presets.py check` is the measure.
+- **A run of things that each "stop the last one" needs its own token:** the score room's audition plays every
+  variation in turn, but a take ending by itself went through the same stop as the Stop button and ended the whole
+  audition after one card. Ending a take (`endPlay`) and stopping what the user started (`stopAll`) are two calls.
+- **A compressor and limiter on the music bus make every cue the same loudness:** a dread bed rendered as loud as
+  the jump scare (both about -14 dB RMS). Cue levels go after the limiter (the master), never on the notes.

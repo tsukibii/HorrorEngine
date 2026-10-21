@@ -6,12 +6,15 @@
 // Several cues in a row (the sequence strip: sneak, then the fall, then flustered): one take, each cue's notes
 // shifted by where it starts. item: {take, gap (s after the previous one ends; negative overlaps), at (or a fixed start)}.
 function chainTakes(items) {
-  const out = { cue: "chain", ev: [], marks: [], hits: [], secs: 0, tempo: items[0] ? items[0].take.tempo : 90, meter: [4, 4], parts: [] };
+  // the parts keep their levels against each other: the loudest sets the master, the others sit under it note by note
+  const top = Math.max(...items.map(it => it.take.gain ?? 0));
+  const out = { cue: "chain", gain: top, ev: [], marks: [], hits: [], secs: 0, tempo: items[0] ? items[0].take.tempo : 90, meter: [4, 4], parts: [] };
   let at = 0;
   for (const it of items) {
     const tk = it.take, s = it.at !== undefined ? it.at : Math.max(0, at + (it.gap || 0));
     out.parts.push({ cue: tk.cue, at: s, secs: tk.secs });
-    for (const e of tk.ev) out.ev.push(Object.assign({}, e, { t: e.t + s }));
+    const under = (tk.gain ?? 0) - top;
+    for (const e of tk.ev) out.ev.push(Object.assign({}, e, { t: e.t + s, db: (e.db || 0) + under }));
     for (const m of tk.marks) out.marks.push({ t: m.t + s, text: m.text });
     for (const h of tk.hits) out.hits.push({ t: h.t + s, label: h.label });
     out.marks.push({ t: s, text: "cue: " + tk.cue });
@@ -67,6 +70,9 @@ const Engine = {
     }
   },
 
+  // the cue's level, at the master after the limiter (the Mixer's own -3 dB plus the cue's gain)
+  level(mixer, take, at) { mixer.master.gain.cancelScheduledValues(at); mixer.master.gain.setValueAtTime(dbToGain(-3 + (take.gain ?? 0)), at); },
+
   setSpace(id) { this.space = id; if (this.mixer) this.mixer.setSpace(id, this.ctx.currentTime, 0.6); },
 
   async play(take, from = 0) {
@@ -76,6 +82,7 @@ const Engine = {
     const keys = await this.load(take);
     this.players = this.playersFor(this.mixer, keys, this.players);
     const t0 = this.ctx.currentTime + 0.12;
+    this.level(this.mixer, take, t0);
     this.schedule(this.players, take, t0, from);
     this.playing = { take, t0: t0 - from, until: t0 + take.secs - from };
     return this.playing;
@@ -105,6 +112,7 @@ const Engine = {
     const mixer = new Mixer(off);
     mixer.setSpace(space, 0, 0);
     const players = this.playersFor(mixer, keys);
+    this.level(mixer, take, 0);
     this.schedule(players, take, 0.05, 0, false);
     const buf = await off.startRendering();
     return wavBytes(buf);

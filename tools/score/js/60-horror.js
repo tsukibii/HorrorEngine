@@ -8,7 +8,7 @@ const DISSONANCE = [[7], [6], [1], [1, 6], [1, 2, 6]];      // over the pedal, b
 // Dread drone: a low pedal in the strings with a rub creeping in above, the piano dropping single low notes and the
 // odd high "drip". Under exploring a dark house.
 CUE("dread_drone", {
-  family: "horror", label: "Dread drone", uses: ["dread", "explore", "house at night", "aftermath"],
+  family: "horror", level: -14, label: "Dread drone", uses: ["dread", "explore", "house at night", "aftermath"],
   desc: "A low string pedal that swells and ebbs, a dissonance creeping in above it, single low piano notes and a high drip now and then.",
   refs: "The Shining (Penderecki's clusters), Silent Hill's room tones, Ringu",
   params: { key: P.key(4, "phrygian", ["phrygian", "locrian", "aeolian"]), len: P.len(20, 8, 40), dissonance: P.amt("dissonance", 0.6), drips: P.amt("piano drips", 0.4), swell: P.amt("swell", 0.6) },
@@ -38,7 +38,7 @@ CUE("dread_drone", {
 // The stalker: a repeated low two-note figure on the piano (an unsettling meter), pizzicato under it, a string
 // pedal that climbs a semitone every few bars. She's somewhere in the house.
 CUE("stalker_ostinato", {
-  family: "horror", label: "Stalker ostinato", uses: ["stalk", "dread", "searching", "patrol"],
+  family: "horror", level: -9, label: "Stalker ostinato", uses: ["stalk", "dread", "searching", "patrol"],
   desc: "A low repeated piano figure in an odd meter (tonic and a minor second or tritone), pizzicato doubling, a string pedal that climbs every few bars.",
   refs: "Halloween's 5/4 piano (in spirit), Jaws' two notes, Insidious' strings",
   params: { key: P.key(2, "phrygian", ["phrygian", "locrian", "harmonic_minor"]), tempo: P.tempo(84, 56, 120), meter: P.pick("meter", ["5/4", "7/8", "4/4", "3/4"], "5/4"),
@@ -66,7 +66,7 @@ CUE("stalker_ostinato", {
 // The music box gone wrong: a sweet waltz in a major key on the glockenspiel and high piano, drifting out of tune,
 // one wrong note at the cadence, slowing as it winds down. The yandere's lullaby.
 CUE("music_box", {
-  family: "horror", label: "Music box gone wrong", uses: ["yandere", "lullaby", "her room", "the turn", "memory"],
+  family: "horror", level: -8, label: "Music box gone wrong", uses: ["yandere", "lullaby", "her room", "the turn", "memory"],
   desc: "A sweet music-box waltz (glockenspiel and high piano) that drifts flat, hits a wrong note at the cadence and winds down like a dying spring.",
   refs: "Doki Doki Literature Club's broken lullabies, Higurashi's music box, Silent Hill's lullaby cues",
   params: { key: P.key(5, "ionian", ["ionian", "lydian", "major_pent"]), tempo: P.tempo(80, 60, 104), len: P.len(18, 8, 32), wrongness: P.amt("wrongness", 0.5), winddown: P.amt("wind down", 0.6), strings: P.amt("string bed", 0.3) },
@@ -99,7 +99,7 @@ CUE("music_box", {
 // The riser: strings sliding up in a cluster, tremolo swelling, the piano hammering faster; then cut to silence
 // (the scare lands after) or into a sting.
 CUE("riser", {
-  family: "horror", label: "Riser", uses: ["tension", "approach", "before the scare", "she's coming"],
+  family: "horror", level: -3, label: "Riser", uses: ["tension", "approach", "before the scare", "she's coming"],
   desc: "A string cluster sliding upward with tremolo swelling and the piano repeating faster and faster; it cuts to silence (the scare comes after) or slams into a sting.",
   refs: "Insidious and The Conjuring's rising strings, Psycho's shrieking violins (in spirit)",
   params: { key: P.key(0, "chromatic"), len: P.len(6, 2, 14), ending: P.pick("ending", ["cut", "sting"]), width: P.amt("cluster width", 0.6), accel: P.amt("accelerate", 0.7) },
@@ -131,7 +131,7 @@ function stingAt(t, root, at, power) {
 // The sting: the jump scare. A short silence, then everything at once: a string cluster, low and high piano
 // clusters, a drum. The silence is part of it.
 CUE("sting", {
-  family: "horror", label: "Jump-scare sting", uses: ["scare", "jumpscare", "she appears", "found you"],
+  family: "horror", level: 0, label: "Jump-scare sting", uses: ["scare", "jumpscare", "she appears", "found you"],
   desc: "Half a second of nothing, then a fortissimo string cluster with low and high piano clusters and a drum, ringing off into the hall.",
   refs: "Every jump scare since Cat People; Insidious' screeching stings; Ju-On",
   params: { key: P.key(1, "chromatic"), pre: { kind: "num", def: 0.5, min: 0, max: 2, step: 0.1, label: "silence first (s)" }, power: P.amt("power", 0.9), tail: P.amt("tremolo tail", 0.5) },
@@ -147,7 +147,7 @@ CUE("sting", {
 // The heartbeat: lub-dub on the timpani and the low piano, speeding up; a high string note held like breath.
 // While you hide.
 CUE("heartbeat", {
-  family: "horror", label: "Heartbeat", uses: ["hiding", "hold your breath", "she's near", "hide"],
+  family: "horror", level: -8, label: "Heartbeat", uses: ["hiding", "hold your breath", "she's near", "hide"],
   desc: "A lub-dub on timpani and low piano that speeds up over the cue, under a single high string note held like a breath.",
   refs: "The Tell-Tale Heart staging in games; Alien: Isolation's locker scenes",
   params: { key: P.key(9, "aeolian"), from: P.tempo(64, 50, 110), to: P.tempo(118, 60, 170), len: P.len(16, 6, 40), breath: P.amt("held note", 0.6) },
@@ -169,7 +169,7 @@ CUE("heartbeat", {
 // Hiding: almost nothing. A very high tremolo, a pizzicato note now and then (a creak), and when she's near the
 // notes come closer together and a low pedal wakes.
 CUE("hiding_tension", {
-  family: "horror", label: "Hiding (she's near)", uses: ["hiding", "hide", "search", "near"],
+  family: "horror", level: -13, label: "Hiding (she's near)", uses: ["hiding", "hide", "search", "near"],
   desc: "A thin high tremolo, sparse low pizzicato taps like creaks, a pedal that wakes and a minor second when she's near.",
   refs: "Alien: Isolation, Outlast's hiding beds, DOORS' Rush warning (the lights' hum)",
   params: { key: P.key(6, "locrian"), len: P.len(20, 8, 40), near: P.amt("how near she is", 0.5), taps: P.amt("creaks", 0.5) },
@@ -188,7 +188,7 @@ CUE("hiding_tension", {
 // The chase: a fast string and piano ostinato in a dark mode, the timpani on the downbeats, the key climbing a
 // semitone every few bars. Run.
 CUE("chase", {
-  family: "horror", label: "Chase", uses: ["chase", "run", "escape", "panic"],
+  family: "horror", level: -2, label: "Chase", uses: ["chase", "run", "escape", "panic"],
   desc: "Driving sixteenths in the strings and pizzicato over low piano octaves, timpani on the downbeats, the key climbing a semitone every four bars.",
   refs: "Train to Busan's train chases, Kingdom's propulsive strings, The Mimic's chase loops",
   params: { key: P.key(4, "phrygian", ["phrygian", "harmonic_minor", "aeolian"]), tempo: P.tempo(156, 120, 184), len: P.len(20, 8, 48), climb: P.amt("climb", 0.7), drums: P.amt("drums", 0.6) },
@@ -213,7 +213,7 @@ CUE("chase", {
 // The death: a descending chromatic line in octaves on the piano, slowing; the strings fade from a cluster; a last
 // low cluster and a bell, then silence.
 CUE("death", {
-  family: "horror", label: "Death", uses: ["death", "game over", "caught", "the end"],
+  family: "horror", level: -5, label: "Death", uses: ["death", "game over", "caught", "the end"],
   desc: "Piano octaves falling chromatically and slowing, strings fading out of a cluster, one last low piano cluster and a tubular bell.",
   refs: "Silent Hill's game-over cues, Resident Evil's 'You died' (in spirit), Hereditary's endings",
   params: { key: P.key(10, "chromatic"), len: P.len(8, 4, 16), bell: P.amt("bell", 0.7), strings: P.amt("strings", 0.6) },
@@ -232,7 +232,7 @@ CUE("death", {
 
 // Behind you: a reversed piano swell (inhaled) into a close dissonant chord very high in the strings: a whisper.
 CUE("behind_you", {
-  family: "horror", label: "Behind you (whisper)", uses: ["behind you", "whisper", "glimpse", "presence"],
+  family: "horror", level: -10, label: "Behind you (whisper)", uses: ["behind you", "whisper", "glimpse", "presence"],
   desc: "A piano note swelling backwards like an intake of breath into a hushed, very high cluster in the strings.",
   refs: "Hereditary and The Ring's breathy swells; the reversed-cymbal trick",
   params: { key: P.key(3, "chromatic"), len: P.len(4, 2, 8), height: P.amt("height", 0.7) },
@@ -250,7 +250,7 @@ CUE("behind_you", {
 
 // The turn: a warm major chord whose top slides down a semitone into minor; the smile dropping.
 CUE("the_turn", {
-  family: "horror", label: "The turn (smile drops)", uses: ["the turn", "reveal", "yandere", "her mask slips"],
+  family: "horror", level: -5, label: "The turn (smile drops)", uses: ["the turn", "reveal", "yandere", "her mask slips"],
   desc: "A warm major chord on piano and strings; the strings' third slides down into minor and a tritone creeps in under it as the piano goes quiet.",
   refs: "Danganronpa and Squid Game's sweetness turned; the Hitchcock chord bend",
   params: { key: P.key(7, "ionian"), len: P.len(6, 3, 12), bend: P.amt("how far it falls", 0.6) },
@@ -269,7 +269,7 @@ CUE("the_turn", {
 
 // Creaking house: col-legno-like pizzicato taps, low tremolo swelling in and out, the house settling around you.
 CUE("house_creaks", {
-  family: "horror", label: "The house settles", uses: ["explore", "dread", "empty house", "night"],
+  family: "horror", level: -14, label: "The house settles", uses: ["explore", "dread", "empty house", "night"],
   desc: "Irregular low pizzicato taps like wood settling, low tremolo swelling in and out, a single piano note left hanging.",
   refs: "Ju-On and The Grudge's creaks, Paranormal Activity's sound-design scoring",
   params: { key: P.key(8, "locrian"), len: P.len(18, 8, 36), taps: P.amt("taps", 0.5), swells: P.amt("swells", 0.5) },
@@ -288,7 +288,7 @@ CUE("house_creaks", {
 // Found you: the hider is discovered. Shorter than the sting: a falling minor second (or tritone) in the low piano
 // with a snapped pizzicato, then silence, or a lead into the chase. Gentler or sinister.
 CUE("found_you", {
-  family: "horror", label: "Found you", uses: ["found", "hiding", "caught", "hide and seek", "peekaboo"],
+  family: "horror", level: -2, label: "Found you", uses: ["found", "hiding", "caught", "hide and seek", "peekaboo"],
   desc: "Two low piano notes falling a minor second (or a tritone) with a snapped pizzicato and a rim click, then silence or a lead into a chase.",
   refs: "Jaws' semitone, the J-horror fillip (Ringu, Ju-On), Fatal Frame's jarring bolt after the slow creep",
   params: { key: P.key(4, "phrygian"), interval: P.pick("interval", ["minor 2nd", "tritone"]), after: P.pick("after", ["silence", "into the chase", "her giggle (glock)"]), weight: P.amt("weight", 0.6) },
@@ -310,7 +310,7 @@ CUE("found_you", {
 // scare, nothing at all (a false lull), or a harmless sound (the bus hiss: a cat, a pipe). Don't let silence always
 // end in a bang.
 CUE("false_scare", {
-  family: "horror", label: "The lull (scare or not)", uses: ["lull", "silence", "false scare", "before the scare", "fake out"],
+  family: "horror", level: -3, label: "The lull (scare or not)", uses: ["lull", "silence", "false scare", "before the scare", "fake out"],
   desc: "A low drone thins to almost nothing, holds for an unpredictable stretch, then: the scare, nothing, or a harmless knock (a false scare).",
   refs: "Cat People's bus (the Lewton bus), Ringu's ma, the Conjuring's untelegraphed scares",
   params: { key: P.key(4, "locrian", ["locrian", "phrygian"]), len: P.len(10, 5, 20), outcome: P.pick("outcome", ["scare", "nothing", "harmless knock"]), hold: P.amt("how long the silence holds", 0.5) },
@@ -329,7 +329,7 @@ CUE("false_scare", {
 // The rite: she shows you the shrine. Low drums and timpani in a pattern that speeds up, a pizzicato ostinato, the
 // horn calling on the flat second, a tremolo rising under it all.
 CUE("ritual", {
-  family: "horror", label: "Ritual (the shrine)", uses: ["ritual", "shrine", "possession", "the reveal", "cult"],
+  family: "horror", level: -3, label: "Ritual (the shrine)", uses: ["ritual", "shrine", "possession", "the reveal", "cult"],
   desc: "Low toms and timpani in a pattern that speeds up, a pizzicato ostinato, the horn calling on the flat second, a tremolo rising under it.",
   refs: "The Wailing's shaman rite (Jang Young-gyu, Dalpalan), Kingdom's drums, Midsommar's ritual builds",
   params: { key: P.key(2, "phrygian", ["phrygian", "phrygian_dominant"]), from: P.tempo(70, 50, 100), to: P.tempo(140, 90, 180), len: P.len(20, 10, 40), horn: P.amt("horn calls", 0.6) },

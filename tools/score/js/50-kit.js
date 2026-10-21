@@ -58,6 +58,9 @@ function CUE(id, def) {
   // watching" lays a barely heard high tremolo cluster under it (a comedy scene she is secretly watching). Variations
   // leave them where they are set.
   def.params = Object.assign({}, def.params, {
+    // how loud the cue sits against the others (dB at the master, after the limiter): a dread bed far under a sting
+    // (docs/MUSIC_RESEARCH.md §5.2: leave the scare its headroom)
+    gain: { kind: "num", def: def.level ?? -6, min: -24, max: 6, step: 1, label: "level (dB)", fixed: true, shared: true },
     corrupt: { kind: "num", def: 0, min: 0, max: 1, step: 0.05, label: "corruption (any cue)", fixed: true, shared: true },
     watched: { kind: "num", def: 0, min: 0, max: 1, step: 0.05, label: "she's watching (hidden layer)", fixed: true, shared: true },
   });
@@ -94,7 +97,7 @@ function writeCue(cueId, params, seed) {
   t.secs = Math.max(t.secs, ...t.ev.map(e => e.t + 0.2));
   // a ringing tail past the length, never much more (but never cutting off the cue's own last notes)
   if (p.len) t.secs = Math.min(t.secs, Math.max(p.len + 4, ...t.ev.map(e => e.t + 1.5), ...t.hits.map(x => x.t + 1)));
-  return { cue: cueId, params: p, seed, secs: t.secs, tempo: t.tempo, meter: t.meter, key: t.key, ev: t.ev, marks: t.marks, hits: t.hits };
+  return { cue: cueId, params: p, seed, gain: p.gain, secs: t.secs, tempo: t.tempo, meter: t.meter, key: t.key, ev: t.ev, marks: t.marks, hits: t.hits };
 }
 
 // Corruption, after the cue has written its notes (its own random source, so the cue's notes stay the same):

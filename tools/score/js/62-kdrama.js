@@ -6,7 +6,7 @@
 // Sneaking on tiptoe: staccato pizzicato in a minor key, low on the beat and high off it, flute staccato tiptoes,
 // a freeze now and then (the character stops, listens), then on again.
 CUE("sneak", {
-  family: "kdrama", label: "Sneaking (tiptoe)", uses: ["sneak", "tiptoe", "creeping up", "spying", "comedy"],
+  family: "kdrama", level: -6, label: "Sneaking (tiptoe)", uses: ["sneak", "tiptoe", "creeping up", "spying", "comedy"],
   desc: "Staccato pizzicato tiptoeing in a minor key, flute staccato on the high steps, and freezes where everything stops (the character listens), then carries on.",
   refs: "The classic 'sneaking' cue of K-drama comedies (Strong Woman Do Bong-soon, What's Wrong with Secretary Kim); Mancini's Pink Panther in spirit",
   params: { key: P.key(9, "aeolian", ["aeolian", "dorian", "harmonic_minor"]), tempo: P.tempo(112, 92, 132), len: P.len(12, 6, 30), cheek: P.amt("chromatic cheek", 0.5), freezes: P.amt("freezes", 0.4) },
@@ -35,7 +35,7 @@ CUE("sneak", {
 // Flustered: a quick run up on xylophone and glockenspiel, pizzicato fluttering between two notes, a high bright
 // piano chord like a blush.
 CUE("flustered", {
-  family: "kdrama", label: "Flustered (blush)", uses: ["flustered", "embarrassed", "caught staring", "blush", "comedy"],
+  family: "kdrama", level: -4, label: "Flustered (blush)", uses: ["flustered", "embarrassed", "caught staring", "blush", "comedy"],
   desc: "A fast run up the xylophone into a glockenspiel twinkle, pizzicato fluttering between two notes, a bright high piano chord like a blush.",
   refs: "The blush stings of romantic comedies (Business Proposal, Weightlifting Fairy Kim Bok-joo)",
   params: { key: P.key(2, "ionian", ["ionian", "lydian"]), tempo: P.tempo(140, 110, 170), len: P.len(3, 1.5, 6), flutter: P.amt("flutter", 0.6) },
@@ -54,7 +54,7 @@ CUE("flustered", {
 // The fall: a slide down the harp and piano, a thud (timpani and bass drum, or a wood block's bonk), then a held
 // beat of nothing, and a little "ow" chord.
 CUE("slapstick_fall", {
-  family: "kdrama", label: "Slapstick fall", uses: ["trip", "fall", "pratfall", "bonk", "comedy"],
+  family: "kdrama", level: -2, label: "Slapstick fall", uses: ["trip", "fall", "pratfall", "bonk", "comedy"],
   desc: "A slide down the harp and piano, a thud on the landing (timpani and bass drum, or a wood-block bonk), a beat of silence, then a small sheepish chord.",
   refs: "The pratfall stings of K-drama comedies; cartoon scoring (Carl Stalling) in spirit",
   params: { key: P.key(0, "ionian"), fall: { kind: "num", def: 0.8, min: 0.3, max: 2, step: 0.1, label: "the fall (s)" }, landing: P.pick("landing", ["thud", "bonk", "crash"]), slide: P.pick("the slide", ["harp run", "slide whistle", "xylophone"]), after: P.amt("sheepish chord", 0.7) },
@@ -81,7 +81,7 @@ CUE("slapstick_fall", {
 // Cute: bouncy glockenspiel and xylophone over a pizzicato oom-pah, a major pentatonic tune, a triangle on four.
 // Eating something delicious, a puppy, a happy little walk.
 CUE("cute", {
-  family: "kdrama", label: "Cute (eating, happy walk)", uses: ["cute", "eating", "happy", "aegyo", "comedy"],
+  family: "kdrama", level: -5, label: "Cute (eating, happy walk)", uses: ["cute", "eating", "happy", "aegyo", "comedy"],
   desc: "A bouncy major pentatonic tune on glockenspiel and xylophone over a pizzicato oom-pah bass, flute staccato answers and a triangle on the fourth beat.",
   refs: "The cute cues of Reply 1988 and Extraordinary Attorney Woo; the celesta-and-pizzicato 'aegyo' sound",
   params: { key: P.key(7, "major_pent", ["major_pent", "ionian"]), tempo: P.tempo(120, 100, 140), len: P.len(10, 6, 24), sparkle: P.amt("sparkle", 0.5) },
@@ -108,7 +108,7 @@ CUE("cute", {
 // Smug: a sly pizzicato walking bass creeping chromatically, flute staccato with little leans, a knowing pause.
 // Scheming, a smirk, the plan coming together.
 CUE("smug", {
-  family: "kdrama", label: "Smug / scheming", uses: ["smug", "scheming", "smirk", "a plan", "comedy"],
+  family: "kdrama", level: -6, label: "Smug / scheming", uses: ["smug", "scheming", "smirk", "a plan", "comedy"],
   desc: "A sly walking pizzicato bass that creeps chromatically, flute staccato phrases with little leans, a knowing pause before the last note.",
   refs: "The scheming-rival cues of K-drama comedies; the villain's tango in spirit",
   params: { key: P.key(4, "harmonic_minor", ["harmonic_minor", "dorian"]), tempo: P.tempo(96, 80, 112), len: P.len(10, 6, 20), creep: P.amt("creep", 0.6) },
@@ -129,7 +129,7 @@ CUE("smug", {
 // The shock: "dun dun dun", three low hits falling (horn, low strings, timpani), a tremolo after, sometimes a fast
 // zoom-in of rising strings first.
 CUE("shock", {
-  family: "kdrama", label: "Shock (dun dun dun)", uses: ["shock", "realisation", "twist", "gasp", "comedy", "reveal"],
+  family: "kdrama", level: -1, label: "Shock (dun dun dun)", uses: ["shock", "realisation", "twist", "gasp", "comedy", "reveal"],
   desc: "Three heavy hits falling (horn, low strings, piano and timpani together), a string tremolo left hanging; optionally a quick zoom-in rush first.",
   refs: "The dramatic-reveal stings of makjang dramas and comedies alike (Boys Over Flowers, The Penthouse)",
   params: { key: P.key(2, "aeolian"), hits: P.pick("hits", ["3", "2", "1"], "3"), zoom: P.amt("zoom-in first", 0.4), hang: P.amt("tremolo hang", 0.6) },
@@ -154,7 +154,7 @@ CUE("shock", {
 // Slow motion: the romantic look. Piano arpeggios over the "royal road" or I–V–vi–IV, strings swelling in, a
 // glockenspiel sparkle on the downbeat; at the end it can lift a step (the climax key change).
 CUE("slowmo_romance", {
-  family: "kdrama", label: "Slow-motion romance", uses: ["romance", "slow motion", "eye contact", "first meeting", "love"],
+  family: "kdrama", level: -5, label: "Slow-motion romance", uses: ["romance", "slow motion", "eye contact", "first meeting", "love"],
   desc: "Rolling piano arpeggios over a K-pop ballad progression, strings swelling in under them, a glockenspiel sparkle on the first beat; it may lift a whole step for the last bars.",
   refs: "Goblin, Crash Landing on You, Descendants of the Sun: the OST ballad underscore (piano first, strings rising)",
   params: { key: P.key(5, "ionian"), tempo: P.tempo(72, 58, 86), progression: P.pick("progression", ["royal_road", "pop", "canon", "doo_wop"]), len: P.len(24, 12, 48), lift: P.amt("key change at the end", 0.5), strings: P.amt("strings", 0.7) },
@@ -178,7 +178,7 @@ CUE("slowmo_romance", {
 
 // Heart flutter: a harp glissando up, glockenspiel twinkles and a warm string chord; the eyes meet.
 CUE("heart_flutter", {
-  family: "kdrama", label: "Heart flutter", uses: ["heart flutter", "eye contact", "touch", "romance"],
+  family: "kdrama", level: -6, label: "Heart flutter", uses: ["heart flutter", "eye contact", "touch", "romance"],
   desc: "A harp glissando up into glockenspiel twinkles and a warm string chord swelling and fading: the moment the eyes meet.",
   refs: "The eye-contact stings of romantic K-dramas (Hotel del Luna's softer cues, Twenty-Five Twenty-One)",
   params: { key: P.key(4, "lydian", ["lydian", "ionian"]), len: P.len(4, 2, 8), twinkles: P.amt("twinkles", 0.6) },
@@ -196,7 +196,7 @@ CUE("heart_flutter", {
 
 // The sad flashback: solo piano in a minor key, sparse and rubato, the strings coming in after a few bars.
 CUE("sad_flashback", {
-  family: "kdrama", label: "Sad flashback", uses: ["flashback", "sad", "memory", "grief", "regret"],
+  family: "kdrama", level: -8, label: "Sad flashback", uses: ["flashback", "sad", "memory", "grief", "regret"],
   desc: "Solo piano in a minor key, sparse and rubato (a melody over broken chords), the strings entering softly after a few bars.",
   refs: "My Mister, Goblin's memory cues, Reply 1988's tender piano themes",
   params: { key: P.key(9, "aeolian"), tempo: P.tempo(64, 50, 76), progression: P.pick("progression", ["ballad_minor", "sad_pop", "lament"]), len: P.len(28, 14, 56), strings: P.amt("strings", 0.5) },
@@ -220,7 +220,7 @@ CUE("sad_flashback", {
 
 // The comic chase: a galop in two, pizzicato and xylophone racing, horn calls, snare.
 CUE("comic_chase", {
-  family: "kdrama", label: "Comic chase", uses: ["comic chase", "running late", "hurry", "comedy"],
+  family: "kdrama", level: -3, label: "Comic chase", uses: ["comic chase", "running late", "hurry", "comedy"],
   desc: "A galloping 2/4 in a major key: pizzicato oom-pah racing, xylophone runs, horn calls and a snare keeping it moving.",
   refs: "The running-late montages of K-drama comedies; Offenbach's galop in spirit",
   params: { key: P.key(0, "ionian", ["ionian", "mixolydian"]), tempo: P.tempo(168, 140, 196), len: P.len(12, 6, 30), horn: P.amt("horn calls", 0.6) },
@@ -241,7 +241,7 @@ CUE("comic_chase", {
 
 // Awkward: a held, slightly wrong chord, one plucked note left hanging, a glockenspiel "ding" into the silence.
 CUE("awkward", {
-  family: "kdrama", label: "Awkward silence", uses: ["awkward", "silence", "cringe", "comedy"],
+  family: "kdrama", level: -6, label: "Awkward silence", uses: ["awkward", "silence", "cringe", "comedy"],
   desc: "A thin, slightly wrong string chord, one pizzicato note left hanging, and a single glockenspiel ding dropped into the quiet.",
   refs: "The awkward-pause stings of K-drama comedies; the 'cricket' moment in sitcom scoring",
   params: { key: P.key(5, "lydian"), len: P.len(3, 1.5, 6) },
@@ -258,7 +258,7 @@ CUE("awkward", {
 
 // Triumph: a horn fanfare over strings and timpani, I–IV–V–I.
 CUE("triumph", {
-  family: "kdrama", label: "Triumph", uses: ["triumph", "victory", "it worked", "comedy"],
+  family: "kdrama", level: -2, label: "Triumph", uses: ["triumph", "victory", "it worked", "comedy"],
   desc: "A horn fanfare over strings and piano chords with timpani, I–IV–V–I, landing big.",
   refs: "The win moments of K-drama comedies and sports dramas (Twenty-Five Twenty-One's fencing wins)",
   params: { key: P.key(10, "ionian"), tempo: P.tempo(104, 88, 124), len: P.len(6, 4, 12) },
@@ -279,7 +279,7 @@ CUE("triumph", {
 
 // The sad horn: three notes sagging down a semitone each, the last one bending flat (a pout, a sulk, a fail).
 CUE("womp_womp", {
-  family: "kdrama", label: "Sulk (womp womp)", uses: ["sulk", "pout", "fail", "rejected", "comedy"],
+  family: "kdrama", level: -3, label: "Sulk (womp womp)", uses: ["sulk", "pout", "fail", "rejected", "comedy"],
   desc: "Three horn notes falling a semitone at a time over a low pizzicato, the last one sagging flat and fading: the sulk.",
   refs: "The 'sad trombone' gag, played on the one horn we have",
   params: { key: P.key(7, "chromatic"), sag: P.amt("sag", 0.7) },
@@ -297,7 +297,7 @@ CUE("womp_womp", {
 // The punchline: under a second. Ba-dum-tss on the kit, a xylophone ta-da, a pizzicato bonk, or a timpani boing
 // (the thud bent down).
 CUE("punchline", {
-  family: "kdrama", label: "Punchline (ba-dum-tss)", uses: ["punchline", "joke", "rimshot", "comedy", "tag"],
+  family: "kdrama", level: -2, label: "Punchline (ba-dum-tss)", uses: ["punchline", "joke", "rimshot", "comedy", "tag"],
   desc: "A tag under a second: ba-dum-tss on the kit, a xylophone ta-da, a pizzicato bonk or a timpani boing.",
   refs: "The rimshot; the variety-show sound punctuation K-drama comedy borrows (Running Man, Infinite Challenge captions)",
   params: { key: P.key(0, "ionian"), kind: P.pick("tag", ["ba-dum-tss", "ta-da", "bonk", "boing"]) },

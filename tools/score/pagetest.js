@@ -69,7 +69,11 @@ const URL = process.env.SCORE_URL || "http://127.0.0.1:8791/";
   const pos = await page.evaluate(async () => { await playTake(writeCue("sting", {}, 1), null, null); await new Promise(r => setTimeout(r, 400)); const p = Engine.position(); stopAll(); return p; });
   if (!(pos > 0)) fail("playback position " + pos);
 
-  await page.evaluate(() => { selectCue("yandere_waltz"); makeVariations(); });
+  // audition: two short variations and the settings, each cut at 3 s, then it says so
+  await page.evaluate(() => { selectCue("punchline"); $("count").value = 2; makeVariations(); $("audsecs").value = 3; $("audition").click(); });
+  await page.waitForFunction(() => /auditioned 3/.test(document.getElementById("status").textContent), null, { timeout: 30000 }).catch(() => fail("audition never finished"));
+
+  await page.evaluate(() => { $("count").value = 8; selectCue("yandere_waltz"); makeVariations(); });
   if (process.argv[2]) await page.screenshot({ path: process.argv[2] });
   if (errors.length) fail("page errors: " + errors.slice(0, 5).join(" | "));
   await browser.close();

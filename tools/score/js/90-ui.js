@@ -83,7 +83,9 @@ function legendFor(take) {
 
 // ---- playing ----
 async function playTake(take, canvas, el, from = 0) {
+  const aud = UI.audition;
   stopAll();
+  if (aud && aud.keep) UI.audition = aud;
   try {
     status("loading " + takeInstruments(take).filter(k => !Engine.loaded(k)).join(", ") + "...");
     await Engine.play(take, from);
@@ -93,7 +95,30 @@ async function playTake(take, canvas, el, from = 0) {
   if (el) el.classList.add("playing");
   requestAnimationFrame(tick);
 }
+// Audition: every variation card in turn (the settings' card last), each for up to `secs`; any stop ends it.
+async function audition() {
+  const token = UI.audition = {};
+  const cards = [...$("cards").children].slice(1).concat([$("cards").firstChild]), secs = clamp(+$("audsecs").value || 12, 3, 60);
+  for (const card of cards) {
+    if (UI.audition !== token) return;
+    token.keep = true;                                    // playTake's stop leaves this audition running
+    await playTake(card._take, card.querySelector("canvas"), card);
+    token.keep = false;
+    if (UI.audition !== token) return;
+    card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const t0 = performance.now();
+    while (UI.audition === token && Engine.position() >= 0 && performance.now() - t0 < secs * 1000) await new Promise(r => setTimeout(r, 100));
+    if (UI.audition !== token) return;
+    await new Promise(r => setTimeout(r, 600));
+  }
+  if (UI.audition === token) { stopAll(); status("auditioned " + cards.length + ": keep the ones you liked (Shift+number)"); }
+}
 function stopAll() {
+  UI.audition = null;
+  endPlay();
+}
+// the playing card's highlight and playhead cleared (a take ending by itself leaves an audition running)
+function endPlay() {
   Engine.stop();
   const p = UI.playing;
   if (p) { if (p.el) p.el.classList.remove("playing"); if (p.canvas) drawRoll(p.canvas, p.take); }
@@ -103,7 +128,7 @@ function tick() {
   const p = UI.playing;
   if (!p) return;
   const pos = Engine.position();
-  if (pos < 0) { stopAll(); status(UI.dirty ? "unsaved" : "ready"); return; }
+  if (pos < 0) { endPlay(); if (!UI.audition) status(UI.dirty ? "unsaved" : "ready"); return; }
   if (p.canvas) drawRoll(p.canvas, p.take, pos);
   requestAnimationFrame(tick);
 }
@@ -343,6 +368,7 @@ async function boot() {
   $("keep").onclick = () => { keep(UI.cue.id, UI.params, UI.seed); renderCards(); };
   $("reset").onclick = () => { UI.params = cueParams(UI.cue, {}); renderParams(); renderCards(); };
   $("vary").onclick = makeVariations;
+  $("audition").onclick = () => { if (UI.vars.length < 1) makeVariations(); audition(); };
   // a slider or choice changed: card 0 (the settings) follows
   $("params").addEventListener("change", () => renderCards());
   $("exportPal").onclick = () => downloadBytes(new TextEncoder().encode(JSON.stringify(UI.palette, null, 1)), "palette-" + UI.scope + ".json", "application/json");
@@ -374,6 +400,7 @@ async function boot() {
     } else if (e.code === "Space") { $("play").click(); e.preventDefault(); }
     else if (e.code === "KeyS" || e.code === "Escape") stopAll();
     else if (e.code === "KeyV") makeVariations();
+    else if (e.code === "KeyA") $("audition").click();
   });
   selectCue(CUES[LS.get("cue", "")] ? LS.get("cue", "") : "her_theme");
   status("ready");

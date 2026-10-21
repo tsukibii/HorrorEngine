@@ -35,10 +35,12 @@
       <span class="sep"></span>
       <button id="vary" class="primary" title="Write variations around these settings (V)">Make variations</button>
       <input id="count" type="number" min="2" max="24" value="8" title="How many">
+      <button id="audition" title="Play every variation in turn (each up to the seconds given), so you only listen and keep (A)">Audition all</button>
+      <input id="audsecs" type="number" min="3" max="60" value="12" title="seconds of each">
       <label title="How far the variations stray from the settings: a little (new notes, nudged numbers) to anything in range">spread</label>
       <input id="spread" type="range" min="0.05" max="1" step="0.05" value="0.35"><span id="spreadv" class="hint"></span>
     </div>
-    <div class="hint">Keys: <kbd>1</kbd>-<kbd>9</kbd> play a variation, <kbd>Shift</kbd>+number keeps it, <kbd>Space</kbd> play the settings, <kbd>S</kbd> stop, <kbd>V</kbd> new variations. Click a roll to play from there.</div>
+    <div class="hint">Keys: <kbd>1</kbd>-<kbd>9</kbd> play a variation, <kbd>Shift</kbd>+number keeps it, <kbd>Space</kbd> play the settings, <kbd>S</kbd> stop, <kbd>V</kbd> new variations, <kbd>A</kbd> audition them all. Click a roll to play from there.</div>
     <div id="cards"></div>
   </section>
   <section id="pal" class="col">

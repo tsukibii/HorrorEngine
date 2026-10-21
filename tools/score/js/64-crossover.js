@@ -8,7 +8,7 @@
 // time the phrase does: an augmented chord where the IV should be, a flattened note in the tune, or a low cluster
 // under the cadence. Which one, and how loud, is the parameter.
 CUE("her_theme", {
-  family: "crossover", label: "Her theme (something off)", uses: ["her theme", "romance", "yandere", "first meeting", "at home with her"],
+  family: "crossover", level: -8, label: "Her theme (something off)", uses: ["her theme", "romance", "yandere", "first meeting", "at home with her"],
   desc: "A tender piano love theme over warm chords, with one wrong thing that comes back every phrase: an augmented chord, a flattened note in the tune or a low cluster under the cadence.",
   refs: "Doki Doki Literature Club's 'Your Reality' (sweet piano hiding the wrong), Mirai Nikki's Yuno cues, the 'Ending' piano of Silent Hill 2",
   params: { key: P.key(7, "ionian", ["ionian", "lydian"]), tempo: P.tempo(70, 56, 88), len: P.len(24, 10, 48),
@@ -51,7 +51,7 @@ CUE("her_theme", {
 // Sweet, then wrong: a romance underscore that turns at a point (her smile stays and the music doesn't): the major
 // harmony slides a semitone, the strings bend down, a low piano note lands under it all. The turn is a hit point.
 CUE("sweet_then_wrong", {
-  family: "crossover", label: "Sweet, then wrong", uses: ["the turn", "reveal", "her smile", "yandere", "date"],
+  family: "crossover", level: -6, label: "Sweet, then wrong", uses: ["the turn", "reveal", "her smile", "yandere", "date"],
   desc: "A warm romance underscore (rolling piano, strings) that turns at the hit: the harmony slides down a semitone, the strings bend down into a cluster, a low note lands.",
   refs: "School Days' last episode, Gone Girl's warm-cold score (Reznor and Ross), the Parasite 'Belt of Faith' turn",
   params: { key: P.key(2, "ionian"), tempo: P.tempo(76, 60, 92), turn_at: P.amt("where it turns (share)", 0.6), len: P.len(16, 8, 32),
@@ -86,7 +86,7 @@ CUE("sweet_then_wrong", {
 // The yandere waltz: a pretty 3/4 waltz on top (harp or piano, a flute line), and under the floor a low tremolo
 // cluster that never stops, getting louder each phrase: she is dancing, the house is not.
 CUE("yandere_waltz", {
-  family: "crossover", label: "Yandere waltz", uses: ["yandere", "dance", "her room", "dinner with her", "obsession"],
+  family: "crossover", level: -7, label: "Yandere waltz", uses: ["yandere", "dance", "her room", "dinner with her", "obsession"],
   desc: "A pretty waltz (harp or piano with a flute line) over a low string tremolo cluster that never stops and grows each phrase.",
   refs: "Danganronpa's sweet-menacing waltzes, the Shining ballroom (Al Bowlly over the dread), Mirai Nikki",
   params: { key: P.key(9, "harmonic_minor", ["harmonic_minor", "aeolian", "ionian"]), tempo: P.tempo(132, 100, 168), len: P.len(24, 12, 48),
@@ -118,7 +118,7 @@ CUE("yandere_waltz", {
 // The pounding heart: a heartbeat on the timpani under a romance chord that won't settle; the pulse quickens,
 // the harmony slides between love (a major seventh) and fear (a minor ninth). Is it love or fear? Both.
 CUE("pounding_heart", {
-  family: "crossover", label: "Pounding heart (love or fear)", uses: ["close to her", "kiss", "she leans in", "hiding with her", "confession"],
+  family: "crossover", level: -6, label: "Pounding heart (love or fear)", uses: ["close to her", "kiss", "she leans in", "hiding with her", "confession"],
   desc: "A heartbeat on the timpani under a held chord that slides between a warm major seventh and a cold minor ninth; the pulse quickens.",
   refs: "Pearl's warm-gone-wrong strings, the 'kiss' cues of Fatal Attraction, Five Hearts Under One Roof's close scenes",
   params: { key: P.key(4, "ionian"), from: P.tempo(64, 50, 90), to: P.tempo(110, 70, 160), len: P.len(14, 6, 30), fear: P.amt("fear over love", 0.5) },
@@ -147,7 +147,7 @@ CUE("pounding_heart", {
 // The timed choice's clock: pizzicato ticking on the beat (a clock in the room), a string note climbing a semitone
 // every few seconds, the ticking doubling for the last stretch. Under a 30-second timed reply.
 CUE("timed_choice", {
-  family: "crossover", label: "Timed choice (the clock)", uses: ["timed choice", "decision", "reply", "countdown", "interrogation"],
+  family: "crossover", level: -9, label: "Timed choice (the clock)", uses: ["timed choice", "decision", "reply", "countdown", "interrogation"],
   desc: "Pizzicato ticking like a clock, a string line climbing a semitone every few seconds, the ticks doubling near the end; it stops dead on the hit.",
   refs: "Until Dawn's choice beds, Detroit: Become Human's interrogations, Squid Game's countdown (Jung Jae-il)",
   params: { key: P.key(2, "aeolian"), len: P.len(30, 6, 45), tick: P.tempo(60, 50, 90), climb: P.amt("climb", 0.6), sweet: P.amt("sweetness (a romance over it)", 0.2) },
@@ -174,7 +174,7 @@ CUE("timed_choice", {
 // Her answer to your reply (2 to 4 s, after a choice): warm (a rolled major chord, a glock sparkle), cold (the same
 // chord with its third gone and a low note), uncanny (warm on top, a semitone rub under it), or hurt.
 CUE("reply_answer", {
-  family: "crossover", label: "Her answer (after a reply)", uses: ["reply", "choice result", "karma", "her mood"],
+  family: "crossover", level: -6, label: "Her answer (after a reply)", uses: ["reply", "choice result", "karma", "her mood"],
   desc: "A two-to-four second answer to the player's reply: warm, cold, uncanny (warm on top, a rub under it) or hurt (a falling minor sixth).",
   refs: "Persona's social-link stings, Doki Doki's poem-reaction cues, the K-drama 'reaction shot' sting",
   params: { key: P.key(0, "ionian"), mood: P.pick("her mood", ["warm", "cold", "uncanny", "hurt"]), len: P.len(3, 1.5, 5), size: P.amt("how big", 0.5) },
@@ -205,7 +205,7 @@ CUE("reply_answer", {
 // The close moment: almost nothing. High piano notes far apart in an open (lydian or pentatonic) colour, a breath of
 // strings, long silences; the player's eye is on her face. For intimate first-person close-ups, whispers.
 CUE("close_moment", {
-  family: "crossover", label: "Close moment (almost nothing)", uses: ["intimate", "whisper", "close-up", "she touches your face", "quiet"],
+  family: "crossover", level: -12, label: "Close moment (almost nothing)", uses: ["intimate", "whisper", "close-up", "she touches your face", "quiet"],
   desc: "High piano notes far apart in an open colour, a breath of strings, long silences: room for a whisper.",
   refs: "Lost in Translation's quiet cues, Your Name's piano sketches (RADWIMPS), the quiet bed-scene cues of Korean melodrama",
   params: { key: P.key(4, "lydian", ["lydian", "major_pent", "ionian", "dorian"]), len: P.len(16, 6, 32), space: P.amt("silence between", 0.6), breath: P.amt("strings' breath", 0.4) },
@@ -229,7 +229,7 @@ CUE("close_moment", {
 // slowed, resolved warmly (good), left on the IV (neutral, never home), or turned to minor with the low cluster
 // returning and a music-box tag (bad).
 CUE("ending", {
-  family: "crossover", label: "Ending (good, neutral, bad)", uses: ["ending", "credits", "epilogue", "karma"],
+  family: "crossover", level: -6, label: "Ending (good, neutral, bad)", uses: ["ending", "credits", "epilogue", "karma"],
   desc: "The love theme's chords slowed down: resolved warmly (good), left hanging on the IV (neutral), or turned minor with the cluster back and a music-box tag (bad).",
   refs: "Silent Hill 2's endings, To the Moon's 'For River', Ringu's closing cues; the K-drama finale montage swell",
   params: { key: P.key(7, "ionian"), ending: P.pick("ending", ["good", "neutral", "bad"]), tempo: P.tempo(58, 44, 72), len: P.len(30, 16, 60), strings: P.amt("strings", 0.7) },
@@ -263,7 +263,7 @@ CUE("ending", {
 // past where it should stop: up a step, then again, then again, the strings turning to tremolo and a flat-second
 // suspension creeping into the chords. She loves you. Too much.
 CUE("obsession_confession", {
-  family: "crossover", label: "Confession (one key change too many)", uses: ["confession", "obsession", "I love you", "too much", "yandere"],
+  family: "crossover", level: -5, label: "Confession (one key change too many)", uses: ["confession", "obsession", "I love you", "too much", "yandere"],
   desc: "A ballad swell (royal road, piano arpeggios then strings) that rises a step, then again, then again; the strings turn to tremolo and a flat second creeps into the chords.",
   refs: "The K-drama last-chorus key change, made sinister; Phantom Thread's too-intense romance (Greenwood); School Days",
   params: { key: P.key(5, "ionian"), tempo: P.tempo(70, 60, 80), lifts: { kind: "num", def: 3, min: 1, max: 5, step: 1, label: "key changes" }, phrase: { kind: "num", def: 2, min: 1, max: 8, step: 1, label: "bars a key" }, tremolo: P.amt("tremolo creep", 0.6) },
@@ -291,7 +291,7 @@ CUE("obsession_confession", {
 // The ghost lover's lullaby: a tender 6/8 on the nylon guitar with a flute melody and high string harmonics, and
 // every few bars a tubular bell too low and too long. A tender scene with something dead.
 CUE("ghost_lullaby", {
-  family: "crossover", label: "Ghost lover's lullaby", uses: ["ghost", "tender", "lullaby", "memory", "she's dead"],
+  family: "crossover", level: -9, label: "Ghost lover's lullaby", uses: ["ghost", "tender", "lullaby", "memory", "she's dead"],
   desc: "Nylon guitar arpeggios in 6/8, a flute melody, high quiet strings; every few bars a tubular bell, too low and too long.",
   refs: "Hotel del Luna and Goblin's dark cues, Silent Hill 2's 'Theme of Laura' (reprise), Pan's Labyrinth's lullaby (Navarrete)",
   params: { key: P.key(9, "aeolian", ["aeolian", "dorian", "harmonic_minor"]), tempo: P.tempo(60, 48, 76), len: P.len(24, 12, 48), bell: P.amt("the bell", 0.5), flute: P.amt("flute melody", 0.7) },
@@ -317,7 +317,7 @@ CUE("ghost_lullaby", {
 // The playground game: a childish tune on the flute (the recorder's stand-in), a snare and claves in the 3-3-7
 // sports-day clap, bright and simple, with one note kept wrong. The game she wants to play with you.
 CUE("playground_game", {
-  family: "crossover", label: "Playground game (one wrong note)", uses: ["her game", "hide and seek", "the rules", "children's game", "cute menace"],
+  family: "crossover", level: -6, label: "Playground game (one wrong note)", uses: ["her game", "hide and seek", "the rules", "children's game", "cute menace"],
   desc: "A childish flute tune with snare and claves in the 3-3-7 clap rhythm, bright and simple, with one note always a semitone wrong.",
   refs: "Squid Game's 'Way Back Then' (Jung Jae-il: recorder, snare, claps, the kept wrong note), 'Red Light, Green Light'",
   params: { key: P.key(2, "ionian", ["ionian", "major_pent"]), tempo: P.tempo(112, 90, 132), len: P.len(16, 8, 32), wrong: P.amt("the wrong note", 0.7), low: P.amt("the cello under it", 0.3) },
