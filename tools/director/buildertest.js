@@ -1,6 +1,8 @@
 // The scene builder in a headless browser: every reference layout loads with nothing to fix and passes the story
-// and level checks; the player walks (and a wall stops them); a room and a door are added; a layout saves into a
-// scratch game (made and removed here) and reads back the same. Ends "BUILDER ok".
+// and level checks; the player walks (and a wall stops them); a room and a door are added; the finish, wall items,
+// a reference cut-out and the kit (furniture, fittings, floors, a ceiling step, window frames, curtains) pass and
+// read back; a layout saves into a scratch game (made and removed here) and reads back the same; the desk reloads,
+// another game's level is borrowed, the desk's deep link shows its marks. Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -121,6 +123,42 @@ const SCRATCH = "Zz_builder_test";
     if (Math.abs(ref.op.w - 0.78) > 0.001 || Math.abs(ref.op.h - 1.17) > 0.001 || ref.op.type !== "window" || ref.op.ref !== "window_test") fail("reference cut " + JSON.stringify(ref));
     const chk = await page.evaluate(() => window.builder.runChecks());
     if (chk.errors.length) fail("after the finish, the item and the cut-out: " + chk.errors.slice(0, 3).join("; "));
+
+    // the kit: furniture against a wall, a downlight, a wall fitting, a ceiling step, a window frame and curtains;
+    // they pass the checks, the plan builds them, and a saved level reads back the same
+    const kt = await page.evaluate(async () => {
+      const B = window.B, bu = window.builder, BMm = window.BM;
+      B.dirty = false; bu.openPreset("1ldk");
+      const ldk = B.model.rooms.find(r => r.kind === "ldk");
+      bu.setKitPreset("kit", "sofa_3"); bu.addKit(ldk.x + ldk.w - 0.3, ldk.y + ldk.d / 2);
+      const sofa = B.model.kits[B.model.kits.length - 1];
+      bu.setKitPreset("kit", "downlight_100"); bu.addKit(ldk.x + 1, ldk.y + 1);
+      const dl = B.model.kits[B.model.kits.length - 1];
+      bu.addItem(ldk.x + 0.6, ldk.y + ldk.d - 0.1, "socket_jp_2");
+      ldk.ceilKit = { preset: "ceiling_step" };
+      const win = B.model.ops.find(o => o.type === "window" && BMm.sides(B.model, o).some(q => q.room === ldk));
+      bu.addCurtains(win);
+      bu.changed();
+      await new Promise(r => setTimeout(r, 1500));
+      const lvl = B.exported.level, props = lvl.rooms.flatMap(r => (r.props || []).map(p => Object.assign({ room: r.id }, p)));
+      const back = BMm.levelToModel({ levels: { t: lvl } }, "t");
+      return { sofa: [+(ldk.w - sofa.x).toFixed(3), sofa.rot], dl: [dl.z, dl.size[2], ldk.h], problems: B.exported.problems,
+               kitProps: props.filter(p => p.kit).length, floors: props.filter(p => /_fx_floor$/.test(p.id)).length, frames: props.filter(p => /_fx_win\d+$/.test(p.id)).length,
+               pieces: B.plan.pieces.filter(q => q.tags.some(t => t.startsWith("kit:"))).length,
+               back: { kits: back.kits.length, fits: back.items.filter(i => i.kind === "fit").length, floors: back.rooms.filter(r => r.floorKit).length,
+                       ceil: back.rooms.filter(r => r.ceilKit).length, frames: back.ops.filter(o => o.frame).length },
+               model: { kits: B.model.kits.length, fits: B.model.items.filter(i => i.kind === "fit").length, floors: B.model.rooms.filter(r => r.floorKit).length,
+                        ceil: B.model.rooms.filter(r => r.ceilKit).length, frames: B.model.ops.filter(o => o.frame).length },
+               chk: await bu.runChecks() };
+    });
+    console.log("kit", JSON.stringify(Object.assign({}, kt, { chk: kt.chk.errors.length + " errors" })));
+    if (kt.chk.errors.length) fail("the kit: " + kt.chk.errors.slice(0, 3).join("; "));
+    if (kt.problems.length) fail("the kit's problems: " + kt.problems.join("; "));
+    if (kt.sofa[0] > 0.6 || kt.sofa[1] !== 270) fail("the sofa didn't go back to the east wall facing west: " + kt.sofa);
+    if (Math.abs(kt.dl[0] + kt.dl[1] - kt.dl[2]) > 0.001) fail("the downlight isn't on the ceiling: " + kt.dl);
+    if (!kt.floors || !kt.frames || kt.pieces < kt.kitProps) fail("floors, frames or kit pieces missing: " + JSON.stringify(kt));
+    if (JSON.stringify(kt.back) !== JSON.stringify(kt.model)) fail("the level doesn't read back the same: " + JSON.stringify(kt.back) + " vs " + JSON.stringify(kt.model));
+    if (shots) { await page.evaluate(() => { const B = window.B, r = B.model.rooms.find(r => r.kind === "ldk"); Object.assign(B.model.player, { x: r.x + r.w * 0.75, y: r.y + r.d * 0.8, yaw: 200 }); window.builder.render3d(); }); await page.waitForTimeout(600); await page.screenshot({ path: path.join(shots, "builder_kit.png") }); }
     if (shots) await page.screenshot({ path: path.join(shots, "builder_finish.png") });
 
     // save the house into the scratch game and read it back
@@ -174,6 +212,23 @@ const SCRATCH = "Zz_builder_test";
     console.log("deep link", JSON.stringify(mk));
     if (mk.focus !== node || mk.level !== "house" || !mk.here || !mk.rows || !mk.marks) fail("the deep link and marks: " + JSON.stringify(mk));
     if (shots) await page.screenshot({ path: path.join(shots, "builder_marks.png") });
+
+    // the kit maker: every type at its defaults, a preset exploded into parts, a glb export
+    const km = await ctx.newPage();
+    km.on("pageerror", e => errors.push("kit maker: " + e.message));
+    await km.goto(URL + "kit.html");
+    await km.waitForFunction(() => window.__kitReady, null, { timeout: 60000 });
+    const kr = await km.evaluate(() => {
+      const KM = window.kitmaker, out = { types: 0, parts: 0 };
+      for (const o of [...document.querySelectorAll("#newType option")].filter(o => o.value)) { const s = document.querySelector("#newType"); s.value = o.value; s.onchange(); out.types++; }
+      KM.openPreset("vanity_drawers"); KM.explode(); out.parts = KM.K.spec.parts.length; out.type = KM.K.spec.type;
+      out.rows = document.querySelectorAll(".kf-card").length;
+      return out;
+    });
+    console.log("kit maker", JSON.stringify(kr));
+    if (kr.types < 18 || kr.type !== "parts" || !kr.parts || kr.rows !== kr.parts) fail("the kit maker: " + JSON.stringify(kr));
+    if (shots) await km.screenshot({ path: path.join(shots, "kit_maker.png") });
+    await km.close();
   } finally {
     fs.rmSync(path.join(ROOT, "Content/Games", SCRATCH), { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "Saved/Story", SCRATCH), { recursive: true, force: true });

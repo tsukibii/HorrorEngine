@@ -2,7 +2,13 @@
 // reference layout and written back as the story's rooms (with the shared walls worked out: the taller, then the
 // larger room builds a wall two rooms share, the other skips that stretch), openings, links, built-ins, stairs and
 // the start spot. docs/SCENE_BUILDER.md has the rules; check.js-style tests run it in the page (builder_test.js).
-import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH } from "./builder-presets.js";
+import { KINDS, FIXTURES, OPENINGS, JO, WALL_ITEMS, LIGHT_K, FINISH, FLOOR_BY_KIND, WINDOW_FRAME } from "./builder-presets.js";
+import * as KIT from "./kit.js";
+
+// the kit's presets (docs/KIT.md): the page sets them once it has them (stage.js loadAssetLibrary)
+export const KITS = { presets: {} };
+const kitFull = spec => KIT.withDefaults(KIT.resolve(spec, KITS.presets));
+const noSize = k => { if (!k || typeof k !== "object") return k ? { preset: k } : null; const o = clone(k); delete o.size; return o; };
 
 export const WALLS = ["n", "e", "s", "w"];
 const OPP = { n: "s", s: "n", e: "w", w: "e" };
@@ -43,13 +49,15 @@ export function newRoom(kind, id, x, y, z = 0, o = {}) {
   const [w, d] = o.size || K.size;
   return { id, kind, name: o.name || "", x, y, z, w, d, h: o.h || K.h || 2.4, floor: o.floor || K.floor, light: o.light || "dim",
            ceiling: o.ceiling ?? K.ceiling ?? true, open: (o.open || K.open || []).slice(), fixtures: o.fixtures ?? true,
-           dir: o.dir || (d >= w ? "n" : "e"), extra: o.extra || {} };
+           dir: o.dir || (d >= w ? "n" : "e"), floorKit: o.floorKit !== undefined ? o.floorKit : (FLOOR_BY_KIND[kind] ? { preset: FLOOR_BY_KIND[kind] } : null),
+           ceilKit: o.ceilKit || null, extra: o.extra || {} };
 }
 
 export function newOpening(type, id, line, c, z, o = {}) {
   const D = OPENINGS[type];
   return { id, type, axis: line.axis, v: line.v, c, z, w: o.w || D.w, h: o.h || D.h, sill: o.sill ?? D.sill,
-           swing: type === "slide" ? "slide" : (o.swing || "in"), locked_by: o.locked_by || null, creak: !!o.creak, extra: o.extra || {} };
+           swing: type === "slide" ? "slide" : (o.swing || "in"), locked_by: o.locked_by || null, creak: !!o.creak, extra: o.extra || {},
+           frame: o.frame !== undefined ? o.frame : (type === "window" ? { preset: WINDOW_FRAME } : null) };
 }
 
 // ---- a reference layout -> the model ----
@@ -78,7 +86,7 @@ export function presetToModel(P) {
     const r = byId[rid], ln = wallLine(r, wall), W = WALL_ITEMS[kind];
     return newItem(kind, `${rid}_wi_${kind}_${i + 1}`, rid, wall, r3((ln.hi - ln.lo) * at));
   });
-  return { rooms, ops, items, floors, finish: Object.assign({}, FINISH), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
+  return { rooms, ops, items, kits: [], floors, finish: Object.assign({}, FINISH), player: { x: P.start[0], y: P.start[1], yaw: P.start[2], z: 0 },
            her: { x: P.her[0], y: P.her[1], yaw: P.her[2], z: 0 }, levelExtra: {}, startId: "start", problems };
 }
 
@@ -98,7 +106,10 @@ export function levelToModel(story, levelName) {
     const kind = r.kind || guessKind(r.id);
     return { id: r.id, kind, name: r.name || "", x: r.at[0], y: r.at[1], z: r.at[2], w: r.size[0], d: r.size[1], h: r.size[2],
              floor: r.floor || (KINDS[kind] || KINDS.other).floor, light: r.light || "dim", ceiling: r.ceiling !== false, open: [],
-             fixtures: r.fixtures ?? (r.props || []).some(p => p.id.startsWith(`${r.id}_fx_`)), dir: r.dir || (r.size[1] >= r.size[0] ? "n" : "e"), extra };
+             fixtures: r.fixtures ?? (r.props || []).some(p => p.id.startsWith(`${r.id}_fx_`) && !/_fx_(light|switch|floor|ceiling|win\d+)$/.test(p.id)),
+             dir: r.dir || (r.size[1] >= r.size[0] ? "n" : "e"), extra,
+             floorKit: noSize(((r.props || []).find(p => p.id === `${r.id}_fx_floor`) || {}).kit),
+             ceilKit: noSize(((r.props || []).find(p => p.id === `${r.id}_fx_ceiling`) || {}).kit) };
   });
   const byId = Object.fromEntries(rooms.map(r => [r.id, r]));
   // a wall skipped whole that no neighbour builds is an open side (a porch, a balcony's railing side)
@@ -123,6 +134,7 @@ export function levelToModel(story, levelName) {
         { w: op.w, h: op.h, sill: upper ? 0 : sill, swing: dx.swing, locked_by: dx.locked_by, creak: dx.creak });
       delete dx.id; delete dx.swing; delete dx.locked_by; delete dx.creak;
       o.extra = dx;
+      o.frame = null;
       ops.push(o);
     }
   }
@@ -134,21 +146,36 @@ export function levelToModel(story, levelName) {
   const her = { x: big.x + big.w / 2, y: big.y + big.d / 2, yaw: 270, z: big.z };
   const levelExtra = {};
   for (const [k, v] of Object.entries(lvl)) if (!["rooms", "links", "start", "trim"].includes(k)) levelExtra[k] = clone(v);
-  // wall items: the props named <room>_wi_<kind>_<n>, read back to their wall
-  const items = [];
+  // wall items: the props named <room>_wi_<kind>_<n> (and wall fittings, <room>_wf_<n>), read back to their wall
+  const items = [], kits = [];
   for (const sr of lvl.rooms) for (const p of sr.props || []) {
-    const m = p.id.match(new RegExp(`^${sr.id}_wi_([a-z]+)_`));
-    if (!m || !WALL_ITEMS[m[1]] || !/^box /.test(p.shape || "")) continue;
-    const [w, t, h] = p.shape.split(/\s+/).slice(1).map(Number), r = byId[sr.id], [ax, ay] = p.at;
-    const ns = Math.round(((p.rot || 0) % 180 + 180) % 180) !== 90;
+    const r = byId[sr.id];
+    // window frames: <room>_fx_win<n>, of: the window
+    if (new RegExp(`^${sr.id}_fx_win\\d+$`).test(p.id) && p.of && p.kit) { const op = ops.find(o => o.id === p.of); if (op) op.frame = noSize(p.kit); continue; }
+    if (new RegExp(`^${sr.id}_kt_`).test(p.id) && p.kit) {          // kit things placed in the room
+      const sz = (p.kit.size || []).slice();
+      const ex = clone(p); for (const k of ["id", "at", "rot", "z", "kit"]) delete ex[k];
+      kits.push({ id: p.id, room: sr.id, x: p.at[0], y: p.at[1], z: p.z || 0, rot: p.rot || 0, spec: noSize(p.kit), size: sz.length === 3 ? sz : null, extra: ex });
+      continue;
+    }
+    const m = p.id.match(new RegExp(`^${sr.id}_wi_([a-z0-9]+)_`)), f = new RegExp(`^${sr.id}_wf_`).test(p.id);
+    if (!(m && WALL_ITEMS[m[1]]) && !f) continue;
+    let w, t, h;
+    if (p.kit && Array.isArray(p.kit.size)) [w, t, h] = p.kit.size;
+    else if (/^box /.test(p.shape || "")) [w, t, h] = p.shape.split(/\s+/).slice(1).map(Number);
+    else continue;
+    const [ax, ay] = p.at, ns = Math.round(((p.rot || 0) % 180 + 180) % 180) !== 90;
     const wall = ns ? (ay > r.d / 2 ? "n" : "s") : (ax > r.w / 2 ? "e" : "w");
-    items.push(Object.assign(newItem(m[1], p.id, sr.id, wall, ns ? ax : ay), { w, h, t, z: r3((p.z || 0) + h / 2), extra: clone(p) }));
+    const it = Object.assign(newItem(f ? "fit" : m[1], p.id, sr.id, wall, ns ? ax : ay), { w, h, t, z: r3((p.z || 0) + h / 2), extra: clone(p) });
+    if (p.kit) it.kit = noSize(p.kit);
+    delete it.extra.kit; delete it.extra.shape;
+    items.push(it);
   }
   const tr = lvl.trim || {};
   const finish = { skirting: tr.skirting || 0, cornice: tr.cornice || 0, casing: tr.casing || 0, threshold: tr.threshold || 0,
                    lights: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_light`)),
                    switches: lvl.rooms.some(r => (r.props || []).some(p => p.id === `${r.id}_fx_switch`)) };
-  return { rooms, ops, items, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
+  return { rooms, ops, items, kits, floors: floors.length ? floors : [0], finish, player, her, levelExtra, startId: lvl.start || "start", problems: [] };
 }
 
 // ---- the model -> a story level ----
@@ -214,7 +241,7 @@ export function sides(model, op) {
 
 export function modelToLevel(model, story) {
   const S = skips(model), problems = [];
-  const out = {}, links = [], seen = new Set();
+  const out = {}, links = [], seen = new Set(), frames = [];
   for (const r of model.rooms) {
     const d = Object.assign({}, clone(r.extra), { id: r.id, at: [r3(r.x), r3(r.y), r3(r.z)], size: [r3(r.w), r3(r.d), r3(r.h)], floor: r.floor, light: r.light });
     if (!r.ceiling) d.ceiling = false; else delete d.ceiling;
@@ -230,7 +257,7 @@ export function modelToLevel(model, story) {
     }
     if (skip.length) d.skip = skip; else delete d.skip;
     d.openings = [];
-    d.props = (r.extra.props || []).filter(p => !p.id.startsWith(`${r.id}_fx_`) && !p.id.startsWith(`${r.id}_wi_`)).map(clone);
+    d.props = (r.extra.props || []).filter(p => !["_fx_", "_wi_", "_wf_", "_kt_"].some(k => p.id.startsWith(r.id + k))).map(clone);
     if (!d.props.length) delete d.props;
     out[r.id] = d;
   }
@@ -250,6 +277,7 @@ export function modelToLevel(model, story) {
       if (op.creak) o.door.creak = true;
     }
     out[host.room.id].openings.push(o);
+    if (op.type === "window" && op.frame) frames.push({ op, host });
     if (other && op.type !== "window") {
       const key = [host.room.id, other.room.id].sort().join("|") + "|" + (o.door ? o.door.id : "");
       if (!seen.has(key)) { seen.add(key); links.push({ a: host.room.id, b: other.room.id, via: o.door ? o.door.id : null }); }
@@ -267,6 +295,15 @@ export function modelToLevel(model, story) {
       if (fin.switches) { const sw = switchFor(model, r); if (sw) extra.push(sw); }
     }
     for (const it of (model.items || []).filter(i => i.room === r.id)) extra.push(itemProp(r, it));
+    const fl = r.floorKit && kitProp(r.floorKit, `${r.id}_fx_floor`, problems);
+    if (fl) extra.push(Object.assign(fl, { kit: Object.assign(fl.kit, { size: [r3(r.w - 0.1), r3(r.d - 0.1), fl.kit.size[2]] }), at: [r3(r.w / 2), r3(r.d / 2)] }));
+    const cl = r.ceilKit && r.ceiling && kitProp(r.ceilKit, `${r.id}_fx_ceiling`, problems);
+    if (cl) { const dh = cl.kit.size[2]; extra.push(Object.assign(cl, { kit: Object.assign(cl.kit, { size: [r3(r.w - 0.1), r3(r.d - 0.1), dh] }), at: [r3(r.w / 2), r3(r.d / 2)], z: r3(r.h - dh) })); }
+    for (const k of (model.kits || []).filter(k => k.room === r.id)) {
+      const kp = kitProp(Object.assign({}, k.spec, k.size ? { size: k.size } : {}), k.id, problems);
+      if (kp) extra.push(Object.assign(clone(k.extra || {}), kp, { at: [r3(k.x), r3(k.y)], rot: Math.round(k.rot) % 360 }, k.z ? { z: r3(k.z) } : {}));
+    }
+    frames.filter(f => f.host.room === r).forEach((f, i) => { const fp = frameProp(r, f, `${r.id}_fx_win${i + 1}`, problems); if (fp) extra.push(fp); });
     if (r.kind === "stairs" && r.fixtures) { const st = stairsProp(model, r); if (st) extra.push(st); else problems.push(`${r.id}: stairs need a floor above (add one)`); }
     if (extra.length) d.props = (d.props || []).concat(extra);
   }
@@ -334,6 +371,13 @@ function placeFixtures(model, r) {
     const rect = i.wall === "n" ? [a0, r.d - g - t, a1, r.d] : i.wall === "s" ? [a0, 0, a1, g + t] : i.wall === "w" ? [0, a0, g + t, a1] : [r.w - g - t, a0, r.w, a1];
     return [rect, i.z - i.h / 2];
   });
+  // furniture placed from the kit keeps its floor: its footprint (axis-aligned) in room space
+  for (const k of (model.kits || []).filter(k => k.room === r.id)) {
+    let surf = false; try { surf = ["tiles", "planks", "tatami", "rug"].includes(KIT.resolve(k.spec, KITS.presets).type); } catch (e) { }
+    if (surf || mountOf(k.spec) === "ceiling" || k.z > 1.2 || !k.size) continue;
+    const a = k.rot * Math.PI / 180, hw = (Math.abs(Math.cos(a)) * k.size[0] + Math.abs(Math.sin(a)) * k.size[1]) / 2, hd = (Math.abs(Math.sin(a)) * k.size[0] + Math.abs(Math.cos(a)) * k.size[1]) / 2;
+    placed.push([k.x - hw, k.y - hd, k.x + hw, k.y + hd]);
+  }
   const winOn = wl => model.ops.filter(op => op.type !== "window" ? false : sides(model, op).some(s => s.room === r && s.wall === wl));
   const walls = WALLS.filter(wl => !r.open.includes(wl)).sort((a, b) => (wallLine(r, b).hi - wallLine(r, b).lo) - (wallLine(r, a).hi - wallLine(r, a).lo));
   for (const fx of want) {
@@ -360,8 +404,9 @@ function placeFixtures(model, r) {
     if (!done) continue;
     placed.push(done.rect);
     const [x0, y0, x1, y1] = done.rect;
-    out.push({ id: `${r.id}_fx_${fx}`, shape: `box ${fw} ${fd} ${fh}`, at: [r3((x0 + x1) / 2), r3((y0 + y1) / 2)],
-               rot: done.wl === "n" || done.wl === "s" ? 0 : 90, tag: FIXTURES[fx].tag });
+    const F = FIXTURES[fx], useKit = F.kit && KITS.presets[F.kit];
+    out.push(Object.assign({ id: `${r.id}_fx_${fx}` }, useKit ? { kit: { preset: F.kit, size: [fw, fd, fh] } } : { shape: `box ${fw} ${fd} ${fh}` },
+               { at: [r3((x0 + x1) / 2), r3((y0 + y1) / 2)], rot: FACE[done.wl], tag: F.tag }));
   }
   return out;
 }
@@ -417,6 +462,7 @@ export function uniquify(model, taken, levelName) {
   const fresh = id => { if (!taken.has(id)) { taken.add(id); return id; } let i = 2; while (taken.has(`${id}_${i}`)) i++; taken.add(`${id}_${i}`); return `${id}_${i}`; };
   for (const r of model.rooms) { const old = r.id; r.id = fresh(r.id); if (old !== r.id) renameItems(model, old, r.id); }
   for (const it of model.items || []) it.id = fresh(it.id);
+  for (const k of model.kits || []) k.id = fresh(k.id);
   for (const op of model.ops) if (op.type === "door" || op.type === "slide") op.id = fresh(op.id); else op.id = fresh(op.id);
   if (taken.has(model.startId || "start")) model.startId = fresh(levelName ? `${levelName}_start` : "start");
   else taken.add(model.startId || "start");
@@ -425,18 +471,51 @@ export function uniquify(model, taken, levelName) {
 
 // ---- things on walls ----
 export function newItem(kind, id, room, wall, a, o = {}) {
-  const W = WALL_ITEMS[kind];
-  return { id, kind, room, wall, a, w: o.w || W.size[0], h: o.h || W.size[1], t: o.t || W.size[2], z: o.z || W.z, extra: o.extra || {} };
+  const W = WALL_ITEMS[kind] || { size: [0.1, 0.1, 0.01], z: 1.2 };
+  const it = { id, kind, room, wall, a, w: o.w || W.size[0], h: o.h || W.size[1], t: o.t || W.size[2], z: o.z || W.z, extra: o.extra || {} };
+  if (o.kit) it.kit = o.kit;
+  return it;
 }
+// a wall fitting from a kit preset (a switch plate, a socket, a panel): its size and height from the preset
+export function newFitting(preset, id, room, wall, a) {
+  const P = KITS.presets[preset], [w, t, h] = kitFull({ preset }).size;
+  return newItem("fit", id, room, wall, a, { w, h, t, z: r3((P && P.z !== undefined ? P.z : 1.2) + h / 2), kit: { preset } });
+}
+// a kit thing placed in a room: x, y its middle in room space, z its base above the floor, rot its front's way
+export function newKit(preset, id, room, x, y, o = {}) {
+  const P = KITS.presets[preset] || {}, f = kitFull({ preset });
+  return { id, room, x, y, z: o.z ?? (P.z || 0), rot: o.rot || 0, spec: { preset }, size: f.size.slice(), extra: {} };
+}
+export const mountOf = spec => { try { const r = KIT.resolve(spec, KITS.presets); const p = r && spec.preset ? KITS.presets[spec.preset] : null; return (p && p.mount) || KIT.TYPES[r.type].mount; } catch (e) { return "floor"; } };
 // the prop a wall item becomes: a box against the inside face of its wall, its middle at z
 function itemProp(r, it) {
   const ln = wallLine(r, it.wall), len = ln.hi - ln.lo, T = 0.1;
   const a = Math.min(Math.max(it.a, it.w / 2 + 0.06), len - it.w / 2 - 0.06), off = T / 2 + it.t / 2 + 0.001;
   const at = it.wall === "n" ? [a, r.d - off] : it.wall === "s" ? [a, off] : it.wall === "e" ? [r.w - off, a] : [off, a];
   const zc = Math.min(it.z, r.h - 0.04 - it.h / 2);
-  const p = Object.assign({}, clone(it.extra || {}), { id: it.id, shape: `box ${r3(it.w)} ${r3(it.t)} ${r3(it.h)}`, at: at.map(r3),
-    rot: it.wall === "n" || it.wall === "s" ? 0 : 90, z: r3(zc - it.h / 2), tag: WALL_ITEMS[it.kind].tag });
+  const W = WALL_ITEMS[it.kind], spec = it.kit || (W && W.kit ? { preset: W.kit } : null);
+  const p = Object.assign({}, clone(it.extra || {}), { id: it.id, at: at.map(r3), rot: FACE[it.wall], z: r3(zc - it.h / 2) });
+  if (W && W.tag) p.tag = W.tag;
+  if (spec && (!spec.preset || KITS.presets[spec.preset] || !Object.keys(KITS.presets).length)) p.kit = Object.assign(clone(spec), { size: [r3(it.w), r3(it.t), r3(it.h)] });
+  else p.shape = `box ${r3(it.w)} ${r3(it.t)} ${r3(it.h)}`;
   return p;
+}
+// the rot that turns a kit thing's front (its -y) away from a wall, into the room
+export const FACE = { n: 0, s: 180, e: 270, w: 90 };
+// a kit spec as a prop: its full size worked out (from its preset when it has none)
+function kitProp(spec, id, problems) {
+  try { const f = kitFull(spec); const k = clone(spec); k.size = f.size.map(r3); return { id, kit: k }; }
+  catch (e) { problems.push(`${id}: ${e.message}`); return null; }
+}
+// a window's frame: in the wall's thickness, its sill (the stool) reaching into the room
+function frameProp(r, { op, host }, id, problems) {
+  let f;
+  try { f = kitFull(op.frame); } catch (e) { problems.push(`${op.id}'s frame: ${e.message}`); return null; }
+  const T = 0.1, stool = Math.max(0, +f.stool || 0), st = stool > 0 ? Math.max(0.005, +f.stool_t || 0) : 0, d = T + stool;
+  const off = stool / 2, a = host.at, sill = op.z - r.z + (op.sill || 0);
+  const at = host.wall === "n" ? [a, r.d - off] : host.wall === "s" ? [a, off] : host.wall === "e" ? [r.w - off, a] : [off, a];
+  const k = clone(op.frame); k.size = [r3(op.w), r3(d), r3(op.h + st)]; k.wall = T;
+  return { id, kit: k, at: at.map(r3), rot: FACE[host.wall], z: r3(sill - st), in_wall: true, of: op.id };
 }
 // a light switch by the first doorway into the room, on the room's side, past the door's casing
 function switchFor(model, r) {
@@ -457,7 +536,8 @@ function switchFor(model, r) {
 }
 // a room renamed: its wall items follow it (their ids carry the room's, so a level reads them back)
 export function renameItems(model, from, to) {
-  for (const it of model.items || []) if (it.room === from) { it.room = to; it.id = it.id.replace(new RegExp(`^${from}_wi_`), `${to}_wi_`); }
+  for (const it of model.items || []) if (it.room === from) { it.room = to; it.id = it.id.replace(new RegExp(`^${from}_(wi|wf)_`), `${to}_$1_`); }
+  for (const k of model.kits || []) if (k.room === from) { k.room = to; k.id = k.id.replace(new RegExp(`^${from}_kt_`), `${to}_kt_`); }
 }
 
 // A level taken from another game's script, as a start: its rooms, doors, built-ins, trim and wall items, and its

@@ -83,3 +83,6 @@ the fix.
   page, so a test of the builder telling the desk it saved has to open both pages from one `newContext()`.
 - **A level check that reads every level's rooms has to keep to the level it checks:** the doorway clearances of
   one level were tested against another level's furniture standing in the same place, and failed a borrowed level.
+- **The desk's server imports storykit once:** after changing `plan.py`, `level_check.py` or anything it imports,
+  restart `serve.py` (find its PID, kill it, start it again), or the pages plan with the old code. The kit's pieces
+  were missing from the builder's 3D view, and a level check failed on a rule already fixed, both for this reason.

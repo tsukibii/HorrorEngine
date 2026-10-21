@@ -37,12 +37,12 @@ export const KINDS = {
 };
 
 // built-ins, so a room reads at its real size from the player's eye: [w, d, h] boxes against a wall with no door
-export const FIXTURES = {
-  shoe_cabinet: { size: [0.9, 0.38, 1.0], tag: "shoe_cabinet" },
-  kitchen:      { size: [2.55, 0.65, 0.85], tag: "kitchen_counter" },
+export const FIXTURES = {          // kit: the kit preset it's drawn with (docs/KIT.md), sized to fit
+  shoe_cabinet: { size: [0.9, 0.38, 1.0], tag: "shoe_cabinet", kit: "shoe_cabinet" },
+  kitchen:      { size: [2.55, 0.65, 0.85], tag: "kitchen_counter", kit: "kitchen_run" },
   tub:          { size: [1.4, 0.8, 0.55], tag: "bathtub" },
-  vanity:       { size: [0.75, 0.55, 0.85], tag: "vanity" },
-  washer:       { size: [0.64, 0.64, 0.95], tag: "washing_machine" },
+  vanity:       { size: [0.75, 0.55, 0.85], tag: "vanity", kit: "vanity_drawers" },
+  washer:       { size: [0.64, 0.64, 0.95], tag: "washing_machine", kit: "washing_machine" },
   toilet:       { size: [0.4, 0.7, 0.8], tag: "toilet" },
 };
 
@@ -245,18 +245,22 @@ export const PRESETS = [
 
 // Things stuck to a wall, real sizes: [w, h, t (out from the wall)] and the height of their middle above the floor.
 // They are ordinary props (`<room>_wi_<kind>_<n>`, a box with its `tag`): the art pass gives each its mesh or texture.
-export const WALL_ITEMS = {
-  poster:   { en: "Poster (B2)", size: [0.515, 0.728, 0.004], z: 1.5, tag: "poster" },
-  frame:    { en: "Picture frame", size: [0.45, 0.35, 0.025], z: 1.5, tag: "frame" },
-  mirror:   { en: "Mirror", size: [0.45, 1.2, 0.02], z: 1.25, tag: "mirror" },
-  tv:       { en: "TV, 55\" on the wall", size: [1.23, 0.71, 0.06], z: 1.15, tag: "tv" },
-  ac:       { en: "Air conditioner (エアコン)", size: [0.8, 0.25, 0.29], z: 2.05, tag: "air_conditioner" },
-  clock:    { en: "Wall clock", size: [0.3, 0.3, 0.05], z: 1.9, tag: "clock" },
-  calendar: { en: "Calendar", size: [0.3, 0.45, 0.003], z: 1.55, tag: "calendar" },
-  board:    { en: "Whiteboard / corkboard", size: [0.9, 0.6, 0.02], z: 1.4, tag: "board" },
-  shelf:    { en: "Wall shelf", size: [0.8, 0.03, 0.22], z: 1.6, tag: "shelf" },
-  switch:   { en: "Light switch", size: [0.07, 0.12, 0.01], z: 1.2, tag: "light_switch" },
+export const WALL_ITEMS = {          // size: [width, height, off the wall]; z: its middle; kit: drawn with that preset
+  poster:   { en: "Poster (B2)", size: [0.545, 0.758, 0.012], z: 1.5, tag: "poster", kit: "poster_b2" },
+  frame:    { en: "Picture frame", size: [0.45, 0.35, 0.025], z: 1.5, tag: "frame", kit: "picture_frame" },
+  mirror:   { en: "Mirror", size: [0.45, 1.2, 0.02], z: 1.25, tag: "mirror", kit: "mirror" },
+  tv:       { en: "TV, 55\" on the wall", size: [1.23, 0.71, 0.06], z: 1.15, tag: "tv", kit: "tv_55" },
+  ac:       { en: "Air conditioner (エアコン)", size: [0.8, 0.25, 0.29], z: 2.05, tag: "air_conditioner", kit: "air_conditioner" },
+  clock:    { en: "Wall clock", size: [0.3, 0.3, 0.05], z: 1.9, tag: "clock", kit: "wall_clock" },
+  calendar: { en: "Calendar", size: [0.3, 0.45, 0.004], z: 1.55, tag: "calendar", kit: "calendar" },
+  board:    { en: "Whiteboard / corkboard", size: [0.9, 0.6, 0.02], z: 1.4, tag: "board", kit: "whiteboard" },
+  shelf:    { en: "Wall shelf", size: [0.8, 0.03, 0.22], z: 1.6, tag: "shelf", kit: "wall_shelf" },
+  switch:   { en: "Light switch", size: [0.07, 0.12, 0.012], z: 1.2, tag: "light_switch", kit: "switch_jp_1" },
 };
+// a room's floor by its kind (the layouts and new rooms start with these; "Floors by room kind" fills the rest)
+export const FLOOR_BY_KIND = { ldk: "oak_planks", living: "oak_planks", dining: "oak_planks", kitchen: "oak_planks", bedroom: "oak_planks",
+  kids: "oak_planks", study: "oak_planks", service: "oak_planks", corridor: "oak_planks", closet: "oak_planks", walkin: "oak_planks", stairs: null,
+  washitsu: "tatami", bath: "tile_300", washroom: "tile_300", toilet: "tile_300", genkan: "stone_450", balcony: "deck_boards", engawa: "wide_planks" };
 
 // a ceiling light's colour temperature by room: warm where people live, cooler where they wash and cook
 export const LIGHT_K = { ldk: 3000, living: 2700, dining: 2700, kitchen: 4000, washitsu: 2700, bedroom: 2700, kids: 3000, study: 3500,
@@ -266,6 +270,7 @@ export const LIGHT_K = { ldk: 3000, living: 2700, dining: 2700, kitchen: 4000, w
 // mawaribuchi: try 3 cm), a 12 mm threshold where the floor changes, a ceiling light in each room with its switch by
 // the door
 export const FINISH = { skirting: 0.06, cornice: 0, casing: 0.06, threshold: 0.012, lights: true, switches: true };
+export const WINDOW_FRAME = "window_slide";     // the frame a new window gets
 
 // texture sets a room can be given (its `look`): the few the studio already uses, plus whatever has been fetched
 // into the library (python tools/cc0.py textures <word>, then get): the builder lists both

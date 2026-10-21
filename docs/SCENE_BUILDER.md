@@ -51,6 +51,29 @@ rooms that can change between chapters. The panel under the 3D view counts what 
   whiteboard, a shelf, a light switch. Real sizes; drag one along its wall; select it to change its size and how high
   it hangs. They're props with a `tag`, so the art pass knows what each is, and built-ins keep clear of the ones that
   hang low. One covering a door or window is flagged under *To fix*.
+- **Furniture** (the kit, docs/KIT.md): pick a preset (cabinets and built-ins, furniture, rugs, curtains,
+  downlights, wall panels), then click in a room.
+  - Things that stand against a wall go to the nearest one, back to it, front to the room. Downlights go on the
+    ceiling.
+  - Drag one to move it: against a wall it slides along it (hold Alt to pull it free). **R** turns it; the arrows
+    nudge it 5 cm.
+  - Select one to set its size, height and facing. Its numbers show under the 3D view: columns, drawers, handles,
+    gaps, cushions...
+  - *Open in the kit maker* edits it there and keeps the result as a preset.
+  - The built-ins keep clear of what you place.
+- **Wall fittings:** pick a switch plate, a socket, a thermostat or intercom panel, or a vent, then click near a
+  wall. Each sits at its usual height: switches at 1.2 m, Japanese sockets at 25 cm, Korean ones at 30 cm. The
+  built-ins' light switches are kit plates too, and so are the wall items (a framed poster, a TV with its slim back,
+  an エアコン, a clock).
+- **Floors and ceilings:** the selected room's *floor* is a pattern with real gaps: planks, tiles, tatami, stone or
+  deck boards. Its gaps, seed and pattern show under the 3D view; *This floor in every <kind>* copies it.
+  - The layouts and new rooms start with their kind's floor: planks where people live, tatami in a washitsu, tiles
+    in the wet rooms, stone in the genkan.
+  - *Floors by room kind* (under Finish) fills any room that has none.
+  - Its *ceiling* can step down round the edge, with a curtain pocket at the window wall.
+- **Windows:** every window gets a frame (sliding sashes, a fixed big window with a mullion and transom...) with its
+  inside sill. Its numbers show under the 3D view. *Add curtains* hangs pleated curtains on a rail in front of it.
+  *Frames in every window* (under Finish) frames the ones without.
 - **Reference cut-outs:** under *References*, **load a model** (.glb, .gltf or .fbx: the window or door you'll use
   in Unreal; a file in centimetres is read as such). It's measured (width, height, depth) and gets a type (window,
   door, sliding) and a sill; set a **gap** in mm for clearance, or leave 0 for a tight fit. Then *Reference cut-out*
@@ -150,7 +173,8 @@ traditional house plays best for chases.
 | `tools/director/builder.html`, `builder.js` | the page: the plan (SVG), the panels, the desk's `Stage` from the player's eye, walking |
 | `tools/director/builder-model.js` | the model, without the page: layouts and levels in, story rooms out. Shared walls (the taller, then the larger room builds a wall two rooms share; the other skips that stretch), openings on whichever room builds that wall, links from openings, built-ins and stairs clear of every doorway, the start spot, unique ids, the stats |
 | `tools/director/builder-presets.js` | the room kinds (colours, Japanese names, footsteps, sizes, built-ins), the built-ins' sizes, the opening defaults, the reference layouts |
-| `tools/director/serve.py` | `POST /api/worldcheck/<level>`: the world checks on an unsaved story |
+| `tools/director/serve.py` | `POST /api/worldcheck/<level>`: the world checks on an unsaved story; `GET /api/kit`, `PUT /api/kit/preset/<name>`: the kit's presets |
+| `tools/director/kit.js` and the rest of the kit | furniture, fittings, floors, ceiling steps, window frames from numbers (docs/KIT.md) |
 | `tools/director/buildertest.js` | the test: every layout passes the checks with nothing to fix, walking and walls, adding a room and a door, the finish, wall items, a reference cut-out, saving into a scratch game, a desk open on it reloading after the save, another game's level borrowed, and the desk's deep link with its marks and the script panel. Ends `BUILDER ok`; needs the desk's server running and Playwright |
 | `tools/director/app.js` | the desk's side: *Edit environment*, reloading when the builder saves (a `BroadcastChannel`, `horrorstudio-story`), and `index.html?game=&node=&watch=1` to play a node |
 
@@ -182,8 +206,11 @@ What the builder now hands over, and what to do with it:
 
 ## 8. Not done yet
 
-- **Default looks by room kind** (tatami in a washitsu, tile in the bath): *Same look for every <kind>* does it by
-  hand until the texture sets for them are fetched.
+- **Default looks by room kind** (texture sets for a washitsu's walls, a bath's tiles): *Same look for every
+  <kind>* does it by hand until the texture sets for them are fetched. The floors' geometry already follows the
+  kind (the kit).
+- **Doors from the kit:** door leaves with panels and handles. Doors are the runner's (they open), so they stay
+  slabs for now.
 - **Room shapes:** rectangles only. An L-shaped room is two rooms joined by an opening.
 - **Building over a doorway:** a door can't sit on a wall that another room builds, so the builder puts it on the
   room that does.

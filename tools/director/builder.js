@@ -9,8 +9,10 @@ import { Stage, vfov, EYES, s2t, SHOTS, shotFor, FOV_H, loadAssetLibrary, LIBRAR
 import { loadBody, BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
-import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS } from "./builder-presets.js";
+import { KINDS, OPENINGS, PRESETS, JO, MODULE, STOREY, WALL_ITEMS, FINISH, KNOWN_LOOKS, FLOOR_BY_KIND } from "./builder-presets.js";
 import * as BM from "./builder-model.js";
+import * as KIT from "./kit.js";
+import { form as kitForm, overrides as kitOverrides, CSS as KIT_CSS } from "./kit-form.js";
 
 const $ = s => document.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -184,7 +186,7 @@ function draw() {
       const rot = Math.abs(((p.yaw % 180) + 180) % 180 - 90) < 1;
       const ww = rot ? d : w, dd = rot ? w : d;
       if (p.kind === "wall" && z - h / 2 <= z0 && z + h / 2 >= z0) dw += `M${sx(x - ww / 2)} ${sy(y + dd / 2)}h${ww * B.view.s}v${dd * B.view.s}h${-ww * B.view.s}z`;
-      else if (p.kind === "mesh" && Math.abs(z - h / 2 - floorZ()) < 1.2 && z + h / 2 > floorZ())
+      else if (p.kind === "mesh" && Math.abs(z - h / 2 - floorZ()) < 1.2 && z + h / 2 > floorZ() && !p.tags.includes("surface") && !p.tags.includes("in_wall") && !/_kt_/.test(p.id))
         el("rect", { x: sx(x - ww / 2), y: sy(y + dd / 2), width: ww * B.view.s, height: dd * B.view.s, fill: "#6d7d92", "fill-opacity": 0.55, stroke: "#9fb0c6", "stroke-width": 0.8 });
     }
     el("path", { d: dw, fill: "#d8d4ca" });
@@ -194,6 +196,7 @@ function draw() {
     if (Math.abs(op.z - floorZ()) > 0.3 && !(op.z < floorZ() && op.z + op.h > floorZ())) continue;
     drawOpening(op);
   }
+  for (const k of B.model.kits || []) drawKit(k);
   for (const it of B.model.items || []) drawItem(it);
   if ($("#marks").checked) drawMarks();
   drawPeople();
@@ -311,8 +314,11 @@ svg.addEventListener("mousedown", e => {
   const t = e.target, x = wx(e.offsetX), y = wy(e.offsetY);
   if (B.tool === "measure" && e.button === 0) { const p = snapPt(x, y); B.measure = { a: p, b: p }; drag = { kind: "measure" }; draw(); return; }
   if (B.tool === "item" && e.button === 0) { addItem(x, y); return; }
+  if (B.tool === "kit" && e.button === 0) { addKit(x, y); return; }
+  if (B.tool === "fit" && e.button === 0) { addItem(x, y, B.fitPreset); return; }
   if (B.tool !== "select" && e.button === 0) { addOpening(x, y); return; }
   if (t.dataset.item) { B.sel = { item: t.dataset.item }; const it = B.model.items.find(i => i.id === t.dataset.item); pushUndo(); drag = { kind: "item", it, a0: it.a, p: wallCoord(it, x, y) }; changed(false); return; }
+  if (t.dataset.kit) { B.sel = { kit: t.dataset.kit }; const k = B.model.kits.find(q => q.id === t.dataset.kit); pushUndo(); drag = { kind: "kit", k, x0: k.x, y0: k.y, x, y }; changed(false); return; }
   if (t.dataset.handle) { const r = roomOf(B.sel.room); pushUndo(); drag = { kind: "resize", h: t.dataset.handle, r, start: { x: r.x, y: r.y, w: r.w, d: r.d }, x, y }; return; }
   if (t.dataset.turn) { pushUndo(); drag = { kind: "turn", who: t.dataset.turn }; return; }
   if (t.dataset.person) { pushUndo(); const o = B.model[t.dataset.person]; drag = { kind: "person", who: t.dataset.person, dx: o.x - x, dy: o.y - y }; return; }
@@ -337,6 +343,9 @@ window.addEventListener("mousemove", e => {
     magnetResize(r, h);
   } else if (drag.kind === "measure") {
     B.measure.b = snapPt(x, y); draw(); return;
+  } else if (drag.kind === "kit") {
+    const k = drag.k; k.x = r2(Math.round((drag.x0 + x - drag.x) / 0.05) * 0.05); k.y = r2(Math.round((drag.y0 + y - drag.y) / 0.05) * 0.05);
+    if (BM.mountOf(k.spec) === "back" && !e.altKey) snapKit(k, 0.3);
   } else if (drag.kind === "item") {
     drag.it.a = Math.round((drag.a0 + wallCoord(drag.it, x, y) - drag.p) / 0.05) * 0.05;
   } else if (drag.kind === "op") {
@@ -420,6 +429,8 @@ function renderTools() {
   const box = $("#tools"); box.innerHTML = "";
   for (const [t, label, tip] of [["select", "Select / move"], ["door", "Door"], ["slide", "Sliding door"], ["arch", "Opening"], ["window", "Window"],
                                   ["ref", "Reference cut-out", "cut a wall to the reference model chosen under References"], ["item", "Wall item", "a mirror, a poster, a TV... on the wall you click"],
+                                  ["kit", "Furniture", "cabinets, built-ins, beds, sofas, tables, rugs, curtains, downlights: click in a room (ones that stand against a wall go to the nearest)"],
+                                  ["fit", "Wall fitting", "switch plates, sockets, panels, vents: click near a wall"],
                                   ["measure", "Measure", "drag to measure (it snaps like a room)"]]) {
     const b = document.createElement("button"); b.textContent = label; b.className = B.tool === t ? "on" : ""; if (tip) b.title = tip;
     b.onclick = () => { B.tool = t; if (t !== "measure") B.measure = null; svg.style.cursor = t === "select" ? "default" : "crosshair"; renderTools(); draw(); };
@@ -430,6 +441,13 @@ function renderTools() {
     for (const [k, W] of Object.entries(WALL_ITEMS)) sel.append(new Option(`${W.en} (${W.size[0] * 100}×${W.size[1] * 100} cm)`, k));
     sel.value = B.itemKind; sel.onchange = () => { B.itemKind = sel.value; };
     box.append(sel);
+  }
+  if (B.tool === "kit" || B.tool === "fit") {
+    const sel = kitSelect(B.tool === "fit" ? (p, m) => m === "wall" : (p, m) => !["wall", "opening", "room-floor", "room-ceiling"].includes(m),
+                          B.tool === "fit" ? B.fitPreset : B.kitPreset, v => { if (B.tool === "fit") B.fitPreset = v; else B.kitPreset = v; });
+    sel.style.width = "100%"; sel.style.marginTop = "4px";
+    const a = document.createElement("a"); a.href = "kit.html"; a.target = "kitmaker"; a.textContent = "Kit maker ↗"; a.className = "hint"; a.title = "make your own presets (they show here once saved; reload this page)";
+    box.append(sel, a);
   }
   if (B.tool === "ref") {
     const n = document.createElement("div"); n.className = "hint"; n.style.marginTop = "4px";
@@ -451,6 +469,7 @@ function check(v, label, on) { const l = document.createElement("label"); const 
 
 function renderProps() {
   const box = $("#props"); box.innerHTML = ""; box.className = "";
+  $("#kitbox").innerHTML = "";
   const grid = document.createElement("div"); grid.className = "prop";
   if (B.sel && B.sel.room) {
     const r = roomOf(B.sel.room);
@@ -469,7 +488,7 @@ function renderProps() {
     walls.append("open sides:", ...BM.WALLS.map(wl => check(r.open.includes(wl), wl, on => { r.open = on ? [...r.open, wl] : r.open.filter(x => x !== wl); })));
     box.append(walls, check(r.ceiling, "ceiling", v => { r.ceiling = v; }), document.createElement("br"),
       check(r.fixtures, "built-ins (kitchen, bath, toilet, shoe cabinet, stairs)", v => { r.fixtures = v; }));
-    box.append(lookEditor(r));
+    box.append(surfaceEditor(r), lookEditor(r));
     const del = document.createElement("button"); del.textContent = "Remove room"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
     const props = (r.extra.props || []).filter(p => !p.id.startsWith(r.id + "_fx_"));
     if (props.length) { const n = document.createElement("div"); n.className = "hint"; n.textContent = `${props.length} props from the story stay in this room (room space: they move with it).`; box.append(n); }
@@ -487,18 +506,26 @@ function renderProps() {
     if (op.type === "door" || op.type === "slide") grid.append(...field("locked by", txt(op.locked_by, v => { op.locked_by = v || null; })));
     box.append(grid);
     if (op.type === "door" || op.type === "slide") box.append(check(op.creak, "creaks", v => { op.creak = v; }));
+    if (op.type === "window") box.append(windowEditor(op));
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
   } else if (B.sel && B.sel.item) {
     const it = (B.model.items || []).find(i => i.id === B.sel.item);
     if (!it) { B.sel = null; return renderProps(); }
-    const head = document.createElement("div"); head.innerHTML = `<b>${WALL_ITEMS[it.kind].en}</b> <span class="hint">on ${it.room}'s ${it.wall} wall</span>`;
+    const fitting = it.kind === "fit", P = fitting && it.kit && LIBRARY.kit[it.kit.preset];
+    const head = document.createElement("div"); head.innerHTML = `<b>${fitting ? (P ? P.label : "Wall fitting") : WALL_ITEMS[it.kind].en}</b> <span class="hint">on ${it.room}'s ${it.wall} wall</span>`;
     box.append(head);
-    grid.append(...field("kind", pick(it.kind, Object.entries(WALL_ITEMS).map(([k, W]) => [k, W.en]), v => { const W = WALL_ITEMS[v]; it.kind = v; [it.w, it.h, it.t] = W.size; it.z = W.z; it.id = it.id.replace(/_wi_[a-z]+_/, `_wi_${v}_`); B.sel.item = it.id; })),
+    if (fitting) grid.append(...field("fitting", kitSelect((p, m) => m === "wall", it.kit && it.kit.preset, v => { pushUndo(); const n = BM.newFitting(v, it.id, it.room, it.wall, it.a); Object.assign(it, { w: n.w, h: n.h, t: n.t, z: n.z, kit: n.kit }); changed(); })));
+    else grid.append(...field("kind", pick(it.kind, Object.entries(WALL_ITEMS).map(([k, W]) => [k, W.en]), v => { const W = WALL_ITEMS[v]; it.kind = v; [it.w, it.h, it.t] = W.size; it.z = W.z; delete it.kit; it.id = it.id.replace(/_wi_[a-z0-9]+_/, `_wi_${v}_`); B.sel.item = it.id; })));
+    grid.append(
       ...field("width", num(it.w, v => { it.w = Math.max(0.02, v); }, 0.01)), ...field("height", num(it.h, v => { it.h = Math.max(0.01, v); }, 0.01)),
       ...field("off the wall", num(it.t, v => { it.t = Math.max(0.002, v); }, 0.005)), ...field("middle at", num(it.z, v => { it.z = Math.max(it.h / 2, v); }, 0.05)));
     box.append(grid);
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
-  } else { box.className = "hint"; box.textContent = "Nothing selected. Click a room, a door or a wall item."; }
+  } else if (B.sel && B.sel.kit) {
+    const k = (B.model.kits || []).find(q => q.id === B.sel.kit);
+    if (!k) { B.sel = null; return renderProps(); }
+    kitPanel(box, grid, k);
+  } else { box.className = "hint"; box.textContent = "Nothing selected. Click a room, a door, a wall item or a piece of furniture."; }
 }
 function wrap(...xs) { const d = document.createElement("div"); d.style.display = "flex"; d.style.gap = "4px"; d.append(...xs); return d; }
 function renameRoom(r, v) {
@@ -511,8 +538,9 @@ function renameRoom(r, v) {
 function removeSel() {
   if (!B.sel) return;
   pushUndo();
-  if (B.sel.room) { B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room); B.model.items = (B.model.items || []).filter(i => i.room !== B.sel.room); }
+  if (B.sel.room) { B.model.rooms = B.model.rooms.filter(r => r.id !== B.sel.room); B.model.items = (B.model.items || []).filter(i => i.room !== B.sel.room); B.model.kits = (B.model.kits || []).filter(k => k.room !== B.sel.room); }
   else if (B.sel.item) B.model.items = B.model.items.filter(i => i.id !== B.sel.item);
+  else if (B.sel.kit) B.model.kits = B.model.kits.filter(k => k.id !== B.sel.kit);
   else B.model.ops = B.model.ops.filter(o => o.id !== B.sel.op);
   B.sel = null; changed();
 }
@@ -679,6 +707,10 @@ document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
   if (e.key === "Delete" || e.key === "Backspace") { removeSel(); e.preventDefault(); return; }
   if (e.key === "Escape") { B.tool = "select"; B.measure = null; renderTools(); B.sel = null; changed(false); return; }
+  const kk = B.sel && B.sel.kit && B.model.kits.find(q => q.id === B.sel.kit);
+  if (kk && e.key.toLowerCase() === "r") { pushUndo(); kk.rot = (kk.rot + (e.shiftKey ? 270 : 90)) % 360; changed(); return; }
+  const kmv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+  if (kk && kmv) { pushUndo(); kk.x = r2(kk.x + kmv[0] * 0.05); kk.y = r2(kk.y + kmv[1] * 0.05); changed(); e.preventDefault(); return; }
   const r = B.sel && B.sel.room && roomOf(B.sel.room);
   if (r && e.key.toLowerCase() === "r") { pushUndo(); [r.w, r.d] = [r.d, r.w]; changed(); return; }
   const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
@@ -691,6 +723,8 @@ async function boot() {
   $("#preset").onchange = () => { const v = $("#preset").value; $("#preset").value = ""; if (v.startsWith("other:")) { const [, g, l] = v.split(":"); openOther(g, l); } else openPreset(v); };
   $("#marks").onchange = () => draw();
   await loadAssetLibrary().catch(() => { });
+  BM.KITS.presets = LIBRARY.kit;
+  const css = document.createElement("style"); css.textContent = KIT_CSS; document.head.append(css);
   $("#game").onchange = () => loadGame($("#game").value);
   $("#level").onchange = () => {
     const v = $("#level").value;
@@ -721,7 +755,7 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM;
-window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds };
+window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
 
 // ---- wall items ----
@@ -744,7 +778,7 @@ function drawItem(it) {
   el("rect", { x: sx(x0), y: sy(y1), width: (x1 - x0) * B.view.s, height: (y1 - y0) * B.view.s, fill: ITEM_COL[it.kind] || "#ccc", stroke: sel ? "#d9a441" : "#111", "stroke-width": sel ? 2 : 1, "data-item": it.id }, g);
   el("rect", { x: sx(x0) - 4, y: sy(y1) - 4, width: (x1 - x0) * B.view.s + 8, height: (y1 - y0) * B.view.s + 8, fill: "transparent", "data-item": it.id }, g);
 }
-function addItem(x, y) {
+function addItem(x, y, fitPreset) {
   // the room you clicked in, and its wall nearest the click
   const r = BM.roomAt(B.model, x, y, floorZ());
   if (!r) { status("click inside a room, near the wall", "bad"); return; }
@@ -753,9 +787,10 @@ function addItem(x, y) {
   if (d[wall] > 0.6) { status("click nearer the wall (within 60 cm)", "bad"); return; }
   if (r.open.includes(wall)) { status("that side is open: no wall to hang it on", "bad"); return; }
   const a = Math.round(((wall === "n" || wall === "s") ? x - r.x : y - r.y) / 0.05) * 0.05;
-  let i = 1; while ((B.model.items || []).some(it => it.id === `${r.id}_wi_${B.itemKind}_${i}`)) i++;
+  const idOf = i => fitPreset ? `${r.id}_wf_${i}` : `${r.id}_wi_${B.itemKind}_${i}`;
+  let i = 1; while ((B.model.items || []).some(it => it.id === idOf(i))) i++;
   pushUndo();
-  const it = BM.newItem(B.itemKind, `${r.id}_wi_${B.itemKind}_${i}`, r.id, wall, a);
+  const it = fitPreset ? BM.newFitting(fitPreset, idOf(i), r.id, wall, a) : BM.newItem(B.itemKind, idOf(i), r.id, wall, a);
   B.model.items.push(it); B.sel = { item: it.id };
   changed();
 }
@@ -780,9 +815,14 @@ function renderFinish() {
               ...cm("cornice, cm", "cornice", "a moulding where the wall meets the ceiling (mawaribuchi; 0: none)"),
               ...cm("door casing, cm", "casing", "the frame round every door and opening, both sides (0: none)"),
               ...cm("threshold, cm", "threshold", "a strip across a doorway where the floor changes, wood to tile (0: none)"));
+  const floors = document.createElement("button"); floors.textContent = "Floors by room kind";
+  floors.title = "every room without a floor gets its kind's: planks in the living rooms, tatami in a washitsu, tiles in the wet rooms, stone in the genkan";
+  floors.onclick = () => { pushUndo(); let n = 0; for (const r of B.model.rooms) if (!r.floorKit && FLOOR_BY_KIND[r.kind]) { r.floorKit = { preset: FLOOR_BY_KIND[r.kind] }; n++; } changed(); status(`${n} rooms got a floor`); };
+  const frames = document.createElement("button"); frames.textContent = "Frames in every window";
+  frames.onclick = () => { pushUndo(); let n = 0; for (const op of B.model.ops) if (op.type === "window" && !op.frame) { op.frame = { preset: "window_slide" }; n++; } changed(); status(`${n} windows got a frame`); };
   box.append(grid,
     check(f.lights, "a ceiling light in every room", v => { f.lights = v; renderFinish(); }), document.createElement("br"),
-    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }));
+    check(f.switches, "its switch by the door (an interactable)", v => { f.switches = v; renderFinish(); }), document.createElement("br"), floors, " ", frames);
 }
 
 // ---- reference models: a window or a door you'll place in Unreal, measured here so the wall is cut to fit ----
@@ -957,4 +997,145 @@ function lookEditor(r) {
   const h = document.createElement("div"); h.className = "hint"; h.textContent = "Look (texture sets; fetch more with cc0.py textures <word> and get)";
   wrapEl.append(h, g, same);
   return wrapEl;
+}
+
+// ---- the kit (docs/KIT.md): furniture and built-ins placed in rooms, fittings on walls, floors, ceiling steps, window frames ----
+function kitSelect(filter, value, on) {
+  const sel = document.createElement("select"), by = {};
+  for (const [n, p] of Object.entries(LIBRARY.kit || {})) {
+    let m; try { m = BM.mountOf({ preset: n }); } catch (e) { continue; }
+    if (!filter(p, m)) continue;
+    const cat = p.cat || (KIT.TYPES[p.type] || {}).cat || "furniture"; (by[cat] = by[cat] || []).push([n, p]);
+  }
+  for (const [cat, title] of Object.entries(KIT.CATS)) {
+    if (!by[cat]) continue;
+    const g = document.createElement("optgroup"); g.label = title;
+    for (const [n, p] of by[cat]) g.append(new Option(p.label + (p.user ? " (yours)" : ""), n));
+    sel.append(g);
+  }
+  if (value && [...sel.options].some(o => o.value === value)) sel.value = value; else if (sel.options.length) on(sel.value);
+  sel.onchange = () => on(sel.value);
+  return sel;
+}
+function addKit(x, y) {
+  const r = BM.roomAt(B.model, x, y, floorZ());
+  if (!r) { status("click inside a room", "bad"); return; }
+  const preset = B.kitPreset;
+  if (!preset || !LIBRARY.kit[preset]) { status("pick what to place first", "bad"); return; }
+  let i = 1; while ((B.model.kits || []).some(k => k.id === `${r.id}_kt_${preset}_${i}`)) i++;
+  pushUndo();
+  const k = BM.newKit(preset, `${r.id}_kt_${preset}_${i}`, r.id, r2(Math.round((x - r.x) / 0.05) * 0.05), r2(Math.round((y - r.y) / 0.05) * 0.05));
+  const mount = BM.mountOf(k.spec);
+  if (mount === "ceiling") k.z = +(r.h - k.size[2]).toFixed(4);
+  if (mount === "back") snapKit(k, 99);
+  (B.model.kits = B.model.kits || []).push(k); B.sel = { kit: k.id };
+  changed();
+}
+// against the nearest wall within `reach` m: its back to the wall, its front to the room
+function snapKit(k, reach = 0.3) {
+  const r = roomOf(k.room); if (!r) return;
+  const T = WALL_T / 2 + 0.002, rot = ((k.rot % 360) + 360) % 360, [w, d] = k.size;
+  const dist = { s: k.y, n: r.d - k.y, w: k.x, e: r.w - k.x };
+  const wl = Object.keys(dist).filter(x => !r.open.includes(x)).sort((a, b) => dist[a] - dist[b])[0];
+  if (!wl || dist[wl] - d / 2 - T > reach) return;
+  k.rot = BM.FACE[wl];
+  const half = d / 2 + T, along = wl === "n" || wl === "s" ? [k.x, w / 2, r.w] : [k.y, w / 2, r.d];
+  const a = Math.min(Math.max(along[0], along[1] + T), along[2] - along[1] - T);
+  if (wl === "n") { k.y = r2(r.d - half); k.x = r2(a); } else if (wl === "s") { k.y = r2(half); k.x = r2(a); }
+  else if (wl === "e") { k.x = r2(r.w - half); k.y = r2(a); } else { k.x = r2(half); k.y = r2(a); }
+  void rot;
+}
+function kitCorners(k) {
+  const r = roomOf(k.room), a = k.rot * Math.PI / 180, ax = [Math.cos(a), Math.sin(a)], ay = [-Math.sin(a), Math.cos(a)], [w, d] = k.size;
+  const c = (u, v) => [r.x + k.x + ax[0] * u + ay[0] * v, r.y + k.y + ax[1] * u + ay[1] * v];
+  return { box: [c(-w / 2, -d / 2), c(w / 2, -d / 2), c(w / 2, d / 2), c(-w / 2, d / 2)], front: [c(-w / 2, -d / 2), c(w / 2, -d / 2)] };
+}
+function drawKit(k) {
+  const r = roomOf(k.room);
+  if (!r || !onFloor(r)) return;
+  const { box, front } = kitCorners(k), sel = B.sel && B.sel.kit === k.id, ceil = BM.mountOf(k.spec) === "ceiling";
+  const g = el("g", { "data-kit": k.id, style: "cursor:move" });
+  el("polygon", { points: box.map(([x, y]) => `${sx(x)},${sy(y)}`).join(" "), fill: ceil ? "none" : "#c9b48f", "fill-opacity": 0.5, stroke: sel ? "#d9a441" : "#e8dcc2",
+    "stroke-width": sel ? 2 : 1, "stroke-dasharray": ceil ? "3 3" : "none", "data-kit": k.id }, g);
+  el("line", { x1: sx(front[0][0]), y1: sy(front[0][1]), x2: sx(front[1][0]), y2: sy(front[1][1]), stroke: sel ? "#d9a441" : "#f6eedd", "stroke-width": 3, "data-kit": k.id }, g);
+  const P = LIBRARY.kit[(k.spec || {}).preset];
+  if (B.view.s * Math.min(k.size[0], k.size[1]) > 26) {
+    const cx = box.reduce((s, p) => s + p[0], 0) / 4, cy = box.reduce((s, p) => s + p[1], 0) / 4;
+    el("text", { x: sx(cx), y: sy(cy) + 3, "text-anchor": "middle", fill: "#f6eedd", "font-size": 9 }, g).textContent = (P ? P.label : k.spec.type || "kit").split(/[,:(]/)[0].slice(0, 22);
+  }
+}
+function kitPanel(box, grid, k) {
+  const P = LIBRARY.kit[(k.spec || {}).preset], full = (() => { try { return KIT.withDefaults(KIT.resolve(Object.assign({}, k.spec, { size: k.size }), LIBRARY.kit)); } catch (e) { return null; } })();
+  const head = document.createElement("div"); head.innerHTML = `<b>${P ? P.label : "Kit thing"}</b> <span class="hint">in ${k.room} · R turns it, the arrows nudge it</span>`;
+  box.append(head);
+  grid.append(...field("id", txt(k.id, v => { if (v && !B.model.kits.some(q => q.id === v)) { k.id = v.startsWith(k.room + "_kt_") ? v : `${k.room}_kt_${v}`; B.sel.kit = k.id; } })),
+    ...field("x, y", wrap(num(k.x, v => { k.x = v; }), num(k.y, v => { k.y = v; }))),
+    ...field("up from floor", num(k.z, v => { k.z = Math.max(0, v); })), ...field("faces", pick(String(k.rot), [["0", "south ↓"], ["90", "east →"], ["180", "north ↑"], ["270", "west ←"]], v => { k.rot = +v; })),
+    ...field("w × d × h", wrap(...[0, 1, 2].map(i => Object.assign(num(k.size[i], v => { k.size[i] = Math.max(0.005, v); }, 0.01), { style: "width:50px" })))));
+  box.append(grid);
+  if (full) {
+    kitBox(`${P ? P.label : KIT.TYPES[full.type].label}: its numbers`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, (k.spec || {}).preset, LIBRARY.kit); delete o.size; k.spec = o; k.size = nf.size.slice(); changed(); }, { noSize: true }));
+  }
+  const row = document.createElement("div"); row.style.cssText = "display:flex;gap:4px;margin-top:6px;flex-wrap:wrap";
+  const sn = document.createElement("button"); sn.textContent = "Back to the wall"; sn.onclick = () => { pushUndo(); snapKit(k, 99); changed(); };
+  const mk = document.createElement("button"); mk.textContent = "Open in the kit maker ↗";
+  mk.onclick = () => window.open("kit.html#" + encodeURIComponent(JSON.stringify(Object.assign({}, k.spec, { size: k.size }))), "kitmaker");
+  const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel();
+  row.append(sn, mk, del); box.append(row);
+}
+// a room's floor (a pattern of tiles, planks or tatami with real gaps) and its ceiling step
+function surfaceEditor(r) {
+  const d = document.createElement("div"); d.style.marginTop = "6px";
+  const g = document.createElement("div"); g.className = "prop";
+  const opt = mount => [["", "(none)"], ...Object.entries(LIBRARY.kit || {}).filter(([n]) => BM.mountOf({ preset: n }) === mount).map(([n, p]) => [n, p.label])];
+  g.append(...field("floor", pick((r.floorKit || {}).preset || "", opt("room-floor"), v => { r.floorKit = v ? { preset: v } : null; })),
+           ...field("ceiling", pick((r.ceilKit || {}).preset || "", opt("room-ceiling"), v => { r.ceilKit = v ? { preset: v } : null; })));
+  d.append(g);
+  if (r.floorKit) {
+    let full = null; try { full = KIT.withDefaults(KIT.resolve(r.floorKit, LIBRARY.kit)); } catch (e) { }
+    if (full) {
+      const same = document.createElement("button"); same.textContent = `This floor in every ${(KINDS[r.kind] || KINDS.other).en.toLowerCase()}`;
+      same.onclick = () => { pushUndo(); for (const o of B.model.rooms) if (o.kind === r.kind) o.floorKit = JSON.parse(JSON.stringify(r.floorKit)); changed(); };
+      kitBox(`${r.name || r.id}'s floor: the gaps, the seed, the pattern`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, r.floorKit.preset, LIBRARY.kit); delete o.size; r.floorKit = o; changed(); }, { noSize: true }), same);
+    }
+  }
+  return d;
+}
+function windowEditor(op) {
+  const d = document.createElement("div"); d.style.marginTop = "6px";
+  const g = document.createElement("div"); g.className = "prop";
+  const opts = [["", "(none: a hole)"], ...Object.entries(LIBRARY.kit || {}).filter(([n]) => BM.mountOf({ preset: n }) === "opening").map(([n, p]) => [n, p.label])];
+  g.append(...field("frame", pick((op.frame || {}).preset || "", opts, v => { op.frame = v ? { preset: v } : null; })));
+  d.append(g);
+  if (op.frame) {
+    let full = null; try { full = KIT.withDefaults(KIT.resolve(op.frame, LIBRARY.kit)); } catch (e) { }
+    if (full) {
+      kitBox(`${op.id}'s frame (its size is the window's)`, kitForm(full, nf => { pushUndo(); const o = kitOverrides(nf, op.frame.preset, LIBRARY.kit); delete o.size; op.frame = o; changed(); }, { noSize: true }));
+    }
+  }
+  const cur = document.createElement("button"); cur.textContent = "Add curtains"; cur.title = "pleated curtains on a rail near the ceiling, wider than the window, in front of its sill";
+  cur.onclick = () => addCurtains(op);
+  d.append(cur);
+  return d;
+}
+function addCurtains(op) {
+  const s = BM.sides(B.model, op).find(x => x.holds) || BM.sides(B.model, op)[0];
+  if (!s) { status("this window isn't on a wall", "bad"); return; }
+  const r = s.room, preset = LIBRARY.kit.curtain_blackout ? "curtain_blackout" : Object.keys(LIBRARY.kit).find(n => BM.mountOf({ preset: n }) === "back");
+  let i = 1; while ((B.model.kits || []).some(k => k.id === `${r.id}_kt_curtain_${i}`)) i++;
+  pushUndo();
+  const k = BM.newKit(preset, `${r.id}_kt_curtain_${i}`, r.id, 0, 0);
+  const stool = op.frame ? (() => { try { return KIT.withDefaults(KIT.resolve(op.frame, LIBRARY.kit)).stool || 0; } catch (e) { return 0; } })() : 0;
+  k.size = [r2(op.w + 0.4), r2(Math.max(0.08, k.size[1])), r2(r.h - 0.03)];
+  const off = WALL_T / 2 + stool + k.size[1] / 2 + 0.02, a = s.at;
+  k.rot = BM.FACE[s.wall];
+  if (s.wall === "n") { k.x = a; k.y = r.d - off; } else if (s.wall === "s") { k.x = a; k.y = off; } else if (s.wall === "e") { k.x = r.w - off; k.y = a; } else { k.x = off; k.y = a; }
+  k.x = r2(k.x); k.y = r2(k.y);
+  (B.model.kits = B.model.kits || []).push(k); B.sel = { kit: k.id };
+  changed();
+}
+// the selected thing's kit numbers, in the wide panel under the 3D view
+function kitBox(title, ...els) {
+  const box = $("#kitbox"), h = document.createElement("h2"); h.textContent = title;
+  box.append(h, ...els);
 }
