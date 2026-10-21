@@ -4,7 +4,7 @@
 // x across, y deep with the FRONT at -y, z up from the base; every part stays inside the size box, so the box the
 // plan and the checks see is the thing. The gaps (between tiles, boards, doors and drawers) and the bevels are real
 // geometry: they're what a light bake turns into the thin dark lines and bright edges of a real room.
-export const VERSION = 2;          // bump when a generator's output changes (presets.json carries the same number)
+export const VERSION = 3;          // bump when a generator's output changes (presets.json carries the same number)
 
 // ---- material slots: one material each in Unreal (kit_<slot>), a flat colour in the desk ----------------------
 // [colour, roughness, metalness, opacity, emissive]
@@ -29,7 +29,7 @@ export function rng(seed) {           // mulberry32: the same seed, the same gap
   return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const SL = ["box", "cyl", "soft", "pipe"];
+const SL = ["box", "cyl", "soft", "pipe", "lathe", "sweep"];
 
 // a part: {s: "box"|"cyl", at: [x, y, z] (the middle of its base), size: [w, d, h], m: slot, b: bevel, rz: degrees
 // about z, skip: faces to leave out ("-z+y"), uv: [du, dv, swap]}. A cyl's size is [2r, 2r, length] along its axis
@@ -113,7 +113,7 @@ export const TYPES = {
     ["slot", "material", "front", "slot"], ["hinge_slot", "hinge material", "metal", "slot"]], gen: doorGen },
   handle: { label: "Door handle (both sides)", cat: "door", mount: "door", size: [0.15, 0.13, 0.07], params: [["kind", "kind", "lever", "pick", ["lever", "bar", "knob", "pull", "recess"]],
     ["through", "door thickness", 0.04, "m"], ["points", "a lever points", "left", "pick", ["left", "right"]], ["rose", "rose", "round", "pick", ["round", "square", "plate"]],
-    ["lock", "keyhole below", false, "bool"], ["slot", "material", "metal", "slot"]], gen: handleGen },
+    ["lock", "keyhole below", false, "bool"], ["style", "style", "modern", "pick", ["modern", "classic"]], ["slot", "material", "metal", "slot"]], gen: handleGen },
   door_frame: { label: "Door frame: lining and stop", cat: "door", mount: "opening", size: [0.84, 0.1, 2.05], params: [["lining", "lining", 0.02, "mm"], ["stop", "door stop", true, "bool"],
     ["stop_t", "stop", 0.012, "mm"], ["leaf_t", "the door's thickness", 0.04, "m"], ["slot", "material", "body", "slot"]], gen: frameGen },
   bulkhead: { label: "Ceiling step / curtain pocket", cat: "ceiling", mount: "room-ceiling", size: [3.6, 3.6, 0.12], params: [["border", "step width n, e, s, w", [0.35, 0.35, 0.35, 0.35], "m4"],
@@ -171,7 +171,7 @@ export function build(spec, presets) {
 export function mesh(parts) {
   const G = {};
   const buf = m => G[m] || (G[m] = { pos: [], nrm: [], uv: [], idx: [] });
-  for (const p of parts) ({ cyl: cylFaces, soft: softFaces, pipe: pipeFaces }[p.s] || boxFaces)(p, buf);
+  for (const p of parts) ({ cyl: cylFaces, soft: softFaces, pipe: pipeFaces, lathe: latheFaces, sweep: sweepFaces }[p.s] || boxFaces)(p, buf);
   return G;
 }
 function xform(p) {              // part space (centred on its at) -> item space
@@ -347,6 +347,112 @@ function pipeFaces(p, buf) {
   const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
   if (cr[0] * nn[0] + cr[1] * nn[1] + cr[2] * nn[2] < 0) for (let q = base === 0 ? 0 : B.idx.length - n * m * 6; q < B.idx.length; q += 3) { const t2 = B.idx[q + 1]; B.idx[q + 1] = B.idx[q + 2]; B.idx[q + 2] = t2; }
 }
+// ---- turned and swept hardware: knobs, roses, levers, bar pulls, hinge knuckles ----------------------------------
+// lathe: a profile [[r, t], ...] (radius, distance along the axis from the base) turned round its axis, smooth; a point
+// given twice is a hard edge. sweep: a rounded section ({a, b, r}: half-height along `up`, half-width across, corner
+// radius) carried along a path, with rounded ends. The way door hardware is modelled, at a density that holds up
+// next to the soft things.
+function lathe(P, x, y, z, prof, m, o = {}) {
+  const R = Math.max(...prof.map(q => q[0])), L = Math.max(...prof.map(q => q[1]));
+  const p = Object.assign({ s: "lathe", at: [x, y, z], prof, size: [2 * R, 2 * R, L], m, n: 40 }, o); P.push(p); return p;
+}
+function latheFaces(p, buf) {
+  const B = buf(p.m), n = Math.max(8, p.n || 40), prof = p.prof || [], ax = p.axis || "z";
+  const map = ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "y" ? [u, t, v] : ax === "-z" ? [u, v, -t] : [u, v, t];
+  const xf0 = xform(p), xf = q => xf0(map(q)), a = (p.rz || 0) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+  const segN = i => { const [r0, t0] = prof[i], [r1, t1] = prof[i + 1], L = Math.hypot(r1 - r0, t1 - t0) || 1; return [(t1 - t0) / L, -(r1 - r0) / L]; };
+  const same = (i, j) => prof[i] && prof[j] && prof[i][0] === prof[j][0] && prof[i][1] === prof[j][1];
+  const vn = [];                                         // each profile point's normal (radial, axial)
+  for (let i = 0; i < prof.length; i++) {
+    const prev = i > 0 && !same(i, i - 1) ? segN(i - 1) : null, next = i < prof.length - 1 && !same(i, i + 1) ? segN(i) : null;
+    const hardIn = i > 0 && same(i, i - 1), hardOut = i < prof.length - 1 && same(i, i + 1);
+    const nn = hardOut ? prev : hardIn ? next : prev && next ? [prev[0] + next[0], prev[1] + next[1]] : prev || next || [0, 1];
+    const L = Math.hypot(...nn) || 1; vn.push([nn[0] / L, nn[1] / L]);
+  }
+  const base = B.pos.length / 3, run = [0];
+  for (let i = 1; i < prof.length; i++) run.push(run[i - 1] + Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]));
+  const Rm = Math.max(...prof.map(q => q[0]), 0.001);
+  for (let i = 0; i < prof.length; i++) for (let j = 0; j <= n; j++) {
+    const an = j / n * Math.PI * 2, c = Math.cos(an), sn = Math.sin(an), [r, t] = prof[i], [nr, nt] = vn[i];
+    B.pos.push(...xf([r * c, r * sn, t]));
+    const nm = map([nr * c, nr * sn, nt]); B.nrm.push(nm[0] * co - nm[1] * si, nm[0] * si + nm[1] * co, nm[2]);
+    B.uv.push(j / n * Math.PI * 2 * Rm, run[i]);
+  }
+  for (let i = 0; i + 1 < prof.length; i++) {
+    if (same(i, i + 1)) continue;
+    for (let j = 0; j < n; j++) {
+      const a0 = base + i * (n + 1) + j, a1 = a0 + 1, b0 = a0 + n + 1, b1 = b0 + 1;
+      B.idx.push(a0, a1, b1, a0, b1, b0);
+    }
+  }
+  fixWinding(B, base);
+}
+function sweep(P, pts, sec, m, o = {}) {
+  const lo = [0, 1, 2].map(k => Math.min(...pts.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...pts.map(q => q[k])));
+  const p = Object.assign({ s: "sweep", at: [0, 0, 0], size: hi.map((v, k) => v - lo[k]), pts, sec, m, up: [0, 0, 1], caps: true }, o); P.push(p); return p;
+}
+// a smooth path through control points (Catmull-Rom), k samples a span
+function smoothPath(ctrl, k = 6) {
+  if (ctrl.length < 3) return ctrl;
+  const out = [], c = i => ctrl[Math.max(0, Math.min(ctrl.length - 1, i))];
+  for (let i = 0; i < ctrl.length - 1; i++) for (let q = 0; q < k; q++) {
+    const t = q / k, t2 = t * t, t3 = t2 * t, p0 = c(i - 1), p1 = c(i), p2 = c(i + 1), p3 = c(i + 2);
+    out.push([0, 1, 2].map(d => 0.5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3)));
+  }
+  out.push(ctrl[ctrl.length - 1]);
+  return out;
+}
+function sweepFaces(p, buf) {
+  const B = buf(p.m), pts = p.pts || [], N = pts.length;
+  if (N < 2) return;
+  const sc = p.sec || { a: 0.005, b: 0.005, r: 0.005 }, A = sc.a, Bh = sc.b, rc = Math.min(sc.r ?? Math.min(A, Bh), A, Bh), k = 4;
+  const sec = [];                                       // the rounded rectangle, anticlockwise, with its normals: [x across, y up, nx, ny]
+  for (const [cx, cy0, a0] of [[Bh - rc, A - rc, 0], [-(Bh - rc), A - rc, 90], [-(Bh - rc), -(A - rc), 180], [Bh - rc, -(A - rc), 270]])
+    for (let i = 0; i <= k; i++) { const an = (a0 + i / k * 90) * Math.PI / 180, c = Math.cos(an), sn = Math.sin(an); sec.push([cx + rc * c, cy0 + rc * sn, c, sn]); }
+  const M = sec.length, sub = (u, v) => u.map((x, i) => x - v[i]), nrmz = u => { const L = Math.hypot(...u) || 1; return u.map(x => x / L); };
+  const cross = (u, v) => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], dot = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const T = pts.map((q, i) => nrmz(sub(pts[Math.min(N - 1, i + 1)], pts[Math.max(0, i - 1)])));
+  let up = p.up || [0, 0, 1];
+  const frames = [];
+  for (let i = 0; i < N; i++) {                          // parallel transport: the section doesn't twist
+    let nv = sub(up, T[i].map(x => x * dot(up, T[i]))); if (Math.hypot(...nv) < 1e-6) nv = Math.abs(T[i][0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+    nv = nrmz(nv); const bv = cross(T[i], nv); frames.push([nv, bv]); up = nv;
+  }
+  const rings = [];                                     // [centre, up, across, scale, along-normal]
+  const capR = Math.min(A, Bh) * 0.9, kc = p.caps === false ? 0 : 4;
+  for (let c = kc; c >= 1; c--) { const th = c / kc * Math.PI / 2; rings.push([pts[0].map((x, d) => x - T[0][d] * Math.sin(th) * capR), frames[0][0], frames[0][1], Math.cos(th), T[0].map(x => -x * Math.sin(th)), Math.cos(th)]); }
+  for (let i = 0; i < N; i++) rings.push([pts[i], frames[i][0], frames[i][1], 1, [0, 0, 0], 1]);
+  for (let c = 1; c <= kc; c++) { const th = c / kc * Math.PI / 2; rings.push([pts[N - 1].map((x, d) => x + T[N - 1][d] * Math.sin(th) * capR), frames[N - 1][0], frames[N - 1][1], Math.cos(th), T[N - 1].map(x => x * Math.sin(th)), Math.cos(th)]); }
+  const base = B.pos.length / 3; let run = 0;
+  rings.forEach(([c, nv, bv, scl, tn, w], ri) => {
+    if (ri) run += Math.hypot(...sub(c, rings[ri - 1][0]));
+    for (let j = 0; j < M; j++) {
+      const [sx, sy, nx, ny] = sec[j], shrinkX = sx * scl, shrinkY = sy * scl;
+      B.pos.push(...c.map((x, d) => x + bv[d] * shrinkX + nv[d] * shrinkY));
+      B.nrm.push(...nrmz([0, 1, 2].map(d => (bv[d] * nx + nv[d] * ny) * w + tn[d])));
+      B.uv.push(run, j / M * 2 * (A + Bh));
+    }
+  });
+  for (let r = 0; r + 1 < rings.length; r++) for (let j = 0; j < M; j++) {
+    const a0 = base + r * M + j, a1 = base + r * M + (j + 1) % M, b0 = a0 + M, b1 = a1 + M;
+    B.idx.push(a0, a1, b1, a0, b1, b0);
+  }
+  fixWinding(B, base);
+}
+// turn a run of triangles (from vertex `base` on) outward, judged by their vertices' normals
+function fixWinding(B, base) {
+  let score = 0, first = -1;
+  for (let q = B.idx.length - 3; q >= 0 && B.idx[q] >= base; q -= 3) {
+    first = q;
+    const [ia, ib, ic] = [B.idx[q], B.idx[q + 1], B.idx[q + 2]], P3 = i => [B.pos[i * 3], B.pos[i * 3 + 1], B.pos[i * 3 + 2]];
+    const A = P3(ia), e1 = P3(ib).map((v, d) => v - A[d]), e2 = P3(ic).map((v, d) => v - A[d]);
+    const cr = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const nn = [0, 1, 2].map(d => B.nrm[ia * 3 + d] + B.nrm[ib * 3 + d] + B.nrm[ic * 3 + d]);
+    score += Math.sign(cr[0] * nn[0] + cr[1] * nn[1] + cr[2] * nn[2]);
+  }
+  if (score < 0 && first >= 0) for (let q = first; q < B.idx.length; q += 3) { const t = B.idx[q + 1]; B.idx[q + 1] = B.idx[q + 2]; B.idx[q + 2] = t; }
+}
+
 // a soft part between bounds, with its piping (a tube round each seam) and its tufts' buttons
 function sf(P, x0, y0, z0, x1, y1, z1, m, o = {}) {
   if (x1 - x0 < 1e-3 || y1 - y0 < 1e-3 || z1 - z0 < 1e-3) return null;
@@ -820,36 +926,64 @@ function doorGen(s, P) {
   const n = Math.max(0, s.hinges | 0), hx = (s.hinge === "right" ? 1 : -1) * (W / 2 - KNUCKLE);
   for (let k = 0; k < n; k++) {
     const zc = n === 1 ? H / 2 : k === 0 ? 0.25 : k === n - 1 ? H - 0.2 : 0.25 + (H - 0.45) * k / (n - 1);
-    cy(P, hx, -T / 2 + KNUCKLE, zc - 0.05, KNUCKLE, 0.1, s.hinge_slot, { n: 12 });
-    cy(P, hx, -T / 2 + KNUCKLE, zc + 0.05, KNUCKLE * 0.5, 0.006, s.hinge_slot, { n: 8 });      // the pin's cap
+    const kr = KNUCKLE, half = 0.0495, knuckle = [[0, 0], [kr * 0.92, 0], [kr, 0.0012], [kr, half - 0.0012], [kr * 0.92, half], [0, half]];
+    lathe(P, hx, -T / 2 + kr, zc - 0.05, knuckle, s.hinge_slot, { n: 28 });                   // the knuckle, in two halves
+    lathe(P, hx, -T / 2 + kr, zc + 0.0005, knuckle, s.hinge_slot, { n: 28 });
+    for (const [z, sgn] of [[zc + 0.0505, 1], [zc - 0.0505, -1]])                             // the pin's finials
+      lathe(P, hx, -T / 2 + kr, z, [[0, 0], [kr * 0.75, 0], [kr * 0.7, 0.0015], [kr * 0.35, 0.0035], [0, 0.004]], s.hinge_slot, { n: 24, axis: sgn > 0 ? "z" : "-z" });
   }
 }
 // a door's handles, both sides of a leaf `through` thick, centred on the box (the plan puts the box's middle where
 // the grip goes). lever, bar (a long pull), knob, pull (a short horizontal one), recess (a sliding door's flush cup)
 function handleGen(s, P) {
   const [W, D, H] = s.size, th = clamp(s.through, 0.005, D), pj = (D - th) / 2, zc = H / 2, m = s.slot, dir = s.points === "right" ? 1 : -1;
+  const classic = s.style === "classic";
   for (const sd of [-1, 1]) {
-    const face = sd * th / 2, ax = sd < 0 ? "-y" : "y", out = (a, b2) => sd < 0 ? [face - b2, face - a] : [face + a, face + b2];
-    const rose = (r, len) => { if (s.rose === "round") cy(P, 0, face, zc, r, len, m, { axis: ax, n: 20 }); else { const [y0, y1] = out(0, len); const hw = s.rose === "plate" ? Math.min(0.025, W / 4) : r, hh = s.rose === "plate" ? Math.min(H / 2 - 0.002, 0.11) : r; bx(P, -hw, y0, zc - hh, hw, y1, zc + hh, m, { b: 0.001 }); } };
-    if (s.lock && s.kind !== "recess" && zc >= 0.085) { cy(P, 0, face, zc - 0.07, 0.012, 0.004, m, { axis: ax, n: 14 }); const [y0, y1] = out(0.004, 0.0045); bx(P, -0.0025, y0, zc - 0.078, 0.0025, y1, zc - 0.062, "hole"); }
+    const face = sd * th / 2, ax = sd < 0 ? "-y" : "y", Y = d => face + sd * d;     // Y(d): d out from this face
+    const out = (a, b2) => sd < 0 ? [face - b2, face - a] : [face + a, face + b2];
+    const rose = (R, len) => {                                    // a turned rose, domed, its edge rounded
+      if (s.rose === "round") {
+        const e = Math.min(0.0015, len * 0.25);
+        lathe(P, 0, face, zc, classic ? [[0, 0], [R, 0], [R, 0], [R, len * 0.35], [R * 0.9, len * 0.7], [R * 0.55, len * 0.9], [R * 0.5, len], [R * 0.25, len], [0, len]]
+                                      : [[0, 0], [R, 0], [R, 0], [R, len - e], [R - e * 0.6, len - e * 0.2], [R - e, len], [R * 0.6, len], [R * 0.25, len], [0, len]], m, { axis: ax, n: 48 });
+      } else {
+        const [y0, y1] = out(0, len), hw = s.rose === "plate" ? Math.min(0.025, W / 4) : R, hh = s.rose === "plate" ? Math.min(H / 2 - 0.002, 0.11) : R;
+        bx(P, -hw, y0, zc - hh, hw, y1, zc + hh, m, { b: Math.min(0.0015, len * 0.3) });
+      }
+    };
+    if (s.lock && s.kind !== "recess" && zc >= 0.085) {           // an escutcheon and its keyhole
+      lathe(P, 0, face, zc - 0.07, [[0, 0], [0.013, 0], [0.013, 0.002], [0.011, 0.0035], [0, 0.0035]], m, { axis: ax, n: 32 });
+      const [y0, y1] = out(0.0034, 0.0038);
+      lathe(P, 0, Y(0.0034), zc - 0.066, [[0, 0], [0.0028, 0], [0.0028, 0.0004], [0, 0.0004]], "hole", { axis: ax, n: 16 });
+      bx(P, -0.0013, y0, zc - 0.078, 0.0013, y1, zc - 0.066, "hole");
+    }
     if (s.kind === "lever") {
-      rose(0.026, Math.min(0.008, pj * 0.2)); cy(P, 0, face, zc, 0.009, pj * 0.6, m, { axis: ax, n: 12 });
-      const [y0, y1] = out(pj * 0.55, pj), L = W / 2 - 0.004;
-      bx(P, dir > 0 ? -0.012 : -L, y0, zc - 0.009, dir > 0 ? L : 0.012, y1, zc + 0.009, m, { b: 0.004 });
+      const rl = Math.min(0.008, pj * 0.2), nl = pj * 0.62;
+      rose(Math.min(0.026, H / 2 - 0.001, W / 2), rl);
+      lathe(P, 0, face, zc, [[0, 0], [0.0105, 0], [0.0105, rl + 0.002], [0.009, rl + 0.006], [0.009, nl - 0.004], [0.0105, nl], [0, nl]], m, { axis: ax, n: 32 });
+      const L = W / 2 - 0.006, yl = pj * 0.8, half = Math.min(0.0055, (pj - yl) + 0.004);
+      const ctrl = classic ? [[0, yl, 0], [L * 0.3, yl + 0.002, 0.001], [L * 0.7, yl + 0.004, -0.002], [L, yl - 0.002, -0.006]]   // a scroll, dipping at the tip
+                           : [[-0.002, yl, 0], [L * 0.45, yl, 0], [L * 0.8, yl, 0], [L, yl - 0.008, 0]];                          // a return: the tip turns back to the door
+      sweep(P, smoothPath(ctrl.map(([x, d, z]) => [dir * x, Y(Math.min(d, pj - half)), zc + z]), 8), { a: 0.0095, b: half, r: Math.min(0.0045, half) }, m, { up: [0, 0, 1] });
     } else if (s.kind === "bar") {
-      const r = Math.min(0.014, pj * 0.25, W / 2), [ya] = out(pj * 0.45, pj);
-      for (const z of [0.03, H - 0.03]) cy(P, 0, face, z, 0.007, pj * 0.6, m, { axis: ax, n: 10 });
-      cy(P, 0, sd < 0 ? face - pj + r : face + pj - r, 0.005, r, H - 0.01, m, { n: 16 }); void ya;
+      const r = Math.min(0.0125, pj * 0.22, W / 2 - 0.001), yb = pj - r, sl = yb;
+      for (const z of [0.035, H - 0.035]) lathe(P, 0, face, z, [[0, 0], [0.012, 0], [0.012, 0.002], [0.0075, 0.007], [0.0075, sl], [0, sl]], m, { axis: ax, n: 28 });
+      sweep(P, [[0, Y(yb), r + 0.002], [0, Y(yb), H / 2], [0, Y(yb), H - r - 0.002]], { a: r, b: r, r }, m, { up: [1, 0, 0] });
     } else if (s.kind === "knob") {
-      rose(0.026, Math.min(0.008, pj * 0.2)); cy(P, 0, face, zc, 0.011, pj * 0.45, m, { axis: ax, n: 12 });
-      cy(P, 0, sd < 0 ? face - pj * 0.4 : face + pj * 0.4, zc, Math.min(0.028, W / 2, H / 2), pj * 0.6, m, { axis: ax, n: 24 });
+      const R = Math.min(0.029, W / 2 - 0.001, H / 2 - 0.001), rl = Math.min(0.008, pj * 0.18), L = pj;
+      rose(Math.min(0.026, H / 2 - 0.001), rl);
+      const prof = classic                                         // a classic mushroom, or a modern ball on a slim neck
+        ? [[0, 0], [0.011, 0], [0.011, rl + 0.002], [0.0085, L * 0.3], [0.009, L * 0.45], [R * 0.75, L * 0.62], [R, L * 0.78], [R * 0.97, L * 0.9], [R * 0.75, L * 0.98], [0, L]]
+        : [[0, 0], [0.01, 0], [0.01, rl + 0.002], [0.0075, L * 0.32], [R * 0.55, L * 0.45], [R * 0.92, L * 0.6], [R, L * 0.74], [R * 0.93, L * 0.88], [R * 0.6, L * 0.97], [0, L]];
+      lathe(P, 0, face, zc, prof, m, { axis: ax, n: 48 });
     } else if (s.kind === "pull") {
-      for (const x of [-W / 2 + 0.012, W / 2 - 0.012]) cy(P, x, face, zc, 0.006, pj * 0.6, m, { axis: ax, n: 10 });
-      const [y0, y1] = out(pj * 0.55, pj); bx(P, -W / 2, y0, zc - 0.007, W / 2, y1, zc + 0.007, m, { b: 0.003 });
+      const r = Math.min(0.006, H / 2 - 0.001, pj * 0.2), yb = pj - r, xs = W / 2 - 0.014;
+      for (const x of [-xs, xs]) lathe(P, x, face, zc, [[0, 0], [0.008, 0], [0.008, 0.0015], [0.005, 0.005], [0.005, yb], [0, yb]], m, { axis: ax, n: 24 });
+      sweep(P, [[-(W / 2 - r - 0.001), Y(yb), zc], [0, Y(yb), zc], [W / 2 - r - 0.001, Y(yb), zc]], { a: r, b: r, r }, m, { up: [0, 0, 1] });
     } else {                                                                    // recess: a flush cup and its rim
       const [y0, y1] = out(-0.0005, Math.max(0.001, pj)), outer = sd < 0 ? y0 : y1;
-      bx(P, -W / 2, y0, 0, W / 2, y1, H, m, { b: 0.001 });
-      bx(P, -W / 2 + 0.004, outer - 0.0002, 0.004, W / 2 - 0.004, outer + 0.0002, H - 0.004, "hole");
+      bx(P, -W / 2, y0, 0, W / 2, y1, H, m, { b: Math.min(0.001, Math.max(0.0002, pj * 0.3)) });
+      bx(P, -W / 2 + 0.004, outer - 0.0002, 0.004, W / 2 - 0.004, outer + 0.0002, H - 0.004, "hole", { b: 0.0001 });
     }
   }
 }
@@ -882,7 +1016,7 @@ function blockGen(s, P) {
 function partsGen(s, P) {
   for (const q of s.parts || []) {
     if (!SL.includes(q.s) || !Array.isArray(q.at) || !Array.isArray(q.size)) continue;
-    if (q.s === "soft" || q.s === "pipe") { P.push(Object.assign({}, q, { at: q.at.map(Number), size: q.size.map(v => Math.max(0, +v)), m: q.m || "body" })); continue; }
+    if (q.s === "soft" || q.s === "pipe" || q.s === "lathe" || q.s === "sweep") { P.push(Object.assign({}, q, { at: q.at.map(Number), size: q.size.map(v => Math.max(0, +v)), m: q.m || "body" })); continue; }
     P.push({ s: q.s, at: q.at.map(Number), size: q.size.map(v => Math.max(0.0005, +v)), m: q.m || "body",
              b: +q.b || 0, rz: +q.rz || 0, axis: q.axis, ri: +q.ri || 0 });
   }
@@ -982,7 +1116,11 @@ export function variation(full, seed, groups = ["size", "layout", "look"]) {
 // a part scaled with its box, per axis: a cylinder stays round (its width takes the smaller of the two across)
 export function scalePart(q, f) {
   const o = Object.assign({}, q, { at: q.at.map((v, k) => v * f[k]) });
-  if (q.s === "pipe") { o.pts = (q.pts || []).map(p => p.map((v, k) => v * f[k])); return o; }
+  if (q.s === "pipe" || q.s === "sweep") { o.pts = (q.pts || []).map(p => p.map((v, k) => v * f[k])); if (q.sec) { const r = Math.min(...f); o.sec = { a: q.sec.a * r, b: q.sec.b * r, r: (q.sec.r ?? 0) * r }; } return o; }
+  if (q.s === "lathe") {
+    const along = q.axis === "-y" || q.axis === "y" ? 1 : 2, r = Math.min(...[0, 1, 2].filter(k => k !== along).map(k => f[k]));
+    o.prof = (q.prof || []).map(([pr, t]) => [pr * r, t * f[along]]); o.size = [q.size[0] * r, q.size[1] * r, q.size[2] * f[along]]; return o;
+  }
   if (q.s !== "cyl") { o.size = q.size.map((v, k) => v * f[k]); return o; }
   const along = q.axis === "-y" ? 1 : 2, across = [0, 1, 2].filter(k => k !== along), r = Math.min(...across.map(k => f[k]));
   o.size = [q.size[0] * r, q.size[1] * r, q.size[2] * f[along]];

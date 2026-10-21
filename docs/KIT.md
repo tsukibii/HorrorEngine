@@ -225,3 +225,24 @@ The plan makes three things of it, sized to the doorway:
 - Without a Blueprint, the leaf is the door (the StoryRunner turns it, RUNNER_SPEC.md).
 - The frame and every other kit thing that doesn't move are **Static**, so they bake. The leaf and handle are
   Movable.
+
+### Handles and hinges
+
+Door hardware is turned and swept, the way it's modelled for real, at about the density of the soft things:
+- **Turned (lathe):** a profile spun round its axis, with smooth normals. Roses (domed, their edges rounded), knobs (a
+  modern ball on a slim neck, or a classic mushroom), lever necks, the bar pulls' flared standoffs, escutcheons, and
+  the hinges' knuckles (in two halves, with the pin's finials).
+- **Swept:** a rounded section carried along a smooth curve, with rounded ends. Levers (*modern*: a return lever whose
+  tip turns back toward the door; *classic*: a scroll that dips at the tip), bar pulls and short pulls.
+- About 2,000 to 4,000 triangles a handle (both sides), against 300 to 600 for the free ones online. A handle's
+  *style* is modern or classic.
+
+What's out there, for the record:
+- The Base Mesh's `door_handle` and `door_knob` (CC0, already in the library's index; 368 and 592 triangles) are low
+  bases, like ours were. The CGTrader "CC0 door handle 3" is about 383 polygons. Womp's CC0 handles are print
+  references.
+- The good ones are paid and can't be redistributed: iMeshh's levers, and the Blender door generators (Procedural
+  Openings, ArchNodes) with their hinges and handles. Nothing on GitHub generates handles.
+
+The lathe and the sweep are kit parts like any other (`lathe`, `sweep`), so *Explode to parts* keeps them, and a free
+thing can use them.
