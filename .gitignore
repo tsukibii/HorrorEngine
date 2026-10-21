@@ -40,3 +40,6 @@ Content/StoryData/
 Builds/
 vendor/UnrealClaude-src/
 Plugins/UnrealClaude/Resources/mcp-bridge/node_modules/
+
+# the project's Python environment (uv venv)
+.venv/
