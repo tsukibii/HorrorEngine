@@ -3,18 +3,21 @@
 // renders storyboard frames; finds which body parts the player can see; exports the blocking as glTF for Unreal.
 import * as THREE from "three";
 import * as M from "./motion.js";
+import * as K3 from "./kit3.js";
 import { BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 
 // The studio's CC0 library (Content/Studio/Library, docs/ASSETS.md): what's been fetched, from /api/library. A prop
 // tagged art:<ref> shows that mesh in its block (the block stays, invisible, for the visibility test); mat:<ref> puts
-// that texture set on a block, tiled by real metres. Anything not fetched stays a grey block.
-export const LIBRARY = { meshes: new Set(), textures: {} };
+// that texture set on a block, tiled by real metres. Anything not fetched stays a grey block. A prop with a kit
+// (docs/KIT.md) is drawn from its numbers by kit.js, the presets from /api/kit.
+export const LIBRARY = { meshes: new Set(), textures: {}, kit: {} };
 export async function loadAssetLibrary() {
   try {
     const r = await (await fetch("/api/library")).json();
     LIBRARY.meshes = new Set(r.meshes || []); LIBRARY.textures = r.textures || {};
   } catch (e) { /* no library: blocks */ }
+  try { LIBRARY.kit = (await (await fetch("/api/kit")).json()).presets || {}; } catch (e) { /* no kit presets */ }
   return LIBRARY;
 }
 const meshCache = {}, matCache = {};
@@ -227,7 +230,8 @@ export class Stage {
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null };
         this.world.add(m); this.solid.push(m);
-        if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
+        if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
+        else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
       } else if (p.kind === "light") {
         const kind = (p.d && p.d.kind) || "bulb";
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];
@@ -616,6 +620,13 @@ export class Stage {
     block.add(holder); block.material = block.material.clone(); block.material.visible = false;
     block.userData.dressed = true;
     this.render();
+  }
+  kitIn(block, spec, h) {                          // a kit thing in its block: built from its numbers, base on the block's
+    try {
+      const g = K3.object(spec, LIBRARY.kit, { shadows: !!this.kitShadows });
+      g.position.y = -h / 2; block.add(g);
+      block.material = block.material.clone(); block.material.visible = false; block.userData.dressed = true;
+    } catch (e) { console.warn("kit " + JSON.stringify(spec) + ": " + e.message); }
   }
   async assetsReady() { await Promise.all(this.pending || []); this.render(); }
 

@@ -33,6 +33,7 @@ TOOLS = [
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
+    ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
@@ -42,6 +43,8 @@ TOOLS = [
     ("Checks", "Shots review (plan only, no pictures)", "tools/shots_sheet.py --game {game} --plan", {}),
     ("Checks", "Shots review (after the editor took them)", "tools/shots_sheet.py --game {game}", {}),
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
+    ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
+    ("Story", "Kit meshes for Unreal (the importer runs it too)", "node tools/kit/build.mjs --game {game}", {}),
 
     ("Story", "Notes from the desk", "tools/story.py --game {game} notes", {}),
     ("Story", "Flow graph", "tools/story.py --game {game} flow", {}),

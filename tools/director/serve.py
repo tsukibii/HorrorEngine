@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 from storykit import plan as P  # noqa: E402
 from storykit import library as LIB  # noqa: E402
+from storykit import kit as KIT  # noqa: E402
 sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
 STATIC = {".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".txt": "text/plain"}
@@ -133,6 +134,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"inbox": str(inbox.relative_to(L.ROOT)).replace("\\", "/"),
                                    "saved": sorted(f.stem for f in inbox.glob("*.npz")) + sorted(f.stem for f in L.ROOT.glob("*.npz")),
                                    "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else []})
+        if parts[:2] == ["api", "kit"]:               # the kit's presets (Content/Studio/Kit/presets.json)
+            return self.send(200, KIT.presets_file())
         if parts[:2] == ["api", "games"]:
             return self.send(200, {"games": L.games()})
         if parts[:2] == ["api", "story"] and len(parts) == 3:
@@ -147,6 +150,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         parts = self.path.strip("/").split("/")
+        if parts[:3] == ["api", "kit", "preset"] and len(parts) == 4:      # the kit maker keeps (or, with null, drops) a preset
+            name = parts[3]
+            if not name.replace("_", "").isalnum() or not name[:1].isalpha() or name.lower() != name:
+                return self.send(400, {"error": "a preset name is lower-case letters, digits and _"})
+            spec = json.loads(self.body().decode("utf-8") or "null")
+            data = KIT.presets_file()
+            data = dict(data, presets=dict(data.get("presets", {})))
+            if spec is None:
+                data["presets"].pop(name, None)
+            else:
+                try:
+                    KIT.size(spec)
+                except ValueError as e:
+                    return self.send(400, {"error": str(e)})
+                data["presets"][name] = spec
+            KIT.PRESETS_FILE.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+            return self.send(200, KIT.presets_file())
         if parts[:2] != ["api", "story"] or len(parts) != 3:
             return self.send(404, {"error": "not found"})
         p = self.game_path(parts[2])
