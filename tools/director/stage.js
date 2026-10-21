@@ -120,7 +120,7 @@ export const VOICES = ["says", "whispers", "says angrily", "screams", "murmurs",
 export function version(sc) { const v = sc && sc.variants && sc.pick && sc.variants[sc.pick]; return v ? Object.assign({}, sc, v) : (sc || {}); }
 
 // ---- the figure -------------------------------------------------------------------------------------------------
-const RADIUS = { spine_01: 0.12, spine_02: 0.12, spine_03: 0.13, neck_01: 0.05, head: 0.05, clavicle_l: 0.05, clavicle_r: 0.05,
+export const RADIUS = { spine_01: 0.12, spine_02: 0.12, spine_03: 0.13, neck_01: 0.05, head: 0.05, clavicle_l: 0.05, clavicle_r: 0.05,
   upperarm_l: 0.05, upperarm_r: 0.05, lowerarm_l: 0.042, lowerarm_r: 0.042, hand_l: 0.035, hand_r: 0.035, hand_end_l: 0.03, hand_end_r: 0.03,
   thigh_l: 0.075, thigh_r: 0.075, calf_l: 0.055, calf_r: 0.055, foot_l: 0.045, foot_r: 0.045, ball_l: 0.04, ball_r: 0.04 };
 

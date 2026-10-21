@@ -252,6 +252,9 @@ def spawn(piece, cmap):
     return finish(spawn_block(piece, colour), piece, f"{piece['room']}/props")
 
 
+EXPOSURE_EV100 = 3.5    # held still, for rooms lit by a bulb or a candle (EV100 0 is daylight: everything blown out)
+
+
 def environment(lid):
     """A dark interior's basics, rebuilt with the level: exposure held still (auto exposure undoes darkness), a
     faint sky light so unlit corners aren't pure black."""
@@ -259,7 +262,7 @@ def environment(lid):
     ppv.set_editor_property("unbound", True)
     try:
         s = ppv.get_editor_property("settings")
-        for name, value in (("auto_exposure_min_brightness", 0.0), ("auto_exposure_max_brightness", 0.0),
+        for name, value in (("auto_exposure_min_brightness", EXPOSURE_EV100), ("auto_exposure_max_brightness", EXPOSURE_EV100),
                             ("auto_exposure_bias", 0.0)):
             s.set_editor_property("override_" + name, True)
             s.set_editor_property(name, value)
@@ -270,6 +273,17 @@ def environment(lid):
     sky = actors.spawn_actor_from_class(unreal.SkyLight, unreal.Vector(0, 0, 1000), rot(0))
     sky.light_component.set_intensity(0.05)
     finish(sky, {"id": f"{lid}__sky", "tags": ["story", "story:sky"]}, "env")
+
+
+def preview(game, lid):
+    """The StoryPreview (Source/StoryRunner): plays the desk's bake of this game in Play (docs/UNREAL_FLOW.md §1b)."""
+    cls = unreal.load_class(None, "/Script/StoryRunner.StoryPreview")
+    if cls is None:
+        unreal.log_warning("storykit: no StoryPreview class (build the StoryRunner module: setup.py build)")
+        return
+    a = actors.spawn_actor_from_class(cls, unreal.Vector(0, 0, 0), rot(0))
+    a.set_editor_property("game", game)
+    finish(a, {"id": f"{lid}__preview", "tags": ["story", "story:preview"]}, "env")
 
 
 REVERB = "/Game/Studio/Audio/Reverb/RV_{}"        # one ReverbEffect per acoustics preset (storylib.ACOUSTICS; SETUP makes them)
@@ -363,6 +377,7 @@ def build(game=None, level=None):
             attach_parts(made)
         cast_standins(story, lid, cmap)
         environment(lid)
+        preview(game, lid)
         if story.get("format", 2) >= 3:
             acoustics(story, lid)
         levels.save_current_level()

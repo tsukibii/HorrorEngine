@@ -3,6 +3,7 @@
 import * as M from "./motion.js";
 import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
+import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 
 const $ = s => document.querySelector(s);
@@ -983,7 +984,13 @@ $("#check").onclick = async () => {
 };
 $("#generate").onclick = async () => {
   if (DIRTY) await save();
-  const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "running the checks…"));
+  const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
+  stopWatch(); await loadFiles(); if (!PLAN) await replan();
+  try {                                        // the Watch, recorded: what Unreal's preview plays (bake.js)
+    const pv = await bakePreview(watchStage, S, PLAN, FILES, 30, (i, n, id) => { $("#genState").textContent = `baking the scenes… ${i + 1}/${n} (${id})`; });
+    await api("/api/preview/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pv) });
+  } catch (e) { $("#genState").className = "err"; $("#genState").textContent = "The bake failed: " + e.message; return; }
+  $("#genState").textContent = "running the checks…";
   const j = await api("/api/unreal/generate/" + encodeURIComponent(GAME), { method: "POST" });
   box.append(el("pre", {}, (j.checks || []).join("\n")));
   const st = $("#genState");

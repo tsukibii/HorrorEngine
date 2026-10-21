@@ -31,6 +31,20 @@ setup these steps rely on.
    the guide-backs), and the debug view of the karma.
 5. **Done when:** you can play the whole game as blocks, every choice and ending, as it was on the desk.
 
+## 1b. The preview (built 2026-10-21)
+
+Generate also **bakes the Watch**: `tools/director/bake.js` steps the desk's own timeline for every scene at 30 fps and
+writes what it computes (the player's camera and lens, every figure's joints, the subtitles, the black, the lights'
+flicker, the events) with the flow, stitches and endings to `Content/Games/<G>/Previs/preview.json` (git-ignored).
+`AStoryPreview` (Source/StoryRunner, one per level, put there by the importer) plays it in **Play**: scenes as
+recorded (the cast as the desk's figures, cylinders between joints), events and act-choices as cards with buttons,
+stitches as task cards (walk the level, then Task done or the interrupts; timers count down; gameplay stitches offer
+their results), endings with Return to and Play from the start. **N** the node menu (play from any node), **Tab** the
+mouse for the cards or the walk back. It computes nothing: change the desk, Generate, play again.
+Not yet: voices and takes (subtitles only), the cues (lights_die, sounds, door tricks), replies (the first option
+plays), choices by karma or count (picked by hand), scenes in another level's map (a card says so), MetaHumans (the
+figures stand in).
+
 ## 2. The MetaHumans in their roles
 
 1. Set each cast member's `metahuman` (the MetaHuman Character asset) in the story.

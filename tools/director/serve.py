@@ -282,6 +282,12 @@ class Handler(BaseHTTPRequestHandler):
             r = subprocess.run([sys.executable, str(ROOT / "tools" / "motion.py"), "--game", parts[2], "import"],
                                capture_output=True, text=True, encoding="utf-8")
             return self.send(200 if r.returncode == 0 else 500, {"output": r.stdout + r.stderr})
+        if parts[:2] == ["api", "preview"] and len(parts) == 3 and self.game_path(parts[2]):     # bake.js's recording
+            out = L.GAMES / parts[2] / "Previs" / "preview.json"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            data = json.loads(self.body().decode("utf-8"))
+            out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+            return self.send(200, {"ok": True, "path": str(out.relative_to(ROOT)), "kb": round(out.stat().st_size / 1024)})
         if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
             return self.send(200, UL.generate(parts[3]))

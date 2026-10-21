@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (Generate: the desk to Unreal with no Claude in between)
+
+- **When the user is done on the desk they press Generate, and Unreal has a previewable game with no Claude in
+  between.** Claude helps later, inside Unreal. The first goal: the newest Pilot, every block, piece of furniture
+  and light, 1:1 in Unreal, and its scenes previewable.
+- **No voices yet** (the dialogue voice tooling comes later): the MVP plays the scenes with subtitles only.
+- **Gameplay is UI selectables for now,** as in the desk's Watch (task cards, results and choices as buttons); the
+  real gameplay is refined later.
+- `scene-builder` is merged into `main` (it changes the desk -> Unreal flow).
+
 ## 2026-10-21 (UnrealClaude's scripts)
 
 - **Claude sees UnrealClaude's Python tools, and scripts in this project run without asking** (`--show-scripts

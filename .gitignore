@@ -82,6 +82,7 @@ Content/Studio/PBR/*
 
 # made by the desk's Generate (storykit.generate) from story.json: rebuilt, never edited (CLAUDE.md, "text is the truth")
 Content/Games/*/Maps/
+Content/Games/*/Previs/preview.json
 Content/Studio/Greybox/
 Content/Studio/Imported/
 # the first imports went to /Game/Studio/Library/Meshes (Unreal's copies, beside the CC0 sources in meshes/)

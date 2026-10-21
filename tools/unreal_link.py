@@ -73,7 +73,8 @@ def start_editor(game):
     (out_dir(game) / "pending").write_text(game, encoding="utf-8")
     exe = str(UE_LAUNCHER) if UE_LAUNCHER.exists() else str(Path(json.loads(ENV.read_text())["engine"]) / "Engine" / "Binaries" / "Linux" / "UnrealEditor")
     log = open(out_dir(game) / "editor.log", "w", encoding="utf-8")
-    subprocess.Popen([exe, up], stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+    # setsid -f: the editor belongs to nobody, so the desk's server never holds it (or its zombie) when it ends
+    subprocess.Popen(["setsid", "-f", exe, up], stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL).wait()
 
 
 def generate(game):
