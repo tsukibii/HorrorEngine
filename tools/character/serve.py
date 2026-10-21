@@ -86,6 +86,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 3 and clean(parts[2]):
             f = PEOPLE / clean(parts[2]) / "character.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {})
+        if parts[:2] == ["api", "skin"] and len(parts) == 3 and clean(parts[2]):        # the photo skin texture
+            f = PEOPLE / clean(parts[2]) / "skin.png"
+            return self.send(200, f.read_bytes(), "image/png") if f.exists() else self.send(404, {"error": "no skin yet"})
         if parts[:2] == ["api", "picture"] and len(parts) == 4 and clean(parts[2]) and parts[3] in SLOTS:
             f = pictures(clean(parts[2])).get(parts[3])
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f else self.send(404, {"error": "none"})
@@ -121,7 +124,7 @@ class Handler(BaseHTTPRequestHandler):
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(self.body())
             return self.send(200, {"ok": True, "path": str(f.relative_to(ROOT))})
-        if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("mhr", "detect", "body"):
+        if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("mhr", "detect", "body", "skin"):
             req = json.loads(self.body().decode("utf-8") or "{}")
             req["op"] = parts[2]
             if parts[2] != "mhr":
@@ -131,6 +134,11 @@ class Handler(BaseHTTPRequestHandler):
                 req["name"] = n
             if parts[2] == "detect":                                       # none: the worker forgets the old ones
                 req["files"] = [str(f) for f in pictures(req["name"]).values()]
+            if parts[2] == "skin":
+                req["out"] = str(PEOPLE / req["name"] / "skin.png")
+                code, res = WORKER.call(req)
+                if "path" in res: res["path"] = str(Path(res["path"]).relative_to(ROOT))
+                return self.send(code, res)
             return self.send(*WORKER.call(req))
         return self.send(404, {"error": "not found"})
 

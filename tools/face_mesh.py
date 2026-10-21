@@ -641,6 +641,8 @@ def cmd_worker(a):
       mhr {}                              the body editor's sliders: groups, labels, the bases, MHR's measures
       body {name, weights, settings, skip, side}   MHR's body (tools/character/mhr.py) with those identity weights and the
                                           face bent onto its head: the points that moved and by how much
+      skin {name, weights, settings, skip, side, out, size}   the same body's skin from its front picture
+                                          (tools/character/skin.py): a texture on MHR's UVs at out
     (detect, fit, body: a picture named in side is used for the face's depth only)"""
     ses, pics = Session(home_dir(a)), {}
 
@@ -669,20 +671,33 @@ def cmd_worker(a):
             presets = json.loads(mhr.PRESETS_FILE.read_text(encoding="utf-8"))["presets"] if mhr.PRESETS_FILE.exists() else {}
             return dict(groups=m["header"]["groups"], labels=mhr.labels(m), presets=presets,
                         measures=mhr.measures(m["points"], m))
-        if op == "body":
+        if op in ("body", "skin"):
             sys.path.insert(0, str(ROOT / "tools" / "character"))
             import mhr
             m = mhr.load()
             pts = mhr.body(q.get("weights", []), m)
             frames, thumbs = pics.get(q.get("name"), ([], {}))
-            if not frames: return dict(idx=[], delta=[], report=None)
+            if not frames:
+                if op == "skin": raise ValueError("add a front picture first")
+                return dict(idx=[], delta=[], report=None)
             tpl, bnd = ses.body(m["points"], m["tris"])
             shaped = dict(tpl, verts=pts)
             verts, tris, rot, report, _ = ses.shape(frames, q.get("settings", {}), q.get("skip", []), q.get("side", []),
                                                     template=(shaped, bnd))
-            d = verts - pts
-            idx = np.flatnonzero(np.abs(d).max(1) > 1e-6)
-            return dict(idx=idx.tolist(), delta=flat(d[idx], 6), report=report)
+            if op == "body":
+                d = verts - pts
+                idx = np.flatnonzero(np.abs(d).max(1) > 1e-6)
+                return dict(idx=idx.tolist(), delta=flat(d[idx], 6), report=report)
+            import cv2
+            import skin
+            front = next((k for k in thumbs if k.startswith("front")), None) or next(iter(thumbs))
+            img, lpts = thumbs[front]
+            pixels = np.stack([lpts[:, 0], -lpts[:, 1]], 1)
+            bound = bound_points(dict(tpl, verts=verts), bnd)
+            tex, alpha, srep = skin.bake(img, pixels, verts, m["tris"], m["uv"], bound, int(q.get("size", 2048)))
+            out = Path(q["out"]); out.parent.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(out), tex)
+            return dict(path=str(out), report=dict(srep, picture=front))
         if op in ("fit", "save"):
             if q["name"] not in pics: raise ValueError("detect the pictures first")
             frames, thumbs = pics[q["name"]]

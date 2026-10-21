@@ -2,7 +2,7 @@
 // the feminine base and a shape slider move the body, the height scales it; a front picture (the page's own head from
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
-// eyesClosed (not a look); the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
+// eyesClosed (not a look); the skin is made from the front picture and worn; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup         (once)
 //   python tools/character/serve.py              (in another shell)
@@ -83,6 +83,14 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     const w = await page.evaluate(() => { const b = window.__body, w = b.fromArkit({ eyeBlinkLeft: 1 }); return Object.fromEntries(b.ENAMES.map((n, i) => [n, w[i]]).filter(x => x[1])); });
     if (JSON.stringify(w) !== JSON.stringify({ eyesClosed_L: 1 })) throw new Error("eyeBlinkLeft maps to " + JSON.stringify(w));
     await page.click("#exprClear");
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("the skin from the front picture: a texture, worn", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    await page.click("#photoSkin button");
+    await page.waitForFunction(() => window.__body.skin && window.__body.material.map === window.__body.skin, null, { timeout: 90000 });
+    const st = await page.textContent("#status");
+    if (!/skin: .*skin\.png/.test(st)) throw new Error(st);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the head OBJ exports", async () => {

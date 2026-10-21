@@ -234,6 +234,48 @@ $("#exprCycle").onchange = () => {
   if ($("#exprCycle").checked) cycle = setInterval(() => { const n = PRESET_NAMES[cycleAt++ % PRESET_NAMES.length]; setExpr(fromArkit(AMAP.presets[n])); markPreset(n); }, 1000);
 };
 
+// ---- skin: a tone, a roughness, and the photo skin (tools/character/skin.py through the worker) -------------------
+st.skin = { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 };
+const toneIn = el("input", { type: "color", value: st.skin.tone });
+$("#skinRows").append(el("div", { className: "row" }, el("span", { textContent: "Tone" }), toneIn, el("output")),
+  el("small", { className: "note", textContent: "The body's colour without a photo skin; with one, the photo's own tone is used." }));
+toneIn.oninput = () => { st.skin.tone = toneIn.value; skinLook(); };
+set.rough = slider($("#skinRows"), "rough", "Roughness", 0.2, 1, 0.01, st.skin.rough, "Lower is shinier (the glass-skin look lives in Unreal's material later).", v => { st.skin.rough = v; skinLook(); });
+const photoBtn = el("button", { textContent: "Make the skin from the front picture", title: "Projects the front picture onto MHR's UVs (about 5 s): People/<name>/skin.png" });
+const usePhoto = el("input", { type: "checkbox" }), sizeSel = el("select", {}, ...[1024, 2048, 4096].map(v => el("option", { value: v, textContent: `${v} px`, selected: v === 2048 })));
+$("#photoSkin").append(photoBtn, " ", sizeSel,
+  el("label", { className: "tog" }, usePhoto, el("span", { textContent: "Wear the photo skin" })),
+  el("p", { className: "note", textContent: "The face comes from the picture where the head faces the camera; above the brows only skin-coloured pixels count (bangs stay off the forehead); the rest of the body takes the face's tone. Eyes and mouth are painted on MHR's closed shell until the face parts come." }));
+let SKIN = null;
+const loader = new THREE.TextureLoader();
+function skinLook() {
+  material.map = st.skin.photo && SKIN ? SKIN : null;
+  material.color.set(material.map ? 0xffffff : st.skin.tone);
+  material.roughness = st.skin.rough; material.needsUpdate = true;
+}
+async function loadSkin() {
+  if (!WHO) return;
+  try {
+    const t = await loader.loadAsync(`api/skin/${encodeURIComponent(WHO)}?v=${Date.now()}`);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    if (SKIN) SKIN.dispose();
+    SKIN = t;
+  } catch (e) { SKIN = null; }
+  usePhoto.disabled = !SKIN; skinLook();
+}
+usePhoto.onchange = () => { st.skin.photo = usePhoto.checked; skinLook(); };
+sizeSel.onchange = () => { st.skin.size = +sizeSel.value; };
+photoBtn.onclick = async () => {
+  if (!WHO || !PICS.length) return status("add a front picture first (Face tab)", "bad");
+  status("projecting the picture onto the skin…");
+  const side = PICS.filter(p => p.name.startsWith("side.")).map(p => p.name);
+  try {
+    const r = await api("api/face/skin", { name: WHO, weights: weights(), settings: { ...st.face, relative: $("#relative").checked }, side, size: st.skin.size });
+    await loadSkin(); st.skin.photo = usePhoto.checked = !!SKIN; skinLook();
+    status(`skin: ${r.path} (${r.report.triangles} triangles from ${r.report.picture})`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+};
+
 // ---- the body ---------------------------------------------------------------------------------------------------
 const view = $("#view");
 const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(devicePixelRatio);
@@ -245,10 +287,14 @@ scene.add(hemi, camera); camera.add(key);
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 const material = new THREE.MeshStandardMaterial({ color: 0xc9b3a2, roughness: 0.62 });
-const geo = new THREE.BufferGeometry();
+const geo = new THREE.BufferGeometry();                // shared points: the smooth normals
 const POS = new Float32Array(N * 3), RAW = new Float32Array(N * 3);
 geo.setAttribute("position", new THREE.BufferAttribute(POS, 3)); geo.setIndex(new THREE.BufferAttribute(TRIS, 1));
-const mesh = new THREE.Mesh(geo, material); scene.add(mesh);
+const C = TRIS.length, dgeo = new THREE.BufferGeometry();  // what's drawn: one point per corner, MHR's UVs split at seams
+dgeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+dgeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
+const mesh = new THREE.Mesh(dgeo, material); scene.add(mesh);
 let SCALE = 1, TOP = 1.7;
 function computeBody() {                               // RAW: MHR with the weights, unscaled (what the face fit sees)
   RAW.set(BASEP);
@@ -273,7 +319,10 @@ function compose() {                                   // POS: RAW + the face, s
     const k = st.face.strength * SCALE;
     for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; POS[i] += k * DELTA.d[j * 3]; POS[i + 1] += k * DELTA.d[j * 3 + 1]; POS[i + 2] += k * DELTA.d[j * 3 + 2]; }
   }
-  geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
+  geo.attributes.position.needsUpdate = true; geo.computeVertexNormals();
+  const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
+  for (let c = 0; c < C; c++) { const i = TRIS[c] * 3, j = c * 3; DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2]; }
+  dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
 }
 const orbit = { yaw: 0.3, pitch: 0.08, focus: "body" };
 function place() {
@@ -380,10 +429,13 @@ async function open(name) {
   set.base(st.base); set.height(st.height); for (const f of FACE) set[f[0]](st.face[f[0]]);
   st.shape.forEach((v, i) => { shapeSet[i](v); });
   document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
+  Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
+  toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
+  SKIN = null; await loadSkin();
   computeBody(); compose(); hud();
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -420,7 +472,7 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 $("#raking").onchange = place;
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
+window.__body = { st, fromArkit, ENAMES, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);
