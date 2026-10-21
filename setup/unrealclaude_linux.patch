@@ -1,0 +1,18 @@
+diff --git a/UnrealClaude/Source/UnrealClaude/Private/MCP/Tools/MCPTool_AnimBlueprintModify.cpp b/UnrealClaude/Source/UnrealClaude/Private/MCP/Tools/MCPTool_AnimBlueprintModify.cpp
+index ff1d4a4..feb192d 100644
+--- a/UnrealClaude/Source/UnrealClaude/Private/MCP/Tools/MCPTool_AnimBlueprintModify.cpp
++++ b/UnrealClaude/Source/UnrealClaude/Private/MCP/Tools/MCPTool_AnimBlueprintModify.cpp
+@@ -790,10 +790,10 @@ FMCPToolResult FMCPTool_AnimBlueprintModify::HandleSetStateAnimation(const FStri
+ 			const TSharedPtr<FJsonObject>* BindingsObj;
+ 			if (Params->TryGetObjectField(TEXT("parameter_bindings"), BindingsObj))
+ 			{
+-				for (const auto& Pair : (*BindingsObj)->Values)
++				auto First = (*BindingsObj)->Values.CreateConstIterator();
++				if (First)
+ 				{
+-					Binding = Pair.Value->AsString();
+-					break;
++					Binding = First->Value->AsString();
+ 				}
+ 			}
+ 		}

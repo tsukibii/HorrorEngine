@@ -237,6 +237,7 @@ UC_REPO = "https://github.com/Natfii/UnrealClaude"
 UC_PR = 48            # "Fix compile on UE 5.8: FJsonObject key type changed to FSharedString" (verified on 5.8 by its author)
 UC_SRC = ROOT / "vendor" / "UnrealClaude-src"
 UC_PLUGIN = ROOT / "Plugins" / "UnrealClaude"
+UC_LINUX_PATCH = HERE / "unrealclaude_linux.patch"   # what Linux's clang (warnings as errors) needs on top of it
 
 
 def git(*args, cwd=None):
@@ -264,6 +265,9 @@ def cmd_unrealclaude(args):
     if UC_PLUGIN.exists():
         shutil.rmtree(UC_PLUGIN)
     shutil.copytree(UC_SRC / "UnrealClaude", UC_PLUGIN, ignore=shutil.ignore_patterns(".git", "node_modules"))
+    r = run(["git", "apply", "--directory=Plugins", str(UC_LINUX_PATCH)], cwd=ROOT)   # clang's -Werror on Linux
+    print(f"fix   {UC_LINUX_PATCH.name}" if r and r.returncode == 0 else
+          f"MISS  {UC_LINUX_PATCH.name} no longer applies (fixed upstream?): {r.stderr.strip() if r else ''}")
     up = UC_PLUGIN / "UnrealClaude.uplugin"
     d = json.loads(up.read_text(encoding="utf-8-sig"))
     if env.get("version"):
@@ -286,7 +290,7 @@ def cmd_unrealclaude(args):
     print("npm   bridge packages installed" if r.returncode == 0 else f"FAIL  npm install: {r.stderr.strip()[:300]}")
     mcp = ROOT / ".mcp.json"
     cfg = json.loads(mcp.read_text(encoding="utf-8")) if mcp.exists() else {}
-    cfg.setdefault("mcpServers", {})["unreal"] = {"command": "node", "args": [str(bridge / "index.js")],
+    cfg.setdefault("mcpServers", {})["unreal"] = {"command": "node", "args": [(bridge / "index.js").relative_to(ROOT).as_posix()],
                                                     "env": {"UNREAL_MCP_URL": "http://localhost:3000"}}
     mcp.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
     print("mcp   .mcp.json: server 'unreal' (restart Claude Code in this folder and approve it)")
