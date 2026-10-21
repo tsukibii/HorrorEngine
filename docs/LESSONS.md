@@ -119,3 +119,6 @@ the fix.
   no lamp (the Pilot's cellar stairs) played black in Unreal while the desk showed it. Each room gets a shadowless
   fill (`importer.room_fills`). And anything the desk lets the player do during a scene (look round the cone) has to
   be in the bake, or Unreal locks it.
+- **The desk's server sends only the file types it lists** (`serve.py` STATIC): Play's CSS came back 404 until `.css`
+  was added. A new kind of file in `tools/director/` needs its type there. A test can run its own desk beside the
+  open one: `DESK_PORT=8781 python tools/director/serve.py`.

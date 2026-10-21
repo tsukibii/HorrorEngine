@@ -105,7 +105,9 @@ playback; Generate stays the one button.
 
 ## 8. The order
 
-1. **Play mode on the desk**: walk the built level (WASD, mouse look, collision with walls and furniture, stance), the
+1. **Play mode on the desk** (**walking, collision, crouch, the cursor, doors, pickups, notes, the code lock, beats,
+   act choices, timers and interrupts: built 2026-10-21**, `tools/director/play/`, `playtest.js` PLAY ok on the Pilot;
+   the neumorphic theme and the physics die next): walk the built level (WASD, mouse look, collision with walls and furniture, stance), the
    CSS UI and its first theme (§10), the physics die,
    the interaction point and prompt, doors, pickups, notes, objectives, beats firing from `enter` and `use`.
 2. **Scenes from play**: a beat starts a scene; blended in and out on the ladder (§1); interactive cinematics (walk

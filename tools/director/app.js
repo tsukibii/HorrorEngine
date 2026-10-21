@@ -5,6 +5,7 @@ import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PIT
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
+import { PlayRuntime } from "./play/runtime.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -796,6 +797,7 @@ function runEvent(ev) {
 async function watchStitch(st, nid, n) {
   paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 });
   const lvl = st.level || Object.keys(S.levels)[0];
+  if ($("#wPlay").checked && !st.play) return playStitch(st, n, lvl);
   watchStage.setWorld(PLAN, S, lvl);
   watchStage.frame({ view: S.levels[lvl].start, camera: { mode: "free" }, clips: [{ id: "x", who: "", en: "" }], stage: {} }, 0, FILES);
   await fade(0.25, 0.5);
@@ -843,6 +845,39 @@ async function watchStitch(st, nid, n) {
   await fade(1, 0.4);
   return result.to;
 }
+// Play mode (play/runtime.js): the tasks walked. One runtime for the whole run, so what you carry and the doors you
+// opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
+function playRt() {
+  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, settings: { crouch: { mode: $("#wCrouch").value } } });
+  return RUN.play;
+}
+function playPlace(rt, lvl) {
+  const a = RUN.afterScene; RUN.afterScene = null;
+  if (a && a.level === lvl) rt.placeFromCamera(lvl, a.cam);
+  else if (rt.level !== lvl) rt.placeAt(lvl, S.levels[lvl].start);
+  else rt.enterLevel(lvl);
+}
+async function playStitch(st, n, lvl) {
+  const rt = playRt(), t0 = performance.now();
+  playPlace(rt, lvl);
+  const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(n.ref));
+  const go = rt.runStitch(st, n, its);
+  await fade(0, 0.5);
+  const r = await go;
+  rt.pause();
+  RUN.secs += (performance.now() - t0) / 1000; wclock();
+  await fade(1, 0.4);
+  return r.to;
+}
+async function playChoice(n) {
+  const rt = playRt();
+  playPlace(rt, rt.level || (RUN.afterScene && RUN.afterScene.level) || Object.keys(S.levels)[0]);
+  const go = rt.runChoice(n);
+  await fade(0, 0.4);
+  const o = await go;
+  rt.pause();
+  return o;
+}
 function watchChoice(n) {
   return new Promise(res => { const card = el("div", { class: "wcard" }, el("div", { class: "muted" }, "THE PLAYER DECIDES (by acting)"), el("div", { class: "big" }, n.prompt || ""), ...(n.options || []).map(o => el("button", { class: "primary", on: { click: () => { card.remove(); res(o); } } }, o.label || JSON.stringify(o.when)))); $("#watchBox").append(card); });
 }
@@ -869,10 +904,12 @@ async function watch(fromNid, snap) {
     const n = S.flow[nid]; reach(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
-      await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next; }
+      await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next;
+      if (RUN) RUN.afterScene = { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera.clone() }; }
     else if (n.type === "stitch") nid = await watchStitch(S.stitches[n.ref] || {}, nid, n);
     else if (n.type === "choice") {
-      if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }
+      if (n.by === "act" && $("#wPlay").checked) nid = (await playChoice(n)).to;
+      else if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }
       else if (n.by === "result") nid = (n.options.find(o => o.result === RUN.results[n.of]) || n.options[0]).to;
       else if (n.by === "karma") nid = karmaPick(n, RUN.karma, S).to;
       else if (n.by === "count") nid = (n.options.find(o => { const v = RUN.counters[o.count] || 0; return (o.min === undefined || v >= o.min) && (o.max === undefined || v <= o.max); }) || n.options[n.options.length - 1]).to;
@@ -915,7 +952,7 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
+function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
   if (RELOAD_AFTER_WATCH && !DIRTY) { RELOAD_AFTER_WATCH = false; load().then(() => status("environment reloaded from the scene builder")); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked) RUN.skip = true; });
 
@@ -1020,5 +1057,5 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, openBuilder, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

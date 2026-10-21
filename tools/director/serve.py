@@ -8,6 +8,7 @@ Claude edits, so both see each other's changes; every save keeps the previous fi
 Plain Python, no installs. Listens on 127.0.0.1 only.
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -24,14 +25,14 @@ from storykit import kit as KIT  # noqa: E402
 from storykit import pbr as PBR  # noqa: E402
 sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
-STATIC = {".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".txt": "text/plain"}
+STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain"}
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 BODIES = L.STUDIO / "Bodies"
 FOOTAGE = L.ROOT / "Footage"          # the takes, as intake.py copies them (Footage/<Game>/<take id>.mp4)
 MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4"}
 
-PORT = 8780
+PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
 
 

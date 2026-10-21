@@ -1,0 +1,10 @@
+/* Play HUD theme "plain": the desk's dark greybox look, nothing more. A theme only sets these variables
+   (play/ui/hud.css uses them); copy this file to make another. */
+.play-hud[data-theme="plain"]{
+  --ph-font:system-ui,sans-serif; --ph-text:#e8e4dc; --ph-muted:#9a978f; --ph-accent:#e8c27a; --ph-bad:#e06a5a;
+  --ph-surface:rgba(24,24,28,.82); --ph-veil:rgba(0,0,0,.55);
+  --ph-dot:6px; --ph-ring:34px; --ph-cursor:rgba(255,255,255,.85); --ph-cursor-shadow:0 0 3px rgba(0,0,0,.8);
+  --ph-radius-s:6px; --ph-radius:10px; --ph-radius-l:16px;
+  --ph-pop:0 2px 8px rgba(0,0,0,.5); --ph-pop-l:0 10px 40px rgba(0,0,0,.6); --ph-inset:inset 0 2px 6px rgba(0,0,0,.6);
+  --ph-text-shadow:0 1px 3px rgba(0,0,0,.9);
+}

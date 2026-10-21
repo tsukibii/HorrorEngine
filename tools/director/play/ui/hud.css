@@ -1,0 +1,52 @@
+/* The Play HUD's layout (play/hud.js). Every colour, radius, shadow and font is a variable the theme sets
+   (play/ui/themes/<name>.css); this file only places things and names the states. */
+.play-hud{position:absolute;inset:0;pointer-events:none;font-family:var(--ph-font);color:var(--ph-text);z-index:5;cursor:none}
+.play-hud.free{cursor:default}
+.play-hud .ph-cursor{position:absolute;left:50%;top:50%;width:var(--ph-dot);height:var(--ph-dot);margin:calc(var(--ph-dot) / -2) 0 0 calc(var(--ph-dot) / -2);
+  border-radius:50%;background:var(--ph-cursor);box-shadow:var(--ph-cursor-shadow);transition:all .14s ease-out;display:flex;align-items:center;justify-content:center}
+.play-hud .ph-cursor::after{content:var(--ph-icon, "");font-size:calc(var(--ph-ring) * .45);line-height:1;color:var(--ph-accent);opacity:0;transition:opacity .14s}
+.play-hud .ph-cursor:not([data-cursor="none"]){width:var(--ph-ring);height:var(--ph-ring);margin:calc(var(--ph-ring) / -2) 0 0 calc(var(--ph-ring) / -2);
+  background:var(--ph-surface);box-shadow:var(--ph-pop)}
+.play-hud .ph-cursor:not([data-cursor="none"])::after{opacity:1}
+.play-hud .ph-cursor[data-cursor="look"]{--ph-icon:"◉"}
+.play-hud .ph-cursor[data-cursor="read"]{--ph-icon:"≡"}
+.play-hud .ph-cursor[data-cursor="take"]{--ph-icon:"✚"}
+.play-hud .ph-cursor[data-cursor="open"]{--ph-icon:"⇄"}
+.play-hud .ph-cursor[data-cursor="use"]{--ph-icon:"●"}
+.play-hud .ph-cursor[data-cursor="hide"]{--ph-icon:"▣"}
+.play-hud .ph-cursor[data-cursor="talk"]{--ph-icon:"…"}
+.play-hud .ph-cursor[data-cursor="locked"]{--ph-icon:"✕"}
+.play-hud .ph-cursor[data-cursor="locked"]::after{color:var(--ph-bad)}
+.play-hud.free .ph-cursor{opacity:0}
+.play-hud .ph-prompt{position:absolute;left:50%;top:calc(50% + var(--ph-ring) * .5 + 12px);transform:translateX(-50%);display:flex;gap:8px;align-items:center;
+  opacity:0;transition:opacity .14s;font-size:14px;text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-prompt.on{opacity:1}
+.play-hud .ph-key{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:var(--ph-radius-s);
+  background:var(--ph-surface);color:var(--ph-accent);box-shadow:var(--ph-pop);font-weight:600;text-shadow:none}
+.play-hud .ph-objective{position:absolute;left:20px;top:16px;padding:8px 14px;border-radius:var(--ph-radius);background:var(--ph-surface);box-shadow:var(--ph-pop);
+  font-size:13px;opacity:0;transition:opacity .3s}
+.play-hud .ph-objective.on{opacity:1}
+.play-hud .ph-objective::before{content:"Objective";display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ph-muted)}
+.play-hud .ph-timer{position:absolute;right:20px;top:16px;font-size:28px;font-variant-numeric:tabular-nums;color:var(--ph-bad);text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-log{position:absolute;right:20px;top:60px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11px;color:var(--ph-muted);text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-line{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);max-width:70%;text-align:center;font-size:19px;opacity:0;transition:opacity .25s;
+  text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-line.on{opacity:1}
+.play-hud .ph-who{color:var(--ph-accent);margin-right:8px}
+.play-hud .ph-stance{position:absolute;left:20px;bottom:16px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ph-muted)}
+.play-hud .ph-hint{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-size:12px;color:var(--ph-muted);opacity:0;transition:opacity .2s;text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-hint.on{opacity:1}
+.play-hud .ph-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ph-veil);pointer-events:auto;cursor:default}
+.play-hud .ph-card{min-width:280px;max-width:min(520px,80%);padding:24px 28px;border-radius:var(--ph-radius-l);background:var(--ph-surface);box-shadow:var(--ph-pop-l);
+  display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.play-hud .ph-title{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ph-muted)}
+.play-hud .ph-text{font-size:16px;line-height:1.55;white-space:pre-wrap}
+.play-hud .ph-code{font-size:30px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums;padding:10px;border-radius:var(--ph-radius);box-shadow:var(--ph-inset)}
+.play-hud .ph-pad{display:grid;grid-template-columns:repeat(3,64px);gap:14px;justify-content:center}
+.play-hud .ph-btn{font:inherit;color:var(--ph-text);border:0;border-radius:var(--ph-radius);background:var(--ph-surface);box-shadow:var(--ph-pop);height:48px;cursor:pointer;
+  transition:box-shadow .12s,transform .12s,color .12s}
+.play-hud .ph-btn:hover{color:var(--ph-accent)}
+.play-hud .ph-btn:active{box-shadow:var(--ph-inset);transform:scale(.97)}
+.play-hud .ph-close{height:40px;align-self:center;padding:0 28px}
+.play-hud .shake{animation:ph-shake .38s ease-in-out}
+@keyframes ph-shake{0%,100%{translate:0}20%{translate:-6px}40%{translate:6px}60%{translate:-4px}80%{translate:3px}}

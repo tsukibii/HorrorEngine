@@ -93,6 +93,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 #banner{display:none;padding:6px 10px;background:#1d3346;border-bottom:1px solid #3d6a8f}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<link rel="stylesheet" href="play/ui/hud.css">
 </head>
 <body>
 <header>
@@ -148,6 +149,8 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
       <label title="the takes' video in the corner; off keeps their audio only"><input type="checkbox" id="wVideo" checked> take video</label>
       <label><input type="checkbox" id="wSpeak"> speak the Japanese</label>
       <label><input type="checkbox" id="wSecrets"> finds the secrets</label>
+      <label title="Play mode: the player's tasks are walked (WASD, mouse, E to use, C to crouch), not cards"><input type="checkbox" id="wPlay" checked> walk the tasks</label>
+      <label title="crouch: press C once, or hold it">crouch <select id="wCrouch"><option value="toggle">toggle</option><option value="hold">hold</option></select></label>
       <label><input type="checkbox" id="wFast" checked> tasks auto-finish after 2 s</label>
       <label title="Cutscenes can't be skipped in the game; this is for the desk only"><input type="checkbox" id="wSkip"> dev: Esc skips</label>
       <span id="wClock" class="muted"></span><span id="wKarma" class="muted" title="the run's karma (a debug meter: the player never sees it)"></span><span id="wTrail" class="muted"></span>
