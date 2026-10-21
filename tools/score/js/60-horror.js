@@ -1,0 +1,389 @@
+// Horror cues on piano and strings: dread under the exploring, the stalker's ostinato, the music box gone wrong,
+// the riser and the sting, the heartbeat while you hide, the chase, the death. Techniques and references:
+// docs/MUSIC_RESEARCH.md. Dissonance is the point here: minor seconds, tritones, clusters, pedals that won't resolve.
+"use strict";
+
+const DISSONANCE = [[7], [6], [1], [1, 6], [1, 2, 6]];      // over the pedal, by amount: a fifth, a tritone, a minor second, both, a cluster
+
+// Dread drone: a low pedal in the strings with a rub creeping in above, the piano dropping single low notes and the
+// odd high "drip". Under exploring a dark house.
+CUE("dread_drone", {
+  family: "horror", level: -14, label: "Dread drone", uses: ["dread", "explore", "house at night", "aftermath"],
+  desc: "A low string pedal that swells and ebbs, a dissonance creeping in above it, single low piano notes and a high drip now and then.",
+  refs: "The Shining (Penderecki's clusters), Silent Hill's room tones, Ringu",
+  params: { key: P.key(4, "phrygian", ["phrygian", "locrian", "aeolian"]), len: P.len(20, 8, 40), dissonance: P.amt("dissonance", 0.6), drips: P.amt("piano drips", 0.4), swell: P.amt("swell", 0.6) },
+  gen(t, p) {
+    const k = p.key, root = 28 + k.tonic + (k.tonic > 7 ? 0 : 12), L = p.len, r = t.rng;
+    t.beat(60, [4, 4]);
+    const over = DISSONANCE[Math.min(4, Math.floor(p.dissonance * 4.99))];
+    for (let s = 0; s < L; s += 7) {                          // the pedal: overlapping swells (each sample note re-sounds softly)
+      const d = Math.min(9, L - s + 2);
+      t.n("strings", root + 12, s + t.human(0.2), d, 40 + 30 * p.swell, { attack: 2.5, raw: true });
+      t.n("strings", root + 19, s + 1.5 + t.human(0.3), d - 1.5, 30 + 20 * p.swell, { attack: 3 });
+    }
+    over.forEach((iv, i) => {                                 // the rub enters late and stays
+      for (let s = L * (0.25 + 0.15 * i); s < L; s += 6) t.n("strings", root + 24 + iv, s + t.human(0.3), Math.min(7, L - s + 1.5), 28 + 25 * p.dissonance, { attack: 3.5, tone: i === over.length - 1 && p.dissonance > 0.5 ? "harmonic" : undefined });
+    });
+    t.n("piano", root, 0.05, null, t.vel(60), { raw: true });
+    const drips = Math.round(1 + p.drips * 7);
+    for (let i = 0; i < drips; i++) {
+      const at = r.range(2, L - 1);
+      if (r.chance(0.55)) t.n("piano", root + r.pick([0, 1, 6, 12]), at, null, t.vel(48), { raw: true });
+      else t.n("piano", deg(k, r.int(7, 13), 48) + r.pick([0, 0, 1]), at, null, t.vel(38));
+    }
+    t.end(L);
+  },
+});
+
+// The stalker: a repeated low two-note figure on the piano (an unsettling meter), pizzicato under it, a string
+// pedal that climbs a semitone every few bars. She's somewhere in the house.
+CUE("stalker_ostinato", {
+  family: "horror", level: -9, label: "Stalker ostinato", uses: ["stalk", "dread", "searching", "patrol"],
+  desc: "A low repeated piano figure in an odd meter (tonic and a minor second or tritone), pizzicato doubling, a string pedal that climbs every few bars.",
+  refs: "Halloween's 5/4 piano (in spirit), Jaws' two notes, Insidious' strings",
+  params: { key: P.key(2, "phrygian", ["phrygian", "locrian", "harmonic_minor"]), tempo: P.tempo(84, 56, 120), meter: P.pick("meter", ["5/4", "7/8", "4/4", "3/4"], "5/4"),
+            interval: P.pick("figure", ["minor 2nd", "tritone", "minor 3rd"]), len: P.len(24, 10, 48), climb: P.amt("climb", 0.6) },
+  gen(t, p) {
+    const k = p.key, [num, den] = p.meter.split("/").map(Number), spb = t.beat(p.tempo * (den === 8 ? 2 : 1), [num, den]);
+    const step = { "minor 2nd": 1, tritone: 6, "minor 3rd": 3 }[p.interval], low = 36 + k.tonic, bar = num * spb;
+    const groups = num === 7 ? [0, 2, 4] : num === 5 ? [0, 3] : num === 3 ? [0] : [0, 2];
+    let up = 0;
+    for (let b = 0, s = 0; s < p.len; b++, s += bar) {
+      if (b && b % 4 === 0 && t.rng.chance(p.climb)) up++;
+      for (let i = 0; i < num; i++) {
+        const accent = groups.includes(i), m = low + up + (i % 2 ? step : 0);
+        t.n("piano", m, s + i * spb + t.human(), spb * 0.9, t.vel(accent ? 74 : 56), { raw: true });
+        t.n("piano", m + 12, s + i * spb + t.human(), spb * 0.6, t.vel(accent ? 48 : 34));
+        if (accent) t.n("pizz", m + 12, s + i * spb + t.human(), 0.3, t.vel(70));
+      }
+      if (b % 2 === 0) t.n("strings", low + 24 + up, s, bar * 2.1, 40 + 6 * up, { attack: bar * 0.8 });
+      if (b % 4 === 3 && up) t.n("trem", low + 31 + up, s, bar, 30 + 8 * up, { attack: bar * 0.6 });
+    }
+    t.end(p.len);
+  },
+});
+
+// The music box gone wrong: a sweet waltz in a major key on the glockenspiel and high piano, drifting out of tune,
+// one wrong note at the cadence, slowing as it winds down. The yandere's lullaby.
+CUE("music_box", {
+  family: "horror", level: -8, motif: true, label: "Music box gone wrong", uses: ["yandere", "lullaby", "her room", "the turn", "memory"],
+  desc: "A sweet music-box waltz (glockenspiel and high piano) that drifts flat, hits a wrong note at the cadence and winds down like a dying spring.",
+  refs: "Doki Doki Literature Club's broken lullabies, Higurashi's music box, Silent Hill's lullaby cues",
+  params: { key: P.key(5, "ionian", ["ionian", "lydian", "major_pent"]), tempo: P.tempo(80, 60, 104), len: P.len(18, 8, 32), wrongness: P.amt("wrongness", 0.5), winddown: P.amt("wind down", 0.6), strings: P.amt("string bed", 0.3) },
+  gen(t, p) {
+    const k = p.key, spb0 = t.beat(p.tempo, [3, 4]);
+    let tune = [4, 2, 0, 2, 4, 4, 4, -1, 1, 1, 1, -1, 4, 7, 7, -1];      // degrees; -1 a rest (a little lilt of our own)
+    if (p.motif) {                                                  // the game's theme, a beat a slot (held beats ring)
+      tune = [];
+      for (const [d, beats] of motifLine(p.motif, 3)) { tune.push(d); for (let i = 1; i < Math.round(beats); i++) tune.push(-1); }
+    }
+    const bars = Math.max(4, Math.round(p.len / (3 * spb0)));
+    let s = 0;
+    for (let b = 0; b < bars; b++) {
+      const slow = 1 + (b / bars) ** 2 * p.winddown * 1.2, spb = spb0 * slow;      // the spring running down
+      const detune = -p.wrongness * 45 * (b / bars) + t.rng.gauss(0, p.wrongness * 6); // drifting flat
+      for (let i = 0; i < 3; i++) {
+        const d = tune[(b * 3 + i) % tune.length];
+        if (d >= 0) {
+          let m = deg(k, d, 84);
+          if (b === bars - 2 && i === 0 && t.rng.chance(0.4 + p.wrongness * 0.6)) m += t.rng.pick([1, 6, -1]);   // the wrong note
+          let held = 0;                                             // the theme's long notes ring through their beats
+          if (p.motif) while (held < 3 && tune[(b * 3 + i + held + 1) % tune.length] === -1) held++;
+          t.n("glock", m, s + i * spb + t.human(0.01), spb * (2 + held), t.vel(62), { cents: detune });
+          t.n("piano", m, s + i * spb + t.human(0.01), spb * (1.5 + held), t.vel(40), { cents: detune * 0.5 });
+        }
+      }
+      if (b % 2 === 0 || p.motif) t.chord("piano", triad(k, p.motif ? [0, 3, 4, 4, 0, 3, 4, 0][b % 8] : [0, 3, 4, 0][(b / 2) % 4], 60), s, spb * 3, 34, { cents: detune * 0.3 });
+      if (p.strings > 0.1 && b % 4 === 0) t.n("strings", deg(k, 0, 72), s, spb * 12, 22 + 30 * p.strings, { attack: spb * 4, cents: detune * 0.2 });
+      s += 3 * spb;
+    }
+    if (p.wrongness > 0.4) t.n("glock", deg(k, 0, 84) + 1, s + spb0, null, t.vel(50), { cents: -60 * p.wrongness });   // one last wrong plink
+    t.end(s + spb0 * 2);
+  },
+});
+
+// The riser: strings sliding up in a cluster, tremolo swelling, the piano hammering faster; then cut to silence
+// (the scare lands after) or into a sting.
+CUE("riser", {
+  family: "horror", level: -3, label: "Riser", uses: ["tension", "approach", "before the scare", "she's coming"],
+  desc: "A string cluster sliding upward with tremolo swelling and the piano repeating faster and faster; it cuts to silence (the scare comes after) or slams into a sting.",
+  refs: "Insidious and The Conjuring's rising strings, Psycho's shrieking violins (in spirit)",
+  params: { key: P.key(0, "chromatic"), len: P.len(6, 2, 14), ending: P.pick("ending", ["cut", "sting"]), width: P.amt("cluster width", 0.6), accel: P.amt("accelerate", 0.7) },
+  gen(t, p) {
+    const L = p.len, root = 48 + p.key.tonic, n = 2 + Math.round(p.width * 4);
+    t.beat(60);
+    for (let i = 0; i < n; i++) {
+      t.n("strings", root + 7 + i, 0.05 * i, L, 40 + 6 * i, { attack: L * 0.8, bend: { semis: 5 + i % 3, at: 0.3, dur: L - 0.3 } });
+      if (i % 2 === 0) t.n("trem", root + 19 + i, 0.2 + 0.05 * i, L, 38, { attack: L * 0.9, bend: { semis: 7, at: 0.5, dur: L - 0.5 } });
+    }
+    let s = 0.4, gap = 0.6;                                    // the piano: the same low note, faster and louder
+    while (s < L) { t.n("piano", root - 12, s, gap, clamp(50 + 60 * (s / L), 1, 120), { raw: true }); t.n("piano", root - 11, s + gap / 2, gap / 2, clamp(40 + 50 * (s / L), 1, 110), { raw: true }); s += gap; gap = Math.max(0.06, gap * (1 - 0.18 * p.accel)); }
+    if (p.ending === "sting") { stingAt(t, root, L, 1); t.end(L + 3); }
+    else { t.point(L, "cut: the scare lands here"); t.end(L); }
+  },
+});
+
+function stingAt(t, root, at, power) {
+  const v = 95 + 25 * power;
+  for (const iv of [0, 1, 2, 6, 7, 13]) t.n("strings", root + 12 + iv, at, 1.6, v, {});
+  for (const iv of [12, 13, 18, 24]) t.n("trem", root + iv, at, 2.4, v - 10, {});
+  t.chord("piano", [root - 24, root - 23, root - 18, root - 12, root - 11], at, null, v, { raw: true });
+  t.chord("piano", [root + 24, root + 25, root + 31], at, null, v - 20);
+  t.hit("bass_drum", at, 127); t.hit("crash", at, 90);
+  t.n("timpani", root - 12, at, null, 120);
+  t.point(at, "sting");
+}
+
+// The sting: the jump scare. A short silence, then everything at once: a string cluster, low and high piano
+// clusters, a drum. The silence is part of it.
+CUE("sting", {
+  family: "horror", level: 0, label: "Jump-scare sting", uses: ["scare", "jumpscare", "she appears", "found you"],
+  desc: "Half a second of nothing, then a fortissimo string cluster with low and high piano clusters and a drum, ringing off into the hall.",
+  refs: "Every jump scare since Cat People; Insidious' screeching stings; Ju-On",
+  params: { key: P.key(1, "chromatic"), pre: { kind: "num", def: 0.5, min: 0, max: 2, step: 0.1, label: "silence first (s)" }, power: P.amt("power", 0.9), tail: P.amt("tremolo tail", 0.5) },
+  gen(t, p) {
+    const root = 46 + p.key.tonic;
+    t.beat(60);
+    stingAt(t, root, p.pre, p.power);
+    if (p.tail > 0.1) for (const iv of [13, 14]) t.n("trem", root + iv, p.pre + 0.4, 1 + 3 * p.tail, 50 * p.tail + 20, {});
+    t.end(p.pre + 1.5 + 3 * p.tail);
+  },
+});
+
+// The heartbeat: lub-dub on the timpani and the low piano, speeding up; a high string note held like breath.
+// While you hide.
+CUE("heartbeat", {
+  family: "horror", level: -8, label: "Heartbeat", uses: ["hiding", "hold your breath", "she's near", "hide"],
+  desc: "A lub-dub on timpani and low piano that speeds up over the cue, under a single high string note held like a breath.",
+  refs: "The Tell-Tale Heart staging in games; Alien: Isolation's locker scenes",
+  params: { key: P.key(9, "aeolian"), from: P.tempo(64, 50, 110), to: P.tempo(118, 60, 170), len: P.len(16, 6, 40), breath: P.amt("held note", 0.6) },
+  gen(t, p) {
+    const k = p.key, low = 33 + k.tonic;
+    t.beat(p.from);
+    let s = 0.2;
+    while (s < p.len) {
+      const u = s / p.len, bpm = p.from + (p.to - p.from) * u * u, spb = 60 / bpm;
+      t.n("timpani", low, s, 0.4, t.vel(88 + 20 * u), { raw: true }); t.n("piano", low, s, 0.3, t.vel(60 + 25 * u), { raw: true });
+      t.n("timpani", low, s + spb * 0.28, 0.3, t.vel(62 + 20 * u), { raw: true }); t.n("piano", low, s + spb * 0.28, 0.2, t.vel(44 + 20 * u), { raw: true });
+      s += spb;
+    }
+    if (p.breath > 0.1) t.n("trem", deg(k, 7, 72) + (p.breath > 0.6 ? 1 : 0), 1, p.len - 1, 20 + 35 * p.breath, { attack: p.len * 0.6 });
+    t.end(p.len);
+  },
+});
+
+// Hiding: almost nothing. A very high tremolo, a pizzicato note now and then (a creak), and when she's near the
+// notes come closer together and a low pedal wakes.
+CUE("hiding_tension", {
+  family: "horror", level: -13, label: "Hiding (she's near)", uses: ["hiding", "hide", "search", "near"],
+  desc: "A thin high tremolo, sparse low pizzicato taps like creaks, a pedal that wakes and a minor second when she's near.",
+  refs: "Alien: Isolation, Outlast's hiding beds, DOORS' Rush warning (the lights' hum)",
+  params: { key: P.key(6, "locrian"), len: P.len(20, 8, 40), near: P.amt("how near she is", 0.5), taps: P.amt("creaks", 0.5),
+            clock: P.pick("pulse", ["none", "col legno clock", "muted piano"]), glass: P.amt("glassy (ponticello)", 0.6) },
+  gen(t, p) {
+    const k = p.key, r = t.rng, hi = 76 + mod(k.tonic, 6), tone = p.glass > 0.3 ? "ponticello" : undefined;
+    t.beat(60);
+    t.n("trem", hi, 0, p.len, 22 + 20 * p.near, { attack: 3, tone });
+    if (p.near > 0.3) t.n("trem", hi + 1, p.len * (1 - p.near), p.len * p.near, 20 + 30 * p.near, { attack: 4, tone });
+    // the pulse drops out when she is closest (research H8): the last stretch is the player's own breathing
+    const quiet = p.len * (1 - 0.35 * p.near);
+    if (p.clock === "col legno clock") for (let s = 0.5; s < quiet; s += 1) t.n("pizz", 67 + k.tonic, s, 0.04, t.vel(54), { tone: "legno" });
+    else if (p.clock === "muted piano") for (let s = 0.5; s < quiet; s += 1) t.n("piano", 50 + k.tonic, s, 0.12, t.vel(40), { release: 0.05 });
+    if (p.near > 0.2) t.n("strings", 40 + k.tonic, p.len * 0.3, p.len * 0.7, 30 + 30 * p.near, { attack: 5, raw: true });
+    const n = Math.round(2 + p.taps * 10 + p.near * 6);
+    for (let i = 0; i < n; i++) t.n("pizz", 43 + k.tonic + r.pick([0, 1, 6, 12, 13]), r.range(1, p.len - 0.5), 0.2, t.vel(40 + 30 * p.near));
+    t.end(p.len);
+  },
+});
+
+// The chase: a fast string and piano ostinato in a dark mode, the timpani on the downbeats, the key climbing a
+// semitone every few bars. Run.
+CUE("chase", {
+  family: "horror", level: -2, label: "Chase", uses: ["chase", "run", "escape", "panic"],
+  desc: "Driving sixteenths in the strings and pizzicato over low piano octaves, timpani on the downbeats, the key climbing a semitone every four bars.",
+  refs: "Train to Busan's train chases, Kingdom's propulsive strings, The Mimic's chase loops",
+  params: { key: P.key(4, "phrygian", ["phrygian", "harmonic_minor", "aeolian"]), tempo: P.tempo(156, 120, 184), len: P.len(20, 8, 48), climb: P.amt("climb", 0.7), drums: P.amt("drums", 0.6) },
+  gen(t, p) {
+    let k = { ...p.key };
+    const spb = t.beat(p.tempo, [4, 4]), bar = 4 * spb, cell = [0, 1, 0, 3, 0, 1, 4, 3];    // degrees of a tight cell
+    for (let b = 0, s = 0; s < p.len; b++, s += bar) {
+      if (b && b % 4 === 0 && t.rng.chance(p.climb)) k = { ...k, tonic: k.tonic + 1 };
+      for (let i = 0; i < 16; i++) {
+        const m = deg(k, cell[i % 8], 60);
+        t.n(i % 2 ? "pizz" : "strings", m, s + i * spb / 4, spb / 4 * 0.9, t.vel(i % 4 === 0 ? 92 : 70), { release: 0.08 });
+      }
+      for (let i = 0; i < 4; i++) t.chord("piano", [deg(k, 0, 36), deg(k, 0, 48)], s + i * spb, spb * 0.8, t.vel(i === 0 ? 96 : 78), { raw: true });
+      t.n("timpani", deg(k, 0, 36), s, 0.6, t.vel(100), { raw: true });
+      if (p.drums > 0.3) { t.hit("taiko", s + 2 * spb, 90 * p.drums); if (b % 2 === 1) t.hit("taiko_hand", s + 3.5 * spb, 70 * p.drums); }
+      if (b % 2 === 0) t.n("horn", deg(k, 4, 48), s, bar * 1.8, t.vel(70), { attack: 0.4 });
+    }
+    t.end(p.len);
+  },
+});
+
+// The death: a descending chromatic line in octaves on the piano, slowing; the strings fade from a cluster; a last
+// low cluster and a bell, then silence.
+CUE("death", {
+  family: "horror", level: -5, label: "Death", uses: ["death", "game over", "caught", "the end"],
+  desc: "Piano octaves falling chromatically and slowing, strings fading out of a cluster, one last low piano cluster and a tubular bell.",
+  refs: "Silent Hill's game-over cues, Resident Evil's 'You died' (in spirit), Hereditary's endings",
+  params: { key: P.key(10, "chromatic"), len: P.len(8, 4, 16), bell: P.amt("bell", 0.7), strings: P.amt("strings", 0.6) },
+  gen(t, p) {
+    const top = 72 + mod(p.key.tonic, 12), L = p.len;
+    t.beat(60);
+    let s = 0, gap = 0.22, m = top;
+    while (s < L * 0.7) { t.chord("piano", [m, m - 12], s, gap * 1.4, t.vel(70 - 30 * (s / L))); s += gap; gap *= 1.12; m -= 1; }
+    if (p.strings > 0.1) for (const iv of [0, 1, 3, 6]) t.n("strings", top - 12 + iv, 0, L * 0.8, 30 + 40 * p.strings, { attack: 0.5, bend: { semis: -2, at: L * 0.3, dur: L * 0.5 } });
+    t.chord("piano", [m - 24, m - 23, m - 18, m - 12], L * 0.75, null, 70, { raw: true });
+    if (p.bell > 0.2) t.n("bells", 60 + mod(m, 12), L * 0.78, null, 50 + 50 * p.bell);
+    t.point(L * 0.75, "the last breath");
+    t.end(L + 2);
+  },
+});
+
+// Behind you: a reversed piano swell (inhaled) into a close dissonant chord very high in the strings: a whisper.
+CUE("behind_you", {
+  family: "horror", level: -10, label: "Behind you (whisper)", uses: ["behind you", "whisper", "glimpse", "presence"],
+  desc: "A piano note swelling backwards like an intake of breath into a hushed, very high cluster in the strings.",
+  refs: "Hereditary and The Ring's breathy swells; the reversed-cymbal trick",
+  params: { key: P.key(3, "chromatic"), len: P.len(4, 2, 8), height: P.amt("height", 0.7) },
+  gen(t, p) {
+    const top = 74 + Math.round(p.height * 8) + mod(p.key.tonic, 4), sw = Math.min(2, p.len * 0.5);
+    t.beat(60);
+    t.n("piano", top - 24, 0, sw, 90, { reverse: true });
+    t.n("piano", top - 17, 0, sw, 80, { reverse: true });
+    for (const iv of [0, 1, 2]) t.n("strings", top + iv, sw, p.len - sw + 1, 34, { attack: 0.2, tone: "harmonic", cents: (iv - 1) * 30 });
+    t.n("trem", top + 6, sw + 0.1, p.len - sw, 28, { attack: 0.5, tone: "ponticello" });
+    t.point(sw, "the whisper");
+    t.end(p.len + 1);
+  },
+});
+
+// The turn: a warm major chord whose top slides down a semitone into minor; the smile dropping.
+CUE("the_turn", {
+  family: "horror", level: -5, label: "The turn (smile drops)", uses: ["the turn", "reveal", "yandere", "her mask slips"],
+  desc: "A warm major chord on piano and strings; the strings' third slides down into minor and a tritone creeps in under it as the piano goes quiet.",
+  refs: "Danganronpa and Squid Game's sweetness turned; the Hitchcock chord bend",
+  params: { key: P.key(7, "ionian"), len: P.len(6, 3, 12), bend: P.amt("how far it falls", 0.6) },
+  gen(t, p) {
+    const k = p.key, [r, th, fi] = triad(k, 0, 60), L = p.len, at = L * 0.35;
+    t.beat(70);
+    t.chord("piano", [r - 12, r, th, fi, r + 12], 0, at, 64, { roll: 0.03 });
+    t.n("strings", r, 0, L, 54, { attack: 0.6 }); t.n("strings", fi, 0, L, 50, { attack: 0.6 });
+    t.n("strings", th + 12, 0, L, 54, { attack: 0.6, bend: { semis: -1, at, dur: 1.4 } });                 // the third falls: minor
+    if (p.bend > 0.5) t.n("strings", fi + 12, at + 0.4, L - at, 46, { attack: 0.3, bend: { semis: -1, at: 0.2, dur: 1.6 } });  // the fifth too: a tritone
+    t.n("strings", r - 12 + 6, at + 1, L - at, 30 + 30 * p.bend, { attack: 1.5 });
+    t.point(at, "the smile drops");
+    t.end(L + 1);
+  },
+});
+
+// Creaking house: col-legno-like pizzicato taps, low tremolo swelling in and out, the house settling around you.
+CUE("house_creaks", {
+  family: "horror", level: -14, label: "The house settles", uses: ["explore", "dread", "empty house", "night"],
+  desc: "Irregular low pizzicato taps like wood settling, low tremolo swelling in and out, a single piano note left hanging.",
+  refs: "Ju-On and The Grudge's creaks, Paranormal Activity's sound-design scoring",
+  params: { key: P.key(8, "locrian"), len: P.len(18, 8, 36), taps: P.amt("taps", 0.5), swells: P.amt("swells", 0.5) },
+  gen(t, p) {
+    const k = p.key, r = t.rng, low = 43 + mod(k.tonic, 7);
+    t.beat(60);
+    const n = Math.round(4 + p.taps * 16);
+    for (let i = 0; i < n; i++) { const at = r.range(0, p.len), m = low + r.pick([0, 1, 5, 6, 11]); t.n("pizz", m, at, 0.15, t.vel(45)); if (r.chance(0.3)) t.n("pizz", m + 1, at + r.range(0.05, 0.15), 0.12, t.vel(35)); }
+    const sw = Math.round(1 + p.swells * 4);
+    for (let i = 0; i < sw; i++) { const at = r.range(0, p.len - 3), d = r.range(2.5, 5); t.n("trem", low + r.pick([0, 1, 12]), at, d, 30 + 25 * p.swells, { attack: d * 0.6 }); }
+    t.n("piano", deg(k, 4, 72), r.range(p.len * 0.4, p.len * 0.8), null, t.vel(42));
+    t.end(p.len);
+  },
+});
+
+// Found you: the hider is discovered. Shorter than the sting: a falling minor second (or tritone) in the low piano
+// with a snapped pizzicato, then silence, or a lead into the chase. Gentler or sinister.
+CUE("found_you", {
+  family: "horror", level: -2, label: "Found you", uses: ["found", "hiding", "caught", "hide and seek", "peekaboo"],
+  desc: "Two low piano notes falling a minor second (or a tritone) with a snapped pizzicato and a rim click, then silence or a lead into a chase.",
+  refs: "Jaws' semitone, the J-horror fillip (Ringu, Ju-On), Fatal Frame's jarring bolt after the slow creep",
+  params: { key: P.key(4, "phrygian"), interval: P.pick("interval", ["minor 2nd", "tritone"]), after: P.pick("after", ["silence", "into the chase", "her giggle (glock)"]), weight: P.amt("weight", 0.6) },
+  gen(t, p) {
+    const root = 36 + p.key.tonic, drop = p.interval === "tritone" ? 6 : 1, v = 70 + 50 * p.weight;
+    t.beat(100, [4, 4]);
+    t.n("piano", root + drop, 0, 0.5, v, { raw: true }); t.n("piano", root + drop + 12, 0, 0.5, v - 20, { raw: true });
+    t.n("pizz", root + drop + 24, 0, 0.2, 120); t.hit("rim", 0, 110);
+    t.n("piano", root, 0.42, null, v + 6, { raw: true }); t.n("piano", root + 12, 0.42, null, v - 14, { raw: true });
+    t.n("pizz", root + 24, 0.42, 0.2, 124); t.hit("rim", 0.42, 120);
+    t.point(0.42, "found");
+    if (p.after === "into the chase") { [0, 1, 0, 1, 0, 1, 3, 1].forEach((d, i) => t.n("trem", root + 24 + d, 1.0 + i * 0.18, 0.17, 70 + i * 6)); t.hit("bass_drum", 2.44, 110); t.end(2.6); }
+    else if (p.after === "her giggle (glock)") { [12, 10, 12, 7].forEach((d, i) => t.n("glock", root + 60 + d, 1.3 + i * 0.13, null, 44 - i * 4)); t.end(2.6); }
+    else t.end(2.2);
+  },
+});
+
+// The lull: music falls away to near nothing for a while (never the same length twice), then the outcome: the
+// scare, nothing at all (a false lull), or a harmless sound (the bus hiss: a cat, a pipe). Don't let silence always
+// end in a bang.
+CUE("false_scare", {
+  family: "horror", level: -3, label: "The lull (scare or not)", uses: ["lull", "silence", "false scare", "before the scare", "fake out"],
+  desc: "A low drone thins to almost nothing, holds for an unpredictable stretch, then: the scare, nothing, or a harmless knock (a false scare).",
+  refs: "Cat People's bus (the Lewton bus), Ringu's ma, the Conjuring's untelegraphed scares",
+  params: { key: P.key(4, "locrian", ["locrian", "phrygian"]), len: P.len(10, 5, 20), outcome: P.pick("outcome", ["scare", "nothing", "harmless knock"]), hold: P.amt("how long the silence holds", 0.5) },
+  gen(t, p) {
+    const root = 28 + p.key.tonic + (p.key.tonic > 7 ? 0 : 12), r = t.rng;
+    t.beat(60, [4, 4]);
+    const fade = p.len * 0.35, at = fade + 0.6 + p.hold * r.range(1, 4);
+    t.n("strings", root + 12, 0, fade, 40, { attack: 1, raw: true, release: 1.2 }); t.n("strings", root + 13, 0.5, fade - 0.5, 28, { attack: 1.5, release: 1.2 });
+    t.mark(fade, "silence");
+    if (p.outcome === "scare") { stingAt(t, root, at, 1); t.end(at + 3); }
+    else if (p.outcome === "harmless knock") { t.hit("log_lo", at, 70); t.hit("log_lo", at + 0.22, 50); t.point(at, "just the pipes"); t.n("piano", root + 36, at + 1.6, null, 26); t.end(at + 3); }
+    else { t.point(at, "nothing comes"); t.n("strings", root + 12, at + 0.8, 3, 22, { attack: 2, raw: true }); t.end(at + 4); }
+  },
+});
+
+// The rite: she shows you the shrine. Low drums and timpani in a pattern that speeds up, a pizzicato ostinato, the
+// horn calling on the flat second, a tremolo rising under it all.
+CUE("ritual", {
+  family: "horror", level: -3, label: "Ritual (the shrine)", uses: ["ritual", "shrine", "possession", "the reveal", "cult"],
+  desc: "Low toms and timpani in a pattern that speeds up, a pizzicato ostinato, the horn calling on the flat second, a tremolo rising under it.",
+  refs: "The Wailing's shaman rite (Jang Young-gyu, Dalpalan), Kingdom's drums, Midsommar's ritual builds",
+  params: { key: P.key(2, "phrygian", ["phrygian", "phrygian_dominant"]), from: P.tempo(70, 50, 100), to: P.tempo(140, 90, 180), len: P.len(20, 10, 40), horn: P.amt("horn calls", 0.6) },
+  gen(t, p) {
+    const k = p.key, root = 38 + k.tonic, r = t.rng;
+    t.beat(p.from, [4, 4]);
+    let at = 0, i = 0;
+    while (at < p.len) {
+      const spb = 60 / lerp(p.from, p.to, Math.pow(at / p.len, 1.4)), acc = i % 4 === 0;
+      t.hit(acc ? "taiko" : r.chance(0.5) ? "tenor" : "taiko_hand", at, acc ? 108 : 70 + r.int(0, 20));
+      if (i % 2 === 0) t.n("timpani", root - 2 + (i % 8 === 4 ? 1 : 0), at, 0.4, acc ? 90 : 66);
+      t.n("pizz", root + 12 + [0, 1, 0, 3, 0, 1, 5, 1][i % 8], at, 0.2, t.vel(66));
+      if (p.horn > 0.2 && i % 16 === 8) { t.n("horn", root + 12 + 1, at, spb * 3, 60 + 40 * p.horn * at / p.len); t.n("horn", root + 12, at + spb * 3, spb * 2, 56 + 30 * p.horn); }
+      at += spb; i++;
+    }
+    for (let s = 0; s < p.len; s += 5) t.n("trem", root + 12 + Math.floor(s / 5), s, 5.2, 30 + 50 * s / p.len, { attack: 2 });
+    t.hit("gong", p.len, 120); t.n("piano", root - 12, p.len, null, 110, { raw: true }); t.n("piano", root - 11, p.len, null, 96, { raw: true });
+    t.point(p.len, "the rite ends");
+    t.end(p.len + 3);
+  },
+});
+
+// The endless rise: a Shepard-like climb (research §2.7: Dunkirk's three rising scales). String voices start low
+// and glide up an octave, fading in at the bottom and out at the top, a new one every third of a glide, so the pitch
+// seems to climb forever; ticks speed up under it and a timpani roll swells. It ends on a cut, a sting or nothing.
+CUE("endless_rise", {
+  family: "horror", level: -4, label: "Endless rise (Shepard)", uses: ["tension", "rising", "approach", "she's coming", "build"],
+  desc: "String voices gliding up an octave, staggered and crossfaded so the pitch seems to climb forever; ticks speeding up under it; then a cut, a sting or nothing.",
+  refs: "Dunkirk (Zimmer's Shepard tone), the Shepard–Risset glissando; Penderecki for the strings",
+  params: { key: P.key(2, "phrygian"), len: P.len(12, 6, 30), glide: { kind: "num", def: 4, min: 2, max: 8, step: 0.5, label: "one glide (s)" }, end: P.pick("end", ["cut", "sting", "nothing"]), ticks: P.amt("ticks", 0.6) },
+  gen(t, p) {
+    const k = p.key, base = 50 + mod(k.tonic, 12), T = p.glide, L = p.len;
+    t.beat(60);
+    for (let s = 0, i = 0; s < L - T * 0.3; s += T / 3, i++) {
+      const dur = Math.min(T, L - s);
+      for (const [inst, oct, v] of [["strings", 0, 46], ["trem", 12, 34], ["strings", 24, 26]]) {
+        t.n(inst, base + oct, s, dur * 0.72, v + 20 * s / L, { raw: true, attack: dur * 0.35, release: dur * 0.3, bend: { semis: 12 * dur / T, at: 0, dur }, cents: (i % 3 - 1) * 6 });
+      }
+    }
+    if (p.ticks > 0.1) { let at = 0.3; while (at < L) { t.n("pizz", base + 12, at, 0.05, t.vel(40 + 40 * at / L), { tone: "legno" }); at += lerp(0.6, 0.09, Math.pow(at / L, 0.8)) / (0.5 + p.ticks); } }
+    for (let s = L * 0.4; s < L; s += 0.11) t.n("timpani", 38 + mod(k.tonic, 12), s, 0.15, 20 + 70 * ((s - L * 0.4) / (L * 0.6)) ** 2, { raw: true });
+    if (p.end === "sting") stingAt(t, base - 12, L, 1);
+    else { t.point(L, p.end === "cut" ? "the cut" : "it just stops"); if (p.end === "cut") t.tapeStop(L, 0.05); }
+    t.end(L + (p.end === "sting" ? 3 : 0.5));
+  },
+});

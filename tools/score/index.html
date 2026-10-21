@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Score room</title>
+<link rel="stylesheet" href="score.css">
+</head>
+<body>
+<header>
+  <h1>SCORE ROOM</h1>
+  <label>palette</label><select id="scope" title="Where the favourites live: the studio's palette, or a game's own"></select>
+  <label title="The game's theme: the tune the theme-quoting cues play (0: each cue's own tune)">theme</label><input id="motif" type="number" min="0" max="9999" step="1" style="width:64px"><button id="motifdice" title="another theme">&#127922;</button><button id="motifplay" title="hear the theme alone">&#9654;</button>
+  <label>played in</label><select id="space" title="The room the music is heard in (the hall the reverb traces)"></select>
+  <button id="exportPal" title="Download the palette as JSON">Export</button>
+  <button id="importPal" title="Merge a palette JSON file into this one">Import</button>
+  <input type="file" id="importFile" accept=".json,application/json" hidden>
+  <span id="loading"></span>
+  <span id="status">starting...</span>
+</header>
+<main>
+  <section id="lib" class="col">
+    <input id="filter" placeholder="filter: chase, cute, her room..." autocomplete="off">
+    <div id="cuelist"></div>
+  </section>
+  <section id="work" class="col">
+    <div id="cuehead"></div>
+    <div id="params"></div>
+    <div class="bar">
+      <button id="play" class="primary" title="Play these settings (Space)">&#9654; Play</button>
+      <button id="stop" title="Stop (S or Esc)">&#9632; Stop</button>
+      <label>seed</label><input id="seed" type="number" min="0" step="1">
+      <button id="reseed" title="A new seed: the same settings, other notes">&#127922;</button>
+      <button id="keep" title="Keep these settings and seed in the palette">&#9733; Keep</button>
+      <button id="reset" title="Back to the cue's defaults">Defaults</button>
+      <span class="sep"></span>
+      <button id="vary" class="primary" title="Write variations around these settings (V)">Make variations</button>
+      <input id="count" type="number" min="2" max="24" value="8" title="How many">
+      <button id="audition" title="Play every variation in turn (each up to the seconds given), so you only listen and keep (A)">Audition all</button>
+      <input id="audsecs" type="number" min="3" max="60" value="12" title="seconds of each">
+      <label title="How far the variations stray from the settings: a little (new notes, nudged numbers) to anything in range">spread</label>
+      <input id="spread" type="range" min="0.05" max="1" step="0.05" value="0.35"><span id="spreadv" class="hint"></span>
+    </div>
+    <div class="hint">Keys: <kbd>1</kbd>-<kbd>9</kbd> play a variation, <kbd>Shift</kbd>+number keeps it, <kbd>Space</kbd> play the settings, <kbd>S</kbd> stop, <kbd>V</kbd> new variations, <kbd>A</kbd> audition them all. Click a roll to play from there.</div>
+    <div id="cards"></div>
+  </section>
+  <section id="pal" class="col">
+    <h2>Favourites <span id="favcount" class="hint"></span></h2>
+    <div class="bar"><input id="favfilter" placeholder="filter favourites" style="flex:1"><select id="favsort"><option value="new">newest</option><option value="stars">stars</option><option value="cue">by cue</option></select></div>
+    <div id="favs"></div>
+    <h2>Sequence</h2>
+    <div class="hint">Chain favourites the way a scene plays them (sneak, the fall, flustered). The number is the gap before each (s; negative overlaps).</div>
+    <div id="seq"></div>
+    <canvas id="seqroll" width="680" height="140"></canvas>
+    <div class="bar">
+      <button id="seqplay">&#9654; Play sequence</button>
+      <input id="seqname" placeholder="sequence name" style="flex:1">
+      <button id="seqkeep" title="Keep the sequence in the palette">Keep</button>
+      <button id="seqclear">Clear</button>
+    </div>
+    <div id="seqs"></div>
+    <h2>Score a scene</h2>
+    <div class="hint">What the character does, one action a line: the time (s) and what happens. Your favourites are searched first, then the cues; a cue's hit lands on its time (the thud on the landing). End a line with <kbd>@ring</kbd> to let it overlap or <kbd>@scratch</kbd> for a tape stop into the next.</div>
+    <textarea id="scene" rows="6" spellcheck="false">0 sneak
+4.2 trip
+5.4 blush
+9 slow motion romance @scratch
+14 awkward</textarea>
+    <div class="bar">
+      <button id="scenego" class="primary">Score it</button>
+      <button id="sceneplay">&#9654;</button>
+      <button id="scenebake" title="render WAV and MIDI into the palette's Music/renders/">Bake</button>
+      <input id="scenename" placeholder="scene name" style="flex:1">
+      <button id="scenekeep" title="Keep the scene in the palette">Keep</button>
+    </div>
+    <canvas id="sceneroll" width="680" height="140"></canvas>
+    <div id="scenelist" class="hint"></div>
+    <div id="scenes"></div>
+  </section>
+</main>
+<script src="js/00-util.js"></script>
+<script src="js/10-theory.js"></script>
+<script src="js/20-audio.js"></script>
+<script src="js/30-sampler.js"></script>
+<script src="js/40-midi.js"></script>
+<script src="js/50-kit.js"></script>
+<script src="js/60-horror.js"></script>
+<script src="js/62-kdrama.js"></script>
+<script src="js/64-crossover.js"></script>
+<script src="js/70-player.js"></script>
+<script src="js/90-ui.js"></script>
+</body>
+</html>

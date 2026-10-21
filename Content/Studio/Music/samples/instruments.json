@@ -1,0 +1,5672 @@
+{
+ "piano": {
+  "name": "Meta Piano (upright)",
+  "kind": "pitched",
+  "credit": "Meta Open Sound (github.com/facebookincubator/Meta-open-sound), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    31
+   ],
+   [
+    32,
+    63
+   ],
+   [
+    64,
+    95
+   ],
+   [
+    96,
+    127
+   ]
+  ],
+  "release": 0.35,
+  "gain_db": 0,
+  "sustain": false,
+  "range": [
+   21,
+   108
+  ],
+  "zones": [
+   {
+    "note": 21,
+    "layer": 0,
+    "file": "piano/A0_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 21,
+    "layer": 1,
+    "file": "piano/A0_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 21,
+    "layer": 2,
+    "file": "piano/A0_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 21,
+    "layer": 3,
+    "file": "piano/A0_v4.ogg",
+    "tune": 0.0,
+    "len": 7.83
+   },
+   {
+    "note": 22,
+    "layer": 0,
+    "file": "piano/As0_v1.ogg",
+    "tune": 0.0,
+    "len": 7.56
+   },
+   {
+    "note": 22,
+    "layer": 1,
+    "file": "piano/As0_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 22,
+    "layer": 2,
+    "file": "piano/As0_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 22,
+    "layer": 3,
+    "file": "piano/As0_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 23,
+    "layer": 0,
+    "file": "piano/B0_v1.ogg",
+    "tune": 0.0,
+    "len": 8.11
+   },
+   {
+    "note": 23,
+    "layer": 1,
+    "file": "piano/B0_v2.ogg",
+    "tune": 0.0,
+    "len": 8.41
+   },
+   {
+    "note": 23,
+    "layer": 2,
+    "file": "piano/B0_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 23,
+    "layer": 3,
+    "file": "piano/B0_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 24,
+    "layer": 0,
+    "file": "piano/C1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.01
+   },
+   {
+    "note": 24,
+    "layer": 1,
+    "file": "piano/C1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 24,
+    "layer": 2,
+    "file": "piano/C1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 24,
+    "layer": 3,
+    "file": "piano/C1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 25,
+    "layer": 0,
+    "file": "piano/Cs1_v1.ogg",
+    "tune": 0.0,
+    "len": 7.95
+   },
+   {
+    "note": 25,
+    "layer": 1,
+    "file": "piano/Cs1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 25,
+    "layer": 2,
+    "file": "piano/Cs1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 25,
+    "layer": 3,
+    "file": "piano/Cs1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 26,
+    "layer": 0,
+    "file": "piano/D1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 26,
+    "layer": 1,
+    "file": "piano/D1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 26,
+    "layer": 2,
+    "file": "piano/D1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 26,
+    "layer": 3,
+    "file": "piano/D1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 27,
+    "layer": 0,
+    "file": "piano/Ds1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 27,
+    "layer": 1,
+    "file": "piano/Ds1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 27,
+    "layer": 2,
+    "file": "piano/Ds1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 27,
+    "layer": 3,
+    "file": "piano/Ds1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 28,
+    "layer": 0,
+    "file": "piano/E1_v1.ogg",
+    "tune": 0.0,
+    "len": 5.72
+   },
+   {
+    "note": 28,
+    "layer": 1,
+    "file": "piano/E1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 28,
+    "layer": 2,
+    "file": "piano/E1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 28,
+    "layer": 3,
+    "file": "piano/E1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 29,
+    "layer": 0,
+    "file": "piano/F1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 29,
+    "layer": 1,
+    "file": "piano/F1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 29,
+    "layer": 2,
+    "file": "piano/F1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 29,
+    "layer": 3,
+    "file": "piano/F1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 30,
+    "layer": 0,
+    "file": "piano/Fs1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 30,
+    "layer": 1,
+    "file": "piano/Fs1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 30,
+    "layer": 2,
+    "file": "piano/Fs1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 30,
+    "layer": 3,
+    "file": "piano/Fs1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 31,
+    "layer": 0,
+    "file": "piano/G1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 31,
+    "layer": 1,
+    "file": "piano/G1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 31,
+    "layer": 2,
+    "file": "piano/G1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 31,
+    "layer": 3,
+    "file": "piano/G1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 32,
+    "layer": 0,
+    "file": "piano/Gs1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 32,
+    "layer": 1,
+    "file": "piano/Gs1_v2.ogg",
+    "tune": 0.0,
+    "len": 4.94
+   },
+   {
+    "note": 32,
+    "layer": 2,
+    "file": "piano/Gs1_v3.ogg",
+    "tune": 0.0,
+    "len": 6.79
+   },
+   {
+    "note": 32,
+    "layer": 3,
+    "file": "piano/Gs1_v4.ogg",
+    "tune": 0.0,
+    "len": 7.44
+   },
+   {
+    "note": 33,
+    "layer": 0,
+    "file": "piano/A1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 33,
+    "layer": 1,
+    "file": "piano/A1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 33,
+    "layer": 2,
+    "file": "piano/A1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 33,
+    "layer": 3,
+    "file": "piano/A1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "piano/As1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 34,
+    "layer": 1,
+    "file": "piano/As1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 34,
+    "layer": 2,
+    "file": "piano/As1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 34,
+    "layer": 3,
+    "file": "piano/As1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 35,
+    "layer": 0,
+    "file": "piano/B1_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 35,
+    "layer": 1,
+    "file": "piano/B1_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 35,
+    "layer": 2,
+    "file": "piano/B1_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 35,
+    "layer": 3,
+    "file": "piano/B1_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "piano/C2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "piano/C2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 36,
+    "layer": 2,
+    "file": "piano/C2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 36,
+    "layer": 3,
+    "file": "piano/C2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 37,
+    "layer": 0,
+    "file": "piano/Cs2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 37,
+    "layer": 1,
+    "file": "piano/Cs2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 37,
+    "layer": 2,
+    "file": "piano/Cs2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 37,
+    "layer": 3,
+    "file": "piano/Cs2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 38,
+    "layer": 0,
+    "file": "piano/D2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.32
+   },
+   {
+    "note": 38,
+    "layer": 1,
+    "file": "piano/D2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 38,
+    "layer": 2,
+    "file": "piano/D2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 38,
+    "layer": 3,
+    "file": "piano/D2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 39,
+    "layer": 0,
+    "file": "piano/Ds2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 39,
+    "layer": 1,
+    "file": "piano/Ds2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 39,
+    "layer": 2,
+    "file": "piano/Ds2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 39,
+    "layer": 3,
+    "file": "piano/Ds2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "piano/E2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "piano/E2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 40,
+    "layer": 2,
+    "file": "piano/E2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 40,
+    "layer": 3,
+    "file": "piano/E2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "piano/F2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 41,
+    "layer": 1,
+    "file": "piano/F2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 41,
+    "layer": 2,
+    "file": "piano/F2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 41,
+    "layer": 3,
+    "file": "piano/F2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "piano/Fs2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 42,
+    "layer": 1,
+    "file": "piano/Fs2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 42,
+    "layer": 2,
+    "file": "piano/Fs2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 42,
+    "layer": 3,
+    "file": "piano/Fs2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "piano/G2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "piano/G2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 43,
+    "layer": 2,
+    "file": "piano/G2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 43,
+    "layer": 3,
+    "file": "piano/G2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "piano/Gs2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 44,
+    "layer": 1,
+    "file": "piano/Gs2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 44,
+    "layer": 2,
+    "file": "piano/Gs2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 44,
+    "layer": 3,
+    "file": "piano/Gs2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "piano/A2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 45,
+    "layer": 1,
+    "file": "piano/A2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 45,
+    "layer": 2,
+    "file": "piano/A2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 45,
+    "layer": 3,
+    "file": "piano/A2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "piano/As2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.34
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "piano/As2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 46,
+    "layer": 2,
+    "file": "piano/As2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 46,
+    "layer": 3,
+    "file": "piano/As2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "piano/B2_v1.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 47,
+    "layer": 1,
+    "file": "piano/B2_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 47,
+    "layer": 2,
+    "file": "piano/B2_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 47,
+    "layer": 3,
+    "file": "piano/B2_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "piano/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 8.37
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "piano/C3_v2.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 48,
+    "layer": 2,
+    "file": "piano/C3_v3.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 48,
+    "layer": 3,
+    "file": "piano/C3_v4.ogg",
+    "tune": 0.0,
+    "len": 8.5
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "piano/Cs3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 49,
+    "layer": 1,
+    "file": "piano/Cs3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 49,
+    "layer": 2,
+    "file": "piano/Cs3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 49,
+    "layer": 3,
+    "file": "piano/Cs3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "piano/D3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "piano/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 2,
+    "file": "piano/D3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 3,
+    "file": "piano/D3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 51,
+    "layer": 0,
+    "file": "piano/Ds3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 51,
+    "layer": 1,
+    "file": "piano/Ds3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 51,
+    "layer": 2,
+    "file": "piano/Ds3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 51,
+    "layer": 3,
+    "file": "piano/Ds3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "piano/E3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "piano/E3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 2,
+    "file": "piano/E3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 3,
+    "file": "piano/E3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "piano/F3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "piano/F3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 2,
+    "file": "piano/F3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 3,
+    "file": "piano/F3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 54,
+    "layer": 0,
+    "file": "piano/Fs3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 54,
+    "layer": 1,
+    "file": "piano/Fs3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 54,
+    "layer": 2,
+    "file": "piano/Fs3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 54,
+    "layer": 3,
+    "file": "piano/Fs3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "piano/G3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "piano/G3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 2,
+    "file": "piano/G3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 3,
+    "file": "piano/G3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "piano/Gs3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 56,
+    "layer": 1,
+    "file": "piano/Gs3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 56,
+    "layer": 2,
+    "file": "piano/Gs3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 56,
+    "layer": 3,
+    "file": "piano/Gs3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "piano/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 5.62
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "piano/A3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 2,
+    "file": "piano/A3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 3,
+    "file": "piano/A3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "piano/As3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "piano/As3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 58,
+    "layer": 2,
+    "file": "piano/As3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 58,
+    "layer": 3,
+    "file": "piano/As3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "piano/B3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "piano/B3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 2,
+    "file": "piano/B3_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 3,
+    "file": "piano/B3_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "piano/C4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.58
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "piano/C4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 2,
+    "file": "piano/C4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 3,
+    "file": "piano/C4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 61,
+    "layer": 0,
+    "file": "piano/Cs4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.32
+   },
+   {
+    "note": 61,
+    "layer": 1,
+    "file": "piano/Cs4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 61,
+    "layer": 2,
+    "file": "piano/Cs4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 61,
+    "layer": 3,
+    "file": "piano/Cs4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "piano/D4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "piano/D4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 2,
+    "file": "piano/D4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 3,
+    "file": "piano/D4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "piano/Ds4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 63,
+    "layer": 1,
+    "file": "piano/Ds4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 63,
+    "layer": 2,
+    "file": "piano/Ds4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 63,
+    "layer": 3,
+    "file": "piano/Ds4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "piano/E4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "piano/E4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 2,
+    "file": "piano/E4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 3,
+    "file": "piano/E4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "piano/F4_v1.ogg",
+    "tune": 0.0,
+    "len": 4.34
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "piano/F4_v2.ogg",
+    "tune": 0.0,
+    "len": 5.46
+   },
+   {
+    "note": 65,
+    "layer": 2,
+    "file": "piano/F4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 3,
+    "file": "piano/F4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "piano/Fs4_v1.ogg",
+    "tune": 0.0,
+    "len": 4.71
+   },
+   {
+    "note": 66,
+    "layer": 1,
+    "file": "piano/Fs4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 2,
+    "file": "piano/Fs4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 3,
+    "file": "piano/Fs4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "piano/G4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "piano/G4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 2,
+    "file": "piano/G4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 3,
+    "file": "piano/G4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "piano/Gs4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 68,
+    "layer": 1,
+    "file": "piano/Gs4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 68,
+    "layer": 2,
+    "file": "piano/Gs4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 68,
+    "layer": 3,
+    "file": "piano/Gs4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "piano/A4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "piano/A4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.8
+   },
+   {
+    "note": 69,
+    "layer": 2,
+    "file": "piano/A4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 3,
+    "file": "piano/A4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 70,
+    "layer": 0,
+    "file": "piano/As4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 70,
+    "layer": 1,
+    "file": "piano/As4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 70,
+    "layer": 2,
+    "file": "piano/As4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 70,
+    "layer": 3,
+    "file": "piano/As4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "piano/B4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 1,
+    "file": "piano/B4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 2,
+    "file": "piano/B4_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 3,
+    "file": "piano/B4_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "piano/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "piano/C5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 2,
+    "file": "piano/C5_v3.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 3,
+    "file": "piano/C5_v4.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 73,
+    "layer": 0,
+    "file": "piano/Cs5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 73,
+    "layer": 1,
+    "file": "piano/Cs5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 73,
+    "layer": 2,
+    "file": "piano/Cs5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 73,
+    "layer": 3,
+    "file": "piano/Cs5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "piano/D5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "piano/D5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 74,
+    "layer": 2,
+    "file": "piano/D5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 74,
+    "layer": 3,
+    "file": "piano/D5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 75,
+    "layer": 0,
+    "file": "piano/Ds5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 75,
+    "layer": 1,
+    "file": "piano/Ds5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 75,
+    "layer": 2,
+    "file": "piano/Ds5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 75,
+    "layer": 3,
+    "file": "piano/Ds5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "piano/E5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "piano/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 76,
+    "layer": 2,
+    "file": "piano/E5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 76,
+    "layer": 3,
+    "file": "piano/E5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "piano/F5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "piano/F5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 77,
+    "layer": 2,
+    "file": "piano/F5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 77,
+    "layer": 3,
+    "file": "piano/F5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "piano/Fs5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 78,
+    "layer": 1,
+    "file": "piano/Fs5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 78,
+    "layer": 2,
+    "file": "piano/Fs5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 78,
+    "layer": 3,
+    "file": "piano/Fs5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "piano/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.82
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "piano/G5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 79,
+    "layer": 2,
+    "file": "piano/G5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 79,
+    "layer": 3,
+    "file": "piano/G5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 80,
+    "layer": 0,
+    "file": "piano/Gs5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 80,
+    "layer": 1,
+    "file": "piano/Gs5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 80,
+    "layer": 2,
+    "file": "piano/Gs5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 80,
+    "layer": 3,
+    "file": "piano/Gs5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "piano/A5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "piano/A5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 81,
+    "layer": 2,
+    "file": "piano/A5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 81,
+    "layer": 3,
+    "file": "piano/A5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "piano/As5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.88
+   },
+   {
+    "note": 82,
+    "layer": 1,
+    "file": "piano/As5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 82,
+    "layer": 2,
+    "file": "piano/As5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 82,
+    "layer": 3,
+    "file": "piano/As5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "piano/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.11
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "piano/B5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 83,
+    "layer": 2,
+    "file": "piano/B5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 83,
+    "layer": 3,
+    "file": "piano/B5_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "piano/C6_v1.ogg",
+    "tune": 0.0,
+    "len": 4.19
+   },
+   {
+    "note": 84,
+    "layer": 1,
+    "file": "piano/C6_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 84,
+    "layer": 2,
+    "file": "piano/C6_v3.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 84,
+    "layer": 3,
+    "file": "piano/C6_v4.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 85,
+    "layer": 0,
+    "file": "piano/Cs6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 85,
+    "layer": 1,
+    "file": "piano/Cs6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 85,
+    "layer": 2,
+    "file": "piano/Cs6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 85,
+    "layer": 3,
+    "file": "piano/Cs6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "piano/D6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.47
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "piano/D6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 86,
+    "layer": 2,
+    "file": "piano/D6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 86,
+    "layer": 3,
+    "file": "piano/D6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 87,
+    "layer": 0,
+    "file": "piano/Ds6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.15
+   },
+   {
+    "note": 87,
+    "layer": 1,
+    "file": "piano/Ds6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 87,
+    "layer": 2,
+    "file": "piano/Ds6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 87,
+    "layer": 3,
+    "file": "piano/Ds6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "piano/E6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "piano/E6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 88,
+    "layer": 2,
+    "file": "piano/E6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 88,
+    "layer": 3,
+    "file": "piano/E6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 89,
+    "layer": 0,
+    "file": "piano/F6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 89,
+    "layer": 1,
+    "file": "piano/F6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 89,
+    "layer": 2,
+    "file": "piano/F6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 89,
+    "layer": 3,
+    "file": "piano/F6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 90,
+    "layer": 0,
+    "file": "piano/Fs6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 90,
+    "layer": 1,
+    "file": "piano/Fs6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 90,
+    "layer": 2,
+    "file": "piano/Fs6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 90,
+    "layer": 3,
+    "file": "piano/Fs6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 91,
+    "layer": 0,
+    "file": "piano/G6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.41
+   },
+   {
+    "note": 91,
+    "layer": 1,
+    "file": "piano/G6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 91,
+    "layer": 2,
+    "file": "piano/G6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.15
+   },
+   {
+    "note": 91,
+    "layer": 3,
+    "file": "piano/G6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.24
+   },
+   {
+    "note": 92,
+    "layer": 0,
+    "file": "piano/Gs6_v1.ogg",
+    "tune": 0.0,
+    "len": 2.69
+   },
+   {
+    "note": 92,
+    "layer": 1,
+    "file": "piano/Gs6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 92,
+    "layer": 2,
+    "file": "piano/Gs6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 92,
+    "layer": 3,
+    "file": "piano/Gs6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 93,
+    "layer": 0,
+    "file": "piano/A6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 93,
+    "layer": 1,
+    "file": "piano/A6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 93,
+    "layer": 2,
+    "file": "piano/A6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 93,
+    "layer": 3,
+    "file": "piano/A6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 94,
+    "layer": 0,
+    "file": "piano/As6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 94,
+    "layer": 1,
+    "file": "piano/As6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 94,
+    "layer": 2,
+    "file": "piano/As6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 94,
+    "layer": 3,
+    "file": "piano/As6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 95,
+    "layer": 0,
+    "file": "piano/B6_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 95,
+    "layer": 1,
+    "file": "piano/B6_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 95,
+    "layer": 2,
+    "file": "piano/B6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 95,
+    "layer": 3,
+    "file": "piano/B6_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "piano/C7_v1.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 96,
+    "layer": 1,
+    "file": "piano/C7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 96,
+    "layer": 2,
+    "file": "piano/C7_v3.ogg",
+    "tune": 0.0,
+    "len": 2.85
+   },
+   {
+    "note": 96,
+    "layer": 3,
+    "file": "piano/C7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 97,
+    "layer": 0,
+    "file": "piano/Cs7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.72
+   },
+   {
+    "note": 97,
+    "layer": 1,
+    "file": "piano/Cs7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.27
+   },
+   {
+    "note": 97,
+    "layer": 2,
+    "file": "piano/Cs7_v3.ogg",
+    "tune": 0.0,
+    "len": 3.41
+   },
+   {
+    "note": 97,
+    "layer": 3,
+    "file": "piano/Cs7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 98,
+    "layer": 0,
+    "file": "piano/D7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.58
+   },
+   {
+    "note": 98,
+    "layer": 1,
+    "file": "piano/D7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.15
+   },
+   {
+    "note": 98,
+    "layer": 2,
+    "file": "piano/D7_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 98,
+    "layer": 3,
+    "file": "piano/D7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.43
+   },
+   {
+    "note": 99,
+    "layer": 0,
+    "file": "piano/Ds7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.84
+   },
+   {
+    "note": 99,
+    "layer": 1,
+    "file": "piano/Ds7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.47
+   },
+   {
+    "note": 99,
+    "layer": 2,
+    "file": "piano/Ds7_v3.ogg",
+    "tune": 0.0,
+    "len": 3.42
+   },
+   {
+    "note": 99,
+    "layer": 3,
+    "file": "piano/Ds7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 100,
+    "layer": 0,
+    "file": "piano/E7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.84
+   },
+   {
+    "note": 100,
+    "layer": 1,
+    "file": "piano/E7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 100,
+    "layer": 2,
+    "file": "piano/E7_v3.ogg",
+    "tune": 0.0,
+    "len": 3.16
+   },
+   {
+    "note": 100,
+    "layer": 3,
+    "file": "piano/E7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 101,
+    "layer": 0,
+    "file": "piano/F7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.87
+   },
+   {
+    "note": 101,
+    "layer": 1,
+    "file": "piano/F7_v2.ogg",
+    "tune": 0.0,
+    "len": 2.92
+   },
+   {
+    "note": 101,
+    "layer": 2,
+    "file": "piano/F7_v3.ogg",
+    "tune": 0.0,
+    "len": 2.95
+   },
+   {
+    "note": 101,
+    "layer": 3,
+    "file": "piano/F7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 102,
+    "layer": 0,
+    "file": "piano/Fs7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.58
+   },
+   {
+    "note": 102,
+    "layer": 1,
+    "file": "piano/Fs7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.08
+   },
+   {
+    "note": 102,
+    "layer": 2,
+    "file": "piano/Fs7_v3.ogg",
+    "tune": 0.0,
+    "len": 2.54
+   },
+   {
+    "note": 102,
+    "layer": 3,
+    "file": "piano/Fs7_v4.ogg",
+    "tune": 0.0,
+    "len": 2.86
+   },
+   {
+    "note": 103,
+    "layer": 0,
+    "file": "piano/G7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.65
+   },
+   {
+    "note": 103,
+    "layer": 1,
+    "file": "piano/G7_v2.ogg",
+    "tune": 0.0,
+    "len": 2.87
+   },
+   {
+    "note": 103,
+    "layer": 2,
+    "file": "piano/G7_v3.ogg",
+    "tune": 0.0,
+    "len": 2.56
+   },
+   {
+    "note": 103,
+    "layer": 3,
+    "file": "piano/G7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.03
+   },
+   {
+    "note": 104,
+    "layer": 0,
+    "file": "piano/Gs7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.74
+   },
+   {
+    "note": 104,
+    "layer": 1,
+    "file": "piano/Gs7_v2.ogg",
+    "tune": 0.0,
+    "len": 3.22
+   },
+   {
+    "note": 104,
+    "layer": 2,
+    "file": "piano/Gs7_v3.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 104,
+    "layer": 3,
+    "file": "piano/Gs7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.5
+   },
+   {
+    "note": 105,
+    "layer": 0,
+    "file": "piano/A7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.23
+   },
+   {
+    "note": 105,
+    "layer": 1,
+    "file": "piano/A7_v2.ogg",
+    "tune": 0.0,
+    "len": 2.73
+   },
+   {
+    "note": 105,
+    "layer": 2,
+    "file": "piano/A7_v3.ogg",
+    "tune": 0.0,
+    "len": 2.36
+   },
+   {
+    "note": 105,
+    "layer": 3,
+    "file": "piano/A7_v4.ogg",
+    "tune": 0.0,
+    "len": 2.02
+   },
+   {
+    "note": 106,
+    "layer": 0,
+    "file": "piano/As7_v1.ogg",
+    "tune": 0.0,
+    "len": 2.09
+   },
+   {
+    "note": 106,
+    "layer": 1,
+    "file": "piano/As7_v2.ogg",
+    "tune": 0.0,
+    "len": 2.33
+   },
+   {
+    "note": 106,
+    "layer": 2,
+    "file": "piano/As7_v3.ogg",
+    "tune": 0.0,
+    "len": 2.38
+   },
+   {
+    "note": 106,
+    "layer": 3,
+    "file": "piano/As7_v4.ogg",
+    "tune": 0.0,
+    "len": 3.12
+   },
+   {
+    "note": 107,
+    "layer": 0,
+    "file": "piano/B7_v1.ogg",
+    "tune": 0.0,
+    "len": 1.4
+   },
+   {
+    "note": 107,
+    "layer": 1,
+    "file": "piano/B7_v2.ogg",
+    "tune": 0.0,
+    "len": 1.96
+   },
+   {
+    "note": 107,
+    "layer": 2,
+    "file": "piano/B7_v3.ogg",
+    "tune": 0.0,
+    "len": 1.95
+   },
+   {
+    "note": 107,
+    "layer": 3,
+    "file": "piano/B7_v4.ogg",
+    "tune": 0.0,
+    "len": 2.3
+   },
+   {
+    "note": 108,
+    "layer": 0,
+    "file": "piano/C8_v1.ogg",
+    "tune": 0.0,
+    "len": 1.93
+   },
+   {
+    "note": 108,
+    "layer": 1,
+    "file": "piano/C8_v2.ogg",
+    "tune": 0.0,
+    "len": 1.76
+   },
+   {
+    "note": 108,
+    "layer": 2,
+    "file": "piano/C8_v3.ogg",
+    "tune": 0.0,
+    "len": 1.67
+   },
+   {
+    "note": 108,
+    "layer": 3,
+    "file": "piano/C8_v4.ogg",
+    "tune": 0.0,
+    "len": 2.38
+   }
+  ],
+  "calib_db": 0.0,
+  "layer_db": [
+   0.0,
+   -1.3,
+   -1.3,
+   -1.3
+  ]
+ },
+ "guitar": {
+  "name": "Meta Nylon Guitar",
+  "kind": "pitched",
+  "credit": "Meta Open Sound (github.com/facebookincubator/Meta-open-sound), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    50
+   ],
+   [
+    51,
+    95
+   ],
+   [
+    96,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": -1,
+  "sustain": false,
+  "range": [
+   40,
+   82
+  ],
+  "zones": [
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "guitar/E2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "guitar/E2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 40,
+    "layer": 2,
+    "file": "guitar/E2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "guitar/G2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "guitar/G2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 2,
+    "file": "guitar/G2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "guitar/As2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "guitar/As2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 2,
+    "file": "guitar/As2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "guitar/Cs3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 49,
+    "layer": 1,
+    "file": "guitar/Cs3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 49,
+    "layer": 2,
+    "file": "guitar/Cs3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "guitar/E3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "guitar/E3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 52,
+    "layer": 2,
+    "file": "guitar/E3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "guitar/G3_v1.ogg",
+    "tune": 0.0,
+    "len": 5.4
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "guitar/G3_v2.ogg",
+    "tune": 0.0,
+    "len": 5.4
+   },
+   {
+    "note": 55,
+    "layer": 2,
+    "file": "guitar/G3_v3.ogg",
+    "tune": 0.0,
+    "len": 3.95
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "guitar/As3_v1.ogg",
+    "tune": 0.0,
+    "len": 4.12
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "guitar/As3_v2.ogg",
+    "tune": 0.0,
+    "len": 5.02
+   },
+   {
+    "note": 58,
+    "layer": 2,
+    "file": "guitar/As3_v3.ogg",
+    "tune": 0.0,
+    "len": 5.61
+   },
+   {
+    "note": 61,
+    "layer": 0,
+    "file": "guitar/Cs4_v1.ogg",
+    "tune": 0.0,
+    "len": 3.71
+   },
+   {
+    "note": 61,
+    "layer": 1,
+    "file": "guitar/Cs4_v2.ogg",
+    "tune": 0.0,
+    "len": 3.58
+   },
+   {
+    "note": 61,
+    "layer": 2,
+    "file": "guitar/Cs4_v3.ogg",
+    "tune": 0.0,
+    "len": 3.94
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "guitar/E4_v1.ogg",
+    "tune": 0.0,
+    "len": 4.92
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "guitar/E4_v2.ogg",
+    "tune": 0.0,
+    "len": 5.23
+   },
+   {
+    "note": 64,
+    "layer": 2,
+    "file": "guitar/E4_v3.ogg",
+    "tune": 0.0,
+    "len": 5.58
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "guitar/G4_v1.ogg",
+    "tune": 0.0,
+    "len": 3.83
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "guitar/G4_v2.ogg",
+    "tune": 0.0,
+    "len": 4.27
+   },
+   {
+    "note": 67,
+    "layer": 2,
+    "file": "guitar/G4_v3.ogg",
+    "tune": 0.0,
+    "len": 4.64
+   },
+   {
+    "note": 70,
+    "layer": 0,
+    "file": "guitar/As4_v1.ogg",
+    "tune": 0.0,
+    "len": 2.08
+   },
+   {
+    "note": 70,
+    "layer": 1,
+    "file": "guitar/As4_v2.ogg",
+    "tune": 0.0,
+    "len": 3.39
+   },
+   {
+    "note": 70,
+    "layer": 2,
+    "file": "guitar/As4_v3.ogg",
+    "tune": 0.0,
+    "len": 3.26
+   },
+   {
+    "note": 73,
+    "layer": 0,
+    "file": "guitar/Cs5_v1.ogg",
+    "tune": 0.0,
+    "len": 2.28
+   },
+   {
+    "note": 73,
+    "layer": 1,
+    "file": "guitar/Cs5_v2.ogg",
+    "tune": 0.0,
+    "len": 2.6
+   },
+   {
+    "note": 73,
+    "layer": 2,
+    "file": "guitar/Cs5_v3.ogg",
+    "tune": 0.0,
+    "len": 3.14
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "guitar/E5_v1.ogg",
+    "tune": 0.0,
+    "len": 1.63
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "guitar/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 2.48
+   },
+   {
+    "note": 76,
+    "layer": 2,
+    "file": "guitar/E5_v3.ogg",
+    "tune": 0.0,
+    "len": 2.25
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "guitar/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 1.81
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "guitar/G5_v2.ogg",
+    "tune": 0.0,
+    "len": 2.03
+   },
+   {
+    "note": 79,
+    "layer": 2,
+    "file": "guitar/G5_v3.ogg",
+    "tune": 0.0,
+    "len": 2.0
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "guitar/As5_v1.ogg",
+    "tune": 0.0,
+    "len": 1.68
+   },
+   {
+    "note": 82,
+    "layer": 1,
+    "file": "guitar/As5_v2.ogg",
+    "tune": 0.0,
+    "len": 1.71
+   },
+   {
+    "note": 82,
+    "layer": 2,
+    "file": "guitar/As5_v3.ogg",
+    "tune": 0.0,
+    "len": 1.93
+   }
+  ],
+  "calib_db": 10.9,
+  "layer_db": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "steel": {
+  "name": "Meta Steel Guitar",
+  "kind": "pitched",
+  "credit": "Meta Open Sound (github.com/facebookincubator/Meta-open-sound), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    50
+   ],
+   [
+    51,
+    95
+   ],
+   [
+    96,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": -1,
+  "sustain": false,
+  "range": [
+   40,
+   84
+  ],
+  "zones": [
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "steel/E2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "steel/E2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 40,
+    "layer": 2,
+    "file": "steel/E2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "steel/Fs2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 42,
+    "layer": 1,
+    "file": "steel/Fs2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 42,
+    "layer": 2,
+    "file": "steel/Fs2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "steel/Gs2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 44,
+    "layer": 1,
+    "file": "steel/Gs2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 44,
+    "layer": 2,
+    "file": "steel/Gs2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "steel/As2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "steel/As2_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 2,
+    "file": "steel/As2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "steel/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "steel/C3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 2,
+    "file": "steel/C3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "steel/D3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "steel/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 2,
+    "file": "steel/D3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "steel/E3_v1.ogg",
+    "tune": 0.0,
+    "len": 5.96
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "steel/E3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 52,
+    "layer": 2,
+    "file": "steel/E3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 54,
+    "layer": 0,
+    "file": "steel/Fs3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 54,
+    "layer": 1,
+    "file": "steel/Fs3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 54,
+    "layer": 2,
+    "file": "steel/Fs3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "steel/Gs3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 56,
+    "layer": 1,
+    "file": "steel/Gs3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 56,
+    "layer": 2,
+    "file": "steel/Gs3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "steel/As3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "steel/As3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 2,
+    "file": "steel/As3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "steel/C4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "steel/C4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 2,
+    "file": "steel/C4_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "steel/D4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "steel/D4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 62,
+    "layer": 2,
+    "file": "steel/D4_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "steel/E4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "steel/E4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 64,
+    "layer": 2,
+    "file": "steel/E4_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "steel/Fs4_v1.ogg",
+    "tune": 0.0,
+    "len": 4.63
+   },
+   {
+    "note": 66,
+    "layer": 1,
+    "file": "steel/Fs4_v2.ogg",
+    "tune": 0.0,
+    "len": 4.81
+   },
+   {
+    "note": 66,
+    "layer": 2,
+    "file": "steel/Fs4_v3.ogg",
+    "tune": 0.0,
+    "len": 4.75
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "steel/Gs4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 68,
+    "layer": 1,
+    "file": "steel/Gs4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 68,
+    "layer": 2,
+    "file": "steel/Gs4_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 70,
+    "layer": 0,
+    "file": "steel/As4_v1.ogg",
+    "tune": 0.0,
+    "len": 5.03
+   },
+   {
+    "note": 70,
+    "layer": 1,
+    "file": "steel/As4_v2.ogg",
+    "tune": 0.0,
+    "len": 4.83
+   },
+   {
+    "note": 70,
+    "layer": 2,
+    "file": "steel/As4_v3.ogg",
+    "tune": 0.0,
+    "len": 5.52
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "steel/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.58
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "steel/C5_v2.ogg",
+    "tune": 0.0,
+    "len": 4.31
+   },
+   {
+    "note": 72,
+    "layer": 2,
+    "file": "steel/C5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.5
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "steel/D5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.27
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "steel/D5_v2.ogg",
+    "tune": 0.0,
+    "len": 5.03
+   },
+   {
+    "note": 74,
+    "layer": 2,
+    "file": "steel/D5_v3.ogg",
+    "tune": 0.0,
+    "len": 5.58
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "steel/E5_v1.ogg",
+    "tune": 0.0,
+    "len": 3.77
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "steel/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 4.3
+   },
+   {
+    "note": 76,
+    "layer": 2,
+    "file": "steel/E5_v3.ogg",
+    "tune": 0.0,
+    "len": 4.96
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "steel/Fs5_v1.ogg",
+    "tune": 0.0,
+    "len": 3.08
+   },
+   {
+    "note": 78,
+    "layer": 1,
+    "file": "steel/Fs5_v2.ogg",
+    "tune": 0.0,
+    "len": 4.11
+   },
+   {
+    "note": 78,
+    "layer": 2,
+    "file": "steel/Fs5_v3.ogg",
+    "tune": 0.0,
+    "len": 4.16
+   },
+   {
+    "note": 80,
+    "layer": 0,
+    "file": "steel/Gs5_v1.ogg",
+    "tune": 0.0,
+    "len": 3.76
+   },
+   {
+    "note": 80,
+    "layer": 1,
+    "file": "steel/Gs5_v2.ogg",
+    "tune": 0.0,
+    "len": 4.54
+   },
+   {
+    "note": 80,
+    "layer": 2,
+    "file": "steel/Gs5_v3.ogg",
+    "tune": 0.0,
+    "len": 4.5
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "steel/As5_v1.ogg",
+    "tune": 0.0,
+    "len": 2.07
+   },
+   {
+    "note": 82,
+    "layer": 1,
+    "file": "steel/As5_v2.ogg",
+    "tune": 0.0,
+    "len": 3.7
+   },
+   {
+    "note": 82,
+    "layer": 2,
+    "file": "steel/As5_v3.ogg",
+    "tune": 0.0,
+    "len": 3.89
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "steel/C6_v1.ogg",
+    "tune": 0.0,
+    "len": 2.05
+   },
+   {
+    "note": 84,
+    "layer": 1,
+    "file": "steel/C6_v2.ogg",
+    "tune": 0.0,
+    "len": 2.41
+   },
+   {
+    "note": 84,
+    "layer": 2,
+    "file": "steel/C6_v3.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   }
+  ],
+  "calib_db": 8.1,
+  "layer_db": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "harp": {
+  "name": "Harp (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.5,
+  "gain_db": -2,
+  "sustain": false,
+  "range": [
+   28,
+   101
+  ],
+  "zones": [
+   {
+    "note": 28,
+    "layer": 0,
+    "file": "harp/E1_v1.ogg",
+    "tune": 8.8,
+    "len": 7.0
+   },
+   {
+    "note": 31,
+    "layer": 0,
+    "file": "harp/G1_v1.ogg",
+    "tune": 32.1,
+    "len": 6.75
+   },
+   {
+    "note": 35,
+    "layer": 0,
+    "file": "harp/B1_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 38,
+    "layer": 0,
+    "file": "harp/D2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "harp/F2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "harp/A2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "harp/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "harp/E3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "harp/G3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "harp/B3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "harp/D4_v1.ogg",
+    "tune": 8.4,
+    "len": 5.0
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "harp/F4_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "harp/A4_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "harp/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "harp/E5_v1.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "harp/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.41
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "harp/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 3.1
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "harp/D6_v1.ogg",
+    "tune": 0.0,
+    "len": 2.36
+   },
+   {
+    "note": 89,
+    "layer": 0,
+    "file": "harp/F6_v1.ogg",
+    "tune": 0.0,
+    "len": 2.34
+   },
+   {
+    "note": 93,
+    "layer": 0,
+    "file": "harp/A6_v1.ogg",
+    "tune": 15.3,
+    "len": 3.31
+   },
+   {
+    "note": 95,
+    "layer": 0,
+    "file": "harp/B6_v1.ogg",
+    "tune": 0.0,
+    "len": 2.73
+   },
+   {
+    "note": 98,
+    "layer": 0,
+    "file": "harp/D7_v1.ogg",
+    "tune": 0.0,
+    "len": 0.92
+   },
+   {
+    "note": 101,
+    "layer": 0,
+    "file": "harp/F7_v1.ogg",
+    "tune": 26.5,
+    "len": 0.57
+   }
+  ],
+  "calib_db": -1.4
+ },
+ "glock": {
+  "name": "Glockenspiel (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": -8,
+  "sustain": false,
+  "range": [
+   79,
+   108
+  ],
+  "zones": [
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "glock/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 4.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "glock/C6_v1.ogg",
+    "tune": -15.8,
+    "len": 4.0
+   },
+   {
+    "note": 91,
+    "layer": 0,
+    "file": "glock/G6_v1.ogg",
+    "tune": -15.9,
+    "len": 4.0
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "glock/C7_v1.ogg",
+    "tune": -19.5,
+    "len": 3.97
+   },
+   {
+    "note": 103,
+    "layer": 0,
+    "file": "glock/G7_v1.ogg",
+    "tune": -19.7,
+    "len": 3.47
+   },
+   {
+    "note": 108,
+    "layer": 0,
+    "file": "glock/C8_v1.ogg",
+    "tune": -27.9,
+    "len": 1.69
+   }
+  ],
+  "calib_db": -2.0
+ },
+ "marimba": {
+  "name": "Marimba (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": -4,
+  "sustain": false,
+  "range": [
+   41,
+   96
+  ],
+  "zones": [
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "marimba/F2_v1.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "marimba/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "marimba/G3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "marimba/B3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "marimba/F4_v1.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "marimba/C5_v1.ogg",
+    "tune": -8.3,
+    "len": 2.06
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "marimba/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 1.24
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "marimba/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 1.1
+   },
+   {
+    "note": 89,
+    "layer": 0,
+    "file": "marimba/F6_v1.ogg",
+    "tune": 0.0,
+    "len": 1.28
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "marimba/C7_v1.ogg",
+    "tune": 0.0,
+    "len": 1.18
+   }
+  ],
+  "calib_db": -3.9
+ },
+ "xylo": {
+  "name": "Xylophone (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.2,
+  "gain_db": -8,
+  "sustain": false,
+  "range": [
+   67,
+   108
+  ],
+  "zones": [
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "xylo/G4_v1.ogg",
+    "tune": -16.4,
+    "len": 2.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "xylo/C5_v1.ogg",
+    "tune": -16.0,
+    "len": 1.96
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "xylo/G5_v1.ogg",
+    "tune": -17.6,
+    "len": 1.55
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "xylo/C6_v1.ogg",
+    "tune": -19.3,
+    "len": 1.14
+   },
+   {
+    "note": 91,
+    "layer": 0,
+    "file": "xylo/G6_v1.ogg",
+    "tune": -20.1,
+    "len": 0.7
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "xylo/C7_v1.ogg",
+    "tune": -20.5,
+    "len": 0.56
+   },
+   {
+    "note": 103,
+    "layer": 0,
+    "file": "xylo/G7_v1.ogg",
+    "tune": -24.5,
+    "len": 0.52
+   },
+   {
+    "note": 108,
+    "layer": 0,
+    "file": "xylo/C8_v1.ogg",
+    "tune": -19.6,
+    "len": 0.45
+   }
+  ],
+  "calib_db": -2.7
+ },
+ "bells": {
+  "name": "Tubular bells (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 1.0,
+  "gain_db": -6,
+  "sustain": false,
+  "range": [
+   60,
+   77
+  ],
+  "zones": [
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "bells/C4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "bells/G4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "bells/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "bells/F5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   }
+  ],
+  "calib_db": -1.0
+ },
+ "pizz": {
+  "name": "String section pizzicato (VSCO-2 cellos and violins)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    80
+   ],
+   [
+    81,
+    127
+   ]
+  ],
+  "release": 0.15,
+  "gain_db": -2,
+  "sustain": false,
+  "range": [
+   36,
+   86
+  ],
+  "zones": [
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "pizz/C2_v1.ogg",
+    "tune": -10.4,
+    "len": 2.5
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "pizz/C2_v2.ogg",
+    "tune": 0.0,
+    "len": 2.5
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "pizz/E2_v1.ogg",
+    "tune": 21.2,
+    "len": 2.5
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "pizz/E2_v2.ogg",
+    "tune": 20.4,
+    "len": 2.5
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "pizz/G2_v1.ogg",
+    "tune": 0.0,
+    "len": 2.5
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "pizz/G2_v2.ogg",
+    "tune": 0.0,
+    "len": 2.5
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "pizz/B2_v1.ogg",
+    "tune": 13.8,
+    "len": 2.5
+   },
+   {
+    "note": 47,
+    "layer": 1,
+    "file": "pizz/B2_v2.ogg",
+    "tune": 15.6,
+    "len": 2.5
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "pizz/D3_v1.ogg",
+    "tune": 0.0,
+    "len": 2.5
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "pizz/D3_v2.ogg",
+    "tune": -15.0,
+    "len": 2.5
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "pizz/F3_v1.ogg",
+    "tune": -25.8,
+    "len": 1.52
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "pizz/F3_v2.ogg",
+    "tune": 0.0,
+    "len": 1.81
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "pizz/G3_v1.ogg",
+    "tune": 0.0,
+    "len": 2.32
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "pizz/G3_v2.ogg",
+    "tune": 0.0,
+    "len": 2.5
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "pizz/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 1.25
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "pizz/A3_v2.ogg",
+    "tune": 0.0,
+    "len": 0.88
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "pizz/B3_v1.ogg",
+    "tune": 0.0,
+    "len": 0.71
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "pizz/B3_v2.ogg",
+    "tune": 0.0,
+    "len": 0.91
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "pizz/D4_v1.ogg",
+    "tune": 0.0,
+    "len": 1.59
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "pizz/D4_v2.ogg",
+    "tune": 12.0,
+    "len": 1.98
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "pizz/Fs4_v1.ogg",
+    "tune": 16.5,
+    "len": 0.94
+   },
+   {
+    "note": 66,
+    "layer": 1,
+    "file": "pizz/Fs4_v2.ogg",
+    "tune": 0.0,
+    "len": 0.85
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "pizz/A4_v1.ogg",
+    "tune": 0.0,
+    "len": 0.84
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "pizz/A4_v2.ogg",
+    "tune": 0.0,
+    "len": 0.86
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "pizz/C5_v1.ogg",
+    "tune": -20.9,
+    "len": 0.53
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "pizz/C5_v2.ogg",
+    "tune": -16.3,
+    "len": 0.58
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "pizz/E5_v1.ogg",
+    "tune": 10.7,
+    "len": 0.54
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "pizz/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 0.83
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "pizz/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.84
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "pizz/G5_v2.ogg",
+    "tune": 0.0,
+    "len": 0.59
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "pizz/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.46
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "pizz/B5_v2.ogg",
+    "tune": 0.0,
+    "len": 0.53
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "pizz/D6_v1.ogg",
+    "tune": 0.0,
+    "len": 0.64
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "pizz/D6_v2.ogg",
+    "tune": -14.7,
+    "len": 0.48
+   }
+  ],
+  "calib_db": 14.6,
+  "layer_db": [
+   0.0,
+   -5.3
+  ]
+ },
+ "strings": {
+  "name": "String section sustain (VSCO-2 cellos and violins)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    80
+   ],
+   [
+    81,
+    127
+   ]
+  ],
+  "release": 0.8,
+  "gain_db": -4,
+  "sustain": true,
+  "range": [
+   36,
+   86
+  ],
+  "zones": [
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "strings/C2_v1.ogg",
+    "tune": 10.4,
+    "len": 7.0
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "strings/C2_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "strings/E2_v1.ogg",
+    "tune": -9.9,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "strings/E2_v2.ogg",
+    "tune": -15.5,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "strings/G2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "strings/G2_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "strings/B2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 47,
+    "layer": 1,
+    "file": "strings/B2_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "strings/D3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "strings/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "strings/F3_v1.ogg",
+    "tune": -11.3,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "strings/F3_v2.ogg",
+    "tune": -12.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "strings/G3_v1.ogg",
+    "tune": -9.1,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "strings/G3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "strings/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "strings/A3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "strings/B3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "strings/B3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "strings/D4_v1.ogg",
+    "tune": -11.6,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "strings/D4_v2.ogg",
+    "tune": -18.3,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "strings/Fs4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 1,
+    "file": "strings/Fs4_v2.ogg",
+    "tune": -20.2,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "strings/A4_v1.ogg",
+    "tune": -9.4,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "strings/A4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "strings/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "strings/C5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "strings/E5_v1.ogg",
+    "tune": -14.2,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "strings/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "strings/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "strings/G5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "strings/B5_v1.ogg",
+    "tune": -8.5,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "strings/B5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "strings/D6_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "strings/D6_v2.ogg",
+    "tune": 8.0,
+    "len": 7.0
+   }
+  ],
+  "calib_db": 17.2,
+  "layer_db": [
+   0.0,
+   -1.5
+  ]
+ },
+ "trem": {
+  "name": "String section tremolo (VSCO-2 cellos and violins)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    80
+   ],
+   [
+    81,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": -6,
+  "sustain": true,
+  "range": [
+   36,
+   86
+  ],
+  "zones": [
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "trem/C2_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "trem/E2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "trem/E2_v2.ogg",
+    "tune": 31.8,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "trem/G2_v1.ogg",
+    "tune": -16.7,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "trem/G2_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "trem/B2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "trem/D3_v1.ogg",
+    "tune": 24.2,
+    "len": 6.82
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "trem/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.77
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "trem/F3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.87
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "trem/F3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.82
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "trem/G3_v1.ogg",
+    "tune": -18.7,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "trem/G3_v2.ogg",
+    "tune": -20.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "trem/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "trem/A3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "trem/B3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "trem/B3_v2.ogg",
+    "tune": -36.1,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "trem/D4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "trem/D4_v2.ogg",
+    "tune": -17.8,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "trem/Fs4_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "trem/A4_v1.ogg",
+    "tune": 8.4,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "trem/A4_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "trem/C5_v1.ogg",
+    "tune": 9.4,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "trem/C5_v2.ogg",
+    "tune": -13.5,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "trem/E5_v1.ogg",
+    "tune": -13.6,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "trem/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "trem/G5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "trem/G5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "trem/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "trem/B5_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "trem/D6_v1.ogg",
+    "tune": -12.3,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "trem/D6_v2.ogg",
+    "tune": -10.0,
+    "len": 7.0
+   }
+  ],
+  "calib_db": 22.6,
+  "layer_db": [
+   0.0,
+   -15.3
+  ]
+ },
+ "flute": {
+  "name": "Flute (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.4,
+  "gain_db": -5,
+  "sustain": true,
+  "range": [
+   60,
+   96
+  ],
+  "zones": [
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "flute/C4_v1.ogg",
+    "tune": 15.1,
+    "len": 6.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "flute/E4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "flute/A4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "flute/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "flute/E5_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "flute/A5_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "flute/C6_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "flute/E6_v1.ogg",
+    "tune": 0.0,
+    "len": 5.57
+   },
+   {
+    "note": 93,
+    "layer": 0,
+    "file": "flute/A6_v1.ogg",
+    "tune": 0.0,
+    "len": 5.02
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "flute/C7_v1.ogg",
+    "tune": 0.0,
+    "len": 4.3
+   }
+  ],
+  "calib_db": 4.0
+ },
+ "flute_stac": {
+  "name": "Flute staccato (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    80
+   ],
+   [
+    81,
+    127
+   ]
+  ],
+  "release": 0.1,
+  "gain_db": -5,
+  "sustain": false,
+  "range": [
+   69,
+   96
+  ],
+  "zones": [
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "flute_stac/A4_v1.ogg",
+    "tune": -10.4,
+    "len": 0.63
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "flute_stac/A4_v2.ogg",
+    "tune": 0.0,
+    "len": 0.6
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "flute_stac/C5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.67
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "flute_stac/C5_v2.ogg",
+    "tune": 12.6,
+    "len": 0.61
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "flute_stac/E5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.68
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "flute_stac/E5_v2.ogg",
+    "tune": 0.0,
+    "len": 0.73
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "flute_stac/A5_v1.ogg",
+    "tune": 8.4,
+    "len": 0.79
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "flute_stac/A5_v2.ogg",
+    "tune": -26.6,
+    "len": 0.55
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "flute_stac/C6_v1.ogg",
+    "tune": 0.0,
+    "len": 0.61
+   },
+   {
+    "note": 84,
+    "layer": 1,
+    "file": "flute_stac/C6_v2.ogg",
+    "tune": 0.0,
+    "len": 0.54
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "flute_stac/E6_v1.ogg",
+    "tune": 8.6,
+    "len": 0.72
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "flute_stac/E6_v2.ogg",
+    "tune": 0.0,
+    "len": 0.44
+   },
+   {
+    "note": 93,
+    "layer": 0,
+    "file": "flute_stac/A6_v1.ogg",
+    "tune": 0.0,
+    "len": 0.56
+   },
+   {
+    "note": 93,
+    "layer": 1,
+    "file": "flute_stac/A6_v2.ogg",
+    "tune": 0.0,
+    "len": 0.48
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "flute_stac/C7_v1.ogg",
+    "tune": 0.0,
+    "len": 0.52
+   }
+  ],
+  "calib_db": 13.4,
+  "layer_db": [
+   0.0,
+   -4.1
+  ]
+ },
+ "horn": {
+  "name": "French horn (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    60
+   ],
+   [
+    61,
+    100
+   ],
+   [
+    101,
+    127
+   ]
+  ],
+  "release": 0.5,
+  "gain_db": -5,
+  "sustain": true,
+  "range": [
+   33,
+   77
+  ],
+  "zones": [
+   {
+    "note": 33,
+    "layer": 0,
+    "file": "horn/A1_v1.ogg",
+    "tune": 33.6,
+    "len": 5.12
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "horn/C2_v1.ogg",
+    "tune": 10.4,
+    "len": 5.87
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "horn/C2_v2.ogg",
+    "tune": 0.0,
+    "len": 4.4
+   },
+   {
+    "note": 36,
+    "layer": 2,
+    "file": "horn/C2_v3.ogg",
+    "tune": 0.0,
+    "len": 3.82
+   },
+   {
+    "note": 39,
+    "layer": 0,
+    "file": "horn/Ds2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 39,
+    "layer": 1,
+    "file": "horn/Ds2_v2.ogg",
+    "tune": 0.0,
+    "len": 5.29
+   },
+   {
+    "note": 39,
+    "layer": 2,
+    "file": "horn/Ds2_v3.ogg",
+    "tune": -14.3,
+    "len": 4.53
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "horn/G2_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "horn/G2_v2.ogg",
+    "tune": 22.3,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 2,
+    "file": "horn/G2_v3.ogg",
+    "tune": 0.0,
+    "len": 5.11
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "horn/As2_v1.ogg",
+    "tune": -10.0,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "horn/As2_v2.ogg",
+    "tune": 13.8,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 2,
+    "file": "horn/As2_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "horn/D3_v1.ogg",
+    "tune": -31.3,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "horn/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 2,
+    "file": "horn/D3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "horn/F3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "horn/F3_v2.ogg",
+    "tune": 12.1,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 2,
+    "file": "horn/F3_v3.ogg",
+    "tune": 29.2,
+    "len": 6.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "horn/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "horn/A3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 57,
+    "layer": 2,
+    "file": "horn/A3_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "horn/C4_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "horn/C4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 2,
+    "file": "horn/C4_v3.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "horn/D5_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "horn/F5_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   }
+  ],
+  "calib_db": 1.7,
+  "layer_db": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ "timpani": {
+  "name": "Timpani (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "layers": [
+   [
+    1,
+    60
+   ],
+   [
+    61,
+    100
+   ],
+   [
+    101,
+    127
+   ]
+  ],
+  "release": 0.8,
+  "gain_db": -3,
+  "sustain": false,
+  "range": [
+   33,
+   59
+  ],
+  "zones": [
+   {
+    "note": 33,
+    "layer": 2,
+    "file": "timpani/A1_v3.ogg",
+    "tune": -27.1,
+    "len": 3.05
+   },
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "timpani/As1_v1.ogg",
+    "tune": 19.8,
+    "len": 1.02
+   },
+   {
+    "note": 34,
+    "layer": 2,
+    "file": "timpani/As1_v3.ogg",
+    "tune": -15.7,
+    "len": 3.17
+   },
+   {
+    "note": 39,
+    "layer": 2,
+    "file": "timpani/Ds2_v3.ogg",
+    "tune": 24.3,
+    "len": 3.23
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "timpani/E2_v2.ogg",
+    "tune": 0.0,
+    "len": 5.0
+   },
+   {
+    "note": 41,
+    "layer": 1,
+    "file": "timpani/F2_v2.ogg",
+    "tune": -49.2,
+    "len": 5.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "timpani/B2_v1.ogg",
+    "tune": 44.2,
+    "len": 4.36
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "timpani/D3_v2.ogg",
+    "tune": 44.1,
+    "len": 4.46
+   },
+   {
+    "note": 50,
+    "layer": 2,
+    "file": "timpani/D3_v3.ogg",
+    "tune": 35.0,
+    "len": 4.23
+   },
+   {
+    "note": 51,
+    "layer": 1,
+    "file": "timpani/Ds3_v2.ogg",
+    "tune": 35.0,
+    "len": 3.26
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "timpani/E3_v2.ogg",
+    "tune": -50.7,
+    "len": 3.35
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "timpani/F3_v1.ogg",
+    "tune": -47.5,
+    "len": 1.95
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "timpani/Gs3_v1.ogg",
+    "tune": 26.2,
+    "len": 3.37
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "timpani/B3_v1.ogg",
+    "tune": -34.8,
+    "len": 3.74
+   }
+  ],
+  "calib_db": 8.7,
+  "layer_db": [
+   0.0,
+   -9.1,
+   -12.1
+  ]
+ },
+ "drums": {
+  "name": "Drums and percussion (VSCO-2)",
+  "kind": "kit",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "release": 0.3,
+  "gain_db": -3,
+  "pieces": {
+   "taiko": {
+    "gm": 41,
+    "layers": [
+     {
+      "file": "drums/taiko_v1.ogg",
+      "vel": [
+       1,
+       50
+      ],
+      "len": 0.97
+     },
+     {
+      "file": "drums/taiko_v2.ogg",
+      "vel": [
+       51,
+       95
+      ],
+      "len": 1.39
+     },
+     {
+      "file": "drums/taiko_v3.ogg",
+      "vel": [
+       96,
+       127
+      ],
+      "len": 1.38
+     }
+    ]
+   },
+   "taiko_hand": {
+    "gm": 43,
+    "layers": [
+     {
+      "file": "drums/taiko_hand_v1.ogg",
+      "vel": [
+       1,
+       50
+      ],
+      "len": 1.13
+     },
+     {
+      "file": "drums/taiko_hand_v2.ogg",
+      "vel": [
+       51,
+       95
+      ],
+      "len": 1.15
+     },
+     {
+      "file": "drums/taiko_hand_v3.ogg",
+      "vel": [
+       96,
+       127
+      ],
+      "len": 1.23
+     }
+    ]
+   },
+   "taiko_rim": {
+    "gm": 45,
+    "layers": [
+     {
+      "file": "drums/taiko_rim_v1.ogg",
+      "vel": [
+       1,
+       80
+      ],
+      "len": 1.2
+     },
+     {
+      "file": "drums/taiko_rim_v2.ogg",
+      "vel": [
+       81,
+       127
+      ],
+      "len": 1.5
+     }
+    ]
+   },
+   "bass_drum": {
+    "gm": 36,
+    "layers": [
+     {
+      "file": "drums/bass_drum_v1.ogg",
+      "vel": [
+       1,
+       50
+      ],
+      "len": 4.0
+     },
+     {
+      "file": "drums/bass_drum_v2.ogg",
+      "vel": [
+       51,
+       95
+      ],
+      "len": 4.0
+     },
+     {
+      "file": "drums/bass_drum_v3.ogg",
+      "vel": [
+       96,
+       127
+      ],
+      "len": 4.0
+     }
+    ]
+   },
+   "bass_roll": {
+    "gm": 35,
+    "layers": [
+     {
+      "file": "drums/bass_roll_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 6.0
+     }
+    ]
+   },
+   "tenor": {
+    "gm": 47,
+    "layers": [
+     {
+      "file": "drums/tenor_v1.ogg",
+      "vel": [
+       1,
+       50
+      ],
+      "len": 1.58
+     },
+     {
+      "file": "drums/tenor_v2.ogg",
+      "vel": [
+       51,
+       95
+      ],
+      "len": 1.91
+     },
+     {
+      "file": "drums/tenor_v3.ogg",
+      "vel": [
+       96,
+       127
+      ],
+      "len": 1.38
+     }
+    ]
+   },
+   "snare": {
+    "gm": 38,
+    "layers": [
+     {
+      "file": "drums/snare_v1.ogg",
+      "vel": [
+       1,
+       50
+      ],
+      "len": 0.38
+     },
+     {
+      "file": "drums/snare_v2.ogg",
+      "vel": [
+       51,
+       95
+      ],
+      "len": 0.49
+     },
+     {
+      "file": "drums/snare_v3.ogg",
+      "vel": [
+       96,
+       127
+      ],
+      "len": 0.58
+     }
+    ]
+   },
+   "snare_roll": {
+    "gm": 40,
+    "layers": [
+     {
+      "file": "drums/snare_roll_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 4.0
+     }
+    ]
+   },
+   "rim": {
+    "gm": 37,
+    "layers": [
+     {
+      "file": "drums/rim_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 0.5
+     }
+    ]
+   },
+   "crash": {
+    "gm": 49,
+    "layers": [
+     {
+      "file": "drums/crash_v1.ogg",
+      "vel": [
+       1,
+       60
+      ],
+      "len": 6.0
+     },
+     {
+      "file": "drums/crash_v2.ogg",
+      "vel": [
+       61,
+       100
+      ],
+      "len": 6.0
+     },
+     {
+      "file": "drums/crash_v3.ogg",
+      "vel": [
+       101,
+       127
+      ],
+      "len": 6.0
+     }
+    ]
+   },
+   "cym_swell": {
+    "gm": 57,
+    "layers": [
+     {
+      "file": "drums/cym_swell_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 7.0
+     }
+    ]
+   },
+   "cym_bow": {
+    "gm": 52,
+    "layers": [
+     {
+      "file": "drums/cym_bow_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 6.0
+     }
+    ]
+   },
+   "gong": {
+    "gm": 55,
+    "layers": [
+     {
+      "file": "drums/gong_v1.ogg",
+      "vel": [
+       1,
+       80
+      ],
+      "len": 8.0
+     },
+     {
+      "file": "drums/gong_v2.ogg",
+      "vel": [
+       81,
+       127
+      ],
+      "len": 8.0
+     }
+    ]
+   },
+   "triangle": {
+    "gm": 81,
+    "layers": [
+     {
+      "file": "drums/triangle_v1.ogg",
+      "vel": [
+       1,
+       80
+      ],
+      "len": 1.28
+     },
+     {
+      "file": "drums/triangle_v2.ogg",
+      "vel": [
+       81,
+       127
+      ],
+      "len": 1.89
+     }
+    ]
+   },
+   "tri_roll": {
+    "gm": 80,
+    "layers": [
+     {
+      "file": "drums/tri_roll_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 4.0
+     }
+    ]
+   },
+   "sleigh": {
+    "gm": 83,
+    "layers": [
+     {
+      "file": "drums/sleigh_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.77
+     }
+    ]
+   },
+   "belltree": {
+    "gm": 84,
+    "layers": [
+     {
+      "file": "drums/belltree_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 3.48
+     }
+    ]
+   },
+   "log_hi": {
+    "gm": 76,
+    "layers": [
+     {
+      "file": "drums/log_hi_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.0
+     }
+    ]
+   },
+   "log_lo": {
+    "gm": 77,
+    "layers": [
+     {
+      "file": "drums/log_lo_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 0.91
+     }
+    ]
+   },
+   "claves": {
+    "gm": 75,
+    "layers": [
+     {
+      "file": "drums/claves_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 0.6
+     }
+    ]
+   },
+   "shaker": {
+    "gm": 70,
+    "layers": [
+     {
+      "file": "drums/shaker_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.0
+     }
+    ]
+   },
+   "tamb": {
+    "gm": 54,
+    "layers": [
+     {
+      "file": "drums/tamb_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.0
+     }
+    ]
+   },
+   "rumble": {
+    "gm": 39,
+    "layers": [
+     {
+      "file": "drums/rumble_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 4.43
+     }
+    ]
+   },
+   "anvil": {
+    "gm": 56,
+    "layers": [
+     {
+      "file": "drums/anvil_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.17
+     }
+    ]
+   },
+   "timp_roll": {
+    "gm": 59,
+    "layers": [
+     {
+      "file": "drums/timp_roll_v1.ogg",
+      "vel": [
+       1,
+       90
+      ],
+      "len": 6.0
+     },
+     {
+      "file": "drums/timp_roll_v2.ogg",
+      "vel": [
+       91,
+       127
+      ],
+      "len": 6.0
+     }
+    ]
+   }
+  },
+  "calib_db": 11.9
+ }
+}
