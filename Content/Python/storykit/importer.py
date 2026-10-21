@@ -275,7 +275,7 @@ def environment(lid):
     finish(sky, {"id": f"{lid}__sky", "tags": ["story", "story:sky"]}, "env")
 
 
-def preview(game, lid):
+def preview(game, lid, bodies=None):
     """The StoryPreview (Source/StoryRunner): plays the desk's bake of this game in Play (docs/UNREAL_FLOW.md §1b)."""
     cls = unreal.load_class(None, "/Script/StoryRunner.StoryPreview")
     if cls is None:
@@ -283,6 +283,8 @@ def preview(game, lid):
         return
     a = actors.spawn_actor_from_class(cls, unreal.Vector(0, 0, 0), rot(0))
     a.set_editor_property("game", game)
+    if bodies:
+        a.set_editor_property("bodies", dict(bodies))
     finish(a, {"id": f"{lid}__preview", "tags": ["story", "story:preview"]}, "env")
 
 
@@ -357,7 +359,7 @@ def build_kit(game):
     (unreal.log if r.returncode == 0 else unreal.log_warning)("storykit: " + (out[-1] if out else "kit build"))
 
 
-def build(game=None, level=None):
+def build(game=None, level=None, bodies=None):
     story, spath = L.load(game)
     game = spath.parent.name
     cmap = class_map()
@@ -377,7 +379,7 @@ def build(game=None, level=None):
             attach_parts(made)
         cast_standins(story, lid, cmap)
         environment(lid)
-        preview(game, lid)
+        preview(game, lid, bodies)
         if story.get("format", 2) >= 3:
             acoustics(story, lid)
         levels.save_current_level()

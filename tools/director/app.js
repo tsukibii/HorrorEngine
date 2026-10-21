@@ -987,7 +987,8 @@ $("#generate").onclick = async () => {
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
   stopWatch(); await loadFiles(); if (!PLAN) await replan();
   try {                                        // the Watch, recorded: what Unreal's preview plays (bake.js)
-    const pv = await bakePreview(watchStage, S, PLAN, FILES, 30, (i, n, id) => { $("#genState").textContent = `baking the scenes… ${i + 1}/${n} (${id})`; });
+    const saveBody = (who, blob) => fetch(`/api/export/${encodeURIComponent(GAME)}/Body_${encodeURIComponent(who)}.glb`, { method: "POST", body: blob });
+    const pv = await bakePreview(watchStage, S, PLAN, FILES, 30, (i, n, id) => { $("#genState").textContent = `baking the scenes… ${i + 1}/${n} (${id})`; }, GLTFExporter, saveBody);
     await api("/api/preview/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pv) });
   } catch (e) { $("#genState").className = "err"; $("#genState").textContent = "The bake failed: " + e.message; return; }
   $("#genState").textContent = "running the checks…";

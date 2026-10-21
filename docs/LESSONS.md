@@ -107,3 +107,11 @@ the fix.
 - **A Slate tick isn't an engine frame:** with the editor in the background Slate ticks many times per frame, so
   `shots.take` queued all 18 cameras inside one frame and one picture came out. Wait on
   `SystemLibrary.get_frame_count()` for anything that needs the renderer.
+- **Unreal's glTF import scales a skinned mesh's bones by their nodes but not its vertices:** MHR binds in
+  centimetres under a 0.0098 node scale, so Mari came in as a 172 m skin on a 1.6 m skeleton and drew nowhere near
+  her bones. The desk now exports a fresh skeleton with no scales, vertices and bones in metres, the mesh at the
+  identity. Check an imported body's reference bones against its bounds before posing it.
+- **The editor keeps a Python module it has imported:** `storykit.generate` reloaded the rest of storykit but not
+  itself, so a Generate ran yesterday's code. The desk's script reloads it first.
+- **FBXLoader's vertices aren't shared:** normals recomputed on them come out flat (a faceted body in Unreal). Keep
+  the file's normals.

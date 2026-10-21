@@ -3,6 +3,8 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/LightComponent.h"
+#include "Components/PoseableMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Components/StaticMeshComponent.h"
 #include "Dom/JsonObject.h"
 #include "Engine/Engine.h"
@@ -54,6 +56,53 @@ namespace
 	FSlateFontInfo Font(int32 Size, const TCHAR* Style = TEXT("Regular")) { return FCoreStyle::GetDefaultFontStyle(Style, Size); }
 
 	const FVector NaNV(NAN, NAN, NAN);
+
+	int32 BodySkinCount(const TSharedPtr<FJsonObject>& Root, const FString& Who)
+	{
+		const TSharedPtr<FJsonObject> B = Obj(Obj(Root, TEXT("bodies")), Who);
+		const TArray<TSharedPtr<FJsonValue>>* Bones = nullptr;
+		return (B.IsValid() && B->TryGetArrayField(TEXT("bones"), Bones)) ? Bones->Num() : 0;
+	}
+
+	// three.js (x, y up, z south), metres -> Unreal (x, y = three z, z = three y), centimetres; row-vector form
+	const FMatrix ThreeToUe(FPlane(100, 0, 0, 0), FPlane(0, 0, 100, 0), FPlane(0, 100, 0, 0), FPlane(0, 0, 0, 1));
+
+	// The affine map (row-vector form, p * M) that best takes points A to points B: least squares, 4 unknowns a column.
+	bool FitAffine(const TArray<FVector>& A, const TArray<FVector>& B, FMatrix& Out)
+	{
+		double N[4][4] = {}, R[4][3] = {};
+		for (int32 I = 0; I < A.Num(); ++I)
+		{
+			const double X[4] = {A[I].X, A[I].Y, A[I].Z, 1.0}, Y[3] = {B[I].X, B[I].Y, B[I].Z};
+			for (int32 J = 0; J < 4; ++J)
+			{
+				for (int32 K = 0; K < 4; ++K) N[J][K] += X[J] * X[K];
+				for (int32 D = 0; D < 3; ++D) R[J][D] += X[J] * Y[D];
+			}
+		}
+		for (int32 C = 0; C < 4; ++C)            // Gauss-Jordan with partial pivoting on [N | R]
+		{
+			int32 Piv = C;
+			for (int32 Rr = C + 1; Rr < 4; ++Rr) if (FMath::Abs(N[Rr][C]) > FMath::Abs(N[Piv][C])) Piv = Rr;
+			if (FMath::Abs(N[Piv][C]) < 1e-12) return false;
+			for (int32 K = 0; K < 4; ++K) Swap(N[C][K], N[Piv][K]);
+			for (int32 D = 0; D < 3; ++D) Swap(R[C][D], R[Piv][D]);
+			const double Inv = 1.0 / N[C][C];
+			for (int32 K = 0; K < 4; ++K) N[C][K] *= Inv;
+			for (int32 D = 0; D < 3; ++D) R[C][D] *= Inv;
+			for (int32 Rr = 0; Rr < 4; ++Rr)
+			{
+				if (Rr == C) continue;
+				const double F = N[Rr][C];
+				for (int32 K = 0; K < 4; ++K) N[Rr][K] -= F * N[C][K];
+				for (int32 D = 0; D < 3; ++D) R[Rr][D] -= F * R[C][D];
+			}
+		}
+		Out = FMatrix::Identity;
+		for (int32 J = 0; J < 4; ++J)
+			for (int32 D = 0; D < 3; ++D) Out.M[J][D] = R[J][D];
+		return true;
+	}
 	bool Valid(const FVector& V) { return !FMath::IsNaN(V.X); }
 }
 
@@ -123,9 +172,23 @@ bool AStoryPreview::Load()
 					const auto* Cam = Arr(FO, TEXT("cam"));
 					for (int32 K = 0; K < 10; ++K) P.Cam.Add(Cam && Cam->IsValidIndex(K) ? (float)(*Cam)[K]->AsNumber() : 0.f);
 					P.Black.Add(FO->GetNumberField(TEXT("black")));
-					const TSharedPtr<FJsonObject> Bodies = Obj(FO, TEXT("bodies"));
-					if (!Bodies.IsValid()) continue;
-					for (const auto& BP : Bodies->Values)
+					const TSharedPtr<FJsonObject> SkinO = Obj(FO, TEXT("skin"));
+					for (const FString& Who : P.Cast)
+					{
+						const int32 NB = BodySkinCount(Root, Who);
+						if (NB == 0) continue;
+						TArray<float>& Dst = P.Skin.FindOrAdd(Who);
+						const TArray<TSharedPtr<FJsonValue>>* SA = nullptr;
+						const int32 Start = Dst.Num();
+						Dst.AddUninitialized(NB * 12);
+						if (SkinO.IsValid() && SkinO->TryGetArrayField(Who, SA) && SA->Num() == NB * 12)
+							for (int32 K = 0; K < NB * 12; ++K) Dst[Start + K] = (*SA)[K]->AsNumber();
+						else
+							for (int32 K = 0; K < NB * 12; ++K) Dst[Start + K] = NAN;
+					}
+					const TSharedPtr<FJsonObject> Figs = Obj(FO, TEXT("bodies"));
+					if (!Figs.IsValid()) continue;
+					for (const auto& BP : Figs->Values)
 					{
 						TArray<FVector>* Dst = P.Joints.Find(FString(*BP.Key));
 						if (!Dst) continue;
@@ -235,6 +298,7 @@ void AStoryPreview::BeginPlay()
 			if (ULightComponent* L = It->FindComponentByClass<ULightComponent>()) LightRefs.Add(S, {L, L->Intensity});
 		}
 
+	SetupBodies();
 	BuildUi();
 	FString From = StartNode;
 	if (From.IsEmpty()) From = Str(Root, TEXT("start"));
@@ -585,6 +649,104 @@ void AStoryPreview::ShowFigures(bool bShow)
 {
 	for (auto& FP : Figures)
 		if (FP.Value.Actor.IsValid()) FP.Value.Actor->SetActorHiddenInGame(!bShow);
+	for (auto& BP : BodyRigs)
+		if (BP.Value.Actor.IsValid()) BP.Value.Actor->SetActorHiddenInGame(!bShow);
+}
+
+void AStoryPreview::SetupBodies()
+{
+	const TSharedPtr<FJsonObject> BodiesO = Obj(Root, TEXT("bodies"));
+	for (const auto& BP : Bodies)
+	{
+		USkeletalMesh* Mesh = BP.Value;
+		const TSharedPtr<FJsonObject> Info = Obj(BodiesO, BP.Key);
+		const auto* BoneArr = Arr(Info, TEXT("bones"));
+		const auto* BindArr = Arr(Info, TEXT("bind"));
+		if (!Mesh || !BoneArr || !BindArr) continue;
+		AActor* A = GetWorld()->SpawnActor<AActor>();
+		USceneComponent* R = NewObject<USceneComponent>(A);
+		A->SetRootComponent(R);
+		R->RegisterComponent();
+#if WITH_EDITOR
+		A->SetActorLabel(FString::Printf(TEXT("preview_body_%s"), *BP.Key));
+#endif
+		UPoseableMeshComponent* PM = NewObject<UPoseableMeshComponent>(A);
+		PM->SetSkinnedAssetAndUpdate(Mesh);
+		PM->SetupAttachment(R);
+		PM->SetBoundsScale(4.f);                   // posed far from its reference pose: don't cull by the old bounds
+		PM->RegisterComponent();
+
+		TMap<FString, int32> SkinIndex;
+		for (int32 I = 0; I < BoneArr->Num(); ++I) SkinIndex.Add((*BoneArr)[I]->AsString(), I);
+		FPvBody Body;
+		Body.Actor = A;
+		Body.Mesh = PM;
+		Body.NumSkin = BoneArr->Num();
+		double Lin = 100;
+		if (Info->TryGetNumberField(TEXT("skin_lin"), Lin)) Body.Lin = Lin;
+		TArray<FVector> Bind, Ref;
+		TArray<FMatrix> RefM;
+		const int32 NumUe = PM->GetNumBones();
+		for (int32 B = 0; B < NumUe; ++B)               // Unreal's bone order: parents first
+		{
+			const FName Name = PM->GetBoneName(B);
+			const int32* Si = SkinIndex.Find(Name.ToString());
+			if (!Si) continue;
+			const FTransform RefT = PM->GetBoneTransformByName(Name, EBoneSpaces::ComponentSpace);
+			Body.Names.Add(Name);
+			Body.SkinIdx.Add(*Si);
+			RefM.Add(RefT.ToMatrixWithScale());
+			Ref.Add(RefT.GetLocation());
+			Bind.Add(FVector((*BindArr)[*Si * 3]->AsNumber(), (*BindArr)[*Si * 3 + 1]->AsNumber(), (*BindArr)[*Si * 3 + 2]->AsNumber()));
+		}
+		FMatrix H;
+		if (Body.Names.Num() < 4 || !FitAffine(Bind, Ref, H))
+		{
+			UE_LOG(LogStoryPreview, Warning, TEXT("STORY: %s's body: only %d of its bones match the bake; drawn as the figure"), *BP.Key, Body.Names.Num());
+			A->Destroy();
+			continue;
+		}
+		double Err = 0;
+		for (int32 I = 0; I < Bind.Num(); ++I) Err = FMath::Max(Err, (H.TransformPosition(Bind[I]) - Ref[I]).Size());
+		const FMatrix Hinv = H.Inverse();
+		for (const FMatrix& M : RefM) Body.RefHinv.Add(M * Hinv);
+		UE_LOG(LogStoryPreview, Log, TEXT("STORY: %s's body: %d of %d bones driven, import axes fitted to %.2f cm"), *BP.Key, Body.Names.Num(), NumUe, Err);
+		A->SetActorHiddenInGame(true);
+		BodyRigs.Add(BP.Key, MoveTemp(Body));
+	}
+}
+
+void AStoryPreview::ApplyBodies(float Time)
+{
+	const FPvScene* S = Scenes.Find(SceneId);
+	if (!S || S->Frames == 0) return;
+	const float FF = FMath::Clamp(Time * S->Fps, 0.f, (float)(S->Frames - 1));
+	const int32 F0 = FMath::FloorToInt(FF), F1 = FMath::Min(F0 + 1, S->Frames - 1);
+	const float U = FF - F0;
+	for (auto& BP : BodyRigs)
+	{
+		FPvBody& B = BP.Value;
+		const TArray<float>* Sk = S->Skin.Find(BP.Key);
+		const bool bHere = Sk && Sk->Num() >= S->Frames * B.NumSkin * 12 && !FMath::IsNaN((*Sk)[F0 * B.NumSkin * 12]);
+		if (B.Actor.IsValid()) B.Actor->SetActorHiddenInGame(!bHere);
+		if (!bHere) continue;
+		auto Bone = [&](int32 F, int32 Si)
+		{
+			const float* E = Sk->GetData() + (F * B.NumSkin + Si) * 12;
+			const float L = 1.f / B.Lin;
+			const FMatrix Sm(FPlane(E[0] * L, E[1] * L, E[2] * L, 0), FPlane(E[3] * L, E[4] * L, E[5] * L, 0),
+			                 FPlane(E[6] * L, E[7] * L, E[8] * L, 0), FPlane(E[9], E[10], E[11], 1));
+			return Sm;
+		};
+		for (int32 K = 0; K < B.Names.Num(); ++K)
+		{
+			const FTransform T0(B.RefHinv[K] * Bone(F0, B.SkinIdx[K]) * ThreeToUe);
+			FTransform Tm = T0;
+			if (U > 0.001f && F1 != F0 && !FMath::IsNaN((*Sk)[F1 * B.NumSkin * 12]))
+				Tm.Blend(T0, FTransform(B.RefHinv[K] * Bone(F1, B.SkinIdx[K]) * ThreeToUe), U);
+			B.Mesh->SetBoneTransformByName(B.Names[K], Tm, EBoneSpaces::ComponentSpace);
+		}
+	}
 }
 
 void AStoryPreview::ApplyFigures(float Time)
@@ -599,6 +761,7 @@ void AStoryPreview::ApplyFigures(float Time)
 	{
 		AActor* A = FP.Value.Actor.Get();
 		if (!A) continue;
+		if (BodyRigs.Contains(FP.Key)) { A->SetActorHiddenInGame(true); continue; }     // the real body stands in
 		const TArray<FVector>* J = S->Joints.Find(FP.Key);
 		const bool bHere = J && Valid((*J)[F0 * NJ + FMath::Max(HeadIdx, 0)]);
 		A->SetActorHiddenInGame(!bHere);
@@ -665,6 +828,7 @@ void AStoryPreview::ApplyFrame(float Time)
 			SubWho = FText::FromString(Sub.Who.IsEmpty() ? S->Title : FString::Printf(TEXT("%s \u00B7 %s"), *S->Title, *Sub.Who));
 		}
 	ApplyFigures(Time);
+	ApplyBodies(Time);
 }
 
 void AStoryPreview::Tick(float Dt)

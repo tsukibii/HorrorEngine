@@ -16,6 +16,8 @@ class ACameraActor;
 class ULightComponent;
 class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class UPoseableMeshComponent;
+class USkeletalMesh;
 class SWidget;
 class SVerticalBox;
 class FJsonObject;
@@ -37,6 +39,18 @@ struct FPvScene
 	TArray<FPvSub> Subs;
 	TArray<FPvEvent> Events;
 	TMap<FString, TArray<float>> Lights;        // light id -> intensity multiplier a frame
+	TMap<FString, TArray<float>> Skin;          // who -> frames x bones x 12: each body bone's skinning matrix
+};
+
+struct FPvBody
+{
+	TWeakObjectPtr<AActor> Actor;
+	TObjectPtr<UPoseableMeshComponent> Mesh;
+	TArray<FName> Names;                        // Unreal's bones that the bake has, parents first
+	TArray<int32> SkinIdx;                      // each one's place in the bake's bone list
+	TArray<FMatrix> RefHinv;                    // its reference pose times the inverse of the fitted import axes
+	int32 NumSkin = 0;
+	float Lin = 100;
 };
 
 struct FPvFigure
@@ -62,6 +76,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Story")
 	FString StartNode;
 
+	/** Each cast member's body as the desk shows it (imported by Generate from Previs/Body_<who>.glb). A cast
+	 *  member without one is drawn as the desk's figure. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Story")
+	TMap<FString, TObjectPtr<USkeletalMesh>> Bodies;
+
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -84,6 +103,8 @@ private:
 	void ApplyFrame(float T);
 	void ApplyFigures(float T);
 	void ShowFigures(bool bShow);
+	void SetupBodies();
+	void ApplyBodies(float T);
 	void SetSceneView(bool bScene);
 	void SetMouse(bool bMouse);
 	void ToggleMouse();
@@ -113,6 +134,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<ACameraActor> Camera;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> FigureMat;
 	TMap<FString, FPvFigure> Figures;
+	TMap<FString, FPvBody> BodyRigs;
 	struct FLightRef { TWeakObjectPtr<ULightComponent> Light; float Base = 0; };
 	TMap<FString, FLightRef> LightRefs;
 

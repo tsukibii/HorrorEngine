@@ -34,13 +34,47 @@ def write(game, result):
     (out_dir(game) / "result.json").write_text(json.dumps(result, indent=1), encoding="utf-8")
 
 
+def import_bodies(game):
+    """Each cast member's body as the desk shows it (Previs/Body_<who>.glb, written by the desk's bake) as a skeletal
+    mesh in /Game/Games/<Game>/Imported/Bodies/<who>/<hash>: a folder per version of the file, so an unchanged body
+    isn't imported again and a changed one never replaces an asset a map still uses."""
+    import hashlib
+    found = {}
+    for f in sorted((L.GAMES / game / "Previs").glob("Body_*.glb")):
+        who = f.stem[5:]
+        dest = f"/Game/Games/{game}/Imported/Bodies/{who}/v{hashlib.sha1(f.read_bytes()).hexdigest()[:10]}"
+
+        def mesh_in(d):
+            for path in unreal.EditorAssetLibrary.list_assets(d, recursive=True) if unreal.EditorAssetLibrary.does_directory_exist(d) else []:
+                a = unreal.load_asset(path)
+                if isinstance(a, unreal.SkeletalMesh):
+                    return a
+            return None
+
+        found[who] = mesh_in(dest)
+        if found[who] is None:
+            task = unreal.AssetImportTask()
+            task.set_editor_property("filename", str(f))
+            task.set_editor_property("destination_path", dest)
+            task.set_editor_property("automated", True)
+            task.set_editor_property("save", True)
+            unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+            found[who] = mesh_in(dest)
+        if found[who] is None:
+            del found[who]
+            unreal.log_warning(f"storykit: {f.name} didn't import as a skeletal mesh: {who} stays a figure")
+    return found
+
+
 def run(game):
     result = {"ok": False, "game": game, "levels": {}, "errors": [], "started": time.time()}
     write(game, dict(result, state="building"))
     try:
         imp = fresh()
         story, _ = L.load(game)
-        made = imp.build(game) or {}
+        bodies = import_bodies(game)
+        result["bodies"] = {k: v.get_path_name() for k, v in bodies.items()}
+        made = imp.build(game, bodies=bodies) or {}
         result["levels"] = made
         first = story["flow"].get(story["game"].get("start"), {})
         ref = story.get("scenes", {}).get(first.get("ref")) or story.get("stitches", {}).get(first.get("ref")) or {}

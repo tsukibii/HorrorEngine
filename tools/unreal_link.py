@@ -63,7 +63,7 @@ def checks(game):
 
 def script(game):
     return (f"# @Description: Generate {game} from the desk\n"
-            f"import storykit.generate as g\ng.run({game!r})\n")
+            f"import importlib\nimport storykit.generate as g\nimportlib.reload(g)\ng.run({game!r})\n")
 
 
 def start_editor(game):
