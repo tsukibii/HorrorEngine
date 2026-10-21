@@ -130,3 +130,7 @@ the fix.
   point and a curve as twelve, so the drape skipped every straight-to-curved stitch (the skirt's waistband floated,
   the t-shirt slid off its shoulders). Straight edges now get twelve too. And GarmentCode's flat placement, 30 cm in
   front and 25 cm behind, sews shoulder seams straight through the shoulders: lay the panels on the body first.
+- **To open MHR's sealed shell, move points, don't hide triangles:** hiding the triangles inside the lid outline
+  left slivers over one eye (MHR's triangulation differs round each eye); sinking every point inside the outline
+  behind the eyeball works whatever the triangles are. The mouth is still open: its visible inside isn't within the
+  inner-lip outline at all, so the same trick showed a pale wall (a look at MHR's mouth geometry comes first).
