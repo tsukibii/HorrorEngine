@@ -88,6 +88,8 @@
       <div id="skinRows"></div>
       <h3>Photo skin</h3>
       <div id="photoSkin"></div>
+      <h3>Eyes</h3>
+      <div id="eyeRows"></div>
     </section>
 
     <section data-tab="hair" hidden>
@@ -346,6 +348,7 @@ dgeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(C * 3),
 dgeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
 if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
 const mesh = new THREE.Mesh(dgeo, material); scene.add(mesh);
+let EYES_IN = false;
 let SCALE = 1, TOP = 1.7;
 function computeBody() {                               // RAW: MHR with the weights, unscaled (what the face fit sees)
   RAW.set(BASEP);
@@ -356,25 +359,85 @@ function computeBody() {                               // RAW: MHR with the weig
     for (let i = 0; i < RAW.length; i++) RAW[i] += a * S[i];
   }
 }
-function compose() {                                   // POS: RAW + the face, scaled to the height, feet on the floor
+function compose() {                                   // POS: RAW + the face, scaled to the height, feet on the floor; then the eyes, the expressions
   let lo = Infinity, hi = -Infinity;
   for (let i = 1; i < RAW.length; i += 3) { lo = Math.min(lo, RAW[i]); hi = Math.max(hi, RAW[i]); }
   SCALE = st.height / (hi - lo); TOP = st.height;
   for (let i = 0; i < RAW.length; i += 3) { POS[i] = RAW[i] * SCALE; POS[i + 1] = (RAW[i + 1] - lo) * SCALE; POS[i + 2] = RAW[i + 2] * SCALE; }
+  if (DELTA) {
+    const k = st.face.strength * SCALE;
+    for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; POS[i] += k * DELTA.d[j * 3]; POS[i + 1] += k * DELTA.d[j * 3 + 1]; POS[i + 2] += k * DELTA.d[j * 3 + 2]; }
+  }
+  placeEyes();                                         // from the neutral face
   for (let e = 0; e < ENAMES.length; e++) {
     const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
     for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; POS[i] += a * X[j * 3]; POS[i + 1] += a * X[j * 3 + 1]; POS[i + 2] += a * X[j * 3 + 2]; }
   }
-  if (DELTA) {
-    const k = st.face.strength * SCALE;
-    for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; POS[i] += k * DELTA.d[j * 3]; POS[i + 1] += k * DELTA.d[j * 3 + 1]; POS[i + 2] += k * DELTA.d[j * 3 + 2]; }
-  }
+  openEyes();                                          // from the moving lids: a blink closes over the eyeball
   geo.attributes.position.needsUpdate = true; geo.computeVertexNormals();
   const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
-  for (let c = 0; c < C; c++) { const i = TRIS[c] * 3, j = c * 3; DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2]; }
+  for (let c = 0; c < C; c++) {
+    const i = TRIS[c] * 3, j = c * 3;
+    DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
+  }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
 }
+
+// ---- eyes: MHR's closed shell sunk behind an eyeball inside MediaPipe's lid outline -----------------------------------
+const LMK = await api("api/face/landmarks", {}).catch(() => null);   // {tri, bary}: the 468 points on MHR's body
+const LIDS = { L: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466],   // the character's left (+x)
+               R: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] };
+function lmk(i) {                                       // a landmark's place on the body as it is now
+  const t = LMK.tri[i] * 3, b = LMK.bary[i], out = [0, 0, 0];
+  for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) out[a] += b[k] * POS[v + a]; }
+  return out;
+}
+function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+function openEyes() {                                  // the closed shell inside the lid outline sinks behind the eyeball
+  if (!LMK || !st.eyes.on) return null;
+  for (const side of ["L", "R"]) {
+    const ring = LIDS[side].map(lmk), m = EYES[side];
+    const cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cy = ring.reduce((a, p) => a + p[1], 0) / ring.length;
+    const poly = ring.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]);
+    const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const back = m.position.z - m.scale.x * 1.05, front = Math.min(...ring.map(p => p[2])) - 0.006;
+    for (let i = 0; i < POS.length; i += 3) {
+      const x = POS[i], y = POS[i + 1], z = POS[i + 2];
+      if (x < x0 || x > x1 || y < y0 || y > y1 || z < front) continue;
+      if (inside(poly, x, y)) POS[i + 2] = back;
+    }
+  }
+  return null;
+}
+function eyeTexture(color) {                            // sclera, iris and pupil round the sphere's front pole
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d");
+  const sc = g.createLinearGradient(0, 0, 0, 256); sc.addColorStop(0, "#f4efe9"); sc.addColorStop(0.6, "#efe3dc"); sc.addColorStop(1, "#d9b8b0");
+  g.fillStyle = sc; g.fillRect(0, 0, 512, 256);
+  const ir = g.createLinearGradient(0, 0, 0, 44); ir.addColorStop(0, color); ir.addColorStop(0.75, color); ir.addColorStop(1, "#1a1210");
+  g.fillStyle = ir; g.fillRect(0, 0, 512, 44);         // the iris: the cap within ~31 degrees of the pole
+  g.fillStyle = "#050505"; g.fillRect(0, 0, 512, 15);  // the pupil
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const eyeMat = new THREE.MeshPhysicalMaterial({ roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 });
+const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
+const EYES = { L: new THREE.Mesh(eyeGeo, eyeMat), R: new THREE.Mesh(eyeGeo, eyeMat) };
+st.eyes = { on: true, iris: "#3b2618" };
+function placeEyes() {
+  for (const side of ["L", "R"]) {
+    const m = EYES[side];
+    if (!LMK || !st.eyes.on) { m.visible = false; continue; }
+    const ring = LIDS[side].map(lmk), n = ring.length;
+    const c = [0, 1, 2].map(a => ring.reduce((s, p) => s + p[a], 0) / n);
+    const r = 0.0118 * SCALE;                          // a 12 mm eyeball, with the body's scale
+    m.scale.setScalar(r); m.position.set(c[0], c[1], Math.max(...ring.map(p => p[2])) - r + 0.0008);
+    const w = n => st.expr[ENAMES.indexOf(n)] * st.exprAmt;
+    const yaw = (w(`eyesLookLeft_${side}`) - w(`eyesLookRight_${side}`)) * 0.45, pitch = (w(`eyesLookDown_${side}`) - w(`eyesLookUp_${side}`)) * 0.35;
+    m.rotation.set(pitch, yaw, 0); m.visible = true;
+  }
+}
+
 const orbit = { yaw: 0.3, pitch: 0.08, focus: "body" };
 function place() {
   const head = orbit.focus === "head", ty = head ? TOP - 0.12 * TOP / 1.7 : TOP * 0.52, d = head ? 0.9 : 4.6;
@@ -393,8 +456,18 @@ for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
 };
 $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
-renderer.setAnimationLoop(() => { place(); renderer.render(scene, camera); });
+renderer.setAnimationLoop(() => { if (!EYES_IN) { scene.add(EYES.L, EYES.R); EYES_IN = true; } place(); renderer.render(scene, camera); });
 resize();
+
+// ---- the eyes' controls ---------------------------------------------------------------------------------------------
+{
+  const on = el("input", { type: "checkbox", checked: true }), iris = el("input", { type: "color", value: "#3b2618" });
+  $("#eyeRows").append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Sinks MHR's closed shell inside MediaPipe's lid outline behind a 12 mm eyeball; the gaze shapes turn them, a blink closes the lid over them. Placeholders for the real eye parts (ICT-FaceKit's, with the tear line and occlusion)." }))),
+    el("div", { className: "row" }, el("span", { textContent: "Iris" }), iris, el("output")));
+  on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
+  iris.oninput = () => { st.eyes.iris = iris.value; eyeMat.map = eyeTexture(iris.value); eyeMat.needsUpdate = true; };
+  eyeMat.map = eyeTexture(st.eyes.iris);
+}
 
 // ---- changes: the body here at once, the face from the worker after a pause ----------------------------------------
 let faceTimer = null, seq = 0;
@@ -484,10 +557,13 @@ async function open(name) {
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
+  Object.assign(st.eyes, { on: true, iris: "#3b2618" }, c.eyes || {});
+  $("#eyeRows input[type=checkbox]").checked = st.eyes.on; $("#eyeRows input[type=color]").value = st.eyes.iris;
+  eyeMat.map = eyeTexture(st.eyes.iris); eyeMat.needsUpdate = true;
   computeBody(); compose(); hud();
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -524,7 +600,7 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 $("#raking").onchange = place;
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, POS, N };   // bodytest.js
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);

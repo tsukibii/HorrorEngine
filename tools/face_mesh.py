@@ -638,6 +638,7 @@ def cmd_worker(a):
       template {head}                     the head's points and triangles and the rotation that faces it to the view
       fit {name, settings, skip}          the head bent with those settings, its points flat, the report
       save {name, settings, skip, out}    <out>/<name>.obj, .json, _sheet.png
+      landmarks {}                        where MediaPipe's 468 points sit on MHR's body (triangle, barycentric weights)
       mhr {}                              the body editor's sliders: groups, labels, the bases, MHR's measures
       body {name, weights, settings, skip, side}   MHR's body (tools/character/mhr.py) with those identity weights and the
                                           face bent onto its head: the points that moved and by how much
@@ -671,6 +672,12 @@ def cmd_worker(a):
             presets = json.loads(mhr.PRESETS_FILE.read_text(encoding="utf-8"))["presets"] if mhr.PRESETS_FILE.exists() else {}
             return dict(groups=m["header"]["groups"], labels=mhr.labels(m), presets=presets,
                         measures=mhr.measures(m["points"], m))
+        if op == "landmarks":                              # where MediaPipe's 468 points sit on MHR's body (face parts)
+            sys.path.insert(0, str(ROOT / "tools" / "character"))
+            import mhr
+            m = mhr.load()
+            tpl, bnd = ses.body(m["points"], m["tris"])
+            return dict(tri=[int(t) for t in bnd["tri"]], bary=bnd["bary"])
         if op in ("body", "skin"):
             sys.path.insert(0, str(ROOT / "tools" / "character"))
             import mhr

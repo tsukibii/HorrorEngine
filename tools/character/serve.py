@@ -148,10 +148,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(500, {"error": "the garment failed: " + (r.stderr or r.stdout)[-600:]})
             res = json.loads(line)
             return self.send(200, {"design": design, "drape": res["drape"], "measures_cm": res["measures_cm"]})
-        if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("mhr", "detect", "body", "skin"):
+        if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("mhr", "landmarks", "detect", "body", "skin"):
             req = json.loads(self.body().decode("utf-8") or "{}")
             req["op"] = parts[2]
-            if parts[2] != "mhr":
+            if parts[2] not in ("mhr", "landmarks"):
                 n = clean(req.get("name"))
                 if not n:
                     return self.send(400, {"error": "pick or make a character first"})

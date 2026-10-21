@@ -2,7 +2,7 @@
 // the feminine base and a shape slider move the body, the height scales it; a front picture (the page's own head from
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
-// eyesClosed (not a look); the skin is made from the front picture and worn; pants are made to the body and worn; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
+// eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; pants are made to the body and worn; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup, python tools/garment.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
@@ -82,6 +82,8 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (moved.body > 5e-4) throw new Error(`the smile moved the body ${moved.body} m`);   // MHR's shapes reach the upper neck a little
     const w = await page.evaluate(() => { const b = window.__body, w = b.fromArkit({ eyeBlinkLeft: 1 }); return Object.fromEntries(b.ENAMES.map((n, i) => [n, w[i]]).filter(x => x[1])); });
     if (JSON.stringify(w) !== JSON.stringify({ eyesClosed_L: 1 })) throw new Error("eyeBlinkLeft maps to " + JSON.stringify(w));
+    const eyes = await page.evaluate(() => { const E = window.__body.EYES; return [E.L.visible, E.R.visible, E.L.position.x, E.R.position.x]; });
+    if (!eyes[0] || !eyes[1] || !(eyes[2] > 0.01 && eyes[3] < -0.01)) throw new Error("the eyeballs aren't in place: " + eyes);
     await page.click("#exprClear");
     await page.click('#tabs button[data-tab="body"]');
   });
