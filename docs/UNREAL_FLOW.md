@@ -13,6 +13,7 @@ setup these steps rely on.
 | each scene's blocking (bodies, moves, cameras) | the desk's **Export glTF** → `Content/Games/<G>/Previs/` | animation on the stand-ins until real motions exist **(built)** |
 | the Kimodo motions | `Saved/Story/<G>/kimodo/*.npz` (the demo) or `motion/*.npz` (the CLI) | FBX on SOMA → retargeted onto each MetaHuman: `tools/retarget.py` **(FBX built and tested; editor script: to do, local)** |
 | the takes (MiniMax videos) | `Footage/<G>/<take id>.mp4` (`intake.py`, trimmed) | SoundWaves for the voice, face animation by MetaHuman Animator: `storykit.media.import_takes` **(to do, local: SETUP S11)** |
+| the levels' kit things, doors and textures (the scene builder, docs/KIT.md, ASSETS.md §6) | `levels` in story.json; `Library/meshes/kit/` (built by the importer); `Content/Studio/PBR/` | kit meshes (static), doors as frame + leaf on its hinges + handle (tagged `door_part:*`), material instances of M_StudioSurface in `/Game/Studio/PBR/` imported only when missing **(built, untested: docs/HANDOFF_SCENE_BUILDER.md §3)** |
 | the look, trackers and idle | scene `look`, `trackers`; the idle has no field | one Control Rig layer for the whole cast, driven by the runner **(to do, local)** |
 
 ## 1. The blocked game, playable as blocks
