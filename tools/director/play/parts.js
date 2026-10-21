@@ -6,9 +6,10 @@
 //   action       run(value, act, rt) -> (promise)         a beat's `do` ({"objective": "Find the key"})
 //   interactable prompt(thing, rt, s) -> {cursor, label}; use(thing, rt, s)    a prop's `use` (note, pickup, door...)
 //   ability      update(rt, dt, s); key(rt, e, down, s); mouse(rt, dx, dy, s)  what the player can do (walk, crouch, look)
+//   behaviour    start(npc, rt, s); update(npc, rt, dt, s)                   what a cast member does in play (idle, path...)
 // `s` is the part's settings (settingsOf): the defaults, then the player's (the Watch's crouch toggle or hold).
 
-export const KINDS = ["condition", "action", "interactable", "ability"];
+export const KINDS = ["condition", "action", "interactable", "ability", "behaviour"];
 const REG = Object.fromEntries(KINDS.map(k => [k, {}]));
 
 export function register(kind, name, part) {

@@ -8,6 +8,8 @@ import { matches } from "./conditions.js";
 import { runAll } from "./actions.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
+import { behaviourOf } from "./behaviours.js";
+import * as M from "../motion.js";
 import { Hud } from "./hud.js";
 import { Physics, dieMaterials } from "./physics.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
@@ -29,6 +31,7 @@ export class PlayRuntime {
     this.hud = new Hud(box, opts.theme || (story.game || {}).ui_theme || THEME);
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
+    this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
     this.listener = null; this.ray = new THREE.Raycaster();
     this.on = {
@@ -82,7 +85,7 @@ export class PlayRuntime {
     }
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
     if (this.player.hiding) this.stage.seeThrough(this.player.hiding, this.stage.seeThroughOf(this.player.hiding));
-    for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // NPC behaviours come in step 3
+    for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // shown again by their behaviour (drawNpcs)
     const movers = this.stage.world.children.filter(o => o.isMesh && o.userData.use === "roll");   // things that roll: dice
     for (const m of movers) {
       m.material = dieMaterials();
@@ -291,6 +294,44 @@ export class PlayRuntime {
     return new Promise(done => { this.moving = { from: { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw, pitch: p.pitch }, to, t: 0, done }; });
   }
 
+  // ---- the cast in play: behaviours (play/behaviours.js) ------------------------------------------------------------
+  // a route: a level's named one, or a list of spots in place -> {level, mode, points: [{pos, yaw, wait, pose}]}
+  route(ref) {
+    let r = null, level = null;
+    if (Array.isArray(ref)) r = { points: ref };
+    else for (const [lid, lv] of Object.entries(this.story.levels || {})) if ((lv.routes || {})[ref]) { r = lv.routes[ref]; level = lid; }
+    if (!r) { this.hud.log(`no route ${ref}`); return null; }
+    const points = [];
+    for (const p of r.points || []) {
+      const q = typeof p === "string" ? { at: p } : p, t = this.plan.things[q.at];
+      if (!t) { this.hud.log(`route ${ref}: no spot ${q.at}`); continue; }
+      level = level || t.level;
+      points.push({ pos: s2t(t.pos[0], t.pos[1], t.pos[2] || 0), yaw: t.yaw || 0, wait: +(q.wait || 0), pose: q.pose || null });
+    }
+    return points.length ? { level, mode: r.mode || "loop", points } : null;
+  }
+  behave(cid, spec) {
+    const as = spec.as || "idle", npc = this.npcs[cid];
+    if (as === "off") { delete this.npcs[cid]; if (this.stage.cast[cid]) this.stage.cast[cid].group.visible = false; return; }
+    const b = behaviourOf(as); if (!b) { this.hud.log(`behaviour not in Play yet: ${as}`); return; }
+    const n = this.npcs[cid] = { cid, as, s: settingsOf(b, spec), st: {}, pos: npc && npc.pos, yaw: npc ? npc.yaw : 0, level: npc && npc.level, pose: "idle", walking: false };
+    b.start(n, this, n.s);
+  }
+  drawNpcs(dt) {
+    const lib = this.stage.lib, X = new THREE.Vector3(1, 0, 0);
+    for (const n of Object.values(this.npcs)) {
+      const b = behaviourOf(n.as); if (b && b.update) b.update(n, this, dt, n.s);
+      const f = this.stage.cast[n.cid]; if (!f) continue;
+      f.group.visible = !!n.pos && n.level === this.level;
+      if (!f.group.visible) continue;
+      f.group.position.copy(n.pos); f.group.rotation.y = (n.yaw + 90) * Math.PI / 180;
+      let p = M.clonePose(lib.poses[n.pose] || lib.poses.idle);
+      if (n.walking) p = M.walkOverlay(lib, p, this.clock);
+      p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(X, Math.sin(this.clock * 2.2) * 0.012));   // breathing
+      f.update(M.fk(lib, p, +((this.story.cast || {})[n.cid] || {}).height || 1.7).pos);
+    }
+  }
+
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
   aim() {
@@ -399,10 +440,11 @@ export class PlayRuntime {
       if (u.flicker) k *= 1 - u.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
       l.intensity = (u.base || 1) * k;
     }
+    this.drawNpcs(dt);
     if (!this.busy) this.updateCursor(dt);
     this.emit({ type: "tick" });
     this.hud.tick();
     this.stage.render();
   }
 }
-export const PARTS = () => Object.fromEntries(["condition", "action", "interactable", "ability"].map(k => [k, names(k)]));
+export const PARTS = () => Object.fromEntries(["condition", "action", "interactable", "ability", "behaviour"].map(k => [k, names(k)]));

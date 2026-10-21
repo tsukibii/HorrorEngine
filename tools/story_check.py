@@ -24,15 +24,17 @@ from storykit import kit as KIT  # noqa: E402
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
-TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled"}
+TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least"}
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene"}
+           "karma", "count", "scene", "behave"}
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
+BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "off": ()}   # a cast member in play: what each needs
+ROUTE_MODES = {"loop", "pingpong", "once"}
 TRICKS = {  # name: (required fields, seconds it takes)
     "swap": ({"hide", "show"}, 0), "slam_behind": ({"door"}, 2), "lights_die": ({"room"}, 3),
     "glimpse": ({"figure"}, 2), "knock": ({"at"}, 3), "whisper": ({"line", "at"}, 0),
@@ -132,6 +134,21 @@ def check_world(story, things, r):
         start = things.get(lvl.get("start"))
         if not start or start.use != "spot" or start.level != lid:
             r.err(f"level {lid}: start {lvl.get('start')!r} isn't a spot in it")
+        for rid, rt in (lvl.get("routes") or {}).items():    # named walks for the cast in play (behave path / patrol)
+            pts = rt.get("points", []) if isinstance(rt, dict) else []
+            if len(pts) < 2:
+                r.err(f"level {lid}: route {rid} needs points: two or more spots")
+            if isinstance(rt, dict) and rt.get("mode", "loop") not in ROUTE_MODES:
+                r.err(f"level {lid}: route {rid} mode {rt.get('mode')!r} (one of {', '.join(sorted(ROUTE_MODES))})")
+            for pt in pts:
+                q = {"at": pt} if isinstance(pt, str) else pt
+                t = things.get(q.get("at"))
+                if not t or t.use != "spot" or t.level != lid:
+                    r.err(f"level {lid}: route {rid} point {q.get('at')!r} isn't a spot in it")
+                if not isinstance(q.get("wait", 0), (int, float)) or q.get("wait", 0) < 0:
+                    r.err(f"level {lid}: route {rid} at {q.get('at')}: wait {q.get('wait')!r} (seconds)")
+                if q.get("pose") is not None and q["pose"] not in POSES:
+                    r.err(f"level {lid}: route {rid} at {q.get('at')}: pose {q['pose']!r} isn't in Content/Studio/poses.json")
         for k, v in (lvl.get("trim") or {}).items():
             if k not in ("skirting", "cornice", "casing", "threshold") or not isinstance(v, (int, float)) or not 0 <= v <= 0.4:
                 r.err(f"level {lid}: trim {k}: {v!r} (skirting, cornice, casing, threshold: heights or widths in metres, 0 for none)")
@@ -636,6 +653,8 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: read {v!r} isn't a note")
     elif k == "after" and v not in beats:
         r.err(f"{bid}: after {v!r} isn't a beat in this stitch")
+    elif k == "hidden" and v is not True and (v not in things or things[v].use != "locker"):
+        r.err(f"{bid}: hidden {v!r}: true (in any hiding place) or a locker's id")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
         if v not in things or things[v].use != "roll":
             r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
@@ -711,6 +730,29 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: shot who {a.get('who')!r} isn't in cast")
         if a.get("line") and a["line"] not in lines:
             r.err(f"{bid}: shot line {a['line']!r} isn't a line")
+    elif k == "behave":                                 # {"behave": cast id, "as": idle sit path patrol off, ...}
+        routes = {rid for lv in story.get("levels", {}).values() for rid in (lv.get("routes") or {})}
+        as_ = a.get("as", "idle")
+        if v not in cast:
+            r.err(f"{bid}: behave {v!r} isn't in cast")
+        if as_ not in BEHAVE:
+            r.err(f"{bid}: behave as {as_!r} (one of {', '.join(sorted(BEHAVE))})")
+            return
+        for f in BEHAVE[as_]:
+            if f not in a:
+                r.err(f"{bid}: behave as {as_} needs {f!r}")
+        if "at" in a:
+            placed(a["at"], "spot")
+        rs = a.get("routes", []) + ([a["route"]] if isinstance(a.get("route"), str) else [])
+        for x in rs:
+            if x not in routes:
+                r.err(f"{bid}: route {x!r} isn't a route on any level")
+        for x in a.get("route", []) if isinstance(a.get("route"), list) else []:
+            placed(x, "spot")
+        if a.get("pose") is not None and a["pose"] not in POSES:
+            r.err(f"{bid}: behave pose {a['pose']!r} isn't in Content/Studio/poses.json")
+        if a.get("pick", "order") not in ("order", "random") or a.get("mode", "loop") not in ROUTE_MODES:
+            r.err(f"{bid}: behave pick (order random) or mode (loop pingpong once)")
     elif k == "stalker":
         if v not in STALKER:
             r.err(f"{bid}: stalker {v!r}")
@@ -1135,6 +1177,8 @@ class World:
             return ("start", self.cur) in self.done_events
         if k in ("enter", "exit", "look", "rolled"):      # rolled: the walker rolls until the face comes up
             return self.can_reach(v)
+        if k == "hidden":                                 # the walker gets into that locker, or the nearest one it can reach
+            return any(self.can_reach(t.id) for t in self.things.values() if t.use == "locker" and (v is True or t.id == v))
         if k == "use":
             t = self.things[v]
             if t.use == "pickup":
@@ -1159,7 +1203,7 @@ class World:
     def where(self, w):
         k = next(iter(set(w) - TRIGGER_EXTRA))
         v = w[k]
-        return v if k in ("enter", "exit", "use", "look", "rolled") and v in self.things else None
+        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden") and v in self.things else None
 
     def apply_state(self, a):
         k = verbs(a)[0]

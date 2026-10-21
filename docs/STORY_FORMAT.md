@@ -57,6 +57,11 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 
 - Each level becomes one map: `/Game/Games/<Game>/Maps/L_<level>`.
 - `start` is a spot.
+- `routes` (optional): named walks for the cast in play (`behave` path and patrol, §4), each a list of the level's
+  spots in order, with a `wait` (seconds, facing the spot's `rot`) and a `pose` (the pose library) where she stops:
+  `"routes": {"r_hall": {"points": [{"at": "hall_back", "wait": 2, "pose": "look_left"}, "hall_near"], "mode": "pingpong"}}`.
+  `mode`: `loop` (the default), `pingpong`, `once`. She walks straight from point to point, so place the spots where
+  the line between them is clear.
 
 **A room:**
 
@@ -365,6 +370,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `{"flag": name}` | the flag is set |
 | `{"all": [...]}`, `{"any": [...]}` | a combination |
 | `{"caught": true}` | the stalker catches the player |
+| `{"hidden": true}`, `{"hidden": locker}` | the player is in any hiding place, or in that one (`use: locker`); holds while they stay |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
@@ -375,6 +381,11 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 - `wait`, `fade` (`in`/`out`, `secs`), `lookat` (`secs`, `lock`)
 - `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)
 - `stalker` (`spawn despawn patrol hunt chase`, `at`, `route`)
+- `behave`: what a cast member does in play, until another `behave` (or a scene takes them and hands them back):
+  `{"behave": "mari", "as": "path", "route": "r_hall"}`. `as`: `idle` (`at` a spot, `pose`, `face` a thing, a cast
+  member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,
+  `from`: `nearest` or `first` point), `patrol` (`routes`: walks each once, then the next; `pick`: `order` or
+  `random`), `off` (gone). Not AI: the same steps every time, so a player can learn them.
 - `trick` (TRICKS.md §2), `checkpoint`
 - `scene`: a **triggered scene**. It plays a scene in the middle of the stitch, started by what the player does
   (walking into a place, sitting down, using a thing), blended in from where they are and back out to play, and the

@@ -116,7 +116,10 @@ playback; Generate stays the one button.
    triggered scene and play goes on, `use: sit`; still to do: interactive cinematics where you walk while she talks,
    and Unreal's preview, which fades a blend for now): a beat starts a scene; blended in and out on the ladder (§1); interactive cinematics (walk
    while she talks); timed choices.
-3. **NPC behaviours**: idle, sit, path on routes; talk lines; routes in the builder.
+3. **NPC behaviours** (**built on the desk 2026-10-21**: `play/behaviours.js`, a `behaviour` part kind; `idle`, `sit`,
+   `path`, `patrol`, `off` by the `behave` action; `levels.<id>.routes`; a scene takes the actor and play hands them
+   back where they were; still to do: talk lines, drawing routes in the builder, the blend when a scene takes them):
+   idle, sit, path on routes; talk lines; routes in the builder.
 4. **Stealth**: crouch, hiding places with see-through (**built 2026-10-21**), safe zones, the view cone and
    suspicion, caught.
 5. **The registry and the checks** (grown alongside 1 to 4, not after).

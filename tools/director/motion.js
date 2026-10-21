@@ -84,7 +84,7 @@ export function evalBlock(lib, keys, t, dur, startMove) {
   return P(ks[ks.length - 1]);
 }
 
-function walkOverlay(lib, p, t) {
+export function walkOverlay(lib, p, t) {
   const phase = (Math.sin(t * Math.PI * 1.8 * 2) + 1) / 2;   // ~1.8 steps a second
   const stride = mixPose(lib.poses.walk_a, lib.poses.walk_b, phase);
   const out = clonePose(p);

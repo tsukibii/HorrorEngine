@@ -1,6 +1,6 @@
 // Play mode in a headless browser (docs/GAMEPLAY_PLAN.md §8 step 1): the Pilot walked from the start to the good
 // ending with the keys and the cursor, as a player would: a wall stops you, the front door opens with E, the hall's
-// trigger ends the arrival, the letter reads, E hides in the locker and gets out, the kitchen's glimpse fires, the drawer's code is typed on the panel,
+// trigger ends the arrival, Mari walks her route in the hall, the letter reads, E hides in the locker and gets out, the kitchen's glimpse fires, the drawer's code is typed on the panel,
 // the key shows and is taken, the locked cellar door opens with it, the struggle is mashed free (E), and the timed run
 // out of the house ends on the porch. Ends "PLAY ok".
 //
@@ -29,6 +29,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.stitches.t_search.beats.push({ id: "b_sit", when: { use: "chair_b" }, do: [{ scene: "s_message" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "big_die", shape: "box 0.3 0.3 0.3", at: [2.6, 4.2], use: "roll" });
     S.stitches.t_search.beats.push({ id: "b_roll", when: { rolled: "big_die", at_least: 1 }, optional: true, do: [{ flag: "rolled_once" }] });
+    S.levels.house.routes = { r_hall: { points: [{ at: "hall_mari_back_spot", wait: 1, pose: "look_left" }, "hall_mari_near_spot"], mode: "pingpong" } };
+    S.stitches.t_search.beats.push({ id: "b_walk", when: { start: true }, do: [{ behave: "mari", as: "path", route: "r_hall" }] });
     await window.__dd.replan();
   });
   await page.click('nav button[data-v="watchView"]');
@@ -100,6 +102,14 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (most > 0.15) throw new Error(`black went to ${most.toFixed(2)}`);
   });
   await step("the message scene, then the search", () => scenesUntilPlay());
+  const mari = () => page.evaluate(() => { const rt = window.__dd.play, f = rt.stage.cast.mari, n = rt.npcs.mari;
+    return { vis: f.group.visible, x: f.group.position.x, y: -f.group.position.z, walking: n && n.walking, pose: n && n.pose }; });
+  const onRoute = async what => {                      // on the line between her two spots, and moving along it
+    const a = await mari(); await page.waitForTimeout(1500); const b = await mari();
+    for (const m of [a, b]) if (!m.vis || Math.abs(m.x - 2) > 0.05 || m.y < 3.55 || m.y > 5.8) throw new Error(`${what}: off her route ${JSON.stringify(m)}`);
+    if (Math.abs(a.y - b.y) < 0.2 && !(a.pose === "look_left" || b.pose === "look_left")) throw new Error(`${what}: not walking ${JSON.stringify([a, b])}`);
+  };
+  await step("a behaviour: Mari walks her route up and down the hall (path, pingpong, a wait in a pose)", () => onRoute("the search"));
   await step("sitting: E sits (the eye at sitting height), E stands", async () => {
     const r = await goTo("chair_a", 0.8);
     if (r.cursor !== "sit") throw new Error("cursor " + r.cursor);
@@ -119,6 +129,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const st = await page.evaluate(() => { const rt = window.__dd.play; return { seat: !!rt.player.seat, stitch: !!rt.end, y: -rt.player.pos.z }; });
     if (st.seat || !st.stitch) throw new Error(JSON.stringify(st));
     if (Math.abs(st.y - 2.2) > 0.6) throw new Error(`carried on from y=${st.y.toFixed(2)}, the scene's eye is at 2.2`);
+    await onRoute("after the scene");
   });
   await step("the die: E throws it, it settles on the floor, its face is heard (rolled)", async () => {
     const r = await goTo("big_die", 1.1);
