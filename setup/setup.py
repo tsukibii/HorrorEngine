@@ -2,7 +2,9 @@
 """The project's one-time setup, step by step (SETUP.md says when to run each). Safe to rerun: each step skips
 what's already done.
 
-    python setup/setup.py env                    find Unreal, Visual Studio, git, git-lfs; write setup/env.json
+    python setup/setup.py env                    find Unreal, the C++ toolchain, git, git-lfs; write setup/env.json
+    python setup/setup.py adopt <folder>         move a project the Project Browser made elsewhere into this folder
+                                                 (its .uproject, Source, Config, Content merged), then delete what's left
     python setup/setup.py plugins [words...]     list the engine's plugins whose name matches (default: setup/plugins.json's words)
     python setup/setup.py enable                 enable setup/plugins.json's plugins in the .uproject (names checked against the engine)
     python setup/setup.py unrealclaude [--show-scripts] [--auto-approve]
@@ -17,8 +19,9 @@ what's already done.
                                                  Drop last frame, Stage, Path, Pose): put them in, see if they fit, save the
                                                  checkout's changes back into the patch, or take them out
     python setup/setup.py configure              ini lines (packaging story.json, Python), .gitignore, .gitattributes
-    python setup/setup.py build                  compile the editor target (C++ projects), via the engine's Build.bat
-    python setup/setup.py editor [args]          open the editor on the project (extra args pass through)
+    python setup/setup.py build                  compile the editor target (C++ projects), via the engine's Build.sh / Build.bat
+    python setup/setup.py editor [args]          open the editor on the project (extra args pass through; on Linux through
+                                                 unreal-omarchy's `ue` launcher when it's there, for its stability flags)
 """
 import json
 import os
@@ -32,6 +35,9 @@ ROOT = Path(__file__).resolve().parents[1]
 HERE = ROOT / "setup"
 ENV = HERE / "env.json"
 LAUNCHER = Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "Epic" / "UnrealEngineLauncher" / "LauncherInstalled.dat"
+WINDOWS = os.name == "nt"
+PLAT = "Win64" if WINDOWS else "Linux"
+UE_LAUNCHER = Path.home() / ".local" / "bin" / "ue"      # unreal-omarchy's launcher (it knows UE_ROOT)
 VSWHERE = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -67,6 +73,10 @@ def find_engine(given=None):
         if engines:
             best = max(engines, key=lambda a: tuple(int(x) for x in a["AppName"][3:].split(".")))
             return Path(best["InstallLocation"])
+    if UE_LAUNCHER.exists():
+        m = re.search(r'^UE_ROOT="?([^"\n]+)"?', UE_LAUNCHER.read_text(encoding="utf-8", errors="replace"), re.M)
+        if m and Path(m.group(1)).exists():
+            return Path(m.group(1))
     for base in (Path(r"C:\Program Files\Epic Games"), Path(r"D:\Epic Games")):
         if base.exists():
             cands = sorted(base.glob("UE_5.*"))
@@ -75,43 +85,62 @@ def find_engine(given=None):
     return None
 
 
+def editor_exe(eng):
+    return Path(eng) / "Engine" / "Binaries" / PLAT / ("UnrealEditor.exe" if WINDOWS else "UnrealEditor")
+
+
+def linux_toolchain(eng):
+    """Epic's bundled clang (the Linux prebuilt ships it), or one LINUX_MULTIARCH_ROOT points at."""
+    if os.environ.get("LINUX_MULTIARCH_ROOT"):
+        return os.environ["LINUX_MULTIARCH_ROOT"]
+    base = Path(eng) / "Engine" / "Extras" / "ThirdPartyNotUE" / "SDKs" / "HostLinux" / "Linux_x64" if eng else None
+    found = sorted(base.glob("*clang*")) if base and base.exists() else []
+    return str(found[-1]) if found else None
+
+
 def cmd_env(args):
     rows, env = [], {}
     eng = find_engine(args[0] if args else None)
-    editor = eng / "Engine" / "Binaries" / "Win64" / "UnrealEditor.exe" if eng else None
+    editor = editor_exe(eng) if eng else None
     ok = bool(editor and editor.exists())
     version = None
     if eng and (eng / "Engine" / "Build" / "Build.version").exists():
         bv = json.loads((eng / "Engine" / "Build" / "Build.version").read_text())
         version = f"{bv.get('MajorVersion')}.{bv.get('MinorVersion')}.{bv.get('PatchVersion')}"
     rows.append(("Unreal Engine", ok, f"{eng} ({version})" if ok else "not found: pass its folder, e.g. "
-                 "`python setup/setup.py env \"C:/Program Files/Epic Games/UE_5.8\"`"))
+                 "`python setup/setup.py env /path/to/UnrealEngine` (or set UE_ROOT)"))
     env.update(engine=str(eng) if eng else None, version=version)
     if ok and version and tuple(int(x) for x in version.split(".")[:2]) < (5, 8):
         rows.append(("Unreal 5.8 or newer", False, f"found {version}: the MCP plugin needs 5.8"))
-    vs = None
-    if VSWHERE.exists():
-        r = run([str(VSWHERE), "-latest", "-products", "*", "-requires", "Microsoft.VisualStudio.Workload.NativeGame",
-                 "-property", "installationPath"])
-        vs = r.stdout.strip() if r and r.stdout.strip() else None
-    rows.append(("Visual Studio with 'Game development with C++'", bool(vs), vs or
-                 "needed to compile C++ (the StoryRunner): install Visual Studio Community with that workload, then rerun"))
-    env["visual_studio"] = vs
+    if WINDOWS:
+        vs = None
+        if VSWHERE.exists():
+            r = run([str(VSWHERE), "-latest", "-products", "*", "-requires", "Microsoft.VisualStudio.Workload.NativeGame",
+                     "-property", "installationPath"])
+            vs = r.stdout.strip() if r and r.stdout.strip() else None
+        rows.append(("Visual Studio with 'Game development with C++'", bool(vs), vs or
+                     "needed to compile C++ (the StoryRunner): install Visual Studio Community with that workload, then rerun"))
+        env["visual_studio"] = vs
+    else:
+        tc = linux_toolchain(eng)
+        rows.append(("Epic's clang toolchain (C++)", bool(tc), tc or "not in this engine: the Linux prebuilt ships it under "
+                     "Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux; or set LINUX_MULTIARCH_ROOT"))
+        env["toolchain"] = tc
     git = shutil.which("git")
-    rows.append(("git", bool(git), git or "install Git for Windows (winget install Git.Git)"))
+    rows.append(("git", bool(git), git or ("install Git for Windows (winget install Git.Git)" if WINDOWS else "sudo pacman -S git")))
     lfs = run(["git", "lfs", "version"]) if git else None
     rows.append(("git-lfs", bool(lfs and lfs.returncode == 0), (lfs.stdout.strip() if lfs and lfs.returncode == 0 else
-                 "install it (winget install GitHub.GitLFS), then `git lfs install`")))
+                 ("install it (winget install GitHub.GitLFS)" if WINDOWS else "sudo pacman -S git-lfs") + ", then `git lfs install`")))
     try:
         import PIL  # noqa: F401
         pil = True
     except ImportError:
         pil = False
-    rows.append(("Pillow (for the plan and shot sheets)", pil, "ok" if pil else "pip install pillow"))
+    rows.append(("Pillow (for the plan and shot sheets)", pil, "ok" if pil else "uv pip install pillow numpy (or pip)"))
     node = run(["node", "--version"])
     nv = node.stdout.strip() if node and node.returncode == 0 else None
     node_ok = bool(nv) and int(nv.lstrip("v").split(".")[0]) >= 18
-    rows.append(("Node.js 18+ (UnrealClaude's MCP bridge)", node_ok, nv or "install Node.js LTS (winget install OpenJS.NodeJS.LTS)"))
+    rows.append(("Node.js 18+ (UnrealClaude's MCP bridge)", node_ok, nv or ("install Node.js LTS (winget install OpenJS.NodeJS.LTS)" if WINDOWS else "sudo pacman -S nodejs npm")))
     cc = run(["claude", "--version"]) or run(["claude.cmd", "--version"])
     rows.append(("Claude Code CLI", bool(cc and cc.returncode == 0), (cc.stdout.strip() if cc and cc.returncode == 0 else
                  "npm install -g @anthropic-ai/claude-code, then claude auth login")))
@@ -119,7 +148,7 @@ def cmd_env(args):
     rows.append(("free disk on this drive", free > 60, f"{free:.0f} GB (want 60+ for the project, builds and footage)"))
     up = uproject()
     rows.append(("the .uproject in this folder", bool(up), str(up.name) if up else
-                 "create the project first (SETUP.md S2), then unzip this kit into its folder"))
+                 "create the project (SETUP.md S2), then `python setup/setup.py adopt <its folder>`"))
     env["uproject"] = str(up) if up else None
     for name, good, note in rows:
         print(f"{'ok  ' if good else 'MISS'}  {name:<48} {note}")
@@ -453,8 +482,9 @@ def cmd_configure(_args):
 def cmd_build(_args):
     env = load_env()
     up = Path(env["uproject"] or uproject())
-    bat = Path(env["engine"]) / "Engine" / "Build" / "BatchFiles" / "Build.bat"
-    cmd = [str(bat), f"{up.stem}Editor", "Win64", "Development", f"-Project={up}", "-WaitMutex", "-NoHotReload"]
+    batch = Path(env["engine"]) / "Engine" / "Build" / "BatchFiles"
+    script = batch / "Build.bat" if WINDOWS else batch / "Linux" / "Build.sh"
+    cmd = [str(script), f"{up.stem}Editor", PLAT, "Development", f"-Project={up}", "-WaitMutex", "-NoHotReload"]
     print(" ".join(cmd))
     r = subprocess.run(cmd)
     print("BUILD ok" if r.returncode == 0 else f"BUILD FAILED ({r.returncode})")
@@ -464,14 +494,57 @@ def cmd_build(_args):
 def cmd_editor(args):
     env = load_env()
     up = Path(env["uproject"] or uproject())
-    exe = Path(env["engine"]) / "Engine" / "Binaries" / "Win64" / "UnrealEditor.exe"
+    exe = UE_LAUNCHER if not WINDOWS and UE_LAUNCHER.exists() else editor_exe(env["engine"])
     subprocess.Popen([str(exe), str(up)] + args)
     print(f"EDITOR started: {exe} {up.name} {' '.join(args)}")
 
 
+ADOPT = ["Source", "Config", "Content"]               # what a new project brings; the rest (Binaries, Intermediate,
+                                                    # Saved, DerivedDataCache) is rebuilt here
+
+
+def cmd_adopt(args):
+    """The Project Browser won't create a project in a folder with files in it, so it makes one elsewhere and this
+    moves it in: its .uproject, Source and Config (which must be new here) and its Content (merged: nothing of ours
+    is overwritten). Then the old folder goes."""
+    if not args:
+        sys.exit("adopt <the folder the Project Browser made>")
+    src = Path(args[0]).expanduser().resolve()
+    ups = sorted(src.glob("*.uproject"))
+    if len(ups) != 1:
+        sys.exit(f"want one .uproject in {src}, found {len(ups)}")
+    if uproject():
+        sys.exit(f"this folder already has {uproject().name}: nothing adopted")
+    for name in ("Source", "Config"):
+        if (ROOT / name).exists():
+            sys.exit(f"{name}/ already exists here: move it aside first")
+    clash = [f.relative_to(src) for f in (src / "Content").rglob("*") if f.is_file() and (ROOT / f.relative_to(src)).exists()]
+    if clash:
+        sys.exit("these Content files exist in both: " + ", ".join(map(str, clash[:10])))
+    for name in ("Source", "Config"):
+        if (src / name).exists():
+            shutil.move(str(src / name), str(ROOT / name))
+    for f in sorted((src / "Content").rglob("*")):
+        if f.is_file():
+            dst = ROOT / f.relative_to(src)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(f), str(dst))
+    shutil.move(str(ups[0]), str(ROOT / ups[0].name))
+    for f in src.glob(f"{ups[0].stem}.png"):        # the project's thumbnail
+        shutil.move(str(f), str(ROOT / f.name))
+    left = [p.name for p in src.iterdir() if p.name not in ("Binaries", "Intermediate", "Saved", "DerivedDataCache",
+                                                             "Content", ".vs", ".vscode") and p.suffix not in (".sln", ".code-workspace")]
+    if left:
+        print(f"kept {src}: it still has {', '.join(left)} (look, then delete it yourself)")
+    else:
+        shutil.rmtree(src)
+        print(f"removed {src}")
+    print(f"ADOPT ok: {ups[0].name} with {', '.join(ADOPT)} in {ROOT}")
+
+
 def main():
     cmds = {"env": cmd_env, "plugins": cmd_plugins, "enable": cmd_enable, "fetch": cmd_fetch, "unrealclaude": cmd_unrealclaude,
-            "configure": cmd_configure, "build": cmd_build, "editor": cmd_editor, "kimodo": cmd_kimodo,
+            "configure": cmd_configure, "adopt": cmd_adopt, "build": cmd_build, "editor": cmd_editor, "kimodo": cmd_kimodo,
             "kimodo-patch": cmd_kimodo_patch}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         print(__doc__)

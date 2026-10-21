@@ -76,7 +76,7 @@ Before every push: CHECKS ok, and PLAYTHROUGH ok on every game the change can to
   - read the review JSON first
 - **The editor through UnrealClaude** (MCP server `unreal`), one call at a time. Python goes through
   `unreal_execute_script`. Save before and after bulk changes. Without the editor:
-  `UnrealEditor-Cmd.exe <project> -ExecutePythonScript=…`.
+  `<engine>/Engine/Binaries/Linux/UnrealEditor-Cmd <project> -ExecutePythonScript=…`.
 - **First person: the camera is the player.** Only what their eye can see from where they can stand: one lens
   (`game.fov`), shot sizes by distance, `stance` for height, `push` to lean in. Never a `fov` on a clip
   (DIRECTING.md §1).

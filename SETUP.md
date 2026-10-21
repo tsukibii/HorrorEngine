@@ -11,47 +11,55 @@ Work the phases in order, and tick each (`- [x]`) in the commit that finishes it
 - [ ] Read `CLAUDE.md`, `docs/DECISIONS.md`, `docs/PIPELINE.md`, then skim `docs/STORY_FORMAT.md` and
   `docs/TOOLBOX.md`.
 - [ ] Ask the user, in one message:
-  1. **the project's name:** `HorrorStudio` unless they prefer another neutral name; it becomes every game's `.exe`
+  1. **the project's name:** `HorrorStudio` unless they prefer another neutral name; it becomes every game's executable
      name
-  2. **where it lives:** a fast drive, short path, no spaces
-  3. **git hosting:** a private GitHub repo (Git LFS quotas apply), Azure DevOps, or Diversion
-  4. **script permissions:** whether UnrealClaude may show Claude its Python tool (`--show-scripts`; every script
+  2. **git hosting:** GitHub (`origin`) unless they want another (Git LFS quotas apply)
+  3. **script permissions:** whether UnrealClaude may show Claude its Python tool (`--show-scripts`; every script
      still asks in the editor), and whether to **auto-approve** scripts in this project (`--auto-approve`: faster,
      and the editor logs each one; only on their own machine)
 
 ## S1. Prerequisites (Claude runs, user installs)
 
-- [ ] `python setup/setup.py env`. If Python is missing: `winget install Python.Python.3.12`, then
-  `pip install pillow numpy`.
-- [ ] For each `MISS`, give the one command or click, and rerun until `ENV ok`. The usual misses:
-  - **Visual Studio 2022 Community** with "Game development with C++" (and the Windows SDK)
-  - Git for Windows
-  - Git LFS (`git lfs install`)
-  - **Node.js LTS** (`winget install OpenJS.NodeJS.LTS`)
-  - Claude Code CLI (already there if you're reading this in it)
-- **Done:** `ENV ok`.
+The studio runs on Linux (DECISIONS 2026-10-21): Omarchy, Unreal 5.8.3's Linux prebuilt (installed and made stable by
+`../unreal-omarchy/`, started with `ue`), and Epic's bundled clang for C++ (no Visual Studio). Python is the user's
+uv.
 
-## S2. Make the studio project (user, 2 minutes)
+- [ ] `python setup/setup.py env`. It finds the engine through `ue`'s `UE_ROOT` (or `UE_ROOT`, or a folder you pass).
+- [ ] For each `MISS`, give the one command, and rerun until `ENV ok`. The usual misses:
+  - `sudo pacman -S git-lfs`, then `git lfs install`
+  - `sudo pacman -S nodejs npm` (UnrealClaude's MCP bridge)
+  - Pillow and numpy: `uv pip install pillow numpy` into the Python that runs the tools
+  - the engine itself: run `../unreal-omarchy/` first (its CLAUDE.md)
+- **Done:** `ENV ok` (the `.uproject` line clears in S2).
 
-- [ ] **(user)** Epic Games Launcher → Unreal Engine 5.8 → Launch → Games → **First Person**, then:
-  - variant **Survival Horror**
-  - **C++**
+## S2. Make the project, in this folder (user, 2 minutes, then Claude)
+
+The project lives in this repo's folder, next to `Content/Studio`, `Content/Games`, the tools and Kimodo
+(`vendor/kimodo`). The Project Browser refuses a folder that already has files in it, so it makes the project
+somewhere else and `setup.py adopt` moves it in.
+
+- [ ] **(user)** `ue` → Games → **First Person**, then:
+  - **C++** (the C++ version carries every variant's code and content, Horror included)
   - Desktop, Maximum quality
   - Starter Content off
-  - name it the S0 answer, in the S0 folder
+  - folder: `/run/media/hal/Derick/Unreal/UnrealProjects`
+  - name: the S0 answer (`HorrorStudio`)
   - Create
-- [ ] **(user)** When the editor has opened (it compiles shaders once, and that's the point of one studio project),
-  close it.
-- [ ] **(user)** Copy everything inside the zip's `HorrorStudio` folder into the project folder, next to the
-  `.uproject` (merge `Content`).
-- [ ] **(user)** Open Claude Code in that folder and say "continue the setup".
-- **Done:** `python setup/setup.py env` shows the `.uproject` as ok.
+- [ ] **(user)** Let it open (the first shader compile takes 10 to 40 minutes), then close the editor.
+- [ ] `python setup/setup.py adopt /run/media/hal/Derick/Unreal/UnrealProjects/HorrorStudio`: the `.uproject`, its
+  thumbnail, `Source`, `Config` and `Content` (merged; nothing of ours is overwritten) come into this folder, and the
+  old folder goes (its Binaries, Intermediate and caches are rebuilt here).
+- [ ] `python setup/setup.py build`, then `python setup/setup.py editor`: it opens here (through `ue`), on the
+  template's map.
+- **Done:** `python setup/setup.py env` shows the `.uproject` as ok, and the editor opens it from this folder.
 
 ## S3. Git (Claude)
 
-- [ ] `python setup/setup.py configure` (writes `.gitignore`, `.gitattributes` and the ini lines).
-- [ ] `git init`, `git lfs install`, commit everything.
-- [ ] Add the remote from S0, and push.
+This folder is already the repo (`origin` is GitHub).
+- [ ] `python setup/setup.py configure` (the ini lines, and `.gitattributes`, which sends the binary assets to LFS;
+  `.gitignore` is there already).
+- [ ] `git lfs install`; check `.gitattributes` sends `*.uasset` and `*.umap` to LFS, then commit the project
+  (`.uproject`, `Source`, `Config`, the template's `Content`) and push.
 - **Done:** a clean `git status`, and the remote has the commit.
 
 ## S4. UnrealClaude, with the UE 5.8 fix (Claude, user approves)
@@ -70,7 +78,7 @@ fix; use 48.
     `http://localhost:3000`)
 - [ ] `python setup/setup.py plugins`, fix names in `setup/plugins.json` if your engine differs, then
   `python setup/setup.py enable`.
-- [ ] `python setup/setup.py build` (the first build takes 5 to 20 minutes), then `python setup/setup.py editor`.
+- [ ] `python setup/setup.py build` (5 to 20 minutes with the plugin), then `python setup/setup.py editor`.
 - [ ] **(user)** If the editor asks to rebuild modules: Yes.
 - [ ] With the editor open: `curl http://localhost:3000/mcp/status` returns JSON.
 - [ ] **(user)** Restart Claude Code in the folder and approve the `unreal` MCP server.
@@ -118,7 +126,7 @@ fix; use 48.
      **interrupts**
   7. checkpoints and saves
 - [ ] Run the tests headless:
-  `UnrealEditor-Cmd.exe <project> -ExecCmds="Automation RunTests Story; Quit" -unattended -nullrhi -log`.
+  `<engine>/Engine/Binaries/Linux/UnrealEditor-Cmd <project> -ExecCmds="Automation RunTests Story; Quit" -unattended -nullrhi -log`.
 - **Done:** `RUNNER ok`, and `Story.State` prints the pilot's state in PIE.
 
 ## S8. The importer, for real (Claude)
@@ -239,7 +247,7 @@ fix; use 48.
 ## S13. Package the pilot (Claude)
 
 - [ ] `python tools/package_game.py --game Pilot --dry`, read it, then run it for real. Fix what UAT complains about.
-- [ ] Run the `.exe`. Check that it starts in the pilot, plays to an ending, and that no other game's assets are in
+- [ ] Run the packaged game. Check that it starts in the pilot, plays to an ending, and that no other game's assets are in
   the build (the cook's log).
 - **Done:** `PACKAGE ok`, the build plays, and its size is reasonable.
 
