@@ -2,6 +2,12 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (hair: Sisir for our own cuts, Fab for the rest)
+
+- **Sisir is the tool to try for custom hairstyles** (free standalone, Windows: draw guides on the archetype groom
+  head, a procedural stack grows the groom, Alembic out, bind in Unreal as a wardrobe item). Styles that exist on
+  Fab are bought, not made (docs/METAHUMAN_LOOKS.md §3.3 and §3.5). The first Sisir-to-Unreal run goes in LESSONS.md.
+
 ## 2026-10-20 (Kimodo's motions onto the MetaHumans)
 
 - **The body motions made with Kimodo in the desk go onto the user's rigged MetaHumans in Unreal** (no talking: the

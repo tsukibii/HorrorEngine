@@ -186,7 +186,7 @@ other (§3.1), so the fit is the same. Easiest first; "unverified" means a vendo
 
 | Tool | What it is | Output | Cost | Notes |
 |---|---|---|---|---|
-| **Sisir** (standalone, Windows, July 2026) | import a head OBJ, draw guide curves on it, a non-destructive procedural stack (clump, frizz, curl, cut) grows the full groom | Alembic and PLY (no FBX or USD) | free; the licence was being updated for commercial use (CG Channel), 80.lv says free for commercial already: check its site | the closest thing to "easy hair" today; its Unreal import is untested in print (Unreal's Alembic groom schema is informal), so the first run is a test |
+| **Sisir** (standalone, Windows, July 2026) | import a head OBJ, draw guide curves on it, a non-destructive procedural stack (clump, frizz, curl, cut) grows the full groom | Alembic and PLY (no FBX or USD) | free; the licence was being updated for commercial use (CG Channel), 80.lv says free for commercial already: check its site | **the user's pick (DECISIONS 2026-10-21)**; the closest thing to "easy hair" today; its Unreal import is untested in print (Unreal's Alembic groom schema is informal), so the first run is a test |
 | **Unreal's own Groom Dataflow** (5.7, Hair Data Flow section in the groom asset) | templates build a node graph on an imported groom: guides, interpolation, cards, joint-based deformation and painting on strands (the "hair art directability" docs) | the groom itself | free, in the engine | edits an existing groom; it doesn't draw one from nothing |
 | **Epic's Hair Card Generator** (experimental plugin, Geometry category; a Dataflow "Cards" template in 5.7) | strands to card LODs with textures, inside the editor | card meshes and textures on the groom | free | the ship step for a game: strands for the close-ups, cards everywhere else |
 | **MetaHuman for Houdini + Houdini Groom Starter Kit** (Epic, free assets) | procedural grooming on the MetaHuman head in Houdini, with an exporter | Alembic | the assets are free; Houdini isn't (Indie is cheap) | the official procedural route |
@@ -209,6 +209,32 @@ anime read, and Epic's card generator before shipping. The Blender starter kit's
 Hair is Creator's: nothing in the desk (the storyboard's bodies are clay). Record the wardrobe item or the `.mhpkg`
 name per cast member in `docs/games/<Game>.md` next to the face recipe. Custom grooms live in `/Game/Studio/Grooms/`
 (shared, never a game's folder). Fab grooms are not CC0: they stay in the user's project and out of shared files.
+
+### 3.5 Ready-made grooms on Fab: what to buy for a Korean or Japanese cast (2026-10-21)
+
+Fab's MetaHuman channel (`fab.com/search/channels/metahuman?tags=groom`) has hundreds of grooms; most are Western
+cuts, fades and beards. The ones that read East Asian come mostly from one seller, **Venice**, whose names are
+salon terms from Seoul (air bangs, collarbone waves) and who posts every style on the Unreal forums with the same
+spec: strands bound to the archetype head ("verified through the MetaHuman accessory adaptation of Unreal 5.6",
+so it fits any head), an LOD setup that drops the curve count by 50 to 70 percent, 20 to 500 physics guides, the
+`.abc` source, a UE 5.5.4 project and the `.mhpkg`. Prices aren't in the forum posts: read them on Fab.
+
+| Need | Buy | Why |
+|---|---|---|
+| **Pipeline test, costs nothing** | Venice, **"Real-time Straight Hair with Air Bangs"** (free) | long straight hair with the thin Korean fringe: the most common young-woman look in both countries; install it first, confirm the binding, the LODs and the card generator on it before paying for anything |
+| **The female lead** | Venice, **"Two Styles Korean Collarbone Waves"** | the K-drama cut (collarbone length, soft C-curl ends), two variants in one pack |
+| **A schoolgirl or a short cut** | Venice **"Short Bob Vol.2 - Straight"**, or **"Short Bob with Blunt Bangs"** (seller unnamed in the listing; check it) | the straight bob with a blunt fringe is the Japanese schoolgirl read; Venice's "Twisted Bob" for a styled one |
+| **Hair the player can grab, or a runner** | Venice **"Six Style Ponytail"** or **"Eve Long Ponytail with Bangs"** (also in Venice's "Mega Groom Hair Pack", often half price) | ponytails have the most physics guides (up to 500): they swing, and they're what a hand can close on (docs/TRICKS.md, the grab) |
+| **Anime read** | Venice **"Anime Twin-Tail"**, "Bubble Twin-Tail", "Spiral Twin Tail", "Ichigo Spiky Short" | the only anime-styled MetaHuman grooms found |
+| **Men** | Venice **"Two Styles SlickedBack Short"** or **"Triple SidePart Pompadour"** as the nearest; KhitrovArt for fades and recedes (strands only, 5.6 to 5.8) | **Fab has no two-block, comma hair or curtain fringe**: the Korean men's cuts are the first Sisir job (§3.3) |
+| **Free, to learn the format** | AnnaLev "Messy Bob", Quang Phan "MHC: Nomad Wave Undercut", studio TEKATI "Broccoli Fade 2" (all free) | three different sellers' packaging to compare against our own `.mhpkg` |
+| **Brows** | KhitrovArt "Medium Natural Straight Eyebrows" | straight brows are half the East Asian read (§1.2) and Creator's are mostly arched |
+
+Before buying, on each listing: 5.6 or later and "verified" or "accessory adaptation" in the text (older grooms
+bound to the 5.5 head need rebinding by hand); whether cards are included (KhitrovArt says no; Venice doesn't say:
+assume strands only and plan on Epic's card generator); physics guide count if it must swing. Fab's standard
+licence allows the groom in a shipped game but not redistribution: it stays in the user's project, never in a
+shared file (the studio rule). Colour is the hair material, not the groom: every one of these goes black.
 
 ## Sources
 
@@ -264,3 +290,17 @@ Hair tools (§3.3): [Sisir (CG Channel)](https://www.cgchannel.com/2026/07/sisir
 [DiffLocks](https://difflocks.is.tue.mpg.de/), [HairLRM](https://arxiv.org/abs/2606.15238), [CGHair](https://arxiv.org/abs/2604.03716),
 [Digital Salon](https://digital-salon.github.io/), [anime twin-tail groom](https://forums.unrealengine.com/t/venice-real-time-anime-twin-tail-hair-for-metahuman/2743782),
 [best grooming tools for Unreal (overview)](https://yelzkizi.org/best-hair-grooming-tools-for-unreal-engine/).
+Fab grooms (§3.5): [Fab MetaHuman grooms](https://www.fab.com/search/channels/metahuman?tags=groom),
+[Venice: Straight Hair with Air Bangs (free)](https://fab.com/s/392bcd050924),
+[Venice: Short Bob Vol.2 Straight](https://forums.unrealengine.com/t/venice-real-time-short-bob-hair-for-metahuman-vol-2-straight/2600874),
+[Venice: Twisted Bob](https://forums.unrealengine.com/t/venice-real-time-twisted-bob-hair-hair-for-metahuman/2745890),
+[Venice: Six Style Ponytail](https://forums.unrealengine.com/t/2633452),
+[Venice: Voluminous High Ponytail](https://forums.unrealengine.com/t/venice-real-time-voluminous-high-ponytail-hair-for-metahuman/2617192),
+[Venice: Two Styles SlickedBack Short](https://forums.unrealengine.com/t/venice-real-time-two-styles-slickedback-short-groom-hair-for-metahuman/2653230),
+[Venice: Ichigo Spiky Short](https://forums.unrealengine.com/t/2569322),
+[Eve Long Ponytail with Bangs](https://www.fab.com/listings/5ea13ec6-90a3-4af4-bfca-96f9f606559f),
+[Short Bob with Blunt Bangs](https://www.fab.com/listings/152a6956-200e-4918-b0bd-c6e22711f652),
+[Studio Ninjato MetaHair 17](https://forums.unrealengine.com/t/studio-ninjato-metahair-17-groom-hair-for-metahuman/2583008),
+[studio TEKATI Broccoli Fade 2 (free)](https://forums.unrealengine.com/t/now-permanently-free-studio-tekati-metahuman-broccoli-fade-2/2732688),
+[KhitrovArt straight eyebrows](https://forums.unrealengine.com/t/khitrovart-medium-natural-straight-eyebrows-groom-for-metahuman/2838687),
+[KhitrovArt hard part slick back (5.6 to 5.8, strands only)](https://forums.unrealengine.com/t/khitrovart-hard-part-slick-back-with-mid-skin-fade-groom-for-metahuman/2739919).
