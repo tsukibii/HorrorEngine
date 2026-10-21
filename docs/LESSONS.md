@@ -140,3 +140,9 @@ the fix.
 heavier or lighter fabric and stiffer bending didn't help. At 8 the seams still close (0.5 mm), the shirt stays on the
 shoulders with real short sleeves, and skirts and pants drape as before. Try `DRAPE_SET='{"key": value}'` on a few
 settings side by side (renders stacked) before rewriting the drape.
+
+**MHR's mouth is sealed by a membrane (2026-10-21).** The open mouth's "inside" isn't a sock of skin behind the lips:
+it's a sheet of triangles whose corners all sit on the lip line, stretched across the gap when the jaw drops. Sinking
+points, depth tests and floods inward from the lip line all miss it (they also leaked onto the chin at the corners).
+Find it by what it does: near the mouth, the triangles that grow ten times or more in area under jawDrop; colour those
+per corner. Measure the expression's effect before guessing at the geometry.
