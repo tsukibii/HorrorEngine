@@ -65,6 +65,14 @@ a tiny nose) so a manga-leaning face is a sculpt elsewhere brought in through Me
 - **Reallusion Character Creator 4 + Headshot 2:** a photo to a CC head; CC heads aren't MetaHuman topology, so it's
   the same Mesh to MetaHuman path (Reallusion's own notes say the 5.6 steps changed; their "Apply CC Texture" route
   is for textures, not shape).
+- **`tools/face_mesh.py` (ours, free, no account):** a face's shape from one photo or several, or a video (the
+  close-up takes work), with MediaPipe's Face Landmarker (Apache-2.0). Each picture's 468 points are taken out of
+  their head pose, the turned, smiling, blinking and talking ones dropped, the rest averaged into one neutral face:
+  an OBJ (metres, opens in Blender facing -Y, Z up), a JSON of what was used, a contact sheet. It's the front of the
+  face only, at an average adult's size, with no texture: scale it onto the MetaHuman base mesh by the eyes, then
+  Mesh to MetaHuman's trace and auto-match. Depth is MediaPipe's learned guess, so check the profile against a side
+  photo. Faces made from real people's pictures stay in `Content/Studio/Heads/` (git-ignored). Not MICA or FLAME:
+  both need an account and are non-commercial.
 - **A generated reference:** the user already makes close-up face videos; a neutral frontal frame from those is a
   FaceBuilder input, and the mocap takes are the same face, so likeness and animation agree.
 

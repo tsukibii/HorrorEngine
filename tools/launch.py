@@ -81,6 +81,7 @@ TOOLS = [
 
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
+    ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
     ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
@@ -98,6 +99,7 @@ TOOLS = [
     ("Setup", "Kimodo demo additions: check", "setup/setup.py kimodo-patch check", {}),
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
     ("Setup", "GarmentCode setup", "tools/garment.py setup", {}),
+    ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
 ]
 
