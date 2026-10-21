@@ -219,13 +219,55 @@ def scene_version(scene):
     return merged
 
 
+def engine_version():
+    """The studio engine's version (Content/Studio/VERSION): games record it in game.built_with."""
+    f = STUDIO / "VERSION"
+    return f.read_text(encoding="utf-8").strip() if f.exists() else "0.0.0"
+
+
+JA_MORAE = 6.5        # morae a second: a film's unhurried delivery (everyday speech runs 7 to 8)
+JA_PAUSES = {"…": 0.25, "‥": 0.2, "、": 0.25, "。": 0.45, "？": 0.4, "！": 0.3, "?": 0.4, "!": 0.3, "—": 0.3, "―": 0.3}
+_SMALL = set("ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ")
+
+
+def ja_secs(text):
+    """How long a Japanese line takes to say: kana count a mora each (small ゃ ゅ ょ ride on the one before), a kanji
+    about 1.7, Latin letters and digits a third each; punctuation adds its pause; plus half a second of breath."""
+    morae, pause = 0.0, 0.0
+    for ch in str(text):
+        o = ord(ch)
+        if ch in JA_PAUSES:
+            pause += JA_PAUSES[ch]
+        elif ch in _SMALL:
+            continue
+        elif 0x3040 <= o <= 0x30ff:                   # hiragana, katakana (ー and っ count: they're held)
+            morae += 1
+        elif 0x4e00 <= o <= 0x9fff or 0x3400 <= o <= 0x4dbf:
+            morae += 1.7
+        elif ch.isalnum():
+            morae += 1 / 3
+    return morae / JA_MORAE + pause + 0.5
+
+
+def reply_secs(clip):
+    """What a reply adds after its clip: the player's answer, then her answer back (the first option's), typically."""
+    rp = clip.get("reply")
+    if not rp:
+        return 0.0
+    then = next((o.get("then") for o in rp.get("options", []) if o.get("then")), None)
+    return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (clip_secs(then) if then else 0.0)
+
+
 def clip_secs(clip, line_fallback=12.0):
-    """A clip's length: its measured `dur` (from the take), else the placeholder voice's `dur_tts`, else an estimate:
-    12 characters a second plus a breath."""
+    """A clip's length: its measured `dur` (from the take, after its trim), else the placeholder voice's `dur_tts`,
+    else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath."""
     if clip.get("dur"):
-        return float(clip["dur"])
+        tr = clip.get("trim") or {}
+        return max(0.1, float(clip["dur"]) - float(tr.get("in", 0)) - float(tr.get("out", 0)))
     if clip.get("dur_tts"):
         return float(clip["dur_tts"])
+    if clip.get("ja") and any(ord(ch) > 0x3000 for ch in clip["ja"]):
+        return max(1.5, ja_secs(clip["ja"]))
     return max(1.5, len(clip.get("en", "")) / line_fallback + 0.6)
 
 
@@ -241,6 +283,8 @@ def line_secs(line):
     """A voice line's length: its measured 'dur' once the audio exists, else a placeholder at 15 characters a second."""
     if line.get("dur"):
         return float(line["dur"])
+    if line.get("ja") and any(ord(ch) > 0x3000 for ch in line["ja"]):
+        return max(1.0, ja_secs(line["ja"]))
     return max(1.5, len(line.get("en", "")) / 15.0)
 
 
@@ -265,9 +309,88 @@ MODS = {"ease": ("in", "out"), "speed": ("x",), "ramp": ("from", "to"), "hold": 
         "twitch": ("amount",), "trim": ("in", "out"), "loop": ("from", "to", "times"), "mirror": ()}
 FITS = ("stretch", "hold", "loop", "pad", "trim")
 MOODS = ("intimate", "dread", "panic", "reveal", "calm", "grief", "chase", "aftermath")
+VOICES = ("says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly",
+          "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums")   # docs/VOICES.md
+TIERS = ("simple", "activity", "action")            # the animation budget: 80 / 15 / 5 (docs/KIMODO.md §2)
+TIER_SHARE = {"simple": 0.80, "activity": 0.15, "action": 0.05}
+SEG_MIN, SEG_MAX = 2.0, 10.0                         # a Kimodo motion: one behaviour, 2 to 10 seconds
+CHOOSE_SECS = 30                                     # a timed choice's default (format 3)
+REPLY_SECS = 6                                       # how long she waits for a reply before she carries on
+REPLY_ANSWER = 2.5                                   # how long a player takes to pick a reply, typically
+# the gameplay between scenes (format 3 `play`): simple rules the Roblox generation knows; each type's results
+PLAYS = {"hide": ["hidden", "found"], "run": ["escaped", "caught"], "collect": ["done", "failed"],
+         "sneak": ["made_it", "spotted"], "hold": ["held", "broke"], "search": ["found", "out_of_time"],
+         "escape": ["out", "caught"]}
+# a play's gameplay assets: the seeker's looped motions by role, and the lines she calls out by moment (barks)
+PLAY_ROLES = ("wait", "count", "search", "patrol", "chase", "found", "idle")
+BARK_MOMENTS = ("start", "count", "search", "near", "found", "lost", "taunt", "chase")
+# how a room sounds (format 3 room `acoustics`; the importer gives each room a reverb, docs/UNREAL_FLOW.md)
+ACOUSTICS = ("closet", "bathroom", "bedroom", "small_room", "kitchen", "living_room", "hallway", "stairwell",
+             "basement", "large_hall", "church", "outdoors", "car")
+
+
+def acoustics_of(room):
+    """A room's acoustics: its own `acoustics`, else a guess from its size, floor and ceiling."""
+    if room.get("acoustics"):
+        return room["acoustics"]
+    w, d = float(room["size"][0]), float(room["size"][1])
+    area, long_ = w * d, max(w, d) / max(0.1, min(w, d))
+    if room.get("ceiling") is False:
+        return "outdoors"
+    if area < 3:
+        return "closet"
+    if room.get("floor") == "tile":
+        return "bathroom" if area < 8 else "kitchen"
+    if long_ > 2.5:
+        return "hallway"
+    if area > 60:
+        return "large_hall"
+    return "small_room" if area < 14 else "living_room"
+
+
+def minimax_prompt(clip, cast=None):
+    """The MiniMax image-to-video prompt for a take (docs/VOICES.md): the expression and the voice around the line.
+    `<subject> makes <a|an> <expr> while <subject> <voice> <d>[Japanese] <ja> </d>`; an unseen speaker is an
+    off-screen voice with the lips still."""
+    who = (cast or {}).get(clip.get("who"), {})
+    subj = who.get("subject", "she")
+    voice = clip.get("voice") or "says"
+    line = f"<d>[Japanese] {clip.get('ja', '')} </d>"
+    if clip.get("face") is False:
+        return f"an off-screen voice {voice}, no one on screen speaks {line}"
+    expr = (clip.get("expr") or "neutral expression").strip()
+    art = "" if expr.lower().startswith(("a ", "an ", "the ", "her ", "his ")) else ("an " if expr[0].lower() in "aeiou" else "a ")
+    out = f"{subj} makes {art}{expr} while {subj} {voice} {line}"
+    if clip.get("reply") or clip.get("wait_expr"):    # a hanging line: the take ends on her waiting for the answer
+        w = (clip.get("wait_expr") or "hopeful, expectant expression").strip()
+        out += f", then {subj} makes {'' if w.lower().startswith(('a ', 'an ')) else ('an ' if w[0].lower() in 'aeiou' else 'a ')}{w} and waits silently"
+    return out
+
+
+def reply_clips(clip):
+    """A clip's reply answers as clips of their own: (option id, clip); their takes are <take id>_<option id>."""
+    for o in (clip.get("reply") or {}).get("options", []):
+        if o.get("then"):
+            yield o["id"], dict({"who": clip.get("who")}, **o["then"], id=f"{clip.get('id')}_{o['id']}")
+
+
+def karma_of(delta, axis="karma"):
+    """A karma delta as {axis: n}: an int is the default axis."""
+    if delta is None:
+        return {}
+    if isinstance(delta, (int, float)):
+        return {axis: float(delta)}
+    return {k: float(v) for k, v in delta.items()}
+
+
+def karma_axes(story):
+    k = story.get("game", {}).get("karma") or {}
+    return k.get("axes") or {"karma": {"min": -10, "max": 10}}
 
 
 def event_results(ev):
+    if ev.get("play"):                                # a gameplay stitch read as an event (format 3)
+        return PLAYS.get(ev["play"].get("type"), ["success", "fail"])
     if ev.get("type") == "choose":
         return [o.get("id") for o in ev.get("options", [])]
     return EVENT_RESULTS.get(ev.get("type"), ["success", "fail"])

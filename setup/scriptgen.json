@@ -1,0 +1,9 @@
+{
+ "_note": "tools/scriptgen.py: the local model it drafts with (Ollama). model: Qwen3.6-27B at Q4 fits the RTX 3090 with a 32k context; gemma3:27b is the one to compare on Japanese prose. VERIFY the exact tag with ollama list after pulling.",
+ "url": "http://127.0.0.1:11434",
+ "model": "qwen3.6:27b",
+ "num_ctx": 32768,
+ "temperature": 0.8,
+ "tries": 3,
+ "timeout": 600
+}

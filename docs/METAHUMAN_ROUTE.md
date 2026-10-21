@@ -11,6 +11,9 @@ a rival body. The ideal workflow they asked for, and what the research says each
 | 4. A simplified rig in the desk, no face | export the rigged body FBX; `bodies.js` already drives the UE5 mannequin skeleton the MetaHuman body extends | works today (`previs_body`); face untouched |
 | 5. Jiggle | Kawaii Physics on the MetaHuman body, set up from the Fat suit page's soft-bone export | the export exists; the Unreal side is a manual setup (§4) |
 
+The face, the skin finish and the hair are the next doc: docs/METAHUMAN_LOOKS.md (East Asian faces in Creator, glass
+skin as a texture set, grooms that adapt to the head).
+
 ## 1. What MetaHuman exposes (what the research found)
 
 - **A Python API for the Creator, since 5.8** (`MetaHumanCharacterEditorSubsystem`, docs: "MetaHuman Creator Python

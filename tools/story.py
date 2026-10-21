@@ -6,6 +6,8 @@
     python tools/story.py rooms [level]         rooms, openings and props, one line each
     python tools/story.py stats                 counts, words, minutes of performance
     python tools/story.py clips [out.csv] [--all]   the takes to record (MiniMax): one row per clip, picked variants (or all)
+    python tools/story.py minimax [--scene S] [--csv out.csv] [--all]   each take's MiniMax prompt, ready to paste, with
+                                                its take id (the file name), the Japanese, the delivery note and subtitles
     python tools/story.py lines [out.csv]       one-off voice lines (say, whisper) outside scenes
     python tools/story.py cast                  each cast member's clips, lines and scenes
     python tools/story.py art                   every prop still a block, with library meshes named like its tag
@@ -117,8 +119,9 @@ def flow_view(story):
 
 
 NEW = {
-    "format": 2,
-    "game": {"id": "", "title": "", "start": "n_start", "target_min": 0, "voice": "ja", "text": "en", "clip_max": 10},
+    "format": 3,
+    "game": {"id": "", "title": "", "start": "n_start", "target_min": 0, "voice": "ja", "text": "en", "clip_max": 8,
+             "subtitles": ["en", "zh"]},
     "cast": {"someone": {"name": "Someone", "metahuman": None, "height": 1.7}},
     "items": {}, "notes": {}, "lines": {}, "sounds": {},
     "levels": {"main": {"start": "start", "rooms": [
@@ -133,7 +136,7 @@ NEW = {
     "stitches": {"t_start": {"title": "Start", "level": "main", "beats": [
         {"id": "b_start", "when": {"start": True}, "do": [{"fade": "in", "secs": 2}, {"done": True}]}]}},
     "flow": {"n_start": {"type": "stitch", "ref": "t_start", "next": "n_first"},
-             "n_first": {"type": "scene", "ref": "s_first", "next": "e_end"},
+             "n_first": {"type": "scene", "ref": "s_first", "next": "e_end", "final": True},
              "e_end": {"type": "ending", "kind": "good", "title": "The end"}},
     "secrets": {},
 }
@@ -152,7 +155,7 @@ def main():
             sys.exit(f"{d} already has a story")
         d.mkdir(parents=True, exist_ok=True)
         s = json.loads(json.dumps(NEW))
-        s["game"].update(id=name, title=name)
+        s["game"].update(id=name, title=name, built_with={"engine": L.engine_version(), "format": 3})
         (d / "story.json").write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"made {d / 'story.json'}: check it with python tools/check_all.py --game {name}")
         return
@@ -247,6 +250,45 @@ def main():
                                  c.get("en", ""), c.get("act", ""), f"{L.clip_secs(c):.1f}", cmax, prev_seam or "-",
                                  start, end, "no" if c.get("face") is False else "yes"])
         write_rows(rows, args[0] if args else None)
+    elif cmd == "minimax":
+        every = "--all" in args
+        only = args[args.index("--scene") + 1] if "--scene" in args else None
+        out = args[args.index("--csv") + 1] if "--csv" in args else None
+        cmax = story["game"].get("clip_max", 8 if story.get("format", 2) >= 3 else 10)
+        rows = [["take", "scene", "clip", "speaker", "est_secs", "expr", "voice", "ja", "ja_note", "en", "zh", "prompt"]]
+        for sid, sc in story.get("scenes", {}).items():
+            if only and sid != only:
+                continue
+            for k, ver in versions(sc, every):
+                for c in [x for c0 in ver.get("clips", []) for x in [c0] + [rc for _, rc in L.reply_clips(c0)]]:
+                    tid, secs = take_id(game, sid, k, c["id"]), L.clip_secs(c)
+                    prompt = L.minimax_prompt(c, story.get("cast"))
+                    rows.append([tid, sid, c["id"], c.get("who"), f"{secs:.1f}", c.get("expr", ""), c.get("voice", ""), c.get("ja", ""),
+                                 c.get("ja_note", ""), c.get("en", ""), c.get("zh", ""), prompt])
+                    if not out:
+                        flag = f"  SPLIT IT: over {cmax} s" if secs > cmax else ""
+                        missing = [f for f in ("expr", "voice") if not c.get(f) and c.get("face") is not False]
+                        print(f"{tid}.mp4  ({secs:.1f} s{'' if c.get('dur') else ' est'}){flag}"
+                              f"{'  (no ' + ', '.join(missing) + ')' if missing else ''}")
+                        if c.get("ja_note"):
+                            print(f"  delivery: {c['ja_note']}")
+                        print(f"  en: {c.get('en', '')}" + (f"   zh: {c['zh']}" if c.get("zh") else ""))
+                        print(f"  {prompt}\n")
+        if not only:                                   # the lines outside scenes: gameplay barks and one-off voice lines
+            for lid, ln in story.get("lines", {}).items():
+                prompt = L.minimax_prompt(ln, story.get("cast"))
+                rows.append([lid, "(line)", "", ln.get("who"), f"{L.line_secs(ln):.1f}", ln.get("expr", ""), ln.get("voice", ""), ln.get("ja", ""),
+                             ln.get("ja_note", ""), ln.get("en", ""), ln.get("zh", ""), prompt])
+                if not out:
+                    print(f"{lid}.mp4  (line{', heard not seen' if ln.get('face') is False else ''})")
+                    if ln.get("ja_note"):
+                        print(f"  delivery: {ln['ja_note']}")
+                    print(f"  en: {ln.get('en', '')}" + (f"   zh: {ln['zh']}" if ln.get("zh") else ""))
+                    print(f"  {prompt}\n")
+        if out:
+            write_rows(rows, out)
+        else:
+            print(f"{len(rows) - 1} takes. Save each MiniMax video as its take id (.mp4) in one folder for the timeline.")
     elif cmd == "lines":
         rows = [["id", "speaker", "mood", "ja", "en"]]
         for k, ln in story.get("lines", {}).items():

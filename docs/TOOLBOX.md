@@ -34,6 +34,7 @@ the kit or built in setup, and why it matters.
 | **storykit.media**: takes in as SoundWaves, face videos queued for MetaHuman Animator, animations on the right tracks by take id | the polish layers swap in by name | S12 |
 | **Kimodo** (the Fab plugin, scriptable if possible; else the local CLI) | body animation from a prompt that Claude can check | S11 |
 | **The struggle system** (IK + physical animation) | one grab system for every game | S11 |
+| **Sisir** (free standalone grooming: guides drawn on the archetype groom head, Alembic out) plus Epic's Hair Card Generator | hairstyles of our own that bind to every MetaHuman head; cards for the shipped game (docs/METAHUMAN_LOOKS.md §3.3) | S12 |
 
 ## Habits that save tokens
 

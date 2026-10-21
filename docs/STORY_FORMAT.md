@@ -1,4 +1,4 @@
-# The story format (format 2)
+# The story format (formats 2 and 3)
 
 A game is one file: **`Content/Games/<Game>/story.json`**. The importer builds its levels, the StoryRunner plays
 it, the director's desk edits and previews it, and the offline checks prove it before any of them run. Every word
@@ -6,6 +6,8 @@ below is something the code reads. A word that isn't here doesn't exist: add it 
 page in one commit, or don't use it.
 
 The worked example is `Content/Games/Pilot/story.json`. `python tools/story.py --game Pilot flow` shows its shape.
+**Format 3** (§9, pipeline v2) adds the Japanese pass, karma, endings by karma, no dying, the animation budget and
+Kimodo segments; its worked example is `Content/Games/Sample/story.json`.
 
 A game has three layers:
 - **The world:** levels, rooms, props. Blocks first, art later.
@@ -207,7 +209,8 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 ```
 
 - A variant overrides any of `stage`, `camera`, `clips` and `cues`.
-- `pick` is the one that plays.
+- `pick` is the one that plays, unless `pick_by: "found_at"` names it by where the player was caught (§9.8); such
+  variants may also set `view` and `stance`.
 - The checks prove every variant, and `story.py clips --all` lists every variant's takes, so all of them can be
   recorded and compared in the game before choosing.
 
@@ -252,6 +255,7 @@ motions and estimates follow.
 |---|---|
 | `block` | pose keys along the clip: `at` 0..1 (or `s` seconds), a `pose` from the library, the `ease` into it (`linear in out inout snap hold overshoot`), `walk` (stride while travelling), `move` (travel to a spot by this key) |
 | `mods` | time modifiers, applied in order: `ease {in, out}`, `speed {x}`, `ramp {from, to}`, `hold {at, secs}`, `snap {at, secs}`, `twitch {amount}`, `trim {in, out}`, `loop {from, to, times}`, `mirror` |
+| `secs`, `delay` | the action's own length against the take (default: the clip's length) and how long after the take starts it begins: set by hand in the desk when the director's action and the take don't line up |
 | `fit` | when a generated motion's length differs from the take: `stretch` (×0.8 to ×1.25), `hold`, `loop`, `pad`, `trim` |
 | `blend` | seconds of crossfade from this actor's previous clip (default 0.25) |
 | `bridge` | an in-between from the previous clip's last pose to this one's first: the desk blends it, `motion.py` makes a Kimodo job for it |
@@ -353,7 +357,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 **Branching and rejoining:** branches may rejoin (`n_hide` → `n_cellar`). Loops need a flag choice to leave.
 
-**Endings:** `kind` is `good bad secret other`. `short_ok` exempts an early death ending from `target_min` and
+**Endings:** `kind` is `good neutral bad secret other`. `short_ok` exempts an early death ending from `target_min` and
 `fast_min`.
 
 ### 5.1 Timed tasks and trigger cutscenes
@@ -455,3 +459,197 @@ sheet per stitch, scene and level (`Saved/Story/<G>/Shots/`).
 
 Report failures as `s_message/s_message.c2.1: rule 4: hall_lamp too dark`, fix them in story.json, rebuild, and
 re-shoot that beat only (`storykit.shots.take(G, beat=...)`).
+
+## 9. Format 3: the v2 pipeline (docs/PIPELINE.md)
+
+`"format": 3` keeps everything above and adds the fields below. `Content/Games/Sample/story.json` uses all of them.
+
+### 9.1 The game
+
+| Field | Meaning |
+|---|---|
+| `clip_max` | **8** by default: MiniMax's audio holds for 7 to 9 s |
+| `subtitles` | the subtitle languages, `["en", "zh"]`: every clip with `ja` needs each |
+| `karma` | `{"axes": {"karma": {"min": -10, "max": 10, "label": "..."}}}`: one axis by default; more if the story needs them |
+| `no_death` | **true** by default: an ending only comes from a karma choice or a node marked `final` (§9.4) |
+
+### 9.2 Lines (a clip after the Japanese pass)
+
+```json
+{"id": "c3", "who": "mari", "en_draft": "But if you hear knocking... don't open it.",
+ "ja": "でも、ノックが聞こえても……開けないで。", "ja_note": "close and urgent, the last three words almost soundless",
+ "en": "But even if you hear knocking... don't open it.", "zh": "但是，就算听到敲门声……也别开门。",
+ "expr": "frightened expression, eyes wide and lips trembling", "voice": "whispers"}
+```
+
+| Field | Meaning |
+|---|---|
+| `en_draft` | the English as you refined it (the first pass); kept for reference |
+| `ja` | the line as recorded, written for Japanese (register, endings, silences), not translated word for word |
+| `ja_note` | how it's said, as a film director would give it: breath, pace, where the pause falls, what's held back |
+| `en`, `zh` | the subtitles, **translated from the Japanese** |
+| `expr` | the facial expression for MiniMax, as visible movement (docs/VOICES.md) |
+| `voice` | how it's said for MiniMax: `says`, `whispers`, `says angrily`, `screams`... (docs/VOICES.md keeps the list and what's been tested) |
+| `trim` | `{"in": s, "out": s}`: dead air cut from the take's start and end (the auto-clean writes it); the clip's length is `dur` minus the trim |
+
+Cast members get `subject` (`she` or `he`) for the prompts. Without `dur`, a clip's length is estimated from the
+Japanese (about 6.5 morae a second, plus its pauses: `storylib.ja_secs`). `python tools/story.py --game G minimax`
+prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <ja> </d>`.
+
+### 9.3 Timed choices and karma
+
+```json
+"event": {"type": "choose", "default": "o_silent", "options": [
+  {"id": "o_kind", "label": "No. I came for you.", "ja": "ううん。君に会いに来た。", "zh": "没有。我是来见你的。", "karma": 1},
+  {"id": "o_ask", "label": "Why did you call me here?", "ja": "どうして呼んだの？", "zh": "你为什么叫我来？", "karma": 0},
+  {"id": "o_silent", "label": "(Say nothing)", "ja": "（黙っている）", "zh": "（沉默）", "karma": -1}]}
+```
+
+- `secs` is **30** unless given. The timeout takes `default`: silence is an answer, and can carry karma.
+- `karma` on an option is a number (the default axis) or `{"axis": n}`. A `karma` action does the same from beats,
+  cues and `sets`: reactions count (`{"karma": -2}` for taking the doll).
+- A karma choice needs no result choice after it: the karma is what it's for. It can still branch with one.
+
+### 9.4 Endings by karma, deaths and the branch map, easter eggs
+
+```json
+"n_end": {"type": "choice", "by": "karma", "options": [{"min": 2, "to": "e_good"}, {"max": -2, "to": "e_bad"}, {"to": "e_neutral"}]},
+"e_caught": {"type": "ending", "kind": "death", "title": "Found three times", "retry": "n_hide1"}
+```
+
+- **Endings:** good, neutral, bad, decided by karma (DECISIONS 2026-10-20).
+- **Deaths** (DECISIONS 2026-10-21): an ending of kind `death` is a game over that opens the **branch map** (the
+  desk and the game alike): every node the player has reached, the ones they've missed shown as locked silhouettes,
+  and `retry`, the branch it suggests returning to (it must lie on the way to the death). The player can return to
+  any reached node; the state there (flags, karma, counters) is what it was when they first arrived. Deaths don't
+  count for `target_min` or `fast_min`.
+- `game.no_death: true` brings back the old rule for a game that wants it (an ending only from a karma choice or a
+  node marked `final`; missed tasks guide the player on).
+- **Easter eggs** come from what the player found, not karma: a flag choice on a secret's flag leads to its scene,
+  which **blends back** into the main story (the check warns when an egg's branch never rejoins the fallback's node).
+
+### 9.5 Bodies: the animation budget and Kimodo segments
+
+```json
+"body": {"tier": "simple", "segments": [
+  {"name": "sample_message_c2_01_walkforward", "prompt": "A tired person walks forward slowly", "secs": 4,
+   "path": ["hall_mari_spot", "hall_mari_near_spot"]},
+  {"name": "sample_message_c2_02_glanceleft", "prompt": "A person standing still glances to the left", "secs": 2}]}
+```
+
+| Field | Meaning |
+|---|---|
+| `tier` | `simple` (80% of the game's motion), `activity` (15%), `action` (5%); `hero: true` for the detailed few. The check reports the split |
+| `segments` | the Kimodo motions that make this clip's body, in order: each one behaviour, **2 to 10 s**, its prompt starting "A person" (or "A scared person"...), never saying where to look |
+| segment `name` | what you save it as in Kimodo: `<game>_<scene>_<clip>_<nn>_<verb>` (docs/KIMODO.md §3); unique, or `reuse: true` |
+| segment `path` | stage marks the root travels through (a 2D root path constraint) |
+| segment `keys` | `[{"at": 0..1, "pose": ...}]`: full-body keyframes from the pose library for poses Kimodo doesn't know |
+| segment `loop` | the demo's Loop checkbox (idles, walk cycles) |
+| segment `file` | the made motion (`motion.py import` writes it) |
+
+### 9.6 The look and the trackers (where a head points)
+
+Kimodo can't aim a head, so the look is a layer on top of whatever body plays (desk now, Control Rig in Unreal):
+
+```json
+"look": {"mari": {"at": "player", "limit": [70, 20, 30], "past": "hold"}},
+"trackers": {"t_noise": {"height": 1.0, "keys": [{"clip": "c1", "at": 0, "to": "hall_mari_spot"}, {"clip": "c1", "at": 1, "to": "hall_walk_spot"}]}}
+```
+
+| Field | Meaning |
+|---|---|
+| scene `look` | per actor on stage, for the whole scene; a clip's own `look` (same fields) wins while it plays |
+| `at` | `player` (the eye at the view spot), a tracker, someone on stage, or a placed thing |
+| `limit` | `[yaw, up, down]` degrees the head may turn from the chest's facing (70, 20, 30 by default) |
+| `past` | beyond the limit: `hold` at the edge (still trying to see you) or `snap` back to forward |
+| `lag` | seconds the head trails a moving tracker (0.25) |
+| `w` | 0..1, how much of the turn to apply |
+| scene `trackers` | invisible boxes a head can follow: `height` above the floor, and `keys` that **ride clip edges** (`clip`, `at` 0..1 of it, `to` a spot, a thing or `[x, y, z]`), eased between keys; never scene time |
+
+The turn is shared down the body: spine 10%, chest 15%, neck 25%, head 50% (on Kimodo's skeleton: neck 25%, head
+25%). The desk shows trackers as small blue wire boxes.
+
+### 9.7 The procedural idle
+
+Nothing is a statue: under every pose the desk adds breathing (faster in `panic` and `chase`), a slow weight shift
+and small head moves, seeded per cast member and slowed by the scene's mood (`dread`, `grief`, `intimate`). It runs
+at full strength while an actor holds still (between lines, during a 30 s choice, while a scene holds) and at 40%
+under a moving body. Unreal gets the same layer (plan W9); no field is needed.
+
+The checks: every karma route is played (the kind, the cruel and the silent player at every timed choice, each
+with secrets missed and found) and each one's ending and karma are printed; every ending must be reachable.
+
+### 9.8 Gameplay between scenes (`play`)
+
+Simple rules the Roblox generation knows (REFERENCES.md §5): a stitch with `play` is one round of a mechanic, and
+its result branches like an event's.
+
+```json
+"t_hide1": {"title": "Hide and seek, round 1", "level": "house", "template": "hide", "beats": [],
+            "play": {"type": "hide", "secs": 40, "rule": "Hide before she finishes counting to ten",
+                     "warn": "she counts out loud, eyes covered", "spots": ["hall_locker"], "on": {"found": [{"count": "found"}]}}},
+"n_hide1_r": {"type": "choice", "by": "result", "of": "n_hide1", "options": [{"result": "hidden", "to": "n_hide2"}, {"result": "found", "to": "n_r1_cute"}]}
+```
+
+| `type` | Results | The round |
+|---|---|---|
+| `hide` | hidden, found | a warning, seconds to get into a hiding place; staying too long can turn on you |
+| `run` | escaped, caught | a chase to a door the player has seen |
+| `collect` | done, failed | tick a short list (items, chores) while she's around |
+| `sneak` | made_it, spotted | move only while she isn't looking (or while she can't hear) |
+| `hold` | held, broke | keep still, hold the breath, hold the door |
+| `search` | found, out_of_time | find one thing before the time's up |
+| `escape` | out, caught | get out by a route, against the clock |
+
+- `secs` is the round's length; `rule` the one line a child could say; `warn` what tells the player it's coming;
+  `spots` the hiding places or targets (placed things); `on` runs actions per result.
+- **The seeker and her assets** (what the round needs made, beyond the scenes):
+  - `seeker`: the cast member hunting.
+  - `loops`: `{role: motions id}`, her non-cinematic motions by role (`wait count search patrol chase found idle`):
+    Kimodo motions in the `motions` table with a `name` (on the shot list), usually `loop: true` and
+    `in_place: true` (exported without the root's travel; the game moves her along her route).
+  - `barks`: `{moment: [lines ids]}`, what she calls out (`start count search near found lost taunt chase`): lines in
+    the `lines` table (each a take named by its id; `face: false` when heard from hiding, an off-screen voice for
+    MiniMax). Give a moment two or three lines so it doesn't repeat; the runner picks one at random.
+- **Deaths by hiding spot:** a death scene with `"pick_by": "found_at"` and a variant per spot (named by the spot's
+  id; each can set its own `stage`, `view`, `stance`, `camera` and `clips`) plays the variant for where the player
+  was caught, else `pick`. Every variant is checked, listed for takes and on the Kimodo shot list.
+- A play stitch needs no beats and no `done`: its result ends it. A result choice after it branches; without one,
+  the first result (the player's success) plays on.
+- On the desk it's a card before the next scene: the rule, the timer, and buttons for each result ("did you manage
+  to hide?"). In Unreal each type is a template Blueprint the runner starts (RUNNER_SPEC.md).
+
+### 9.9 Replies and hanging lines
+
+A reply is a small dialogue choice that mostly changes what she says back: two options (left and right), shown with
+the Japanese over the English. The clip it's on is a **hanging line**: she asks, then waits, her face doing the
+waiting.
+
+```json
+{"id": "c1r", "who": "mari", "ja": "今日、どうだった？", "en": "How was your day?", "wait_expr": "hopeful, expectant expression",
+ "reply": {"wait": 6, "timeout": null, "options": [
+   {"id": "good", "label": "Good.", "ja": "よかったよ。", "then": {"ja": "そう……よかった。", "en": "Good...", "expr": "...", "voice": "says softly"}},
+   {"id": "bad", "label": "Bad.", "ja": "最悪だった。", "sets": [{"flag": "told_bad_day"}], "then": {"ja": "かわいそう。", "en": "Poor thing."}}]}}
+```
+
+- `then` is her answer to that reply: a clip (its own take, `<take id>_<option id>`), the same `who` unless it says.
+  After it, the scene goes on with its next clip: the line it was always going to say.
+- `wait` (6 s by default, 2 to 15): how long she waits. Past it her answer is skipped (`timeout: null`), or a
+  `timeout` option's answer plays (an answer to your silence).
+- `sets`: actions when the reply is picked (a flag, karma, a count), so a reply can open a branch later through a
+  flag choice; most set nothing and are there so it feels like you.
+- `wait_expr`: the face she holds while she waits, for the take's end (MiniMax).
+
+### 9.10 Counters
+
+`game.counters: {"found": {"label": "times she found you"}}`; the `count` action (`{"count": "found"}` adds 1;
+`"add"` or `"set"` for others) from beats, cues, `sets`, replies and plays; and a flow choice `by: "count"`
+(`{"count": "found", "min": 3, "to": "n_caught"}`, the last option the fallback). The sample's hide and seek: cute
+the first time she finds you, a tease the second, the third is a death.
+
+### 9.11 Room acoustics
+
+`"acoustics"` on a room: one of `closet bathroom bedroom small_room kitchen living_room hallway stairwell basement
+large_hall church outdoors car`. Without it the room's size, floor and ceiling pick one (`storylib.acoustics_of`).
+The importer puts an AudioVolume with that preset's reverb in each room, so voices and steps sound like the place
+(docs/UNREAL_FLOW.md).

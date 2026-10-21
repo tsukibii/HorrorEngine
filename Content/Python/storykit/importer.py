@@ -220,6 +220,31 @@ def environment(lid):
     finish(sky, {"id": f"{lid}__sky", "tags": ["story", "story:sky"]}, "env")
 
 
+REVERB = "/Game/Studio/Audio/Reverb/RV_{}"        # one ReverbEffect per acoustics preset (storylib.ACOUSTICS; SETUP makes them)
+
+
+def acoustics(story, lid):
+    """Each room an AudioVolume with its preset's reverb, so a voice in the hall sounds like a hall (format 3)."""
+    for rm in story["levels"][lid]["rooms"]:
+        preset = L.acoustics_of(rm)
+        x, y, z = rm["at"]
+        w, d, h = rm["size"]
+        vol = actors.spawn_actor_from_class(unreal.AudioVolume, to_ue((x + w / 2, y + d / 2, z + h / 2)), rot(0))
+        vol.set_actor_scale3d(unreal.Vector(w, d, h))                 # VERIFY: the brush is 2 m across; scale to the room
+        try:
+            rs = vol.get_editor_property("settings")                   # VERIFY: ReverbSettings on AudioVolume in 5.8
+            effect = unreal.EditorAssetLibrary.load_asset(REVERB.format(preset))
+            if effect:
+                rs.set_editor_property("reverb_effect", effect)
+                rs.set_editor_property("apply_reverb", True)
+                vol.set_editor_property("settings", rs)
+            else:
+                unreal.log_warning(f"storykit: no reverb asset {REVERB.format(preset)} for room {rm['id']}")
+        except Exception as e:  # noqa: BLE001 - the first run fixes the property names
+            unreal.log_warning(f"storykit: reverb not set on {rm['id']}: {e}")
+        finish(vol, {"id": f"{rm['id']}__acoustics", "tags": ["story", f"story:{rm['id']}__acoustics", f"acoustics:{preset}"]}, "env")
+
+
 def map_path(game, lid):
     return f"/Game/Games/{game}/Maps/L_{lid}"
 
@@ -266,6 +291,8 @@ def build(game=None, level=None):
                 spawn(piece, cmap)
         cast_standins(story, lid, cmap)
         environment(lid)
+        if story.get("format", 2) >= 3:
+            acoustics(story, lid)
         levels.save_current_level()
         unreal.log(f"IMPORT {lid}: {len(pieces)} pieces -> {path}")
     # the runtime reads story.json itself; tools/package_game.py stages only that game's folder

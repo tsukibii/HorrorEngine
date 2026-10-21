@@ -12,6 +12,18 @@ the fix.
 
 ## This project
 
+- **A box of absolutely placed cards has no height of its own:** the branch map's cards sat in a zero-height box and
+  the page took the clicks; size the box to the cards (the map does now).
+- **Merge the other session's push before building on the same file:** the local session's `motion.py import` (one
+  file) landed on main while this branch had its own (every shot-list name); both forms now live under one command.
+- **Playwright's own Chromium can't decode H.264 or AAC:** the desk's take test read nothing from a MiniMax-style
+  mp4 until it used a WebM copy. Test takes with WebM; your Chrome or Edge plays the real mp4s.
+- **A running desk server keeps the old serve.py:** new routes 404 until it's restarted (find its PID in one
+  command, kill it in the next, start it again).
+- **A dev skip mustn't skip the thing being tested:** the desk's Esc skip jumped past timed choices, so the karma
+  test saw none; it now jumps to the next event instead.
+- **A room with no doorway in had its entrance shot from its middle, looking straight down:** the planner now stands
+  at the level's start spot (or just inside the south wall), so a new game's template passes the shot check.
 - **Blender joins bones when it reads an FBX, and a joined bone can't move:** the first round-trip check of a
   Kimodo FBX was off by the whole walk, because the hips' travel was dropped on Blender's re-import, not in the file.
   Disconnect the bones before measuring (Unreal has no such rule).
@@ -50,3 +62,11 @@ the fix.
 - **Measure a prompt before trusting it:** of 12 horror prompts, 4 didn't do what they said on the first wording
   (no crouch, no cower, no getting up, a fast retreat). Two were fixed by rewording; two can't be (crouch-walking,
   slowness), and those need a pose or a paced path. `tools/kimodo_presets.py check` is the measure.
+- **A run of things that each "stop the last one" needs its own token:** the score room's audition plays every
+  variation in turn, but a take ending by itself went through the same stop as the Stop button and ended the whole
+  audition after one card. Ending a take (`endPlay`) and stopping what the user started (`stopAll`) are two calls.
+- **A compressor and limiter on the music bus make every cue the same loudness:** a dread bed rendered as loud as
+  the jump scare (both about -14 dB RMS). Cue levels go after the limiter (the master), never on the notes.
+- **A server started from a script must not keep the script's output:** the launcher's page servers inherited its
+  stdout, so anything reading the launcher's output (a pipe, a test) waited for the server to end. Windows gets its
+  own console window; elsewhere the server's output goes to Saved/launch/<name>.log.

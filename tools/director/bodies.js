@@ -556,7 +556,12 @@ export class BodyFigure {
       let dir = null;
       if (aim && pos[aim] && pos[j]) dir = pos[aim].clone().sub(pos[j]);
       if (!dir || dir.length() < 1e-5) continue;
-      const tf = frame(dir, this.secondaries(j, ax));
+      let sec = this.secondaries(j, ax);
+      if ((j === "head" || j === "neck_01") && pos.head_side && pos.head) {        // the look layer's turn
+        const hs = pos.head_side.clone().sub(pos.head).normalize();
+        sec = [j === "head" ? hs : hs.add(ax.Lu).normalize(), ax.F];
+      }
+      const tf = frame(dir, sec);
       const base = this.srcFrame[j] || r.frame;                                  // trunk: the previs bone's turn from its rest
       const want = tf.multiply(base.clone().invert()).multiply(r.q);             // limbs: aimed like the previs bone
       const parentQ = gqi.clone().multiply(b.parent.getWorldQuaternion(new THREE.Quaternion()));

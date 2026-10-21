@@ -39,6 +39,10 @@ never silently.
 | choice `act` | wait until one option's trigger fires (the player keeps playing meanwhile); take its `to` |
 | choice `flag` | the first option whose `if` holds |
 | choice `result` | the event result recorded by scene node `of` (and its clip, if `event` is given) |
+| choice `karma` | (format 3) the first option whose `min`/`max` holds for its `axis` (default `karma`); the last is the fallback |
+| choice `count` | (format 3) the same for a counter (`game.counters`) |
+| stitch with `play` | (format 3) start the mechanic's template (the `seeker` plays her `loops` by role, moved by the AI along her route; her `barks` play by moment, one picked at random, through the round; on a catch the spot is remembered for `pick_by: found_at`) (hide, run, collect, sneak, hold, search, escape: `/Game/Studio/Horror/Play/BP_Play_<type>`) with its `secs`, `rule`, `warn` and `spots`; its result ends the stitch and is stored like an event's |
+| ending `death` | (format 3) the death card, then **the branch map**: the flow drawn as chapters, every node reached (from its checkpoint) and the missed ones as locked silhouettes; `retry` highlighted; returning restores that node's checkpoint |
 | ending | the ending card (title, kind), credits, back to the menu; it records that the ending was seen (for secret-ending hints) |
 
 ## The scene player (the elastic timeline)
@@ -93,6 +97,18 @@ scene: a camera fade, and control taken and given back softly.
   `warn` seconds of "!" before.
 - The result is stored for the scene node, and the event's `on` actions run.
 - Inputs map to Enhanced Input actions (Interact, mouse delta).
+- **Replies (format 3):** after a clip with `reply`, two prompts at the bottom of the screen, left and right (the
+  Japanese over the English, in the player's language), for `wait` seconds while her face holds (`wait_expr`, then
+  the idle); picking one runs its `sets` and plays its `then` take; on time out the answer is skipped (or the
+  `timeout` option's plays), and the next clip follows. Left and right map to the mouse buttons and the pad's
+  shoulders.
+- **Checkpoints (format 3):** every flow node the player enters saves the state (flags, karma, counters, inventory,
+  the doors) as that node's checkpoint; the branch map (pause menu, and after every death) lists them. Unvisited
+  nodes show as silhouettes so the player sees what they've missed; there are no stat gates.
+- **Format 3:** a `choose` gives 30 s unless it says otherwise; the options show in the player's subtitle language
+  (`label`, `ja`, `zh`); the chosen option's `karma` is added to the run's karma (kept per axis, saved with the
+  checkpoint); the idle and the look-at keep the character alive while the player decides. A `karma` verb in beats,
+  cues and `sets` adds to it too. A death (an ending of kind `death`) opens the branch map instead of the menu.
 - A settings option turns timers off (accessibility): the event waits, then takes `default`, or success for
   press-type events.
 

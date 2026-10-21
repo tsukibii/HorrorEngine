@@ -2,6 +2,83 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (hair: Sisir for our own cuts, Fab for the rest)
+
+- **Sisir is the tool to try for custom hairstyles** (free standalone, Windows: draw guides on the archetype groom
+  head, a procedural stack grows the groom, Alembic out, bind in Unreal as a wardrobe item). Styles that exist on
+  Fab are bought, not made (docs/METAHUMAN_LOOKS.md §3.3 and §3.5). The first Sisir-to-Unreal run goes in LESSONS.md.
+
+## 2026-10-21 (music: the score room)
+
+- **Woohill's music engine comes over as the score room** (`tools/score/`, docs/MUSIC.md), an HTML app now that can
+  be plugged into the director later (no Godot tool). Its job: more horror-style piano and string orchestrations, and
+  K-drama fun cues that score what the character is doing (typical K-drama TV: the sneak, the fall, the blush, the
+  slow-motion look). It makes variations and the user chooses the favourites, which go into a palette per game (and a
+  studio one). Built on research into K-drama and horror scoring and the shows and films whose music fits our
+  instruments (docs/MUSIC_RESEARCH.md). Each game gets its own mini soundtrack, part procedural and reacting to what
+  the player does, when it plugs into the desk and Unreal (docs/MUSIC.md §5).
+
+## 2026-10-21 (horror romance, deaths back, the branch map, replies, simple gameplay)
+
+These change the 2026-10-20 entries below where they disagree.
+- **The player can die again** (no dying took the gameplay out). Instead of game over, **a death opens the branch
+  map**: the player picks which branch to return to, and sees which branches they've missed. It works like
+  *Five Hearts Under One Roof*'s scene and branch viewer (jump, skip, replay), **without its stat gates**. The
+  desk works the same way.
+- **The genre is horror romance:** obsession and yandere, as in Japanese anime and games (others may be prompted).
+  First person is shaped by it: the intimate moments are written and staged for the player's eye.
+- **Replies:** dialogue choices that mostly change the line she says back (left or right, the English with the
+  Japanese over it, as the desk shows them). Each one can be just immersion (she answers, then the scene goes on with
+  the line it was always going to say) or set something that opens a branch later.
+- **Hanging lines:** she asks and waits, with her face, for the answer; not forever: past a few seconds her answer to
+  your reply is skipped and the scene carries on with the next line it would have said anyway. The writing has to
+  feel like a conversation even when the player's replies are the quiet guy's short ones: it has to feel like you.
+- **Simple gameplay, for the Roblox generation:** hide or run, tick boxes, nothing that needs a hard decision or a
+  hard puzzle. Hide and seek where being found is cute the first times and then not (found three times and it's
+  over), chases, collect-while-she-patrols, sneak while she isn't looking. On the desk it's a card before the next
+  scene ("did you manage to hide?"); in Unreal the built-in tools and Claude flesh it out.
+- **Unreal later:** reverb that sounds like real houses and rooms, for immersion.
+- **Later, not now:** lift the music tool from the woohill repo (live procedural orchestration) and make it part
+  procedural per game: each game gets its chords, flourishes and a mini soundtrack that reacts to what the player does.
+
+## 2026-10-20 (pipeline v2: the user's answers)
+
+- **Endings are good, neutral and bad**; "evil" is the bad one. **Easter eggs** aren't karma: they come from what the
+  player found and blend back into the main story.
+- **The MiniMax prompt** is `she makes a <expression> while she <voice> <d>[Japanese] <line> </d>` (`[Japanese]`
+  written literally). Claude supplies the expression and the voice; the user handles the rest of MiniMax's format.
+- **Voices:** try more than says, whispers, says angrily and screams; keep a list of what's been tested and works
+  (docs/VOICES.md).
+- **The blocking loader into Kimodo's demo and the Loop tool are the user's** (built locally): nothing to build here.
+- "Work on it until you can't do anything else without me": the branch builds everything that can be built and
+  checked without the editor, the RTX 3090 or the user's takes.
+
+## 2026-10-20 (pipeline v2: how a game is made from now on)
+
+- **The workflow** (docs/PIPELINE.md v2, built on branch `pipeline-v2` by docs/PIPELINE_V2_PLAN.md):
+  1. The user's outline and rough cast in the desk.
+  2. A local model drafts the English script; Claude reviews and glues.
+  3. The user refines.
+  4. Claude's Japanese pass (as a professional film would say it), with English and Chinese subtitles translated
+     from the Japanese, and a MiniMax image-to-video prompt per take.
+  5. The takes on the desk's timeline, with an auto-clean that fits the director's parts to them.
+  6. The motions made by the user in Kimodo's demo from Claude's shot list, imported back by name.
+  7. Unreal: the blocked game playable, the MetaHumans, the face mocap, the gameplay with a crosshair.
+  8. Art, QA, ship. The engine and its mechanics are versioned so each game is quicker than the last.
+- **The kind of game:** a dark anthology in first person (Resident Evil 7 meets Japanese monster and psychological
+  horror), carried by mood. The ending comes from **karma**: how the player responded and reacted, in timed choices
+  (30 s), not what they found. **No dying**: a missed task guides the player gently on; only the final ending may
+  kill the hero. Branching and simple acting scenes after *Five Hearts Under One Roof*.
+- **Takes are 7 to 8 seconds** (MiniMax's audio holds for 7 to 9): the Japanese is written in beats that stitch (a
+  line, a pause or an expression, a short question). `clip_max` 8.
+- **Motions:** 80% simple life-to-life, 15% activity, 5% action and horror, a few detailed ones and the final
+  ending's; the detail comes from the face mocap. Each Kimodo motion is one behaviour of at least 2 seconds
+  (docs/KIMODO.md). The head's look is a layer on top (trackers, clamped), not Kimodo's job.
+- **The first game is a 15 to 20 minute itch.io game**, to test every stage once.
+- **Extras:** a procedural idle so characters stay alive outside the interactive parts; a script generator on a
+  local model (Qwen3.6-27B on the RTX 3090) with Claude for the reviews and the glue.
+- The work runs on its own branch beside SETUP (which continues on the user's machine).
+
 ## 2026-10-20 (Kimodo's motions onto the MetaHumans)
 
 - **The body motions made with Kimodo in the desk go onto the user's rigged MetaHumans in Unreal** (no talking: the
