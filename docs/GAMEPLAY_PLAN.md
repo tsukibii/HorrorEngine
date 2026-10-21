@@ -132,6 +132,25 @@ playback; Generate stays the one button.
   numbers; decided when we port it.
 - **The look and post-processing come last**, per game; Unreal doesn't have to match the desk's colour.
 
+## 11. Added 2026-10-21: borrowed mechanics, gaze, one part per idea (DECISIONS)
+
+- **One part per idea, grown by settings.** A part takes a settings object with defaults; a new possibility is a new
+  setting or option on the same part, never a near-copy. `gameplay.json` lists each part's settings, so the check
+  knows them.
+- **Gaze** (romance and horror): the desk already has a clip's `look` (the head follows the player, a tracker or
+  someone, with limits; stage.js `lookLayer`). It becomes one `gaze` part for gameplay and interactive cinematics
+  too: `at`, `ratio` (how much of the turn the head takes, the eyes and chest share the rest), `limit`, a speed, and
+  what happens past the limit. In Unreal, a look-at on the head and neck with the same numbers.
+- **The tracker** (after Florence): a named number that interactions add to (`do: {"track": "closeness", "add": 1}`),
+  read by conditions (`when: {"track": "closeness", "at_least": 3}`), so it can swap a scene's version, change a
+  stitch, or branch the flow. The karma axes already do this for choices; the tracker is the same thing fed by play.
+- **Physical interaction** (after Amnesia): `physics` things are dragged with the free cursor (§10): a door or drawer
+  follows the drag on its hinge or slide, a loose thing is held and thrown. The UI answers in the theme: the cursor
+  presses in, a locked thing shakes.
+- **From Chilla's Art:** chores as stitches (stock the shelf, clean the room, answer the phone) built from the same
+  parts, and a place that comes back changed (a level's props and lights swapped by flags between visits).
+- Later: a chat-window panel (Emily Is Away) for a romance horror; per-vignette play (Edith Finch).
+
 ## 9. Ask the user first
 
 - Crouch: toggle, hold, or both (a setting)?

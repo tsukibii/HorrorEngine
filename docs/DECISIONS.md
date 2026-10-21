@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-21 (what to borrow, gaze, parts that extend)
+
+- **Borrow Chilla's Art's mechanics** (short first-person Japanese horror: everyday chores as the tasks, the same place
+  coming back changed). **Not Dark Pictures** (it doesn't fit). Firewatch's talk-while-walking is already the plan.
+- **A Florence-like tracker:** small interactions feed a tracker that can change interactive scenes or gameplay scenes,
+  or send the flow down another branch.
+- **Amnesia's physical interaction, yes:** drag doors and drawers and handle things with the cursor; the neumorphic UI
+  blends with it, with small animations (a press, a shake).
+- **Romance gaze, yes:** in interactive cinematics and gameplay, cast members turn their head to look at the player by
+  a ratio (how much of the turn the head takes), an IK-style look.
+- Later, not now: Emily Is Away's chat (a future romance horror), Edith Finch's per-vignette play.
+- **Every part is extendable by settings, not copies:** one function with more variables or options, never a second
+  function that does nearly the same thing.
+
 ## 2026-10-21 (Play mode: the look last, physics things, a cursor, CSS UI)
 
 - **Unreal doesn't have to match the desk's look.** Post-processing and the look come last, per game (a game may go
