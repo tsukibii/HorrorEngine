@@ -182,7 +182,7 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!brows) throw new Error("no brows");
     await page.click("#hairRows > button >> text=Export hair OBJ");
     await page.waitForFunction(() => /wrote .*_studiotest_hair\.obj and the wig's chains/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
-    await page.click("#hairRows label.tog >> nth=0");                      // the wig off: cards grown from the scalp
+    await page.click("#hairRows > label.tog >> nth=0");                    // the wig off: cards grown from the scalp (the model box has its own switches)
     await page.waitForFunction(() => !window.__body.st.hair.wig && window.__body.hair.report.cards > 500 && window.__body.hair.report.inside_pct < 2, null, { timeout: 30000 });
     await page.click('#tabs button[data-tab="body"]');
   });
@@ -227,6 +227,39 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
       await page.waitForFunction(() => /closest:/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
     }
     await page.selectOption("#hairRows select >> nth=1", "style");
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("a hair model as a wig: centimetres scaled, fitted by the crown, locked at the top, swinging off the head; a handle widens it", async () => {
+    const V = [], F = [], grid = (fn, nu, nv) => {      // a test model made here: a dome and a curtain round the back, in centimetres
+      const b = V.length;
+      for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) V.push(fn(i / nu, j / nv));
+      for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const a = b + j * (nu + 1) + i, c = a + nu + 1; F.push([a, c, a + 1], [a + 1, c, c + 1]); }
+    };
+    grid((u, v) => { const e = v * Math.PI / 2 * 1.15 - 0.15; return [11.5 * Math.cos(u * 2 * Math.PI) * Math.cos(e), 11.5 * Math.sin(e), 11.5 * Math.sin(u * 2 * Math.PI) * Math.cos(e)]; }, 48, 16);
+    grid((u, v) => { const a = (40 + u * 280) * Math.PI / 180, r = 11.8 + 3 * v; return [r * Math.sin(a), -1.7 - 35 * v, r * Math.cos(a)]; }, 40, 24);
+    const obj = V.map(p => `v ${p.join(" ")}`).concat(F.map(f => `f ${f.map(i => i + 1).join(" ")}`)).join("\n");
+    await page.click('#tabs button[data-tab="hair"]');
+    await page.selectOption("#hairRows select:has(option[value=shake])", "still");   // the hair step leaves the head shaking
+    await page.selectOption("#hairRows select:has(option[value=model])", "model");
+    await page.setInputFiles("#hairRows input[type=file]", { name: "studiotest_hair.obj", mimeType: "text/plain", buffer: Buffer.from(obj) });
+    await page.waitForFunction(() => window.__body.modelWig, null, { timeout: 60000 });
+    const rep = () => page.evaluate(() => { const w = window.__body.modelWig, M = window.__body.rig.matrix; return { ...w.report, ...w.measure(M.elements, M.clone().invert().elements) }; });
+    await page.waitForTimeout(1500);                                         // settled on a still head
+    const a = await rep();
+    if (!(a.particles > 50 && a.locked > 0 && a.inside === 0 && a.drift_mm < 0.5)) throw new Error("fitted: " + JSON.stringify(a));
+    await page.selectOption("#hairRows select:has(option[value=shake])", "shake"); await page.waitForTimeout(2500);
+    const b = await rep();
+    if (b.drift_mm > 0.5 || b.swing_mm < 2 || b.inside > b.particles * 0.02) throw new Error("shaking: " + JSON.stringify(b));
+    await page.selectOption("#hairRows select:has(option[value=shake])", "still");
+    await page.evaluate(() => document.querySelector('#views button[data-yaw="0"]').click()); await page.waitForTimeout(800);
+    const [x, y] = await page.evaluate(() => window.__body.handleOnScreen("left")), [cx] = await page.evaluate(() => window.__body.handleOnScreen("right"));
+    await page.mouse.move(x, y); await page.mouse.down();
+    for (let i = 1; i <= 4; i++) await page.mouse.move(x + Math.sign(x - cx) * 12 * i, y);
+    await page.mouse.up();
+    const left = await page.evaluate(() => window.__body.st.hair.model.fit.left);
+    if (!(left > 1.05)) throw new Error(`the left handle didn't widen it (left ${left})`);
+    await page.waitForFunction(() => window.__body.modelWig, null, { timeout: 30000 });   // the physics back on release
+    await page.selectOption("#hairRows select:has(option[value=model])", "style");        // the style back for the rest
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the head OBJ exports", async () => {

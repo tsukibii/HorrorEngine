@@ -77,3 +77,26 @@ What each cut is, and the knob that makes it:
 
 The Hair tab's sliders override each style's numbers (`layers` is one of them); the Bangs switch keeps a style's own
 kind of bangs.
+
+## Hair models worn as wigs, and where CC0 ones come from (2026-10-22)
+
+`wigify.js` (the Hair tab's "a hair model, worn as a wig") takes any hair-only mesh, GLB, glTF, FBX or OBJ, and wears it:
+fitted by the crown (the model's top 10 cm scaled to the head's crown band plus a centimetre of hair, its top just over
+the head's, centred on the skull), six handles (the crown moves it; left, right, front and back widen or narrow each
+side; the bottom one stretches what hangs below the ears), points inside the head pushed out at rest, the top locked to
+the head (a slider: the crown only, or down to the ears), the rest a cage of a few hundred particles with gravity, a
+loose hold to the fitted shape, springs to their neighbours and the skin collision, every vertex riding its nearest
+particles. Centimetre models (taller than 3 units) are scaled to metres; Turn 90° when a model faces another way.
+
+So a model's licence is the only licence. Where CC0 hair models are (check each one's page: CC0 is per asset):
+
+- **MakeHuman's own assets**: the system hairs that ship with MakeHuman are CC0 ([the FAQ](https://static.makehumancommunity.org/makehuman/faq/are_makehuman_files_free.html));
+  the community library's hairs are licensed one by one ([MakeHuman Community](https://static.makehumancommunity.org/about.html)), many CC0.
+- **Quaternius**: low-poly CC0 character packs, some with separate hair meshes (listed as CC0 by
+  [a third party's licence file](https://app.cinevva.com/blog/hair/library/LICENSE.txt); confirm on Quaternius's page).
+- **Womp**: CC0 stylised hair caps ([Hair 1](https://flowerpecker.womp.com/assets/hair-1-v40clnbwzg/) to 9), but edited in the browser: an export is needed.
+- **Blender's Human Base Meshes** (CC0) has bodies and heads but no hair meshes; its hair is the Geometry Nodes system.
+- **Our own**: the Hair tab's cards exported as OBJ, or anything made in Blender: no licence question at all.
+
+Not CC0 and kept out: Perm's fitted hairstyles (USC-HairSalon, research use: free games only, DECISIONS 2026-10-22),
+Mixamo, MetaHuman grooms, store-bought hair.

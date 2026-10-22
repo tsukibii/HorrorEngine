@@ -129,6 +129,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "clothes"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a draped garment
             f = PEOPLE / clean(parts[2]) / "clothes" / clean(parts[3]) / "garment.obj"
             return self.send(200, f.read_bytes(), "text/plain") if f.exists() else self.send(404, {"error": "not made yet"})
+        if parts[:2] == ["api", "wigs"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a hair model worn as a wig
+            f = PEOPLE / clean(parts[2]) / "wigs" / clean(parts[3])
+            return self.send(200, f.read_bytes(), "application/octet-stream") if f.is_file() else self.send(404, {"error": "no such hair model"})
         if parts[:2] == ["api", "hairlib"] and len(parts) == 3 and parts[2] in ("index.json", "sprite.png"):   # the hair library
             f = perm_home() / "library" / parts[2]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no hair library yet: python tools/perm.py setup, then library"})
@@ -169,6 +172,12 @@ class Handler(BaseHTTPRequestHandler):
             if data:                                                           # an empty body clears the slot
                 (d / (parts[3] + ext)).write_bytes(data)
             return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "wigs"] and len(parts) == 4 and name and clean(parts[3]):   # a hair model (GLB, glTF, FBX, OBJ) for the wig
+            if Path(clean(parts[3])).suffix.lower() not in (".glb", ".gltf", ".fbx", ".obj"):
+                return self.send(400, {"error": "a hair model: GLB, glTF, FBX or OBJ"})
+            d = PEOPLE / name / "wigs"; d.mkdir(parents=True, exist_ok=True)
+            (d / clean(parts[3])).write_bytes(self.body())
+            return self.send(200, {"ok": True, "path": str((d / clean(parts[3])).relative_to(ROOT))})
         if parts[:2] == ["api", "skin"] and len(parts) == 4 and name and parts[3] in ("paint", "touch"):   # the touch-up's layers
             data = self.body()
             if not data.startswith(b"\x89PNG\r\n\x1a\n"):
