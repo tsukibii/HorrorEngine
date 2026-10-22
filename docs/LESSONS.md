@@ -346,3 +346,7 @@ the decisions send it, and say the whole route (made, used, exported) back to th
 An element's `hidden` loses to a CSS rule that sets its `display` (`.row { display: grid }`): the Character Studio's
 Hair tab "hid" the style's rows for strand hair and they stayed on screen. Pages that hide with the attribute carry
 `[hidden] { display: none !important; }`.
+
+The bake preview's `let PREVIEW` was already the lock tools' placement preview: a second `let` of the same name kills
+the whole module at load, and the salon came up blank with no status. Before adding a top-level name to a long page
+script, grep for it (`\bNAME\b`).

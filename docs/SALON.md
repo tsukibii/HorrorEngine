@@ -6,6 +6,15 @@ view. The plan, the decisions behind it and what comes next are in docs/SALON_PL
     python tools/character/serve.py          then http://127.0.0.1:8793/salon.html
                                              ?person=NAME opens a character, ?ref=NAME a reference, ?hair=NAME a hairstyle
 
+## The steps (2026-10-22)
+
+The side panel is the work in order, each step a dropdown, all closed until opened (the ones open are remembered in
+the browser); each one's hint says what it's for, or what it's on now (the character, the lock picked):
+**1. Character** (whose head), **2. Reference** (a video to trace over, if you like), **3. Start from** (a preset or
+a hairstyle), **4. Mirror**, **5. Locks** (draw the hair, in groups; Layer by height), **6. Selected** (the lock
+picked), **7. Pull** (how the handles drag), **8. Roots**, **9. Gravity and motion** (let it fall; try the swing),
+**10. Finish** (the cover), **11. Volume** (Thicken, padding, the base), **12. Scalp**, **13. Look**, **14. Bake**.
+
 ## On a character (2026-10-22)
 
 The hair belongs to a character (DECISIONS 2026-10-22, final): **the Character Studio** makes the character, **the
@@ -219,7 +228,7 @@ gravity and the result kept (Houdini's guide simulation; its forum on keeping a 
 in), Bertails et al. (Eurographics 2005) predict natural hair shapes as the statics of rods under gravity, and Hsu,
 Yuksel et al. (SIGGRAPH 2023) solve the opposite, keeping a styled groom from sagging.
 
-**Gravity's Friction and Root hold** (Move, Gravity), for every fall: friction where hair touches the head or the hair
+**Gravity's Friction and Root hold** (Gravity and motion), for every fall: friction where hair touches the head or the hair
 (1: it stays on slopes under 45 degrees; 0: it slides round the head, as before), and the roots' stiffness (0.5: each
 strand's first 7 cm keep their comb, fading along it, while the rest falls; 0: nothing holds them).
 
@@ -244,10 +253,10 @@ curves are its chains (a strand's points, a bundle's spine, a sheet's three edge
 root pinned to the head, the rest Verlet points held towards the styled shape (**Floppy-stiff**), so a still head
 keeps the style exactly; they lag and swing when the head moves, keep their lengths, are pushed off the body, and
 gravity pulls only as far as the head is tilted from upright (**Gravity**). **Rustle** is a wind with no direction:
-a small sway both ways. The **Move** panel turns, nods, shakes or walks the head (the hair with it); **still** stops
+a small sway both ways. **Gravity and motion** (Swing) turns, nods, shakes or walks the head (the hair with it); **still** stops
 it and the locks settle back. No bending springs, no solver, one step a frame.
 
-**Gravity** (Move, 2026-10-22): the switch drops **all** the hair shown, physics ticked or not: nothing holds a lock
+**Gravity** (Gravity and motion, 2026-10-22): the switch drops **all** the hair shown, physics ticked or not: nothing holds a lock
 to its style, real gravity pulls it down, the roots stay, the lengths are kept, the body pushes it out, and it lies on
 the head and shoulders or hangs (`salonphys.js`, drop mode, the same chains as the swing). Every moment is recorded (30
 a second, 12 s at most); **Moment** slides back to any of them, **Pause** and **Run on** carry on from there. Switching
@@ -267,7 +276,10 @@ Character Studio shows it still on the head for now; Unreal gets it with the fin
 - Everything else is **one mesh**: each card simplified to 8 points along it (the live hair has 24), cut out at 0.4
   and tinted by vertex colours; the darkened scalp is its own mesh, `hair_scalp`. `hime_demo`: 5 410 vertices live,
   1 440 baked, 503 KB.
-- **show the bake** loads the file back (three.js's GLTFLoader) in place of the live hair.
+- **Preview the bake** shows only the bake: the file it would write, read back (three.js's GLTFLoader), the hair you
+  edit and its live scalp hidden; it's made again a moment after the hair changes (a lock, the padding, the scalp, the
+  look), left-drag only turns the head, and a drawing tool (or Gravity) ends it. It's the file's own look (the strand
+  atlas on a plain material, as the Character Studio shows it), not the salon's hair shader.
 
 ## The look (2026-10-22)
 
@@ -284,7 +296,7 @@ a cool blue sheen in streaks along the strands, a few crimson strands, pointed s
   broken into streaks clump by clump, wrapped diffuse, dark roots, the inner colour, a cool rim, and **depth**: hair
   near the skin is in the outer layers' shade (each vertex's distance off the body). Cut out softly with alpha to
   coverage.
-- **Looks** (Head and look, **Hair look**): *Jet black, blue sheen, crimson strands* (the reference, the default),
+- **Looks** (Look, **Hair look**): *Jet black, blue sheen, crimson strands* (the reference, the default),
   natural black, dark brown, ash brown, chestnut, black with red underneath. Then by hand: the roots', lengths', shine,
   sheen and inner colours, the inner amount, **Glossy**, **Highlight** (towards the roots or the tips), **Streaks**
   (a smooth band to broken streaks). Saved in `salon.json` (`look.hair`, `look.custom`). A lock's **own colour**
@@ -314,7 +326,9 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
 
 ## Checks
 
-- `node tools/character/salontest.js`: SALON (the server running; `BODY_URL` for another port): the view snaps onto
+- `node tools/character/salontest.js`: SALON (the server running; `BODY_URL` for another port): the side panel's
+  fourteen steps in order, closed until opened; the preview of the bake (only it shown, its bones bending it, made
+  again when a lock is hidden and shown, ended by a drawing tool); the view snaps onto
   the MiniMax reference's frames at 0, 90, 180 and 270 degrees with the frame's camera exactly, the far side mirrored
   with half the turn, the fit moving the cameras; the cube's front face dragged with the mouse bending the front view
   and not the back (and undone); the darkened scalp (on the scalp only, the face clear, faded at the hairline, the

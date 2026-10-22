@@ -41,6 +41,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   const scr = p => ev(p => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(); const q = s.screenOf(p); return [r.left + q[0], r.top + q[1]]; }, p);
   const surf = p => ev(p => window.__salon.COL.surface(p), p);
   const count = () => ev(() => window.__salon.st.locks.length);
+  const openSteps = () => ev(() => document.querySelectorAll("details.step").forEach(d => { d.open = true; }));   // the side panel's dropdowns
   const drag = async pts => { await page.mouse.move(...pts[0]); await page.mouse.down(); for (let i = 1; i < pts.length; i++) for (let k = 1; k <= 5; k++) await page.mouse.move(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k / 5, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k / 5); await page.mouse.up(); };
 
   await page.goto(BASE + "salon.html?ref=minimax_wig");
@@ -48,6 +49,14 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });
     const n = await ev(() => [window.__salon.CAMS.length, window.__salon.HF && window.__salon.HF.S]);
     if (!(n[0] >= 90) || !(n[1] > 0.5)) throw new Error(`${n[0]} cameras, head size ${n[1]}`);
+  });
+  await step("the side panel: fourteen steps in the work's order, closed until opened", async () => {
+    const steps = await ev(() => [...document.querySelectorAll("details.step")].map(d => [d.querySelector("summary b").textContent, d.open]));
+    const want = ["Character", "Reference", "Start from", "Mirror", "Locks", "Selected", "Pull", "Roots", "Gravity and motion", "Finish", "Volume", "Scalp", "Look", "Bake"];
+    if (JSON.stringify(steps.map(x => x[0])) !== JSON.stringify(want.map((w, i) => `${i + 1}. ${w}`)) || steps.some(x => x[1])) throw new Error(JSON.stringify(steps));
+    if (await page.isVisible("#bakebox button")) throw new Error("a closed step's buttons show");
+    await openSteps();
+    if (!(await page.isVisible("#bakebox button"))) throw new Error("an open step's buttons don't show");
   });
   await step("turning the view snaps onto the nearest frame; the view's camera is that frame's and its picture is drawn", async () => {
     let last = null;
@@ -555,7 +564,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   });
   await step("Bake: the swinging lock its own skinned mesh, the rest one mesh with fewer vertices; the file loads back and its bones bend it", async () => {
     await ev(n => { document.querySelector("#hairName").value = n; document.querySelector("#status").textContent = ""; }, TEST);   // (an earlier bake's "baked" gone)
-    await page.click("#bakebox button:text-is('Bake')");
+    await page.click("#bakebox button:text-is('Bake the hairstyle')");
     await page.waitForFunction(() => /baked/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
     const d = path.join(ROOT, "Content", "Studio", "Hair", TEST), sum = JSON.parse(fs.readFileSync(path.join(d, "salon_bake.json"), "utf-8"));
     const glb = fs.readFileSync(path.join(d, "salon.glb"));
@@ -566,11 +575,25 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!scalpMat || scalpMat.alphaMode !== "BLEND" || !(scalpMat.extensions && scalpMat.extensions.KHR_materials_unlit) || !(json.nodes || []).some(n => n.name === "hair_scalp")) throw new Error("the bake's scalp: " + JSON.stringify(scalpMat));
     const cardsMat = (json.materials || []).find(m => m.name === "hair_cards");
     if (!(json.images || []).length || !cardsMat || cardsMat.alphaMode !== "MASK" || !(cardsMat.extras && cardsMat.extras.look && cardsMat.extras.look.label)) throw new Error("the bake's look: " + JSON.stringify({ images: (json.images || []).length, cards: cardsMat }).slice(0, 300));
-    await page.click("text=show the bake"); await page.waitForTimeout(800);
+    console.log(`       ${sum.before.vertices} vertices live -> ${sum.after.vertices} baked (static ${sum.static.vertices}); ${Math.round(glb.length / 1024)} KB`);
+  });
+  await step("Preview the bake: only the bake shown (the editing hair and its scalp hidden), its bones bend it, made again when the hair changes; a drawing tool ends it", async () => {
+    await page.click("#previewBake");
+    await page.waitForFunction(() => window.__salon.BAKEVIEW, null, { timeout: 60000 });
+    const shown = await ev(() => { const s = window.__salon, m = Object.values(s.MESHES); let baked = 0; s.BAKEG.traverse(o => { if (o.isMesh) baked++; });
+      return { editing: m.some(x => x.parent.visible && x.visible), scalp: s.scalpInfo() && s.scalpInfo().visible, bake: s.BAKEG.visible, baked, physics: s.BAKEVIEW.summary.physics.length }; });
+    if (shown.editing || shown.scalp || !shown.bake || shown.baked < 3 || shown.physics !== 1) throw new Error(JSON.stringify(shown));
     const c = await ev(() => window.__salon.bakeCheck());
     if (!c || c.bones !== 6 || c.bind > 1e-4 || c.moveTip < 0.01 || c.moveRoot > 0.1 * c.moveTip) throw new Error(JSON.stringify(c));   // the root ring sits round its bone: it turns a little
-    await page.click("text=show the bake");
-    console.log(`       ${sum.before.vertices} vertices live -> ${sum.after.vertices} baked (static ${sum.static.vertices}); ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; ${Math.round(glb.length / 1024)} KB`);
+    await ev(() => { const s = window.__salon; s.st.locks.find(l => l.physics && l.physics.on).visible = false; s.dirtyAll(); s.render(); });   // the swinging lock hidden: the preview follows
+    await page.waitForFunction(() => window.__salon.BAKEVIEW && window.__salon.BAKEVIEW.summary.physics.length === 0, null, { timeout: 30000 });
+    await ev(() => { const s = window.__salon; s.st.locks.find(l => l.physics && l.physics.on).visible = true; s.dirtyAll(); s.render(); });
+    await page.waitForFunction(() => window.__salon.BAKEVIEW && window.__salon.BAKEVIEW.summary.physics.length === 1, null, { timeout: 30000 });
+    await ev(() => window.__salon.setTool("strand"));
+    const back = await ev(() => { const s = window.__salon; s.render(); return { preview: !!s.BAKEVIEW, editing: Object.values(s.MESHES).some(x => x.parent.visible && x.visible), scalp: s.scalpInfo() && s.scalpInfo().visible, bake: s.BAKEG.children.length }; });
+    await ev(() => window.__salon.setTool("select"));
+    if (back.preview || !back.editing || !back.scalp || back.bake) throw new Error(JSON.stringify(back));
+    console.log(`       ${shown.baked} baked meshes shown alone; ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; the swinging lock hidden and shown, the preview followed; the strand tool ended it`);
   });
   await step("saved as salon.json and loaded back the same", async () => {
     const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
@@ -578,7 +601,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const f = path.join(ROOT, "Content", "Studio", "Hair", TEST, "salon.json");
     if (!fs.existsSync(f)) throw new Error("no " + f);
     await page.goto(BASE + "salon.html?hair=" + TEST);
-    await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });
+    await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 }); await openSteps();
     await page.waitForTimeout(500);
     const after = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
     if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`saved ${JSON.stringify(before).slice(0, 200)}, loaded ${JSON.stringify(after).slice(0, 200)}`);
@@ -599,7 +622,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const N = await ev(() => window.__body.N), body = fs.readFileSync(path.join(dir, "body.bin"));
     if (body.length !== N * 12) throw new Error(`body.bin is ${body.length} bytes for ${N} points`);
     await page.goto(BASE + "salon.html?person=" + TEST);             // the salon on it: its body, hair made and saved onto it
-    await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });
+    await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 }); await openSteps();
     const on = await ev(() => { const s = window.__salon, P = s.PERSON; let top = -1; for (let i = 1; i < P.body.length; i += 3) top = Math.max(top, P.body[i]); return { name: P.name, face: P.face, top, picked: document.querySelector("#person").value }; });
     if (on.name !== TEST || !on.face || on.picked !== TEST || Math.abs(on.top - 1.58) > 0.003) throw new Error(JSON.stringify(on));
     await ev(() => { window.__salon.presets.apply("m_crop"); window.__salon.render(); });
@@ -611,7 +634,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => /saved the hairstyle/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
     const kept = JSON.parse(fs.readFileSync(path.join(style, "salon.json"), "utf-8")); fs.rmSync(style, { recursive: true, force: true });
     if (kept.head.person !== null || kept.locks.length !== locks) throw new Error("the hairstyle: " + JSON.stringify(kept.head));
-    await ev(() => { document.querySelector("#status").textContent = ""; }); await page.click("#bakebox button:text-is('Bake')");
+    await ev(() => { document.querySelector("#status").textContent = ""; }); await page.click(`#bakebox button:text-is('Bake onto ${TEST}')`);
     await page.waitForFunction(n => new RegExp(`baked onto ${n}`).test(document.querySelector("#status").textContent), TEST, { timeout: 60000 });
     const sum = JSON.parse(fs.readFileSync(path.join(dir, "salon", "salon_bake.json"), "utf-8"));
     if (sum.head.person !== TEST || !fs.existsSync(path.join(dir, "salon", "salon.glb"))) throw new Error("the bake: " + JSON.stringify(sum.head));

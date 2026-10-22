@@ -62,6 +62,7 @@ const camera = new THREE.PerspectiveCamera(30, 1, 0.02, 30); camera.matrixAutoUp
 const key = new THREE.DirectionalLight(0xffffff, 2.0); scene.add(key, key.target); scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 const fillL = new THREE.DirectionalLight(0xb8c4ff, 0.6); scene.add(fillL, fillL.target);
 const HAIR = new THREE.Group(); HAIR.matrixAutoUpdate = false; scene.add(HAIR);            // local -> world
+const BAKEG = new THREE.Group(); BAKEG.matrixAutoUpdate = false; scene.add(BAKEG);          // the bake previewed: the same place, apart from the editing hair
 const HANDLES = new THREE.Group(); HAIR.add(HANDLES);
 let HEAD = null, HF = null, COL = null, LOCAL_PTS = null;
 const HFMAT = new THREE.Matrix4(), RIG = new THREE.Matrix4();            // the head's frame; the head's motion (world)
@@ -222,7 +223,7 @@ function drawScalp() {
   const sc = st.scalp; if (!sc || !sc.on || !HEAD || !LOCAL_PTS) return;
   const g = scalpGeometry(sc); if (!g) return;
   SCALPM = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-  SCALPM.renderOrder = 1; SCALPM.userData.alpha = scalpAlphas(sc); HEAD.add(SCALPM);
+  SCALPM.renderOrder = 1; SCALPM.userData.alpha = scalpAlphas(sc); SCALPM.visible = !BAKEVIEW; HEAD.add(SCALPM); HAIRV++;
 }
 function scalpAlphas(sc) {                                             // per head vertex: how much scalp shows there
   const n = LOCAL_PTS.length / 3, a = new Float32Array(n);
@@ -433,7 +434,7 @@ function refreshLocks() {
     if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, laid && laid.get(l.id) || null); HAIR.add(MESHES[l.id]); }
     MESHES[l.id].visible = shown(l);
   });
-  if (rebuilt) { shadeDepths(); PAD_DIRTY = true; }
+  if (rebuilt) { shadeDepths(); PAD_DIRTY = true; HAIRV++; }
   DIRTY.clear();
   drawHandles();
 }
@@ -506,6 +507,7 @@ function rigAt(t) {
 function applyRig() {
   if (HEAD) { HEAD.matrix.copy(RIG); HEAD.matrixWorldNeedsUpdate = true; }
   HAIR.matrix.copy(RIG).multiply(HFMAT); HAIR.matrixWorldNeedsUpdate = true;
+  BAKEG.matrix.copy(HAIR.matrix); BAKEG.matrixWorldNeedsUpdate = true;
 }
 function physicsLocks() { return st.locks.filter(l => l.physics && l.physics.on && l.visible); }
 function stepPhysics(t) {
@@ -588,6 +590,7 @@ function coverPanel() {
 let DROP = null;
 const ID3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], IDP = p => p;
 function startDrop(only = null) {                                     // only: the ids that fall (a cover); the rest stays, in their way
+  if (BAKEVIEW) previewBake(false);
   if (MOTION !== "still") setMotion("still");
   RIG.identity(); applyRig(); render();
   const all = st.locks.filter(isShown()), locks = only ? all.filter(l => only.includes(l.id)) : all;
@@ -660,8 +663,8 @@ function dropPanel() {
 }
 function movePanel() {
   const box = $("#movebox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: "Tick Physics on a lock (Selected) to let it swing. The head's motions show it; Still lets it settle back to its style." }));
   box.append(el("h4", { textContent: "Gravity" }), Object.assign(el("div"), { id: "dropbox" })); dropPanel();
+  box.append(el("h4", { textContent: "Swing" }), el("p", { className: "note", textContent: "Tick Physics on a lock (Selected) to let it swing. The head's motions show it; Still lets it settle back to its style." }));
   for (const m of ["still", "turn", "nod", "shake", "walk"]) { const b = el("button", { textContent: m, onclick: () => setMotion(m) }); b.dataset.m = m; b.classList.toggle("on", m === MOTION); box.append(b); }
 }
 
@@ -694,8 +697,7 @@ function liveVertices() {                                               // what 
   let n = 0; for (const M of [...Object.values(MESHES), PADM].filter(Boolean)) M.traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); if (SCALPM) n += SCALPM.geometry.attributes.position.count; return n;
 }
 let BAKED = null;
-async function bake() {
-  const at = where(), name = at.name;
+function buildBake(name) {                                             // the bake's scene and numbers, nothing written
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => (l.visible && vis[l.group] !== false) || inBase(l));   // a hidden base is still the hair
   const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, person: st.head.person, preset: st.head.person ? null : st.head.preset, height: st.head.person ? PERSON?.height : st.head.height } };
   shown.forEach((l, i) => {
@@ -731,35 +733,50 @@ async function bake() {
   }
   summary.before = { vertices: liveVertices() };
   summary.after = { vertices: (summary.static.vertices || 0) + summary.physics.reduce((a, x) => a + x.vertices, 0) };
+  return { root, summary };
+}
+async function bakeFile(name) {                                        // the bake as the file holds it: the binary glTF
+  render(); if (st.volume.padding && (PAD_DIRTY || !PAD)) refreshPadding();   // the hair as it is now: laid, padded
+  const { root, summary } = buildBake(name);
   const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
+  root.traverse(o => { o.geometry?.dispose(); });
+  return { glb, summary };
+}
+async function bake() {
+  const at = where(), { glb, summary } = await bakeFile(at.name);
   await fetch(at.url("salon.glb"), { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the GLB wasn't saved"); });
   await api(at.url("salon_bake.json"), JSON.stringify(summary, null, 1));
   summary.glb_bytes = glb.byteLength; BAKED = summary; bakePanel();
   status(at.on ? `baked onto ${at.on} (${at.path("salon.glb")}): the Character Studio wears it (Hair: made in the salon)` : `baked ${at.path("salon.glb")}`, "ok");
   return summary;
 }
-// the bake loaded back (GLTFLoader) and shown instead of the live hair: what a game gets
-const BAKEG = new THREE.Group(); HAIR.add(BAKEG);
-async function showBake(on) {
-  BAKEG.clear(); st.look.showBake = on;
-  for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; if (SCALPM) SCALPM.visible = !on; if (PADM) PADM.visible = !on;
-  if (!on) { for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; draw(); return null; }
-  const r = await fetch(where().url("salon.glb") + `?v=${Date.now()}`); if (!r.ok) throw new Error("nothing baked yet");
-  const buf = await r.arrayBuffer();
-  const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(buf, "", ok, bad));
-  let skinnedN = 0, bonesN = 0, meshes = 0; gltf.scene.traverse(o => { if (o.isSkinnedMesh) skinnedN++; if (o.isBone) bonesN++; if (o.isMesh) meshes++; });
-  BAKEG.add(gltf.scene); draw();
-  return { meshes, skinned: skinnedN, bones: bonesN };
+// Preview the bake: the file it would write, read back (GLTFLoader) and shown alone, the editing hair and its live scalp
+// hidden; made again a moment after anything changes the hair. Left-drag turns the head; a drawing tool ends it.
+let BAKEVIEW = null, BAKEVIEW_TIMER = null, HAIRV = 0;                   // HAIRV: counts the hair's changes (locks, padding, scalp, look)
+function showOnly(bake) { HAIR.visible = !bake; if (SCALPM) SCALPM.visible = !bake; BAKEG.visible = bake; }
+function disposeBake() { BAKEG.traverse(o => { o.geometry?.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); }); BAKEG.clear(); }
+async function previewBake(on) {
+  clearTimeout(BAKEVIEW_TIMER);
+  if (!on) { BAKEVIEW = null; disposeBake(); showOnly(false); bakePanel(); draw(); return null; }
+  const { glb, summary } = await bakeFile(st.head.person || null);
+  const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(glb, "", ok, bad));
+  let skinned = 0, bones = 0, meshes = 0; gltf.scene.traverse(o => { if (o.isSkinnedMesh) skinned++; if (o.isBone) bones++; if (o.isMesh) { meshes++; o.frustumCulled = false; } });
+  disposeBake(); BAKEG.add(gltf.scene); showOnly(true);
+  BAKEVIEW = { v: HAIRV, summary, bytes: glb.byteLength, meshes, skinned, bones }; bakePanel(); draw();
+  return { meshes, skinned, bones };
 }
+function previewStale() { if (BAKEVIEW && BAKEVIEW.v !== HAIRV) { BAKEVIEW.v = HAIRV; clearTimeout(BAKEVIEW_TIMER); BAKEVIEW_TIMER = setTimeout(() => { if (BAKEVIEW) previewBake(true).catch(e => status(e.message, "bad")); }, 400); } }
 function bakePanel() {
   const box = $("#bakebox"); if (!box) return; box.innerHTML = "";
   const who = st.head.person;
+  const pv = el("button", { textContent: BAKEVIEW ? "Preview the bake: on" : "Preview the bake", className: BAKEVIEW ? "on" : "", title: "only the bake shown, as it would be written (the hair you edit hidden); made again as you change things; a drawing tool ends it",
+    onclick: () => previewBake(!BAKEVIEW).catch(e => status(e.message, "bad")) }); pv.id = "previewBake";
+  box.append(pv, el("button", { textContent: who ? `Bake onto ${who}` : "Bake the hairstyle", onclick: () => bake().catch(e => status(e.message, "bad")) }));
+  const n = BAKEVIEW ? BAKEVIEW.summary : BAKED;
+  if (n) box.append(el("p", { className: "note", textContent: `${BAKEVIEW ? "Preview" : "Baked"}: ${n.before.vertices} vertices live -> ${n.after.vertices}: one still mesh of ${n.static.vertices || 0}, ${n.physics.length} swinging (${n.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round((BAKEVIEW ? BAKEVIEW.bytes : n.glb_bytes) / 1024)} KB` }));
   box.append(el("p", { className: "note", textContent: (who ? `Bake puts the hair on ${who} (Content/Studio/People/${who}/salon/salon.glb): the Character Studio wears it (Hair: made in the salon), and so will the director's desk; ${who} goes to Unreal from there, finished, rigged and animated, hair and all. `
     : "Bake writes the hairstyle's mesh (Content/Studio/Hair/<name>/salon.glb); pick a character at the top to bake the hair onto it. ") +
     "In it: every lock with physics its own skinned mesh on bones along its chains (a sheet three chains, a strand or bundle one), everything else (and the padding, while it's ticked in Volume) merged into one mesh with fewer points along each card, and the darkened scalp." }));
-  box.append(el("button", { textContent: "Bake", onclick: () => bake().catch(e => status(e.message, "bad")) }));
-  const t = el("div"); tick(t, "show the bake", !!st.look.showBake, v => showBake(v).catch(e => status(e.message, "bad")), "the baked file loaded back in place of the live hair"); box.append(t);
-  if (BAKED) box.append(el("p", { className: "note", textContent: `${BAKED.before.vertices} vertices live -> ${BAKED.after.vertices} baked: one static mesh of ${BAKED.static.vertices || 0}, ${BAKED.physics.length} swinging (${BAKED.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round(BAKED.glb_bytes / 1024)} KB` }));
 }
 
 // ---- the frame ---------------------------------------------------------------------------------------------------------
@@ -772,7 +789,7 @@ function render() {
     const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
     setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
   } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
-  refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding();
+  refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding(); previewStale();
   const ovl = placeOverlay();
   renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
   if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
@@ -868,6 +885,7 @@ const HINTS = {
 };
 const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, height: 1, last: null };
 function setTool(t) {
+  if (BAKEVIEW && t !== "select") previewBake(false);
   TOOL = t; resetPlace();
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
   $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
@@ -917,7 +935,7 @@ const cv = renderer.domElement;
 cv.addEventListener("contextmenu", e => e.preventDefault());
 cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId);
-  const orbitOnly = e.button !== 0;
+  const orbitOnly = e.button !== 0 || !!BAKEVIEW;                       // previewing the bake: the view only turns
   if (!orbitOnly && TOOL === "fit") {
     const h = cubeHandleAt(e);
     if (h) { remember(); DRAG = { kind: "cube", ijk: h, y: e.clientY }; return; }
@@ -1143,6 +1161,7 @@ function refreshPadding() {
   const V = st.volume, base = baseLocks().filter(l => EVAL[l.id]), based = st.groups.some(g => g.base);
   PAD = !V.padding || !base.length ? null : based ? BASE : padOf(base.map(l => EVAL[l.id]), COL, { thickness: V.thickness, smooth: V.smooth });
   if (PAD && PAD.cards.length) { PADM = cardsMesh(PAD.cards); PADM.visible = base.some(isShown()); HAIR.add(PADM); }
+  HAIRV++;
   CHECK = checkHair();
   if (V.clips && CHECK.clips.length) {
     const g = new THREE.BufferGeometry().setFromPoints(CHECK.clips.map(p => new THREE.Vector3(...p)));
@@ -1235,7 +1254,8 @@ function locksPanel() {
 function select(id) { SELECTED = id; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); draw(); }
 function selPanel() {
   const box = $("#selbox"); box.innerHTML = "";
-  const l = lockById(SELECTED); if (!l) { box.append(el("p", { className: "note", textContent: "Nothing selected." })); return; }
+  const l = lockById(SELECTED); stepHint("selected", l ? l.name || l.type : "the lock you picked");
+  if (!l) { box.append(el("p", { className: "note", textContent: "Nothing selected." })); return; }
   const o = original(l), edit = fn => v => { remember(); fn(v); changed(o); draw(); };
   const name = el("input", { type: "text", value: l.name || "", onchange: () => { l.name = name.value; locksPanel(); } });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Name" }), name, el("span")));
@@ -1269,9 +1289,10 @@ function selPanel() {
              l.mirror_of ? el("button", { textContent: "Break the mirror", onclick: () => { remember(); l.mirror_of = null; l.name = l.name.replace(" (mirror)", ""); locksPanel(); selPanel(); } }) : "",
              el("button", { textContent: "Delete", onclick: () => deleteLock(o.id) }));
 }
-function restyle() { applyLook(HAIRU, look()); SCALP_DIRTY = true; for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
+function restyle() { applyLook(HAIRU, look()); SCALP_DIRTY = true; HAIRV++; for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
 function characterPanel() {                                           // the body the hair is drawn on
   const box = $("#charbox"); if (!box) return; box.innerHTML = "";
+  stepHint("character", st.head.person || "a base body"); stepHint("bake", st.head.person ? `onto ${st.head.person}` : "as a hairstyle");
   if (st.head.person) {
     box.append(el("p", { className: "note", textContent: PERSON?.face
       ? `${st.head.person}'s body and face, as the Character Studio saved them (${PERSON.height ?? "?"} m). Change them there, save, and open the character here again; then bake again.`
@@ -1306,6 +1327,16 @@ function lookPanel() {                                                  // the h
   box.append(t);
 }
 
+// ---- the steps (the side panel) -------------------------------------------------------------------------------------------
+// Dropdowns in the order the work goes, closed until opened; which are open is remembered in this browser. Each one's
+// hint says what it's for, or what it's on now (the character, the lock picked).
+const STEP_KEY = "salon:open";
+try { const open = JSON.parse(localStorage.getItem(STEP_KEY) || "[]"); for (const d of document.querySelectorAll("details.step")) d.open = open.includes(d.dataset.step); } catch (e) { }
+for (const d of document.querySelectorAll("details.step")) d.addEventListener("toggle", () => {
+  try { localStorage.setItem(STEP_KEY, JSON.stringify([...document.querySelectorAll("details.step[open]")].map(x => x.dataset.step))); } catch (e) { }
+});
+function stepHint(step, text) { const h = document.querySelector(`details.step[data-step="${step}"] .hint`); if (h) h.textContent = text; }
+
 // ---- save and load ----------------------------------------------------------------------------------------------------
 // The hair is kept on the character it's drawn on (Save: People/<name>/salon/salon.json); a hairstyle (Start from) is
 // hair kept to start other characters from (Content/Studio/Hair/<name>/), laid onto whatever head is shown.
@@ -1336,7 +1367,7 @@ async function applyHair(o, person) {                                 // a salon
   st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 }, o.volume || {}); BASE_DIRTY = true; SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
   UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
-  SIM_DIRTY = true; BAKED = null; if (st.look.showBake) await showBake(false); st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
+  SIM_DIRTY = true; BAKED = null; delete st.look.showBake; if (BAKEVIEW) await previewBake(false); st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
   allPanels(); draw();
 }
 async function load(name) {                                           // a hairstyle, onto the head shown (a character keeps its body)
@@ -1345,11 +1376,11 @@ async function load(name) {                                           // a hairs
   status(st.head.person ? `the hairstyle ${name} on ${st.head.person}: Save keeps it on ${st.head.person}` : `loaded the hairstyle ${name}`, "ok");
 }
 async function openPerson(name) {                                     // a character: its body, and its hair if it has some (else the hair shown stays, to put on it)
-  if (!name) { st.head.person = null; PERSON = null; await buildHead(); characterPanel(); $("#person").value = ""; status("a base body (Save keeps the hair as a hairstyle)", "ok"); return; }
+  if (!name) { st.head.person = null; PERSON = null; await buildHead(); characterPanel(); bakePanel(); $("#person").value = ""; status("a base body (Save keeps the hair as a hairstyle)", "ok"); return; }
   PERSON = await personBody(name);
   const r = await fetch(`api/people/${enc(name)}/salon/salon.json?v=${Date.now()}`);
   if (r.ok) await applyHair(await r.json(), name);
-  else { st.head.person = name; await buildHead(); characterPanel(); }
+  else { st.head.person = name; await buildHead(); characterPanel(); bakePanel(); }
   $("#person").value = name;
   status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet, the hair shown is put on it when you Save"}`, PERSON.face ? "ok" : "bad");
 }
@@ -1374,9 +1405,9 @@ $("#person").onchange = () => openPerson($("#person").value).catch(e => status(e
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
+  screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
-  setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
+  setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();
