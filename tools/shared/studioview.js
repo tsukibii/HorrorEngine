@@ -25,7 +25,7 @@ export class StudioView {
     this.on = false; this.s = { ...DEFAULTS };
     try { Object.assign(this.s, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { }
     this.saved = null; this.hidden = []; this.frame = 0; this.envTex = null; this.loading = null;
-    this.key = new THREE.DirectionalLight(0xffffff, this.s.key);
+    this.key = new THREE.DirectionalLight(0xffffff, this.s.key); this.key.castShadow = true;
     this.key.shadow.mapSize.set(2048, 2048); this.key.shadow.bias = -0.0004; this.key.shadow.normalBias = 0.012; this.key.shadow.radius = 3;
     this.floor = new THREE.Mesh(new THREE.CircleGeometry(4, 64).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: this.s.shadow, depthWrite: false }));
     this.floor.receiveShadow = true; this.floor.userData.noShadow = true; this.floor.renderOrder = -1;
