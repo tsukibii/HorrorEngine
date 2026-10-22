@@ -236,3 +236,10 @@ end in the air 9 cm in front of the face, roots grazing the silhouette's edge, a
 time the page did the right thing. Aim a test's clicks at what's visible: points on the skin inside the silhouette,
 inside the view at that zoom, and check the page's refusals before calling them bugs.
 
+## Joining gaps round a head closes over the face (2026-10-22)
+
+The fill's trace joins the gaps between locks with a closing on the grid of directions round the head. A fringe above
+and two sidelocks beside the face surround it, so the closing filled the face, and a lock's footprint spread a cell
+round each point bled onto the eyes. Mark the face (the front, below the hairline, above the chin) and never join
+across it; give a point only its own cell; keep the face clear below the brows unless the user brings it back.
+

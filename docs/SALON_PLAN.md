@@ -211,6 +211,10 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   only. Colour per lock or the head's hair colour; roots darker; occlusion by depth into the hair (the radial outer
   shell from `hair_batch.py`'s idea).
   **Built 2026-10-22**: cards (ribbons with a strand alpha, roots darker) and strands (thin lines spread through the lock, a count); not yet: the hair shader's two highlights, occlusion by depth.
+- [x] **The fill** (the user's cheat, 2026-10-22): Trace wraps the locks and the scalp in an orange glow; select its
+  points with a brush (mirror), cut, bring back, push out, pull in, smooth, copy a side; Fill makes a mass of hair
+  between the head and the glow, combed the way the nearest locks run, with its own cube to bend it. **Done
+  2026-10-22** (docs/SALON.md, The fill). It covers much of the fake volume below; the cap's pore texture is still to do.
 - [ ] **Fake volume**: the **cap**: select scalp triangles by painting (or "all the scalp", "under the locks"), a
   pore texture (the Studio's procedural skin's pores, darkened, in the hair colour), and a **thickness** slider that
   lifts the cap along the normals and lifts the roots of every lock on it by the same amount, so the hair looks

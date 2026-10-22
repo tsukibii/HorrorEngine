@@ -4,6 +4,7 @@ import * as THREE from "three";
 import * as SL from "./salonlib.js";
 import * as SR from "./salonref.js";
 import * as FFD from "./ffd.js";
+import * as SF from "./salonfill.js";
 
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -27,6 +28,7 @@ const st = {
   look: { color: "#2b1d16", byLock: false, guides: false, scalp: true },
   groups: [{ id: "g1", name: "Hair", visible: true }],
   locks: [],
+  glow: null,                          // the trace (salonfill.js): {AZ, EL, C, r, inner, on, face, show, mirror, filled, fill: {density, seed, cube}}
 };
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
 
@@ -148,40 +150,171 @@ function placeOverlay() {
   return OVL_MESH.visible;
 }
 
-// the cube drawn and pulled (the Fit tool): its face lines, a handle on every surface point
+// the cubes drawn and pulled: the reference's (the Fit tool) and the fill's (the Glow tool, "shape the fill"); their
+// face lines, a handle on every surface point
 const CUBE = new THREE.Group(); HAIR.add(CUBE);
+function activeCube() {
+  if (TOOL === "fit" && REF && st.reference.on && st.reference.fit && st.reference.fit.cube) return { cube: st.reference.fit.cube, sym: !!st.reference.cubeSym, kind: "ref" };
+  if (TOOL === "glow" && st.glow && st.glow.filled && st.glow.shape && st.glow.fill.cube) return { cube: st.glow.fill.cube, sym: !!st.glow.mirror, kind: "fill" };
+  return null;
+}
+const stretchedPt = (cube, p) => { const m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1]; return p.map((x, a) => m[a] + (x - m[a]) * sv[a]); };
 function drawCube() {
   CUBE.clear();
-  const cube = st.reference.fit && st.reference.fit.cube;
-  if (!cube || !REF || !st.reference.on || TOOL !== "fit") return;
-  const mat = new THREE.LineBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.75, depthTest: false });
-  const stretched = p => { const m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1]; return p.map((x, a) => m[a] + (x - m[a]) * sv[a]); };
-  for (const L of FFD.lines(cube)) { const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(L.map(p => new THREE.Vector3(...stretched(p)))), mat); ln.renderOrder = 11; CUBE.add(ln); }
+  const ac = activeCube(); if (!ac) return;
+  const cube = ac.cube, mat = new THREE.LineBasicMaterial({ color: ac.kind === "fill" ? 0x7fd0ff : 0xffa040, transparent: true, opacity: 0.75, depthTest: false });
+  for (const L of FFD.lines(cube)) { const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(L.map(p => new THREE.Vector3(...stretchedPt(cube, p)))), mat); ln.renderOrder = 11; CUBE.add(ln); }
   const sizes = { corner: 0.006, edge: 0.0048, face: 0.0055 }, colours = { corner: 0xffffff, edge: 0xffc070, face: 0x6fd0ff };
   for (const h of FFD.handles(cube)) {
     const hot = HOVER_CUBE && HOVER_CUBE.join() === [h.i, h.j, h.k].join();
     const m = new THREE.Mesh(new THREE.SphereGeometry(sizes[h.kind], 10, 8), new THREE.MeshBasicMaterial({ color: hot ? 0xff5050 : colours[h.kind], depthTest: false }));
-    m.position.set(...stretched(cube.pts[FFD.idx(cube, h.i, h.j, h.k)])); m.renderOrder = 12; CUBE.add(m);
+    m.position.set(...stretchedPt(cube, cube.pts[FFD.idx(cube, h.i, h.j, h.k)])); m.renderOrder = 12; CUBE.add(m);
   }
 }
 let HOVER_CUBE = null;
 function cubeHandleAt(e) {
-  const cube = st.reference.fit && st.reference.fit.cube; if (!cube || TOOL !== "fit") return null;
-  const [mx, my] = rel(e); let best = null, bd = 12, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
-  for (const h of FFD.handles(cube)) { const p = cube.pts[FFD.idx(cube, h.i, h.j, h.k)].map((x, a) => m[a] + (x - m[a]) * sv[a]); const [sx, sy] = screenOf(p), d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = [h.i, h.j, h.k]; } }
+  const ac = activeCube(); if (!ac) return null;
+  const [mx, my] = rel(e); let best = null, bd = 12;
+  for (const h of FFD.handles(ac.cube)) { const [sx, sy] = screenOf(stretchedPt(ac.cube, ac.cube.pts[FFD.idx(ac.cube, h.i, h.j, h.k)])), d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = [h.i, h.j, h.k]; } }
   return best;
 }
-// a cube point pulled to q (where it's drawn, i.e. stretched): stored unstretched; with "symmetric", its mirror too
-function pullCube(ijk, q) {
-  const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
+// a cube point pulled to q (where it's drawn, i.e. stretched): stored unstretched; symmetric: its mirror too
+function pullCube(ijk, q, ac = activeCube() || { cube: st.reference.fit.cube, sym: !!st.reference.cubeSym }) {
+  const cube = ac.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
   const un = q.map((x, a) => m[a] + (x - m[a]) / sv[a]);
   cube.pts[FFD.idx(cube, ...ijk)] = un;
-  if (st.reference.cubeSym) {
+  if (ac.sym) {
     const [i2, j2, k2] = FFD.mirrorOf(cube, ...ijk);
     if (i2 !== ijk[0]) cube.pts[FFD.idx(cube, i2, j2, k2)] = [2 * m[0] - un[0], un[1], un[2]];
-    else cube.pts[FFD.idx(cube, ...ijk)][0] = FFD.rest(cube, ...ijk)[0];   // on the middle plane: it stays there
+    else cube.pts[FFD.idx(cube, ...ijk)][0] = FFD.rest(cube, ...ijk)[0];
   }
   FFD.settle(cube);
+  if (ac.kind === "fill") FILL_DIRTY = true;
+}
+
+// ---- the glow and the fill ---------------------------------------------------------------------------------------------
+const GLOW = new THREE.Group(), FILLG = new THREE.Group(); HAIR.add(GLOW, FILLG);
+let GLOW_DIRTY = true, FILL_DIRTY = true, FILLRES = null, SEL = new Set(), GLOW_BRUSH = 26;
+const glowMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+  uniforms: { colour: { value: new THREE.Color(0xff8a1e) } },
+  vertexShader: `varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `uniform vec3 colour; varying vec3 vN; varying vec3 vV; void main() { float rim = 1.0 - abs(dot(normalize(vN), normalize(vV))); gl_FragColor = vec4(colour, 0.10 + 0.55 * rim * rim); }`,
+});
+function glowGuides() {                                              // every visible lock's guides, for the trace and the comb
+  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), out = [];
+  for (const l of st.locks) if (l.visible && vis[l.group] !== false) for (const G of (EVAL[l.id] || SL.evaluate(l, COL))) out.push(G.pts);
+  return out;
+}
+function traceGlow() {
+  remember();
+  const keep = st.glow ? { show: st.glow.show, mirror: st.glow.mirror } : { show: true, mirror: true };
+  st.glow = Object.assign(SF.trace(glowGuides(), COL), keep, { filled: false, shape: false, fill: { density: 900, seed: 11, cube: null } });
+  SEL = new Set(); GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw();
+}
+function drawGlow() {
+  if (!GLOW_DIRTY) return; GLOW_DIRTY = false;
+  GLOW.clear();
+  const g = st.glow; if (!g || (g.filled && !g.show) || (!g.show && TOOL !== "glow")) return;
+  const m = SF.shellMesh(g, g.r, 1);
+  if (m.index.length) {
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(m.position, 3)); geo.setIndex(m.index); geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, glowMat); mesh.renderOrder = 5; GLOW.add(mesh);
+  }
+  // the outline (the path): the edge cells in bright orange; in the Glow tool every vertex, the selection white
+  const edge = SF.boundary(g), ep = [];
+  for (const c of edge) ep.push(...SF.pointOf(g, c));
+  const eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.Float32BufferAttribute(ep, 3));
+  const pts = new THREE.Points(eg, new THREE.PointsMaterial({ color: 0xffb050, size: 5, sizeAttenuation: false, depthTest: false, transparent: true, opacity: 0.9 })); pts.renderOrder = 6; GLOW.add(pts);
+  if (TOOL === "glow") {                                             // the points: on (orange), off (faint), selected (white, big)
+    const sets = { on: [], off: [], sel: [] };
+    for (let c = 0; c < g.on.length; c++) sets[SEL.has(c) ? "sel" : g.on[c] ? "on" : "off"].push(...SF.pointOf(g, c, g.on[c] ? g.r[c] : g.inner[c] + 0.006));
+    for (const [k, colour, size, opacity] of [["off", 0x8a8f99, 2.5, 0.45], ["on", 0xff9a40, 4, 1], ["sel", 0xffffff, 7, 1]]) {
+      if (!sets[k].length) continue;
+      const vg = new THREE.BufferGeometry(); vg.setAttribute("position", new THREE.Float32BufferAttribute(sets[k], 3));
+      const vp = new THREE.Points(vg, new THREE.PointsMaterial({ color: colour, size, sizeAttenuation: false, transparent: opacity < 1, opacity, depthTest: k !== "sel" })); vp.renderOrder = k === "sel" ? 9 : 7; GLOW.add(vp);
+    }
+  }
+}
+function makeFill() {
+  const g = st.glow; if (!g) return;
+  remember();
+  FILLRES = SF.fillMesh(g, glowGuides(), { density: g.fill.density, seed: g.fill.seed }, COL);
+  if (!g.fill.cube) {                                                // the fill's own cube, round it
+    const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], P = FILLRES.shell.position;
+    for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i + a]); hi[a] = Math.max(hi[a], P[i + a]); }
+    g.fill.cube = FFD.makeCube(lo.map(v => v - 0.01), hi.map(v => v + 0.01));
+  }
+  g.filled = true; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw();
+}
+function drawFill() {
+  if (!FILL_DIRTY) return; FILL_DIRTY = false;
+  FILLG.traverse(o => { o.geometry?.dispose(); }); FILLG.clear();
+  const g = st.glow; if (!g || !g.filled) return;
+  if (!FILLRES) FILLRES = SF.fillMesh(g, glowGuides(), { density: g.fill.density, seed: g.fill.seed }, COL);
+  const cube = g.fill.cube, bend = cube && !FFD.isRest(cube) ? p => FFD.deform(cube, p) : p => p;
+  const P = FILLRES.shell.position, pos = new Float32Array(P.length);
+  for (let i = 0; i < P.length; i += 3) pos.set(bend([P[i], P[i + 1], P[i + 2]]), i);
+  const colour = new THREE.Color(g.fill.color || st.look.color);
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setIndex(FILLRES.shell.index); geo.computeVertexNormals();
+  FILLG.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: colour.clone().multiplyScalar(0.75), roughness: 0.6, side: THREE.DoubleSide })));
+  // the combed strands as cards lying on the mass
+  const cp = [], uv = [], idx = [], cc = [];
+  FILLRES.strands.forEach((line0, s) => {
+    const line = line0.map(bend), base = cp.length / 3, n = line.length, u0 = (s * 0.37) % 1;
+    for (let k = 0; k < n; k++) {
+      const t = SL.norm(SL.sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), out = SL.norm(SL.sub(line[k], g.C)), a = SL.norm(SL.cross(t, out));
+      const w = 0.006 * (1 - 0.6 * k / (n - 1)), h = SL.mul(a, w / 2);
+      cp.push(...SL.sub(line[k], h), ...SL.add(line[k], h)); uv.push(u0, k / (n - 1), u0 + 0.5, k / (n - 1));
+      const sh = 0.6 + 0.4 * k / (n - 1); cc.push(sh, sh, sh, sh, sh, sh);
+    }
+    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  });
+  const sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.Float32BufferAttribute(cp, 3)); sg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); sg.setAttribute("color", new THREE.Float32BufferAttribute(cc, 3)); sg.setIndex(idx); sg.computeVertexNormals();
+  FILLG.add(new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, side: THREE.DoubleSide, alphaMap: strandTex, alphaTest: 0.4, vertexColors: true })));
+  FILLG.userData = { vertices: pos.length / 3, strands: FILLRES.strands.length };
+}
+function glowCellsAt(e) {                                            // the cells under the brush that face the view
+  const g = st.glow; if (!g) return [];
+  const [mx, my] = rel(e), cam = SR.toLocal(HF, [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]]), out = [];
+  for (let c = 0; c < g.on.length; c++) {
+    const p = SF.pointOf(g, c, g.on[c] ? g.r[c] : g.inner[c] + 0.006), n = SL.norm(SL.sub(p, g.C));
+    if (SL.dot(n, SL.sub(cam, p)) <= 0) continue;
+    const [sx, sy] = screenOf(p); if (Math.hypot(sx - mx, sy - my) <= GLOW_BRUSH) out.push(c);
+  }
+  return out;
+}
+const glowEdit = (fn) => { if (!st.glow) return; remember(); fn(SF.withMirror([...SEL], st.glow.mirror)); GLOW_DIRTY = true; FILLRES = null; FILL_DIRTY = true; draw(); };
+function glowPanel() {
+  const box = $("#glowbox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "Trace wraps your locks and the scalp in a glow (the face below the brows stays clear). With the Glow tool (G) paint over its points to select them (Ctrl takes them off; the wheel sizes the brush), drag a selected point up or down to push the glow out or in, cut what shouldn't be hair (the ears). Fill turns it into a mass of hair combed the way your nearest locks run: the more locks, the better it follows them." }));
+  box.append(el("button", { textContent: st.glow ? "Trace again" : "Trace", title: "the glow from the locks shown now (the edits are lost; undo brings them back)", onclick: traceGlow }));
+  const g = st.glow; if (!g) return;
+  const t = el("div");
+  tick(t, "show the glow", g.show, v => { g.show = v; GLOW_DIRTY = true; draw(); });
+  tick(t, "mirror", g.mirror, v => { g.mirror = v; }, "selecting and editing one side does the other side's same points");
+  box.append(t);
+  box.append(el("div", {},
+    el("button", { textContent: "All", onclick: () => { SEL = new Set(g.on.map((v, c) => c).filter(c => g.on[c])); GLOW_DIRTY = true; draw(); } }),
+    el("button", { textContent: "None", onclick: () => { SEL = new Set(); GLOW_DIRTY = true; draw(); } }),
+    el("button", { textContent: "Invert", onclick: () => { SEL = new Set(g.on.map((v, c) => c).filter(c => !SEL.has(c))); GLOW_DIRTY = true; draw(); } })));
+  box.append(el("div", {},
+    el("button", { textContent: "Cut", title: "the selected points out of the glow (the selection is cleared; undo brings them back)", onclick: () => { glowEdit(cs => SF.setOn(g, cs, false)); SEL = new Set(); GLOW_DIRTY = true; draw(); } }),
+    el("button", { textContent: "Bring back", onclick: () => glowEdit(cs => SF.setOn(g, cs, true)) }),
+    el("button", { textContent: "Puff out", title: "half a centimetre out", onclick: () => glowEdit(cs => SF.pushOut(g, cs, 0.005)) }),
+    el("button", { textContent: "Pull in", onclick: () => glowEdit(cs => SF.pushOut(g, cs, -0.005)) }),
+    el("button", { textContent: "Smooth", onclick: () => glowEdit(cs => SF.smooth(g, cs)) })));
+  box.append(el("div", {},
+    el("button", { textContent: "Left onto right", title: "the character's left side copied onto the right, mirrored", onclick: () => glowEdit(() => SF.copySide(g, true)) }),
+    el("button", { textContent: "Right onto left", onclick: () => glowEdit(() => SF.copySide(g, false)) })));
+  slider(box, "Density", 100, 3000, 50, g.fill.density, v => { g.fill.density = v; if (g.filled) { FILLRES = null; FILL_DIRTY = true; draw(); } }, "the combed strands over the mass");
+  box.append(el("button", { textContent: g.filled ? "Fill again" : "Fill", title: "a mass of hair between the head and the glow, combed by the locks", onclick: makeFill }));
+  if (g.filled) {
+    box.append(el("button", { textContent: "Unfill", onclick: () => { remember(); g.filled = false; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw(); } }));
+    const t2 = el("div"); tick(t2, "shape the fill (its cube)", !!g.shape, v => { g.shape = v; draw(); }, "the Glow tool shows the fill's cube: pull its points to bend the mass like Blender's lattice"); box.append(t2);
+    box.append(el("button", { textContent: "Reset the fill's cube", onclick: () => { remember(); g.fill.cube = FFD.makeCube(g.fill.cube.min, g.fill.cube.max); FILL_DIRTY = true; draw(); } }));
+    box.append(el("p", { className: "note", textContent: `${FILLG.userData.vertices || 0} vertices in the mass, ${FILLG.userData.strands || 0} strands` }));
+  }
 }
 
 // ---- the head ---------------------------------------------------------------------------------------------------------
@@ -217,11 +350,12 @@ async function buildHead() {
   COL = new SL.Collider(LOCAL_PTS, { chin });
   tintScalp();
   for (const l of st.locks) DIRTY.add(l.id);
+  if (st.glow) { for (let c = 0; c < st.glow.on.length; c++) st.glow.inner[c] = SF.innerAlong(COL, SF.dirOf(SF.azOf(c % SF.AZ), SF.elOf(Math.floor(c / SF.AZ)))); st.glow.C = COL.C.slice(); FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; }
   draw();
 }
 function tintScalp() {
   if (!HEAD) return;
-  const c = HEAD.geometry.attributes.color, on = st.look.scalp && TOOL !== "select" && TOOL !== "fit";
+  const c = HEAD.geometry.attributes.color, on = st.look.scalp && TOOL !== "select" && TOOL !== "fit" && TOOL !== "glow";
   for (let i = 0; i < c.count; i++) { const p = [LOCAL_PTS[i * 3], LOCAL_PTS[i * 3 + 1], LOCAL_PTS[i * 3 + 2]]; const s = on && SL.onScalp(p, COL.C); c.setXYZ(i, s ? 0.75 : 1, s ? 0.88 : 1, s ? 1.15 : 1); }
   c.needsUpdate = true;
 }
@@ -324,7 +458,7 @@ function render() {
     const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
     setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
   } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
-  refreshLocks(); drawCube();
+  refreshLocks(); drawCube(); drawGlow(); drawFill();
   const ovl = placeOverlay();
   renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
   if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
@@ -372,9 +506,9 @@ function lockAt(e) {
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
-const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit });
+const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, glow: st.glow });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; if ("glow" in o) { st.glow = o.glow; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -382,7 +516,7 @@ $("#undo").onclick = undo; $("#redo").onclick = redo;
 // ---- the locks --------------------------------------------------------------------------------------------------------
 const lockById = id => st.locks.find(l => l.id === id) || null;
 function changed(l) {                                                // a lock edited: its twins follow
-  DIRTY.add(l.id);
+  DIRTY.add(l.id); if (st.glow && st.glow.filled) { FILLRES = null; FILL_DIRTY = true; }
   st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL);
   for (const t of st.locks) if (t.mirror_of === l.id) DIRTY.add(t.id);
 }
@@ -403,17 +537,18 @@ function deleteLock(id) {
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
-const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["fit", "Fit ref (F)", "f"]];
+const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["glow", "Glow (G)", "g"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
   select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
+  glow: "Paint over the glow's points to select them (Ctrl: take them off; the wheel sizes the brush); drag a selected point up to push the glow out, down to pull it in. Right-drag turns the head. Trace, Cut, Fill: the Fill panel.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
 const PLACE = { stage: 0, root: null, line: [], sag: 0.2, spread: 0.05, r0: 0.015, last: null };
 function setTool(t) {
-  TOOL = t; resetPlace();
+  TOOL = t; resetPlace(); GLOW_DIRTY = true;
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
   $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
   tintScalp(); draw();
@@ -446,6 +581,13 @@ cv.addEventListener("contextmenu", e => e.preventDefault());
 cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId);
   const orbitOnly = e.button !== 0;
+  if (!orbitOnly && TOOL === "glow" && st.glow) {
+    const h = cubeHandleAt(e);
+    if (h) { remember(); DRAG = { kind: "cube", ijk: h, y: e.clientY }; return; }
+    const under = glowCellsAt(e), onSel = under.filter(c => SEL.has(c));
+    if (onSel.length && !e.ctrlKey) { remember(); DRAG = { kind: "glowmove", y: e.clientY }; return; }
+    DRAG = { kind: "glowsel", off: e.ctrlKey }; for (const c of SF.withMirror(under, st.glow.mirror)) e.ctrlKey ? SEL.delete(c) : SEL.add(c); GLOW_DIRTY = true; draw(); return;
+  }
   if (!orbitOnly && TOOL === "fit") {
     const h = cubeHandleAt(e);
     if (h) { remember(); DRAG = { kind: "cube", ijk: h, y: e.clientY }; return; }
@@ -470,7 +612,7 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (!DRAG) {
     if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
-    else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
+    else if (TOOL === "fit" || TOOL === "glow") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
     else if (TOOL === "select" && SELECTED) { const h = handleAt(e); const p = h ? h.path : null; if ((p && p.join()) !== (HOVER && HOVER.join())) { HOVER = p; drawHandles(); draw(); } }
     return;
   }
@@ -492,6 +634,11 @@ cv.addEventListener("pointermove", e => {
     if (mirrored) { to = SL.reflectPoint(to, st.mirror.seam); }
     SL.dragHandle(target, DRAG.path, to, COL);
     changed(target); draw();
+  } else if (DRAG.kind === "glowsel") {
+    for (const c of SF.withMirror(glowCellsAt(e), st.glow.mirror)) DRAG.off ? SEL.delete(c) : SEL.add(c); GLOW_DIRTY = true; draw();
+  } else if (DRAG.kind === "glowmove") {
+    const dr = -(e.clientY - DRAG.y) * 0.0006; DRAG.y = e.clientY;
+    SF.pushOut(st.glow, SF.withMirror([...SEL], st.glow.mirror), dr); GLOW_DIRTY = true; FILLRES = null; FILL_DIRTY = true; draw();
   } else if (DRAG.kind === "cube") {
     const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
     const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
@@ -532,6 +679,7 @@ cv.addEventListener("wheel", e => {
     if (PLACE.last) showPreview(previewFrom({ clientX: PLACE.last[0], clientY: PLACE.last[1] }));
     draw(); return;
   }
+  if (TOOL === "glow") { GLOW_BRUSH = Math.max(6, Math.min(120, GLOW_BRUSH * (s < 0 ? 1.15 : 1 / 1.15))); $("#hint").textContent = `brush ${Math.round(GLOW_BRUSH)} px`; return; }
   if (TOOL === "fit" && SNAP) { st.reference.fit.scale *= s < 0 ? 1.02 : 1 / 1.02; recam(); fitPanelSync(); draw(); return; }
   if (e.shiftKey && SNAP) { stepFrame(s); return; }
   if (SNAP) orbit.zoom = Math.max(0.5, Math.min(6, orbit.zoom * (s < 0 ? 1.1 : 1 / 1.1)));
@@ -678,9 +826,10 @@ async function load(name) {
   Object.assign(st.head, o.head || {}); Object.assign(st.mirror, o.mirror || {}); Object.assign(st.look, o.look || {});
   st.groups = o.groups?.length ? o.groups : st.groups; st.locks = o.locks || []; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
   Object.assign(st.reference, o.reference || {});
+  st.glow = o.glow || null; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; SEL = new Set();
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); status(`loaded ${name}`, "ok"); draw();
+  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); glowPanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
@@ -688,7 +837,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); glowPanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -699,5 +848,6 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, FFD, pullCube, overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
+  screenOf, headAt, save, load, FFD, SF, pullCube, traceGlow, makeFill, glowCellsAt, get SEL() { return SEL; }, set SEL(v) { SEL = v; }, glowEdit, glowPanel,
+  fillInfo: () => ({ vertices: FILLG.userData.vertices || 0, strands: FILLG.userData.strands || 0, res: FILLRES }), overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
   dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); } };

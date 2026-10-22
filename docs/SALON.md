@@ -81,6 +81,30 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
   "Break the mirror" frees a twin; "Mirror once" makes a free copy.
 - **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
 
+## The fill: trace, glow, fill (2026-10-22)
+
+A cheat to fill the empty space between the locks you placed. Place the locks that decide the flow (the front, the
+sides, the back), then, in the **Fill** panel:
+
+1. **Trace**: the locks shown and the scalp are wrapped in a **glow**, a translucent orange shell round the head
+   (`salonfill.js`). It's a grid of 36 x 22 directions round the skull's middle, each with a radius: a lock's points
+   set the radius where they lie, the scalp gives a centimetre of hair, the gaps between locks are joined up (a cell's
+   radius from its neighbours) and never cross the face; below the brows the face stays clear. The glow never goes
+   inside the body (each direction knows how far the body reaches).
+2. **Edit** with the **Glow** tool (G): paint over its points to select them (white; Ctrl takes them off; the wheel
+   sizes the brush), drag a selected point up to push the glow out there, down to pull it in. **Cut** takes the
+   selected points out (the ears), **Bring back**, **Puff out**, **Pull in**, **Smooth**; **All**, **None**,
+   **Invert**. With **mirror** on, every selection and edit does the other side's same points; **Left onto right**
+   and **Right onto left** copy a whole side across.
+3. **Fill**: the glow becomes a **mass of hair** between the head and it, tapered down to the skin where it was cut,
+   with strands combed over it (the **density** slider): at each point the comb runs the way the nearest locks' guides
+   run (nearer counting more), and far from every lock the hair falls down. The more locks, the closer it follows
+   them. **Shape the fill** shows the mass's own cube (blue lines): pull its points like the reference's to bend it,
+   like Blender's lattice. **Unfill** goes back to the glow; **Fill again** after the locks change.
+
+The glow is saved in `salon.json` (`glow`: its radii, which cells are on, the fill's settings and cube); the mass is
+made again from it on load. Undo covers all of it.
+
 ## The file
 
 `Content/Studio/Hair/<name>/salon.json`: `head` (the body preset, its height), `reference` (its name, the view
@@ -92,14 +116,15 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine
 
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror: plain arrays, node can
 run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
-ellipsoid depth), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
+ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its comb), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
 
 - `node tools/character/salontest.js`: SALON (the server running; `BODY_URL` for another port): the view snaps onto
   the MiniMax reference's frames at 0, 90, 180 and 270 degrees with the frame's camera exactly, the far side mirrored
   with half the turn, the fit moving the cameras; the cube's front face dragged with the mouse bending the front view
-  and not the back (and undone); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
+  and not the back (and undone); the glow traced (the face clear), both ears selected by one brush stroke with mirror
+  and cut, the glow pushed out by a drag, the fill off the body and combed the locks' way, its cube pulled; a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.
