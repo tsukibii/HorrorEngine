@@ -105,6 +105,9 @@ TOOLS = [
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
     ("Pages", "Character Studio (body, face from pictures, expressions)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
+    ("Pages", "Hair splat on clay (a wig's splat glued to jiggling clumps)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/gshair.html"}),
+    ("Pages", "Hair builder (shape a hair splat by hand: cage, cuts, paint, jiggle)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/hairbuilder.html"}),
+    ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
@@ -155,6 +158,8 @@ TOOLS = [
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
+    ("Look", "Hair splat from a video of a wig (frames, key, poses, splat, clay)", "tools/gshair.py run {ask:Video or folder} --name {ask:Character}", {}),
+    ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
     ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
@@ -175,6 +180,7 @@ TOOLS = [
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
     ("Setup", "Perm setup (the hair library: 343 hairstyles)", "tools/perm.py setup", {}),
     ("Setup", "Perm library (thumbnails and outlines of every hairstyle)", "tools/perm.py library", {}),
+    ("Setup", "Hair splat setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
 ]
 

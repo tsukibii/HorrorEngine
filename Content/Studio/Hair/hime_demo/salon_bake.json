@@ -1,0 +1,46 @@
+{
+ "about": "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)",
+ "name": "hime_demo",
+ "physics": [],
+ "static": {
+  "vertices": 1440,
+  "triangles": 1260
+ },
+ "head": {
+  "C": [
+   2.2351741790771484e-8,
+   1.582696557044983,
+   0.08076827973127365
+  ],
+  "B": [
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0.9998085644897567,
+    0.019566153759283916
+   ],
+   [
+    0,
+    -0.019566153759283916,
+    0.9998085644897567
+   ]
+  ],
+  "S": 0.9695013548995635,
+  "preset": "feminine",
+  "height": 1.7
+ },
+ "scalp": {
+  "vertices": 1090,
+  "thickness": 0.7
+ },
+ "before": {
+  "vertices": 5410
+ },
+ "after": {
+  "vertices": 1440
+ }
+}

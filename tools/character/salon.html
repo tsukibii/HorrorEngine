@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Salon</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; --blue: #5a8ad9; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0 12px 0 0; color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+  #view { position: relative; min-height: 0; overflow: hidden; background: #1b1c20; }
+  #view canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 2; }
+  #tools { position: absolute; left: 8px; top: 8px; z-index: 5; display: flex; flex-direction: column; gap: 3px; }
+  #tools button { width: 86px; text-align: left; }
+  #hint { position: absolute; left: 104px; right: 8px; bottom: 6px; z-index: 5; color: var(--ink); text-shadow: 0 1px 2px #000; pointer-events: none; }
+  #frameTag { position: absolute; right: 8px; top: 8px; z-index: 5; color: var(--dim); text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }
+  aside { overflow: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 10px 12px; }
+  h4 { margin: 12px 0 6px; color: var(--gold); font-size: 12px; } .row { display: grid; grid-template-columns: 84px 1fr 44px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row span { color: var(--dim); } input[type=range] { width: 100%; } output { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  button { background: #26272b; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; margin: 1px 0; } button.on { border-color: var(--gold); color: var(--gold); }
+  input[type=text], select { background: #0e0f11; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  .note { color: var(--dim); margin: 4px 0 8px; } label.tick { display: inline-flex; gap: 4px; align-items: center; margin: 2px 8px 2px 0; }
+  .lock { display: grid; grid-template-columns: 18px 1fr auto; gap: 4px; align-items: center; padding: 2px 4px; border-radius: 3px; cursor: pointer; }
+  .lock.sel { background: #2a2b30; outline: 1px solid var(--gold); } .lock .twin { color: var(--blue); } .grp { margin: 6px 0 2px; color: var(--dim); display: flex; gap: 6px; align-items: center; }
+  .grp.active b { color: var(--gold); } .eye { cursor: pointer; user-select: none; }
+  details { margin: 6px 0; } summary { cursor: pointer; color: var(--gold); }
+  details.step { margin: 0; border-top: 1px solid var(--line); } details.step:last-child { border-bottom: 1px solid var(--line); }
+  details.step > summary { padding: 7px 2px; display: flex; gap: 8px; align-items: baseline; list-style: none; user-select: none; }
+  details.step > summary::-webkit-details-marker { display: none; }
+  details.step > summary::before { content: "▸"; color: var(--dim); width: 10px; } details.step[open] > summary::before { content: "▾"; }
+  details.step > summary b { font-size: 12px; } details.step > summary .hint { color: var(--dim); font-size: 11px; margin-left: auto; text-align: right; }
+  details.step[open] { padding-bottom: 8px; }
+</style></head>
+<body>
+<header><h1>Salon</h1>
+  <label title="the Character Studio's character the hair is drawn on (its own body and face), or none: a base body">Character <select id="person"></select></label>
+  <button id="saveHair" title="the hair onto the character (with none, as the hairstyle named in Start from)">Save</button>
+  <button id="undo" title="Ctrl+Z">Undo</button> <button id="redo" title="Ctrl+Shift+Z">Redo</button>
+  <span id="status"></span></header>
+<main>
+  <div id="view">
+    <div id="tools"></div>
+    <div id="frameTag"></div>
+    <div id="hint"></div>
+  </div>
+  <aside>
+    <p class="note">Work down the steps: whose head, a start (a preset or your own locks), let gravity drop it, finish and fill it, then bake it onto the character. Lock tools on the left: click a root on the scalp and an end (a strand), drag a root line and click where it ends (a sheet), or a root and a tip (a bundle); select a lock to pull its handles. Drag the empty view to turn the head (right-drag always turns it).</p>
+    <details class="step" data-step="character"><summary><b>1. Character</b><span class="hint">whose head</span></summary>
+      <div id="charbox"></div>
+    </details>
+    <details class="step" data-step="reference"><summary><b>2. Reference</b><span class="hint">a video to trace over (if you like)</span></summary>
+      <div id="refbox"></div>
+    </details>
+    <details class="step" data-step="start"><summary><b>3. Start from</b><span class="hint">a preset or a hairstyle</span></summary>
+      <div id="presetbox"></div>
+      <div id="stylebox"><p class="note">Or a hairstyle kept before (from any head: it's laid onto this one).</p>
+        <select id="hairList"></select> <button id="loadHair">Load</button><br>
+        <input type="text" id="hairName" value="my_hair" size="12"> <button id="saveStyle" title="this hair kept to start other characters from (Content/Studio/Hair/&lt;name&gt;/)">Save as a hairstyle</button></div>
+    </details>
+    <details class="step" data-step="mirror"><summary><b>4. Mirror</b><span class="hint">one side twins the other</span></summary>
+      <div id="mirrorbox"></div>
+    </details>
+    <details class="step" data-step="locks"><summary><b>5. Locks</b><span class="hint">draw the hair, in groups</span></summary>
+      <div id="locks"></div>
+    </details>
+    <details class="step" data-step="selected"><summary><b>6. Selected</b><span class="hint">the lock you picked</span></summary>
+      <div id="selbox"></div>
+    </details>
+    <details class="step" data-step="pull"><summary><b>7. Pull</b><span class="hint">how the handles drag</span></summary>
+      <div id="pullbox"></div>
+    </details>
+    <details class="step" data-step="roots"><summary><b>8. Roots</b><span class="hint">how hair leaves the head</span></summary>
+      <div id="rootbox"></div>
+    </details>
+    <details class="step" data-step="gravity"><summary><b>9. Gravity and motion</b><span class="hint">let it fall; try the swing</span></summary>
+      <div id="movebox"></div>
+    </details>
+    <details class="step" data-step="finish"><summary><b>10. Finish</b><span class="hint">a parting over the gaps</span></summary>
+      <div id="coverbox"></div>
+    </details>
+    <details class="step" data-step="volume"><summary><b>11. Volume</b><span class="hint">thicker, filled out, the base</span></summary>
+      <div id="volbox"></div>
+    </details>
+    <details class="step" data-step="scalp"><summary><b>12. Scalp</b><span class="hint">dark under the hair</span></summary>
+      <div id="scalpbox"></div>
+    </details>
+    <details class="step" data-step="look"><summary><b>13. Look</b><span class="hint">colour and shine</span></summary>
+      <div id="lookbox"></div>
+    </details>
+    <details class="step" data-step="bake"><summary><b>14. Bake</b><span class="hint">onto the character</span></summary>
+      <div id="bakebox"></div>
+    </details>
+  </aside>
+</main>
+<script type="module" src="./salon.js"></script>
+</body></html>

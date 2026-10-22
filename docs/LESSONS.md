@@ -199,3 +199,159 @@ The Studio's first POV view took `game.fov` (90° horizontal) against its own ca
 panel: 94° up and down, a medium close-up that showed the whole torso. A first-person check frames like the game's
 screen: 16:9, so 59° vertical, drawn in a 16:9 frame with bars round it, and any picking (the brush) goes through that
 frame. Distances from DIRECTING.md's shot table (MCU 0.7 m, MS 1.2 m) only mean what they say through the right lens.
+
+## A tool's launcher can't share its name with its package (2026-10-22)
+
+`tools/gshair.py` (the launcher) and `tools/character/gshair/` (the package) are both `gshair` to Python: the
+package's own CLI put `tools/` on `sys.path` first and imported the launcher instead of itself. Put the package's
+folder before `tools/`, or name them apart. The launcher runs the package in its own environment with `-I`, so the
+order inside `cli.py` is the only thing that decides it.
+
+## OpenCV's hue is half a degree, and "the largest piece" isn't the wig (2026-10-22)
+
+Green is 120 degrees, so 60 in OpenCV's 0 to 180 hue: a green key written for 30 keyed nothing. And with patterns on
+the floor for the cameras to track by, the largest non-green piece of a frame is the floor, not the wig: keep the
+piece that is big, central and high (area weighted by its distance from the middle and its height in the frame).
+
+## A face's PnP has a mirror solution, and a small reprojection error doesn't rule it out (2026-10-22)
+
+The 468 face points are nearly flat, so PnP has two answers: the camera in front of the face and its mirror behind
+the head, both within a pixel or two at a small image size. EPnP, SQPnP and a RANSAC consensus all landed in the
+mirror with a fine rms, and every chained camera followed it round. OpenCV's iterative solver from its own start
+finds the right one; check it anyway (the camera must sit on the face's side) and never trust the rms alone.
+
+## A synthetic camera must be a proper rotation (2026-10-22)
+
+The check's look-at built its camera rows as right = up x forward, down = right x forward: a left-handed frame
+(determinant -1), a mirror. Every real solver returns proper rotations, so PnP could only land in the mirrored twins
+of such a camera, with a fine reprojection error, and two fixes went into the solver before the truth was checked.
+Check the truth first: a camera's determinant, and the subject's left on the viewer's right.
+
+## A frame from bound landmarks inherits the binding's asymmetry (2026-10-22)
+
+The face landmarks bound onto MHR put 234 and 454 (the ear sides) 2.4 cm apart front to back on a body that is exactly
+symmetric, so an ear-to-ear axis from them turns the head's frame about 10 degrees. Anything placed in that frame (a
+reference's cameras, a splat's fit) comes out turned. Build a frame from the mesh's own symmetry: one vertex and its
+mirror, not two landmarks.
+
+## A test's clicks have to be where a user could click (2026-10-22)
+
+The salon's first runs "failed" four times on clicks no one would make: ends off the bottom of the view, a fringe's
+end in the air 9 cm in front of the face, roots grazing the silhouette's edge, a root below the temple's hairline. Each
+time the page did the right thing. Aim a test's clicks at what's visible: points on the skin inside the silhouette,
+inside the view at that zoom, and check the page's refusals before calling them bugs.
+
+## Joining gaps round a head closes over the face (2026-10-22)
+
+The fill's trace joins the gaps between locks with a closing on the grid of directions round the head. A fringe above
+and two sidelocks beside the face surround it, so the closing filled the face, and a lock's footprint spread a cell
+round each point bled onto the eyes. Mark the face (the front, below the hairline, above the chin) and never join
+across it; give a point only its own cell; keep the face clear below the brows unless the user brings it back.
+
+## Wait in time, not frames (2026-10-22)
+
+The salon's physics stopped its loop after 150 still frames. A heavier hair shader dropped the software renderer's
+frame rate and the same 150 frames took longer than the test's 15 s, so SALON failed with nothing wrong. Anything that
+settles, times out or animates goes by the clock (here: 2.5 s still), never by a count of frames.
+
+## Hair has to be laid down, not just kept out (2026-10-22)
+
+The salon's curves were drawn straight, bowed out by a fifth of their length, and only ever pushed out of the head, 12 mm
+clear: on a round head nothing pulled them back down, so hair floated 13 to 18 mm over the scalp. Combed hair lies on the
+scalp until it leaves the head: pull every point near the head down onto it, then let the user bow it. And a setting the
+wheel changes while placing (the bow) must start over for the next lock, or the next lock floats too.
+
+## A reach in centimetres meets handles spaced by the lock's length (2026-10-22)
+
+The pull's first test used a 4 cm reach and expected it to bend the strand it pulled: nothing else on that strand moved,
+because a 35 cm strand's six handles are 6 cm apart (only the next strand, 2.5 cm away, was in reach). Distances
+between handles grow with the lock, so a reach that suits a fringe takes nothing on a long lock. Measure the spacing
+before picking a reach (for a default or a test): the salon starts at 8 cm.
+
+## A preview is only true if it's made the way the result is (2026-10-22)
+
+The salon's gravity drew each frame from the fall alone, and switching it off kept the hair through another path: twins
+rebuilt as their originals' mirrors (they had fallen on their own, a little differently) and Layer by height re-laid
+on top (it wasn't applied while falling). The user switched off and the hair moved. Whatever shows a result before
+it's kept (a preview, a scrubbed frame) goes through the same steps the kept result will; the check compares what's
+drawn before and after, not the data.
+
+## A map round the skull is only true on the head (2026-10-22)
+
+Layer by height kept, per direction from the skull's middle, how far out the hair below reached, and pushed later
+hair past it. Hair that pokes out or hangs below the head lies along those same directions, far out, so a strand
+combed over a poking one was lifted 11 cm along it, and with gravity's fallen hair, 45 cm. Only what lies on the head
+belongs in such a map. The second try counted a lock's whole cross-section wherever its lowest edge lay, and a sheet
+touching the cheek with its other edge 5 cm out made a spike; count each point up to the lock's own thickness.
+
+## A page test reads what's drawn only after drawing it (2026-10-22)
+
+The salon draws on the next animation frame, and a step that read a new lock's evaluated guides straight after the
+click passed for days, then failed once (the frame hadn't come). Every step that reads drawn state (EVAL, meshes)
+calls the page's render() first.
+
+## Hair without friction slides round the head (2026-10-22)
+
+The cover's sheets were combed out from a middle parting, and the fall (Verlet, the head pushing points out, no
+friction) swung them round the back of the head into a crest: on a frictionless head, hair lying on top creeps to its
+lowest path whatever way it was combed, and the head's slight tilt decides which way. Hair that lies needs friction
+where it touches: the slide along the surface held back by friction times how far the point was pushed out (Coulomb,
+position-based), so it stays where the slope is gentle and slides where it's steep. The other side of it: hair laid
+along the head with friction is already where gravity leaves it; to check that a fall happens at all, make something
+that overhangs.
+
+## A sample's number isn't its place along the lock (2026-10-22)
+
+The salon's guides were 24 samples spread evenly, and the taper, the texture, the dome's height and the bake's skin
+weights all took sample k as k/23 of the way along. Bending the roots needed samples closer near the root, and every
+one of those had to change to the sample's own place (each guide's `t`), as did a check that measured "half way" at
+sample 12. Carry the place with the samples (or resample by arc length) instead of deriving it from an index.
+
+## Hair finished by gravity needs stiff roots, and rows that meet (2026-10-22)
+
+The first presets fell badly three ways. Long hair combed back off the face slid down the forehead onto it (steeper
+than friction holds, and nothing in the chains stiffened the roots): the drop now holds each strand's first few cm to
+its comb, fading along it (Root hold), and long locks get a control point every 6 cm so the hold has something to
+hold. Rows too far apart left skin between them (short hair must reach past the next row's roots), and a row that
+ran into the ear was skipped whole (split rows into the runs that are on the scalp). Measure the scalp covered
+(SALON: at least 90 %) instead of judging it from one view.
+
+## Shade hair by what's over it, not by the skin (2026-10-22)
+
+The hair shader darkened hair near the skin (inner layers in shadow). Short hair lies near the skin everywhere, so a
+crop's top, its outermost hair, came out black, and with the darkened scalp under it read as bald. The depth it
+shades by is now how far a point is under the hair's outer surface (all the hair shown, round the skull's middle):
+the outermost hair is lit however close to the skin it lies.
+
+## Clear the signal before waiting for it (2026-10-22)
+
+SALON's bake step clicked Bake and waited for the status bar to say "baked". A step before it now bakes too, so the
+status already said "baked": the wait returned at once and the step read the earlier step's files (no physics lock, the
+wrong vertex count). A test that waits for a message (a status, a file, a flag) clears it first.
+
+## Restarting a server: kill the process that holds the port (2026-10-22)
+
+After a change to serve.py the salon's server had to restart. The PID found first was a wrapper; killing it left the
+old server running (started before the change) and the new one failed with "Address already in use", while the page
+still answered, from the old code, which refused the new file. Check the running server's start time against the
+change, kill that PID, and start the new one detached; then check the log, not just that the port answers.
+
+## A check that measured nothing is a broken check (2026-10-22)
+
+The Clip blend check counted 0 points over the base three times: first the test strand bowed out above the base (it
+was never in it), then the test subtracted the collider object instead of its centre (NaN everywhere). It failed
+rather than passed only because it asked for a minimum. Every measuring check states how many samples it measured
+and fails on none.
+
+The salon's bake was written as hair for Unreal on its own, and the user had to correct it: hair goes onto the
+Character Studio's characters, and only finished characters go to Unreal. DECISIONS 2026-10-21 already said one app
+for everything character, with the export to Unreal from it. Before building where a tool's output goes, read where
+the decisions send it, and say the whole route (made, used, exported) back to the user.
+
+An element's `hidden` loses to a CSS rule that sets its `display` (`.row { display: grid }`): the Character Studio's
+Hair tab "hid" the style's rows for strand hair and they stayed on screen. Pages that hide with the attribute carry
+`[hidden] { display: none !important; }`.
+
+The bake preview's `let PREVIEW` was already the lock tools' placement preview: a second `let` of the same name kills
+the whole module at load, and the salon came up blank with no status. Before adding a top-level name to a long page
+script, grep for it (`\bNAME\b`).

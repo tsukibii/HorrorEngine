@@ -13,8 +13,56 @@ The user's answers, newest first. They override the plan, the research and the d
 - **The Character Studio becomes one app**: no typing page addresses. A bar across the top swaps between the steps
   and the editing stages (body, face, skin, paint, hair, clothes, motion, look, export), and the pages that live on the
   desk today (face mesh, body shape, flesh, poses, pigment) move in as stages. docs/CHARACTER_STUDIO.md §4.
-- **Hair from a 360° video as a Gaussian splat**, glued to big invisible "clay" clumps that wiggle (no strands, no real
-  physics): being researched on its own branch first; docs/research/hair_splats.md.
+- **Hair:** the salon is the route (below: hair drawn by hand on the character, baked onto it). The Gaussian splat
+  with its clay clumps was tried on the salon's branch and set aside (docs/GSHAIR.md, docs/research/hair_splats.md);
+  in the one app the salon is the Hair stage.
+
+## 2026-10-22, final (hair goes onto characters; only finished characters go to Unreal)
+
+- **Hair is added to the characters built in the Character Studio**, not made for Unreal on its own: the salon draws on
+  a character's own body and face, keeps the hair with it and bakes it onto it; the Character Studio wears it.
+- **The order:** the character in the Character Studio, its hair in the salon, then the character used in the director's
+  desk; **only the final characters, rigged and with their animations, are exported to Unreal.**
+
+## 2026-10-22, last (the salon's cover)
+
+- **Gaps are covered by a Y parting, not a plane:** along the head's middle, each root a Y (one root, strands going
+  left and right) lying over all the other hair, as long as the hair rooted highest (the user's characters have no
+  spiky anime hair, so that's enough), and it falls with gravity. A placed plane was tried and dropped. No combing yet.
+
+## 2026-10-22, latest (the salon's scalp, layers and gravity)
+
+- **The fill is dropped** (the trace, the orange glow, the mass of hair): under the hair shader it doesn't look good.
+  In its place **the scalp is darkened**: a flat colour under the hair (no shine, no shader), with a thickness (its
+  opacity) from sparse to full, so the hair looks fuller and deeper.
+- Hair **lies on the scalp** (it floated above it), and the scalp takes roots on the **sideburns**.
+- **Layer by height** is a toggle: hair that grows higher always lies over the hair below it, like real hair.
+- **A gravity switch** drops all the hair: it falls naturally, the user picks the moment, switches it off and refines
+  by hand what should stick up.
+- **The handle pull is Blender's proportional editing**: the wheel grows and shrinks the area a pull moves, the
+  effect fading with distance.
+
+## 2026-10-22, later still (the salon, not the splat)
+
+- **The Gaussian splat route was worth testing and isn't good enough** (docs/GSHAIR.md: the splat, the clay, the hand
+  builder). It stays in the repo as a reference layer only. **Hair is drawn by hand in a virtual salon** on the head
+  or the clothed body: vector locks (a strand, a sheet from a root line with the ends' spread on the wheel, a bundle),
+  shaped by their handles and a few sliders, in groups to hide and show; stylised by default, realism as an option;
+  physics only on the locks the user marks; never clipping the body or clothes; fake volume from a scalp cap with a
+  thickness; brows and lashes as variations; easier than Blender. The plan: docs/SALON_PLAN.md (Blender's hair read
+  first, as research, never copied). The animation refiner comes later (per clip physics, keyed poses).
+- The footage is about 0.4 MP and soft; stylised realism (Arcane-like) is the look; the humans no longer go to Unreal.
+- **Physics is game-grade:** a few locks jiggle with the head, wind is a rustle with no direction, nothing clips; no
+  more than that. **The salon must be layman-easy and fun, like a character creator:** never a blank head (a wall of
+  cuts first), the reference in the room, tracing the outline over it as the main act, galleries with pictures for
+  the fringe, sidelocks, tails, length, colour; handles and word sliders, no numbers; East Asian styles first.
+- **The video stays the reference, as a locked overlay:** a camera per frame in the head's space; turning the view
+  snaps to the nearest frame, laid half-transparent over the head, so the reference is right from every angle; a
+  video that only reaches the side is mirrored onto the other side. The reference's scale, position and the orbit's
+  lock to the view (front frame, direction, sweep, height) are always adjustable by hand; a green screen is optional,
+  the overlay is transparent anyway. **Mirror is a toggle with a seam:** the middle
+  by default, or the user's own (moved sideways, or drawn on the scalp); hair placed on one side is twinned on the
+  other until the link is broken.
 
 ## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
 

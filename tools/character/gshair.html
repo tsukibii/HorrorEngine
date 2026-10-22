@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hair splat on clay</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0 12px 0 0; color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+  #view { position: relative; min-height: 0; } #view canvas { display: block; width: 100%; height: 100%; }
+  aside { overflow: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 10px 12px; }
+  h4 { margin: 12px 0 6px; color: var(--gold); font-size: 12px; } .row { display: grid; grid-template-columns: 92px 1fr 44px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row span { color: var(--dim); } input[type=range] { width: 100%; } output { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  button { background: #26272b; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; } button.on { border-color: var(--gold); color: var(--gold); }
+  input[type=text] { background: #0e0f11; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; width: 140px; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  .note { color: var(--dim); margin: 4px 0 8px; } #stats { position: absolute; left: 8px; bottom: 6px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  img.sheet { width: 100%; display: block; margin: 4px 0; border: 1px solid var(--line); }
+</style></head>
+<body>
+<header><h1>Hair splat on clay</h1>
+  <label>Character <input type="text" id="name" placeholder="_gshairtest"></label> <button id="load">Load</button>
+  <span>Head:</span> <button data-m="still" class="on">still</button><button data-m="turn">turn</button><button data-m="nod">nod</button><button data-m="shake">shake</button><button data-m="walk">walk</button>
+  <span id="status"></span></header>
+<main>
+  <div id="view"><div id="stats"></div></div>
+  <aside>
+    <p class="note">A Gaussian splat of real hair (tools/gshair.py) glued to a few invisible clumps of clay on chains that jiggle with the head (wig.js). Only the chains are simulated; the splat rides them on the GPU.</p>
+    <h4>Jiggle</h4><div id="jiggle"></div>
+    <h4>Look</h4><div id="look"></div>
+    <h4>Wig shell</h4><p class="note">The splat traced into a low-poly shell (its outer and inner lines, under a thousand triangles) with the frames projected onto it. Blend: the shell alone, the splat alone, or both.</p><div id="wigbox"></div>
+    <h4>Clay</h4><div id="clay"></div>
+    <h4>Fit to the head</h4><p class="note">A wig's capture has no face, so its first fit is a guess: move, turn and scale it, then Glue again to keep it.</p><div id="fit"></div>
+    <h4>From the capture</h4><div id="sheets"></div>
+  </aside>
+</main>
+<script type="module">
+import * as THREE from "three";
+import { SplatHair, headPush } from "./splats.js";
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+const status = (t, cls = "") => { const s = $("#status"); s.textContent = t; s.className = cls; };
+const api = async (u, body) => { const r = await fetch(u, body === undefined ? {} : { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j; };
+const slider = (box, key, label, min, max, step, val, fn, title = "") => {
+  const inp = el("input", { type: "range", min, max, step, value: val, title }), out = el("output", { textContent: val });
+  inp.oninput = () => { out.textContent = inp.value; fn(+inp.value); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: label, title }), inp, out));
+  return v => { inp.value = v; out.textContent = v; };
+};
+
+// ---- the scene -------------------------------------------------------------------------------------------------------
+const view = $("#view");
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setPixelRatio(devicePixelRatio);
+renderer.setClearColor(0x1b1c20); view.append(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
+const key = new THREE.DirectionalLight(0xffffff, 2.2); scene.add(key); scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig);
+let HEAD = null, HAIR = null, CLAY = null, WIGM = null, WIGWIRE = null, TOP = 1.7, SCALE = 1, MOVE = "still", WHO = "", JSONH = null, BIN = null;
+const st = { gravity: 1, hold: 0.5, damping: 0.97, iterations: 4, roughness: 0.35, shift: 0.035, specular: 0.5, ambient: 0.3, sigma: 1, opacity: 1, az: 35, elev: 40, clumps: 16, joints: 4, showClay: false,
+             fit: { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }, wig: { show: true, blend: 0.5, wire: false, plain: false } };
+function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (HAIR) HAIR.viewport(w * devicePixelRatio, h * devicePixelRatio); }
+new ResizeObserver(resize).observe(view);
+// orbit by hand: drag turns, wheel zooms
+let orbit = { yaw: 0.3, pitch: 0.1, dist: 0.9 }, drag = null;
+renderer.domElement.onpointerdown = e => { drag = [e.clientX, e.clientY]; };
+window.onpointerup = () => { drag = null; };
+window.onpointermove = e => { if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.006; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onwheel = e => { orbit.dist = Math.max(0.3, Math.min(3, orbit.dist * (1 + e.deltaY * 0.001))); e.preventDefault(); };
+function placeCamera() {
+  const c = new THREE.Vector3(0, TOP - 0.12 * SCALE, 0);
+  camera.position.set(c.x + orbit.dist * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), c.y + orbit.dist * Math.sin(orbit.pitch), c.z + orbit.dist * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
+  camera.lookAt(c); camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+}
+function lightDir() { const a = st.az * Math.PI / 180, e = st.elev * Math.PI / 180; return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)); }
+function moveRig(t) {
+  const m = new THREE.Matrix4(), piv = new THREE.Vector3(0, TOP - 0.25 * SCALE, 0), w = 2 * Math.PI, e = new THREE.Euler(), p = new THREE.Vector3();
+  if (MOVE === "turn") e.set(0, 0.7 * Math.sin(w * 0.5 * t), 0);
+  else if (MOVE === "nod") e.set(0.3 * Math.sin(w * 0.7 * t), 0, 0);
+  else if (MOVE === "shake") e.set(0, 0.45 * Math.sin(w * 1.8 * t), 0);
+  else if (MOVE === "walk") { e.set(0.04 * Math.sin(w * 1.8 * t), 0.08 * Math.sin(w * 0.9 * t), 0.05 * Math.sin(w * 0.9 * t)); p.set(0, 0.03 * Math.abs(Math.sin(w * 0.9 * t)), 0); }
+  m.makeTranslation(-piv.x, -piv.y, -piv.z).premultiply(new THREE.Matrix4().makeRotationFromEuler(e)).premultiply(new THREE.Matrix4().makeTranslation(piv.x + p.x, piv.y + p.y, piv.z + p.z));
+  rig.matrix.copy(m); rig.matrixWorldNeedsUpdate = true;
+}
+for (const b of document.querySelectorAll("header button[data-m]")) b.onclick = () => { MOVE = b.dataset.m; for (const o of document.querySelectorAll("header button[data-m]")) o.classList.toggle("on", o === b); };
+
+// ---- the fit: a rigid transform of the clay about the skull (the Gaussians follow their chains) ----------------------
+function fitMatrix() {
+  const f = st.fit, C = new THREE.Vector3(...JSONH.head.C);
+  const R = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(f.pitch * Math.PI / 180, f.yaw * Math.PI / 180, f.roll * Math.PI / 180, "YXZ"));
+  return new THREE.Matrix4().makeTranslation(-C.x, -C.y, -C.z).premultiply(new THREE.Matrix4().makeScale(f.scale, f.scale, f.scale)).premultiply(R).premultiply(new THREE.Matrix4().makeTranslation(C.x + f.x, C.y + f.y, C.z + f.z));
+}
+function buildHair() {
+  if (HAIR) { scene.remove(HAIR.mesh); HAIR.dispose(); HAIR = null; }
+  if (CLAY) { scene.remove(CLAY); CLAY = null; }
+  const j = JSON.parse(JSON.stringify(JSONH)), M = fitMatrix();
+  const v = new THREE.Vector3();
+  j.guides = j.guides.map(g => g.map(p => v.set(...p).applyMatrix4(M).toArray()));
+  const R3 = new THREE.Matrix3().setFromMatrix4(M);
+  j.frames.N = j.frames.N.map(g => g.map(n => v.set(...n).applyMatrix3(R3).normalize().toArray()));
+  HAIR = new SplatHair(j, BIN, headPush(j.head), SCALE);
+  HAIR.set("uScale", st.fit.scale); HAIR.set("uSigma", st.sigma); HAIR.set("uOpacity", st.opacity); HAIR.set("roughness", st.roughness); HAIR.set("shift", st.shift); HAIR.set("specular", st.specular); HAIR.set("ambient", st.ambient);
+  scene.add(HAIR.mesh); resize(); applyWig();
+  // the clay: a sphere per joint, the radius of the clump, and its chain
+  CLAY = new THREE.Group(); CLAY.visible = st.showClay;
+  const K = j.clumps, J = j.joints;
+  const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd9a441, transparent: true, opacity: 0.1, depthWrite: false }), K * J);
+  const lines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffd080 }));
+  lines.geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(K * (J - 1) * 6), 3));
+  CLAY.add(inst, lines); CLAY.userData = { inst, lines, K, J, radii: j.radii }; scene.add(CLAY);
+  status(`${j.gaussians} Gaussians on ${K} clumps (${j.report.align} fit)`, "ok");
+}
+function updateClay() {
+  if (!CLAY || !CLAY.visible || !HAIR) return;
+  const { inst, lines, K, J, radii } = CLAY.userData, P = HAIR.wig.P, m = new THREE.Matrix4(), pos = lines.geometry.attributes.position.array;
+  for (let c = 0; c < K; c++) {
+    const at = HAIR.wig.chains[c].at;
+    for (let jj = 0; jj < J; jj++) {
+      const i = (at + jj) * 3, r = Math.max(0.01, 0.6 * radii[c] * st.fit.scale);
+      m.makeScale(r, r, r).setPosition(P[i], P[i + 1], P[i + 2]); inst.setMatrixAt(c * J + jj, m);
+      if (jj < J - 1) { const o = (c * (J - 1) + jj) * 6; pos.set([P[i], P[i + 1], P[i + 2], P[i + 3], P[i + 4], P[i + 5]], o); }
+    }
+  }
+  inst.instanceMatrix.needsUpdate = true; lines.geometry.attributes.position.needsUpdate = true;
+}
+
+// ---- loading ---------------------------------------------------------------------------------------------------------
+async function load(name) {
+  WHO = name; status("loading…");
+  const q = `?v=${Date.now()}`, base = `api/gshair/${encodeURIComponent(name)}/`;
+  const [hr, sr, br] = await Promise.all([fetch(base + "head.json" + q), fetch(base + "splat.json" + q), fetch(base + "splat.bin" + q)]);
+  if (!hr.ok || !sr.ok || !br.ok) { status(`no splat for ${name} yet: python tools/gshair.py run VIDEO --name ${name}`, "bad"); return false; }
+  const head = await hr.json(); JSONH = await sr.json(); BIN = await br.arrayBuffer();
+  if (HEAD) { rig.remove(HEAD); HEAD.geometry.dispose(); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(head.points.flat(), 3)); g.setIndex(head.tris.flat()); g.computeVertexNormals();
+  HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x8c8a86, roughness: 0.8 })); rig.add(HEAD);
+  SCALE = head.S; TOP = JSONH.head.top[1];
+  await loadWig(base, q);
+  st.fit = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }; for (const k in fitSet) fitSet[k](st.fit[k]);
+  st.clumps = JSONH.clumps; st.joints = JSONH.joints; claySet.clumps(st.clumps); claySet.joints(st.joints);
+  buildHair();
+  $("#sheets").replaceChildren(...["splat_sheet.jpg", "poses_sheet.jpg"].map(f => el("img", { className: "sheet", src: base + f + q, alt: f, title: f, onerror: e => e.target.remove() })));
+  history.replaceState(null, "", `?name=${encodeURIComponent(name)}`);
+  return true;
+}
+async function loadWig(base, q) {
+  if (WIGM) { rig.remove(WIGM); WIGM.geometry.dispose(); WIGM.material.dispose(); WIGM = null; }
+  if (WIGWIRE) { rig.remove(WIGWIRE); WIGWIRE = null; }
+  const r = await fetch(base + "wig.json" + q); if (!r.ok) return;
+  const w = await r.json();
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(w.positions.flat(), 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(w.normals.flat(), 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(w.uvs.flat(), 2)); g.setIndex(w.indices);
+  const tex = new THREE.TextureLoader().load(base + "wig.png" + q); tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = true;
+  WIGM = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75, metalness: 0, side: THREE.DoubleSide, transparent: true }));
+  WIGM.userData = { tex, report: w.report }; rig.add(WIGM);
+  WIGWIRE = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xffd080, wireframe: true, transparent: true, opacity: 0.6 })); rig.add(WIGWIRE);
+  applyWig();
+}
+function applyWig() {
+  const w = st.wig;
+  if (WIGM) {
+    WIGM.visible = w.show && w.blend < 1; WIGM.material.opacity = w.show ? Math.min(1, 2 * (1 - w.blend)) : 0;
+    WIGM.material.map = w.plain ? null : WIGM.userData.tex; WIGM.material.color.set(w.plain ? 0x8a7560 : 0xffffff); WIGM.material.needsUpdate = true;
+  }
+  if (WIGWIRE) WIGWIRE.visible = w.show && w.wire;
+  if (HAIR) { HAIR.mesh.visible = !(WIGM && w.show && w.blend <= 0); HAIR.set("uOpacity", st.opacity * (WIGM && w.show ? Math.min(1, 2 * w.blend) : 1)); }
+}
+$("#load").onclick = () => load($("#name").value.trim() || "_gshairtest");
+
+// ---- the panel -------------------------------------------------------------------------------------------------------
+const jig = $("#jiggle");
+slider(jig, "gravity", "Gravity", 0, 2, 0.05, st.gravity, v => { st.gravity = v; }, "How much the clumps hang.");
+slider(jig, "hold", "Hold", 0.02, 1, 0.01, st.hold, v => { st.hold = v; }, "How firmly each clump keeps its shape (low: floppy).");
+slider(jig, "damping", "Damping", 0.9, 0.995, 0.005, st.damping, v => { st.damping = v; }, "How fast the jiggle settles.");
+const look = $("#look");
+slider(look, "roughness", "Roughness", 0.1, 1, 0.01, st.roughness, v => { st.roughness = v; HAIR && HAIR.set("roughness", v); }, "The hair's sheen: low is glossy.");
+slider(look, "shift", "Shift", 0, 0.1, 0.005, st.shift, v => { st.shift = v; HAIR && HAIR.set("shift", v); }, "The highlights' shift along the hair.");
+slider(look, "specular", "Specular", 0, 1.5, 0.05, st.specular, v => { st.specular = v; HAIR && HAIR.set("specular", v); });
+slider(look, "ambient", "Ambient", 0, 1, 0.02, st.ambient, v => { st.ambient = v; HAIR && HAIR.set("ambient", v); });
+slider(look, "az", "Light turn", -180, 180, 5, st.az, v => { st.az = v; });
+slider(look, "elev", "Light height", -20, 85, 5, st.elev, v => { st.elev = v; });
+slider(look, "sigma", "Splat size", 0.4, 2.5, 0.05, st.sigma, v => { st.sigma = v; HAIR && HAIR.set("uSigma", v); }, "Every Gaussian's size, as a multiple of what was fitted.");
+slider(look, "opacity", "Opacity", 0.2, 2, 0.05, st.opacity, v => { st.opacity = v; applyWig(); });
+const wigbox = $("#wigbox");
+slider(wigbox, "wig_blend", "Blend", 0, 1, 0.05, st.wig.blend, v => { st.wig.blend = v; applyWig(); }, "0: the shell alone; 1: the splat alone; between: both.");
+const wigShow = el("button", { textContent: "Shell on", className: "on" }); wigShow.onclick = () => { st.wig.show = !st.wig.show; wigShow.classList.toggle("on", st.wig.show); applyWig(); };
+const wigWire = el("button", { textContent: "Wireframe" }); wigWire.onclick = () => { st.wig.wire = !st.wig.wire; wigWire.classList.toggle("on", st.wig.wire); applyWig(); };
+const wigPlain = el("button", { textContent: "Untextured" }); wigPlain.onclick = () => { st.wig.plain = !st.wig.plain; wigPlain.classList.toggle("on", st.wig.plain); applyWig(); };
+wigbox.append(wigShow, " ", wigWire, " ", wigPlain);
+const clay = $("#clay"), claySet = {};
+const showBtn = el("button", { textContent: "Show the clay" }); showBtn.onclick = () => { st.showClay = !st.showClay; showBtn.classList.toggle("on", st.showClay); if (CLAY) CLAY.visible = st.showClay; };
+claySet.clumps = slider(clay, "clumps", "Clumps", 2, 64, 1, st.clumps, v => { st.clumps = v; }, "Blobs of clay: one per lock of hair.");
+claySet.joints = slider(clay, "joints", "Joints", 2, 8, 1, st.joints, v => { st.joints = v; }, "Joints down each clump's chain.");
+const glue = el("button", { textContent: "Glue again" });
+glue.onclick = async () => {
+  if (!WHO) return status("load a character first", "bad");
+  status("gluing…"); glue.disabled = true;
+  try {
+    const f = st.fit, C = JSONH.head.C, al = JSONH.align;
+    const M = fitMatrix(), e = M.elements, s = st.fit.scale;
+    const Rd = [[e[0] / s, e[4] / s, e[8] / s], [e[1] / s, e[5] / s, e[9] / s], [e[2] / s, e[6] / s, e[10] / s]], td = [e[12], e[13], e[14]];
+    // compose: p_head = s_d R_d (s R p + t) + t_d
+    const R = Rd.map(r => [0, 1, 2].map(j => r[0] * al.R[0][j] + r[1] * al.R[1][j] + r[2] * al.R[2][j]));
+    const t = [0, 1, 2].map(i => s * (Rd[i][0] * al.t[0] + Rd[i][1] * al.t[1] + Rd[i][2] * al.t[2]) + td[i]);
+    const r = await api(`api/gshair/${encodeURIComponent(WHO)}/clumps`, { clumps: st.clumps, joints: st.joints, align: { R, t, s: s * al.s, source: f.scale === 1 && !f.x && !f.y && !f.z && !f.yaw && !f.pitch && !f.roll ? al.source : "page" } });
+    await load(WHO); status(`glued: ${r.clumps} clumps, chains ${r.chain_m.median} m`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+  glue.disabled = false;
+};
+clay.append(showBtn, " ", glue);
+const fit = $("#fit"), fitSet = {};
+for (const [k, label, min, max, step, title] of [["x", "Left/right", -0.1, 0.1, 0.002, "m"], ["y", "Up/down", -0.1, 0.1, 0.002, "m"], ["z", "Back/front", -0.1, 0.1, 0.002, "m"],
+    ["yaw", "Turn", -180, 180, 1, "degrees"], ["pitch", "Tip", -45, 45, 1, "degrees"], ["roll", "Tilt", -45, 45, 1, "degrees"], ["scale", "Scale", 0.5, 2, 0.01, "times"]])
+  fitSet[k] = slider(fit, "fit_" + k, label, min, max, step, st.fit[k], v => { st.fit[k] = v; if (JSONH) buildHair(); }, title);
+const exp = el("button", { textContent: "Export the chains (JSON)" });
+exp.onclick = () => { if (!HAIR) return; const Minv = rig.matrix.clone().invert().elements; const data = { about: "the clay clumps' chains in the body's frame (metres, Y up, facing +Z); each Gaussian's clump and place in splat.bin", chains: HAIR.local(Minv), radii: JSONH.radii, members: JSONH.members };
+  const a = el("a", { href: URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" })), download: `${WHO}_clay.json` }); a.click(); };
+fit.append(exp);
+
+// ---- the loop --------------------------------------------------------------------------------------------------------
+let last = performance.now(), acc = 0, frames = 0, fpsAt = last, fps = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  moveRig(now / 1000); placeCamera();
+  key.position.copy(lightDir()).multiplyScalar(3).add(new THREE.Vector3(0, TOP, 0));
+  if (HAIR) {
+    acc += dt; let n = 0; const M = rig.matrix.elements, Minv = rig.matrix.clone().invert().elements;
+    while (acc >= 1 / 60 && n < 3) { HAIR.step(1 / 60, M, Minv, { gravity: st.gravity, hold: st.hold, damping: st.damping, iterations: st.iterations }); acc -= 1 / 60; n++; }
+    if (acc > 0.2) acc = 0;
+    HAIR.light(lightDir()); HAIR.sort(camera); updateClay();
+  }
+  renderer.render(scene, camera);
+  if (++frames >= 30) { fps = Math.round(frames * 1000 / (now - fpsAt)); frames = 0; fpsAt = now; if (HAIR) { const m = HAIR.measure(rig.matrix.clone().invert().elements); $("#stats").textContent = `${HAIR.M} Gaussians, ${HAIR.K} clumps, ${fps} fps, drift ${m.drift_mm} mm, inside ${m.inside_pct}%`; } }
+}
+requestAnimationFrame(frame);
+const first = new URLSearchParams(location.search).get("name");
+if (first) { $("#name").value = first; load(first); }
+window.__gshair = { st, get hair() { return HAIR; }, get wig() { return WIGM; }, applyWig, view: (yaw, pitch, dist) => { orbit = { yaw, pitch, dist }; }, get ready() { return !!(HAIR && HAIR.ready); }, load, motion: m => { MOVE = m; }, canvas: renderer.domElement, rig, measure: () => HAIR && HAIR.measure(rig.matrix.clone().invert().elements) };
+</script>
+</body></html>

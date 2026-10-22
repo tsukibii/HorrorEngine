@@ -1,7 +1,7 @@
 # The Character Studio: where it is, the rule it keeps, and one app
 
 Written 2026-10-22 as the pass-over from the `claude/character-studio` session into this branch (the character
-creator). §1 is what's built, §2 the rule every stage keeps (DECISIONS 2026-10-22, evening), §3 where each stage
+creator), updated when the salon's branch (`claude/elegant-planck-9aatj8`) was merged in. §1 is what's built, §2 the rule every stage keeps (DECISIONS 2026-10-22, evening), §3 where each stage
 stands against it, §4 the one-app revamp, §5 the order to build it in. Nothing in §4 and §5 is built yet.
 
 ## 1. What's built
@@ -17,7 +17,8 @@ character on disk in `Content/Studio/People/<name>/` (git-ignored: real faces st
 | Expressions | MHR's 72 shapes, presets written as ARKit-52 curves (the mocap's map) | `arkit_mhr.json` |
 | Skin | tone; the **photo skin** (the front picture projected onto MHR's UVs: `skin.py`, `skin.png` + `skin_mask.png`); the **procedural skin** (`skinshader.js`: noise layers, glass, oil, age, makeup, presets); the **touch-up** (`touchup.js`: paint, take the photo away, bring it back, soften, undo; pigment brushes); eyes (`eyes.js`) | |
 | Layers | paint layers above the base: select by vertex, fill with colour, decal, PBR set or texture, opacity, shine, relief (docs/LAYERS.md) | `layers.js`, `layersui.js` |
-| Hair | a style grown here (`hair.js`, cards or the `wig.js` wig, Asian cuts); strands from the Perm library blended, fitted and batched (`perm.py`, `hair_match.py`, `hair_fit.py`, `hair_batch.py`, `strands.js`); a hair model worn as a wig (`wigify.js`: crown fit, six handles, the top locked, a swinging particle cage) | |
+| Hair | a style grown here (`hair.js`, cards or the `wig.js` wig, Asian cuts); strands from the Perm library blended, fitted and batched (`perm.py`, `hair_match.py`, `hair_fit.py`, `hair_batch.py`, `strands.js`); a hair model worn as a wig (`wigify.js`: crown fit, six handles, the top locked, a swinging particle cage); **made in the salon**: the salon's bake worn on the head (below) | |
+| *(the salon, its own page)* | **the hair route** (DECISIONS 2026-10-22): locks drawn by hand on this character's own body and face (the Studio's Save writes `body.bin` for it), against a reference video locked to the view; fourteen numbered steps, each a dropdown closed until opened; Bake writes `salon/salon.glb` and `salon_bake.json`, which the Hair tab wears (docs/SALON.md) | `salon.html`, `salon.js`, `salonlib.js`, ... |
 | Clothes | GarmentCode designs draped with Blender's cloth (`clothes.py`, `drape.py`), lock points, presets and outfits worn in layers (`make_designs.py`) | |
 | View | the studio view (`tools/shared/studioview.js`); POV from the player's eye at MCU or MS through the game's 90° lens in 16:9, under studio, warm lamp, cold night and flashlight | |
 
@@ -28,7 +29,9 @@ cuffs on tops).
 Character pages that still live elsewhere, on the desk's server (port 8780): `face.html` (photos to a head, the
 MetaHuman route), `shape.html` (an MHR body shaped for MetaHuman), `bodies.html` (a body against every pose),
 `flesh.html` (soft bones, jiggle), `poses.html` (the pose library), `pigment.html` (the pigment test), `pbr.html` (the
-PBR shelf). That's the address typing the revamp ends.
+PBR shelf). On the Studio's own server but as separate pages: `salon.html` (the hair route), `hairbuilder.html` and
+`gshair.html` (the splat and clay route, set aside: reference only, docs/GSHAIR.md). That's the address typing the
+revamp ends.
 
 ## 2. The rule: editable at every stage, even after a bake
 
@@ -61,6 +64,8 @@ export is a bake like any other (§3, Export).
 | Hair: style | the style and its numbers | made live | none |
 | Hair: Perm | the blend's weights, vary and seed | `hair/fit.f32`, `hair/batch.bin` | no receipt; the blend's strands aren't kept (remade from Perm, fine while Perm's set up) |
 | Hair: model wig | the model file in `wigs/`, its fit and lock in `character.json` | made live | none |
+| Hair: salon | `salon/salon.json` (the locks, groups, look); the reference video in `Content/Studio/Hair/References/`; hairstyles to start from in `Content/Studio/Hair/` | `salon/salon.glb`, `salon_bake.json` (the head frame it was made on: a receipt already) | the Studio doesn't yet say when the head changed after the bake (the salon's note asks to bake again by hand): the first stale dot to add |
+| Body for the salon | the body's weights and the face (above) | `body.bin` (written by Save) | none: remade on every Save |
 | Clothes | each garment's design and colour; `design.yaml`, `body.yaml` beside the drape | `garment.obj` | **the lock choice and what it was draped over aren't saved** (an outfit remade alone would drape differently); no receipt |
 | Exports | none | `<name>_head.obj`, `_hair.obj`, `_wig.json`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with one receipt for the whole export |
 
@@ -86,6 +91,11 @@ fingerprint in it, the clothes' lock and order saved, exports in their own folde
   bakes that run in the background with their progress in the stage's dot.
 - **Keys:** 1 to 9 the stages, Tab the steps, Alt-drag always turns the view (painting tools take the plain drag).
 
+**The steps look like the salon's** (the UI the salon's branch settled): in each stage the side panel is the work
+in order, numbered steps, each a dropdown closed until opened (the open ones remembered), each with a one-line hint
+of what it's for or what it's on now. The salon already is that; the other stages are rebuilt the same way as they
+move into the shell.
+
 **What moves in from the desk:**
 
 | Page today | Becomes |
@@ -98,6 +108,8 @@ fingerprint in it, the clothes' lock and order saved, exports in their own folde
 | `pigment.html` | gone: its brushes are in the touch-up (Paint) |
 | `pbr.html` (the shelf) | stays on the desk; Paint's fill picker reads the same shelf |
 | Kimodo motions (later) | Motion, a "Clips" step: the shot list's motions played on the character |
+| `salon.html` | **Hair**, the salon's fourteen steps as the stage's own (the Studio's Hair tab today just links to it and wears its bake); the procedural styles, the Perm library and the model wig as a "Quick hair" step |
+| `hairbuilder.html`, `gshair.html` | stay as reference pages (set aside, DECISIONS 2026-10-22) |
 
 **How it's built** (so the move is safe): each stage becomes its own module (`stages/body.js`, `stages/skin.js`...)
 with `mount(panel)`, `unmount()`, `status()` and its part of the save, around a small shell (`app.js`: the bar, the
@@ -113,7 +125,8 @@ Each a commit, STUDIO ok at each:
    clothes keep their lock and order. A stale bake shows; one button remakes it.
 3. **Export as a stage:** everything to `export/` with one receipt (the OBJs, the wig's chains, the textures), ready for
    Unreal; the character's folder keeps only sources and live bakes.
-4. **Flesh moves in** (Body, Flesh), then **Poses** (Motion), then **the MetaHuman head** (Face). `shape.html` and
+4. **The salon moves in** as the Hair stage (its page becomes the stage's panel; one save, one character), then
+   **Flesh** (Body, Flesh), then **Poses** (Motion), then **the MetaHuman head** (Face). `shape.html` and
    `pigment.html` retire once nothing links to them; the launcher drops their lines.
 5. **Look:** the studio view and the POV in one stage, the lights side by side as a contact sheet of the character.
 6. **Motion: Kimodo's clips** on the character (last, with the move to Unreal, as decided).

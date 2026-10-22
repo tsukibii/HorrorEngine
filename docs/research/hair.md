@@ -100,3 +100,8 @@ So a model's licence is the only licence. Where CC0 hair models are (check each 
 
 Not CC0 and kept out: Perm's fitted hairstyles (USC-HairSalon, research use: free games only, DECISIONS 2026-10-22),
 Mixamo, MetaHuman grooms, store-bought hair.
+
+## The splat route (2026-10-22)
+
+The user's flow after the GaussianHair paper (Luo et al. 2024): not strands, a Gaussian splat of a real wig glued to a few
+invisible clumps of clay that jiggle on the head. Built as `tools/gshair.py` and the Studio's `gshair.html`: docs/GSHAIR.md.
