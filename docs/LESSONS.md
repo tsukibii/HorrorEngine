@@ -146,3 +146,9 @@ it's a sheet of triangles whose corners all sit on the lip line, stretched acros
 points, depth tests and floods inward from the lip line all miss it (they also leaked onto the chin at the corners).
 Find it by what it does: near the mouth, the triangles that grow ten times or more in area under jawDrop; colour those
 per corner. Measure the expression's effect before guessing at the geometry.
+
+**A simulation undoes what the generator promised (2026-10-22).** The grown hair kept off the face and cut its bangs at
+the brows while it grew; once the same strands became wig clumps under gravity, side locks fell across the face and
+bangs sagged into the eyes, and in twin tails the bangs took the tie and were pinned whole. Every rule the shape keeps
+(the face keep-out, the bangs' hold, who is pinned) has to live in the step too, not only in the shape it starts from;
+and read the exported data (pinned counts per clump) as well as the pictures.

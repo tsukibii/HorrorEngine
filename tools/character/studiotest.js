@@ -3,7 +3,8 @@
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; pants are made to the body and worn;
-// twin tails grow from the scalp and stay off the head, with brows and lashes, and export; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
+// a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
+// the grown cards still grow; brows and lashes; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup, python tools/garment.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
@@ -106,14 +107,24 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!/pants: \d+ points, seams within/.test(st)) throw new Error(st);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("hair: twin tails grown from the scalp, off the head, brows and lashes, exported", async () => {
+  await step("hair: a twin-tail wig settles off the head and shoulders, survives a shake, exports its chains; grown cards too", async () => {
     await page.click('#tabs button[data-tab="hair"]');
-    await page.selectOption("#hairRows select", "twin");
-    await page.waitForFunction(() => window.__body.hair && window.__body.st.hair.style === "twin" && window.__body.hair.report.cards > 500, null, { timeout: 30000 });
-    const r = await page.evaluate(() => ({ ...window.__body.hair.report, brows: window.__body.hair.brows.index.length }));
-    if (r.inside_pct > 2 || r.scalp_triangles < 300 || !r.brows) throw new Error(JSON.stringify(r));
-    await page.click("#hairRows > button");
-    await page.waitForFunction(() => /wrote .*_studiotest_hair\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    await page.selectOption("#hairRows select >> nth=0", "twin");
+    await page.waitForFunction(() => window.__body.wig && window.__body.st.hair.style === "twin", null, { timeout: 30000 });
+    await page.waitForTimeout(2500);
+    const m = () => page.evaluate(() => window.__body.wig.measure(window.__body.rig.matrix.clone().invert().elements));
+    const a = await m();
+    if (a.clumps < 100 || a.nan || a.inside_pct > 2 || !(a.drift_mm < 80)) throw new Error("settled " + JSON.stringify(a));
+    await page.selectOption("#hairRows select >> nth=1", "shake"); await page.waitForTimeout(2500);
+    const b = await m();
+    await page.selectOption("#hairRows select >> nth=1", "still");
+    if (b.nan || b.inside_pct > 3) throw new Error("shaken " + JSON.stringify(b));
+    const brows = await page.evaluate(() => window.__body.hair.brows.index.length);
+    if (!brows) throw new Error("no brows");
+    await page.click("#hairRows > button >> text=Export hair OBJ");
+    await page.waitForFunction(() => /wrote .*_studiotest_hair\.obj and the wig's chains/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    await page.click("#hairRows label.tog >> nth=0");                      // the wig off: cards grown from the scalp
+    await page.waitForFunction(() => !window.__body.st.hair.wig && window.__body.hair.report.cards > 500 && window.__body.hair.report.inside_pct < 2, null, { timeout: 30000 });
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the head OBJ exports", async () => {

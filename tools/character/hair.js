@@ -1,6 +1,8 @@
 // Hair for the Character Studio: cards grown from the scalp of the body as it is now (any shape, any face), styled by a
 // few numbers, kept off the head and shoulders. Plain arrays out (no three.js here), so the page and a check can share it.
-//   grow(pos, tris, lm, scale, style) -> { hair: {position, uv, shade, index}, brows: {...}, scalp: [triangle ids], report }
+//   grow(pos, tris, lm, scale, style) -> { hair: {position, uv, shade, index}, brows: {...}, scalp: [triangle ids],
+//     strands (each strand's points, how many are pinned: the wig's clumps, wig.js), push (the collision), guard (the
+//     face kept clear), report }
 // pos: the body's points (Float32Array, metres, Y up, facing +Z); tris: its triangles; lm(i): MediaPipe landmark i on the
 // body now; scale: the body's scale against MHR (sizes below are MHR's, at 1.7 m). Cards: ribbons with an alpha of strands,
 // a scalp cap under them in the hair's colour. docs/MHR_PIPELINE_RESEARCH.md phase 4: strands and grooms come later.
@@ -149,6 +151,11 @@ export function grow(pos, tris, lm, scale, opts = {}) {
              : tails === "pony" ? [add(fr.C, add(mul(fr.U, tieUp), mul(fr.F, -0.1 * S)))] : [];
   const DOWN = [0, -1, 0], SEG = 0.012 * S;
   let inside = 0, points = 0, cards = 0;
+  const strands = [];
+  const guard = q => {                                     // nothing but bangs hangs over the face: out to its sides
+    const e = sub(q, fr.C), ex = dot(e, fr.X), half = 0.072 * S;
+    return dot(e, fr.F) > 0.01 * S && Math.abs(ex) < half && q[1] > chinY - 0.03 * S ? add(q, mul(fr.X, (ex < 0 ? -1 : 1) * half - ex)) : q;
+  };
   const hfront = dot(sub(lm(10), fr.C), fr.U);
   for (let c = 0; c < o.cards && total; c++) {
     let r = rand() * total, lo = 0, hi = acc.length - 1;
@@ -159,7 +166,7 @@ export function grow(pos, tris, lm, scale, opts = {}) {
     const d = sub(root, fr.C), x = dot(d, fr.X), f = dot(d, fr.F), hh = dot(d, fr.U);
     const side = Math.abs(x - part) < 0.004 * S ? (rand() < 0.5 ? -1 : 1) : Math.sign(x - part);
     const isBang = bangs && f > 0.02 * S && Math.abs(x) < 0.055 * S && hh < hfront + 0.06 * S;
-    const tie = tails === "twin" ? ties[side < 0 ? 0 : 1] : tails === "pony" ? ties[0] : null;
+    const tie = isBang ? null : tails === "twin" ? ties[side < 0 ? 0 : 1] : tails === "pony" ? ties[0] : null;
     const proj = a => norm(sub(a, mul(n, dot(a, n))));
     const pts = [root];
     let dir, p = add(root, mul(n, vol * 0.5)), stop = -Infinity, L = length * (0.85 + 0.3 * rand());
@@ -188,10 +195,7 @@ export function grow(pos, tris, lm, scale, opts = {}) {
       dir = norm(mix(dir, DOWN, g));
       let q = add(p, mul(dir, SEG));
       if (wave) q = add(q, mul(wdir, Math.sin(grown / (0.06 * S) * 6.28 + phase) * wave * 0.004 * S));
-      if (!isBang) {                                         // nothing but bangs hangs over the face
-        const e = sub(q, fr.C), ex = dot(e, fr.X), half = 0.072 * S;
-        if (dot(e, fr.F) > 0.01 * S && Math.abs(ex) < half && q[1] > chinY - 0.03 * S) q = add(q, mul(fr.X, (ex < 0 ? -1 : 1) * half - ex));
-      }
+      if (!isBang) q = guard(q);
       const gap = vol + (isBang ? 0.002 * S : 0.004 * S);
       let moved; [q, moved] = push(q, gap);
       const up = dot(sub(q, fr.C), fr.U) / fr.top;             // 1 on top, 0 at the ears: hug the top, loosen down to the ears
@@ -208,6 +212,8 @@ export function grow(pos, tris, lm, scale, opts = {}) {
       if (spin && k > 9) out = spin;
       return norm(cross(tng, norm(out)));
     });
+    strands.push({ pts, pin: tie ? 10 : 1, bang: isBang, tail: !!tie, spin });   // for the wig: pinned up to the tie
+    if (o.guidesOnly) { points += pts.length; cards++; continue; }
     ribbon(G, pts, across, o.width * S * (isBang ? 0.8 : 1), 0.85 + 0.3 * rand(), tie ? 0.25 : 0.4);
     cards++; points += pts.length;
     for (const q of pts.slice(2)) if (push(q, 0)[1]) inside++;
@@ -240,6 +246,6 @@ export function grow(pos, tris, lm, scale, opts = {}) {
       }
     }
   }
-  return { hair: G, brows: B, scalp: scalpTris, frame: fr,
+  return { hair: G, brows: B, scalp: scalpTris, frame: fr, strands, push, guard,
            report: { cards, points, scalp_triangles: scalpTris.length, inside_pct: points ? Math.round(1000 * inside / points) / 10 : 0 } };
 }
