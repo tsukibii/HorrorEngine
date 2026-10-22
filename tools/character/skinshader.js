@@ -75,11 +75,11 @@ uniform float uProc, uPigOn, uScale, uHasPhoto, uHasTouch, uHasPig, ${FEATURES.m
 uniform vec3 uTone, uPhotoTone, ${COLOURS.map(c => "uc_" + c[0]).join(", ")};
 uniform vec3 ${Object.keys(POINTS).join(", ")}, uEarL, uEarR, uFaceC, uMouthC, uRight, uUp, uFwd;
 uniform vec3 uLidUL[9], uLidUR[9], uLidLL[9], uLidLR[9];
-uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf;
+uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf, uLayGlow;
 uniform float uHasLay, uShowSel;
 varying float vSel;
 varying vec3 vObj; varying vec2 vSkinUv;
-float skinH, skinRough, skinCoat, skinCoatR = -1.0;
+float skinH, skinRough, skinCoat, skinCoatR = -1.0, skinSm = 0.0;   // skinSm: a layer's smoothing (evens out the pores, grain and relief)
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
 float vnoise(vec3 p) {
@@ -134,7 +134,7 @@ float wrinkles(vec3 p) {
 
 vec3 proceduralSkin(vec3 base, vec3 p) {
   float px = length(fwidth(p)), s = uScale;
-  float even = 1.0 - 0.8 * uf_evenness, age = uf_age;
+  float even = (1.0 - 0.8 * uf_evenness) * (1.0 - skinSm), age = uf_age;
   float face = near(p, uFaceC, 0.09);
   float tzone = max(near(p, uNose, 0.025), max(near(p, uCheekL, 0.035), near(p, uCheekR, 0.035)));
   vec3 c = base;
@@ -145,7 +145,7 @@ vec3 proceduralSkin(vec3 base, vec3 p) {
   c *= 1.0 + g * 0.14 * uf_grain * even * (1.0 - smoothstep(0.0006, 0.0015, px));
   float ps = uf_poreSize * 0.001 * (1.0 + 0.4 * age), pfade = 1.0 - smoothstep(ps * 0.15, ps * 0.4, px);   // pores only up close: a few pixels each
   vec2 pc = cells(p / ps);                                           // pores
-  float pore = (1.0 - smoothstep(0.05, 0.3, pc.x)) * step(0.25, pc.y) * (0.45 + 0.55 * max(tzone, face * 0.6)) * pfade;
+  float pore = (1.0 - smoothstep(0.05, 0.3, pc.x)) * step(0.25, pc.y) * (0.45 + 0.55 * max(tzone, face * 0.6)) * pfade * (1.0 - skinSm);
   c *= 1.0 - 0.1 * uf_pores * pore;
   float fs = uf_freckleSize * 0.001; vec2 fc = cells(p / fs + 3.1);  // freckles
   float where = mix(max(tzone, near(p, uNose, 0.05)) * face, 1.0, uf_spread);
@@ -158,7 +158,7 @@ vec3 proceduralSkin(vec3 base, vec3 p) {
   c = mix(c, c * uc_flushColor * 1.6, uf_flush * even * fl * 0.5);  // flush
   float v = 1.0 - abs(fbm(p * 38.0) * 2.0 - 1.0);                    // veins: thin ridges of the noise
   c = mix(c, c * vec3(0.78, 0.86, 1.08), (uf_veins + 0.3 * age) * even * pow(v, 10.0) * 0.8);
-  float wr = wrinkles(p) * age * uf_wrinkles;                        // wrinkles: darker grooves with relief
+  float wr = wrinkles(p) * age * uf_wrinkles * (1.0 - skinSm);                        // wrinkles: darker grooves with relief
   c *= 1.0 - 0.12 * clamp(wr, 0.0, 1.5);
   skinH = -pore * uf_pores - 1.6 * wr;
   float hp = max(max(near(p, uBoneL, 0.022), near(p, uBoneR, 0.022)), max(near(p, uBridge, 0.012), max(near(p, uForehead, 0.02), 0.7 * near(p, uChin, 0.012))));
@@ -216,7 +216,7 @@ export function procedural(material) {
   const u = { uProc: { value: 0 }, uPigOn: { value: 0 }, uScale: { value: 1 }, uHasPhoto: { value: 0 }, uTone: { value: new THREE.Color() }, uPhotoTone: { value: new THREE.Color(1, 1, 1) },
               uPhotoMap: { value: null }, uPhotoMask: { value: null },
               uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null },
-              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null } };   // the layers (layers.js)   // the touch-up (touchup.js)
+              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
@@ -226,7 +226,7 @@ export function procedural(material) {
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0;
+      .replace("#include <color_fragment>", `skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
   if (uHasPhoto > 0.5) {                                             // the picture inside its mask, the procedural skin outside
@@ -262,6 +262,7 @@ if (uProc > 0.5 || uHasLay > 0.5) {                                             
   normal = normalize(abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2));
 }`)
       .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+if (uHasLay > 0.5) totalEmissiveRadiance += texture2D(uLayGlow, vSkinUv).rgb * 0.5 * (0.5 + 0.5 * diffuseColor.r);   // light from within, painted: thin skin, an ear's rim
 if (uProc > 0.5) {                                                   // light through the skin: the rims, the ears; less with age
   float rim = pow(1.0 - max(dot(normal, normalize(vViewPosition)), 0.0), 2.5);
   float ears = max(near(vObj, uEarL, 0.03), near(vObj, uEarR, 0.03));
@@ -272,7 +273,7 @@ if (uProc > 0.5) {                                                   // light th
 if (uProc > 0.5 || uHasLay > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-5";
+  material.customProgramCacheKey = () => "studio-skin-6";
   return u;
 }
 

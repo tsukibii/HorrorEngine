@@ -11,6 +11,7 @@
 //   pig  RGB   transmittance, white = none: pigment layers are multiplied together, so   (a layer with pigment on)
 //              two pigments mix like filters (blue x green goes dark teal) and order doesn't matter
 //   surf RGBA  R roughness multiplier x4 · G clear coat (gloss) · B relief · A coat roughness
+//   glow RGBA  RGB light from within (thin skin: ears, nose tip, cheeks) · A how much the pores, grain and relief are smoothed away
 // Pigment layers show under the overlay ones whatever their order in the list (a limit of keeping them in separate textures).
 import * as THREE from "three";
 
@@ -53,8 +54,9 @@ export const DEFAULT_FILL = () => ({
   type: "colour", colour: "#c23a4f",
   image: { mode: "front", size: 12, rot: 0, ox: 0, oy: 0, tile: false, relative: false },     // size in cm; tile on for textures, off for a decal
   pbr: { size: 20, rough: 1, height: 0.6, ao: 1, tint: "#ffffff" },
+  grad: { c2: "#f3a6ae", mode: "radial", alpha: "flat", gamma: 1, angle: 90, len: 4 },   // c2 is the edge colour; alpha: flat, fading out toward the edge (centre) or toward the middle (edge)
   opacity: 1, pigment: false, density: 2.2, cover: 0.15,
-  shine: 0, oil: 0, tight: 0.25,
+  shine: 0, oil: 0, tight: 0.25, glow: 0, glowColour: "#ff5a3c", smooth: 0,
 });
 
 export class SkinLayers {
@@ -65,7 +67,7 @@ export class SkinLayers {
     this.ov = new Uint8Array(SIZE * SIZE * 4); this.pig = new Uint8Array(SIZE * SIZE * 4).fill(255); this.surf = new Uint8Array(SIZE * SIZE * 4);
     const tex = (d, srgb) => { const t = new THREE.DataTexture(d, SIZE, SIZE, THREE.RGBAFormat); t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true;
       t.anisotropy = 4; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true; return t; };
-    this.texOv = tex(this.ov, true); this.texPig = tex(this.pig, true); this.texSurf = tex(this.surf, false);
+    this.glow = new Uint8Array(SIZE * SIZE * 4); this.texGlow = tex(this.glow, true); this.texOv = tex(this.ov, true); this.texPig = tex(this.pig, true); this.texSurf = tex(this.surf, false);
     this.buildAdjacency(); this.buildIndex();
     this.onChange = () => { };
   }
@@ -185,9 +187,14 @@ export class SkinLayers {
     for (let i = 0; i < this.N; i++) if (w[i] > 0.5) { x += P[i * 3]; y += P[i * 3 + 1]; z += P[i * 3 + 2]; c++; }
     return c ? [x / c, y / c, z / c] : this.anchor.slice();
   }
+  depthOf(w) {                                                        // 0 at the selection's edge, 1 at its deepest point, along the surface
+    const d = this.distance(i => w[i] < 0.5, Infinity); let m = 1e-6;
+    for (let i = 0; i < this.N; i++) if (w[i] >= 0.5 && d[i] < Infinity) m = Math.max(m, d[i]);
+    return Float32Array.from(d, (x, i) => w[i] < 0.5 ? 0 : Math.min(1, x / m));
+  }
   add(name, w, fill) {
     const L = { id: this.nextId++, name, visible: true, w: Float32Array.from(w), ...structuredClone({ ...fill, imgs: undefined }), imgs: fill.imgs || {} };
-    L.w0 = Float32Array.from(L.w); L.anchor = this.centroid(w); L.stale = true; this.layers.push(L); this.update(); return L;
+    L.depth = this.depthOf(w); L.w0 = Float32Array.from(L.w); L.anchor = this.centroid(w); L.stale = true; this.layers.push(L); this.update(); return L;
   }
   remove(L) { this.layers.splice(this.layers.indexOf(L), 1); this.update(); }
   move(L, d) { const i = this.layers.indexOf(L), j = i + d; if (j < 0 || j >= this.layers.length) return; this.layers.splice(i, 1); this.layers.splice(j, 0, L); this.compose(); }
@@ -226,7 +233,16 @@ export class SkinLayers {
       const v0 = T[t * 3], v1 = T[t * 3 + 1], v2 = T[t * 3 + 2], b1 = this.bu[p], b2 = this.bv[p], b0 = 1 - b1 - b2;
       const m = MT[p]; if (m < 0.002) continue;
       let r = colour[0], g = colour[1], b = colour[2], a = m, rmv = 1, h = 0.5;
-      if (type === "uv" && img) {                                  // a texture already in MHR's layout (the photo skin, one painted elsewhere)
+      if (type === "gradient") {
+        const G = L.grad; let t;
+        if (G.mode === "linear") {
+          const x = b0 * P[v0 * 3] + b1 * P[v1 * 3] + b2 * P[v2 * 3], y = b0 * P[v0 * 3 + 1] + b1 * P[v1 * 3 + 1] + b2 * P[v2 * 3 + 1], an = G.angle * Math.PI / 180;
+          t = clamp(((x - ax) * Math.cos(an) + (y - ay) * Math.sin(an)) * 100 / G.len + 0.5);        // from the colour (0) to the second colour (1) along an angle, len cm across
+        } else t = 1 - (b0 * L.depth[v0] + b1 * L.depth[v1] + b2 * L.depth[v2]);                     // the colour in the middle, the second at the edge
+        const tg = Math.pow(t, Math.max(0.1, G.gamma)), c2 = hex2rgb(G.c2);
+        r = colour[0] + (c2[0] - colour[0]) * tg; g = colour[1] + (c2[1] - colour[1]) * tg; b = colour[2] + (c2[2] - colour[2]) * tg;
+        if (G.mode !== "linear") a = m * (G.alpha === "centre" ? Math.pow(1 - t, 0.8) : G.alpha === "edge" ? Math.pow(t, 0.8) : 1);       // fade out toward the edge, or toward the middle (a rim)
+      } else if (type === "uv" && img) {                                  // a texture already in MHR's layout (the photo skin, one painted elsewhere)
         img.at((p % S + 0.5) / S, 1 - (Math.floor(p / S) + 0.5) / S, false, px); r = px[0]; g = px[1]; b = px[2]; a = m * px[3];
         if (mean) { r = clamp(r / Math.max(mean[0], 0.02), 0, 1.25); g = clamp(g / Math.max(mean[1], 0.02), 0, 1.25); b = clamp(b / Math.max(mean[2], 0.02), 0, 1.25); }
       } else if (type === "image" || type === "pbr") {
@@ -270,13 +286,14 @@ export class SkinLayers {
   // the visible layers into the three textures
   compose() {
     const S = SIZE, n = S * S, ov = this.ov, pig = this.pig, sf = this.surf;
-    ov.fill(0); pig.fill(255); sf.fill(0);
+    ov.fill(0); pig.fill(255); sf.fill(0); this.glow.fill(0);
     const R = new Float32Array(n).fill(1), COAT = new Float32Array(n), COATR = new Float32Array(n), HT = new Float32Array(n);
+    const GR = new Float32Array(n), GG = new Float32Array(n), GB = new Float32Array(n), SM = new Float32Array(n);
     const oR = new Float32Array(n), oG = new Float32Array(n), oB = new Float32Array(n), oA = new Float32Array(n);   // premultiplied
     const pR = new Float32Array(n).fill(1), pG = new Float32Array(n).fill(1), pB = new Float32Array(n).fill(1);
     let any = false;
     for (const L of this.layers) {
-      if (!L.visible || !L.rgba) continue; any = true;
+      if (!L.visible || !L.rgba) continue; any = true; const gcol = hex2rgb(L.glowColour || "#ff5a3c"), glow = L.glow || 0, smo = L.smooth || 0;
       const op = L.opacity, dens = L.density, cover = L.cover, shine = L.shine, oil = L.oil, rmL = (1 - 0.5 * shine) * (1 - 0.55 * oil), tight = L.tight;
       for (let p = 0; p < n; p++) {
         const o = p * 4, a = L.rgba[o + 3] / 255 * op; if (a < 0.003) continue;
@@ -289,28 +306,31 @@ export class SkinLayers {
         R[p] *= 1 + (L.rm[p] / 64 * rmL - 1) * a;
         const cw = shine * a; if (cw > 0) { COATR[p] = (COATR[p] * COAT[p] + (1 - 0.8 * tight) * cw) / (COAT[p] + cw); COAT[p] = Math.min(1, COAT[p] + cw); }
         HT[p] += (L.ht[p] / 255 - 0.5) * a;
+        if (glow > 0) { GR[p] += gcol[0] * glow * a; GG[p] += gcol[1] * glow * a; GB[p] += gcol[2] * glow * a; }
+        if (smo > 0) SM[p] = Math.min(1, SM[p] + smo * a);
       }
     }
     for (let p = 0; p < n; p++) {
       const o = p * 4, a = oA[p];
       if (a > 0.002) { ov[o] = oR[p] / a * 255; ov[o + 1] = oG[p] / a * 255; ov[o + 2] = oB[p] / a * 255; ov[o + 3] = a * 255; }
       pig[o] = pR[p] * 255; pig[o + 1] = pG[p] * 255; pig[o + 2] = pB[p] * 255; pig[o + 3] = 255;
+      this.glow[o] = clamp(GR[p]) * 255; this.glow[o + 1] = clamp(GG[p]) * 255; this.glow[o + 2] = clamp(GB[p]) * 255; this.glow[o + 3] = SM[p] * 255;
       sf[o] = clamp(R[p] * 64, 0, 255); sf[o + 1] = COAT[p] * 255; sf[o + 2] = clamp(128 + HT[p] * 255, 0, 255); sf[o + 3] = COATR[p] * 255;
     }
-    this.any = any; for (const t of [this.texOv, this.texPig, this.texSurf]) t.needsUpdate = true;
+    this.any = any; for (const t of [this.texOv, this.texPig, this.texSurf, this.texGlow]) t.needsUpdate = true;
   }
 
   // ---- saving: the masks as bytes, the pictures as data URLs ----
   toJSON() {
     return { v: 1, nextId: this.nextId, layers: this.layers.map(L => ({
       id: L.id, name: L.name, visible: L.visible, anchor: L.anchor, type: L.type, colour: L.colour, image: L.image, pbr: L.pbr, opacity: L.opacity, pigment: L.pigment, density: L.density, cover: L.cover,
-      shine: L.shine, oil: L.oil, tight: L.tight, w: b64(Uint8Array.from(L.w, x => Math.round(clamp(x) * 255))),
+      shine: L.shine, oil: L.oil, tight: L.tight, glow: L.glow, glowColour: L.glowColour, smooth: L.smooth, grad: L.grad, depth: L.depth ? b64(Uint8Array.from(L.depth, x => Math.round(clamp(x) * 255))) : null, w: b64(Uint8Array.from(L.w, x => Math.round(clamp(x) * 255))),
       imgs: Object.fromEntries(Object.entries(L.imgs).map(([k, p]) => [k, p.url])) })) };
   }
   async fromJSON(j) {
     this.layers = []; this.nextId = j.nextId || 1;
     for (const s of j.layers || []) {
-      const L = { ...s, w: Float32Array.from(unb64(s.w), x => x / 255), imgs: {}, stale: true }; L.w0 = Float32Array.from(L.w);
+      const L = { ...s, w: Float32Array.from(unb64(s.w), x => x / 255), imgs: {}, stale: true }; L.w0 = Float32Array.from(L.w); L.depth = s.depth ? Float32Array.from(unb64(s.depth), x => x / 255) : this.depthOf(L.w);
       for (const [k, url] of Object.entries(s.imgs || {})) if (url) { const im = await loadImage(url); L.imgs[k] = Object.assign(new Pix(im), { url }); }
       this.layers.push(L);
     }

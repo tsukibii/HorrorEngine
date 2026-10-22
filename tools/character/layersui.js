@@ -8,7 +8,7 @@ export function mountLayers(ctx) {
   const C = TRIS.length;
   const L = new SkinLayers({ N: POS.length / 3, TRIS, UV: dgeo.attributes.uv.array, getPos: () => POS, getNrm: () => ctx.geo.attributes.normal.array });
   const selAttr = new THREE.BufferAttribute(new Float32Array(C), 1); dgeo.setAttribute("selW", selAttr);
-  SKU.uLayOv.value = L.texOv; SKU.uLayPig.value = L.texPig; SKU.uLaySurf.value = L.texSurf;
+  SKU.uLayOv.value = L.texOv; SKU.uLayPig.value = L.texPig; SKU.uLaySurf.value = L.texSurf; SKU.uLayGlow.value = L.texGlow;
 
   const S = { tool: "brush", add: true, radius: 12, softErase: 0.6, strengthErase: 0.5, angle: 28, dist: 15, bleed: 0, inner: 0, outer: 0, show: true, live: true };
   let F = DEFAULT_FILL(), cur = null, ACTIVE = false, STROKING = false, SAVED = true;
@@ -94,13 +94,22 @@ export function mountLayers(ctx) {
 
   // the fill
   box.append(el("h4", { textContent: "Fill" }));
-  const typeChips = chips(box, [["colour", "Colour"], ["image", "PNG"], ["pbr", "PBR set"], ["uv", "UV texture", "A picture already in MHR's UV layout (the photo skin, one painted elsewhere)"]], () => target().type, k => { target().type = k; changed(true); showType(); });
-  const sec = { colour: el("div"), image: el("div"), pbr: el("div"), uv: el("div") };
+  const typeChips = chips(box, [["colour", "Colour"], ["image", "PNG"], ["pbr", "PBR set"], ["gradient", "Gradient", "A colour fading to another: from the middle to the edge of the selection, or along a line"], ["uv", "UV texture", "A picture already in MHR's UV layout (the photo skin, one painted elsewhere)"]], () => target().type, k => { target().type = k; changed(true); showType(); });
+  const sec = { colour: el("div"), gradient: el("div"), image: el("div"), pbr: el("div"), uv: el("div") };
   box.append(...Object.values(sec));
   const showType = () => { for (const [k, d] of Object.entries(sec)) d.hidden = k !== target().type; };
   const changed = (rebake = false) => { if (cur) { L.touch(cur, rebake); SAVED = false; } };
   const colour = el("input", { type: "color" }); colour.oninput = () => { target().colour = colour.value; changed(true); };
   sec.colour.append(row("Colour", colour)); refreshers.push(() => { colour.value = target().colour; });
+  // gradient: the colour above is the middle (or the start), this is the edge (or the end)
+  const colour2 = el("input", { type: "color" }); colour2.oninput = () => { target().grad.c2 = colour2.value; changed(true); };
+  sec.gradient.append(el("small", { className: "note", textContent: "The Colour above is the middle (or the start); the second is the edge (or the end)." }), row("Second colour", colour2));
+  chips(sec.gradient, [["radial", "Middle → edge", "Along the surface from the deepest point to the edge"], ["linear", "Along a line"]], () => target().grad.mode, k => { target().grad.mode = k; changed(true); });
+  chips(sec.gradient, [["flat", "Solid", "The fill stays full"], ["centre", "Fades out", "Solid in the middle, fading toward the edge (gradient lips)"], ["edge", "Rim", "Strong at the edge, clear in the middle (an ear's rim, a flushed fringe)"]], () => target().grad.alpha, k => { target().grad.alpha = k; changed(true); });
+  refreshers.push(slider(sec.gradient, "Curve", 0.3, 3, 0.05, () => target().grad.gamma, v => { target().grad.gamma = v; changed(true); }, "Below 1 the second colour comes in late, above 1 early."));
+  refreshers.push(slider(sec.gradient, "Line angle", -180, 180, 1, () => target().grad.angle, v => { target().grad.angle = v; changed(true); }, "0 across, 90 upward."));
+  refreshers.push(slider(sec.gradient, "Line length (cm)", 0.5, 30, 0.1, () => target().grad.len, v => { target().grad.len = v; changed(true); }));
+  refreshers.push(() => { colour2.value = target().grad.c2; });
   const filePicker = (parent, label, key, hint) => {
     const f = el("input", { type: "file", accept: "image/*" }), name = el("small", { className: "note" });
     f.onchange = async () => { if (!f.files[0]) return; try { const p = await fileToPix(f.files[0]); target().imgs = target().imgs || {}; target().imgs[key] = p; name.textContent = f.files[0].name; changed(true); } catch (e) { status(e.message, "bad"); } };
@@ -157,12 +166,16 @@ export function mountLayers(ctx) {
   refreshers.push(slider(box, "Shine", 0, 1, 0.01, () => target().shine, v => { target().shine = v; changed(false); }, "A wet clear coat over the fill: gel, gloss, lipstick."));
   refreshers.push(slider(box, "Oily", 0, 1, 0.01, () => target().oil, v => { target().oil = v; changed(false); }, "Lowers the roughness: broad, soft highlights (oily skin, sweat)."));
   refreshers.push(slider(box, "Gloss tightness", 0, 1, 0.01, () => target().tight, v => { target().tight = v; changed(false); }, "Small hard highlights (1) or a wide soft sheen (0)."));
+  const glowC = el("input", { type: "color" }); glowC.oninput = () => { target().glowColour = glowC.value; changed(false); };
+  refreshers.push(slider(box, "Glow from within", 0, 1, 0.01, () => target().glow, v => { target().glow = v; changed(false); }, "Light through thin skin: an ear's rim, the nose tip, flushed cheeks. Tinted by the colour below."));
+  box.append(row("Glow colour", glowC)); refreshers.push(() => { glowC.value = target().glowColour; });
+  refreshers.push(slider(box, "Smooth skin", 0, 1, 0.01, () => target().smooth, v => { target().smooth = v; changed(false); }, "Evens out the pores, grain, mottling and relief where the layer is (the porcelain, stylised look)."));
   const fill = el("button", { textContent: "Fill the selection (new layer)", className: "primary", title: "Pours this into the selection as a new layer, with the edge above" });
   fill.onclick = () => {
     if (!L.count()) return status("select some of the body first (Select on the body)", "bad");
     prepare();
     const f = structuredClone({ ...F, imgs: undefined }); f.imgs = { ...(F.imgs || {}) };
-    const n = L.layers.length + 1, lay = L.add(`${{ colour: "Colour", image: "PNG", pbr: "PBR", uv: "UV texture" }[F.type]} ${n}`, L.weights(S.bleed, S.inner, S.outer), f);
+    const n = L.layers.length + 1, lay = L.add(`${{ colour: "Colour", gradient: "Gradient", image: "PNG", pbr: "PBR", uv: "UV texture" }[F.type]} ${n}`, L.weights(S.bleed, S.inner, S.outer), f);
     cur = lay; refreshAll(); drawList(); SAVED = false; status(`layer ${n}: ${L.count()} points`, "ok");
   };
   const newFill = el("button", { textContent: "New fill", title: "Stop editing the layer; the controls above go back to the next fill" });
