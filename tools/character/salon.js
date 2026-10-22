@@ -36,8 +36,9 @@ const st = {
   locks: [],
   scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
   roots: { lift: 40, length: 0.02, vary: 0.4 },                     // how hair comes out of the head (salonlib.js's rootBend)
+  volume: { thicken: 1 },                                            // Thicken: every card as much wider
 };
-SL.setRoots(st.roots);
+SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
 
 // ---- the scene --------------------------------------------------------------------------------------------------------
@@ -760,9 +761,9 @@ function lockAt(e) {
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
-const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp, roots: st.roots });
+const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp, roots: st.roots, volume: st.volume });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.roots) { st.roots = o.roots; SL.setRoots(st.roots); rootsPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.roots) { st.roots = o.roots; SL.setRoots(st.roots); rootsPanel(); } if (o.volume) { st.volume = o.volume; SL.setThicken(st.volume.thicken); volumePanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -1046,6 +1047,12 @@ function presetPanel() {
   box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), sel, el("span")));
   box.append(el("button", { textContent: "Make it", onclick: () => applyPreset(sel.value) }), el("button", { textContent: "Make it and let it fall", onclick: () => applyPreset(sel.value, true) }));
 }
+// ---- volume: the hair filled out for the bake ---------------------------------------------------------------------------
+function volumePanel() {
+  const box = $("#volbox"); if (!box) return; box.innerHTML = "";
+  const V = st.volume, set = (k, v) => { V[k] = v; SL.setThicken(V.thicken); for (const l of st.locks) DIRTY.add(l.id); draw(); };
+  slider(box, "Thicken", 0.5, 3, 0.05, V.thicken, v => set("thicken", v), "every strand's card this many times as wide (1: as made); the strands stay where they are");
+}
 function rootsPanel() {
   const box = $("#rootbox"); if (!box) return; box.innerHTML = "";
   box.append(el("p", { className: "note", textContent: "How hair comes out of the head, every lock: it leaves the scalp at an angle the way it goes and bends over, whatever gravity does." }));
@@ -1159,10 +1166,11 @@ async function load(name) {
   Object.assign(st.reference, o.reference || {});
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
+  st.volume = Object.assign({ thicken: 1 }, o.volume || {}); SL.setThicken(st.volume.thicken);
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); rootsPanel(); coverPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
+  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); rootsPanel(); coverPanel(); volumePanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
@@ -1170,7 +1178,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1182,7 +1190,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, rootsPanel, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
+  PULL, pullPanel, rootsPanel, volumePanel, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;

@@ -386,6 +386,17 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.cover.settings.show = false; s.coverPanel(); s.render(); }, crown);
     console.log(`       ${made.n} sheets on the parting (roots ${(made.roots * 1000).toFixed(1)} mm off the middle and the skin), arms ${(made.length * 100).toFixed(1)} cm (the top hair's), ${made.forksLifted} forks lifted onto the hair; over it past their roots (${lay.n} points, none under); on top it slid ${(slid * 1000).toFixed(1)} mm (friction); kept as shown, the rest unmoved; undone`);
   });
+  await step("Thicken: every card as much wider, the strands where they were", async () => {
+    const id = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
+      const l = s.addLock(SL.makeStrand(C.surface([0.02, 0.15, -0.06]), [0.03, -0.12, -0.16], C, { width: 0.01 })); s.st.mirror.on = m; s.render(); return l.id; });
+    const card = () => ev(id => { const s = window.__salon; s.render(); const G = s.EVAL[id][0]; return { w: G.width.slice(), p: G.pts.map(q => q.slice()) }; }, id);
+    const slide = v => page.$$eval("#volbox .row", (rows, v) => { const row = rows.find(x => x.querySelector("span").textContent === "Thicken"); const i = row.querySelector("input"); i.value = v; i.dispatchEvent(new Event("input")); }, v);
+    const a = await card(); await slide(2); const b = await card(); await slide(1);
+    await ev(id => window.__salon.deleteLock(id), id);
+    const ratio = Math.max(...b.w.map((w, k) => Math.abs(w / a.w[k] - 2))), moved = Math.max(...b.p.map((q, k) => Math.hypot(...q.map((x, j) => x - a.p[k][j]))));
+    if (ratio > 1e-9 || moved > 1e-9) throw new Error(`Thicken 2: widths off by ${ratio}, the guide moved ${moved} m`);
+    console.log("       Thicken 2: every card twice as wide, the guide where it was");
+  });
   await step("the presets: all eight build on the head (mirrored, the scalp covered); the long cut falls and is kept with the face clear; undo brings the hair back", async () => {
     const before = await ev(() => JSON.stringify(window.__salon.st.locks));
     const all = await ev(() => { const s = window.__salon, SL = s.SL, L = s.localPoints(), out = [];

@@ -402,6 +402,9 @@ function sideways(pts, col, k) {                                     // a ribbon
 // and to whatever pose physics or gravity gives it, so neither changes how hair comes out of the head, and a root under
 // other hair rises through it instead of standing straight up to it. setRoots() sets them for every lock.
 export const ROOTS = { lift: 40, length: 0.02, vary: 0.4 };
+// Thicken: every card as much wider (the strands' widths, a sheet's and a bundle's cards, a dome's), the guides where they are
+export const WIDTH = { scale: 1 };
+export function setThicken(k) { WIDTH.scale = Math.max(0.1, +k || 1); }
 export function setRoots(o) { Object.assign(ROOTS, o || {}); }
 export const seedOf = id => [...String(id || "")].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7);
 export function rootBend(pts, col, r = Math.random, R = ROOTS) {
@@ -441,14 +444,14 @@ function thicken(lock, base, col) {
     const phi = Math.PI * (i + 0.5) / m, u = (1 + Math.cos(phi)) / 2, c = Math.cos(phi), sn = Math.sin(phi);
     const pts = keepOff(fr.map((_, k) => add(at(k, u), mul(fr[k][1], H[k] * sn))), col);
     dome.push({ pts, u, t: TS, across: fr.map(([a, up, w], k) => { const d = add(mul(a, -sn * w / 2), mul(up, c * H[k])); return len(d) > 1e-6 ? norm(d) : a; }),
-                width: fr.map(([, , w], k) => Math.max(0.003, Math.hypot(sn * w / 2, c * H[k]) * Math.PI / m * 1.7) * (one ? 1 : 1 - lock.taper * Math.pow(TS[k], 1.5))) });
+                width: fr.map(([, , w], k) => Math.max(0.003, Math.hypot(sn * w / 2, c * H[k]) * Math.PI / m * 1.7) * (one ? 1 : 1 - lock.taper * Math.pow(TS[k], 1.5)) * (one ? 1 : WIDTH.scale)) });
   }
   const out = [...base, ...dome]; out.thick = H;
   return out;
 }
 
 export function evaluate(lock, col, layers = null) {
-  const taperW = (w, k) => w * (1 - lock.taper * Math.pow(TS[k], 1.5)), rr = rng(seedOf(lock.id));
+  const taperW = (w, k) => w * (1 - lock.taper * Math.pow(TS[k], 1.5)) * WIDTH.scale, rr = rng(seedOf(lock.id));
   const lay = P => rootBend(keepOff(catmull(P, SAMPLES, WARP), col, layers), col, rr);   // a curve: sampled, kept off, its root bent
   if (lock.type === "strand") {
     const pts = lay(lock.pts);
@@ -488,7 +491,7 @@ export function evaluate(lock, col, layers = null) {
     const pts = spine.map((p, k) => { const r = rad(k), [, u, v] = frames[k]; return add(p, add(mul(u, c * r), mul(v, s * r * h))); });
     const kept = keepOff(pts, col, layers);
     out.push({ pts: kept, t: TS, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c * h))); }),
-               width: kept.map((_, k) => { const f = TS[k]; return Math.max(0.003, 2 * Math.PI * rad(k) * arc / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
+               width: kept.map((_, k) => { const f = TS[k]; return Math.max(0.003, 2 * Math.PI * rad(k) * arc / g * 1.8) * (1 - lock.taper * 0.3 * f) * WIDTH.scale; }) });
   }
   out.thick = spine.map((_, k) => 2 * rad(k) * Math.max(h, 1e-3));    // its depth across the scalp: the layer it makes
   return out;

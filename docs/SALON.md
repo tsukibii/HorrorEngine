@@ -144,6 +144,11 @@ Keep this frame) to keep them, as with gravity; Back to before leaves them as ma
 **Covers always lie over all the other hair**, Layer by height on or off: they're laid last, pushed out of a map of
 the hair under them (what lies on the head, as layering counts it). Combing is for later.
 
+## Volume (2026-10-22)
+
+**Thicken** (Volume): every card that many times as wide (the strands' widths, a sheet's and a bundle's cards, a
+dome's), from 0.5 to 3, the guides where they are; on screen and in the bake. Saved as `volume.thicken`.
+
 ## Presets: starting points finished by gravity (2026-10-22)
 
 **Start from** makes a hairstyle laid out rough on purpose, in layers, to be finished by gravity: make it, switch
@@ -268,7 +273,7 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
-  its original mirrored); a bundle line; thickness; the presets (all eight on the head, mirrored, at least 90 % of the
+  its original mirrored); a bundle line; thickness; Thicken (every card twice as wide at 2, the guides unmoved); the presets (all eight on the head, mirrored, at least 90 % of the
   scalp covered, the long cut falling clear of the face, undone); the roots (a strand on the crown leaving
   the scalp at its lift and bending over, flat at Lift 0, the same after gravity); the cover (the parting's Y's previewed at the top hair's length,
   made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly
