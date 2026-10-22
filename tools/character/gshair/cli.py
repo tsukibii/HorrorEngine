@@ -35,7 +35,7 @@ def add_splat(p):
     p.add_argument("--init", type=int, default=40000, help="Gaussians to start from")
     p.add_argument("--orient", type=float, default=0.1, help="the orientation loss's weight (0 turns it off)")
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--refine-poses", action="store_true", help="let the cameras move a little with the splat")
+    p.add_argument("--refine-poses", action="store_true", default=None, help="let the cameras move a little with the splat (the default when no face anchored them)")
     p.add_argument("--max-frames", type=int)
 
 

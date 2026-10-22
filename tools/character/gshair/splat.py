@@ -19,16 +19,20 @@ from .data import Views
 from .raster import orient_feats, project_cov, psnr, quat_to_mat, splat, ssim
 
 
-def hull(views, voxel=0.01, keep=0.85, max_voxels=None, pad=1.3):
-    """voxel centres inside the hair mask of nearly every frame that sees them; the box from the cameras' look-at"""
+def hull_box(views):
+    """the point the cameras look at (least squares on their rays) and their mean distance from it"""
     centres = np.array([(-f["R"].cpu().numpy().T @ f["t"].cpu().numpy()) for f in views.frames], float)
     fwd = np.array([f["R"].cpu().numpy()[2] for f in views.frames], float)
-    # the point the cameras look at: least squares on the rays
     A = np.zeros((3, 3)); b = np.zeros(3)
     for c, d in zip(centres, fwd):
         P = np.eye(3) - np.outer(d, d); A += P; b += P @ c
     look = np.linalg.solve(A + 1e-9 * np.eye(3), b)
-    dist = np.linalg.norm(centres - look, axis=1).mean()
+    return look, float(np.linalg.norm(centres - look, axis=1).mean())
+
+
+def hull(views, voxel=0.01, keep=0.85, max_voxels=None, pad=1.3):
+    """voxel centres inside the hair mask of nearly every frame that sees them; the box from the cameras' look-at"""
+    look, dist = hull_box(views)
     half = 0.45 * dist * pad
     xs = np.arange(-half, half + 1e-9, voxel)
     G = np.stack(np.meshgrid(xs, xs, xs, indexing="ij"), -1).reshape(-1, 3) + look
@@ -164,19 +168,25 @@ def sheet(views, G, path, n=4):
         hue = (np.degrees(np.arctan2(o[..., 1], o[..., 0])) % 360) / 2
         hsv = np.stack([hue, np.clip(np.linalg.norm(o, axis=-1), 0, 1) * 255, acc.cpu().numpy().clip(0, 1) * 255], -1).astype(np.uint8)
         ori = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB).astype(np.float32) / 255
-        row = np.hstack([gt, rg, ori])
-        cv2.putText(row, f"{f['name']} psnr {psnr(img[..., :3], gt if False else f['img'] * f['hair'][..., None], f['region']):.1f}", (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (1, 1, 1), 2)
+        row = (np.clip(np.hstack([gt, rg, ori]), 0, 1) * 255).astype(np.uint8)
+        cv2.putText(row, f"{f['name']} psnr {psnr(img[..., :3], f['img'] * f['hair'][..., None], f['region']):.1f}", (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         tiles.append(row)
-    cv2.imwrite(str(path), cv2.cvtColor((np.vstack(tiles) * 255).astype(np.uint8), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 80])
+    cv2.imwrite(str(path), cv2.cvtColor(np.vstack(tiles), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 80])
 
 
 def run(out, res=540, iters=4000, device=None, voxel=0.01, n_init=40000, seed=0, orient=0.1, densify_every=100, log_every=100,
-        max_frames=None, cap=400000, refine_poses=False):
+        max_frames=None, cap=400000, refine_poses=None):
+    """refine_poses None: the cameras move with the splat when nothing anchored them (a wig's capture, no face)"""
     out = Path(out)
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(seed); rng = np.random.default_rng(seed)
     views = Views(out, res, device, max_frames=max_frames)
+    if refine_poses is None: refine_poses = not views.cap.cameras()["report"].get("anchored", False)
     t0 = time.time()
+    anchored = views.cap.cameras()["report"].get("anchored", False)
+    look0, dist0 = hull_box(views)
+    if not anchored: voxel = voxel * dist0 / 0.9                      # a free world: its unit is the starting pair's baseline; the cameras stood about 0.9 m away
+    voxel = max(voxel, 0.9 * dist0 * 1.3 / 160)                        # never more than 160 voxels a side
     H, look, dist = hull(views, voxel, max_voxels=n_init)
     if len(H) < 50: raise SystemExit(f"the hair's visual hull has only {len(H)} voxels: the masks or the poses are off (poses_sheet.jpg, masks/)")
     H = H + rng.uniform(-voxel / 2, voxel / 2, H.shape)
@@ -187,7 +197,7 @@ def run(out, res=540, iters=4000, device=None, voxel=0.01, n_init=40000, seed=0,
     deltas = {f["name"]: torch.nn.Parameter(torch.zeros(6, device=device)) for f in views.frames} if refine_poses else None
     opt_pose = torch.optim.Adam(list(deltas.values()), lr=1e-4) if deltas else None
     log, hist = [], []
-    rep = dict(hull_voxels=int(len(H)), frames=len(views.frames), heldout=len(views.heldout), device=device, res=[views.W, views.H], look=look.round(4).tolist(), camera_distance=round(extent, 3))
+    rep = dict(hull_voxels=int(len(H)), frames=len(views.frames), heldout=len(views.heldout), device=device, res=[views.W, views.H], look=look.round(4).tolist(), camera_distance=round(extent, 3), refine_poses=bool(refine_poses))
     for it in range(1, iters + 1):
         f = views.sample(rng)
         d = deltas[f["name"]] if (deltas and it > iters // 6) else None

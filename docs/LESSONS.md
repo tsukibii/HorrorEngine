@@ -207,3 +207,17 @@ order inside `cli.py` is the only thing that decides it.
 Green is 120 degrees, so 60 in OpenCV's 0 to 180 hue: a green key written for 30 keyed nothing. And with patterns on
 the floor for the cameras to track by, the largest non-green piece of a frame is the floor, not the wig: keep the
 piece that is big, central and high (area weighted by its distance from the middle and its height in the frame).
+
+## A face's PnP has a mirror solution, and a small reprojection error doesn't rule it out (2026-10-22)
+
+The 468 face points are nearly flat, so PnP has two answers: the camera in front of the face and its mirror behind
+the head, both within a pixel or two at a small image size. EPnP, SQPnP and a RANSAC consensus all landed in the
+mirror with a fine rms, and every chained camera followed it round. OpenCV's iterative solver from its own start
+finds the right one; check it anyway (the camera must sit on the face's side) and never trust the rms alone.
+
+## A synthetic camera must be a proper rotation (2026-10-22)
+
+The check's look-at built its camera rows as right = up x forward, down = right x forward: a left-handed frame
+(determinant -1), a mirror. Every real solver returns proper rotations, so PnP could only land in the mirrored twins
+of such a camera, with a fine reprojection error, and two fixes went into the solver before the truth was checked.
+Check the truth first: a camera's determinant, and the subject's left on the viewer's right.

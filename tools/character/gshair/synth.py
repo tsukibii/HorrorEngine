@@ -12,9 +12,54 @@ from .common import HOME, HeadField, head_frame, jsave, landmarks_on, load_head,
 
 
 def look_at(pos, target, up):
+    """an OpenCV camera (x right, y down, z forward) at pos looking at target: R rows = right, down, forward"""
     f = target - pos; f /= np.linalg.norm(f)
-    r = np.cross(up, f); r /= np.linalg.norm(r)
-    return np.stack([r, np.cross(r, f), f]), None
+    r = np.cross(f, up); r /= np.linalg.norm(r)
+    return np.stack([r, np.cross(f, r), f]), None
+
+
+class Room:
+    """a textured room behind the head: a wall round it (a cylinder, 1.6 m) and a table under it (0.32 m down, to
+    1.3 m out), both painted with random shapes, as a feature matcher sees a real room; ray-cast per pixel"""
+    def __init__(self, C, rng, radius=1.6, table_y=-0.32, table_r=1.3):
+        self.C, self.radius, self.ty, self.tr = C, radius, table_y, table_r
+        self.wall = self.paint(rng, 3072, 768); self.table = self.paint(rng, 1024, 1024)
+
+    @staticmethod
+    def paint(rng, w, h):
+        import cv2
+        img = np.full((h, w, 3), rng.uniform(0.3, 0.7, 3) * 255, np.uint8)
+        for _ in range(w * h // 1500):
+            c = tuple(int(x) for x in rng.uniform(20, 235, 3)); x, y = int(rng.integers(w)), int(rng.integers(h))
+            k = rng.random()
+            if k < 0.4: cv2.rectangle(img, (x, y), (x + int(rng.integers(4, 60)), y + int(rng.integers(4, 60))), c, -1)
+            elif k < 0.7: cv2.circle(img, (x, y), int(rng.integers(2, 25)), c, -1)
+            else: cv2.line(img, (x, y), (x + int(rng.integers(-80, 80)), y + int(rng.integers(-80, 80))), c, int(rng.integers(1, 4)))
+        noise = rng.normal(0, 6, img.shape)
+        return np.clip(cv2.GaussianBlur(img, (0, 0), 0.6).astype(np.float32) + noise, 0, 255) / 255
+
+    def view(self, R, t, K, W, H):
+        import cv2
+        u, v = np.meshgrid(np.arange(W) + 0.5, np.arange(H) + 0.5)
+        d = np.stack([(u - K[2]) / K[0], (v - K[3]) / K[1], np.ones_like(u)], -1) @ R          # rays in the world
+        o = -R.T @ t
+        out = np.zeros((H, W, 3), np.float32)
+        # the table: where the ray goes down to its plane within its radius
+        s = (self.C[1] + self.ty - o[1]) / np.where(np.abs(d[..., 1]) < 1e-9, 1e-9, d[..., 1])
+        hit = o + d * s[..., None]
+        on_table = (s > 0) & (np.hypot(hit[..., 0] - self.C[0], hit[..., 2] - self.C[2]) < self.tr)
+        tx = ((hit[..., 0] - self.C[0]) / self.tr * 0.5 + 0.5) * (self.table.shape[1] - 1); ty = ((hit[..., 2] - self.C[2]) / self.tr * 0.5 + 0.5) * (self.table.shape[0] - 1)
+        tab = cv2.remap(self.table, tx.astype(np.float32), ty.astype(np.float32), cv2.INTER_LINEAR)
+        # the wall: the cylinder round the head's axis
+        ox, oz = o[0] - self.C[0], o[2] - self.C[2]; dx, dz = d[..., 0], d[..., 2]
+        a = dx * dx + dz * dz; b = 2 * (ox * dx + oz * dz); c = ox * ox + oz * oz - self.radius ** 2
+        disc = np.maximum(b * b - 4 * a * c, 0); sw = (-b + np.sqrt(disc)) / (2 * np.maximum(a, 1e-9))
+        hw = o + d * sw[..., None]
+        ang = (np.arctan2(hw[..., 0] - self.C[0], hw[..., 2] - self.C[2]) + np.pi) / (2 * np.pi) * (self.wall.shape[1] - 1)
+        hgt = np.clip((0.9 - (hw[..., 1] - self.C[1])) / 1.8, 0, 1) * (self.wall.shape[0] - 1)
+        wall = cv2.remap(self.wall, ang.astype(np.float32), hgt.astype(np.float32), cv2.INTER_LINEAR)
+        out[:] = wall; out[on_table] = tab[on_table]
+        return out
 
 
 def strands_on(pts, tris, lm, fr, S, field, n, nodes, rng):
@@ -70,28 +115,27 @@ def make(out, n_strands=600, nodes=48, views=36, size=320, seed=0, radius=4e-4, 
     else:
         head_mu = np.zeros((0, 3))
     nd = len(head_mu)
-    n_wall = 40000
-    ang = rng.uniform(0, 2 * np.pi, n_wall); hgt = rng.uniform(-0.8, 0.6, n_wall)
-    wall = C + np.stack([1.6 * np.sin(ang), hgt, 1.6 * np.cos(ang)], 1)
+    nd = len(head_mu); n_wall = 0
     T = lambda a: torch.as_tensor(np.asarray(a), dtype=torch.float32, device=device)
-    MU = T(np.concatenate([mu_h, head_mu, wall])); AX = T(np.concatenate([ax.reshape(-1, 3), np.tile([1, 0, 0], (nd + n_wall, 1))]))
-    R_ = T(np.concatenate([np.full(nh, radius), np.full(nd, 0.0025), np.full(n_wall, 0.008)]))
-    SG = T(np.concatenate([s.reshape(-1) * 0.5, np.full(nd, 0.0025), np.full(n_wall, 0.008)]))
-    OP = T(np.concatenate([np.full(nh, 0.9), np.full(nd, 0.97), np.full(n_wall, 0.9)]))
-    RGB = T(np.concatenate([rgb_h, np.tile([0.80, 0.64, 0.55], (nd, 1)), rng.uniform(0.2, 0.9, (n_wall, 3))]))
-    ISH = T(np.concatenate([np.ones(nh), np.zeros(nd + n_wall)]))[:, None]
+    MU = T(np.concatenate([mu_h, head_mu])); AX = T(np.concatenate([ax.reshape(-1, 3), np.tile([1, 0, 0], (nd, 1))]))
+    R_ = T(np.concatenate([np.full(nh, radius), np.full(nd, 0.0025)]))
+    SG = T(np.concatenate([s.reshape(-1) * 0.5, np.full(nd, 0.0025)]))
+    OP = T(np.concatenate([np.full(nh, 0.9), np.full(nd, 0.97)]))
+    RGB = T(np.concatenate([rgb_h, np.tile([0.80, 0.64, 0.55], (nd, 1))]))
+    ISH = T(np.concatenate([np.ones(nh), np.zeros(nd)]))[:, None]
+    room = Room(C, rng)
     f_px = 1.4 * size; K = [f_px, f_px, size / 2, size / 2]
     names, cams, lms = [], [], {}
     bank = gabor_bank()
     for i in range(views):
         a = 2 * np.pi * i / views
-        pos = C + np.array([0.9 * np.sin(a), 0.12, 0.9 * np.cos(a)])
-        R, _ = look_at(pos, C, fr["U"]); t = -R @ pos
+        pos = C + np.array([0.9 * np.sin(a), 0.18, 0.9 * np.cos(a)])
+        R, _ = look_at(pos, C - fr["U"] * 0.1, fr["U"]); t = -R @ pos
         cam = dict(R=T(R), t=T(t), K=tuple(K), W=size, H=size)
         with torch.no_grad():
-            img, acc, _ = render(MU, AX, R_, SG, OP, torch.cat([RGB, ISH], 1), cam, bg=T([0.75, 0.75, 0.75, 0.0]))
-            _, acc_p, _ = render(MU[: nh + nd], AX[: nh + nd], R_[: nh + nd], SG[: nh + nd], OP[: nh + nd], RGB[: nh + nd], cam)
-        rgb = img[..., :3].clamp(0, 1).cpu().numpy(); hairv = img[..., 3].clamp(0, 1).cpu().numpy()
+            img, acc_p, _ = render(MU, AX, R_, SG, OP, torch.cat([RGB, ISH], 1), cam)
+        bg = room.view(R, t, K, size, size)
+        rgb = np.clip(img[..., :3].cpu().numpy() + (1 - acc_p.cpu().numpy())[..., None] * bg, 0, 1); hairv = img[..., 3].clamp(0, 1).cpu().numpy()
         name = f"{i:03d}"; names.append(name)
         cv2.imwrite(str(out / "frames" / f"{name}.jpg"), cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 95])
         hm = np.clip(hairv / (acc_p.cpu().numpy() + 1e-3), 0, 1)

@@ -50,13 +50,39 @@ def pnp(obj, img, K, px=PNP_PX, min_inliers=MIN_INLIERS):
     return R, t, inl, float(np.sqrt(((p - img[inl]) ** 2).sum(1).mean()))
 
 
+def in_front(R, t, fr):
+    """the camera centre is on the face's side of the head"""
+    return float((-R.T @ t - fr["C"]) @ fr["F"]) > 0
+
+
 def face_poses(cap, head_lm, K, max_rms=8.0):
+    """PnP of the face's 468 points on the character's head, the camera kept in front of the face. A face is nearly
+    flat, so PnP has a mirror solution (the camera behind the head, nearly the same reprojection) that EPnP, SQPnP and
+    RANSAC's consensus fall into; OpenCV's iterative solver from its own start doesn't, and the points that disagree
+    most are dropped once and the pose solved again from there"""
+    import cv2
+    from .common import head_frame
+    fr = head_frame(head_lm)
     out = {}
+    obj = head_lm.astype(np.float64)
     for name, pts in jload(cap.dir / "landmarks.json", {}).items():
-        r = pnp(head_lm, np.asarray(pts, float), K)
-        if r is None: continue
-        R, t, inl, rms = r
-        if rms > max_rms or len(inl) < 200: continue
+        img = np.asarray(pts, np.float64)
+        if len(img) != len(obj): continue
+        ok, rv, tv = cv2.solvePnP(obj, img, Kmat(K), None, flags=cv2.SOLVEPNP_ITERATIVE)
+        if not ok: continue
+        p, z = project_np(obj, rotmat(rv), tv.reshape(3), K)
+        e = np.linalg.norm(p - img, axis=1)
+        inl = np.flatnonzero(e <= max(3 * np.median(e), 2.0))
+        if len(inl) < 200: continue
+        R, t = rotmat(rv), tv.reshape(3)
+        ok, rv2, tv2 = cv2.solvePnP(obj[inl], img[inl], Kmat(K), None, flags=cv2.SOLVEPNP_ITERATIVE)   # again, from scratch, without the worst points
+        if ok:                                                        # (a refinement from a guess can walk to the twin with the points behind the camera)
+            R2, t2 = rotmat(rv2), tv2.reshape(3); p2, z2 = project_np(obj[inl], R2, t2, K)
+            if (z2 > 0).all() and in_front(R2, t2, fr): R, t = R2, t2
+        p, z = project_np(obj[inl], R, t, K)
+        if (z <= 0).any() or not in_front(R, t, fr): continue
+        rms = float(np.sqrt(((p - img[inl]) ** 2).sum(1).mean()))
+        if rms > max_rms: continue
         out[name] = dict(R=R, t=t, rms=rms, inliers=int(len(inl)), source="face")
     return out
 
@@ -86,29 +112,23 @@ def match(desc_a, desc_b, kp_a, kp_b, ratio=0.75):
 
 
 class Tracks:
-    """feature observations joined across frames: a list of {frame: feature index}"""
-    def __init__(self): self.parent = {}
-
-    def find(self, k):
-        while self.parent.get(k, k) != k:
-            self.parent[k] = self.parent.get(self.parent[k], self.parent[k]); k = self.parent[k]
-        return k
-
-    def union(self, a, b):
-        ra, rb = self.find(a), self.find(b)
-        if ra != rb: self.parent[ra] = rb
-
+    """feature observations joined across frames into tracks, each at most one feature per frame: a match joins a
+    feature to an existing track only if the track has nothing in that frame yet (a wrong match can't swallow a
+    whole wall of look-alike dots into one track), and tracks are never merged. A list of {frame: feature index}"""
     def build(self, names, kp, pairs):
-        for (a, b), m in pairs.items():
-            for i, j in m: self.union((a, int(i)), (b, int(j)))
-        tracks = {}
-        for name in names:
-            for i in range(len(kp[name])):
-                if (name, i) not in self.parent and self.find((name, i)) == (name, i): continue
-                r = self.find((name, i))
-                tracks.setdefault(r, {})
-                if name not in tracks[r]: tracks[r][name] = i
-        return [t for t in tracks.values() if len(t) >= 2]
+        order = {n: k for k, n in enumerate(names)}
+        track_of, tracks = {}, []
+        for (a, b) in sorted(pairs, key=lambda ab: (order[ab[1]] - order[ab[0]], order[ab[0]])):
+            for i, j in pairs[(a, b)]:
+                ka, kb = (a, int(i)), (b, int(j))
+                ta, tb = track_of.get(ka), track_of.get(kb)
+                if ta is None and tb is None:
+                    track_of[ka] = track_of[kb] = len(tracks); tracks.append({a: int(i), b: int(j)})
+                elif tb is None and b not in tracks[ta]:
+                    tracks[ta][b] = int(j); track_of[kb] = ta
+                elif ta is None and tb is not None and a not in tracks[tb]:
+                    tracks[tb][a] = int(i); track_of[ka] = tb
+        return [t for t in tracks if len(t) >= 2]
 
 
 def triangulate(obs, poses, kp, K):
@@ -186,7 +206,7 @@ def relative_step(a, b, m, poses, kp, tracks, pts, K, track_of):
     return dict(R=R, t=t, rms=0.0, inliers=int(n), source="step")
 
 
-def chain(cap, poses, kp, desc, K, span=3):
+def chain(cap, poses, kp, desc, K, head_lm=None, span=4, bundle_every=5):
     names = cap.names
     pairs = {}
     for i, a in enumerate(names):
@@ -198,16 +218,20 @@ def chain(cap, poses, kp, desc, K, span=3):
     track_of = {(name, i): ti for ti, obs in enumerate(tracks) for name, i in obs.items()}
     pts, log = {}, []
 
-    def grow_points():
+    def grow_points(again=False):
         for ti, obs in enumerate(tracks):
-            if ti in pts: continue
+            if ti in pts and not again: continue
             X = triangulate(obs, poses, kp, K)
             if X is not None: pts[ti] = X
+            elif again: pts.pop(ti, None)
     grow_points()
-    changed = True
+    changed = True; since_bundle = 0
     while changed:
         changed = False
         for name in [n for n in names if n not in poses]:
+            if since_bundle >= bundle_every:                                # incremental SfM: settle what's posed so far
+                bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=False, max_nfev=20)
+                grow_points(again=True); since_bundle = 0
             obj, img = [], []
             for ti, obs in enumerate(tracks):
                 if ti in pts and name in obs: obj.append(pts[ti]); img.append(kp[name][obs[name]])
@@ -229,12 +253,12 @@ def chain(cap, poses, kp, desc, K, span=3):
                 r = relative_step(best[0], name, best[1], poses, kp, tracks, pts, K, track_of)
                 if r is None: continue
                 poses[name] = r
-            log.append((name, poses[name]["inliers"], poses[name]["source"])); changed = True
+            log.append((name, poses[name]["inliers"], poses[name]["source"])); changed = True; since_bundle += 1
             grow_points()
     return tracks, pts, log
 
 
-def bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=True, max_points=8000, face_weight=2.0):
+def bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=True, max_points=8000, face_weight=5.0, max_nfev=60, drop_px=12.0, loss="huber"):
     """one bundle adjustment: poses, points, the focal; the face points anchor the frames that see it, else the
     first camera and the scale are held"""
     from scipy.optimize import least_squares
@@ -245,12 +269,20 @@ def bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=True, max_point
     tids = sorted(pts, key=lambda t: -len(tracks[t]))[:max_points]
     pi = {t: i for i, t in enumerate(tids)}
     obs = np.array([(ni[name], pi[t], *kp[name][k]) for t in tids for name, k in tracks[t].items() if name in ni], float).reshape(-1, 4)
+    # observations that don't fit the poses as they stand are out (a wrong match, a point behind a camera)
+    keep = np.ones(len(obs), bool)
+    for i in range(len(obs)):
+        f_, j_ = int(obs[i, 0]), int(obs[i, 1]); R, t = poses[names[f_]]["R"], poses[names[f_]]["t"]
+        p, z = project_np(pts[tids[j_]][None], R, t, K)
+        keep[i] = z[0] > 0.05 and np.linalg.norm(p[0] - obs[i, 2:]) < drop_px
+    obs = obs[keep]
+    if len(obs) < 20: return dict(rms_before=None, rms_after=None, focal=K[0], points=0, observations=0, face_observations=0, anchored=False), K[0]
     fobs = []
     if head_lm is not None:
         for name, L in lms.items():
             if name in ni and poses[name]["source"] == "face":
                 L = np.asarray(L, float)
-                fobs += [(ni[name], l, L[l, 0], L[l, 1]) for l in FIRM]
+                fobs += [(ni[name], l, L[l, 0], L[l, 1]) for l in range(len(L))]
     fobs = np.array(fobs, float).reshape(-1, 4)
     anchored = len(fobs) > 0
     nF, nP = len(names), len(tids)
@@ -268,7 +300,7 @@ def bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=True, max_point
         out = np.empty((len(idx), 2))
         for i in np.unique(idx):
             m = idx == i; R = rotmat(cams[i, :3]); c = X[m] @ R.T + cams[i, 3:]
-            z = np.maximum(c[:, 2], 1e-6)
+            z = np.maximum(c[:, 2], 0.05)                                 # a point behind a camera: a bounded, not a huge, residual
             out[m] = np.stack([f * c[:, 0] / z + K[2], f * c[:, 1] / z + K[3]], 1)
         return out
 
@@ -298,7 +330,7 @@ def bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=True, max_point
             for k in range(3): S[at, 6 * gauge[1] + 3 + k] = 1
     if refine_focal: S[:, -1] = 1
     before = float(np.sqrt((resid(x0)[: 2 * len(obs)] ** 2).mean()))
-    r = least_squares(resid, x0, jac_sparsity=S, loss="huber", f_scale=3.0, x_scale="jac", max_nfev=60, verbose=0)
+    r = least_squares(resid, x0, jac_sparsity=S, loss=loss, f_scale=2.0, x_scale="jac", max_nfev=max_nfev, verbose=0)
     cams, P, f = unpack(r.x)
     for n in names:
         i = ni[n]; poses[n]["R"] = rotmat(cams[i, :3]); poses[n]["t"] = cams[i, 3:]
@@ -388,9 +420,16 @@ def run(out, head_lm=None, head_points=None, colmap=None, refine_focal=True, no_
         if not poses: raise SystemExit("--no-chain needs frames that see the face")
     elif len(poses) < len(cap.names):
         kp, desc = features(cap)
-        tracks, pts, log = chain(cap, poses, kp, desc, K)
+        tracks, pts, log = chain(cap, poses, kp, desc, K, head_lm)
         report["chain"] = len(log); report["unposed"] = [n for n in cap.names if n not in poses]
-        ba, f = bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal)
+        # the whole loop at once: first with a loose gate so the frames where the chain's two ends meet pull on each
+        # other, the points triangulated again, then tightly
+        bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal=False, max_nfev=100, drop_px=60.0, loss="linear")   # plain least squares: a robust loss would let the drift stand
+        for ti, obs in enumerate(tracks):
+            X = triangulate(obs, poses, kp, K)
+            if X is not None: pts[ti] = X
+            else: pts.pop(ti, None)
+        ba, f = bundle(cap, poses, tracks, pts, kp, head_lm, K, refine_focal, max_nfev=80, drop_px=8.0)
         report["bundle"] = ba
         if refine_focal: K = [f, f, K[2], K[3]]
     if not poses: raise SystemExit("no frame could be posed")
