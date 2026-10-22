@@ -8,6 +8,7 @@
 // reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); thickness on a strand
 // and a sheet (off by default, the dome's height, its taper); the roots (leaving the scalp at their lift, flat at 0,
 // gravity not flattening them); padding (the scalp covered, along the hair, physics left out, a base group, the bake);
+// the base (baked alone, hidden, Clip blend);
 // the presets (all eight on the head, the scalp covered, the long cut falling clear of the
 // face); the cover (a parting of Y's over the rest, its length the
 // top hair's, falling onto it with friction, kept as shown); the
@@ -443,8 +444,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
       const ph = base.find(l => l.group === "back"); ph.physics = Object.assign({}, s.SP ? {} : {}, { on: true }); s.render(); s.volume.refresh();
       all.withPhysics = s.volume.pad.stats.points; all.expectedPhysics = sumPts(s.volume.baseLocks()); all.physicsOut = !s.volume.baseLocks().includes(ph); ph.physics.on = false;
       // the base: one group ticked
-      const g = s.st.groups.find(g => g.id === "top"); g.base = true; s.render(); s.volume.refresh();
-      all.groupPoints = s.volume.pad.stats.points; all.groupExpected = sumPts(s.st.locks.filter(l => l.group === "top" && !(l.physics && l.physics.on))); g.base = false;
+      const g = s.st.groups.find(g => g.id === "top"); g.base = true; s.dirtyAll(); s.render(); s.volume.refresh();   // (as the ▣ toggle does)
+      all.groupPoints = s.volume.pad.stats.points; all.groupExpected = sumPts(s.st.locks.filter(l => l.group === "top" && !(l.physics && l.physics.on))); g.base = false; s.dirtyAll();
       // in the bake: the still mesh has the padding's cards
       document.querySelector("#hairName").value = "_salontest"; s.render(); s.volume.refresh();
       const on = await s.bake(); V.padding = false; s.render(); const off = await s.bake();
@@ -455,6 +456,35 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (r.points !== r.expected || r.withPhysics !== r.expectedPhysics || !r.physicsOut || r.groupPoints !== r.groupExpected) throw new Error(`what it's made of: ${JSON.stringify(r)}`);
     if (!(r.bakeOn > r.bakeOff) || r.padCards !== r.cards) throw new Error(`the bake: ${JSON.stringify(r)}`);
     console.log(`       the long cut: ${r.cards} padding cards, the scalp covered ${(r.before * 100).toFixed(0)}% -> ${(r.after * 100).toFixed(0)}%, along the hair (mean |cos| ${r.agree.toFixed(2)}), none in the body or over the smooth outside; a physics lock left out; one base group alone; the bake ${r.bakeOff} -> ${r.bakeOn} still vertices`);
+  });
+  await step("the base: baked alone; hidden, it still holds up the strands outside it; Clip blend 0 lets one sink in, 1 lays it on, 0.5 half; the main bake keeps the hidden base", async () => {
+    const r = await ev(async () => { const s = window.__salon, SL = s.SL, C = s.COL, V = s.st.volume;
+      s.presets.apply("w_long"); V.padding = true; V.thickness = 0.5;
+      for (const g of s.st.groups) g.base = true;                       // all of it the base
+      s.st.groups.push({ id: "flourish", name: "Flourish", visible: true });
+      const m = s.st.mirror.on; s.st.mirror.on = false;
+      const f = SL.makeStrand(C.surface([0.02, 0.17, -0.05]), C.surface([0.05, 0.0, -0.12]), C, { width: 0.015 }); SL.hug(f, C);   // on the scalp: inside the base
+      f.group = "flourish"; f.name = "flourish"; s.st.locks.push(f);
+      s.st.mirror.on = m; s.dirtyAll(); s.render(); s.volume.refresh();
+      // how far under the base's outside the flourish sits (its points over the head, past its root)
+      const under = () => { s.dirtyAll(); s.render(); const B = s.volume.base, G = s.EVAL[f.id][0]; let sum = 0, n = 0, max = 0;
+        G.pts.forEach((p, k) => { if (k < 6 || p[1] < C.chin - 0.03) return; const d = SL.sub(p, C.C), R = B.hull.at(SL.norm(d)); if (!R) return; const u = Math.max(0, R + 0.0015 - SL.len(d)); sum += u; n++; max = Math.max(max, u); });
+        return { mean: sum / Math.max(1, n), max, n }; };
+      V.blend = 0; const b0 = under(); V.blend = 1; const b1 = under(); V.blend = 0.5; const bh = under(); V.blend = 1;
+      document.querySelector("#hairName").value = "_salontest";
+      const bb = await s.volume.bakeBase();
+      s.volume.showBase(false); const hid = under(); const shownBase = s.st.groups.filter(g => g.base).some(g => g.visible);
+      const full = await s.bake();
+      return { b0, b1, bh, bb, hid, shownBase, staticV: full.static.vertices };
+    });
+    for (let i = 0; i < 2; i++) await page.keyboard.press("Control+z");
+    await ev(() => { const s = window.__salon; s.presets.apply("w_long"); });
+    await page.keyboard.press("Control+z"); await page.keyboard.press("Control+z");
+    await ev(() => { const s = window.__salon; s.st.volume.padding = false; s.dirtyAll(); s.render(); });
+    if (!(r.b0.mean > 0.002) || r.b1.max > 1e-6 || !(r.bh.mean > r.b0.mean * 0.3 && r.bh.mean < r.b0.mean * 0.7)) throw new Error(`Clip blend: ${JSON.stringify(r)}`);
+    if (!r.bb || !(r.bb.locks > 10) || !(r.bb.padding > 0) || r.hid.max > 1e-6 || r.shownBase || !(r.staticV > r.bb.vertices * 0.5)) throw new Error(`the base: ${JSON.stringify(r)}`);
+    const glb = fs.readFileSync(path.join(ROOT, "Content", "Studio", "Hair", TEST, "salon_base.glb")); if (glb.toString("ascii", 0, 4) !== "glTF") throw new Error("salon_base.glb isn't a glTF");
+    console.log(`       Clip blend 0: the flourish ${(r.b0.mean * 1000).toFixed(1)} mm into the base (mean), 1: on it, 0.5: ${(r.bh.mean * 1000).toFixed(1)} mm; the base baked alone (${r.bb.locks} locks, ${r.bb.padding} padding cards, ${r.bb.vertices} vertices); hidden, it still holds the flourish up; the main bake keeps it (${r.staticV} still vertices)`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

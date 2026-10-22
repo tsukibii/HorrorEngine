@@ -200,6 +200,10 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   duplicate, mirror once (a twin across the seam without the link), delete, reorder; undo/redo (a stack of
   `salon.json` states, cheap).
   **Built 2026-10-22**: groups (new, the active one, show and hide), every lock a row (select, show, hide), name, colour, drawn as, duplicate, mirror once, break the mirror, delete, undo and redo; not yet: reorder, physics on.
+- [x] **Volume** (the user's ask, 2026-10-22): Thicken; the base's padding (its hull closed and smoothed, cards along
+  the hair under it, physics left out, a preview, the check of gaps and clips); the base baked first and hidden, the
+  flourishes sitting on it by Clip blend. **Done 2026-10-22** (docs/SALON.md, Volume). Not yet: padding for what
+  hangs below the chin.
 - [x] **Presets finished by gravity** (the user's ask, 2026-10-22): eight starting points (five women's, long to
   shoulder; three men's) laid out rough in rows to fall into shape; gravity with friction and root hold. **Done
   2026-10-22** (docs/SALON.md, Presets). The gallery with pictures is still to do.

@@ -37,7 +37,7 @@ const st = {
   locks: [],
   scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
   roots: { lift: 40, length: 0.02, vary: 0.4 },                     // how hair comes out of the head (salonlib.js's rootBend)
-  volume: { thicken: 1, padding: false, thickness: 0.4, smooth: 0.5 },   // Thicken; the base's padding (salonpad.js)
+  volume: { thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 },   // Thicken; the base's padding (salonpad.js); Clip blend
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
@@ -363,22 +363,46 @@ function poseLockMesh(l, posed, laid = null) {
 // the shown hair as it's drawn: with Layer by height on, lowest root first, each laid over the ones before; the covers
 // (the finishing helper's hair) always last, over all the rest, layers on or off. list: the shown locks (or their posed
 // copies); fixed: guides already laid for locks that haven't moved. A map id -> guides, or null when nothing's layered.
-const layOrder = list => list.slice().sort((a, b) => (!!a.cover - !!b.cover) || (st.layering ? SL.rootHeight(a) - SL.rootHeight(b) : 0) || (a.id < b.id ? -1 : 1));
+// With a base (Volume: groups ticked as base), the base is laid first, its smooth outside found (salonpad.js's hull, BASE),
+// and every other lock is pushed out of it by Clip blend (1: it lies on the base; 0: it may sink into it).
+const inBase = l => st.groups.some(g => g.base && g.id === l.group);
+const layOrder = list => list.slice().sort((a, b) => (inBase(b) - inBase(a)) || (!!a.cover - !!b.cover) || (st.layering ? SL.rootHeight(a) - SL.rootHeight(b) : 0) || (a.id < b.id ? -1 : 1));
+let BASE = null, BASE_DIRTY = true;
+function baseFrom(laid) {                                              // the base's padding and hull, from its laid guides
+  if (!BASE_DIRTY && BASE) return BASE;
+  const V = st.volume, guides = st.locks.filter(l => inBase(l) && !(l.physics && l.physics.on)).map(l => laid.get(l.id) || EVAL[l.id]).filter(Boolean);
+  BASE = guides.length ? padOf(guides, COL, { thickness: V.thickness, smooth: V.smooth }) : null; BASE_DIRTY = false;
+  return BASE;
+}
+function onBase(hull, under) {                                         // a layer push, then out of the base by Clip blend
+  const k = st.volume.blend ?? 1;
+  return { C: COL.C, push: p => {
+    const q = under ? under.push(p) : p; if (!k || q[1] < COL.chin - 0.03) return q;
+    const d = SL.sub(q, COL.C), r = SL.len(d), R = hull.at(SL.mul(d, 1 / r)); if (!R || r >= R + 0.0015) return q;
+    return SL.mix(q, SL.add(COL.C, SL.mul(d, (R + 0.0015) / r)), k);
+  } };
+}
 function layOut(list, fixed = null) {
-  if (!st.layering && !list.some(l => l.cover)) return null;
+  const based = st.groups.some(g => g.base);
+  if (!st.layering && !list.some(l => l.cover) && !based) return null;
   const layers = new SL.Layers(COL), out = new Map();
+  let hull = null;
   for (const l of layOrder(list)) {
-    const g = fixed && fixed.has(l.id) ? fixed.get(l.id) : SL.evaluate(l, COL, st.layering || l.cover ? layers : null);
+    if (based && !hull && !inBase(l)) { const B = baseFrom(out); hull = B ? B.hull : null; }   // the base is laid: its outside
+    const lay = st.layering || l.cover ? layers : null, push = hull && !inBase(l) ? onBase(hull, lay) : lay;
+    const g = fixed && fixed.has(l.id) ? fixed.get(l.id) : SL.evaluate(l, COL, push);
     layers.add(g); out.set(l.id, g);
   }
+  if (based) baseFrom(out);
   return out;
 }
 const isShown = () => { const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])); return l => l.visible && vis[l.group] !== false; };
 function refreshLocks() {
   const ids = new Set(st.locks.map(l => l.id));
-  if ((st.layering || st.locks.some(l => l.cover)) && DIRTY.size) for (const l of st.locks) DIRTY.add(l.id);   // a change re-lays the layers (all of them: simple, quick enough)
+  if (st.locks.some(l => DIRTY.has(l.id) && inBase(l)) || [...DIRTY].some(id => !ids.has(id))) BASE_DIRTY = true;   // the base changed: its outside again
+  if ((st.layering || st.locks.some(l => l.cover) || (BASE_DIRTY && st.groups.some(g => g.base))) && DIRTY.size) for (const l of st.locks) DIRTY.add(l.id);   // a change re-lays the layers (all of them: simple, quick enough)
   for (const id of Object.keys(MESHES)) if (!ids.has(id) || DIRTY.has(id)) { HAIR.remove(MESHES[id]); MESHES[id].traverse(disposeOf); delete MESHES[id]; delete EVAL[id]; }
-  const shown = isShown(), laid = st.locks.some(l => !MESHES[l.id]) ? layOut(st.locks.filter(shown)) : null;
+  const shown = isShown(), laid = st.locks.some(l => !MESHES[l.id]) ? layOut(st.locks.filter(l => shown(l) || inBase(l))) : null;   // a hidden base still holds the rest up
   const rebuilt = st.locks.some(l => !MESHES[l.id]);
   st.locks.forEach((l, i) => {
     if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, laid && laid.get(l.id) || null); HAIR.add(MESHES[l.id]); }
@@ -557,7 +581,8 @@ function startDrop(only = null) {                                     // only: t
 function showDropFrame(i) {
   if (!DROP) return;
   DROP.frame = Math.max(0, Math.min(DROP.frames.length - 1, i)); DROP.sim.restoreFrame(DROP.frames[DROP.frame]);
-  const posed = dropPoses(), shown = st.locks.filter(isShown());       // laid as the kept hair will be (the still hair as it is)
+  const posed = dropPoses(), shown = st.locks.filter(l => isShown()(l) || inBase(l));   // laid as the kept hair will be (the still hair as it is)
+  if ([...posed.keys()].some(id => inBase(lockById(id)))) BASE_DIRTY = true;           // the base falling: its outside each frame
   const laid = layOut(shown.map(l => posed.get(l.id) || l), new Map(shown.filter(l => !posed.has(l.id) && EVAL[l.id]).map(l => [l.id, EVAL[l.id]])));
   for (const [id, p] of posed) poseLockMesh(lockById(id), p, laid ? laid.get(id) : null);
   const sl = $("#dropFrame"); if (sl) { sl.max = DROP.frames.length - 1; sl.value = DROP.frame; } const o = $("#dropTime"); if (o) o.textContent = `${(DROP.frame / 30).toFixed(1)} s`;
@@ -646,7 +671,7 @@ function liveVertices() {                                               // what 
 let BAKED = null;
 async function bake() {
   const name = $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!name) throw new Error("a name first");
-  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => l.visible && vis[l.group] !== false);
+  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => (l.visible && vis[l.group] !== false) || inBase(l));   // a hidden base is still the hair
   const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, preset: st.head.preset, height: st.head.height } };
   shown.forEach((l, i) => {
     const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = l.color || null;   // the look is in the atlas; a lock's own colour tints it
@@ -1063,14 +1088,31 @@ function baseLocks() {
   const b = baseGroups(), shown = isShown();
   return st.locks.filter(l => !(l.physics && l.physics.on) && (b.length ? b.includes(l.group) : shown(l)));
 }
+// the base alone, baked: its still locks and its padding as one mesh, salon_base.glb; then hide it and add the swinging
+// flourishes, which sit on it by Clip blend
+async function bakeBase() {
+  const name = $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!name) throw new Error("a name first");
+  if (!baseGroups().length) throw new Error("tick the base's groups in Locks first");
+  render(); if (PAD_DIRTY || (st.volume.padding && !PAD)) refreshPadding();
+  const parts = baseLocks().map(l => cardsGeometry((EVAL[l.id] || []).map(G => resampleGuide(G, BAKE_ALONG)), l.color || null));
+  if (st.volume.padding && PAD && PAD.cards.length) parts.push(cardsGeometry(PAD.cards.map(G => resampleGuide(G, BAKE_ALONG)), null));
+  const root = new THREE.Group(); root.name = "hair_base";
+  const m = new THREE.Mesh(geometryOf(parts), bakeMat()); m.name = "hair_base"; root.add(m);
+  const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
+  await fetch(`api/hair/${name}/salon_base.glb`, { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the base wasn't saved"); });
+  const out = { groups: baseGroups(), locks: baseLocks().length, padding: st.volume.padding && PAD ? PAD.cards.length : 0, vertices: m.geometry.attributes.position.count, glb_bytes: glb.byteLength };
+  status(`baked the base: Content/Studio/Hair/${name}/salon_base.glb (${out.locks} locks, ${out.padding} padding cards, ${out.vertices} vertices)`, "ok");
+  return out;
+}
+function showBase(on) { remember(); for (const g of st.groups) if (g.base) g.visible = on; PAD_DIRTY = true; locksPanel(); volumePanel(); draw(); }
 function schedulePadding() { clearTimeout(PAD_TIMER); PAD_TIMER = setTimeout(() => { refreshPadding(); draw(); }, DROP ? 600 : 200); }
 function refreshPadding() {
   PAD_DIRTY = false;
   if (PADM) { HAIR.remove(PADM); PADM.traverse(disposeOf); PADM = null; }
   if (CLIPM) { HAIR.remove(CLIPM); CLIPM.traverse(disposeOf); CLIPM = null; }
   if (!COL) return;
-  const V = st.volume, base = baseLocks().filter(l => EVAL[l.id]);
-  PAD = V.padding && base.length ? padOf(base.map(l => EVAL[l.id]), COL, { thickness: V.thickness, smooth: V.smooth }) : null;
+  const V = st.volume, base = baseLocks().filter(l => EVAL[l.id]), based = st.groups.some(g => g.base);
+  PAD = !V.padding || !base.length ? null : based ? BASE : padOf(base.map(l => EVAL[l.id]), COL, { thickness: V.thickness, smooth: V.smooth });
   if (PAD && PAD.cards.length) { PADM = cardsMesh(PAD.cards); PADM.visible = base.some(isShown()); HAIR.add(PADM); }
   CHECK = checkHair();
   if (V.clips && CHECK.clips.length) {
@@ -1110,14 +1152,22 @@ function checkHair() {
 const checkText = () => CHECK ? `the scalp covered ${(CHECK.before * 100).toFixed(0)}%${PAD ? ` (with the padding's ${CHECK.cards} cards, ${(CHECK.after * 100).toFixed(0)}%)` : ""}; ${CHECK.clips.length} places where locks clip into each other` : "";
 function volumePanel() {
   const box = $("#volbox"); if (!box) return; box.innerHTML = "";
-  const V = st.volume, set = (k, v) => { V[k] = v; SL.setThicken(V.thicken); for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; draw(); };
+  const V = st.volume, set = (k, v) => { V[k] = v; SL.setThicken(V.thicken); for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; BASE_DIRTY = true; draw(); };
   slider(box, "Thicken", 0.5, 3, 0.05, V.thicken, v => set("thicken", v), "every strand's card this many times as wide (1: as made); the strands stay where they are");
   box.append(el("p", { className: "note", textContent: "Padding fills the base out into one smooth mass: its gaps closed, its outside smoothed, cards following the hair under the outer locks. The base: the groups ticked ▣ in Locks (none: all the hair shown); locks with physics are left out. It's baked with the still hair." }));
   const pt = el("div"); tick(pt, "Padding (preview)", !!V.padding, v => { V.padding = v; PAD_DIRTY = true; draw(); }, "show the padding; it's in the bake while this is ticked"); box.append(pt);
-  slider(box, "Thickness", 0, 1, 0.05, V.thickness, v => { V.thickness = v; PAD_DIRTY = true; draw(); }, "how full: 0 just fills the gaps under the outer hair; 1 lifts the mass 1.2 cm and adds deeper layers");
-  slider(box, "Smooth", 0, 1, 0.05, V.smooth, v => { V.smooth = v; PAD_DIRTY = true; draw(); }, "how smooth the mass's outside curve is, and how wide a gap it closes");
+  const rebase = () => { BASE_DIRTY = true; PAD_DIRTY = true; if (st.groups.some(g => g.base)) for (const l of st.locks) DIRTY.add(l.id); draw(); };
+  slider(box, "Thickness", 0, 1, 0.05, V.thickness, v => { V.thickness = v; rebase(); }, "how full: 0 just fills the gaps under the outer hair; 1 lifts the mass 1.2 cm and adds deeper layers");
+  slider(box, "Smooth", 0, 1, 0.05, V.smooth, v => { V.smooth = v; rebase(); }, "how smooth the mass's outside curve is, and how wide a gap it closes");
   const ct = el("div"); tick(ct, "Show where it clips", !!V.clips, v => { V.clips = v; PAD_DIRTY = true; draw(); }, "red dots where two locks' cards cross at the same height"); box.append(ct);
   box.append(Object.assign(el("p", { className: "note", textContent: checkText() }), { id: "volcheck" }));
+  const b = st.groups.filter(g => g.base);
+  box.append(el("h4", { textContent: "The base" }), el("p", { className: "note", textContent: b.length ? `${b.map(g => g.name).join(", ")}: bake it, hide it, and add the flourishes; the rest sits on it by Clip blend.` : "Tick groups ▣ in Locks to make them the base: bake a good base shape first, then hide it and add the flourishes." }));
+  slider(box, "Clip blend", 0, 1, 0.05, V.blend ?? 1, v => { V.blend = v; for (const l of st.locks) if (!inBase(l)) DIRTY.add(l.id); draw(); }, "how the hair outside the base meets it: 1 lies on it, 0 may sink into it, between partly");
+  if (b.length) {
+    const hidden = b.every(g => !g.visible);
+    box.append(el("button", { textContent: "Bake the base", onclick: () => bakeBase().catch(e => status(e.message, "bad")) }), el("button", { textContent: hidden ? "Show the base" : "Hide the base", onclick: () => showBase(hidden) }));
+  }
 }
 function rootsPanel() {
   const box = $("#rootbox"); if (!box) return; box.innerHTML = "";
@@ -1141,7 +1191,7 @@ function locksPanel() {
   const box = $("#locks"); box.innerHTML = "";
   for (const g of st.groups) {
     const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group", onclick: () => { g.visible = !g.visible; locksPanel(); draw(); } });
-    const base = el("span", { className: "eye", textContent: g.base ? "▣" : "□", title: "in the base (the mass the padding fills out, baked first)", onclick: () => { remember(); g.base = !g.base; PAD_DIRTY = true; locksPanel(); draw(); } });
+    const base = el("span", { className: "eye", textContent: g.base ? "▣" : "□", title: "in the base (the mass the padding fills out, baked first)", onclick: () => { remember(); g.base = !g.base; PAD_DIRTY = true; BASE_DIRTY = true; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); volumePanel(); draw(); } });
     const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, eye, base, el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } }));
     box.append(row);
     st.locks.filter(l => l.group === g.id).forEach(l => {
@@ -1233,7 +1283,7 @@ async function load(name) {
   Object.assign(st.reference, o.reference || {});
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
-  st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5 }, o.volume || {}); SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
+  st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 }, o.volume || {}); BASE_DIRTY = true; SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
@@ -1257,7 +1307,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, baseLocks }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
+  PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;

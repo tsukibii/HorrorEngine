@@ -169,6 +169,14 @@ of the scalp the hair covers, without and with the padding (the long cut fallen:
 two locks' cards cross at the same height (they clip); **Show where it clips** marks them with red dots. Saved as
 `volume` (padding, thickness, smooth); a group's `base`.
 
+**The base** (Volume): bake a good base shape first, then add the swinging flourishes over it. Tick the base's groups
+▣ in Locks; with a base, it's laid first and its smooth outside (the padding's hull) is found, and every lock outside
+it, physics ones too, is pushed out of that outside by **Clip blend** (1: it lies on the base; 0: it may sink into it;
+0.5 halfway: on the long cut, a strand on the scalp sits 15.5, 0 and 7.7 mm into it). **Bake the base** writes
+`salon_base.glb`: the base's still locks and its padding as one mesh. **Hide the base** hides its groups and padding;
+the base still holds the rest up, roots still go on the skull (the head is what's picked), and the main Bake keeps
+the hidden base. Saved as `volume.blend`.
+
 ## Presets: starting points finished by gravity (2026-10-22)
 
 **Start from** makes a hairstyle laid out rough on purpose, in layers, to be finished by gravity: make it, switch
@@ -295,7 +303,8 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
   its original mirrored); a bundle line; thickness; Thicken (every card twice as wide at 2, the guides unmoved); padding (the long cut: the scalp
   covered at least as well and 97 % or more, the cards along the nearest hair, none in the body or over the smooth
-  outside, a physics lock left out, one base group alone, more still vertices in the bake); the presets (all eight on the head, mirrored, at least 90 % of the
+  outside, a physics lock left out, one base group alone, more still vertices in the bake); the base (baked alone with its padding, hidden yet holding a strand up, Clip blend
+  0, 1 and 0.5, the main bake keeping it); the presets (all eight on the head, mirrored, at least 90 % of the
   scalp covered, the long cut falling clear of the face, undone); the roots (a strand on the crown leaving
   the scalp at its lift and bending over, flat at Lift 0, the same after gravity); the cover (the parting's Y's previewed at the top hair's length,
   made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly

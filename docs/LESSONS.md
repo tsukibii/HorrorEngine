@@ -323,3 +323,17 @@ the outermost hair is lit however close to the skin it lies.
 SALON's bake step clicked Bake and waited for the status bar to say "baked". A step before it now bakes too, so the
 status already said "baked": the wait returned at once and the step read the earlier step's files (no physics lock, the
 wrong vertex count). A test that waits for a message (a status, a file, a flag) clears it first.
+
+## Restarting a server: kill the process that holds the port (2026-10-22)
+
+After a change to serve.py the salon's server had to restart. The PID found first was a wrapper; killing it left the
+old server running (started before the change) and the new one failed with "Address already in use", while the page
+still answered, from the old code, which refused the new file. Check the running server's start time against the
+change, kill that PID, and start the new one detached; then check the log, not just that the port answers.
+
+## A check that measured nothing is a broken check (2026-10-22)
+
+The Clip blend check counted 0 points over the base three times: first the test strand bowed out above the base (it
+was never in it), then the test subtracted the collider object instead of its centre (NaN everywhere). It failed
+rather than passed only because it asked for a minimum. Every measuring check states how many samples it measured
+and fails on none.

@@ -69,7 +69,7 @@ GSHAIR_RUNS = {}                                       # name -> the running pip
 
 
 HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hair presets for the hair builder (tools/gshair.py preset)
-HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json", "salon.glb"}
+HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
 
