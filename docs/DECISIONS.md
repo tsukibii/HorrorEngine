@@ -16,6 +16,11 @@ The user's answers, newest first. They override the plan, the research and the d
   more than that. **The salon must be layman-easy and fun, like a character creator:** never a blank head (a wall of
   cuts first), the reference in the room, tracing the outline over it as the main act, galleries with pictures for
   the fringe, sidelocks, tails, length, colour; handles and word sliders, no numbers; East Asian styles first.
+- **The video stays the reference, as a locked overlay:** a camera per frame in the head's space; turning the view
+  snaps to the nearest frame, laid half-transparent over the head, so the reference is right from every angle; a
+  video that only reaches the side is mirrored onto the other side. **Mirror is a toggle with a seam:** the middle
+  by default, or the user's own (moved sideways, or drawn on the scalp); hair placed on one side is twinned on the
+  other until the link is broken.
 
 ## 2026-10-22, later (Perm, not DiffLocks; lock points; the look we want)
 

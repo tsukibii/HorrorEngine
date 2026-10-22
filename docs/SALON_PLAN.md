@@ -23,8 +23,12 @@ fine; tedious is not. The rules that follow from that, which every phase below h
    bangs, layered bob, wolf cut, two-block, half-up, low pony, twin tails, bob, long straight, long wavy). One click and
    it's on the head, moving. Everything after is adjustment.
 2. **The reference is in the room.** Drop a photo or a video; it sits beside the view, and can be laid over the head
-   half-transparent, matched to the head's angle (front, side, back; for a video the camera follows the frame). You
-   draw against it.
+   half-transparent, matched to the head's angle. A video is the better reference: it becomes the **locked
+   reference** (below): wherever you turn the head, the frame shot from that angle is laid over it, so the overlay is
+   right from every side, not only front and side. A video that only reaches the side is mirrored onto the other
+   side. Photos are the fallback: front, side and back, each told which it is. You draw against it.
+   **Mirror** is a toggle: with it on, a lock placed on one side of the seam appears on the other too, and stays its
+   twin until you break the link; the seam is the middle of the head by default, or your own.
 3. **Tracing is the main act.** In the front, side and back views you trace the hair's **outline** over the reference
    with a lasso, like tracing on paper; the hair's outer shape stretches to the trace (the locks scale and move so
    their outline matches; the inside follows). Three traces and the rough shape is there. No lock needs touching for
@@ -112,11 +116,28 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
 - [ ] The body as **collision proxies**: the head's radial field, the body's slices (port `body_slices` to JS once,
   in `collide.js`), and a garment proxy when a draped garment is loaded (`api/clothes/<name>/<design>`): a voxel
   occupancy of the garment at 1 cm plus its surface normals, `push(p, gap)` → `[q, moved]` like `headPush`.
-- [ ] The **reference guide**: `python tools/gshair.py hull --out DIR` (new step: the keyed frames' visual hull from
-  the orbit poses as a mesh, marching cubes in numpy or the radial shell of `gshair/wig.py`; no training) → a
-  translucent mesh round the head with an opacity slider and a fit (move, turn, scale, the fit sliders from
-  `gshair.html`). Also the frames themselves: a filmstrip of the orbit, the nearest frame shown beside the view for
-  the current camera angle (the real reference the user draws against).
+- [ ] The **locked reference** (the video as a 3D reference, the user's ask 2026-10-22): the orbit video's frames
+  with a camera per frame **in the head's space**, so that turning the salon's view turns the reference with it.
+  - The backend exists: `gshair.py frames` picks the frames, `masks` finds the face landmarks, `poses` gives a camera
+    per frame (face PnP while the face shows, `--orbit` for the rest and for a faceless mannequin head, where the
+    user marks the front frame and the sweep), and `common.head_frame` + `mhr_scale` put those cameras on the salon
+    head (the face's height sets the scale; a mannequin's "front" frame and the orbit prior set it otherwise). A new
+    step `gshair.py reference --out DIR` writes `reference.json`: per frame its camera (R, t, K) in head space, the
+    frame file, the keyed frame file; nothing trains.
+  - In the salon: **the camera snaps to the frames.** With the reference on, orbiting the view picks the frame whose
+    camera is nearest to where the user is looking and moves the view camera onto it exactly (same position, look
+    and focal); the frame (keyed, so only the hair and head) is drawn as a half-transparent full-screen layer and
+    lines up with the head. The wheel scrubs frames (or orbits as usual with the reference following: ~90 frames
+    over a turn is under 4° between them, so the nearest frame is always close). An opacity slider; a tick to show
+    the unkeyed frame; a filmstrip.
+  - **Partial sweeps**: the user says how far the video goes (a full turn, front to side, front to back); for an
+    angle the video never reached, the frame from the mirrored angle is flipped left-right and its camera
+    reflected across the head's sagittal plane. Photos are the same mechanism with three fixed cameras (front, side,
+    back, the user saying which is which), flipped for the missing side.
+  - **Fit**: move, turn, scale sliders on the reference as a whole (the fit from `gshair.html`), for when the
+    landmark alignment is off or the head is a mannequin; "Glue again" re-fits.
+  - The visual hull (`gshair.py hull`, the keyed frames' hull from the orbit poses as a translucent mesh) stays an
+    optional layer for later; the locked frames are the reference the user draws against.
 - [ ] Load and save `salon.json`; the presets list; `node tools/character/salontest.js`: loads, draws the head, the
   guide fits, a save round trip. `SALON ok`.
 
@@ -145,9 +166,18 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   none), tails (twin, pony, half-up, buns), the length (shoulder, chest, waist), the volume (flat, airy, big), the
   colour (black, dark brown, ash, chestnut, a lighter tip) and the shine (realistic highlights or an anime band).
   Each entry is a small set of locks or a change to the current ones, built from the Asian cuts of `hair.js`.
+- [ ] **Mirror** (a toggle, with a seam): with Mirror on, every lock placed, moved, shaped or deleted on one side of
+  the seam does the same on the other; the twin is a link in `salon.json` (`mirror_of`), kept until "Break the
+  mirror" on a lock or the group. The seam is a plane: **the middle** (the head's sagittal plane from the landmarks)
+  by default; **moved** sideways with a slider when the parting isn't central (a plane parallel to the middle, the
+  user's "own seam"); or **drawn**: two clicks on the scalp set a line and the plane through it and the head's
+  centre, for a parting that isn't straight across. The seam is drawn on the head as a thin line while Mirror is on.
+  Mirrored roots are snapped back to the scalp (reflected across a plane, a root lands within millimetres of the
+  near-symmetric head: pushed to the surface along the normal), guide points reflected, the lock's handedness
+  flipped (a curl's turn too). Tracing with Mirror on traces both sides at once from one half.
 - [ ] **Groups panel**: every lock a row (name, type, visible, colour, physics on, realism); select, hide/show,
-  duplicate, mirror left-right (across the head's X), delete, reorder; undo/redo (a stack of `salon.json` states,
-  cheap).
+  duplicate, mirror once (a twin across the seam without the link), delete, reorder; undo/redo (a stack of
+  `salon.json` states, cheap).
 - [ ] **Shaping on a selected lock**: four brushes as modifiers of the handles, never per strand: comb (drag the
   tips sideways), grow/shrink (length), puff (away from the head), smooth; and sliders: curl (a spiral of a radius
   and turns along the lock), frizz (noise), clump (the guides pulled to the lock's centre line), width, taper. The
@@ -164,7 +194,10 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   fuller with no more hair. A hairline slider (as `hair.js`'s `hairline`).
 - [ ] **Brows and lashes**: presets (straight, arched, thick, thin; natural, long, doll) placed from the landmarks
   (`hair.js` already grows brows and lashes: lift those into lock groups the user can edit like any other).
-- [ ] `salontest.js` grows: a strand, a sheet, a bundle placed by simulated clicks; handles move; hide/show; a mirror;
+- [ ] `salontest.js` grows: a strand, a sheet, a bundle placed by simulated clicks; handles move; hide/show; Mirror on
+  with the middle seam and with a moved seam (a lock placed left appears right, moved together, the link broken);
+  the locked reference: orbiting 90° picks a side frame and the view camera equals its camera; a partial sweep's
+  missing side gets the flipped frame;
   a cap with thickness changes the silhouette; brows and lashes placed; undo. `SALON ok`.
 
 ## Game-grade physics: what is kept and what is dropped (the user's call, 2026-10-22)
@@ -224,8 +257,9 @@ runtime since they ride the guides.
 - [ ] Hair presets: whole heads of locks saved and reloaded onto any body (roots are scalp-relative so they land on a
   different head); the Asian cuts of `hair.js` rebuilt as salon presets (hime, see-through bangs, curtain, layered
   bob, wolf, two-block, half-up, low pony) so a game's cast starts from them.
-- [ ] The reference guide and the splat as **toggleable layers** with opacity; the orbit video's nearest frame beside
-  the view; "match the frame": the camera moved to the orbit frame's angle.
+- [ ] The locked reference, the hull and the splat as **toggleable layers** with opacity; the Reference step asks
+  only three things: drop the file, how far the video turns (a full turn / to the side / to the back), and which
+  frame is the front when there is no face to find it.
 - [ ] docs/SALON.md: the tools, the shortcuts, the data, the checks; the launcher's lines; CLAUDE.md's table row.
 
 ## Phase 5: later, designed for now
