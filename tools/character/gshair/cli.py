@@ -24,7 +24,9 @@ def add_head(p):
 
 def add_masks(p):
     p.add_argument("--key", default="green", help="green (a wig on a green head), hair (a person: MediaPipe), keyed:DIR (keyed PNGs, e.g. CorridorKey's)")
-    p.add_argument("--hue", type=int, default=60, help="the green's hue in OpenCV's 0-180 (pure green, 120 degrees, is 60; backdrops run 50 to 70)")
+    p.add_argument("--hue", type=int, default=60, help="the green's hue in OpenCV's 0-180 (pure green, 120 degrees, is 60; backdrops run 45 to 70; the range is hue-25 to hue+20)")
+    p.add_argument("--sat", type=float, default=0.12, help="green must be at least this saturated (a pale green mannequin: low)")
+    p.add_argument("--val", type=float, default=0.4, help="green must be at least this bright: darker pixels are hair even with green spill on them (a black wig: 0.4; a blonde one: lower)")
 
 
 def add_splat(p):
@@ -37,6 +39,14 @@ def add_splat(p):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--refine-poses", action="store_true", default=None, help="let the cameras move a little with the splat (the default when no face anchored them)")
     p.add_argument("--max-frames", type=int)
+
+
+def add_orbit(p):
+    p.add_argument("--orbit", action="store_true", help="a turntable (a rotating head on a plain backdrop, a MiniMax orbit): cameras on an even circle, no feature matching")
+    p.add_argument("--sweep", type=float, default=360.0, help="--orbit: the degrees the frames cover")
+    p.add_argument("--elevation", type=float, default=0.0, help="--orbit: the camera's angle above eye level, degrees")
+    p.add_argument("--distance", type=float, default=0.9, help="--orbit: the camera's distance, m (a guess)")
+    p.add_argument("--front", type=int, default=0, help="--orbit: the frame (by index) that sees the face from the front")
 
 
 def add_clumps(p):
@@ -54,9 +64,10 @@ def main(argv=None):
     p = sub.add_parser("masks"); add_out(p); add_masks(p); p.add_argument("--res", type=int, default=960)
     p = sub.add_parser("poses"); add_out(p); add_head(p); p.add_argument("--colmap", help="a COLMAP text model folder instead of the chain")
     p.add_argument("--fixed-focal", action="store_true"); p.add_argument("--no-chain", action="store_true", help="only the frames that see the face")
+    add_orbit(p)
     p = sub.add_parser("splat"); add_out(p); add_splat(p)
     p = sub.add_parser("clumps"); add_out(p); add_clumps(p)
-    p = sub.add_parser("run", help="every step from a video"); add_out(p); add_head(p); add_masks(p); add_splat(p); add_clumps(p); p.add_argument("source")
+    p = sub.add_parser("run", help="every step from a video"); add_out(p); add_head(p); add_masks(p); add_orbit(p); add_splat(p); add_clumps(p); p.add_argument("source")
     p.add_argument("--count", type=int, default=90); p.add_argument("--focal35", type=float, default=24.0)
     p.add_argument("--from", dest="from_step", default="frames", choices=STEPS)
     p = sub.add_parser("check"); p.add_argument("--keep", action="store_true"); p.add_argument("--full", action="store_true"); p.add_argument("--out", default=None)
@@ -84,13 +95,14 @@ def main(argv=None):
         todo = STEPS[STEPS.index(a.from_step):]
         out = Path(a.out)
         if "frames" in todo: print(json.dumps(dict(step="frames", frames=len(frames.pick(a.source, out, a.count, 1080, a.focal35).names))), flush=True)
-        if "masks" in todo: print(json.dumps(dict(step="masks", **masks.run(out, a.key, hue=(a.hue - 15, a.hue + 20)))), flush=True)
+        if "masks" in todo: print(json.dumps(dict(step="masks", **masks.run(out, a.key, hue=(a.hue - 25, a.hue + 20), sat=a.sat, val=a.val))), flush=True)
         if "poses" in todo:
             pts, tris, name = common.load_head(a.head, a.body)
             lm = common.landmarks_on(pts, tris, name)
             np.savez_compressed(out / "head.npz", points=pts.astype(np.float32), tris=tris.astype(np.int32), landmarks=lm.astype(np.float32))
             faces = common.jload(out / "masks.json", {}).get("faces", 0)
-            print(json.dumps(dict(step="poses", **poses.run(out, lm if faces else None, pts))), flush=True)
+            orbit = dict(sweep=a.sweep, elevation=a.elevation, distance=a.distance, front=a.front) if a.orbit else None
+            print(json.dumps(dict(step="poses", **poses.run(out, lm if faces else None, pts, orbit=orbit))), flush=True)
         if "splat" in todo:
             print(json.dumps(dict(step="splat", **{k: v for k, v in splat.run(out, a.res, a.iters, a.device, a.voxel, a.init, a.seed, a.orient,
                                                                                    max_frames=a.max_frames, refine_poses=a.refine_poses).items() if k != "log"})), flush=True)

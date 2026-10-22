@@ -55,9 +55,11 @@ def orientation(grey, bank=None):
     return theta.astype(np.float32), conf
 
 
-def green_key(bgr, hue=(45, 80), sat=0.3, val=0.12, keep_largest=True, feather=2.0):
-    """a chroma key: hair = not green. Returns the soft mask (H,W) float32 and the picture with the green spill taken
-    out of the kept pixels (G no higher than the larger of R and B)"""
+def green_key(bgr, hue=(35, 80), sat=0.12, val=0.4, keep_largest=True, feather=2.0):
+    """a chroma key: hair = not green. Green is a hue in the range, saturated above sat and brighter than val: a pale
+    green mannequin keys away (low saturation, bright) while dark hair with green spill on it stays (dark). Returns
+    the soft mask (H,W) float32 and the picture with the green spill taken out of the kept pixels (G no higher than
+    the larger of R and B)"""
     import cv2
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
     h, s, v = hsv[..., 0], hsv[..., 1] / 255.0, hsv[..., 2] / 255.0
@@ -118,7 +120,7 @@ class Segmenters:
         return [[p.x * w, p.y * h] for p in res.face_landmarks[0]] if res.face_landmarks else None
 
 
-def run(out, key="green", res=960, home=HOME, segmenters=None, bank=None, hue=(25, 50)):
+def run(out, key="green", res=960, home=HOME, segmenters=None, bank=None, hue=(35, 80), sat=0.12, val=0.4):
     """every frame's hair mask (and keyed picture), face points and orientation map"""
     import cv2
     cap = Capture(out)
@@ -144,7 +146,7 @@ def run(out, key="green", res=960, home=HOME, segmenters=None, bank=None, hue=(2
             hair = rgba[..., 3].astype(np.float32) / 255; pic = rgba[..., :3]
             cv2.imwrite(str(fk / f"{name}.png"), pic)
         elif key == "green":
-            hair, pic = green_key(bgr, hue)
+            hair, pic = green_key(bgr, hue, sat, val)
             cv2.imwrite(str(fk / f"{name}.png"), pic)
         elif key == "hair":
             hair, person = seg.hair_person(bgr); pic = bgr
@@ -161,6 +163,8 @@ def run(out, key="green", res=960, home=HOME, segmenters=None, bank=None, hue=(2
         np.savez_compressed(cap.orient(name), theta=theta.astype(np.float16), conf=(conf * (hm > 0.3)).astype(np.float16))
         report["hair_px"].append(int((hair > 0.5).sum()))
     jsave(cap.dir / "landmarks.json", lms)
+    for t in (seg.face, seg.hair, seg.person):                        # closed now, not at exit (MediaPipe complains then)
+        if t is not None: t.close()
     report["hair_px"] = dict(min=min(report["hair_px"]), median=int(np.median(report["hair_px"])), max=max(report["hair_px"]))
     report["res"] = res
     jsave(cap.dir / "masks.json", report)
@@ -168,7 +172,7 @@ def run(out, key="green", res=960, home=HOME, segmenters=None, bank=None, hue=(2
 
 
 def main(a):
-    rep = run(a.out, a.key, a.res, hue=(a.hue - 15, a.hue + 20))
+    rep = run(a.out, a.key, a.res, hue=(a.hue - 25, a.hue + 20), sat=a.sat, val=a.val)
     print(json.dumps(rep))
     if rep["hair_px"]["min"] < 500: print("warning: a frame has almost no hair in its mask: look at masks/")
     print("GSHAIR masks ok")

@@ -406,9 +406,33 @@ def align_to(poses, anchors):
     return poses
 
 
-def run(out, head_lm=None, head_points=None, colmap=None, refine_focal=True, no_chain=False):
+def orbit_poses(cap, K, sweep=360.0, elevation=0.0, distance=0.9, front=0):
+    """a turntable: the head at the origin (Y up, facing +Z), the cameras on an even circle round it, frame `front`
+    in front of the face; sweep the degrees the frames cover (360: a full turn with the last frame short of the
+    first), elevation the camera's angle above eye level, distance in metres (a guess: the clay's fit scales it)"""
+    names = cap.names; n = len(names)
+    step = np.radians(sweep) / (n if sweep >= 359 else max(n - 1, 1))
+    out = {}
+    for i, name in enumerate(names):
+        a = (i - front) * step
+        pos = np.array([distance * np.sin(a) * np.cos(np.radians(elevation)), distance * np.sin(np.radians(elevation)), distance * np.cos(a) * np.cos(np.radians(elevation))])
+        f = -pos / np.linalg.norm(pos); r = np.cross(f, [0, 1, 0]); r /= np.linalg.norm(r); d = np.cross(f, r)
+        R = np.stack([r, d, f])
+        out[name] = dict(R=R, t=-R @ pos, rms=0.0, inliers=0, source="orbit")
+    return out
+
+
+def run(out, head_lm=None, head_points=None, colmap=None, refine_focal=True, no_chain=False, orbit=None):
     cap = Capture(out)
     K = list(cap.meta["K"])
+    if orbit is not None:
+        poses = orbit_poses(cap, K, **orbit)
+        frames = [dict(name=n, R=poses[n]["R"], t=poses[n]["t"], rms=0.0, inliers=0, source="orbit", K=K) for n in cap.names]
+        report = dict(frames=len(frames), posed=len(frames), anchored=False, orbit=orbit, look=[0, 0, 0], camera_distance=orbit.get("distance", 0.9),
+                      down=[0, -1, 0], forward_first=frames[0]["R"][2].round(4).tolist(), sweep_deg=dict(min=0, max=round(orbit.get("sweep", 360))))
+        cap.save_cameras(frames, report)
+        sheet(cap, frames, K, cap.dir / "poses_sheet.jpg")
+        return report
     poses = face_poses(cap, head_lm, K) if head_lm is not None else {}
     report = dict(frames=len(cap.names), face=len(poses))
     pts = None
@@ -455,8 +479,10 @@ def main(a):
     lm = landmarks_on(pts, tris, name)
     np.savez_compressed(Path(a.out) / "head.npz", points=pts.astype(np.float32), tris=tris.astype(np.int32), landmarks=lm.astype(np.float32))
     faces = jload(Path(a.out) / "masks.json", {}).get("faces", 0)
-    rep = run(a.out, lm if faces else None, pts, a.colmap, not a.fixed_focal, a.no_chain)
+    orbit = dict(sweep=a.sweep, elevation=a.elevation, distance=a.distance, front=a.front) if a.orbit else None
+    rep = run(a.out, lm if faces else None, pts, a.colmap, not a.fixed_focal, a.no_chain, orbit)
     print(json.dumps(rep))
     if rep["posed"] < rep["frames"]: print(f"warning: {rep['frames'] - rep['posed']} frames unposed (left out)")
-    if not rep["anchored"]: print("no face seen: the world is the first camera's; clumps.py fits it onto the head (adjust on the page)")
+    if rep.get("orbit"): print("an orbit: cameras on an even circle round the head, to be refined with the splat; the clay's fit finishes the scale on the page")
+    elif not rep["anchored"]: print("no face seen: the world is the first camera's; clumps.py fits it onto the head (adjust on the page)")
     print("GSHAIR poses ok")
