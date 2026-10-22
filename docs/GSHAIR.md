@@ -58,6 +58,37 @@ The shading on the page is the paper's: the UE4 approximation of Marschner (R, T
 Karis 2016) plus its local scattering term, with how deep a Gaussian sits in the hair standing in for the light's
 transmittance. The splat's colours keep the capture's light: film flat, and the page's light adds the game's.
 
+## The hair builder (2026-10-22)
+
+The user's call after the first real capture: the tool makes the splat and hands over a kit to shape it by hand,
+Arcane-style stylised realism with the Gaussians as the reference, instead of fitting hair automatically.
+`http://127.0.0.1:8793/hairbuilder.html` (the Studio's server; the launcher's Pages):
+
+- **Presets** in `Content/Studio/Hair/<name>/` (tracked: `python tools/gshair.py preset --out DIR --name NAME` from a
+  capture, or the page's Source section): `gaussians.bin` the raw splat (14 floats a Gaussian: position, scales,
+  rotation, colour, opacity), `hair.json` the cage, the pieces, the head, the look; `edit.bin` the Gaussians as
+  edited (paint, erase, baked deformations: the raw splat stays); `bake.json` + `bake.bin` the bake. The MiniMax wig
+  is the first preset (`minimax_wig`).
+- **The cage** (`lattice.js`): a box round the hair, cut by planes (across, front from back, side from side) into
+  pieces. Each piece is its own small lattice (two columns each way, `Bend rows` + 1 rows down); every Gaussian
+  belongs to the piece it sits in and keeps its place in that piece's nodes, so the GPU puts it back from the nodes
+  each frame (`hairsplat.js`). Pieces are independent: the bottom dragged moves the bottom only. A piece is selected
+  from the list or by a double click on it, dragged in the view, stretched, turned, bent (its bottom row moved),
+  reset, or boxed in (cuts at its edges). Changing the box or the cuts bakes what the pieces did into the hair first.
+- **The brush**: paint adds Gaussians round the point under the cursor (the nearby ones' colour and size, or a colour
+  of yours), erase removes them; the depth comes from the Gaussians under the cursor, so it paints on the hair.
+- **Jiggle** per piece: its four columns of nodes become wig.js chains pinned at the top (gravity, hold, damping per
+  piece), kept off the head. Everything else is rigid with the head.
+- **The head**: none, a base MHR body (feminine, masculine, average) at a height, or a character's weights.
+- **Save** writes the preset; **Bake** adds `bake.json` (the pieces: nodes, rest, physics) and `bake.bin` (every
+  Gaussian's piece and place) for the Studio's runtime to load later.
+- **For the animation refiner later**: a piece's physics is data in `hair.json`; the runtime takes a pose override
+  per piece (`__builder.setOverride(id, nodes)`, applied after the physics each frame), and `animation.clips` in the
+  preset is reserved for per-clip overrides and keyed poses.
+- **The check**: `node tools/character/hairbuildertest.js [preset]`: HAIRBUILDER ok (the server running; a preset
+  loads over a base head, a cut, a drag that moves one piece only, a stretch, paint and erase, jiggle through a
+  shake, save with a bake and reload).
+
 ## The first real capture (2026-10-22)
 
 A MiniMax orbit of a wig on a green bust (640 px, 124 frames, 5 s). What it taught:

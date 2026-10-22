@@ -101,7 +101,9 @@ def main():
     if a.cmd == "page":
         print(f"python tools/character/serve.py, then http://127.0.0.1:8793/gshair.html" + (f"?name={a.name}" if a.name else "")); return
     argv = [a.cmd] + rest
-    if a.name:
+    if a.name and a.cmd == "preset":
+        argv += ["--name", a.name]
+    elif a.name:
         out = ROOT / "Content" / "Studio" / "People" / a.name / "gshair"
         if "--out" not in rest: argv += ["--out", str(out)]
     if a.help: argv.append("--help")

@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hair builder</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0 12px 0 0; color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
+  #view { position: relative; min-height: 0; } #view canvas { display: block; width: 100%; height: 100%; }
+  aside { overflow: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 10px 12px; }
+  h4 { margin: 12px 0 6px; color: var(--gold); font-size: 12px; } .row { display: grid; grid-template-columns: 92px 1fr 44px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row span { color: var(--dim); } input[type=range] { width: 100%; } output { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  button { background: #26272b; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; margin: 2px 0; } button.on { border-color: var(--gold); color: var(--gold); }
+  button.piece { font-variant-numeric: tabular-nums; } button.jig { border-color: #5a8ad9; }
+  input[type=text], select { background: #0e0f11; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  .note { color: var(--dim); margin: 4px 0 8px; } #stats { position: absolute; left: 8px; bottom: 6px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #log { font: 11px monospace; white-space: pre-wrap; color: var(--dim); max-height: 120px; overflow: auto; background: #0e0f11; padding: 4px; }
+  details { margin: 6px 0; } summary { cursor: pointer; color: var(--gold); }
+</style></head>
+<body>
+<header><h1>Hair builder</h1>
+  <label>Preset <select id="preset"></select></label> <button id="load">Load</button>
+  <span>Head:</span> <button data-m="still" class="on">still</button><button data-m="turn">turn</button><button data-m="nod">nod</button><button data-m="shake">shake</button><button data-m="walk">walk</button>
+  <span id="status"></span></header>
+<main>
+  <div id="view"><div id="stats"></div></div>
+  <aside>
+    <p class="note">A hair splat shaped by hand: a box round it, cut into pieces you move, stretch, bend and set jiggling; paint and erase in 3D; a head under it. Drag in the view to orbit; with a piece selected, drag it; with a brush on, paint.</p>
+    <details><summary>Source: a video to a splat</summary><div id="source"></div></details>
+    <h4>Cage</h4><div id="cage"></div>
+    <h4>Pieces</h4><div id="pieces"></div><div id="pieceBox"></div>
+    <h4>Brush</h4><div id="brush"></div>
+    <h4>Head</h4><div id="headbox"></div>
+    <h4>Look</h4><div id="look"></div>
+    <h4>Save</h4><div id="save"></div>
+  </aside>
+</main>
+<script type="module">
+import * as THREE from "three";
+import { HairSplat, FLOATS } from "./hairsplat.js";
+import { Lattice } from "./lattice.js";
+import { Wig } from "./wig.js";
+import { headPush } from "./splats.js";
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+const status = (t, cls = "") => { const s = $("#status"); s.textContent = t; s.className = cls; };
+const api = async (u, body, raw = false) => { const r = await fetch(u, body === undefined ? {} : { method: "POST", body: raw ? body : JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j; };
+const slider = (box, label, min, max, step, val, fn, title = "") => {
+  const inp = el("input", { type: "range", min, max, step, value: val, title }), out = el("output", { textContent: val });
+  inp.oninput = () => { out.textContent = inp.value; fn(+inp.value); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: label, title }), inp, out));
+  return v => { inp.value = v; out.textContent = v; };
+};
+
+// ---- the scene -------------------------------------------------------------------------------------------------------
+const view = $("#view");
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setPixelRatio(devicePixelRatio);
+renderer.setClearColor(0x1b1c20); view.append(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
+const key = new THREE.DirectionalLight(0xffffff, 2.2); scene.add(key); scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig);
+const CAGE = new THREE.Group(); rig.add(CAGE);
+let HAIR = null, LAT = null, PRESET = null, HJSON = null, HEAD = null, HEADFIELD = null, WIGS = {}, MOVE = "still", TOP = 1.7, SCALE = 1;
+const st = { look: { roughness: 0.35, shift: 0.035, specular: 0.5, ambient: 0.3, sigma: 1, opacity: 1, az: 35, elev: 40 },
+             brush: { mode: "off", radius: 0.03, count: 10, colour: "hair", size: 1 }, selected: null, head: { kind: "base", preset: "feminine", height: 1.7, character: null },
+             cage: { box: { centre: [0, 1.5, 0], size: [0.3, 0.5, 0.3] }, cuts: { x: [], y: [], z: [] }, segments: 2 }, override: {} };   // override: the animation refiner's keyed poses, per piece (reserved)
+function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (HAIR) HAIR.viewport(w * devicePixelRatio, h * devicePixelRatio); }
+new ResizeObserver(resize).observe(view);
+let orbit = { yaw: 0.3, pitch: 0.1, dist: 0.9 };
+function placeCamera() {
+  const c = new THREE.Vector3(0, TOP - 0.12 * SCALE, 0);
+  camera.position.set(c.x + orbit.dist * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), c.y + orbit.dist * Math.sin(orbit.pitch), c.z + orbit.dist * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
+  camera.lookAt(c); camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+}
+function lightDir() { const a = st.look.az * Math.PI / 180, e = st.look.elev * Math.PI / 180; return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)); }
+function moveRig(t) {
+  const m = new THREE.Matrix4(), piv = new THREE.Vector3(0, TOP - 0.25 * SCALE, 0), w = 2 * Math.PI, e = new THREE.Euler(), p = new THREE.Vector3();
+  if (MOVE === "turn") e.set(0, 0.7 * Math.sin(w * 0.5 * t), 0);
+  else if (MOVE === "nod") e.set(0.3 * Math.sin(w * 0.7 * t), 0, 0);
+  else if (MOVE === "shake") e.set(0, 0.45 * Math.sin(w * 1.8 * t), 0);
+  else if (MOVE === "walk") { e.set(0.04 * Math.sin(w * 1.8 * t), 0.08 * Math.sin(w * 0.9 * t), 0.05 * Math.sin(w * 0.9 * t)); p.set(0, 0.03 * Math.abs(Math.sin(w * 0.9 * t)), 0); }
+  m.makeTranslation(-piv.x, -piv.y, -piv.z).premultiply(new THREE.Matrix4().makeRotationFromEuler(e)).premultiply(new THREE.Matrix4().makeTranslation(piv.x + p.x, piv.y + p.y, piv.z + p.z));
+  rig.matrix.copy(m); rig.matrixWorldNeedsUpdate = true;
+}
+for (const b of document.querySelectorAll("header button[data-m]")) b.onclick = () => { MOVE = b.dataset.m; for (const o of document.querySelectorAll("header button[data-m]")) o.classList.toggle("on", o === b); };
+
+// ---- the head: a base MHR body from the packed mesh, or a character's weights -----------------------------------------
+let MHR = null;
+async function loadMHR() {
+  if (MHR) return MHR;
+  const buf = await (await fetch("bodies/MHR_lod1.bin")).arrayBuffer();
+  const hl = new DataView(buf).getUint32(0, true), H = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl)));
+  const N = H.points, base = new Float32Array(buf, H.points_at, N * 3), tris = new Uint32Array(buf, H.triangles_at, H.triangles * 3);
+  const h16 = new Uint16Array(buf, H.shapes_at, H.shapes * N * 3);
+  const presets = (await (await fetch("bodies/MHR_presets.json")).json()).presets || {};
+  MHR = { H, N, base, tris, h16, presets };
+  return MHR;
+}
+const f16 = x => { const s = x & 0x8000 ? -1 : 1, e = (x >> 10) & 31, f = x & 1023; return s * (e === 0 ? f * 5.960464477539063e-8 : e === 31 ? 0 : Math.pow(2, e - 15) * (1 + f / 1024)); };
+async function buildHead() {
+  if (HEAD) { rig.remove(HEAD); HEAD.geometry.dispose(); HEAD = null; HEADFIELD = null; }
+  if (st.head.kind === "none") { TOP = 1.7; SCALE = 1; return; }
+  const m = await loadMHR();
+  let weights = m.presets[st.head.preset] || [];
+  if (st.head.kind === "character" && st.head.character) {
+    const c = await api(`api/people/${encodeURIComponent(st.head.character)}`).catch(() => ({}));
+    weights = c.weights || c.shape || weights; if (c.height) st.head.height = c.height;
+  }
+  const N = m.N, P = Float32Array.from(m.base);
+  weights.forEach((a, k) => { if (!a) return; const o = k * N * 3; for (let i = 0; i < N * 3; i++) P[i] += a * f16(m.h16[o + i]); });
+  let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+  SCALE = st.head.height / (hi - lo); TOP = st.head.height;
+  for (let i = 0; i < P.length; i += 3) { P[i] *= SCALE; P[i + 1] = (P[i + 1] - lo) * SCALE; P[i + 2] *= SCALE; }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(new THREE.BufferAttribute(m.tris, 1)); g.computeVertexNormals();
+  HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x8c8a86, roughness: 0.8 })); rig.add(HEAD);
+  // the head as a radial field for the jiggle's collision (the skull's part of the body)
+  const C = [0, 0, 0]; let n = 0;
+  for (let i = 0; i < P.length; i += 3) if (P[i + 1] > TOP - 0.2 * SCALE) { C[0] += P[i]; C[1] += P[i + 1]; C[2] += P[i + 2]; n++; }
+  C[0] /= n; C[1] /= n; C[2] /= n;
+  const EL = 32, AZ = 64, R = Array.from({ length: EL }, () => new Array(AZ).fill(0));
+  for (let i = 0; i < P.length; i += 3) {
+    const d = [P[i] - C[0], P[i + 1] - C[1], P[i + 2] - C[2]], r = Math.hypot(...d); if (r > 0.18 * SCALE) continue;
+    const el_ = Math.asin(Math.max(-1, Math.min(1, d[1] / (r || 1e-9)))), az = Math.atan2(d[0], d[2]);
+    const a = Math.min(AZ - 1, Math.floor((az + Math.PI) / (2 * Math.PI) * AZ)), e = Math.min(EL - 1, Math.floor((el_ + Math.PI / 2) / Math.PI * EL));
+    R[e][a] = Math.max(R[e][a], r);
+  }
+  for (let pass = 0; pass < 3; pass++) for (let e = 0; e < EL; e++) for (let a = 0; a < AZ; a++) if (!R[e][a]) R[e][a] = Math.max(R[e][(a + 1) % AZ], R[e][(a + AZ - 1) % AZ], R[Math.min(EL - 1, e + 1)][a], R[Math.max(0, e - 1)][a]);
+  HEADFIELD = { C, X: [1, 0, 0], U: [0, 1, 0], F: [0, 0, 1], radii: R, body: null };
+}
+
+// ---- the hair: a preset loaded, the cage, the pieces ------------------------------------------------------------------
+async function loadPreset(name) {
+  status("loading…");
+  const h = await api(`api/hair/${encodeURIComponent(name)}/hair.json?v=${Date.now()}`).catch(e => { status(`no preset ${name}: ${e.message}`, "bad"); return null; });
+  if (!h) return false;
+  const file = (h.paint && h.paint.edited) ? h.paint.edited : h.gaussians.file;
+  const bin = await (await fetch(`api/hair/${encodeURIComponent(name)}/${file}?v=${Date.now()}`)).arrayBuffer();
+  PRESET = name; HJSON = h;
+  st.cage = { box: h.cage.box, cuts: Object.assign({ x: [], y: [], z: [] }, h.cage.cuts), segments: h.cage.segments || 2, pieces: h.cage.pieces || {}, nodes: h.cage.nodes || null };
+  Object.assign(st.look, h.look || {}); for (const k in lookSet) lookSet[k](st.look[k]);
+  Object.assign(st.head, h.head || {}); headSet();
+  await buildHead();
+  buildHair(new Float32Array(bin));
+  $("#saveName").value = name;
+  history.replaceState(null, "", `?preset=${encodeURIComponent(name)}`);
+  status(`${HAIR.n} Gaussians in ${LAT.pieces.length} piece${LAT.pieces.length > 1 ? "s" : ""}`, "ok");
+  return true;
+}
+function buildHair(data) {
+  if (HAIR) { rig.remove(HAIR.mesh); HAIR.dispose(); HAIR = null; }
+  LAT = new Lattice(st.cage);
+  HAIR = new HairSplat(data, LAT); rig.add(HAIR.mesh); resize();
+  for (const k in st.look) applyLook(k, st.look[k]);
+  st.selected = null; rebuildJiggle(); listPieces(); drawCage();
+}
+// the cage's lines: every piece's box from its nodes, the selected one in gold
+function drawCage() {
+  while (CAGE.children.length) { const c = CAGE.children.pop(); c.geometry.dispose(); c.material.dispose(); }
+  if (!LAT) return;
+  for (const p of LAT.pieces) {
+    const n = p.rows, pos = [];
+    const at = (r, c) => [p.nodes[(r * 4 + c) * 3], p.nodes[(r * 4 + c) * 3 + 1], p.nodes[(r * 4 + c) * 3 + 2]];
+    for (let r = 0; r < n; r++) for (const [a, b] of [[0, 1], [1, 3], [3, 2], [2, 0]]) pos.push(...at(r, a), ...at(r, b));
+    for (let r = 0; r + 1 < n; r++) for (let c = 0; c < 4; c++) pos.push(...at(r, c), ...at(r + 1, c));
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    const line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: p.id === st.selected ? 0xd9a441 : (p.settings.jiggle ? 0x5a8ad9 : 0x55575c), transparent: true, opacity: p.id === st.selected ? 1 : 0.5 }));
+    line.userData.piece = p.id; CAGE.add(line);
+  }
+}
+function updateCageLines() {                            // the nodes moved: the lines follow (cheap: a few hundred floats)
+  for (const line of CAGE.children) {
+    const p = LAT.byId[line.userData.piece], a = line.geometry.attributes.position.array; let w = 0;
+    const at = (r, c) => [p.nodes[(r * 4 + c) * 3], p.nodes[(r * 4 + c) * 3 + 1], p.nodes[(r * 4 + c) * 3 + 2]];
+    for (let r = 0; r < p.rows; r++) for (const [x, y] of [[0, 1], [1, 3], [3, 2], [2, 0]]) { a.set(at(r, x), w); a.set(at(r, y), w + 3); w += 6; }
+    for (let r = 0; r + 1 < p.rows; r++) for (let c = 0; c < 4; c++) { a.set(at(r, c), w); a.set(at(r + 1, c), w + 3); w += 6; }
+    line.geometry.attributes.position.needsUpdate = true;
+  }
+}
+function select(id) { st.selected = id; listPieces(); drawCage(); if (HAIR) HAIR.updateNodes(id); pieceBox(); }
+function listPieces() {
+  const box = $("#pieces"); box.replaceChildren();
+  if (!LAT) return;
+  for (const p of LAT.pieces) {
+    const b = el("button", { className: "piece" + (p.id === st.selected ? " on" : "") + (p.settings.jiggle ? " jig" : ""), textContent: (p.settings.name || p.id) + ` (${p.count})`, title: "select; drag it in the view" });
+    b.onclick = () => select(p.id === st.selected ? null : p.id); box.append(b);
+  }
+}
+
+// ---- the cage's controls ---------------------------------------------------------------------------------------------
+{
+  const box = $("#cage"), cageSet = {};
+  const num = (label, get, set, min, max, step, title) => cageSet[label] = slider(box, label, min, max, step, get(), v => { set(v); rebuildCage(); }, title);
+  const b = st.cage.box;
+  num("Centre x", () => b.centre[0], v => { st.cage.box.centre[0] = v; }, -0.3, 0.3, 0.005); num("Centre y", () => b.centre[1], v => { st.cage.box.centre[1] = v; }, 1.0, 2.0, 0.005);
+  num("Centre z", () => b.centre[2], v => { st.cage.box.centre[2] = v; }, -0.3, 0.3, 0.005);
+  num("Width", () => b.size[0], v => { st.cage.box.size[0] = v; }, 0.05, 0.8, 0.005); num("Height", () => b.size[1], v => { st.cage.box.size[1] = v; }, 0.05, 1.0, 0.005); num("Depth", () => b.size[2], v => { st.cage.box.size[2] = v; }, 0.05, 0.8, 0.005);
+  const fit = el("button", { textContent: "Fit the box to the hair" });
+  fit.onclick = () => { if (!HAIR) return; const P = HAIR.positions(), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9]; for (let i = 0; i < P.length; i += 3) { if (!HAIR.alive[i / 3]) continue; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i + a]); hi[a] = Math.max(hi[a], P[i + a]); } }
+    st.cage.box = { centre: [0, 1, 2].map(a => (lo[a] + hi[a]) / 2), size: [0, 1, 2].map(a => hi[a] - lo[a] + 0.02) }; syncCage(); rebuildCage(); };
+  const cutY = el("input", { type: "range", min: 0.05, max: 0.95, step: 0.05, value: 0.5, title: "where across the height (0 the bottom)" }), addY = el("button", { textContent: "Cut across (horizontal)" });
+  const cutZ = el("input", { type: "range", min: 0.05, max: 0.95, step: 0.05, value: 0.5, title: "where from the back (0) to the front (1)" }), addZ = el("button", { textContent: "Cut front from back" });
+  const cutX = el("input", { type: "range", min: 0.05, max: 0.95, step: 0.05, value: 0.5, title: "where from the right (0) to the left (1)" }), addX = el("button", { textContent: "Cut side from side" });
+  addY.onclick = () => { st.cage.cuts.y.push(+cutY.value); rebuildCage(); }; addZ.onclick = () => { st.cage.cuts.z.push(+cutZ.value); rebuildCage(); }; addX.onclick = () => { st.cage.cuts.x.push(+cutX.value); rebuildCage(); };
+  const cutsOut = el("div", { className: "note" });
+  const clear = el("button", { textContent: "No cuts" }); clear.onclick = () => { st.cage.cuts = { x: [], y: [], z: [] }; rebuildCage(); };
+  cageSet.segments = slider(box, "Bend rows", 1, 6, 1, st.cage.segments, v => { st.cage.segments = v; rebuildCage(); }, "Rows of nodes down each piece: more bends and jiggles finer.");
+  box.append(fit, el("div", { className: "row" }, el("span", { textContent: "Across" }), cutY, addY), el("div", { className: "row" }, el("span", { textContent: "Front/back" }), cutZ, addZ),
+             el("div", { className: "row" }, el("span", { textContent: "Side/side" }), cutX, addX), cutsOut, clear);
+  window.syncCage = () => { const b = st.cage.box; cageSet["Centre x"](b.centre[0]); cageSet["Centre y"](b.centre[1]); cageSet["Centre z"](b.centre[2]); cageSet.Width(b.size[0]); cageSet.Height(b.size[1]); cageSet.Depth(b.size[2]); cageSet.segments(st.cage.segments); };
+  window.rebuildCage = () => {                        // a new cage: what the pieces did so far is baked into the hair first
+    if (!HAIR) return;
+    const moved = LAT.pieces.some(p => p.nodes.some((v, i) => Math.abs(v - p.rest[i]) > 1e-6));
+    if (moved) HAIR.bake();
+    const keep = {}; for (const p of LAT.pieces) keep[p.id] = p.settings;
+    st.cage.pieces = keep; st.cage.nodes = null;
+    cutsOut.textContent = `cuts: across ${st.cage.cuts.y.join(", ") || "none"}; front/back ${st.cage.cuts.z.join(", ") || "none"}; side ${st.cage.cuts.x.join(", ") || "none"}`;
+    buildHair(HAIR.data);
+  };
+}
+
+// ---- a piece's controls ----------------------------------------------------------------------------------------------
+function pieceBox() {
+  const box = $("#pieceBox"); box.replaceChildren();
+  if (!LAT || !st.selected) { box.append(el("p", { className: "note", textContent: "Select a piece to move it (drag in the view), stretch, turn, bend and jiggle it." })); return; }
+  const p = LAT.byId[st.selected];
+  const name = el("input", { type: "text", value: p.settings.name || "", placeholder: p.id }); name.onchange = () => { p.settings.name = name.value.trim(); listPieces(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Name" }), name, el("span")));
+  const last = { x: 1, y: 1, z: 1, yaw: 0, pitch: 0, roll: 0, bx: 0, by: 0, bz: 0 };
+  const rel = (label, k, min, max, step, fn, title) => slider(box, label, min, max, step, last[k], v => { fn(v - last[k], v / (last[k] || 1)); last[k] = v; HAIR.updateNodes(st.selected); updateCageLines(); }, title);
+  rel("Stretch x", "x", 0.3, 3, 0.02, (d, r) => LAT.scalePiece(p.id, [r, 1, 1]), "Wider or narrower."); rel("Stretch y", "y", 0.3, 3, 0.02, (d, r) => LAT.scalePiece(p.id, [1, r, 1]), "Longer or shorter.");
+  rel("Stretch z", "z", 0.3, 3, 0.02, (d, r) => LAT.scalePiece(p.id, [1, 1, r]), "Deeper or flatter.");
+  rel("Turn", "yaw", -90, 90, 1, d => LAT.rotatePiece(p.id, d * Math.PI / 180, 0, 0)); rel("Tip", "pitch", -90, 90, 1, d => LAT.rotatePiece(p.id, 0, d * Math.PI / 180, 0)); rel("Tilt", "roll", -90, 90, 1, d => LAT.rotatePiece(p.id, 0, 0, d * Math.PI / 180));
+  rel("Bend x", "bx", -0.2, 0.2, 0.005, d => LAT.moveRow(p.id, p.rows - 1, [d, 0, 0]), "The bottom row moved sideways: a bend."); rel("Bend y", "by", -0.2, 0.2, 0.005, d => LAT.moveRow(p.id, p.rows - 1, [0, d, 0]), "The bottom row up or down.");
+  rel("Bend z", "bz", -0.2, 0.2, 0.005, d => LAT.moveRow(p.id, p.rows - 1, [0, 0, d]), "The bottom row forward or back.");
+  const jig = el("button", { textContent: p.settings.jiggle ? "Jiggle: on" : "Jiggle: off", className: p.settings.jiggle ? "on" : "" });
+  jig.onclick = () => { p.settings.jiggle = !p.settings.jiggle; rebuildJiggle(); listPieces(); drawCage(); pieceBox(); };
+  box.append(jig);
+  if (p.settings.jiggle) {
+    slider(box, "Gravity", 0, 2, 0.05, p.settings.gravity, v => { p.settings.gravity = v; }); slider(box, "Hold", 0.02, 1, 0.01, p.settings.hold, v => { p.settings.hold = v; }, "How firmly it keeps its shape.");
+    slider(box, "Damping", 0.9, 0.995, 0.005, p.settings.damping, v => { p.settings.damping = v; });
+  }
+  const reset = el("button", { textContent: "Reset this piece" }); reset.onclick = () => { LAT.reset(p.id); rebuildJiggle(); HAIR.updateNodes(st.selected); updateCageLines(); pieceBox(); };
+  const dup = el("button", { textContent: "Box in this piece (a new cut round it)", title: "cuts the cage at this piece's edges so neighbours split off" });
+  dup.onclick = () => { const b = st.cage.box, lo = b.centre.map((c, i) => c - b.size[i] / 2); const f = a => [(p.min[a] - lo[a]) / b.size[a], (p.max[a] - lo[a]) / b.size[a]]; for (const [ax, i] of [["x", 0], ["y", 1], ["z", 2]]) for (const c of f(i)) if (c > 0.02 && c < 0.98 && !st.cage.cuts[ax].some(v => Math.abs(v - c) < 0.02)) st.cage.cuts[ax].push(+c.toFixed(3)); rebuildCage(); };
+  box.append(" ", reset, el("br"), dup);
+}
+
+// ---- the jiggle: wig.js chains on the columns of the pieces that jiggle; a pose override hook for the refiner --------
+function rebuildJiggle() {
+  WIGS = {};
+  if (!LAT) return;
+  const push = HEADFIELD ? headPush(HEADFIELD) : (p => [p, false]);
+  for (const p of LAT.pieces) {
+    if (!p.settings.jiggle) continue;
+    const chains = LAT.chains().filter(c => c.piece === p.id).map(c => ({ pts: c.pts, pin: c.pin, bang: false, tail: false, spin: null }));
+    WIGS[p.id] = new Wig(chains, push, HEADFIELD ? HEADFIELD.C : [0, TOP - 0.1, 0], SCALE, Math.random, 1);
+  }
+}
+function stepJiggle(dt) {
+  const M = rig.matrix.elements, Minv = rig.matrix.clone().invert().elements;
+  const inv = (x, y, z) => [Minv[0] * x + Minv[4] * y + Minv[8] * z + Minv[12], Minv[1] * x + Minv[5] * y + Minv[9] * z + Minv[13], Minv[2] * x + Minv[6] * y + Minv[10] * z + Minv[14]];
+  let any = false;
+  for (const id in WIGS) {
+    const p = LAT.byId[id], w = WIGS[id];
+    w.step(dt, M, Minv, { gravity: p.settings.gravity, hold: p.settings.hold, damping: p.settings.damping, iterations: 4 });
+    for (let c = 0; c < 4; c++) { const at = w.chains[c].at; for (let r = 0; r < p.rows; r++) { const q = inv(w.P[(at + r) * 3], w.P[(at + r) * 3 + 1], w.P[(at + r) * 3 + 2]); p.nodes.set(q, (r * 4 + c) * 3); } }
+    if (st.override[id]) p.nodes.set(st.override[id]);   // the refiner's keyed pose for this piece, when it has one
+    any = true;
+  }
+  if (any) { HAIR.updateNodes(st.selected); updateCageLines(); }
+}
+
+// ---- the brush: paint and erase where the cursor meets the hair ------------------------------------------------------
+{
+  const box = $("#brush");
+  const modes = {};
+  for (const m of ["off", "paint", "erase"]) { modes[m] = el("button", { textContent: m, className: m === "off" ? "on" : "" }); modes[m].onclick = () => { st.brush.mode = m; for (const k in modes) modes[k].classList.toggle("on", k === m); }; }
+  box.append(modes.off, modes.paint, modes.erase);
+  slider(box, "Radius", 0.005, 0.1, 0.005, st.brush.radius, v => { st.brush.radius = v; }, "m");
+  slider(box, "Amount", 1, 60, 1, st.brush.count, v => { st.brush.count = v; }, "Gaussians per dab when painting.");
+  slider(box, "Size", 0.3, 3, 0.1, st.brush.size, v => { st.brush.size = v; }, "The painted Gaussians' size against the hair's.");
+  const col = el("input", { type: "color", value: "#2a1d17" }), fromHair = el("button", { textContent: "Colour from the hair", className: "on" });
+  fromHair.onclick = () => { st.brush.colour = st.brush.colour === "hair" ? col.value : "hair"; fromHair.classList.toggle("on", st.brush.colour === "hair"); };
+  col.oninput = () => { st.brush.colour = col.value; fromHair.classList.remove("on"); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, fromHair));
+}
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function brushAt(clientX, clientY) {                   // the 3D point under the cursor on the hair (the nearby Gaussians' median depth), in the rig's frame
+  if (!HAIR) return null;
+  const r = renderer.domElement.getBoundingClientRect(); ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+  const P = HAIR.positions(), M = rig.matrixWorld, pr = new THREE.Vector3(), hits = [];
+  const px = st.brush.radius / orbit.dist * camera.projectionMatrix.elements[5];   // the radius in NDC, roughly
+  for (let i = 0; i < HAIR.n; i++) {
+    if (!HAIR.alive[i]) continue;
+    pr.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]).applyMatrix4(M).project(camera);
+    if (pr.z > 1) continue;
+    if (Math.hypot(pr.x - ndc.x, (pr.y - ndc.y) / camera.aspect * camera.aspect) < Math.max(px, 0.02)) hits.push([i, pr.z]);
+  }
+  if (!hits.length) return null;
+  hits.sort((a, b) => a[1] - b[1]);
+  const mid = hits[Math.floor(hits.length / 2)];
+  const q = new THREE.Vector3(ndc.x, ndc.y, mid[1]).unproject(camera).applyMatrix4(rig.matrixWorld.clone().invert());
+  return { point: [q.x, q.y, q.z], nearest: mid[0], hits: hits.map(h => h[0]) };
+}
+function dab(clientX, clientY) {
+  const b = brushAt(clientX, clientY); if (!b) return;
+  const P = HAIR.positions(), R = st.brush.radius, near = [];
+  for (const i of b.hits) { const d = Math.hypot(P[i * 3] - b.point[0], P[i * 3 + 1] - b.point[1], P[i * 3 + 2] - b.point[2]); if (d < R) near.push(i); }
+  if (st.brush.mode === "erase") { if (near.length) HAIR.erase(near); return; }
+  const src = near.length ? near : [b.nearest], recs = [];
+  for (let k = 0; k < st.brush.count; k++) {
+    const s = src[Math.floor(Math.random() * src.length)], o = s * FLOATS, rec = Array.from(HAIR.data.subarray(o, o + FLOATS));
+    const u = () => (Math.random() + Math.random() + Math.random() - 1.5) * R;
+    rec[0] = b.point[0] + u(); rec[1] = b.point[1] + u(); rec[2] = b.point[2] + u();
+    rec[3] *= st.brush.size; rec[4] *= st.brush.size; rec[5] *= st.brush.size;
+    if (st.brush.colour !== "hair") { const c = new THREE.Color(st.brush.colour); rec[10] = c.r; rec[11] = c.g; rec[12] = c.b; }
+    rec[13] = Math.max(rec[13], 0.6);
+    recs.push(...rec);
+  }
+  // painted in the rig's frame as the hair stands now: baked into the piece's rest so the new ones ride with it
+  HAIR.add(recs);
+}
+
+// ---- pointer: orbit, drag a piece, or brush ---------------------------------------------------------------------------
+let drag = null;
+renderer.domElement.onpointerdown = e => {
+  if (st.brush.mode !== "off" && HAIR) { drag = { brush: true }; dab(e.clientX, e.clientY); return; }
+  if (st.selected && HAIR) {                        // on the selected piece: drag it in the view plane
+    const b = brushAt(e.clientX, e.clientY);
+    if (b && LAT.pieces[HAIR.piece[b.nearest]].id === st.selected) { drag = { piece: st.selected, x: e.clientX, y: e.clientY, depth: b.point }; return; }
+  }
+  drag = { orbit: true, x: e.clientX, y: e.clientY };
+};
+window.onpointerup = () => { drag = null; };
+window.onpointermove = e => {
+  if (!drag) return;
+  if (drag.brush) { dab(e.clientX, e.clientY); return; }
+  if (drag.piece) {
+    const r = renderer.domElement.getBoundingClientRect();
+    const dist = new THREE.Vector3(...drag.depth).applyMatrix4(rig.matrixWorld).sub(camera.position).length();
+    const perPx = 2 * dist * Math.tan(camera.fov * Math.PI / 360) / r.height;
+    const dx = (e.clientX - drag.x) * perPx, dy = -(e.clientY - drag.y) * perPx;
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+    const d = right.multiplyScalar(dx).add(up.multiplyScalar(dy)).applyMatrix3(new THREE.Matrix3().setFromMatrix4(rig.matrixWorld).invert());
+    LAT.movePiece(drag.piece, [d.x, d.y, d.z]); if (WIGS[drag.piece]) rebuildJiggle();
+    HAIR.updateNodes(st.selected); updateCageLines(); drag.x = e.clientX; drag.y = e.clientY; return;
+  }
+  orbit.yaw -= (e.clientX - drag.x) * 0.006; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag.y) * 0.006)); drag.x = e.clientX; drag.y = e.clientY;
+};
+renderer.domElement.onwheel = e => { orbit.dist = Math.max(0.3, Math.min(3, orbit.dist * (1 + e.deltaY * 0.001))); e.preventDefault(); };
+renderer.domElement.ondblclick = e => { const b = brushAt(e.clientX, e.clientY); if (b) select(LAT.pieces[HAIR.piece[b.nearest]].id); };
+
+// ---- the head's controls, the look, saving ---------------------------------------------------------------------------
+const headSel = el("select"), chars = el("select");
+for (const [v, t] of [["none", "no head"], ["base", "a base body"], ["character", "a character"]]) headSel.append(el("option", { value: v, textContent: t }));
+const presetSel = el("select"); for (const p of ["feminine", "masculine", "average"]) presetSel.append(el("option", { value: p, textContent: p }));
+headSel.onchange = () => { st.head.kind = headSel.value; buildHead().then(() => { rebuildJiggle(); }); };
+presetSel.onchange = () => { st.head.preset = presetSel.value; buildHead().then(rebuildJiggle); };
+chars.onchange = () => { st.head.character = chars.value; st.head.kind = "character"; headSel.value = "character"; buildHead().then(rebuildJiggle); };
+const heightSet = slider($("#headbox"), "Height", 1.4, 2.0, 0.01, st.head.height, v => { st.head.height = v; buildHead().then(rebuildJiggle); });
+$("#headbox").prepend(el("div", { className: "row" }, el("span", { textContent: "Head" }), headSel, el("span")), el("div", { className: "row" }, el("span", { textContent: "Base" }), presetSel, el("span")), el("div", { className: "row" }, el("span", { textContent: "Character" }), chars, el("span")));
+function headSet() { headSel.value = st.head.kind; presetSel.value = st.head.preset; heightSet(st.head.height); if (st.head.character) chars.value = st.head.character; }
+api("api/people").then(r => { chars.append(el("option", { value: "", textContent: "—" })); for (const p of r.people) chars.append(el("option", { value: p.name, textContent: p.name })); }).catch(() => {});
+const lookSet = {};
+function applyLook(k, v) { if (!HAIR) return; if (k === "sigma") HAIR.set("uSigma", v); else if (k === "opacity") HAIR.set("uOpacity", v); else if (k !== "az" && k !== "elev") HAIR.set(k, v); }
+for (const [k, label, min, max, step, title] of [["roughness", "Roughness", 0.1, 1, 0.01, "low: glossy"], ["shift", "Shift", 0, 0.1, 0.005, ""], ["specular", "Specular", 0, 1.5, 0.05, ""], ["ambient", "Ambient", 0, 1, 0.02, ""],
+    ["az", "Light turn", -180, 180, 5, ""], ["elev", "Light height", -20, 85, 5, ""], ["sigma", "Splat size", 0.4, 2.5, 0.05, ""], ["opacity", "Opacity", 0.2, 2, 0.05, ""]])
+  lookSet[k] = slider($("#look"), label, min, max, step, st.look[k], v => { st.look[k] = v; applyLook(k, v); }, title);
+{
+  const box = $("#save"), name = el("input", { type: "text", id: "saveName", placeholder: "preset name" }), save = el("button", { textContent: "Save" }), bake = el("button", { textContent: "Bake" }), out = el("div", { className: "note" });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Name" }), name, el("span")), save, " ", bake, out);
+  window.savePreset = async (bakeToo = false) => {
+    if (!HAIR) return status("load a preset first", "bad");
+    const n = name.value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!n) return status("a name", "bad");
+    status("saving…");
+    try {
+      const h = { ...(HJSON || {}), name: n, cage: LAT.toJSON(), head: { ...st.head }, look: { ...st.look },
+                  paint: { edited: "edit.bin", count: HAIR.n, about: "the Gaussians as edited (painted, erased, baked deformations); gaussians.bin stays the raw splat" },
+                  animation: (HJSON && HJSON.animation) || { clips: {} } };
+      if (n !== PRESET) { h.source = { ...(h.source || {}), from_preset: PRESET }; await api(`api/hair/${n}/gaussians.bin`, new Blob([HAIR.data]), true); }
+      await api(`api/hair/${n}/edit.bin`, new Blob([HAIR.data]), true);
+      await api(`api/hair/${n}/hair.json`, h);
+      if (bakeToo) {
+        const per = new Float32Array(HAIR.n * 4);
+        for (let i = 0; i < HAIR.n; i++) { per[i * 4] = HAIR.piece[i]; per[i * 4 + 1] = HAIR.uvw[i * 3]; per[i * 4 + 2] = HAIR.uvw[i * 3 + 1]; per[i * 4 + 3] = HAIR.uvw[i * 3 + 2]; }
+        await api(`api/hair/${n}/bake.bin`, new Blob([per]), true);
+        await api(`api/hair/${n}/bake.json`, { about: "the hair baked for the Studio's runtime: the pieces (nodes, physics), every Gaussian's piece and place (bake.bin: piece, u, v, w), the Gaussians (edit.bin)",
+          gaussians: "edit.bin", count: HAIR.n, pieces: LAT.pieces.map(p => ({ id: p.id, index: LAT.pieces.indexOf(p), rows: p.rows, nodes: Array.from(p.nodes, v => +v.toFixed(5)), rest: Array.from(p.rest, v => +v.toFixed(5)), settings: p.settings, count: p.count })),
+          head: st.head, look: st.look, animation: { clips: {} } });
+      }
+      PRESET = n; HJSON = h; status(`saved ${n}${bakeToo ? " and baked" : ""}: ${HAIR.n} Gaussians, ${LAT.pieces.length} pieces`, "ok"); out.textContent = `Content/Studio/Hair/${n}/`; await listPresets();
+    } catch (e) { status(e.message, "bad"); }
+  };
+  save.onclick = () => savePreset(false); bake.onclick = () => savePreset(true);
+}
+
+// ---- the source: a video to a splat through tools/gshair.py -------------------------------------------------------------
+{
+  const box = $("#source"), src = el("input", { type: "text", placeholder: "/path/to/video.mp4 or a folder of pictures", style: "width: 100%" }), who = el("input", { type: "text", placeholder: "capture name", value: "wig" });
+  const keySel = el("select"); for (const k of ["green", "hair"]) keySel.append(el("option", { value: k, textContent: k === "green" ? "green screen" : "a person (MediaPipe)" }));
+  const orbitChk = el("input", { type: "checkbox", checked: true }), run = el("button", { textContent: "Run" }), mk = el("button", { textContent: "Make a preset of it" }), log = el("div", { id: "log" });
+  const opts = { iters: 4000, res: 540, count: 90, elevation: 0, hue: 60, val: 0.4 };
+  box.append(el("p", { className: "note", textContent: "A video of a wig on a green head (or a person), keyed, posed and splatted on this machine, sealed off the network. A turntable or an AI orbit: tick orbit." }),
+             src, el("div", { className: "row" }, el("span", { textContent: "Name" }), who, el("span")), el("div", { className: "row" }, el("span", { textContent: "Key" }), keySel, el("span")),
+             el("div", { className: "row" }, el("span", { textContent: "Orbit" }), orbitChk, el("span")));
+  for (const [k, label, min, max, step] of [["iters", "Iterations", 200, 30000, 100], ["res", "Size (px)", 256, 1080, 4], ["count", "Frames", 30, 200, 10], ["elevation", "Camera height°", -30, 60, 1], ["hue", "Green hue", 30, 90, 1], ["val", "Hair darker than", 0.1, 0.9, 0.05]])
+    slider(box, label, min, max, step, opts[k], v => { opts[k] = v; });
+  box.append(run, " ", mk, log);
+  let poll = null;
+  run.onclick = async () => {
+    const n = who.value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!n || !src.value.trim()) return status("a video and a name", "bad");
+    try { await api(`api/gshair/${n}/run`, { source: src.value.trim(), key: keySel.value, orbit: orbitChk.checked, ...opts }); status("running… (the log below)"); }
+    catch (e) { return status(e.message, "bad"); }
+    clearInterval(poll);
+    poll = setInterval(async () => { const s = await api(`api/gshair/${n}/status`).catch(() => null); if (!s) return; log.textContent = s.log; log.scrollTop = log.scrollHeight; if (!s.running) { clearInterval(poll); status(s.exit === 0 ? "the splat is made: Make a preset of it" : `the run stopped (exit ${s.exit})`, s.exit === 0 ? "ok" : "bad"); } }, 3000);
+  };
+  mk.onclick = async () => {
+    const n = who.value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!n) return status("a name", "bad");
+    try { const r = await api(`api/gshair/${n}/preset`, { preset: n }); status(`preset ${r.name}: ${r.gaussians} Gaussians`, "ok"); await listPresets(); $("#preset").value = r.name; await loadPreset(r.name); }
+    catch (e) { status(e.message, "bad"); }
+  };
+}
+async function listPresets() {
+  const sel = $("#preset"), cur = sel.value; sel.replaceChildren();
+  const r = await api("api/hair").catch(() => ({ presets: [] }));
+  for (const p of r.presets) sel.append(el("option", { value: p.name, textContent: `${p.name} (${p.gaussians})` }));
+  if (cur) sel.value = cur;
+}
+$("#load").onclick = () => loadPreset($("#preset").value);
+
+// ---- the loop --------------------------------------------------------------------------------------------------------
+let last = performance.now(), acc = 0, frames = 0, fpsAt = last, fps = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  moveRig(now / 1000); placeCamera();
+  key.position.copy(lightDir()).multiplyScalar(3).add(new THREE.Vector3(0, TOP, 0));
+  if (HAIR) {
+    acc += dt; let n = 0;
+    while (acc >= 1 / 60 && n < 3) { stepJiggle(1 / 60); acc -= 1 / 60; n++; }
+    if (acc > 0.2) acc = 0;
+    HAIR.light(lightDir()); HAIR.mesh.updateMatrixWorld(); HAIR.sort(camera);
+  }
+  renderer.render(scene, camera);
+  if (++frames >= 30) { fps = Math.round(frames * 1000 / (now - fpsAt)); frames = 0; fpsAt = now; if (HAIR) $("#stats").textContent = `${HAIR.n} Gaussians, ${LAT.pieces.length} pieces, ${Object.keys(WIGS).length} jiggling, ${fps} fps`; }
+}
+requestAnimationFrame(frame);
+await listPresets();
+const first = new URLSearchParams(location.search).get("preset");
+if (first) { $("#preset").value = first; loadPreset(first); }
+window.__builder = { st, get hair() { return HAIR; }, get lattice() { return LAT; }, get ready() { return !!HAIR; }, loadPreset, select, rebuildCage, rebuildJiggle, dab, brushAt, savePreset, canvas: renderer.domElement, rig, motion: m => { MOVE = m; },
+  view: (yaw, pitch, dist) => { orbit = { yaw, pitch, dist }; }, get wigs() { return WIGS; }, setOverride: (id, nodes) => { st.override[id] = nodes; } };   // setOverride: the animation refiner's hook
+</script>
+</body></html>

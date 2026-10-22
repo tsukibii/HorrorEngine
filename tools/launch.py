@@ -36,6 +36,7 @@ TOOLS = [
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
     ("Pages", "Character Studio (body, face from pictures, expressions)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
     ("Pages", "Hair splat on clay (a wig's splat glued to jiggling clumps)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/gshair.html"}),
+    ("Pages", "Hair builder (shape a hair splat by hand: cage, cuts, paint, jiggle)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/hairbuilder.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
