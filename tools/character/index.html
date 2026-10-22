@@ -484,7 +484,7 @@ if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
 const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
 const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
-const STUDIO = new StudioView({ renderer, scene, hide: [floor] });   // tools/shared/studioview.js: a white studio, an HDR, a key light with shadows   // the body and all it wears: the head motion moves it
+const STUDIO = new StudioView({ renderer, scene, hide: [floor], floorY: 0 });   // tools/shared/studioview.js: a white studio, an HDR, a key light with shadows   // the body and all it wears: the head motion moves it
 let EYES_IN = false;
 let SCALE = 1, TOP = 1.7;
 function computeBody() {                               // RAW: MHR with the weights, unscaled (what the face fit sees)
