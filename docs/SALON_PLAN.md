@@ -128,7 +128,9 @@ The hair is for a game: a few locks jiggle with the head's motion, wind nudges t
 **Kept:** one or two guide chains per lock (3 to 5 points), verlet as `wig.js` does it now (root pinned to the body,
 gravity, a hold toward the drawn shape, damping, 4 constraint passes a frame), ribbons and strands riding the guides
 on the GPU; jiggle **opt-in per lock** with one slider (stiff, soft, floppy presets), everything else rigid with the
-head; wind as one direction, a strength and a gust noise on the free points of jiggling locks with a per-lock weight;
+head; wind as a rustle, not a direction: a small random sway with no bias, a strength and a tempo, on the free points of
+jiggling locks with a per-lock weight (the hair bounces a little either way, like a bush, and you can't tell where it
+blows from);
 a push-out against the proxies every frame then the length pass, and a one-off settle of the rest shape when the body
 or the clothes change. Budget: 40 locks, about 300 simulated points, one push-out per point per frame: nothing.
 
@@ -145,8 +147,9 @@ runtime since they ride the guides.
 - [ ] **Physics per lock** (`physics.on`, off by default): the lock's one or two guides become wig.js chains of 3 to
   5 points (pinned at the root, the sheet's root line pinned along it), gravity, hold to the drawn shape, damping, from
   one `jiggle` slider (stiff, soft, floppy presets), and the push-out against the head field, the body slices and the
-  garment proxy, then the length pass. No bending springs, no fake root, no substeps. Wind: one direction, a strength
-  and a gust noise on the free points, a per-lock weight. The head motion test (turn, nod, shake, walk) as in the
+  garment proxy, then the length pass. No bending springs, no fake root, no substeps. Wind: a rustle, not a
+  direction: each jiggling lock's free points get a small random sway (smooth noise per lock and per point, zero on
+  average, no side it comes from) with a strength and a tempo, and a per-lock weight. The head motion test (turn, nod, shake, walk) as in the
   Studio. Locks without physics are rigid with the head. The strands and ribbons follow the guides (already how
   `strands.js` works).
 - [ ] **Never clip**: on every edit and every frame, every guide point pushed out of the proxies by a gap (2 mm, a
@@ -177,7 +180,7 @@ runtime since they ride the guides.
 
 - [ ] The animation refiner: play a clip on the character, adjust a lock's physics per clip, lock a pose at a frame
   (`animation.clips[clip].locks[id] = {physics, keys: [{frame, points}]}`), scrub.
-- [ ] Wind and a hand (the player's) as forces on the chains.
+- [ ] A hand (the player's) and a passing body as pushes on the chains (the rustle is already Phase 3).
 - [ ] A groom export for Unreal (Alembic through Blender's module, `tools/retarget.py`'s route) if the humans ever
   go back there.
 
