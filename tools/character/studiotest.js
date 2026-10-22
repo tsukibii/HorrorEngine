@@ -5,7 +5,7 @@
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
 // skin takes over the body with the photo on the face through its mask, and its features change the picture; pants are made to the body and worn;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
-// the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in for DiffLocks') batched into clumps,
+// the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup, python tools/garment.py setup, python tools/retarget.py setup   (once)
@@ -145,7 +145,7 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("strand hair: strands from elsewhere batched into clumps, rebuilt on the GPU from guide chains, off the body, through a shake", async () => {
-    // a stand-in for DiffLocks' output (no GPU here): dense strands grown by hair.js on this body, 32 points each
+    // a stand-in for strands made elsewhere: dense strands grown by hair.js on this body, 32 points each
     const pts = await page.evaluate(async () => {
       const H = await import("./hair.js"), b = window.__body;
       const r = H.grow(b.POS, b.TRIS, b.lmk, b.scale, { style: "long", cards: 3000, guidesOnly: true });

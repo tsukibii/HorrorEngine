@@ -1,4 +1,4 @@
-"""Hair batched the way anime games do it: tens of thousands of strands (DiffLocks' about 100k, fitted by hair_fit.py)
+"""Hair batched the way anime games do it: tens of thousands of strands (fitted by hair_fit.py)
 grouped into a few hundred clumps; each clump is one guide, a chain of joints, and only the chains get physics. Every
 strand rides its clump: each of its points is kept as an offset in its guide's frame at the same distance from the
 root, so the strands are rebuilt from the moving chains on the GPU and nothing per strand is simulated. numpy only.
@@ -72,9 +72,9 @@ def frames(G, out_from):
 
 
 def colour(mat):
-    """a base colour from DiffLocks' melanin and redness (Blender's Principled Hair absorption, seen through about a
+    """a base colour from a melanin and a redness (Blender's Principled Hair absorption, seen through about a
     strand's width), and the root darkening"""
-    m = float(mat.get("melanin", 0.85)); r = float(mat.get("redness", 0.15))     # without DiffLocks' guess: dark brown
+    m = float(mat.get("melanin", 0.85)); r = float(mat.get("redness", 0.15))     # without a guess: dark brown
     q = -np.log(max(1 - m, 1e-4))
     sigma = q * (1 - r) * np.array([0.506, 0.841, 1.653]) + q * r * np.array([0.343, 0.733, 1.924])
     rgb = np.exp(-sigma * 0.9)

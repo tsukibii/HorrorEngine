@@ -36,7 +36,7 @@ vendor/blender/
 vendor/garmentcode/
 # MediaPipe's environment and the Face Landmarker model (tools/face_mesh.py setup; rebuildable)
 vendor/face_mesh/
-# DiffLocks: its code, environment, DINOv2 and the checkpoints (non-commercial licence; tools/difflocks.py setup): never shared
+# DiffLocks (removed 2026-10-22: it needs an account): if the folder is still there, delete it; never shared
 vendor/difflocks/
 
 # generated: package_game.py's copies and builds; the UnrealClaude source checkout (the plugin copy is tracked)

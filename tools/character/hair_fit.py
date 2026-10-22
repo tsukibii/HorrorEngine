@@ -1,12 +1,12 @@
-"""DiffLocks' strands (tools/difflocks.py run: SMPL-X's head frame) onto a Character Studio character (its body as the
-Studio has it: metres, Y up, facing +Z, feet on the floor). Runs in face_mesh.py's environment (MediaPipe, numpy):
+"""Strands made on another head (Perm's on its AVATAR NEO head: tools/perm.py) onto a Character Studio character (its
+body as the Studio has it: metres, Y up, facing +Z, feet on the floor). Runs in face_mesh.py's environment (MediaPipe, numpy):
 
-    python tools/character/hair_fit.py --strands DIR/strands.npz --out DIR/fit.npz (--character NAME | --body body.npy)
-                                       [--smplx vendor/difflocks/src/data_loader/difflocks_bodydata/smplx_base.ply]
+    python tools/character/hair_fit.py --strands DIR/strands.npz --head HEAD.obj|.ply --out DIR/fit.npz
+                                       (--character NAME | --body body.npy|.f32)
 
 1. Both heads' faces are found the way face_mesh.py finds a template's: rendered, MediaPipe's 468 points pinned to the
    triangles under them (kept in vendor/face_mesh/bindings/). The firm ones (eye corners, the nose's bridge, the
-   forehead, the cheeks at the ears) give a similarity (scale, turn, move) from SMPL-X's head to this one.
+   forehead, the cheeks at the ears) give a similarity (scale, turn, move) from the strands' head to this one.
 2. Skulls differ: each strand is carried by its root onto the nearest point of this scalp (a millimetre out), whole,
    so its shape is kept.
 3. What still sits inside the head or the shoulders is pushed out (a radial field round the skull, slices down the
@@ -38,6 +38,19 @@ def read_ply(path):
         n = b[off]; f = np.frombuffer(b, "<u4", n, off + 1); off += 1 + 4 * n
         tris += [[f[0], f[k], f[k + 1]] for k in range(1, n - 1)]
     return np.stack([v["x"], v["y"], v["z"]], 1).astype(float), np.array(tris)
+
+
+def read_obj(path):
+    """an OBJ's points and triangles (fans for bigger faces)"""
+    v, tris = [], []
+    for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+        p = line.split()
+        if not p: continue
+        if p[0] == "v": v.append([float(x) for x in p[1:4]])
+        elif p[0] == "f":
+            ids = [int(x.split("/")[0]) for x in p[1:]]; ids = [i - 1 if i > 0 else len(v) + i for i in ids]
+            tris += [[ids[0], ids[k], ids[k + 1]] for k in range(1, len(ids) - 1)]
+    return np.array(v, float), np.array(tris)
 
 
 def umeyama(src, dst):
@@ -181,7 +194,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--strands", required=True); ap.add_argument("--out", required=True)
     ap.add_argument("--character"); ap.add_argument("--body", help="the body as the Studio has it (n,3: .npy, or raw float32 .f32)")
-    ap.add_argument("--smplx", default=str(ROOT / "vendor" / "difflocks" / "src" / "data_loader" / "difflocks_bodydata" / "smplx_base.ply"))
+    ap.add_argument("--head", required=True, help="the head the strands were made on, in their frame (OBJ or PLY)")
     a = ap.parse_args()
     import mhr
     if a.body:
@@ -193,7 +206,7 @@ def main():
     else:
         sys.exit("--character NAME or --body body.npy")
     S = np.load(a.strands)["positions"].astype(float)
-    sx, sxt = read_ply(a.smplx)
+    sx, sxt = read_ply(a.head) if a.head.endswith(".ply") else read_obj(a.head)
     P, rep = fit(S, sx, sxt, pts, tris, scale=k)
     np.savez_compressed(a.out, positions=P)
     print(json.dumps(rep))

@@ -2,7 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
-## 2026-10-22 (hair from a photo with DiffLocks; batched like an anime game)
+## 2026-10-22, later (Perm, not DiffLocks; lock points; the look we want)
+
+- **DiffLocks is dropped:** its checkpoints need an account, and the user won't register. Removed from the repo
+  (delete `vendor/difflocks/` if it was set up). **Perm** replaces it (Yale and Adobe, ICLR 2025: MIT code, checkpoints
+  and 343 fitted artist hairstyles on the authors' public links, no account): a hairstyle library to browse and blend,
+  matched to a photo by its hair's outline. Non-commercial on its data's side, which fits the free games. Run sealed off
+  the network like DiffLocks was.
+- **The look:** hybrid realism, a bit low-poly but aesthetic, beyond PSX, the way MHR looks; characters that light well
+  in medium shots from the player's eye. Hair: East Asian hairstyles first. Skin: glass and youthful skin as well as
+  old, oily skin, makeup presets. A touch-up painting tool over the projected face. Clothes: lock points on the body
+  (no more pants at the ankles) and presets: shirt and trousers, school uniforms.
+
+## 2026-10-22 (hair from a photo with DiffLocks; batched like an anime game; DiffLocks since dropped, above)
 
 - **The games are free, never sold** (itch.io at most, no payments, tips or donations): an experiment. On that basis
   **DiffLocks** (a picture to about 100k strands; Meshcapade and MPI, non-commercial licence: "non-commercial artistic

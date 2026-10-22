@@ -624,7 +624,7 @@ function stepWig(dt) {
   if (ACC_W > 0.2) ACC_W = 0;
   if (n) wigGeo(false);
 }
-// the strands from the picture (DiffLocks -> hair_fit -> hair_batch): guides with physics, strands rebuilt on the GPU
+// strand hair (hair_fit -> hair_batch): guides with physics, strands rebuilt on the GPU
 var STRANDS = null; let ACC_S = 0;
 async function loadStrands() {
   if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
@@ -651,27 +651,16 @@ const hairSet = {};
   const box = $("#hairRows"), styleSel = el("select"), color = el("input", { type: "color", value: st.hair.color });
   styleSel.append(el("option", { value: "none", textContent: "none (bald)" }), ...Object.entries(HAIR.STYLES).map(([k, v]) => el("option", { value: k, textContent: v.label })));
   box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), styleSel, el("output")), el("div", { className: "row" }, el("span", { textContent: "Colour" }), color, el("output")));
-  const srcSel = el("select"), mk = el("button", { textContent: "Make from the front picture" }), rebatch = el("button", { textContent: "Batch again" });
-  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "from the picture (DiffLocks)" }));
+  const srcSel = el("select"), rebatch = el("button", { textContent: "Batch again" });
+  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "strands (made elsewhere)" }));
   const photoBox = el("div", { className: "photoHair" });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Hair" }), srcSel, el("output")), photoBox);
-  photoBox.append(el("p", { className: "note", textContent: "DiffLocks (Meshcapade, MPI; non-commercial: free games only) turns the front picture into about 100k strands, sealed off the network; they're moved onto this head and batched like an anime game's: clumps, each one guide chain with physics, every strand riding its clump on the GPU. Needs tools/difflocks.py setup and its checkpoints, and a CUDA GPU; a minute or two." }), mk);
+  photoBox.append(el("p", { className: "note", textContent: "Strands made elsewhere, fitted to this head and batched like an anime game's: clumps, each one guide chain with physics, every strand riding its clump on the GPU." }));
   hairSet.bclumps = slider(photoBox, "hair_bclumps", "Clumps", 32, 1024, 32, st.hair.batch.clumps, "Guide chains with physics: more follow the hair's shape closer, cost more.", v => { st.hair.batch.clumps = v; });
-  hairSet.bstrands = slider(photoBox, "hair_bstrands", "Strands drawn", 2000, 60000, 1000, st.hair.batch.strands, "Of DiffLocks' 100k, how many are drawn (each rides its clump).", v => { st.hair.batch.strands = v; });
+  hairSet.bstrands = slider(photoBox, "hair_bstrands", "Strands drawn", 2000, 60000, 1000, st.hair.batch.strands, "How many of the strands are drawn (each rides its clump).", v => { st.hair.batch.strands = v; });
   photoBox.append(rebatch);
   const showSrc = () => { photoBox.hidden = st.hair.source !== "photo"; box.querySelectorAll(".styleOnly").forEach(e => { e.hidden = st.hair.source === "photo"; }); };
-  srcSel.onchange = async () => { st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet: make them from the front picture", h ? "ok" : ""); } hairDirty = true; };
-  mk.onclick = async () => {
-    if (!WHO) return status("make or pick a character first", "bad");
-    status("DiffLocks: the strands from the front picture (sealed off the network), then onto this head and batched…"); mk.disabled = true;
-    try {
-      const q = `clumps=${st.hair.batch.clumps}&strands=${st.hair.batch.strands}`;
-      const r = await api(`api/hair/${encodeURIComponent(WHO)}/difflocks?${q}`, new Blob([POS]));
-      await loadStrands(); st.hair.color = STRANDS.colorHex; color.value = st.hair.color; tint();   // DiffLocks' guess at the colour
-      status(`strands: ${r.batch.strands_drawn} drawn on ${r.batch.clumps} clumps (of ${r.batch.strands_in}); roots moved ${r.fit.root_moved_mm.mean} mm`, "ok");
-    } catch (e) { status(e.message, "bad"); }
-    mk.disabled = false;
-  };
+  srcSel.onchange = async () => { st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet", h ? "ok" : ""); } hairDirty = true; };
   rebatch.onclick = async () => {
     if (!WHO) return status("make or pick a character first", "bad");
     status("batching…"); rebatch.disabled = true;
