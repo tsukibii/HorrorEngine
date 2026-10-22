@@ -128,6 +128,23 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.keyboard.press("Control+z");
     console.log(`       a strand over the crown lies ${(lie[lie.length >> 1] * 1000).toFixed(1)} mm off the skin (median, ${(lie[lie.length - 1] * 1000).toFixed(1)} at most); a sideburn strand placed`);
   });
+  await step("Layer by height: a lock rooted higher lies over the one rooted lower where they cross", async () => {
+    const ids = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL;
+      const low = SL.makeStrand(C.surface([0.065, 0.05, 0.0]), C.surface([0.08, -0.03, -0.06]), C, { name: "low", width: 0.02 });
+      const high = SL.makeStrand(C.surface([0.03, 0.17, -0.01]), C.surface([0.075, -0.04, -0.03]), C, { name: "high", width: 0.02 });
+      s.addLock(low); s.addLock(high); s.render(); return [low.id, high.id]; });
+    const under = () => ev(([lo, hi]) => { const s = window.__salon, L = new s.SL.Layers(s.COL); L.add(s.EVAL[lo]);
+      let n = 0, worst = 0; for (const G of s.EVAL[hi]) G.pts.forEach((p, k) => { if (!k) return; const d = s.SL.sub(p, s.COL.C), R = L.radius(d); if (R > 0) { const gap = s.SL.len(d) - R; if (gap < L.gap - 1e-6) { n++; worst = Math.min(worst, gap); } } });
+      return { n, worst }; }, ids);
+    const off = await under();
+    await page.click("text=Layer by height"); await page.waitForTimeout(200); await ev(() => window.__salon.render());
+    const on = await under();
+    if (!(off.n > 0)) throw new Error("the two locks don't cross: the check means nothing");
+    if (on.n) throw new Error(`${on.n} points of the higher lock still under the lower (${(on.worst * 1000).toFixed(1)} mm)`);
+    await page.click("text=Layer by height");
+    await ev(ids => { for (const id of ids) window.__salon.deleteLock(id); }, ids);
+    console.log(`       crossing: ${off.n} of the higher lock's points under the lower one without it, none with it`);
+  });
   await step("a sheet: a root line dragged along the hairline, its end on the brows", async () => {
     await view(0, 0.05, 1.1);
     const n0 = await count(); await page.keyboard.press("l");

@@ -32,6 +32,7 @@ const st = {
   mirror: { on: false, seam: 0 },
   look: { color: "#2b1d16", byLock: false, guides: false, scalp: true, hair: DEFAULT_LOOK, custom: {} },   // hair: a look (hairtex.js), custom: its colours and numbers changed
   groups: [{ id: "g1", name: "Hair", visible: true }],
+  layering: false,                     // layer by height: hair rooted higher lies over hair rooted lower
   locks: [],
   glow: null,                          // the trace (salonfill.js): {AZ, EL, C, r, inner, on, face, show, mirror, filled, fill: {density, seed, cube}}
 };
@@ -393,8 +394,8 @@ function cardPositions(guides) {
   return pos;
 }
 function strandPositions(l, guides) { const pos = []; for (const s of SL.strandsOf(l, guides)) for (let k = 1; k < s.length; k++) pos.push(...s[k - 1], ...s[k]); return pos; }
-function buildLockMesh(l, i) {
-  const guides = SL.evaluate(l, COL); EVAL[l.id] = guides;
+function buildLockMesh(l, i, laid = null) {
+  const guides = laid || SL.evaluate(l, COL); EVAL[l.id] = guides;
   const grp = new THREE.Group(); grp.userData.lock = l.id;
   if (l.render === "strands") {                                      // thin lines in the look's colours (the inner ones too)
     const strands = SL.strandsOf(l, guides), cols = [], k0 = look(), tint = tintOf(l, i), r = SL.rng(5);
@@ -435,12 +436,21 @@ function poseLockMesh(l, posed) {
 }
 function refreshLocks() {
   const ids = new Set(st.locks.map(l => l.id));
+  if (st.layering && DIRTY.size) for (const l of st.locks) DIRTY.add(l.id);   // a change re-lays the layers (all of them: simple, quick enough)
   for (const id of Object.keys(MESHES)) if (!ids.has(id) || DIRTY.has(id)) { HAIR.remove(MESHES[id]); MESHES[id].traverse(disposeOf); delete MESHES[id]; delete EVAL[id]; }
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible]));
-  st.locks.forEach((l, i) => {
-    if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i); HAIR.add(MESHES[l.id]); }
-    MESHES[l.id].visible = l.visible && vis[l.group] !== false;
-  });
+  const order = st.locks.map((l, i) => [l, i]);
+  let layers = null;
+  if (st.layering && order.some(([l]) => !MESHES[l.id])) {                // lowest root first, each laid over the ones before
+    order.sort((a, b) => SL.rootHeight(a[0]) - SL.rootHeight(b[0]) || (a[0].id < b[0].id ? -1 : 1));
+    layers = new SL.Layers(COL);
+  }
+  for (const [l, i] of order) {
+    const shown = l.visible && vis[l.group] !== false;
+    if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, layers && shown ? SL.evaluate(l, COL, layers) : null); HAIR.add(MESHES[l.id]); }
+    if (layers && shown) layers.add(EVAL[l.id]);
+    MESHES[l.id].visible = shown;
+  }
   DIRTY.clear();
   drawHandles();
 }
@@ -682,9 +692,9 @@ function lockAt(e) {
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
-const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, glow: st.glow });
+const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, glow: st.glow, layering: st.layering });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; if ("glow" in o) { st.glow = o.glow; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if ("glow" in o) { st.glow = o.glow; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -949,6 +959,7 @@ function locksPanel() {
         el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: l.type + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") })));
     });
   }
+  const lt = el("div"); tick(lt, "Layer by height", !!st.layering, v => { remember(); st.layering = v; for (const l of st.locks) DIRTY.add(l.id); draw(); }, "hair rooted higher always lies over hair rooted lower, like real hair"); box.append(lt);
   box.append(el("button", { textContent: "New group", onclick: () => { const id = "g" + (st.groups.length + 1) + Date.now().toString(36).slice(-3); st.groups.push({ id, name: `Group ${st.groups.length + 1}`, visible: true }); ACTIVE_GROUP = id; locksPanel(); } }));
 }
 function select(id) { SELECTED = id; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); draw(); }
@@ -1022,7 +1033,7 @@ async function save() {
 async function load(name) {
   const o = await api(`api/hair/${encodeURIComponent(name)}/salon.json`);
   Object.assign(st.head, o.head || {}); Object.assign(st.mirror, o.mirror || {}); Object.assign(st.look, o.look || {});
-  st.groups = o.groups?.length ? o.groups : st.groups; st.locks = o.locks || []; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
+  st.groups = o.groups?.length ? o.groups : st.groups; st.locks = o.locks || []; st.layering = !!o.layering; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
   Object.assign(st.reference, o.reference || {});
   st.glow = o.glow || null; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; SEL = new Set();
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;

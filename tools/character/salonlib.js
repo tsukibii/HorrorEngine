@@ -243,7 +243,39 @@ export function setHandle(lock, path, p) {
 // guides: [{pts: SAMPLES points, across: a unit vector per point (the ribbon's width), width: per point}]
 const quad = (L, M, R, u) => { const Mp = sub(mul(M, 2), mul(add(L, R), 0.5)); return add(add(mul(L, (1 - u) * (1 - u)), mul(Mp, 2 * u * (1 - u))), mul(R, u * u)); };
 
-function keepOff(pts, col) { return col ? pts.map((p, i) => i === 0 ? p : col.push(p, GAP)[0]) : pts; }
+function keepOff(pts, col, layers = null) { return col ? pts.map((p, i) => i === 0 ? p : layers ? col.push(layers.push(col.push(p, GAP)[0]), GAP)[0] : col.push(p, GAP)[0]) : pts; }
+
+// ---- layer by height --------------------------------------------------------------------------------------------------
+// Real hair: what grows higher lies over what grows lower. The locks are laid lowest root first; each is pushed out of a
+// map of the hair already laid (round the skull's middle, 2.5 degrees a bin: how far out the hair reaches that way),
+// then adds its cards to it (both edges of every card, a card's thickness on top).
+export const rootHeight = l => l.type === "strand" ? l.pts[0][1] : l.type === "bundle" ? l.spine[0][1] : l.root.reduce((a, p) => a + p[1], 0) / l.root.length;
+export class Layers {
+  constructor(col, opts = {}) { this.col = col; this.C = col.C; this.R = new Float32Array(EL * AZ); this.thick = opts.thick ?? 0.002; this.gap = opts.gap ?? 0.0015; }
+  bin(d, r) { const e = Math.asin(clamp(d[1] / r, -1, 1)), a = Math.atan2(d[0], d[2]); return [(e + Math.PI / 2) / Math.PI * (EL - 1), (a + Math.PI) / (2 * Math.PI) * AZ]; }
+  splat(p) {
+    const d = sub(p, this.C), r = len(d); if (r < 1e-6) return;
+    const [e, a] = this.bin(d, r), e0 = Math.round(e), a0 = Math.round(a), rr = r + this.thick;
+    for (let de = -1; de <= 1; de++) for (let da = -1; da <= 1; da++) {
+      const ee = e0 + de; if (ee < 0 || ee >= EL) continue;
+      const k = ee * AZ + (((a0 + da) % AZ) + AZ) % AZ; if (rr > this.R[k]) this.R[k] = rr;
+    }
+  }
+  add(guides) {
+    for (const G of guides) G.pts.forEach((p, k) => { if (!k) return; this.splat(p); const h = mul(G.across[k], G.width[k] / 2); this.splat(add(p, h)); this.splat(sub(p, h)); });
+  }
+  radius(d) {                                                        // the hair laid so far, this way (0: none)
+    const r = len(d) || 1e-9, [e, a] = this.bin(d, r), e0 = Math.floor(e), a0 = Math.floor(a), fe = e - e0, fa = a - a0;
+    const at = (i, j) => this.R[clamp(i, 0, EL - 1) * AZ + ((j % AZ) + AZ) % AZ];
+    const v = [at(e0, a0), at(e0, a0 + 1), at(e0 + 1, a0), at(e0 + 1, a0 + 1)], w = [(1 - fe) * (1 - fa), (1 - fe) * fa, fe * (1 - fa), fe * fa];
+    let s = 0, m = 0; for (let i = 0; i < 4; i++) if (v[i] > 0) { s += v[i] * w[i]; m += w[i]; }
+    return m > 0.3 ? s / m : 0;                                      // only where the hair below really is
+  }
+  push(p) {
+    const d = sub(p, this.C), r = len(d), R = this.radius(d);
+    return R > 0 && r < R + this.gap ? add(this.C, mul(d, (R + this.gap) / (r || 1e-9))) : p;
+  }
+}
 function sideways(pts, col, k) {                                     // a ribbon lying flat on the hair's surface
   const i0 = Math.max(0, k - 1), i1 = Math.min(pts.length - 1, k + 1), t = norm(sub(pts[i1], pts[i0]));
   const out = col ? col.normal(pts[k]) : [0, 0, 1];
@@ -251,10 +283,10 @@ function sideways(pts, col, k) {                                     // a ribbon
   return norm(a);
 }
 
-export function evaluate(lock, col) {
+export function evaluate(lock, col, layers = null) {
   const taperW = (w, k) => w * (1 - lock.taper * Math.pow(k / (SAMPLES - 1), 1.5));
   if (lock.type === "strand") {
-    const pts = keepOff(catmull(lock.pts), col);
+    const pts = keepOff(catmull(lock.pts), col, layers);
     return [{ pts, across: pts.map((_, k) => sideways(pts, col, k)), width: pts.map((_, k) => taperW(lock.width, k)) }];
   }
   if (lock.type === "sheet") {
@@ -265,7 +297,7 @@ export function evaluate(lock, col) {
       const d = sub(root, C[0]);
       const ctrl = C.map((c, k) => add(c, mul(d, Math.pow(1 - k / (n - 1), 2))));
       ctrl[0] = root;
-      guides.push(keepOff(catmull(ctrl), col));
+      guides.push(keepOff(catmull(ctrl), col, layers));
     }
     // the ribbons' width: the gap to the neighbours, overlapped
     return guides.map((pts, j) => {
@@ -275,7 +307,7 @@ export function evaluate(lock, col) {
     });
   }
   // bundle: guides round the spine at the radius from root to tip
-  const spine = keepOff(catmull(lock.spine), col), g = Math.max(3, lock.guides | 0), out = [];
+  const spine = keepOff(catmull(lock.spine), col, layers), g = Math.max(3, lock.guides | 0), out = [];
   const frames = []; let b1 = null;
   for (let k = 0; k < spine.length; k++) {                           // a frame along the spine, carried (parallel transport)
     const t = norm(sub(spine[Math.min(spine.length - 1, k + 1)], spine[Math.max(0, k - 1)]));
@@ -285,7 +317,7 @@ export function evaluate(lock, col) {
   for (let j = 0; j < g; j++) {
     const th = j / g * 2 * Math.PI, c = Math.cos(th), s = Math.sin(th);
     const pts = spine.map((p, k) => { const f = k / (spine.length - 1), r = lock.r0 + (lock.r1 - lock.r0) * f; const [, u, v] = frames[k]; return add(p, add(mul(u, c * r), mul(v, s * r))); });
-    const kept = keepOff(pts, col);
+    const kept = keepOff(pts, col, layers);
     out.push({ pts: kept, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c))); }),
                width: kept.map((_, k) => { const f = k / (spine.length - 1), r = lock.r0 + (lock.r1 - lock.r0) * f; return Math.max(0.003, 2 * Math.PI * r / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
   }

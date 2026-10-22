@@ -86,6 +86,10 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
 - **Mirror**: with it on, a new lock gets a twin across the seam that follows every edit of its original (dragging
   the twin's handle edits the original, mirrored). The seam is the head's middle or moved sideways (a side parting).
   "Break the mirror" frees a twin; "Mirror once" makes a free copy.
+- **Layer by height** (Locks; 2026-10-22): like real hair, what grows higher lies over what grows lower. The locks are
+  laid lowest root first; each is pushed out of a map of the hair already laid (how far out it reaches in each
+  direction round the skull, 2.5 degrees a bin, both edges of every card counted, a card's 2 mm on top) to 1.5 mm
+  over it. Any change re-lays them all. The bake takes the layered hair.
 - **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
 
 ## The fill: trace, glow, fill (2026-10-22)
