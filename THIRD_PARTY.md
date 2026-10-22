@@ -7,6 +7,7 @@
 | The Base Mesh props (glTF by M3-org) | `Content/Studio/Library/meshes/basemesh/`, the index in `Content/Studio/Library/index/basemesh.json` | CC0 1.0 (`Content/Studio/Library/LEDGER.json` lists each file and its source) |
 | EZSoftBone (Ethan Zack): the soft-bone method, ported to JavaScript and changed (no files copied) | `tools/director/softbone.js` | MIT (github.com/EZhex1991/EZSoftBone; credited in the file) |
 | GarmentCode (Maria Korosteleva): installed by `tools/garment.py setup` into `vendor/garmentcode/` (git-ignored), nothing copied; the patterns it makes are ours | `vendor/garmentcode/` | MIT (its `LICENSE`) |
+| MediaPipe's hair segmenter, multiclass selfie segmenter and Face Landmarker models (Google): fetched by `tools/gshair.py setup` into `vendor/gshair/` (git-ignored), nothing copied; the splat is ours | `vendor/gshair/` | Apache-2.0 |
 | awesome-cc0 (madjin) | `docs/assets/awesome-cc0.md` | CC0 1.0 (`docs/assets/awesome-cc0.LICENSE.txt`) |
 
 Apache-2.0 asks that a copy of the licence travels with the files and that changes are marked: keep

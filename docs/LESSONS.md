@@ -194,3 +194,16 @@ The Studio's first POV view took `game.fov` (90° horizontal) against its own ca
 panel: 94° up and down, a medium close-up that showed the whole torso. A first-person check frames like the game's
 screen: 16:9, so 59° vertical, drawn in a 16:9 frame with bars round it, and any picking (the brush) goes through that
 frame. Distances from DIRECTING.md's shot table (MCU 0.7 m, MS 1.2 m) only mean what they say through the right lens.
+
+## A tool's launcher can't share its name with its package (2026-10-22)
+
+`tools/gshair.py` (the launcher) and `tools/character/gshair/` (the package) are both `gshair` to Python: the
+package's own CLI put `tools/` on `sys.path` first and imported the launcher instead of itself. Put the package's
+folder before `tools/`, or name them apart. The launcher runs the package in its own environment with `-I`, so the
+order inside `cli.py` is the only thing that decides it.
+
+## OpenCV's hue is half a degree, and "the largest piece" isn't the wig (2026-10-22)
+
+Green is 120 degrees, so 60 in OpenCV's 0 to 180 hue: a green key written for 30 keyed nothing. And with patterns on
+the floor for the cameras to track by, the largest non-green piece of a frame is the floor, not the wig: keep the
+piece that is big, central and high (area weighted by its distance from the middle and its height in the frame).

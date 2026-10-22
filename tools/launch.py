@@ -35,6 +35,7 @@ TOOLS = [
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
     ("Pages", "Character Studio (body, face from pictures, expressions)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
+    ("Pages", "Hair splat on clay (a wig's splat glued to jiggling clumps)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/gshair.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
@@ -84,6 +85,7 @@ TOOLS = [
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
+    ("Look", "Hair splat from a video of a wig (frames, key, poses, splat, clay)", "tools/gshair.py run {ask:Video or folder} --name {ask:Character}", {}),
     ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
@@ -104,6 +106,7 @@ TOOLS = [
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
     ("Setup", "Perm setup (the hair library: 343 hairstyles)", "tools/perm.py setup", {}),
     ("Setup", "Perm library (thumbnails and outlines of every hairstyle)", "tools/perm.py library", {}),
+    ("Setup", "Hair splat setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
 ]
 

@@ -77,3 +77,8 @@ What each cut is, and the knob that makes it:
 
 The Hair tab's sliders override each style's numbers (`layers` is one of them); the Bangs switch keeps a style's own
 kind of bangs.
+
+## The splat route (2026-10-22)
+
+The user's flow after the GaussianHair paper (Luo et al. 2024): not strands, a Gaussian splat of a real wig glued to a few
+invisible clumps of clay that jiggle on the head. Built as `tools/gshair.py` and the Studio's `gshair.html`: docs/GSHAIR.md.

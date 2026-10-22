@@ -40,6 +40,8 @@ vendor/face_mesh/
 vendor/difflocks/
 # Perm: its code, environment, checkpoints, fitted hairstyles, the AVATAR NEO head, the library (tools/perm.py setup)
 vendor/perm/
+# the hair splat's environment (torch, OpenCV, MediaPipe) and models, and its check's output (tools/gshair.py setup)
+vendor/gshair/
 
 # generated: package_game.py's copies and builds; the UnrealClaude source checkout (the plugin copy is tracked)
 Content/StoryData/

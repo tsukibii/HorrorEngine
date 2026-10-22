@@ -63,6 +63,24 @@ def perm_home():
     return Path(os.environ.get("PERM_HOME", ROOT / "vendor" / "perm"))
 
 
+GSHAIR_FILES = {"splat.json", "splat.bin", "head.json", "align.json", "cameras.json", "capture.json", "masks.json",
+                "splat_sheet.jpg", "poses_sheet.jpg", "run.log"}
+GSHAIR_RUNS = {}                                       # name -> the running pipeline (subprocess.Popen)
+
+
+def gshair_dir(name):
+    return PEOPLE / name / "gshair"
+
+
+def gshair_status(name):
+    """the hair splat's state: what's made, whether a run is going, the log's tail"""
+    d = gshair_dir(name); p = GSHAIR_RUNS.get(name)
+    running = p is not None and p.poll() is None
+    if p is not None and not running: GSHAIR_RUNS.pop(name, None)
+    log = (d / "run.log").read_text(encoding="utf-8", errors="replace")[-3000:] if (d / "run.log").exists() else ""
+    return dict(running=running, exit=None if running or p is None else p.returncode, files=sorted(f.name for f in d.iterdir()) if d.exists() else [], log=log)
+
+
 def batch_hair(name, q):
     """the hair's strands (hair/fit.*) batched into clumps for the Studio (hair_batch.py)"""
     d = PEOPLE / name / "hair"
@@ -143,6 +161,11 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "picture"] and len(parts) == 4 and clean(parts[2]) and parts[3] in SLOTS:
             f = pictures(clean(parts[2])).get(parts[3])
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f else self.send(404, {"error": "none"})
+        if parts[:2] == ["api", "gshair"] and len(parts) == 4 and clean(parts[2]):        # the hair splat (tools/gshair.py)
+            if parts[3] == "status": return self.send(200, gshair_status(clean(parts[2])))
+            if parts[3] in GSHAIR_FILES:
+                f = gshair_dir(clean(parts[2])) / parts[3]
+                return self.send(200, f.read_bytes(), TYPES.get(f.suffix, "text/plain")) if f.exists() else self.send(404, {"error": f"no {parts[3]} yet: python tools/gshair.py run VIDEO --name {parts[2]}"})
         f = HERE.joinpath(*parts)
         if f.is_file() and f.suffix in TYPES and f.suffix != ".py":
             return self.send(200, f.read_bytes(), TYPES[f.suffix])
@@ -256,6 +279,30 @@ class Handler(BaseHTTPRequestHandler):
                 if "path" in res: res["path"] = str(Path(res["path"]).relative_to(ROOT))
                 return self.send(code, res)
             return self.send(*WORKER.call(req))
+        if parts[:2] == ["api", "gshair"] and len(parts) == 4 and name and parts[3] in ("body", "run", "clumps"):
+            d = gshair_dir(name); d.mkdir(parents=True, exist_ok=True)
+            tool = [sys.executable, str(ROOT / "tools" / "gshair.py")]
+            if parts[3] == "body":                       # the body as the Studio has it now: the head the splat sits on
+                (d / "body.f32").write_bytes(self.body()); return self.send(200, {"ok": True})
+            q = json.loads(self.body().decode("utf-8") or "{}")
+            if parts[3] == "run":                        # the whole pipeline in the background (sealed off the network)
+                if gshair_status(name)["running"]: return self.send(409, {"error": "already running"})
+                src = q.get("source", "")
+                if not src or not Path(src).exists(): return self.send(400, {"error": "a video, a folder of pictures or a picture on this machine"})
+                cmd = tool + ["run", src, "--name", name, "--key", str(q.get("key", "green")), "--iters", str(int(q.get("iters", 4000))),
+                              "--res", str(int(q.get("res", 540))), "--clumps", str(int(q.get("clumps", 16))), "--from", str(q.get("from", "frames"))]
+                if (d / "body.f32").exists(): cmd += ["--body", str(d / "body.f32")]
+                log = open(d / "run.log", "w", encoding="utf-8")
+                GSHAIR_RUNS[name] = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=ROOT)
+                return self.send(200, {"started": True})
+            if q.get("align"):                           # the page's fit, kept
+                (d / "align.json").write_text(json.dumps(q["align"]), encoding="utf-8")
+            r = subprocess.run(tool + ["clumps", "--name", name, "--clumps", str(int(q.get("clumps", 16))), "--joints", str(int(q.get("joints", 4)))],
+                               capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
+            line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
+            if r.returncode or not line or "GSHAIR clumps ok" not in r.stdout:
+                return self.send(500, {"error": "the clay: " + (r.stderr or r.stdout)[-800:]})
+            return self.send(200, json.loads(line))
         return self.send(404, {"error": "not found"})
 
 
