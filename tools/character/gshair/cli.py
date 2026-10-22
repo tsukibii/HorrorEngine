@@ -67,6 +67,9 @@ def main(argv=None):
     add_orbit(p)
     p = sub.add_parser("splat"); add_out(p); add_splat(p)
     p = sub.add_parser("clumps"); add_out(p); add_clumps(p)
+    p = sub.add_parser("wig", help="a low-poly wig shell traced from the splat, textured from the frames"); add_out(p)
+    p.add_argument("--az", type=int, default=18, help="cells round the head"); p.add_argument("--cap-rows", type=int, default=5); p.add_argument("--cyl-rows", type=int, default=8)
+    p.add_argument("--tex", type=int, default=256, help="the texture's size")
     p = sub.add_parser("run", help="every step from a video"); add_out(p); add_head(p); add_masks(p); add_orbit(p); add_splat(p); add_clumps(p); p.add_argument("source")
     p.add_argument("--count", type=int, default=90); p.add_argument("--focal35", type=float, default=24.0)
     p.add_argument("--from", dest="from_step", default="frames", choices=STEPS)
@@ -85,6 +88,8 @@ def main(argv=None):
         from gshair import splat; splat.main(a)
     elif a.cmd == "clumps":
         from gshair import clumps; clumps.main(a)
+    elif a.cmd == "wig":
+        from gshair import wig; wig.main(a)
     elif a.cmd == "check":
         from gshair import check
         check.run(a.out or (common.HOME / "check"), a.keep, not a.full, a.device)

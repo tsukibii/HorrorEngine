@@ -28,6 +28,7 @@
     <p class="note">A Gaussian splat of real hair (tools/gshair.py) glued to a few invisible clumps of clay on chains that jiggle with the head (wig.js). Only the chains are simulated; the splat rides them on the GPU.</p>
     <h4>Jiggle</h4><div id="jiggle"></div>
     <h4>Look</h4><div id="look"></div>
+    <h4>Wig shell</h4><p class="note">The splat traced into a low-poly shell (its outer and inner lines, under a thousand triangles) with the frames projected onto it. Blend: the shell alone, the splat alone, or both.</p><div id="wigbox"></div>
     <h4>Clay</h4><div id="clay"></div>
     <h4>Fit to the head</h4><p class="note">A wig's capture has no face, so its first fit is a guess: move, turn and scale it, then Glue again to keep it.</p><div id="fit"></div>
     <h4>From the capture</h4><div id="sheets"></div>
@@ -55,9 +56,9 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
 const key = new THREE.DirectionalLight(0xffffff, 2.2); scene.add(key); scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig);
-let HEAD = null, HAIR = null, CLAY = null, TOP = 1.7, SCALE = 1, MOVE = "still", WHO = "", JSONH = null, BIN = null;
+let HEAD = null, HAIR = null, CLAY = null, WIGM = null, WIGWIRE = null, TOP = 1.7, SCALE = 1, MOVE = "still", WHO = "", JSONH = null, BIN = null;
 const st = { gravity: 1, hold: 0.5, damping: 0.97, iterations: 4, roughness: 0.35, shift: 0.035, specular: 0.5, ambient: 0.3, sigma: 1, opacity: 1, az: 35, elev: 40, clumps: 16, joints: 4, showClay: false,
-             fit: { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 } };
+             fit: { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }, wig: { show: true, blend: 0.5, wire: false, plain: false } };
 function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (HAIR) HAIR.viewport(w * devicePixelRatio, h * devicePixelRatio); }
 new ResizeObserver(resize).observe(view);
 // orbit by hand: drag turns, wheel zooms
@@ -99,7 +100,7 @@ function buildHair() {
   j.frames.N = j.frames.N.map(g => g.map(n => v.set(...n).applyMatrix3(R3).normalize().toArray()));
   HAIR = new SplatHair(j, BIN, headPush(j.head), SCALE);
   HAIR.set("uScale", st.fit.scale); HAIR.set("uSigma", st.sigma); HAIR.set("uOpacity", st.opacity); HAIR.set("roughness", st.roughness); HAIR.set("shift", st.shift); HAIR.set("specular", st.specular); HAIR.set("ambient", st.ambient);
-  scene.add(HAIR.mesh); resize();
+  scene.add(HAIR.mesh); resize(); applyWig();
   // the clay: a sphere per joint, the radius of the clump, and its chain
   CLAY = new THREE.Group(); CLAY.visible = st.showClay;
   const K = j.clumps, J = j.joints;
@@ -134,12 +135,36 @@ async function load(name) {
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(head.points.flat(), 3)); g.setIndex(head.tris.flat()); g.computeVertexNormals();
   HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x8c8a86, roughness: 0.8 })); rig.add(HEAD);
   SCALE = head.S; TOP = JSONH.head.top[1];
+  await loadWig(base, q);
   st.fit = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, scale: 1 }; for (const k in fitSet) fitSet[k](st.fit[k]);
   st.clumps = JSONH.clumps; st.joints = JSONH.joints; claySet.clumps(st.clumps); claySet.joints(st.joints);
   buildHair();
   $("#sheets").replaceChildren(...["splat_sheet.jpg", "poses_sheet.jpg"].map(f => el("img", { className: "sheet", src: base + f + q, alt: f, title: f, onerror: e => e.target.remove() })));
   history.replaceState(null, "", `?name=${encodeURIComponent(name)}`);
   return true;
+}
+async function loadWig(base, q) {
+  if (WIGM) { rig.remove(WIGM); WIGM.geometry.dispose(); WIGM.material.dispose(); WIGM = null; }
+  if (WIGWIRE) { rig.remove(WIGWIRE); WIGWIRE = null; }
+  const r = await fetch(base + "wig.json" + q); if (!r.ok) return;
+  const w = await r.json();
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(w.positions.flat(), 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(w.normals.flat(), 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(w.uvs.flat(), 2)); g.setIndex(w.indices);
+  const tex = new THREE.TextureLoader().load(base + "wig.png" + q); tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = true;
+  WIGM = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75, metalness: 0, side: THREE.DoubleSide, transparent: true }));
+  WIGM.userData = { tex, report: w.report }; rig.add(WIGM);
+  WIGWIRE = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xffd080, wireframe: true, transparent: true, opacity: 0.6 })); rig.add(WIGWIRE);
+  applyWig();
+}
+function applyWig() {
+  const w = st.wig;
+  if (WIGM) {
+    WIGM.visible = w.show && w.blend < 1; WIGM.material.opacity = w.show ? Math.min(1, 2 * (1 - w.blend)) : 0;
+    WIGM.material.map = w.plain ? null : WIGM.userData.tex; WIGM.material.color.set(w.plain ? 0x8a7560 : 0xffffff); WIGM.material.needsUpdate = true;
+  }
+  if (WIGWIRE) WIGWIRE.visible = w.show && w.wire;
+  if (HAIR) { HAIR.mesh.visible = !(WIGM && w.show && w.blend <= 0); HAIR.set("uOpacity", st.opacity * (WIGM && w.show ? Math.min(1, 2 * w.blend) : 1)); }
 }
 $("#load").onclick = () => load($("#name").value.trim() || "_gshairtest");
 
@@ -156,7 +181,13 @@ slider(look, "ambient", "Ambient", 0, 1, 0.02, st.ambient, v => { st.ambient = v
 slider(look, "az", "Light turn", -180, 180, 5, st.az, v => { st.az = v; });
 slider(look, "elev", "Light height", -20, 85, 5, st.elev, v => { st.elev = v; });
 slider(look, "sigma", "Splat size", 0.4, 2.5, 0.05, st.sigma, v => { st.sigma = v; HAIR && HAIR.set("uSigma", v); }, "Every Gaussian's size, as a multiple of what was fitted.");
-slider(look, "opacity", "Opacity", 0.2, 2, 0.05, st.opacity, v => { st.opacity = v; HAIR && HAIR.set("uOpacity", v); });
+slider(look, "opacity", "Opacity", 0.2, 2, 0.05, st.opacity, v => { st.opacity = v; applyWig(); });
+const wigbox = $("#wigbox");
+slider(wigbox, "wig_blend", "Blend", 0, 1, 0.05, st.wig.blend, v => { st.wig.blend = v; applyWig(); }, "0: the shell alone; 1: the splat alone; between: both.");
+const wigShow = el("button", { textContent: "Shell on", className: "on" }); wigShow.onclick = () => { st.wig.show = !st.wig.show; wigShow.classList.toggle("on", st.wig.show); applyWig(); };
+const wigWire = el("button", { textContent: "Wireframe" }); wigWire.onclick = () => { st.wig.wire = !st.wig.wire; wigWire.classList.toggle("on", st.wig.wire); applyWig(); };
+const wigPlain = el("button", { textContent: "Untextured" }); wigPlain.onclick = () => { st.wig.plain = !st.wig.plain; wigPlain.classList.toggle("on", st.wig.plain); applyWig(); };
+wigbox.append(wigShow, " ", wigWire, " ", wigPlain);
 const clay = $("#clay"), claySet = {};
 const showBtn = el("button", { textContent: "Show the clay" }); showBtn.onclick = () => { st.showClay = !st.showClay; showBtn.classList.toggle("on", st.showClay); if (CLAY) CLAY.visible = st.showClay; };
 claySet.clumps = slider(clay, "clumps", "Clumps", 2, 64, 1, st.clumps, v => { st.clumps = v; }, "Blobs of clay: one per lock of hair.");
@@ -206,6 +237,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 const first = new URLSearchParams(location.search).get("name");
 if (first) { $("#name").value = first; load(first); }
-window.__gshair = { st, get hair() { return HAIR; }, get ready() { return !!(HAIR && HAIR.ready); }, load, motion: m => { MOVE = m; }, canvas: renderer.domElement, rig, measure: () => HAIR && HAIR.measure(rig.matrix.clone().invert().elements) };
+window.__gshair = { st, get hair() { return HAIR; }, get wig() { return WIGM; }, applyWig, view: (yaw, pitch, dist) => { orbit = { yaw, pitch, dist }; }, get ready() { return !!(HAIR && HAIR.ready); }, load, motion: m => { MOVE = m; }, canvas: renderer.domElement, rig, measure: () => HAIR && HAIR.measure(rig.matrix.clone().invert().elements) };
 </script>
 </body></html>

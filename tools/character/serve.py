@@ -64,7 +64,7 @@ def perm_home():
 
 
 GSHAIR_FILES = {"splat.json", "splat.bin", "head.json", "align.json", "cameras.json", "capture.json", "masks.json",
-                "splat_sheet.jpg", "poses_sheet.jpg", "run.log"}
+                "splat_sheet.jpg", "poses_sheet.jpg", "run.log", "wig.json", "wig.png", "wig.obj"}
 GSHAIR_RUNS = {}                                       # name -> the running pipeline (subprocess.Popen)
 
 
