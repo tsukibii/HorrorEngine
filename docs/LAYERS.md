@@ -25,6 +25,13 @@ Brush (radius along the surface), Flood (until the surface bends past an angle o
 - **Colour**, **PNG** (front, side, top or triplanar, size in cm, rotate, move, tile or not; its own alpha is kept, and the
   picture lands centred on the selection), **PBR set** (albedo, roughness, height, AO from files or the PBR shelf, tiled
   triplanar, so the body can wear one while the face doesn't), **UV texture** (a picture in MHR's UV layout, such as the photo skin).
+- **Gradient** (a fill type): the Colour is the middle, the second colour the edge, along the surface (**Middle → edge**) or
+  along a line (angle, length in cm); **Solid**, **Fades out** (strong in the middle: gradient lips) or **Rim** (strong at the
+  edge: an ear's rim); a curve. `docs/assets/layers/gradient_smooth_before_after.png`: gradient lips and blush, and smoothing.
+- **Glow from within** (with a colour): light through thin skin, painted where the layer is (ears, nose tip, flushed cheeks);
+  `docs/assets/layers/glow_whole_head.png` is the strongest setting on the whole head, so use a little.
+- **Smooth skin**: evens out the pores, grain, mottling, wrinkles and age spots where the layer is (the porcelain look). A
+  layer that only smooths (or only glows) takes a white **Pigment** fill: white filters nothing, so the paint is invisible.
 - **Opacity**, **Pigment** (on: the fill filters the skin's own colour and overlapping pigments mix, order doesn't matter;
   off: it covers like paint), pigment density and cover, **Shine** (a clear coat: gel, gloss, lipstick), **Oily** (lower
   roughness), **Gloss tightness**. **Relative to its own average** divides out a picture's mean colour, so a face photo lays
