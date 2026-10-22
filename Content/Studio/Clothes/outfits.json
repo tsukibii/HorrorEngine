@@ -1,0 +1,93 @@
+{
+ "about": "garments made in order, each draped over the ones before (tools/character/make_designs.py)",
+ "outfits": {
+  "school uniform (sailor)": [
+   [
+    "sailor_blouse",
+    "#eef0f2"
+   ],
+   [
+    "pleated_skirt",
+    "#1f2a44"
+   ]
+  ],
+  "school uniform (blazer, skirt)": [
+   [
+    "button_shirt",
+    "#f2f2ee"
+   ],
+   [
+    "pleated_skirt",
+    "#3a3f4a"
+   ],
+   [
+    "blazer",
+    "#1d2840"
+   ]
+  ],
+  "school uniform (blazer, trousers)": [
+   [
+    "button_shirt",
+    "#f2f2ee"
+   ],
+   [
+    "trousers",
+    "#2b2f38"
+   ],
+   [
+    "blazer",
+    "#1d2840"
+   ]
+  ],
+  "gakuran": [
+   [
+    "trousers",
+    "#141519"
+   ],
+   [
+    "gakuran",
+    "#141519"
+   ]
+  ],
+  "summer uniform": [
+   [
+    "short_sleeve_shirt",
+    "#f4f4f0"
+   ],
+   [
+    "pleated_skirt",
+    "#2a3550"
+   ]
+  ],
+  "shirt and trousers": [
+   [
+    "button_shirt",
+    "#dfe6ee"
+   ],
+   [
+    "trousers",
+    "#2f3238"
+   ]
+  ],
+  "casual": [
+   [
+    "t-shirt",
+    "#c9c3b8"
+   ],
+   [
+    "jeans",
+    "#2e4566"
+   ]
+  ],
+  "hoodie and jeans": [
+   [
+    "jeans",
+    "#2e4566"
+   ],
+   [
+    "hoodie",
+    "#3a3a3e"
+   ]
+  ]
+ }
+}

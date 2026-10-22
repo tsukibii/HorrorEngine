@@ -321,6 +321,27 @@ const lockSel = el("select", { title: "An opening held on the body through the d
 $("#clothesRows").append(el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
   el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")),
   el("div", { className: "row" }, el("span", { textContent: "Hold at" }), lockSel, el("output")), makeBtn);
+// outfits: several garments made in order, each draped over the ones before (Content/Studio/Clothes/outfits.json)
+const outfitSel = el("select"), outfitBtn = el("button", { textContent: "Make the outfit" });
+$("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { className: "row" }, el("span", { textContent: "Outfit" }), outfitSel, el("output")), outfitBtn);
+let OUTFITS = {};
+api("api/outfits").then(r => { OUTFITS = r.outfits || {}; outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n }))); }).catch(() => {});
+outfitBtn.onclick = async () => {
+  if (!WHO) return status("make or pick a character first", "bad");
+  const parts = OUTFITS[outfitSel.value] || [], under = [];
+  outfitBtn.disabled = true;
+  try {
+    for (const g of st.clothes.slice()) { const m = GARMENTS.get(g.design); if (m) { rig.remove(m); GARMENTS.delete(g.design); } }
+    st.clothes = []; drawWorn();
+    for (const [i, [design, color]] of parts.entries()) {
+      status(`${outfitSel.value}: ${design} (${i + 1} of ${parts.length})${under.length ? " over " + under.join(", ") : ""}…`);
+      await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: "auto", under: [...under] });
+      st.clothes.push({ design, color }); await wear(design, color); drawWorn(); under.push(design);
+    }
+    status(`${outfitSel.value}: ${parts.map(p => p[0]).join(", ")}`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+  outfitBtn.disabled = false;
+};
 api("api/designs").then(r => designSel.replaceChildren(...r.designs.map(d => el("option", { value: d, textContent: d.replace(/_/g, " ") })))).catch(() => {});
 function parseObj(text) {
   const v = [], f = [];

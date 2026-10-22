@@ -121,6 +121,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 3 and clean(parts[2]):
             f = PEOPLE / clean(parts[2]) / "character.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {})
+        if parts[:2] == ["api", "outfits"]:                                         # garments made in order, each over the last
+            f = DESIGNS.parent / "outfits.json"
+            return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"outfits": {}})
         if parts[:2] == ["api", "designs"]:                                         # the garment designs
             return self.send(200, {"designs": sorted(f.stem for f in DESIGNS.glob("*.yaml"))})
         if parts[:2] == ["api", "clothes"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a draped garment
@@ -181,7 +184,9 @@ class Handler(BaseHTTPRequestHandler):
             out = PEOPLE / name / "clothes" / design
             r = subprocess.run([str(py), str(HERE / "clothes.py"), "--out", str(out), "--design", design,
                                 "--height", str(float(q.get("height", 1.7))), "--weights", json.dumps(q.get("weights", [])),
-                                "--locks", str(q.get("locks", "auto"))],
+                                "--locks", str(q.get("locks", "auto")),
+                                "--under", ",".join(str(PEOPLE / name / "clothes" / u / "garment.obj") for u in q.get("under", [])
+                                                    if clean(u) and (PEOPLE / name / "clothes" / u / "garment.obj").exists())],
                                capture_output=True, text=True, encoding="utf-8")
             line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
             if r.returncode or not line:

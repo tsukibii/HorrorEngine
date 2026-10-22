@@ -1,7 +1,7 @@
 """The drape: GarmentCode's flat panels sewn onto a body with Blender's cloth (sewing springs), headless. Runs inside
 Blender's module (tools/character/clothes.py calls it):
 
-    python drape.py -- body.obj panels.obj panels.seams.json garment.obj [frames] [locks: auto | neck,waist,hips | none]
+    python drape.py -- body.obj panels.obj panels.seams.json garment.obj [frames] [locks: auto | neck,waist,hips | none] [under: garment.obj,...]
 
 body.obj: metres, Y up, facing +Z (the Character Studio's frame). panels.obj + .seams.json: tools/garment.py's panels
 (cm, placed round GarmentCode's body: the same frame). Each panel is re-meshed with inner points (Blender's constrained
@@ -213,6 +213,7 @@ def main():
     body_obj, panels_obj, seams_json, out = args[:4]
     frames = int(args[4]) if len(args) > 4 else 90
     locks = [x for x in (args[5] if len(args) > 5 else "auto").split(",") if x and x != "none"]
+    under = [x for x in (args[6] if len(args) > 6 else "").split(",") if x]   # garments already worn: this one goes over them
     t0 = time.time()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     to_b = lambda p: (p[0], -p[2], p[1])                   # the Studio's Y up, +Z front -> Blender's Z up, -Y front
@@ -222,6 +223,12 @@ def main():
     body = bpy.data.objects.new("body", bme); bpy.context.scene.collection.objects.link(body)
     body.modifiers.new("collision", "COLLISION")
     body.collision.thickness_outer = 0.004; body.collision.cloth_friction = 5
+    for k, path in enumerate(under):                    # what's worn under it collides too, a little thicker
+        uv, uf, _ = read_obj(path)
+        ume = bpy.data.meshes.new(f"under{k}"); ume.from_pydata([to_b(p) for p in uv], [], uf); ume.update()
+        uo = bpy.data.objects.new(f"under{k}", ume); bpy.context.scene.collection.objects.link(uo)
+        uo.modifiers.new("collision", "COLLISION"); uo.collision.thickness_outer = 0.005; uo.collision.cloth_friction = 5
+        bv = np.vstack([bv, uv])                         # and the prewrap and the locks lay it over them
 
     gv, gf, sew, free = build(panels_obj, seams_json)
     # GarmentCode's body stands a little behind ours: centre the garment on this torso, front to back

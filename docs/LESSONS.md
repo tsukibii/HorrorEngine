@@ -164,3 +164,11 @@ points to the nearest skin point piled several onto the same spot on a heavy bod
 blew Blender's cloth apart (seams a metre apart). Laying them round the body's cross-section at that height (each at
 its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
 flatten a scooped neckline to one height: it hitches the whole top up.
+
+## Tops: no cuff bands, sleeves at the arms' angle (2026-10-22)
+
+GarmentCode's tops on our A-pose bodies came out cropped and crumpled. Not the tightness or the sewing force: the hem
+rode up on the hips until the top flared (`shirt.flare` 1.25 to 1.35) and was long enough, and the sleeves folded up at
+the wrist while they had a `CuffBand` (the cuff panel pulls the sleeve's end in and the drape can't pass it over the
+hand). Cut sleeves at 45 degrees (the arms' angle), 0.8 long, no cuff. Compare variants of one design side by side
+(four drapes in parallel) before changing a preset.
