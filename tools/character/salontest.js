@@ -7,7 +7,8 @@
 // pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
 // reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); thickness on a strand
 // and a sheet (off by default, the dome's height, its taper); the roots (leaving the scalp at their lift, flat at 0,
-// gravity not flattening them); the cover (a parting of Y's over the rest, its length the
+// gravity not flattening them); the presets (all eight on the head, the scalp covered, the long cut falling clear of the
+// face); the cover (a parting of Y's over the rest, its length the
 // top hair's, falling onto it with friction, kept as shown); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
@@ -374,7 +375,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     let off = 0, still = 0; for (const id in kept) { const a = shown[id], b = kept[id]; if (!a || a.length !== b.length) { off = Infinity; continue; } for (let i = 0; i < a.length; i++) off = Math.max(off, Math.abs(a[i] - b[i])); if (before[id]) for (let i = 0; i < b.length; i++) still = Math.max(still, Math.abs(before[id][i] - b[i])); }
     const lay = await ev(ids => { const s = window.__salon, SL = s.SL, over = new SL.Layers(s.COL); for (const l of s.st.locks.filter(l => l.visible && !l.cover).sort((a, b) => a.id < b.id ? -1 : 1)) over.add(s.EVAL[l.id]);
       let n = 0, under = 0; for (const id of ids) for (const G of s.EVAL[id]) { let arc = 0;              // past the root, which rises through the hair
-        G.pts.forEach((p, k) => { if (k) arc += SL.len(SL.sub(p, G.pts[k - 1])); if (arc < 0.03 || p[1] < s.COL.chin - 0.03) return; const d = SL.sub(p, s.COL.C), R = over.radius(d); if (R > 0) { n++; if (SL.len(d) < R + over.gap - 1e-6) under++; } }); }
+        G.pts.forEach((p, k) => { if (k) arc += SL.len(SL.sub(p, G.pts[k - 1])); if (arc < 0.045 || p[1] < s.COL.chin - 0.03) return; const d = SL.sub(p, s.COL.C), R = over.radius(d); if (R > 0) { n++; if (SL.len(d) < R + over.gap - 1e-6) under++; } }); }
       return { n, under, top: ids.map(id => s.st.locks.find(l => l.id === id).edges[1].slice(1, 5)) }; }, made.ids);
     const slid = Math.max(...lay.top.flatMap((E, j) => E.map((p, k) => Math.hypot(...p.map((x, a) => x - made.top[j][k][a])))));
     if (off > 1e-6 || still > 1e-6) throw new Error(`switched off, the cover moved ${off} m from what was shown; the other hair moved ${still} m`);
@@ -384,6 +385,31 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (await count() !== n0 || await ev(() => window.__salon.st.groups.some(g => g.id === "cover"))) throw new Error("two undos didn't take the cover away");
     await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.cover.settings.show = false; s.coverPanel(); s.render(); }, crown);
     console.log(`       ${made.n} sheets on the parting (roots ${(made.roots * 1000).toFixed(1)} mm off the middle and the skin), arms ${(made.length * 100).toFixed(1)} cm (the top hair's), ${made.forksLifted} forks lifted onto the hair; over it past their roots (${lay.n} points, none under); on top it slid ${(slid * 1000).toFixed(1)} mm (friction); kept as shown, the rest unmoved; undone`);
+  });
+  await step("the presets: all eight build on the head (mirrored, the scalp covered); the long cut falls and is kept with the face clear; undo brings the hair back", async () => {
+    const before = await ev(() => JSON.stringify(window.__salon.st.locks));
+    const all = await ev(() => { const s = window.__salon, SL = s.SL, L = s.localPoints(), out = [];
+      for (const p of s.presets.list) {
+        s.presets.apply(p.id); s.render();
+        const env = new SL.Envelope(s.COL); for (const l of s.st.locks) env.add(s.EVAL[l.id]);
+        let n = 0, covered = 0, inside = 0, nan = 0;
+        for (let i = 0; i < L.length; i += 3) { const q = [L[i], L[i + 1], L[i + 2]]; if (!SL.onScalp(q, s.COL.C) || SL.len(SL.sub(q, s.COL.C)) > 0.17) continue; n++; if (env.under(q) > 0.001) covered++; }
+        for (const l of s.st.locks) for (const G of s.EVAL[l.id]) G.pts.forEach((q, k) => { if (!q.every(Number.isFinite)) nan++; else if (k && s.COL.push(q, -0.001)[1]) inside++; });
+        out.push({ id: p.id, who: p.who, locks: s.st.locks.length, twins: s.st.locks.filter(l => l.mirror_of).length, cover: covered / n, inside, nan, lift: s.st.roots.lift });
+      }
+      return out; });
+    for (const r of all) if (r.locks < 10 || !r.twins || r.cover < 0.9 || r.inside || r.nan) throw new Error(`${r.id}: ${JSON.stringify(r)}`);
+    await ev(() => window.__salon.presets.apply("w_long"));
+    await page.click("#dropSwitch"); await page.waitForFunction(() => window.__salon.drop.state && window.__salon.drop.state.frames > 45, null, { timeout: 120000 });
+    await ev(() => window.__salon.drop.pause()); await page.click("#dropSwitch");
+    const face = await ev(() => { const s = window.__salon, C = s.COL.C; s.render(); let n = 0;
+      for (const l of s.st.locks) for (const G of s.EVAL[l.id]) for (const q of G.pts) if (Math.abs(q[0] - C[0]) < 0.035 && q[1] > -0.07 && q[1] < 0.02 && q[2] > C[2] + 0.06) n++;
+      return n; });
+    if (face) throw new Error(`${face} points of the long cut's hair hang in front of the face after the fall`);
+    for (let i = 0; i < all.length + 2; i++) await page.keyboard.press("Control+z");
+    const back = await ev(() => JSON.stringify(window.__salon.st.locks));
+    if (back !== before) throw new Error("undo didn't bring the hair back");
+    console.log(`       ${all.map(r => `${r.id} ${r.locks} locks ${(r.cover * 100).toFixed(0)}%`).join(", ")} of the scalp covered; the long cut fell, the face clear; undone`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

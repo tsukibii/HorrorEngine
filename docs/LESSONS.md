@@ -301,3 +301,19 @@ The salon's guides were 24 samples spread evenly, and the taper, the texture, th
 weights all took sample k as k/23 of the way along. Bending the roots needed samples closer near the root, and every
 one of those had to change to the sample's own place (each guide's `t`), as did a check that measured "half way" at
 sample 12. Carry the place with the samples (or resample by arc length) instead of deriving it from an index.
+
+## Hair finished by gravity needs stiff roots, and rows that meet (2026-10-22)
+
+The first presets fell badly three ways. Long hair combed back off the face slid down the forehead onto it (steeper
+than friction holds, and nothing in the chains stiffened the roots): the drop now holds each strand's first few cm to
+its comb, fading along it (Root hold), and long locks get a control point every 6 cm so the hold has something to
+hold. Rows too far apart left skin between them (short hair must reach past the next row's roots), and a row that
+ran into the ear was skipped whole (split rows into the runs that are on the scalp). Measure the scalp covered
+(SALON: at least 90 %) instead of judging it from one view.
+
+## Shade hair by what's over it, not by the skin (2026-10-22)
+
+The hair shader darkened hair near the skin (inner layers in shadow). Short hair lies near the skin everywhere, so a
+crop's top, its outermost hair, came out black, and with the darkened scalp under it read as bald. The depth it
+shades by is now how far a point is under the hair's outer surface (all the hair shown, round the skull's middle):
+the outermost hair is lit however close to the skin it lies.

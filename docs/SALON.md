@@ -144,6 +144,34 @@ Keep this frame) to keep them, as with gravity; Back to before leaves them as ma
 **Covers always lie over all the other hair**, Layer by height on or off: they're laid last, pushed out of a map of
 the hair under them (what lies on the head, as layering counts it). Combing is for later.
 
+## Presets: starting points finished by gravity (2026-10-22)
+
+**Start from** makes a hairstyle laid out rough on purpose, in layers, to be finished by gravity: make it, switch
+Gravity on (or **Make it and let it fall**), and switch it off when it looks right; then refine. It replaces the hair
+(undo brings it back). Women: *Long, straight, middle parting* (55 cm), *Long with blunt bangs*, *Hime cut* (blunt
+bangs, cheek-length sidelocks), *Chest length, curtain bangs*, *Shoulder length, middle parting*. Men: *Short crop*,
+*Two-block, fringe down*, *Middle-part curtains*.
+
+How they're made (`salonpresets.js`): the scalp is covered in rows of sheets from the nape to the top (six for women,
+seven for men, each split into the runs that are on the scalp, so a row stops at the ear and goes on behind it), the
+left side mirrored to the right as twins; each sheet combed by where it grows (the front band away from the face from
+a parting, the temples down by the face, the rest down; a fringe forward, curtains out from the middle), its tips at
+the style's cut (a height: the waist, the chest, the shoulders, the brows, the cheekbones) or a length for short hair,
+each a little longer or shorter than the next so the ends don't line up; the top a parting of Y's (the cover). Layer by
+height on; short hair lifts less at the root (Roots). They're built on the head shown, so they fit any MHR body.
+
+Nobody publishes presets made this way that we found. The way of working is known: grooms are left to settle under
+gravity and the result kept (Houdini's guide simulation; its forum on keeping a groom from flopping when gravity comes
+in), Bertails et al. (Eurographics 2005) predict natural hair shapes as the statics of rods under gravity, and Hsu,
+Yuksel et al. (SIGGRAPH 2023) solve the opposite, keeping a styled groom from sagging.
+
+**Gravity's Friction and Root hold** (Move, Gravity), for every fall: friction where hair touches the head or the hair
+(1: it stays on slopes under 45 degrees; 0: it slides round the head, as before), and the roots' stiffness (0.5: each
+strand's first 7 cm keep their comb, fading along it, while the rest falls; 0: nothing holds them).
+
+**Shading by depth** is now by what's over the hair: how far each point is under the hair's outer surface (all the hair
+shown), so the outermost hair is lit however close to the skin it lies; below the chin, the distance off the body.
+
 ## The scalp (2026-10-22)
 
 The **Scalp** panel darkens the skin under the hair so the hair doesn't look sparse: a flat colour (the look's roots'
@@ -223,7 +251,7 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `thick
 
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror, the pull: plain arrays, node
 can run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
-ellipsoid depth), `salonphys.js` (the chains, the step, the
+ellipsoid depth), `salonpresets.js` (the starting points), `salonphys.js` (the chains, the step, the
 skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
@@ -240,7 +268,8 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
-  its original mirrored); a bundle line; thickness; the roots (a strand on the crown leaving
+  its original mirrored); a bundle line; thickness; the presets (all eight on the head, mirrored, at least 90 % of the
+  scalp covered, the long cut falling clear of the face, undone); the roots (a strand on the crown leaving
   the scalp at its lift and bending over, flat at Lift 0, the same after gravity); the cover (the parting's Y's previewed at the top hair's length,
   made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly
   sliding on top as they fall, kept exactly as shown, the rest unmoved, undone); a save and a reload.

@@ -25,10 +25,12 @@ export function chainsOf(lock) {                                          // [pa
 export class Sim {
   constructor(locks, col, opts = {}) {
     this.col = col; this.items = []; this.drop = !!opts.drop; this.down = opts.down || [0, -1, 0]; this.strength = opts.strength ?? 1; this.friction = opts.friction || 0;
+    this.rootHold = opts.rootHold || 0; this.rootReach = opts.rootReach ?? 0.07;   // a drop: the roots' stiffness, held to their comb, fading by rootReach along
     for (const l of locks) {
       const ph = Object.assign({}, DEFAULTS, l.physics || {}); if (!ph.on && !this.drop) continue;
       if (this.drop) Object.assign(ph, { stiffness: 0, damping: 0.965, gravity: this.strength, rustle: 0 });
-      const chains = chainsOf(l).map(([path, P]) => ({ path, rest: P.map(p => p.slice()), x: null, xp: null, L: P.slice(1).map((p, i) => len(sub(p, P[i]))) }));
+      const chains = chainsOf(l).map(([path, P]) => { const L = P.slice(1).map((p, i) => len(sub(p, P[i]))), s = [0]; L.forEach((d, i) => s.push(s[i] + d));
+        return { path, rest: P.map(p => p.slice()), x: null, xp: null, L, s }; });
       // a sheet's neighbouring edges keep their spacing point by point (so it swings as one sheet)
       const ties = [];
       if (l.type === "sheet") for (let k = 0; k + 1 < chains.length; k++) for (let i = 1; i < chains[k].rest.length; i++) ties.push([k, k + 1, i, len(sub(chains[k].rest[i], chains[k + 1].rest[i]))]);
@@ -50,7 +52,8 @@ export class Sim {
           const v = mul(sub(c.x[i], c.xp[i]), ph.damping), f = i / (n - 1);
           c.xp[i] = c.x[i];
           let q = add(add(c.x[i], v), add(g, mul(wind, f)));
-          q = add(q, mul(sub(target[i], q), hold));
+          const hr = this.drop && this.rootHold && c.s[i] < this.rootReach ? this.rootHold * Math.pow(1 - c.s[i] / this.rootReach, 2) : 0;   // stiff near the root
+          q = add(q, mul(sub(target[i], q), Math.max(hold, hr)));
           c.x[i] = q;
         }
       }

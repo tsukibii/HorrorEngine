@@ -5,6 +5,7 @@ import * as SL from "./salonlib.js";
 import * as SR from "./salonref.js";
 import * as FFD from "./ffd.js";
 import * as SP from "./salonphys.js";
+import { PRESETS, buildPreset } from "./salonpresets.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { LOOKS, DEFAULT_LOOK, UV_SPAN, makeAtlas, albedo, linear } from "./hairtex.js";
@@ -298,7 +299,15 @@ const disposeOf = o => { o.geometry?.dispose(); if (o.material && !o.material.us
 // a lock's tint for the shader: its own colour, or the debug colours (w = 1 replaces the look's colour), else none
 function tintOf(l, i) { const hex = st.look.byLock ? PALETTE[i % PALETTE.length] : l.color; return hex ? [...linear(hex), 1] : [1, 1, 1, 0]; }
 // along each card: the direction the strands run (two vertices a sample)
-const depthsOf = pos => { const d = []; for (let i = 0; i < pos.length; i += 3) d.push(COL ? COL.depth([pos[i], pos[i + 1], pos[i + 2]]) : 0.03); return d; };
+// the shader's depth (0.028 the outermost, 0 deep in the hair): how far each vertex is under the hair's outer surface
+// (salonlib.js's Envelope, of all the hair shown), or until there is one, its distance off the body
+let ENV = null;
+const depthsOf = pos => { const d = []; for (let i = 0; i < pos.length; i += 3) { const p = [pos[i], pos[i + 1], pos[i + 2]]; d.push(ENV ? 0.028 - Math.min(0.028, ENV.under(p)) : COL ? COL.depth(p) : 0.03); } return d; };
+function shadeDepths() {                                               // the outer surface again, every card's depth from it
+  const shown = isShown(); ENV = new SL.Envelope(COL);
+  for (const l of st.locks) if (shown(l) && EVAL[l.id]) ENV.add(EVAL[l.id]);
+  for (const id in MESHES) for (const o of MESHES[id].children) if (o.userData.role === "cards") { const A = o.geometry.attributes.aDepth; A.array.set(depthsOf(o.geometry.attributes.position.array)); A.needsUpdate = true; }
+}
 function cardTangents(guides) { const t = []; for (const G of guides) { const n = G.pts.length; for (let k = 0; k < n; k++) { const d = SL.norm(SL.sub(G.pts[Math.min(n - 1, k + 1)], G.pts[Math.max(0, k - 1)])); t.push(...d, ...d); } } return t; }
 const PALETTE = ["#c8553d", "#4f86c6", "#6dae63", "#d9a441", "#a46cc8", "#4fb3b3", "#d97a9a", "#8f9d4a"];
 function lockColour(l, i) { return st.look.byLock ? PALETTE[i % PALETTE.length] : (l.color || look().tip); }
@@ -368,10 +377,12 @@ function refreshLocks() {
   if ((st.layering || st.locks.some(l => l.cover)) && DIRTY.size) for (const l of st.locks) DIRTY.add(l.id);   // a change re-lays the layers (all of them: simple, quick enough)
   for (const id of Object.keys(MESHES)) if (!ids.has(id) || DIRTY.has(id)) { HAIR.remove(MESHES[id]); MESHES[id].traverse(disposeOf); delete MESHES[id]; delete EVAL[id]; }
   const shown = isShown(), laid = st.locks.some(l => !MESHES[l.id]) ? layOut(st.locks.filter(shown)) : null;
+  const rebuilt = st.locks.some(l => !MESHES[l.id]);
   st.locks.forEach((l, i) => {
     if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, laid && laid.get(l.id) || null); HAIR.add(MESHES[l.id]); }
     MESHES[l.id].visible = shown(l);
   });
+  if (rebuilt) shadeDepths();
   DIRTY.clear();
   drawHandles();
 }
@@ -536,8 +547,8 @@ function startDrop(only = null) {                                     // only: t
     const map = new SL.Layers(COL); for (const l of layOrder(all.filter(l => !ids.has(l.id)))) if (EVAL[l.id]) map.add(EVAL[l.id]);
     col = { push: (p, gap) => { const [q, m] = COL.push(p, gap), r = map.push(q); return [r, m || r !== q]; } };
   }
-  // a cover rubs on the hair it lands on (it stays where it lies, slides where it's steep); the gravity switch doesn't
-  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1, friction: only ? 1 : 0 }), twins: locks.filter(twin), only, frames: [], frame: 0, running: true };
+  // hair rubs where it touches the head or the hair (it stays where it lies, slides where it's steep): Friction
+  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1, friction: st.dropFriction ?? 1, rootHold: st.dropRootHold ?? 0.5 }), twins: locks.filter(twin), only, frames: [], frame: 0, running: true };
   DROP.sim.step(IDP, IDP, ID3, 0, 0); DROP.frames.push(DROP.sim.snapshot());
   dropPanel(); requestAnimationFrame(dropLoop);
 }
@@ -587,6 +598,8 @@ function dropPanel() {
   box.append(el("p", { className: "note", textContent: DROP && DROP.only ? "The cover is falling onto the hair. Slide back to any moment; switch off (or Keep this frame) and that's its shape." : "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
   const sw = el("button", { textContent: DROP ? "Gravity: on" : "Gravity: off", className: DROP ? "on" : "", onclick: () => DROP ? keepDrop() : startDrop() }); sw.id = "dropSwitch"; box.append(sw);
   slider(box, "Strength", 0.2, 2, 0.1, st.dropStrength ?? 1, v => { st.dropStrength = v; if (DROP) DROP.sim.strength = v, DROP.sim.items.forEach(it => { it.ph.gravity = v; }); }, "how hard gravity pulls (1: the real thing)");
+  slider(box, "Root hold", 0, 1, 0.05, st.dropRootHold ?? 0.5, v => { st.dropRootHold = v; if (DROP) DROP.sim.rootHold = v; }, "how stiff the roots are: their first few cm keep their comb while the rest falls (0: nothing holds them)");
+  slider(box, "Friction", 0, 1.5, 0.05, st.dropFriction ?? 1, v => { st.dropFriction = v; if (DROP) DROP.sim.friction = v; }, "how much hair sticks where it touches the head or the hair (0: it slides round the head to its lowest; 1: it stays on slopes under 45 degrees)");
   if (!DROP) return;
   const fr = el("input", { type: "range", min: 0, max: DROP.frames.length - 1, step: 1, value: DROP.frame, id: "dropFrame", title: "the moments recorded: slide back to one", oninput: () => { pauseDrop(); showDropFrame(+fr.value); render(); } });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Moment" }), fr, el("output", { id: "dropTime", textContent: `${(DROP.frame / 30).toFixed(1)} s` })));
@@ -1013,6 +1026,26 @@ function mirrorPanel() {
   tick(box, "Mirror", st.mirror.on, v => { st.mirror.on = v; setTool(TOOL); }, "new locks get a twin across the seam that follows them");
   slider(box, "Seam", -4, 4, 0.1, st.mirror.seam * 100, v => { st.mirror.seam = v / 100; st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL); for (const l of st.locks) if (l.mirror_of) DIRTY.add(l.id); draw(); }, "cm off the head's middle: a seam parallel to the middle for a side parting");
 }
+// ---- the starting points: hairstyles laid out rough, finished by gravity (salonpresets.js) -----------------------------
+function applyPreset(id, fall = false) {
+  remember();
+  const P = buildPreset(id, COL);
+  st.locks = P.locks; st.groups = P.groups; st.layering = P.layering; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
+  if (P.roots) { Object.assign(st.roots, P.roots); SL.setRoots(st.roots); rootsPanel(); }   // short hair lifts less at the root
+  for (const l of st.locks) DIRTY.add(l.id);
+  locksPanel(); selPanel(); render();
+  if (fall) startDrop();
+  status(`${PRESETS.find(p => p.id === id).label}: ${fall ? "falling; switch gravity off to keep it" : "press Gravity (Move) to let it fall into shape"}`, "ok");
+  return P;
+}
+function presetPanel() {
+  const box = $("#presetbox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "A hairstyle laid out rough, in layers, to be finished by gravity: make it, let it fall, switch gravity off when it looks right. It replaces the hair (undo brings it back)." }));
+  const sel = el("select");
+  for (const who of ["women", "men"]) { const g = el("optgroup", { label: who === "women" ? "Women" : "Men" }); for (const p of PRESETS.filter(p => p.who === who)) g.append(el("option", { value: p.id, textContent: `${p.label} (${Math.round(p.length * 100)} cm)` })); sel.append(g); }
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), sel, el("span")));
+  box.append(el("button", { textContent: "Make it", onclick: () => applyPreset(sel.value) }), el("button", { textContent: "Make it and let it fall", onclick: () => applyPreset(sel.value, true) }));
+}
 function rootsPanel() {
   const box = $("#rootbox"); if (!box) return; box.innerHTML = "";
   box.append(el("p", { className: "note", textContent: "How hair comes out of the head, every lock: it leaves the scalp at an angle the way it goes and bends over, whatever gravity does." }));
@@ -1137,7 +1170,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1149,7 +1182,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, rootsPanel, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
+  PULL, pullPanel, rootsPanel, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;

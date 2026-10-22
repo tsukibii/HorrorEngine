@@ -217,7 +217,8 @@ export function makeSheet(rootLine, endMid, spread, col, o = {}) {
   let across = sub(r1, r0); const down = sub(endMid, rm);
   across = sub(across, mul(norm(down), dot(across, norm(down)))); across = norm(across);
   const half = mul(across, spread / 2);
-  const edges = [drape(r0, sub(endMid, half), col, o.sag ?? 0), drape(rm, endMid, col, o.sag ?? 0), drape(r1, add(endMid, half), col, o.sag ?? 0)];
+  const n = o.ctrl ?? CTRL;                                             // control points down each edge (more for a long lock)
+  const edges = [drape(r0, sub(endMid, half), col, o.sag ?? 0, n), drape(rm, endMid, col, o.sag ?? 0, n), drape(r1, add(endMid, half), col, o.sag ?? 0, n)];
   const guides = o.guides ?? clamp(Math.round(Math.max(length(root), spread) / 0.012) + 1, 3, 12);
   return { id: newId(), type: "sheet", name: o.name || "sheet", group: o.group || "g1", visible: true, root, edges, guides,
            taper: o.taper ?? 0.5, render: o.render || "cards", density: o.density ?? 60, color: o.color || null, mirror_of: null };
@@ -364,6 +365,27 @@ export class Layers {
     if (p[1] < this.col.chin - 0.03) return p;
     const d = sub(p, this.C), r = len(d), R = this.radius(d);
     return R > 0 && r < R + this.gap ? add(this.C, mul(d, (R + this.gap) / (r || 1e-9))) : p;
+  }
+}
+// how deep in the hair a point is: the hair's outer surface round the skull's middle (every guide point and card edge
+// shown, 2.5 degrees a bin, bilinear), and a point's distance under it. The shader shades by it (the hair over a point
+// shadows it), so the outermost hair is lit however close to the skin it lies; under the chin, the distance off the body.
+export class Envelope {
+  constructor(col) { this.col = col; this.C = col.C; this.R = new Float32Array(EL * AZ); }
+  add(guides) {
+    for (const G of guides) G.pts.forEach((p, k) => { const h = mul(G.across[k], G.width[k] / 2); for (const q of [p, add(p, h), sub(p, h)]) this.splat(q); });
+  }
+  splat(p) {
+    const d = sub(p, this.C), r = len(d); if (r < 1e-6 || p[1] < this.col.chin - 0.03) return;
+    const e = Math.asin(clamp(d[1] / r, -1, 1)), a = Math.atan2(d[0], d[2]), e0 = Math.round((e + Math.PI / 2) / Math.PI * (EL - 1)), a0 = Math.round((a + Math.PI) / (2 * Math.PI) * AZ);
+    for (let de = -1; de <= 1; de++) for (let da = -1; da <= 1; da++) { const ee = e0 + de; if (ee < 0 || ee >= EL) continue; const k = ee * AZ + (((a0 + da) % AZ) + AZ) % AZ; if (r > this.R[k]) this.R[k] = r; }
+  }
+  under(p) {                                                         // m under the outer surface (or off the body, low down)
+    if (p[1] < this.col.chin - 0.03) return Math.max(0, 0.028 - this.col.depth(p));
+    const d = sub(p, this.C), r = len(d) || 1e-9, e = (Math.asin(clamp(d[1] / r, -1, 1)) + Math.PI / 2) / Math.PI * (EL - 1), a = (Math.atan2(d[0], d[2]) + Math.PI) / (2 * Math.PI) * AZ;
+    const e0 = Math.floor(e), a0 = Math.floor(a), fe = e - e0, fa = a - a0, at = (i, j) => this.R[clamp(i, 0, EL - 1) * AZ + ((j % AZ) + AZ) % AZ];
+    const R = (at(e0, a0) * (1 - fa) + at(e0, a0 + 1) * fa) * (1 - fe) + (at(e0 + 1, a0) * (1 - fa) + at(e0 + 1, a0 + 1) * fa) * fe;
+    return Math.max(0, R - r);
   }
 }
 function sideways(pts, col, k) {                                     // a ribbon lying flat on the hair's surface
