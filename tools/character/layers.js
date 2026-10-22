@@ -7,7 +7,7 @@
 //
 // Every layer is baked into MHR's UV space (SIZE x SIZE) by walking each triangle once (the index is built once: the UVs never
 // change; the positions are read live). Layers are merged into three textures the skin shader reads:
-//   ov   RGBA  paint laid over the skin (straight alpha)                                  (a layer with pigment off)
+//   ov   RGBA  paint laid over the skin (premultiplied alpha)                                  (a layer with pigment off)
 //   pig  RGB   transmittance, white = none: pigment layers are multiplied together, so   (a layer with pigment on)
 //              two pigments mix like filters (blue x green goes dark teal) and order doesn't matter
 //   surf RGBA  R roughness multiplier x4 · G clear coat (gloss) · B relief · A coat roughness
@@ -312,7 +312,7 @@ export class SkinLayers {
     }
     for (let p = 0; p < n; p++) {
       const o = p * 4, a = oA[p];
-      if (a > 0.002) { ov[o] = oR[p] / a * 255; ov[o + 1] = oG[p] / a * 255; ov[o + 2] = oB[p] / a * 255; ov[o + 3] = a * 255; }
+      if (a > 0.002) { ov[o] = oR[p] * 255; ov[o + 1] = oG[p] * 255; ov[o + 2] = oB[p] * 255; ov[o + 3] = a * 255; }      // premultiplied: filtering the texture never pulls a clear texel's black into the edge
       pig[o] = pR[p] * 255; pig[o + 1] = pG[p] * 255; pig[o + 2] = pB[p] * 255; pig[o + 3] = 255;
       this.glow[o] = clamp(GR[p]) * 255; this.glow[o + 1] = clamp(GG[p]) * 255; this.glow[o + 2] = clamp(GB[p]) * 255; this.glow[o + 3] = SM[p] * 255;
       sf[o] = clamp(R[p] * 64, 0, 255); sf[o + 1] = COAT[p] * 255; sf[o + 2] = clamp(128 + HT[p] * 255, 0, 255); sf[o + 3] = COATR[p] * 255;

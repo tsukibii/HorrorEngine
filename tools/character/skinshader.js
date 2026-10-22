@@ -247,7 +247,7 @@ if (uHasTouch > 0.5) { vec4 tp = texture2D(uTouchPaint, vSkinUv); diffuseColor.r
 if (uHasPig > 0.5 && uPigOn > 0.5) diffuseColor.rgb *= pow(texture2D(uTouchPig, vSkinUv).rgb, vec3(uf_pigStrength / 1.4));   // the pigment strokes: filters, multiplied together   // the touch-up's paint, over all
 if (uHasLay > 0.5) {                                                   // the layers above the base: pigment (filters), paint over, then the surface (gloss, relief)
   diffuseColor.rgb *= texture2D(uLayPig, vSkinUv).rgb;
-  vec4 lo = texture2D(uLayOv, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, lo.rgb, lo.a);
+  vec4 lo = texture2D(uLayOv, vSkinUv); diffuseColor.rgb = diffuseColor.rgb * (1.0 - lo.a) + lo.rgb;   // premultiplied
   vec4 sf = texture2D(uLaySurf, vSkinUv);
   skinRough *= max(sf.r * 4.0, 0.04); skinCoat = clamp(skinCoat + sf.g, 0.0, 1.0); skinH += (sf.b - 0.50196) * 14.0; if (sf.g > 0.01) skinCoatR = 1.0 - sf.a;
 }
@@ -273,7 +273,7 @@ if (uProc > 0.5) {                                                   // light th
 if (uProc > 0.5 || uHasLay > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-6";
+  material.customProgramCacheKey = () => "studio-skin-7";
   return u;
 }
 
