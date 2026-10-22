@@ -292,3 +292,13 @@ sheets lie draped from the seam down the sides, and pinned at the top on a smoot
 can go; only what reaches past the head's widest (or off the hair's edge) hangs and falls. To check that gravity acts,
 make something that can fall (the cover 40 cm wide, its sides round under the widest part), and expect laid hair to
 stay put.
+
+## Hair without friction slides round the head (2026-10-22)
+
+The cover's sheets were combed out from a middle parting, and the fall (Verlet, the head pushing points out, no
+friction) swung them round the back of the head into a crest: on a frictionless head, hair lying on top creeps to its
+lowest path whatever way it was combed, and the head's slight tilt decides which way. Hair that lies needs friction
+where it touches: the slide along the surface held back by friction times how far the point was pushed out (Coulomb,
+position-based), so it stays where the slope is gentle and slides where it's steep. The other side of it: hair laid
+along the head with friction is already where gravity leaves it; to check that a fall happens at all, make something
+that overhangs.

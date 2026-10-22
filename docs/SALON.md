@@ -137,6 +137,22 @@ the hair under them (what lies on the head, as layering counts it). Hair laid al
 leaves it, so a cover over the crown hardly moves; what reaches past the head's widest, or off the hair's edge, hangs.
 Combing is for later.
 
+## The cover: the finishing helper (2026-10-22)
+
+Locks placed round a crown can leave a hole in the middle. **Finish** covers it with a **parting**: a root line along
+the head's middle (the mirror's seam, so moving the seam makes a side parting), **From** and **To** where it runs (0 the
+front hairline, 100 the nape; 10 to 60 to start), each root a **Y**: a stem up from the skin to the top of the hair
+over it (the fork; in a gap, none), then two arms, out to both sides over the hair, round the head to 80 degrees off
+the parting and then straight down, **Length** long (to start: as long as the hair rooted highest on the head).
+**Show the parting** draws the Y's before they're made. **Make the hair** makes them (two sheets a stretch of about 6
+cm, in the group **Cover**) and lets them fall: gravity for them alone, the rest of the hair still and in their way,
+and **friction** where they touch, so they stay where they lie and slide only where it's steep. Switch gravity off (or
+Keep this frame) to keep them, as with gravity; Back to before leaves them as made. Its hair is ordinary sheets
+(`cover: true`), refined like any other.
+
+**Covers always lie over all the other hair**, Layer by height on or off: they're laid last, pushed out of a map of
+the hair under them (what lies on the head, as layering counts it). Combing is for later.
+
 ## The scalp (2026-10-22)
 
 The **Scalp** panel darkens the skin under the hair so the hair doesn't look sparse: a flat colour (the look's roots'

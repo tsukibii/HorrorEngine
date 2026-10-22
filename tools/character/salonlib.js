@@ -237,35 +237,45 @@ export function makeBundleLine(rootLine, tip, col, o = {}) {
 }
 
 // ---- the cover: the finishing helper -----------------------------------------------------------------------------------
-// A plane laid over a gap, following the head: its seam (the plane's middle, `height` long, running `t` from the centre
-// `c`) is the roots, and it reaches `width` / 2 to each side. Points go round the skull's middle by arc length (along
-// the seam, then across from it), each on the skin or, through `over(p)`, on the hair laid there.
-//   coverPlane(col, {c, t, width, height}, over, ns, nw) -> rows along the seam, each nw points across, left to right
-export function coverPlane(col, P, over = null, ns = 9, nw = 13) {
-  const n = col.normal(P.c), t = norm(sub(P.t, mul(n, dot(P.t, n)))), b = cross(n, t), R0 = len(sub(P.c, col.C)), rows = [];
-  for (let i = 0; i < ns; i++) {
-    const al = (i / (ns - 1) - 0.5) * P.height / R0, row = [];
-    for (let j = 0; j < nw; j++) {
-      const be = (j / (nw - 1) - 0.5) * P.width / R0;
-      const d = norm(add(add(mul(n, Math.cos(al) * Math.cos(be)), mul(t, Math.sin(al) * Math.cos(be))), mul(b, Math.sin(be))));
-      const q = add(col.C, mul(d, col.radius(d) + GAP));
-      row.push(over ? over(q) : q);
-    }
-    rows.push(row);
+// A parting along the head's middle (the seam, x = seam), hair over the gaps: each root a Y, up from the skin to the top
+// of the hair over it (the fork: `over(p)` lifts a point onto the hair laid there), then out to both sides over the
+// hair, `length` long: round the head to 80 degrees off the parting, then straight down. Two sheets a stretch of the
+// parting (about 6 cm), so they follow the head; `cover` lays them over all the other hair.
+//   scalpMidline(col, seam) -> the scalp's middle line, the front hairline to the nape, as points
+//   partingCover(col, {seam, from, to, length, over}) -> the sheets (from, to: shares of the midline, front to nape)
+export function scalpMidline(col, seam = 0, n = 241) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const a = (-0.1 + 1.35 * i / (n - 1)) * Math.PI, p = col.surface(add(col.C, [seam, 0.1 * Math.sin(a), 0.1 * Math.cos(a)]));
+    if (onScalp(p, col.C)) out.push(p); else if (out.length) break;
   }
-  return rows;
+  return out;
 }
-// the cover's hair: two sheets rooted on the seam (on the skin), combed out over the plane to each side; `cover` lays
-// them over all the other hair
-export function makeCover(col, P, over = null, o = {}) {
-  const G = coverPlane(col, P, over, 9, 2 * CTRL - 1), ns = G.length, mid = CTRL - 1;
-  const root = G.map(row => col.surface(row[mid]));
-  const guides = clamp(Math.round(P.height / 0.008) + 1, 4, 14);
-  return [-1, 1].map(side => {
-    const edge = i => [root[i], ...Array.from({ length: CTRL - 1 }, (_, k) => G[i][mid + side * (k + 1)])];
-    return { id: newId(), type: "sheet", name: side < 0 ? "cover 1" : "cover 2", group: o.group || "g1", visible: true, cover: true,
-             root: root.map(p => p.slice()), edges: [edge(0), edge(ns >> 1), edge(ns - 1)], guides, taper: 0.3, render: "cards", density: 80, color: null, mirror_of: null };
-  });
+const ARM_TURN = 80 * Math.PI / 180;
+function yArm(col, root, side, L, over, n = 10) {
+  const lift = q => over ? over(col.push(q, GAP)[0]) : col.push(q, GAP)[0];
+  const fork = lift(add(root, mul(col.normal(root), GAP))), d0 = col.normal(fork);
+  let sw = sub([side, 0, 0], mul(d0, dot([side, 0, 0], d0))); sw = norm(sw);
+  const round = a => { const d = norm(add(mul(d0, Math.cos(a)), mul(sw, Math.sin(a)))); return add(col.C, mul(d, col.radius(d) + GAP)); };
+  const R0 = len(sub(fork, col.C)), turn = Math.min(ARM_TURN, L / R0), side80 = round(turn), pts = [root, fork];
+  for (let i = 1; i <= n - 2; i++) {
+    const s = L * i / (n - 2);
+    pts.push(lift(s <= turn * R0 ? round(s / R0) : add(side80, [0, -(s - turn * R0), 0])));
+  }
+  return pts;
+}
+export function partingCover(col, o = {}) {
+  const line = scalpMidline(col, o.seam ?? 0); if (line.length < 2) return [];
+  const total = length(line), a = clamp(o.from ?? 0.1, 0, 1), b = clamp(o.to ?? 0.6, 0, 1), L = o.length ?? 0.2;
+  if ((b - a) * total < 0.01) return [];
+  const segs = Math.max(1, Math.round((b - a) * total / 0.06)), out = [];
+  for (let k = 0; k < segs; k++) {
+    const f0 = a + (b - a) * k / segs, f1 = a + (b - a) * (k + 1) / segs, root = Array.from({ length: 7 }, (_, i) => along(line, f0 + (f1 - f0) * i / 6));
+    const guides = clamp(Math.round(length(root) / 0.008) + 1, 3, 10);
+    for (const side of [1, -1]) out.push({ id: newId(), type: "sheet", name: `cover ${k + 1} ${side > 0 ? "left" : "right"}`, group: o.group || "g1", visible: true, cover: true,
+      root: root.map(p => p.slice()), edges: [0, 3, 6].map(i => yArm(col, root[i], side, L, o.over)), guides, taper: 0.3, render: "cards", density: 80, color: null, mirror_of: null });
+  }
+  return out;
 }
 
 // every point array of a lock (the handles and the roots), for moving, mirroring, saving

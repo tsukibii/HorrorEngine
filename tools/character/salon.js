@@ -470,52 +470,49 @@ function play(now) {
   requestAnimationFrame(play);
 }
 // ---- the cover: the finishing helper ----------------------------------------------------------------------------------
-// A plane over a gap (the Cover tool: a click on the head), following the head and the hair on it, its seam running up
-// the view (Turn turns it). Make the hair: two sheets rooted on the seam, out to both sides over the plane, laid over
-// all the other hair (covers always lie on top), then they fall onto it (gravity on, only the cover). Not saved: a helper.
-let PLANE = null, PLANEM = null;
-function planeOf(P) {                                                  // the seam's way: the view's up on the head, turned
-  const n = COL.normal(P.c), t0 = SL.norm(SL.sub(P.up, SL.mul(n, SL.dot(P.up, n)))), b0 = SL.cross(n, t0), a = P.turn * Math.PI / 180;
-  return { c: P.c, t: SL.add(SL.mul(t0, Math.cos(a)), SL.mul(b0, Math.sin(a))), width: P.width, height: P.height };
-}
+// Hair over the gaps (Finish): a parting along the head's middle (the mirror's seam, so a side parting moves it), each
+// root a Y: up through the hair to its top, then out to both sides over it, as long as the hair rooted highest on the
+// head (Length changes it). Show it previews the Y's; Make the hair adds them (group Cover, laid over all the other
+// hair) and lets them fall onto it (gravity on for them alone). salonlib.js's partingCover.
+const COVER = { show: false, from: 0.1, to: 0.6, length: null };
+let COVERM = null;
 function hairOver() {                                                  // a point lifted onto the hair shown (not covers)
   const map = new SL.Layers(COL); for (const l of layOrder(st.locks.filter(isShown()).filter(l => !l.cover))) if (EVAL[l.id]) map.add(EVAL[l.id]);
   return p => map.push(p);
 }
-function placePlane(c, up) { PLANE = Object.assign({ width: 0.1, height: 0.08, turn: 0 }, PLANE || {}, { c, up }); drawPlane(); coverPanel(); draw(); }
-function drawPlane() {
-  if (PLANEM) { HAIR.remove(PLANEM); PLANEM.traverse(disposeOf); PLANEM = null; }
-  if (!PLANE) return;
-  const rows = SL.coverPlane(COL, planeOf(PLANE), hairOver()), ns = rows.length, nw = rows[0].length, pos = [], idx = [];
-  rows.forEach(r => r.forEach(p => pos.push(...p)));
-  for (let i = 0; i < ns - 1; i++) for (let j = 0; j < nw - 1; j++) { const a = i * nw + j; idx.push(a, a + 1, a + nw, a + 1, a + nw + 1, a + nw); }
-  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
-  PLANEM = new THREE.Group();
-  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x7fb2ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })); m.renderOrder = 5;
-  const line = (pts, color) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color, depthTest: false })); l.renderOrder = 10; return l; };
-  const rim = [...rows[0], ...rows.map(r => r[nw - 1]), ...rows[ns - 1].slice().reverse(), ...rows.map(r => r[0]).reverse()];
-  PLANEM.add(m, line(rim, 0x9cc4ff), line(rows.map(r => r[nw >> 1]), 0x5aa65a));
-  HAIR.add(PLANEM);
+function topLength() {                                                 // how long the hair rooted highest is (its middle guide)
+  const l = st.locks.filter(isShown()).filter(l => !l.cover).sort((a, b) => SL.rootHeight(b) - SL.rootHeight(a))[0];
+  const G = l && (EVAL[l.id] || SL.evaluate(l, COL)); return G ? SL.length(G[G.length >> 1].pts) : 0.15;
+}
+const coverLocks = () => SL.partingCover(COL, { seam: st.mirror.seam, from: COVER.from, to: COVER.to, length: COVER.length ?? topLength(), over: hairOver(), group: "cover" });
+function drawCover() {
+  if (COVERM) { HAIR.remove(COVERM); COVERM.traverse(disposeOf); COVERM = null; }
+  if (!COVER.show) return;
+  const locks = coverLocks(); if (!locks.length) return;
+  const line = (pts, color) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(SL.catmull(pts).map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color, depthTest: false })); l.renderOrder = 10; return l; };
+  COVERM = new THREE.Group();
+  for (const l of locks) { for (const E of l.edges) COVERM.add(line(E, 0x9cc4ff)); COVERM.add(line(l.root, 0x5aa65a)); }
+  HAIR.add(COVERM);
 }
 function makeCoverHair() {
-  if (!PLANE) return null;
-  render(); remember();
+  render();
+  const locks = coverLocks(); if (!locks.length) return null;
+  remember();
   if (!st.groups.find(g => g.id === "cover")) st.groups.push({ id: "cover", name: "Cover", visible: true });
-  const locks = SL.makeCover(COL, planeOf(PLANE), hairOver(), { group: "cover" });
   st.locks.push(...locks);
-  PLANE = null; drawPlane(); SELECTED = null; locksPanel(); selPanel(); coverPanel(); render();
+  COVER.show = false; drawCover(); SELECTED = null; locksPanel(); selPanel(); coverPanel(); render();
   startDrop(locks.map(l => l.id));
   return locks;
 }
 function coverPanel() {
   const box = $("#coverbox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: "A plane over a gap (Cover, C: click on the head). Make the hair: hair from its seam out to both sides, over all the other hair, then it falls onto it (switch gravity off to keep it)." }));
-  if (!PLANE) { box.append(el("button", { textContent: "Place a plane", onclick: () => setTool("cover") })); return; }
-  const set = () => { drawPlane(); draw(); };
-  slider(box, "Width", 2, 40, 0.5, +(PLANE.width * 100).toFixed(1), v => { PLANE.width = v / 100; set(); }, "cm across the seam (half to each side)");
-  slider(box, "Height", 2, 40, 0.5, +(PLANE.height * 100).toFixed(1), v => { PLANE.height = v / 100; set(); }, "cm along the seam: how long the root line is");
-  slider(box, "Turn", -90, 90, 1, PLANE.turn, v => { PLANE.turn = v; set(); }, "degrees: the seam turned from the view's up");
-  box.append(el("button", { textContent: "Make the hair", onclick: makeCoverHair }), el("button", { textContent: "Remove the plane", onclick: () => { PLANE = null; drawPlane(); coverPanel(); draw(); } }));
+  box.append(el("p", { className: "note", textContent: "Hair over the gaps: a parting along the head's middle (the mirror's seam), each root a Y, up through the hair to its top and out to both sides over it. Make the hair: it lies over all the other hair and falls onto it (switch gravity off to keep it)." }));
+  const set = () => { drawCover(); draw(); };
+  const t = el("div"); tick(t, "Show the parting", COVER.show, v => { COVER.show = v; set(); coverPanel(); }, "the Y's it would make, before making them"); box.append(t);
+  slider(box, "From", 0, 100, 1, Math.round(COVER.from * 100), v => { COVER.from = v / 100; set(); }, "% along the head's middle where it starts: 0 the front hairline, 100 the nape");
+  slider(box, "To", 0, 100, 1, Math.round(COVER.to * 100), v => { COVER.to = v / 100; set(); }, "% along the head's middle where it ends");
+  slider(box, "Length", 2, 80, 0.5, +((COVER.length ?? topLength()) * 100).toFixed(1), v => { COVER.length = v / 100; set(); }, "cm each side reaches: at first, as long as the hair rooted highest on the head");
+  box.append(el("button", { textContent: "Make the hair", onclick: makeCoverHair }));
 }
 
 // ---- gravity: all the hair falls -------------------------------------------------------------------------------------------
@@ -537,7 +534,8 @@ function startDrop(only = null) {                                     // only: t
     const map = new SL.Layers(COL); for (const l of layOrder(all.filter(l => !ids.has(l.id)))) if (EVAL[l.id]) map.add(EVAL[l.id]);
     col = { push: (p, gap) => { const [q, m] = COL.push(p, gap), r = map.push(q); return [r, m || r !== q]; } };
   }
-  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1 }), twins: locks.filter(twin), only, frames: [], frame: 0, running: true };
+  // a cover rubs on the hair it lands on (it stays where it lies, slides where it's steep); the gravity switch doesn't
+  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1, friction: only ? 1 : 0 }), twins: locks.filter(twin), only, frames: [], frame: 0, running: true };
   DROP.sim.step(IDP, IDP, ID3, 0, 0); DROP.frames.push(DROP.sim.snapshot());
   dropPanel(); requestAnimationFrame(dropLoop);
 }
@@ -784,13 +782,12 @@ function deleteLock(id) {
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
-const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["cover", "Cover (C)", "c"], ["fit", "Fit ref (F)", "f"]];
+const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
   select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). The handles in the ring move with it, less the farther they are: the wheel while dragging grows (down) or shrinks (up) the ring, O turns it off. Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
-  cover: "Click where the hair has a gap: a plane lies over it, its seam (green) running up the view, the roots of its hair. The wheel sizes it; Width, Height and Turn are in Finish. Make the hair: hair from the seam out to both sides, over all the other hair, then it falls onto it.",
   bline: "Drag a line along the blue scalp: it's the bundle's width (its diameter). Let go, then click the tip. The wheel makes it an oval (its height) while you place it.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
@@ -860,10 +857,6 @@ cv.addEventListener("pointerdown", e => {
   if (!orbitOnly && (TOOL === "strand" || TOOL === "bundle")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.root = p; PLACE.stage = 1; showPreview(previewFrom(e)); draw(); return; } }
     else { const l = previewFrom(e); if (l) { resetPlace(); addLock(l); } return; }
-  }
-  if (!orbitOnly && TOOL === "cover") {
-    const p = headAt(e.clientX, e.clientY);
-    if (p) { const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion); placePlane(COL.surface(p), SR.MV(SR.T(HF.B), up.toArray())); return; }
   }
   if (!orbitOnly && (TOOL === "sheet" || TOOL === "bline")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.line = [p]; DRAG = { kind: "rootline" }; showRootLine(PLACE.line); draw(); return; } }
@@ -937,7 +930,6 @@ cv.addEventListener("wheel", e => {
     draw(); return;
   }
   if (TOOL === "fit" && SNAP) { st.reference.fit.scale *= s < 0 ? 1.02 : 1 / 1.02; recam(); fitPanelSync(); draw(); return; }
-  if (TOOL === "cover" && PLANE) { const k = s < 0 ? 1.1 : 1 / 1.1; PLANE.width = Math.min(0.4, Math.max(0.02, PLANE.width * k)); PLANE.height = Math.min(0.4, Math.max(0.02, PLANE.height * k)); drawPlane(); coverPanel(); draw(); return; }
   if (e.shiftKey && SNAP) { stepFrame(s); return; }
   if (SNAP) orbit.zoom = Math.max(0.5, Math.min(6, orbit.zoom * (s < 0 ? 1.1 : 1 / 1.1)));
   else orbit.dist = Math.max(0.25, Math.min(3, orbit.dist * (s < 0 ? 1 / 1.1 : 1.1)));
@@ -1029,6 +1021,7 @@ function pullPanel() {
   const o = el("div"); tick(o, "This lock only", PULL.only, v => { PULL.only = v; drawHandles(); draw(); }, "only the handles of the lock you pull, not the hair round it"); box.append(o);
 }
 function locksPanel() {
+  if (COVER.length == null) coverPanel();                             // the cover's Length follows the top hair until it's set
   const box = $("#locks"); box.innerHTML = "";
   for (const g of st.groups) {
     const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group", onclick: () => { g.visible = !g.visible; locksPanel(); draw(); } });
@@ -1145,7 +1138,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, cover: { place: placePlane, make: makeCoverHair, get plane() { return PLANE; }, rows: () => PLANE && SL.coverPlane(COL, planeOf(PLANE), hairOver()) }, coverPanel,
+  PULL, pullPanel, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;

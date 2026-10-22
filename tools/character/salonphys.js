@@ -9,7 +9,7 @@
 //                                         turn from upright (3x3 rows); returns nothing
 //   sim.pose(lock) -> a copy of the lock with its chains where the sim has them (local), for evaluate()
 
-import { add, sub, mul, len } from "./salonlib.js";
+import { add, sub, mul, len, dot } from "./salonlib.js";
 
 export const DEFAULTS = { on: false, stiffness: 0.4, damping: 0.92, gravity: 1, rustle: 0 };
 export const holdOf = s => 0.02 + 0.3 * s * s;                            // stiffness (0 floppy, 1 stiff) -> pull to rest per step
@@ -24,7 +24,7 @@ export function chainsOf(lock) {                                          // [pa
 // the space the step works in), until it lies or hangs; the step's points are recorded for scrubbing
 export class Sim {
   constructor(locks, col, opts = {}) {
-    this.col = col; this.items = []; this.drop = !!opts.drop; this.down = opts.down || [0, -1, 0]; this.strength = opts.strength ?? 1;
+    this.col = col; this.items = []; this.drop = !!opts.drop; this.down = opts.down || [0, -1, 0]; this.strength = opts.strength ?? 1; this.friction = opts.friction || 0;
     for (const l of locks) {
       const ph = Object.assign({}, DEFAULTS, l.physics || {}); if (!ph.on && !this.drop) continue;
       if (this.drop) Object.assign(ph, { stiffness: 0, damping: 0.965, gravity: this.strength, rustle: 0 });
@@ -64,9 +64,18 @@ export class Sim {
         }
       }
       for (const c of it.chains) for (let i = 1; i < c.x.length; i++) {             // off the body (in the head's space)
-        const [q, moved] = this.col.push(Minv(c.x[i]), this.drop ? 0.0025 : 0.006); if (moved) c.x[i] = M(q);
+        const p = Minv(c.x[i]), [q, moved] = this.col.push(p, this.drop ? 0.0025 : 0.006); if (!moved) continue;
+        c.x[i] = M(this.friction ? this.rub(p, q, Minv(c.xp[i])) : q);
       }
     }
+  }
+  // friction where a point touches (position-based Coulomb, as in Mueller et al.'s unified particles): its slide along
+  // the surface this step held back, all of it while the slide is under friction x how far it was pushed out (static),
+  // else that much of it; so hair lying where the slope is under atan(friction) stays put and steeper hair slides
+  rub(p, q, prev) {
+    const nv = sub(q, p), d = len(nv); if (d < 1e-12) return q;
+    const n = mul(nv, 1 / d), mv = sub(q, prev), tg = sub(mv, mul(n, dot(mv, n))), tl = len(tg); if (tl < 1e-12) return q;
+    return sub(q, mul(tg, Math.min(1, this.friction * d / tl)));
   }
   reset() { for (const it of this.items) for (const c of it.chains) { c.x = null; c.xp = null; } }
   // every chain point now, flat (a recorded frame), and back
