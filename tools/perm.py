@@ -52,10 +52,30 @@ def py_of(home):
     return home / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+def kind(path):
+    """what a download really is, by its first bytes"""
+    head = path.read_bytes()[:4096] if path.stat().st_size else b""
+    if not head: return "empty"
+    low = head.lstrip().lower()
+    if low.startswith((b"<!doctype html", b"<html")) or b"<html" in low[:2000]: return "a web page"
+    if zipfile.is_zipfile(path): return "zip"
+    if tarfile.is_tarfile(path): return "tar"
+    for magic, name in ((b"7z\xbc\xaf\x27\x1c", "7-zip"), (b"Rar!", "RAR"), (b"\x1f\x8b", "gzip (not a tar)"), (b"BZh", "bzip2"),
+                        (b"\xfd7zXZ", "xz"), (b"\x80", "a pickle")):
+        if head.startswith(magic): return name
+    return "unknown (starts " + head[:8].hex(" ") + ")"
+
+
 def unpack(archive, dest):
-    """a tar or zip into dest, refusing any path that would land outside it"""
+    """a tar, zip or 7-zip into dest, refusing any path that would land outside it"""
     dest.mkdir(parents=True, exist_ok=True)
     root = dest.resolve()
+    if kind(archive) == "7-zip":                           # 7z (p7zip) when it's installed: listed first, every path checked
+        if not shutil.which("7z"): return False
+        listing = subprocess.run(["7z", "l", "-slt", "-ba", str(archive)], capture_output=True, text=True).stdout
+        for m in (l[7:] for l in listing.splitlines() if l.startswith("Path = ")):
+            if not (dest / m).resolve().is_relative_to(root): sys.exit(f"{archive}: {m} points outside: refused")
+        return subprocess.run(["7z", "x", "-y", f"-o{dest}", str(archive)], stdout=subprocess.DEVNULL).returncode == 0
     if zipfile.is_zipfile(archive):
         with zipfile.ZipFile(archive) as z:
             for m in z.namelist():
@@ -74,6 +94,10 @@ def unpack(archive, dest):
 def fetch(name, url, downloads):
     """the file from its link (download=1), or one already in downloads/ whose name starts with the key"""
     have = sorted(p for p in downloads.glob(f"{name}*") if p.is_file())
+    for p in have:                                         # a web page saved by an earlier try isn't the file: fetch again
+        if kind(p) in ("a web page", "empty"):
+            print(f"  {p.name} is {kind(p)}, not the download: removed"); p.unlink()
+    have = [p for p in have if p.exists()]
     if have: return have[0]
     out = downloads / (name + (".obj" if name == "head" else ".bin"))
     tries = [url]
@@ -86,7 +110,7 @@ def fetch(name, url, downloads):
             req = urllib.request.Request(direct, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=60) as r, open(out, "wb") as f:
                 shutil.copyfileobj(r, f)
-            if b"<html" in out.read_bytes()[:2000].lower():
+            if kind(out) in ("a web page", "empty"):
                 out.unlink(); raise OSError("a web page came back, not the file")
             return out
         except OSError as e:
@@ -121,7 +145,7 @@ def cmd_setup(a):
         else:
             target = home / name
             if not (target.exists() and any(target.iterdir())) and not unpack(f, target):
-                missing.append((name, url)); print(f"  {f.name} isn't a zip or tar")
+                missing.append((name, url)); print(f"  {f.name} is {kind(f)}: not an archive setup can open" + (" (install 7z: sudo pacman -S p7zip)" if kind(f) == "7-zip" else ""))
     if missing:
         print("\nSome links refused a script. Download these in your browser into " + str(downloads) + ", named as shown, then run setup again:")
         for name, url in missing: print(f"  {name}*  <-  {url}")
