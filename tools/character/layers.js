@@ -112,7 +112,7 @@ export class SkinLayers {
 
   // ---- distances along the surface: Dijkstra over the edges, from every source at once, as far as `limit` ----
   distance(isSource, limit) {
-    const { N, adjStart, adj } = this, P = this.getPos(), dist = new Float32Array(N).fill(Infinity);
+    const { N, adjStart, adj } = this, P = this.getPos(), dist = new Float64Array(N).fill(Infinity);          // doubles: float32 rounding made equal paths look shorter and looped forever
     const hk = [], hv = [];                                   // a binary heap of (distance, vertex)
     const push = (k, v) => { let i = hk.length; hk.push(k); hv.push(v); while (i > 0) { const p = (i - 1) >> 1; if (hk[p] <= hk[i]) break; [hk[p], hk[i]] = [hk[i], hk[p]]; [hv[p], hv[i]] = [hv[i], hv[p]]; i = p; } };
     const pop = () => { const k = hk[0], v = hv[0], lk = hk.pop(), lv = hv.pop(); if (hk.length) { hk[0] = lk; hv[0] = lv; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < hk.length && hk[l] < hk[m]) m = l; if (r < hk.length && hk[r] < hk[m]) m = r; if (m === i) break; [hk[m], hk[i]] = [hk[i], hk[m]]; [hv[m], hv[i]] = [hv[i], hv[m]]; i = m; } } return [k, v]; };
