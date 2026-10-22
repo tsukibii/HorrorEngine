@@ -36,6 +36,23 @@ head), camera height, sweep (a turn that went further or less than found), "the 
 camera reflected across the head's middle). "Glue again" goes back to the automatic fit. Shift+wheel or the arrow keys
 step through the frames.
 
+## The cube (2026-10-22)
+
+The reference sits inside a **cube**: a 3 x 3 x 3 lattice (`ffd.js`) round its hair (the box carved from the keyed
+frames: `hull_box` in `reference.json`). With the **Fit ref** tool the cube is drawn in orange with a handle on every
+surface point: the corners (white) are shared by three faces, the edges' middles (orange) by two, each face has its
+middle (blue). Pulling one bends the picture where that part of the cube faces you: the front face's points bend the
+front views, a side's the side views, a corner every view that sees it. Alt-drag moves a point towards or away from
+you. **Width, height, depth** stretch the whole cube about its middle (the reference's own move, scale and turn are
+the fit's sliders above); **symmetric** pulls the other side's same point mirrored; **Reset the cube** puts every point
+back; **Cube round the hair** makes a new one on the hair as it sits now. Undo covers the cube and the fit.
+
+How a frame bends: it's drawn as a 24 x 24 grid, each vertex where its pixel lands once the cube has moved the space it
+shows. A pixel's ray is taken to meet the hair at the cube's inscribed ellipsoid (where it enters, or where it passes
+closest), that point is moved by the lattice, and projected back with the frame's camera. The lattice interpolates:
+the space under a handle moves exactly with it, smoothly between (Blender's Bezier lattice moves it by a fraction; here
+a pulled face's middle drags the picture's middle the whole way). The cube is saved with the fit (`fit.cube`).
+
 ## The locks
 
 | Tool | Key | How | The wheel while placing |
@@ -74,14 +91,15 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine
 ## Code
 
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror: plain arrays, node can
-run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `gshair/reference.py` (the reference from
-a capture or photos, the face fit), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
+run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
+ellipsoid depth), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
 
 - `node tools/character/salontest.js`: SALON (the server running; `BODY_URL` for another port): the view snaps onto
   the MiniMax reference's frames at 0, 90, 180 and 270 degrees with the frame's camera exactly, the far side mirrored
-  with half the turn, the fit moving the cameras; a strand, a sheet and a bundle placed with the mouse; Mirror's twin
+  with half the turn, the fit moving the cameras; the cube's front face dragged with the mouse bending the front view
+  and not the back (and undone); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.

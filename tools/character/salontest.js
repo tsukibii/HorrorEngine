@@ -1,6 +1,7 @@
 // The salon (tools/character/salon.html) in a headless browser. The locked reference: turning the view snaps it onto the
 // nearest frame of the MiniMax turntable (Content/Studio/Hair/References/minimax_wig), the view's camera is that frame's,
-// the picture is drawn; with half the turn in use the far side is a mirrored frame; the fit moves the cameras. The lock
+// the picture is drawn; with half the turn in use the far side is a mirrored frame; the fit moves the cameras; the
+// reference's cube bends the picture where its pulled face looks at the view. The lock
 // tools with the mouse: a strand (root, end), a sheet (a root line dragged along the scalp, an end), a bundle; Mirror on
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; a
 // save and a reload. Ends "SALON ok".
@@ -40,8 +41,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     let last = null;
     for (const a of [0, 90, 180, 270]) {
       await view(a * Math.PI / 180, -0.25, 0.85); await page.waitForTimeout(400);
-      const r = await ev(() => { const s = window.__salon, c = s.SNAP; if (!c) return null; const m = document.querySelector("#ref");
-        return { name: c.name, angle: c.angle, mirrored: c.mirrored, shown: m.style.display !== "none" && m.complete && m.naturalWidth > 0 }; });
+      const r = await ev(() => { const s = window.__salon, c = s.SNAP; if (!c) return null; const o = s.overlay();
+        return { name: c.name, angle: c.angle, mirrored: c.mirrored, shown: o.visible && o.loaded }; });
       if (!r) throw new Error(`no frame at ${a}°`);
       if (r.angle > 8) throw new Error(`${a}°: the nearest frame ${r.name} is ${r.angle.toFixed(1)}° off`);
       if (r.mirrored) throw new Error(`${a}°: a mirrored frame although the video covers it`);
@@ -59,8 +60,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await view(-Math.PI / 2, -0.25, 0.85);
     const r = await ev(() => { const c = window.__salon.SNAP; return c && { name: c.name, mirrored: c.mirrored, angle: c.angle }; });
     if (!r || !r.mirrored) throw new Error(JSON.stringify(r));
-    const flip = await ev(() => document.querySelector("#ref").style.transform);
-    if (!/scale\(-1, 1\)/.test(flip)) throw new Error("the picture isn't flipped: " + flip);
+    const flip = await ev(() => window.__salon.overlay().flipped);
+    if (!flip) throw new Error("the picture isn't flipped");
     console.log(`       270° -> frame ${r.name} mirrored`);
     await ev(() => { const s = window.__salon; s.st.reference.fit.cover = 360; s.recam(); });
   });
@@ -70,6 +71,27 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
       const a = s.SR.worldCamera(s.CAMS.find(same), s.HF).C; s.st.reference.fit.offset[0] += 0.02; s.recam();
       const b = s.SR.worldCamera(s.CAMS.find(same), s.HF).C; s.st.reference.fit.offset[0] -= 0.02; s.recam(); return Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / s.HF.S; });
     if (Math.abs(d - 0.02) > 1e-4) throw new Error(`a 2 cm offset moved the camera ${(d * 100).toFixed(2)} cm`);
+  });
+  await step("the cube: a face's middle pulled bends the picture where that face looks at you, hardly elsewhere", async () => {
+    await page.keyboard.press("f");
+    const mid = async yaw => { await view(yaw, -0.25, 0.85); await page.waitForTimeout(300);
+      return ev(() => { const P = window.__salon.overlay().pos, G = Math.round(Math.sqrt(P.length / 3)) - 1, i = ((G / 2) * (G + 1) + G / 2) * 3; return [P[i], P[i + 1]]; }); };
+    const f0 = await mid(0), b0 = await mid(Math.PI);
+    await view(0, -0.25, 0.85); await page.waitForTimeout(300);
+    const h = await scr(await ev(() => { const s = window.__salon, c = s.st.reference.fit.cube; return c.pts[s.FFD.idx(c, 1, 1, 2)]; }));
+    await page.mouse.move(...h); await page.mouse.down(); await page.mouse.move(h[0] + 25, h[1], { steps: 5 }); await page.mouse.move(h[0] + 50, h[1], { steps: 5 }); await page.mouse.up();
+    const moved = await ev(() => { const s = window.__salon, c = s.st.reference.fit.cube, F = s.FFD; const p = c.pts[F.idx(c, 1, 1, 2)], r = F.rest(c, 1, 1, 2); return Math.hypot(p[0] - r[0], p[1] - r[1], p[2] - r[2]); });
+    if (moved < 0.01) throw new Error(`the front face's handle moved ${(moved * 100).toFixed(2)} cm under the mouse`);
+    const f1 = await mid(0), b1 = await mid(Math.PI);
+    const df = Math.hypot(f1[0] - f0[0], f1[1] - f0[1]), db = Math.hypot(b1[0] - b0[0], b1[1] - b0[1]);
+    if (df < 20 || db > 0.15 * df) throw new Error(`the front's middle moved ${df.toFixed(1)} px, the back's ${db.toFixed(1)} px`);
+    const handles = await ev(() => { const s = window.__salon; return s.FFD.handles(s.st.reference.fit.cube).length; });
+    if (handles !== 26) throw new Error(`${handles} handles on the cube`);
+    console.log(`       the front face's middle dragged ${(moved * 100).toFixed(1)} cm: the front view's middle moved ${df.toFixed(0)} px, the back's ${db.toFixed(1)} px`);
+    await page.keyboard.press("Control+z");
+    const rest = await ev(() => window.__salon.FFD.isRest(window.__salon.st.reference.fit.cube));
+    if (!rest) throw new Error("undo didn't put the cube back");
+    await page.keyboard.press("v");
     await ev(() => window.__salon.loadReference(""));
   });
   await step("a strand: a root clicked on the scalp, an end clicked", async () => {

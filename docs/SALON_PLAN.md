@@ -150,6 +150,9 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   - The visual hull (`gshair.py hull`, the keyed frames' hull from the orbit poses as a translucent mesh) stays an
     optional layer for later; the locked frames are the reference the user draws against.
   **Done 2026-10-22** (docs/SALON.md): `gshair.py reference` and `run --to reference`, the head-local space from four MHR vertices (a symmetric pair: docs/LESSONS.md), the automatic fit from the face (the MiniMax wig: 24 landmarks, 5 mm), snapping, the fit's sliders and the Fit tool, "use up to" with the mirrored far side, photos as three fixed cameras. Not yet: a photo's own nudge in the page (the data has `fit.per_frame`), the hull as a layer.
+- [x] **The reference's cube** (the user's ask, 2026-10-22): the reference inside a 3 x 3 x 3 lattice, the whole cube
+  stretched and each face's 3 x 3 points pulled to bend the views it faces, corners and edges shared between faces;
+  symmetric pulls; undo. **Done 2026-10-22** (docs/SALON.md, The cube).
 - [x] Load and save `salon.json`; the presets list; `node tools/character/salontest.js`: loads, draws the head, the
   guide fits, a save round trip. `SALON ok`.
   **Done 2026-10-22**: `salon.json` through `api/hair/<name>/salon.json`, the list from `api/salon`, `?hair=NAME`; SALON ok.

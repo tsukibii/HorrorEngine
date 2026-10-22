@@ -138,6 +138,28 @@ def face_fit(rows, lm2d, mhr_local):
                 source="face", points=len(a), reproj_px=round(float(np.median(errs)), 2), residual_mm=round(float(np.median(res)) * 1000, 1), roll=round(roll, 2))
 
 
+def hull_box(rows, alphas, size, step=0.015, keep=0.9, pad=0.015):
+    """the hair's box in the reference's local space: a coarse visual hull carved by the keyed frames (a voxel stays
+    when it falls inside the hair in nearly every frame that sees it), its bounds padded"""
+    import cv2
+    w2, h2 = size
+    ax = [np.arange(-0.35, 0.35, step), np.arange(-0.7, 0.35, step), np.arange(-0.45, 0.4, step)]
+    X, Y, Z = np.meshgrid(*ax, indexing="ij"); P = np.stack([X.ravel(), Y.ravel(), Z.ravel()], 1)
+    inside = np.zeros(len(P)); seen = np.zeros(len(P))
+    for r, a in zip(rows, alphas):
+        if a is None: continue
+        m = cv2.dilate((a > 64).astype(np.uint8), np.ones((5, 5), np.uint8))
+        R, t = np.array(r["R"]), np.array(r["t"]); fx, fy, cx, cy = r["K"]
+        c = P @ R.T + t; z = c[:, 2]; ok = z > 1e-3
+        u = np.round(fx * c[:, 0] / np.where(ok, z, 1) + cx).astype(int); v = np.round(fy * c[:, 1] / np.where(ok, z, 1) + cy).astype(int)
+        vis = ok & (u >= 0) & (u < w2) & (v >= 0) & (v < h2)
+        seen += vis; inside[vis] += m[v[vis], u[vis]] > 0
+    hull = (seen >= 3) & (inside >= keep * seen)
+    if hull.sum() < 20: return None
+    H = P[hull]
+    return dict(min=np.round(H.min(0) - pad, 4).tolist(), max=np.round(H.max(0) + pad, 4).tolist(), voxels=int(hull.sum()), step=step)
+
+
 def _write(img, path, quality=82):
     import cv2
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -174,7 +196,7 @@ def make(cap, name, size=640, quality=82, use_align=True, refs=None):
     if front is not None and 0 <= front < len(frames):           # the front frame faces the face (the orbit's prior)
         R0, t0 = to_local(np.array(frames[front]["R"], float), np.array(frames[front]["t"], float), Q, sigma, b)
         turn = -math.radians(orbit_angles(R0, t0)[0])
-    rows = []
+    rows, alphas = [], []
     for f in frames:
         R, t = to_local(np.array(f["R"], float), np.array(f["t"], float), Q, sigma, b)
         R, t = turn_about_up(R, t, turn)
@@ -194,6 +216,9 @@ def make(cap, name, size=640, quality=82, use_align=True, refs=None):
             ds = img.copy(); ds[..., 1] = np.minimum(ds[..., 1], np.maximum(ds[..., 0], ds[..., 2]))   # the backdrop's green spill off the edges
             _write(np.dstack([ds, a]), out / "keyed" / f"{f['name']}.webp", quality)
             row["keyed"] = f"keyed/{f['name']}.webp"
+            alphas.append(a)
+        else:
+            alphas.append(None)
         rows.append(row)
     fit = dict(offset=[0, 0, 0], scale=1.0, turn=0.0, height=0.0, flip=False, sweep=1.0, cover=360, mirror=True, per_frame={})
     lm2d = jload(cap / "landmarks.json", {}) or {}
@@ -203,15 +228,16 @@ def make(cap, name, size=640, quality=82, use_align=True, refs=None):
         ff = face_fit(rows, lm2d, mhr_local)
         if ff and ff["residual_mm"] < 15: fit.update({k: ff[k] for k in ("offset", "scale", "turn", "height")}); fit["from"] = ff
         elif ff: fit["from"] = dict(ff, used=False)
+    box = hull_box(rows, alphas, (w2, h2))                       # the hair's box: where the salon's cube starts
     for r in rows: r.pop("K_src", None)
     azs = np.unwrap(np.radians([r["az"] for r in rows]))
     ref = dict(about="the salon's locked reference: a camera per frame in head-local space (tools/character/gshair/reference.py)",
                kind="video", source=jload(cap / "capture.json", {}).get("source"), size=[w2, h2],
                local=dict(anchors=idx, face_height=FACE_H, axes="X the character's left, U up the face, F forward; origin between the ears; units of MHR's face height"),
                align=al.get("source", "splat"), front_turn=round(math.degrees(turn), 2), sweep=round(float(np.degrees(azs.max() - azs.min())), 1),
-               frames=rows, fit=fit)
+               frames=rows, fit=fit, hull_box=box)
     jsave(out / "reference.json", ref)
-    return dict(name=name, frames=len(rows), sweep=ref["sweep"], align=ref["align"], fit=fit.get("from", "none"), path=str(out.relative_to(ROOT)) if out.is_relative_to(ROOT) else str(out))
+    return dict(name=name, frames=len(rows), sweep=ref["sweep"], align=ref["align"], fit=fit.get("from", "none"), hull_box=box, path=str(out.relative_to(ROOT)) if out.is_relative_to(ROOT) else str(out))
 
 
 def photos(files, name, size=900, quality=85, focal35=50.0, dist=1.0, side_face="left"):

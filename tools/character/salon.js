@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import * as SL from "./salonlib.js";
 import * as SR from "./salonref.js";
+import * as FFD from "./ffd.js";
 
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -42,7 +43,7 @@ const HAIR = new THREE.Group(); HAIR.matrixAutoUpdate = false; scene.add(HAIR); 
 const HANDLES = new THREE.Group(); HAIR.add(HANDLES);
 let HEAD = null, HF = null, COL = null, LOCAL_PTS = null;
 let VW = 1, VH = 1;
-function resize() { VW = view.clientWidth; VH = view.clientHeight; renderer.setSize(VW, VH, false); draw(); }
+function resize() { VW = view.clientWidth; VH = view.clientHeight; renderer.setSize(VW, VH, false); Object.assign(OVL_CAM, { left: 0, right: VW, top: VH, bottom: 0 }); OVL_CAM.updateProjectionMatrix(); draw(); }
 new ResizeObserver(resize).observe(view);
 
 // the view: a free orbit round the head, or locked onto the reference frame nearest to it
@@ -69,20 +70,49 @@ function setCamera(R, t, fx, fy, cx, cy) {
 }
 
 // ---- the reference ----------------------------------------------------------------------------------------------------
-let REF = null, CAMS = [], IMGS = {};
-const refImg = $("#ref");
+// The frame is drawn as a grid of GRID x GRID cells in view pixels (an orthographic overlay), each vertex where its
+// pixel lands once the reference's cube (ffd.js) has bent the space it shows: the pixel's ray meets the cube's
+// ellipsoid (the hair's volume, roughly), that point is moved by the cube and projected back. With the cube at rest the
+// grid is the flat picture.
+let REF = null, CAMS = [], TEX = {};
+const OVL = new THREE.Scene(), OVL_CAM = new THREE.OrthographicCamera(0, 1, 1, 0, -1, 1), GRID = 24;
+const OVL_MESH = (() => {
+  const g = new THREE.BufferGeometry(), n = (GRID + 1) ** 2, idx = [];
+  g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+  for (let r = 0; r < GRID; r++) for (let c = 0; c < GRID; c++) { const a = r * (GRID + 1) + c; idx.push(a, a + GRID + 1, a + 1, a + 1, a + GRID + 1, a + GRID + 2); }
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
+  m.frustumCulled = false; m.visible = false; OVL.add(m); return m;
+})();
 async function loadReference(name) {
-  st.reference.name = name || null; REF = null; CAMS = []; IMGS = {};
-  if (!name) { refImg.style.display = "none"; refPanel(); draw(); return; }
+  st.reference.name = name || null; REF = null; CAMS = []; TEX = {};
+  if (!name) { OVL_MESH.visible = false; refPanel(); draw(); return; }
   REF = await api(`api/refs/${encodeURIComponent(name)}/reference.json`);
   if (!st.reference.fitFor || st.reference.fitFor !== name) { st.reference.fit = Object.assign(structuredClone(SR.DEFAULT_FIT), REF.fit || {}); st.reference.fitFor = name; }
+  if (!st.reference.fit.cube) st.reference.fit.cube = cubeRoundHair();
   recam(); refPanel(); draw();
 }
+// the cube's start: round the reference's hair (its carved box, through the fit), or round the head and shoulders
+function cubeRoundHair() {
+  const f = st.reference.fit, hb = REF && REF.hull_box;
+  if (!hb) return FFD.makeCube([-0.17, -0.4, -0.2], [0.17, 0.2, 0.17]);
+  const Rf = SR.MM(SR.Ry((f.turn || 0) * Math.PI / 180), SR.Rx(-(f.height || 0) * Math.PI / 180)), k = f.scale || 1, o = f.offset || [0, 0, 0];
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (const x of [hb.min[0], hb.max[0]]) for (const y of [hb.min[1], hb.max[1]]) for (const z of [hb.min[2], hb.max[2]]) {
+    const q = SR.MV(Rf, [x, y, z]).map((v, a) => k * v + o[a]); for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], q[a]); hi[a] = Math.max(hi[a], q[a]); }
+  }
+  return FFD.makeCube(lo.map(v => +v.toFixed(4)), hi.map(v => +v.toFixed(4)));
+}
 function recam() { CAMS = REF ? SR.cameras(REF, st.reference.fit) : []; }
-function image(cam) {
+function texture(cam) {
   const file = st.reference.keyed && cam.keyed ? cam.keyed : cam.file, k = `${st.reference.name}/${file}`;
-  if (!IMGS[k]) { const im = new Image(); im.src = `api/refs/${encodeURIComponent(st.reference.name)}/${file}`; im.onload = () => draw(); IMGS[k] = im; }
-  return IMGS[k];
+  if (!TEX[k]) {
+    const im = new Image(), t = new THREE.Texture(im);
+    t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearFilter; t.generateMipmaps = false;
+    im.onload = () => { t.needsUpdate = true; t.userData.loaded = true; draw(); };
+    im.src = `api/refs/${encodeURIComponent(st.reference.name)}/${file}`; TEX[k] = t;
+  }
+  return TEX[k];
 }
 function snapView() {
   SNAP = null;
@@ -90,17 +120,68 @@ function snapView() {
   const fc = freeCamera(), dir = SR.toLocal(HF, SR.centre(fc.R, fc.t));
   SNAP = SR.nearest(CAMS, dir, 3);
 }
+// where a frame pixel (in the camera's own pixels) lands in the view, through the cube
+function landing(cam, u, v, cube, rest) {
+  const k = VH / cam.H * orbit.zoom, cx = VW / 2 + orbit.pan[0], cy = VH / 2 + orbit.pan[1];
+  if (!rest) {
+    const d = SR.MV(SR.T(cam.R), [(u - cam.K[2]) / cam.K[0], (v - cam.K[3]) / cam.K[1], 1]), o = SR.centre(cam.R, cam.t);
+    const X = FFD.deform(cube, FFD.ellipsoidHit(cube, o, d)), c = SR.MV(cam.R, X).map((x, a) => x + cam.t[a]);
+    if (c[2] > 1e-4) { u = cam.K[0] * c[0] / c[2] + cam.K[2]; v = cam.K[1] * c[1] / c[2] + cam.K[3]; }
+  }
+  return [cx + (u - cam.K[2]) * k, cy + (v - cam.K[3]) * k];
+}
 function placeOverlay() {
-  if (!SNAP || !st.reference.on) { refImg.style.display = "none"; $("#frameTag").textContent = REF && st.reference.on && !st.reference.lock ? "reference unlocked: turn freely" : ""; return; }
-  const im = image(SNAP), k = VH / SNAP.H * orbit.zoom, cx = VW / 2 + orbit.pan[0], cy = VH / 2 + orbit.pan[1];
-  if (refImg.dataset.src !== im.src) { refImg.src = im.src; refImg.dataset.src = im.src; }
-  refImg.style.display = "block"; refImg.style.opacity = st.reference.opacity;
-  // the camera's principal point is the view's (cx, cy); a frame pixel is k view pixels (times a photo's own nudge s,
-  // shifted by its dx, dy, which K already carries)
-  const [s, dx, dy] = SNAP.nudge, w = SNAP.W * k * s, h = SNAP.H * k * s, left = cx + (dx - SNAP.K[2]) * k, top = cy + (dy - SNAP.K[3]) * k;
-  refImg.style.width = `${w}px`; refImg.style.height = `${h}px`;
-  refImg.style.transform = SNAP.mirrored ? `translate(${left + w}px, ${top}px) scale(-1, 1)` : `translate(${left}px, ${top}px)`;
+  if (!SNAP || !st.reference.on) { OVL_MESH.visible = false; $("#frameTag").textContent = REF && st.reference.on && !st.reference.lock ? "reference unlocked: turn freely" : ""; return false; }
+  const tex = texture(SNAP), cube = st.reference.fit.cube, rest = !cube || FFD.isRest(cube);
+  const P = OVL_MESH.geometry.attributes.position, UV = OVL_MESH.geometry.attributes.uv, [s, dx, dy] = SNAP.nudge;
+  for (let r = 0; r <= GRID; r++) for (let c = 0; c <= GRID; c++) {
+    const i = r * (GRID + 1) + c, uo = c / GRID * SNAP.W, vo = r / GRID * SNAP.H;
+    // the image's pixel (a photo's nudge: scaled and shifted, which K already carries); a mirrored frame's pixel u
+    // shows the picture's W - u
+    const [x, y] = landing(SNAP, uo * s + dx, vo * s + dy, cube, rest);
+    P.setXYZ(i, x, VH - y, 0); UV.setXY(i, SNAP.mirrored ? 1 - c / GRID : c / GRID, 1 - r / GRID);
+  }
+  P.needsUpdate = true; UV.needsUpdate = true;
+  OVL_MESH.material.map = tex; OVL_MESH.material.opacity = st.reference.opacity; OVL_MESH.material.needsUpdate = OVL_MESH.userData.tex !== tex; OVL_MESH.userData.tex = tex;
+  OVL_MESH.visible = !!tex.userData.loaded; OVL_MESH.userData.flipped = SNAP.mirrored;
   $("#frameTag").textContent = `frame ${SNAP.name}${SNAP.mirrored ? " mirrored" : ""}  az ${SNAP.az.toFixed(0)}°  el ${SNAP.el.toFixed(0)}°`;
+  return OVL_MESH.visible;
+}
+
+// the cube drawn and pulled (the Fit tool): its face lines, a handle on every surface point
+const CUBE = new THREE.Group(); HAIR.add(CUBE);
+function drawCube() {
+  CUBE.clear();
+  const cube = st.reference.fit && st.reference.fit.cube;
+  if (!cube || !REF || !st.reference.on || TOOL !== "fit") return;
+  const mat = new THREE.LineBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.75, depthTest: false });
+  const stretched = p => { const m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1]; return p.map((x, a) => m[a] + (x - m[a]) * sv[a]); };
+  for (const L of FFD.lines(cube)) { const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(L.map(p => new THREE.Vector3(...stretched(p)))), mat); ln.renderOrder = 11; CUBE.add(ln); }
+  const sizes = { corner: 0.006, edge: 0.0048, face: 0.0055 }, colours = { corner: 0xffffff, edge: 0xffc070, face: 0x6fd0ff };
+  for (const h of FFD.handles(cube)) {
+    const hot = HOVER_CUBE && HOVER_CUBE.join() === [h.i, h.j, h.k].join();
+    const m = new THREE.Mesh(new THREE.SphereGeometry(sizes[h.kind], 10, 8), new THREE.MeshBasicMaterial({ color: hot ? 0xff5050 : colours[h.kind], depthTest: false }));
+    m.position.set(...stretched(cube.pts[FFD.idx(cube, h.i, h.j, h.k)])); m.renderOrder = 12; CUBE.add(m);
+  }
+}
+let HOVER_CUBE = null;
+function cubeHandleAt(e) {
+  const cube = st.reference.fit && st.reference.fit.cube; if (!cube || TOOL !== "fit") return null;
+  const [mx, my] = rel(e); let best = null, bd = 12, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
+  for (const h of FFD.handles(cube)) { const p = cube.pts[FFD.idx(cube, h.i, h.j, h.k)].map((x, a) => m[a] + (x - m[a]) * sv[a]); const [sx, sy] = screenOf(p), d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = [h.i, h.j, h.k]; } }
+  return best;
+}
+// a cube point pulled to q (where it's drawn, i.e. stretched): stored unstretched; with "symmetric", its mirror too
+function pullCube(ijk, q) {
+  const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
+  const un = q.map((x, a) => m[a] + (x - m[a]) / sv[a]);
+  cube.pts[FFD.idx(cube, ...ijk)] = un;
+  if (st.reference.cubeSym) {
+    const [i2, j2, k2] = FFD.mirrorOf(cube, ...ijk);
+    if (i2 !== ijk[0]) cube.pts[FFD.idx(cube, i2, j2, k2)] = [2 * m[0] - un[0], un[1], un[2]];
+    else cube.pts[FFD.idx(cube, ...ijk)][0] = FFD.rest(cube, ...ijk)[0];   // on the middle plane: it stays there
+  }
+  FFD.settle(cube);
 }
 
 // ---- the head ---------------------------------------------------------------------------------------------------------
@@ -237,17 +318,18 @@ function showRootLine(pts) {
 let PENDING = false;
 function draw() { if (PENDING) return; PENDING = true; requestAnimationFrame(() => { PENDING = false; render(); }); }
 function render() {
-  if (!HF) { renderer.render(scene, camera); return; }
+  if (!HF) { renderer.autoClear = true; renderer.render(scene, camera); return; }
   snapView();
   if (SNAP) {
     const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
     setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
   } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
-  view.classList.toggle("behind", !!st.reference.behind);
-  renderer.setClearColor(0x1b1c20, st.reference.behind && SNAP ? 0 : 1);
-  refreshLocks();
-  placeOverlay();
-  renderer.render(scene, camera);
+  refreshLocks(); drawCube();
+  const ovl = placeOverlay();
+  renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
+  if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
+  renderer.clearDepth(); renderer.render(scene, camera);
+  if (ovl && !st.reference.behind) renderer.render(OVL, OVL_CAM);
 }
 
 // ---- picking ----------------------------------------------------------------------------------------------------------
@@ -290,9 +372,9 @@ function lockAt(e) {
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
-const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups });
+const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -327,7 +409,7 @@ const HINTS = {
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
-  fit: "Drag to move the reference picture over the head; the wheel scales it. The sliders turn it and set the camera's height.",
+  fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
 const PLACE = { stage: 0, root: null, line: [], sag: 0.2, spread: 0.05, r0: 0.015, last: null };
 function setTool(t) {
@@ -364,7 +446,11 @@ cv.addEventListener("contextmenu", e => e.preventDefault());
 cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId);
   const orbitOnly = e.button !== 0;
-  if (!orbitOnly && TOOL === "fit") { DRAG = { kind: "fit", x: e.clientX, y: e.clientY }; return; }
+  if (!orbitOnly && TOOL === "fit") {
+    const h = cubeHandleAt(e);
+    if (h) { remember(); DRAG = { kind: "cube", ijk: h, y: e.clientY }; return; }
+    remember(); DRAG = { kind: "fit", x: e.clientX, y: e.clientY }; return;
+  }
   if (!orbitOnly && TOOL === "select") {
     const h = handleAt(e);
     if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey }; return; }
@@ -384,6 +470,7 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (!DRAG) {
     if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
+    else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
     else if (TOOL === "select" && SELECTED) { const h = handleAt(e); const p = h ? h.path : null; if ((p && p.join()) !== (HOVER && HOVER.join())) { HOVER = p; drawHandles(); draw(); } }
     return;
   }
@@ -405,6 +492,13 @@ cv.addEventListener("pointermove", e => {
     if (mirrored) { to = SL.reflectPoint(to, st.mirror.seam); }
     SL.dragHandle(target, DRAG.path, to, COL);
     changed(target); draw();
+  } else if (DRAG.kind === "cube") {
+    const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
+    const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
+    let to;
+    if (e.altKey) { const n = new THREE.Vector3(); camera.getWorldDirection(n); const nl = SL.norm(SR.MV(SR.T(HF.B), n.toArray())); to = SL.add(p, SL.mul(nl, (e.clientY - DRAG.y) * 0.0015)); DRAG.y = e.clientY; }
+    else to = onPlane(e.clientX, e.clientY, p);
+    if (to) { pullCube(DRAG.ijk, to); draw(); }
   } else if (DRAG.kind === "fit" && SNAP) {
     const dx = e.clientX - DRAG.x, dy = e.clientY - DRAG.y; DRAG.x = e.clientX; DRAG.y = e.clientY;
     const k = VH / SNAP.H * orbit.zoom, fv = SNAP.K[0] * k, c = SR.centre(SNAP.R, SNAP.t), depth = Math.hypot(...c);
@@ -467,7 +561,7 @@ function lookFrom(c) {                                               // the free
 
 // ---- panels -----------------------------------------------------------------------------------------------------------
 let fitSet = {};
-function fitPanelSync() { const f = st.reference.fit; fitSet.scale?.(f.scale); fitSet.turn?.(f.turn); fitSet.height?.(f.height); fitSet.sweep?.(f.sweep); fitSet.x?.(f.offset[0] * 100); fitSet.y?.(f.offset[1] * 100); fitSet.z?.(f.offset[2] * 100); }
+function fitPanelSync() { const f = st.reference.fit; if (f.cube && f.cube.stretch) { fitSet.sx?.(f.cube.stretch[0]); fitSet.sy?.(f.cube.stretch[1]); fitSet.sz?.(f.cube.stretch[2]); } fitSet.scale?.(f.scale); fitSet.turn?.(f.turn); fitSet.height?.(f.height); fitSet.sweep?.(f.sweep); fitSet.x?.(f.offset[0] * 100); fitSet.y?.(f.offset[1] * 100); fitSet.z?.(f.offset[2] * 100); }
 function saveFitHint() { status("the fit is kept with the hair when you save", ""); }
 async function refPanel() {
   const box = $("#refbox"); box.innerHTML = "";
@@ -498,7 +592,18 @@ async function refPanel() {
   tick(t2, "the other way round", f.flip, v => { f.flip = v; recam(); draw(); }, "the video turned the other way");
   tick(t2, "mirror the missing side", f.mirror, v => { f.mirror = v; recam(); draw(); }, "angles the video never reached show the mirrored frame");
   box.append(t2);
-  box.append(el("button", { textContent: "Glue again", title: "back to the automatic fit", onclick: () => { R.fit = Object.assign(structuredClone(SR.DEFAULT_FIT), REF.fit || {}); orbit.pan = [0, 0]; orbit.zoom = 1; recam(); refPanel(); draw(); } }),
+  box.append(el("h4", { textContent: "The cube" }), el("p", { className: "note", textContent: "The reference inside a cube: with the Fit tool, pull a corner (white), an edge (orange) or a face's middle (blue) to bend the picture where that side of the cube faces you; Alt-drag towards or away from you. Corners and edges are shared, so they bend every view that sees them." }));
+  const c2 = el("div");
+  tick(c2, "symmetric", !!R.cubeSym, v => { R.cubeSym = v; }, "a pull on one side pulls the other side's same point, mirrored");
+  box.append(c2);
+  const cs = f.cube.stretch || (f.cube.stretch = [1, 1, 1]);
+  fitSet.sx = slider(box, "Width", 0.7, 1.4, 0.01, cs[0], v => { remember(); cs[0] = v; draw(); }, "the whole cube stretched left-right about its middle");
+  fitSet.sy = slider(box, "Height", 0.7, 1.4, 0.01, cs[1], v => { remember(); cs[1] = v; draw(); }, "up-down");
+  fitSet.sz = slider(box, "Depth", 0.7, 1.4, 0.01, cs[2], v => { remember(); cs[2] = v; draw(); }, "front-back");
+  box.append(el("button", { textContent: "Reset the cube", title: "every point back where it started", onclick: () => { remember(); f.cube = FFD.makeCube(f.cube.min, f.cube.max); refPanel(); draw(); } }),
+             el("button", { textContent: "Cube round the hair", title: "a new cube on the reference's hair as it sits now (the bends are lost)", onclick: () => { remember(); f.cube = null; f.cube = cubeRoundHair(); refPanel(); draw(); } }));
+  box.append(el("h4", { textContent: "" }));
+  box.append(el("button", { textContent: "Glue again", title: "back to the automatic fit", onclick: () => { R.fit = Object.assign(structuredClone(SR.DEFAULT_FIT), REF.fit || {}); R.fit.cube = cubeRoundHair(); orbit.pan = [0, 0]; orbit.zoom = 1; recam(); refPanel(); draw(); } }),
              el("button", { textContent: "Front", onclick: () => lookFrom(CAMS.find(c => !c.mirrored)) }),
              el("button", { textContent: "◀ frame", onclick: () => SNAP && stepFrame(-1) }), el("button", { textContent: "frame ▶", onclick: () => SNAP && stepFrame(1) }));
 }
@@ -594,5 +699,5 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
+  screenOf, headAt, save, load, FFD, pullCube, overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
   dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); } };
