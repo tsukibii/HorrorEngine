@@ -126,3 +126,76 @@ the fix.
   whole view doesn't read as "I'm in a locker" either: the Pilot's locker scene looked like standing in the hall.
   Slats (an alpha map of bars, drawn both sides) read at once and keep the room visible between them
   (`stage.seeThrough`).
+
+- **Mesh to MetaHuman needs a head, not a face:** the face-only mesh from `face_mesh.py` (MediaPipe's 468 points)
+  traced badly: with no skull or ears the tracker struggled to place things, and MediaPipe's eye openings are too
+  soft to read as eyelids. Bend a whole head template to the points instead (the template's own eyelids, shaped by
+  the photo's), best the MetaHuman base head itself, so the result is already lined up.
+- **Every stitched edge needs the same number of points on both sides:** `garment.py` sampled a straight edge as one
+  point and a curve as twelve, so the drape skipped every straight-to-curved stitch (the skirt's waistband floated,
+  the t-shirt slid off its shoulders). Straight edges now get twelve too. And GarmentCode's flat placement, 30 cm in
+  front and 25 cm behind, sews shoulder seams straight through the shoulders: lay the panels on the body first.
+- **To open MHR's sealed shell, move points, don't hide triangles:** hiding the triangles inside the lid outline
+  left slivers over one eye (MHR's triangulation differs round each eye); sinking every point inside the outline
+  behind the eyeball works whatever the triangles are. The mouth is still open: its visible inside isn't within the
+  inner-lip outline at all, so the same trick showed a pale wall (a look at MHR's mouth geometry comes first).
+
+**Sewing springs: gentle, not strong (2026-10-21).** Blender's `sewing_force_max` at 30 closed a GarmentCode t-shirt's
+10 cm seam gaps so hard that it pulled the shirt off the shoulders and crushed the sleeves into rolls up the arms;
+heavier or lighter fabric and stiffer bending didn't help. At 8 the seams still close (0.5 mm), the shirt stays on the
+shoulders with real short sleeves, and skirts and pants drape as before. Try `DRAPE_SET='{"key": value}'` on a few
+settings side by side (renders stacked) before rewriting the drape.
+
+**MHR's mouth is sealed by a membrane (2026-10-21).** The open mouth's "inside" isn't a sock of skin behind the lips:
+it's a sheet of triangles whose corners all sit on the lip line, stretched across the gap when the jaw drops. Sinking
+points, depth tests and floods inward from the lip line all miss it (they also leaked onto the chin at the corners).
+Find it by what it does: near the mouth, the triangles that grow ten times or more in area under jawDrop; colour those
+per corner. Measure the expression's effect before guessing at the geometry.
+
+**A simulation undoes what the generator promised (2026-10-22).** The grown hair kept off the face and cut its bangs at
+the brows while it grew; once the same strands became wig clumps under gravity, side locks fell across the face and
+bangs sagged into the eyes, and in twin tails the bangs took the tie and were pinned whole. Every rule the shape keeps
+(the face keep-out, the bangs' hold, who is pinned) has to live in the step too, not only in the shape it starts from;
+and read the exported data (pinned counts per clump) as well as the pictures.
+
+**Collide hair with the skin, not a star-shaped head (2026-10-22).** Hair kept off the head by a radial field (the
+farthest skin in each 11° direction) hung a median 26 mm off the cheeks: near an ear or a cheekbone the farthest skin
+in that direction is the ear's tip. Pushing along the nearest skin point's normal (a hash of the skin's points, 1.2 cm
+cells) brought it to 19 mm (the rest is physics: straight hair drops from the skull's widest part), and the hair now
+lies along the face. Measure distance to the skin at face height; a front picture hides it.
+
+**Pin cloth round the body, not onto its nearest points (2026-10-22).** Locking a waistband by moving each of its
+points to the nearest skin point piled several onto the same spot on a heavy body: coincident and crossed points
+blew Blender's cloth apart (seams a metre apart). Laying them round the body's cross-section at that height (each at
+its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
+flatten a scooped neckline to one height: it hitches the whole top up.
+
+## Tops: no cuff bands, sleeves at the arms' angle (2026-10-22)
+
+GarmentCode's tops on our A-pose bodies came out cropped and crumpled. Not the tightness or the sewing force: the hem
+rode up on the hips until the top flared (`shirt.flare` 1.25 to 1.35) and was long enough, and the sleeves folded up at
+the wrist while they had a `CuffBand` (the cuff panel pulls the sleeve's end in and the drape can't pass it over the
+hand). Cut sleeves at 45 degrees (the arms' angle), 0.8 long, no cuff. Compare variants of one design side by side
+(four drapes in parallel) before changing a preset.
+
+## Three.js converts a colour once (2026-10-22)
+
+Since r152 `Color.set("#hex")` turns the sRGB hex into linear itself (ColorManagement is on). The procedural skin and the
+strand hair also called `.convertSRGBToLinear()` after it, so their colours went through twice: the skin came out an
+orange tan, darker than the same tone without the shader, and the hair darker than picked. Set a uniform colour with
+`.set()` alone. Compare a shader's colour against plain `material.color` with the same hex when a look seems off.
+
+## A frame with a wig in it is never the same twice (2026-10-22)
+
+The touch-up's check compared the picture before a stroke and after its undo, byte for byte, and failed although the
+paint layer was back to empty: two shots taken one after the other with nothing changed differ by thousands of pixels,
+because the wig keeps swinging. Measure where the change is meant to be (the mouth, where no hair falls) and the layer
+itself, not the whole frame. "A changed picture" alone proves nothing for the same reason: check it changed where it
+should.
+
+## The game's lens is 90° across a 16:9 screen, not across whatever canvas (2026-10-22)
+
+The Studio's first POV view took `game.fov` (90° horizontal) against its own canvas, nearly square beside the side
+panel: 94° up and down, a medium close-up that showed the whole torso. A first-person check frames like the game's
+screen: 16:9, so 59° vertical, drawn in a 16:9 frame with bars round it, and any picking (the brush) goes through that
+frame. Distances from DIRECTING.md's shot table (MCU 0.7 m, MS 1.2 m) only mean what they say through the right lens.

@@ -64,6 +64,10 @@ def environ(home, k=None):
     out["KIMODO_STAGE"] = str(STAGE_FILE)      # the demo's Stage panel starts with the last one written
     out["KIMODO_THREE_DIR"] = str(ROOT / "tools" / "director" / "vendor")   # three.js for the demo's pose window
     out["KIMODO_STUDIO_ROOT"] = str(ROOT)      # the demo's pose library and Send to Studio
+    out["SERVER_NAME"] = "127.0.0.1"           # the demo listens on every network otherwise (its default is 0.0.0.0)
+    out["HF_HUB_DISABLE_TELEMETRY"] = "1"      # no usage stats on Hugging Face's requests
+    out["GRADIO_ANALYTICS_ENABLED"] = "False"  # nor from gradio (its text-encoder client and server)
+    out["DO_NOT_TRACK"] = "1"
     if (k or {}).get("text_encoders_dir"):
         out["TEXT_ENCODERS_DIR"] = k["text_encoders_dir"]
         out["TEXT_ENCODER_MODE"] = "local"    # no text-encoder server to try first

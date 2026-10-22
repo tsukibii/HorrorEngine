@@ -1,0 +1,1281 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Body Editor</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header b { color: var(--gold); letter-spacing: .05em; }
+  select, input, button { background: #222327; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 7px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--gold); } button.on { border-color: var(--gold); color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 400px; min-height: 0; }
+  #view { position: relative; min-height: 0; } #view canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+  #views { position: absolute; right: 10px; top: 10px; display: flex; gap: 4px; }
+  #hud { position: absolute; left: 10px; bottom: 10px; color: var(--dim); line-height: 1.6; background: #0009; padding: 6px 9px; border-radius: 4px; max-width: 60%; }
+  #hud .warn { color: var(--gold); }
+  aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
+  h3 { margin: 16px 0 6px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  h3 button { font-size: 10px; padding: 1px 6px; }
+  .row { display: grid; grid-template-columns: 110px 1fr 44px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row span:first-child { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .row small { grid-column: 1 / 4; color: var(--dim); margin-top: -2px; line-height: 1.35; }
+  .row input[type=range] { width: 100%; padding: 0; accent-color: var(--gold); }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row.moved span:first-child { color: var(--ink); }
+  .tog { display: flex; gap: 6px; align-items: flex-start; margin: 6px 0; } .tog small { display: block; color: var(--dim); line-height: 1.35; }
+  .tog input { accent-color: var(--gold); margin-top: 2px; }
+  .bases { display: flex; gap: 6px; margin: 4px 0 6px; } .bases button { flex: 1; }
+  #slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .slot { border: 1px dashed var(--line); border-radius: 6px; min-height: 150px; position: relative; display: grid; place-items: center; text-align: center; color: var(--dim); cursor: pointer; overflow: hidden; background: #151619; }
+  .slot.drop { border-color: var(--gold); color: var(--gold); }
+  .slot img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .slot .label { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 5px; background: #000b; font-size: 11px; line-height: 1.3; }
+  .slot .label.bad { color: var(--bad); } .slot .x { position: absolute; right: 4px; top: 4px; padding: 0 6px; line-height: 16px; background: #000a; }
+  details { margin: 2px 0; } summary { cursor: pointer; color: var(--dim); margin: 4px 0; }
+  .note { color: var(--dim); line-height: 1.45; margin: 4px 0; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  #tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; position: sticky; top: -8px; background: var(--panel); padding: 6px 0; z-index: 2; }
+  #tabs button { flex: 1; padding: 5px 4px; } #tabs button.on { border-color: var(--gold); color: var(--gold); }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; } .chips button { padding: 3px 8px; } .chips button.on { border-color: var(--gold); color: var(--gold); }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 55vh auto; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+  .hairlib { display: grid; grid-template-columns: repeat(3, 96px); gap: 4px; max-height: 270px; overflow-y: auto; margin: 6px 0; }
+  .hairlib div { width: 96px; height: 60px; border-radius: 4px; cursor: pointer; outline: 1px solid #333; background-repeat: no-repeat; }
+  .hairlib div.on { outline: 2px solid var(--accent, #e0b060); }
+</style></head>
+<body>
+<header>
+  <b>CHARACTER STUDIO</b>
+  <select id="who" title="Each character keeps its pictures and settings in Content/Studio/People/&lt;name&gt;/ (git-ignored)"></select>
+  <input id="newName" placeholder="new character" style="width:120px"> <button id="make">New</button>
+  <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
+  <button id="expBody" title="The whole body, A-pose, metres, Y up, facing +Z: People/&lt;name&gt;/&lt;name&gt;_body.obj">Export body OBJ</button>
+  <button id="expHead" title="The head alone, cut at the neck (People/&lt;name&gt;/&lt;name&gt;_head.obj)">Export head OBJ</button>
+  <span id="status"></span>
+</header>
+<main>
+  <div id="view">
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
+    <div id="hud"></div>
+  </div>
+  <aside>
+    <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button></nav>
+
+    <section data-tab="body">
+      <h3>Base</h3>
+      <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button></div>
+      <div id="baseRows"></div>
+      <h3>Shape <button id="resetShape" title="Every shape slider back to the base">Reset</button></h3>
+      <div id="shapeRows"></div>
+    </section>
+
+    <section data-tab="face" hidden>
+      <h3>Pictures</h3>
+      <div id="slots"></div>
+      <p class="note">Optional. A front picture shapes the face; a side picture (or a three-quarter one: MediaPipe needs to find the face, so up to about 70°) gives its depth. With none, the base and the head sliders make the face.</p>
+      <h3>Fit</h3>
+      <div id="faceRows"></div>
+      <label class="tog"><input type="checkbox" id="relative" checked><span>Expressions against this face<small>Full lips read as a pout to MediaPipe; this keeps them from counting as an expression.</small></span></label>
+    </section>
+
+    <section data-tab="expr" hidden>
+      <h3>Presets <button id="exprClear" title="Back to neutral">Neutral</button></h3>
+      <div id="exprPresets" class="chips"></div>
+      <p class="note">Faces written as ARKit-52 curves and run through the same map the mocap will use (tools/character/arkit_mhr.json), so they also test it. A preview: expressions aren't saved into the character.</p>
+      <div id="exprAmt"></div>
+      <label class="tog"><input type="checkbox" id="exprCycle"><span>Cycle the presets<small>One a second, to check them all on this face.</small></span></label>
+      <h3>MHR's 72 shapes</h3>
+      <div id="exprRows"></div>
+    </section>
+
+    <section data-tab="skin" hidden>
+      <h3>Tone</h3>
+      <div id="skinRows"></div>
+      <h3>Photo skin</h3>
+      <div id="photoSkin"></div>
+      <h3>Procedural skin</h3>
+      <div id="procRows"></div>
+      <h3>Touch-up</h3>
+      <div id="touchRows"></div>
+      <h3>Eyes</h3>
+      <div id="eyeRows"></div>
+    </section>
+
+    <section data-tab="hair" hidden>
+      <h3>Hair, brows, lashes</h3>
+      <div id="hairRows"></div>
+      <p class="note">Cards grown from this head's scalp (tools/character/hair.js): a style, then its numbers; they follow the body and the face, and keep off the head and shoulders. Strands for close-ups and a groom brush come later (docs/MHR_PIPELINE_RESEARCH.md, phase 4).</p>
+    </section>
+
+    <section data-tab="clothes" hidden>
+      <h3>Clothes</h3>
+      <div id="clothesRows"></div>
+      <p class="note">A design's sewing pattern made to this body by GarmentCode, sewn onto it with Blender's cloth (about 10 to 20 s), worn here. Skirts, trousers and tops drape on; the cloth is still coarse (2 cm triangles). Change the body, then make the garment again.</p>
+      <div id="worn"></div>
+    </section>
+
+    <h3>View</h3>
+    <label class="tog"><input type="checkbox" id="wire"><span>Wireframe</span></label>
+    <label class="tog"><input type="checkbox" id="raking"><span>Raking light<small>A low light from the side: the profile and bumps read better.</small></span></label>
+  </aside>
+</main>
+<script type="module">
+// MHR's whole body (Meta's Momentum Human Rig, Apache-2.0) from a base and its 45 identity shapes, computed here from
+// Content/Studio/Bodies/MHR_lod1.bin (tools/character/pack_mhr.py); the face from up to two pictures is fitted in Python
+// (tools/face_mesh.py's body op, through serve.py) and laid on top. docs/METAHUMAN_LOOKS.md §1.3.
+import * as THREE from "three";
+import * as HAIR from "./hair.js";
+import { Wig } from "./wig.js";
+import { StrandHair } from "./strands.js";
+import * as SKINSH from "./skinshader.js";
+import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
+import * as WIGIFY from "./wigify.js";
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+const api = async (u, body) => {
+  const r = await fetch(u, body === undefined ? {} : { method: "POST", body: typeof body === "string" || body instanceof Blob ? body : JSON.stringify(body) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j;
+};
+const status = (t, cls = "") => { const s = $("#status"); s.textContent = t; s.className = cls; };
+
+// ---- MHR: the packed mesh and its shapes ------------------------------------------------------------------------
+const buf = await (await fetch("bodies/MHR_lod1.bin")).arrayBuffer();
+const hl = new DataView(buf).getUint32(0, true);
+const H = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl)));
+const N = H.points, BASEP = new Float32Array(buf, H.points_at, N * 3), TRIS = new Uint32Array(buf, H.triangles_at, H.triangles * 3);
+function f16(at, count) {                               // float16 -> float32, once
+  const h = new Uint16Array(buf, at, count), out = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    const x = h[i], s = x & 0x8000 ? -1 : 1, e = (x >> 10) & 31, f = x & 1023;
+    out[i] = s * (e === 0 ? f * 5.960464477539063e-8 : e === 31 ? (f ? NaN : Infinity) : Math.pow(2, e - 15) * (1 + f / 1024));
+  }
+  return out;
+}
+const SHAPES = f16(H.shapes_at, H.shapes * N * 3);
+// the 72 FACS expressions (Meta's names), on the points they move; MHR adds them to any identity as they are
+const ENAMES = H.expr_names || [], EN = H.expr_points || 0;
+const EIDX = EN ? new Uint32Array(buf, H.expr_idx_at, EN) : new Uint32Array(0);
+const EXPR = EN ? f16(H.expr_at, ENAMES.length * EN * 3) : new Float32Array(0);
+const INFO = await api("api/face/mhr", {}).catch(e => { status(e.message, "bad"); return null; }) ||
+  { groups: H.groups, labels: new Array(H.shapes).fill(""), presets: {} };
+const PRESETS = INFO.presets;
+
+// ---- the state ------------------------------------------------------------------------------------------------------
+const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the fit shows
+  ["strength", "Face strength", 0, 1, 0.05, 1, "How much of the fitted face shows over the base."],
+  ["depth", "Depth", 0, 1, 0.05, 0.4, "How much of MediaPipe's depth the face takes from a front picture (a side picture replaces it where it sees)."],
+  ["side_depth", "Side depth", 0, 1, 0.05, 1, "How much of the depth the side picture gives."],
+  ["follow", "Head follows", 0, 1, 0.05, 0.5, "How much the head (skull, ears) takes the face's proportions; the neck and below never move."],
+  ["detail", "Detail", 0, 1.5, 0.05, 1, "The fine pass: eyelids, lips, nostrils."],
+  ["smooth", "Smooth", 0.001, 0.1, 0.001, 0.01, "Damps the fit: softer, fewer bumps."],
+  ["symmetry", "Symmetry", 0, 1, 0.05, 0.5, "Blends the face toward its mirror image."],
+];
+const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
+             expr: new Float32Array(ENAMES.length), exprAmt: 1 };
+let WHO = null, DELTA = null, PICS = [], REPORT = null;
+
+const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
+function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
+  const inp = el("input", { type: "range", min: lo, max: hi, step, value: val });
+  const out = el("output", { textContent: fmt(val, step) });
+  const row = el("div", { className: "row", title: title || "" }, el("span", { textContent: label }), inp, out);
+  if (help) row.append(el("small", { textContent: help }));
+  inp.oninput = () => { out.textContent = fmt(inp.value, step); onInput(+inp.value, row); };
+  box.append(row);
+  return v => { inp.value = v; out.textContent = fmt(v, step); };
+}
+const set = {};
+set.base = slider($("#baseRows"), "base", "Feminine ↔ masc.", -1, 1, 0.05, 0, "−1 feminine, 0 MHR's average, +1 masculine: the shape sliders add to it.", v => { st.base = v; changed("body"); });
+set.height = slider($("#baseRows"), "height", "Height (m)", 1.4, 2.1, 0.01, 1.7, "The whole body scaled to this height.", v => { st.height = v; changed("scale"); });
+for (const [k, label, lo, hi, step, def, help] of FACE)
+  set[k] = slider($("#faceRows"), k, label, lo, hi, step, def, help, v => { st.face[k] = v; changed(k === "strength" ? "strength" : "face"); });
+$("#relative").onchange = () => changed("face");
+const shapeSet = [];
+for (const [g, [a, b]] of Object.entries(INFO.groups)) {
+  const d = el("details", { open: g === "body" }, el("summary", { textContent: `${g[0].toUpperCase() + g.slice(1)} (${b - a})` }));
+  for (let i = a; i < b; i++)
+    shapeSet[i] = slider(d, i, `${i}: ${INFO.labels[i] || ""}`, -3, 3, 0.05, 0, "", (v, row) => { st.shape[i] = v; row.classList.toggle("moved", v !== 0); changed("body"); }, INFO.labels[i]);
+  $("#shapeRows").append(d);
+}
+for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { st.base = +b.dataset.base; set.base(st.base); changed("body"); };
+$("#resetShape").onclick = () => { st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); changed("body"); };
+
+function weights() {                                   // the base blended in, the sliders on top
+  const t = st.base, p = t < 0 ? PRESETS.feminine : PRESETS.masculine, k = Math.abs(t);
+  return st.shape.map((v, i) => v + (p ? k * (p[i] || 0) : 0));
+}
+
+// ---- tabs ---------------------------------------------------------------------------------------------------------
+function tab(name) {
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("aside section").forEach(x => { x.hidden = x.dataset.tab !== name; });
+  if (["face", "expr", "skin", "hair"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
+  try { localStorage.setItem("studio:tab", name); } catch (e) { }
+}
+for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => tab(b.dataset.tab);
+
+// ---- expressions: MHR's 72 shapes as sliders, presets in ARKit terms through the map ------------------------------
+const AMAP = await api("arkit_mhr.json").catch(() => ({ map: {}, presets: {} }));
+const EGROUPS = [["Brows", /^(browLowerer|innerBrow|outerBrow)/], ["Eyes and lids", /^(eyes|lidTightener|upperLidRaiser)/],
+                 ["Cheeks and nose", /^(cheek|dimpler|nasolabial|nose|nostril)/], ["Jaw and chin", /^(jaw|chinRaiser)/],
+                 ["Lips and mouth", /^(lip|lowerLip|upperLip|mouth)/]];
+const exprSet = [];
+for (const [g, re] of EGROUPS) {
+  const d = el("details", { open: g === "Eyes and lids" }, el("summary", { textContent: g }));
+  ENAMES.forEach((n, i) => {
+    if (!re.test(n)) return;
+    exprSet[i] = slider(d, n, n, 0, 1, 0.01, 0, "", (v, row) => { st.expr[i] = v; row.classList.toggle("moved", v !== 0); markPreset(null); changed("expr"); }, n);
+  });
+  $("#exprRows").append(d);
+}
+slider($("#exprAmt"), "exprAmt", "Strength", 0, 1.5, 0.05, 1, "All of the expression, scaled.", v => { st.exprAmt = v; changed("expr"); });
+function fromArkit(curves) {                            // ARKit curves -> MHR's 72 weights, through the map
+  const w = new Float32Array(ENAMES.length);
+  for (const [k, v] of Object.entries(curves)) for (const [m, g] of AMAP.map[k] || []) { const i = ENAMES.indexOf(m); if (i >= 0) w[i] += v * g; }
+  return w;
+}
+function setExpr(w) {
+  st.expr.set(w);
+  w.forEach((v, i) => { exprSet[i] && exprSet[i](v); });
+  document.querySelectorAll("#exprRows .row").forEach(r => r.classList.toggle("moved", st.expr[ENAMES.indexOf(r.title)] !== 0));
+  changed("expr");
+}
+function markPreset(name) { document.querySelectorAll("#exprPresets button").forEach(b => b.classList.toggle("on", b.textContent === name)); }
+const PRESET_NAMES = Object.keys(AMAP.presets || {});
+for (const name of PRESET_NAMES) {
+  const b = el("button", { textContent: name, title: Object.entries(AMAP.presets[name]).map(([k, v]) => `${k} ${v}`).join(", ") || "all zero" });
+  b.onclick = () => { setExpr(fromArkit(AMAP.presets[name])); markPreset(name); };
+  $("#exprPresets").append(b);
+}
+$("#exprClear").onclick = () => { setExpr(new Float32Array(ENAMES.length)); markPreset("neutral"); };
+let cycle = null, cycleAt = 0;
+$("#exprCycle").onchange = () => {
+  clearInterval(cycle);
+  if ($("#exprCycle").checked) cycle = setInterval(() => { const n = PRESET_NAMES[cycleAt++ % PRESET_NAMES.length]; setExpr(fromArkit(AMAP.presets[n])); markPreset(n); }, 1000);
+};
+
+// ---- skin: a tone, a roughness, and the photo skin (tools/character/skin.py through the worker) -------------------
+st.skin = { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 };
+const toneIn = el("input", { type: "color", value: st.skin.tone });
+$("#skinRows").append(el("div", { className: "row" }, el("span", { textContent: "Tone" }), toneIn, el("output")),
+  el("small", { className: "note", textContent: "The body's colour without a photo skin; with one, the photo's own tone is used." }));
+toneIn.oninput = () => { st.skin.tone = toneIn.value; skinLook(); };
+set.rough = slider($("#skinRows"), "rough", "Roughness", 0.2, 1, 0.01, st.skin.rough, "Lower is shinier (the glass-skin look lives in Unreal's material later).", v => { st.skin.rough = v; skinLook(); });
+const photoBtn = el("button", { textContent: "Make the skin from the front picture", title: "Projects the front picture onto MHR's UVs (about 5 s): People/<name>/skin.png" });
+const usePhoto = el("input", { type: "checkbox" }), sizeSel = el("select", {}, ...[1024, 2048, 4096].map(v => el("option", { value: v, textContent: `${v} px`, selected: v === 2048 })));
+$("#photoSkin").append(photoBtn, " ", sizeSel,
+  el("label", { className: "tog" }, usePhoto, el("span", { textContent: "Wear the photo skin" })),
+  el("p", { className: "note", textContent: "The face comes from the picture where the head faces the camera; above the brows only skin-coloured pixels count (bangs stay off the forehead); the rest of the body takes the face's tone. Eyes and mouth are painted on MHR's closed shell until the face parts come." }));
+var SKIN = null, SKINMASK = null;
+const loader = new THREE.TextureLoader();
+function skinLook() {
+  const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
+  material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
+  material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
+  material.roughness = st.skin.rough; material.clearcoat = proc ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
+  SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
+  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+}
+async function loadSkin() {
+  if (!WHO) return;
+  try {
+    const t = await loader.loadAsync(`api/skin/${encodeURIComponent(WHO)}?v=${Date.now()}`);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    if (SKIN) SKIN.dispose();
+    SKIN = t;
+  } catch (e) { SKIN = null; }
+  try { const m = await loader.loadAsync(`api/skin/${encodeURIComponent(WHO)}?mask=1&v=${Date.now()}`); SKINMASK?.dispose(); SKINMASK = m; }
+  catch (e) { SKINMASK = null; }
+  if (SKIN && SKINMASK) {                              // the photo's own skin tone (its mean inside the mask): what the pigment is relative to
+    try {
+      const px = img => { const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d", { willReadFrequently: true }); g.drawImage(img, 0, 0, 128, 128); return g.getImageData(0, 0, 128, 128).data; };
+      const a = px(SKIN.image), m = px(SKINMASK.image); let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < a.length; i += 4) if (m[i] > 200) { r += a[i]; g += a[i + 1]; b += a[i + 2]; n++; }
+      if (n) SKU.uPhotoTone.value.setRGB(r / n / 255, g / n / 255, b / n / 255, THREE.SRGBColorSpace);
+    } catch (e) { }
+  }
+  usePhoto.disabled = !SKIN;
+  await TOUCH.load(`api/skin/${encodeURIComponent(WHO)}?paint=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?touch=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?pigment=1&v=${Date.now()}`);
+  touchState(); skinLook();
+}
+// the procedural skin's controls: a toggle, every feature its own slider, two colours
+st.skin.proc = { ...SKINSH.DEFAULTS };
+const procSet = {};
+{
+  const box = $("#procRows"), on = el("input", { type: "checkbox" });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Procedural skin", el("small", { textContent: "The body's colour and fine relief made from noise where each point sits (no seams): every feature below is its own layer, makeup too. With a photo skin, the picture shows on the face through its mask and this skin carries the rest." }))));
+  on.onchange = () => { st.skin.proc.on = on.checked; skinLook(); };
+  const skinPre = el("select"), makePre = el("select");      // presets: they set the sliders, which stay yours to move
+  skinPre.append(el("option", { value: "", textContent: "skin preset…" }), ...Object.keys(SKINSH.SKIN_PRESETS).map(k => el("option", { value: k, textContent: k })));
+  makePre.append(el("option", { value: "", textContent: "makeup preset…" }), ...Object.keys(SKINSH.MAKEUP_PRESETS).map(k => el("option", { value: k, textContent: k })));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Skin" }), skinPre, el("output")), el("div", { className: "row" }, el("span", { textContent: "Makeup" }), makePre, el("output")));
+  const usePreset = (pre, groups, colours) => {   // the preset's groups start from the defaults: nothing left over from before
+    for (const f of SKINSH.FEATURES) if (groups.includes(f[7])) st.skin.proc[f[0]] = f[5];
+    for (const c of colours) st.skin.proc[c] = SKINSH.DEFAULTS[c];
+    for (const [k, v] of Object.entries(pre)) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }
+    st.skin.proc.on = true; procSet.all(); skinLook();
+  };
+  skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], ["freckleColor", "flushColor"]); skinPre.value = ""; };
+  makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]); makePre.value = ""; };
+  let group = null;
+  for (const [k, label, lo, hi, step, val, help, g] of SKINSH.FEATURES) {
+    if (g !== group) { box.append(el("h4", { textContent: g })); group = g; }
+    if (k === "pigment") {                               // the toggle: off is the plain overlay, on the makeup and the photo are pigment
+      const pg = procSet.pigOn = el("input", { type: "checkbox", checked: !!st.skin.proc.pigmentOn });
+      pg.onchange = () => { st.skin.proc.pigmentOn = pg.checked; skinLook(); };
+      box.append(el("label", { className: "tog" }, pg, el("span", {}, "Pigment", el("small", { textContent: "Makeup and the photo act as pigment that tints the skin's own colour, instead of an overlay that covers it. Off: the plain overlay." }))));
+    }
+    procSet[k] = slider(box, "skin_" + k, label, lo, hi, step, val, help, v => { st.skin.proc[k] = v; skinLook(); });
+  }
+  const colours = {};
+  box.append(el("h4", { textContent: "Colours" }));
+  for (const [k, label] of SKINSH.COLOURS) {
+    const c = colours[k] = el("input", { type: "color", value: st.skin.proc[k] });
+    c.oninput = () => { st.skin.proc[k] = c.value; skinLook(); };
+    box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
+  }
+  procSet.all = () => { on.checked = st.skin.proc.on; procSet.pigOn.checked = !!st.skin.proc.pigmentOn; for (const [k] of SKINSH.COLOURS) colours[k].value = st.skin.proc[k]; for (const f of SKINSH.FEATURES) procSet[f[0]](st.skin.proc[f[0]]); };
+}
+usePhoto.onchange = () => { st.skin.photo = usePhoto.checked; skinLook(); };
+sizeSel.onchange = () => { st.skin.size = +sizeSel.value; };
+photoBtn.onclick = async () => {
+  if (!WHO || !PICS.length) return status("add a front picture first (Face tab)", "bad");
+  status("projecting the picture onto the skin…");
+  const side = PICS.filter(p => p.name.startsWith("side.")).map(p => p.name);
+  try {
+    const r = await api("api/face/skin", { name: WHO, weights: weights(), settings: { ...st.face, relative: $("#relative").checked }, side, size: st.skin.size });
+    const t = r.report.tone_bgr;                       // the body takes the picture's own skin tone (the procedural skin starts from it)
+    if (t) { st.skin.tone = "#" + [t[2], t[1], t[0]].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join(""); toneIn.value = st.skin.tone; }
+    await loadSkin(); st.skin.photo = usePhoto.checked = !!SKIN; skinLook();
+    status(`skin: ${r.path} (${r.report.triangles} triangles from ${r.report.picture})`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+};
+
+// ---- clothes: GarmentCode patterns draped on this body (tools/character/clothes.py) --------------------------------
+st.clothes = [];                                       // [{design, color}]
+const GARMENTS = new Map();                            // design -> mesh
+const designSel = el("select"), makeBtn = el("button", { textContent: "Make and drape" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
+const lockSel = el("select", { title: "An opening held on the body through the drape, so the garment can't slide off a body its pattern doesn't grip" },
+  ...[["auto", "auto (a waistband)"], ["none", "nothing"], ["waist", "the waist"], ["hips", "the hips"], ["neck", "the neck"], ["waist,neck", "waist and neck"]]
+    .map(([v, t]) => el("option", { value: v, textContent: t })));
+$("#clothesRows").append(el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
+  el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")),
+  el("div", { className: "row" }, el("span", { textContent: "Hold at" }), lockSel, el("output")), makeBtn);
+// outfits: several garments made in order, each draped over the ones before (Content/Studio/Clothes/outfits.json)
+const outfitSel = el("select"), outfitBtn = el("button", { textContent: "Make the outfit" });
+$("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { className: "row" }, el("span", { textContent: "Outfit" }), outfitSel, el("output")), outfitBtn);
+let OUTFITS = {};
+api("api/outfits").then(r => { OUTFITS = r.outfits || {}; outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n }))); }).catch(() => {});
+outfitBtn.onclick = async () => {
+  if (!WHO) return status("make or pick a character first", "bad");
+  const parts = OUTFITS[outfitSel.value] || [], under = [];
+  outfitBtn.disabled = true;
+  try {
+    for (const g of st.clothes.slice()) { const m = GARMENTS.get(g.design); if (m) { rig.remove(m); GARMENTS.delete(g.design); } }
+    st.clothes = []; drawWorn();
+    for (const [i, [design, color]] of parts.entries()) {
+      status(`${outfitSel.value}: ${design} (${i + 1} of ${parts.length})${under.length ? " over " + under.join(", ") : ""}…`);
+      await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: "auto", under: [...under] });
+      st.clothes.push({ design, color }); await wear(design, color); drawWorn(); under.push(design);
+    }
+    status(`${outfitSel.value}: ${parts.map(p => p[0]).join(", ")}`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+  outfitBtn.disabled = false;
+};
+api("api/designs").then(r => designSel.replaceChildren(...r.designs.map(d => el("option", { value: d, textContent: d.replace(/_/g, " ") })))).catch(() => {});
+function parseObj(text) {
+  const v = [], f = [];
+  for (const line of text.split("\n")) {
+    if (line.startsWith("v ")) { const p = line.split(/\s+/); v.push(+p[1], +p[2], +p[3]); }
+    else if (line.startsWith("f ")) { const p = line.split(/\s+/).slice(1).map(x => parseInt(x) - 1); for (let k = 1; k + 1 < p.length; k++) f.push(p[0], p[k], p[k + 1]); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.setIndex(f); g.computeVertexNormals();
+  return g;
+}
+async function wear(design, color) {
+  const r = await fetch(`api/clothes/${encodeURIComponent(WHO)}/${encodeURIComponent(design)}?v=${Date.now()}`);
+  if (!r.ok) return false;
+  const old = GARMENTS.get(design); if (old) { rig.remove(old); old.geometry.dispose(); }
+  const m = new THREE.Mesh(parseObj(await r.text()), new THREE.MeshStandardMaterial({ color, roughness: 0.85, side: THREE.DoubleSide }));
+  GARMENTS.set(design, m); rig.add(m); return true;
+}
+function drawWorn() {
+  $("#worn").replaceChildren(...st.clothes.map(c => {
+    const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
+    col.oninput = () => { c.color = col.value; GARMENTS.get(c.design)?.material.color.set(c.color); };
+    x.onclick = () => { st.clothes = st.clothes.filter(o => o !== c); const m = GARMENTS.get(c.design); if (m) { rig.remove(m); GARMENTS.delete(c.design); } drawWorn(); };
+    return el("div", { className: "row" }, el("span", { textContent: c.design.replace(/_/g, " ") }), col, x);
+  }));
+}
+async function dressAll() {
+  for (const m of GARMENTS.values()) rig.remove(m);
+  GARMENTS.clear();
+  for (const c of st.clothes) await wear(c.design, c.color);
+}
+makeBtn.onclick = async () => {
+  if (!WHO) return status("make or pick a character first", "bad");
+  const design = designSel.value;
+  status(`sewing ${design} onto ${WHO}…`); makeBtn.disabled = true;
+  try {
+    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: lockSel.value });
+    if (!st.clothes.some(c => c.design === design)) st.clothes.push({ design, color: gColor.value });
+    await wear(design, st.clothes.find(c => c.design === design).color); drawWorn();
+    const held = Object.entries(r.drape.locks || {}).map(([k, n]) => `${k} (${n} points)`).join(", ");
+    status(`${design}: ${r.drape.points} points, seams within ${r.drape.seam_gap_mm} mm${held ? ", held at the " + held : ""}, ${r.drape.seconds} s`, "ok");
+  } catch (e) { status(e.message, "bad"); }
+  makeBtn.disabled = false;
+};
+
+// ---- the body ---------------------------------------------------------------------------------------------------
+const view = $("#view");
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(devicePixelRatio);
+view.prepend(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x202125);
+const camera = new THREE.PerspectiveCamera(26, 1, 0.02, 100);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3530, 1.1), key = new THREE.DirectionalLight(0xffffff, 1.6);
+scene.add(hemi, camera); camera.add(key);
+{                                                      // a soft studio around the character, so glossy skin and hair have something to reflect
+  const env = new THREE.Scene(), box = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 12), new THREE.MeshBasicMaterial({ color: 0x2c2d33, side: THREE.BackSide }));
+  env.add(box);
+  for (const [x, y, z, w, h, k] of [[-3, 2.5, 3, 3, 2, 5], [3.5, 1.5, 2, 2, 3, 2.5], [0, 3.9, 0, 5, 5, 1.2], [0, 1.5, -5.9, 6, 2, 1]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k * 0.96), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 1.4, 0); env.add(m);
+  }
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(env, 0.04).texture;
+  hemi.intensity = 0.7;
+}
+// the light: the studio, or the kinds the games use (a POV check: does the face read in a medium shot under them?)
+const torch = new THREE.SpotLight(0xfff1dc, 0, 12, 0.36, 0.8, 2); torch.position.set(0.12, -0.18, 0); camera.add(torch, torch.target); torch.target.position.set(0, 0, -1);
+const LIGHTS = {   // key: colour, intensity, place (the camera's frame: x right, y up, -z ahead); hemi sky, ground, intensity; env: reflections
+  studio: { key: [0xffffff, 1.6, [1, 1.4, 2]], hemi: [0xffffff, 0x3a3530, 0.7], env: 1, torch: 0, bg: 0x202125 },
+  lamp:   { key: [0xffb36a, 2.4, [-1.6, 0.6, -0.4]], hemi: [0x5a4030, 0x120c08, 0.18], env: 0.35, torch: 0, bg: 0x120d0a },   // a table lamp to one side
+  night:  { key: [0x8ea6ff, 1.4, [1.8, 1.6, -0.6]], hemi: [0x3a4c7a, 0x05060a, 0.32], env: 0.25, torch: 0, bg: 0x07090f },  // moonlight from the side, a little behind: half the face
+  torch:  { key: [0xffffff, 0, [0, 0, 0]], hemi: [0x202838, 0x050505, 0.06], env: 0.15, torch: 3, bg: 0x040405 },           // the player's flashlight
+};
+const LIGHT = { name: "studio", env: 1 };
+function setLight(name) {
+  const L = LIGHTS[name] || LIGHTS.studio; LIGHT.name = name; LIGHT.env = L.env;
+  key.color.set(L.key[0]); key.intensity = L.key[1]; key.position.set(...L.key[2]);
+  hemi.color.set(L.hemi[0]); hemi.groundColor.set(L.hemi[1]); hemi.intensity = L.hemi[2];
+  torch.intensity = L.torch; scene.background.set(L.bg);
+  skinLook();
+}
+const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3 });   // the skin: a coat for oil and dew
+const geo = new THREE.BufferGeometry();                // shared points: the smooth normals
+const POS = new Float32Array(N * 3), RAW = new Float32Array(N * 3);
+geo.setAttribute("position", new THREE.BufferAttribute(POS, 3)); geo.setIndex(new THREE.BufferAttribute(TRIS, 1));
+const C = TRIS.length, dgeo = new THREE.BufferGeometry();  // what's drawn: one point per corner, MHR's UVs split at seams
+dgeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+dgeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
+if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
+const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
+const mesh = new THREE.Mesh(dgeo, material);
+const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);   // the body and all it wears: the head motion moves it
+let EYES_IN = false;
+let SCALE = 1, TOP = 1.7;
+function computeBody() {                               // RAW: MHR with the weights, unscaled (what the face fit sees)
+  RAW.set(BASEP);
+  const w = weights();
+  for (let k = 0; k < w.length; k++) {
+    const a = w[k]; if (!a) continue;
+    const S = SHAPES.subarray(k * N * 3, (k + 1) * N * 3);
+    for (let i = 0; i < RAW.length; i++) RAW[i] += a * S[i];
+  }
+}
+function compose() {                                   // POS: RAW + the face, scaled to the height, feet on the floor; then the eyes, the expressions
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 1; i < RAW.length; i += 3) { lo = Math.min(lo, RAW[i]); hi = Math.max(hi, RAW[i]); }
+  SCALE = st.height / (hi - lo); TOP = st.height;
+  for (let i = 0; i < RAW.length; i += 3) { POS[i] = RAW[i] * SCALE; POS[i + 1] = (RAW[i + 1] - lo) * SCALE; POS[i + 2] = RAW[i + 2] * SCALE; }
+  if (DELTA) {
+    const k = st.face.strength * SCALE;
+    for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; POS[i] += k * DELTA.d[j * 3]; POS[i + 1] += k * DELTA.d[j * 3 + 1]; POS[i + 2] += k * DELTA.d[j * 3 + 2]; }
+  }
+  placeEyes();                                         // from the neutral face
+  for (let e = 0; e < ENAMES.length; e++) {
+    const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
+    const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
+    for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; POS[i] += a * X[j * 3]; POS[i + 1] += a * X[j * 3 + 1]; POS[i + 2] += a * X[j * 3 + 2]; }
+  }
+  openEyes();                                          // from the moving lids: a blink closes over the eyeball
+  geo.attributes.position.needsUpdate = true; geo.computeVertexNormals();
+  const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
+  for (let c = 0; c < C; c++) {
+    const i = TRIS[c] * 3, j = c * 3;
+    DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
+  }
+  dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
+  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+  hairDirty = true;
+}
+
+// ---- eyes: MHR's closed shell sunk behind an eyeball inside MediaPipe's lid outline -----------------------------------
+const LMK = await api("api/face/landmarks", {}).catch(() => null);   // {tri, bary}: the 468 points on MHR's body
+const LIDS = { L: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466],   // the character's left (+x)
+               R: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] };
+function lmk(i) {                                       // a landmark's place on the body as it is now
+  const t = LMK.tri[i] * 3, b = LMK.bary[i], out = [0, 0, 0];
+  for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) out[a] += b[k] * POS[v + a]; }
+  return out;
+}
+function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+function openEyes() {                                  // the closed shell inside the lid outline sinks behind the eyeball
+  if (!LMK || !st.eyes.on) return null;
+  for (const side of ["L", "R"]) {
+    const ring = LIDS[side].map(lmk), m = EYES[side];
+    const cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cy = ring.reduce((a, p) => a + p[1], 0) / ring.length;
+    const poly = ring.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]);
+    const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const back = m.position.z - m.scale.x * 1.05, front = Math.min(...ring.map(p => p[2])) - 0.006;
+    for (let i = 0; i < POS.length; i += 3) {
+      const x = POS[i], y = POS[i + 1], z = POS[i + 2];
+      if (x < x0 || x > x1 || y < y0 || y > y1 || z < front) continue;
+      if (inside(poly, x, y)) POS[i + 2] = back;
+    }
+  }
+  return null;
+}
+// the mouth: MHR's shell is sealed between the lips by a membrane of triangles whose corners all sit on the lip line;
+// when the jaw drops they stretch into the open mouth. Those (near the mouth, ten times their area or more on jawDrop)
+// are coloured dark, per corner (vertex colours multiply the skin's texture). Teeth and a tongue come with the face parts.
+function mouthShade() {
+  const col = new Float32Array(C * 3).fill(1), e = ENAMES.indexOf("jawDrop");
+  if (!LMK || e < 0) return col;
+  const lb = i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0]; for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * BASEP[v + a]; } return o; };
+  const L = lb(61), R = lb(291), M = lb(13);
+  const open = Float32Array.from(BASEP), X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
+  for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; open[i] += X[j * 3]; open[i + 1] += X[j * 3 + 1]; open[i + 2] += X[j * 3 + 2]; }
+  const area = (P, t) => {
+    const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, c = TRIS[t + 2] * 3;
+    const u = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]], v = [P[c] - P[a], P[c + 1] - P[a + 1], P[c + 2] - P[a + 2]];
+    return Math.hypot(u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]);
+  };
+  for (let t = 0; t < TRIS.length; t += 3) {
+    const cx = (BASEP[TRIS[t] * 3] + BASEP[TRIS[t + 1] * 3] + BASEP[TRIS[t + 2] * 3]) / 3, cy = (BASEP[TRIS[t] * 3 + 1] + BASEP[TRIS[t + 1] * 3 + 1] + BASEP[TRIS[t + 2] * 3 + 1]) / 3;
+    if (cx < Math.min(L[0], R[0]) - 0.004 || cx > Math.max(L[0], R[0]) + 0.004 || Math.abs(cy - M[1]) > 0.012) continue;
+    if (area(open, t) < 10 * area(BASEP, t) + 1e-9) continue;
+    for (let k = 0; k < 3; k++) { const j = (t + k) * 3; col[j] = 0.16; col[j + 1] = 0.05; col[j + 2] = 0.05; }
+  }
+  return col;
+}
+dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material.vertexColors = true;
+
+function eyeTexture(color) {                            // sclera, iris and pupil round the sphere's front pole
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d");
+  const sc = g.createLinearGradient(0, 0, 0, 256); sc.addColorStop(0, "#f4efe9"); sc.addColorStop(0.6, "#efe3dc"); sc.addColorStop(1, "#d9b8b0");
+  g.fillStyle = sc; g.fillRect(0, 0, 512, 256);
+  const ir = g.createLinearGradient(0, 0, 0, 44); ir.addColorStop(0, color); ir.addColorStop(0.75, color); ir.addColorStop(1, "#1a1210");
+  g.fillStyle = ir; g.fillRect(0, 0, 512, 44);         // the iris: the cap within ~31 degrees of the pole
+  g.fillStyle = "#050505"; g.fillRect(0, 0, 512, 15);  // the pupil
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const eyeMat = new THREE.MeshPhysicalMaterial({ roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 });
+const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
+const EYES = { L: new THREE.Mesh(eyeGeo, eyeMat), R: new THREE.Mesh(eyeGeo, eyeMat) };
+st.eyes = { on: true, iris: "#3b2618" };
+function placeEyes() {
+  for (const side of ["L", "R"]) {
+    const m = EYES[side];
+    if (!LMK || !st.eyes.on) { m.visible = false; continue; }
+    const ring = LIDS[side].map(lmk), n = ring.length;
+    const c = [0, 1, 2].map(a => ring.reduce((s, p) => s + p[a], 0) / n);
+    const r = 0.0118 * SCALE;                          // a 12 mm eyeball, with the body's scale
+    m.scale.setScalar(r); m.position.set(c[0], c[1], Math.max(...ring.map(p => p[2])) - r + 0.0008);
+    const w = n => st.expr[ENAMES.indexOf(n)] * st.exprAmt;
+    const yaw = (w(`eyesLookLeft_${side}`) - w(`eyesLookRight_${side}`)) * 0.45, pitch = (w(`eyesLookDown_${side}`) - w(`eyesLookUp_${side}`)) * 0.35;
+    m.rotation.set(pitch, yaw, 0); m.visible = true;
+  }
+}
+
+const orbit = { yaw: 0.3, pitch: 0.08, focus: "body" };
+function place() {
+  const head = orbit.focus === "head", pov = orbit.focus === "pov", face = TOP - 0.12 * TOP / 1.7;
+  if (pov) {                                           // the player's eye, standing, at the shot's distance, looking at the face
+    const d = +$("#povShot").value + 0.1;              // the face is ~10 cm in front of the body's middle
+    camera.position.set(d * Math.sin(orbit.yaw), 1.65, d * Math.cos(orbit.yaw)); camera.lookAt(0, face, 0);
+  } else {
+    const ty = head ? face : TOP * 0.52, d = head ? 0.9 : 4.6;
+    camera.position.set(d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), ty + d * Math.sin(orbit.pitch), d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
+    camera.lookAt(0, ty, 0);
+  }
+  const fov = pov ? 2 * Math.atan(Math.tan(Math.PI / 4) * 9 / 16) * 180 / Math.PI : 26;   // game.fov: 90° across a 16:9 screen (59° up and down)
+  if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  if (LIGHT.name === "studio") { key.position.set(...($("#raking").checked ? [3, 0.2, 0.5] : [1, 1.4, 2])); hemi.intensity = $("#raking").checked ? 0.2 : 0.7; }
+}
+function viewRect(w, h) {                              // where the picture goes: the whole canvas, or in POV the game's 16:9 screen (from the bottom left)
+  if (orbit.focus !== "pov") return { x: 0, y: 0, w, h };
+  const vw = Math.min(w, h * 16 / 9), vh = vw * 9 / 16;
+  return { x: (w - vw) / 2, y: (h - vh) / 2, w: vw, h: vh };
+}
+function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+addEventListener("resize", resize);
+let drag = null;
+renderer.domElement.onpointerdown = e => {
+  renderer.domElement.setPointerCapture(e.pointerId);
+  if (HANDLES.visible && e.button === 0 && !e.altKey && grabHandle(e)) return;          // a wig handle
+  if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
+  drag = [e.clientX, e.clientY];
+};
+renderer.domElement.onpointermove = e => { if (DRAG) return dragHandle(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onpointerup = () => { drag = null; if (DRAG) { DRAG = null; fitWig(true); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
+for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
+  if (b.dataset.v) orbit.focus = b.dataset.v; else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }
+  document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
+};
+$("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
+let LAST = performance.now() / 1000, ACC = 0;
+renderer.setAnimationLoop(() => {
+  if (!EYES_IN) { rig.add(EYES.L, EYES.R); EYES_IN = true; }
+  if (hairDirty && HAIR_OK) growHair();
+  const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
+  if (HAIR_OK) { moveRig(now); stepWig(dt); stepStrands(dt); stepModelWig(dt); }
+  place();
+  const sz = renderer.getSize(new THREE.Vector2()), R = viewRect(sz.x, sz.y), aspect = R.w / R.h;
+  if (camera.aspect !== aspect) { camera.aspect = aspect; camera.updateProjectionMatrix(); }
+  if (orbit.focus === "pov") {                         // the game's 16:9 screen inside the canvas, black bars round it
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y); renderer.setClearColor(0x000000, 1); renderer.clear();
+    renderer.setScissorTest(true); renderer.setScissor(R.x, R.y, R.w, R.h); renderer.setViewport(R.x, R.y, R.w, R.h);
+    renderer.render(scene, camera); renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
+  } else renderer.render(scene, camera);
+});
+resize();
+
+// ---- the touch-up: paint on the body over the photo and the procedural skin (touchup.js) ------------------------------
+const TOUCH = new TouchUp();
+SKU.uTouchPaint.value = TOUCH.paintTex; SKU.uTouchMask.value = TOUCH.maskTex; SKU.uTouchPig.value = TOUCH.pigTex;
+let PAINTING = false, STROKE = false, TOUCH_SAVED = true;
+const ray = new THREE.Raycaster();
+function touchAt(e, first) {                           // a dab where the pointer is on the body; false when it's off the body
+  const r = renderer.domElement.getBoundingClientRect();
+  const V = viewRect(r.width, r.height), x = e.clientX - r.left - V.x, y = r.bottom - e.clientY - V.y;   // within the drawn frame (POV: the 16:9 one)
+  ray.setFromCamera(new THREE.Vector2(x / V.w * 2 - 1, y / V.h * 2 - 1), camera);
+  if (first) dgeo.computeBoundingSphere();
+  const h = touchHit(ray, mesh, dgeo.attributes.uv);
+  if (!h) return false;
+  if (first) TOUCH.begin();
+  TOUCH.dab(h.uv, TOUCH.size / 1000 * h.perMetre);
+  SKU.uHasTouch.value = 1; SKU.uHasPig.value = TOUCH.usedPig ? 1 : 0; TOUCH_SAVED = false;
+  return true;
+}
+function touchState() {
+  SKU.uHasTouch.value = TOUCH.used ? 1 : 0; SKU.uHasPig.value = TOUCH.usedPig ? 1 : 0;
+  $("#touchUndo").disabled = !TOUCH.undo.length;
+  $("#touchSave").textContent = TOUCH_SAVED ? "Saved" : "Save the touch-up";
+}
+{
+  const box = $("#touchRows"), on = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: TOUCH.color });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Paint on the body", el("small", { textContent: "Dragging on the body paints with the brush below; Alt-drag still turns the view. Painted on MHR's UVs, so it goes with the character into Unreal." }))));
+  on.onchange = () => { PAINTING = on.checked; renderer.domElement.style.cursor = PAINTING ? "crosshair" : ""; };
+  const chips = el("div", { className: "chips" });
+  for (const [k, label, help] of BRUSHES) {
+    const b = el("button", { textContent: label, title: help }); b.dataset.brush = k;
+    b.onclick = () => {
+      TOUCH.brush = k; chips.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+      if ((k === "pigment" || k === "swatch") && !st.skin.proc.pigmentOn) { procSet.pigOn.checked = st.skin.proc.pigmentOn = true; skinLook(); status("the Pigment toggle is on: pigment strokes only show with it"); }
+      if ((k === "skin" || k === "photo") && !st.skin.proc.on) { $("#procRows label.tog input").click(); status("the procedural skin is on: it's what shows where the photo is taken away"); }
+    };
+    if (k === TOUCH.brush) b.classList.add("on");
+    chips.append(b);
+  }
+  box.append(chips, el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")));
+  col.oninput = () => { TOUCH.color = col.value; };
+  slider(box, "touchSize", "Size (mm)", 1, 40, 0.5, TOUCH.size, "The brush's radius on the body.", v => { TOUCH.size = v; });
+  slider(box, "touchStrength", "Strength", 0.05, 1, 0.01, TOUCH.strength, "How fast a stroke builds up.", v => { TOUCH.strength = v; });
+  slider(box, "touchHard", "Hardness", 0, 0.95, 0.01, TOUCH.hard, "0 a soft airbrush, near 1 a hard edge.", v => { TOUCH.hard = v; });
+  {                                                       // the swatch: pick a circle on a reference image; it becomes the brush
+    const file = el("input", { type: "file", accept: "image/*" }), cv = el("canvas", { width: 240, height: 180 }), g = cv.getContext("2d"), pv = el("canvas", { width: 48, height: 48 });
+    cv.style.cssText = "width:240px;height:180px;border:1px solid var(--line);cursor:crosshair;display:block;margin:4px 0;touch-action:none"; pv.style.cssText = "width:48px;height:48px;border-radius:50%;border:1px solid var(--line)";
+    let img = null, sel = null, drag = null;
+    const fit = () => img ? Math.min(cv.width / img.width, cv.height / img.height) : 1;
+    const draw = () => {
+      g.fillStyle = "#222"; g.fillRect(0, 0, cv.width, cv.height); if (!img) return;
+      const k = fit(); g.drawImage(img, 0, 0, img.width * k, img.height * k);
+      if (sel) { g.strokeStyle = "#ffd25a"; g.lineWidth = 2; g.beginPath(); g.arc(sel.x * k, sel.y * k, sel.r * k, 0, 7); g.stroke(); }
+    };
+    const pick = () => { if (!img || !sel || sel.r < 3) return; TOUCH.setSwatch(img, sel.x, sel.y, sel.r); const st = TOUCH.stampFor("swatch"); if (st) { const q = pv.getContext("2d"); q.clearRect(0, 0, 48, 48); q.drawImage(st, 0, 0, 48, 48); } };
+    file.onchange = () => { const f = file.files[0]; if (!f) return; const im = new Image(); im.onload = () => { img = im; sel = null; draw(); }; im.src = URL.createObjectURL(f); };
+    cv.onpointerdown = e => { if (!img) return; cv.setPointerCapture(e.pointerId); const k = fit(), r = cv.getBoundingClientRect(); drag = { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; sel = { ...drag, r: 0 }; };
+    cv.onpointermove = e => { if (!drag) return; const k = fit(), r = cv.getBoundingClientRect(); sel.r = Math.hypot((e.clientX - r.left) / k - drag.x, (e.clientY - r.top) / k - drag.y); draw(); };
+    cv.onpointerup = () => { if (drag) { drag = null; pick(); } };
+    window.__swatch = { load: (im, x, y, r) => { img = im; sel = { x, y, r }; draw(); pick(); } };
+    box.append(el("h4", { textContent: "Swatch brush" }), el("div", { className: "row" }, el("span", { textContent: "Reference" }), file, el("output")),
+      cv, el("div", { className: "row" }, el("span", { textContent: "Brush" }), pv, el("output")));
+    slider(box, "touchBlend", "Blend", 0, 1, 0.01, TOUCH.blend, "How much the mixer evens out the swatch: 0 its own colours as picked (highlights, shading and all), 1 its average colour. Each dab also turns at random, so what's left evens out along the stroke.", v => { TOUCH.blend = v; });
+  }
+  const undo = el("button", { id: "touchUndo", textContent: "Undo", title: "The last stroke (Ctrl+Z)" }), clear = el("button", { textContent: "Clear" }),
+        save = el("button", { id: "touchSave", textContent: "Saved" });
+  undo.onclick = () => { if (TOUCH.back()) { TOUCH_SAVED = false; touchState(); } };
+  clear.onclick = () => { if (!confirm("Clear all the touch-up?")) return; TOUCH.clear(); TOUCH_SAVED = false; touchState(); };
+  save.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    const [p, m, q] = await TOUCH.blobs();
+    try {
+      await api(`api/skin/${encodeURIComponent(WHO)}/pigment`, q);
+      await api(`api/skin/${encodeURIComponent(WHO)}/paint`, p); await api(`api/skin/${encodeURIComponent(WHO)}/touch`, m);
+      TOUCH_SAVED = true; touchState(); status(`touch-up saved: People/${WHO}/skin_paint.png, skin_touch.png`, "ok");
+    } catch (e) { status(e.message, "bad"); }
+  };
+  box.append(el("div", { className: "row" }, undo, clear, save),
+    el("p", { className: "note", textContent: "Paint: lips, liner, brows, a fixed eye. Skin takes the photo away (hair or a shadow baked into the picture) for the procedural skin; Photo brings it back. Soften blurs both." }));
+  addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "z" && PAINTING) { e.preventDefault(); undo.onclick(); } });
+  touchState();
+}
+
+// ---- the eyes' controls ---------------------------------------------------------------------------------------------
+{
+  const on = el("input", { type: "checkbox", checked: true }), iris = el("input", { type: "color", value: "#3b2618" });
+  $("#eyeRows").append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Sinks MHR's closed shell inside MediaPipe's lid outline behind a 12 mm eyeball; the gaze shapes turn them, a blink closes the lid over them. Placeholders for the real eye parts (ICT-FaceKit's, with the tear line and occlusion)." }))),
+    el("div", { className: "row" }, el("span", { textContent: "Iris" }), iris, el("output")));
+  on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
+  iris.oninput = () => { st.eyes.iris = iris.value; eyeMat.map = eyeTexture(iris.value); eyeMat.needsUpdate = true; };
+  eyeMat.map = eyeTexture(st.eyes.iris);
+}
+
+// ---- hair: cards from the scalp (hair.js), brows and lashes, a cap in the hair's colour ---------------------------------
+st.hair = { ...HAIR.DEFAULTS, wig: true, clumps: 160, clumpWidth: 0.024, hold: 0.25, gravity: 1, source: "style", batch: { clumps: 256, strands: 20000 }, over: {} };
+const HAIR_MORE = { wig: true, clumps: 160, clumpWidth: 0.024, hold: 0.25, gravity: 1, source: "style", batch: { clumps: 256, strands: 20000 }, blend: { weights: {}, vary: 0, seed: 0 } };
+function strandTexture() {                              // strands down a card: alpha only
+  const c = document.createElement("canvas"); c.width = 128; c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = "#000"; g.fillRect(0, 0, 128, 256);
+  let seed = 3; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 46; i++) {
+    const x = 6 + r() * 116, end = 140 + r() * 116, a = 0.55 + 0.45 * r();
+    const gr = g.createLinearGradient(0, 0, 0, end); gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(0.8, `rgba(255,255,255,${a})`); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.strokeStyle = gr; g.lineWidth = 1.5 + r() * 2.5; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + (r() - 0.5) * 10, end * 0.4, x + (r() - 0.5) * 14, end * 0.7, x + (r() - 0.5) * 16, end); g.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+const hairMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.55, alphaMap: strandTexture(), alphaTest: 0.35, side: THREE.DoubleSide, vertexColors: true });
+const browMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.7, side: THREE.DoubleSide, vertexColors: true });
+const capMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
+const HM = { hair: new THREE.Mesh(new THREE.BufferGeometry(), hairMat), brows: new THREE.Mesh(new THREE.BufferGeometry(), browMat), cap: new THREE.Mesh(new THREE.BufferGeometry(), capMat) };
+rig.add(HM.hair, HM.brows, HM.cap);
+const WM = new THREE.Mesh(new THREE.BufferGeometry(), hairMat); WM.frustumCulled = false; scene.add(WM);   // the wig: world space
+var WIG = null;
+var HAIRNOW = null, hairDirty = true, HAIR_OK = false;   // var: the render loop starts before this block
+function toGeo(m, G) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(G.position, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(G.shade.flatMap(v => [v, v, v]), 3)); g.setIndex(G.index); g.computeVertexNormals();
+  m.geometry.dispose(); m.geometry = g;
+}
+function growHair() {
+  if (!geo.attributes.normal) return;                  // the body isn't composed yet
+  hairDirty = false;
+  const on = st.hair.style !== "none" && LMK;
+  HM.hair.visible = HM.cap.visible = !!on; HM.brows.visible = !!LMK && (st.hair.brows || st.hair.lashes);
+  if (!LMK) return;
+  const photo = st.hair.source === "photo";
+  MWM.visible = false; HANDLES.visible = false;
+  if (st.hair.source === "model") {                    // a hair model as a wig: the body's collision, brows, no cap
+    const r = HAIR.grow(POS, TRIS, lmk, SCALE, { ...st.hair, ...st.hair.over, style: "long", cards: 0, guidesOnly: true });
+    HAIRNOW = r; toGeo(HM.brows, r.brows); HM.hair.visible = false; WM.visible = false; WIG = null;
+    HM.brows.visible = st.hair.brows || st.hair.lashes;
+    if (STRANDS) STRANDS.mesh.visible = false;
+    capOf(r.scalp, false);
+    if (MODEL) fitWig(true);
+    return;
+  }
+  if (photo) {                                         // strands from the picture: the body's collision for their chains, brows, a cap
+    const r = HAIR.grow(POS, TRIS, lmk, SCALE, { ...st.hair, ...st.hair.over, style: "long", cards: 0, guidesOnly: true });
+    HAIRNOW = r; toGeo(HM.brows, r.brows); HM.hair.visible = false; WM.visible = false; WIG = null;
+    HM.brows.visible = st.hair.brows || st.hair.lashes;
+    if (STRANDS) { STRANDS.wig.push = r.push; STRANDS.mesh.visible = true; }
+    capOf(r.scalp, !!STRANDS); return;
+  }
+  if (STRANDS) STRANDS.mesh.visible = false;
+  const wig = on && st.hair.wig;
+  const r = HAIR.grow(POS, TRIS, lmk, SCALE, { ...st.hair, ...st.hair.over, style: on ? st.hair.style : "long", cards: !on ? 0 : wig ? st.hair.clumps : st.hair.cards, guidesOnly: wig });
+  HAIRNOW = r; toGeo(HM.hair, r.hair); toGeo(HM.brows, r.brows);
+  HM.hair.visible = on && !wig; WM.visible = wig;
+  WIG = wig ? new Wig(r.strands, r.push, r.frame.C, SCALE, Math.random, 2, r.guard) : null;
+  if (WIG) { r.report.wig = true; WIG.step(1 / 60, rig.matrix.elements, rig.matrix.clone().invert().elements, wigSet()); wigGeo(true); }
+  capOf(r.scalp, on);
+}
+function capOf(scalp, on) {                            // the scalp, a little off the skin, in the hair's colour
+  HM.cap.visible = on;
+  const NP = geo.attributes.normal.array, cap = [], off = 0.0015 * SCALE;
+  for (const t of on ? scalp : []) for (let k = 0; k < 3; k++) { const i = TRIS[t * 3 + k] * 3; cap.push(POS[i] + NP[i] * off, POS[i + 1] + NP[i + 1] * off, POS[i + 2] + NP[i + 2] * off); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cap, 3)); g.computeVertexNormals();
+  HM.cap.geometry.dispose(); HM.cap.geometry = g;
+}
+// the wig's step, its cards, and the head motion that swings it
+const wigSet = () => ({ hold: st.hair.hold, gravity: st.hair.gravity, width: st.hair.clumpWidth });
+function wigGeo(fresh) {
+  const G = WIG.cards({ position: [], uv: [], shade: [], index: [] }, st.hair.clumpWidth);
+  const g = WM.geometry;
+  if (fresh || !g.attributes.position || g.attributes.position.count * 3 !== G.position.length) {
+    const ng = new THREE.BufferGeometry();
+    ng.setAttribute("position", new THREE.Float32BufferAttribute(G.position, 3)); ng.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
+    ng.setAttribute("color", new THREE.Float32BufferAttribute(G.shade.flatMap(v => [v, v, v]), 3)); ng.setIndex(G.index);
+    ng.computeVertexNormals(); WM.geometry.dispose(); WM.geometry = ng; return;
+  }
+  g.attributes.position.array.set(G.position); g.attributes.position.needsUpdate = true; g.computeVertexNormals();
+}
+let MOVE = "still", ACC_W = 0;
+function moveRig(t) {                                  // still, turn, nod, shake, walk: about the neck
+  const m = new THREE.Matrix4(), piv = new THREE.Vector3(0, TOP - 0.25 * SCALE, 0), w = 2 * Math.PI;
+  const e = new THREE.Euler(), p = new THREE.Vector3();
+  if (MOVE === "turn") e.set(0, 0.7 * Math.sin(w * 0.5 * t), 0);
+  else if (MOVE === "nod") e.set(0.3 * Math.sin(w * 0.7 * t), 0, 0);
+  else if (MOVE === "shake") e.set(0, 0.45 * Math.sin(w * 1.8 * t), 0);
+  else if (MOVE === "walk") { e.set(0.04 * Math.sin(w * 1.8 * t), 0.08 * Math.sin(w * 0.9 * t), 0.05 * Math.sin(w * 0.9 * t)); p.set(0, 0.03 * Math.abs(Math.sin(w * 0.9 * t)), 0); }
+  m.makeTranslation(-piv.x, -piv.y, -piv.z).premultiply(new THREE.Matrix4().makeRotationFromEuler(e)).premultiply(new THREE.Matrix4().makeTranslation(piv.x + p.x, piv.y + p.y, piv.z + p.z));
+  rig.matrix.copy(m); rig.matrixWorldNeedsUpdate = true;
+}
+function stepWig(dt) {
+  if (!WIG || !WM.visible) return;
+  ACC_W += dt; let n = 0;
+  const M = rig.matrix.elements, Minv = rig.matrix.clone().invert().elements;
+  while (ACC_W >= 1 / 60 && n < 3) { WIG.step(1 / 60, M, Minv, wigSet()); ACC_W -= 1 / 60; n++; }
+  if (ACC_W > 0.2) ACC_W = 0;
+  if (n) wigGeo(false);
+}
+// ---- a hair model worn as a wig (wigify.js) -------------------------------------------------------------------------
+var MODEL = null, MWIG = null, MFIT = null, DRAG = null; let ACC_M = 0;
+const wigMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.5, side: THREE.DoubleSide });
+const MWM = new THREE.Mesh(new THREE.BufferGeometry(), wigMat); MWM.frustumCulled = false; MWM.visible = false; scene.add(MWM);
+const HANDLES = new THREE.Group(); HANDLES.visible = false; HANDLES.userData.on = true; scene.add(HANDLES);
+for (const [name, c] of [["crown", 0xffd166], ["left", 0x5ec8ff], ["right", 0x5ec8ff], ["front", 0x7ee08a], ["back", 0x7ee08a], ["length", 0xff7a8a]]) {
+  const h = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true, opacity: 0.85 }));
+  h.name = name; h.renderOrder = 10; HANDLES.add(h);
+}
+async function loadModel() {                           // the model's file into points, triangles, UVs and its texture
+  MODEL = null; MWIG = null; MFIT = null;
+  const m = st.hair.model; if (!WHO || !m?.file) return false;
+  const r = await fetch(`api/wigs/${encodeURIComponent(WHO)}/${encodeURIComponent(m.file)}`); if (!r.ok) return false;
+  const buf = await r.arrayBuffer(), ext = m.file.split(".").pop().toLowerCase();
+  let root;
+  try {
+    if (ext === "obj") root = new THREE.Mesh(parseObj(new TextDecoder().decode(buf)));
+    else if (ext === "glb" || ext === "gltf") { const { GLTFLoader } = await import("./vendor/GLTFLoader.js"); root = (await new GLTFLoader().parseAsync(buf, "")).scene; }
+    else if (ext === "fbx") { const { FBXLoader } = await import("./vendor/FBXLoader.js"); root = new FBXLoader().parse(buf, ""); }
+  } catch (e) { console.warn(e); return false; }
+  if (!root) return false;
+  root.updateMatrixWorld(true);
+  const P = [], UV = [], IX = []; let map = null, cut = false;
+  root.traverse(o => {
+    if (!o.isMesh || !o.geometry?.attributes?.position) return;
+    const g = o.geometry, pa = g.attributes.position, ua = g.attributes.uv, base = P.length / 3, v = new THREE.Vector3();
+    for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld); P.push(v.x, v.y, v.z); UV.push(ua ? ua.getX(i) : 0, ua ? ua.getY(i) : 0); }
+    if (g.index) for (let i = 0; i < g.index.count; i++) IX.push(base + g.index.getX(i)); else for (let i = 0; i < pa.count; i++) IX.push(base + i);
+    const mt = Array.isArray(o.material) ? o.material[0] : o.material;
+    if (!map && mt?.map) { map = mt.map; cut = mt.transparent || mt.alphaTest > 0 || !!mt.alphaMap; }
+  });
+  if (!P.length) return false;
+  MODEL = { raw: new Float32Array(P), uv: new Float32Array(UV), index: IX, count: P.length / 3 };
+  wigMat.map = map; wigMat.alphaTest = map && cut ? 0.35 : 0; wigMat.color.set(map ? 0xffffff : st.hair.color); wigMat.needsUpdate = true;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P.length), 3)); g.setAttribute("uv", new THREE.BufferAttribute(MODEL.uv, 2)); g.setIndex(IX);
+  MWM.geometry.dispose(); MWM.geometry = g;
+  return true;
+}
+function fitWig(physics) {                             // the model onto this head (the fit's handles); with physics, the wig
+  if (!MODEL || !HAIRNOW) return;
+  const r = HAIRNOW, m = st.hair.model, band = WIGIFY.headBand(POS, r.frame, SCALE);
+  MFIT = WIGIFY.fitModel(WIGIFY.normalise(MODEL.raw, m.fit.yaw || 0), r.frame, band, SCALE, m.fit);
+  MWIG = null;
+  if (physics) {
+    const moved = WIGIFY.unclip(MFIT.R, r.push, 0.003 * SCALE);
+    MWIG = new WIGIFY.ModelWig(MFIT.R, r.push, { ...r.frame, top: band.top }, SCALE, m.lock ?? WIGIFY.SET.lock);
+    MWIG.report.unclipped = moved;
+    MWIG.step(1 / 60, rig.matrix.elements, rig.matrix.clone().invert().elements, wigSet());
+  }
+  MWM.visible = true; HANDLES.visible = HANDLES.userData.on;
+  drawModelWig();
+}
+function drawModelWig() {
+  const M = rig.matrix.elements, a = MWM.geometry.attributes.position.array;
+  if (MWIG) MWIG.positions(a, M);
+  else for (let i = 0; i < a.length; i += 3) { const x = MFIT.R[i], y = MFIT.R[i + 1], z = MFIT.R[i + 2];
+    a[i] = M[0] * x + M[4] * y + M[8] * z + M[12]; a[i + 1] = M[1] * x + M[5] * y + M[9] * z + M[13]; a[i + 2] = M[2] * x + M[6] * y + M[10] * z + M[14]; }
+  MWM.geometry.attributes.position.needsUpdate = true; MWM.geometry.computeVertexNormals();
+  const k = 0.011 * SCALE;
+  for (const h of HANDLES.children) { const at = MFIT.handles[h.name].at; h.position.set(...at).applyMatrix4(rig.matrix); h.scale.setScalar(k); }
+}
+function stepModelWig(dt) {
+  if (!MWM.visible || !MFIT) return;
+  HANDLES.visible = HANDLES.userData.on;
+  if (!MWIG) return drawModelWig();
+  ACC_M += dt; let n = 0;
+  const M = rig.matrix.elements, Minv = rig.matrix.clone().invert().elements, set = { ...wigSet() };
+  while (ACC_M >= 1 / 60 && n < 3) { MWIG.step(1 / 60, M, Minv, set); ACC_M -= 1 / 60; n++; }
+  if (ACC_M > 0.2) ACC_M = 0;
+  if (n) drawModelWig();
+}
+function pointerRay(e) {
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), x = e.clientX - r.left - V.x, y = r.bottom - e.clientY - V.y;
+  ray.setFromCamera(new THREE.Vector2(x / V.w * 2 - 1, y / V.h * 2 - 1), camera);
+}
+function grabHandle(e) {                               // a handle under the pointer: its fit and where the drag started
+  pointerRay(e);
+  const h = ray.intersectObjects(HANDLES.children, false)[0];
+  if (!h) return false;
+  const name = h.object.name, H = MFIT.handles[name], at = new THREE.Vector3(...H.at).applyMatrix4(rig.matrix);
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), at);
+  DRAG = { name, H, plane, start: at, fit: JSON.parse(JSON.stringify(st.hair.model.fit)) };
+  MWIG = null;                                         // still while it's dragged: the physics comes back on release
+  return true;
+}
+function dragHandle(e) {
+  pointerRay(e);
+  const p = ray.ray.intersectPlane(DRAG.plane, new THREE.Vector3()); if (!p) return;
+  const inv = rig.matrix.clone().invert(), q = p.clone().applyMatrix4(inv), s = DRAG.start.clone().applyMatrix4(inv), f = st.hair.model.fit, H = DRAG.H;
+  if (DRAG.name === "crown") { f.move = [0, 1, 2].map(k => DRAG.fit.move[k] + (q.getComponent(k) - s.getComponent(k))); }
+  else {                                               // along the handle's own axis, from the head's middle
+    const along = [0, 1, 2].reduce((t, k) => t + (q.getComponent(k) - s.getComponent(k)) * H.axis[k], 0);
+    const e1 = Math.max(0.01 * SCALE, H.extent + along);
+    f[DRAG.name] = Math.min(2.5, Math.max(0.4, DRAG.fit[DRAG.name] * e1 / Math.max(1e-4, H.extent)));
+  }
+  fitWig(false);
+}
+
+// strand hair (hair_fit -> hair_batch): guides with physics, strands rebuilt on the GPU
+var STRANDS = null; let ACC_S = 0;
+async function loadStrands() {
+  if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
+  if (!WHO) return false;
+  const [hr, br] = await Promise.all([fetch(`api/hair/${encodeURIComponent(WHO)}/batch.json?v=${Date.now()}`), fetch(`api/hair/${encodeURIComponent(WHO)}/batch.bin?v=${Date.now()}`)]);
+  if (!hr.ok || !br.ok) return false;
+  const head = await hr.json();
+  const r = HAIR.grow(POS, TRIS, lmk, SCALE, { style: "long", cards: 0, guidesOnly: true, brows: false, lashes: false });
+  STRANDS = new StrandHair(head, await br.arrayBuffer(), r.push, r.frame.C, SCALE);
+  STRANDS.setColor(st.hair.color); scene.add(STRANDS.mesh);
+  STRANDS.step(1 / 60, rig.matrix.elements, rig.matrix.clone().invert().elements, wigSet());
+  hairDirty = true; return head;
+}
+function stepStrands(dt) {
+  if (!STRANDS || !STRANDS.mesh.visible) return;
+  ACC_S += dt; let n = 0;
+  const M = rig.matrix.elements, Minv = rig.matrix.clone().invert().elements;
+  while (ACC_S >= 1 / 60 && n < 3) { STRANDS.step(1 / 60, M, Minv, wigSet()); ACC_S -= 1 / 60; n++; }
+  if (ACC_S > 0.2) ACC_S = 0;
+  STRANDS.light(new THREE.Vector3().setFromMatrixPosition(key.matrixWorld).sub(new THREE.Vector3(0, TOP * 0.9, 0)).normalize());
+}
+const hairSet = {};
+{
+  const box = $("#hairRows"), styleSel = el("select"), color = el("input", { type: "color", value: st.hair.color });
+  styleSel.append(el("option", { value: "none", textContent: "none (bald)" }), ...Object.entries(HAIR.STYLES).map(([k, v]) => el("option", { value: k, textContent: v.label })));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), styleSel, el("output")), el("div", { className: "row" }, el("span", { textContent: "Colour" }), color, el("output")));
+  const srcSel = el("select"), rebatch = el("button", { textContent: "Batch again" });
+  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "strands (the hair library)" }),
+                el("option", { value: "model", textContent: "a hair model, worn as a wig" }));
+  const photoBox = el("div", { className: "photoHair" }), modelBox = el("div", { className: "photoHair" });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Hair" }), srcSel, el("output")), modelBox, photoBox);
+  // a hair model (wigify.js): imported, fitted by the crown, six handles, locked at the top, swinging off the head
+  {
+    const file = el("input", { type: "file", accept: ".glb,.gltf,.fbx,.obj" }), turn = el("button", { textContent: "Turn 90°" }),
+          refit = el("button", { textContent: "Fit again" }), handles = el("input", { type: "checkbox", checked: true });
+    modelBox.append(el("p", { className: "note", textContent: "A hair-only model (GLB, FBX or OBJ): CC0 ones (Quaternius, MakeHuman's own hairs) or your own. Fitted to this head by its crown; drag the handles to adjust it: the top one moves it, the sides, front and back widen or narrow, the bottom one is the length. The top is locked to the head; the rest swings and keeps off the head and shoulders." }),
+      el("div", { className: "row" }, el("span", { textContent: "Model" }), file, el("output")), el("div", { className: "row" }, turn, refit),
+      el("label", { className: "tog" }, handles, el("span", { textContent: "Handles" })));
+    hairSet.lock = slider(modelBox, "wig_lock", "Locked down to", 0, 1, 0.05, 0.45, "How far down the head the wig is held: 0 the crown only, 1 down to the ears.", v => { if (st.hair.model) { st.hair.model.lock = v; hairDirty = true; } });
+    file.onchange = async () => {
+      const f = file.files[0]; if (!f) return;
+      if (!WHO) return status("make or pick a character first", "bad");
+      const ext = f.name.split(".").pop().toLowerCase(), name = f.name.replace(/[^A-Za-z0-9_.-]/g, "_").replace(/^\.+/, "");
+      if (!["glb", "gltf", "fbx", "obj"].includes(ext)) return status("a hair model: GLB, glTF (one file), FBX or OBJ", "bad");
+      status(`taking ${f.name}…`);
+      try {
+        await api(`api/wigs/${encodeURIComponent(WHO)}/${encodeURIComponent(name)}`, f);
+        st.hair.model = { file: name, fit: { ...WIGIFY.FIT, move: [0, 0, 0] }, lock: WIGIFY.SET.lock };
+        hairSet.lock(st.hair.model.lock);
+        const ok = await loadModel(); hairDirty = true;
+        status(ok ? `${name}: ${MODEL.count} points, fitted to the head` : `couldn't read ${name}`, ok ? "ok" : "bad");
+      } catch (e) { status(e.message, "bad"); }
+      file.value = "";
+    };
+    turn.onclick = () => { if (!st.hair.model) return; st.hair.model.fit.yaw = ((st.hair.model.fit.yaw || 0) + 90) % 360; hairDirty = true; };
+    refit.onclick = () => { if (!st.hair.model) return; st.hair.model.fit = { ...WIGIFY.FIT, move: [0, 0, 0], yaw: st.hair.model.fit.yaw || 0 }; hairDirty = true; };
+    handles.onchange = () => { HANDLES.userData.on = handles.checked; };
+  }
+  photoBox.append(el("p", { className: "note", textContent: "Strands made elsewhere, fitted to this head and batched like an anime game's: clumps, each one guide chain with physics, every strand riding its clump on the GPU." }));
+  // the hair library (Perm's hairstyles: tools/perm.py): pick or blend, or match the front picture
+  st.hair.blend = st.hair.blend || { weights: {}, vary: 0, seed: 0 };
+  const libNote = el("p", { className: "note" }), grid = el("div", { className: "hairlib" }), chosen = el("div");
+  const matchBtn = el("button", { textContent: "Match the front picture" }), blendBtn = el("button", { textContent: "Make the blend" });
+  photoBox.append(el("h4", { textContent: "Hair library" }), libNote, grid, chosen, matchBtn, " ", blendBtn);
+  hairSet.vary = slider(photoBox, "hair_vary", "Vary", 0, 0.6, 0.02, 0, "A little randomness in the blend's shape (the same seed gives the same).", v => { st.hair.blend.vary = v; });
+  let LIB = null;
+  const drawChosen = () => {
+    const W = st.hair.blend.weights;
+    grid.querySelectorAll("div").forEach(d => d.classList.toggle("on", d.dataset.name in W));
+    chosen.replaceChildren(...Object.keys(W).map(n => {
+      const r = el("div", { className: "row" }), inp = el("input", { type: "range", min: 0, max: 1, step: 0.01, value: W[n] }), x = el("button", { textContent: "×" });
+      inp.oninput = () => { W[n] = +inp.value; }; x.onclick = () => { delete W[n]; drawChosen(); };
+      r.append(el("span", { textContent: n.replace(/^strands0*/, "#") }), inp, x); return r;
+    }));
+  };
+  hairSet.library = async () => {
+    if (LIB) { drawChosen(); return; }
+    const r = await fetch("api/hairlib/index.json").catch(() => null);
+    if (!r || !r.ok) { libNote.textContent = "No hair library yet: python tools/perm.py setup, then python tools/perm.py library (Perm, Yale and Adobe: 343 artist hairstyles; free games only)."; return; }
+    LIB = await r.json();
+    const rows = Math.ceil(LIB.names.length / LIB.cols), [cw, ch] = LIB.cell, k = 0.5;
+    libNote.textContent = `${LIB.names.length} hairstyles (front and side). Click to add one to the blend, again to take it out; weights below.`;
+    grid.replaceChildren(...LIB.names.map((n, i) => {
+      const c = el("div", { title: `${n} · falls ${LIB.drop[i]} face heights` }); c.dataset.name = n;
+      Object.assign(c.style, { backgroundImage: "url(api/hairlib/sprite.png)", backgroundSize: `${LIB.cols * cw * k}px ${rows * ch * k}px`,
+        backgroundPosition: `-${(i % LIB.cols) * cw * k}px -${Math.floor(i / LIB.cols) * ch * k}px` });
+      c.onclick = () => { const W = st.hair.blend.weights; if (n in W) delete W[n]; else W[n] = 1; drawChosen(); };
+      return c;
+    }));
+    drawChosen();
+  };
+  matchBtn.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    status("finding the hair in the front picture and scoring every hairstyle's outline…");
+    try {
+      const r = await api(`api/hair/${encodeURIComponent(WHO)}/match`, {});
+      st.hair.blend.weights = Object.fromEntries(r.top.map(t => [t.name, t.weight])); drawChosen();
+      status("closest: " + r.top.map(t => `${t.name} (${Math.round(t.iou * 100)}%)`).join(", ") + ". Make the blend to try it.", "ok");
+    } catch (e) { status(e.message, "bad"); }
+  };
+  blendBtn.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    if (!Object.keys(st.hair.blend.weights).length) return status("pick a hairstyle or two from the library first", "bad");
+    status("Perm: blending the hairstyles (sealed off the network), then onto this head and batched…"); blendBtn.disabled = true;
+    try {
+      const q = new URLSearchParams({ weights: JSON.stringify(st.hair.blend.weights), vary: st.hair.blend.vary, seed: st.hair.blend.seed,
+                                      clumps: st.hair.batch.clumps, strands: st.hair.batch.strands });
+      const r = await api(`api/hair/${encodeURIComponent(WHO)}/perm?${q}`, new Blob([POS]));
+      await loadStrands(); status(`hair: ${r.batch.strands_drawn} strands drawn on ${r.batch.clumps} clumps (of ${r.batch.strands_in}); roots moved ${r.fit.root_moved_mm.mean} mm`, "ok");
+    } catch (e) { status(e.message, "bad"); }
+    blendBtn.disabled = false;
+  };
+  hairSet.bclumps = slider(photoBox, "hair_bclumps", "Clumps", 32, 1024, 32, st.hair.batch.clumps, "Guide chains with physics: more follow the hair's shape closer, cost more.", v => { st.hair.batch.clumps = v; });
+  hairSet.bstrands = slider(photoBox, "hair_bstrands", "Strands drawn", 2000, 60000, 1000, st.hair.batch.strands, "How many of the strands are drawn (each rides its clump).", v => { st.hair.batch.strands = v; });
+  photoBox.append(rebatch);
+  const showSrc = () => { photoBox.hidden = st.hair.source !== "photo"; modelBox.hidden = st.hair.source !== "model"; box.querySelectorAll(".styleOnly").forEach(e => { e.hidden = st.hair.source !== "style"; }); };
+  srcSel.onchange = async () => { st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo") hairSet.library(); if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet", h ? "ok" : ""); } hairDirty = true; };
+  rebatch.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    status("batching…"); rebatch.disabled = true;
+    try { const r = await api(`api/hair/${encodeURIComponent(WHO)}/batch`, st.hair.batch); await loadStrands(); status(`strands: ${r.batch.strands_drawn} drawn on ${r.batch.clumps} clumps`, "ok"); }
+    catch (e) { status(e.message, "bad"); }
+    rebatch.disabled = false;
+  };
+  hairSet.source = () => { srcSel.value = st.hair.source; hairSet.lock(st.hair.model?.lock ?? WIGIFY.SET.lock); hairSet.bclumps(st.hair.batch.clumps); hairSet.bstrands(st.hair.batch.strands);
+    st.hair.blend = st.hair.blend || { weights: {}, vary: 0, seed: 0 }; hairSet.vary(st.hair.blend.vary); showSrc(); if (st.hair.source === "photo") hairSet.library(); };
+  const wigOn = el("input", { type: "checkbox", checked: true }), moveSel = el("select"), drop = el("button", { textContent: "Drop it again" });
+  moveSel.append(...["still", "turn", "nod", "shake", "walk"].map(m => el("option", { value: m, textContent: m })));
+  box.append(el("label", { className: "tog" }, wigOn, el("span", {}, "Wig with physics", el("small", { textContent: "The style as a wig on the head: clumps of hair, each a chain pinned at its root (a tail at its tie), swung by gravity and the head, held loosely to the style, kept off the head and shoulders. Off: cards grown from the scalp, still." }))),
+    el("div", { className: "row" }, el("span", { textContent: "Head motion" }), moveSel, el("output")));
+  hairSet.clumps = slider(box, "hair_clumps", "Clumps", 40, 400, 10, st.hair.clumps, "How many locks the wig has (each three crossed cards).", v => { st.hair.clumps = v; hairDirty = true; });
+  hairSet.clumpWidth = slider(box, "hair_clumpWidth", "Clump width (m)", 0.008, 0.05, 0.001, st.hair.clumpWidth, "", v => { st.hair.clumpWidth = v; if (WIG) wigGeo(true); });
+  hairSet.hold = slider(box, "hair_hold", "Hold", 0, 1, 0.01, st.hair.hold, "How hard the clumps keep the style's shape: 0 hangs freely, 1 barely moves. Loosest at the tips.", v => { st.hair.hold = v; });
+  hairSet.gravity = slider(box, "hair_gravity", "Gravity", 0, 2, 0.05, st.hair.gravity, "", v => { st.hair.gravity = v; });
+  box.append(drop);
+  wigOn.onchange = () => { st.hair.wig = wigOn.checked; hairDirty = true; };
+  moveSel.onchange = () => { MOVE = moveSel.value; };
+  drop.onclick = () => { if (WIG) WIG.started = false; };
+  hairSet.wig = v => { wigOn.checked = v; };
+  const NUM = [   // [key, label, lo, hi, step, help]: a style's own numbers, overridden here
+    ["length", "Length (m)", 0.03, 0.7, 0.01, "Along the strand, at MHR's 1.7 m."], ["volume", "Volume", 0, 0.04, 0.001, "How far the hair stands off the head."],
+    ["wave", "Wave", 0, 1, 0.05, "Waves along the strand."], ["part", "Parting", -1, 1, 0.05, "−1 left, 0 the middle, +1 right."],
+    ["tie", "Tie height", 0, 1, 0.05, "Twin tails, ponytails, half-up: how high they're tied."], ["layers", "Layers", 0, 1, 0.05, "Shorter toward the crown: a layered cut, a wolf cut."]];
+  const fill = () => { const sty = HAIR.STYLES[st.hair.style] || {}; for (const [k] of NUM) hairSet[k](st.hair.over[k] ?? sty[k] ?? 0); hairSet.bangs(st.hair.over.bangs ?? !!sty.bangs); };
+  for (const [k, label, lo, hi, step, help] of NUM) hairSet[k] = slider(box, "hair_" + k, label, lo, hi, step, 0, help, v => { st.hair.over[k] = v; hairDirty = true; });
+  const bangs = el("input", { type: "checkbox" }); box.append(el("label", { className: "tog" }, bangs, el("span", { textContent: "Bangs" })));
+  hairSet.bangs = v => { bangs.checked = v; }; bangs.onchange = () => { st.hair.over.bangs = bangs.checked; hairDirty = true; };
+  hairSet.bangsAt = slider(box, "hair_bangsAt", "Bangs end (m)", -0.03, 0.03, 0.002, 0, "Below the brows (+) or above them (−).", v => { st.hair.bangsAt = v; hairDirty = true; });
+  hairSet.hairline = slider(box, "hair_hairline", "Hairline", -0.03, 0.03, 0.002, 0, "Where the hair starts on the forehead, up (+) or down (−).", v => { st.hair.hairline = v; hairDirty = true; });
+  hairSet.cards = slider(box, "hair_cards", "Cards", 200, 2500, 50, st.hair.cards, "How many cards: thicker hair, slower.", v => { st.hair.cards = v; hairDirty = true; });
+  hairSet.width = slider(box, "hair_width", "Card width (m)", 0.004, 0.03, 0.001, st.hair.width, "", v => { st.hair.width = v; hairDirty = true; });
+  const brows = el("input", { type: "checkbox", checked: true }), lashes = el("input", { type: "checkbox", checked: true });
+  box.append(el("label", { className: "tog" }, brows, el("span", { textContent: "Brows" })), el("label", { className: "tog" }, lashes, el("span", { textContent: "Lashes" })));
+  brows.onchange = () => { st.hair.brows = brows.checked; hairDirty = true; }; lashes.onchange = () => { st.hair.lashes = lashes.checked; hairDirty = true; };
+  const tint = () => { if (!wigMat.map) wigMat.color.set(st.hair.color); hairMat.color.set(st.hair.color); capMat.color.set(st.hair.color); browMat.color.set(st.hair.color).multiplyScalar(0.8); STRANDS?.setColor(st.hair.color); };
+  color.oninput = () => { st.hair.color = color.value; tint(); };
+  styleSel.onchange = () => { st.hair.style = styleSel.value; st.hair.over = {}; fill(); hairDirty = true; };
+  const exp = el("button", { textContent: "Export hair OBJ", title: "the cards, brows and lashes (with UVs for the strand texture) and the scalp cap" });
+  box.append(exp);
+  exp.onclick = async () => {
+    if (!WHO || !HAIRNOW) return status("make a character first", "bad");
+    const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_hair.obj`)}`, hairObj());
+    if (WIG && WM.visible) await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_wig.json`)}`, JSON.stringify({
+      about: "the wig's clumps as chains (metres, Y up, facing +Z, the body's frame): the first `pinned` points ride the head, the rest are bones for Unreal's physics; tools/character/wig.js",
+      style: st.hair.style, clumps: WIG.local(rig.matrix.clone().invert().elements) }));
+    status(`wrote ${r.path}${WIG && WM.visible ? " and the wig's chains" : ""}`, "ok");
+  };
+  box.children[0].classList.add("styleOnly");                                       // the style picker
+  for (const r of [...box.children].slice([...box.children].indexOf(photoBox) + 1))   // the rest is the style's: hidden for strands
+    if (!r.textContent.startsWith("Head motion") && !/^(Hold|Gravity)/.test(r.textContent)) r.classList.add("styleOnly");
+  hairSet.all = () => { styleSel.value = st.hair.style; color.value = st.hair.color; brows.checked = st.hair.brows; lashes.checked = st.hair.lashes;
+    for (const k of ["clumps", "clumpWidth", "hold", "gravity"]) hairSet[k](st.hair[k]); hairSet.wig(st.hair.wig); hairSet.source();
+    hairSet.bangsAt(st.hair.bangsAt); hairSet.hairline(st.hair.hairline); hairSet.cards(st.hair.cards); hairSet.width(st.hair.width); fill(); tint(); };
+  hairSet.all(); HAIR_OK = true;
+}
+function hairObj() {                                   // metres, Y up, facing +Z; o hair (cards), o brows (and lashes), o scalp
+  const out = [`# ${WHO}: hair cards from the Character Studio (tools/character/hair.js); metres, Y up, facing +Z`];
+  let base = 0;
+  const part = (name, G) => {
+    out.push(`o ${WHO}_${name}`);
+    for (let i = 0; i < G.position.length; i += 3) out.push(`v ${G.position[i].toFixed(5)} ${G.position[i + 1].toFixed(5)} ${G.position[i + 2].toFixed(5)}`);
+    if (G.uv) for (let i = 0; i < G.uv.length; i += 2) out.push(`vt ${G.uv[i].toFixed(4)} ${G.uv[i + 1].toFixed(4)}`);
+    for (let i = 0; i < G.index.length; i += 3) { const [a, b, c] = [0, 1, 2].map(k => base + G.index[i + k] + 1); out.push(G.uv ? `f ${a}/${a} ${b}/${b} ${c}/${c}` : `f ${a} ${b} ${c}`); }
+    base += G.position.length / 3;
+  };
+  part("hair", WIG && WM.visible ? WIG.cards({ position: [], uv: [], shade: [], index: [] }, st.hair.clumpWidth, true, rig.matrix.clone().invert().elements) : HAIRNOW.hair);
+  part("brows", HAIRNOW.brows);
+  const cap = HM.cap.geometry.attributes.position;
+  if (cap && cap.count) {   // the cap's own vertices, with the uv indices (one per hair vertex) already used, so no vt
+    const G = { position: [...cap.array], index: [...Array(cap.count).keys()] };
+    out.push(`o ${WHO}_scalp`);
+    for (let i = 0; i < G.position.length; i += 3) out.push(`v ${G.position[i].toFixed(5)} ${G.position[i + 1].toFixed(5)} ${G.position[i + 2].toFixed(5)}`);
+    for (let i = 0; i < G.index.length; i += 3) out.push(`f ${base + i + 1} ${base + i + 2} ${base + i + 3}`);
+  }
+  return out.join("\n") + "\n";
+}
+
+// ---- changes: the body here at once, the face from the worker after a pause ----------------------------------------
+let faceTimer = null, seq = 0;
+function changed(what) {
+  if (what === "body") computeBody();
+  compose();
+  if (what === "body" || what === "face") { clearTimeout(faceTimer); faceTimer = setTimeout(fitFace, what === "body" ? 350 : 150); }
+}
+async function fitFace() {
+  if (!WHO || !PICS.length) { if (DELTA) { DELTA = null; compose(); } hud(); return; }
+  const mine = ++seq; status("fitting the face…");
+  const side = PICS.filter(p => p.name.startsWith("side.")).map(p => p.name);
+  try {
+    const r = await api("api/face/body", { name: WHO, weights: weights(), settings: { ...st.face, relative: $("#relative").checked }, side });
+    if (mine !== seq) return;
+    DELTA = r.idx.length ? { idx: r.idx, d: r.delta } : null; REPORT = r.report; compose(); hud(); status("");
+  } catch (e) { if (mine === seq) { status(e.message, "bad"); } }
+}
+function hud() {
+  const lines = [`${H.lod} · ${N} points · ${st.height.toFixed(2)} m`];
+  if (REPORT) lines.push(`face from ${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}`);
+  $("#hud").replaceChildren(...lines.map(t => el("div", { textContent: t })), ...(REPORT?.warnings || []).map(w => el("div", { className: "warn", textContent: w })));
+}
+
+// ---- the pictures ---------------------------------------------------------------------------------------------------
+const SLOT_TEXT = { front: "Front picture\nclick or drop", side: "Side picture\n(optional)" };
+function drawSlots(missed = []) {
+  $("#slots").replaceChildren(...["front", "side"].map(slot => {
+    const p = PICS.find(x => x.name.startsWith(slot + ".")), file = el("input", { type: "file", accept: "image/*", hidden: true });
+    const box = el("div", { className: "slot", title: slot === "side" ? "a side or three-quarter view: its depth" : "a frontal, neutral, evenly lit face" }, file);
+    const each = Object.fromEntries((REPORT?.each || []).map(x => [x.name, x]));
+    if (p) {
+      const x = each[p.name] || {};
+      box.append(el("img", { src: "data:image/jpeg;base64," + p.thumb }),
+        el("div", { className: "label" + (x.dropped ? " bad" : ""), textContent: `${slot}${x.turn !== undefined ? ` · ${x.turn}°` : ""}${x.dropped ? ` · not used (${x.dropped})` : ""}` }));
+    } else if (missed.some(m => m.startsWith(slot + "."))) {
+      box.append(el("div", { textContent: `${slot}: no face found in it`, style: "color: var(--bad)" }));
+    } else box.append(el("div", { textContent: SLOT_TEXT[slot], style: "white-space: pre-line" }));
+    if (p || missed.some(m => m.startsWith(slot + "."))) {
+      const x = el("button", { className: "x", textContent: "×", title: `clear the ${slot} picture` });
+      x.onclick = async e => { e.stopPropagation(); await api(`api/picture/${encodeURIComponent(WHO)}/${slot}/png`, ""); detect(); };
+      box.append(x);
+    }
+    box.onclick = () => WHO ? file.click() : status("make or pick a character first", "bad");
+    file.onchange = () => file.files[0] && upload(slot, file.files[0]);
+    box.ondragover = e => { e.preventDefault(); box.classList.add("drop"); };
+    box.ondragleave = () => box.classList.remove("drop");
+    box.ondrop = e => { e.preventDefault(); box.classList.remove("drop"); if (e.dataTransfer.files[0]) upload(slot, e.dataTransfer.files[0]); };
+    return box;
+  }));
+}
+async function upload(slot, f) {
+  if (!WHO) return status("make or pick a character first", "bad");
+  const ext = (f.name.split(".").pop() || "png").toLowerCase();
+  try { await api(`api/picture/${encodeURIComponent(WHO)}/${slot}/${ext}`, f); } catch (e) { return status(e.message, "bad"); }
+  detect();
+}
+async function detect() {
+  if (!WHO) return;
+  status("finding the face…");
+  try {
+    const r = await api("api/face/detect", { name: WHO });
+    PICS = r.pictures; REPORT = null; drawSlots(r.missed); status(r.missed.length ? `no face found in ${r.missed.join(", ")}` : "", r.missed.length ? "bad" : "");
+    await fitFace(); drawSlots(r.missed);
+  } catch (e) { status(e.message, "bad"); }
+}
+
+// ---- characters -----------------------------------------------------------------------------------------------------
+async function people(pick) {
+  const list = (await api("api/people")).people;
+  $("#who").replaceChildren(...list.map(p => el("option", { value: p.name, textContent: p.name })));
+  if (!list.length) $("#who").append(el("option", { value: "", textContent: "no characters yet: name one, New" }));
+  if (pick) $("#who").value = pick;
+  return list;
+}
+async function open(name) {
+  WHO = name || null; PICS = []; DELTA = null; REPORT = null; drawSlots();
+  const c = WHO ? await api(`api/people/${encodeURIComponent(WHO)}`) : {};
+  st.base = c.base ?? 0; st.height = c.height ?? 1.7;
+  st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
+  Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
+  $("#relative").checked = c.relative !== false;
+  set.base(st.base); set.height(st.height); for (const f of FACE) set[f[0]](st.face[f[0]]);
+  st.shape.forEach((v, i) => { shapeSet[i](v); });
+  document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
+  Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
+  st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
+  toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
+  SKIN = null; await loadSkin();
+  st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
+  Object.assign(st.eyes, { on: true, iris: "#3b2618" }, c.eyes || {});
+  $("#eyeRows input[type=checkbox]").checked = st.eyes.on; $("#eyeRows input[type=color]").value = st.eyes.iris;
+  eyeMat.map = eyeTexture(st.eyes.iris); eyeMat.needsUpdate = true;
+  Object.assign(st.hair, HAIR.DEFAULTS, HAIR_MORE, { over: {}, batch: { ...HAIR_MORE.batch }, blend: { weights: {}, vary: 0, seed: 0 }, model: null }, c.hair || {});
+  if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
+  hairSet.all();
+  computeBody(); compose(); hud();
+  if (WHO && st.hair.source === "photo") await loadStrands();
+  if (WHO && st.hair.source === "model") { await loadModel(); hairDirty = true; } else MODEL = null;
+  if (WHO) detect();
+}
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, hair: st.hair,
+                           weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
+$("#who").onchange = () => open($("#who").value);
+$("#make").onclick = async () => {
+  const n = $("#newName").value.trim();
+  if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(n)) return status("a name is letters, digits, _ - .", "bad");
+  const exists = [...$("#who").options].some(o => o.value === n);
+  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures stay)`)) return;
+  await api(`api/people/${encodeURIComponent(n)}`, {}); $("#newName").value = "";   // a fresh character: the defaults
+  await people(n); await open(n); status(`${n}: drop a front picture, or just shape the body`, "ok");
+};
+$("#save").onclick = async () => {
+  if (!WHO) return status("make a character first", "bad");
+  const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); status(`saved ${r.path}`, "ok");
+};
+function objText(head) {                               // metres, Y up, facing +Z; the head cut 0.245 m under its top (as MHR_head.obj)
+  const cut = TOP - 0.245 * SCALE, keep = new Int32Array(N).fill(-1), v = [], f = [];
+  const tris = [];
+  for (let t = 0; t < TRIS.length; t += 3) {
+    const a = TRIS[t], b = TRIS[t + 1], c = TRIS[t + 2];
+    if (head && Math.min(POS[a * 3 + 1], POS[b * 3 + 1], POS[c * 3 + 1]) < cut) continue;
+    tris.push(a, b, c);
+  }
+  let n = 0;
+  for (const i of tris) if (keep[i] < 0) { keep[i] = ++n; v.push(`v ${POS[i * 3].toFixed(5)} ${POS[i * 3 + 1].toFixed(5)} ${POS[i * 3 + 2].toFixed(5)}`); }
+  for (let t = 0; t < tris.length; t += 3) f.push(`f ${keep[tris[t]]} ${keep[tris[t + 1]]} ${keep[tris[t + 2]]}`);
+  return [`# ${WHO}: MHR (Meta, Apache-2.0) from the Character Studio (tools/character/); metres, Y up, facing +Z`, `o ${WHO}_${head ? "head" : "body"}`, ...v, ...f].join("\n") + "\n";
+}
+for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).onclick = async () => {
+  if (!WHO) return status("make a character first", "bad");
+  await api(`api/people/${encodeURIComponent(WHO)}`, character());
+  const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_${head ? "head" : "body"}.obj`)}`, objText(head));
+  status(`wrote ${r.path}`, "ok");
+};
+$("#raking").onchange = place;
+$("#lightSel").onchange = () => setLight($("#lightSel").value);
+$("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
+
+try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
+  handleOnScreen(n) { const h = HANDLES.getObjectByName(n), v = h.position.clone().project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+    return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
+  onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+    return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
+const list = await people();
+document.querySelector('#views button[data-v="body"]').classList.add("on");
+await open(list.length ? list[0].name : null);
+</script>
+</body></html>

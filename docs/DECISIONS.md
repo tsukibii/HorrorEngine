@@ -12,6 +12,41 @@ The user's answers, newest first. They override the plan, the research and the d
   out.
 - The Play UI doesn't look its best yet: touch-ups come much later, with the other polish.
 
+## 2026-10-22, later (Perm, not DiffLocks; lock points; the look we want)
+
+- **DiffLocks is dropped:** its checkpoints need an account, and the user won't register. Removed from the repo
+  (delete `vendor/difflocks/` if it was set up). **Perm** replaces it (Yale and Adobe, ICLR 2025: MIT code, checkpoints
+  and 343 fitted artist hairstyles on the authors' public links, no account): a hairstyle library to browse and blend,
+  matched to a photo by its hair's outline. Non-commercial on its data's side, which fits the free games. Run sealed off
+  the network like DiffLocks was.
+- **The look:** hybrid realism, a bit low-poly but aesthetic, beyond PSX, the way MHR looks; characters that light well
+  in medium shots from the player's eye. Hair: East Asian hairstyles first. Skin: glass and youthful skin as well as
+  old, oily skin, makeup presets. A touch-up painting tool over the projected face. Clothes: lock points on the body
+  (no more pants at the ankles) and presets: shirt and trousers, school uniforms.
+
+## 2026-10-22 (hair from a photo with DiffLocks; batched like an anime game; DiffLocks since dropped, above)
+
+- **The games are free, never sold** (itch.io at most, no payments, tips or donations): an experiment. On that basis
+  **DiffLocks** (a picture to about 100k strands; Meshcapade and MPI, non-commercial licence: "non-commercial artistic
+  projects" allowed) is used for hair from a photo. Its code, checkpoints and output stay local (`vendor/difflocks/`,
+  `Content/Studio/People/`, both git-ignored); the user registers for the checkpoints themselves. Hair it made is marked
+  in the character's files, so it can be found and replaced if a game ever earns anything. No sexual content with it.
+- **It runs with no network at all** (a sealed network namespace), so nothing it or MediaPipe does can leave the
+  machine; `tools/difflocks.py audit` lists every place in its code that could reach out.
+- **Hair is batched like an anime game's:** the strands grouped into clumps, each clump one guide with a short bone
+  chain, and only the chains get physics; every strand follows its clump. docs/research/hair.md.
+
+## 2026-10-21 (our own characters: MHR first, one app for everything character)
+
+- **Characters are built on MHR, not MetaHuman** (docs/MHR_PIPELINE_RESEARCH.md): MetaHuman Creator proved restricting
+  and slow. This replaces the 2026-10-20 routes that made every final character a MetaHuman (Kimodo onto the
+  MetaHumans, clothing through MetaHuman's Outfit Asset): Kimodo's motions go onto our MHR characters, garments onto
+  MHR bodies. MetaHuman stays only as an optional branch for a hero face if the close-up A/B (T7) says so.
+- **One app for everything character** (`tools/character/`, the Character Studio): body, face from photos, the
+  expressions, hair and clothing as they come, Kimodo's motions played on the character, and the export to Unreal.
+  It grows out of the body editor. Avoid ComfyUI and other outside apps where we can.
+- The work goes on its own branch, `claude/character-studio`, off the face branch.
+
 ## 2026-10-21 (scenes blend; triggered scenes)
 
 - **Scenes blend in and out by default** (the view eases from the player's eye, no black). A hard cut or a fade is

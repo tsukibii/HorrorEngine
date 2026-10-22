@@ -34,6 +34,12 @@ vendor/kimodo/
 vendor/blender/
 # GarmentCode's checkout and environment (tools/garment.py setup; rebuildable)
 vendor/garmentcode/
+# MediaPipe's environment and the Face Landmarker model (tools/face_mesh.py setup; rebuildable)
+vendor/face_mesh/
+# DiffLocks (removed 2026-10-22: it needs an account): if the folder is still there, delete it; never shared
+vendor/difflocks/
+# Perm: its code, environment, checkpoints, fitted hairstyles, the AVATAR NEO head, the library (tools/perm.py setup)
+vendor/perm/
 
 # generated: package_game.py's copies and builds; the UnrealClaude source checkout (the plugin copy is tracked)
 Content/StoryData/
@@ -79,6 +85,10 @@ Content/Studio/Library/index/local.json
 # the PBR shelf (docs/ASSETS.md §6): your texture sets, too big for git; only its README is shared
 Content/Studio/PBR/*
 !Content/Studio/PBR/README.md
+# faces from photos (tools/face_mesh.py): made from real people's pictures, they stay on your machine
+Content/Studio/Heads/
+# the body editor's characters (tools/body/): their face pictures, settings and exports stay on your machine
+Content/Studio/People/
 
 # made by the desk's Generate (storykit.generate) from story.json: rebuilt, never edited (CLAUDE.md, "text is the truth")
 Content/Games/*/Maps/
