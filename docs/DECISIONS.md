@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-22 (hair from a photo with DiffLocks; batched like an anime game)
+
+- **The games are free, never sold** (itch.io at most, no payments, tips or donations): an experiment. On that basis
+  **DiffLocks** (a picture to about 100k strands; Meshcapade and MPI, non-commercial licence: "non-commercial artistic
+  projects" allowed) is used for hair from a photo. Its code, checkpoints and output stay local (`vendor/difflocks/`,
+  `Content/Studio/People/`, both git-ignored); the user registers for the checkpoints themselves. Hair it made is marked
+  in the character's files, so it can be found and replaced if a game ever earns anything. No sexual content with it.
+- **It runs with no network at all** (a sealed network namespace), so nothing it or MediaPipe does can leave the
+  machine; `tools/difflocks.py audit` lists every place in its code that could reach out.
+- **Hair is batched like an anime game's:** the strands grouped into clumps, each clump one guide with a short bone
+  chain, and only the chains get physics; every strand follows its clump. docs/research/hair.md.
+
 ## 2026-10-21 (our own characters: MHR first, one app for everything character)
 
 - **Characters are built on MHR, not MetaHuman** (docs/MHR_PIPELINE_RESEARCH.md): MetaHuman Creator proved restricting
