@@ -270,3 +270,11 @@ rebuilt as their originals' mirrors (they had fallen on their own, a little diff
 on top (it wasn't applied while falling). The user switched off and the hair moved. Whatever shows a result before
 it's kept (a preview, a scrubbed frame) goes through the same steps the kept result will; the check compares what's
 drawn before and after, not the data.
+
+## A map round the skull is only true on the head (2026-10-22)
+
+Layer by height kept, per direction from the skull's middle, how far out the hair below reached, and pushed later
+hair past it. Hair that pokes out or hangs below the head lies along those same directions, far out, so a strand
+combed over a poking one was lifted 11 cm along it, and with gravity's fallen hair, 45 cm. Only what lies on the head
+belongs in such a map. The second try counted a lock's whole cross-section wherever its lowest edge lay, and a sheet
+touching the cheek with its other edge 5 cm out made a spike; count each point up to the lock's own thickness.

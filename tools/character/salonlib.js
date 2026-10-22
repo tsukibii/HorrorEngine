@@ -243,15 +243,32 @@ export function setHandle(lock, path, p) {
 // guides: [{pts: SAMPLES points, across: a unit vector per point (the ribbon's width), width: per point}]
 const quad = (L, M, R, u) => { const Mp = sub(mul(M, 2), mul(add(L, R), 0.5)); return add(add(mul(L, (1 - u) * (1 - u)), mul(Mp, 2 * u * (1 - u))), mul(R, u * u)); };
 
-function keepOff(pts, col, layers = null) { return col ? pts.map((p, i) => i === 0 ? p : layers ? col.push(layers.push(col.push(p, GAP)[0]), GAP)[0] : col.push(p, GAP)[0]) : pts; }
+// every point but the root kept off the body; with layers, lifted over the hair laid below, the lift spread along the
+// lock (each point at least its neighbour's lift less DRAPE per metre along) so it drapes over instead of stepping up
+const DRAPE = 0.6;
+function keepOff(pts, col, layers = null) {
+  if (!col) return pts;
+  const P = pts.map((p, i) => i === 0 ? p : col.push(p, GAP)[0]);
+  if (!layers) return P;
+  const lift = P.map((p, i) => i === 0 ? 0 : len(sub(layers.push(p), p)));
+  if (!lift.some(x => x > 0)) return P;
+  const seg = P.map((p, i) => i ? len(sub(p, P[i - 1])) : 0);
+  for (let i = 2; i < P.length; i++) lift[i] = Math.max(lift[i], lift[i - 1] - DRAPE * seg[i]);
+  for (let i = P.length - 2; i >= 1; i--) lift[i] = Math.max(lift[i], lift[i + 1] - DRAPE * seg[i + 1]);
+  return P.map((p, i) => i === 0 || !lift[i] ? p : col.push(add(p, mul(norm(sub(p, layers.C)), lift[i])), GAP)[0]);
+}
 
 // ---- layer by height --------------------------------------------------------------------------------------------------
 // Real hair: what grows higher lies over what grows lower. The locks are laid lowest root first; each is pushed out of a
 // map of the hair already laid (round the skull's middle, 2.5 degrees a bin: how far out the hair reaches that way),
-// then adds its cards to it (both edges of every card, a card's thickness on top).
+// then adds to it what of it lies on the head: at each point along the lock, if its lowest guide is within `lie` of
+// where it would rest (on the skin, or on the hair below), the points there no further out than the lock's own
+// thickness count (a bundle's top over its bottom: guides.thick, by sample; a sheet's edge lifted off the cheek
+// doesn't); where it stands off (pulled out, poking) or hangs below the head, nothing counts, so hair laid later passes
+// under a poke instead of being lifted along it. Only the head is layered (above the chin).
 export const rootHeight = l => l.type === "strand" ? l.pts[0][1] : l.type === "bundle" ? l.spine[0][1] : l.root.reduce((a, p) => a + p[1], 0) / l.root.length;
 export class Layers {
-  constructor(col, opts = {}) { this.col = col; this.C = col.C; this.R = new Float32Array(EL * AZ); this.thick = opts.thick ?? 0.002; this.gap = opts.gap ?? 0.0015; }
+  constructor(col, opts = {}) { this.col = col; this.C = col.C; this.R = new Float32Array(EL * AZ); this.thick = opts.thick ?? 0.002; this.gap = opts.gap ?? 0.0015; this.lie = opts.lie ?? 0.008; }
   bin(d, r) { const e = Math.asin(clamp(d[1] / r, -1, 1)), a = Math.atan2(d[0], d[2]); return [(e + Math.PI / 2) / Math.PI * (EL - 1), (a + Math.PI) / (2 * Math.PI) * AZ]; }
   splat(p) {
     const d = sub(p, this.C), r = len(d); if (r < 1e-6) return;
@@ -261,8 +278,27 @@ export class Layers {
       const k = ee * AZ + (((a0 + da) % AZ) + AZ) % AZ; if (rr > this.R[k]) this.R[k] = rr;
     }
   }
+  // how far p stands off where it would rest (the skin, or the hair laid so far); Infinity off the head
+  standoff(p) {
+    if (p[1] < this.col.chin - 0.03) return Infinity;
+    const d = sub(p, this.C), R = this.col.radius(d); if (!(R > 0)) return Infinity;
+    const H = this.radius(d);
+    return len(d) - Math.max(R + GAP, H > 0 ? H + this.gap : 0);
+  }
   add(guides) {
-    for (const G of guides) G.pts.forEach((p, k) => { if (!k) return; this.splat(p); const h = mul(G.across[k], G.width[k] / 2); this.splat(add(p, h)); this.splat(sub(p, h)); });
+    if (!guides.length) return;
+    const n = guides[0].pts.length, T = guides.thick, keep = [];     // decided first: a lock doesn't lie on itself
+    for (let k = 1; k < n; k++) {
+      const row = []; let low = Infinity;
+      for (const G of guides) {
+        if (!G.pts[k]) continue; const p = G.pts[k], h = mul(G.across[k], G.width[k] / 2);
+        for (const q of [p, add(p, h), sub(p, h)]) { const s = this.standoff(q); row.push([q, s]); low = Math.min(low, s); }
+      }
+      if (low >= this.lie) continue;
+      const most = low + this.lie + (T ? T[k] : 0);
+      for (const [q, s] of row) if (s < most) keep.push(q);
+    }
+    for (const p of keep) this.splat(p);
   }
   radius(d) {                                                        // the hair laid so far, this way (0: none)
     const r = len(d) || 1e-9, [e, a] = this.bin(d, r), e0 = Math.floor(e), a0 = Math.floor(a), fe = e - e0, fa = a - a0;
@@ -272,6 +308,7 @@ export class Layers {
     return m > 0.3 ? s / m : 0;                                      // only where the hair below really is
   }
   push(p) {
+    if (p[1] < this.col.chin - 0.03) return p;
     const d = sub(p, this.C), r = len(d), R = this.radius(d);
     return R > 0 && r < R + this.gap ? add(this.C, mul(d, (R + this.gap) / (r || 1e-9))) : p;
   }
@@ -321,6 +358,7 @@ export function evaluate(lock, col, layers = null) {
     out.push({ pts: kept, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c))); }),
                width: kept.map((_, k) => { const f = k / (spine.length - 1), r = lock.r0 + (lock.r1 - lock.r0) * f; return Math.max(0.003, 2 * Math.PI * r / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
   }
+  out.thick = spine.map((_, k) => 2 * (lock.r0 + (lock.r1 - lock.r0) * k / (spine.length - 1)));   // its diameter: the layer it makes
   return out;
 }
 

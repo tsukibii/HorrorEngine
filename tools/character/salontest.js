@@ -129,7 +129,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.keyboard.press("Control+z");
     console.log(`       a strand over the crown lies ${(lie[lie.length >> 1] * 1000).toFixed(1)} mm off the skin (median, ${(lie[lie.length - 1] * 1000).toFixed(1)} at most); a sideburn strand placed`);
   });
-  await step("Layer by height: a lock rooted higher lies over the one rooted lower where they cross", async () => {
+  await step("Layer by height: a lock rooted higher lies over the one rooted lower where they cross; a lower lock pulled out, or hanging far below, doesn't lift it", async () => {
     const ids = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL;
       const low = SL.makeStrand(C.surface([0.065, 0.05, 0.0]), C.surface([0.08, -0.03, -0.06]), C, { name: "low", width: 0.02 });
       const high = SL.makeStrand(C.surface([0.03, 0.17, -0.01]), C.surface([0.075, -0.04, -0.03]), C, { name: "high", width: 0.02 });
@@ -144,7 +144,21 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (on.n) throw new Error(`${on.n} points of the higher lock still under the lower (${(on.worst * 1000).toFixed(1)} mm)`);
     await page.click("text=Layer by height");
     await ev(ids => { for (const id of ids) window.__salon.deleteLock(id); }, ids);
-    console.log(`       crossing: ${off.n} of the higher lock's points under the lower one without it, none with it`);
+    // the user's case: a lower strand at the back pulled out from the head, another hanging far below; a higher strand
+    // combed down over the first, another beside: they lie on the head under the poke (the old map lifted them 11 and 6 cm)
+    const dev = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
+      const lo = s.addLock(SL.makeStrand(C.surface([0, -0.01, -0.1]), [0, -0.22, -0.13], C, { width: 0.02 }));
+      lo.pts[2] = SL.add(lo.pts[2], [0, 0.02, -0.06]); lo.pts[3] = SL.add(lo.pts[3], [0, 0, -0.03]);
+      const tail = s.addLock(SL.makeStrand(C.surface([0.03, -0.02, -0.095]), [0.05, -0.4, -0.2], C, { width: 0.02 }));
+      const hi = s.addLock(SL.makeStrand(C.surface([0, 0.09, -0.07]), [0, -0.22, -0.135], C, { width: 0.02 }));
+      const hi2 = s.addLock(SL.makeStrand(C.surface([0.03, 0.08, -0.08]), [0.045, -0.2, -0.14], C, { width: 0.02 }));
+      s.st.mirror.on = m; s.dirtyAll(); s.render();
+      const flat = [hi, hi2].map(l => s.EVAL[l.id][0].pts);
+      s.st.layering = true; s.dirtyAll(); s.render();
+      const d = [hi, hi2].map((l, j) => Math.max(...s.EVAL[l.id][0].pts.map((p, k) => SL.len(SL.sub(p, flat[j][k])))));
+      s.st.layering = false; for (const l of [lo, tail, hi, hi2]) s.deleteLock(l.id); s.render(); return d; });
+    if (dev[0] > 0.012 || dev[1] > 0.002) throw new Error(`the higher strands were lifted ${dev.map(x => (x * 100).toFixed(1))} cm by the poke and the hanging strand`);
+    console.log(`       crossing: ${off.n} of the higher lock's points under the lower one without it, none with it; over a lower strand pulled out, the higher one moves ${(dev[0] * 100).toFixed(1)} cm (over its base), the one beside the hanging strand ${(dev[1] * 100).toFixed(1)}`);
   });
   await step("a sheet: a root line dragged along the hairline, its end on the brows", async () => {
     await view(0, 0.05, 1.1);

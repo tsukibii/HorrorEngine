@@ -99,7 +99,12 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
 - **Layer by height** (Locks; 2026-10-22): like real hair, what grows higher lies over what grows lower. The locks are
   laid lowest root first; each is pushed out of a map of the hair already laid (how far out it reaches in each
   direction round the skull, 2.5 degrees a bin, both edges of every card counted, a card's 2 mm on top) to 1.5 mm
-  over it. Any change re-lays them all. The bake takes the layered hair.
+  over it, the lift spread along the lock so it drapes over what's under it instead of stepping up. Only hair that
+  **lies on the head** goes into the map: at each point along a lock, if its lowest part is within 8 mm of where it
+  would rest (the skin, or the hair under it), its points there count up to the lock's own thickness (a bundle's
+  diameter); a lock pulled out from the head (poking), a sheet's edge lifted off the cheek or hair hanging below the
+  head doesn't count, so hair rooted higher passes under a poke instead of being lifted along it (it was lifted 11 cm).
+  Any change re-lays them all. The bake takes the layered hair.
 - **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
 
 ## The scalp (2026-10-22)
