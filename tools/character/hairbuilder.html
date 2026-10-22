@@ -154,7 +154,7 @@ function buildHair(data) {
   LAT = new Lattice(st.cage);
   HAIR = new HairSplat(data, LAT); rig.add(HAIR.mesh); resize();
   for (const k in st.look) applyLook(k, st.look[k]);
-  st.selected = null; rebuildJiggle(); listPieces(); drawCage();
+  st.selected = null; rebuildJiggle(); listPieces(); drawCage(); if (window.syncCage) syncCage();
 }
 // the cage's lines: every piece's box from its nodes, the selected one in gold
 function drawCage() {
@@ -192,12 +192,15 @@ function listPieces() {
 // ---- the cage's controls ---------------------------------------------------------------------------------------------
 {
   const box = $("#cage"), cageSet = {};
-  const num = (label, get, set, min, max, step, title) => cageSet[label] = slider(box, label, min, max, step, get(), v => { set(v); rebuildCage(); }, title);
+  // the box is the whole hair's handle: its centre moves every piece, its size stretches them about its centre
+  const boxMove = (a, v) => { if (!LAT) { st.cage.box.centre[a] = v; return; } const d = [0, 0, 0]; d[a] = v - st.cage.box.centre[a]; st.cage.box.centre[a] = v; LAT.moveAll(d); LAT.box.centre[a] = v; HAIR.updateNodes(st.selected); updateCageLines(); };
+  const boxSize = (a, v) => { if (!LAT) { st.cage.box.size[a] = v; return; } const s = [1, 1, 1]; s[a] = v / (st.cage.box.size[a] || 1e-6); st.cage.box.size[a] = v; LAT.scaleAll(st.cage.box.centre, s); LAT.box.size[a] = v; HAIR.updateNodes(st.selected); updateCageLines(); };
+  const num = (label, get, fn, min, max, step, title) => cageSet[label] = slider(box, label, min, max, step, get(), fn, title);
   const b = st.cage.box;
-  num("Centre x", () => b.centre[0], v => { st.cage.box.centre[0] = v; }, -0.3, 0.3, 0.005); num("Centre y", () => b.centre[1], v => { st.cage.box.centre[1] = v; }, 1.0, 2.0, 0.005);
-  num("Centre z", () => b.centre[2], v => { st.cage.box.centre[2] = v; }, -0.3, 0.3, 0.005);
-  num("Width", () => b.size[0], v => { st.cage.box.size[0] = v; }, 0.05, 0.8, 0.005); num("Height", () => b.size[1], v => { st.cage.box.size[1] = v; }, 0.05, 1.0, 0.005); num("Depth", () => b.size[2], v => { st.cage.box.size[2] = v; }, 0.05, 0.8, 0.005);
-  const fit = el("button", { textContent: "Fit the box to the hair" });
+  num("Centre x", () => b.centre[0], v => boxMove(0, v), -0.3, 0.3, 0.005, "The whole hair sideways."); num("Centre y", () => b.centre[1], v => boxMove(1, v), 1.0, 2.0, 0.005, "The whole hair up or down.");
+  num("Centre z", () => b.centre[2], v => boxMove(2, v), -0.3, 0.3, 0.005, "The whole hair forward or back.");
+  num("Width", () => b.size[0], v => boxSize(0, v), 0.05, 0.8, 0.005, "The whole hair stretched sideways about the box's centre."); num("Height", () => b.size[1], v => boxSize(1, v), 0.05, 1.0, 0.005, "The whole hair stretched up and down."); num("Depth", () => b.size[2], v => boxSize(2, v), 0.05, 0.8, 0.005, "The whole hair stretched front to back.");
+  const fit = el("button", { textContent: "Fit the box to the hair", title: "snaps the box round the hair as it is now (what the pieces did is baked in)" });
   fit.onclick = () => { if (!HAIR) return; const P = HAIR.positions(), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9]; for (let i = 0; i < P.length; i += 3) { if (!HAIR.alive[i / 3]) continue; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i + a]); hi[a] = Math.max(hi[a], P[i + a]); } }
     st.cage.box = { centre: [0, 1, 2].map(a => (lo[a] + hi[a]) / 2), size: [0, 1, 2].map(a => hi[a] - lo[a] + 0.02) }; syncCage(); rebuildCage(); };
   const cutY = el("input", { type: "range", min: 0.05, max: 0.95, step: 0.05, value: 0.5, title: "where across the height (0 the bottom)" }), addY = el("button", { textContent: "Cut across (horizontal)" });
@@ -207,6 +210,7 @@ function listPieces() {
   const cutsOut = el("div", { className: "note" });
   const clear = el("button", { textContent: "No cuts" }); clear.onclick = () => { st.cage.cuts = { x: [], y: [], z: [] }; rebuildCage(); };
   cageSet.segments = slider(box, "Bend rows", 1, 6, 1, st.cage.segments, v => { st.cage.segments = v; rebuildCage(); }, "Rows of nodes down each piece: more bends and jiggles finer.");
+  box.append(el("p", { className: "note", textContent: "The box is the whole hair's handle: move it and the hair moves, stretch it and the hair stretches. Cuts split it into pieces with handles of their own." }));
   box.append(fit, el("div", { className: "row" }, el("span", { textContent: "Across" }), cutY, addY), el("div", { className: "row" }, el("span", { textContent: "Front/back" }), cutZ, addZ),
              el("div", { className: "row" }, el("span", { textContent: "Side/side" }), cutX, addX), cutsOut, clear);
   window.syncCage = () => { const b = st.cage.box; cageSet["Centre x"](b.centre[0]); cageSet["Centre y"](b.centre[1]); cageSet["Centre z"](b.centre[2]); cageSet.Width(b.size[0]); cageSet.Height(b.size[1]); cageSet.Depth(b.size[2]); cageSet.segments(st.cage.segments); };

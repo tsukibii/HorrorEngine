@@ -35,6 +35,16 @@ const fail = m => { console.error("HAIRBUILDER FAIL: " + m); process.exit(1); };
     const px = await hairPixels(); if (px < 2000) throw new Error(`${px} pixels of hair`);
     console.log(`       ${n[0]} Gaussians, ${px} pixels of hair`);
   });
+  await step("the box's width stretches the whole hair about its centre", async () => {
+    const ext = () => ev(() => { const P = window.__builder.hair.positions(); let lo = 1e9, hi = -1e9; for (let i = 0; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); } return hi - lo; });
+    const w0 = await ext();
+    await ev(() => { const inp = document.querySelector('input[title="The whole hair stretched sideways about the box\'s centre."]'); inp.value = (+inp.value) * 1.5; inp.dispatchEvent(new Event("input")); });
+    await page.waitForTimeout(200);
+    const w1 = await ext();
+    if (Math.abs(w1 / w0 - 1.5) > 0.03) throw new Error(`width ${w0.toFixed(3)} -> ${w1.toFixed(3)}`);
+    await ev(() => { const inp = document.querySelector('input[title="The whole hair stretched sideways about the box\'s centre."]'); inp.value = (+inp.value) / 1.5; inp.dispatchEvent(new Event("input")); });
+    console.log(`       ${w0.toFixed(3)} m -> ${w1.toFixed(3)} m and back`);
+  });
   await step("a horizontal cut makes two pieces, each with Gaussians", async () => {
     await ev(() => { window.__builder.st.cage.cuts.y.push(0.5); window.__builder.rebuildCage(); });
     await page.waitForTimeout(300);

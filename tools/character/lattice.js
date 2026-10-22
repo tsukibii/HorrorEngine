@@ -87,6 +87,10 @@ export class Lattice {
     return [ext(p.nodes, 0, 1) / (ext(p.rest, 0, 1) || 1), ext(p.nodes, 0, last) / (ext(p.rest, 0, last) || 1), ext(p.nodes, 0, 2) / (ext(p.rest, 0, 2) || 1)];
   }
 
+  // the whole hair: every piece moved, or scaled about one centre (the box's handles)
+  moveAll(d) { for (const p of this.pieces) this.movePiece(p.id, d); }
+  scaleAll(c, s) { for (const p of this.pieces) for (let i = 0; i < p.nodes.length; i += 3) for (let a = 0; a < 3; a++) p.nodes[i + a] = c[a] + (p.nodes[i + a] - c[a]) * s[a]; }
+
   movePiece(id, d) { const p = this.byId[id]; for (let i = 0; i < p.nodes.length; i += 3) { p.nodes[i] += d[0]; p.nodes[i + 1] += d[1]; p.nodes[i + 2] += d[2]; } }
 
   // scale a piece about its centre (its nodes as they are now), per axis
