@@ -10,7 +10,7 @@ export function mountLayers(ctx) {
   const selAttr = new THREE.BufferAttribute(new Float32Array(C), 1); dgeo.setAttribute("selW", selAttr);
   SKU.uLayOv.value = L.texOv; SKU.uLayPig.value = L.texPig; SKU.uLaySurf.value = L.texSurf;
 
-  const S = { tool: "brush", add: true, radius: 12, angle: 28, dist: 15, bleed: 0, inner: 0, outer: 0, show: true, live: true };
+  const S = { tool: "brush", add: true, radius: 12, softErase: 0.6, strengthErase: 0.5, angle: 28, dist: 15, bleed: 0, inner: 0, outer: 0, show: true, live: true };
   let F = DEFAULT_FILL(), cur = null, ACTIVE = false, STROKING = false, SAVED = true;
   const target = () => cur || F;
 
@@ -35,6 +35,10 @@ export function mountLayers(ctx) {
   };
   const apply = e => {
     const v = vertexAt(e); if (v < 0) return false;
+    if (S.tool === "erase" || S.tool === "restore") {                          // the layer being edited loses (or gets back) its fill under the brush
+      if (!cur) { status("pick a layer in the list first (click its name): the eraser works on that layer", "bad"); return false; }
+      L.erase(cur, v, S.radius / 1000, S.softErase, S.strengthErase, S.tool === "restore"); SAVED = false; return true;
+    }
     if (S.tool === "brush") L.brush(v, S.radius / 1000, S.add); else L.flood(v, S.dist / 100, S.angle, S.add);
     selLater(); return true;
   };
@@ -68,11 +72,14 @@ export function mountLayers(ctx) {
   box.append(el("label", { className: "tog" }, Object.assign(el("input", { type: "checkbox", id: "laySelect" }), { onchange: e => { ACTIVE = e.target.checked; renderer.domElement.style.cursor = ACTIVE ? "cell" : ""; } }),
     el("span", {}, "Select on the body", el("small", { textContent: "Dragging on the body picks vertices (the orange tint); Alt-drag still turns the view. A fill pours into the selection: nothing under the layers changes." }))));
   box.append(el("h4", { textContent: "Select" }));
-  chips(box, [["brush", "Brush", "Every point within the radius along the surface"], ["flood", "Flood", "Spreads over the surface until it bends more than the angle, or goes as far as the distance"]], () => S.tool, k => { S.tool = k; });
+  chips(box, [["brush", "Brush", "Every point within the radius along the surface"], ["flood", "Flood", "Spreads over the surface until it bends more than the angle, or goes as far as the distance"],
+    ["erase", "Erase layer", "Takes the fill of the layer you're editing away under the brush: soft or sharp"], ["restore", "Restore", "Brings back what the fill first covered, under the brush"]], () => S.tool, k => { S.tool = k; });
   chips(box, [[true, "Add", "Drag adds"], [false, "Subtract", "Drag takes away"]], () => S.add, k => { S.add = k === "true" || k === true; });
   slider(box, "Brush (mm)", 3, 60, 1, () => S.radius, v => { S.radius = v; }, "The brush's radius along the surface.");
   slider(box, "Flood angle", 5, 90, 1, () => S.angle, v => { S.angle = v; }, "How much the surface may bend from one point to the next before the flood stops.");
   slider(box, "Flood reach (cm)", 1, 60, 1, () => S.dist, v => { S.dist = v; }, "How far the flood may go.");
+  slider(box, "Erase softness", 0, 1, 0.01, () => S.softErase, v => { S.softErase = v; }, "Erase layer / Restore: 0 a hard-edged disc, 1 fading from the centre to the rim of the brush.");
+  slider(box, "Erase strength", 0.05, 1, 0.01, () => S.strengthErase, v => { S.strengthErase = v; }, "How much one dab takes (1 takes it all in one pass; low builds up over a drag).");
   const ops = el("div", { className: "chips" });
   const op = (label, fn, help) => { const b = el("button", { textContent: label, title: help || "" }); b.onclick = () => { fn(); selLater(); }; ops.append(b); };
   op("All", () => L.all()); op("None", () => L.clear()); op("Invert", () => L.invert());

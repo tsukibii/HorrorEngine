@@ -167,6 +167,18 @@ export class SkinLayers {
     return w;
   }
 
+  // ---- erasing from a layer: a soft or sharp brush takes its weights down (or, restoring, back toward what the fill first poured) ----
+  // soft 0 is a hard disc, 1 fades from the dab's centre to its rim; strength is how much one dab takes
+  erase(L, v, radius, soft, strength, restore = false) {
+    const d = this.distance(i => i === v, radius), s = clamp(soft, 0, 1);
+    for (let i = 0; i < this.N; i++) {
+      if (d[i] > radius) continue;
+      const t = d[i] / radius, f = s <= 0.001 || t <= 1 - s ? 1 : 1 - smooth((t - (1 - s)) / s), k = clamp(strength * f);
+      L.w[i] = restore ? L.w[i] + (L.w0[i] - L.w[i]) * k : L.w[i] * (1 - k);
+    }
+    L.stale = true; clearTimeout(this._e); this._e = setTimeout(() => this.update(), 90);          // the bake waits for the drag to pause
+  }
+
   // ---- layers ----
   centroid(w) {                                                      // where the selection is: a picture lands centred on it
     const P = this.getPos(); let x = 0, y = 0, z = 0, c = 0;
@@ -175,7 +187,7 @@ export class SkinLayers {
   }
   add(name, w, fill) {
     const L = { id: this.nextId++, name, visible: true, w: Float32Array.from(w), ...structuredClone({ ...fill, imgs: undefined }), imgs: fill.imgs || {} };
-    L.anchor = this.centroid(w); L.stale = true; this.layers.push(L); this.update(); return L;
+    L.w0 = Float32Array.from(L.w); L.anchor = this.centroid(w); L.stale = true; this.layers.push(L); this.update(); return L;
   }
   remove(L) { this.layers.splice(this.layers.indexOf(L), 1); this.update(); }
   move(L, d) { const i = this.layers.indexOf(L), j = i + d; if (j < 0 || j >= this.layers.length) return; this.layers.splice(i, 1); this.layers.splice(j, 0, L); this.compose(); }
@@ -298,7 +310,7 @@ export class SkinLayers {
   async fromJSON(j) {
     this.layers = []; this.nextId = j.nextId || 1;
     for (const s of j.layers || []) {
-      const L = { ...s, w: Float32Array.from(unb64(s.w), x => x / 255), imgs: {}, stale: true };
+      const L = { ...s, w: Float32Array.from(unb64(s.w), x => x / 255), imgs: {}, stale: true }; L.w0 = Float32Array.from(L.w);
       for (const [k, url] of Object.entries(s.imgs || {})) if (url) { const im = await loadImage(url); L.imgs[k] = Object.assign(new Pix(im), { url }); }
       this.layers.push(L);
     }

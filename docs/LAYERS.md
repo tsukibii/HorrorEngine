@@ -14,6 +14,13 @@ Brush (radius along the surface), Flood (until the surface bends past an angle o
   (Dijkstra over the mesh's edges), like a feathered selection. The mesh's own point spacing (about 5 mm on the face) is the
   finest step; the bake softens a few texels more.
 
+## Erasing
+- **Erase layer** and **Restore** (in the Select tool list): the brush takes the fill of the layer you're editing away (or
+  brings back what the fill first covered). **Erase softness** 0 is a hard-edged disc, 1 fades from the centre to the rim;
+  **Erase strength** is how much one dab takes; the radius is the Brush slider. Pick a layer first (click its name).
+- The touch-up's own Erase brush (Skin tab) takes paint, pigment strokes and photo-mask edits away; its Hardness slider is the
+  softness.
+
 ## Fills (a new layer each time)
 - **Colour**, **PNG** (front, side, top or triplanar, size in cm, rotate, move, tile or not; its own alpha is kept, and the
   picture lands centred on the selection), **PBR set** (albedo, roughness, height, AO from files or the PBR shelf, tiled
