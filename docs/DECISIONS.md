@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-22, latest (the salon, not the splat)
+
+- **The Gaussian splat route was worth testing and isn't good enough** (docs/GSHAIR.md: the splat, the clay, the hand
+  builder). It stays in the repo as a reference layer only. **Hair is drawn by hand in a virtual salon** on the head
+  or the clothed body: vector locks (a strand, a sheet from a root line with the ends' spread on the wheel, a bundle),
+  shaped by their handles and a few sliders, in groups to hide and show; stylised by default, realism as an option;
+  physics only on the locks the user marks; never clipping the body or clothes; fake volume from a scalp cap with a
+  thickness; brows and lashes as variations; easier than Blender. The plan: docs/SALON_PLAN.md (Blender's hair read
+  first, as research, never copied). The animation refiner comes later (per clip physics, keyed poses).
+- The footage is about 0.4 MP and soft; stylised realism (Arcane-like) is the look; the humans no longer go to Unreal.
+
 ## 2026-10-22, later (Perm, not DiffLocks; lock points; the look we want)
 
 - **DiffLocks is dropped:** its checkpoints need an account, and the user won't register. Removed from the repo
