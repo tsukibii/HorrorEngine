@@ -105,6 +105,7 @@ TOOLS = [
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
+    ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),

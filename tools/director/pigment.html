@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pigment Test</title>
+<link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#d9a441}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.4 system-ui,sans-serif;overflow:hidden}
+header{display:flex;gap:14px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:14px;margin:0;color:var(--accent);letter-spacing:.04em}
+label{color:var(--dim);display:flex;gap:6px;align-items:center}input[type=range]{width:110px}
+#view{position:absolute;inset:41px 0 0 0}#view canvas{display:block}
+#tags{position:absolute;inset:41px 0 0 0;pointer-events:none}
+#tags span{position:absolute;transform:translateX(-50%);font-size:12px;color:#ddd;text-shadow:0 1px 2px #000}
+#tags .row{color:var(--accent);transform:none;font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <h1>PIGMENT TEST</h1>
+  <label>strength <input id="k" type="range" min="0" max="3" step="0.05" value="1.2"></label>
+  <label>cover <input id="cover" type="range" min="0" max="1" step="0.05" value="0.25" title="opaque part of the pigment (lipstick, paint) that hides the base"></label>
+  <label>grain <input id="grain" type="range" min="0" max="1" step="0.05" value="0.5" title="the pigment takes unevenly: pools in pores, streaks along the flow"></label>
+  <label><input id="marker" type="checkbox" checked> highlighter on forehead</label>
+  <span style="color:var(--dim)">drag to turn the heads · top row: image overlay (alpha) · middle: pigment · bottom: the pigment's per-pixel absorbency (white = takes it)</span>
+</header>
+<div id="view"></div><div id="tags"></div>
+<script type="module">
+import * as THREE from "three";
+
+const view = document.getElementById("view");
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x15151a);
+const camera = new THREE.PerspectiveCamera(24, 1, 0.1, 100); camera.position.set(0, 0, 14);
+
+// ---- the pigment art: colour + how much (alpha), drawn like a make-up face + a highlighter stroke ----
+const N = 512;
+function art(withMarker) {
+  const c = document.createElement("canvas"); c.width = c.height = N; const g = c.getContext("2d");
+  g.clearRect(0, 0, N, N);
+  const X = u => u * N, Y = v => (1 - v) * N;            // art space: u,v in 0..1, v up
+  // blush: soft pink, low density
+  for (const sx of [-1, 1]) { const gr = g.createRadialGradient(X(.5 + sx * .2), Y(.4), 4, X(.5 + sx * .2), Y(.4), 52);
+    gr.addColorStop(0, "rgba(235,90,110,.55)"); gr.addColorStop(1, "rgba(235,90,110,0)"); g.fillStyle = gr; g.fillRect(0, 0, N, N); }
+  // lips: strong red-pink
+  g.fillStyle = "rgba(200,30,60,.95)"; g.beginPath(); g.ellipse(X(.5), Y(.285), 40, 15, 0, 0, 7); g.fill();
+  // brows: dark brown strokes
+  g.strokeStyle = "rgba(40,22,14,.9)"; g.lineCap = "round";
+  for (const sx of [-1, 1]) { g.lineWidth = 11; g.beginPath(); g.moveTo(X(.5 + sx * .09), Y(.655)); g.quadraticCurveTo(X(.5 + sx * .19), Y(.69), X(.5 + sx * .29), Y(.64)); g.stroke(); }
+  // eyeliner with a wing, drawn *past* the lids on purpose, so we can see what it refuses to stick to
+  g.strokeStyle = "rgba(15,10,12,.95)"; g.lineWidth = 7;
+  for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(X(.5 + sx * .075), Y(.585)); g.quadraticCurveTo(X(.5 + sx * .16), Y(.625), X(.5 + sx * .24), Y(.60)); g.lineTo(X(.5 + sx * .28), Y(.625)); g.stroke(); }
+  // a ring drawn over the eyeball itself: skin takes it, the eyeball must not
+  g.strokeStyle = "rgba(20,30,160,.9)"; g.lineWidth = 5;
+  for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(X(.5 + sx * .15), Y(.575), 22, 15, 0, 0, 7); g.stroke(); }
+  // highlighter: yellow, a broad see-through stroke across brow and hairline, crossing a pen line
+  if (withMarker) {
+    g.strokeStyle = "rgba(255,235,20,.75)"; g.lineWidth = 30; g.lineCap = "butt";
+    g.beginPath(); g.moveTo(X(.2), Y(.80)); g.lineTo(X(.8), Y(.77)); g.stroke();
+    g.strokeStyle = "rgba(255,70,170,.75)"; g.beginPath(); g.moveTo(X(.25), Y(.865)); g.lineTo(X(.75), Y(.845)); g.stroke();
+  }
+  const d = g.getImageData(0, 0, N, N);                  // un-premultiplied, so alpha stays "how much pigment"
+  const t = new THREE.DataTexture(new Uint8Array(d.data.buffer), N, N, THREE.RGBAFormat);
+  t.magFilter = t.minFilter = THREE.LinearFilter; t.flipY = false; t.needsUpdate = true; return t;
+}
+let artTex = art(true);
+
+// ---- shaders ----
+// Regions come from the head's own geometry (object space), standing in for the tool's per-part base colours:
+//   skin (takes pigment), lips (takes more), eyeball & iris (take almost none), each with its own base colour.
+const vert = `
+varying vec3 vP; varying vec3 vL; varying vec3 vN; uniform vec3 off;
+void main(){ vL = position; vP = position + off; vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
+const frag = `
+precision highp float;
+varying vec3 vP; varying vec3 vL; varying vec3 vN;
+uniform sampler2D art; uniform vec3 skin; uniform int mode; uniform int part;   // part 0 head 1 eye
+uniform float k, cover, grain;
+float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
+vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
+void main(){
+  vec3 base; float absorb;
+  vec2 q = vP.xy;                                   // front-facing region maths on the face plane
+  if (part == 1) {                                  // eyeball: white, a brown iris looking forward
+    vec3 n = normalize(vL); float a = acos(clamp(n.z,-1.,1.));
+    base = lin(vec3(.93,.92,.90)); absorb = 0.03;
+    if (a < .55) { base = lin(vec3(.22,.12,.07)); absorb = 0.08; }
+    if (a < .22) { base = lin(vec3(.02,.02,.02)); }
+  } else {
+    base = lin(skin); absorb = 1.0;
+    vec2 lc = (q - vec2(0., -.43)) / vec2(.25, .075);              // lips: where the tool says "lips"
+    float lipM = 1.0 - smoothstep(.85, 1.0, length(lc));
+    base = mix(base, lin(skin * vec3(.95,.55,.55)), lipM); absorb = mix(absorb, 1.45, lipM);
+  }
+  // grain: skin pores pool pigment; plus a streak along a flow direction (here: across the face, x)
+  float pores = vn(vP.xy * 95. + vP.z*40.);
+  float streak = vn(vec2(vP.x * 9., vP.y * 140.));
+  float take = absorb * mix(1.0, .45 + 1.1 * (0.55*pores + 0.45*streak), grain);
+  // projection down -z onto the art; front faces only
+  vec2 uv = vec2(vP.x / 2.0 + .5, vP.y / 2.0 + .5);
+  vec4 pg = texture2D(art, vec2(uv.x, 1.0 - uv.y));
+  float front = smoothstep(.15, .45, normalize(vP).z) * step(0., uv.x) * step(uv.x, 1.) * step(0., uv.y) * step(uv.y, 1.);
+  float d = pg.a * front;
+  vec3 pc = lin(pg.rgb);
+  vec3 col = base;
+  if (mode == 0) {
+    col = mix(base, pc, d);                                         // a plain image overlay
+  } else if (mode == 1) {
+    // pigment: light through a film of density d*take*k. transmittance = colour^(density). plus a hiding part.
+    vec3 T = pow(max(pc, vec3(.002)), vec3(d * take * k));
+    col = base * T;
+    col = mix(col, pc, d * cover * clamp(take,0.,1.5) / 1.5);
+  } else {
+    col = vec3(clamp(take * d, 0., 1.));                            // debug: what this pixel will accept
+  }
+  vec3 L = normalize(vec3(.35,.55,1.));
+  float lam = max(dot(normalize(vN), L), 0.);
+  vec3 lit = col * (.30 + .85 * lam);
+  if (mode == 2) lit = col;
+  gl_FragColor = vec4(lit, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+const U = { k: {value: 1.2}, cover: {value: .25}, grain: {value: .5}, art: {value: artTex} };
+const skins = [[0.93, 0.78, 0.68], [0.78, 0.58, 0.42], [0.42, 0.27, 0.19]];
+const rowsMode = [0, 1, 2];
+const heads = [];
+const headGeo = new THREE.SphereGeometry(1, 128, 96); headGeo.scale(0.82, 1.0, 0.9);
+const eyeGeo = new THREE.SphereGeometry(0.115, 48, 32);
+function mk(part, skin, mode, off = [0, 0, 0]) {
+  return new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag,
+    uniforms: { ...U, skin: {value: new THREE.Vector3(...skin)}, mode: {value: mode}, part: {value: part}, off: {value: new THREE.Vector3(...off)} } });
+}
+const grp = new THREE.Group(); scene.add(grp);
+const tags = document.getElementById("tags");
+const rowName = ["image overlay (alpha)", "pigment", "absorbency map"];
+rowsMode.forEach((mode, r) => skins.forEach((s, c) => {
+  const g = new THREE.Group(); g.position.set((c - 1) * 2.3, (1 - r) * 2.3, 0);
+  const head = new THREE.Mesh(headGeo, mk(0, s, mode)); g.add(head);
+  for (const sx of [-1, 1]) { const e = new THREE.Mesh(eyeGeo, mk(1, s, mode, [sx * 0.30, 0.18, 0.84])); e.position.set(sx * 0.30, 0.18, 0.84); e.scale.set(1, .8, 1); g.add(e); }
+  grp.add(g); heads.push(g);
+}));
+rowName.forEach((n, r) => { const e = document.createElement("span"); e.className = "row"; e.textContent = n; e.dataset.r = r; tags.appendChild(e); });
+
+function layout() {
+  const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h); camera.aspect = w / h;
+  camera.position.z = 4.0 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.min(1, camera.aspect / 1.3);
+  camera.updateMatrixWorld();
+  camera.updateProjectionMatrix();
+  tags.querySelectorAll(".row").forEach(e => { const r = +e.dataset.r; const p = new THREE.Vector3(-3.4, (1 - r) * 2.3 + 1.0, 0).project(camera);
+    e.style.left = ((p.x * .5 + .5) * w) + "px"; e.style.top = ((-p.y * .5 + .5) * h) + "px"; });
+}
+addEventListener("resize", layout); layout();
+
+let rx = 0, ry = 0, drag = false, lx = 0, ly = 0;
+renderer.domElement.addEventListener("pointerdown", e => { drag = true; lx = e.clientX; ly = e.clientY; });
+addEventListener("pointerup", () => drag = false);
+addEventListener("pointermove", e => { if (!drag) return; ry += (e.clientX - lx) * .008; rx += (e.clientY - ly) * .008; lx = e.clientX; ly = e.clientY; });
+for (const id of ["k", "cover", "grain"]) document.getElementById(id).oninput = e => { U[id].value = +e.target.value; };
+document.getElementById("marker").onchange = e => { artTex.dispose(); artTex = art(e.target.checked); U.art.value = artTex; };
+window.__set = (a, b) => { ry = a; rx = b; };                                  // for the headless check
+(function loop() { heads.forEach(g => { g.rotation.y = ry; g.rotation.x = rx; }); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
