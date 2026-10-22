@@ -127,8 +127,9 @@ it and the locks settle back. No bending springs, no solver, one step a frame.
 to its style, real gravity pulls it down, the roots stay, the lengths are kept, the body pushes it out, and it lies on
 the head and shoulders or hangs (`salonphys.js`, drop mode, the same chains as the swing). Every moment is recorded (30
 a second, 12 s at most); **Moment** slides back to any of them, **Pause** and **Run on** carry on from there. Switching
-off, or **Keep this frame**, makes the moment shown the hair's shape (a twin follows its original); pull up by hand
-what should stick up. **Back to before** drops the fall; undo takes a kept one back. **Strength** scales gravity.
+off, or **Keep this frame**, makes the moment shown the hair's shape, exactly as it's drawn: a twin falls as its
+original's fall mirrored (on its own only when its original is hidden), and with Layer by height on every moment is laid
+in layers as the kept hair will be. Pull up by hand what should stick up. **Back to before** drops the fall; undo takes a kept one back. **Strength** scales gravity.
 
 **Bake** writes the hair for a game: `Content/Studio/Hair/<name>/salon.glb` (a binary glTF, the head's local space in
 metres) and `salon_bake.json` (the numbers, the head it was made on, each swinging lock's settings).

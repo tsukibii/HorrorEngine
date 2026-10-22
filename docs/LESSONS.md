@@ -262,3 +262,11 @@ The pull's first test used a 4 cm reach and expected it to bend the strand it pu
 because a 35 cm strand's six handles are 6 cm apart (only the next strand, 2.5 cm away, was in reach). Distances
 between handles grow with the lock, so a reach that suits a fringe takes nothing on a long lock. Measure the spacing
 before picking a reach (for a default or a test): the salon starts at 8 cm.
+
+## A preview is only true if it's made the way the result is (2026-10-22)
+
+The salon's gravity drew each frame from the fall alone, and switching it off kept the hair through another path: twins
+rebuilt as their originals' mirrors (they had fallen on their own, a little differently) and Layer by height re-laid
+on top (it wasn't applied while falling). The user switched off and the hair moved. Whatever shows a result before
+it's kept (a preview, a scrubbed frame) goes through the same steps the kept result will; the check compares what's
+drawn before and after, not the data.

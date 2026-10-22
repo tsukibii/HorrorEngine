@@ -336,9 +336,9 @@ function buildLockMesh(l, i, laid = null) {
   return grp;
 }
 // a swinging lock drawn where the physics has it (same vertices, new positions)
-function poseLockMesh(l, posed) {
+function poseLockMesh(l, posed, laid = null) {
   const grp = MESHES[l.id]; if (!grp) return;
-  const guides = SL.evaluate(posed, COL);
+  const guides = laid || SL.evaluate(posed, COL);
   for (const o of grp.children) {
     const P = o.geometry.attributes.position;
     const src = o.userData.role === "cards" ? cardPositions(guides) : o.userData.role === "strands" ? strandPositions(l, guides) : guides[o.userData.j] ? guides[o.userData.j].pts.flat() : null;
@@ -467,22 +467,34 @@ function play(now) {
 // The switch drops every visible lock (physics or not): nothing holds it to its style, it falls and lies on the head and
 // shoulders or hangs. Every step is recorded; the slider goes back to any of them; switching off (or Keep this frame)
 // makes the frame shown the hair's shape, to refine by hand (undo takes it back). salonphys.js's Sim, drop mode.
+// What's shown is what's kept: a twin is drawn as its original's fall mirrored (it falls only when its original is
+// hidden), and with Layer by height on, every frame is laid in layers as the kept hair will be.
 let DROP = null;
 const ID3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], IDP = p => p;
 function startDrop() {
   if (MOTION !== "still") setMotion("still");
   RIG.identity(); applyRig();
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), locks = st.locks.filter(l => l.visible && vis[l.group] !== false);
+  const ids = new Set(locks.map(l => l.id)), twin = l => l.mirror_of && ids.has(l.mirror_of);
   const down = SL.norm(SR.MV(SR.T(HF.B), [0, -1, 0]));               // the world's down in the head's space
-  DROP = { sim: new SP.Sim(locks, COL, { drop: true, down, strength: st.dropStrength ?? 1 }), frames: [], frame: 0, running: true };
+  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), COL, { drop: true, down, strength: st.dropStrength ?? 1 }), twins: locks.filter(twin), frames: [], frame: 0, running: true };
   DROP.sim.step(IDP, IDP, ID3, 0, 0); DROP.frames.push(DROP.sim.snapshot());
   dropPanel(); requestAnimationFrame(dropLoop);
 }
 function showDropFrame(i) {
   if (!DROP) return;
   DROP.frame = Math.max(0, Math.min(DROP.frames.length - 1, i)); DROP.sim.restoreFrame(DROP.frames[DROP.frame]);
-  for (const l of st.locks) if (DROP.sim.has(l.id) && MESHES[l.id]) poseLockMesh(l, DROP.sim.pose(l, IDP));
+  const posed = dropPoses(), order = [...posed.values()];
+  let layers = null;
+  if (st.layering) { order.sort((a, b) => SL.rootHeight(a) - SL.rootHeight(b) || (a.id < b.id ? -1 : 1)); layers = new SL.Layers(COL); }
+  for (const p of order) { const g = SL.evaluate(p, COL, layers); if (layers) layers.add(g); poseLockMesh(lockById(p.id), p, g); }
   const sl = $("#dropFrame"); if (sl) { sl.max = DROP.frames.length - 1; sl.value = DROP.frame; } const o = $("#dropTime"); if (o) o.textContent = `${(DROP.frame / 30).toFixed(1)} s`;
+}
+function dropPoses() {                                                // every lock shown, where the fall has it (the sim's frame)
+  const out = new Map();
+  for (const l of st.locks) if (DROP.sim.has(l.id)) out.set(l.id, DROP.sim.pose(l, IDP));
+  for (const t of DROP.twins) { const o = out.get(t.mirror_of); if (o) out.set(t.id, Object.assign(SL.mirrored(o, st.mirror.seam, COL, t.id), { group: t.group, visible: t.visible })); }
+  return out;
 }
 function dropLoop() {
   if (!DROP || !DROP.running) return;
@@ -499,10 +511,14 @@ function keepDrop() {                                                  // the fr
   remember();
   DROP.sim.restoreFrame(DROP.frames[DROP.frame]);
   for (const l of st.locks) {
-    if (!DROP.sim.has(l.id) || l.mirror_of) continue;                 // a twin follows its original
-    const posed = DROP.sim.pose(l, IDP);
-    if (l.type === "strand") l.pts = posed.pts; else if (l.type === "bundle") l.spine = posed.spine; else l.edges = posed.edges;
-    changed(l);
+    if (!DROP.sim.has(l.id)) continue;                                // twins drawn from their originals follow them
+    let o = l, posed = DROP.sim.pose(l, IDP);
+    if (l.mirror_of && lockById(l.mirror_of)) { o = lockById(l.mirror_of); posed = SL.mirrored(posed, st.mirror.seam, null, o.id); }   // a twin that fell alone: onto its original, mirrored back
+    const roots = o.type === "strand" ? [o.pts[0]] : o.type === "bundle" ? [o.spine[0]] : o.edges.map(E => E[0]);   // the roots stay exactly
+    if (o.type === "strand") { o.pts = posed.pts; o.pts[0] = roots[0]; }
+    else if (o.type === "bundle") { o.spine = posed.spine; o.spine[0] = roots[0]; }
+    else { o.edges = posed.edges; o.edges.forEach((E, j) => { E[0] = roots[j]; }); }
+    changed(o);
   }
   DROP = null; dropPanel(); draw();
 }
