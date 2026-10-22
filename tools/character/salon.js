@@ -725,15 +725,16 @@ function deleteLock(id) {
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
-const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["fit", "Fit ref (F)", "f"]];
+const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
   select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). The handles in the ring move with it, less the farther they are: the wheel while dragging grows (down) or shrinks (up) the ring, O turns it off. Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
+  bline: "Drag a line along the blue scalp: it's the bundle's width (its diameter). Let go, then click the tip. The wheel makes it an oval (its height) while you place it.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
-const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, last: null };
+const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, height: 1, last: null };
 function setTool(t) {
   TOOL = t; resetPlace();
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
@@ -746,7 +747,7 @@ for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, o
 
 function previewFrom(e) {
   if (!PLACE.stage) return null;
-  const anchor = TOOL === "sheet" ? SL.along(PLACE.line, 0.5) : PLACE.root;
+  const anchor = TOOL === "sheet" || TOOL === "bline" ? SL.along(PLACE.line, 0.5) : PLACE.root;
   // over the body the end lies on it (hair resting on the face, the shoulders, the chest); in the air, on the plane
   // through the root facing the view
   // (only a hit near the root's depth: from the front, a click on the chest means the chest, not the back of the head's
@@ -759,6 +760,7 @@ function previewFrom(e) {
   if (TOOL === "strand") return SL.makeStrand(PLACE.root, end, COL, { sag: PLACE.sag });
   if (TOOL === "bundle") return SL.makeBundle(PLACE.root, end, COL, { sag: PLACE.sag, r0: PLACE.r0 });
   if (TOOL === "sheet") return SL.makeSheet(PLACE.line, end, PLACE.spread, COL, { sag: PLACE.sag * 0.7 });
+  if (TOOL === "bline") return SL.makeBundleLine(PLACE.line, end, COL, { sag: PLACE.sag, height: PLACE.height });
   return null;
 }
 function scalpAt(e) { const p = headAt(e.clientX, e.clientY); return p && (e.shiftKey || SL.onScalp(p, COL.C)) ? COL.surface(p) : null; }
@@ -799,7 +801,7 @@ cv.addEventListener("pointerdown", e => {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.root = p; PLACE.stage = 1; showPreview(previewFrom(e)); draw(); return; } }
     else { const l = previewFrom(e); if (l) { resetPlace(); addLock(l); } return; }
   }
-  if (!orbitOnly && TOOL === "sheet") {
+  if (!orbitOnly && (TOOL === "sheet" || TOOL === "bline")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.line = [p]; DRAG = { kind: "rootline" }; showRootLine(PLACE.line); draw(); return; } }
     else { const l = previewFrom(e); if (l) { resetPlace(); addLock(l); } return; }
   }
@@ -865,7 +867,8 @@ cv.addEventListener("wheel", e => {
     if (TOOL === "strand") PLACE.sag = Math.max(-0.6, Math.min(1.2, PLACE.sag - s * 0.05));
     if (TOOL === "sheet") PLACE.spread = Math.max(0.005, Math.min(0.3, PLACE.spread * (s < 0 ? 1.12 : 1 / 1.12)));
     if (TOOL === "bundle") PLACE.r0 = Math.max(0.003, Math.min(0.06, PLACE.r0 * (s < 0 ? 1.12 : 1 / 1.12)));
-    $("#hint").textContent = TOOL === "strand" ? `sag ${PLACE.sag.toFixed(2)}` : TOOL === "sheet" ? `spread ${(PLACE.spread * 100).toFixed(1)} cm` : `root width ${(PLACE.r0 * 200).toFixed(1)} cm`;
+    if (TOOL === "bline") PLACE.height = Math.max(0.1, Math.min(2, PLACE.height * (s < 0 ? 1.1 : 1 / 1.1)));
+    $("#hint").textContent = TOOL === "strand" ? `sag ${PLACE.sag.toFixed(2)}` : TOOL === "sheet" ? `spread ${(PLACE.spread * 100).toFixed(1)} cm` : TOOL === "bline" ? `height ${Math.round(PLACE.height * 100)}% of the width` : `root width ${(PLACE.r0 * 200).toFixed(1)} cm`;
     if (PLACE.last) showPreview(previewFrom({ clientX: PLACE.last[0], clientY: PLACE.last[1] }));
     draw(); return;
   }
@@ -988,7 +991,8 @@ function selPanel() {
   box.append(el("div", { className: "row" }, el("span", { textContent: "Drawn as" }), rs, el("span")));
   if (o.type === "strand") slider(box, "Width", 0.001, 0.03, 0.0005, o.width, edit(v => { o.width = v; }), "the card's width, m (a single hair is about 1 mm)");
   if (o.type !== "strand") slider(box, "Guides", 2, 16, 1, o.guides, edit(v => { o.guides = v; }));
-  if (o.type === "bundle") { slider(box, "Root radius", 0.002, 0.06, 0.001, o.r0, edit(v => { o.r0 = v; })); slider(box, "Tip radius", 0, 0.06, 0.001, o.r1, edit(v => { o.r1 = v; })); }
+  if (o.type === "bundle") { slider(box, "Root radius", 0.002, 0.06, 0.001, o.r0, edit(v => { o.r0 = v; })); slider(box, "Tip radius", 0, 0.06, 0.001, o.r1, edit(v => { o.r1 = v; }));
+    slider(box, "Height", 0.1, 2, 0.05, o.height ?? 1, edit(v => { o.height = v; }), "its other axis, as a share of its width: 1 round, less a flatter oval, more a taller one"); }
   slider(box, "Taper", 0, 1, 0.05, o.taper, edit(v => { o.taper = v; }), "how much thinner the tip is");
   const ph = o.physics || (o.physics = Object.assign({}, SP.DEFAULTS));
   const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);

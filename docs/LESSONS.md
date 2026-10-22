@@ -278,3 +278,9 @@ hair past it. Hair that pokes out or hangs below the head lies along those same 
 combed over a poking one was lifted 11 cm along it, and with gravity's fallen hair, 45 cm. Only what lies on the head
 belongs in such a map. The second try counted a lock's whole cross-section wherever its lowest edge lay, and a sheet
 touching the cheek with its other edge 5 cm out made a spike; count each point up to the lock's own thickness.
+
+## A page test reads what's drawn only after drawing it (2026-10-22)
+
+The salon draws on the next animation frame, and a step that read a new lock's evaluated guides straight after the
+click passed for days, then failed once (the frame hadn't come). Every step that reads drawn state (EVAL, meshes)
+calls the page's render() first.

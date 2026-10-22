@@ -5,7 +5,7 @@
 // tools with the mouse: a strand (root, end), a sheet (a root line dragged along the scalp, an end), a bundle; Mirror on
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
 // pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
-// reach mid-drag, O, a twin's pull); the
+// reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
 // in it); the look (the strand atlas, the shader on every card, a look restyling them); a save and a reload.
@@ -104,7 +104,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const n0 = await count(); await page.keyboard.press("s");
     await page.mouse.click(...await scr(await surf([0.04, 0.13, 0.0])));
     const e = await scr([0.12, -0.2, 0.03]); await page.mouse.move(...e); await page.mouse.wheel(0, -200); await page.mouse.click(...e);
-    const l = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; return { type: l.type, guides: s.EVAL[l.id] ? s.EVAL[l.id].length : 0 }; });
+    const l = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.render(); return { type: l.type, guides: s.EVAL[l.id] ? s.EVAL[l.id].length : 0 }; });
     if (await count() !== n0 + 1 || l.type !== "strand") throw new Error(`${await count()} locks, last ${l.type}`);
   });
   await step("the strand lies on the scalp; a root on the sideburn is taken, one on the ear isn't", async () => {
@@ -114,7 +114,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.mouse.click(...await scr(await surf([0.02, 0.2, 0.0])));
     const e0 = await scr(await surf([0.03, 0.02, -0.2])); await page.mouse.move(...e0); await page.mouse.click(...e0);
     if (await count() !== n00 + 1) throw new Error("no strand over the crown");
-    const lie = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; return s.EVAL[l.id][0].pts.slice(1, -2).map(p => s.COL.depth(p)).sort((a, b) => a - b); });
+    const lie = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.render(); return s.EVAL[l.id][0].pts.slice(1, -2).map(p => s.COL.depth(p)).sort((a, b) => a - b); });
     await page.keyboard.press("Control+z");
     if (lie[lie.length >> 1] > 0.004 || lie[lie.length - 1] > 0.008) throw new Error(`the strand is ${(lie[lie.length >> 1] * 1000).toFixed(1)} mm off the skin (median), ${(lie[lie.length - 1] * 1000).toFixed(1)} at most`);
     await view(-Math.PI / 2 + 0.25, 0.0, 0.6);
@@ -271,6 +271,28 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const mirrorErr = Math.hypot(2 * t2.seam - t2.h[0] - t2.o[0], t2.h[1] - t2.o[1], t2.h[2] - t2.o[2]);
     if (dist(t2.o, tw.o) < 0.005 || dist(t2.h, tw.h) < 0.005 || mirrorErr > 1e-9) throw new Error(`the twin's pull: original moved ${dist(t2.o, tw.o)}, twin ${dist(t2.h, tw.h)}, mirror off by ${mirrorErr}`);
     console.log(`       pulled ${(Math.hypot(...dg) * 100).toFixed(1)} cm: ${inReach[0]} more handles on its strand and ${inReach[1]} on the next (${(wB * 100).toFixed(0)}% at 2.5 cm) by the smooth falloff, ${still} beyond the 8 cm reach still; ${notches} notches grew the reach to ${(grown * 100).toFixed(2)} cm and took the next strand; the twin's pull moved its original ${(dist(t2.o, tw.o) * 100).toFixed(1)} cm`);
+  });
+  await step("a bundle line: the line dragged along the scalp is its width, the wheel makes it an oval, Height changes it", async () => {
+    await view(Math.PI * 0.8, 0.35, 0.9); await page.keyboard.press("d");
+    const sa = await scr(await surf([-0.025, 0.14, -0.07])), sb = await scr(await surf([0.025, 0.14, -0.07]));
+    const [A, B] = await ev(q => q.map(([x, y]) => window.__salon.COL.surface(window.__salon.headAt(x, y))), [sa, sb]);   // where the clicks land
+    await page.mouse.move(...sa); await page.mouse.down(); await page.mouse.move((sa[0] + sb[0]) / 2, (sa[1] + sb[1]) / 2); await page.mouse.move(...sb); await page.mouse.up();
+    for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 100);      // down: flatter, a tenth a notch
+    const tip = await scr([0.0, -0.06, -0.2]); await page.mouse.move(...tip); await page.mouse.click(...tip);
+    const ring = () => ev(() => { const s = window.__salon, SL = s.SL, l = s.st.locks.find(x => x.id === s.selected); s.render(); const G = s.EVAL[l.id], c = l.spine[0];
+      const e = j => SL.len(SL.sub(G[j].pts[0], c)), twin = s.st.locks.find(x => x.mirror_of === l.id);
+      // the width's way: the line, squared to where the bundle leaves the root
+      const sp = SL.catmull(l.spine).map((p, i) => i ? s.COL.push(p, SL.GAP)[0] : p), t0 = SL.norm(SL.sub(sp[1], sp[0])), u = SL.norm(SL.sub(l.axis, SL.mul(t0, SL.dot(l.axis, t0))));
+      return { type: l.type, r0: l.r0, height: l.height, axis: l.axis, along: Math.abs(SL.dot(SL.norm(SL.sub(G[0].pts[0], c)), u)), ratio: e(2) / e(0), twinAxis: twin ? twin.axis : SL.mirrored(l, 0.01, s.COL).axis }; });
+    const r = await ring(), w = Math.hypot(...B.map((x, a) => x - A[a]));
+    if (r.type !== "bundle" || !r.axis || Math.abs(2 * r.r0 - w) > 1e-6 || r.along < 0.9999) throw new Error(`not the line's width: ${JSON.stringify(r)}, the line ${w}`);
+    if (Math.abs(r.height - Math.pow(1.1, -5)) > 1e-6 || Math.abs(r.ratio - r.height) > 0.01) throw new Error(`the wheel's oval: ${JSON.stringify(r)}`);
+    if (Math.abs(r.twinAxis[0] + r.axis[0]) > 1e-9 || Math.abs(r.twinAxis[1] - r.axis[1]) > 1e-9 || Math.abs(r.twinAxis[2] - r.axis[2]) > 1e-9) throw new Error("a twin's width isn't mirrored");
+    await page.$$eval("#selbox .row", rows => { const row = rows.find(x => x.querySelector("span") && x.querySelector("span").textContent === "Height"); const i = row.querySelector("input"); i.value = 1.5; i.dispatchEvent(new Event("input")); });
+    const r2 = await ring();
+    if (Math.abs(r2.height - 1.5) > 1e-9 || Math.abs(r2.ratio - 1.5) > 0.01) throw new Error(`Height didn't make it taller: ${JSON.stringify(r2)}`);
+    await ev(() => { const s = window.__salon; s.deleteLock(s.selected); });
+    console.log(`       ${(w * 100).toFixed(1)} cm line -> ${(r.r0 * 200).toFixed(1)} cm across; 5 notches -> height ${(r.height * 100).toFixed(0)}% (the ring ${(r.ratio * 100).toFixed(0)}%), the slider 150%; a twin's width mirrored`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

@@ -60,6 +60,7 @@ a pulled face's middle drags the picture's middle the whole way). The cube is sa
 | Strand | S | click a root on the scalp (tinted blue while a tool is armed), click the end | the sag (how far it bows out) |
 | Sheet | L | drag a root line along the scalp, let go, click where it ends | the spread of the end |
 | Bundle | B | click a root, click the tip | the root's width |
+| Bundle line | D | drag a line along the scalp (its width), let go, click the tip | its height (an oval) |
 | Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it | the pull's reach (down grows it) |
 | Fit ref | F | drag the reference picture; the wheel scales it | |
 
@@ -88,6 +89,12 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
 - **Sheet**: the root line plus three edge curves (left, middle, right); the guides across it are blended from them,
   their roots on the line. The edges' points are the handles.
 - **Bundle**: a spine with a radius at the root and the tip (wide to gathered, or the other way): a tube of guides.
+  Its cross-section is an ellipse: **Height** (Selected) is its other axis as a share of its width, 1 round, less a
+  flatter oval lying on the head, more a taller one standing off it.
+- **Bundle line** (2026-10-22): a bundle whose root is drawn as a line along the scalp, the line its **diameter**: the
+  width across the root is the line's length, its middle the root, the width's way the line's (squared to where the
+  bundle leaves the head, if drawn at a slant), gathered to a third at the tip. The wheel while placing sets its
+  Height (a tenth a notch); a twin's line is mirrored.
 - **Drawn as** cards (stylised: ribbons with a strand texture) or strands (realism: thin lines spread through the
   lock, as many as the slider says).
 - **Kept off the body**: the head is a radial field round the skull's middle, the neck and torso horizontal slices
@@ -178,7 +185,8 @@ crown and back, two low tails), on the darkened scalp.
 `Content/Studio/Hair/<name>/salon.json`: `head` (the body preset, its height), `reference` (its name, the view
 settings, the fit), `mirror`, `look`, `groups`, `locks`. Every point is in the head's local space, so the hair moves
 to another body with it. A lock: `id`, `type`, `name`, `group`, `visible`, `render`, `taper`, `color`, `mirror_of`, and
-by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine`, `r0`, `r1` and `guides` (bundle).
+by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine`, `r0`, `r1`, `height` (1 round),
+`axis` (a bundle line's width, or none) and `guides` (bundle).
 
 ## Code
 

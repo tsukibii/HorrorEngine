@@ -221,10 +221,19 @@ export function makeSheet(rootLine, endMid, spread, col, o = {}) {
            taper: o.taper ?? 0.5, render: o.render || "cards", density: o.density ?? 60, color: o.color || null, mirror_of: null };
 }
 
+// a bundle: a tube round its spine, r0 at the root to r1 at the tip; its cross-section an ellipse, `height` its other
+// axis as a share of its width (1 round); `axis` the width's direction at the root (a bundle line's line), or across
+// the spine on the scalp
 export function makeBundle(root, tip, col, o = {}) {
   return { id: newId(), type: "bundle", name: o.name || "bundle", group: o.group || "g1", visible: true,
-           spine: drape(root, tip, col, o.sag ?? 0), r0: o.r0 ?? 0.015, r1: o.r1 ?? 0.004, guides: o.guides ?? 8,
+           spine: drape(root, tip, col, o.sag ?? 0), r0: o.r0 ?? 0.015, r1: o.r1 ?? 0.004, height: o.height ?? 1, axis: o.axis || null, guides: o.guides ?? 8,
            taper: o.taper ?? 0.4, render: o.render || "cards", density: o.density ?? 80, color: o.color || null, mirror_of: null };
+}
+// a bundle line: a line drawn along the scalp is the bundle's diameter (its width across the root, the root in its
+// middle), gathered to a third at the tip
+export function makeBundleLine(rootLine, tip, col, o = {}) {
+  const a = rootLine[0], b = rootLine[rootLine.length - 1], r = Math.max(0.003, len(sub(b, a)) / 2), mid = mix(a, b, 0.5);
+  return makeBundle(col ? col.surface(mid) : mid, tip, col, Object.assign({ name: "bundle line", r0: r, r1: Math.max(0.002, r * 0.3), axis: norm(sub(b, a)) }, o));
 }
 
 // every point array of a lock (the handles and the roots), for moving, mirroring, saving
@@ -348,17 +357,21 @@ export function evaluate(lock, col, layers = null) {
   const frames = []; let b1 = null;
   for (let k = 0; k < spine.length; k++) {                           // a frame along the spine, carried (parallel transport)
     const t = norm(sub(spine[Math.min(spine.length - 1, k + 1)], spine[Math.max(0, k - 1)]));
-    if (!b1) { b1 = cross(t, col ? col.normal(spine[0]) : [0, 0, 1]); if (len(b1) < 1e-4) b1 = cross(t, [1, 0, 0]); }
+    if (!b1) {                                                       // the width: the bundle line's line, or across on the scalp
+      if (lock.axis) { b1 = sub(lock.axis, mul(t, dot(lock.axis, t))); if (len(b1) < 0.2) b1 = null; }
+      if (!b1) { b1 = cross(t, col ? col.normal(spine[0]) : [0, 0, 1]); if (len(b1) < 1e-4) b1 = cross(t, [1, 0, 0]); }
+    }
     b1 = norm(sub(b1, mul(t, dot(b1, t)))); frames.push([t, b1, cross(t, b1)]);
   }
-  for (let j = 0; j < g; j++) {
-    const th = j / g * 2 * Math.PI, c = Math.cos(th), s = Math.sin(th);
-    const pts = spine.map((p, k) => { const f = k / (spine.length - 1), r = lock.r0 + (lock.r1 - lock.r0) * f; const [, u, v] = frames[k]; return add(p, add(mul(u, c * r), mul(v, s * r))); });
+  const h = lock.height ?? 1, rad = k => lock.r0 + (lock.r1 - lock.r0) * k / (spine.length - 1);
+  for (let j = 0; j < g; j++) {                                      // round an ellipse: r across, r * height the other way
+    const th = j / g * 2 * Math.PI, c = Math.cos(th), s = Math.sin(th), arc = Math.hypot(s, h * c);
+    const pts = spine.map((p, k) => { const r = rad(k), [, u, v] = frames[k]; return add(p, add(mul(u, c * r), mul(v, s * r * h))); });
     const kept = keepOff(pts, col, layers);
-    out.push({ pts: kept, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c))); }),
-               width: kept.map((_, k) => { const f = k / (spine.length - 1), r = lock.r0 + (lock.r1 - lock.r0) * f; return Math.max(0.003, 2 * Math.PI * r / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
+    out.push({ pts: kept, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c * h))); }),
+               width: kept.map((_, k) => { const f = k / (spine.length - 1); return Math.max(0.003, 2 * Math.PI * rad(k) * arc / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
   }
-  out.thick = spine.map((_, k) => 2 * (lock.r0 + (lock.r1 - lock.r0) * k / (spine.length - 1)));   // its diameter: the layer it makes
+  out.thick = spine.map((_, k) => 2 * rad(k) * Math.max(h, 1e-3));    // its depth across the scalp: the layer it makes
   return out;
 }
 
@@ -392,7 +405,7 @@ export function mirrored(lock, seam = 0, col = null, id = null) {
   const m = JSON.parse(JSON.stringify(lock)), R = p => reflectPoint(p, seam);
   m.id = id || newId(); m.mirror_of = lock.id; m.name = (lock.name || lock.type) + " (mirror)";
   if (m.type === "strand") { m.pts = m.pts.map(R); if (col) m.pts[0] = col.surface(m.pts[0]); }
-  else if (m.type === "bundle") { m.spine = m.spine.map(R); if (col) m.spine[0] = col.surface(m.spine[0]); }
+  else if (m.type === "bundle") { m.spine = m.spine.map(R); if (col) m.spine[0] = col.surface(m.spine[0]); if (m.axis) m.axis = [-m.axis[0], m.axis[1], m.axis[2]]; }
   else { m.root = m.root.map(R).map(p => col ? col.surface(p) : p); m.edges = m.edges.map(E => E.map(R)); m.edges.forEach(E => { E[0] = col ? col.surface(E[0]) : E[0]; }); }
   return m;
 }
