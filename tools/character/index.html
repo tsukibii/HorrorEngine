@@ -315,8 +315,12 @@ photoBtn.onclick = async () => {
 st.clothes = [];                                       // [{design, color}]
 const GARMENTS = new Map();                            // design -> mesh
 const designSel = el("select"), makeBtn = el("button", { textContent: "Make and drape" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
+const lockSel = el("select", { title: "An opening held on the body through the drape, so the garment can't slide off a body its pattern doesn't grip" },
+  ...[["auto", "auto (a waistband)"], ["none", "nothing"], ["waist", "the waist"], ["hips", "the hips"], ["neck", "the neck"], ["waist,neck", "waist and neck"]]
+    .map(([v, t]) => el("option", { value: v, textContent: t })));
 $("#clothesRows").append(el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
-  el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), makeBtn);
+  el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")),
+  el("div", { className: "row" }, el("span", { textContent: "Hold at" }), lockSel, el("output")), makeBtn);
 api("api/designs").then(r => designSel.replaceChildren(...r.designs.map(d => el("option", { value: d, textContent: d.replace(/_/g, " ") })))).catch(() => {});
 function parseObj(text) {
   const v = [], f = [];
@@ -352,10 +356,11 @@ makeBtn.onclick = async () => {
   const design = designSel.value;
   status(`sewing ${design} onto ${WHO}…`); makeBtn.disabled = true;
   try {
-    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height });
+    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: lockSel.value });
     if (!st.clothes.some(c => c.design === design)) st.clothes.push({ design, color: gColor.value });
     await wear(design, st.clothes.find(c => c.design === design).color); drawWorn();
-    status(`${design}: ${r.drape.points} points, seams within ${r.drape.seam_gap_mm} mm, ${r.drape.seconds} s`, "ok");
+    const held = Object.entries(r.drape.locks || {}).map(([k, n]) => `${k} (${n} points)`).join(", ");
+    status(`${design}: ${r.drape.points} points, seams within ${r.drape.seam_gap_mm} mm${held ? ", held at the " + held : ""}, ${r.drape.seconds} s`, "ok");
   } catch (e) { status(e.message, "bad"); }
   makeBtn.disabled = false;
 };

@@ -180,7 +180,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, {"error": "GarmentCode isn't set up: python tools/garment.py setup"})
             out = PEOPLE / name / "clothes" / design
             r = subprocess.run([str(py), str(HERE / "clothes.py"), "--out", str(out), "--design", design,
-                                "--height", str(float(q.get("height", 1.7))), "--weights", json.dumps(q.get("weights", []))],
+                                "--height", str(float(q.get("height", 1.7))), "--weights", json.dumps(q.get("weights", [])),
+                                "--locks", str(q.get("locks", "auto"))],
                                capture_output=True, text=True, encoding="utf-8")
             line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
             if r.returncode or not line:

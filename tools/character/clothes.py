@@ -90,6 +90,7 @@ def main():
     ap.add_argument("--height", type=float, default=1.7)
     ap.add_argument("--weights", default="[]", help="the character's 45 identity weights, as JSON")
     ap.add_argument("--frames", type=int, default=90)
+    ap.add_argument("--locks", default="auto", help="openings held on the body: auto, none, or neck,waist,hips")
     a = ap.parse_args()
     import yaml
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
@@ -109,7 +110,7 @@ def main():
         for t in tris: f.write("f %d %d %d\n" % tuple(t + 1))
     shutil.copy(design, out / "design.yaml")
     r = subprocess.run([blender_python(), str(ROOT / "tools" / "character" / "drape.py"), "--", str(out / "body.obj"),
-                        str(panels), str(panels.with_suffix(".seams.json")), str(out / "garment.obj"), str(a.frames)],
+                        str(panels), str(panels.with_suffix(".seams.json")), str(out / "garment.obj"), str(a.frames), a.locks],
                        capture_output=True, text=True, encoding="utf-8")
     rep = next((json.loads(l[6:]) for l in r.stdout.splitlines() if l.startswith("DRAPE ")), None)
     if r.returncode or rep is None:

@@ -158,3 +158,9 @@ farthest skin in each 11° direction) hung a median 26 mm off the cheeks: near a
 in that direction is the ear's tip. Pushing along the nearest skin point's normal (a hash of the skin's points, 1.2 cm
 cells) brought it to 19 mm (the rest is physics: straight hair drops from the skull's widest part), and the hair now
 lies along the face. Measure distance to the skin at face height; a front picture hides it.
+
+**Pin cloth round the body, not onto its nearest points (2026-10-22).** Locking a waistband by moving each of its
+points to the nearest skin point piled several onto the same spot on a heavy body: coincident and crossed points
+blew Blender's cloth apart (seams a metre apart). Laying them round the body's cross-section at that height (each at
+its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
+flatten a scooped neckline to one height: it hitches the whole top up.

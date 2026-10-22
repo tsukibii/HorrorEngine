@@ -1,12 +1,14 @@
 """The drape: GarmentCode's flat panels sewn onto a body with Blender's cloth (sewing springs), headless. Runs inside
 Blender's module (tools/character/clothes.py calls it):
 
-    python drape.py -- body.obj panels.obj panels.seams.json garment.obj [frames]
+    python drape.py -- body.obj panels.obj panels.seams.json garment.obj [frames] [locks: auto | neck,waist,hips | none]
 
 body.obj: metres, Y up, facing +Z (the Character Studio's frame). panels.obj + .seams.json: tools/garment.py's panels
 (cm, placed round GarmentCode's body: the same frame). Each panel is re-meshed with inner points (Blender's constrained
 Delaunay, the outline kept); stitched edges are subdivided alike so their points pair one to one, and each pair is a
-sewing spring. The cloth sews with gravity off, then hangs with it on, colliding with the body; the seams are welded.
+sewing spring. The locks hold openings (a waistband, a neckline) on the body: those points go onto the skin and are
+pinned, so a garment can't slide off a body its pattern doesn't grip. The cloth sews with gravity off, then hangs with
+it on, colliding with the body; the seams are welded.
 Writes garment.obj (metres) and prints DRAPE {report}: the seams' gap before welding, the points left inside the body.
 """
 import json
@@ -113,7 +115,9 @@ def build(panels_obj, seams_json):
         A, B = where[ka], where[kb]
         if rev: B = B[::-1]
         sew += [(a, b) for a, b in zip(A, B) if a != b]
-    return np.array(verts), faces, sorted(set(tuple(sorted(p)) for p in sew))
+    stitched = {ka for ka, _, _ in pairs} | {kb for _, kb, _ in pairs}
+    free = [where[k] for k in where if k not in stitched]  # the openings: waistbands, necklines, hems, cuffs
+    return np.array(verts), faces, sorted(set(tuple(sorted(p)) for p in sew)), free
 
 
 def prewrap(gv, gf, bv, off=0.015, cell=0.01):
@@ -158,10 +162,57 @@ def prewrap(gv, gf, bv, off=0.015, cell=0.01):
     return out
 
 
+LOCKS = {"neck": 0.84, "waist": 0.615, "hips": 0.53}   # heights, of the body's height
+
+
+def ring(bv, h, H, sectors=72):
+    """the body's cross-section at height h (the torso: the arms left out): its middle and its radius by angle"""
+    band = bv[(np.abs(bv[:, 1] - h) < 0.015) & (np.abs(bv[:, 0]) < 0.24 * H / 1.7)]
+    c = band[:, [0, 2]].mean(0)
+    d = band[:, [0, 2]] - c
+    sec = ((np.arctan2(d[:, 0], d[:, 1]) + np.pi) / (2 * np.pi) * sectors).astype(int) % sectors
+    R = np.zeros(sectors); np.maximum.at(R, sec, np.hypot(d[:, 0], d[:, 1]))
+    for _ in range(4): R = np.where(R > 0, R, np.maximum(np.roll(R, 1), np.roll(R, -1)))
+    return c, R
+
+
+def lock(start, free, bv, bf, locks):
+    """the openings held on the body: for each lock, the free edges whose height is nearest its own (within 8 cm) are
+    laid round the body's cross-section at their height (each point at its own angle from the middle, 5 mm off the
+    skin: they keep their order, nothing piles up) and pinned. auto: the highest opening, if it's a waistband (bottoms).
+    Returns the pinned points and what each lock took."""
+    H = bv[:, 1].max()
+    edges = [(e, float(start[e, 1].mean())) for e in free if len(e) > 1]
+    if not edges: return set(), {}
+    want = list(locks)
+    if "auto" in want:
+        want.remove("auto")
+        top = max(h for _, h in edges)                   # a waistband the garment hangs from (tops hang well by their seams)
+        if abs(top - LOCKS["waist"] * H) < 0.08 * H: want.append("waist")
+    pins, took = set(), {}
+    for name in dict.fromkeys(want):
+        if name not in LOCKS: continue
+        target = LOCKS[name] * H
+        cands = [(e, h) for e, h in edges if abs(h - target) < 0.08]
+        if not cands: continue
+        best = min(abs(h - target) for _, h in cands)
+        chosen = [e for e, h in cands if abs(h - target) < best + 0.03]   # the front and back of one opening alike
+        ids = sorted({i for e in chosen for i in e})
+        h = float(np.mean(start[ids, 1]))
+        c, R = ring(bv, h, H)
+        for i in ids:
+            p = start[i]; ang = np.arctan2(p[0] - c[0], p[2] - c[1])
+            r = R[int((ang + np.pi) / (2 * np.pi) * len(R)) % len(R)] + 0.005
+            start[i] = [c[0] + np.sin(ang) * r, p[1], c[1] + np.cos(ang) * r]   # its own height: a scooped neckline stays scooped
+        pins.update(ids); took[name] = len(ids)
+    return pins, took
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:]
     body_obj, panels_obj, seams_json, out = args[:4]
     frames = int(args[4]) if len(args) > 4 else 90
+    locks = [x for x in (args[5] if len(args) > 5 else "auto").split(",") if x and x != "none"]
     t0 = time.time()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     to_b = lambda p: (p[0], -p[2], p[1])                   # the Studio's Y up, +Z front -> Blender's Z up, -Y front
@@ -172,16 +223,20 @@ def main():
     body.modifiers.new("collision", "COLLISION")
     body.collision.thickness_outer = 0.004; body.collision.cloth_friction = 5
 
-    gv, gf, sew = build(panels_obj, seams_json)
+    gv, gf, sew, free = build(panels_obj, seams_json)
     # GarmentCode's body stands a little behind ours: centre the garment on this torso, front to back
     torso = bv[(bv[:, 1] > bv[:, 1].max() * 0.55) & (bv[:, 1] < bv[:, 1].max() * 0.75) & (np.abs(bv[:, 0]) < 0.15)]
     gv[:, 2] += torso[:, 2].mean() - (gv[:, 2].min() + gv[:, 2].max()) / 2
     start = prewrap(gv, gf, bv)
+    pins, locked = lock(start, free, bv, bf, locks)
     gme = bpy.data.meshes.new("garment"); gme.from_pydata([to_b(p) for p in start], [list(e) for e in sew], gf); gme.update()
     gar = bpy.data.objects.new("garment", gme); bpy.context.scene.collection.objects.link(gar)
 
     cl = gar.modifiers.new("cloth", "CLOTH")
     s = cl.settings
+    if pins:                                             # the locks: held where they were put, on the body
+        vg = gar.vertex_groups.new(name="lock"); vg.add(sorted(pins), 1.0, "REPLACE")
+        s.vertex_group_mass = "lock"; s.pin_stiffness = 1.0
     s.quality = 8; s.mass = 0.25; s.air_damping = 2
     s.tension_stiffness = s.compression_stiffness = 12; s.shear_stiffness = 5; s.bending_stiffness = 0.3
     s.use_sewing_springs = True; s.sewing_force_max = 8      # 30 yanked a t-shirt off the shoulders, sleeves crushed
@@ -218,7 +273,7 @@ def main():
         f.write("# draped by tools/character/drape.py: metres, Y up, facing +Z\no garment\n")
         for p in W: f.write("v %.5f %.5f %.5f\n" % tuple(p))
         for fa in F: f.write("f " + " ".join(str(i + 1) for i in fa) + "\n")
-    rep = dict(points=len(W), faces=len(F), seams=len(sew), seam_gap_mm=round(gap * 1000, 1),
+    rep = dict(points=len(W), faces=len(F), seams=len(sew), seam_gap_mm=round(gap * 1000, 1), locks=locked,
                inside_pct=round(100 * inside / max(1, len(W[::max(1, len(W) // 1500)])), 1),
                frames=frames, seconds=round(time.time() - t0, 1))
     print("DRAPE " + json.dumps(rep))
