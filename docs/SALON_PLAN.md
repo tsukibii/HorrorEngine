@@ -28,24 +28,26 @@ a second try. Read docs/DECISIONS.md and CLAUDE.md first.
 
 ## Phase 0: research Blender's hair, then design (one session, no code yet)
 
-- [ ] Shallow-clone Blender (`git clone --depth 1 https://github.com/blender/blender`, GPL: read, never copy; nothing of it
-  ships) into the scratchpad. If the proxy refuses GitHub, use the mirror on projects.blender.org.
-- [ ] Read how **hair curves are stored and edited**: `source/blender/blenkernel/intern/curves_geometry.cc` (control
+- [x] Blender's source read from GitHub (the raw files; no clone needed): `main` for the data model, the add step,
+  the constraints and the simulation; the `v4.2.0` tag for the sculpt brushes (they moved after 4.2). **The user's
+  call: port Blender's functions freely (an in-house tool for free games); keep Blender's names; the files that carry
+  ports say "Ported from Blender (GPL-2.0-or-later)" in their header and THIRD_PARTY.md has the row.**
+- [x] Read how **hair curves are stored and edited**: `source/blender/blenkernel/intern/curves_geometry.cc` (control
   points, Catmull-Rom and poly curves, per-curve attributes), the sculpt-curves brushes in
   `source/blender/editors/sculpt_paint/curves_sculpt_*.cc` (add, comb, snake hook, grow/shrink, pinch, puff, smooth,
   slide; how the root stays on the surface: `curves_sculpt_add.cc`'s surface sampling and `slide`'s re-projection).
-- [ ] Read the **procedural hair node groups** (the asset file `release/datafiles/assets/geometry_nodes/`
+- [x] (from the code they lift from and memory; the manual was unreachable: verify in Blender) Read the **procedural hair node groups** (the asset file `release/datafiles/assets/geometry_nodes/`
   `procedural_hair_node_assets.blend`; its node trees are documented in the manual's "Hair Nodes" page): Interpolate
   Hair Curves (children from guides), Clump, Frizz, Curl, Roll, Hair Curves Noise, Shrinkwrap (off a surface),
   Smooth, Trim, Set Hair Curve Profile, Duplicate Hair Curves, Attach Hair Curves to Surface. Write down the inputs
   each takes and the few that matter for us: interpolate, clump, curl, shrinkwrap, trim, profile.
-- [ ] Read the **hair simulation**: the old particle hair dynamics run on the cloth solver
+- [x] Read the **hair simulation**: the old particle hair dynamics run on the cloth solver
   (`source/blender/blenkernel/intern/particle_system.cc` → `cloth.cc`, `implicit_blender.cc` /
   `BPH_mass_spring.cc`): structural springs along the strand, bending springs, a mass per point, damping, collision
   with collision objects by a depth, and "pinning" by vertex-group stiffness. Note what we keep (springs along and
   bending, pin at the root, collision push-out, a stiffness falloff from root to tip) and what we drop (implicit
   integration, self-collision, the cloth coupling).
-- [ ] Write `docs/research/blender_hair.md`: the data model, the brushes and what each does in one line, the node
+- [x] Written: `docs/research/blender_hair.md`, with the maths ported to JavaScript and a table of what goes where. Was: write `docs/research/blender_hair.md`: the data model, the brushes and what each does in one line, the node
   groups and their inputs, the sim's forces and constraints, and **our lighter version**: Catmull-Rom locks, verlet
   chains (wig.js) with a bending constraint, root pinned, collision by push-out against the head field, body slices
   and a garment proxy, physics only on marked locks.
@@ -163,6 +165,6 @@ a second try. Read docs/DECISIONS.md and CLAUDE.md first.
 - Never per-strand editing: the smallest thing the user touches is a lock's handle or slider.
 - Every tool works with click, click, wheel, drag; no modal dialogs; undo everywhere.
 - Measure, don't eyeball: inside percentage, drift, frame times in the stats line; the tests check them.
-- Blender is read for how, never copied (GPL); our code is ours.
+- Blender's functions are ported freely (the user's call), with Blender's names kept and a GPL-2.0-or-later header on the files that carry them; THIRD_PARTY.md says so.
 - The Gaussian tools stay in the repo as the reference layer (and the record of what was tried); nothing of them is
   needed to draw hair.
