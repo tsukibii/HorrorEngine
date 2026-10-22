@@ -7,7 +7,8 @@
 // pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
 // reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); thickness on a strand
 // and a sheet (off by default, the dome's height, its taper); the roots (leaving the scalp at their lift, flat at 0,
-// gravity not flattening them); the presets (all eight on the head, the scalp covered, the long cut falling clear of the
+// gravity not flattening them); padding (the scalp covered, along the hair, physics left out, a base group, the bake);
+// the presets (all eight on the head, the scalp covered, the long cut falling clear of the
 // face); the cover (a parting of Y's over the rest, its length the
 // top hair's, falling onto it with friction, kept as shown); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
@@ -422,6 +423,39 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (back !== before) throw new Error("undo didn't bring the hair back");
     console.log(`       ${all.map(r => `${r.id} ${r.locks} locks ${(r.cover * 100).toFixed(0)}%`).join(", ")} of the scalp covered; the long cut fell, the face clear; undone`);
   });
+  await step("padding: the base filled out (the scalp covered, cards along the hair, under the smooth outside, off the body); physics left out; a base group alone; in the bake", async () => {
+    const r = await ev(async () => { const s = window.__salon, SL = s.SL, V = s.st.volume;
+      s.presets.apply("w_long"); V.padding = true; V.thickness = 0.5; s.render(); s.volume.refresh();
+      const P = s.volume.pad, c = s.volume.check, base = s.volume.baseLocks();
+      // along the hair: each padding card's direction against the nearest base guide's, at a few points each
+      const pts = []; for (const l of base) for (const G of s.EVAL[l.id]) G.pts.forEach((p, k) => { if (k && k < G.pts.length - 1 && p[1] > s.COL.chin - 0.03) pts.push([p, SL.norm(SL.sub(G.pts[k + 1], G.pts[k - 1]))]); });
+      let agree = 0, n = 0, inside = 0, above = 0;
+      for (const G of P.cards) for (const k of [4, 10, 16]) {
+        const p = G.pts[k], tg = SL.norm(SL.sub(G.pts[k + 1], G.pts[k - 1])); let best = null, bd = 1e9;
+        for (const [q, t] of pts) { const d = SL.len(SL.sub(q, p)); if (d < bd) { bd = d; best = t; } }
+        agree += Math.abs(SL.dot(tg, best)); n++;
+        if (s.COL.push(p, -0.001)[1]) inside++;
+        const d = SL.sub(p, s.COL.C), R = P.hull.at(SL.norm(d)); if (R && SL.len(d) > R + 0.001) above++;
+      }
+      const sumPts = L => L.reduce((a, l) => a + s.EVAL[l.id].reduce((b, G) => b + G.pts.length, 0), 0);
+      const all = { cards: P.cards.length, before: c.before, after: c.after, agree: agree / n, inside, above, points: P.stats.points, expected: sumPts(base) };
+      // a lock with physics is left out
+      const ph = base.find(l => l.group === "back"); ph.physics = Object.assign({}, s.SP ? {} : {}, { on: true }); s.render(); s.volume.refresh();
+      all.withPhysics = s.volume.pad.stats.points; all.expectedPhysics = sumPts(s.volume.baseLocks()); all.physicsOut = !s.volume.baseLocks().includes(ph); ph.physics.on = false;
+      // the base: one group ticked
+      const g = s.st.groups.find(g => g.id === "top"); g.base = true; s.render(); s.volume.refresh();
+      all.groupPoints = s.volume.pad.stats.points; all.groupExpected = sumPts(s.st.locks.filter(l => l.group === "top" && !(l.physics && l.physics.on))); g.base = false;
+      // in the bake: the still mesh has the padding's cards
+      document.querySelector("#hairName").value = "_salontest"; s.render(); s.volume.refresh();
+      const on = await s.bake(); V.padding = false; s.render(); const off = await s.bake();
+      all.bakeOn = on.static.vertices; all.bakeOff = off.static.vertices; all.padCards = on.padding && on.padding.cards;
+      return all; });
+    await page.keyboard.press("Control+z");
+    if (r.cards < 30 || r.after < r.before || r.after < 0.97 || r.agree < 0.75 || r.inside || r.above) throw new Error(`the padding: ${JSON.stringify(r)}`);
+    if (r.points !== r.expected || r.withPhysics !== r.expectedPhysics || !r.physicsOut || r.groupPoints !== r.groupExpected) throw new Error(`what it's made of: ${JSON.stringify(r)}`);
+    if (!(r.bakeOn > r.bakeOff) || r.padCards !== r.cards) throw new Error(`the bake: ${JSON.stringify(r)}`);
+    console.log(`       the long cut: ${r.cards} padding cards, the scalp covered ${(r.before * 100).toFixed(0)}% -> ${(r.after * 100).toFixed(0)}%, along the hair (mean |cos| ${r.agree.toFixed(2)}), none in the body or over the smooth outside; a physics lock left out; one base group alone; the bake ${r.bakeOff} -> ${r.bakeOn} still vertices`);
+  });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line
     const r = await ev(() => { const s = window.__salon, i = s.scalpInfo(); if (!i) return null; const A = i.alpha, L = s.localPoints(), C = s.COL.C;
@@ -489,7 +523,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     console.log(`       ${st0.frames} moments recorded; a tip fell ${(fell * 100).toFixed(1)} cm, the roots stayed; switched off, the hair stayed exactly as shown (${twins} twin, layers on); undone`);
   });
   await step("Bake: the swinging lock its own skinned mesh, the rest one mesh with fewer vertices; the file loads back and its bones bend it", async () => {
-    await ev(n => { document.querySelector("#hairName").value = n; }, TEST);
+    await ev(n => { document.querySelector("#hairName").value = n; document.querySelector("#status").textContent = ""; }, TEST);   // (an earlier bake's "baked" gone)
     await page.click("#bakebox button:text-is('Bake')");
     await page.waitForFunction(() => /baked/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
     const d = path.join(ROOT, "Content", "Studio", "Hair", TEST), sum = JSON.parse(fs.readFileSync(path.join(d, "salon_bake.json"), "utf-8"));

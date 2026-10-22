@@ -6,6 +6,7 @@ import * as SR from "./salonref.js";
 import * as FFD from "./ffd.js";
 import * as SP from "./salonphys.js";
 import { PRESETS, buildPreset } from "./salonpresets.js";
+import { padding as padOf } from "./salonpad.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { LOOKS, DEFAULT_LOOK, UV_SPAN, makeAtlas, albedo, linear } from "./hairtex.js";
@@ -36,7 +37,7 @@ const st = {
   locks: [],
   scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
   roots: { lift: 40, length: 0.02, vary: 0.4 },                     // how hair comes out of the head (salonlib.js's rootBend)
-  volume: { thicken: 1 },                                            // Thicken: every card as much wider
+  volume: { thicken: 1, padding: false, thickness: 0.4, smooth: 0.5 },   // Thicken; the base's padding (salonpad.js)
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
@@ -383,7 +384,7 @@ function refreshLocks() {
     if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, laid && laid.get(l.id) || null); HAIR.add(MESHES[l.id]); }
     MESHES[l.id].visible = shown(l);
   });
-  if (rebuilt) shadeDepths();
+  if (rebuilt) { shadeDepths(); PAD_DIRTY = true; }
   DIRTY.clear();
   drawHandles();
 }
@@ -640,7 +641,7 @@ function bakeMat() {
   return cards;
 }
 function liveVertices() {                                               // what the salon draws now (the "before")
-  let n = 0; for (const id in MESHES) MESHES[id].traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); if (SCALPM) n += SCALPM.geometry.attributes.position.count; return n;
+  let n = 0; for (const M of [...Object.values(MESHES), PADM].filter(Boolean)) M.traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); if (SCALPM) n += SCALPM.geometry.attributes.position.count; return n;
 }
 let BAKED = null;
 async function bake() {
@@ -652,6 +653,10 @@ async function bake() {
     if (l.physics && l.physics.on) skinned.push([l, guides.map(G => resampleGuide(G, BAKE_ALONG_PHYS)), colour]);
     else statics.push(cardsGeometry(guides.map(G => resampleGuide(G, BAKE_ALONG)), colour));
   });
+  if (st.volume.padding) {                                             // the padding: with the still hair
+    if (PAD_DIRTY || !PAD) refreshPadding();
+    if (PAD && PAD.cards.length) { statics.push(cardsGeometry(PAD.cards.map(G => resampleGuide(G, BAKE_ALONG)), null)); summary.padding = { cards: PAD.cards.length, thickness: st.volume.thickness, smooth: st.volume.smooth }; }
+  }
   const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
   const mat = bakeMat();
   if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mat); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
@@ -686,8 +691,8 @@ async function bake() {
 const BAKEG = new THREE.Group(); HAIR.add(BAKEG);
 async function showBake(on) {
   BAKEG.clear(); st.look.showBake = on;
-  for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; if (SCALPM) SCALPM.visible = !on;
-  if (!on) { for (const l of st.locks) DIRTY.add(l.id); draw(); return null; }
+  for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; if (SCALPM) SCALPM.visible = !on; if (PADM) PADM.visible = !on;
+  if (!on) { for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; draw(); return null; }
   const name = $("#hairName").value.trim();
   const buf = await (await fetch(`api/hair/${encodeURIComponent(name)}/salon.glb`)).arrayBuffer();
   const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(buf, "", ok, bad));
@@ -697,7 +702,7 @@ async function showBake(on) {
 }
 function bakePanel() {
   const box = $("#bakebox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: "Bake writes the hair for a game (Content/Studio/Hair/<name>/salon.glb): every lock with physics its own skinned mesh on bones along its chains (a sheet three chains, a strand or bundle one), everything else, the fill too, merged into one mesh with fewer points along each card. Save first to name it." }));
+  box.append(el("p", { className: "note", textContent: "Bake writes the hair for a game (Content/Studio/Hair/<name>/salon.glb): every lock with physics its own skinned mesh on bones along its chains (a sheet three chains, a strand or bundle one), everything else (and the padding, while it's ticked in Volume) merged into one mesh with fewer points along each card. Save first to name it." }));
   box.append(el("button", { textContent: "Bake", onclick: () => bake().catch(e => status(e.message, "bad")) }));
   const t = el("div"); tick(t, "show the bake", !!st.look.showBake, v => showBake(v).catch(e => status(e.message, "bad")), "the baked file loaded back in place of the live hair"); box.append(t);
   if (BAKED) box.append(el("p", { className: "note", textContent: `${BAKED.before.vertices} vertices live -> ${BAKED.after.vertices} baked: one static mesh of ${BAKED.static.vertices || 0}, ${BAKED.physics.length} swinging (${BAKED.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round(BAKED.glb_bytes / 1024)} KB` }));
@@ -713,7 +718,7 @@ function render() {
     const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
     setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
   } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
-  refreshLocks(); drawCube(); drawScalp();
+  refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding();
   const ovl = placeOverlay();
   renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
   if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
@@ -1048,10 +1053,71 @@ function presetPanel() {
   box.append(el("button", { textContent: "Make it", onclick: () => applyPreset(sel.value) }), el("button", { textContent: "Make it and let it fall", onclick: () => applyPreset(sel.value, true) }));
 }
 // ---- volume: the hair filled out for the bake ---------------------------------------------------------------------------
+// The base: the groups ticked as the base in Locks (none ticked: all the hair shown), its still locks (physics ones are
+// left out: they swing). Its padding (salonpad.js) fills it out into one smooth mass of cards following the hair; shown
+// while Padding is ticked, baked with the still hair. The check: how much of the scalp the hair covers, with and without
+// the padding, and where locks clip into each other (the red dots).
+let PAD = null, PADM = null, PAD_DIRTY = true, PAD_TIMER = null, CHECK = null, CLIPM = null;
+const baseGroups = () => st.groups.filter(g => g.base).map(g => g.id);
+function baseLocks() {
+  const b = baseGroups(), shown = isShown();
+  return st.locks.filter(l => !(l.physics && l.physics.on) && (b.length ? b.includes(l.group) : shown(l)));
+}
+function schedulePadding() { clearTimeout(PAD_TIMER); PAD_TIMER = setTimeout(() => { refreshPadding(); draw(); }, DROP ? 600 : 200); }
+function refreshPadding() {
+  PAD_DIRTY = false;
+  if (PADM) { HAIR.remove(PADM); PADM.traverse(disposeOf); PADM = null; }
+  if (CLIPM) { HAIR.remove(CLIPM); CLIPM.traverse(disposeOf); CLIPM = null; }
+  if (!COL) return;
+  const V = st.volume, base = baseLocks().filter(l => EVAL[l.id]);
+  PAD = V.padding && base.length ? padOf(base.map(l => EVAL[l.id]), COL, { thickness: V.thickness, smooth: V.smooth }) : null;
+  if (PAD && PAD.cards.length) { PADM = cardsMesh(PAD.cards); PADM.visible = base.some(isShown()); HAIR.add(PADM); }
+  CHECK = checkHair();
+  if (V.clips && CHECK.clips.length) {
+    const g = new THREE.BufferGeometry().setFromPoints(CHECK.clips.map(p => new THREE.Vector3(...p)));
+    CLIPM = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xff3b30, size: 6, sizeAttenuation: false, depthTest: false })); CLIPM.renderOrder = 12; HAIR.add(CLIPM);
+  }
+  const out = $("#volcheck"); if (out) out.textContent = checkText();
+}
+// cards on the hair shader, from guides (the padding's)
+function cardsMesh(guides) {
+  const uv = [], tints = [], idx = [];
+  guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
+    for (let k = 0; k < n; k++) { const v = G.t ? G.t[k] : k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); tints.push(0, 0, 0, 0, 0, 0, 0, 0); }
+    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cardPositions(guides), 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute("aTangent", new THREE.Float32BufferAttribute(cardTangents(guides), 3)); g.setAttribute("aTint", new THREE.Float32BufferAttribute(tints, 4)); g.setIndex(idx); g.computeVertexNormals();
+  g.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(g.attributes.position.array), 1));
+  const grp = new THREE.Group(), m = new THREE.Mesh(g, HAIR_MAT); m.userData.role = "cards"; grp.add(m); grp.userData.padding = true;
+  return grp;
+}
+// the check: the scalp covered (the head's scalp vertices with hair over them), without and with the padding, and where
+// cards of two locks cross within a millimetre of each other's height (they clip), one dot a 2.5-degree bin
+function checkHair() {
+  const shown = st.locks.filter(isShown()), env = new SL.Envelope(COL);
+  for (const l of shown) if (EVAL[l.id]) env.add(EVAL[l.id]);
+  const scalp = []; for (let i = 0; i < LOCAL_PTS.length; i += 3) { const q = [LOCAL_PTS[i], LOCAL_PTS[i + 1], LOCAL_PTS[i + 2]]; if (SL.onScalp(q, COL.C) && SL.len(SL.sub(q, COL.C)) < 0.17) scalp.push(q); }
+  const cover = e => scalp.filter(q => e.under(q) > 0.001).length / Math.max(1, scalp.length);
+  const before = cover(env); let after = before;
+  if (PAD) { for (const G of PAD.cards) env.add([G]); after = cover(env); }
+  const bins = new Map(), clips = [];
+  for (const l of shown) for (const G of EVAL[l.id] || []) G.pts.forEach((p, k) => {
+    if (!k || p[1] < COL.chin - 0.03) return; const d = SL.sub(p, COL.C), r = SL.len(d), e = Math.round(Math.asin(d[1] / r) * 72), a = Math.round(Math.atan2(d[0], d[2]) * 72 / Math.max(0.2, Math.cos(Math.asin(d[1] / r)))), key = e + "," + a;
+    const L = bins.get(key) || []; if (!L.done && L.some(([id, rr]) => id !== l.id && Math.abs(rr - r) < 0.001)) { L.done = true; clips.push(p); } L.push([l.id, r]); bins.set(key, L);
+  });
+  return { before, after, clips, cards: PAD ? PAD.cards.length : 0 };
+}
+const checkText = () => CHECK ? `the scalp covered ${(CHECK.before * 100).toFixed(0)}%${PAD ? ` (with the padding's ${CHECK.cards} cards, ${(CHECK.after * 100).toFixed(0)}%)` : ""}; ${CHECK.clips.length} places where locks clip into each other` : "";
 function volumePanel() {
   const box = $("#volbox"); if (!box) return; box.innerHTML = "";
-  const V = st.volume, set = (k, v) => { V[k] = v; SL.setThicken(V.thicken); for (const l of st.locks) DIRTY.add(l.id); draw(); };
+  const V = st.volume, set = (k, v) => { V[k] = v; SL.setThicken(V.thicken); for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; draw(); };
   slider(box, "Thicken", 0.5, 3, 0.05, V.thicken, v => set("thicken", v), "every strand's card this many times as wide (1: as made); the strands stay where they are");
+  box.append(el("p", { className: "note", textContent: "Padding fills the base out into one smooth mass: its gaps closed, its outside smoothed, cards following the hair under the outer locks. The base: the groups ticked ▣ in Locks (none: all the hair shown); locks with physics are left out. It's baked with the still hair." }));
+  const pt = el("div"); tick(pt, "Padding (preview)", !!V.padding, v => { V.padding = v; PAD_DIRTY = true; draw(); }, "show the padding; it's in the bake while this is ticked"); box.append(pt);
+  slider(box, "Thickness", 0, 1, 0.05, V.thickness, v => { V.thickness = v; PAD_DIRTY = true; draw(); }, "how full: 0 just fills the gaps under the outer hair; 1 lifts the mass 1.2 cm and adds deeper layers");
+  slider(box, "Smooth", 0, 1, 0.05, V.smooth, v => { V.smooth = v; PAD_DIRTY = true; draw(); }, "how smooth the mass's outside curve is, and how wide a gap it closes");
+  const ct = el("div"); tick(ct, "Show where it clips", !!V.clips, v => { V.clips = v; PAD_DIRTY = true; draw(); }, "red dots where two locks' cards cross at the same height"); box.append(ct);
+  box.append(Object.assign(el("p", { className: "note", textContent: checkText() }), { id: "volcheck" }));
 }
 function rootsPanel() {
   const box = $("#rootbox"); if (!box) return; box.innerHTML = "";
@@ -1075,7 +1141,8 @@ function locksPanel() {
   const box = $("#locks"); box.innerHTML = "";
   for (const g of st.groups) {
     const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group", onclick: () => { g.visible = !g.visible; locksPanel(); draw(); } });
-    const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, eye, el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } }));
+    const base = el("span", { className: "eye", textContent: g.base ? "▣" : "□", title: "in the base (the mass the padding fills out, baked first)", onclick: () => { remember(); g.base = !g.base; PAD_DIRTY = true; locksPanel(); draw(); } });
+    const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, eye, base, el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } }));
     box.append(row);
     st.locks.filter(l => l.group === g.id).forEach(l => {
       const e2 = el("span", { className: "eye", textContent: l.visible ? "◉" : "○", onclick: ev => { ev.stopPropagation(); l.visible = !l.visible; locksPanel(); draw(); } });
@@ -1166,7 +1233,7 @@ async function load(name) {
   Object.assign(st.reference, o.reference || {});
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
-  st.volume = Object.assign({ thicken: 1 }, o.volume || {}); SL.setThicken(st.volume.thicken);
+  st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5 }, o.volume || {}); SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
@@ -1190,7 +1257,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, rootsPanel, volumePanel, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
+  PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, baseLocks }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;

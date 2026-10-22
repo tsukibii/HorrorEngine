@@ -317,3 +317,9 @@ The hair shader darkened hair near the skin (inner layers in shadow). Short hair
 crop's top, its outermost hair, came out black, and with the darkened scalp under it read as bald. The depth it
 shades by is now how far a point is under the hair's outer surface (all the hair shown, round the skull's middle):
 the outermost hair is lit however close to the skin it lies.
+
+## Clear the signal before waiting for it (2026-10-22)
+
+SALON's bake step clicked Bake and waited for the status bar to say "baked". A step before it now bakes too, so the
+status already said "baked": the wait returned at once and the step read the earlier step's files (no physics lock, the
+wrong vertex count). A test that waits for a message (a status, a file, a flag) clears it first.

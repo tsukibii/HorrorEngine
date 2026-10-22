@@ -149,6 +149,26 @@ the hair under them (what lies on the head, as layering counts it). Combing is f
 **Thicken** (Volume): every card that many times as wide (the strands' widths, a sheet's and a bundle's cards, a
 dome's), from 0.5 to 3, the guides where they are; on screen and in the bake. Saved as `volume.thicken`.
 
+**Padding** (Volume) fills **the base** out into one smooth, full mass, the way finished hair reads (no see-through
+gaps between locks, no lumps). The base is the groups ticked ▣ in Locks (none ticked: all the hair shown); locks with
+physics are left out (they swing). `salonpad.js`, only the head (above the chin; what hangs below is the locks' own):
+
+1. the hull: per direction round the skull's middle (72 x 144 bins, 2.5 degrees), how far out the hair reaches;
+2. the gaps closed: the covered bins dilated and eroded back (a morphological closing, 2 to 5 bins by Smooth), a gap's
+   radius its neighbours' (a normalized Gaussian average);
+3. smoothed: the radius averaged over a Gaussian (1 to 3.5 bins by **Smooth**), lifted by **Thickness** (up to 1.2 cm),
+   never under the skin: the mass's outer curve;
+4. the flow: each bin's hair direction (the guides' tangents on the sphere, root to tip), averaged; none near: down;
+5. the cards: evenly spaced streamlines along the flow on that surface (after Jobard and Lefer 1997: a line starts a
+   spacing, 1.2 cm, from the others and stops within half of it), upstream to where the hair starts and downstream to
+   where it ends, each a card with the strand texture, its root upstream, 2 mm under the surface (the outer locks lie
+   on it, the gaps show it); Thickness adds deeper shells.
+
+**Padding (preview)** shows it; while it's ticked the bake puts it in the still mesh. **The check** under it: how much
+of the scalp the hair covers, without and with the padding (the long cut fallen: 88 % and 99.8 %), and how many places
+two locks' cards cross at the same height (they clip); **Show where it clips** marks them with red dots. Saved as
+`volume` (padding, thickness, smooth); a group's `base`.
+
 ## Presets: starting points finished by gravity (2026-10-22)
 
 **Start from** makes a hairstyle laid out rough on purpose, in layers, to be finished by gravity: make it, switch
@@ -256,7 +276,7 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `thick
 
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror, the pull: plain arrays, node
 can run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
-ellipsoid depth), `salonpresets.js` (the starting points), `salonphys.js` (the chains, the step, the
+ellipsoid depth), `salonpresets.js` (the starting points), `salonpad.js` (the padding), `salonphys.js` (the chains, the step, the
 skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
@@ -273,7 +293,9 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
-  its original mirrored); a bundle line; thickness; Thicken (every card twice as wide at 2, the guides unmoved); the presets (all eight on the head, mirrored, at least 90 % of the
+  its original mirrored); a bundle line; thickness; Thicken (every card twice as wide at 2, the guides unmoved); padding (the long cut: the scalp
+  covered at least as well and 97 % or more, the cards along the nearest hair, none in the body or over the smooth
+  outside, a physics lock left out, one base group alone, more still vertices in the bake); the presets (all eight on the head, mirrored, at least 90 % of the
   scalp covered, the long cut falling clear of the face, undone); the roots (a strand on the crown leaving
   the scalp at its lift and bending over, flat at Lift 0, the same after gravity); the cover (the parting's Y's previewed at the top hair's length,
   made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly
