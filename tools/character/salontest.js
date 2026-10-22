@@ -4,8 +4,7 @@
 // reference's cube bends the picture where its pulled face looks at the view. The lock
 // tools with the mouse: a strand (root, end), a sheet (a root line dragged along the scalp, an end), a bundle; Mirror on
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
-// trace's glow (the face kept clear), a mirrored brush selection cut, the glow pushed out by a drag, the fill (off the
-// body, combed the locks' way) and its cube; physics on the bundle (a shake swings it, still settles it); the bake (a
+// darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
 // in it); the look (the strand atlas, the shader on every card, a look restyling them); a save and a reload.
 // Ends "SALON ok".
@@ -205,65 +204,16 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (n2 !== n0 - 2) throw new Error(`the second undo left ${n2} locks of ${n0} (the sidelock and its twin should go)`);
     if (s3 !== s0) throw new Error("redo didn't bring it all back");
   });
-  await step("Trace wraps the locks and the scalp in a glow, the face below the brows kept clear", async () => {
-    await page.click("button:text-is('Trace')");
-    const g = await ev(() => { const s = window.__salon, g = s.st.glow; let on = 0, under = 0, face = 0;
-      for (let c = 0; c < g.on.length; c++) { if (!g.on[c]) continue; on++; if (g.r[c] < g.inner[c]) under++;
-        const p = s.SF.pointOf(g, c, g.inner[c]); if (g.face[c] && p[1] < 0.03) face++; }
-      return { on, under, face, n: g.on.length }; });
-    if (g.on < 150 || g.under || g.face) throw new Error(JSON.stringify(g));
-    console.log(`       ${g.on} of ${g.n} cells in the glow`);
-  });
-  await step("the Glow tool's brush selects both sides with mirror on, and Cut takes them out", async () => {
-    await page.keyboard.press("g"); await view(-Math.PI / 2, 0.0, 1.0);
-    const ear = await scr([-0.075, 0.0, -0.005]);
-    await page.mouse.move(...ear); await page.mouse.down(); await page.mouse.move(ear[0] + 10, ear[1] + 15, { steps: 4 }); await page.mouse.up();
-    const sel = await ev(() => { const s = window.__salon, S = [...s.SEL]; return { n: S.length, paired: S.every(c => s.SEL.has(s.SF.mirrorCell(c))), cells: S }; });
-    if (sel.n < 4 || !sel.paired) throw new Error(`${sel.n} selected, mirrored pairs: ${sel.paired}`);
-    await page.click("button:text-is('Cut')");
-    const left = await ev(cs => cs.filter(c => window.__salon.st.glow.on[c]).length, sel.cells);
-    if (left) throw new Error(`${left} of the cut cells still on`);
-    console.log(`       ${sel.n} cells selected round both ears and cut`);
-  });
-  await step("dragging a selected point up pushes the glow out there", async () => {
-    await page.click("button:text-is('None')");
-    await view(0, 0.5, 1.0);
-    const top = await scr(await ev(() => { const s = window.__salon, g = s.st.glow, c = s.SF.cell(Math.floor(s.SF.AZ / 2), s.SF.EL - 4); return s.SF.pointOf(g, c); }));
-    await page.mouse.click(...top);
-    const before = await ev(() => { const s = window.__salon; return [...s.SEL].map(c => [c, s.st.glow.r[c]]); });
-    if (!before.length) throw new Error("nothing selected at the crown");
-    await page.mouse.move(...top); await page.mouse.down(); await page.mouse.move(top[0], top[1] - 30, { steps: 6 }); await page.mouse.up();
-    const grew = await ev(b => b.map(([c, r]) => window.__salon.st.glow.r[c] - r), before);
-    if (Math.min(...grew) < 0.01) throw new Error(`the glow moved ${grew.map(x => (x * 1000).toFixed(1)).join(", ")} mm`);
-    console.log(`       ${before.length} points pushed out ${(Math.min(...grew) * 1000).toFixed(0)} mm`);
-  });
-  await step("Fill: a mass between the head and the glow, off the body, combed the way the nearest locks run", async () => {
-    await page.click("button:text-is('Fill')"); await page.waitForTimeout(300);
-    const f = await ev(() => { const s = window.__salon, F = s.fillInfo(), res = F.res, SL = s.SL; let inside = 0;
-      const P = res.shell.position; for (let i = 0; i < P.length; i += 3) if (s.COL.push([P[i], P[i + 1], P[i + 2]], -0.001)[1]) inside++;
-      const segs = []; for (const l of s.st.locks) for (const G of s.EVAL[l.id] || []) for (let k = 1; k < G.pts.length; k++) segs.push([SL.mul(SL.add(G.pts[k], G.pts[k - 1]), 0.5), SL.norm(SL.sub(G.pts[k], G.pts[k - 1]))]);
-      let agree = 0, near = 0;
-      for (const line of res.strands) { const p = line[0], d = SL.norm(SL.sub(line[2], line[0])); let best = null, bd = 0.03;
-        for (const [m, t] of segs) { const dd = SL.len(SL.sub(m, p)); if (dd < bd) { bd = dd; best = t; } }
-        if (best) { near++; agree += SL.dot(d, best); } }
-      return { vertices: F.vertices, strands: F.strands, inside, near, agree: near ? agree / near : 0 }; });
-    if (f.vertices < 500 || f.strands < 200 || f.inside) throw new Error(JSON.stringify(f));
-    if (f.near < 20 || f.agree < 0.5) throw new Error(`the comb doesn't follow the locks: ${JSON.stringify(f)}`);
-    console.log(`       ${f.vertices} vertices, ${f.strands} strands; ${f.near} start beside a lock, running its way by ${f.agree.toFixed(2)} (1 = the same)`);
-  });
-  await step("the fill's cube bends the mass with the mouse", async () => {
-    await page.click("text=shape the fill (its cube)");
-    await view(0, 0.1, 1.3);
-    const h = await scr(await ev(() => { const s = window.__salon, c = s.st.glow.fill.cube; return c.pts[s.FFD.idx(c, 2, 2, 2)]; }));
-    const v0 = await ev(() => window.__salon.fillInfo().vertices);
-    const before = await ev(() => { const s = window.__salon, c = s.st.glow.fill.cube; return c.pts[s.FFD.idx(c, 2, 2, 2)].slice(); });
-    await page.mouse.move(...h); await page.mouse.down(); await page.mouse.move(h[0] + 40, h[1] - 20, { steps: 6 }); await page.mouse.up();
-    const after = await ev(() => { const s = window.__salon, c = s.st.glow.fill.cube; return { p: c.pts[s.FFD.idx(c, 2, 2, 2)], rest: s.FFD.isRest(c) }; });
-    const moved = Math.hypot(after.p[0] - before[0], after.p[1] - before[1], after.p[2] - before[2]);
-    if (moved < 0.01 || after.rest) throw new Error(`the fill's corner moved ${(moved * 100).toFixed(2)} cm`);
-    if (v0 !== await ev(() => window.__salon.fillInfo().vertices)) throw new Error("the mass changed its vertices");
-    console.log(`       a corner of the fill's cube pulled ${(moved * 100).toFixed(1)} cm`);
-    await page.keyboard.press("v");
+  await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
+    // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line
+    const r = await ev(() => { const s = window.__salon, i = s.scalpInfo(); if (!i) return null; const A = i.alpha, L = s.localPoints(), C = s.COL.C;
+      let face = 0, faceN = 0; for (let k = 0; k < A.length; k++) { const x = L[k * 3], y = L[k * 3 + 1], z = L[k * 3 + 2]; const az = Math.abs(Math.atan2(x, z - C[2])) * 180 / Math.PI; if (az < 28 && y < 0.04 && y > -0.12 && z > C[2]) { faceN++; if (A[k] > 0) face++; } }
+      return { vertices: i.vertices, max: Math.max(...A), face, faceN, soft: A.filter(a => a > 0 && a < s.st.scalp.thickness - 1e-6).length }; });
+    if (!r || r.vertices < 500 || Math.abs(r.max - 0.7) > 1e-6 || r.face || r.faceN < 100 || r.soft < 20) throw new Error(JSON.stringify(r));
+    const r2 = await ev(() => { const s = window.__salon; s.st.scalp.thickness = 0.3; s.scalpPanel(); s.dirtyAll(); s.render(); return Math.max(...s.scalpInfo().alpha); });
+    if (Math.abs(r2 - 0.3) > 1e-6) throw new Error("Thickness didn't change it: " + r2);
+    await ev(() => { const s = window.__salon; s.st.scalp.thickness = 0.7; s.scalpPanel(); s.render(); });
+    console.log(`       ${r.vertices} vertices on the scalp, full (0.7) on the crown, ${r.soft} fading at the hairline, none of the face's ${r.faceN}`);
   });
   await step("the hair look: a strand atlas see-through at its tips, the shader on every card, a look restyling them all", async () => {
     const T = await import(path.join(__dirname, "hairtex.js"));
@@ -321,6 +271,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (glb.toString("ascii", 0, 4) !== "glTF") throw new Error("salon.glb isn't a binary glTF");
     const json = JSON.parse(glb.toString("utf-8", 20, 20 + glb.readUInt32LE(12)));
     if (sum.physics.length !== 1 || (json.skins || []).length !== 1 || !(sum.after.vertices < sum.before.vertices)) throw new Error(JSON.stringify({ physics: sum.physics.length, skins: (json.skins || []).length, before: sum.before, after: sum.after }));
+    const scalpMat = (json.materials || []).find(m => m.name === "hair_scalp");
+    if (!scalpMat || scalpMat.alphaMode !== "BLEND" || !(scalpMat.extensions && scalpMat.extensions.KHR_materials_unlit) || !(json.nodes || []).some(n => n.name === "hair_scalp")) throw new Error("the bake's scalp: " + JSON.stringify(scalpMat));
     const cardsMat = (json.materials || []).find(m => m.name === "hair_cards");
     if (!(json.images || []).length || !cardsMat || cardsMat.alphaMode !== "MASK" || !(cardsMat.extras && cardsMat.extras.look && cardsMat.extras.look.label)) throw new Error("the bake's look: " + JSON.stringify({ images: (json.images || []).length, cards: cardsMat }).slice(0, 300));
     await page.click("text=show the bake"); await page.waitForTimeout(800);
@@ -330,18 +282,18 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     console.log(`       ${sum.before.vertices} vertices live -> ${sum.after.vertices} baked (static ${sum.static.vertices}); ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; ${Math.round(glb.length / 1024)} KB`);
   });
   await step("saved as salon.json and loaded back the same", async () => {
-    const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.glow.on.reduce((a, b) => a + b, 0), window.__salon.st.glow.filled]);
+    const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
     await ev(n => { document.querySelector("#hairName").value = n; return window.__salon.save(); }, TEST);
     const f = path.join(ROOT, "Content", "Studio", "Hair", TEST, "salon.json");
     if (!fs.existsSync(f)) throw new Error("no " + f);
     await page.goto(BASE + "salon.html?hair=" + TEST);
     await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });
     await page.waitForTimeout(500);
-    const after = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.glow.on.reduce((a, b) => a + b, 0), window.__salon.st.glow.filled]);
+    const after = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
     if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`saved ${JSON.stringify(before).slice(0, 200)}, loaded ${JSON.stringify(after).slice(0, 200)}`);
-    if (!(await ev(() => window.__salon.fillInfo().vertices))) throw new Error("the fill isn't drawn after the reload");
+    if (!(await ev(() => window.__salon.scalpInfo() && window.__salon.scalpInfo().vertices))) throw new Error("the scalp isn't drawn after the reload");
     fs.rmSync(path.dirname(f), { recursive: true, force: true });
-    console.log(`       ${after[0].length} locks, ${after[1]} glow cells, filled`);
+    console.log(`       ${after[0].length} locks, the scalp at ${after[1]}`);
   });
   if (shot) await page.screenshot({ path: shot });
   if (errors.length) fail("page errors: " + errors.join(" | "));

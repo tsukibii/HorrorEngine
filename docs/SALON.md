@@ -81,7 +81,7 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
 - **Drawn as** cards (stylised: ribbons with a strand texture) or strands (realism: thin lines spread through the
   lock, as many as the slider says).
 - **Kept off the body**: the head is a radial field round the skull's middle, the neck and torso horizontal slices
-  every centimetre (the arms left out); every guide point is pushed out to 4 mm off the skin, and new curves are laid
+  every centimetre (the arms left out); every guide point is pushed out to 2.5 mm off the skin, and new curves are laid
   over the head before that, so a lock combed down the back lies on it instead of cutting through.
 - **Mirror**: with it on, a new lock gets a twin across the seam that follows every edit of its original (dragging
   the twin's handle edits the original, mirrored). The seam is the head's middle or moved sideways (a side parting).
@@ -92,29 +92,16 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
   over it. Any change re-lays them all. The bake takes the layered hair.
 - **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
 
-## The fill: trace, glow, fill (2026-10-22)
+## The scalp (2026-10-22)
 
-A cheat to fill the empty space between the locks you placed. Place the locks that decide the flow (the front, the
-sides, the back), then, in the **Fill** panel:
+The **Scalp** panel darkens the skin under the hair so the hair doesn't look sparse: a flat colour (the look's roots'
+colour unless set by hand), **no shine and no shader**, on the scalp's triangles (the same outline the roots keep to,
+sideburns in, the ears and the face out). **Thickness** is its opacity, sparse (0) to full (1, the skin hidden);
+**Soft edge** fades it in over the last centimetre or so above the hairline, so there's no hard line on the forehead.
+It's a copy of the head's scalp triangles half a millimetre off the skin, unlit, its alpha per vertex. Saved in
+`salon.json` (`scalp`: on, thickness, soft, colour); the bake carries it as `hair_scalp` (unlit, alpha-blended).
 
-1. **Trace**: the locks shown and the scalp are wrapped in a **glow**, a translucent orange shell round the head
-   (`salonfill.js`). It's a grid of 36 x 22 directions round the skull's middle, each with a radius: a lock's points
-   set the radius where they lie, the scalp gives a centimetre of hair, the gaps between locks are joined up (a cell's
-   radius from its neighbours) and never cross the face; below the brows the face stays clear. The glow never goes
-   inside the body (each direction knows how far the body reaches).
-2. **Edit** with the **Glow** tool (G): paint over its points to select them (white; Ctrl takes them off; the wheel
-   sizes the brush), drag a selected point up to push the glow out there, down to pull it in. **Cut** takes the
-   selected points out (the ears), **Bring back**, **Puff out**, **Pull in**, **Smooth**; **All**, **None**,
-   **Invert**. With **mirror** on, every selection and edit does the other side's same points; **Left onto right**
-   and **Right onto left** copy a whole side across.
-3. **Fill**: the glow becomes a **mass of hair** between the head and it, tapered down to the skin where it was cut,
-   with strands combed over it (the **density** slider): at each point the comb runs the way the nearest locks' guides
-   run (nearer counting more), and far from every lock the hair falls down. The more locks, the closer it follows
-   them. **Shape the fill** shows the mass's own cube (blue lines): pull its points like the reference's to bend it,
-   like Blender's lattice. **Unfill** goes back to the glow; **Fill again** after the locks change.
-
-The glow is saved in `salon.json` (`glow`: its radii, which cells are on, the fill's settings and cube); the mass is
-made again from it on load. Undo covers all of it.
+It replaced the trace, glow and fill (the user's call, 2026-10-22: a mass of hair under the shader didn't look good).
 
 ## Physics and the bake (2026-10-22)
 
@@ -139,9 +126,9 @@ metres) and `salon_bake.json` (the numbers, the head it was made on, each swingi
 - Every lock with physics is **its own skinned mesh** on bones along its chains (a strand or bundle one chain of six,
   a sheet three), each vertex on the two nearest joints along and the two nearest chains across (four influences),
   its physics settings in the mesh's extras for the runtime.
-- Everything else, **the fill too, is one mesh**: each card simplified to 8 points along it (the live hair has 24),
-  the fill's shell a cell to a vertex and half its strands in 4 points each; two parts: the cards (a strand texture
-  cut out at 0.4, tinted by vertex colours) and the mass. The demo: 34 177 vertices live, 5 167 baked, 299 KB.
+- Everything else is **one mesh**: each card simplified to 8 points along it (the live hair has 24), cut out at 0.4
+  and tinted by vertex colours; the darkened scalp is its own mesh, `hair_scalp`. `hime_demo`: 5 410 vertices live,
+  1 440 baked, 503 KB.
 - **show the bake** loads the file back (three.js's GLTFLoader) in place of the live hair.
 
 ## The look (2026-10-22)
@@ -158,7 +145,7 @@ a cool blue sheen in streaks along the strands, a few crimson strands, pointed s
   normal (a sharp pale one towards the root, a broad tinted one towards the tip), a soft sheen from where you look
   broken into streaks clump by clump, wrapped diffuse, dark roots, the inner colour, a cool rim, and **depth**: hair
   near the skin is in the outer layers' shade (each vertex's distance off the body). Cut out softly with alpha to
-  coverage. The fill's mass gets the same shading, its streaks along the comb.
+  coverage.
 - **Looks** (Head and look, **Hair look**): *Jet black, blue sheen, crimson strands* (the reference, the default),
   natural black, dark brown, ash brown, chestnut, black with red underneath. Then by hand: the roots', lengths', shine,
   sheen and inner colours, the inner amount, **Glossy**, **Highlight** (towards the roots or the tips), **Streaks**
@@ -168,7 +155,7 @@ a cool blue sheen in streaks along the strands, a few crimson strands, pointed s
   shader can't go in a glTF), the look's numbers in the material's extras for a runtime that has the shader.
 
 `hime_demo` is a hime cut built like the reference (a blunt fringe at the brows, sidelocks to the collarbones, the
-crown and back, two low tails, traced and filled).
+crown and back, two low tails), on the darkened scalp.
 
 ## The file
 
@@ -181,7 +168,7 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine
 
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror: plain arrays, node can
 run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
-ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its comb), `salonphys.js` (the chains, the step, the
+ellipsoid depth), `salonphys.js` (the chains, the step, the
 skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
@@ -189,10 +176,11 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
 - `node tools/character/salontest.js`: SALON (the server running; `BODY_URL` for another port): the view snaps onto
   the MiniMax reference's frames at 0, 90, 180 and 270 degrees with the frame's camera exactly, the far side mirrored
   with half the turn, the fit moving the cameras; the cube's front face dragged with the mouse bending the front view
-  and not the back (and undone); the glow traced (the face clear), both ears selected by one brush stroke with mirror
-  and cut, the glow pushed out by a drag, the fill off the body and combed the locks' way, its cube pulled; physics on
+  and not the back (and undone); the darkened scalp (on the scalp only, the face clear, faded at the hairline, the
+  thickness applied); physics on
   a bundle (a shake swings its tip 10 cm, the root stays, still settles it); the bake (one skinned mesh, one static
-  with fewer vertices, a glTF whose bind pose is exact and whose root bone bends it, the look's texture in it); the
+  with fewer vertices, the scalp unlit and blended, a glTF whose bind pose is exact and whose root bone bends it, the
+  look's texture in it); the
   look (the atlas see-through at its tips, every card on the hair shader, a look restyling them); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the

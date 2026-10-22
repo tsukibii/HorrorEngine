@@ -5,7 +5,7 @@
 // the inner colour on the strands the atlas picks, a cool rim. Cut out softly (alpha to coverage).
 //
 //   const U = hairUniforms(atlasTexture, look)   shared by every hair material; applyLook(U, look) restyles them all
-//   hairMaterial(U) / hairMaterial(U, {mass: true})   cards / the fill's solid mass (strands from its position)
+//   hairMaterial(U)   the cards' material
 //   lightHair(U, keyDir, keyColour, fillDir, fillColour)   each frame, the world's light directions
 import * as THREE from "three";
 import { linear } from "./hairtex.js";
@@ -25,20 +25,12 @@ void main() {
 const FRAG = /* glsl */`
 uniform sampler2D atlas;
 uniform vec3 rootC, tipC, innerC, spec1C, spec2C, rimC, keyDir, keyC, fillDir, fillC, ambientC;
-uniform float innerAmt, shine, gloss1, gloss2, shift1, shift2, shiftNoise, rimAmt, rootLen, alphaCut, mass;
+uniform float innerAmt, shine, gloss1, gloss2, shift1, shift2, shiftNoise, rimAmt, rootLen, alphaCut;
 varying vec3 vN; varying vec3 vT; varying vec3 vW; varying vec2 vUv; varying vec4 vTint; varying float vOcc;
-float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
-float n1(float x, float seed) { float i = floor(x), f = fract(x); return mix(hash(vec3(i, seed, 0.0)), hash(vec3(i + 1.0, seed, 0.0)), f * f * (3.0 - 2.0 * f)); }
 float kk(vec3 T, vec3 H, float g) { float th = dot(T, H); return pow(sqrt(max(0.0, 1.0 - th * th)), g); }
 void main() {
-  vec4 at; float v;
-  if (mass > 0.5) {                                   // the mass: soft streaks along its comb (a few mm across, long along),
-    vec3 Tm = normalize(vT), Bm = normalize(cross(Tm, normalize(vN)));   // faded where they'd be finer than a pixel
-    float across = dot(vW, Bm) * 420.0, along = dot(vW, Tm) * 5.0, aa = clamp(1.0 - fwidth(across) * 0.35, 0.0, 1.0);
-    float r = mix(0.5, 0.55 * n1(across, 1.0) + 0.3 * n1(across * 2.7 + along * 0.2, 2.0), aa) + 0.15 * n1(across * 0.25 + along, 3.0);
-    at = vec4(clamp(r, 0.0, 1.0), mix(0.5, n1(across * 0.9, 5.0), aa), n1(across / 14.0, 9.0), 1.0); v = 0.55;
-  } else { at = texture2D(atlas, vUv); v = vUv.y; }
-  if (mass < 0.5 && at.a < alphaCut * 0.4) discard;
+  vec4 at = texture2D(atlas, vUv); float v = vUv.y;
+  if (at.a < alphaCut * 0.4) discard;
   vec3 V = normalize(cameraPosition - vW);
   vec3 N = normalize(vN); if (dot(N, V) < 0.0) N = -N;
   vec3 T = normalize(vT);
@@ -63,7 +55,7 @@ void main() {
   col += mix(spec2C, innerC * 0.8, inner) * sv * 0.35 * shine * mix(0.3, 1.0, root) * vOcc;
   col *= vOcc;
   col += rimC * rimAmt * pow(1.0 - abs(dot(N, V)), 3.0) * (0.5 + 0.5 * at.r) * vOcc;
-  float alpha = mass > 0.5 ? 1.0 : smoothstep(alphaCut - 0.15, alphaCut + 0.15, at.a);
+  float alpha = smoothstep(alphaCut - 0.15, alphaCut + 0.15, at.a);
   gl_FragColor = vec4(col, alpha);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -93,8 +85,8 @@ export function lightHair(U, keyDir, keyColour, fillDir, fillColour) {
   if (keyColour) U.keyC.value.copy(keyColour); if (fillColour) U.fillC.value.copy(fillColour);
 }
 export function hairMaterial(U, o = {}) {
-  const m = new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, { mass: { value: o.mass ? 1 : 0 } }), vertexShader: VERT, fragmentShader: FRAG,
-    side: THREE.DoubleSide, alphaToCoverage: !o.mass, transparent: !!o.transparent, opacity: o.opacity ?? 1 });
+  const m = new THREE.ShaderMaterial({ uniforms: Object.assign({}, U), vertexShader: VERT, fragmentShader: FRAG,
+    side: THREE.DoubleSide, alphaToCoverage: true, transparent: !!o.transparent, opacity: o.opacity ?? 1 });
   m.userData.hair = true;
   return m;
 }

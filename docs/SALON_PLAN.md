@@ -211,10 +211,11 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   only. Colour per lock or the head's hair colour; roots darker; occlusion by depth into the hair (the radial outer
   shell from `hair_batch.py`'s idea).
   **Built 2026-10-22**: cards (ribbons with a strand alpha, roots darker) and strands (thin lines spread through the lock, a count); not yet: the hair shader's two highlights, occlusion by depth.
-- [x] **The fill** (the user's cheat, 2026-10-22): Trace wraps the locks and the scalp in an orange glow; select its
-  points with a brush (mirror), cut, bring back, push out, pull in, smooth, copy a side; Fill makes a mass of hair
-  between the head and the glow, combed the way the nearest locks run, with its own cube to bend it. **Done
-  2026-10-22** (docs/SALON.md, The fill). It covers much of the fake volume below; the cap's pore texture is still to do.
+- [x] ~~**The fill**~~ (the user's cheat, 2026-10-22: trace the locks into a glow, fill it with a mass of hair). Built,
+  then **dropped the same day** (it didn't look good under the hair shader); the darkened scalp replaced it.
+- [x] **The darkened scalp** (the user's ask, 2026-10-22): the scalp's triangles in a flat colour (the roots'), no
+  shine, a thickness (its opacity, sparse to full) and a soft edge at the hairline; baked as `hair_scalp`. **Done
+  2026-10-22** (docs/SALON.md, The scalp). The cap below is the rest of it: a pore texture, lifting the roots.
 - [ ] **Fake volume**: the **cap**: select scalp triangles by painting (or "all the scalp", "under the locks"), a
   pore texture (the Studio's procedural skin's pores, darkened, in the hair colour), and a **thickness** slider that
   lifts the cap along the normals and lifts the roots of every lock on it by the same amount, so the hair looks
@@ -253,7 +254,7 @@ runtime since they ride the guides.
 
 - [x] **Physics and the bake, first cut** (the user's ask, 2026-10-22): physics per lock (the lock's control curves as
   chains, held to the style, swung by the head, gravity by tilt, rustle, lengths, push-out), the head's motions; Bake
-  to a glTF: each swinging lock a skinned mesh on its chains' bones, everything else (the fill too) one simplified
+  to a glTF: each swinging lock a skinned mesh on its chains' bones, everything else one simplified
   mesh. **Done 2026-10-22** (docs/SALON.md, Physics and the bake). Not yet from the items below: the clothed body,
   OBJ ribbons, the runtime that plays the bake in the Studio.
 - [ ] **Physics per lock** (`physics.on`, off by default): the lock's one or two guides become wig.js chains of 3 to

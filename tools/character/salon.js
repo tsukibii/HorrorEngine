@@ -4,7 +4,6 @@ import * as THREE from "three";
 import * as SL from "./salonlib.js";
 import * as SR from "./salonref.js";
 import * as FFD from "./ffd.js";
-import * as SF from "./salonfill.js";
 import * as SP from "./salonphys.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
@@ -34,7 +33,7 @@ const st = {
   groups: [{ id: "g1", name: "Hair", visible: true }],
   layering: false,                     // layer by height: hair rooted higher lies over hair rooted lower
   locks: [],
-  glow: null,                          // the trace (salonfill.js): {AZ, EL, C, r, inner, on, face, show, mirror, filled, fill: {density, seed, cube}}
+  scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
 };
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
 
@@ -158,12 +157,10 @@ function placeOverlay() {
   return OVL_MESH.visible;
 }
 
-// the cubes drawn and pulled: the reference's (the Fit tool) and the fill's (the Glow tool, "shape the fill"); their
-// face lines, a handle on every surface point
+// the reference's cube drawn and pulled (the Fit tool): its face lines, a handle on every surface point
 const CUBE = new THREE.Group(); HAIR.add(CUBE);
 function activeCube() {
   if (TOOL === "fit" && REF && st.reference.on && st.reference.fit && st.reference.fit.cube) return { cube: st.reference.fit.cube, sym: !!st.reference.cubeSym, kind: "ref" };
-  if (TOOL === "glow" && st.glow && st.glow.filled && st.glow.shape && st.glow.fill.cube) return { cube: st.glow.fill.cube, sym: !!st.glow.mirror, kind: "fill" };
   return null;
 }
 const stretchedPt = (cube, p) => { const m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1]; return p.map((x, a) => m[a] + (x - m[a]) * sv[a]); };
@@ -197,136 +194,52 @@ function pullCube(ijk, q, ac = activeCube() || { cube: st.reference.fit.cube, sy
     else cube.pts[FFD.idx(cube, ...ijk)][0] = FFD.rest(cube, ...ijk)[0];
   }
   FFD.settle(cube);
-  if (ac.kind === "fill") FILL_DIRTY = true;
 }
 
-// ---- the glow and the fill ---------------------------------------------------------------------------------------------
-const GLOW = new THREE.Group(), FILLG = new THREE.Group(); HAIR.add(GLOW, FILLG);
-let GLOW_DIRTY = true, FILL_DIRTY = true, FILLRES = null, SEL = new Set(), GLOW_BRUSH = 26;
-const glowMat = new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
-  uniforms: { colour: { value: new THREE.Color(0xff8a1e) } },
-  vertexShader: `varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
-  fragmentShader: `uniform vec3 colour; varying vec3 vN; varying vec3 vV; void main() { float rim = 1.0 - abs(dot(normalize(vN), normalize(vV))); gl_FragColor = vec4(colour, 0.10 + 0.55 * rim * rim); }`,
-});
-function glowGuides() {                                              // every visible lock's guides, for the trace and the comb
-  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), out = [];
-  for (const l of st.locks) if (l.visible && vis[l.group] !== false) for (const G of (EVAL[l.id] || SL.evaluate(l, COL))) out.push(G.pts);
-  return out;
+// ---- the darkened scalp -----------------------------------------------------------------------------------------------
+// Under the hair, the scalp in the roots' colour (unlit: no shine), so the hair doesn't look sparse: the illusion of
+// depth. Thickness is its opacity, sparse to full; it fades out over `soft` at the hairline (the scalp's edge: the
+// forehead, the temples, the sideburns, round the ears, the nape). A copy of the head's scalp triangles, lifted 0.5 mm.
+let SCALPM = null, SCALP_DIRTY = true;
+function drawScalp() {
+  if (!SCALP_DIRTY) return; SCALP_DIRTY = false;
+  if (SCALPM) { SCALPM.parent?.remove(SCALPM); SCALPM.geometry.dispose(); SCALPM.material.dispose(); SCALPM = null; }
+  const sc = st.scalp; if (!sc || !sc.on || !HEAD || !LOCAL_PTS) return;
+  const g = scalpGeometry(sc); if (!g) return;
+  SCALPM = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  SCALPM.renderOrder = 1; SCALPM.userData.alpha = scalpAlphas(sc); HEAD.add(SCALPM);
 }
-function traceGlow() {
-  remember();
-  const keep = st.glow ? { show: st.glow.show, mirror: st.glow.mirror } : { show: true, mirror: true };
-  st.glow = Object.assign(SF.trace(glowGuides(), COL), keep, { filled: false, shape: false, fill: { density: 450, seed: 11, cube: null } });
-  SEL = new Set(); GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw();
-}
-function drawGlow() {
-  if (!GLOW_DIRTY) return; GLOW_DIRTY = false;
-  GLOW.clear();
-  const g = st.glow; if (!g || (g.filled && !g.show) || (!g.show && TOOL !== "glow")) return;
-  const m = SF.shellMesh(g, g.r, 1);
-  if (m.index.length) {
-    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(m.position, 3)); geo.setIndex(m.index); geo.computeVertexNormals();
-    const mesh = new THREE.Mesh(geo, glowMat); mesh.renderOrder = 5; GLOW.add(mesh);
+function scalpAlphas(sc) {                                             // per head vertex: how much scalp shows there
+  const n = LOCAL_PTS.length / 3, a = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const p = [LOCAL_PTS[i * 3], LOCAL_PTS[i * 3 + 1], LOCAL_PTS[i * 3 + 2]], d = SL.sub(p, COL.C); if (SL.len(d) > 0.17) continue;
+    const az = Math.abs(Math.atan2(p[0], p[2] - COL.C[2])) * 180 / Math.PI;
+    if (az > 58 && az < 110 && Math.abs(p[0]) > 0.077 && p[1] < 0.045) continue;   // the ear's flap
+    const m = p[1] - SL.scalpLimit(az), t = Math.max(0, Math.min(1, m / Math.max(1e-4, sc.soft)));
+    a[i] = sc.thickness * t * t * (3 - 2 * t);
   }
-  // the outline (the path): the edge cells in bright orange; in the Glow tool every vertex, the selection white
-  const edge = SF.boundary(g), ep = [];
-  for (const c of edge) ep.push(...SF.pointOf(g, c));
-  const eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.Float32BufferAttribute(ep, 3));
-  const pts = new THREE.Points(eg, new THREE.PointsMaterial({ color: 0xffb050, size: 5, sizeAttenuation: false, depthTest: false, transparent: true, opacity: 0.9 })); pts.renderOrder = 6; GLOW.add(pts);
-  if (TOOL === "glow") {                                             // the points: on (orange), off (faint), selected (white, big)
-    const sets = { on: [], off: [], sel: [] };
-    for (let c = 0; c < g.on.length; c++) sets[SEL.has(c) ? "sel" : g.on[c] ? "on" : "off"].push(...SF.pointOf(g, c, g.on[c] ? g.r[c] : g.inner[c] + 0.006));
-    for (const [k, colour, size, opacity] of [["off", 0x8a8f99, 2.5, 0.45], ["on", 0xff9a40, 4, 1], ["sel", 0xffffff, 7, 1]]) {
-      if (!sets[k].length) continue;
-      const vg = new THREE.BufferGeometry(); vg.setAttribute("position", new THREE.Float32BufferAttribute(sets[k], 3));
-      const vp = new THREE.Points(vg, new THREE.PointsMaterial({ color: colour, size, sizeAttenuation: false, transparent: opacity < 1, opacity, depthTest: k !== "sel" })); vp.renderOrder = k === "sel" ? 9 : 7; GLOW.add(vp);
-    }
-  }
+  return a;
 }
-function makeFill() {
-  const g = st.glow; if (!g) return;
-  remember();
-  FILLRES = SF.fillMesh(g, glowGuides(), { density: g.fill.density, seed: g.fill.seed }, COL);
-  if (!g.fill.cube) {                                                // the fill's own cube, round it
-    const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], P = FILLRES.shell.position;
-    for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], P[i + a]); hi[a] = Math.max(hi[a], P[i + a]); }
-    g.fill.cube = FFD.makeCube(lo.map(v => v - 0.01), hi.map(v => v + 0.01));
-  }
-  g.filled = true; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw();
+function scalpGeometry(sc, local = false) {                            // the scalp's triangles (head space, or the hair's local)
+  const P = HEAD.geometry.attributes.position, N = HEAD.geometry.attributes.normal, T = MHR.tris, A = scalpAlphas(sc);
+  const c = new THREE.Color().setRGB(...linear(sc.colour || look().root), THREE.LinearSRGBColorSpace);
+  const map = new Map(), pos = [], col = [], idx = [];
+  const vert = i => { if (map.has(i)) return map.get(i); const k = pos.length / 3, q = [P.getX(i) + N.getX(i) * 0.0005, P.getY(i) + N.getY(i) * 0.0005, P.getZ(i) + N.getZ(i) * 0.0005];
+    pos.push(...(local ? SR.toLocal(HF, q) : q)); col.push(c.r, c.g, c.b, A[i]); map.set(i, k); return k; };
+  for (let t = 0; t < T.length; t += 3) { const a = T[t], b = T[t + 1], d = T[t + 2]; if (A[a] <= 0 && A[b] <= 0 && A[d] <= 0) continue; idx.push(vert(a), vert(b), vert(d)); }
+  if (!idx.length) return null;
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 4)); g.setIndex(idx);
+  return g;
 }
-function drawFill() {
-  if (!FILL_DIRTY) return; FILL_DIRTY = false;
-  FILLG.traverse(disposeOf); FILLG.clear();
-  const g = st.glow; if (!g || !g.filled) return;
-  if (!FILLRES) FILLRES = SF.fillMesh(g, glowGuides(), { density: g.fill.density, seed: g.fill.seed }, COL);
-  const cube = g.fill.cube, bend = cube && !FFD.isRest(cube) ? p => FFD.deform(cube, p) : p => p;
-  const P = FILLRES.shell.position, pos = new Float32Array(P.length);
-  for (let i = 0; i < P.length; i += 3) pos.set(bend([P[i], P[i + 1], P[i + 2]]), i);
-  const tint = g.fill.color ? [...linear(g.fill.color), 1] : [1, 1, 1, 0], n0 = pos.length / 3;
-  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setIndex(FILLRES.shell.index); geo.computeVertexNormals();
-  geo.setAttribute("aTangent", new THREE.Float32BufferAttribute(FILLRES.shell.flow || new Array(n0 * 3).fill(0).map((_, k) => k % 3 === 1 ? -1 : 0), 3));
-  geo.setAttribute("aTint", new THREE.Float32BufferAttribute([...Array(n0)].flatMap(() => tint), 4)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(new Array(n0 * 2).fill(0.5), 2));
-  geo.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(pos), 1));
-  FILLG.add(new THREE.Mesh(geo, MASS_MAT));
-  // the combed strands as cards lying on the mass
-  const cp = [], uv = [], idx = [], tg = [], ti = [];
-  FILLRES.strands.forEach((line0, s) => {
-    const line = line0.map(bend), base = cp.length / 3, n = line.length, u0 = (s * 0.37) % 1;
-    for (let k = 0; k < n; k++) {
-      const t = SL.norm(SL.sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), out = SL.norm(SL.sub(line[k], g.C)), a = SL.norm(SL.cross(t, out));
-      const w = 0.007 * (1 - 0.5 * k / (n - 1)), h = SL.mul(a, w / 2);
-      cp.push(...SL.sub(line[k], h), ...SL.add(line[k], h)); uv.push(u0, k / (n - 1), u0 + UV_SPAN, k / (n - 1)); tg.push(...t, ...t); ti.push(...tint, ...tint);
-    }
-    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-  });
-  const sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.Float32BufferAttribute(cp, 3)); sg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  sg.setAttribute("aTangent", new THREE.Float32BufferAttribute(tg, 3)); sg.setAttribute("aTint", new THREE.Float32BufferAttribute(ti, 4)); sg.setIndex(idx); sg.computeVertexNormals();
-  sg.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(cp), 1));
-  FILLG.add(new THREE.Mesh(sg, HAIR_MAT));
-  FILLG.userData = { vertices: pos.length / 3, strands: FILLRES.strands.length };
-}
-function glowCellsAt(e) {                                            // the cells under the brush that face the view
-  const g = st.glow; if (!g) return [];
-  const [mx, my] = rel(e), cam = SR.toLocal(HF, [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]]), out = [];
-  for (let c = 0; c < g.on.length; c++) {
-    const p = SF.pointOf(g, c, g.on[c] ? g.r[c] : g.inner[c] + 0.006), n = SL.norm(SL.sub(p, g.C));
-    if (SL.dot(n, SL.sub(cam, p)) <= 0) continue;
-    const [sx, sy] = screenOf(p); if (Math.hypot(sx - mx, sy - my) <= GLOW_BRUSH) out.push(c);
-  }
-  return out;
-}
-const glowEdit = (fn) => { if (!st.glow) return; remember(); fn(SF.withMirror([...SEL], st.glow.mirror)); GLOW_DIRTY = true; FILLRES = null; FILL_DIRTY = true; draw(); };
-function glowPanel() {
-  const box = $("#glowbox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: "Trace wraps your locks and the scalp in a glow (the face below the brows stays clear). With the Glow tool (G) paint over its points to select them (Ctrl takes them off; the wheel sizes the brush), drag a selected point up or down to push the glow out or in, cut what shouldn't be hair (the ears). Fill turns it into a mass of hair combed the way your nearest locks run: the more locks, the better it follows them." }));
-  box.append(el("button", { textContent: st.glow ? "Trace again" : "Trace", title: "the glow from the locks shown now (the edits are lost; undo brings them back)", onclick: traceGlow }));
-  const g = st.glow; if (!g) return;
-  const t = el("div");
-  tick(t, "show the glow", g.show, v => { g.show = v; GLOW_DIRTY = true; draw(); });
-  tick(t, "mirror", g.mirror, v => { g.mirror = v; }, "selecting and editing one side does the other side's same points");
-  box.append(t);
-  box.append(el("div", {},
-    el("button", { textContent: "All", onclick: () => { SEL = new Set(g.on.map((v, c) => c).filter(c => g.on[c])); GLOW_DIRTY = true; draw(); } }),
-    el("button", { textContent: "None", onclick: () => { SEL = new Set(); GLOW_DIRTY = true; draw(); } }),
-    el("button", { textContent: "Invert", onclick: () => { SEL = new Set(g.on.map((v, c) => c).filter(c => !SEL.has(c))); GLOW_DIRTY = true; draw(); } })));
-  box.append(el("div", {},
-    el("button", { textContent: "Cut", title: "the selected points out of the glow (the selection is cleared; undo brings them back)", onclick: () => { glowEdit(cs => SF.setOn(g, cs, false)); SEL = new Set(); GLOW_DIRTY = true; draw(); } }),
-    el("button", { textContent: "Bring back", onclick: () => glowEdit(cs => SF.setOn(g, cs, true)) }),
-    el("button", { textContent: "Puff out", title: "half a centimetre out", onclick: () => glowEdit(cs => SF.pushOut(g, cs, 0.005)) }),
-    el("button", { textContent: "Pull in", onclick: () => glowEdit(cs => SF.pushOut(g, cs, -0.005)) }),
-    el("button", { textContent: "Smooth", onclick: () => glowEdit(cs => SF.smooth(g, cs)) })));
-  box.append(el("div", {},
-    el("button", { textContent: "Left onto right", title: "the character's left side copied onto the right, mirrored", onclick: () => glowEdit(() => SF.copySide(g, true)) }),
-    el("button", { textContent: "Right onto left", onclick: () => glowEdit(() => SF.copySide(g, false)) })));
-  slider(box, "Density", 100, 3000, 50, g.fill.density, v => { g.fill.density = v; if (g.filled) { FILLRES = null; FILL_DIRTY = true; draw(); } }, "the combed strands over the mass");
-  box.append(el("button", { textContent: g.filled ? "Fill again" : "Fill", title: "a mass of hair between the head and the glow, combed by the locks", onclick: makeFill }));
-  if (g.filled) {
-    box.append(el("button", { textContent: "Unfill", onclick: () => { remember(); g.filled = false; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw(); } }));
-    const t2 = el("div"); tick(t2, "shape the fill (its cube)", !!g.shape, v => { g.shape = v; draw(); }, "the Glow tool shows the fill's cube: pull its points to bend the mass like Blender's lattice"); box.append(t2);
-    box.append(el("button", { textContent: "Reset the fill's cube", onclick: () => { remember(); g.fill.cube = FFD.makeCube(g.fill.cube.min, g.fill.cube.max); FILL_DIRTY = true; draw(); } }));
-    box.append(el("p", { className: "note", textContent: `${FILLG.userData.vertices || 0} vertices in the mass, ${FILLG.userData.strands || 0} strands` }));
-  }
+function scalpPanel() {
+  const box = $("#scalpbox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "The scalp under the hair in the roots' colour, no shine: the hair looks fuller and deeper. Thickness takes it from sparse to full; Soft edge fades it at the hairline." }));
+  const sc = st.scalp, set = () => { SCALP_DIRTY = true; draw(); };
+  const t = el("div"); tick(t, "Darken the scalp", sc.on, v => { sc.on = v; set(); }); box.append(t);
+  slider(box, "Thickness", 0, 1, 0.05, sc.thickness, v => { sc.thickness = v; set(); }, "sparse (0) to full (1)");
+  slider(box, "Soft edge", 0, 0.03, 0.001, sc.soft, v => { sc.soft = v; set(); }, "how far in from the hairline it fades, m");
+  const c = el("input", { type: "color", value: sc.colour || look().root, title: "the scalp's colour (the hair's roots' colour unless set)", oninput: () => { sc.colour = c.value; set(); } });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Colour" }), c, sc.colour ? el("button", { textContent: "x", title: "back to the roots' colour", onclick: () => { sc.colour = null; set(); scalpPanel(); } }) : el("span")));
 }
 
 // ---- the head ---------------------------------------------------------------------------------------------------------
@@ -362,12 +275,12 @@ async function buildHead() {
   COL = new SL.Collider(LOCAL_PTS, { chin, tris: m.tris });
   tintScalp();
   for (const l of st.locks) DIRTY.add(l.id);
-  if (st.glow) { for (let c = 0; c < st.glow.on.length; c++) st.glow.inner[c] = SF.innerAlong(COL, SF.dirOf(SF.azOf(c % SF.AZ), SF.elOf(Math.floor(c / SF.AZ)))); st.glow.C = COL.C.slice(); FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; }
+  SCALP_DIRTY = true;
   draw();
 }
 function tintScalp() {
   if (!HEAD) return;
-  const c = HEAD.geometry.attributes.color, on = st.look.scalp && TOOL !== "select" && TOOL !== "fit" && TOOL !== "glow";
+  const c = HEAD.geometry.attributes.color, on = st.look.scalp && TOOL !== "select" && TOOL !== "fit";
   for (let i = 0; i < c.count; i++) { const p = [LOCAL_PTS[i * 3], LOCAL_PTS[i * 3 + 1], LOCAL_PTS[i * 3 + 2]]; const s = on && SL.onScalp(p, COL.C); c.setXYZ(i, s ? 0.75 : 1, s ? 0.88 : 1, s ? 1.15 : 1); }
   c.needsUpdate = true;
 }
@@ -377,8 +290,8 @@ const MESHES = {}, DIRTY = new Set(), EVAL = {};
 // the hair's look: one strand atlas, one set of uniforms every hair material shares (a look changed restyles them all)
 const look = () => Object.assign({}, LOOKS[st.look.hair] || LOOKS[DEFAULT_LOOK], st.look.custom || {});
 const ATLAS = makeAtlas(), HAIRU = hairUniforms(atlasTexture(ATLAS), LOOKS[DEFAULT_LOOK]);
-const HAIR_MAT = hairMaterial(HAIRU), MASS_MAT = hairMaterial(HAIRU, { mass: true }), PREVIEW_MAT = hairMaterial(HAIRU, { transparent: true, opacity: 0.7 });
-for (const m of [HAIR_MAT, MASS_MAT, PREVIEW_MAT]) m.userData.shared = true;
+const HAIR_MAT = hairMaterial(HAIRU), PREVIEW_MAT = hairMaterial(HAIRU, { transparent: true, opacity: 0.7 });
+for (const m of [HAIR_MAT, PREVIEW_MAT]) m.userData.shared = true;
 const disposeOf = o => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) o.material.dispose(); };
 // a lock's tint for the shader: its own colour, or the debug colours (w = 1 replaces the look's colour), else none
 function tintOf(l, i) { const hex = st.look.byLock ? PALETTE[i % PALETTE.length] : l.color; return hex ? [...linear(hex), 1] : [1, 1, 1, 0]; }
@@ -601,27 +514,23 @@ function cardsGeometry(guides, colour) {                                // plain
     for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
   return { pos, uv, col, idx };
 }
-function geometryOf(parts) {                                            // parts merged into one BufferGeometry: the cards first,
-  const pos = [], uv = [], col = [], idx = [], g = new THREE.BufferGeometry();   // then the solid parts, a group each (two materials)
-  const order = [...parts.filter(q => !q.solid), ...parts.filter(q => q.solid)]; let cards = 0;
-  for (const q of order) { const base = pos.length / 3; pos.push(...q.pos); uv.push(...q.uv); col.push(...q.col); for (const i of q.idx) idx.push(base + i); if (!q.solid) cards = idx.length; }
+function geometryOf(parts) {                                            // cards merged into one BufferGeometry
+  const pos = [], uv = [], col = [], idx = [], g = new THREE.BufferGeometry();
+  for (const q of parts) { const base = pos.length / 3; pos.push(...q.pos); uv.push(...q.uv); col.push(...q.col); for (const i of q.idx) idx.push(base + i); }
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-  if (cards) g.addGroup(0, cards, 0); if (idx.length > cards) g.addGroup(cards, idx.length - cards, 1);
   return g;
 }
 // the cards' look in the file: the strand atlas with the look's colours baked in (glTF can't carry the hair shader; its
 // numbers ride in the material's extras for a runtime that has one), cut out at 0.4 (glTF's MASK); the vertex colours
 // are white unless a lock has its own colour
-function bakeMats() {
+function bakeMat() {
   const k = look(), cards = new THREE.MeshStandardMaterial({ name: "hair_cards", map: albedoTexture(ATLAS, albedo(ATLAS, k)), alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide });
-  const mid = [0, 1, 2].map(a => (linear(k.root)[a] + linear(k.tip)[a]) / 2);
-  const mass = new THREE.MeshStandardMaterial({ name: "hair_mass", color: new THREE.Color().setRGB(...mid, THREE.LinearSRGBColorSpace), vertexColors: true, roughness: 0.5, side: THREE.DoubleSide });
   cards.userData = { look: k, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)" };
-  return [cards, mass];
+  return cards;
 }
 function liveVertices() {                                               // what the salon draws now (the "before")
-  let n = 0; for (const id in MESHES) MESHES[id].traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); FILLG.traverse(o => { if (o.isMesh) n += o.geometry.attributes.position.count; }); return n;
+  let n = 0; for (const id in MESHES) MESHES[id].traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); if (SCALPM) n += SCALPM.geometry.attributes.position.count; return n;
 }
 let BAKED = null;
 async function bake() {
@@ -633,19 +542,13 @@ async function bake() {
     if (l.physics && l.physics.on) skinned.push([l, guides.map(G => resampleGuide(G, BAKE_ALONG_PHYS)), colour]);
     else statics.push(cardsGeometry(guides.map(G => resampleGuide(G, BAKE_ALONG)), colour));
   });
-  // the fill: coarser (its shell a cell to a vertex, half the strands, each in four points), bent by its cube
-  if (st.glow && st.glow.filled) {
-    const g = st.glow, f = SF.fillMesh(g, glowGuides(), { density: Math.round(g.fill.density / 2), seed: g.fill.seed, sub: 1 }, COL);
-    const bend = g.fill.cube && !FFD.isRest(g.fill.cube) ? p => FFD.deform(g.fill.cube, p) : p => p, c = g.fill.color ? new THREE.Color(g.fill.color) : new THREE.Color(1, 1, 1);
-    const P = f.shell.position, pos = []; for (let i = 0; i < P.length; i += 3) pos.push(...bend([P[i], P[i + 1], P[i + 2]]));
-    statics.push({ solid: true, pos, uv: new Array(P.length / 3 * 2).fill(0), col: new Array(P.length).fill(0).map((_, k) => [c.r, c.g, c.b][k % 3]), idx: f.shell.index });
-    const lines = f.strands.map(L => L.map(bend)).map(L => SL.resample(L, 4));
-    const gs = lines.map(L => ({ pts: L, across: L.map((p, k) => SL.norm(SL.cross(SL.sub(L[Math.min(3, k + 1)], L[Math.max(0, k - 1)]), SL.norm(SL.sub(p, g.C))))), width: L.map((_, k) => 0.006 * (1 - 0.6 * k / 3)) }));
-    statics.push(cardsGeometry(gs, g.fill.color || null));
-  }
   const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
-  const mats = bakeMats();
-  if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mats); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
+  const mat = bakeMat();
+  if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mat); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
+  if (st.scalp && st.scalp.on) {                                       // the darkened scalp: its own mesh, unlit, its alpha by vertex
+    const g = scalpGeometry(st.scalp, true);
+    if (g) { const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ name: "hair_scalp", vertexColors: true, transparent: true, depthWrite: false })); m.name = "hair_scalp"; root.add(m); summary.scalp = { vertices: g.attributes.position.count, thickness: st.scalp.thickness }; }
+  }
   for (const [l, guides, colour] of skinned) {
     const q = cardsGeometry(guides, colour), geo = geometryOf([q]), sk = SP.skinOf(l, guides), J = sk.J;   // colour: the lock's own, or none
     const si = [], sw = [];
@@ -653,7 +556,7 @@ async function bake() {
     geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4));
     const bones = [], tag = (l.name || l.type).replace(/[^A-Za-z0-9_]/g, "_");
     sk.chains.forEach((P, c) => P.forEach((p, j) => { const b = new THREE.Bone(); b.name = `${tag}_c${c}_j${j}`; const prev = j ? P[j - 1] : [0, 0, 0]; b.position.set(p[0] - prev[0], p[1] - prev[1], p[2] - prev[2]); if (j) bones[c * J + j - 1].add(b); bones.push(b); }));
-    const mesh = new THREE.SkinnedMesh(geo, mats); mesh.name = `hair_${tag}`;
+    const mesh = new THREE.SkinnedMesh(geo, mat); mesh.name = `hair_${tag}`;
     for (let c = 0; c < sk.chains.length; c++) mesh.add(bones[c * J]);
     mesh.updateMatrixWorld(true); mesh.bind(new THREE.Skeleton(bones));
     const ph = Object.assign({}, SP.DEFAULTS, l.physics);
@@ -673,7 +576,7 @@ async function bake() {
 const BAKEG = new THREE.Group(); HAIR.add(BAKEG);
 async function showBake(on) {
   BAKEG.clear(); st.look.showBake = on;
-  for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; FILLG.visible = !on;
+  for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; if (SCALPM) SCALPM.visible = !on;
   if (!on) { for (const l of st.locks) DIRTY.add(l.id); draw(); return null; }
   const name = $("#hairName").value.trim();
   const buf = await (await fetch(`api/hair/${encodeURIComponent(name)}/salon.glb`)).arrayBuffer();
@@ -700,7 +603,7 @@ function render() {
     const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
     setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
   } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
-  refreshLocks(); drawCube(); drawGlow(); drawFill();
+  refreshLocks(); drawCube(); drawScalp();
   const ovl = placeOverlay();
   renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
   if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
@@ -748,9 +651,9 @@ function lockAt(e) {
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
-const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, glow: st.glow, layering: st.layering });
+const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if ("glow" in o) { st.glow = o.glow; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -758,7 +661,7 @@ $("#undo").onclick = undo; $("#redo").onclick = redo;
 // ---- the locks --------------------------------------------------------------------------------------------------------
 const lockById = id => st.locks.find(l => l.id === id) || null;
 function changed(l) {                                                // a lock edited: its twins follow
-  DIRTY.add(l.id); SIM_DIRTY = true; if (st.glow && st.glow.filled) { FILLRES = null; FILL_DIRTY = true; }
+  DIRTY.add(l.id); SIM_DIRTY = true;
   st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL);
   for (const t of st.locks) if (t.mirror_of === l.id) DIRTY.add(t.id);
 }
@@ -779,18 +682,17 @@ function deleteLock(id) {
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
-const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["glow", "Glow (G)", "g"], ["fit", "Fit ref (F)", "f"]];
+const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
   select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
-  glow: "Paint over the glow's points to select them (Ctrl: take them off; the wheel sizes the brush); drag a selected point up to push the glow out, down to pull it in. Right-drag turns the head. Trace, Cut, Fill: the Fill panel.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
 const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, last: null };
 function setTool(t) {
-  TOOL = t; resetPlace(); GLOW_DIRTY = true;
+  TOOL = t; resetPlace();
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
   $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
   tintScalp(); draw();
@@ -824,13 +726,6 @@ cv.addEventListener("contextmenu", e => e.preventDefault());
 cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId);
   const orbitOnly = e.button !== 0;
-  if (!orbitOnly && TOOL === "glow" && st.glow) {
-    const h = cubeHandleAt(e);
-    if (h) { remember(); DRAG = { kind: "cube", ijk: h, y: e.clientY }; return; }
-    const under = glowCellsAt(e), onSel = under.filter(c => SEL.has(c));
-    if (onSel.length && !e.ctrlKey) { remember(); DRAG = { kind: "glowmove", y: e.clientY }; return; }
-    DRAG = { kind: "glowsel", off: e.ctrlKey }; for (const c of SF.withMirror(under, st.glow.mirror)) e.ctrlKey ? SEL.delete(c) : SEL.add(c); GLOW_DIRTY = true; draw(); return;
-  }
   if (!orbitOnly && TOOL === "fit") {
     const h = cubeHandleAt(e);
     if (h) { remember(); DRAG = { kind: "cube", ijk: h, y: e.clientY }; return; }
@@ -855,7 +750,7 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (!DRAG) {
     if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
-    else if (TOOL === "fit" || TOOL === "glow") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
+    else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
     else if (TOOL === "select" && SELECTED) { const h = handleAt(e); const p = h ? h.path : null; if ((p && p.join()) !== (HOVER && HOVER.join())) { HOVER = p; drawHandles(); draw(); } }
     return;
   }
@@ -877,11 +772,6 @@ cv.addEventListener("pointermove", e => {
     if (mirrored) { to = SL.reflectPoint(to, st.mirror.seam); }
     SL.dragHandle(target, DRAG.path, to, COL);
     changed(target); draw();
-  } else if (DRAG.kind === "glowsel") {
-    for (const c of SF.withMirror(glowCellsAt(e), st.glow.mirror)) DRAG.off ? SEL.delete(c) : SEL.add(c); GLOW_DIRTY = true; draw();
-  } else if (DRAG.kind === "glowmove") {
-    const dr = -(e.clientY - DRAG.y) * 0.0006; DRAG.y = e.clientY;
-    SF.pushOut(st.glow, SF.withMirror([...SEL], st.glow.mirror), dr); GLOW_DIRTY = true; FILLRES = null; FILL_DIRTY = true; draw();
   } else if (DRAG.kind === "cube") {
     const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
     const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
@@ -922,7 +812,6 @@ cv.addEventListener("wheel", e => {
     if (PLACE.last) showPreview(previewFrom({ clientX: PLACE.last[0], clientY: PLACE.last[1] }));
     draw(); return;
   }
-  if (TOOL === "glow") { GLOW_BRUSH = Math.max(6, Math.min(120, GLOW_BRUSH * (s < 0 ? 1.15 : 1 / 1.15))); $("#hint").textContent = `brush ${Math.round(GLOW_BRUSH)} px`; return; }
   if (TOOL === "fit" && SNAP) { st.reference.fit.scale *= s < 0 ? 1.02 : 1 / 1.02; recam(); fitPanelSync(); draw(); return; }
   if (e.shiftKey && SNAP) { stepFrame(s); return; }
   if (SNAP) orbit.zoom = Math.max(0.5, Math.min(6, orbit.zoom * (s < 0 ? 1.1 : 1 / 1.1)));
@@ -1050,7 +939,7 @@ function selPanel() {
              l.mirror_of ? el("button", { textContent: "Break the mirror", onclick: () => { remember(); l.mirror_of = null; l.name = l.name.replace(" (mirror)", ""); locksPanel(); selPanel(); } }) : "",
              el("button", { textContent: "Delete", onclick: () => deleteLock(o.id) }));
 }
-function restyle() { applyLook(HAIRU, look()); for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
+function restyle() { applyLook(HAIRU, look()); SCALP_DIRTY = true; for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
 function headPanel() {
   const box = $("#headbox"); box.innerHTML = "";
   const ps = el("select"); for (const k of Object.keys(MHR?.presets || { feminine: 1 })) ps.append(el("option", { value: k, textContent: k }));
@@ -1091,11 +980,11 @@ async function load(name) {
   Object.assign(st.head, o.head || {}); Object.assign(st.mirror, o.mirror || {}); Object.assign(st.look, o.look || {});
   st.groups = o.groups?.length ? o.groups : st.groups; st.locks = o.locks || []; st.layering = !!o.layering; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
   Object.assign(st.reference, o.reference || {});
-  st.glow = o.glow || null; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; SEL = new Set();
+  st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); glowPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
+  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
@@ -1103,7 +992,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); glowPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1114,7 +1003,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, FFD, SF, pullCube, traceGlow, makeFill, glowCellsAt, get SEL() { return SEL; }, set SEL(v) { SEL = v; }, glowEdit, glowPanel,
+  screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
@@ -1128,5 +1017,5 @@ window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { 
     return { name: mesh.name, bones: mesh.skeleton.bones.length, bind, moveTip, moveRoot };
   }, get SIM() { return SIM; }, get MOTION() { return MOTION; }, stepPhysics, MESHES,
   tipOffset: id => { const l = lockById(id); if (!SIM || !l) return 0; const Mi = HAIR.matrix.clone().invert(), v = new THREE.Vector3(); return SIM.tipOffset(l, p => v.set(...p).applyMatrix4(Mi).toArray()); },
-  fillInfo: () => ({ vertices: FILLG.userData.vertices || 0, strands: FILLG.userData.strands || 0, res: FILLRES }), overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
-  dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); } };
+  overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
+  localPoints: () => LOCAL_PTS, dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); SCALP_DIRTY = true; } };

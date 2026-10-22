@@ -3,8 +3,8 @@
  "name": "hime_demo",
  "physics": [],
  "static": {
-  "vertices": 3800,
-  "triangles": 3629
+  "vertices": 1440,
+  "triangles": 1260
  },
  "head": {
   "C": [
@@ -33,10 +33,14 @@
   "preset": "feminine",
   "height": 1.7
  },
+ "scalp": {
+  "vertices": 1090,
+  "thickness": 0.7
+ },
  "before": {
-  "vertices": 22568
+  "vertices": 5410
  },
  "after": {
-  "vertices": 3800
+  "vertices": 1440
  }
 }

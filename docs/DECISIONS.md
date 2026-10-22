@@ -2,7 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
-## 2026-10-22, latest (the salon, not the splat)
+## 2026-10-22, latest (the salon's scalp, layers and gravity)
+
+- **The fill is dropped** (the trace, the orange glow, the mass of hair): under the hair shader it doesn't look good.
+  In its place **the scalp is darkened**: a flat colour under the hair (no shine, no shader), with a thickness (its
+  opacity) from sparse to full, so the hair looks fuller and deeper.
+- Hair **lies on the scalp** (it floated above it), and the scalp takes roots on the **sideburns**.
+- **Layer by height** is a toggle: hair that grows higher always lies over the hair below it, like real hair.
+- **A gravity switch** drops all the hair: it falls naturally, the user picks the moment, switches it off and refines
+  by hand what should stick up.
+- **The handle pull is Blender's proportional editing**: the wheel grows and shrinks the area a pull moves, the
+  effect fading with distance.
+
+## 2026-10-22, later still (the salon, not the splat)
 
 - **The Gaussian splat route was worth testing and isn't good enough** (docs/GSHAIR.md: the splat, the clay, the hand
   builder). It stays in the repo as a reference layer only. **Hair is drawn by hand in a virtual salon** on the head
