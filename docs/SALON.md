@@ -63,6 +63,13 @@ a pulled face's middle drags the picture's middle the whole way). The cube is sa
 | Select | V | click a lock; drag a handle (Alt: towards or away from you) | |
 | Fit ref | F | drag the reference picture; the wheel scales it | |
 
+**Hair lies on the scalp** (2026-10-22): a new lock is combed onto the head: every point within 3 cm of it is laid on
+the skin, 2.5 mm off it (the head's surface is measured from its triangles, 2.5 degrees a bin, 0.3 mm off the real
+skin), and only the wheel's bow lifts it (the bow starts flat for every new lock). **Onto the scalp** and **All onto the
+scalp** (Selected) lay hair made before down the same way. The scalp runs from the forehead's hairline round the
+temples' corners, **down the sideburns** in front of the ears to the tragus, over the ears (not on them) and close
+behind them to the nape.
+
 Ends clicked on the body lie on it (a fringe resting on the brows, a lock on the chest); clicked in the air, on the
 plane through the root facing you. Shift lets a root off the scalp. Esc cancels a placing; Delete removes the selected
 lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.

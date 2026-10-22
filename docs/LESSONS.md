@@ -249,3 +249,10 @@ The salon's physics stopped its loop after 150 still frames. A heavier hair shad
 frame rate and the same 150 frames took longer than the test's 15 s, so SALON failed with nothing wrong. Anything that
 settles, times out or animates goes by the clock (here: 2.5 s still), never by a count of frames.
 
+## Hair has to be laid down, not just kept out (2026-10-22)
+
+The salon's curves were drawn straight, bowed out by a fifth of their length, and only ever pushed out of the head, 12 mm
+clear: on a round head nothing pulled them back down, so hair floated 13 to 18 mm over the scalp. Combed hair lies on the
+scalp until it leaves the head: pull every point near the head down onto it, then let the user bow it. And a setting the
+wheel changes while placing (the bow) must start over for the next lock, or the next lock floats too.
+

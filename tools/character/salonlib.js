@@ -21,7 +21,8 @@ export function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 |
 
 export const CTRL = 6;                 // control points per curve
 export const SAMPLES = 24;             // points per evaluated guide
-export const GAP = 0.004;              // hair kept this far off the skin (m)
+export const GAP = 0.0025;             // hair kept this far off the skin (m)
+export const HUG = 0.03;               // a new curve's points this close to the head lie down on it
 
 // ---- curves -----------------------------------------------------------------------------------------------------------
 // a centripetal Catmull-Rom through the points, n samples (ends included)
@@ -57,7 +58,7 @@ export function resample(P, n) { return Array.from({ length: n }, (_, i) => alon
 // the head: a radial field round the skull's middle (the outermost skin per direction, bilinear between bins), from the
 // points above the chin; the neck and torso: horizontal slices every centimetre, each a polar radius round its middle,
 // the arms left out. push(p, gap) moves a point out along the field's direction until it's gap off the skin.
-const EL = 36, AZ = 72, SA = 48;
+const EL = 72, AZ = 144, SA = 48;      // the head's field: 2.5 degrees a bin
 export class Collider {
   constructor(P, opts = {}) {
     const n = P.length / 3;
@@ -66,12 +67,19 @@ export class Collider {
     for (let i = 0; i < n; i++) { const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2]; if (y > 0.02 && Math.hypot(x, y, z) < 0.16) { zmin = Math.min(zmin, z); zmax = Math.max(zmax, z); } }
     this.C = [0, 0.01, isFinite(zmin) ? (zmin + zmax) / 2 : 0];
     const R = new Float32Array(EL * AZ);
-    for (let i = 0; i < n; i++) {
-      const y = P[i * 3 + 1]; if (y < this.chin) continue;
-      const d = [P[i * 3] - this.C[0], y - this.C[1], P[i * 3 + 2] - this.C[2]], r = len(d); if (r > 0.2 || r < 1e-6) continue;
-      const [e, a] = this.bin(d, r);
-      const k = Math.min(EL - 1, Math.round(e)) * AZ + (Math.round(a) % AZ); R[k] = Math.max(R[k], r);
-    }
+    const splat = (x, y, z) => {
+      if (y < this.chin) return;
+      const d = [x - this.C[0], y - this.C[1], z - this.C[2]], r = len(d); if (r > 0.2 || r < 1e-6) return;
+      const [e, a] = this.bin(d, r), k = Math.min(EL - 1, Math.round(e)) * AZ + (Math.round(a) % AZ); if (r > R[k]) R[k] = r;
+    };
+    if (opts.tris) {                                                 // the skin itself: points spread over every triangle
+      const T = opts.tris, S = 5;
+      for (let t = 0; t < T.length; t += 3) {
+        const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3;
+        if (P[a + 1] < this.chin && P[b + 1] < this.chin && P[c + 1] < this.chin) continue;
+        for (let u = 0; u <= S; u++) for (let v = 0; u + v <= S; v++) { const w = S - u - v; splat((P[a] * u + P[b] * v + P[c] * w) / S, (P[a + 1] * u + P[b + 1] * v + P[c + 1] * w) / S, (P[a + 2] * u + P[b + 2] * v + P[c + 2] * w) / S); }
+      }
+    } else for (let i = 0; i < n; i++) splat(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
     fill(R, EL, AZ, true);
     this.R = R;
     // the slices: from just under the chin to the hips
@@ -123,7 +131,7 @@ export class Collider {
     }
     return isFinite(d) ? d : 0.1;
   }
-  surface(p, gap = 0.002) {                                          // a point snapped onto the head's skin (roots)
+  surface(p, gap = 0.0015) {                                          // a point snapped onto the head's skin (roots)
     const d = sub(p, this.C), R = this.radius(d);
     return add(this.C, mul(norm(d), R + gap));
   }
@@ -143,12 +151,25 @@ function fill(R, rows, cols, wrap) {                                 // empty bi
 }
 
 // ---- the scalp: where roots may go ------------------------------------------------------------------------------------
-// round the head from the front: the forehead's hairline, the temples, over the ears, the nape (heights in local metres)
+// round the head from the front (degrees round the skull's middle, heights in local metres): the forehead's hairline, the
+// temples' corners, the sideburns in front of the ears down to the tragus, above the ears (the ears themselves left
+// out), behind them down to the nape. Measured on MHR: the face's edge by the ear is at 58 degrees, the ear 80 to 108.
+const lerp1 = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+export function scalpLimit(az) {
+  if (az < 28) return 0.062;
+  if (az < 50) return lerp1(0.062, 0.046, (az - 28) / 22);              // the temple's corner
+  if (az < 58) return lerp1(0.046, -0.025, (az - 50) / 8);              // the sideburn's front edge
+  if (az < 80) return -0.025;                                           // the sideburn, to the tragus
+  if (az < 108) return 0.042;                                           // above the ear
+  if (az < 118) return lerp1(0.042, -0.04, (az - 108) / 10);            // close round the back of the ear
+  if (az < 140) return lerp1(-0.04, -0.07, (az - 118) / 22);            // behind it, down to the nape
+  return -0.075;
+}
 export function onScalp(p, C = [0, 0.01, 0]) {
   const d = sub(p, C); if (len(d) > 0.17) return false;
   const az = Math.abs(Math.atan2(p[0], p[2] - C[2])) * 180 / Math.PI;
-  const lim = az < 28 ? 0.062 : az < 95 ? 0.062 + (0.018 - 0.062) * (az - 28) / 67 : az < 140 ? 0.018 + (-0.07 - 0.018) * (az - 95) / 45 : -0.075;
-  return p[1] > lim;
+  if (az > 58 && az < 110 && Math.abs(p[0]) > 0.077 && p[1] < 0.045) return false;   // the ear's flap
+  return p[1] > scalpLimit(az);
 }
 
 // ---- making locks -----------------------------------------------------------------------------------------------------
@@ -157,20 +178,35 @@ export const newId = () => `L${Date.now().toString(36)}${(NEXT++).toString(36)}`
 
 // a curve from a to b laid over the head: straight, bowed out by sag, then pushed off the body and smoothed a few times
 // so it lies on the head like combed hair instead of cutting through it
-export function drape(a, b, col, sag = 0.2, n = CTRL) {
-  const L = len(sub(b, a)), out0 = col ? col.normal(a) : [0, 1, 0];
-  let P = Array.from({ length: n }, (_, i) => { const t = i / (n - 1); return add(mix(a, b, t), mul(out0, sag * L * Math.sin(Math.PI * t) * 0.5)); });
+export function drape(a, b, col, sag = 0, n = CTRL) {
+  const L = len(sub(b, a));
+  let P = Array.from({ length: n }, (_, i) => mix(a, b, i / (n - 1)));
   if (!col) return P;
+  // combed: a point near the head lies on it (pushed out of it or pulled down onto it), smoothed, again
   for (let it = 0; it < 6; it++) {
-    P = P.map((p, i) => i === 0 ? p : col.push(p, GAP * 3)[0]);
+    P = P.map((p, i) => i === 0 ? p : onto(p, col));
     P = P.map((p, i) => i === 0 || i === n - 1 ? p : mix(p, mix(P[i - 1], P[i + 1], 0.5), 0.3));
   }
-  return P.map((p, i) => i === 0 ? p : col.push(p, GAP * 3)[0]);
+  P = P.map((p, i) => i === 0 ? p : onto(p, col));
+  // the wheel's bow: away from the head, most in the middle
+  if (sag) P = P.map((p, i) => i === 0 ? p : col.push(add(p, mul(col.normal(p), sag * L * Math.sin(Math.PI * i / (n - 1)) * 0.5)), GAP)[0]);
+  return P;
+}
+// a point within HUG of the head laid on it (GAP off the skin), one further away left where it is
+export function onto(p, col, reach = HUG) {
+  const d = sub(p, col.C), r = len(d), R = col.radius(d);
+  if (p[1] > col.chin - 0.03 && R > 0 && r < R + reach) return add(col.C, mul(d, (R + GAP) / (r || 1e-9)));
+  return col.push(p, GAP)[0];
+}
+// a lock's control points laid onto the head (all but the roots): "Onto the scalp"
+export function hug(lock, col, reach = HUG) {
+  const H = handles(lock);
+  for (const h of H) if (!h.root) setHandle(lock, h.path, onto(h.p, col, reach));
 }
 
 export function makeStrand(root, end, col, o = {}) {
   return { id: newId(), type: "strand", name: o.name || "strand", group: o.group || "g1", visible: true,
-           pts: drape(root, end, col, o.sag ?? 0.2), width: o.width ?? 0.006, taper: o.taper ?? 0.6, render: o.render || "cards", density: o.density ?? 12, color: o.color || null, mirror_of: null };
+           pts: drape(root, end, col, o.sag ?? 0), width: o.width ?? 0.006, taper: o.taper ?? 0.6, render: o.render || "cards", density: o.density ?? 12, color: o.color || null, mirror_of: null };
 }
 
 // a sheet: the root line (points on the scalp), the end line's middle and its width (the spread)
@@ -179,7 +215,7 @@ export function makeSheet(rootLine, endMid, spread, col, o = {}) {
   let across = sub(r1, r0); const down = sub(endMid, rm);
   across = sub(across, mul(norm(down), dot(across, norm(down)))); across = norm(across);
   const half = mul(across, spread / 2);
-  const edges = [drape(r0, sub(endMid, half), col, o.sag ?? 0.15), drape(rm, endMid, col, o.sag ?? 0.15), drape(r1, add(endMid, half), col, o.sag ?? 0.15)];
+  const edges = [drape(r0, sub(endMid, half), col, o.sag ?? 0), drape(rm, endMid, col, o.sag ?? 0), drape(r1, add(endMid, half), col, o.sag ?? 0)];
   const guides = o.guides ?? clamp(Math.round(Math.max(length(root), spread) / 0.012) + 1, 3, 12);
   return { id: newId(), type: "sheet", name: o.name || "sheet", group: o.group || "g1", visible: true, root, edges, guides,
            taper: o.taper ?? 0.5, render: o.render || "cards", density: o.density ?? 60, color: o.color || null, mirror_of: null };
@@ -187,7 +223,7 @@ export function makeSheet(rootLine, endMid, spread, col, o = {}) {
 
 export function makeBundle(root, tip, col, o = {}) {
   return { id: newId(), type: "bundle", name: o.name || "bundle", group: o.group || "g1", visible: true,
-           spine: drape(root, tip, col, o.sag ?? 0.2), r0: o.r0 ?? 0.015, r1: o.r1 ?? 0.004, guides: o.guides ?? 8,
+           spine: drape(root, tip, col, o.sag ?? 0), r0: o.r0 ?? 0.015, r1: o.r1 ?? 0.004, guides: o.guides ?? 8,
            taper: o.taper ?? 0.4, render: o.render || "cards", density: o.density ?? 80, color: o.color || null, mirror_of: null };
 }
 
@@ -311,7 +347,7 @@ export function dragHandle(lock, path, to, col, falloff = 0.6) {
     if (h.root) return;
     const w = k === at ? 1 : k > at ? Math.pow(falloff, k - at) : 0;
     if (!w) return;
-    let q = add(h.p, mul(d, w)); if (col) q = col.push(q, GAP * 2)[0];
+    let q = add(h.p, mul(d, w)); if (col) q = col.push(q, GAP)[0];
     setHandle(lock, h.path, q);
   });
 }

@@ -358,7 +358,7 @@ async function buildHead() {
   LOCAL_PTS = new Float32Array(P.length);
   for (let i = 0; i < N; i++) { const q = SR.toLocal(HF, [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]]); LOCAL_PTS.set(q, i * 3); }
   const ci = (REF?.local?.anchors || SR.DEFAULT_ANCHORS).chin * 3, chin = SR.toLocal(HF, [P[ci], P[ci + 1], P[ci + 2]])[1];
-  COL = new SL.Collider(LOCAL_PTS, { chin });
+  COL = new SL.Collider(LOCAL_PTS, { chin, tris: m.tris });
   tintScalp();
   for (const l of st.locks) DIRTY.add(l.id);
   if (st.glow) { for (let c = 0; c < st.glow.on.length; c++) st.glow.inner[c] = SF.innerAlong(COL, SF.dirOf(SF.azOf(c % SF.AZ), SF.elOf(Math.floor(c / SF.AZ)))); st.glow.C = COL.C.slice(); FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; }
@@ -722,14 +722,15 @@ const HINTS = {
   glow: "Paint over the glow's points to select them (Ctrl: take them off; the wheel sizes the brush); drag a selected point up to push the glow out, down to pull it in. Right-drag turns the head. Trace, Cut, Fill: the Fill panel.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
-const PLACE = { stage: 0, root: null, line: [], sag: 0.2, spread: 0.05, r0: 0.015, last: null };
+const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, last: null };
 function setTool(t) {
   TOOL = t; resetPlace(); GLOW_DIRTY = true;
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
   $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
   tintScalp(); draw();
 }
-function resetPlace() { PLACE.stage = 0; PLACE.root = null; PLACE.line = []; PLACE.last = null; showPreview(null); showRootLine(null); }
+function resetPlace() { PLACE.stage = 0; PLACE.root = null; PLACE.line = []; PLACE.last = null; PLACE.sag = 0;   // every new lock starts flat on the head (the wheel bows it while placing)
+  showPreview(null); showRootLine(null); }
 for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, onclick: () => setTool(t) }); b.dataset.t = t; $("#tools").append(b); }
 
 function previewFrom(e) {
@@ -975,6 +976,8 @@ function selPanel() {
   if (o.render === "strands") slider(box, "Strands", 1, 400, 1, o.density, edit(v => { o.density = v; }));
   const c = el("input", { type: "color", value: o.color || look().tip, title: "this lock's own colour (instead of the hair's look)", onchange: () => edit(v => { o.color = v; })(c.value) });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Own colour" }), c, o.color ? el("button", { textContent: "x", title: "back to the hair's look", onclick: () => { edit(() => { o.color = null; })(); selPanel(); } }) : el("span")));
+  box.append(el("button", { textContent: "Onto the scalp", title: "its points near the head laid down on it (hair made before lies above the scalp)", onclick: () => { remember(); SL.hug(o, COL); changed(o); draw(); } }),
+             el("button", { textContent: "All onto the scalp", title: "every lock's points near the head laid down on it", onclick: () => { remember(); for (const l of st.locks) if (!l.mirror_of) { SL.hug(l, COL); changed(l); } draw(); } }));
   box.append(el("button", { textContent: "Duplicate", onclick: () => { const d = structuredClone(o); d.id = SL.newId(); d.mirror_of = null; d.name = (o.name || o.type) + " copy"; SL.moveLock(d, [0.01, 0, 0]); addLock(d); } }),
              el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { const m = SL.mirrored(o, st.mirror.seam, COL); m.mirror_of = null; m.name = (o.name || o.type) + " mirrored"; remember(); m.group = o.group; st.locks.push(m); locksPanel(); draw(); } }),
              l.mirror_of ? el("button", { textContent: "Break the mirror", onclick: () => { remember(); l.mirror_of = null; l.name = l.name.replace(" (mirror)", ""); locksPanel(); selPanel(); } }) : "",

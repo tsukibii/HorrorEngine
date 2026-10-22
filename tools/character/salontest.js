@@ -106,6 +106,28 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const l = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; return { type: l.type, guides: s.EVAL[l.id] ? s.EVAL[l.id].length : 0 }; });
     if (await count() !== n0 + 1 || l.type !== "strand") throw new Error(`${await count()} locks, last ${l.type}`);
   });
+  await step("the strand lies on the scalp; a root on the sideburn is taken, one on the ear isn't", async () => {
+    // a strand over the crown to the back of the head (no bow from the wheel) lies on it
+    await view(Math.PI * 0.75, 0.35, 0.9);
+    const n00 = await count(); await page.keyboard.press("s");
+    await page.mouse.click(...await scr(await surf([0.02, 0.2, 0.0])));
+    const e0 = await scr(await surf([0.03, 0.02, -0.2])); await page.mouse.move(...e0); await page.mouse.click(...e0);
+    if (await count() !== n00 + 1) throw new Error("no strand over the crown");
+    const lie = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; return s.EVAL[l.id][0].pts.slice(1, -2).map(p => s.COL.depth(p)).sort((a, b) => a - b); });
+    await page.keyboard.press("Control+z");
+    if (lie[lie.length >> 1] > 0.004 || lie[lie.length - 1] > 0.008) throw new Error(`the strand is ${(lie[lie.length >> 1] * 1000).toFixed(1)} mm off the skin (median), ${(lie[lie.length - 1] * 1000).toFixed(1)} at most`);
+    await view(-Math.PI / 2 + 0.25, 0.0, 0.6);
+    const tries = await ev(() => { const s = window.__salon, SL = s.SL;
+      const sideburn = s.COL.surface([-0.07, 0.01, 0.005]), ear = s.COL.surface([-0.085, 0.0, -0.06]);
+      return { sideburn: SL.onScalp(sideburn, s.COL.C), ear: SL.onScalp(ear, s.COL.C), at: s.screenOf(sideburn) }; });
+    if (!tries.sideburn || tries.ear) throw new Error(JSON.stringify(tries));
+    const n0 = await count(); await page.keyboard.press("s");
+    await page.mouse.click(...await scr(await surf([-0.07, 0.01, 0.005])));
+    const e = await scr([-0.09, -0.08, 0.03]); await page.mouse.move(...e); await page.mouse.click(...e);
+    if (await count() !== n0 + 1) throw new Error("no strand from the sideburn");
+    await page.keyboard.press("Control+z");
+    console.log(`       a strand over the crown lies ${(lie[lie.length >> 1] * 1000).toFixed(1)} mm off the skin (median, ${(lie[lie.length - 1] * 1000).toFixed(1)} at most); a sideburn strand placed`);
+  });
   await step("a sheet: a root line dragged along the hairline, its end on the brows", async () => {
     await view(0, 0.05, 1.1);
     const n0 = await count(); await page.keyboard.press("l");
