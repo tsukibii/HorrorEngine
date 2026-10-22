@@ -7,7 +7,7 @@
 //   node tools/character/gshairtest.js [DIR] [shot.png] DIR: a capture folder with splat.json, splat.bin and head.json
 //                                                       (default vendor/gshair/check/wig); copied to People/_gshairtest/gshair/
 //
-// Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
+// Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>; PW_CHROME=<a Chromium binary> when its browsers aren't installed).
 const fs = require("fs"), path = require("path");
 const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const BASE = process.env.BODY_URL || "http://127.0.0.1:8793/";
@@ -24,7 +24,7 @@ const fail = m => { console.error("GSHAIRPAGE FAIL: " + m); process.exit(1); };
     if (!fs.existsSync(path.join(src, f))) fail(`no ${f} in ${src} (python tools/gshair.py check --keep)`);
     fs.copyFileSync(path.join(src, f), path.join(dst, f));
   }
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || undefined, args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });   // PW_CHROME: a Chromium of your own
   const page = await (await browser.newContext({ viewport: { width: 1100, height: 720 } })).newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));

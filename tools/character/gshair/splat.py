@@ -212,7 +212,7 @@ def run(out, res=540, iters=4000, device=None, voxel=0.01, n_init=40000, seed=0,
         if d is not None: opt_pose.step()
         for g in opt.param_groups:
             if g["name"] == "mu": g["lr"] = lr["mu"] * (0.01 ** (it / iters))
-        hist.append(float(L["total"]))
+        hist.append(float(L["total"].detach()))
         if it % log_every == 0 or it == 1:
             line = dict(it=it, loss=round(float(np.mean(hist[-log_every:])), 4), l1=round(float(L["l1"]), 4), alpha=round(float(L["alpha"]), 4),
                         ori=round(float(L.get("ori", 0)), 4), n=G.n, pairs=pairs, s=round(time.time() - t0, 1))

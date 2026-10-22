@@ -25,8 +25,11 @@ into clumps on chains. Nothing of the paper's code or data is used; nothing trai
   - **texture on the floor** round the stand (newspaper, printed patterns): the cameras are found from fixed details
     in the picture, and a blank green world with a black wig leaves them lost; the key drops the patterns afterwards;
   - soft, even light, no sun moving, no fan;
-  - the phone at 4K, 30 fps, the 1x lens, focus and exposure locked; walk round slowly, 0.6 to 1 m away, three loops
-    (eye level, from above, from a little below), a minute each. About 90 sharp frames are picked.
+  - the camera the user has: about 0.4 megapixels and a little soft, which is fine for the stylised realism the
+    characters have now (not Unreal's humans). A soft, small frame gives the feature matcher less to hold, so the
+    texture round the stand matters more, not less, and the sweep should be slow (small steps between frames);
+    focus and exposure locked; 0.6 to 1 m away, three loops (eye level, from above, from a little below), a minute
+    each. About 90 sharp frames are picked; the splat works at the frame's own size (`--res`).
 
 ## The steps
 
@@ -60,7 +63,7 @@ transmittance. The splat's colours keep the capture's light: film flat, and the 
     python tools/gshair.py check [--keep] [--full]          GSHAIR ok
     node tools/character/gshairtest.js [DIR]                GSHAIRPAGE ok (the page, headless; the desk's server running)
 
-The check runs the whole pipeline on a synthetic capture on the CPU in a few minutes: the splatter's gradients against
+The check runs the whole pipeline on a synthetic capture (256 px frames: about the user's 0.4 MP footage) on the CPU in a few minutes: the splatter's gradients against
 finite differences (cylinders and ellipsoids), the Gabor orientation on stripes, the green key, then a known wig on
 MHR's head rendered from a sweep of cameras, once as a person (the face anchors the poses: camera centres within a few
 mm) and once as a mannequin (a pair to start, the chain round, the bundle: the centres within a few mm after the
@@ -69,7 +72,7 @@ the true alignment and with the guessed one). `--keep` leaves it in `vendor/gsha
 
 ## Unreal
 
-Unreal 5.8 has no splat renderer of its own; the free plugins are for static scenes and untested on Linux, and none
+The characters have moved away from Unreal's humans (docs/DECISIONS.md), so this is for later, if ever. Unreal 5.8 has no splat renderer of its own; the free plugins are for static scenes and untested on Linux, and none
 follows bones. Two routes, neither built yet (the first test is on the page):
 
 1. **The splat as a Niagara layer:** each Gaussian a particle on its clump's bones (the chains exported from the page
@@ -84,7 +87,9 @@ follows bones. Two routes, neither built yet (the first test is on the page):
 - The light is baked into the splat: a wig filmed under a lamp looks lit by that lamp. Film flat; the page's shading
   adds the rest, as an approximation.
 - A wig's capture has no face, so its world is the first camera's and its scale the starting pair's baseline: the
-  fit onto the head is a guess (up, front, width) to finish on the page.
+  fit onto the head is a guess (up, front, width) to finish on the page. Its cameras have nothing to anchor them
+  either: the check's 256 px synthetic sweep (30 frames, 12 degrees apart, about the user's 0.4 MP footage) poses
+  them within 35 mm mean before the splat refines them; a 90-frame sweep is better conditioned.
 - Camera poses need texture in the picture (the floor patterns) and a steady sweep; a capture that won't chain can
   bring a COLMAP text model (`poses --colmap DIR`).
 - Dark hair against dark backgrounds keys badly; green it is. Glossy green reflects the room and leaves patches.
