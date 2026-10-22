@@ -70,7 +70,7 @@ export class StrandHair {
     this.ready = false;
   }
 
-  setColor(hex) { this.mat.uniforms.color.value.set(hex).convertSRGBToLinear(); }
+  setColor(hex) { this.mat.uniforms.color.value.set(hex); }
   get colorHex() { const c = this.h.colour.rgb.map(v => Math.round(Math.min(1, v) * 255)); return "#" + c.map(v => v.toString(16).padStart(2, "0")).join(""); }
 
   // one physics step, then the guides' joints and frames into the texture (parallel transport from the root's frame,

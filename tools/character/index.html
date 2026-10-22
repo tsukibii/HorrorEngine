@@ -266,7 +266,7 @@ function skinLook() {
   const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
   material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
-  material.roughness = st.skin.rough; material.needsUpdate = true;
+  material.roughness = st.skin.rough; material.clearcoat = proc ? 1 : 0; material.envMapIntensity = 0.55; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
 }
@@ -287,14 +287,33 @@ st.skin.proc = { ...SKINSH.DEFAULTS };
 const procSet = {};
 {
   const box = $("#procRows"), on = el("input", { type: "checkbox" });
-  box.append(el("label", { className: "tog" }, on, el("span", {}, "Procedural skin", el("small", { textContent: "The body's colour and fine relief made from noise where each point sits (no seams): every feature below is its own layer. With a photo skin, the picture shows on the face through its mask and this skin carries the rest." }))));
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Procedural skin", el("small", { textContent: "The body's colour and fine relief made from noise where each point sits (no seams): every feature below is its own layer, makeup too. With a photo skin, the picture shows on the face through its mask and this skin carries the rest." }))));
   on.onchange = () => { st.skin.proc.on = on.checked; skinLook(); };
-  for (const [k, label, lo, hi, step, val, help] of SKINSH.FEATURES)
+  const skinPre = el("select"), makePre = el("select");      // presets: they set the sliders, which stay yours to move
+  skinPre.append(el("option", { value: "", textContent: "skin preset…" }), ...Object.keys(SKINSH.SKIN_PRESETS).map(k => el("option", { value: k, textContent: k })));
+  makePre.append(el("option", { value: "", textContent: "makeup preset…" }), ...Object.keys(SKINSH.MAKEUP_PRESETS).map(k => el("option", { value: k, textContent: k })));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Skin" }), skinPre, el("output")), el("div", { className: "row" }, el("span", { textContent: "Makeup" }), makePre, el("output")));
+  const usePreset = (pre, groups, colours) => {   // the preset's groups start from the defaults: nothing left over from before
+    for (const f of SKINSH.FEATURES) if (groups.includes(f[7])) st.skin.proc[f[0]] = f[5];
+    for (const c of colours) st.skin.proc[c] = SKINSH.DEFAULTS[c];
+    for (const [k, v] of Object.entries(pre)) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }
+    st.skin.proc.on = true; procSet.all(); skinLook();
+  };
+  skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], ["freckleColor", "flushColor"]); skinPre.value = ""; };
+  makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]); makePre.value = ""; };
+  let group = null;
+  for (const [k, label, lo, hi, step, val, help, g] of SKINSH.FEATURES) {
+    if (g !== group) { box.append(el("h4", { textContent: g })); group = g; }
     procSet[k] = slider(box, "skin_" + k, label, lo, hi, step, val, help, v => { st.skin.proc[k] = v; skinLook(); });
-  const fc = el("input", { type: "color", value: st.skin.proc.freckleColor }), flc = el("input", { type: "color", value: st.skin.proc.flushColor });
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Freckle colour" }), fc, el("output")), el("div", { className: "row" }, el("span", { textContent: "Flush colour" }), flc, el("output")));
-  fc.oninput = () => { st.skin.proc.freckleColor = fc.value; skinLook(); }; flc.oninput = () => { st.skin.proc.flushColor = flc.value; skinLook(); };
-  procSet.all = () => { on.checked = st.skin.proc.on; fc.value = st.skin.proc.freckleColor; flc.value = st.skin.proc.flushColor; for (const f of SKINSH.FEATURES) procSet[f[0]](st.skin.proc[f[0]]); };
+  }
+  const colours = {};
+  box.append(el("h4", { textContent: "Colours" }));
+  for (const [k, label] of SKINSH.COLOURS) {
+    const c = colours[k] = el("input", { type: "color", value: st.skin.proc[k] });
+    c.oninput = () => { st.skin.proc[k] = c.value; skinLook(); };
+    box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
+  }
+  procSet.all = () => { on.checked = st.skin.proc.on; for (const [k] of SKINSH.COLOURS) colours[k].value = st.skin.proc[k]; for (const f of SKINSH.FEATURES) procSet[f[0]](st.skin.proc[f[0]]); };
 }
 usePhoto.onchange = () => { st.skin.photo = usePhoto.checked; skinLook(); };
 sizeSel.onchange = () => { st.skin.size = +sizeSel.value; };
@@ -394,9 +413,19 @@ const scene = new THREE.Scene(); scene.background = new THREE.Color(0x202125);
 const camera = new THREE.PerspectiveCamera(26, 1, 0.02, 100);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3530, 1.1), key = new THREE.DirectionalLight(0xffffff, 1.6);
 scene.add(hemi, camera); camera.add(key);
+{                                                      // a soft studio around the character, so glossy skin and hair have something to reflect
+  const env = new THREE.Scene(), box = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 12), new THREE.MeshBasicMaterial({ color: 0x2c2d33, side: THREE.BackSide }));
+  env.add(box);
+  for (const [x, y, z, w, h, k] of [[-3, 2.5, 3, 3, 2, 5], [3.5, 1.5, 2, 2, 3, 2.5], [0, 3.9, 0, 5, 5, 1.2], [0, 1.5, -5.9, 6, 2, 1]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k * 0.96), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 1.4, 0); env.add(m);
+  }
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(env, 0.04).texture;
+  hemi.intensity = 0.7;
+}
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
-const material = new THREE.MeshStandardMaterial({ color: 0xc9b3a2, roughness: 0.62 });
+const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3 });   // the skin: a coat for oil and dew
 const geo = new THREE.BufferGeometry();                // shared points: the smooth normals
 const POS = new Float32Array(N * 3), RAW = new Float32Array(N * 3);
 geo.setAttribute("position", new THREE.BufferAttribute(POS, 3)); geo.setIndex(new THREE.BufferAttribute(TRIS, 1));
@@ -530,7 +559,7 @@ function place() {
   const head = orbit.focus === "head", ty = head ? TOP - 0.12 * TOP / 1.7 : TOP * 0.52, d = head ? 0.9 : 4.6;
   camera.position.set(d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), ty + d * Math.sin(orbit.pitch), d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
   camera.lookAt(0, ty, 0);
-  key.position.set(...($("#raking").checked ? [3, 0.2, 0.5] : [1, 1.4, 2])); hemi.intensity = $("#raking").checked ? 0.25 : 1.1;
+  key.position.set(...($("#raking").checked ? [3, 0.2, 0.5] : [1, 1.4, 2])); hemi.intensity = $("#raking").checked ? 0.2 : 0.7;
 }
 function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 addEventListener("resize", resize);

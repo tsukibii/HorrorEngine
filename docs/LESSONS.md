@@ -172,3 +172,10 @@ rode up on the hips until the top flared (`shirt.flare` 1.25 to 1.35) and was lo
 the wrist while they had a `CuffBand` (the cuff panel pulls the sleeve's end in and the drape can't pass it over the
 hand). Cut sleeves at 45 degrees (the arms' angle), 0.8 long, no cuff. Compare variants of one design side by side
 (four drapes in parallel) before changing a preset.
+
+## Three.js converts a colour once (2026-10-22)
+
+Since r152 `Color.set("#hex")` turns the sRGB hex into linear itself (ColorManagement is on). The procedural skin and the
+strand hair also called `.convertSRGBToLinear()` after it, so their colours went through twice: the skin came out an
+orange tan, darker than the same tone without the shader, and the hair darker than picked. Set a uniform colour with
+`.set()` alone. Compare a shader's colour against plain `material.color` with the same hex when a look seems off.
