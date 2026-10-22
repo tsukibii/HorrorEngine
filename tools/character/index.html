@@ -135,6 +135,7 @@ import { StrandHair } from "./strands.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
+import * as EYEPAINT from "./eyes.js";
 import * as WIGIFY from "./wigify.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -571,19 +572,14 @@ function mouthShade() {
 }
 dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material.vertexColors = true;
 
-function eyeTexture(color) {                            // sclera, iris and pupil round the sphere's front pole
-  const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d");
-  const sc = g.createLinearGradient(0, 0, 0, 256); sc.addColorStop(0, "#f4efe9"); sc.addColorStop(0.6, "#efe3dc"); sc.addColorStop(1, "#d9b8b0");
-  g.fillStyle = sc; g.fillRect(0, 0, 512, 256);
-  const ir = g.createLinearGradient(0, 0, 0, 44); ir.addColorStop(0, color); ir.addColorStop(0.75, color); ir.addColorStop(1, "#1a1210");
-  g.fillStyle = ir; g.fillRect(0, 0, 512, 44);         // the iris: the cap within ~31 degrees of the pole
-  g.fillStyle = "#050505"; g.fillRect(0, 0, 512, 15);  // the pupil
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+const eyeMats = { L: new THREE.MeshPhysicalMaterial({ ior: 1.4 }), R: new THREE.MeshPhysicalMaterial({ ior: 1.4 }) };   // one each: the corner tint is the inner one
+function paintEyes() {                                  // eyes.js: the textures and the wet look from st.eyes
+  for (const side of ["L", "R"]) { eyeMats[side].map?.dispose(); eyeMats[side].map = EYEPAINT.eyeTexture(st.eyes, side); EYEPAINT.eyeFinish(eyeMats[side], st.eyes); }
 }
-const eyeMat = new THREE.MeshPhysicalMaterial({ roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 });
 const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
-const EYES = { L: new THREE.Mesh(eyeGeo, eyeMat), R: new THREE.Mesh(eyeGeo, eyeMat) };
-st.eyes = { on: true, iris: "#3b2618" };
+const EYES = { L: new THREE.Mesh(eyeGeo, eyeMats.L), R: new THREE.Mesh(eyeGeo, eyeMats.R) };
+st.eyes = { ...EYEPAINT.EYE_DEFAULTS };
+paintEyes();
 function placeEyes() {
   for (const side of ["L", "R"]) {
     const m = EYES[side];
@@ -738,13 +734,19 @@ LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, 
                     lmk: i => lmk(i), lmkOk: () => !!LMK });
 
 // ---- the eyes' controls ---------------------------------------------------------------------------------------------
+const eyeSet = {};
 {
-  const on = el("input", { type: "checkbox", checked: true }), iris = el("input", { type: "color", value: "#3b2618" });
-  $("#eyeRows").append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Sinks MHR's closed shell inside MediaPipe's lid outline behind a 12 mm eyeball; the gaze shapes turn them, a blink closes the lid over them. Placeholders for the real eye parts (ICT-FaceKit's, with the tear line and occlusion)." }))),
-    el("div", { className: "row" }, el("span", { textContent: "Iris" }), iris, el("output")));
+  const box = $("#eyeRows"), on = el("input", { type: "checkbox", checked: true });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Sinks MHR's closed shell inside MediaPipe's lid outline behind a 12 mm eyeball; the gaze shapes turn them, a blink closes the lid over them. Placeholders for the real eye parts. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
-  iris.oninput = () => { st.eyes.iris = iris.value; eyeMat.map = eyeTexture(iris.value); eyeMat.needsUpdate = true; };
-  eyeMat.map = eyeTexture(st.eyes.iris);
+  let later = 0; const repaint = () => { clearTimeout(later); later = setTimeout(paintEyes, 60); };
+  const cols = {};
+  for (const [k, label] of EYEPAINT.EYE_COLOURS) {
+    const c = cols[k] = el("input", { type: "color", value: st.eyes[k] }); c.oninput = () => { st.eyes[k] = c.value; repaint(); };
+    box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
+  }
+  for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
+  eyeSet.all = () => { on.checked = st.eyes.on; for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
 }
 
 // ---- hair: cards from the scalp (hair.js), brows and lashes, a cap in the hair's colour ---------------------------------
@@ -1233,9 +1235,7 @@ async function open(name) {
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
-  Object.assign(st.eyes, { on: true, iris: "#3b2618" }, c.eyes || {});
-  $("#eyeRows input[type=checkbox]").checked = st.eyes.on; $("#eyeRows input[type=color]").value = st.eyes.iris;
-  eyeMat.map = eyeTexture(st.eyes.iris); eyeMat.needsUpdate = true;
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, c.eyes || {}); eyeSet.all(); paintEyes();
   Object.assign(st.hair, HAIR.DEFAULTS, HAIR_MORE, { over: {}, batch: { ...HAIR_MORE.batch }, blend: { weights: {}, vary: 0, seed: 0 }, model: null }, c.hair || {});
   if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
   hairSet.all();
