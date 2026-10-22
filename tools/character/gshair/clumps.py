@@ -50,9 +50,10 @@ def quat_to_mat(q):
                      np.stack([2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)], 1)], 1)
 
 
-def default_align(sp, cams, fr, field, S):
+def default_align(sp, cams, fr, field, S, lm=None):
     """a wig's world onto the head: up from the cameras' down, front from the first frame, the top of the hair to the
-    top of the skull, the width to the head's (a guess: the page's sliders finish it)"""
+    top of the skull, its front edge to the forehead, its middle to the skull's, the width to the head's (a guess:
+    the page's sliders finish it)"""
     rep = cams["report"]
     if rep.get("anchored"): return dict(R=np.eye(3).tolist(), t=[0, 0, 0], s=1.0, source="face")
     down = np.array(rep["down"], float); up_s = -down / np.linalg.norm(down)
@@ -66,9 +67,11 @@ def default_align(sp, cams, fr, field, S):
     top = np.percentile(loc[:, 1], 97)
     cx = np.average(loc[:, 0], weights=w); cz = np.average(loc[:, 2], weights=w)
     head_w = 2 * np.median(field.R[field.R > 0]) if (field.R > 0).any() else 0.16 * S
-    s = (head_w * 1.25) / max(width, 1e-6)
-    src = mu.mean(0) + Bs @ np.array([cx, top, cz])                     # the hair's top, middle
-    dst = field.C + fr["U"] * (field.R.max() + 0.01 * S)
+    s = (head_w * 1.2) / max(width, 1e-6)
+    front = np.percentile(loc[:, 2], 97)                                 # the hair's front edge (the fringe)
+    src = mu.mean(0) + Bs @ np.array([cx, top, front])                   # the hair's top, middle, front edge
+    forehead = ((lm[10] - field.C) @ fr["F"]) if lm is not None else 0.09 * S
+    dst = field.C + fr["U"] * (field.R.max() + 0.01 * S) + fr["F"] * (forehead + 0.005 * S)
     t = dst - s * R @ src
     return dict(R=R.tolist(), t=t.tolist(), s=float(s), source="guess", width_m=round(float(width * s), 3))
 
@@ -89,7 +92,7 @@ def run(out, clumps=16, joints=4, seed=3, align=None, min_members=30, squash=0.4
     cams = jload(out / "cameras.json")
     al = jload(align or out / "align.json")
     if al is None:
-        al = default_align(sp, cams, fr, field, S); jsave(out / "align.json", al)
+        al = default_align(sp, cams, fr, field, S, lm); jsave(out / "align.json", al)
     g = apply_align(sp, al)
     mu, op = g["mu"], g["opacity"]
     N = len(mu)

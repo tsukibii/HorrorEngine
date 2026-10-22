@@ -30,13 +30,19 @@ const fail = m => { console.error("GSHAIRPAGE FAIL: " + m); process.exit(1); };
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "gshairtest_fail.png" }); fail(`${what}: ${e.message}`); } };
-  const pixels = () => page.evaluate(() => {           // how many canvas pixels aren't the clear colour or the grey head
+  const grab = () => page.evaluate(() => {               // the canvas's pixels now
     const c = window.__gshair.canvas, k = document.createElement("canvas"); k.width = c.width; k.height = c.height;
-    const x = k.getContext("2d"); x.drawImage(c, 0, 0); const d = x.getImageData(0, 0, k.width, k.height).data;
-    let hair = 0, any = 0;
-    for (let i = 0; i < d.length; i += 4) { const r = d[i], g = d[i + 1], b = d[i + 2]; if (Math.abs(r - 27) + Math.abs(g - 28) + Math.abs(b - 32) > 12) any++; if (r > g + 6 && g > b + 2 && r > 25) hair++; }
-    return { any, hair };
+    k.getContext("2d").drawImage(c, 0, 0); return Array.from(k.getContext("2d").getImageData(0, 0, k.width, k.height).data);
   });
+  const pixels = async () => {                             // how many pixels the hair changes (any colour of hair): with it, then without
+    const a = await grab();
+    await page.evaluate(() => { window.__gshair.hair.mesh.visible = false; }); await page.waitForTimeout(400);
+    const b = await grab();
+    await page.evaluate(() => { window.__gshair.hair.mesh.visible = true; }); await page.waitForTimeout(400);
+    let hair = 0, any = 0;
+    for (let i = 0; i < a.length; i += 4) { if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 12) hair++; if (Math.abs(a[i] - 27) + Math.abs(a[i + 1] - 28) + Math.abs(a[i + 2] - 32) > 12) any++; }
+    return { hair, any };
+  };
   await page.goto(BASE + "gshair.html?name=" + NAME);
   await step("the splat and the head load", async () => {
     await page.waitForFunction(() => window.__gshair && window.__gshair.ready, null, { timeout: 60000 });
@@ -47,8 +53,8 @@ const fail = m => { console.error("GSHAIRPAGE FAIL: " + m); process.exit(1); };
   await step("the hair draws", async () => {
     await page.waitForTimeout(1500);
     const p = await pixels();
-    if (p.hair < 300) throw new Error(`${p.hair} brown pixels (${p.any} drawn)`);
-    console.log(`       ${p.hair} brown pixels of hair, ${p.any} drawn`);
+    if (p.hair < 300) throw new Error(`${p.hair} pixels of hair (${p.any} drawn)`);
+    console.log(`       ${p.hair} pixels of hair, ${p.any} drawn`);
   });
   await step("the clay shows", async () => {
     await page.click("text=Show the clay"); await page.waitForTimeout(300);
@@ -68,7 +74,7 @@ const fail = m => { console.error("GSHAIRPAGE FAIL: " + m); process.exit(1); };
     await page.evaluate(() => { const i = document.querySelector('input[title="The hair\'s sheen: low is glossy."]'); i.value = 0.15; i.dispatchEvent(new Event("input")); });
     await page.waitForTimeout(400);
     const p = await pixels();
-    if (p.hair < 300) throw new Error(`${p.hair} brown pixels`);
+    if (p.hair < 300) throw new Error(`${p.hair} pixels of hair`);
   });
   if (shot) { await page.click("text=Show the clay"); await page.waitForTimeout(600); await page.screenshot({ path: shot }); }
   if (errors.length) fail("page errors: " + errors.join(" | "));
