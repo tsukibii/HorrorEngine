@@ -102,10 +102,11 @@ a second try. Read docs/DECISIONS.md and CLAUDE.md first.
 - [ ] **Groups panel**: every lock a row (name, type, visible, colour, physics on, realism); select, hide/show,
   duplicate, mirror left-right (across the head's X), delete, reorder; undo/redo (a stack of `salon.json` states,
   cheap).
-- [ ] **Shaping brushes on a selected lock** (the few Blender ones that matter, as modifiers of the handles, not
-  per strand): comb (drag the tips sideways), grow/shrink (length), puff (away from the head), smooth, curl (a
-  spiral of a radius and turns along the lock), frizz (noise), clump (the guides pulled to the lock's centre line).
-  Each a slider on the lock, re-evaluated from the handles, never baked into them until the user clicks "Apply".
+- [ ] **Shaping on a selected lock**: four brushes as modifiers of the handles, never per strand: comb (drag the
+  tips sideways), grow/shrink (length), puff (away from the head), smooth; and sliders: curl (a spiral of a radius
+  and turns along the lock), frizz (noise), clump (the guides pulled to the lock's centre line), width, taper. The
+  sliders re-evaluate from the handles and are never baked into them until the user clicks "Apply". After every
+  brush: the length pass and the push-out (Blender's constraint step, ported).
 - [ ] **Drawing**: a lock is drawn as ribbons (reuse `ribbon` + the strand alpha texture) between its guides, with
   the hair shader's two highlights; `realism` > 0 adds interpolated strands inside the lock (reuse `strands.js`:
   the guides are the chains; the strand count from the slider) drawn as GPU lines; `realism` = 1 draws strands
@@ -120,14 +121,34 @@ a second try. Read docs/DECISIONS.md and CLAUDE.md first.
 - [ ] `salontest.js` grows: a strand, a sheet, a bundle placed by simulated clicks; handles move; hide/show; a mirror;
   a cap with thickness changes the silhouette; brows and lashes placed; undo. `SALON ok`.
 
+## Game-grade physics: what is kept and what is dropped (the user's call, 2026-10-22)
+
+The hair is for a game: a few locks jiggle with the head's motion, wind nudges them, nothing ever clips. No more.
+
+**Kept:** one or two guide chains per lock (3 to 5 points), verlet as `wig.js` does it now (root pinned to the body,
+gravity, a hold toward the drawn shape, damping, 4 constraint passes a frame), ribbons and strands riding the guides
+on the GPU; jiggle **opt-in per lock** with one slider (stiff, soft, floppy presets), everything else rigid with the
+head; wind as one direction, a strength and a gust noise on the free points of jiggling locks with a per-lock weight;
+a push-out against the proxies every frame then the length pass, and a one-off settle of the rest shape when the body
+or the clothes change. Budget: 40 locks, about 300 simulated points, one push-out per point per frame: nothing.
+
+**Dropped:** bending springs and parallel-transported targets (the hold keeps the drawn bend), the fake root (a pinned
+root and the hold leave the scalp the drawn way), the hair-volume grid, drag beyond damping, substeps, the implicit
+solver, Blender's slide-on-the-plane collision (push-out and the length pass are enough at this scale), a mesh BVH
+(proxies only: the head's radial field, the body's slices, a coarse voxel occupancy for a garment). The brushes are
+four: comb, grow/shrink, puff, smooth (snake hook is comb at the tip, pinch is the clump slider, slide is dragging
+the root handle, delete and density are the groups panel). Realism strands stay optional; they cost nothing at
+runtime since they ride the guides.
+
 ## Phase 3: physics, the clothed body, the bake
 
-- [ ] **Physics per lock** (`physics.on`): the lock's guides become wig.js chains (pinned at the root, the sheet's
-  root line pinned along it), gravity, hold to the drawn shape, damping, a bending constraint added to `wig.js`
-  (the angle between consecutive segments pulled toward the rest angle: Blender's bending spring, cheaply), and the
-  push-out against the head field, the body slices and the garment proxy. The head motion test (turn, nod, shake,
-  walk) as in the Studio. Locks without physics are rigid with the head. The strands and ribbons follow the guides
-  (already how `strands.js` works).
+- [ ] **Physics per lock** (`physics.on`, off by default): the lock's one or two guides become wig.js chains of 3 to
+  5 points (pinned at the root, the sheet's root line pinned along it), gravity, hold to the drawn shape, damping, from
+  one `jiggle` slider (stiff, soft, floppy presets), and the push-out against the head field, the body slices and the
+  garment proxy, then the length pass. No bending springs, no fake root, no substeps. Wind: one direction, a strength
+  and a gust noise on the free points, a per-lock weight. The head motion test (turn, nod, shake, walk) as in the
+  Studio. Locks without physics are rigid with the head. The strands and ribbons follow the guides (already how
+  `strands.js` works).
 - [ ] **Never clip**: on every edit and every frame, every guide point pushed out of the proxies by a gap (2 mm, a
   slider); when a garment is loaded, the rest shape is re-relaxed off it once ("Settle on the clothes") so the hair
   sits on the collar rather than the shoulders; the same hair reloads on a clothed or unclothed body and settles

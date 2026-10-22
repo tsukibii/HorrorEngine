@@ -220,7 +220,11 @@ beyond a page of code each.
   conjugate-gradient solve) → collisions (`cloth_bvh_collision`: impulses from the body's BVH, then the velocities
   corrected) → the hair volume continuum step → positions → pinned vertices moved to their animated positions.
 
-**Ours (the lighter version),** in `wig.js` extended, verlet instead of implicit:
+**Ours (the lighter version),** in `wig.js` as it stands, verlet instead of implicit. The user's call after this
+read: a game needs a few locks jiggling with the head, a nudge of wind, and no clipping, so the list below is further
+cut in docs/SALON_PLAN.md ("Game-grade physics"): no bending springs, no fake root, no hair volume, no substeps, one
+or two short chains per lock, jiggle opt-in with one slider, push-out plus the length pass for collisions. What
+follows is the fuller version, for the record:
 
 1. Points per guide, the root pinned to the body (its triangle and bary), a **fake root** behind it kept rigid with
    the root's frame (so the hair leaves the scalp in the drawn direction).
