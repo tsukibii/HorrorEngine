@@ -70,6 +70,7 @@ GSHAIR_RUNS = {}                                       # name -> the running pip
 
 HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hair presets for the hair builder (tools/gshair.py preset)
 HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}
+SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}   # a character's hair from the salon: People/<name>/salon/
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
 
@@ -107,6 +108,13 @@ def batch_hair(name, q):
     return run_json(cmd, "HAIRBATCH ok")
 
 
+def body_bytes():
+    """body.bin's size: MHR's points (Bodies/MHR_lod1.bin's header), float32 xyz"""
+    with open(BODIES / "MHR_lod1.bin", "rb") as f:
+        n = int.from_bytes(f.read(4), "little")
+        return json.loads(f.read(n))["points"] * 12
+
+
 def pictures(name):
     """{slot: path} of a character's pictures"""
     d = PEOPLE / name / "pictures"
@@ -134,6 +142,22 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         return self.rfile.read(n) if n else b""
 
+    def keep(self, d, fname):
+        """a posted file written to d/fname, if it is what its name says"""
+        data = self.body()
+        if fname.endswith(".json"):
+            try: json.loads(data.decode("utf-8"))
+            except ValueError: return self.send(400, {"error": "not JSON"})
+        elif fname.endswith(".png") and not data.startswith(b"\x89PNG\r\n\x1a\n"):
+            return self.send(400, {"error": "a PNG"})
+        elif fname.endswith(".glb") and not data.startswith(b"glTF"):
+            return self.send(400, {"error": "a binary glTF"})
+        elif fname == "body.bin" and len(data) != body_bytes():
+            return self.send(400, {"error": f"a body is {body_bytes()} bytes"})
+        d.mkdir(parents=True, exist_ok=True)
+        (d / fname).write_bytes(data)
+        return self.send(200, {"ok": True, "path": str((d / fname).relative_to(ROOT))})
+
     def do_GET(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         if not parts:
@@ -148,11 +172,18 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 2:
             out = []
             for d in sorted(PEOPLE.iterdir()) if PEOPLE.exists() else []:
-                if d.is_dir() and clean(d.name): out.append({"name": d.name, "pictures": sorted(pictures(d.name))})
+                if d.is_dir() and clean(d.name): out.append({"name": d.name, "pictures": sorted(pictures(d.name)), "body": (d / "body.bin").exists(),
+                                                             "hair": (d / "salon" / "salon.json").exists(), "baked": (d / "salon" / "salon.glb").exists()})
             return self.send(200, {"people": out})
         if parts[:2] == ["api", "people"] and len(parts) == 3 and clean(parts[2]):
             f = PEOPLE / clean(parts[2]) / "character.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {})
+        if parts[:2] == ["api", "people"] and len(parts) == 4 and clean(parts[2]) and parts[3] == "body.bin":   # the body as the studio shows it
+            f = PEOPLE / clean(parts[2]) / "body.bin"
+            return self.send(200, f.read_bytes(), TYPES[".bin"]) if f.exists() else self.send(404, {"error": "not saved from the Character Studio yet"})
+        if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
+            f = PEOPLE / clean(parts[2]) / "salon" / parts[4]                    # the character's hair from the salon
+            return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
         if parts[:2] == ["api", "outfits"]:                                         # garments made in order, each over the last
             f = DESIGNS.parent / "outfits.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"outfits": {}})
@@ -319,17 +350,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(code, res)
             return self.send(*WORKER.call(req))
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in HAIR_FILES:   # a preset saved by the builder
-            d = HAIR / name; d.mkdir(parents=True, exist_ok=True)
-            data = self.body()
-            if parts[3].endswith(".json"):
-                try: json.loads(data.decode("utf-8"))
-                except ValueError: return self.send(400, {"error": "not JSON"})
-            elif parts[3].endswith(".png") and not data.startswith(b"\x89PNG\r\n\x1a\n"):
-                return self.send(400, {"error": "a PNG"})
-            elif parts[3].endswith(".glb") and not data.startswith(b"glTF"):
-                return self.send(400, {"error": "a binary glTF"})
-            (d / parts[3]).write_bytes(data)
-            return self.send(200, {"ok": True, "path": str((d / parts[3]).relative_to(ROOT))})
+            return self.keep(HAIR / name, parts[3])
+        if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] == "body.bin":   # the body, with its face, no expression
+            return self.keep(PEOPLE / name, "body.bin")
+        if parts[:2] == ["api", "people"] and len(parts) == 5 and name and parts[3] == "salon" and parts[4] in SALON_FILES:
+            if not (PEOPLE / name).is_dir(): return self.send(404, {"error": f"no character {name}"})
+            return self.keep(PEOPLE / name / "salon", parts[4])                  # the character's hair from the salon
         if parts[:2] == ["api", "refs"] and len(parts) == 4 and name and parts[3] == "run":   # a video (or photos) to a salon reference
             q = json.loads(self.body().decode("utf-8") or "{}")
             if ref_status(name)["running"]: return self.send(409, {"error": "already running"})

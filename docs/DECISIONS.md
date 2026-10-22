@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-22, final (hair goes onto characters; only finished characters go to Unreal)
+
+- **Hair is added to the characters built in the Character Studio**, not made for Unreal on its own: the salon draws on
+  a character's own body and face, keeps the hair with it and bakes it onto it; the Character Studio wears it.
+- **The order:** the character in the Character Studio, its hair in the salon, then the character used in the director's
+  desk; **only the final characters, rigged and with their animations, are exported to Unreal.**
+
 ## 2026-10-22, last (the salon's cover)
 
 - **Gaps are covered by a Y parting, not a plane:** along the head's middle, each root a Y (one root, strands going

@@ -27,8 +27,8 @@
 </style></head>
 <body>
 <header><h1>Salon</h1>
-  <label>Hair <input type="text" id="hairName" value="my_hair" size="12"></label>
-  <select id="hairList"></select> <button id="loadHair">Load</button> <button id="saveHair">Save</button>
+  <label title="the Character Studio's character the hair is drawn on (its own body and face), or none: a base body">Character <select id="person"></select></label>
+  <button id="saveHair" title="the hair onto the character (with none, as the hairstyle named in Start from)">Save</button>
   <button id="undo" title="Ctrl+Z">Undo</button> <button id="redo" title="Ctrl+Shift+Z">Redo</button>
   <span id="status"></span></header>
 <main>
@@ -39,7 +39,11 @@
   </div>
   <aside>
     <p class="note">Hair as locks: click a root on the scalp and an end (a strand), drag a root line and click where it ends (a sheet), or a root and a tip (a bundle). Select a lock to pull its handles. Drag the empty view to turn the head (right-drag always turns it).</p>
+    <h4>Character</h4><div id="charbox"></div>
     <h4>Start from</h4><div id="presetbox"></div>
+    <div id="stylebox"><p class="note">Or a hairstyle kept before (from any head: it's laid onto this one).</p>
+      <select id="hairList"></select> <button id="loadHair">Load</button><br>
+      <input type="text" id="hairName" value="my_hair" size="12"> <button id="saveStyle" title="this hair kept to start other characters from (Content/Studio/Hair/&lt;name&gt;/)">Save as a hairstyle</button></div>
     <h4>Reference</h4><div id="refbox"></div>
     <h4>Mirror</h4><div id="mirrorbox"></div>
     <h4>Pull</h4><div id="pullbox"></div>
@@ -51,7 +55,7 @@
     <h4>Scalp</h4><div id="scalpbox"></div>
     <h4>Move</h4><div id="movebox"></div>
     <h4>Bake</h4><div id="bakebox"></div>
-    <h4>Head and look</h4><div id="headbox"></div>
+    <h4>Look</h4><div id="lookbox"></div>
   </aside>
 </main>
 <script type="module" src="./salon.js"></script>

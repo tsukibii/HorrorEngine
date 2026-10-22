@@ -1,10 +1,31 @@
 # The salon
 
-Hair made of a few dozen locks laid on an MHR head by hand, against a reference video whose frames lock to the view.
-The plan, the decisions behind it and what comes next are in docs/SALON_PLAN.md; this is what's built.
+Hair made of a few dozen locks laid on a character's head by hand, against a reference video whose frames lock to the
+view. The plan, the decisions behind it and what comes next are in docs/SALON_PLAN.md; this is what's built.
 
     python tools/character/serve.py          then http://127.0.0.1:8793/salon.html
-                                             ?ref=NAME opens a reference, ?hair=NAME a saved hair
+                                             ?person=NAME opens a character, ?ref=NAME a reference, ?hair=NAME a hairstyle
+
+## On a character (2026-10-22)
+
+The hair belongs to a character (DECISIONS 2026-10-22, final): **the Character Studio** makes the character, **the
+salon** gives it hair, **the director's desk** uses it in the blocking, and only the finished character (rigged, its
+hair on, its animations) goes to Unreal. Nothing goes from the salon to Unreal on its own.
+
+- **Character** (the top bar) lists the Character Studio's characters (`Content/Studio/People/`, git-ignored). Picking
+  one draws on **its own body and face**: the Character Studio's **Save** also writes `body.bin`, the body as it shows
+  it (MHR with its weights, the fitted face on, no expression, its height). A character never saved there since this
+  has only its weights and height (no face) until it is. The Character Studio's Hair tab links here
+  (`salon.html?person=NAME`).
+- **Save** keeps the hair on the character: `People/<name>/salon/salon.json`. Opening the character again brings it
+  back. A character with no hair of its own yet takes the hair shown when you Save (a way to start from another's).
+- **Bake** puts it on the character: `People/<name>/salon/salon.glb` and `salon_bake.json` (with the head frame it was
+  made on). The Character Studio wears it (Hair: **made in the salon**): the GLB on the head by that frame, riding the
+  body and its head motions; the brows and lashes are the studio's own. After changing the head in the studio, save
+  it there and bake again here.
+- **Hairstyles** (Start from) are hair kept to start other characters from, `Content/Studio/Hair/<name>/salon.json`
+  (**Save as a hairstyle**; `hime_demo`, `salon_demo`): loaded onto whatever head is shown, re-laid on it. With no
+  character picked (a base body: Body and Height in Character), Save and Bake write the hairstyle named there.
 
 ## The reference
 
@@ -234,8 +255,11 @@ off, or **Keep this frame**, makes the moment shown the hair's shape, exactly as
 original's fall mirrored (on its own only when its original is hidden), and with Layer by height on every moment is laid
 in layers as the kept hair will be. Pull up by hand what should stick up. **Back to before** drops the fall; undo takes a kept one back. **Strength** scales gravity.
 
-**Bake** writes the hair for a game: `Content/Studio/Hair/<name>/salon.glb` (a binary glTF, the head's local space in
-metres) and `salon_bake.json` (the numbers, the head it was made on, each swinging lock's settings).
+**Bake** puts the hair on the character (On a character, above): `People/<name>/salon/salon.glb` (a binary glTF,
+the head's local space in metres; with no character, the hairstyle's `Content/Studio/Hair/<name>/salon.glb`) and
+`salon_bake.json` (the numbers, the head frame it was made on, each swinging lock's settings). The glTF loads anywhere
+(three.js, Blender, Unreal), but the swing (the chains' physics) and the hair shader need the runtime's own: the
+Character Studio shows it still on the head for now; Unreal gets it with the finished character.
 
 - Every lock with physics is **its own skinned mesh** on bones along its chains (a strand or bundle one chain of six,
   a sheet three), each vertex on the two nearest joints along and the two nearest chains across (four influences),
@@ -273,7 +297,8 @@ crown and back, two low tails), on the darkened scalp.
 
 ## The file
 
-`Content/Studio/Hair/<name>/salon.json`: `head` (the body preset, its height), `reference` (its name, the view
+`People/<name>/salon/salon.json` (or a hairstyle's `Content/Studio/Hair/<name>/salon.json`): `head` (`person`, the
+character it's on, or the body preset and height), `reference` (its name, the view
 settings, the fit), `mirror`, `look`, `groups`, `locks`. Every point is in the head's local space, so the hair moves
 to another body with it. A lock: `id`, `type`, `name`, `group`, `visible`, `render`, `taper`, `color`, `mirror_of`, and
 by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `thickness` and `thicknessTaper` (both), `spine`, `r0`, `r1`, `height` (1 round),
@@ -285,7 +310,7 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `thick
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror, the pull: plain arrays, node
 can run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
 ellipsoid depth), `salonpresets.js` (the starting points), `salonpad.js` (the padding), `salonphys.js` (the chains, the step, the
-skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
+skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, a hairstyle through `api/hair`, a character's hair through `api/people/<name>/salon/`, its body as `api/people/<name>/body.bin`).
 
 ## Checks
 
@@ -308,7 +333,10 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   scalp covered, the long cut falling clear of the face, undone); the roots (a strand on the crown leaving
   the scalp at its lift and bending over, flat at Lift 0, the same after gravity); the cover (the parting's Y's previewed at the top hair's length,
   made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly
-  sliding on top as they fall, kept exactly as shown, the rest unmoved, undone); a save and a reload.
+  sliding on top as they fall, kept exactly as shown, the rest unmoved, undone); a save and a reload; on a character
+  (the Character Studio saves its body, the salon opens it at that height, Save keeps the hair on it, Save as a
+  hairstyle keeps it with no character, Bake writes onto it, it reopens with its hair, and the Character Studio wears
+  it over the head's top, centred).
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.
 

@@ -24,11 +24,21 @@ const slider = (box, label, min, max, step, val, fn, title = "") => {
 };
 const tick = (box, label, val, fn, title = "") => { const c = el("input", { type: "checkbox", checked: val, title }); c.onchange = () => fn(c.checked); box.append(el("label", { className: "tick", title }, c, label)); return v => { c.checked = v; }; };
 const Q = new URLSearchParams(location.search);
+const enc = encodeURIComponent;
+// where the hair is kept: on the character it's drawn on (People/<name>/salon/), or with no character, as a hairstyle in
+// the library (Content/Studio/Hair/<name>/: to start other characters from)
+const styleName = () => $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_");
+function where() {
+  const p = st.head.person;
+  if (p) return { name: p, url: f => `api/people/${enc(p)}/salon/${f}`, path: f => `Content/Studio/People/${p}/salon/${f}`, on: p };
+  const n = styleName(); if (!n) throw new Error("a hairstyle's name first (Start from)");
+  return { name: n, url: f => `api/hair/${n}/${f}`, path: f => `Content/Studio/Hair/${n}/${f}`, on: null };
+}
 
 // ---- the state (what salon.json holds) --------------------------------------------------------------------------------
 const st = {
   version: 1,
-  head: { preset: "feminine", height: 1.7 },
+  head: { preset: "feminine", height: 1.7, person: null },           // person: a Character Studio character (its body), or a base body
   reference: { name: null, on: true, opacity: 0.55, keyed: true, behind: false, lock: true, fit: structuredClone(SR.DEFAULT_FIT) },
   mirror: { on: false, seam: 0 },
   look: { color: "#2b1d16", byLock: false, guides: false, scalp: true, hair: DEFAULT_LOOK, custom: {} },   // hair: a look (hairtex.js), custom: its colours and numbers changed
@@ -259,14 +269,29 @@ async function loadMHR() {
           presets: (await (await fetch("bodies/MHR_presets.json")).json()).presets || {} };
   return MHR;
 }
+function bodyOf(w, height) {                                          // MHR with identity weights w, feet on the floor, `height` tall
+  const m = MHR, N = m.N, P = Float32Array.from(m.base);
+  w.forEach((a, k) => { if (!a) return; const o = k * N * 3; for (let i = 0; i < N * 3; i++) P[i] += a * f16(m.h16[o + i]); });
+  let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
+  const S = height / (hi - lo);
+  for (let i = 0; i < P.length; i += 3) { P[i] *= S; P[i + 1] = (P[i + 1] - lo) * S; P[i + 2] *= S; }
+  return P;
+}
+// the character the hair is drawn on (the Character Studio's): the body it saved (body.bin: its face on, no expression),
+// or, never saved there since its face, its weights and height
+let PERSON = null;
+async function personBody(name) {
+  await loadMHR();
+  const c = await api(`api/people/${enc(name)}`);
+  const r = await fetch(`api/people/${enc(name)}/body.bin?v=${Date.now()}`);
+  if (r.ok) return { name, body: new Float32Array(await r.arrayBuffer()), face: true, height: c.height };
+  if (!c.weights) throw new Error(`${name} has no body yet: save it in the Character Studio`);
+  return { name, body: bodyOf(c.weights, c.height || 1.7), face: false, height: c.height };
+}
 async function buildHead() {
   const m = await loadMHR();
   if (HEAD) { scene.remove(HEAD); HEAD.geometry.dispose(); }
-  const w = m.presets[st.head.preset] || [], N = m.N, P = Float32Array.from(m.base);
-  w.forEach((a, k) => { if (!a) return; const o = k * N * 3; for (let i = 0; i < N * 3; i++) P[i] += a * f16(m.h16[o + i]); });
-  let lo = Infinity, hi = -Infinity; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
-  const S = st.head.height / (hi - lo);
-  for (let i = 0; i < P.length; i += 3) { P[i] *= S; P[i + 1] = (P[i + 1] - lo) * S; P[i + 2] *= S; }
+  const N = m.N, P = st.head.person && PERSON?.name === st.head.person ? Float32Array.from(PERSON.body) : bodyOf(m.presets[st.head.preset] || [], st.head.height);
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(new THREE.BufferAttribute(m.tris, 1)); g.computeVertexNormals();
   g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(N * 3).fill(1), 3));
   HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x9a9690, roughness: 0.75, vertexColors: true })); HEAD.matrixAutoUpdate = false; scene.add(HEAD);
@@ -670,9 +695,9 @@ function liveVertices() {                                               // what 
 }
 let BAKED = null;
 async function bake() {
-  const name = $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!name) throw new Error("a name first");
+  const at = where(), name = at.name;
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => (l.visible && vis[l.group] !== false) || inBase(l));   // a hidden base is still the hair
-  const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, preset: st.head.preset, height: st.head.height } };
+  const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, person: st.head.person, preset: st.head.person ? null : st.head.preset, height: st.head.person ? PERSON?.height : st.head.height } };
   shown.forEach((l, i) => {
     const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = l.color || null;   // the look is in the atlas; a lock's own colour tints it
     if (l.physics && l.physics.on) skinned.push([l, guides.map(G => resampleGuide(G, BAKE_ALONG_PHYS)), colour]);
@@ -707,9 +732,10 @@ async function bake() {
   summary.before = { vertices: liveVertices() };
   summary.after = { vertices: (summary.static.vertices || 0) + summary.physics.reduce((a, x) => a + x.vertices, 0) };
   const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
-  await fetch(`api/hair/${name}/salon.glb`, { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the GLB wasn't saved"); });
-  await api(`api/hair/${name}/salon_bake.json`, JSON.stringify(summary, null, 1));
-  summary.glb_bytes = glb.byteLength; BAKED = summary; bakePanel(); status(`baked Content/Studio/Hair/${name}/salon.glb`, "ok");
+  await fetch(at.url("salon.glb"), { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the GLB wasn't saved"); });
+  await api(at.url("salon_bake.json"), JSON.stringify(summary, null, 1));
+  summary.glb_bytes = glb.byteLength; BAKED = summary; bakePanel();
+  status(at.on ? `baked onto ${at.on} (${at.path("salon.glb")}): the Character Studio wears it (Hair: made in the salon)` : `baked ${at.path("salon.glb")}`, "ok");
   return summary;
 }
 // the bake loaded back (GLTFLoader) and shown instead of the live hair: what a game gets
@@ -718,8 +744,8 @@ async function showBake(on) {
   BAKEG.clear(); st.look.showBake = on;
   for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; if (SCALPM) SCALPM.visible = !on; if (PADM) PADM.visible = !on;
   if (!on) { for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; draw(); return null; }
-  const name = $("#hairName").value.trim();
-  const buf = await (await fetch(`api/hair/${encodeURIComponent(name)}/salon.glb`)).arrayBuffer();
+  const r = await fetch(where().url("salon.glb") + `?v=${Date.now()}`); if (!r.ok) throw new Error("nothing baked yet");
+  const buf = await r.arrayBuffer();
   const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(buf, "", ok, bad));
   let skinnedN = 0, bonesN = 0, meshes = 0; gltf.scene.traverse(o => { if (o.isSkinnedMesh) skinnedN++; if (o.isBone) bonesN++; if (o.isMesh) meshes++; });
   BAKEG.add(gltf.scene); draw();
@@ -727,7 +753,10 @@ async function showBake(on) {
 }
 function bakePanel() {
   const box = $("#bakebox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: "Bake writes the hair for a game (Content/Studio/Hair/<name>/salon.glb): every lock with physics its own skinned mesh on bones along its chains (a sheet three chains, a strand or bundle one), everything else (and the padding, while it's ticked in Volume) merged into one mesh with fewer points along each card. Save first to name it." }));
+  const who = st.head.person;
+  box.append(el("p", { className: "note", textContent: (who ? `Bake puts the hair on ${who} (Content/Studio/People/${who}/salon/salon.glb): the Character Studio wears it (Hair: made in the salon), and so will the director's desk; ${who} goes to Unreal from there, finished, rigged and animated, hair and all. `
+    : "Bake writes the hairstyle's mesh (Content/Studio/Hair/<name>/salon.glb); pick a character at the top to bake the hair onto it. ") +
+    "In it: every lock with physics its own skinned mesh on bones along its chains (a sheet three chains, a strand or bundle one), everything else (and the padding, while it's ticked in Volume) merged into one mesh with fewer points along each card, and the darkened scalp." }));
   box.append(el("button", { textContent: "Bake", onclick: () => bake().catch(e => status(e.message, "bad")) }));
   const t = el("div"); tick(t, "show the bake", !!st.look.showBake, v => showBake(v).catch(e => status(e.message, "bad")), "the baked file loaded back in place of the live hair"); box.append(t);
   if (BAKED) box.append(el("p", { className: "note", textContent: `${BAKED.before.vertices} vertices live -> ${BAKED.after.vertices} baked: one static mesh of ${BAKED.static.vertices || 0}, ${BAKED.physics.length} swinging (${BAKED.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round(BAKED.glb_bytes / 1024)} KB` }));
@@ -1091,7 +1120,7 @@ function baseLocks() {
 // the base alone, baked: its still locks and its padding as one mesh, salon_base.glb; then hide it and add the swinging
 // flourishes, which sit on it by Clip blend
 async function bakeBase() {
-  const name = $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!name) throw new Error("a name first");
+  const at = where();
   if (!baseGroups().length) throw new Error("tick the base's groups in Locks first");
   render(); if (PAD_DIRTY || (st.volume.padding && !PAD)) refreshPadding();
   const parts = baseLocks().map(l => cardsGeometry((EVAL[l.id] || []).map(G => resampleGuide(G, BAKE_ALONG)), l.color || null));
@@ -1099,9 +1128,9 @@ async function bakeBase() {
   const root = new THREE.Group(); root.name = "hair_base";
   const m = new THREE.Mesh(geometryOf(parts), bakeMat()); m.name = "hair_base"; root.add(m);
   const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
-  await fetch(`api/hair/${name}/salon_base.glb`, { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the base wasn't saved"); });
+  await fetch(at.url("salon_base.glb"), { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the base wasn't saved"); });
   const out = { groups: baseGroups(), locks: baseLocks().length, padding: st.volume.padding && PAD ? PAD.cards.length : 0, vertices: m.geometry.attributes.position.count, glb_bytes: glb.byteLength };
-  status(`baked the base: Content/Studio/Hair/${name}/salon_base.glb (${out.locks} locks, ${out.padding} padding cards, ${out.vertices} vertices)`, "ok");
+  status(`baked the base: ${at.path("salon_base.glb")} (${out.locks} locks, ${out.padding} padding cards, ${out.vertices} vertices)`, "ok");
   return out;
 }
 function showBase(on) { remember(); for (const g of st.groups) if (g.base) g.visible = on; PAD_DIRTY = true; locksPanel(); volumePanel(); draw(); }
@@ -1241,15 +1270,25 @@ function selPanel() {
              el("button", { textContent: "Delete", onclick: () => deleteLock(o.id) }));
 }
 function restyle() { applyLook(HAIRU, look()); SCALP_DIRTY = true; for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
-function headPanel() {
-  const box = $("#headbox"); box.innerHTML = "";
+function characterPanel() {                                           // the body the hair is drawn on
+  const box = $("#charbox"); if (!box) return; box.innerHTML = "";
+  if (st.head.person) {
+    box.append(el("p", { className: "note", textContent: PERSON?.face
+      ? `${st.head.person}'s body and face, as the Character Studio saved them (${PERSON.height ?? "?"} m). Change them there, save, and open the character here again; then bake again.`
+      : `${st.head.person}'s body from its weights, without its face: open it in the Character Studio and Save once, so the salon gets the face too.` }));
+    box.append(el("a", { href: "index.html", target: "_blank", textContent: "Open the Character Studio" }));
+    return;
+  }
+  box.append(el("p", { className: "note", textContent: "No character: a base body. Pick a character at the top to draw on its own body and face; the hair is kept on it." }));
   const ps = el("select"); for (const k of Object.keys(MHR?.presets || { feminine: 1 })) ps.append(el("option", { value: k, textContent: k }));
   ps.value = st.head.preset; ps.onchange = () => { st.head.preset = ps.value; buildHead(); };
   box.append(el("div", { className: "row" }, el("span", { textContent: "Body" }), ps, el("span")));
   slider(box, "Height", 1.4, 2.0, 0.01, st.head.height, v => { st.head.height = v; buildHead(); }, "m");
-  // the hair's look: a preset, then its colours and numbers by hand (kept in st.look.custom)
+}
+function lookPanel() {                                                  // the hair's look: a preset, then its colours and numbers by hand (kept in st.look.custom)
+  const box = $("#lookbox"); if (!box) return; box.innerHTML = "";
   const ls = el("select"); for (const [k, v] of Object.entries(LOOKS)) ls.append(el("option", { value: k, textContent: v.label }));
-  ls.value = st.look.hair; ls.onchange = () => { st.look.hair = ls.value; st.look.custom = {}; restyle(); headPanel(); };
+  ls.value = st.look.hair; ls.onchange = () => { st.look.hair = ls.value; st.look.custom = {}; restyle(); lookPanel(); };
   box.append(el("div", { className: "row" }, el("span", { textContent: "Hair look" }), ls, el("span")));
   const k0 = look(), set = (key, v) => { st.look.custom[key] = v; restyle(); };
   for (const [key, label, title] of [["root", "Roots", "the colour at the roots and deep inside"], ["tip", "Lengths", "the colour along the lengths"], ["spec1", "Shine", "the sharp highlight's colour"], ["spec2", "Sheen", "the broad, tinted highlight"], ["inner", "Inner strands", "a hidden colour on a few strands"]]) {
@@ -1268,34 +1307,63 @@ function headPanel() {
 }
 
 // ---- save and load ----------------------------------------------------------------------------------------------------
+// The hair is kept on the character it's drawn on (Save: People/<name>/salon/salon.json); a hairstyle (Start from) is
+// hair kept to start other characters from (Content/Studio/Hair/<name>/), laid onto whatever head is shown.
 async function listHair() { const s = $("#hairList"); s.innerHTML = ""; const r = await api("api/salon").catch(() => ({ hair: [] })); for (const n of r.hair) s.append(el("option", { value: n, textContent: n })); }
-async function save() {
-  const name = $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_");
-  if (!name) return status("a name first", "bad");
-  const out = st;
-  await api(`api/hair/${name}/salon.json`, JSON.stringify(out, null, 1));
-  status(`saved Content/Studio/Hair/${name}/salon.json`, "ok"); listHair();
+async function listPeople() {
+  const r = await api("api/people").catch(() => ({ people: [] }));
+  $("#person").replaceChildren(el("option", { value: "", textContent: "none: a base body" }), ...r.people.map(p => el("option", { value: p.name, textContent: p.name + (p.baked ? " (hair baked)" : p.hair ? " (hair)" : "") })));
+  $("#person").value = st.head.person || "";
 }
-async function load(name) {
-  const o = await api(`api/hair/${encodeURIComponent(name)}/salon.json`);
-  Object.assign(st.head, o.head || {}); Object.assign(st.mirror, o.mirror || {}); Object.assign(st.look, o.look || {});
+async function save() {
+  const at = where();
+  await api(at.url("salon.json"), JSON.stringify(st, null, 1));
+  status(at.on ? `saved ${at.on}'s hair (${at.path("salon.json")}); Bake puts it on ${at.on}` : `saved the hairstyle ${at.path("salon.json")}`, "ok");
+  if (at.on) listPeople(); else listHair();
+}
+async function saveStyle() {                                           // the hair as a hairstyle, whoever it's on
+  const n = styleName(); if (!n) throw new Error("a hairstyle's name first");
+  const o = JSON.parse(JSON.stringify(st)); o.head.person = null;
+  await api(`api/hair/${n}/salon.json`, JSON.stringify(o, null, 1));
+  status(`saved the hairstyle Content/Studio/Hair/${n}/salon.json`, "ok"); listHair();
+}
+async function applyHair(o, person) {                                 // a salon.json onto the page; the head: `person`'s body, or the saved base
+  Object.assign(st.head, o.head || {}); st.head.person = person || null; Object.assign(st.mirror, o.mirror || {}); Object.assign(st.look, o.look || {});
   st.groups = o.groups?.length ? o.groups : st.groups; st.locks = o.locks || []; st.layering = !!o.layering; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
   Object.assign(st.reference, o.reference || {});
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
   st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 }, o.volume || {}); BASE_DIRTY = true; SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
-  $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
+  UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
-  SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); rootsPanel(); coverPanel(); volumePanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
+  SIM_DIRTY = true; BAKED = null; if (st.look.showBake) await showBake(false); st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
+  allPanels(); draw();
 }
+async function load(name) {                                           // a hairstyle, onto the head shown (a character keeps its body)
+  const o = await api(`api/hair/${enc(name)}/salon.json`);
+  await applyHair(o, st.head.person); $("#hairName").value = name;
+  status(st.head.person ? `the hairstyle ${name} on ${st.head.person}: Save keeps it on ${st.head.person}` : `loaded the hairstyle ${name}`, "ok");
+}
+async function openPerson(name) {                                     // a character: its body, and its hair if it has some (else the hair shown stays, to put on it)
+  if (!name) { st.head.person = null; PERSON = null; await buildHead(); characterPanel(); $("#person").value = ""; status("a base body (Save keeps the hair as a hairstyle)", "ok"); return; }
+  PERSON = await personBody(name);
+  const r = await fetch(`api/people/${enc(name)}/salon/salon.json?v=${Date.now()}`);
+  if (r.ok) await applyHair(await r.json(), name);
+  else { st.head.person = name; await buildHead(); characterPanel(); }
+  $("#person").value = name;
+  status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet, the hair shown is put on it when you Save"}`, PERSON.face ? "ok" : "bad");
+}
+function allPanels() { characterPanel(); refPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); lookPanel(); bakePanel(); }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
+$("#saveStyle").onclick = () => saveStyle().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
+$("#person").onchange = () => openPerson($("#person").value).catch(e => status(e.message, "bad"));
 
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); characterPanel(); lookPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair(); await listPeople();
+    if (Q.get("person")) await openPerson(Q.get("person"));
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1306,7 +1374,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
+  screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
   PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned

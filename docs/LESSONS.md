@@ -337,3 +337,12 @@ The Clip blend check counted 0 points over the base three times: first the test 
 was never in it), then the test subtracted the collider object instead of its centre (NaN everywhere). It failed
 rather than passed only because it asked for a minimum. Every measuring check states how many samples it measured
 and fails on none.
+
+The salon's bake was written as hair for Unreal on its own, and the user had to correct it: hair goes onto the
+Character Studio's characters, and only finished characters go to Unreal. DECISIONS 2026-10-21 already said one app
+for everything character, with the export to Unreal from it. Before building where a tool's output goes, read where
+the decisions send it, and say the whole route (made, used, exported) back to the user.
+
+An element's `hidden` loses to a CSS rule that sets its `display` (`.row { display: grid }`): the Character Studio's
+Hair tab "hid" the style's rows for strand hair and they stayed on screen. Pages that hide with the attribute carry
+`[hidden] { display: none !important; }`.

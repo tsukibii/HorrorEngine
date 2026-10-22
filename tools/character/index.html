@@ -21,6 +21,7 @@
   .row input[type=range] { width: 100%; padding: 0; accent-color: var(--gold); }
   .row output { text-align: right; font-variant-numeric: tabular-nums; }
   .row.moved span:first-child { color: var(--ink); }
+  [hidden] { display: none !important; }
   .tog { display: flex; gap: 6px; align-items: flex-start; margin: 6px 0; } .tog small { display: block; color: var(--dim); line-height: 1.35; }
   .tog input { accent-color: var(--gold); margin-top: 2px; }
   .bases { display: flex; gap: 6px; margin: 4px 0 6px; } .bases button { flex: 1; }
@@ -102,7 +103,7 @@
     <section data-tab="hair" hidden>
       <h3>Hair, brows, lashes</h3>
       <div id="hairRows"></div>
-      <p class="note">Cards grown from this head's scalp (tools/character/hair.js): a style, then its numbers; they follow the body and the face, and keep off the head and shoulders. Strands for close-ups and a groom brush come later (docs/MHR_PIPELINE_RESEARCH.md, phase 4).</p>
+      <p class="note">Cards grown from this head's scalp (tools/character/hair.js): a style, then its numbers; they follow the body and the face, and keep off the head and shoulders. Or the hair drawn for this character in the salon (Hair: made in the salon), baked onto it there.</p>
     </section>
 
     <section data-tab="clothes" hidden>
@@ -125,6 +126,7 @@ import * as THREE from "three";
 import * as HAIR from "./hair.js";
 import { Wig } from "./wig.js";
 import { StrandHair } from "./strands.js";
+import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 const $ = s => document.querySelector(s);
@@ -469,6 +471,13 @@ function computeBody() {                               // RAW: MHR with the weig
     for (let i = 0; i < RAW.length; i++) RAW[i] += a * S[i];
   }
 }
+function neutralBody() {                               // the body as saved for the salon: RAW and the face, scaled, no expression
+  let lo = Infinity; for (let i = 1; i < RAW.length; i += 3) lo = Math.min(lo, RAW[i]);
+  const P = new Float32Array(N * 3);
+  for (let i = 0; i < RAW.length; i += 3) { P[i] = RAW[i] * SCALE; P[i + 1] = (RAW[i + 1] - lo) * SCALE; P[i + 2] = RAW[i + 2] * SCALE; }
+  if (DELTA) { const k = st.face.strength * SCALE; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; for (let a = 0; a < 3; a++) P[i + a] += k * DELTA.d[j * 3 + a]; } }
+  return P;
+}
 function compose() {                                   // POS: RAW + the face, scaled to the height, feet on the floor; then the eyes, the expressions
   let lo = Infinity, hi = -Infinity;
   for (let i = 1; i < RAW.length; i += 3) { lo = Math.min(lo, RAW[i]); hi = Math.max(hi, RAW[i]); }
@@ -729,6 +738,12 @@ function growHair() {
   hairDirty = false;
   const on = st.hair.style !== "none" && LMK;
   HM.hair.visible = HM.cap.visible = !!on; HM.brows.visible = !!LMK && (st.hair.brows || st.hair.lashes);
+  if (SALONH) SALONH.visible = st.hair.source === "salon";
+  if (st.hair.source === "salon") {                    // the salon's hair (its own scalp in it); brows and lashes grown here
+    HM.hair.visible = HM.cap.visible = false; WM.visible = false; WIG = null; if (STRANDS) STRANDS.mesh.visible = false;
+    if (LMK) { const r = HAIR.grow(POS, TRIS, lmk, SCALE, { ...st.hair, ...st.hair.over, style: "long", cards: 0, guidesOnly: true }); HAIRNOW = r; toGeo(HM.brows, r.brows); }
+    return;
+  }
   if (!LMK) return;
   const photo = st.hair.source === "photo";
   if (photo) {                                         // strands from the picture: the body's collision for their chains, brows, a cap
@@ -800,6 +815,23 @@ async function loadStrands() {
   STRANDS.step(1 / 60, rig.matrix.elements, rig.matrix.clone().invert().elements, wigSet());
   hairDirty = true; return head;
 }
+// the salon's hair (tools/character/salon.html, docs/SALON.md): its bake onto this character, salon.glb in the head's
+// space, placed by the head frame the salon used (salon_bake.json); rides the body (rig) like everything it wears
+var SALONH = null;
+async function loadSalon() {
+  if (SALONH) { rig.remove(SALONH); SALONH.traverse(o => { o.geometry?.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); }); SALONH = null; }
+  if (!WHO) return null;
+  const at = `api/people/${encodeURIComponent(WHO)}/salon/`, v = `?v=${Date.now()}`;
+  const [jr, gr] = await Promise.all([fetch(at + "salon_bake.json" + v), fetch(at + "salon.glb" + v)]);
+  if (!jr.ok || !gr.ok) return null;
+  const info = await jr.json(), buf = await gr.arrayBuffer();
+  const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(buf, "", ok, bad));
+  const { C, B, S } = info.head, g = new THREE.Group(); g.name = "salon hair"; g.matrixAutoUpdate = false;
+  g.matrix.set(B[0][0] * S, B[0][1] * S, B[0][2] * S, C[0], B[1][0] * S, B[1][1] * S, B[1][2] * S, C[1], B[2][0] * S, B[2][1] * S, B[2][2] * S, C[2], 0, 0, 0, 1);
+  let meshes = 0, swinging = 0; gltf.scene.traverse(o => { if (o.isMesh) { meshes++; o.frustumCulled = false; } if (o.isSkinnedMesh) swinging++; });
+  g.add(gltf.scene); rig.add(g); SALONH = g; hairDirty = true;
+  return { meshes, swinging, head: info.head };
+}
 function stepStrands(dt) {
   if (!STRANDS || !STRANDS.mesh.visible) return;
   ACC_S += dt; let n = 0;
@@ -814,9 +846,11 @@ const hairSet = {};
   styleSel.append(el("option", { value: "none", textContent: "none (bald)" }), ...Object.entries(HAIR.STYLES).map(([k, v]) => el("option", { value: k, textContent: v.label })));
   box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), styleSel, el("output")), el("div", { className: "row" }, el("span", { textContent: "Colour" }), color, el("output")));
   const srcSel = el("select"), rebatch = el("button", { textContent: "Batch again" });
-  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "strands (the hair library)" }));
-  const photoBox = el("div", { className: "photoHair" });
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Hair" }), srcSel, el("output")), photoBox);
+  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "strands (the hair library)" }), el("option", { value: "salon", textContent: "made in the salon" }));
+  const photoBox = el("div", { className: "photoHair" }), salonBox = el("div", { className: "salonHair" });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Hair" }), srcSel, el("output")), photoBox, salonBox);
+  salonBox.append(el("p", { className: "note", textContent: "This character's hair from the salon: drawn there on this body (save the character here first, so the salon has its face), baked onto it; the brows and lashes are from here. After changing the head, bake it again in the salon." }),
+    el("a", { id: "salonLink", href: "salon.html", target: "_blank", textContent: "Do this character's hair in the salon" }));
   photoBox.append(el("p", { className: "note", textContent: "Strands made elsewhere, fitted to this head and batched like an anime game's: clumps, each one guide chain with physics, every strand riding its clump on the GPU." }));
   // the hair library (Perm's hairstyles: tools/perm.py): pick or blend, or match the front picture
   st.hair.blend = st.hair.blend || { weights: {}, vary: 0, seed: 0 };
@@ -874,8 +908,14 @@ const hairSet = {};
   hairSet.bclumps = slider(photoBox, "hair_bclumps", "Clumps", 32, 1024, 32, st.hair.batch.clumps, "Guide chains with physics: more follow the hair's shape closer, cost more.", v => { st.hair.batch.clumps = v; });
   hairSet.bstrands = slider(photoBox, "hair_bstrands", "Strands drawn", 2000, 60000, 1000, st.hair.batch.strands, "How many of the strands are drawn (each rides its clump).", v => { st.hair.batch.strands = v; });
   photoBox.append(rebatch);
-  const showSrc = () => { photoBox.hidden = st.hair.source !== "photo"; box.querySelectorAll(".styleOnly").forEach(e => { e.hidden = st.hair.source === "photo"; }); };
-  srcSel.onchange = async () => { st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo") hairSet.library(); if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet", h ? "ok" : ""); } hairDirty = true; };
+  const showSrc = () => { photoBox.hidden = st.hair.source !== "photo"; salonBox.hidden = st.hair.source !== "salon"; box.querySelectorAll(".styleOnly").forEach(e => { e.hidden = st.hair.source !== "style"; });
+    box.querySelectorAll(".notSalon").forEach(e => { e.hidden = st.hair.source === "salon"; }); };
+  srcSel.onchange = async () => {
+    st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo") hairSet.library();
+    if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet", h ? "ok" : ""); }
+    if (st.hair.source === "salon") { const h = await loadSalon().catch(e => { status(e.message, "bad"); return null; }); status(h ? `the salon's hair: ${h.meshes} meshes (${h.swinging} swinging)` : WHO ? `no hair from the salon for ${WHO} yet: do it there and bake it` : "make or pick a character first", h ? "ok" : "bad"); }
+    hairDirty = true;
+  };
   rebatch.onclick = async () => {
     if (!WHO) return status("make or pick a character first", "bad");
     status("batching…"); rebatch.disabled = true;
@@ -927,8 +967,10 @@ const hairSet = {};
     status(`wrote ${r.path}${WIG && WM.visible ? " and the wig's chains" : ""}`, "ok");
   };
   box.children[0].classList.add("styleOnly");                                       // the style picker
-  for (const r of [...box.children].slice([...box.children].indexOf(photoBox) + 1))   // the rest is the style's: hidden for strands
-    if (!r.textContent.startsWith("Head motion") && !/^(Hold|Gravity)/.test(r.textContent)) r.classList.add("styleOnly");
+  for (const r of [...box.children].slice([...box.children].indexOf(salonBox) + 1)) {   // the rest is the style's (hidden for strands and the salon's
+    if (r.textContent.startsWith("Head motion") || /^(Brows|Lashes)$/.test(r.textContent)) continue;   // hair), but the wig's hold and gravity (strands too)
+    r.classList.add(/^(Hold|Gravity)/.test(r.textContent) ? "notSalon" : "styleOnly");
+  }
   hairSet.all = () => { styleSel.value = st.hair.style; color.value = st.hair.color; brows.checked = st.hair.brows; lashes.checked = st.hair.lashes;
     for (const k of ["clumps", "clumpWidth", "hold", "gravity"]) hairSet[k](st.hair[k]); hairSet.wig(st.hair.wig); hairSet.source();
     hairSet.bangsAt(st.hair.bangsAt); hairSet.hairline(st.hair.hairline); hairSet.cards(st.hair.cards); hairSet.width(st.hair.width); fill(); tint(); };
@@ -1053,6 +1095,8 @@ async function open(name) {
   hairSet.all();
   computeBody(); compose(); hud();
   if (WHO && st.hair.source === "photo") await loadStrands();
+  $("#salonLink").href = WHO ? `salon.html?person=${encodeURIComponent(WHO)}` : "salon.html";
+  if (st.hair.source === "salon" || SALONH) await loadSalon().catch(() => null);
   if (WHO) detect();
 }
 const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, hair: st.hair,
@@ -1068,7 +1112,9 @@ $("#make").onclick = async () => {
 };
 $("#save").onclick = async () => {
   if (!WHO) return status("make a character first", "bad");
-  const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); status(`saved ${r.path}`, "ok");
+  const r = await api(`api/people/${encodeURIComponent(WHO)}`, character());
+  await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));   // the salon's head (its face too)
+  status(`saved ${r.path} (and its body, for the salon)`, "ok");
 };
 function objText(head) {                               // metres, Y up, facing +Z; the head cut 0.245 m under its top (as MHR_head.obj)
   const cut = TOP - 0.245 * SCALE, keep = new Int32Array(N).fill(-1), v = [], f = [];
@@ -1094,7 +1140,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, loadSalon, get salonHair() { return SALONH; }, neutralBody, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();

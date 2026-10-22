@@ -34,6 +34,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  page.on("dialog", d => d.accept());                                 // the Character Studio's "start it again?"
   const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}`); } };
   const ev = (fn, arg) => page.evaluate(fn, arg);
   const view = async (yaw, pitch = 0.1, dist = 1.3) => { await ev(([y, p, d]) => { const s = window.__salon; Object.assign(s.orbit, { yaw: y, pitch: p, dist: d, zoom: 1, pan: [0, 0] }); s.draw(); }, [yaw, pitch, dist]); await page.waitForTimeout(250); };
@@ -584,6 +585,56 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!(await ev(() => window.__salon.scalpInfo() && window.__salon.scalpInfo().vertices))) throw new Error("the scalp isn't drawn after the reload");
     fs.rmSync(path.dirname(f), { recursive: true, force: true });
     console.log(`       ${after[0].length} locks, the scalp at ${after[1]}`);
+  });
+  await step("on a character: the Character Studio saves its body, the salon draws on it and keeps the hair on it, the bake goes onto it, and the Character Studio wears it", async () => {
+    const dir = path.join(ROOT, "Content", "Studio", "People", TEST), style = path.join(ROOT, "Content", "Studio", "Hair", TEST + "_style");
+    fs.rmSync(dir, { recursive: true, force: true });
+    await page.goto(BASE);                                           // the Character Studio: a character, feminine, 1.58 m, saved
+    await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 90000 });
+    await page.fill("#newName", TEST); await page.click("#make");
+    await page.waitForFunction(n => window.__body.who === n, TEST, { timeout: 30000 });
+    await page.click('.bases button[data-base="-1"]');
+    await page.$$eval("#baseRows input", ins => { ins[1].value = 1.58; ins[1].dispatchEvent(new Event("input")); });
+    await page.click("#save"); await page.waitForFunction(() => /saved .*its body/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    const N = await ev(() => window.__body.N), body = fs.readFileSync(path.join(dir, "body.bin"));
+    if (body.length !== N * 12) throw new Error(`body.bin is ${body.length} bytes for ${N} points`);
+    await page.goto(BASE + "salon.html?person=" + TEST);             // the salon on it: its body, hair made and saved onto it
+    await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });
+    const on = await ev(() => { const s = window.__salon, P = s.PERSON; let top = -1; for (let i = 1; i < P.body.length; i += 3) top = Math.max(top, P.body[i]); return { name: P.name, face: P.face, top, picked: document.querySelector("#person").value }; });
+    if (on.name !== TEST || !on.face || on.picked !== TEST || Math.abs(on.top - 1.58) > 0.003) throw new Error(JSON.stringify(on));
+    await ev(() => { window.__salon.presets.apply("m_crop"); window.__salon.render(); });
+    const locks = await count();
+    await ev(() => { document.querySelector("#status").textContent = ""; }); await page.click("#saveHair");
+    await page.waitForFunction(n => new RegExp(`saved ${n}'s hair`).test(document.querySelector("#status").textContent), TEST, { timeout: 30000 });
+    if (!fs.existsSync(path.join(dir, "salon", "salon.json"))) throw new Error("the hair isn't kept on the character");
+    await ev(n => { document.querySelector("#hairName").value = n; }, TEST + "_style"); await page.click("#saveStyle");
+    await page.waitForFunction(() => /saved the hairstyle/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    const kept = JSON.parse(fs.readFileSync(path.join(style, "salon.json"), "utf-8")); fs.rmSync(style, { recursive: true, force: true });
+    if (kept.head.person !== null || kept.locks.length !== locks) throw new Error("the hairstyle: " + JSON.stringify(kept.head));
+    await ev(() => { document.querySelector("#status").textContent = ""; }); await page.click("#bakebox button:text-is('Bake')");
+    await page.waitForFunction(n => new RegExp(`baked onto ${n}`).test(document.querySelector("#status").textContent), TEST, { timeout: 60000 });
+    const sum = JSON.parse(fs.readFileSync(path.join(dir, "salon", "salon_bake.json"), "utf-8"));
+    if (sum.head.person !== TEST || !fs.existsSync(path.join(dir, "salon", "salon.glb"))) throw new Error("the bake: " + JSON.stringify(sum.head));
+    await page.goto(BASE + "salon.html?person=" + TEST);             // opened again: its own hair
+    await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 });
+    if (await count() !== locks) throw new Error(`reopened with ${await count()} locks, saved ${locks}`);
+    await page.goto(BASE);                                           // the Character Studio wears it: on the head, over its top
+    await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 90000 });
+    await page.selectOption("#who", TEST); await page.waitForFunction(n => window.__body.who === n, TEST, { timeout: 30000 });
+    await page.click('#tabs button[data-tab="hair"]'); await page.selectOption("#hairRows select >> nth=1", "salon");
+    await page.waitForFunction(() => window.__body.salonHair && /the salon's hair/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    await page.waitForTimeout(300);
+    const w = await ev(() => {
+      const b = window.__body, H = b.salonHair; H.updateMatrixWorld(true); const v = new H.position.constructor(), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+      H.traverse(o => { if (!o.isMesh || o.isSkinnedMesh || o.name === "hair_scalp") return; const P = o.geometry.attributes.position;
+        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], v.getComponent(k)); hi[k] = Math.max(hi[k], v.getComponent(k)); } } });
+      let top = -1; for (let i = 1; i < b.POS.length; i += 3) top = Math.max(top, b.POS[i]);
+      return { lo, hi, top, visible: H.visible };
+    });
+    const mid = (w.lo[0] + w.hi[0]) / 2;
+    if (!w.visible || w.hi[1] < w.top || w.hi[1] > w.top + 0.06 || w.lo[1] < w.top - 0.3 || Math.abs(mid) > 0.01) throw new Error(JSON.stringify(w));
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`       ${TEST}: body.bin from the Character Studio (${N} points, ${on.top.toFixed(3)} m); ${locks} locks kept on it and baked onto it (${sum.after.vertices} vertices); the Character Studio wears it from ${w.lo[1].toFixed(3)} to ${w.hi[1].toFixed(3)} m over a ${w.top.toFixed(3)} m head top, centred ${(mid * 1000).toFixed(1)} mm`);
   });
   if (shot) await page.screenshot({ path: shot });
   if (errors.length) fail("page errors: " + errors.join(" | "));
