@@ -2,7 +2,8 @@
 // the feminine base and a shape slider move the body, the height scales it; a front picture (the page's own head from
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
-// eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; pants are made to the body and worn;
+// eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
+// skin takes over the body with the photo on the face through its mask, and its features change the picture; pants are made to the body and worn;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in for DiffLocks') batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
@@ -96,6 +97,20 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__body.skin && window.__body.material.map === window.__body.skin, null, { timeout: 90000 });
     const st = await page.textContent("#status");
     if (!/skin: .*skin\.png/.test(st)) throw new Error(st);
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("procedural skin: made in the shader, the photo through its mask on the face; a feature changes the picture", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    await page.waitForFunction(() => window.__body.skinMask, null, { timeout: 30000 });
+    await page.click("#procRows label.tog input");
+    await page.waitForFunction(() => window.__body.SKU.uProc.value === 1 && window.__body.SKU.uHasPhoto.value === 1 && window.__body.material.map === null, null, { timeout: 10000 });
+    const a = await headShot(0);
+    await page.evaluate(() => { const i = document.querySelector("#procRows .row input[type=range]"); i.value = 1; i.dispatchEvent(new Event("input")); });   // mottling all the way
+    await page.evaluate(() => { const r = [...document.querySelectorAll("#procRows .row")].find(x => x.textContent.startsWith("Freckles")); const i = r.querySelector("input"); i.value = 1; i.dispatchEvent(new Event("input")); });
+    const b = await headShot(0);
+    if (Buffer.compare(a, b) === 0) throw new Error("the features don't change the picture");
+    await page.click('#tabs button[data-tab="skin"]');
+    await page.click("#procRows label.tog input");                         // back off for the rest
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("clothes: pants made to this body, draped, worn", async () => {

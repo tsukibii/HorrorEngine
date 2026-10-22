@@ -88,6 +88,8 @@
       <div id="skinRows"></div>
       <h3>Photo skin</h3>
       <div id="photoSkin"></div>
+      <h3>Procedural skin</h3>
+      <div id="procRows"></div>
       <h3>Eyes</h3>
       <div id="eyeRows"></div>
     </section>
@@ -118,6 +120,7 @@ import * as THREE from "three";
 import * as HAIR from "./hair.js";
 import { Wig } from "./wig.js";
 import { StrandHair } from "./strands.js";
+import * as SKINSH from "./skinshader.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const api = async (u, body) => {
@@ -254,12 +257,15 @@ const usePhoto = el("input", { type: "checkbox" }), sizeSel = el("select", {}, .
 $("#photoSkin").append(photoBtn, " ", sizeSel,
   el("label", { className: "tog" }, usePhoto, el("span", { textContent: "Wear the photo skin" })),
   el("p", { className: "note", textContent: "The face comes from the picture where the head faces the camera; above the brows only skin-coloured pixels count (bangs stay off the forehead); the rest of the body takes the face's tone. Eyes and mouth are painted on MHR's closed shell until the face parts come." }));
-let SKIN = null;
+var SKIN = null, SKINMASK = null;
 const loader = new THREE.TextureLoader();
 function skinLook() {
-  material.map = st.skin.photo && SKIN ? SKIN : null;
-  material.color.set(material.map ? 0xffffff : st.skin.tone);
+  const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
+  material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
+  material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
   material.roughness = st.skin.rough; material.needsUpdate = true;
+  SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
+  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
 }
 async function loadSkin() {
   if (!WHO) return;
@@ -269,7 +275,23 @@ async function loadSkin() {
     if (SKIN) SKIN.dispose();
     SKIN = t;
   } catch (e) { SKIN = null; }
+  try { const m = await loader.loadAsync(`api/skin/${encodeURIComponent(WHO)}?mask=1&v=${Date.now()}`); SKINMASK?.dispose(); SKINMASK = m; }
+  catch (e) { SKINMASK = null; }
   usePhoto.disabled = !SKIN; skinLook();
+}
+// the procedural skin's controls: a toggle, every feature its own slider, two colours
+st.skin.proc = { ...SKINSH.DEFAULTS };
+const procSet = {};
+{
+  const box = $("#procRows"), on = el("input", { type: "checkbox" });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Procedural skin", el("small", { textContent: "The body's colour and fine relief made from noise where each point sits (no seams): every feature below is its own layer. With a photo skin, the picture shows on the face through its mask and this skin carries the rest." }))));
+  on.onchange = () => { st.skin.proc.on = on.checked; skinLook(); };
+  for (const [k, label, lo, hi, step, val, help] of SKINSH.FEATURES)
+    procSet[k] = slider(box, "skin_" + k, label, lo, hi, step, val, help, v => { st.skin.proc[k] = v; skinLook(); });
+  const fc = el("input", { type: "color", value: st.skin.proc.freckleColor }), flc = el("input", { type: "color", value: st.skin.proc.flushColor });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Freckle colour" }), fc, el("output")), el("div", { className: "row" }, el("span", { textContent: "Flush colour" }), flc, el("output")));
+  fc.oninput = () => { st.skin.proc.freckleColor = fc.value; skinLook(); }; flc.oninput = () => { st.skin.proc.flushColor = flc.value; skinLook(); };
+  procSet.all = () => { on.checked = st.skin.proc.on; fc.value = st.skin.proc.freckleColor; flc.value = st.skin.proc.flushColor; for (const f of SKINSH.FEATURES) procSet[f[0]](st.skin.proc[f[0]]); };
 }
 usePhoto.onchange = () => { st.skin.photo = usePhoto.checked; skinLook(); };
 sizeSel.onchange = () => { st.skin.size = +sizeSel.value; };
@@ -279,6 +301,8 @@ photoBtn.onclick = async () => {
   const side = PICS.filter(p => p.name.startsWith("side.")).map(p => p.name);
   try {
     const r = await api("api/face/skin", { name: WHO, weights: weights(), settings: { ...st.face, relative: $("#relative").checked }, side, size: st.skin.size });
+    const t = r.report.tone_bgr;                       // the body takes the picture's own skin tone (the procedural skin starts from it)
+    if (t) { st.skin.tone = "#" + [t[2], t[1], t[0]].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join(""); toneIn.value = st.skin.tone; }
     await loadSkin(); st.skin.photo = usePhoto.checked = !!SKIN; skinLook();
     status(`skin: ${r.path} (${r.report.triangles} triangles from ${r.report.picture})`, "ok");
   } catch (e) { status(e.message, "bad"); }
@@ -351,6 +375,8 @@ const C = TRIS.length, dgeo = new THREE.BufferGeometry();  // what's drawn: one 
 dgeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
 dgeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
 if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
+if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
+const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
 const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);   // the body and all it wears: the head motion moves it
 let EYES_IN = false;
@@ -387,6 +413,7 @@ function compose() {                                   // POS: RAW + the face, s
     DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
+  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   hairDirty = true;
 }
 
@@ -809,6 +836,7 @@ async function open(name) {
   st.shape.forEach((v, i) => { shapeSet[i](v); });
   document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
+  st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
@@ -859,7 +887,7 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 $("#raking").onchange = place;
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N };   // bodytest.js
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N };   // bodytest.js
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);

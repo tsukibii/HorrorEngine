@@ -704,6 +704,7 @@ def cmd_worker(a):
             tex, alpha, srep = skin.bake(img, pixels, verts, m["tris"], m["uv"], bound, int(q.get("size", 2048)))
             out = Path(q["out"]); out.parent.mkdir(parents=True, exist_ok=True)
             cv2.imwrite(str(out), tex)
+            cv2.imwrite(str(out.with_name(out.stem + "_mask.png")), (np.clip(alpha, 0, 1) * 255).astype(np.uint8))   # where the picture covers
             return dict(path=str(out), report=dict(srep, picture=front))
         if op in ("fit", "save"):
             if q["name"] not in pics: raise ValueError("detect the pictures first")
