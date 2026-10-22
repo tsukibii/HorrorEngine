@@ -200,8 +200,8 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   duplicate, mirror once (a twin across the seam without the link), delete, reorder; undo/redo (a stack of
   `salon.json` states, cheap).
   **Built 2026-10-22**: groups (new, the active one, show and hide), every lock a row (select, show, hide), name, colour, drawn as, duplicate, mirror once, break the mirror, delete, undo and redo; not yet: reorder, physics on.
-- [x] **The cover** (the user's ask, 2026-10-22): a finishing helper for gaps (a crown's middle): a plane on the head
-  and hair, its seam the roots of two sheets out to each side, over all the other hair, falling onto it. **Done
+- [x] **The cover** (the user's ask, 2026-10-22): a finishing helper for gaps (a crown's middle): a parting along the
+  head's middle, each root a Y over all the other hair, falling onto it (a placed plane tried first, dropped). **Done
   2026-10-22** (docs/SALON.md, The cover). Combing it: later.
 - [x] **The pull** (the user's ask, 2026-10-22): a handle pulled takes the handles in its reach along, faded by
   distance, Blender's proportional editing (its falloffs, the wheel's reach, O). **Done 2026-10-22** (docs/SALON.md).

@@ -2,6 +2,12 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-22, last (the salon's cover)
+
+- **Gaps are covered by a Y parting, not a plane:** along the head's middle, each root a Y (one root, strands going
+  left and right) lying over all the other hair, as long as the hair rooted highest (the user's characters have no
+  spiky anime hair, so that's enough), and it falls with gravity. A placed plane was tried and dropped. No combing yet.
+
 ## 2026-10-22, latest (the salon's scalp, layers and gravity)
 
 - **The fill is dropped** (the trace, the orange glow, the mass of hair): under the hair shader it doesn't look good.

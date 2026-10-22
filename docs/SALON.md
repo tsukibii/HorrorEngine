@@ -62,7 +62,6 @@ a pulled face's middle drags the picture's middle the whole way). The cube is sa
 | Bundle | B | click a root, click the tip | the root's width |
 | Bundle line | D | drag a line along the scalp (its width), let go, click the tip | its height (an oval) |
 | Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it | the pull's reach (down grows it) |
-| Cover | C | click on the head over a gap: the finishing helper's plane (Finish) | its size |
 | Fit ref | F | drag the reference picture; the wheel scales it | |
 
 **Hair lies on the scalp** (2026-10-22): a new lock is combed onto the head: every point within 3 cm of it is laid on
@@ -119,23 +118,6 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
   head doesn't count, so hair rooted higher passes under a poke instead of being lifted along it (it was lifted 11 cm).
   Any change re-lays them all. The bake takes the layered hair.
 - **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
-
-## The cover: the finishing helper (2026-10-22)
-
-Locks placed round a crown can leave a hole in the middle. The **Cover** tool (C) puts a **plane** over it: a click on
-the head lays it there, following the head and the hair already on it (it goes round the skull's middle by arc length,
-then sits on the hair shown), its **seam** (green, the plane's middle) running up the view. In **Finish**: **Width**
-(across the seam, half to each side), **Height** (along the seam: the root line's length), **Turn** (the seam turned
-from the view's up); the wheel sizes it. **Make the hair** turns it into two sheets rooted on the seam (on the skin),
-combed out over the plane to each side, in the group **Cover**, and lets them fall: gravity on for them alone, the rest
-of the hair still and in their way (they land on it, not through it to the skin). Switch gravity off (or Keep this
-frame) to keep them, as with gravity; Back to before leaves them as made. The plane is a helper, not saved; its hair
-is ordinary sheets (`cover: true`), refined like any other.
-
-**Covers always lie over all the other hair**, Layer by height on or off: they're laid last, pushed out of a map of
-the hair under them (what lies on the head, as layering counts it). Hair laid along the head is already where gravity
-leaves it, so a cover over the crown hardly moves; what reaches past the head's widest, or off the hair's edge, hangs.
-Combing is for later.
 
 ## The cover: the finishing helper (2026-10-22)
 
@@ -248,9 +230,9 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
-  its original mirrored); a bundle line; thickness; the cover (its plane on the hair at the size asked, its two sheets
-  rooted on the seam and over all the other hair, falling, kept exactly as shown, the rest unmoved, undone); a save and
-  a reload.
+  its original mirrored); a bundle line; thickness; the cover (the parting's Y's previewed at the top hair's length,
+  made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly
+  sliding on top as they fall, kept exactly as shown, the rest unmoved, undone); a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.
 
