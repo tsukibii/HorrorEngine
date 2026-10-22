@@ -62,7 +62,7 @@ export class Wig {
         P[j] += dx * e * wj; P[j + 1] += dy * e * wj; P[j + 2] += dz * e * wj;
       }
       if (it !== 1 && it !== s.iterations - 1) continue;   // off the head and shoulders twice a step: in the body's frame, back out
-      const gap = 0.004 * this.S;
+      const gap = 0.002 * this.S;
       for (const c of this.chains) for (let k = c.pin; k < c.count; k++) {
         const i = (c.at + k) * 3, l0 = apply(Minv, P[i], P[i + 1], P[i + 2]), l = c.bang ? l0 : this.guard(l0);
         let [q, moved] = this.push(l, c.bang ? 0.002 * this.S : gap);

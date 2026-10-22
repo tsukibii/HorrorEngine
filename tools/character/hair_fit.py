@@ -180,12 +180,13 @@ def character_body(name):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--strands", required=True); ap.add_argument("--out", required=True)
-    ap.add_argument("--character"); ap.add_argument("--body", help="the body as the Studio has it (n,3 .npy)")
+    ap.add_argument("--character"); ap.add_argument("--body", help="the body as the Studio has it (n,3: .npy, or raw float32 .f32)")
     ap.add_argument("--smplx", default=str(ROOT / "vendor" / "difflocks" / "src" / "data_loader" / "difflocks_bodydata" / "smplx_base.ply"))
     a = ap.parse_args()
     import mhr
     if a.body:
-        pts, tris = np.load(a.body).astype(float), mhr.load()["tris"]
+        pts = (np.fromfile(a.body, np.float32).reshape(-1, 3) if a.body.endswith(".f32") else np.load(a.body)).astype(float)
+        tris = mhr.load()["tris"]
         k = (pts[:, 1].max() - pts[:, 1].min()) / 1.7
     elif a.character:
         pts, tris, k = character_body(a.character)

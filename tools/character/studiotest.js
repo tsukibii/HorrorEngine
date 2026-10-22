@@ -4,7 +4,8 @@
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; pants are made to the body and worn;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
-// the grown cards still grow; brows and lashes; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
+// the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in for DiffLocks') batched into clumps,
+// rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup, python tools/garment.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
@@ -109,15 +110,16 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
   });
   await step("hair: a twin-tail wig settles off the head and shoulders, survives a shake, exports its chains; grown cards too", async () => {
     await page.click('#tabs button[data-tab="hair"]');
+    await page.selectOption("#hairRows select >> nth=1", "style");
     await page.selectOption("#hairRows select >> nth=0", "twin");
     await page.waitForFunction(() => window.__body.wig && window.__body.st.hair.style === "twin", null, { timeout: 30000 });
     await page.waitForTimeout(2500);
     const m = () => page.evaluate(() => window.__body.wig.measure(window.__body.rig.matrix.clone().invert().elements));
     const a = await m();
     if (a.clumps < 100 || a.nan || a.inside_pct > 2 || !(a.drift_mm < 80)) throw new Error("settled " + JSON.stringify(a));
-    await page.selectOption("#hairRows select >> nth=1", "shake"); await page.waitForTimeout(2500);
+    await page.selectOption("#hairRows select >> nth=2", "shake"); await page.waitForTimeout(2500);
     const b = await m();
-    await page.selectOption("#hairRows select >> nth=1", "still");
+    await page.selectOption("#hairRows select >> nth=2", "still");
     if (b.nan || b.inside_pct > 3) throw new Error("shaken " + JSON.stringify(b));
     const brows = await page.evaluate(() => window.__body.hair.brows.index.length);
     if (!brows) throw new Error("no brows");
@@ -125,6 +127,33 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => /wrote .*_studiotest_hair\.obj and the wig's chains/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
     await page.click("#hairRows label.tog >> nth=0");                      // the wig off: cards grown from the scalp
     await page.waitForFunction(() => !window.__body.st.hair.wig && window.__body.hair.report.cards > 500 && window.__body.hair.report.inside_pct < 2, null, { timeout: 30000 });
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("strand hair: strands from elsewhere batched into clumps, rebuilt on the GPU from guide chains, off the body, through a shake", async () => {
+    // a stand-in for DiffLocks' output (no GPU here): dense strands grown by hair.js on this body, 32 points each
+    const pts = await page.evaluate(async () => {
+      const H = await import("./hair.js"), b = window.__body;
+      const r = H.grow(b.POS, b.TRIS, b.lmk, b.scale, { style: "long", cards: 3000, guidesOnly: true });
+      return r.strands.map(s => s.pts);
+    }).catch(() => null);
+    if (!pts) throw new Error("no stand-in strands");
+    const P = 32, flat = new Float32Array(pts.length * P * 3);
+    pts.forEach((s, i) => { for (let j = 0; j < P; j++) { const k = Math.min(s.length - 1, Math.round(j * (s.length - 1) / (P - 1))); flat.set(s[k], (i * P + j) * 3); } });
+    await page.evaluate(async ([who, data]) => { await fetch(`api/hair/${who}/strands?points=32`, { method: "POST", body: new Float32Array(data) }); }, [NAME, Array.from(flat)]);
+    await page.click('#tabs button[data-tab="hair"]');
+    await page.evaluate(() => { window.__body.st.hair.batch = { clumps: 128, strands: 3000 }; });
+    await page.selectOption("#hairRows select >> nth=1", "photo");
+    await page.click("#hairRows button >> text=Batch again");
+    await page.waitForFunction(() => /strands: \d+ drawn on \d+ clumps/.test(document.querySelector("#status").textContent), null, { timeout: 120000 });
+    await page.waitForFunction(() => window.__body.strands && window.__body.strands.ready, null, { timeout: 30000 });
+    await page.waitForTimeout(2000);
+    const m = () => page.evaluate(() => window.__body.strands.measure(window.__body.rig.matrix.clone().invert().elements));
+    const a = await m();
+    if (a.nan || a.inside_pct > 2 || a.clumps !== 128) throw new Error("settled " + JSON.stringify(a));
+    await page.selectOption("#hairRows select >> nth=2", "shake"); await page.waitForTimeout(2000);
+    const b = await m(); await page.selectOption("#hairRows select >> nth=2", "still");
+    if (b.nan || b.inside_pct > 3) throw new Error("shaken " + JSON.stringify(b));
+    await page.selectOption("#hairRows select >> nth=1", "style");
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the head OBJ exports", async () => {

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The Character Studio (tools/character/index.html): MHR's whole body from a base (average, feminine, masculine) and
 its 45 identity sliders, with a face from up to two pictures (front, side) bent onto its head by tools/face_mesh.py,
-or none, and its 72 FACS expressions. Exports the body and the head alone (for Mesh to MetaHuman) as OBJ. Each character keeps its pictures and
+or none, and its 72 FACS expressions; hair from the front picture (tools/difflocks.py, sealed off the network; fitted
+and batched by hair_fit.py and hair_batch.py in face_mesh.py's environment). Exports the body and the head alone (for Mesh to MetaHuman) as OBJ. Each character keeps its pictures and
 settings in Content/Studio/People/<name>/ (git-ignored: real people's faces).
 
     python tools/character/serve.py            then open http://127.0.0.1:8793
@@ -40,6 +41,33 @@ def clean(n):
     """a character's or a file's name: letters, digits, _ - . and no leading dot"""
     n = urllib.parse.unquote(n or "")
     return n if n and not n.startswith(".") and all(ch.isalnum() or ch in "_-." for ch in n) else None
+
+
+def face_py():
+    """face_mesh.py's environment (MediaPipe, numpy): the hair fit and the batching run in it"""
+    home = Path(os.environ.get("FACE_MESH_HOME", ROOT / "vendor" / "face_mesh"))
+    return face_mesh.py_of(home)
+
+
+def run_json(cmd, ok_word, env=None):
+    """a tool's last JSON line, or its error"""
+    r = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, encoding="utf-8", env=env)
+    line = next((l for l in reversed(r.stdout.splitlines()) if l.startswith("{")), None)
+    if r.returncode or ok_word not in r.stdout or not line:
+        return None, (r.stderr or r.stdout)[-800:]
+    return json.loads(line), None
+
+
+def batch_hair(name, q):
+    """the hair's strands (hair/fit.*) batched into clumps for the Studio (hair_batch.py)"""
+    d = PEOPLE / name / "hair"
+    fit = next((d / f for f in ("fit.npz", "fit.f32") if (d / f).exists()), None)
+    if not fit: return None, "no strands yet: make them from the front picture"
+    mat = d / "difflocks" / "hair.json"
+    cmd = [face_py(), HERE / "hair_batch.py", "--fit", fit, "--out", d,
+           "--clumps", int(q.get("clumps", 256)), "--strands", int(q.get("strands", 20000))]
+    if mat.exists(): cmd += ["--material", mat]
+    return run_json(cmd, "HAIRBATCH ok")
 
 
 def pictures(name):
@@ -93,6 +121,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "clothes"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a draped garment
             f = PEOPLE / clean(parts[2]) / "clothes" / clean(parts[3]) / "garment.obj"
             return self.send(200, f.read_bytes(), "text/plain") if f.exists() else self.send(404, {"error": "not made yet"})
+        if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("batch.json", "batch.bin"):
+            f = PEOPLE / clean(parts[2]) / "hair" / parts[3]
+            return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no strands yet"})
         if parts[:2] == ["api", "skin"] and len(parts) == 3 and clean(parts[2]):        # the photo skin texture
             f = PEOPLE / clean(parts[2]) / "skin.png"
             return self.send(200, f.read_bytes(), "image/png") if f.exists() else self.send(404, {"error": "no skin yet"})
@@ -148,6 +179,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(500, {"error": "the garment failed: " + (r.stderr or r.stdout)[-600:]})
             res = json.loads(line)
             return self.send(200, {"design": design, "drape": res["drape"], "measures_cm": res["measures_cm"]})
+        if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in ("difflocks", "batch", "strands"):
+            d = PEOPLE / name / "hair"; d.mkdir(parents=True, exist_ok=True)
+            if not face_py().exists():
+                return self.send(400, {"error": "the face tool's environment isn't set up: python tools/face_mesh.py setup"})
+            if parts[3] == "strands":                     # strands from elsewhere: raw float32, ?points=N per strand
+                pts = int(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("points", ["32"])[0])
+                (d / "fit.f32").write_bytes(self.body()); (d / "fit.json").write_text(json.dumps({"points": pts}))
+                (d / "fit.npz").unlink(missing_ok=True)
+                return self.send(200, {"ok": True})
+            if parts[3] == "difflocks":                   # the front picture -> DiffLocks (sealed) -> onto this body -> batched
+                q = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}   # clumps, strands
+                front = pictures(name).get("front")
+                if not front:
+                    return self.send(400, {"error": "drop a front picture first (Face tab)"})
+                (d / "body.f32").write_bytes(self.body())   # the body as the Studio has it now
+                r = subprocess.run([sys.executable, str(ROOT / "tools" / "difflocks.py"), "run", str(front), "--out", str(d / "difflocks")],
+                                   capture_output=True, text=True, encoding="utf-8")
+                if r.returncode or "DIFFLOCKS ok" not in r.stdout:
+                    return self.send(500, {"error": "DiffLocks: " + (r.stderr or r.stdout)[-800:]})
+                env = dict(os.environ)
+                fit, err = run_json([face_py(), HERE / "hair_fit.py", "--strands", d / "difflocks" / "strands.npz",
+                                     "--out", d / "fit.npz", "--body", d / "body.f32"], "HAIRFIT ok", env)
+                if err: return self.send(500, {"error": "the fit: " + err})
+                (d / "fit.f32").unlink(missing_ok=True)
+                res, err = batch_hair(name, q)
+                if err: return self.send(500, {"error": "the batching: " + err})
+                return self.send(200, {"fit": fit, "batch": res})
+            q = json.loads(self.body().decode("utf-8") or "{}")
+            res, err = batch_hair(name, q)
+            return self.send(500, {"error": err}) if err else self.send(200, {"batch": res})
         if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("mhr", "landmarks", "detect", "body", "skin"):
             req = json.loads(self.body().decode("utf-8") or "{}")
             req["op"] = parts[2]

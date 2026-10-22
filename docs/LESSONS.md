@@ -152,3 +152,9 @@ the brows while it grew; once the same strands became wig clumps under gravity, 
 bangs sagged into the eyes, and in twin tails the bangs took the tie and were pinned whole. Every rule the shape keeps
 (the face keep-out, the bangs' hold, who is pinned) has to live in the step too, not only in the shape it starts from;
 and read the exported data (pinned counts per clump) as well as the pictures.
+
+**Collide hair with the skin, not a star-shaped head (2026-10-22).** Hair kept off the head by a radial field (the
+farthest skin in each 11° direction) hung a median 26 mm off the cheeks: near an ear or a cheekbone the farthest skin
+in that direction is the ear's tip. Pushing along the nearest skin point's normal (a hash of the skin's points, 1.2 cm
+cells) brought it to 19 mm (the rest is physics: straight hair drops from the skull's widest part), and the hair now
+lies along the face. Measure distance to the skin at face height; a front picture hides it.
