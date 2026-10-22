@@ -112,6 +112,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "no"})
         if parts[0] == "vendor" and len(parts) == 2 and (VENDOR / parts[1]).is_file():
             return self.send(200, (VENDOR / parts[1]).read_bytes(), TYPES.get(Path(parts[1]).suffix, "text/plain"))
+        if parts[0] in ("shared", "env") and len(parts) == 2:                       # tools/shared (components any page can import) and Content/Studio/Env (HDRs)
+            f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
+            if f.is_file():
+                return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
         if parts[0] == "bodies" and len(parts) == 2 and Path(parts[1]).suffix in (".bin", ".json"):
             f = BODIES / parts[1]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.is_file() else self.send(404, {"error": "no body"})

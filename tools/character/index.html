@@ -61,6 +61,8 @@
     <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button></nav>
 
     <section data-tab="body">
+      <h3>View</h3>
+      <div id="studioRows"></div>
       <h3>Base</h3>
       <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button></div>
       <div id="baseRows"></div>
@@ -136,6 +138,7 @@ import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
 import * as EYEPAINT from "./eyes.js";
+import { StudioView } from "/shared/studioview.js";
 import * as WIGIFY from "./wigify.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -464,7 +467,7 @@ function setLight(name) {
   const L = LIGHTS[name] || LIGHTS.studio; LIGHT.name = name; LIGHT.env = L.env;
   key.color.set(L.key[0]); key.intensity = L.key[1]; key.position.set(...L.key[2]);
   hemi.color.set(L.hemi[0]); hemi.groundColor.set(L.hemi[1]); hemi.intensity = L.hemi[2];
-  torch.intensity = L.torch; scene.background.set(L.bg);
+  torch.intensity = L.torch; if (!STUDIO.on) scene.background.set(L.bg);
   skinLook();
 }
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
@@ -480,7 +483,8 @@ if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(
 if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
 const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
 const mesh = new THREE.Mesh(dgeo, material);
-const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);   // the body and all it wears: the head motion moves it
+const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
+const STUDIO = new StudioView({ renderer, scene, hide: [floor] });   // tools/shared/studioview.js: a white studio, an HDR, a key light with shadows   // the body and all it wears: the head motion moves it
 let EYES_IN = false;
 let SCALE = 1, TOP = 1.7;
 function computeBody() {                               // RAW: MHR with the weights, unscaled (what the face fit sees)
@@ -637,7 +641,7 @@ renderer.setAnimationLoop(() => {
   if (hairDirty && HAIR_OK) growHair();
   const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
   if (HAIR_OK) { moveRig(now); stepWig(dt); stepStrands(dt); stepModelWig(dt); }
-  place();
+  place(); STUDIO.tick();
   const sz = renderer.getSize(new THREE.Vector2()), R = viewRect(sz.x, sz.y), aspect = R.w / R.h;
   if (camera.aspect !== aspect) { camera.aspect = aspect; camera.updateProjectionMatrix(); }
   if (orbit.focus === "pov") {                         // the game's 16:9 screen inside the canvas, black bars round it
@@ -729,6 +733,11 @@ function touchState() {
   touchState();
 }
 
+STUDIO.mountUI($("#studioRows"));                      // the studio view: a checkbox and its sliders (tools/shared/studioview.js)
+{
+  const sb = el("button", { id: "studioBtn", textContent: "Studio", title: "A white studio, an HDR and a key light with shadows: how the model reads lit" });
+  $("#views").append(sb); sb.onclick = () => STUDIO.toggle(); STUDIO.onChange(v => sb.classList.toggle("on", v));
+}
 // ---- the paint layers: select vertices, fill into layers above the base (layers.js, layersui.js) --------------------------
 LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, dgeo, viewRect, POS, TRIS, geo, SKU, material, skinLook,
                     lmk: i => lmk(i), lmkOk: () => !!LMK });

@@ -107,6 +107,10 @@ class Handler(BaseHTTPRequestHandler):
         f = HERE.joinpath(*parts) if parts and ".." not in parts else None
         if f and f.suffix in STATIC and f.is_file() and HERE in f.resolve().parents:
             return self.send(200, f.read_bytes(), STATIC[f.suffix])
+        if parts[0] in ("shared", "env") and len(parts) == 2 and ".." not in parts:      # tools/shared (components any page can import) and Content/Studio/Env (HDRs)
+            f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
+            if f.is_file():
+                return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
         if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/
             return self.send(200, UL.status(parts[3]))
