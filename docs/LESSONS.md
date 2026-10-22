@@ -187,3 +187,10 @@ paint layer was back to empty: two shots taken one after the other with nothing 
 because the wig keeps swinging. Measure where the change is meant to be (the mouth, where no hair falls) and the layer
 itself, not the whole frame. "A changed picture" alone proves nothing for the same reason: check it changed where it
 should.
+
+## The game's lens is 90° across a 16:9 screen, not across whatever canvas (2026-10-22)
+
+The Studio's first POV view took `game.fov` (90° horizontal) against its own canvas, nearly square beside the side
+panel: 94° up and down, a medium close-up that showed the whole torso. A first-person check frames like the game's
+screen: 16:9, so 59° vertical, drawn in a 16:9 frame with bars round it, and any picking (the brush) goes through that
+frame. Distances from DIRECTING.md's shot table (MCU 0.7 m, MS 1.2 m) only mean what they say through the right lens.

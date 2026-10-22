@@ -53,7 +53,7 @@
 </header>
 <main>
   <div id="view">
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -269,7 +269,7 @@ function skinLook() {
   const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
   material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
-  material.roughness = st.skin.rough; material.clearcoat = proc ? 1 : 0; material.envMapIntensity = 0.55; material.needsUpdate = true;
+  material.roughness = st.skin.rough; material.clearcoat = proc ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
 }
@@ -428,6 +428,22 @@ scene.add(hemi, camera); camera.add(key);
   scene.environment = new THREE.PMREMGenerator(renderer).fromScene(env, 0.04).texture;
   hemi.intensity = 0.7;
 }
+// the light: the studio, or the kinds the games use (a POV check: does the face read in a medium shot under them?)
+const torch = new THREE.SpotLight(0xfff1dc, 0, 12, 0.36, 0.8, 2); torch.position.set(0.12, -0.18, 0); camera.add(torch, torch.target); torch.target.position.set(0, 0, -1);
+const LIGHTS = {   // key: colour, intensity, place (the camera's frame: x right, y up, -z ahead); hemi sky, ground, intensity; env: reflections
+  studio: { key: [0xffffff, 1.6, [1, 1.4, 2]], hemi: [0xffffff, 0x3a3530, 0.7], env: 1, torch: 0, bg: 0x202125 },
+  lamp:   { key: [0xffb36a, 2.4, [-1.6, 0.6, -0.4]], hemi: [0x5a4030, 0x120c08, 0.18], env: 0.35, torch: 0, bg: 0x120d0a },   // a table lamp to one side
+  night:  { key: [0x8ea6ff, 1.4, [1.8, 1.6, -0.6]], hemi: [0x3a4c7a, 0x05060a, 0.32], env: 0.25, torch: 0, bg: 0x07090f },  // moonlight from the side, a little behind: half the face
+  torch:  { key: [0xffffff, 0, [0, 0, 0]], hemi: [0x202838, 0x050505, 0.06], env: 0.15, torch: 3, bg: 0x040405 },           // the player's flashlight
+};
+const LIGHT = { name: "studio", env: 1 };
+function setLight(name) {
+  const L = LIGHTS[name] || LIGHTS.studio; LIGHT.name = name; LIGHT.env = L.env;
+  key.color.set(L.key[0]); key.intensity = L.key[1]; key.position.set(...L.key[2]);
+  hemi.color.set(L.hemi[0]); hemi.groundColor.set(L.hemi[1]); hemi.intensity = L.hemi[2];
+  torch.intensity = L.torch; scene.background.set(L.bg);
+  skinLook();
+}
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3 });   // the skin: a coat for oil and dew
@@ -561,10 +577,23 @@ function placeEyes() {
 
 const orbit = { yaw: 0.3, pitch: 0.08, focus: "body" };
 function place() {
-  const head = orbit.focus === "head", ty = head ? TOP - 0.12 * TOP / 1.7 : TOP * 0.52, d = head ? 0.9 : 4.6;
-  camera.position.set(d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), ty + d * Math.sin(orbit.pitch), d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
-  camera.lookAt(0, ty, 0);
-  key.position.set(...($("#raking").checked ? [3, 0.2, 0.5] : [1, 1.4, 2])); hemi.intensity = $("#raking").checked ? 0.2 : 0.7;
+  const head = orbit.focus === "head", pov = orbit.focus === "pov", face = TOP - 0.12 * TOP / 1.7;
+  if (pov) {                                           // the player's eye, standing, at the shot's distance, looking at the face
+    const d = +$("#povShot").value + 0.1;              // the face is ~10 cm in front of the body's middle
+    camera.position.set(d * Math.sin(orbit.yaw), 1.65, d * Math.cos(orbit.yaw)); camera.lookAt(0, face, 0);
+  } else {
+    const ty = head ? face : TOP * 0.52, d = head ? 0.9 : 4.6;
+    camera.position.set(d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), ty + d * Math.sin(orbit.pitch), d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
+    camera.lookAt(0, ty, 0);
+  }
+  const fov = pov ? 2 * Math.atan(Math.tan(Math.PI / 4) * 9 / 16) * 180 / Math.PI : 26;   // game.fov: 90° across a 16:9 screen (59° up and down)
+  if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  if (LIGHT.name === "studio") { key.position.set(...($("#raking").checked ? [3, 0.2, 0.5] : [1, 1.4, 2])); hemi.intensity = $("#raking").checked ? 0.2 : 0.7; }
+}
+function viewRect(w, h) {                              // where the picture goes: the whole canvas, or in POV the game's 16:9 screen (from the bottom left)
+  if (orbit.focus !== "pov") return { x: 0, y: 0, w, h };
+  const vw = Math.min(w, h * 16 / 9), vh = vw * 9 / 16;
+  return { x: (w - vw) / 2, y: (h - vh) / 2, w: vw, h: vh };
 }
 function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 addEventListener("resize", resize);
@@ -587,7 +616,14 @@ renderer.setAnimationLoop(() => {
   if (hairDirty && HAIR_OK) growHair();
   const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
   if (HAIR_OK) { moveRig(now); stepWig(dt); stepStrands(dt); }
-  place(); renderer.render(scene, camera);
+  place();
+  const sz = renderer.getSize(new THREE.Vector2()), R = viewRect(sz.x, sz.y), aspect = R.w / R.h;
+  if (camera.aspect !== aspect) { camera.aspect = aspect; camera.updateProjectionMatrix(); }
+  if (orbit.focus === "pov") {                         // the game's 16:9 screen inside the canvas, black bars round it
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y); renderer.setClearColor(0x000000, 1); renderer.clear();
+    renderer.setScissorTest(true); renderer.setScissor(R.x, R.y, R.w, R.h); renderer.setViewport(R.x, R.y, R.w, R.h);
+    renderer.render(scene, camera); renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
+  } else renderer.render(scene, camera);
 });
 resize();
 
@@ -598,7 +634,8 @@ let PAINTING = false, STROKE = false, TOUCH_SAVED = true;
 const ray = new THREE.Raycaster();
 function touchAt(e, first) {                           // a dab where the pointer is on the body; false when it's off the body
   const r = renderer.domElement.getBoundingClientRect();
-  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), camera);
+  const V = viewRect(r.width, r.height), x = e.clientX - r.left - V.x, y = r.bottom - e.clientY - V.y;   // within the drawn frame (POV: the 16:9 one)
+  ray.setFromCamera(new THREE.Vector2(x / V.w * 2 - 1, y / V.h * 2 - 1), camera);
   if (first) dgeo.computeBoundingSphere();
   const h = touchHit(ray, mesh, dgeo.attributes.uv);
   if (!h) return false;
@@ -1053,11 +1090,13 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
   status(`wrote ${r.path}`, "ok");
 };
 $("#raking").onchange = place;
+$("#lightSel").onchange = () => setLight($("#lightSel").value);
+$("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH,
-  onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect();
-    return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; } };   // bodytest.js, studiotest.js (a landmark on the page)
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
+  onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+    return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);
