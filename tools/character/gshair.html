@@ -103,7 +103,7 @@ function buildHair() {
   // the clay: a sphere per joint, the radius of the clump, and its chain
   CLAY = new THREE.Group(); CLAY.visible = st.showClay;
   const K = j.clumps, J = j.joints;
-  const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd9a441, transparent: true, opacity: 0.22, depthWrite: false }), K * J);
+  const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshStandardMaterial({ color: 0xd9a441, transparent: true, opacity: 0.1, depthWrite: false }), K * J);
   const lines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffd080 }));
   lines.geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(K * (J - 1) * 6), 3));
   CLAY.add(inst, lines); CLAY.userData = { inst, lines, K, J, radii: j.radii }; scene.add(CLAY);
@@ -115,7 +115,7 @@ function updateClay() {
   for (let c = 0; c < K; c++) {
     const at = HAIR.wig.chains[c].at;
     for (let jj = 0; jj < J; jj++) {
-      const i = (at + jj) * 3, r = Math.max(0.01, radii[c] * st.fit.scale);
+      const i = (at + jj) * 3, r = Math.max(0.01, 0.6 * radii[c] * st.fit.scale);
       m.makeScale(r, r, r).setPosition(P[i], P[i + 1], P[i + 2]); inst.setMatrixAt(c * J + jj, m);
       if (jj < J - 1) { const o = (c * (J - 1) + jj) * 6; pos.set([P[i], P[i + 1], P[i + 2], P[i + 3], P[i + 4], P[i + 5]], o); }
     }

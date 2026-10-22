@@ -70,7 +70,7 @@ const fail = m => { console.error("GSHAIRPAGE FAIL: " + m); process.exit(1); };
     const p = await pixels();
     if (p.hair < 300) throw new Error(`${p.hair} brown pixels`);
   });
-  if (shot) await page.screenshot({ path: shot });
+  if (shot) { await page.click("text=Show the clay"); await page.waitForTimeout(600); await page.screenshot({ path: shot }); }
   if (errors.length) fail("page errors: " + errors.join(" | "));
   await browser.close();
   console.log("GSHAIRPAGE ok");
