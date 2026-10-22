@@ -1,6 +1,7 @@
 """The GaussianHair steps, in their environment (tools/gshair.py runs this sealed off the network):
     cli.py run <video|folder> --out DIR [--key green|hair|keyed:DIR] [--head mhr|NAME|head.obj] [--body body.f32] ...
     cli.py frames|masks|poses|splat|clumps --out DIR ...
+    cli.py reference --out DIR --name NAME | --photos FRONT [SIDE] [BACK] --name NAME   (the salon's locked reference)
     cli.py check [--keep] [--full]
 """
 import argparse
@@ -13,8 +14,8 @@ sys.path.insert(0, str(HERE.parents[2] / "tools")); sys.path.insert(0, str(HERE.
 STEPS = ["frames", "masks", "poses", "splat", "clumps"]
 
 
-def add_out(p):
-    p.add_argument("--out", required=True, help="the capture folder (everything lands here)")
+def add_out(p, required=True):
+    p.add_argument("--out", required=required, help="the capture folder (everything lands here)")
 
 
 def add_head(p):
@@ -72,7 +73,13 @@ def main(argv=None):
     p.add_argument("--tex", type=int, default=256, help="the texture's size")
     p = sub.add_parser("preset", help="the capture's splat saved as a hair preset (Content/Studio/Hair/NAME) for the hair builder"); add_out(p)
     p.add_argument("--name", required=True); p.add_argument("--raw", action="store_true", help="in the capture's own world, not fitted to the head")
-    p = sub.add_parser("run", help="every step from a video"); add_out(p); add_head(p); add_masks(p); add_orbit(p); add_splat(p); add_clumps(p); p.add_argument("source")
+    p = sub.add_parser("reference", help="the salon's locked reference (Content/Studio/Hair/References/NAME): a capture's frames with their cameras in head space, or photos")
+    p.add_argument("--out", help="the capture folder (frames, masks, poses done)"); p.add_argument("--name", required=True)
+    p.add_argument("--size", type=int, default=640, help="the frames' long side"); p.add_argument("--no-align", action="store_true", help="ignore the splat's align.json: the silhouette's guess")
+    p.add_argument("--photos", nargs="+", help="front [side [back]] pictures instead of a capture"); p.add_argument("--side-face", default="left", choices=["left", "right"], help="where the face points in the side photo")
+    p = sub.add_parser("run", help="every step from a video"); add_out(p, required=False); add_head(p); add_masks(p); add_orbit(p); add_splat(p); add_clumps(p); p.add_argument("source")
+    p.add_argument("--to", default="clumps", choices=STEPS + ["reference"], help="the last step (reference: frames, masks, poses, then the salon's reference, no splat)")
+    p.add_argument("--ref", help="--to reference: the reference's name (default: the capture folder's parent's name)")
     p.add_argument("--count", type=int, default=90); p.add_argument("--focal35", type=float, default=24.0)
     p.add_argument("--from", dest="from_step", default="frames", choices=STEPS)
     p = sub.add_parser("check"); p.add_argument("--keep", action="store_true"); p.add_argument("--full", action="store_true"); p.add_argument("--out", default=None)
@@ -94,14 +101,23 @@ def main(argv=None):
         from gshair import wig; wig.main(a)
     elif a.cmd == "preset":
         from gshair import preset; preset.main(a)
+    elif a.cmd == "reference":
+        from gshair import reference
+        if not a.photos and not a.out: ap.error("reference: --out CAPTURE or --photos FRONT [SIDE] [BACK]")
+        reference.main(a)
     elif a.cmd == "check":
         from gshair import check
         check.run(a.out or (common.HOME / "check"), a.keep, not a.full, a.device)
     elif a.cmd == "run":
         import json
+        if not a.out:                                             # a reference's capture lives beside it
+            if a.to != "reference" or not a.ref: ap.error("run: --out DIR (or --to reference --ref NAME)")
+            from gshair.reference import REFS
+            a.out = str(REFS / a.ref / "capture")
         import numpy as np
         from gshair import clumps, frames, masks, poses, splat
-        todo = STEPS[STEPS.index(a.from_step):]
+        last = "poses" if a.to == "reference" else a.to
+        todo = STEPS[STEPS.index(a.from_step):STEPS.index(last) + 1]
         out = Path(a.out)
         if "frames" in todo: print(json.dumps(dict(step="frames", frames=len(frames.pick(a.source, out, a.count, 1080, a.focal35).names))), flush=True)
         if "masks" in todo: print(json.dumps(dict(step="masks", **masks.run(out, a.key, hue=(a.hue - 25, a.hue + 20), sat=a.sat, val=a.val))), flush=True)
@@ -116,6 +132,9 @@ def main(argv=None):
             print(json.dumps(dict(step="splat", **{k: v for k, v in splat.run(out, a.res, a.iters, a.device, a.voxel, a.init, a.seed, a.orient,
                                                                                    max_frames=a.max_frames, refine_poses=a.refine_poses).items() if k != "log"})), flush=True)
         if "clumps" in todo: print(json.dumps(dict(step="clumps", **clumps.run(out, a.clumps, a.joints, align=a.align))), flush=True)
+        if a.to == "reference":
+            from gshair import reference
+            print(json.dumps(dict(step="reference", **reference.make(out, a.ref or out.parent.name))), flush=True)
         print("GSHAIR run ok")
 
 

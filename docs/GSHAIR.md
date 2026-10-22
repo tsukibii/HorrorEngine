@@ -104,6 +104,13 @@ A MiniMax orbit of a wig on a green bust (640 px, 124 frames, 5 s). What it taug
 - A generated video isn't a photograph of one object: MiniMax's wig may change a little as it turns. The held-out
   PSNR says how consistent it was.
 
+## The salon's reference (2026-10-22)
+
+The capture steps also make the salon's **locked reference** (docs/SALON.md): `--to reference` stops after the poses
+and writes `Content/Studio/Hair/References/<name>/` (each frame, keyed and not, with its camera in the head's local
+space, and a fit from the face when the frames saw one). No splat is trained. `reference --out CAPTURE --name NAME`
+makes one from a capture that already has its poses.
+
 ## The check
 
     python tools/gshair.py check [--keep] [--full]          GSHAIR ok

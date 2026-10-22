@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 
 from . import clumps, poses, splat, synth
+from .common import project_np
 
 
 def fail(msg):
@@ -122,6 +123,23 @@ def run(out, keep=False, quick=True, device="cpu"):
     print(f"  ok  a person's poses: {pr['face']} by the face, {pr.get('chain', 0)} chained, bundle rms {pr['bundle']['rms_after']} px; "
           f"camera centres {np.mean(err):.1f} mm off (max {np.max(err):.1f} at {worst['name']} by {worst['source']}) ({time.time() - t0:.0f} s)")
     if np.max(err) > 40 or np.mean(err) > 20: fail(f"a camera is {np.max(err):.0f} mm off the truth (mean {np.mean(err):.0f})")
+    # the salon's reference from it: the cameras moved into the head's local space see the head where the capture's did,
+    # and the face triangulated from the frames fits the head it is (scale 1, no offset, no turn)
+    from . import reference
+    rr = reference.make(pdir, "check", refs=out / "refs")
+    ref = json.loads((out / "refs" / "check" / "reference.json").read_text())
+    loc = reference.local_frame(head["points"].astype(float), ref["local"]["anchors"])
+    lm_w = head["landmarks"].astype(float); lm_l = (lm_w - loc["C"]) @ loc["B"] / loc["S"]
+    worst_px = 0.0
+    for c, r in zip(cams, ref["frames"]):
+        a = project_np(lm_w, np.array(c["R"]), np.array(c["t"]), np.array(c["K"]))[0]
+        b = project_np(lm_l, np.array(r["R"]), np.array(r["t"]), np.array(r["K"]))[0]
+        worst_px = max(worst_px, float(np.abs(a - b).max()))
+    ff = ref["fit"].get("from") or {}
+    print(f"  ok  the salon's reference: {rr['frames']} frames in the head's space reproject the face within {worst_px:.3f} px; the face fit "
+          f"scale {ff.get('scale')}, offset {np.round(np.array(ff.get('offset', [0, 0, 0])) * 1000, 1).tolist()} mm, turn {ff.get('turn')}°, {ff.get('residual_mm')} mm residual")
+    if worst_px > 0.05: fail(f"the reference's cameras see the head {worst_px:.2f} px off the capture's")
+    if not ff or abs(ff["scale"] - 1) > 0.04 or np.linalg.norm(ff["offset"]) > 0.012 or abs(ff["turn"]) > 3: fail(f"the face fit of a head onto itself: {ff}")
     # a wig on a mannequin: no face, a free world
     wdir = out / "wig"
     rep = synth.make(wdir, n_strands=500 if quick else 1200, nodes=48, views=views, size=size, person=False, device=device)
@@ -159,6 +177,13 @@ def run(out, keep=False, quick=True, device="cpu"):
     if len(per) != cr["gaussians"] or not np.isfinite(per).all(): fail("splat.bin is wrong")
     for f in ("splat.json", "head.json", "align.json", "splat_sheet.jpg", "poses_sheet.jpg"):
         if not (wdir / f).exists(): fail(f"no {f}")
+    # the wig's reference without the splat's fit (a video straight to the salon): the silhouette's guess, finite cameras
+    # that all see the head's middle in front of them
+    rw = reference.make(wdir, "check_wig", refs=out / "refs", use_align=False)
+    fw = json.loads((out / "refs" / "check_wig" / "reference.json").read_text())["frames"]
+    if rw["frames"] != views or not all(np.isfinite(np.array(f["R"] + [f["t"]], float)).all() and f["t"][2] > 0 for f in fw):
+        fail(f"the wig's reference without a splat: {rw}")
+    print(f"  ok  the wig's reference without the splat: {rw['frames']} frames, aligned by the {rw['align']}, the head in front of every camera")
     print(json.dumps(dict(seconds=round(time.time() - t0), poses_mm=round(float(err.mean()), 1), psnr=sr["psnr_heldout"], chamfer_mm=[round(c, 1) for c in c_exact], guess_mm=[round(c, 1) for c in c_guess])))
     if not keep: shutil.rmtree(out, ignore_errors=True)
     print("GSHAIR ok")

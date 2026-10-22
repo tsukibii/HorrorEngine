@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Salon</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; --blue: #5a8ad9; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0 12px 0 0; color: var(--gold); }
+  main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+  #view { position: relative; min-height: 0; overflow: hidden; background: #1b1c20; }
+  #view canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 2; }
+  #ref { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; z-index: 3; image-rendering: auto; }
+  #view.behind #ref { z-index: 1; }
+  #tools { position: absolute; left: 8px; top: 8px; z-index: 5; display: flex; flex-direction: column; gap: 3px; }
+  #tools button { width: 86px; text-align: left; }
+  #hint { position: absolute; left: 104px; right: 8px; bottom: 6px; z-index: 5; color: var(--ink); text-shadow: 0 1px 2px #000; pointer-events: none; }
+  #frameTag { position: absolute; right: 8px; top: 8px; z-index: 5; color: var(--dim); text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }
+  aside { overflow: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 10px 12px; }
+  h4 { margin: 12px 0 6px; color: var(--gold); font-size: 12px; } .row { display: grid; grid-template-columns: 84px 1fr 44px; gap: 6px; align-items: center; margin: 3px 0; }
+  .row span { color: var(--dim); } input[type=range] { width: 100%; } output { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  button { background: #26272b; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; cursor: pointer; margin: 1px 0; } button.on { border-color: var(--gold); color: var(--gold); }
+  input[type=text], select { background: #0e0f11; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  .note { color: var(--dim); margin: 4px 0 8px; } label.tick { display: inline-flex; gap: 4px; align-items: center; margin: 2px 8px 2px 0; }
+  .lock { display: grid; grid-template-columns: 18px 1fr auto; gap: 4px; align-items: center; padding: 2px 4px; border-radius: 3px; cursor: pointer; }
+  .lock.sel { background: #2a2b30; outline: 1px solid var(--gold); } .lock .twin { color: var(--blue); } .grp { margin: 6px 0 2px; color: var(--dim); display: flex; gap: 6px; align-items: center; }
+  .grp.active b { color: var(--gold); } .eye { cursor: pointer; user-select: none; }
+  details { margin: 6px 0; } summary { cursor: pointer; color: var(--gold); }
+</style></head>
+<body>
+<header><h1>Salon</h1>
+  <label>Hair <input type="text" id="hairName" value="my_hair" size="12"></label>
+  <select id="hairList"></select> <button id="loadHair">Load</button> <button id="saveHair">Save</button>
+  <button id="undo" title="Ctrl+Z">Undo</button> <button id="redo" title="Ctrl+Shift+Z">Redo</button>
+  <span id="status"></span></header>
+<main>
+  <div id="view">
+    <img id="ref" alt="">
+    <div id="tools"></div>
+    <div id="frameTag"></div>
+    <div id="hint"></div>
+  </div>
+  <aside>
+    <p class="note">Hair as locks: click a root on the scalp and an end (a strand), drag a root line and click where it ends (a sheet), or a root and a tip (a bundle). Select a lock to pull its handles. Drag the empty view to turn the head (right-drag always turns it).</p>
+    <h4>Reference</h4><div id="refbox"></div>
+    <h4>Mirror</h4><div id="mirrorbox"></div>
+    <h4>Locks</h4><div id="locks"></div>
+    <h4>Selected</h4><div id="selbox"></div>
+    <h4>Head and look</h4><div id="headbox"></div>
+  </aside>
+</main>
+<script type="module" src="./salon.js"></script>
+</body></html>

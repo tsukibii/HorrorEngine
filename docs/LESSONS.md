@@ -221,3 +221,18 @@ The check's look-at built its camera rows as right = up x forward, down = right 
 (determinant -1), a mirror. Every real solver returns proper rotations, so PnP could only land in the mirrored twins
 of such a camera, with a fine reprojection error, and two fixes went into the solver before the truth was checked.
 Check the truth first: a camera's determinant, and the subject's left on the viewer's right.
+
+## A frame from bound landmarks inherits the binding's asymmetry (2026-10-22)
+
+The face landmarks bound onto MHR put 234 and 454 (the ear sides) 2.4 cm apart front to back on a body that is exactly
+symmetric, so an ear-to-ear axis from them turns the head's frame about 10 degrees. Anything placed in that frame (a
+reference's cameras, a splat's fit) comes out turned. Build a frame from the mesh's own symmetry: one vertex and its
+mirror, not two landmarks.
+
+## A test's clicks have to be where a user could click (2026-10-22)
+
+The salon's first runs "failed" four times on clicks no one would make: ends off the bottom of the view, a fringe's
+end in the air 9 cm in front of the face, roots grazing the silhouette's edge, a root below the temple's hairline. Each
+time the page did the right thing. Aim a test's clicks at what's visible: points on the skin inside the silhouette,
+inside the view at that zoom, and check the page's refusals before calling them bugs.
+

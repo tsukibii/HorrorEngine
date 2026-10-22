@@ -69,7 +69,17 @@ GSHAIR_RUNS = {}                                       # name -> the running pip
 
 
 HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hair presets for the hair builder (tools/gshair.py preset)
-HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png"}
+HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json"}
+REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
+REF_RUNS = {}
+
+
+def ref_status(name):
+    d = REFS / name; p = REF_RUNS.get(name)
+    running = p is not None and p.poll() is None
+    if p is not None and not running: REF_RUNS.pop(name, None)
+    log = (d / "run.log").read_text(encoding="utf-8", errors="replace")[-3000:] if (d / "run.log").exists() else ""
+    return dict(running=running, exit=None if running or p is None else p.returncode, ready=(d / "reference.json").exists(), log=log)
 
 
 def gshair_dir(name):
@@ -172,6 +182,21 @@ class Handler(BaseHTTPRequestHandler):
                     h = json.loads((d / "hair.json").read_text(encoding="utf-8"))
                     out.append({"name": d.name, "gaussians": h.get("gaussians", {}).get("count", 0), "source": h.get("source", {}).get("video"), "baked": (d / "bake.json").exists()})
             return self.send(200, {"presets": out})
+        if parts[:2] == ["api", "salon"] and len(parts) == 2:                             # the salon's hair (salon.json)
+            out = [d.name for d in sorted(HAIR.iterdir()) if d.is_dir() and clean(d.name) and (d / "salon.json").exists()] if HAIR.exists() else []
+            return self.send(200, {"hair": out})
+        if parts[:2] == ["api", "refs"] and len(parts) == 2:                              # the salon's references
+            out = []
+            for d in sorted(REFS.iterdir()) if REFS.exists() else []:
+                if d.is_dir() and clean(d.name) and (d / "reference.json").exists():
+                    r = json.loads((d / "reference.json").read_text(encoding="utf-8"))
+                    out.append({"name": d.name, "kind": r.get("kind"), "frames": len(r.get("frames", [])), "sweep": r.get("sweep")})
+            return self.send(200, {"refs": out})
+        if parts[:2] == ["api", "refs"] and len(parts) >= 4 and clean(parts[2]):
+            if parts[3] == "status" and len(parts) == 4: return self.send(200, ref_status(clean(parts[2])))
+            if (len(parts) == 4 and parts[3] == "reference.json") or (len(parts) == 5 and parts[3] in ("frames", "keyed") and Path(parts[4]).suffix in (".webp", ".jpg", ".png")):
+                f = REFS.joinpath(clean(parts[2]), *parts[3:])
+                return self.send(200, f.read_bytes(), TYPES.get(f.suffix, "application/octet-stream")) if f.is_file() else self.send(404, {"error": f"no {'/'.join(parts[3:])}"})
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in HAIR_FILES:
             f = HAIR / clean(parts[2]) / parts[3]
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix, "application/octet-stream")) if f.exists() else self.send(404, {"error": f"no {parts[3]} for {parts[2]}"})
@@ -303,6 +328,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, {"error": "a PNG"})
             (d / parts[3]).write_bytes(data)
             return self.send(200, {"ok": True, "path": str((d / parts[3]).relative_to(ROOT))})
+        if parts[:2] == ["api", "refs"] and len(parts) == 4 and name and parts[3] == "run":   # a video (or photos) to a salon reference
+            q = json.loads(self.body().decode("utf-8") or "{}")
+            if ref_status(name)["running"]: return self.send(409, {"error": "already running"})
+            d = REFS / name; d.mkdir(parents=True, exist_ok=True)
+            tool = [sys.executable, str(ROOT / "tools" / "gshair.py")]
+            photos = [x for x in q.get("photos", []) if x]
+            if photos:
+                if not all(Path(x).exists() for x in photos): return self.send(400, {"error": "pictures on this machine: front, side, back"})
+                cmd = tool + ["reference", "--name", name, "--photos", *photos, "--side-face", str(q.get("side_face", "left"))]
+            else:
+                src = q.get("source", "")
+                if not src or not Path(src).exists(): return self.send(400, {"error": "a video on this machine"})
+                cmd = tool + ["run", src, "--to", "reference", "--ref", name, "--orbit",
+                              "--sweep", str(float(q.get("sweep", 360))), "--front", str(int(q.get("front", 0))),
+                              "--key", str(q.get("key", "green")), "--count", str(int(q.get("count", 90)))]
+            log = open(d / "run.log", "w", encoding="utf-8")
+            REF_RUNS[name] = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=ROOT)
+            return self.send(200, {"started": True})
         if parts[:2] == ["api", "gshair"] and len(parts) == 4 and name and parts[3] == "preset":   # the capture's splat as a hair preset
             q = json.loads(self.body().decode("utf-8") or "{}")
             pname = clean(q.get("preset")) or name

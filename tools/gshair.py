@@ -11,6 +11,8 @@ network (unshare -rn), with MediaPipe's usage stats blocked.
                                                         every step; the result in Content/Studio/People/NAME/gshair/
                                                         (--out DIR instead of --name for any folder)
     python tools/gshair.py frames|masks|poses|field|grow|refine|export --out DIR ...   one step (its --help)
+    python tools/gshair.py reference --out CAPTURE --name REF    the salon's locked reference from a capture (or --photos F [S] [B])
+    python tools/gshair.py run VIDEO --orbit --to reference --ref REF   a video straight to a salon reference, no splat
     python tools/gshair.py check [--keep] [--full]      GSHAIR ok: the whole pipeline on a synthetic head, on the CPU
     python tools/gshair.py page [--name NAME]           the splat page: python tools/character/serve.py, then
                                                         http://127.0.0.1:8793/gshair.html?name=NAME
@@ -101,7 +103,7 @@ def main():
     if a.cmd == "page":
         print(f"python tools/character/serve.py, then http://127.0.0.1:8793/gshair.html" + (f"?name={a.name}" if a.name else "")); return
     argv = [a.cmd] + rest
-    if a.name and a.cmd == "preset":
+    if a.name and a.cmd in ("preset", "reference"):
         argv += ["--name", a.name]
     elif a.name:
         out = ROOT / "Content" / "Studio" / "People" / a.name / "gshair"

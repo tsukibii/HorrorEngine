@@ -92,7 +92,7 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   groups and their inputs, the sim's forces and constraints, and **our lighter version**: Catmull-Rom locks, verlet
   chains (wig.js) with a bending constraint, root pinned, collision by push-out against the head field, body slices
   and a garment proxy, physics only on marked locks.
-- [ ] Decide the **lock types** and write their data model in `docs/STORY_FORMAT.md`? No: hair isn't story. Put it in
+- [x] Decide the **lock types** and write their data model in `docs/STORY_FORMAT.md`? No: hair isn't story. Put it in
   `docs/SALON.md` (the salon's own doc, started in this phase, grown through the build):
   - `strand`: one curve, root to tip (the Illustrator line).
   - `sheet`: a root **line** on the scalp and an end **line** in the air; the surface between them (a ribbon of
@@ -105,7 +105,8 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   damping, collide}`, `style: {realism: 0..1, strands (the realism option's count), width, taper, curl, frizz}`,
   and its control points in the body's frame (metres, Y up, facing +Z), roots as (triangle, barycentric) on the
   scalp so they move with the head's shape. `animation: {clips: {}}` reserved (the animation refiner).
-- [ ] Decide the file: `Content/Studio/Hair/<name>/salon.json` (tracked; the user's hair is theirs), beside the
+  **Done 2026-10-22**: strand, sheet, bundle, in docs/SALON.md (The file).
+- [x] Decide the file: `Content/Studio/Hair/<name>/salon.json` (tracked; the user's hair is theirs), beside the
   splat presets. Thumbnails `thumb.png`.
 
 ## Phase 1: the salon page, the head, the guide (the shell everything hangs on)
@@ -113,10 +114,12 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
 - [ ] `tools/character/salon.html` + `salon.js`: the Studio's look (dark, side panel, orbit by drag, wheel zoom), a
   base body or a character (reuse `buildHead`), the game's lights, a POV button (the player's eye at MCU distance,
   the 90° lens in a 16:9 frame, as the Studio's POV view).
+  **Built 2026-10-22** with MHR's body presets and a height; not yet: a character's body (People), the game's lights, the POV button.
 - [ ] The body as **collision proxies**: the head's radial field, the body's slices (port `body_slices` to JS once,
   in `collide.js`), and a garment proxy when a draped garment is loaded (`api/clothes/<name>/<design>`): a voxel
   occupancy of the garment at 1 cm plus its surface normals, `push(p, gap)` → `[q, moved]` like `headPush`.
-- [ ] The **locked reference** (the video as a 3D reference, the user's ask 2026-10-22): the orbit video's frames
+  **Built 2026-10-22** in `salonlib.js` (`Collider`): the head's radial field above the chin, the torso's slices every centimetre with the arms left out, `push(p, gap)`; not yet: the garment proxy.
+- [x] The **locked reference** (the video as a 3D reference, the user's ask 2026-10-22): the orbit video's frames
   with a camera per frame **in the head's space**, so that turning the salon's view turns the reference with it.
   - The backend exists: `gshair.py frames` picks the frames, `masks` finds the face landmarks, `poses` gives a camera
     per frame (face PnP while the face shows, `--orbit` for the rest and for a faceless mannequin head, where the
@@ -146,25 +149,31 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
     face and without a key the orbit prior and the hand fit alone place the frames.
   - The visual hull (`gshair.py hull`, the keyed frames' hull from the orbit poses as a translucent mesh) stays an
     optional layer for later; the locked frames are the reference the user draws against.
-- [ ] Load and save `salon.json`; the presets list; `node tools/character/salontest.js`: loads, draws the head, the
+  **Done 2026-10-22** (docs/SALON.md): `gshair.py reference` and `run --to reference`, the head-local space from four MHR vertices (a symmetric pair: docs/LESSONS.md), the automatic fit from the face (the MiniMax wig: 24 landmarks, 5 mm), snapping, the fit's sliders and the Fit tool, "use up to" with the mirrored far side, photos as three fixed cameras. Not yet: a photo's own nudge in the page (the data has `fit.per_frame`), the hull as a layer.
+- [x] Load and save `salon.json`; the presets list; `node tools/character/salontest.js`: loads, draws the head, the
   guide fits, a save round trip. `SALON ok`.
+  **Done 2026-10-22**: `salon.json` through `api/hair/<name>/salon.json`, the list from `api/salon`, `?hair=NAME`; SALON ok.
 
 ## Phase 2: the vector lock tools (the heart)
 
-- [ ] **Picking on the head**: click → the point on the body surface under the cursor (raycast the body mesh), its
+- [x] **Picking on the head**: click → the point on the body surface under the cursor (raycast the body mesh), its
   triangle and barycentric weights, its normal. Roots snap to the scalp (reject outside the scalp unless Shift).
-- [ ] **Strand tool**: click the root, click the end; a Catmull-Rom curve with 6 control points spread between them,
+  **Done 2026-10-22**: the scalp tinted while a tool is armed; Shift lets a root off it.
+- [x] **Strand tool**: click the root, click the end; a Catmull-Rom curve with 6 control points spread between them,
   bulged along the root's normal; the points shown as handles after placing; drag a handle to shape (in the view
   plane; Alt-drag along the view axis); the curve stays off the body (push-out on every edit). Scroll wheel before
   the end click: the curve's sag (how far it bows out).
-- [ ] **Sheet tool** (the realism root): drag a **root line** along the scalp (points sampled every 1 cm on the
+  **Done 2026-10-22**, and an end clicked on the body lies on it (a fringe on the brows), in the air on the plane through the root.
+- [x] **Sheet tool** (the realism root): drag a **root line** along the scalp (points sampled every 1 cm on the
   surface), then click the end line's two corners (or one click plus the wheel for the spread: the end line's width,
   centred on the click); the sheet is the ruled surface between root and end, with 4 to 8 guide curves across it,
   each a Catmull-Rom like a strand; the **outline points** (root line, end line, the two sides' middles) are the
   handles; the whole sheet is one group.
-- [ ] **Bundle tool**: a root line (or a root circle of a radius from the wheel), a tip point; a tapered tube of
+  **Done 2026-10-22**: the root line dragged (a point every 8 mm on the skin), one click plus the wheel's spread for the end; the edges (left, middle, right) are the handles. The end's two corners as two clicks: not yet.
+- [x] **Bundle tool**: a root line (or a root circle of a radius from the wheel), a tip point; a tapered tube of
   guides; a `spread` at the root and at the tip (the triangle: wide to gathered, or gathered to wide); its middle
   ring's points are handles.
+  **Done 2026-10-22**: a root (its width from the wheel) and a tip; the radius at the root and the tip as sliders; the spine's points are the handles. A root line for a bundle: not yet.
 - [ ] **Trace the outline** (the layman's main act): in the front, side or back view, with the reference laid over
   the head, a lasso draws the hair's outline; the locks visible in that view are scaled and moved (about their roots,
   by a 2D warp of the view plane, the depth kept) so the hair's projected outer boundary matches the trace; three
@@ -183,9 +192,11 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   Mirrored roots are snapped back to the scalp (reflected across a plane, a root lands within millimetres of the
   near-symmetric head: pushed to the surface along the normal), guide points reflected, the lock's handedness
   flipped (a curl's turn too). Tracing with Mirror on traces both sides at once from one half.
+  **Built 2026-10-22**: the toggle, twins (`mirror_of`) that follow every edit (dragging a twin edits its original), roots snapped onto the skin, the seam in the middle or moved sideways (a slider), Break the mirror; not yet: the drawn seam and drawing it on the head, tracing with Mirror on.
 - [ ] **Groups panel**: every lock a row (name, type, visible, colour, physics on, realism); select, hide/show,
   duplicate, mirror once (a twin across the seam without the link), delete, reorder; undo/redo (a stack of
   `salon.json` states, cheap).
+  **Built 2026-10-22**: groups (new, the active one, show and hide), every lock a row (select, show, hide), name, colour, drawn as, duplicate, mirror once, break the mirror, delete, undo and redo; not yet: reorder, physics on.
 - [ ] **Shaping on a selected lock**: four brushes as modifiers of the handles, never per strand: comb (drag the
   tips sideways), grow/shrink (length), puff (away from the head), smooth; and sliders: curl (a spiral of a radius
   and turns along the lock), frizz (noise), clump (the guides pulled to the lock's centre line), width, taper. The
@@ -196,17 +207,19 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   the guides are the chains; the strand count from the slider) drawn as GPU lines; `realism` = 1 draws strands
   only. Colour per lock or the head's hair colour; roots darker; occlusion by depth into the hair (the radial outer
   shell from `hair_batch.py`'s idea).
+  **Built 2026-10-22**: cards (ribbons with a strand alpha, roots darker) and strands (thin lines spread through the lock, a count); not yet: the hair shader's two highlights, occlusion by depth.
 - [ ] **Fake volume**: the **cap**: select scalp triangles by painting (or "all the scalp", "under the locks"), a
   pore texture (the Studio's procedural skin's pores, darkened, in the hair colour), and a **thickness** slider that
   lifts the cap along the normals and lifts the roots of every lock on it by the same amount, so the hair looks
   fuller with no more hair. A hairline slider (as `hair.js`'s `hairline`).
 - [ ] **Brows and lashes**: presets (straight, arched, thick, thin; natural, long, doll) placed from the landmarks
   (`hair.js` already grows brows and lashes: lift those into lock groups the user can edit like any other).
-- [ ] `salontest.js` grows: a strand, a sheet, a bundle placed by simulated clicks; handles move; hide/show; Mirror on
+- [x] `salontest.js` grows: a strand, a sheet, a bundle placed by simulated clicks; handles move; hide/show; Mirror on
   with the middle seam and with a moved seam (a lock placed left appears right, moved together, the link broken);
   the locked reference: orbiting 90° picks a side frame and the view camera equals its camera; a partial sweep's
   missing side gets the flipped frame;
   a cap with thickness changes the silhouette; brows and lashes placed; undo. `SALON ok`.
+  **Done 2026-10-22** (SALON ok), with the locked reference's snapping, the mirrored far side and the fit too; hide/show not tested yet.
 
 ## Game-grade physics: what is kept and what is dropped (the user's call, 2026-10-22)
 
@@ -268,7 +281,8 @@ runtime since they ride the guides.
 - [ ] The locked reference, the hull and the splat as **toggleable layers** with opacity; the Reference step asks
   only three things: drop the file, how far the video turns (a full turn / to the side / to the back), and which
   frame is the front when there is no face to find it.
-- [ ] docs/SALON.md: the tools, the shortcuts, the data, the checks; the launcher's lines; CLAUDE.md's table row.
+- [x] docs/SALON.md: the tools, the shortcuts, the data, the checks; the launcher's lines; CLAUDE.md's table row.
+  **Done 2026-10-22**: docs/SALON.md, the launcher's two lines, CLAUDE.md's row and the SALON check.
 
 ## Phase 5: later, designed for now
 

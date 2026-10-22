@@ -37,6 +37,7 @@ TOOLS = [
     ("Pages", "Character Studio (body, face from pictures, expressions)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
     ("Pages", "Hair splat on clay (a wig's splat glued to jiggling clumps)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/gshair.html"}),
     ("Pages", "Hair builder (shape a hair splat by hand: cage, cuts, paint, jiggle)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/hairbuilder.html"}),
+    ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
@@ -87,6 +88,7 @@ TOOLS = [
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
     ("Look", "Hair splat from a video of a wig (frames, key, poses, splat, clay)", "tools/gshair.py run {ask:Video or folder} --name {ask:Character}", {}),
+    ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
     ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
