@@ -22,6 +22,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import face_mesh  # noqa: E402 - the worker's client (no numpy at import)
+sys.path.insert(0, str(ROOT / "Content" / "Python"))
+from storykit import pbr as PBR  # noqa: E402 - the PBR shelf (Content/Studio/PBR), for the Layers tab's PBR fills
 
 PORT = int(os.environ.get("BODY_PORT", 8793))
 PEOPLE = ROOT / "Content" / "Studio" / "People"
@@ -138,6 +140,14 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("batch.json", "batch.bin"):
             f = PEOPLE / clean(parts[2]) / "hair" / parts[3]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no strands yet"})
+        if parts[:2] == ["api", "pbr"]:                    # the shelf's sets, for a PBR fill: {ref: {maps: {albedo: file...}}}
+            return self.send(200, {"sets": {r: {"maps": m["maps"], "tile_m": m.get("tile_m", 2.0)} for r, m in PBR.scan(write=False).items()}})
+        if parts[0] == "pbrfile" and len(parts) >= 3 and ".." not in parts:        # /pbrfile/<category>/<name>/<file>
+            f = PBR.ROOT.joinpath(*parts[1:])
+            return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
+        if parts[:2] == ["api", "layers"] and len(parts) == 3 and clean(parts[2]):      # the paint layers (layers.js), saved as one JSON
+            f = PEOPLE / clean(parts[2]) / "layers.json"
+            return self.send(200, f.read_bytes(), "application/json") if f.exists() else self.send(200, {"layers": []})
         if parts[:2] == ["api", "skin"] and len(parts) == 3 and clean(parts[2]):        # the photo skin texture (?mask: its coverage;
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)           # ?paint, ?touch: the touch-up's layers)
             f = PEOPLE / clean(parts[2]) / next((n for k, n in (("mask", "skin_mask.png"), ("paint", "skin_paint.png"), ("touch", "skin_touch.png"), ("pigment", "skin_pigment.png"))
@@ -184,6 +194,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, {"error": "a PNG"})
             (PEOPLE / name).mkdir(parents=True, exist_ok=True)
             (PEOPLE / name / f"skin_{parts[3]}.png").write_bytes(data)
+            return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "layers"] and len(parts) == 3 and name:
+            (PEOPLE / name).mkdir(parents=True, exist_ok=True)
+            (PEOPLE / name / "layers.json").write_bytes(self.body())
             return self.send(200, {"ok": True})
         if parts[:2] == ["api", "export"] and len(parts) == 4 and name and clean(parts[3]) and \
                 Path(parts[3]).suffix in EXPORTS:

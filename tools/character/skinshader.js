@@ -75,9 +75,11 @@ uniform float uProc, uPigOn, uScale, uHasPhoto, uHasTouch, uHasPig, ${FEATURES.m
 uniform vec3 uTone, uPhotoTone, ${COLOURS.map(c => "uc_" + c[0]).join(", ")};
 uniform vec3 ${Object.keys(POINTS).join(", ")}, uEarL, uEarR, uFaceC, uMouthC, uRight, uUp, uFwd;
 uniform vec3 uLidUL[9], uLidUR[9], uLidLL[9], uLidLR[9];
-uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig;
+uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf;
+uniform float uHasLay, uShowSel;
+varying float vSel;
 varying vec3 vObj; varying vec2 vSkinUv;
-float skinH, skinRough, skinCoat;
+float skinH, skinRough, skinCoat, skinCoatR = -1.0;
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
 float vnoise(vec3 p) {
@@ -213,17 +215,18 @@ vec3 makeup(vec3 c, vec3 p) {
 export function procedural(material) {
   const u = { uProc: { value: 0 }, uPigOn: { value: 0 }, uScale: { value: 1 }, uHasPhoto: { value: 0 }, uTone: { value: new THREE.Color() }, uPhotoTone: { value: new THREE.Color(1, 1, 1) },
               uPhotoMap: { value: null }, uPhotoMask: { value: null },
-              uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null } };   // the touch-up (touchup.js)
+              uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null },
+              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
   for (const k of Object.keys(LIDS)) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; varying vec3 vObj; varying vec2 vSkinUv;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv;");
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `skinH = 0.0; skinRough = 1.0; skinCoat = 0.0;
+      .replace("#include <color_fragment>", `skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0;
 if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
   if (uHasPhoto > 0.5) {                                             // the picture inside its mask, the procedural skin outside
@@ -242,11 +245,18 @@ if (uProc > 0.5) {
 }
 if (uHasTouch > 0.5) { vec4 tp = texture2D(uTouchPaint, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, tp.rgb, tp.a); }
 if (uHasPig > 0.5 && uPigOn > 0.5) diffuseColor.rgb *= pow(texture2D(uTouchPig, vSkinUv).rgb, vec3(uf_pigStrength / 1.4));   // the pigment strokes: filters, multiplied together   // the touch-up's paint, over all
+if (uHasLay > 0.5) {                                                   // the layers above the base: pigment (filters), paint over, then the surface (gloss, relief)
+  diffuseColor.rgb *= texture2D(uLayPig, vSkinUv).rgb;
+  vec4 lo = texture2D(uLayOv, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, lo.rgb, lo.a);
+  vec4 sf = texture2D(uLaySurf, vSkinUv);
+  skinRough *= max(sf.r * 4.0, 0.04); skinCoat = clamp(skinCoat + sf.g, 0.0, 1.0); skinH += (sf.b - 0.50196) * 14.0; if (sf.g > 0.01) skinCoatR = 1.0 - sf.a;
+}
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.55, 0.1), clamp(vSel, 0.0, 1.0) * 0.55 * uShowSel);   // the selection, shown
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-if (uProc > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)
+if (uProc > 0.5 || uHasLay > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
-if (uProc > 0.5) {                                                   // the relief (pores, wrinkles), from how the height changes across the pixel
+if (uProc > 0.5 || uHasLay > 0.5) {                                                   // the relief (pores, wrinkles), from how the height changes across the pixel
   vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx);
   float det = dot(sx, r1); vec2 dh = vec2(dFdx(skinH), dFdy(skinH)) * 0.00025;
   normal = normalize(abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2));
@@ -259,10 +269,10 @@ if (uProc > 0.5) {                                                   // light th
 }`)
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_CLEARCOAT
-if (uProc > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); }  // the coat: the dewy glow, the oil, the gloss
+if (uProc > 0.5 || uHasLay > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-4";
+  material.customProgramCacheKey = () => "studio-skin-5";
   return u;
 }
 

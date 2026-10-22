@@ -37,6 +37,7 @@
   #tabs button { flex: 1; padding: 5px 4px; } #tabs button.on { border-color: var(--gold); color: var(--gold); }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; } .chips button { padding: 3px 8px; } .chips button.on { border-color: var(--gold); color: var(--gold); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 55vh auto; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+  .laylist { margin: 4px 0; } .layrow { display: flex; gap: 4px; align-items: center; padding: 2px 0; border-bottom: 1px solid var(--line); } .layrow .lname { flex: 1; cursor: pointer; } .layrow .lname.on { color: var(--gold); } .layrow button { padding: 0 6px; }
   .hairlib { display: grid; grid-template-columns: repeat(3, 96px); gap: 4px; max-height: 270px; overflow-y: auto; margin: 6px 0; }
   .hairlib div { width: 96px; height: 60px; border-radius: 4px; cursor: pointer; outline: 1px solid #333; background-repeat: no-repeat; }
   .hairlib div.on { outline: 2px solid var(--accent, #e0b060); }
@@ -57,7 +58,7 @@
     <div id="hud"></div>
   </div>
   <aside>
-    <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button></nav>
+    <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button></nav>
 
     <section data-tab="body">
       <h3>Base</h3>
@@ -84,6 +85,12 @@
       <label class="tog"><input type="checkbox" id="exprCycle"><span>Cycle the presets<small>One a second, to check them all on this face.</small></span></label>
       <h3>MHR's 72 shapes</h3>
       <div id="exprRows"></div>
+    </section>
+
+    <section data-tab="layers" hidden>
+      <h3>Paint layers</h3>
+      <p class="note">Select vertices on the body, then fill: colour, a PNG, a PBR set, with a feathered edge, pigment, opacity and shine. Layers sit above the base mesh: delete them and the base is what's left.</p>
+      <div id="layerRows"></div>
     </section>
 
     <section data-tab="skin" hidden>
@@ -127,6 +134,7 @@ import { Wig } from "./wig.js";
 import { StrandHair } from "./strands.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
+import { mountLayers } from "./layersui.js";
 import * as WIGIFY from "./wigify.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -170,7 +178,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1 };
-let WHO = null, DELTA = null, PICS = [], REPORT = null;
+let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null;   // LAY: the paint layers (layersui.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
 function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
@@ -207,7 +215,7 @@ function weights() {                                   // the base blended in, t
 function tab(name) {
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
   document.querySelectorAll("aside section").forEach(x => { x.hidden = x.dataset.tab !== name; });
-  if (["face", "expr", "skin", "hair"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
+  if (["face", "expr", "skin", "layers", "hair"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
   try { localStorage.setItem("studio:tab", name); } catch (e) { }
 }
 for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => tab(b.dataset.tab);
@@ -270,7 +278,7 @@ function skinLook() {
   const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
   material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
-  material.roughness = st.skin.rough; material.clearcoat = proc ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
+  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
 }
@@ -508,6 +516,7 @@ function compose() {                                   // POS: RAW + the face, s
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   hairDirty = true;
+  LAY?.shapeChanged();
 }
 
 // ---- eyes: MHR's closed shell sunk behind an eyeball inside MediaPipe's lid outline -----------------------------------
@@ -611,15 +620,16 @@ function viewRect(w, h) {                              // where the picture goes
 }
 function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 addEventListener("resize", resize);
-let drag = null;
+let drag = null, LSTROKE = false;
 renderer.domElement.onpointerdown = e => {
   renderer.domElement.setPointerCapture(e.pointerId);
   if (HANDLES.visible && e.button === 0 && !e.altKey && grabHandle(e)) return;          // a wig handle
+  if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
   drag = [e.clientX, e.clientY];
 };
-renderer.domElement.onpointermove = e => { if (DRAG) return dragHandle(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
-renderer.domElement.onpointerup = () => { drag = null; if (DRAG) { DRAG = null; fitWig(true); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
+renderer.domElement.onpointermove = e => { if (DRAG) return dragHandle(e); if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onpointerup = () => { drag = null; if (LSTROKE) { LSTROKE = false; LAY.up(); } if (DRAG) { DRAG = null; fitWig(true); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
 for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   if (b.dataset.v) orbit.focus = b.dataset.v; else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
@@ -722,6 +732,10 @@ function touchState() {
   addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "z" && PAINTING) { e.preventDefault(); undo.onclick(); } });
   touchState();
 }
+
+// ---- the paint layers: select vertices, fill into layers above the base (layers.js, layersui.js) --------------------------
+LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, dgeo, viewRect, POS, TRIS, geo, SKU, material, skinLook,
+                    lmk: i => lmk(i), lmkOk: () => !!LMK });
 
 // ---- the eyes' controls ---------------------------------------------------------------------------------------------
 {
@@ -1217,7 +1231,7 @@ async function open(name) {
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
-  SKIN = null; await loadSkin();
+  SKIN = null; await loadSkin(); await LAY.load();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
   Object.assign(st.eyes, { on: true, iris: "#3b2618" }, c.eyes || {});
   $("#eyeRows input[type=checkbox]").checked = st.eyes.on; $("#eyeRows input[type=color]").value = st.eyes.iris;
@@ -1243,7 +1257,7 @@ $("#make").onclick = async () => {
 };
 $("#save").onclick = async () => {
   if (!WHO) return status("make a character first", "bad");
-  const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); status(`saved ${r.path}`, "ok");
+  const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save(); status(`saved ${r.path}`, "ok");
 };
 function objText(head) {                               // metres, Y up, facing +Z; the head cut 0.245 m under its top (as MHR_head.obj)
   const cut = TOP - 0.245 * SCALE, keep = new Int32Array(N).fill(-1), v = [], f = [];
@@ -1269,7 +1283,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
+window.__body = { get LAY() { return LAY; }, st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
   handleOnScreen(n) { const h = HANDLES.getObjectByName(n), v = h.position.clone().project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
