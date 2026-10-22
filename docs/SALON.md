@@ -88,6 +88,11 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
 - **Strand**: one guide, six control points (a Catmull-Rom). Width from a single hair (1 mm) to a lock (3 cm).
 - **Sheet**: the root line plus three edge curves (left, middle, right); the guides across it are blended from them,
   their roots on the line. The edges' points are the handles.
+- **Thickness** (strands and sheets, Selected; 2026-10-22): a bundle's volume on a flat lock: a dome over it, half an
+  ellipse across it as high as Thickness times half its width (0 flat, the default; 1 round), outward from the head,
+  thinning towards the tip by **Thickness taper** (1, the default: to nothing at the tip; 0: as thick all the way).
+  Its cards follow the arc from one edge over the top to the other (a strand gets three, a sheet one fewer than its
+  guides, 3 to 8); strands (realism) fill round it; physics carries the dome with the lock; layering counts it.
 - **Bundle**: a spine with a radius at the root and the tip (wide to gathered, or the other way): a tube of guides.
   Its cross-section is an ellipse: **Height** (Selected) is its other axis as a share of its width, 1 round, less a
   flatter oval lying on the head, more a taller one standing off it.
@@ -185,7 +190,7 @@ crown and back, two low tails), on the darkened scalp.
 `Content/Studio/Hair/<name>/salon.json`: `head` (the body preset, its height), `reference` (its name, the view
 settings, the fit), `mirror`, `look`, `groups`, `locks`. Every point is in the head's local space, so the hair moves
 to another body with it. A lock: `id`, `type`, `name`, `group`, `visible`, `render`, `taper`, `color`, `mirror_of`, and
-by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine`, `r0`, `r1`, `height` (1 round),
+by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `thickness` and `thicknessTaper` (both), `spine`, `r0`, `r1`, `height` (1 round),
 `axis` (a bundle line's width, or none) and `guides` (bundle).
 
 ## Code

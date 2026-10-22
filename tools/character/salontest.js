@@ -5,7 +5,8 @@
 // tools with the mouse: a strand (root, end), a sheet (a root line dragged along the scalp, an end), a bundle; Mirror on
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
 // pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
-// reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); the
+// reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); thickness on a strand
+// and a sheet (off by default, the dome's height, its taper); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
 // in it); the look (the strand atlas, the shader on every card, a look restyling them); a save and a reload.
@@ -293,6 +294,31 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (Math.abs(r2.height - 1.5) > 1e-9 || Math.abs(r2.ratio - 1.5) > 0.01) throw new Error(`Height didn't make it taller: ${JSON.stringify(r2)}`);
     await ev(() => { const s = window.__salon; s.deleteLock(s.selected); });
     console.log(`       ${(w * 100).toFixed(1)} cm line -> ${(r.r0 * 200).toFixed(1)} cm across; 5 notches -> height ${(r.height * 100).toFixed(0)}% (the ring ${(r.ratio * 100).toFixed(0)}%), the slider 150%; a twin's width mirrored`);
+  });
+  await step("thickness on a strand and a sheet: off by default, a dome as high as half the width at 1, thinning to the tip by its taper", async () => {
+    const ids = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
+      const a = s.addLock(SL.makeStrand(C.surface([0, 0.1, -0.08]), [0, -0.15, -0.17], C, { width: 0.02 }));
+      const b = s.addLock(SL.makeSheet([C.surface([-0.03, 0.12, -0.07]), C.surface([0, 0.125, -0.075]), C.surface([0.03, 0.12, -0.07])], [0, -0.15, -0.18], 0.06, C));
+      s.st.mirror.on = m; s.select(a.id); s.render(); return [a.id, b.id]; });
+    const slide = (label, v) => page.$$eval("#selbox .row", (rows, [label, v]) => { const row = rows.find(x => x.querySelector("span") && x.querySelector("span").textContent === label); const i = row.querySelector("input"); i.value = v; i.dispatchEvent(new Event("input")); return +row.querySelector("output").textContent; }, [label, v]);
+    const shape = id => ev(id => { const s = window.__salon, SL = s.SL, l = s.st.locks.find(x => x.id === id); s.render(); const G = s.EVAL[id], n = G[0].pts.length;
+      const W = k => l.type === "strand" ? G[0].width[k] : SL.len(SL.sub(G[l.guides - 1].pts[k], G[0].pts[k]));
+      const top = G.filter(g => Math.abs(g.u - 0.5) < 0.01).pop(), mid = k => l.type === "strand" ? G[0].pts[k] : SL.mix(G[(l.guides - 1) >> 1].pts[k], G[l.guides >> 1].pts[k], 0.5);
+      const lift = k => SL.len(SL.sub(top.pts[k], mid(k)));
+      return { guides: G.length, base: l.type === "strand" ? 1 : l.guides, root: lift(0) / (W(0) / 2), tip: lift(n - 1) / (W(n - 1) / 2), half: lift(n >> 1) / (W(n >> 1) / 2) }; }, id);
+    const flat = await shape(ids[0]);
+    const def = await ev(() => { const rows = [...document.querySelectorAll("#selbox .row")], v = l => +rows.find(x => x.querySelector("span").textContent === l).querySelector("input").value; return [v("Thickness"), v("Thickness taper")]; });
+    if (flat.guides !== 1 || def[0] !== 0 || def[1] !== 1) throw new Error(`a new strand isn't flat by default: ${flat.guides} guides, Thickness ${def[0]}, taper ${def[1]}`);
+    await slide("Thickness", 1); const round = await shape(ids[0]);
+    await slide("Thickness taper", 0); const even = await shape(ids[0]);
+    await ev(id => window.__salon.select(id), ids[1]); await slide("Thickness", 0.5); const sheet = await shape(ids[1]);
+    await ev(id => { const s = window.__salon, l = s.st.locks.find(x => x.id === id); l.render = "strands"; s.dirtyAll(); s.render(); }, ids[1]);
+    const strands = await ev(id => window.__salon.MESHES[id].children.find(o => o.userData.role === "strands").geometry.attributes.position.count, ids[1]);
+    if (round.guides !== 4 || Math.abs(round.root - 1) > 0.03 || round.tip > 0.01 || Math.abs(round.half - 0.5) > 0.06) throw new Error(`the round strand: ${JSON.stringify(round)}`);
+    if (Math.abs(even.tip - 1) > 0.05 || Math.abs(even.half - 1) > 0.05) throw new Error(`taper 0 should keep it round to the tip: ${JSON.stringify(even)}`);
+    if (sheet.guides <= sheet.base || Math.abs(sheet.root - 0.5) > 0.03 || sheet.tip > 0.01 || !strands) throw new Error(`the sheet: ${JSON.stringify(sheet)}, ${strands} strand vertices`);
+    await ev(ids => { for (const id of ids) window.__salon.deleteLock(id); }, ids);
+    console.log(`       a strand: 1 card flat, 4 at 1 (the dome at the root ${(round.root * 100).toFixed(0)}% of half its width, half way ${(round.half * 100).toFixed(0)}%, the tip ${(round.tip * 100).toFixed(0)}%; taper 0: ${(even.tip * 100).toFixed(0)}% at the tip); a sheet at 0.5: ${sheet.base} -> ${sheet.guides} guides, ${(sheet.root * 100).toFixed(0)}% at the root; its strands drawn round the dome`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

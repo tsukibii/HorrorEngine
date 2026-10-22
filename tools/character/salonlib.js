@@ -329,11 +329,37 @@ function sideways(pts, col, k) {                                     // a ribbon
   return norm(a);
 }
 
+// thickness (strands and sheets): a dome over the lock, a half-ellipse across it as high as `thickness` times half its
+// width (1: round), thinning towards the tip by `thicknessTaper` (1: to nothing); its guides follow the arc from one
+// edge over the top to the other, outward from the head. Each guide carries u, where it is across the lock (0 to 1),
+// and guides.thick the dome's height (the layer it makes).
+function thicken(lock, base, col) {
+  const T = lock.thickness || 0; if (!(T > 0)) return base;
+  const n = base[0].pts.length, one = base.length === 1, m = one ? 3 : clamp(base.length - 1, 3, 8), tt = lock.thicknessTaper ?? 1;
+  const edge = (k, side) => one ? add(base[0].pts[k], mul(base[0].across[k], side * base[0].width[k] / 2)) : base[side < 0 ? 0 : base.length - 1].pts[k];
+  const at = (k, u) => { if (one) return mix(edge(k, -1), edge(k, 1), u); const x = u * (base.length - 1), j = Math.min(base.length - 2, Math.floor(x)); return mix(base[j].pts[k], base[j + 1].pts[k], x - j); };
+  const fr = [], H = [];
+  for (let k = 0; k < n; k++) {
+    const L = edge(k, -1), R = edge(k, 1), w = len(sub(R, L)), a = w > 1e-6 ? mul(sub(R, L), 1 / w) : base[0].across[k];
+    let up = col ? col.normal(mix(L, R, 0.5)) : [0, 0, 1]; up = sub(up, mul(a, dot(up, a))); up = len(up) > 1e-4 ? norm(up) : norm(cross(a, [1, 0, 0]));
+    fr.push([a, up, w]); H.push(T * w / 2 * (1 - tt * k / (n - 1)));
+  }
+  const dome = [];
+  for (let i = 0; i < m; i++) {
+    const phi = Math.PI * (i + 0.5) / m, u = (1 + Math.cos(phi)) / 2, c = Math.cos(phi), sn = Math.sin(phi);
+    const pts = keepOff(fr.map((_, k) => add(at(k, u), mul(fr[k][1], H[k] * sn))), col);
+    dome.push({ pts, u, across: fr.map(([a, up, w], k) => { const d = add(mul(a, -sn * w / 2), mul(up, c * H[k])); return len(d) > 1e-6 ? norm(d) : a; }),
+                width: fr.map(([, , w], k) => Math.max(0.003, Math.hypot(sn * w / 2, c * H[k]) * Math.PI / m * 1.7) * (one ? 1 : 1 - lock.taper * Math.pow(k / (n - 1), 1.5))) });
+  }
+  const out = [...base, ...dome]; out.thick = H;
+  return out;
+}
+
 export function evaluate(lock, col, layers = null) {
   const taperW = (w, k) => w * (1 - lock.taper * Math.pow(k / (SAMPLES - 1), 1.5));
   if (lock.type === "strand") {
     const pts = keepOff(catmull(lock.pts), col, layers);
-    return [{ pts, across: pts.map((_, k) => sideways(pts, col, k)), width: pts.map((_, k) => taperW(lock.width, k)) }];
+    return thicken(lock, [{ pts, u: 0.5, across: pts.map((_, k) => sideways(pts, col, k)), width: pts.map((_, k) => taperW(lock.width, k)) }], col);
   }
   if (lock.type === "sheet") {
     const g = Math.max(2, lock.guides | 0), [L, M, R] = lock.edges, n = L.length, guides = [];
@@ -346,11 +372,11 @@ export function evaluate(lock, col, layers = null) {
       guides.push(keepOff(catmull(ctrl), col, layers));
     }
     // the ribbons' width: the gap to the neighbours, overlapped
-    return guides.map((pts, j) => {
+    return thicken(lock, guides.map((pts, j) => {
       const nb = guides[j + 1] || guides[j - 1];
-      return { pts, across: pts.map((p, k) => { const a = sub(nb[k], p); return len(a) > 1e-5 ? norm(j + 1 < g ? a : mul(a, -1)) : sideways(pts, col, k); }),
+      return { pts, u: j / (g - 1), across: pts.map((p, k) => { const a = sub(nb[k], p); return len(a) > 1e-5 ? norm(j + 1 < g ? a : mul(a, -1)) : sideways(pts, col, k); }),
                width: pts.map((p, k) => taperW(Math.max(0.004, len(sub(nb[k], p)) * 1.7), k)) };
-    });
+    }), col);
   }
   // bundle: guides round the spine at the radius from root to tip
   const spine = keepOff(catmull(lock.spine), col, layers), g = Math.max(3, lock.guides | 0), out = [];
@@ -378,12 +404,12 @@ export function evaluate(lock, col, layers = null) {
 // the realism option: thin strands spread through the lock (between its guides, jittered), as polylines
 export function strandsOf(lock, guides, seed = 7) {
   const r = rng(seed + (lock.id ? [...String(lock.id)].reduce((a, c) => a + c.charCodeAt(0), 0) : 0)), out = [], N = Math.max(1, lock.density | 0);
-  if (lock.type === "strand") {
+  if (lock.type === "strand" && guides.length === 1) {
     const G = guides[0];
     for (let s = 0; s < N; s++) { const o = (r() - 0.5) * 2, w = r() * 0.6 + 0.4; out.push(G.pts.map((p, k) => add(p, mul(G.across[k], o * G.width[k] * 0.5 * w)))); }
     return out;
   }
-  if (lock.type === "sheet") {
+  if (lock.type === "sheet" || lock.type === "strand") {                // a thick one too: round its guides, base and dome
     for (let s = 0; s < N; s++) {
       const u = r() * (guides.length - 1), j = Math.min(guides.length - 2, Math.floor(u)), f = u - j, A = guides[j].pts, B = guides[j + 1].pts, tip = 0.75 + 0.25 * r();
       const pts = A.map((p, k) => add(mix(p, B[k], f), mul(guides[j].across[k], (r() - 0.5) * 0.002)));

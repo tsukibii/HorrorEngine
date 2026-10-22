@@ -543,7 +543,7 @@ function movePanel() {
 
 // ---- the bake: the swinging locks each a skinned mesh on its chains' bones, everything else one simplified mesh -------
 const BAKE_ALONG = 8, BAKE_ALONG_PHYS = 12;
-const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]) }; };
+const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]), u: G.u }; };
 function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
   const pos = cardPositions(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
   guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
@@ -994,6 +994,10 @@ function selPanel() {
   if (o.type === "bundle") { slider(box, "Root radius", 0.002, 0.06, 0.001, o.r0, edit(v => { o.r0 = v; })); slider(box, "Tip radius", 0, 0.06, 0.001, o.r1, edit(v => { o.r1 = v; }));
     slider(box, "Height", 0.1, 2, 0.05, o.height ?? 1, edit(v => { o.height = v; }), "its other axis, as a share of its width: 1 round, less a flatter oval, more a taller one"); }
   slider(box, "Taper", 0, 1, 0.05, o.taper, edit(v => { o.taper = v; }), "how much thinner the tip is");
+  if (o.type !== "bundle") {                                          // a bundle's volume for strands and sheets
+    slider(box, "Thickness", 0, 1, 0.05, o.thickness ?? 0, edit(v => { o.thickness = v; }), "flat (0) to round (1): a dome over the lock as high as half its width, like a bundle");
+    slider(box, "Thickness taper", 0, 1, 0.05, o.thicknessTaper ?? 1, edit(v => { o.thicknessTaper = v; }), "how much the thickness thins towards the tip (1: to nothing)");
+  }
   const ph = o.physics || (o.physics = Object.assign({}, SP.DEFAULTS));
   const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
   if (ph.on) {

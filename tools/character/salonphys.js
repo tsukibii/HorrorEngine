@@ -95,7 +95,7 @@ export class Sim {
 export function skinOf(lock, guides) {
   const chains = chainsOf(lock).map(([, P]) => P), J = chains[0].length, out = [];
   guides.forEach((G, gi) => {
-    const n = G.pts.length, u = guides.length > 1 ? gi / (guides.length - 1) : 0.5;
+    const n = G.pts.length, u = G.u ?? (guides.length > 1 ? gi / (guides.length - 1) : 0.5);   // across the lock (a thick one's dome too)
     let across;                                                          // [chain, weight] pairs
     if (lock.type === "sheet") across = u < 0.5 ? [[0, 1 - 2 * u], [1, 2 * u]] : [[1, 2 - 2 * u], [2, 2 * u - 1]];
     else across = [[0, 1]];
