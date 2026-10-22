@@ -12,6 +12,10 @@ The user's answers, newest first. They override the plan, the research and the d
   thickness; brows and lashes as variations; easier than Blender. The plan: docs/SALON_PLAN.md (Blender's hair read
   first, as research, never copied). The animation refiner comes later (per clip physics, keyed poses).
 - The footage is about 0.4 MP and soft; stylised realism (Arcane-like) is the look; the humans no longer go to Unreal.
+- **Physics is game-grade:** a few locks jiggle with the head, wind is a rustle with no direction, nothing clips; no
+  more than that. **The salon must be layman-easy and fun, like a character creator:** never a blank head (a wall of
+  cuts first), the reference in the room, tracing the outline over it as the main act, galleries with pictures for
+  the fringe, sidelocks, tails, length, colour; handles and word sliders, no numbers; East Asian styles first.
 
 ## 2026-10-22, later (Perm, not DiffLocks; lock points; the look we want)
 

@@ -12,6 +12,43 @@ This file is the work list, in build order, for the session that executes it. Ti
 pushed; every page gets a headless test that ends `SALON ok`; write the lesson in docs/LESSONS.md when something takes
 a second try. Read docs/DECISIONS.md and CLAUDE.md first.
 
+## The player's path: the first five minutes (the user's note before handing over)
+
+The salon has to be so easy that a layman gets going without reading anything, and it should feel like playing a
+character creator, not using Blender. The objective is not fine-tuned hair: **a photo or video reference, the rough
+shape achieved, single strands ignored, and it looks good**, Japanese and other East Asian styles first. Manual is
+fine; tedious is not. The rules that follow from that, which every phase below has to obey:
+
+1. **Never a blank head.** The salon opens on a wall of cuts (cards with pictures: hime, see-through bangs, curtain
+   bangs, layered bob, wolf cut, two-block, half-up, low pony, twin tails, bob, long straight, long wavy). One click and
+   it's on the head, moving. Everything after is adjustment.
+2. **The reference is in the room.** Drop a photo or a video; it sits beside the view, and can be laid over the head
+   half-transparent, matched to the head's angle (front, side, back; for a video the camera follows the frame). You
+   draw against it.
+3. **Tracing is the main act.** In the front, side and back views you trace the hair's **outline** over the reference
+   with a lasso, like tracing on paper; the hair's outer shape stretches to the trace (the locks scale and move so
+   their outline matches; the inside follows). Three traces and the rough shape is there. No lock needs touching for
+   this.
+4. **Then the parts that make a cut a cut**, each a gallery with pictures, not a slider: the fringe (blunt hime,
+   see-through, curtain, side-swept, wispy, none), the sidelocks (hime chin-length, face-framing, none), the parting
+   (middle, side, none), tails (twin, pony, half-up, buns), the length (shoulder, chest, waist), the volume (flat,
+   airy, big). Picking one swaps those locks and keeps the rest.
+5. **Handles, not numbers.** When a lock is touched, it has three or four handles (root, middle, tip; a sheet's
+   corners) you pull like clay, big enough to hit, snapping off the head. Sliders say words (short to long, straight
+   to wavy, thin to thick, neat to messy) with a preset dot, never a value that needs explaining. "Lock", "fringe",
+   "sidelocks", "tail" in the UI; "curve", "guide", "lattice", "node" nowhere.
+6. **It moves while you work.** The head idles (a slow turn and a breath), a Shake button, the game's lights and a
+   "How it looks in the game" button (the POV medium shot). Jiggle is a tick on the fringe, the tails, the long
+   locks, with stiff/soft/floppy, tested by Shake, and it is the last step, not the first.
+7. **Undo everywhere, autosave, no waiting.** Every click is instant; nothing trains or bakes until Save. "Surprise
+   me" makes a variation of the current cut (lengths, volume, fringe) for people who'd rather pick than shape.
+8. **Colour and shine as a gallery too**: black, dark brown, ash, chestnut, with or without a lighter tip, and the
+   anime option: a stylised shine band across the hair instead of the realistic highlights.
+9. **Photo mode**: a screenshot of the head beside the reference, the proof it looks right.
+
+The order of the salon's panel is the order above: Cut, Reference, Trace, Fringe & Sides, Shape (handles), Colour,
+Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
+
 ## What exists to build on (reuse, don't rewrite)
 
 | Piece | Where | Reuse for |
@@ -99,6 +136,15 @@ a second try. Read docs/DECISIONS.md and CLAUDE.md first.
 - [ ] **Bundle tool**: a root line (or a root circle of a radius from the wheel), a tip point; a tapered tube of
   guides; a `spread` at the root and at the tip (the triangle: wide to gathered, or gathered to wide); its middle
   ring's points are handles.
+- [ ] **Trace the outline** (the layman's main act): in the front, side or back view, with the reference laid over
+  the head, a lasso draws the hair's outline; the locks visible in that view are scaled and moved (about their roots,
+  by a 2D warp of the view plane, the depth kept) so the hair's projected outer boundary matches the trace; three
+  traces and the rough shape is done. The trace is kept in `salon.json` so it can be redrawn.
+- [ ] **Galleries with pictures** (one click swaps those locks, the rest kept): the fringe (blunt hime, see-through,
+  curtain, side-swept, wispy, none), the sidelocks (hime chin-length, face-framing, none), the parting (middle, side,
+  none), tails (twin, pony, half-up, buns), the length (shoulder, chest, waist), the volume (flat, airy, big), the
+  colour (black, dark brown, ash, chestnut, a lighter tip) and the shine (realistic highlights or an anime band).
+  Each entry is a small set of locks or a change to the current ones, built from the Asian cuts of `hair.js`.
 - [ ] **Groups panel**: every lock a row (name, type, visible, colour, physics on, realism); select, hide/show,
   duplicate, mirror left-right (across the head's X), delete, reorder; undo/redo (a stack of `salon.json` states,
   cheap).
@@ -163,12 +209,18 @@ runtime since they ride the guides.
 - [ ] Export: the locks as OBJ ribbons with UVs (as `hair.js` exports) and the chains as JSON (bones), for anything
   outside the Studio.
 
-## Phase 4: the easy UI (what makes it better than Blender)
+## Phase 4: the easy UI (the player's path above, made real)
 
-- [ ] One tool bar: Strand, Sheet, Bundle, Cap, Brow, Lash, Select; one-key shortcuts; the wheel's meaning shown while
-  a tool is armed ("wheel: spread 6 cm"); Esc cancels; Enter finishes a line.
-- [ ] A style bar per lock with the sliders that matter (width, taper, curl, frizz, clump, realism) and three
-  presets (anime, stylised, realistic) that set them together.
+- [ ] The panel in the path's order: Cut, Reference, Trace, Fringe & Sides, Shape, Colour, Move, Save; one sentence
+  of help at the top of each, a Next button, any step skippable; the wall of cuts first, never a blank head.
+- [ ] The head idles (a slow turn and a breath) while nothing is dragged; Shake; "How it looks in the game"; Photo
+  mode (the head beside the reference); "Surprise me".
+- [ ] One tool bar for the expert's tools: Strand, Sheet, Bundle, Cap, Brow, Lash, Select; one-key shortcuts; the
+  wheel's meaning shown while a tool is armed ("wheel: spread 6 cm"); Esc cancels; Enter finishes a line. Words in
+  the UI: lock, fringe, sidelocks, tail; never curve, guide, lattice, node.
+- [ ] A style bar per lock with word sliders (short to long, straight to wavy, thin to thick, neat to messy, the
+  clump) with a preset dot on each, and three presets (anime, stylised, realistic) that set them together; the
+  numbers behind them never shown.
 - [ ] Hair presets: whole heads of locks saved and reloaded onto any body (roots are scalp-relative so they land on a
   different head); the Asian cuts of `hair.js` rebuilt as salon presets (hime, see-through bangs, curtain, layered
   bob, wolf, two-block, half-up, low pony) so a game's cast starts from them.
