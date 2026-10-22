@@ -3,7 +3,10 @@ Its licence is non-commercial (the games are free: docs/DECISIONS.md 2026-10-22)
 on this machine (vendor/difflocks/ and Content/Studio/People/, git-ignored), and it runs with no network at all.
 
     python tools/difflocks.py setup [--home DIR]     its code (pinned), a uv environment (Python 3.11, torch 2.5 with
-                                                     CUDA 12.4, NATTEN, FlashAttention-2) and DINOv2's code and weights
+                                                     CUDA 12.4, NATTEN with its CUDA kernels: NATTEN's wheel or built
+                                                     with nvcc, --natten-expired-cert to take the wheel from its site
+                                                     despite the expired certificate; FlashAttention-2's prebuilt wheel
+                                                     from its GitHub release) and DINOv2's code and weights
                                                      for torch.hub, under vendor/difflocks/. Then the checkpoints: you
                                                      register at difflocks.is.tue.mpg.de and run its own script
                                                      (cd vendor/difflocks/src && ./download_checkpoints.sh): your account.
@@ -41,7 +44,9 @@ PIN = "fcc73747dc60320c30228b6711000a53fc0c9d84"
 DINO_REPO = "https://github.com/facebookresearch/dinov2.git"
 DINO_WEIGHTS = "https://dl.fbaipublicfiles.com/dinov2/dinov2_vitl14/dinov2_vitl14_reg4_pretrain.pth"
 TORCH = ["torch==2.5.0", "torchvision==0.20.0", "--index-url", "https://download.pytorch.org/whl/cu124"]
-NATTEN = ["natten==0.17.3+torch250cu124", "-f", "https://shi-labs.com/natten/wheels/"]
+NATTEN_WHEELS = "https://shi-labs.com/natten/wheels/"   # NATTEN's own builds (CUDA); its certificate expired 2025-12-03
+FLASH_WHEEL = ("https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.0.post2/"
+               "flash_attn-2.7.0.post2+cu12torch2.5cxx11abiFALSE-cp311-cp311-linux_x86_64.whl")   # prebuilt: no nvcc needed
 NET = re.compile(r"requests\.|urllib|urlopen|http\.client|socket\.|wandb|hf_hub|huggingface_hub|torch\.hub|"
                  r"download|telemetry|analytics|sentry|SummaryWriter|mlflow|comet_ml|clearml|subprocess|os\.system|"
                  r"smtplib|ftplib|https?://")
@@ -78,6 +83,40 @@ def py_of(home):
     return home / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+def natten_cuda(home):
+    """NATTEN is in and has its CUDA kernels (one built without nvcc has none, and DiffLocks needs them)"""
+    r = subprocess.run([str(py_of(home)), "-c", "import natten,sys; sys.exit(0 if natten.has_cuda() else 1)"], capture_output=True)
+    return r.returncode == 0
+
+
+def natten(home, env, pip, a):
+    """NATTEN with CUDA: NATTEN's own wheel, or built here with nvcc for this GPU alone (minutes, not an hour)"""
+    if natten_cuda(home): return
+    subprocess.run(["uv", "pip", "uninstall", "-p", str(py_of(home)), "natten"], env=env)
+    insecure = ["--allow-insecure-host", "shi-labs.com"] if a.natten_expired_cert else []
+    if subprocess.run(pip + ["natten==0.17.3+torch250cu124", "-f", NATTEN_WHEELS] + insecure, env=env).returncode == 0 and natten_cuda(home):
+        return
+    nvcc = shutil.which("nvcc") or next((str(p) for p in (Path(os.environ.get("CUDA_HOME", "/opt/cuda")) / "bin" / "nvcc",) if p.exists()), None)
+    if nvcc:
+        cuda_home = str(Path(nvcc).resolve().parents[1])
+        ver = subprocess.run([nvcc, "--version"], capture_output=True, text=True).stdout
+        if "release 12." not in ver:
+            sys.exit(f"nvcc at {nvcc} isn't CUDA 12 (torch 2.5 here is built for 12.4; the build needs the same major):\n{ver[-200:]}")
+        arch = subprocess.run(["nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader"], capture_output=True, text=True).stdout.split()
+        benv = dict(env, CUDA_HOME=cuda_home, NATTEN_CUDA_ARCH=(arch[0] if arch else "8.6"), NATTEN_N_WORKERS=str(max(2, (os.cpu_count() or 4) // 2)))
+        print(f"building NATTEN with CUDA for compute {benv['NATTEN_CUDA_ARCH']} (CUDA at {cuda_home}; about 10 to 20 minutes)")
+        subprocess.run(pip + ["natten==0.17.3", "--no-build-isolation", "--no-cache", "--reinstall"], env=benv, check=True)
+        if natten_cuda(home): return
+        sys.exit("NATTEN built, but without its CUDA kernels (above)")
+    sys.exit("""NATTEN needs its CUDA kernels and there are two ways to get them:
+  1. NATTEN's own prebuilt wheel. Its site's certificate expired on 2025-12-03, so the download can't be verified
+     the usual way (still encrypted, but the certificate is out of date). If you accept that:
+         python tools/difflocks.py setup --natten-expired-cert
+  2. Build it here: install the CUDA 12 toolkit (nvcc; CUDA 13 won't do: torch 2.5 here is CUDA 12.4), e.g.
+         pacman -Si cuda | grep Version      (12.x: sudo pacman -S cuda; otherwise a CUDA 12 toolkit from NVIDIA)
+     then run setup again (it finds /opt/cuda/bin/nvcc, or set CUDA_HOME).""")
+
+
 def cmd_setup(a):
     home = home_dir(a); home.mkdir(parents=True, exist_ok=True)
     src = home / "src"
@@ -94,10 +133,9 @@ def cmd_setup(a):
     reqs = [l.strip() for l in (src / "requirements.txt").read_text().splitlines()
             if l.strip() and not l.startswith(("torch==", "torchvision==", "setuptools", "wheel"))]
     subprocess.run(pip + reqs + ["setuptools", "wheel", "ninja", "packaging"], env=env, check=True)
-    if subprocess.run(pip + NATTEN, env=env).returncode:
-        print("NATTEN's prebuilt wheel didn't install: building it (minutes)"); subprocess.run(pip + ["natten==0.17.3", "--no-build-isolation"], env=env, check=True)
-    if subprocess.run(pip + ["flash-attn==2.7.0.post2", "--no-build-isolation"], env=env).returncode:
-        sys.exit("FlashAttention-2 didn't install (it needs CUDA 12 and a compiler for a source build): see its README")
+    natten(home, env, pip, a)
+    if subprocess.run(pip + [FLASH_WHEEL], env=env).returncode:
+        sys.exit("FlashAttention-2's prebuilt wheel didn't install (above)")
     hub = home / "hub"
     if not (hub / "dinov2").exists():
         subprocess.run(["git", "clone", "--depth", "1", DINO_REPO, str(hub / "dinov2")], check=True)
@@ -189,6 +227,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("setup", "audit", "check"):
         p = sub.add_parser(name); p.add_argument("--home")
+        if name == "setup": p.add_argument("--natten-expired-cert", action="store_true", help="take NATTEN's wheel although its site's certificate has expired")
     p = sub.add_parser("run"); p.add_argument("picture"); p.add_argument("--out", required=True); p.add_argument("--home")
     p.add_argument("--blender", help="Blender 4.1.1's executable, for the .blend (and --alembic)"); p.add_argument("--alembic", action="store_true")
     a = ap.parse_args()
