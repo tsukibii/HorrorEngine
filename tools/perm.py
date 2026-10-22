@@ -22,6 +22,7 @@ Perm's own CUDA operations compile with nvcc when it's there; without it StyleGA
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -75,18 +76,22 @@ def fetch(name, url, downloads):
     have = sorted(p for p in downloads.glob(f"{name}*") if p.is_file())
     if have: return have[0]
     out = downloads / (name + (".obj" if name == "head" else ".bin"))
-    direct = url + ("&download=1" if "sharepoint.com" in url else "")
-    try:
-        print(f"fetching {name} from the authors' link")
-        req = urllib.request.Request(direct, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=60) as r, open(out, "wb") as f:
-            shutil.copyfileobj(r, f)
-        if out.stat().st_size < 10_000 and b"<html" in out.read_bytes()[:2000].lower():
-            out.unlink(); raise OSError("a web page came back, not the file")
-        return out
-    except OSError as e:
-        print(f"  couldn't: {e}")
-        return None
+    tries = [url]
+    m = re.match(r"https://([^/]+)/:\w:/g/personal/([^/]+)/([^?]+)", url)
+    if m:                                                  # a SharePoint share: its download page, then the link with download=1
+        tries = [f"https://{m[1]}/personal/{m[2]}/_layouts/15/download.aspx?share={m[3]}", url + "&download=1"]
+    print(f"fetching {name} from the authors' link")
+    for direct in tries:
+        try:
+            req = urllib.request.Request(direct, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=60) as r, open(out, "wb") as f:
+                shutil.copyfileobj(r, f)
+            if b"<html" in out.read_bytes()[:2000].lower():
+                out.unlink(); raise OSError("a web page came back, not the file")
+            return out
+        except OSError as e:
+            print(f"  couldn't: {e}")
+    return None
 
 
 def cmd_setup(a):
