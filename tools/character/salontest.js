@@ -4,6 +4,8 @@
 // reference's cube bends the picture where its pulled face looks at the view. The lock
 // tools with the mouse: a strand (root, end), a sheet (a root line dragged along the scalp, an end), a bundle; Mirror on
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
+// pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
+// reach mid-drag, O, a twin's pull); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
 // in it); the look (the strand atlas, the shader on every card, a look restyling them); a save and a reload.
@@ -203,6 +205,58 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (s1 === s0) throw new Error("undo changed nothing");
     if (n2 !== n0 - 2) throw new Error(`the second undo left ${n2} locks of ${n0} (the sidelock and its twin should go)`);
     if (s3 !== s0) throw new Error("redo didn't bring it all back");
+  });
+  await step("the pull is Blender's proportional editing: handles in reach move with it, less the farther they are; the wheel sizes the reach mid-drag; O turns it off; a twin's pull moves its original", async () => {
+    // Blender's curves (calculatePropRatio), d = (size - r) / size; the wheel's 1.1 a notch, 1.01 with Shift
+    const cur = await ev(() => { const SL = window.__salon.SL, out = {}; for (const k of Object.keys(SL.FALLOFFS)) out[k] = [0.25, 0.5, 0.75].map(d => SL.falloff((1 - d) * 0.1, 0.1, k));
+      return Object.assign(out, { beyond: SL.falloff(0.1001, 0.1, "constant"), edge: SL.falloff(0.1, 0.1, "constant"), grow: [SL.growReach(0.05, true), SL.growReach(0.05, false, true)] }); });
+    const want = { smooth: d => 3 * d * d - 2 * d * d * d, sphere: d => Math.sqrt(2 * d - d * d), root: Math.sqrt, inverse_square: d => d * (2 - d), sharp: d => d * d, linear: d => d, constant: () => 1 };
+    for (const [k, f] of Object.entries(want)) [0.25, 0.5, 0.75].forEach((d, i) => { if (Math.abs(cur[k][i] - f(d)) > 1e-9) throw new Error(`${k}(${d}) = ${cur[k][i]}`); });
+    if (cur.beyond !== 0 || cur.edge !== 1 || Math.abs(cur.grow[0] - 0.055) > 1e-12 || Math.abs(cur.grow[1] - 0.05 / 1.01) > 1e-12) throw new Error(JSON.stringify(cur));
+    // two strands hanging behind the head, 2.5 cm apart; the first's fifth handle pulled sideways
+    const ids = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
+      const a = s.addLock(SL.makeStrand(C.surface([0, 0.05, -0.1]), [0, -0.2, -0.24], C)), b = s.addLock(SL.makeStrand(C.surface([0.025, 0.05, -0.1]), [0.025, -0.2, -0.24], C));
+      s.st.mirror.on = m; s.select(a.id); Object.assign(s.PULL, { on: true, falloff: "smooth", size: 0.08, only: false }); s.pullPanel(); return [a.id, b.id]; });
+    await view(Math.PI, 0.05, 1.1); await page.keyboard.press("v");
+    const pts = () => ev(ids => { const s = window.__salon; return ids.map(id => s.SL.handles(s.st.locks.find(l => l.id === id)).map(h => h.p)); }, ids);
+    const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    const grab = async (k, fn) => { const from = await scr((await pts())[0][k]); await page.mouse.move(...from); await page.mouse.down(); await page.mouse.move(from[0] + 30, from[1] + 6, { steps: 6 }); await fn(); await page.mouse.up(); };
+    const P0 = await pts(), G = 4;
+    await grab(G, async () => {});
+    const P1 = await pts(), dg = P1[0][G].map((x, a) => x - P0[0][G][a]);
+    if (Math.hypot(...dg) < 0.01) throw new Error(`the handle moved ${(Math.hypot(...dg) * 100).toFixed(2)} cm`);
+    const exp = await ev(([P0, dg, G]) => { const s = window.__salon, sm = d => 3 * d * d - 2 * d * d * d;   // Blender's smooth, by hand
+      return P0.map(L => L.map((p, k) => { const r = Math.hypot(...p.map((x, a) => x - P0[0][G][a])), w = k === 0 ? 0 : r >= 0.08 ? 0 : sm((0.08 - r) / 0.08);
+        return { w, q: w ? s.COL.push(p.map((x, a) => x + w * dg[a]), s.SL.GAP)[0] : p }; })); }, [P0, dg, G]);
+    let worst = 0, inReach = [0, 0], still = 0;
+    exp.forEach((L, j) => L.forEach((e, k) => { worst = Math.max(worst, dist(e.q, P1[j][k])); if (e.w > 0 && !(j === 0 && k === G)) inReach[j]++; if (!e.w) still++; }));
+    if (worst > 1e-6) throw new Error(`a handle isn't where the smooth falloff puts it: ${worst} m off`);
+    if (!inReach[0] || !inReach[1] || !still) throw new Error(`in reach: ${inReach} (this lock, the next), unmoved ${still}`);
+    const wB = exp[1][G].w;
+    // the reach shrunk to 1 cm: the other strand stays; the wheel (down) grows it mid-drag until it takes the other strand too
+    await ev(() => { window.__salon.PULL.size = 0.01; });
+    const rB = dist((await pts())[1][G], (await pts())[0][G]), notches = Math.ceil(Math.log(rB / 0.01) / Math.log(1.1)) + 1;
+    let mid = null, grown = null, B0 = (await pts())[1][G];
+    await grab(G, async () => { mid = (await pts())[1][G]; for (let i = 0; i < notches; i++) await page.mouse.wheel(0, 100); grown = await ev(() => window.__salon.PULL.size);
+      const after = (await pts())[1][G]; mid = [dist(mid, B0), dist(after, B0)]; await page.mouse.wheel(0, -100); });
+    const shrunk = await ev(() => window.__salon.PULL.size);
+    if (mid[0] > 1e-9 || mid[1] < 0.001) throw new Error(`the other strand moved ${mid.map(x => (x * 1000).toFixed(2))} mm (before, after the wheel)`);
+    if (Math.abs(grown - 0.01 * Math.pow(1.1, notches)) > 1e-9 || Math.abs(shrunk - grown / 1.1) > 1e-9) throw new Error(`the reach ${grown}, ${shrunk}`);
+    // O: off, only the handle moves
+    await page.keyboard.press("o"); const on = await ev(() => window.__salon.PULL.on);
+    const Q0 = await pts(); await grab(G, async () => {}); const Q1 = await pts();
+    const others = Q0.flatMap((L, j) => L.map((p, k) => j === 0 && k === G ? 0 : dist(p, Q1[j][k])));
+    await page.keyboard.press("o");
+    if (on || Math.max(...others) > 1e-9 || dist(Q0[0][G], Q1[0][G]) < 0.005) throw new Error(`with O off: on ${on}, others moved ${Math.max(...others)}`);
+    await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.PULL.size = 0.08; s.pullPanel(); }, ids);
+    // the twin's handle pulled (the sidelock's mirror): its original moves, mirrored
+    const tw = await ev(() => { const s = window.__salon, t = s.st.locks.find(l => l.mirror_of); s.select(t.id); return { id: t.id, of: t.mirror_of, h: t.edges[1][3], o: s.st.locks.find(l => l.id === t.mirror_of).edges[1][3] }; });
+    await view(Math.PI / 2, 0.05, 1.1);
+    const f = await scr(tw.h); await page.mouse.move(...f); await page.mouse.down(); await page.mouse.move(f[0] + 35, f[1] + 10, { steps: 6 }); await page.mouse.up();
+    const t2 = await ev(tw => { const L = window.__salon.st.locks; return { h: L.find(l => l.id === tw.id).edges[1][3], o: L.find(l => l.id === tw.of).edges[1][3], seam: window.__salon.st.mirror.seam }; }, tw);
+    const mirrorErr = Math.hypot(2 * t2.seam - t2.h[0] - t2.o[0], t2.h[1] - t2.o[1], t2.h[2] - t2.o[2]);
+    if (dist(t2.o, tw.o) < 0.005 || dist(t2.h, tw.h) < 0.005 || mirrorErr > 1e-9) throw new Error(`the twin's pull: original moved ${dist(t2.o, tw.o)}, twin ${dist(t2.h, tw.h)}, mirror off by ${mirrorErr}`);
+    console.log(`       pulled ${(Math.hypot(...dg) * 100).toFixed(1)} cm: ${inReach[0]} more handles on its strand and ${inReach[1]} on the next (${(wB * 100).toFixed(0)}% at 2.5 cm) by the smooth falloff, ${still} beyond the 8 cm reach still; ${notches} notches grew the reach to ${(grown * 100).toFixed(2)} cm and took the next strand; the twin's pull moved its original ${(dist(t2.o, tw.o) * 100).toFixed(1)} cm`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

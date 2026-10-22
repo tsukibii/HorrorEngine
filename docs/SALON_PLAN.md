@@ -200,6 +200,8 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
   duplicate, mirror once (a twin across the seam without the link), delete, reorder; undo/redo (a stack of
   `salon.json` states, cheap).
   **Built 2026-10-22**: groups (new, the active one, show and hide), every lock a row (select, show, hide), name, colour, drawn as, duplicate, mirror once, break the mirror, delete, undo and redo; not yet: reorder, physics on.
+- [x] **The pull** (the user's ask, 2026-10-22): a handle pulled takes the handles in its reach along, faded by
+  distance, Blender's proportional editing (its falloffs, the wheel's reach, O). **Done 2026-10-22** (docs/SALON.md).
 - [ ] **Shaping on a selected lock**: four brushes as modifiers of the handles, never per strand: comb (drag the
   tips sideways), grow/shrink (length), puff (away from the head), smooth; and sliders: curl (a spiral of a radius
   and turns along the lock), frizz (noise), clump (the guides pulled to the lock's centre line), width, taper. The

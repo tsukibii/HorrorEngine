@@ -60,7 +60,7 @@ a pulled face's middle drags the picture's middle the whole way). The cube is sa
 | Strand | S | click a root on the scalp (tinted blue while a tool is armed), click the end | the sag (how far it bows out) |
 | Sheet | L | drag a root line along the scalp, let go, click where it ends | the spread of the end |
 | Bundle | B | click a root, click the tip | the root's width |
-| Select | V | click a lock; drag a handle (Alt: towards or away from you) | |
+| Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it | the pull's reach (down grows it) |
 | Fit ref | F | drag the reference picture; the wheel scales it | |
 
 **Hair lies on the scalp** (2026-10-22): a new lock is combed onto the head: every point within 3 cm of it is laid on
@@ -70,13 +70,23 @@ scalp** (Selected) lay hair made before down the same way. The scalp runs from t
 temples' corners, **down the sideburns** in front of the ears to the tragus, over the ears (not on them) and close
 behind them to the nape.
 
+**The pull is Blender's proportional editing** (Pull; 2026-10-22): dragging a handle takes every handle within its
+**reach** along, less the farther they are, on its own lock and on the hair round it; the ring shows the reach round
+where the handle was, and the handles it takes are lit, brighter the more they move (hovering a handle shows the same
+before you pull). The wheel **while dragging** grows (down) or shrinks (up) the reach by a tenth a notch, a hundredth
+with Shift, as Blender's does, and the pull is weighed again from where the handles started; Page Up and Page Down too.
+**O** turns it off (then only the handle moves). **Falloff**: Smooth (the default), Sphere, Root, Inverse square,
+Sharp, Linear, Constant: Blender's curves of d = (reach - distance) / reach, from `calculatePropRatio`. **This lock
+only** keeps it to the lock you pull. A twin's handles pull their original's (mirrored), so both sides move; roots
+never move. The reach starts at 8 cm (a long strand's handles are about 6 cm apart).
+
 Ends clicked on the body lie on it (a fringe resting on the brows, a lock on the chest); clicked in the air, on the
 plane through the root facing you. Shift lets a root off the scalp. Esc cancels a placing; Delete removes the selected
 lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
 
 - **Strand**: one guide, six control points (a Catmull-Rom). Width from a single hair (1 mm) to a lock (3 cm).
 - **Sheet**: the root line plus three edge curves (left, middle, right); the guides across it are blended from them,
-  their roots on the line. The edges' points are the handles; pulling one bends the rest of that edge after it.
+  their roots on the line. The edges' points are the handles.
 - **Bundle**: a spine with a radius at the root and the tip (wide to gathered, or the other way): a tube of guides.
 - **Drawn as** cards (stylised: ribbons with a strand texture) or strands (realism: thin lines spread through the
   lock, as many as the slider says).
@@ -166,8 +176,8 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine
 
 ## Code
 
-`salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror: plain arrays, node can
-run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
+`salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror, the pull: plain arrays, node
+can run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
 ellipsoid depth), `salonphys.js` (the chains, the step, the
 skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
@@ -182,7 +192,10 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   with fewer vertices, the scalp unlit and blended, a glTF whose bind pose is exact and whose root bone bends it, the
   look's texture in it); the
   look (the atlas see-through at its tips, every card on the hair shader, a look restyling them); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
-  following a pulled handle; no guide point inside the body; undo, redo; a save and a reload.
+  following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
+  wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
+  none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
+  its original mirrored); a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.
 

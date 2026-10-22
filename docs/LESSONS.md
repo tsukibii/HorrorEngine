@@ -256,3 +256,9 @@ clear: on a round head nothing pulled them back down, so hair floated 13 to 18 m
 scalp until it leaves the head: pull every point near the head down onto it, then let the user bow it. And a setting the
 wheel changes while placing (the bow) must start over for the next lock, or the next lock floats too.
 
+## A reach in centimetres meets handles spaced by the lock's length (2026-10-22)
+
+The pull's first test used a 4 cm reach and expected it to bend the strand it pulled: nothing else on that strand moved,
+because a 35 cm strand's six handles are 6 cm apart (only the next strand, 2.5 cm away, was in reach). Distances
+between handles grow with the lock, so a reach that suits a fringe takes nothing on a long lock. Measure the spacing
+before picking a reach (for a default or a test): the salon starts at 8 cm.

@@ -380,6 +380,27 @@ function drawHandles() {
     const g = new THREE.BufferGeometry().setFromPoints(l.root.map(p => new THREE.Vector3(...p)));
     const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x5aa65a, depthTest: false })); line.renderOrder = 10; HANDLES.add(line);
   }
+  drawReach();
+}
+// the pull's reach (Blender's proportional circle): a ring round where the handle taken was, in the view's plane, and
+// every handle it takes, brighter the more it moves
+function drawReach() {
+  const at = DRAG && DRAG.kind === "handle" ? { id: DRAG.lock, path: DRAG.path } : HOVER && SELECTED ? { id: SELECTED, path: HOVER } : null;
+  if (!PULL.on || !at) return;
+  const start = DRAG && DRAG.kind === "handle" ? DRAG.start : SL.pullStart(st.locks);
+  const g = (start[at.id] || []).find(h => h.key === at.path.join()); if (!g) return;
+  const n = new THREE.Vector3(); camera.getWorldDirection(n);
+  const f = SL.norm(SR.MV(SR.T(HF.B), n.toArray())), u = SL.norm(SL.cross(f, Math.abs(f[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), v = SL.cross(f, u);
+  const ring = [...Array(65)].map((_, i) => { const a = i / 64 * Math.PI * 2; return new THREE.Vector3(...SL.add(g.p, SL.add(SL.mul(u, Math.cos(a) * PULL.size), SL.mul(v, Math.sin(a) * PULL.size)))); });
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: 0xe8e8e8, depthTest: false, transparent: true, opacity: 0.8 }));
+  line.renderOrder = 11; HANDLES.add(line);
+  const dot = new THREE.SphereGeometry(0.0025, 8, 6), lo = new THREE.Color(0x7a4e14), hi = new THREE.Color(0xffe08a);
+  for (const x of SL.pullWeights(start, at, g.p, pullOpts())) {
+    if (x.id === at.id && x.key === g.key) continue;
+    const l = lockById(x.id), h = l && SL.handles(l).find(q => q.path.join() === x.key); if (!h) continue;
+    const m = new THREE.Mesh(dot, new THREE.MeshBasicMaterial({ color: lo.clone().lerp(hi, x.w), depthTest: false }));
+    m.renderOrder = 12; m.position.set(...h.p); HANDLES.add(m);
+  }
 }
 
 // the placing preview: a lock that isn't in the state yet
@@ -665,6 +686,12 @@ function changed(l) {                                                // a lock e
   st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL);
   for (const t of st.locks) if (t.mirror_of === l.id) DIRTY.add(t.id);
 }
+function changedMany(ids) {                                          // several locks edited: the twins synced once
+  if (!ids.length) return;
+  for (const id of ids) DIRTY.add(id); SIM_DIRTY = true;
+  st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL);
+  const set = new Set(ids); for (const t of st.locks) if (set.has(t.mirror_of)) DIRTY.add(t.id);
+}
 function addLock(l) {
   remember();
   if (SELECTED) DIRTY.add(SELECTED);
@@ -684,7 +711,7 @@ function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 // ---- the tools --------------------------------------------------------------------------------------------------------
 const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
-  select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). Drag the empty view to turn the head; the wheel zooms.",
+  select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). The handles in the ring move with it, less the farther they are: the wheel while dragging grows (down) or shrinks (up) the ring, O turns it off. Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
@@ -721,6 +748,21 @@ function previewFrom(e) {
 function scalpAt(e) { const p = headAt(e.clientX, e.clientY); return p && (e.shiftKey || SL.onScalp(p, COL.C)) ? COL.surface(p) : null; }
 
 let DRAG = null;
+// the pull (Blender's proportional editing, salonlib.js): on (O), the falloff, the reach (the wheel while dragging; Page
+// Up and Down), just the lock taken or all the hair shown
+const PULL = { on: true, falloff: "smooth", size: 0.08, only: false };   // 8 cm: a long strand's handles are 6 cm apart
+const shownIds = () => { const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])); return st.locks.filter(l => l.visible && vis[l.group] !== false).map(l => l.id); };
+const pullOpts = () => ({ size: PULL.on ? PULL.size : 0, falloff: PULL.falloff, only: PULL.only, ids: shownIds(), seam: st.mirror.seam, col: COL });
+function pullNow() {                                                   // the drag's pull again, from where the handles started
+  const moved = SL.pull(st.locks, DRAG.start, { id: DRAG.lock, path: DRAG.path }, DRAG.to, pullOpts());
+  changedMany([...new Set([...moved, ...DRAG.moved])]); DRAG.moved = moved;
+}
+function reach(up, fine) {
+  PULL.size = SL.growReach(PULL.size, up, fine);
+  $("#hint").textContent = `reach ${(PULL.size * 100).toFixed(1)} cm (${PULL.falloff.replace("_", " ")})`;
+  if (DRAG && DRAG.kind === "handle" && DRAG.to) pullNow();
+  pullPanel(); drawHandles(); draw();
+}
 const cv = renderer.domElement;
 cv.addEventListener("contextmenu", e => e.preventDefault());
 cv.addEventListener("pointerdown", e => {
@@ -733,7 +775,7 @@ cv.addEventListener("pointerdown", e => {
   }
   if (!orbitOnly && TOOL === "select") {
     const h = handleAt(e);
-    if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey }; return; }
+    if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey, start: SL.pullStart(st.locks), moved: [], to: null }; drawHandles(); draw(); return; }
     const l = lockAt(e);
     if (l) { select(l.id); return; }
   }
@@ -761,7 +803,6 @@ cv.addEventListener("pointermove", e => {
     const p = scalpAt(e); if (p && SL.len(SL.sub(p, PLACE.line[PLACE.line.length - 1])) > 0.008) { PLACE.line.push(p); showRootLine(PLACE.line); draw(); }
   } else if (DRAG.kind === "handle") {
     const l = lockById(DRAG.lock); if (!l) return;
-    const target = original(l), mirrored = target !== l;
     const h = SL.handles(l).find(x => x.path.join() === DRAG.path.join()); if (!h) return;
     let to;
     if (e.altKey) {                                                  // towards or away from the view
@@ -769,9 +810,7 @@ cv.addEventListener("pointermove", e => {
       to = SL.add(h.p, SL.mul(nl, (e.clientY - DRAG.y) * 0.0015)); DRAG.y = e.clientY;
     } else to = onPlane(e.clientX, e.clientY, h.p);
     if (!to) return;
-    if (mirrored) { to = SL.reflectPoint(to, st.mirror.seam); }
-    SL.dragHandle(target, DRAG.path, to, COL);
-    changed(target); draw();
+    DRAG.to = to; pullNow(); draw();                                   // the handle and those in reach (a twin's: its original's)
   } else if (DRAG.kind === "cube") {
     const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
     const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
@@ -797,13 +836,15 @@ cv.addEventListener("pointerup", e => {
     }
     PLACE.stage = 1; showRootLine(PLACE.line); showPreview(previewFrom(e)); draw();
   }
-  if (DRAG && DRAG.kind === "handle") { const l = lockById(DRAG.lock); if (l) { selPanel(); } }
+  const wasHandle = DRAG && DRAG.kind === "handle";
   if (DRAG && DRAG.kind === "fit") saveFitHint();
   DRAG = null;
+  if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); draw(); }
 });
 cv.addEventListener("wheel", e => {
   e.preventDefault();
   const s = Math.sign(e.deltaY);
+  if (DRAG && DRAG.kind === "handle") { if (PULL.on && s) reach(s > 0, e.shiftKey); return; }   // Blender's: down grows the reach, up shrinks it
   if (PLACE.stage) {
     if (TOOL === "strand") PLACE.sag = Math.max(-0.6, Math.min(1.2, PLACE.sag - s * 0.05));
     if (TOOL === "sheet") PLACE.spread = Math.max(0.005, Math.min(0.3, PLACE.spread * (s < 0 ? 1.12 : 1 / 1.12)));
@@ -822,6 +863,8 @@ addEventListener("keydown", e => {
   if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName) && !((e.ctrlKey || e.metaKey) && e.target.type !== "text")) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (e.key === "Escape") { resetPlace(); draw(); return; }
+  if (e.key === "PageUp" || e.key === "PageDown") { e.preventDefault(); if (PULL.on) reach(e.key === "PageUp", e.shiftKey); return; }
+  if (e.key.toLowerCase() === "o" && !e.ctrlKey) { PULL.on = !PULL.on; pullPanel(); drawHandles(); draw(); return; }
   if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteLock(original(lockById(SELECTED)).id); return; }
   const t = TOOLS.find(x => x[2] === e.key.toLowerCase()); if (t && !e.ctrlKey) setTool(t[0]);
   if (e.key === "ArrowRight" && SNAP) stepFrame(1); if (e.key === "ArrowLeft" && SNAP) stepFrame(-1);
@@ -891,6 +934,15 @@ function mirrorPanel() {
   const box = $("#mirrorbox"); box.innerHTML = "";
   tick(box, "Mirror", st.mirror.on, v => { st.mirror.on = v; setTool(TOOL); }, "new locks get a twin across the seam that follows them");
   slider(box, "Seam", -4, 4, 0.1, st.mirror.seam * 100, v => { st.mirror.seam = v / 100; st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL); for (const l of st.locks) if (l.mirror_of) DIRTY.add(l.id); draw(); }, "cm off the head's middle: a seam parallel to the middle for a side parting");
+}
+function pullPanel() {
+  const box = $("#pullbox"); if (!box) return; box.innerHTML = "";
+  const t = el("div"); tick(t, "Proportional (O)", PULL.on, v => { PULL.on = v; pullPanel(); drawHandles(); draw(); }, "a pulled handle takes the handles near it along, less the farther they are (Blender's proportional editing)"); box.append(t);
+  const fs = el("select"); for (const [k, label] of [["smooth", "Smooth"], ["sphere", "Sphere"], ["root", "Root"], ["inverse_square", "Inverse square"], ["sharp", "Sharp"], ["linear", "Linear"], ["constant", "Constant"]]) fs.append(el("option", { value: k, textContent: label }));
+  fs.value = PULL.falloff; fs.onchange = () => { PULL.falloff = fs.value; drawHandles(); draw(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Falloff", title: "how the pull fades with distance" }), fs, el("span")));
+  slider(box, "Reach", 0.2, 50, 0.1, +(PULL.size * 100).toFixed(1), v => { PULL.size = v / 100; drawHandles(); draw(); }, "cm: the ring's radius (the wheel while dragging: down grows it, up shrinks it; Shift finer; Page Up and Down)");
+  const o = el("div"); tick(o, "This lock only", PULL.only, v => { PULL.only = v; drawHandles(); draw(); }, "only the handles of the lock you pull, not the hair round it"); box.append(o);
 }
 function locksPanel() {
   const box = $("#locks"); box.innerHTML = "";
@@ -992,7 +1044,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1004,7 +1056,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
+  PULL, pullPanel, setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();

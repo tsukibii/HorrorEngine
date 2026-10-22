@@ -368,20 +368,69 @@ export function syncTwins(locks, seam, col) {
   });
 }
 
-// ---- moving a whole lock, a handle with its neighbours ----------------------------------------------------------------
-// dragging one handle pulls the ones after it along (falling off), so a lock bends instead of kinking
-export function dragHandle(lock, path, to, col, falloff = 0.6) {
-  const H = handles(lock), i = H.findIndex(h => h.path.join() === path.join()); if (i < 0) return;
-  const d = sub(to, H[i].p);
-  const series = path[0] === "edges" ? H.filter(h => h.path[1] === path[1]) : H;
-  const at = series.findIndex(h => h.path.join() === path.join());
-  series.forEach((h, k) => {
-    if (h.root) return;
-    const w = k === at ? 1 : k > at ? Math.pow(falloff, k - at) : 0;
-    if (!w) return;
-    let q = add(h.p, mul(d, w)); if (col) q = col.push(q, GAP)[0];
-    setHandle(lock, h.path, q);
-  });
+// ---- pulling a handle: Blender's proportional editing ------------------------------------------------------------------
+// After Blender's transform (calculatePropRatio in source/blender/editors/transform/transform_generics.cc and the
+// PROPSIZE keys in transform.cc; GPL, the curves and the rules ported, no code copied). Every handle within `size` of
+// the one taken moves by the pull times a weight that falls off with its distance; the one taken moves the whole way,
+// the ones beyond `size` not at all. Like Blender's, it's measured from where the handles were when the drag began, so
+// growing or shrinking the reach mid-drag (the wheel: 1.1 a notch, 1.01 with Shift) re-weighs them all.
+//   d = (size - r) / size, r the distance from the handle taken
+export const FALLOFFS = {
+  smooth: d => Math.min(1, 3 * d * d - 2 * d * d * d), sphere: d => Math.sqrt(Math.max(0, 2 * d - d * d)), root: d => Math.sqrt(d),
+  inverse_square: d => d * (2 - d), sharp: d => d * d, linear: d => d, constant: () => 1,
+};
+export function falloff(r, size, kind = "smooth") { if (!(size > 0) || r > size) return 0; return (FALLOFFS[kind] || FALLOFFS.smooth)((size - r) / size); }
+export const growReach = (size, up, fine = false) => { const k = fine ? 1.01 : 1.1; return Math.max(0.002, Math.min(0.5, up ? size * k : size / k)); };
+
+// every lock's handles where they are now (the drag's start)
+export function pullStart(locks) {
+  const s = {}; for (const l of locks) s[l.id] = handles(l).map(h => ({ path: h.path, key: h.path.join(), p: h.p.slice(), root: h.root }));
+  return s;
+}
+// how much each handle shown moves for a pull from c: [{id, key, p, w}] (the handle taken w 1)
+export function pullWeights(start, grab, c, o = {}) {
+  const out = [], size = o.size ?? 0.05;
+  for (const id of o.ids || Object.keys(start)) {
+    if (o.only && id !== grab.id) continue;
+    for (const h of start[id] || []) {
+      if (h.root) continue;
+      const w = id === grab.id && h.key === grab.path.join() ? 1 : falloff(len(sub(h.p, c)), size, o.falloff);
+      if (w > 0) out.push({ id, key: h.key, path: h.path, p: h.p, w });
+    }
+  }
+  return out;
+}
+// pull the handle grab = {id, path} to `to`: every lock's handles set from the start, the pull weighted onto those in
+// reach (o: size, falloff, only: just the lock taken, ids: the locks shown, seam, col). A twin's handles move its
+// original's, mirrored (the twin follows); an original seen both ways (itself and its twin, near the seam) takes the two
+// pulls blended by their weights, never more than the stronger. Roots stay. Returns the ids of the locks moved.
+export function pull(locks, start, grab, to, o = {}) {
+  const byId = Object.fromEntries(locks.map(l => [l.id, l])), seam = o.seam ?? 0;
+  const g = (start[grab.id] || []).find(h => h.key === grab.path.join()); if (!g) return [];
+  const d = sub(to, g.p), dm = [-d[0], d[1], d[2]];
+  const owner = l => l.mirror_of && byId[l.mirror_of] ? byId[l.mirror_of] : l;
+  const acc = new Map();                                   // "id|key" -> {wd, wm}
+  for (const x of pullWeights(start, grab, g.p, o)) {
+    const l = byId[x.id]; if (!l) continue;
+    const T = owner(l), k = T.id + "|" + x.key, a = acc.get(k) || { id: T.id, path: x.path, wd: 0, wm: 0 };
+    if (T === l) a.wd = Math.max(a.wd, x.w); else a.wm = Math.max(a.wm, x.w);
+    acc.set(k, a);
+  }
+  const G = owner(byId[grab.id]), gk = G.id + "|" + g.key;
+  const moved = new Set();
+  for (const l of locks) {                                  // back to the start (a reach shrunk mid-drag lets go)
+    if (l.mirror_of && byId[l.mirror_of]) continue;
+    for (const h of start[l.id] || []) if (!h.root) setHandle(l, h.path, h.p.slice());
+  }
+  for (const [k, a] of acc) {
+    const T = byId[a.id], s0 = start[a.id].find(h => h.key === a.path.join()); if (!s0) continue;
+    let v;
+    if (k === gk) v = G === byId[grab.id] ? d : dm;           // the handle taken lands under the cursor
+    else { const w = Math.max(a.wd, a.wm), t = a.wd + a.wm; v = add(mul(d, a.wd * w / t), mul(dm, a.wm * w / t)); }
+    let q = add(s0.p, v); if (o.col) q = o.col.push(q, GAP)[0];
+    setHandle(T, a.path, q); moved.add(a.id);
+  }
+  return [...moved];
 }
 export function moveLock(lock, d) {
   const T = p => add(p, d);
