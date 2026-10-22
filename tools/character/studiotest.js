@@ -171,6 +171,22 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.selectOption("#hairRows select >> nth=1", "style");
     await page.click('#tabs button[data-tab="body"]');
   });
+  await step("hair library: the hairstyles shown, the front picture matched (skipped without a library)", async () => {
+    const has = await page.evaluate(async () => (await fetch("api/hairlib/index.json")).ok);
+    if (!has) return;                                   // python tools/perm.py setup, then library
+    const front = await page.evaluate(() => window.__body.pics.some(p => p.name.startsWith("front.")));
+    await page.click('#tabs button[data-tab="hair"]');
+    await page.selectOption("#hairRows select >> nth=1", "photo");
+    await page.waitForFunction(() => document.querySelectorAll(".hairlib div").length > 0, null, { timeout: 10000 });
+    await page.click(".hairlib div >> nth=0");
+    if (!(await page.evaluate(() => Object.keys(window.__body.st.hair.blend.weights).length === 1))) throw new Error("a click didn't pick a hairstyle");
+    if (front) {
+      await page.click("#hairRows button:has-text('Match the front picture')");
+      await page.waitForFunction(() => /closest:/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
+    }
+    await page.selectOption("#hairRows select >> nth=1", "style");
+    await page.click('#tabs button[data-tab="body"]');
+  });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });

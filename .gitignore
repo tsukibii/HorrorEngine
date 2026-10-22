@@ -38,6 +38,8 @@ vendor/garmentcode/
 vendor/face_mesh/
 # DiffLocks (removed 2026-10-22: it needs an account): if the folder is still there, delete it; never shared
 vendor/difflocks/
+# Perm: its code, environment, checkpoints, fitted hairstyles, the AVATAR NEO head, the library (tools/perm.py setup)
+vendor/perm/
 
 # generated: package_game.py's copies and builds; the UnrealClaude source checkout (the plugin copy is tracked)
 Content/StoryData/

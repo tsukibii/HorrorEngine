@@ -37,6 +37,9 @@
   #tabs button { flex: 1; padding: 5px 4px; } #tabs button.on { border-color: var(--gold); color: var(--gold); }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; } .chips button { padding: 3px 8px; } .chips button.on { border-color: var(--gold); color: var(--gold); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 55vh auto; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+  .hairlib { display: grid; grid-template-columns: repeat(3, 96px); gap: 4px; max-height: 270px; overflow-y: auto; margin: 6px 0; }
+  .hairlib div { width: 96px; height: 60px; border-radius: 4px; cursor: pointer; outline: 1px solid #333; background-repeat: no-repeat; }
+  .hairlib div.on { outline: 2px solid var(--accent, #e0b060); }
 </style></head>
 <body>
 <header>
@@ -536,7 +539,7 @@ resize();
 
 // ---- hair: cards from the scalp (hair.js), brows and lashes, a cap in the hair's colour ---------------------------------
 st.hair = { ...HAIR.DEFAULTS, wig: true, clumps: 160, clumpWidth: 0.024, hold: 0.25, gravity: 1, source: "style", batch: { clumps: 256, strands: 20000 }, over: {} };
-const HAIR_MORE = { wig: true, clumps: 160, clumpWidth: 0.024, hold: 0.25, gravity: 1, source: "style", batch: { clumps: 256, strands: 20000 } };
+const HAIR_MORE = { wig: true, clumps: 160, clumpWidth: 0.024, hold: 0.25, gravity: 1, source: "style", batch: { clumps: 256, strands: 20000 }, blend: { weights: {}, vary: 0, seed: 0 } };
 function strandTexture() {                              // strands down a card: alpha only
   const c = document.createElement("canvas"); c.width = 128; c.height = 256; const g = c.getContext("2d");
   g.fillStyle = "#000"; g.fillRect(0, 0, 128, 256);
@@ -652,15 +655,68 @@ const hairSet = {};
   styleSel.append(el("option", { value: "none", textContent: "none (bald)" }), ...Object.entries(HAIR.STYLES).map(([k, v]) => el("option", { value: k, textContent: v.label })));
   box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), styleSel, el("output")), el("div", { className: "row" }, el("span", { textContent: "Colour" }), color, el("output")));
   const srcSel = el("select"), rebatch = el("button", { textContent: "Batch again" });
-  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "strands (made elsewhere)" }));
+  srcSel.append(el("option", { value: "style", textContent: "a style (made here)" }), el("option", { value: "photo", textContent: "strands (the hair library)" }));
   const photoBox = el("div", { className: "photoHair" });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Hair" }), srcSel, el("output")), photoBox);
   photoBox.append(el("p", { className: "note", textContent: "Strands made elsewhere, fitted to this head and batched like an anime game's: clumps, each one guide chain with physics, every strand riding its clump on the GPU." }));
+  // the hair library (Perm's hairstyles: tools/perm.py): pick or blend, or match the front picture
+  st.hair.blend = st.hair.blend || { weights: {}, vary: 0, seed: 0 };
+  const libNote = el("p", { className: "note" }), grid = el("div", { className: "hairlib" }), chosen = el("div");
+  const matchBtn = el("button", { textContent: "Match the front picture" }), blendBtn = el("button", { textContent: "Make the blend" });
+  photoBox.append(el("h4", { textContent: "Hair library" }), libNote, grid, chosen, matchBtn, " ", blendBtn);
+  hairSet.vary = slider(photoBox, "hair_vary", "Vary", 0, 0.6, 0.02, 0, "A little randomness in the blend's shape (the same seed gives the same).", v => { st.hair.blend.vary = v; });
+  let LIB = null;
+  const drawChosen = () => {
+    const W = st.hair.blend.weights;
+    grid.querySelectorAll("div").forEach(d => d.classList.toggle("on", d.dataset.name in W));
+    chosen.replaceChildren(...Object.keys(W).map(n => {
+      const r = el("div", { className: "row" }), inp = el("input", { type: "range", min: 0, max: 1, step: 0.01, value: W[n] }), x = el("button", { textContent: "×" });
+      inp.oninput = () => { W[n] = +inp.value; }; x.onclick = () => { delete W[n]; drawChosen(); };
+      r.append(el("span", { textContent: n.replace(/^strands0*/, "#") }), inp, x); return r;
+    }));
+  };
+  hairSet.library = async () => {
+    if (LIB) { drawChosen(); return; }
+    const r = await fetch("api/hairlib/index.json").catch(() => null);
+    if (!r || !r.ok) { libNote.textContent = "No hair library yet: python tools/perm.py setup, then python tools/perm.py library (Perm, Yale and Adobe: 343 artist hairstyles; free games only)."; return; }
+    LIB = await r.json();
+    const rows = Math.ceil(LIB.names.length / LIB.cols), [cw, ch] = LIB.cell, k = 0.5;
+    libNote.textContent = `${LIB.names.length} hairstyles (front and side). Click to add one to the blend, again to take it out; weights below.`;
+    grid.replaceChildren(...LIB.names.map((n, i) => {
+      const c = el("div", { title: `${n} · falls ${LIB.drop[i]} face heights` }); c.dataset.name = n;
+      Object.assign(c.style, { backgroundImage: "url(api/hairlib/sprite.png)", backgroundSize: `${LIB.cols * cw * k}px ${rows * ch * k}px`,
+        backgroundPosition: `-${(i % LIB.cols) * cw * k}px -${Math.floor(i / LIB.cols) * ch * k}px` });
+      c.onclick = () => { const W = st.hair.blend.weights; if (n in W) delete W[n]; else W[n] = 1; drawChosen(); };
+      return c;
+    }));
+    drawChosen();
+  };
+  matchBtn.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    status("finding the hair in the front picture and scoring every hairstyle's outline…");
+    try {
+      const r = await api(`api/hair/${encodeURIComponent(WHO)}/match`, {});
+      st.hair.blend.weights = Object.fromEntries(r.top.map(t => [t.name, t.weight])); drawChosen();
+      status("closest: " + r.top.map(t => `${t.name} (${Math.round(t.iou * 100)}%)`).join(", ") + ". Make the blend to try it.", "ok");
+    } catch (e) { status(e.message, "bad"); }
+  };
+  blendBtn.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    if (!Object.keys(st.hair.blend.weights).length) return status("pick a hairstyle or two from the library first", "bad");
+    status("Perm: blending the hairstyles (sealed off the network), then onto this head and batched…"); blendBtn.disabled = true;
+    try {
+      const q = new URLSearchParams({ weights: JSON.stringify(st.hair.blend.weights), vary: st.hair.blend.vary, seed: st.hair.blend.seed,
+                                      clumps: st.hair.batch.clumps, strands: st.hair.batch.strands });
+      const r = await api(`api/hair/${encodeURIComponent(WHO)}/perm?${q}`, new Blob([POS]));
+      await loadStrands(); status(`hair: ${r.batch.strands_drawn} strands drawn on ${r.batch.clumps} clumps (of ${r.batch.strands_in}); roots moved ${r.fit.root_moved_mm.mean} mm`, "ok");
+    } catch (e) { status(e.message, "bad"); }
+    blendBtn.disabled = false;
+  };
   hairSet.bclumps = slider(photoBox, "hair_bclumps", "Clumps", 32, 1024, 32, st.hair.batch.clumps, "Guide chains with physics: more follow the hair's shape closer, cost more.", v => { st.hair.batch.clumps = v; });
   hairSet.bstrands = slider(photoBox, "hair_bstrands", "Strands drawn", 2000, 60000, 1000, st.hair.batch.strands, "How many of the strands are drawn (each rides its clump).", v => { st.hair.batch.strands = v; });
   photoBox.append(rebatch);
   const showSrc = () => { photoBox.hidden = st.hair.source !== "photo"; box.querySelectorAll(".styleOnly").forEach(e => { e.hidden = st.hair.source === "photo"; }); };
-  srcSel.onchange = async () => { st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet", h ? "ok" : ""); } hairDirty = true; };
+  srcSel.onchange = async () => { st.hair.source = srcSel.value; showSrc(); if (st.hair.source === "photo") hairSet.library(); if (st.hair.source === "photo" && !STRANDS) { const h = await loadStrands(); status(h ? `strands: ${h.strands} drawn on ${h.clumps} clumps` : "no strands yet", h ? "ok" : ""); } hairDirty = true; };
   rebatch.onclick = async () => {
     if (!WHO) return status("make or pick a character first", "bad");
     status("batching…"); rebatch.disabled = true;
@@ -668,7 +724,8 @@ const hairSet = {};
     catch (e) { status(e.message, "bad"); }
     rebatch.disabled = false;
   };
-  hairSet.source = () => { srcSel.value = st.hair.source; hairSet.bclumps(st.hair.batch.clumps); hairSet.bstrands(st.hair.batch.strands); showSrc(); };
+  hairSet.source = () => { srcSel.value = st.hair.source; hairSet.bclumps(st.hair.batch.clumps); hairSet.bstrands(st.hair.batch.strands);
+    st.hair.blend = st.hair.blend || { weights: {}, vary: 0, seed: 0 }; hairSet.vary(st.hair.blend.vary); showSrc(); if (st.hair.source === "photo") hairSet.library(); };
   const wigOn = el("input", { type: "checkbox", checked: true }), moveSel = el("select"), drop = el("button", { textContent: "Drop it again" });
   moveSel.append(...["still", "turn", "nod", "shake", "walk"].map(m => el("option", { value: m, textContent: m })));
   box.append(el("label", { className: "tog" }, wigOn, el("span", {}, "Wig with physics", el("small", { textContent: "The style as a wig on the head: clumps of hair, each a chain pinned at its root (a tail at its tie), swung by gravity and the head, held loosely to the style, kept off the head and shoulders. Off: cards grown from the scalp, still." }))),
@@ -832,7 +889,7 @@ async function open(name) {
   Object.assign(st.eyes, { on: true, iris: "#3b2618" }, c.eyes || {});
   $("#eyeRows input[type=checkbox]").checked = st.eyes.on; $("#eyeRows input[type=color]").value = st.eyes.iris;
   eyeMat.map = eyeTexture(st.eyes.iris); eyeMat.needsUpdate = true;
-  Object.assign(st.hair, HAIR.DEFAULTS, HAIR_MORE, { over: {}, batch: { ...HAIR_MORE.batch } }, c.hair || {});
+  Object.assign(st.hair, HAIR.DEFAULTS, HAIR_MORE, { over: {}, batch: { ...HAIR_MORE.batch }, blend: { weights: {}, vary: 0, seed: 0 } }, c.hair || {});
   if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
   hairSet.all();
   computeBody(); compose(); hud();

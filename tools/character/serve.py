@@ -58,6 +58,11 @@ def run_json(cmd, ok_word, env=None):
     return json.loads(line), None
 
 
+def perm_home():
+    """Perm's folder (tools/perm.py): its library, its head, the hair segmenter"""
+    return Path(os.environ.get("PERM_HOME", ROOT / "vendor" / "perm"))
+
+
 def batch_hair(name, q):
     """the hair's strands (hair/fit.*) batched into clumps for the Studio (hair_batch.py)"""
     d = PEOPLE / name / "hair"
@@ -121,6 +126,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "clothes"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a draped garment
             f = PEOPLE / clean(parts[2]) / "clothes" / clean(parts[3]) / "garment.obj"
             return self.send(200, f.read_bytes(), "text/plain") if f.exists() else self.send(404, {"error": "not made yet"})
+        if parts[:2] == ["api", "hairlib"] and len(parts) == 3 and parts[2] in ("index.json", "sprite.png"):   # the hair library
+            f = perm_home() / "library" / parts[2]
+            return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no hair library yet: python tools/perm.py setup, then library"})
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("batch.json", "batch.bin"):
             f = PEOPLE / clean(parts[2]) / "hair" / parts[3]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no strands yet"})
@@ -179,6 +187,32 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(500, {"error": "the garment failed: " + (r.stderr or r.stdout)[-600:]})
             res = json.loads(line)
             return self.send(200, {"design": design, "drape": res["drape"], "measures_cm": res["measures_cm"]})
+        if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in ("match", "perm"):
+            lib = perm_home() / "library"
+            if not face_py().exists():
+                return self.send(400, {"error": "the face tool's environment isn't set up: python tools/face_mesh.py setup"})
+            if not (lib / "index.json").exists():
+                return self.send(400, {"error": "no hair library yet: python tools/perm.py setup, then python tools/perm.py library"})
+            if parts[3] == "match":                       # the front picture against every hairstyle's outline
+                front = pictures(name).get("front")
+                if not front: return self.send(400, {"error": "drop a front picture first (Face tab)"})
+                res, err = run_json([face_py(), HERE / "hair_match.py", "match", "--library", lib, "--photo", front,
+                                     "--model", perm_home() / "hair_segmenter.tflite", "--top", "3"], "HAIRMATCH ok")
+                return self.send(500, {"error": err}) if err else self.send(200, res)
+            q = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
+            d = PEOPLE / name / "hair"; d.mkdir(parents=True, exist_ok=True)
+            (d / "body.f32").write_bytes(self.body())     # the body as the Studio has it now
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "perm.py"), "blend", "--home", str(perm_home()),
+                                "--weights", q.get("weights", "{}"), "--out", str(d / "perm"), "--seed", q.get("seed", "0"),
+                                "--vary", q.get("vary", "0"), "--roots", q.get("roots", "30k")], capture_output=True, text=True, encoding="utf-8")
+            if r.returncode or "PERM ok" not in r.stdout:
+                return self.send(500, {"error": "Perm: " + (r.stderr or r.stdout)[-800:]})
+            fit, err = run_json([face_py(), HERE / "hair_fit.py", "--strands", d / "perm" / "strands.npz", "--head", perm_home() / "head.obj",
+                                 "--out", d / "fit.npz", "--body", d / "body.f32"], "HAIRFIT ok")
+            if err: return self.send(500, {"error": "the fit: " + err})
+            (d / "fit.f32").unlink(missing_ok=True)
+            res, err = batch_hair(name, q)
+            return self.send(500, {"error": "the batching: " + err}) if err else self.send(200, {"fit": fit, "batch": res})
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in ("batch", "strands"):
             d = PEOPLE / name / "hair"; d.mkdir(parents=True, exist_ok=True)
             if not face_py().exists():

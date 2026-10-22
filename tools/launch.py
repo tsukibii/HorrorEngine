@@ -102,6 +102,8 @@ TOOLS = [
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
     ("Setup", "GarmentCode setup", "tools/garment.py setup", {}),
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
+    ("Setup", "Perm setup (the hair library: 343 hairstyles)", "tools/perm.py setup", {}),
+    ("Setup", "Perm library (thumbnails and outlines of every hairstyle)", "tools/perm.py library", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
 ]
 
