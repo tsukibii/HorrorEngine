@@ -243,3 +243,9 @@ and two sidelocks beside the face surround it, so the closing filled the face, a
 round each point bled onto the eyes. Mark the face (the front, below the hairline, above the chin) and never join
 across it; give a point only its own cell; keep the face clear below the brows unless the user brings it back.
 
+## Wait in time, not frames (2026-10-22)
+
+The salon's physics stopped its loop after 150 still frames. A heavier hair shader dropped the software renderer's
+frame rate and the same 150 frames took longer than the test's 15 s, so SALON failed with nothing wrong. Anything that
+settles, times out or animates goes by the clock (here: 2.5 s still), never by a count of frames.
+

@@ -126,6 +126,32 @@ metres) and `salon_bake.json` (the numbers, the head it was made on, each swingi
   cut out at 0.4, tinted by vertex colours) and the mass. The demo: 34 177 vertices live, 5 167 baked, 299 KB.
 - **show the bake** loads the file back (three.js's GLTFLoader) in place of the live hair.
 
+## The look (2026-10-22)
+
+The hair is drawn with a strand texture and a hair shader, after the user's reference (glossy black anime-realism hair:
+a cool blue sheen in streaks along the strands, a few crimson strands, pointed see-through clump tips, dark roots).
+
+- **The strand atlas** (`hairtex.js`), made in code: 34 clumps of 14 to 27 strands run root to tip; each clump draws
+  together to a point over its last stretch and its strands stop at their own lengths, so a card's tip is see-through
+  and pointed. Coverage, root to tip: 0.69 down to half way, 0.46, 0.23, 0.05, nothing. Its channels: the strand's
+  brightness, the strand's own number (its highlight's shift; the inner-colour strands), the clump's number. A card
+  shows 0.3 of its width (about eight clumps).
+- **The shader** (`hairshader.js`): Kajiya-Kay's two highlights with each strand's tangent shifted along the card's
+  normal (a sharp pale one towards the root, a broad tinted one towards the tip), a soft sheen from where you look
+  broken into streaks clump by clump, wrapped diffuse, dark roots, the inner colour, a cool rim, and **depth**: hair
+  near the skin is in the outer layers' shade (each vertex's distance off the body). Cut out softly with alpha to
+  coverage. The fill's mass gets the same shading, its streaks along the comb.
+- **Looks** (Head and look, **Hair look**): *Jet black, blue sheen, crimson strands* (the reference, the default),
+  natural black, dark brown, ash brown, chestnut, black with red underneath. Then by hand: the roots', lengths', shine,
+  sheen and inner colours, the inner amount, **Glossy**, **Highlight** (towards the roots or the tips), **Streaks**
+  (a smooth band to broken streaks). Saved in `salon.json` (`look.hair`, `look.custom`). A lock's **own colour**
+  replaces the look's on that lock; **colour by lock** still tells them apart.
+- **The bake** carries it: the atlas with the look's colours baked in as the cards' texture (glTF's MASK cut-out, the
+  shader can't go in a glTF), the look's numbers in the material's extras for a runtime that has the shader.
+
+`hime_demo` is a hime cut built like the reference (a blunt fringe at the brows, sidelocks to the collarbones, the
+crown and back, two low tails, traced and filled).
+
 ## The file
 
 `Content/Studio/Hair/<name>/salon.json`: `head` (the body preset, its height), `reference` (its name, the view
@@ -138,7 +164,7 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror: plain arrays, node can
 run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
 ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its comb), `salonphys.js` (the chains, the step, the
-skin weights), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
+skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the hair shader), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
 
@@ -148,7 +174,8 @@ skin weights), `gshair/reference.py` (the reference from a capture or photos, th
   and not the back (and undone); the glow traced (the face clear), both ears selected by one brush stroke with mirror
   and cut, the glow pushed out by a drag, the fill off the body and combed the locks' way, its cube pulled; physics on
   a bundle (a shake swings its tip 10 cm, the root stays, still settles it); the bake (one skinned mesh, one static
-  with fewer vertices, a glTF whose bind pose is exact and whose root bone bends it); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
+  with fewer vertices, a glTF whose bind pose is exact and whose root bone bends it, the look's texture in it); the
+  look (the atlas see-through at its tips, every card on the hair shader, a look restyling them); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.

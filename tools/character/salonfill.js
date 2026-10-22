@@ -173,7 +173,7 @@ export function fillMesh(g, guides, opts = {}, col = null) {
     const t = lo * 3, u = rnd(), v = rnd(), su = Math.sqrt(u);
     const A = P.slice(I[t] * 3, I[t] * 3 + 3), B = P.slice(I[t + 1] * 3, I[t + 1] * 3 + 3), Cc = P.slice(I[t + 2] * 3, I[t + 2] * 3 + 3);
     let p = add(add(mul(A, 1 - su), mul(B, su * (1 - v))), mul(Cc, su * v));
-    const line = [p], steps = Math.round((0.04 + 0.1 * rnd()) / 0.005);
+    const line = [p], steps = Math.round((0.06 + 0.12 * rnd()) / 0.005);
     for (let k = 0; k < steps; k++) {
       const nrm = outward(p), f = flowAt(p, hash, nrm);
       let q = add(p, mul(f, 0.005)); const d = sub(q, g.C), rr = radiusAt(g, d, inset);
@@ -182,5 +182,8 @@ export function fillMesh(g, guides, opts = {}, col = null) {
     }
     if (line.length >= 3) strands.push(line);
   }
+  // the comb at each of the mass's vertices: its strands' direction there (the shader's tangent)
+  shell.flow = [];
+  for (let i = 0; i < P.length; i += 3) { const p = [P[i], P[i + 1], P[i + 2]]; shell.flow.push(...flowAt(p, hash, outward(p))); }
   return { shell, strands, segs: segs.length };
 }

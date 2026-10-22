@@ -114,6 +114,15 @@ export class Collider {
     return [q, moved];
   }
   inside(p) { return this.push(p, 0)[1]; }
+  depth(p) {                                                         // how far outside the body p is (m; the hair's depth for its shading)
+    let d = Infinity;
+    if (p[1] > this.chin - 0.03) { const v = sub(p, this.C); d = len(v) - this.radius(v); }
+    if (p[1] < this.y0 + 0.005) {
+      const f = (this.y0 - p[1]) / this.dy, i = Math.floor(f), w = f - i, a = this.slices[clamp(i, 0, this.ns - 1)], b = this.slices[clamp(i + 1, 0, this.ns - 1)];
+      if (a && b && f < this.ns - 1) { const cx = a.cx * (1 - w) + b.cx * w, cz = a.cz * (1 - w) + b.cz * w, dx = p[0] - cx, dz = p[2] - cz; d = Math.min(d, Math.hypot(dx, dz) - (this.sliceRadius(a, dx, dz) * (1 - w) + this.sliceRadius(b, dx, dz) * w)); }
+    }
+    return isFinite(d) ? d : 0.1;
+  }
   surface(p, gap = 0.002) {                                          // a point snapped onto the head's skin (roots)
     const d = sub(p, this.C), R = this.radius(d);
     return add(this.C, mul(norm(d), R + gap));

@@ -8,6 +8,8 @@ import * as SF from "./salonfill.js";
 import * as SP from "./salonphys.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
+import { LOOKS, DEFAULT_LOOK, UV_SPAN, makeAtlas, albedo, linear } from "./hairtex.js";
+import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture } from "./hairshader.js";
 
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -28,7 +30,7 @@ const st = {
   head: { preset: "feminine", height: 1.7 },
   reference: { name: null, on: true, opacity: 0.55, keyed: true, behind: false, lock: true, fit: structuredClone(SR.DEFAULT_FIT) },
   mirror: { on: false, seam: 0 },
-  look: { color: "#2b1d16", byLock: false, guides: false, scalp: true },
+  look: { color: "#2b1d16", byLock: false, guides: false, scalp: true, hair: DEFAULT_LOOK, custom: {} },   // hair: a look (hairtex.js), custom: its colours and numbers changed
   groups: [{ id: "g1", name: "Hair", visible: true }],
   locks: [],
   glow: null,                          // the trace (salonfill.js): {AZ, EL, C, r, inner, on, face, show, mirror, filled, fill: {density, seed, cube}}
@@ -73,6 +75,7 @@ function setCamera(R, t, fx, fy, cx, cy) {
   camera.projectionMatrix.set(...P[0], ...P[1], ...P[2], ...P[3]); camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
   const h = headTarget(); key.target.position.set(...h); fillL.target.position.set(...h);   // the key above the camera's shoulder, a cool fill from the other side
   key.position.set(C[0] + R[0][0] * 0.5, C[1] + 0.9, C[2] + R[0][2] * 0.5); fillL.position.set(h[0] - R[0][0], h[1], h[2] - R[0][2]);
+  lightHair(HAIRU, key.position.clone().sub(key.target.position), null, fillL.position.clone().sub(fillL.target.position), null);
 }
 
 // ---- the reference ----------------------------------------------------------------------------------------------------
@@ -213,7 +216,7 @@ function glowGuides() {                                              // every vi
 function traceGlow() {
   remember();
   const keep = st.glow ? { show: st.glow.show, mirror: st.glow.mirror } : { show: true, mirror: true };
-  st.glow = Object.assign(SF.trace(glowGuides(), COL), keep, { filled: false, shape: false, fill: { density: 900, seed: 11, cube: null } });
+  st.glow = Object.assign(SF.trace(glowGuides(), COL), keep, { filled: false, shape: false, fill: { density: 450, seed: 11, cube: null } });
   SEL = new Set(); GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); draw();
 }
 function drawGlow() {
@@ -253,29 +256,33 @@ function makeFill() {
 }
 function drawFill() {
   if (!FILL_DIRTY) return; FILL_DIRTY = false;
-  FILLG.traverse(o => { o.geometry?.dispose(); }); FILLG.clear();
+  FILLG.traverse(disposeOf); FILLG.clear();
   const g = st.glow; if (!g || !g.filled) return;
   if (!FILLRES) FILLRES = SF.fillMesh(g, glowGuides(), { density: g.fill.density, seed: g.fill.seed }, COL);
   const cube = g.fill.cube, bend = cube && !FFD.isRest(cube) ? p => FFD.deform(cube, p) : p => p;
   const P = FILLRES.shell.position, pos = new Float32Array(P.length);
   for (let i = 0; i < P.length; i += 3) pos.set(bend([P[i], P[i + 1], P[i + 2]]), i);
-  const colour = new THREE.Color(g.fill.color || st.look.color);
+  const tint = g.fill.color ? [...linear(g.fill.color), 1] : [1, 1, 1, 0], n0 = pos.length / 3;
   const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setIndex(FILLRES.shell.index); geo.computeVertexNormals();
-  FILLG.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: colour.clone().multiplyScalar(0.75), roughness: 0.6, side: THREE.DoubleSide })));
+  geo.setAttribute("aTangent", new THREE.Float32BufferAttribute(FILLRES.shell.flow || new Array(n0 * 3).fill(0).map((_, k) => k % 3 === 1 ? -1 : 0), 3));
+  geo.setAttribute("aTint", new THREE.Float32BufferAttribute([...Array(n0)].flatMap(() => tint), 4)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(new Array(n0 * 2).fill(0.5), 2));
+  geo.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(pos), 1));
+  FILLG.add(new THREE.Mesh(geo, MASS_MAT));
   // the combed strands as cards lying on the mass
-  const cp = [], uv = [], idx = [], cc = [];
+  const cp = [], uv = [], idx = [], tg = [], ti = [];
   FILLRES.strands.forEach((line0, s) => {
     const line = line0.map(bend), base = cp.length / 3, n = line.length, u0 = (s * 0.37) % 1;
     for (let k = 0; k < n; k++) {
       const t = SL.norm(SL.sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), out = SL.norm(SL.sub(line[k], g.C)), a = SL.norm(SL.cross(t, out));
-      const w = 0.006 * (1 - 0.6 * k / (n - 1)), h = SL.mul(a, w / 2);
-      cp.push(...SL.sub(line[k], h), ...SL.add(line[k], h)); uv.push(u0, k / (n - 1), u0 + 0.5, k / (n - 1));
-      const sh = 0.6 + 0.4 * k / (n - 1); cc.push(sh, sh, sh, sh, sh, sh);
+      const w = 0.007 * (1 - 0.5 * k / (n - 1)), h = SL.mul(a, w / 2);
+      cp.push(...SL.sub(line[k], h), ...SL.add(line[k], h)); uv.push(u0, k / (n - 1), u0 + UV_SPAN, k / (n - 1)); tg.push(...t, ...t); ti.push(...tint, ...tint);
     }
     for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
   });
-  const sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.Float32BufferAttribute(cp, 3)); sg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); sg.setAttribute("color", new THREE.Float32BufferAttribute(cc, 3)); sg.setIndex(idx); sg.computeVertexNormals();
-  FILLG.add(new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, side: THREE.DoubleSide, alphaMap: strandTex, alphaTest: 0.4, vertexColors: true })));
+  const sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.Float32BufferAttribute(cp, 3)); sg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  sg.setAttribute("aTangent", new THREE.Float32BufferAttribute(tg, 3)); sg.setAttribute("aTint", new THREE.Float32BufferAttribute(ti, 4)); sg.setIndex(idx); sg.computeVertexNormals();
+  sg.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(cp), 1));
+  FILLG.add(new THREE.Mesh(sg, HAIR_MAT));
   FILLG.userData = { vertices: pos.length / 3, strands: FILLRES.strands.length };
 }
 function glowCellsAt(e) {                                            // the cells under the brush that face the view
@@ -366,16 +373,19 @@ function tintScalp() {
 
 // ---- drawing the locks ------------------------------------------------------------------------------------------------
 const MESHES = {}, DIRTY = new Set(), EVAL = {};
-const strandTex = (() => {                                           // a card's alpha: streaks of strands, frayed at the tip
-  const W = 64, H = 256, c = el("canvas", { width: W, height: H }), g = c.getContext("2d"), r = SL.rng(3);
-  g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
-  for (let i = 0; i < 70; i++) { const x = r() * W, w = 0.6 + r() * 1.6, end = H * (0.78 + 0.22 * r()), a = 0.55 + 0.45 * r();
-    const gr = g.createLinearGradient(0, 0, 0, end); gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(0.85, `rgba(255,255,255,${a})`); gr.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = gr; g.fillRect(x, 0, w, end); }
-  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; return t;
-})();
+// the hair's look: one strand atlas, one set of uniforms every hair material shares (a look changed restyles them all)
+const look = () => Object.assign({}, LOOKS[st.look.hair] || LOOKS[DEFAULT_LOOK], st.look.custom || {});
+const ATLAS = makeAtlas(), HAIRU = hairUniforms(atlasTexture(ATLAS), LOOKS[DEFAULT_LOOK]);
+const HAIR_MAT = hairMaterial(HAIRU), MASS_MAT = hairMaterial(HAIRU, { mass: true }), PREVIEW_MAT = hairMaterial(HAIRU, { transparent: true, opacity: 0.7 });
+for (const m of [HAIR_MAT, MASS_MAT, PREVIEW_MAT]) m.userData.shared = true;
+const disposeOf = o => { o.geometry?.dispose(); if (o.material && !o.material.userData?.shared) o.material.dispose(); };
+// a lock's tint for the shader: its own colour, or the debug colours (w = 1 replaces the look's colour), else none
+function tintOf(l, i) { const hex = st.look.byLock ? PALETTE[i % PALETTE.length] : l.color; return hex ? [...linear(hex), 1] : [1, 1, 1, 0]; }
+// along each card: the direction the strands run (two vertices a sample)
+const depthsOf = pos => { const d = []; for (let i = 0; i < pos.length; i += 3) d.push(COL ? COL.depth([pos[i], pos[i + 1], pos[i + 2]]) : 0.03); return d; };
+function cardTangents(guides) { const t = []; for (const G of guides) { const n = G.pts.length; for (let k = 0; k < n; k++) { const d = SL.norm(SL.sub(G.pts[Math.min(n - 1, k + 1)], G.pts[Math.max(0, k - 1)])); t.push(...d, ...d); } } return t; }
 const PALETTE = ["#c8553d", "#4f86c6", "#6dae63", "#d9a441", "#a46cc8", "#4fb3b3", "#d97a9a", "#8f9d4a"];
-function lockColour(l, i) { return st.look.byLock ? PALETTE[i % PALETTE.length] : (l.color || st.look.color); }
+function lockColour(l, i) { return st.look.byLock ? PALETTE[i % PALETTE.length] : (l.color || look().tip); }
 // a lock's ribbons (two vertices a guide sample) and its strands' lines, as flat position arrays
 function cardPositions(guides) {
   const pos = [];
@@ -386,25 +396,25 @@ function strandPositions(l, guides) { const pos = []; for (const s of SL.strands
 function buildLockMesh(l, i) {
   const guides = SL.evaluate(l, COL); EVAL[l.id] = guides;
   const grp = new THREE.Group(); grp.userData.lock = l.id;
-  const col = new THREE.Color(lockColour(l, i));
-  if (l.render === "strands") {
-    const strands = SL.strandsOf(l, guides), cols = [];
-    for (const s of strands) for (let k = 1; k < s.length; k++) {
-      const a = 0.55 + 0.45 * (k - 1) / (s.length - 1), b = 0.55 + 0.45 * k / (s.length - 1);
-      cols.push(col.r * a, col.g * a, col.b * a, col.r * b, col.g * b, col.b * b);
-    }
+  if (l.render === "strands") {                                      // thin lines in the look's colours (the inner ones too)
+    const strands = SL.strandsOf(l, guides), cols = [], k0 = look(), tint = tintOf(l, i), r = SL.rng(5);
+    const root = tint[3] ? tint.slice(0, 3).map(x => x * 0.45) : linear(k0.root), tip = tint[3] ? tint.slice(0, 3) : SL.mul(SL.add(linear(k0.tip), linear(k0.spec2)), 0.6);
+    for (const s of strands) { const inner = !tint[3] && r() < k0.innerAmount, c1 = inner ? linear(k0.inner) : tip, br = 0.6 + 0.4 * r();
+      for (let k = 1; k < s.length; k++) { const a = Math.min(1, (k - 1) / (s.length - 1) / k0.rootLength), b = Math.min(1, k / (s.length - 1) / k0.rootLength);
+        for (const f of [a, b]) cols.push(...[0, 1, 2].map(x => (root[x] + (c1[x] - root[x]) * f) * br)); } }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(strandPositions(l, guides), 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
     const m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true })); m.userData.role = "strands"; grp.add(m);
   } else {
-    const uv = [], cols = [], idx = [];
+    const uv = [], tints = [], idx = [], tint = tintOf(l, i);
     guides.forEach((G, j) => {
       const base = j * G.pts.length * 2, n = G.pts.length, u0 = (j * 0.37) % 1;
-      for (let k = 0; k < n; k++) { const v = k / (n - 1); uv.push(u0, v, u0 + 0.5, v); const s = 0.5 + 0.5 * Math.min(1, v * 3); cols.push(s, s, s, s, s, s); }
+      for (let k = 0; k < n; k++) { const v = k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); tints.push(...tint, ...tint); }
       for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     });
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cardPositions(guides), 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-    g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3)); g.setIndex(idx); g.computeVertexNormals();
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: col, roughness: 0.55, metalness: 0, side: THREE.DoubleSide, alphaMap: strandTex, alphaTest: 0.4, vertexColors: true })); m.userData.role = "cards"; grp.add(m);
+    g.setAttribute("aTangent", new THREE.Float32BufferAttribute(cardTangents(guides), 3)); g.setAttribute("aTint", new THREE.Float32BufferAttribute(tints, 4)); g.setIndex(idx); g.computeVertexNormals();
+    g.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(g.attributes.position.array), 1));
+    const m = new THREE.Mesh(g, HAIR_MAT); m.userData.role = "cards"; grp.add(m);
   }
   if (st.look.guides || l.id === SELECTED) {
     guides.forEach((G, j) => { const g = new THREE.BufferGeometry().setFromPoints(G.pts.map(p => new THREE.Vector3(...p))); const ln = new THREE.Line(g, new THREE.LineBasicMaterial({ color: l.id === SELECTED ? 0xffd27a : 0x6f7a8a, depthTest: l.id !== SELECTED })); ln.userData = { role: "guide", j }; grp.add(ln); });
@@ -419,12 +429,13 @@ function poseLockMesh(l, posed) {
     const P = o.geometry.attributes.position;
     const src = o.userData.role === "cards" ? cardPositions(guides) : o.userData.role === "strands" ? strandPositions(l, guides) : guides[o.userData.j] ? guides[o.userData.j].pts.flat() : null;
     if (!src || src.length !== P.array.length) continue;
-    P.array.set(src); P.needsUpdate = true; if (o.userData.role === "cards") o.geometry.computeVertexNormals();
+    P.array.set(src); P.needsUpdate = true;
+    if (o.userData.role === "cards") { o.geometry.computeVertexNormals(); const T = o.geometry.attributes.aTangent; T.array.set(cardTangents(guides)); T.needsUpdate = true; }
   }
 }
 function refreshLocks() {
   const ids = new Set(st.locks.map(l => l.id));
-  for (const id of Object.keys(MESHES)) if (!ids.has(id) || DIRTY.has(id)) { HAIR.remove(MESHES[id]); MESHES[id].traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); delete MESHES[id]; delete EVAL[id]; }
+  for (const id of Object.keys(MESHES)) if (!ids.has(id) || DIRTY.has(id)) { HAIR.remove(MESHES[id]); MESHES[id].traverse(disposeOf); delete MESHES[id]; delete EVAL[id]; }
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible]));
   st.locks.forEach((l, i) => {
     if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i); HAIR.add(MESHES[l.id]); }
@@ -451,10 +462,10 @@ function drawHandles() {
 // the placing preview: a lock that isn't in the state yet
 let PREVIEW = null;
 function showPreview(l) {
-  if (PREVIEW) { HAIR.remove(PREVIEW); PREVIEW.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); PREVIEW = null; }
+  if (PREVIEW) { HAIR.remove(PREVIEW); PREVIEW.traverse(disposeOf); PREVIEW = null; }
   if (!l) return;
   PREVIEW = buildLockMesh(l, st.locks.length);
-  PREVIEW.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = 0.75; } });
+  PREVIEW.traverse(o => { if (o.material === HAIR_MAT) o.material = PREVIEW_MAT; else if (o.material && !o.material.userData?.shared) { o.material.transparent = true; o.material.opacity = 0.75; } });
   HAIR.add(PREVIEW);
 }
 let ROOTLINE = null;
@@ -497,14 +508,14 @@ function setMotion(m) {
   MOTION = m; for (const b of document.querySelectorAll("#movebox button[data-m]")) b.classList.toggle("on", b.dataset.m === m);
   if (!PLAYING) { PLAYING = true; T0 = performance.now(); requestAnimationFrame(play); }
 }
-let STILL_FRAMES = 0;
+let STILL_SINCE = 0;
 function play(now) {
   const t = (now - T0) / 1000;
   stepPhysics(t); render();
   const rustling = physicsLocks().some(l => l.physics.rustle > 0);
-  STILL_FRAMES = MOTION === "still" && !rustling ? STILL_FRAMES + 1 : 0;
-  if (STILL_FRAMES > 150) {                                            // settled: the style drawn exactly, the loop off
-    PLAYING = false; STILL_FRAMES = 0; RIG.identity(); applyRig(); SIM && SIM.reset(); for (const l of physicsLocks()) DIRTY.add(l.id); draw(); return;
+  STILL_SINCE = MOTION === "still" && !rustling ? (STILL_SINCE || now) : 0;
+  if (STILL_SINCE && now - STILL_SINCE > 2500) {                       // settled (2.5 s still, whatever the frame rate): the style drawn exactly, the loop off
+    PLAYING = false; STILL_SINCE = 0; RIG.identity(); applyRig(); SIM && SIM.reset(); for (const l of physicsLocks()) DIRTY.add(l.id); draw(); return;
   }
   requestAnimationFrame(play);
 }
@@ -518,9 +529,9 @@ function movePanel() {
 const BAKE_ALONG = 8, BAKE_ALONG_PHYS = 12;
 const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]) }; };
 function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
-  const pos = cardPositions(guides), uv = [], col = [], idx = [], c = new THREE.Color(colour);
+  const pos = cardPositions(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
   guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
-    for (let k = 0; k < n; k++) { const v = k / (n - 1), sh = 0.5 + 0.5 * Math.min(1, v * 3); uv.push(u0, v, u0 + 0.5, v); col.push(c.r * sh, c.g * sh, c.b * sh, c.r * sh, c.g * sh, c.b * sh); }
+    for (let k = 0; k < n; k++) { const v = k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); col.push(c.r, c.g, c.b, c.r, c.g, c.b); }
     for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
   return { pos, uv, col, idx };
 }
@@ -533,16 +544,16 @@ function geometryOf(parts) {                                            // parts
   if (cards) g.addGroup(0, cards, 0); if (idx.length > cards) g.addGroup(cards, idx.length - cards, 1);
   return g;
 }
-// the cards' look in the file: white strands with alpha (the vertex colours tint them), cut out at 0.4 (glTF's MASK)
-const strandRGBA = (() => {
-  const W = 64, H = 256, c = el("canvas", { width: W, height: H }), g = c.getContext("2d"), r = SL.rng(3);
-  for (let i = 0; i < 70; i++) { const x = r() * W, w = 0.6 + r() * 1.6, end = H * (0.78 + 0.22 * r()), a = 0.55 + 0.45 * r();
-    const gr = g.createLinearGradient(0, 0, 0, end); gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(0.85, `rgba(255,255,255,${a})`); gr.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = gr; g.fillRect(x, 0, w, end); }
-  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
-})();
-const bakeMats = () => [new THREE.MeshStandardMaterial({ name: "hair_cards", map: strandRGBA, alphaTest: 0.4, vertexColors: true, roughness: 0.55, side: THREE.DoubleSide }),
-                        new THREE.MeshStandardMaterial({ name: "hair_mass", vertexColors: true, roughness: 0.6, side: THREE.DoubleSide })];
+// the cards' look in the file: the strand atlas with the look's colours baked in (glTF can't carry the hair shader; its
+// numbers ride in the material's extras for a runtime that has one), cut out at 0.4 (glTF's MASK); the vertex colours
+// are white unless a lock has its own colour
+function bakeMats() {
+  const k = look(), cards = new THREE.MeshStandardMaterial({ name: "hair_cards", map: albedoTexture(ATLAS, albedo(ATLAS, k)), alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide });
+  const mid = [0, 1, 2].map(a => (linear(k.root)[a] + linear(k.tip)[a]) / 2);
+  const mass = new THREE.MeshStandardMaterial({ name: "hair_mass", color: new THREE.Color().setRGB(...mid, THREE.LinearSRGBColorSpace), vertexColors: true, roughness: 0.5, side: THREE.DoubleSide });
+  cards.userData = { look: k, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)" };
+  return [cards, mass];
+}
 function liveVertices() {                                               // what the salon draws now (the "before")
   let n = 0; for (const id in MESHES) MESHES[id].traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); FILLG.traverse(o => { if (o.isMesh) n += o.geometry.attributes.position.count; }); return n;
 }
@@ -552,25 +563,25 @@ async function bake() {
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => l.visible && vis[l.group] !== false);
   const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, preset: st.head.preset, height: st.head.height } };
   shown.forEach((l, i) => {
-    const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = lockColour(l, i);
+    const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = l.color || null;   // the look is in the atlas; a lock's own colour tints it
     if (l.physics && l.physics.on) skinned.push([l, guides.map(G => resampleGuide(G, BAKE_ALONG_PHYS)), colour]);
     else statics.push(cardsGeometry(guides.map(G => resampleGuide(G, BAKE_ALONG)), colour));
   });
   // the fill: coarser (its shell a cell to a vertex, half the strands, each in four points), bent by its cube
   if (st.glow && st.glow.filled) {
     const g = st.glow, f = SF.fillMesh(g, glowGuides(), { density: Math.round(g.fill.density / 2), seed: g.fill.seed, sub: 1 }, COL);
-    const bend = g.fill.cube && !FFD.isRest(g.fill.cube) ? p => FFD.deform(g.fill.cube, p) : p => p, c = new THREE.Color(g.fill.color || st.look.color).multiplyScalar(0.75);
+    const bend = g.fill.cube && !FFD.isRest(g.fill.cube) ? p => FFD.deform(g.fill.cube, p) : p => p, c = g.fill.color ? new THREE.Color(g.fill.color) : new THREE.Color(1, 1, 1);
     const P = f.shell.position, pos = []; for (let i = 0; i < P.length; i += 3) pos.push(...bend([P[i], P[i + 1], P[i + 2]]));
     statics.push({ solid: true, pos, uv: new Array(P.length / 3 * 2).fill(0), col: new Array(P.length).fill(0).map((_, k) => [c.r, c.g, c.b][k % 3]), idx: f.shell.index });
     const lines = f.strands.map(L => L.map(bend)).map(L => SL.resample(L, 4));
     const gs = lines.map(L => ({ pts: L, across: L.map((p, k) => SL.norm(SL.cross(SL.sub(L[Math.min(3, k + 1)], L[Math.max(0, k - 1)]), SL.norm(SL.sub(p, g.C))))), width: L.map((_, k) => 0.006 * (1 - 0.6 * k / 3)) }));
-    statics.push(cardsGeometry(gs, g.fill.color || st.look.color));
+    statics.push(cardsGeometry(gs, g.fill.color || null));
   }
   const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
   const mats = bakeMats();
   if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mats); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
   for (const [l, guides, colour] of skinned) {
-    const q = cardsGeometry(guides, colour), geo = geometryOf([q]), sk = SP.skinOf(l, guides), J = sk.J;
+    const q = cardsGeometry(guides, colour), geo = geometryOf([q]), sk = SP.skinOf(l, guides), J = sk.J;   // colour: the lock's own, or none
     const si = [], sw = [];
     sk.weights.forEach(G => G.forEach(w => { for (let side = 0; side < 2; side++) { const ws = w.slice(0, 4); while (ws.length < 4) ws.push([0, 0]); const tot = ws.reduce((a, x) => a + x[1], 0) || 1; si.push(...ws.map(x => x[0])); sw.push(...ws.map(x => x[1] / tot)); } }));
     geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4));
@@ -962,21 +973,33 @@ function selPanel() {
     slider(box, "Rustle", 0, 1, 0.05, ph.rustle, v => { ph.rustle = v; changed(o); SIM_DIRTY = true; if (v) setMotion(MOTION); }, "a wind with no direction: a little sway both ways");
   }
   if (o.render === "strands") slider(box, "Strands", 1, 400, 1, o.density, edit(v => { o.density = v; }));
-  const c = el("input", { type: "color", value: o.color || st.look.color, onchange: () => edit(v => { o.color = v; })(c.value) });
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Colour" }), c, el("span")));
+  const c = el("input", { type: "color", value: o.color || look().tip, title: "this lock's own colour (instead of the hair's look)", onchange: () => edit(v => { o.color = v; })(c.value) });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Own colour" }), c, o.color ? el("button", { textContent: "x", title: "back to the hair's look", onclick: () => { edit(() => { o.color = null; })(); selPanel(); } }) : el("span")));
   box.append(el("button", { textContent: "Duplicate", onclick: () => { const d = structuredClone(o); d.id = SL.newId(); d.mirror_of = null; d.name = (o.name || o.type) + " copy"; SL.moveLock(d, [0.01, 0, 0]); addLock(d); } }),
              el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { const m = SL.mirrored(o, st.mirror.seam, COL); m.mirror_of = null; m.name = (o.name || o.type) + " mirrored"; remember(); m.group = o.group; st.locks.push(m); locksPanel(); draw(); } }),
              l.mirror_of ? el("button", { textContent: "Break the mirror", onclick: () => { remember(); l.mirror_of = null; l.name = l.name.replace(" (mirror)", ""); locksPanel(); selPanel(); } }) : "",
              el("button", { textContent: "Delete", onclick: () => deleteLock(o.id) }));
 }
+function restyle() { applyLook(HAIRU, look()); for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
 function headPanel() {
   const box = $("#headbox"); box.innerHTML = "";
   const ps = el("select"); for (const k of Object.keys(MHR?.presets || { feminine: 1 })) ps.append(el("option", { value: k, textContent: k }));
   ps.value = st.head.preset; ps.onchange = () => { st.head.preset = ps.value; buildHead(); };
   box.append(el("div", { className: "row" }, el("span", { textContent: "Body" }), ps, el("span")));
   slider(box, "Height", 1.4, 2.0, 0.01, st.head.height, v => { st.head.height = v; buildHead(); }, "m");
-  const c = el("input", { type: "color", value: st.look.color, onchange: () => { st.look.color = c.value; for (const l of st.locks) DIRTY.add(l.id); draw(); } });
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Hair colour" }), c, el("span")));
+  // the hair's look: a preset, then its colours and numbers by hand (kept in st.look.custom)
+  const ls = el("select"); for (const [k, v] of Object.entries(LOOKS)) ls.append(el("option", { value: k, textContent: v.label }));
+  ls.value = st.look.hair; ls.onchange = () => { st.look.hair = ls.value; st.look.custom = {}; restyle(); headPanel(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Hair look" }), ls, el("span")));
+  const k0 = look(), set = (key, v) => { st.look.custom[key] = v; restyle(); };
+  for (const [key, label, title] of [["root", "Roots", "the colour at the roots and deep inside"], ["tip", "Lengths", "the colour along the lengths"], ["spec1", "Shine", "the sharp highlight's colour"], ["spec2", "Sheen", "the broad, tinted highlight"], ["inner", "Inner strands", "a hidden colour on a few strands"]]) {
+    const c = el("input", { type: "color", value: k0[key], title, oninput: () => set(key, c.value) });
+    box.append(el("div", { className: "row" }, el("span", { textContent: label, title }), c, el("span")));
+  }
+  slider(box, "Inner amount", 0, 0.4, 0.01, k0.innerAmount, v => set("innerAmount", v), "how many strands are the inner colour");
+  slider(box, "Glossy", 0, 2, 0.05, k0.shine, v => set("shine", v), "how strong the highlights are");
+  slider(box, "Highlight", -0.3, 0.3, 0.01, k0.shift1, v => { set("shift1", v); set("shift2", v + 0.19); }, "where the highlights sit along the strands (towards the roots or the tips)");
+  slider(box, "Streaks", 0, 1, 0.05, k0.shiftNoise, v => set("shiftNoise", v), "how much each strand's highlight wanders: smooth band to broken streaks");
   const t = el("div");
   tick(t, "colour by lock", st.look.byLock, v => { st.look.byLock = v; for (const l of st.locks) DIRTY.add(l.id); draw(); }, "each lock its own colour, to see them apart");
   tick(t, "guides", st.look.guides, v => { st.look.guides = v; for (const l of st.locks) DIRTY.add(l.id); draw(); });
@@ -1001,7 +1024,7 @@ async function load(name) {
   st.glow = o.glow || null; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; SEL = new Set();
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
-  SIM_DIRTY = true; BAKED = null; st.look.showBake = false;
+  SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
   refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); glowPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
@@ -1022,7 +1045,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, SF, pullCube, traceGlow, makeFill, glowCellsAt, get SEL() { return SEL; }, set SEL(v) { SEL = v; }, glowEdit, glowPanel,
-  setMotion, bake, showBake, get PLAYING() { return PLAYING; },
+  setMotion, bake, showBake, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();

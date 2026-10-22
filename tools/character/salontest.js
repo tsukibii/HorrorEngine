@@ -6,8 +6,9 @@
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
 // trace's glow (the face kept clear), a mirrored brush selection cut, the glow pushed out by a drag, the fill (off the
 // body, combed the locks' way) and its cube; physics on the bundle (a shake swings it, still settles it); the bake (a
-// skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones); a save and a
-// reload. Ends "SALON ok".
+// skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
+// in it); the look (the strand atlas, the shader on every card, a look restyling them); a save and a reload.
+// Ends "SALON ok".
 //
 //   python tools/character/serve.py                    (in another shell)
 //   node tools/character/salontest.js [shot.png]
@@ -225,6 +226,16 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     console.log(`       a corner of the fill's cube pulled ${(moved * 100).toFixed(1)} cm`);
     await page.keyboard.press("v");
   });
+  await step("the hair look: a strand atlas see-through at its tips, the shader on every card, a look restyling them all", async () => {
+    const T = await import(path.join(__dirname, "hairtex.js"));
+    const prof = T.coverageProfile(T.makeAtlas());
+    if (!(prof[1] > 0.55 && prof[9] < 0.1)) throw new Error("the atlas's coverage root to tip: " + prof.join(" "));
+    const r = await ev(() => { const s = window.__salon; let cards = 0, hair = 0; for (const id in s.MESHES) s.MESHES[id].traverse(o => { if (o.userData.role === "cards") { cards++; if (o.material.userData.hair && o.geometry.attributes.aTangent && o.geometry.attributes.aDepth) hair++; } });
+      const before = s.HAIRU.tipC.value.getHex(); s.st.look.hair = "chestnut"; s.restyle(); const after = s.HAIRU.tipC.value.getHex(); s.st.look.hair = "jet_blue"; s.restyle();
+      return { cards, hair, changed: before !== after }; });
+    if (!r.cards || r.cards !== r.hair || !r.changed) throw new Error(JSON.stringify(r));
+    console.log(`       coverage root to tip ${prof.map(x => x.toFixed(2)).join(" ")}; ${r.hair} cards on the hair shader; a look restyles them`);
+  });
   await step("physics on the bundle: a shake swings its tip, its root stays on the head, it settles back to its style", async () => {
     const id = await ev(() => window.__salon.st.locks.find(l => l.type === "bundle").id);
     await ev(id => window.__salon.select(id), id);
@@ -251,6 +262,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (glb.toString("ascii", 0, 4) !== "glTF") throw new Error("salon.glb isn't a binary glTF");
     const json = JSON.parse(glb.toString("utf-8", 20, 20 + glb.readUInt32LE(12)));
     if (sum.physics.length !== 1 || (json.skins || []).length !== 1 || !(sum.after.vertices < sum.before.vertices)) throw new Error(JSON.stringify({ physics: sum.physics.length, skins: (json.skins || []).length, before: sum.before, after: sum.after }));
+    const cardsMat = (json.materials || []).find(m => m.name === "hair_cards");
+    if (!(json.images || []).length || !cardsMat || cardsMat.alphaMode !== "MASK" || !(cardsMat.extras && cardsMat.extras.look && cardsMat.extras.look.label)) throw new Error("the bake's look: " + JSON.stringify({ images: (json.images || []).length, cards: cardsMat }).slice(0, 300));
     await page.click("text=show the bake"); await page.waitForTimeout(800);
     const c = await ev(() => window.__salon.bakeCheck());
     if (!c || c.bones !== 6 || c.bind > 1e-4 || c.moveTip < 0.01 || c.moveRoot > 0.1 * c.moveTip) throw new Error(JSON.stringify(c));   // the root ring sits round its bone: it turns a little
