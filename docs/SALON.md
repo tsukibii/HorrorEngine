@@ -126,6 +126,13 @@ gravity pulls only as far as the head is tilted from upright (**Gravity**). **Ru
 a small sway both ways. The **Move** panel turns, nods, shakes or walks the head (the hair with it); **still** stops
 it and the locks settle back. No bending springs, no solver, one step a frame.
 
+**Gravity** (Move, 2026-10-22): the switch drops **all** the hair shown, physics ticked or not: nothing holds a lock
+to its style, real gravity pulls it down, the roots stay, the lengths are kept, the body pushes it out, and it lies on
+the head and shoulders or hangs (`salonphys.js`, drop mode, the same chains as the swing). Every moment is recorded (30
+a second, 12 s at most); **Moment** slides back to any of them, **Pause** and **Run on** carry on from there. Switching
+off, or **Keep this frame**, makes the moment shown the hair's shape (a twin follows its original); pull up by hand
+what should stick up. **Back to before** drops the fall; undo takes a kept one back. **Strength** scales gravity.
+
 **Bake** writes the hair for a game: `Content/Studio/Hair/<name>/salon.glb` (a binary glTF, the head's local space in
 metres) and `salon_bake.json` (the numbers, the head it was made on, each swinging lock's settings).
 

@@ -529,9 +529,65 @@ function play(now) {
   }
   requestAnimationFrame(play);
 }
+// ---- gravity: all the hair falls -------------------------------------------------------------------------------------------
+// The switch drops every visible lock (physics or not): nothing holds it to its style, it falls and lies on the head and
+// shoulders or hangs. Every step is recorded; the slider goes back to any of them; switching off (or Keep this frame)
+// makes the frame shown the hair's shape, to refine by hand (undo takes it back). salonphys.js's Sim, drop mode.
+let DROP = null;
+const ID3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], IDP = p => p;
+function startDrop() {
+  if (MOTION !== "still") setMotion("still");
+  RIG.identity(); applyRig();
+  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), locks = st.locks.filter(l => l.visible && vis[l.group] !== false);
+  const down = SL.norm(SR.MV(SR.T(HF.B), [0, -1, 0]));               // the world's down in the head's space
+  DROP = { sim: new SP.Sim(locks, COL, { drop: true, down, strength: st.dropStrength ?? 1 }), frames: [], frame: 0, running: true };
+  DROP.sim.step(IDP, IDP, ID3, 0, 0); DROP.frames.push(DROP.sim.snapshot());
+  dropPanel(); requestAnimationFrame(dropLoop);
+}
+function showDropFrame(i) {
+  if (!DROP) return;
+  DROP.frame = Math.max(0, Math.min(DROP.frames.length - 1, i)); DROP.sim.restoreFrame(DROP.frames[DROP.frame]);
+  for (const l of st.locks) if (DROP.sim.has(l.id) && MESHES[l.id]) poseLockMesh(l, DROP.sim.pose(l, IDP));
+  const sl = $("#dropFrame"); if (sl) { sl.max = DROP.frames.length - 1; sl.value = DROP.frame; } const o = $("#dropTime"); if (o) o.textContent = `${(DROP.frame / 30).toFixed(1)} s`;
+}
+function dropLoop() {
+  if (!DROP || !DROP.running) return;
+  if (DROP.frame !== DROP.frames.length - 1) DROP.frames.length = DROP.frame + 1;   // run on from a frame gone back to
+  for (let k = 0; k < 2; k++) DROP.sim.step(IDP, IDP, ID3, 0, 1 / 60);
+  DROP.frames.push(DROP.sim.snapshot()); showDropFrame(DROP.frames.length - 1); render();
+  if (DROP.frames.length >= 360) { DROP.running = false; dropPanel(); return; }      // 12 s: it has long since settled
+  requestAnimationFrame(dropLoop);
+}
+function pauseDrop() { if (DROP) { DROP.running = false; dropPanel(); } }
+function runDrop() { if (DROP && !DROP.running) { DROP.running = true; dropPanel(); requestAnimationFrame(dropLoop); } }
+function keepDrop() {                                                  // the frame shown becomes the hair's shape
+  if (!DROP) return;
+  remember();
+  DROP.sim.restoreFrame(DROP.frames[DROP.frame]);
+  for (const l of st.locks) {
+    if (!DROP.sim.has(l.id) || l.mirror_of) continue;                 // a twin follows its original
+    const posed = DROP.sim.pose(l, IDP);
+    if (l.type === "strand") l.pts = posed.pts; else if (l.type === "bundle") l.spine = posed.spine; else l.edges = posed.edges;
+    changed(l);
+  }
+  DROP = null; dropPanel(); draw();
+}
+function revertDrop() { DROP = null; for (const l of st.locks) DIRTY.add(l.id); dropPanel(); draw(); }
+function dropPanel() {
+  const box = $("#dropbox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
+  const sw = el("button", { textContent: DROP ? "Gravity: on" : "Gravity: off", className: DROP ? "on" : "", onclick: () => DROP ? keepDrop() : startDrop() }); sw.id = "dropSwitch"; box.append(sw);
+  slider(box, "Strength", 0.2, 2, 0.1, st.dropStrength ?? 1, v => { st.dropStrength = v; if (DROP) DROP.sim.strength = v, DROP.sim.items.forEach(it => { it.ph.gravity = v; }); }, "how hard gravity pulls (1: the real thing)");
+  if (!DROP) return;
+  const fr = el("input", { type: "range", min: 0, max: DROP.frames.length - 1, step: 1, value: DROP.frame, id: "dropFrame", title: "the moments recorded: slide back to one", oninput: () => { pauseDrop(); showDropFrame(+fr.value); render(); } });
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Moment" }), fr, el("output", { id: "dropTime", textContent: `${(DROP.frame / 30).toFixed(1)} s` })));
+  box.append(DROP.running ? el("button", { textContent: "Pause", onclick: pauseDrop }) : el("button", { textContent: "Run on", onclick: runDrop }),
+             el("button", { textContent: "Keep this frame", onclick: keepDrop }), el("button", { textContent: "Back to before", onclick: revertDrop }));
+}
 function movePanel() {
   const box = $("#movebox"); if (!box) return; box.innerHTML = "";
   box.append(el("p", { className: "note", textContent: "Tick Physics on a lock (Selected) to let it swing. The head's motions show it; Still lets it settle back to its style." }));
+  box.append(el("h4", { textContent: "Gravity" }), Object.assign(el("div"), { id: "dropbox" })); dropPanel();
   for (const m of ["still", "turn", "nod", "shake", "walk"]) { const b = el("button", { textContent: m, onclick: () => setMotion(m) }); b.dataset.m = m; b.classList.toggle("on", m === MOTION); box.append(b); }
 }
 
@@ -1059,7 +1115,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, SF, pullCube, traceGlow, makeFill, glowCellsAt, get SEL() { return SEL; }, set SEL(v) { SEL = v; }, glowEdit, glowPanel,
-  setMotion, bake, showBake, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
+  setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();

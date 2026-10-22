@@ -20,11 +20,14 @@ export function chainsOf(lock) {                                          // [pa
   return lock.edges.map((E, k) => [`edges.${k}`, E]);
 }
 
+// drop: every lock falls (physics on or not), nothing holds it to its style, gravity pulls straight down (opts.down, in
+// the space the step works in), until it lies or hangs; the step's points are recorded for scrubbing
 export class Sim {
-  constructor(locks, col) {
-    this.col = col; this.items = [];
+  constructor(locks, col, opts = {}) {
+    this.col = col; this.items = []; this.drop = !!opts.drop; this.down = opts.down || [0, -1, 0]; this.strength = opts.strength ?? 1;
     for (const l of locks) {
-      const ph = Object.assign({}, DEFAULTS, l.physics || {}); if (!ph.on) continue;
+      const ph = Object.assign({}, DEFAULTS, l.physics || {}); if (!ph.on && !this.drop) continue;
+      if (this.drop) Object.assign(ph, { stiffness: 0, damping: 0.965, gravity: this.strength, rustle: 0 });
       const chains = chainsOf(l).map(([path, P]) => ({ path, rest: P.map(p => p.slice()), x: null, xp: null, L: P.slice(1).map((p, i) => len(sub(p, P[i]))) }));
       // a sheet's neighbouring edges keep their spacing point by point (so it swings as one sheet)
       const ties = [];
@@ -36,7 +39,7 @@ export class Sim {
   step(M, Minv, Rrig, t, dt = 1 / 60) {
     const down = [0, -1, 0], restDown = [Rrig[0][1] * -1, Rrig[1][1] * -1, Rrig[2][1] * -1];   // the head's own "down", in the world
     for (const it of this.items) {
-      const { ph } = it, hold = holdOf(ph.stiffness), g = mul(sub(down, restDown), 9.8 * ph.gravity * dt * dt);
+      const { ph } = it, hold = this.drop ? 0 : holdOf(ph.stiffness), g = this.drop ? mul(this.down, 9.8 * ph.gravity * dt * dt) : mul(sub(down, restDown), 9.8 * ph.gravity * dt * dt);
       const ph0 = it.phase, wind = ph.rustle ? mul([Math.sin(1.7 * t + ph0) * Math.sin(0.53 * t + 2 * ph0), 0.3 * Math.sin(2.3 * t + 3 * ph0), Math.sin(1.31 * t + 0.7 * ph0) * Math.cos(0.71 * t + ph0)], ph.rustle * 2.5 * dt * dt) : [0, 0, 0];
       for (const c of it.chains) {
         const target = c.rest.map(p => M(p));
@@ -51,7 +54,7 @@ export class Sim {
           c.x[i] = q;
         }
       }
-      for (let iter = 0; iter < 3; iter++) {
+      for (let iter = 0; iter < (this.drop ? 6 : 3); iter++) {
         for (const c of it.chains) for (let i = 1; i < c.x.length; i++) {           // lengths, root to tip: the child moves
           const d = sub(c.x[i], c.x[i - 1]), l = len(d) || 1e-9; c.x[i] = add(c.x[i - 1], mul(d, c.L[i - 1] / l));
         }
@@ -61,11 +64,15 @@ export class Sim {
         }
       }
       for (const c of it.chains) for (let i = 1; i < c.x.length; i++) {             // off the body (in the head's space)
-        const [q, moved] = this.col.push(Minv(c.x[i]), 0.006); if (moved) c.x[i] = M(q);
+        const [q, moved] = this.col.push(Minv(c.x[i]), this.drop ? 0.0025 : 0.006); if (moved) c.x[i] = M(q);
       }
     }
   }
   reset() { for (const it of this.items) for (const c of it.chains) { c.x = null; c.xp = null; } }
+  // every chain point now, flat (a recorded frame), and back
+  snapshot() { const out = []; for (const it of this.items) for (const c of it.chains) for (const p of c.x || c.rest) out.push(p[0], p[1], p[2]); return Float32Array.from(out); }
+  restoreFrame(f) { let k = 0; for (const it of this.items) for (const c of it.chains) { c.x = c.rest.map(() => [f[k++], f[k++], f[k++]]); c.xp = c.x.map(p => p.slice()); } }
+  speed() { let m = 0; for (const it of this.items) for (const c of it.chains) if (c.x) for (let i = 1; i < c.x.length; i++) m = Math.max(m, len(sub(c.x[i], c.xp[i]))); return m; }
   pose(lock, Minv) {                                                        // the lock as the sim has it, in local space
     const it = this.items.find(x => x.id === lock.id); if (!it || !it.chains[0].x) return lock;
     const out = JSON.parse(JSON.stringify(lock));

@@ -292,6 +292,26 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => !window.__salon.PLAYING, null, { timeout: 15000 });
     console.log(`       the tip swung up to ${(peak * 100).toFixed(1)} cm; still, it settled and the loop stopped`);
   });
+  await step("Gravity: all the hair falls; the slider goes back; switched off, the moment shown is kept; undo brings it back", async () => {
+    const tips = () => ev(() => window.__salon.st.locks.map(l => { const P = l.type === "strand" ? l.pts : l.type === "bundle" ? l.spine : l.edges[1]; return [P[0].slice(), P[P.length - 1].slice()]; }));
+    const before = await tips();
+    await page.click("#dropSwitch");
+    await page.waitForFunction(() => window.__salon.drop.state && window.__salon.drop.state.frames > 45, null, { timeout: 30000 });
+    const st0 = await ev(() => window.__salon.drop.state);
+    await ev(() => { window.__salon.drop.pause(); window.__salon.drop.show(0); });
+    const zero = await ev(() => { const s = window.__salon, it = s.drop; return it.state.frame; });
+    if (zero !== 0) throw new Error("the slider didn't go back");
+    await ev(() => window.__salon.drop.show(window.__salon.drop.state.frames - 1));
+    await page.click("#dropSwitch");                                // off: the moment shown is kept
+    const after = await tips();
+    const fell = Math.max(...after.map((t, i) => before[i][1][1] - t[1][1])), rootMoved = Math.max(...after.map((t, i) => Math.hypot(...t[0].map((x, k) => x - before[i][0][k]))));
+    const inside = await ev(() => { const s = window.__salon; s.render(); let n = 0; for (const l of s.st.locks) for (const G of s.EVAL[l.id] || []) G.pts.forEach((p, k) => { if (k && s.COL.push(p, -0.0015)[1]) n++; }); return n; });
+    if (fell < 0.02 || rootMoved > 1e-6 || inside) throw new Error(JSON.stringify({ fell, rootMoved, inside }));
+    await page.keyboard.press("Control+z");
+    const back = await tips();
+    if (JSON.stringify(back) !== JSON.stringify(before)) throw new Error("undo didn't bring the shape back");
+    console.log(`       ${st0.frames} moments recorded; a tip fell ${(fell * 100).toFixed(1)} cm, the roots stayed; kept, then undone`);
+  });
   await step("Bake: the swinging lock its own skinned mesh, the rest one mesh with fewer vertices; the file loads back and its bones bend it", async () => {
     await ev(n => { document.querySelector("#hairName").value = n; }, TEST);
     await page.click("#bakebox button:text-is('Bake')");
