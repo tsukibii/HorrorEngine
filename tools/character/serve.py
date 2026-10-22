@@ -30,7 +30,7 @@ DESIGNS = ROOT / "Content" / "Studio" / "Clothes" / "designs"
 VENDOR = ROOT / "tools" / "director" / "vendor"     # three.js, shared with the desk
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
          ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-         ".webp": "image/webp"}
+         ".webp": "image/webp", ".glb": "model/gltf-binary"}
 PICTURES = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 SLOTS = ("front", "side")
 EXPORTS = (".obj", ".json")
@@ -69,7 +69,7 @@ GSHAIR_RUNS = {}                                       # name -> the running pip
 
 
 HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hair presets for the hair builder (tools/gshair.py preset)
-HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json"}
+HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json", "salon.glb"}
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
 
@@ -326,6 +326,8 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError: return self.send(400, {"error": "not JSON"})
             elif parts[3].endswith(".png") and not data.startswith(b"\x89PNG\r\n\x1a\n"):
                 return self.send(400, {"error": "a PNG"})
+            elif parts[3].endswith(".glb") and not data.startswith(b"glTF"):
+                return self.send(400, {"error": "a binary glTF"})
             (d / parts[3]).write_bytes(data)
             return self.send(200, {"ok": True, "path": str((d / parts[3]).relative_to(ROOT))})
         if parts[:2] == ["api", "refs"] and len(parts) == 4 and name and parts[3] == "run":   # a video (or photos) to a salon reference

@@ -105,6 +105,27 @@ sides, the back), then, in the **Fill** panel:
 The glow is saved in `salon.json` (`glow`: its radii, which cells are on, the fill's settings and cube); the mass is
 made again from it on load. Undo covers all of it.
 
+## Physics and the bake (2026-10-22)
+
+**Physics** is per lock (Selected: **Physics (it swings)**), game-grade (`salonphys.js`): the lock's own control
+curves are its chains (a strand's points, a bundle's spine, a sheet's three edges, tied together point by point), the
+root pinned to the head, the rest Verlet points held towards the styled shape (**Floppy-stiff**), so a still head
+keeps the style exactly; they lag and swing when the head moves, keep their lengths, are pushed off the body, and
+gravity pulls only as far as the head is tilted from upright (**Gravity**). **Rustle** is a wind with no direction:
+a small sway both ways. The **Move** panel turns, nods, shakes or walks the head (the hair with it); **still** stops
+it and the locks settle back. No bending springs, no solver, one step a frame.
+
+**Bake** writes the hair for a game: `Content/Studio/Hair/<name>/salon.glb` (a binary glTF, the head's local space in
+metres) and `salon_bake.json` (the numbers, the head it was made on, each swinging lock's settings).
+
+- Every lock with physics is **its own skinned mesh** on bones along its chains (a strand or bundle one chain of six,
+  a sheet three), each vertex on the two nearest joints along and the two nearest chains across (four influences),
+  its physics settings in the mesh's extras for the runtime.
+- Everything else, **the fill too, is one mesh**: each card simplified to 8 points along it (the live hair has 24),
+  the fill's shell a cell to a vertex and half its strands in 4 points each; two parts: the cards (a strand texture
+  cut out at 0.4, tinted by vertex colours) and the mass. The demo: 34 177 vertices live, 5 167 baked, 299 KB.
+- **show the bake** loads the file back (three.js's GLTFLoader) in place of the live hair.
+
 ## The file
 
 `Content/Studio/Hair/<name>/salon.json`: `head` (the body preset, its height), `reference` (its name, the view
@@ -116,7 +137,8 @@ by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `spine
 
 `salon.html` and `salon.js` (the page), `salonlib.js` (locks, curves, the collider, the mirror: plain arrays, node can
 run it), `salonref.js` (the reference's cameras, the fit, picking the frame), `ffd.js` (the cube: a lattice, its handles, the
-ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its comb), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
+ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its comb), `salonphys.js` (the chains, the step, the
+skin weights), `gshair/reference.py` (the reference from a capture or photos, the face fit, the hair's box), `serve.py` (`api/refs`, `api/salon`, `salon.json` through `api/hair`).
 
 ## Checks
 
@@ -124,7 +146,9 @@ ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its 
   the MiniMax reference's frames at 0, 90, 180 and 270 degrees with the frame's camera exactly, the far side mirrored
   with half the turn, the fit moving the cameras; the cube's front face dragged with the mouse bending the front view
   and not the back (and undone); the glow traced (the face clear), both ears selected by one brush stroke with mirror
-  and cut, the glow pushed out by a drag, the fill off the body and combed the locks' way, its cube pulled; a strand, a sheet and a bundle placed with the mouse; Mirror's twin
+  and cut, the glow pushed out by a drag, the fill off the body and combed the locks' way, its cube pulled; physics on
+  a bundle (a shake swings its tip 10 cm, the root stays, still settles it); the bake (one skinned mesh, one static
+  with fewer vertices, a glTF whose bind pose is exact and whose root bone bends it); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the
   face exactly, and the face fit of a head onto itself is scale 1, no offset, no turn.
@@ -132,6 +156,5 @@ ellipsoid depth), `salonfill.js` (the trace, the glow's edits, the fill and its 
 ## Not built yet (docs/SALON_PLAN.md)
 
 Tracing the outline over the reference, the galleries (fringes, sidelocks, tails, colours), the brushes (comb, grow,
-puff, smooth) and the curl, frizz and clump sliders, the cap and the brows and lashes, a drawn seam, physics (jiggle and
-the rustle), the clothed body's collision, the bake, a photo's own nudge in the page (the data has it:
+puff, smooth) and the curl, frizz and clump sliders, the cap and the brows and lashes, a drawn seam, the clothed body's collision, a photo's own nudge in the page (the data has it:
 `fit.per_frame`), the player's-eye view.

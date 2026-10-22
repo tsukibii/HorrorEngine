@@ -5,6 +5,9 @@ import * as SL from "./salonlib.js";
 import * as SR from "./salonref.js";
 import * as FFD from "./ffd.js";
 import * as SF from "./salonfill.js";
+import * as SP from "./salonphys.js";
+import { GLTFExporter } from "./vendor/GLTFExporter.js";
+import { GLTFLoader } from "./vendor/GLTFLoader.js";
 
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -44,6 +47,7 @@ const fillL = new THREE.DirectionalLight(0xb8c4ff, 0.6); scene.add(fillL, fillL.
 const HAIR = new THREE.Group(); HAIR.matrixAutoUpdate = false; scene.add(HAIR);            // local -> world
 const HANDLES = new THREE.Group(); HAIR.add(HANDLES);
 let HEAD = null, HF = null, COL = null, LOCAL_PTS = null;
+const HFMAT = new THREE.Matrix4(), RIG = new THREE.Matrix4();            // the head's frame; the head's motion (world)
 let VW = 1, VH = 1;
 function resize() { VW = view.clientWidth; VH = view.clientHeight; renderer.setSize(VW, VH, false); Object.assign(OVL_CAM, { left: 0, right: VW, top: VH, bottom: 0 }); OVL_CAM.updateProjectionMatrix(); draw(); }
 new ResizeObserver(resize).observe(view);
@@ -339,11 +343,11 @@ async function buildHead() {
   for (let i = 0; i < P.length; i += 3) { P[i] *= S; P[i + 1] = (P[i + 1] - lo) * S; P[i + 2] *= S; }
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(new THREE.BufferAttribute(m.tris, 1)); g.computeVertexNormals();
   g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(N * 3).fill(1), 3));
-  HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x9a9690, roughness: 0.75, vertexColors: true })); scene.add(HEAD);
+  HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x9a9690, roughness: 0.75, vertexColors: true })); HEAD.matrixAutoUpdate = false; scene.add(HEAD);
   HF = SR.headFrame(P, REF?.local?.anchors || SR.DEFAULT_ANCHORS);
   const B = HF.B, s = HF.S;
-  HAIR.matrix.set(B[0][0] * s, B[0][1] * s, B[0][2] * s, HF.C[0], B[1][0] * s, B[1][1] * s, B[1][2] * s, HF.C[1], B[2][0] * s, B[2][1] * s, B[2][2] * s, HF.C[2], 0, 0, 0, 1);
-  HAIR.matrixWorldNeedsUpdate = true;
+  HFMAT.set(B[0][0] * s, B[0][1] * s, B[0][2] * s, HF.C[0], B[1][0] * s, B[1][1] * s, B[1][2] * s, HF.C[1], B[2][0] * s, B[2][1] * s, B[2][2] * s, HF.C[2], 0, 0, 0, 1);
+  applyRig();
   LOCAL_PTS = new Float32Array(P.length);
   for (let i = 0; i < N; i++) { const q = SR.toLocal(HF, [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]]); LOCAL_PTS.set(q, i * 3); }
   const ci = (REF?.local?.anchors || SR.DEFAULT_ANCHORS).chin * 3, chin = SR.toLocal(HF, [P[ci], P[ci + 1], P[ci + 2]])[1];
@@ -372,38 +376,51 @@ const strandTex = (() => {                                           // a card's
 })();
 const PALETTE = ["#c8553d", "#4f86c6", "#6dae63", "#d9a441", "#a46cc8", "#4fb3b3", "#d97a9a", "#8f9d4a"];
 function lockColour(l, i) { return st.look.byLock ? PALETTE[i % PALETTE.length] : (l.color || st.look.color); }
+// a lock's ribbons (two vertices a guide sample) and its strands' lines, as flat position arrays
+function cardPositions(guides) {
+  const pos = [];
+  for (const G of guides) for (let k = 0; k < G.pts.length; k++) { const h = SL.mul(G.across[k], G.width[k] / 2); pos.push(...SL.sub(G.pts[k], h), ...SL.add(G.pts[k], h)); }
+  return pos;
+}
+function strandPositions(l, guides) { const pos = []; for (const s of SL.strandsOf(l, guides)) for (let k = 1; k < s.length; k++) pos.push(...s[k - 1], ...s[k]); return pos; }
 function buildLockMesh(l, i) {
   const guides = SL.evaluate(l, COL); EVAL[l.id] = guides;
   const grp = new THREE.Group(); grp.userData.lock = l.id;
   const col = new THREE.Color(lockColour(l, i));
   if (l.render === "strands") {
-    const strands = SL.strandsOf(l, guides), pos = [], cols = [];
+    const strands = SL.strandsOf(l, guides), cols = [];
     for (const s of strands) for (let k = 1; k < s.length; k++) {
-      pos.push(...s[k - 1], ...s[k]);
       const a = 0.55 + 0.45 * (k - 1) / (s.length - 1), b = 0.55 + 0.45 * k / (s.length - 1);
       cols.push(col.r * a, col.g * a, col.b * a, col.r * b, col.g * b, col.b * b);
     }
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
-    grp.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true })));
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(strandPositions(l, guides), 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+    const m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true })); m.userData.role = "strands"; grp.add(m);
   } else {
-    const pos = [], uv = [], cols = [], idx = [];
+    const uv = [], cols = [], idx = [];
     guides.forEach((G, j) => {
-      const base = pos.length / 3, n = G.pts.length, u0 = (j * 0.37) % 1;
-      for (let k = 0; k < n; k++) {
-        const h = SL.mul(G.across[k], G.width[k] / 2), a = SL.sub(G.pts[k], h), b = SL.add(G.pts[k], h), v = k / (n - 1);
-        pos.push(...a, ...b); uv.push(u0, v, u0 + 0.5, v);
-        const s = 0.5 + 0.5 * Math.min(1, v * 3); cols.push(s, s, s, s, s, s);
-      }
+      const base = j * G.pts.length * 2, n = G.pts.length, u0 = (j * 0.37) % 1;
+      for (let k = 0; k < n; k++) { const v = k / (n - 1); uv.push(u0, v, u0 + 0.5, v); const s = 0.5 + 0.5 * Math.min(1, v * 3); cols.push(s, s, s, s, s, s); }
       for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     });
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cardPositions(guides), 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3)); g.setIndex(idx); g.computeVertexNormals();
-    grp.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: col, roughness: 0.55, metalness: 0, side: THREE.DoubleSide, alphaMap: strandTex, alphaTest: 0.4, vertexColors: true })));
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: col, roughness: 0.55, metalness: 0, side: THREE.DoubleSide, alphaMap: strandTex, alphaTest: 0.4, vertexColors: true })); m.userData.role = "cards"; grp.add(m);
   }
   if (st.look.guides || l.id === SELECTED) {
-    for (const G of guides) { const g = new THREE.BufferGeometry().setFromPoints(G.pts.map(p => new THREE.Vector3(...p))); grp.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: l.id === SELECTED ? 0xffd27a : 0x6f7a8a, depthTest: l.id !== SELECTED }))); }
+    guides.forEach((G, j) => { const g = new THREE.BufferGeometry().setFromPoints(G.pts.map(p => new THREE.Vector3(...p))); const ln = new THREE.Line(g, new THREE.LineBasicMaterial({ color: l.id === SELECTED ? 0xffd27a : 0x6f7a8a, depthTest: l.id !== SELECTED })); ln.userData = { role: "guide", j }; grp.add(ln); });
   }
   return grp;
+}
+// a swinging lock drawn where the physics has it (same vertices, new positions)
+function poseLockMesh(l, posed) {
+  const grp = MESHES[l.id]; if (!grp) return;
+  const guides = SL.evaluate(posed, COL);
+  for (const o of grp.children) {
+    const P = o.geometry.attributes.position;
+    const src = o.userData.role === "cards" ? cardPositions(guides) : o.userData.role === "strands" ? strandPositions(l, guides) : guides[o.userData.j] ? guides[o.userData.j].pts.flat() : null;
+    if (!src || src.length !== P.array.length) continue;
+    P.array.set(src); P.needsUpdate = true; if (o.userData.role === "cards") o.geometry.computeVertexNormals();
+  }
 }
 function refreshLocks() {
   const ids = new Set(st.locks.map(l => l.id));
@@ -446,6 +463,154 @@ function showRootLine(pts) {
   if (!pts || pts.length < 1) return;
   ROOTLINE = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color: 0x5aa65a, depthTest: false }));
   ROOTLINE.renderOrder = 10; HAIR.add(ROOTLINE);
+}
+
+// ---- the head's motion and the physics ----------------------------------------------------------------------------------
+// Turn, nod, shake and walk move the head and the hair together about the neck; the locks with physics on lag, swing and
+// settle back to their style (salonphys.js). Still stops the head; the swinging settles.
+let MOTION = "still", SIM = null, SIM_DIRTY = true, T0 = performance.now(), PLAYING = false;
+function rigAt(t) {
+  const w = 2 * Math.PI, e = new THREE.Euler(), off = new THREE.Vector3();
+  if (MOTION === "turn") e.set(0, 0.7 * Math.sin(w * 0.5 * t), 0);
+  else if (MOTION === "nod") e.set(0.3 * Math.sin(w * 0.7 * t), 0, 0);
+  else if (MOTION === "shake") e.set(0, 0.45 * Math.sin(w * 1.8 * t), 0);
+  else if (MOTION === "walk") { e.set(0.04 * Math.sin(w * 1.8 * t), 0.08 * Math.sin(w * 0.9 * t), 0.05 * Math.sin(w * 0.9 * t)); off.set(0, 0.03 * Math.abs(Math.sin(w * 0.9 * t)), 0); }
+  const piv = HF ? new THREE.Vector3(...SR.toWorld(HF, [0, -0.11, -0.02])) : new THREE.Vector3();
+  return new THREE.Matrix4().makeTranslation(-piv.x, -piv.y, -piv.z).premultiply(new THREE.Matrix4().makeRotationFromEuler(e)).premultiply(new THREE.Matrix4().makeTranslation(piv.x + off.x, piv.y + off.y, piv.z + off.z));
+}
+function applyRig() {
+  if (HEAD) { HEAD.matrix.copy(RIG); HEAD.matrixWorldNeedsUpdate = true; }
+  HAIR.matrix.copy(RIG).multiply(HFMAT); HAIR.matrixWorldNeedsUpdate = true;
+}
+function physicsLocks() { return st.locks.filter(l => l.physics && l.physics.on && l.visible); }
+function stepPhysics(t) {
+  if (SIM_DIRTY || !SIM) { SIM = new SP.Sim(physicsLocks(), COL); SIM_DIRTY = false; }
+  RIG.copy(rigAt(t)); applyRig();
+  const M = HAIR.matrix.clone(), Mi = M.clone().invert(), v = new THREE.Vector3();
+  const toW = p => v.set(p[0], p[1], p[2]).applyMatrix4(M).toArray(), toL = p => v.set(p[0], p[1], p[2]).applyMatrix4(Mi).toArray();
+  const e = RIG.elements, Rr = [[e[0], e[4], e[8]], [e[1], e[5], e[9]], [e[2], e[6], e[10]]];
+  SIM.step(toW, toL, Rr, t, 1 / 60);
+  for (const l of st.locks) if (SIM.has(l.id) && MESHES[l.id]) poseLockMesh(l, SIM.pose(l, toL));
+  return { toL };
+}
+function setMotion(m) {
+  MOTION = m; for (const b of document.querySelectorAll("#movebox button[data-m]")) b.classList.toggle("on", b.dataset.m === m);
+  if (!PLAYING) { PLAYING = true; T0 = performance.now(); requestAnimationFrame(play); }
+}
+let STILL_FRAMES = 0;
+function play(now) {
+  const t = (now - T0) / 1000;
+  stepPhysics(t); render();
+  const rustling = physicsLocks().some(l => l.physics.rustle > 0);
+  STILL_FRAMES = MOTION === "still" && !rustling ? STILL_FRAMES + 1 : 0;
+  if (STILL_FRAMES > 150) {                                            // settled: the style drawn exactly, the loop off
+    PLAYING = false; STILL_FRAMES = 0; RIG.identity(); applyRig(); SIM && SIM.reset(); for (const l of physicsLocks()) DIRTY.add(l.id); draw(); return;
+  }
+  requestAnimationFrame(play);
+}
+function movePanel() {
+  const box = $("#movebox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "Tick Physics on a lock (Selected) to let it swing. The head's motions show it; Still lets it settle back to its style." }));
+  for (const m of ["still", "turn", "nod", "shake", "walk"]) { const b = el("button", { textContent: m, onclick: () => setMotion(m) }); b.dataset.m = m; b.classList.toggle("on", m === MOTION); box.append(b); }
+}
+
+// ---- the bake: the swinging locks each a skinned mesh on its chains' bones, everything else one simplified mesh -------
+const BAKE_ALONG = 8, BAKE_ALONG_PHYS = 12;
+const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]) }; };
+function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
+  const pos = cardPositions(guides), uv = [], col = [], idx = [], c = new THREE.Color(colour);
+  guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
+    for (let k = 0; k < n; k++) { const v = k / (n - 1), sh = 0.5 + 0.5 * Math.min(1, v * 3); uv.push(u0, v, u0 + 0.5, v); col.push(c.r * sh, c.g * sh, c.b * sh, c.r * sh, c.g * sh, c.b * sh); }
+    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
+  return { pos, uv, col, idx };
+}
+function geometryOf(parts) {                                            // parts merged into one BufferGeometry: the cards first,
+  const pos = [], uv = [], col = [], idx = [], g = new THREE.BufferGeometry();   // then the solid parts, a group each (two materials)
+  const order = [...parts.filter(q => !q.solid), ...parts.filter(q => q.solid)]; let cards = 0;
+  for (const q of order) { const base = pos.length / 3; pos.push(...q.pos); uv.push(...q.uv); col.push(...q.col); for (const i of q.idx) idx.push(base + i); if (!q.solid) cards = idx.length; }
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+  if (cards) g.addGroup(0, cards, 0); if (idx.length > cards) g.addGroup(cards, idx.length - cards, 1);
+  return g;
+}
+// the cards' look in the file: white strands with alpha (the vertex colours tint them), cut out at 0.4 (glTF's MASK)
+const strandRGBA = (() => {
+  const W = 64, H = 256, c = el("canvas", { width: W, height: H }), g = c.getContext("2d"), r = SL.rng(3);
+  for (let i = 0; i < 70; i++) { const x = r() * W, w = 0.6 + r() * 1.6, end = H * (0.78 + 0.22 * r()), a = 0.55 + 0.45 * r();
+    const gr = g.createLinearGradient(0, 0, 0, end); gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(0.85, `rgba(255,255,255,${a})`); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(x, 0, w, end); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const bakeMats = () => [new THREE.MeshStandardMaterial({ name: "hair_cards", map: strandRGBA, alphaTest: 0.4, vertexColors: true, roughness: 0.55, side: THREE.DoubleSide }),
+                        new THREE.MeshStandardMaterial({ name: "hair_mass", vertexColors: true, roughness: 0.6, side: THREE.DoubleSide })];
+function liveVertices() {                                               // what the salon draws now (the "before")
+  let n = 0; for (const id in MESHES) MESHES[id].traverse(o => { if (o.isMesh && o.geometry) n += o.geometry.attributes.position.count; }); FILLG.traverse(o => { if (o.isMesh) n += o.geometry.attributes.position.count; }); return n;
+}
+let BAKED = null;
+async function bake() {
+  const name = $("#hairName").value.trim().replace(/[^A-Za-z0-9_-]/g, "_"); if (!name) throw new Error("a name first");
+  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => l.visible && vis[l.group] !== false);
+  const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, preset: st.head.preset, height: st.head.height } };
+  shown.forEach((l, i) => {
+    const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = lockColour(l, i);
+    if (l.physics && l.physics.on) skinned.push([l, guides.map(G => resampleGuide(G, BAKE_ALONG_PHYS)), colour]);
+    else statics.push(cardsGeometry(guides.map(G => resampleGuide(G, BAKE_ALONG)), colour));
+  });
+  // the fill: coarser (its shell a cell to a vertex, half the strands, each in four points), bent by its cube
+  if (st.glow && st.glow.filled) {
+    const g = st.glow, f = SF.fillMesh(g, glowGuides(), { density: Math.round(g.fill.density / 2), seed: g.fill.seed, sub: 1 }, COL);
+    const bend = g.fill.cube && !FFD.isRest(g.fill.cube) ? p => FFD.deform(g.fill.cube, p) : p => p, c = new THREE.Color(g.fill.color || st.look.color).multiplyScalar(0.75);
+    const P = f.shell.position, pos = []; for (let i = 0; i < P.length; i += 3) pos.push(...bend([P[i], P[i + 1], P[i + 2]]));
+    statics.push({ solid: true, pos, uv: new Array(P.length / 3 * 2).fill(0), col: new Array(P.length).fill(0).map((_, k) => [c.r, c.g, c.b][k % 3]), idx: f.shell.index });
+    const lines = f.strands.map(L => L.map(bend)).map(L => SL.resample(L, 4));
+    const gs = lines.map(L => ({ pts: L, across: L.map((p, k) => SL.norm(SL.cross(SL.sub(L[Math.min(3, k + 1)], L[Math.max(0, k - 1)]), SL.norm(SL.sub(p, g.C))))), width: L.map((_, k) => 0.006 * (1 - 0.6 * k / 3)) }));
+    statics.push(cardsGeometry(gs, g.fill.color || st.look.color));
+  }
+  const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
+  const mats = bakeMats();
+  if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mats); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
+  for (const [l, guides, colour] of skinned) {
+    const q = cardsGeometry(guides, colour), geo = geometryOf([q]), sk = SP.skinOf(l, guides), J = sk.J;
+    const si = [], sw = [];
+    sk.weights.forEach(G => G.forEach(w => { for (let side = 0; side < 2; side++) { const ws = w.slice(0, 4); while (ws.length < 4) ws.push([0, 0]); const tot = ws.reduce((a, x) => a + x[1], 0) || 1; si.push(...ws.map(x => x[0])); sw.push(...ws.map(x => x[1] / tot)); } }));
+    geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4));
+    const bones = [], tag = (l.name || l.type).replace(/[^A-Za-z0-9_]/g, "_");
+    sk.chains.forEach((P, c) => P.forEach((p, j) => { const b = new THREE.Bone(); b.name = `${tag}_c${c}_j${j}`; const prev = j ? P[j - 1] : [0, 0, 0]; b.position.set(p[0] - prev[0], p[1] - prev[1], p[2] - prev[2]); if (j) bones[c * J + j - 1].add(b); bones.push(b); }));
+    const mesh = new THREE.SkinnedMesh(geo, mats); mesh.name = `hair_${tag}`;
+    for (let c = 0; c < sk.chains.length; c++) mesh.add(bones[c * J]);
+    mesh.updateMatrixWorld(true); mesh.bind(new THREE.Skeleton(bones));
+    const ph = Object.assign({}, SP.DEFAULTS, l.physics);
+    mesh.userData = { lock: l.name || l.type, physics: { stiffness: ph.stiffness, damping: ph.damping, gravity: ph.gravity, rustle: ph.rustle, hold: SP.holdOf(ph.stiffness) }, chains: sk.chains.length, joints: J };
+    root.add(mesh);
+    summary.physics.push({ lock: l.name || l.type, type: l.type, chains: sk.chains.length, joints: J, bones: bones.length, vertices: geo.attributes.position.count, physics: mesh.userData.physics });
+  }
+  summary.before = { vertices: liveVertices() };
+  summary.after = { vertices: (summary.static.vertices || 0) + summary.physics.reduce((a, x) => a + x.vertices, 0) };
+  const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
+  await fetch(`api/hair/${name}/salon.glb`, { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the GLB wasn't saved"); });
+  await api(`api/hair/${name}/salon_bake.json`, JSON.stringify(summary, null, 1));
+  summary.glb_bytes = glb.byteLength; BAKED = summary; bakePanel(); status(`baked Content/Studio/Hair/${name}/salon.glb`, "ok");
+  return summary;
+}
+// the bake loaded back (GLTFLoader) and shown instead of the live hair: what a game gets
+const BAKEG = new THREE.Group(); HAIR.add(BAKEG);
+async function showBake(on) {
+  BAKEG.clear(); st.look.showBake = on;
+  for (const id in MESHES) MESHES[id].visible = !on && MESHES[id].visible; FILLG.visible = !on;
+  if (!on) { for (const l of st.locks) DIRTY.add(l.id); draw(); return null; }
+  const name = $("#hairName").value.trim();
+  const buf = await (await fetch(`api/hair/${encodeURIComponent(name)}/salon.glb`)).arrayBuffer();
+  const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(buf, "", ok, bad));
+  let skinnedN = 0, bonesN = 0, meshes = 0; gltf.scene.traverse(o => { if (o.isSkinnedMesh) skinnedN++; if (o.isBone) bonesN++; if (o.isMesh) meshes++; });
+  BAKEG.add(gltf.scene); draw();
+  return { meshes, skinned: skinnedN, bones: bonesN };
+}
+function bakePanel() {
+  const box = $("#bakebox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "Bake writes the hair for a game (Content/Studio/Hair/<name>/salon.glb): every lock with physics its own skinned mesh on bones along its chains (a sheet three chains, a strand or bundle one), everything else, the fill too, merged into one mesh with fewer points along each card. Save first to name it." }));
+  box.append(el("button", { textContent: "Bake", onclick: () => bake().catch(e => status(e.message, "bad")) }));
+  const t = el("div"); tick(t, "show the bake", !!st.look.showBake, v => showBake(v).catch(e => status(e.message, "bad")), "the baked file loaded back in place of the live hair"); box.append(t);
+  if (BAKED) box.append(el("p", { className: "note", textContent: `${BAKED.before.vertices} vertices live -> ${BAKED.after.vertices} baked: one static mesh of ${BAKED.static.vertices || 0}, ${BAKED.physics.length} swinging (${BAKED.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round(BAKED.glb_bytes / 1024)} KB` }));
 }
 
 // ---- the frame ---------------------------------------------------------------------------------------------------------
@@ -508,7 +673,7 @@ function lockAt(e) {
 const UNDO = [], REDO = [];
 const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, glow: st.glow });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; if ("glow" in o) { st.glow = o.glow; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); st.locks = o.locks; st.groups = o.groups; if ("glow" in o) { st.glow = o.glow; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; glowPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -516,7 +681,7 @@ $("#undo").onclick = undo; $("#redo").onclick = redo;
 // ---- the locks --------------------------------------------------------------------------------------------------------
 const lockById = id => st.locks.find(l => l.id === id) || null;
 function changed(l) {                                                // a lock edited: its twins follow
-  DIRTY.add(l.id); if (st.glow && st.glow.filled) { FILLRES = null; FILL_DIRTY = true; }
+  DIRTY.add(l.id); SIM_DIRTY = true; if (st.glow && st.glow.filled) { FILLRES = null; FILL_DIRTY = true; }
   st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL);
   for (const t of st.locks) if (t.mirror_of === l.id) DIRTY.add(t.id);
 }
@@ -769,7 +934,7 @@ function locksPanel() {
     st.locks.filter(l => l.group === g.id).forEach(l => {
       const e2 = el("span", { className: "eye", textContent: l.visible ? "◉" : "○", onclick: ev => { ev.stopPropagation(); l.visible = !l.visible; locksPanel(); draw(); } });
       box.append(el("div", { className: "lock" + (l.id === SELECTED ? " sel" : ""), onclick: () => select(l.id) }, e2,
-        el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: l.type + (l.render === "strands" ? " · strands" : "") })));
+        el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: l.type + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") })));
     });
   }
   box.append(el("button", { textContent: "New group", onclick: () => { const id = "g" + (st.groups.length + 1) + Date.now().toString(36).slice(-3); st.groups.push({ id, name: `Group ${st.groups.length + 1}`, visible: true }); ACTIVE_GROUP = id; locksPanel(); } }));
@@ -789,6 +954,13 @@ function selPanel() {
   if (o.type !== "strand") slider(box, "Guides", 2, 16, 1, o.guides, edit(v => { o.guides = v; }));
   if (o.type === "bundle") { slider(box, "Root radius", 0.002, 0.06, 0.001, o.r0, edit(v => { o.r0 = v; })); slider(box, "Tip radius", 0, 0.06, 0.001, o.r1, edit(v => { o.r1 = v; })); }
   slider(box, "Taper", 0, 1, 0.05, o.taper, edit(v => { o.taper = v; }), "how much thinner the tip is");
+  const ph = o.physics || (o.physics = Object.assign({}, SP.DEFAULTS));
+  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
+  if (ph.on) {
+    slider(box, "Floppy-stiff", 0, 1, 0.05, ph.stiffness, v => { ph.stiffness = v; changed(o); SIM_DIRTY = true; }, "how hard it's held to its style");
+    slider(box, "Gravity", 0, 2, 0.1, ph.gravity, v => { ph.gravity = v; changed(o); SIM_DIRTY = true; }, "how far it hangs down when the head tilts");
+    slider(box, "Rustle", 0, 1, 0.05, ph.rustle, v => { ph.rustle = v; changed(o); SIM_DIRTY = true; if (v) setMotion(MOTION); }, "a wind with no direction: a little sway both ways");
+  }
   if (o.render === "strands") slider(box, "Strands", 1, 400, 1, o.density, edit(v => { o.density = v; }));
   const c = el("input", { type: "color", value: o.color || st.look.color, onchange: () => edit(v => { o.color = v; })(c.value) });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Colour" }), c, el("span")));
@@ -829,7 +1001,8 @@ async function load(name) {
   st.glow = o.glow || null; FILLRES = null; GLOW_DIRTY = true; FILL_DIRTY = true; SEL = new Set();
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); glowPanel(); status(`loaded ${name}`, "ok"); draw();
+  SIM_DIRTY = true; BAKED = null; st.look.showBake = false;
+  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); glowPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
@@ -837,7 +1010,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); glowPanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); locksPanel(); selPanel(); glowPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -849,5 +1022,18 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, SF, pullCube, traceGlow, makeFill, glowCellsAt, get SEL() { return SEL; }, set SEL(v) { SEL = v; }, glowEdit, glowPanel,
+  setMotion, bake, showBake, get PLAYING() { return PLAYING; },
+  bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
+    let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
+    BAKEG.updateMatrixWorld(true); mesh.skeleton.update();
+    const P = mesh.geometry.attributes.position, v = new THREE.Vector3(), w = new THREE.Vector3(), rest = [];
+    let bind = 0; for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i); w.copy(v); mesh.applyBoneTransform(i, w); bind = Math.max(bind, w.distanceTo(v)); rest.push(w.clone()); }
+    const root = mesh.skeleton.bones[0]; root.rotation.x += 0.3; BAKEG.updateMatrixWorld(true); mesh.skeleton.update();
+    let moveTip = 0, moveRoot = 0; const n = P.count;
+    for (let i = 0; i < n; i++) { w.fromBufferAttribute(P, i); mesh.applyBoneTransform(i, w); const d = w.distanceTo(rest[i]), k = Math.floor(i / 2) % 12; if (k === 11) moveTip = Math.max(moveTip, d); if (k === 0) moveRoot = Math.max(moveRoot, d); }
+    root.rotation.x -= 0.3; BAKEG.updateMatrixWorld(true);
+    return { name: mesh.name, bones: mesh.skeleton.bones.length, bind, moveTip, moveRoot };
+  }, get SIM() { return SIM; }, get MOTION() { return MOTION; }, stepPhysics, MESHES,
+  tipOffset: id => { const l = lockById(id); if (!SIM || !l) return 0; const Mi = HAIR.matrix.clone().invert(), v = new THREE.Vector3(); return SIM.tipOffset(l, p => v.set(...p).applyMatrix4(Mi).toArray()); },
   fillInfo: () => ({ vertices: FILLG.userData.vertices || 0, strands: FILLG.userData.strands || 0, res: FILLRES }), overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
   dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); } };

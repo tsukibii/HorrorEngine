@@ -5,7 +5,9 @@
 // tools with the mouse: a strand (root, end), a sheet (a root line dragged along the scalp, an end), a bundle; Mirror on
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
 // trace's glow (the face kept clear), a mirrored brush selection cut, the glow pushed out by a drag, the fill (off the
-// body, combed the locks' way) and its cube; a save and a reload. Ends "SALON ok".
+// body, combed the locks' way) and its cube; physics on the bundle (a shake swings it, still settles it); the bake (a
+// skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones); a save and a
+// reload. Ends "SALON ok".
 //
 //   python tools/character/serve.py                    (in another shell)
 //   node tools/character/salontest.js [shot.png]
@@ -222,6 +224,38 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (v0 !== await ev(() => window.__salon.fillInfo().vertices)) throw new Error("the mass changed its vertices");
     console.log(`       a corner of the fill's cube pulled ${(moved * 100).toFixed(1)} cm`);
     await page.keyboard.press("v");
+  });
+  await step("physics on the bundle: a shake swings its tip, its root stays on the head, it settles back to its style", async () => {
+    const id = await ev(() => window.__salon.st.locks.find(l => l.type === "bundle").id);
+    await ev(id => window.__salon.select(id), id);
+    await page.click("text=Physics (it swings)");
+    await view(Math.PI * 0.8, 0.1, 1.4);
+    await page.click("#movebox button:text-is('shake')");
+    let peak = 0; for (let k = 0; k < 8; k++) { await page.waitForTimeout(150); peak = Math.max(peak, await ev(id => window.__salon.tipOffset(id), id)); }
+    const bad = await ev(id => { const s = window.__salon, it = s.SIM.items.find(x => x.id === id), Mi = s.MESHES[id].parent.matrix.clone().invert(); let nan = 0, inside = 0, root = 0;
+      const T = p => { const e = Mi.elements; return [e[0] * p[0] + e[4] * p[1] + e[8] * p[2] + e[12], e[1] * p[0] + e[5] * p[1] + e[9] * p[2] + e[13], e[2] * p[0] + e[6] * p[1] + e[10] * p[2] + e[14]]; };
+      for (const c of it.chains) { c.x.forEach((p, i) => { if (!p.every(Number.isFinite)) nan++; else if (i && s.COL.push(T(p), -0.002)[1]) inside++; }); const r0 = T(c.x[0]); root = Math.max(root, Math.hypot(r0[0] - c.rest[0][0], r0[1] - c.rest[0][1], r0[2] - c.rest[0][2])); }
+      return { nan, inside, root }; }, id);
+    if (peak < 0.01) throw new Error(`the tip swung ${(peak * 100).toFixed(2)} cm`);
+    if (bad.nan || bad.inside || bad.root > 1e-6) throw new Error(JSON.stringify(bad));
+    await page.click("#movebox button:text-is('still')");
+    await page.waitForFunction(() => !window.__salon.PLAYING, null, { timeout: 15000 });
+    console.log(`       the tip swung up to ${(peak * 100).toFixed(1)} cm; still, it settled and the loop stopped`);
+  });
+  await step("Bake: the swinging lock its own skinned mesh, the rest one mesh with fewer vertices; the file loads back and its bones bend it", async () => {
+    await ev(n => { document.querySelector("#hairName").value = n; }, TEST);
+    await page.click("#bakebox button:text-is('Bake')");
+    await page.waitForFunction(() => /baked/.test(document.querySelector("#status").textContent), null, { timeout: 60000 });
+    const d = path.join(ROOT, "Content", "Studio", "Hair", TEST), sum = JSON.parse(fs.readFileSync(path.join(d, "salon_bake.json"), "utf-8"));
+    const glb = fs.readFileSync(path.join(d, "salon.glb"));
+    if (glb.toString("ascii", 0, 4) !== "glTF") throw new Error("salon.glb isn't a binary glTF");
+    const json = JSON.parse(glb.toString("utf-8", 20, 20 + glb.readUInt32LE(12)));
+    if (sum.physics.length !== 1 || (json.skins || []).length !== 1 || !(sum.after.vertices < sum.before.vertices)) throw new Error(JSON.stringify({ physics: sum.physics.length, skins: (json.skins || []).length, before: sum.before, after: sum.after }));
+    await page.click("text=show the bake"); await page.waitForTimeout(800);
+    const c = await ev(() => window.__salon.bakeCheck());
+    if (!c || c.bones !== 6 || c.bind > 1e-4 || c.moveTip < 0.01 || c.moveRoot > 0.1 * c.moveTip) throw new Error(JSON.stringify(c));   // the root ring sits round its bone: it turns a little
+    await page.click("text=show the bake");
+    console.log(`       ${sum.before.vertices} vertices live -> ${sum.after.vertices} baked (static ${sum.static.vertices}); ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; ${Math.round(glb.length / 1024)} KB`);
   });
   await step("saved as salon.json and loaded back the same", async () => {
     const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.glow.on.reduce((a, b) => a + b, 0), window.__salon.st.glow.filled]);

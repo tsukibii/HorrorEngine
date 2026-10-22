@@ -1,0 +1,133 @@
+{
+ "about": "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)",
+ "name": "salon_demo",
+ "physics": [
+  {
+   "lock": "sidelock",
+   "type": "sheet",
+   "chains": 3,
+   "joints": 6,
+   "bones": 18,
+   "vertices": 120,
+   "physics": {
+    "stiffness": 0.4,
+    "damping": 0.92,
+    "gravity": 1,
+    "rustle": 0,
+    "hold": 0.068
+   }
+  },
+  {
+   "lock": "sidelock (mirror)",
+   "type": "sheet",
+   "chains": 3,
+   "joints": 6,
+   "bones": 18,
+   "vertices": 120,
+   "physics": {
+    "stiffness": 0.4,
+    "damping": 0.92,
+    "gravity": 1,
+    "rustle": 0,
+    "hold": 0.068
+   }
+  },
+  {
+   "lock": "long single 1",
+   "type": "strand",
+   "chains": 1,
+   "joints": 6,
+   "bones": 6,
+   "vertices": 24,
+   "physics": {
+    "stiffness": 0.4,
+    "damping": 0.92,
+    "gravity": 1,
+    "rustle": 0,
+    "hold": 0.068
+   }
+  },
+  {
+   "lock": "long single 2",
+   "type": "strand",
+   "chains": 1,
+   "joints": 6,
+   "bones": 6,
+   "vertices": 24,
+   "physics": {
+    "stiffness": 0.4,
+    "damping": 0.92,
+    "gravity": 1,
+    "rustle": 0,
+    "hold": 0.068
+   }
+  },
+  {
+   "lock": "long single 3",
+   "type": "strand",
+   "chains": 1,
+   "joints": 6,
+   "bones": 6,
+   "vertices": 24,
+   "physics": {
+    "stiffness": 0.4,
+    "damping": 0.92,
+    "gravity": 1,
+    "rustle": 0,
+    "hold": 0.068
+   }
+  },
+  {
+   "lock": "ponytail",
+   "type": "bundle",
+   "chains": 1,
+   "joints": 6,
+   "bones": 6,
+   "vertices": 192,
+   "physics": {
+    "stiffness": 0.4,
+    "damping": 0.92,
+    "gravity": 1,
+    "rustle": 0,
+    "hold": 0.068
+   }
+  }
+ ],
+ "static": {
+  "vertices": 4663,
+  "triangles": 4080
+ },
+ "head": {
+  "C": [
+   2.2351741790771484e-8,
+   1.582696557044983,
+   0.08076827973127365
+  ],
+  "B": [
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0.9998085644897567,
+    0.019566153759283916
+   ],
+   [
+    0,
+    -0.019566153759283916,
+    0.9998085644897567
+   ]
+  ],
+  "S": 0.9695013548995635,
+  "preset": "feminine",
+  "height": 1.7
+ },
+ "before": {
+  "vertices": 34177
+ },
+ "after": {
+  "vertices": 5167
+ }
+}

@@ -251,6 +251,11 @@ runtime since they ride the guides.
 
 ## Phase 3: physics, the clothed body, the bake
 
+- [x] **Physics and the bake, first cut** (the user's ask, 2026-10-22): physics per lock (the lock's control curves as
+  chains, held to the style, swung by the head, gravity by tilt, rustle, lengths, push-out), the head's motions; Bake
+  to a glTF: each swinging lock a skinned mesh on its chains' bones, everything else (the fill too) one simplified
+  mesh. **Done 2026-10-22** (docs/SALON.md, Physics and the bake). Not yet from the items below: the clothed body,
+  OBJ ribbons, the runtime that plays the bake in the Studio.
 - [ ] **Physics per lock** (`physics.on`, off by default): the lock's one or two guides become wig.js chains of 3 to
   5 points (pinned at the root, the sheet's root line pinned along it), gravity, hold to the drawn shape, damping, from
   one `jiggle` slider (stiff, soft, floppy presets), and the push-out against the head field, the body slices and the
