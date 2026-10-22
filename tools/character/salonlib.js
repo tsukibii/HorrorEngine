@@ -21,17 +21,19 @@ export function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 |
 
 export const CTRL = 6;                 // control points per curve
 export const SAMPLES = 24;             // points per evaluated guide
+export const WARP = 1.4;               // closer near the root (where the root bends): sample k at (k / (SAMPLES - 1)) ^ WARP
+export const TS = Array.from({ length: SAMPLES }, (_, k) => Math.pow(k / (SAMPLES - 1), WARP));   // each sample's place along a guide, 0 to 1
 export const GAP = 0.0025;             // hair kept this far off the skin (m)
 export const HUG = 0.03;               // a new curve's points this close to the head lie down on it
 
 // ---- curves -----------------------------------------------------------------------------------------------------------
-// a centripetal Catmull-Rom through the points, n samples (ends included)
-export function catmull(P, n = SAMPLES) {
+// a centripetal Catmull-Rom through the points, n samples (ends included), spread evenly (warp 1) or closer at the start
+export function catmull(P, n = SAMPLES, warp = 1) {
   if (P.length < 2) return P.map(p => p.slice());
   const ext = [sub(mul(P[0], 2), P[1]), ...P, sub(mul(P[P.length - 1], 2), P[P.length - 2])];
   const segs = P.length - 1, out = [];
   for (let s = 0; s < n; s++) {
-    const g = s / (n - 1) * segs, i = Math.min(segs - 1, Math.floor(g)), u = g - i;
+    const g = Math.pow(s / (n - 1), warp) * segs, i = Math.min(segs - 1, Math.floor(g)), u = g - i;
     const p0 = ext[i], p1 = ext[i + 1], p2 = ext[i + 2], p3 = ext[i + 3];
     const t01 = Math.pow(len(sub(p1, p0)) || 1e-6, 0.5), t12 = Math.pow(len(sub(p2, p1)) || 1e-6, 0.5), t23 = Math.pow(len(sub(p3, p2)) || 1e-6, 0.5);
     // tangents (Barry and Goldman's form, scaled to the segment)
@@ -371,6 +373,32 @@ function sideways(pts, col, k) {                                     // a ribbon
   return norm(a);
 }
 
+// ---- the roots ------------------------------------------------------------------------------------------------------
+// Hair comes out of the head: a guide leaves the scalp `lift` degrees off it, the way the hair goes, and bends over into
+// the rest of the lock within `length` (a Hermite curve from the root to the guide there), each guide a little its own
+// (`vary`: its lift and its way, either side). Applied once the lock is kept off the body and laid over the hair below,
+// and to whatever pose physics or gravity gives it, so neither changes how hair comes out of the head, and a root under
+// other hair rises through it instead of standing straight up to it. setRoots() sets them for every lock.
+export const ROOTS = { lift: 40, length: 0.02, vary: 0.4 };
+export function setRoots(o) { Object.assign(ROOTS, o || {}); }
+export const seedOf = id => [...String(id || "")].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7);
+export function rootBend(pts, col, r = Math.random, R = ROOTS) {
+  const n = pts.length; if (!col || !(R.lift > 0) || !(R.length > 0) || n < 5) return pts;
+  const s = [0]; for (let k = 1; k < n; k++) s.push(s[k - 1] + len(sub(pts[k], pts[k - 1])));
+  const Lr = Math.min(R.length, 0.3 * s[n - 1]); let j = 2; while (j < n - 2 && s[j] < Lr) j++;
+  const P0 = pts[0], P1 = pts[j], n0 = col.normal(P0), T1 = norm(sub(pts[j + 1], pts[j - 1]));
+  const flat = v => sub(v, mul(n0, dot(v, n0)));
+  let f = flat(sub(P1, P0)); if (len(f) < 1e-4) f = flat(sub(pts[Math.min(n - 1, j + 3)], P0)); if (len(f) < 1e-6) f = cross(n0, [1, 0, 0]); f = norm(f);
+  const v = R.vary || 0, tw = v * 0.35 * (r() * 2 - 1), lift = R.lift * Math.PI / 180 * (1 + v * 0.5 * (r() * 2 - 1));
+  f = norm(add(mul(f, Math.cos(tw)), mul(cross(n0, f), Math.sin(tw))));
+  const e = norm(add(mul(n0, Math.sin(lift)), mul(f, Math.cos(lift)))), D = len(sub(P1, P0)) * 1.3, m0 = mul(e, D), m1 = mul(T1, D), out = pts.slice();
+  for (let k = 1; k < j; k++) {
+    const t = s[k] / s[j], t2 = t * t, t3 = t2 * t;
+    out[k] = col.push(add(add(mul(P0, 2 * t3 - 3 * t2 + 1), mul(m0, t3 - 2 * t2 + t)), add(mul(P1, -2 * t3 + 3 * t2), mul(m1, t3 - t2))), GAP)[0];
+  }
+  return out;
+}
+
 // thickness (strands and sheets): a dome over the lock, a half-ellipse across it as high as `thickness` times half its
 // width (1: round), thinning towards the tip by `thicknessTaper` (1: to nothing); its guides follow the arc from one
 // edge over the top to the other, outward from the head. Each guide carries u, where it is across the lock (0 to 1),
@@ -384,24 +412,25 @@ function thicken(lock, base, col) {
   for (let k = 0; k < n; k++) {
     const L = edge(k, -1), R = edge(k, 1), w = len(sub(R, L)), a = w > 1e-6 ? mul(sub(R, L), 1 / w) : base[0].across[k];
     let up = col ? col.normal(mix(L, R, 0.5)) : [0, 0, 1]; up = sub(up, mul(a, dot(up, a))); up = len(up) > 1e-4 ? norm(up) : norm(cross(a, [1, 0, 0]));
-    fr.push([a, up, w]); H.push(T * w / 2 * (1 - tt * k / (n - 1)));
+    fr.push([a, up, w]); H.push(T * w / 2 * (1 - tt * TS[k]));
   }
   const dome = [];
   for (let i = 0; i < m; i++) {
     const phi = Math.PI * (i + 0.5) / m, u = (1 + Math.cos(phi)) / 2, c = Math.cos(phi), sn = Math.sin(phi);
     const pts = keepOff(fr.map((_, k) => add(at(k, u), mul(fr[k][1], H[k] * sn))), col);
-    dome.push({ pts, u, across: fr.map(([a, up, w], k) => { const d = add(mul(a, -sn * w / 2), mul(up, c * H[k])); return len(d) > 1e-6 ? norm(d) : a; }),
-                width: fr.map(([, , w], k) => Math.max(0.003, Math.hypot(sn * w / 2, c * H[k]) * Math.PI / m * 1.7) * (one ? 1 : 1 - lock.taper * Math.pow(k / (n - 1), 1.5))) });
+    dome.push({ pts, u, t: TS, across: fr.map(([a, up, w], k) => { const d = add(mul(a, -sn * w / 2), mul(up, c * H[k])); return len(d) > 1e-6 ? norm(d) : a; }),
+                width: fr.map(([, , w], k) => Math.max(0.003, Math.hypot(sn * w / 2, c * H[k]) * Math.PI / m * 1.7) * (one ? 1 : 1 - lock.taper * Math.pow(TS[k], 1.5))) });
   }
   const out = [...base, ...dome]; out.thick = H;
   return out;
 }
 
 export function evaluate(lock, col, layers = null) {
-  const taperW = (w, k) => w * (1 - lock.taper * Math.pow(k / (SAMPLES - 1), 1.5));
+  const taperW = (w, k) => w * (1 - lock.taper * Math.pow(TS[k], 1.5)), rr = rng(seedOf(lock.id));
+  const lay = P => rootBend(keepOff(catmull(P, SAMPLES, WARP), col, layers), col, rr);   // a curve: sampled, kept off, its root bent
   if (lock.type === "strand") {
-    const pts = keepOff(catmull(lock.pts), col, layers);
-    return thicken(lock, [{ pts, u: 0.5, across: pts.map((_, k) => sideways(pts, col, k)), width: pts.map((_, k) => taperW(lock.width, k)) }], col);
+    const pts = lay(lock.pts);
+    return thicken(lock, [{ pts, u: 0.5, t: TS, across: pts.map((_, k) => sideways(pts, col, k)), width: pts.map((_, k) => taperW(lock.width, k)) }], col);
   }
   if (lock.type === "sheet") {
     const g = Math.max(2, lock.guides | 0), [L, M, R] = lock.edges, n = L.length, guides = [];
@@ -411,17 +440,17 @@ export function evaluate(lock, col, layers = null) {
       const d = sub(root, C[0]);
       const ctrl = C.map((c, k) => add(c, mul(d, Math.pow(1 - k / (n - 1), 2))));
       ctrl[0] = root;
-      guides.push(keepOff(catmull(ctrl), col, layers));
+      guides.push(lay(ctrl));
     }
     // the ribbons' width: the gap to the neighbours, overlapped
     return thicken(lock, guides.map((pts, j) => {
       const nb = guides[j + 1] || guides[j - 1];
-      return { pts, u: j / (g - 1), across: pts.map((p, k) => { const a = sub(nb[k], p); return len(a) > 1e-5 ? norm(j + 1 < g ? a : mul(a, -1)) : sideways(pts, col, k); }),
+      return { pts, u: j / (g - 1), t: TS, across: pts.map((p, k) => { const a = sub(nb[k], p); return len(a) > 1e-5 ? norm(j + 1 < g ? a : mul(a, -1)) : sideways(pts, col, k); }),
                width: pts.map((p, k) => taperW(Math.max(0.004, len(sub(nb[k], p)) * 1.7), k)) };
     }), col);
   }
   // bundle: guides round the spine at the radius from root to tip
-  const spine = keepOff(catmull(lock.spine), col, layers), g = Math.max(3, lock.guides | 0), out = [];
+  const spine = lay(lock.spine), g = Math.max(3, lock.guides | 0), out = [];
   const frames = []; let b1 = null;
   for (let k = 0; k < spine.length; k++) {                           // a frame along the spine, carried (parallel transport)
     const t = norm(sub(spine[Math.min(spine.length - 1, k + 1)], spine[Math.max(0, k - 1)]));
@@ -431,13 +460,13 @@ export function evaluate(lock, col, layers = null) {
     }
     b1 = norm(sub(b1, mul(t, dot(b1, t)))); frames.push([t, b1, cross(t, b1)]);
   }
-  const h = lock.height ?? 1, rad = k => lock.r0 + (lock.r1 - lock.r0) * k / (spine.length - 1);
+  const h = lock.height ?? 1, rad = k => lock.r0 + (lock.r1 - lock.r0) * TS[k];
   for (let j = 0; j < g; j++) {                                      // round an ellipse: r across, r * height the other way
     const th = j / g * 2 * Math.PI, c = Math.cos(th), s = Math.sin(th), arc = Math.hypot(s, h * c);
     const pts = spine.map((p, k) => { const r = rad(k), [, u, v] = frames[k]; return add(p, add(mul(u, c * r), mul(v, s * r * h))); });
     const kept = keepOff(pts, col, layers);
-    out.push({ pts: kept, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c * h))); }),
-               width: kept.map((_, k) => { const f = k / (spine.length - 1); return Math.max(0.003, 2 * Math.PI * rad(k) * arc / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
+    out.push({ pts: kept, t: TS, across: kept.map((_, k) => { const [, u, v] = frames[k]; return norm(add(mul(u, -s), mul(v, c * h))); }),
+               width: kept.map((_, k) => { const f = TS[k]; return Math.max(0.003, 2 * Math.PI * rad(k) * arc / g * 1.8) * (1 - lock.taper * 0.3 * f); }) });
   }
   out.thick = spine.map((_, k) => 2 * rad(k) * Math.max(h, 1e-3));    // its depth across the scalp: the layer it makes
   return out;

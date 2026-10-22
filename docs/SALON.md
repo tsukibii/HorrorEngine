@@ -81,6 +81,15 @@ Sharp, Linear, Constant: Blender's curves of d = (reach - distance) / reach, fro
 only** keeps it to the lock you pull. A twin's handles pull their original's (mirrored), so both sides move; roots
 never move. The reach starts at 8 cm (a long strand's handles are about 6 cm apart).
 
+**Roots** (2026-10-22): hair comes out of the head. Every guide leaves the scalp **Lift** degrees off it (40 to start;
+0 lies flat from the root), the way the hair goes, and bends over into the rest of the lock within **Bend** (2 cm), a
+Hermite curve from the root to the guide there; **Natural** gives each guide a little of its own lift and way. It's
+done last, once the lock is kept off the body and laid over the hair below, and on whatever pose physics or gravity
+gives it, so gravity never flattens it and a root under other hair rises through it (a parting's hair comes out of the
+head and arcs over instead of standing straight up and hooking over). The guides are sampled closer near the root (the
+k-th of 24 at (k/23)^1.4 along) so the bend shows; the texture, the taper and the bake's skin weights go by each
+sample's place along the lock. Saved as `roots` (lift, length, vary).
+
 Ends clicked on the body lie on it (a fringe resting on the brows, a lock on the chest); clicked in the air, on the
 plane through the root facing you. Shift lets a root off the scalp. Esc cancels a placing; Delete removes the selected
 lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
@@ -208,6 +217,7 @@ settings, the fit), `mirror`, `look`, `groups`, `locks`. Every point is in the h
 to another body with it. A lock: `id`, `type`, `name`, `group`, `visible`, `render`, `taper`, `color`, `mirror_of`, and
 by type `pts` and `width` (strand), `root`, `edges` and `guides` (sheet), `thickness` and `thicknessTaper` (both), `spine`, `r0`, `r1`, `height` (1 round),
 `axis` (a bundle line's width, or none) and `guides` (bundle); `cover` (a sheet the cover made: laid over all the rest).
+`roots`: how hair comes out of the head (lift in degrees, length in metres, vary), for every lock.
 
 ## Code
 
@@ -230,7 +240,8 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving
-  its original mirrored); a bundle line; thickness; the cover (the parting's Y's previewed at the top hair's length,
+  its original mirrored); a bundle line; thickness; the roots (a strand on the crown leaving
+  the scalp at its lift and bending over, flat at Lift 0, the same after gravity); the cover (the parting's Y's previewed at the top hair's length,
   made on the middle line and the skin, out to their own sides, the forks lifted onto the hair, over all of it, hardly
   sliding on top as they fall, kept exactly as shown, the rest unmoved, undone); a save and a reload.
 - `python tools/gshair.py check`: GSHAIR includes the reference: the cameras moved into the head's space reproject the

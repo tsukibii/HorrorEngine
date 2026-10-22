@@ -109,7 +109,7 @@ export function skinOf(lock, guides) {
     if (lock.type === "sheet") across = u < 0.5 ? [[0, 1 - 2 * u], [1, 2 * u]] : [[1, 2 - 2 * u], [2, 2 * u - 1]];
     else across = [[0, 1]];
     out.push(G.pts.map((_, k) => {
-      const t = k / (n - 1) * (J - 1), j = Math.min(J - 2, Math.floor(t)), f = t - j, w = [];
+      const t = (G.t ? G.t[k] : k / (n - 1)) * (J - 1), j = Math.min(J - 2, Math.floor(t)), f = t - j, w = [];   // the sample's place on the chain
       for (const [c, wc] of across) { if (wc > 1e-6) { w.push([c * J + j, wc * (1 - f)]); w.push([c * J + j + 1, wc * f]); } }
       return w.filter(x => x[1] > 1e-6).sort((a, b) => b[1] - a[1]).slice(0, 4);
     }));

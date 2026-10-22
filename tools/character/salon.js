@@ -34,7 +34,9 @@ const st = {
   layering: false,                     // layer by height: hair rooted higher lies over hair rooted lower
   locks: [],
   scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
+  roots: { lift: 40, length: 0.02, vary: 0.4 },                     // how hair comes out of the head (salonlib.js's rootBend)
 };
+SL.setRoots(st.roots);
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
 
 // ---- the scene --------------------------------------------------------------------------------------------------------
@@ -322,7 +324,7 @@ function buildLockMesh(l, i, laid = null) {
     const uv = [], tints = [], idx = [], tint = tintOf(l, i);
     guides.forEach((G, j) => {
       const base = j * G.pts.length * 2, n = G.pts.length, u0 = (j * 0.37) % 1;
-      for (let k = 0; k < n; k++) { const v = k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); tints.push(...tint, ...tint); }
+      for (let k = 0; k < n; k++) { const v = G.t ? G.t[k] : k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); tints.push(...tint, ...tint); }
       for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     });
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cardPositions(guides), 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
@@ -600,11 +602,11 @@ function movePanel() {
 
 // ---- the bake: the swinging locks each a skinned mesh on its chains' bones, everything else one simplified mesh -------
 const BAKE_ALONG = 8, BAKE_ALONG_PHYS = 12;
-const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]), u: G.u }; };
+const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]), u: G.u, t: G.t && ix.map(i => G.t[i]) }; };
 function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
   const pos = cardPositions(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
   guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
-    for (let k = 0; k < n; k++) { const v = k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); col.push(c.r, c.g, c.b, c.r, c.g, c.b); }
+    for (let k = 0; k < n; k++) { const v = G.t ? G.t[k] : k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); col.push(c.r, c.g, c.b, c.r, c.g, c.b); }
     for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
   return { pos, uv, col, idx };
 }
@@ -745,9 +747,9 @@ function lockAt(e) {
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
-const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp });
+const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp, roots: st.roots });
 function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
-function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
+function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.roots) { st.roots = o.roots; SL.setRoots(st.roots); rootsPanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
@@ -1011,6 +1013,14 @@ function mirrorPanel() {
   tick(box, "Mirror", st.mirror.on, v => { st.mirror.on = v; setTool(TOOL); }, "new locks get a twin across the seam that follows them");
   slider(box, "Seam", -4, 4, 0.1, st.mirror.seam * 100, v => { st.mirror.seam = v / 100; st.locks = SL.syncTwins(st.locks, st.mirror.seam, COL); for (const l of st.locks) if (l.mirror_of) DIRTY.add(l.id); draw(); }, "cm off the head's middle: a seam parallel to the middle for a side parting");
 }
+function rootsPanel() {
+  const box = $("#rootbox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "How hair comes out of the head, every lock: it leaves the scalp at an angle the way it goes and bends over, whatever gravity does." }));
+  const R = st.roots, set = (k, v) => { R[k] = v; SL.setRoots(R); for (const l of st.locks) DIRTY.add(l.id); draw(); };
+  slider(box, "Lift", 0, 80, 1, R.lift, v => set("lift", v), "degrees off the scalp the hair leaves it (0: it lies flat from the root)");
+  slider(box, "Bend", 0.5, 5, 0.1, +(R.length * 100).toFixed(1), v => set("length", v / 100), "cm from the root to where it has bent over into the lock");
+  slider(box, "Natural", 0, 1, 0.05, R.vary, v => set("vary", v), "how much each guide's root differs from the next (its lift and its way)");
+}
 function pullPanel() {
   const box = $("#pullbox"); if (!box) return; box.innerHTML = "";
   const t = el("div"); tick(t, "Proportional (O)", PULL.on, v => { PULL.on = v; pullPanel(); drawHandles(); draw(); }, "a pulled handle takes the handles near it along, less the farther they are (Blender's proportional editing)"); box.append(t);
@@ -1115,10 +1125,11 @@ async function load(name) {
   st.groups = o.groups?.length ? o.groups : st.groups; st.locks = o.locks || []; st.layering = !!o.layering; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
   Object.assign(st.reference, o.reference || {});
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
+  st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); coverPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
+  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); rootsPanel(); coverPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
@@ -1126,7 +1137,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); coverPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1138,7 +1149,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
+  PULL, pullPanel, rootsPanel, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;

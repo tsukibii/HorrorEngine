@@ -6,7 +6,8 @@
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
 // pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
 // reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); thickness on a strand
-// and a sheet (off by default, the dome's height, its taper); the cover (a parting of Y's over the rest, its length the
+// and a sheet (off by default, the dome's height, its taper); the roots (leaving the scalp at their lift, flat at 0,
+// gravity not flattening them); the cover (a parting of Y's over the rest, its length the
 // top hair's, falling onto it with friction, kept as shown); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
@@ -157,10 +158,13 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
       s.st.mirror.on = m; s.dirtyAll(); s.render();
       const flat = [hi, hi2].map(l => s.EVAL[l.id][0].pts);
       s.st.layering = true; s.dirtyAll(); s.render();
+      // how far each moved: anywhere (over the lower roots, which rise out of the head, it goes over them), and away from them
+      const far = p => Math.min(SL.len(SL.sub(p, lo.pts[0])), SL.len(SL.sub(p, tail.pts[0]))) > 0.03;
       const d = [hi, hi2].map((l, j) => Math.max(...s.EVAL[l.id][0].pts.map((p, k) => SL.len(SL.sub(p, flat[j][k])))));
-      s.st.layering = false; for (const l of [lo, tail, hi, hi2]) s.deleteLock(l.id); s.render(); return d; });
-    if (dev[0] > 0.012 || dev[1] > 0.002) throw new Error(`the higher strands were lifted ${dev.map(x => (x * 100).toFixed(1))} cm by the poke and the hanging strand`);
-    console.log(`       crossing: ${off.n} of the higher lock's points under the lower one without it, none with it; over a lower strand pulled out, the higher one moves ${(dev[0] * 100).toFixed(1)} cm (over its base), the one beside the hanging strand ${(dev[1] * 100).toFixed(1)}`);
+      const away = [hi, hi2].map((l, j) => Math.max(0, ...s.EVAL[l.id][0].pts.map((p, k) => far(flat[j][k]) ? SL.len(SL.sub(p, flat[j][k])) : 0)));
+      s.st.layering = false; for (const l of [lo, tail, hi, hi2]) s.deleteLock(l.id); s.render(); return [...d, ...away]; });
+    if (dev[0] > 0.015 || dev[1] > 0.015 || dev[3] > 0.003) throw new Error(`the higher strands were lifted ${dev.slice(0, 2).map(x => (x * 100).toFixed(1))} cm by the poke and the hanging strand (${dev.slice(2).map(x => (x * 1000).toFixed(1))} mm away from their roots)`);
+    console.log(`       crossing: ${off.n} of the higher lock's points under the lower one without it, none with it; over a lower strand pulled out, the higher one moves ${(dev[0] * 100).toFixed(1)} cm (over its base), the one beside the hanging strand ${(dev[1] * 100).toFixed(1)} (over its root; ${(dev[3] * 1000).toFixed(1)} mm away from it)`);
   });
   await step("a sheet: a root line dragged along the hairline, its end on the brows", async () => {
     await view(0, 0.05, 1.1);
@@ -284,7 +288,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const ring = () => ev(() => { const s = window.__salon, SL = s.SL, l = s.st.locks.find(x => x.id === s.selected); s.render(); const G = s.EVAL[l.id], c = l.spine[0];
       const e = j => SL.len(SL.sub(G[j].pts[0], c)), twin = s.st.locks.find(x => x.mirror_of === l.id);
       // the width's way: the line, squared to where the bundle leaves the root
-      const sp = SL.catmull(l.spine).map((p, i) => i ? s.COL.push(p, SL.GAP)[0] : p), t0 = SL.norm(SL.sub(sp[1], sp[0])), u = SL.norm(SL.sub(l.axis, SL.mul(t0, SL.dot(l.axis, t0))));
+      const t0 = SL.norm(SL.cross(SL.sub(G[0].pts[0], c), SL.sub(G[2].pts[0], c))), u = SL.norm(SL.sub(l.axis, SL.mul(t0, SL.dot(l.axis, t0))));   // the ring's own plane
       return { type: l.type, r0: l.r0, height: l.height, axis: l.axis, along: Math.abs(SL.dot(SL.norm(SL.sub(G[0].pts[0], c)), u)), ratio: e(2) / e(0), twinAxis: twin ? twin.axis : SL.mirrored(l, 0.01, s.COL).axis }; });
     const r = await ring(), w = Math.hypot(...B.map((x, a) => x - A[a]));
     if (r.type !== "bundle" || !r.axis || Math.abs(2 * r.r0 - w) > 1e-6 || r.along < 0.9999) throw new Error(`not the line's width: ${JSON.stringify(r)}, the line ${w}`);
@@ -306,7 +310,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
       const W = k => l.type === "strand" ? G[0].width[k] : SL.len(SL.sub(G[l.guides - 1].pts[k], G[0].pts[k]));
       const top = G.filter(g => Math.abs(g.u - 0.5) < 0.01).pop(), mid = k => l.type === "strand" ? G[0].pts[k] : SL.mix(G[(l.guides - 1) >> 1].pts[k], G[l.guides >> 1].pts[k], 0.5);
       const lift = k => SL.len(SL.sub(top.pts[k], mid(k)));
-      return { guides: G.length, base: l.type === "strand" ? 1 : l.guides, root: lift(0) / (W(0) / 2), tip: lift(n - 1) / (W(n - 1) / 2), half: lift(n >> 1) / (W(n >> 1) / 2) }; }, id);
+      return { guides: G.length, base: l.type === "strand" ? 1 : l.guides, root: lift(0) / (W(0) / 2), tip: lift(n - 1) / (W(n - 1) / 2), half: lift(n >> 1) / (W(n >> 1) / 2), at: G[0].t ? G[0].t[n >> 1] : (n >> 1) / (n - 1) }; }, id);
     const flat = await shape(ids[0]);
     const def = await ev(() => { const rows = [...document.querySelectorAll("#selbox .row")], v = l => +rows.find(x => x.querySelector("span").textContent === l).querySelector("input").value; return [v("Thickness"), v("Thickness taper")]; });
     if (flat.guides !== 1 || def[0] !== 0 || def[1] !== 1) throw new Error(`a new strand isn't flat by default: ${flat.guides} guides, Thickness ${def[0]}, taper ${def[1]}`);
@@ -315,11 +319,24 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(id => window.__salon.select(id), ids[1]); await slide("Thickness", 0.5); const sheet = await shape(ids[1]);
     await ev(id => { const s = window.__salon, l = s.st.locks.find(x => x.id === id); l.render = "strands"; s.dirtyAll(); s.render(); }, ids[1]);
     const strands = await ev(id => window.__salon.MESHES[id].children.find(o => o.userData.role === "strands").geometry.attributes.position.count, ids[1]);
-    if (round.guides !== 4 || Math.abs(round.root - 1) > 0.03 || round.tip > 0.01 || Math.abs(round.half - 0.5) > 0.06) throw new Error(`the round strand: ${JSON.stringify(round)}`);
+    if (round.guides !== 4 || Math.abs(round.root - 1) > 0.03 || round.tip > 0.01 || Math.abs(round.half - (1 - round.at)) > 0.06) throw new Error(`the round strand: ${JSON.stringify(round)}`);
     if (Math.abs(even.tip - 1) > 0.05 || Math.abs(even.half - 1) > 0.05) throw new Error(`taper 0 should keep it round to the tip: ${JSON.stringify(even)}`);
     if (sheet.guides <= sheet.base || Math.abs(sheet.root - 0.5) > 0.03 || sheet.tip > 0.01 || !strands) throw new Error(`the sheet: ${JSON.stringify(sheet)}, ${strands} strand vertices`);
     await ev(ids => { for (const id of ids) window.__salon.deleteLock(id); }, ids);
-    console.log(`       a strand: 1 card flat, 4 at 1 (the dome at the root ${(round.root * 100).toFixed(0)}% of half its width, half way ${(round.half * 100).toFixed(0)}%, the tip ${(round.tip * 100).toFixed(0)}%; taper 0: ${(even.tip * 100).toFixed(0)}% at the tip); a sheet at 0.5: ${sheet.base} -> ${sheet.guides} guides, ${(sheet.root * 100).toFixed(0)}% at the root; its strands drawn round the dome`);
+    console.log(`       a strand: 1 card flat, 4 at 1 (the dome at the root ${(round.root * 100).toFixed(0)}% of half its width, ${(round.at * 100).toFixed(0)}% along ${(round.half * 100).toFixed(0)}%, the tip ${(round.tip * 100).toFixed(0)}%; taper 0: ${(even.tip * 100).toFixed(0)}% at the tip); a sheet at 0.5: ${sheet.base} -> ${sheet.guides} guides, ${(sheet.root * 100).toFixed(0)}% at the root; its strands drawn round the dome`);
+  });
+  await step("the roots: hair leaves the scalp at its lift and bends over (Lift 0: flat from the root), and gravity doesn't flatten it", async () => {
+    const id = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
+      const l = s.addLock(SL.makeStrand(C.surface([0.01, 0.19, -0.02]), [0.02, -0.15, -0.16], C, { width: 0.01 })); s.st.mirror.on = m; s.select(null); s.render(); return l.id; });
+    const leaves = () => ev(id => { const s = window.__salon, SL = s.SL; s.render(); const P = s.EVAL[id][0].pts, n0 = s.COL.normal(P[0]);
+      return { angle: Math.max(...[1, 2, 3].map(k => Math.asin(SL.dot(SL.norm(SL.sub(P[k], P[0])), n0)) * 180 / Math.PI)), peak: Math.max(...P.slice(1, 6).map(p => s.COL.depth(p))) }; }, id);
+    const lift = v => page.$$eval("#rootbox .row", (rows, v) => { const row = rows.find(x => x.querySelector("span").textContent === "Lift"); const i = row.querySelector("input"); i.value = v; i.dispatchEvent(new Event("input")); }, v);
+    const on = await leaves(); await lift(0); const flat = await leaves(); await lift(40);
+    await page.click("#dropSwitch"); await page.waitForFunction(() => window.__salon.drop.state && window.__salon.drop.state.frames > 30, null, { timeout: 30000 });
+    await ev(() => window.__salon.drop.pause()); await page.click("#dropSwitch"); const fallen = await leaves();
+    await page.keyboard.press("Control+z"); await ev(id => window.__salon.deleteLock(id), id);
+    if (on.angle < 20 || flat.angle > on.angle - 10 || fallen.angle < 20 || on.peak > 0.012) throw new Error(`the root leaves at ${on.angle.toFixed(1)} deg (lift 0: ${flat.angle.toFixed(1)}; after gravity: ${fallen.angle.toFixed(1)}), ${(on.peak * 1000).toFixed(1)} mm high`);
+    console.log(`       lift 40: it leaves the scalp at ${on.angle.toFixed(0)} deg and bends over (${(on.peak * 1000).toFixed(1)} mm at most); lift 0: ${flat.angle.toFixed(0)} deg; after gravity: ${fallen.angle.toFixed(0)} deg`);
   });
   await step("the cover: a parting along the head's middle, each root a Y up through the hair and out to both sides over it, as long as the top hair; it falls onto the hair, rubbing, and is kept as shown", async () => {
     // a crown with a hole: four sheets rooted round it, combed out and down
@@ -356,7 +373,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const shown = await drawn(); await page.click("#dropSwitch"); const kept = await drawn();
     let off = 0, still = 0; for (const id in kept) { const a = shown[id], b = kept[id]; if (!a || a.length !== b.length) { off = Infinity; continue; } for (let i = 0; i < a.length; i++) off = Math.max(off, Math.abs(a[i] - b[i])); if (before[id]) for (let i = 0; i < b.length; i++) still = Math.max(still, Math.abs(before[id][i] - b[i])); }
     const lay = await ev(ids => { const s = window.__salon, SL = s.SL, over = new SL.Layers(s.COL); for (const l of s.st.locks.filter(l => l.visible && !l.cover).sort((a, b) => a.id < b.id ? -1 : 1)) over.add(s.EVAL[l.id]);
-      let n = 0, under = 0; for (const id of ids) for (const G of s.EVAL[id]) G.pts.forEach((p, k) => { if (!k || p[1] < s.COL.chin - 0.03) return; const d = SL.sub(p, s.COL.C), R = over.radius(d); if (R > 0) { n++; if (SL.len(d) < R + over.gap - 1e-6) under++; } });
+      let n = 0, under = 0; for (const id of ids) for (const G of s.EVAL[id]) { let arc = 0;              // past the root, which rises through the hair
+        G.pts.forEach((p, k) => { if (k) arc += SL.len(SL.sub(p, G.pts[k - 1])); if (arc < 0.03 || p[1] < s.COL.chin - 0.03) return; const d = SL.sub(p, s.COL.C), R = over.radius(d); if (R > 0) { n++; if (SL.len(d) < R + over.gap - 1e-6) under++; } }); }
       return { n, under, top: ids.map(id => s.st.locks.find(l => l.id === id).edges[1].slice(1, 5)) }; }, made.ids);
     const slid = Math.max(...lay.top.flatMap((E, j) => E.map((p, k) => Math.hypot(...p.map((x, a) => x - made.top[j][k][a])))));
     if (off > 1e-6 || still > 1e-6) throw new Error(`switched off, the cover moved ${off} m from what was shown; the other hair moved ${still} m`);
@@ -365,7 +383,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.keyboard.press("Control+z"); await page.keyboard.press("Control+z");
     if (await count() !== n0 || await ev(() => window.__salon.st.groups.some(g => g.id === "cover"))) throw new Error("two undos didn't take the cover away");
     await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.cover.settings.show = false; s.coverPanel(); s.render(); }, crown);
-    console.log(`       ${made.n} sheets on the parting (roots ${(made.roots * 1000).toFixed(1)} mm off the middle and the skin), arms ${(made.length * 100).toFixed(1)} cm (the top hair's), ${made.forksLifted} forks lifted onto the hair; over it (${lay.n} points, none under); on top it slid ${(slid * 1000).toFixed(1)} mm (friction); kept as shown, the rest unmoved; undone`);
+    console.log(`       ${made.n} sheets on the parting (roots ${(made.roots * 1000).toFixed(1)} mm off the middle and the skin), arms ${(made.length * 100).toFixed(1)} cm (the top hair's), ${made.forksLifted} forks lifted onto the hair; over it past their roots (${lay.n} points, none under); on top it slid ${(slid * 1000).toFixed(1)} mm (friction); kept as shown, the rest unmoved; undone`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

@@ -294,3 +294,10 @@ where it touches: the slide along the surface held back by friction times how fa
 position-based), so it stays where the slope is gentle and slides where it's steep. The other side of it: hair laid
 along the head with friction is already where gravity leaves it; to check that a fall happens at all, make something
 that overhangs.
+
+## A sample's number isn't its place along the lock (2026-10-22)
+
+The salon's guides were 24 samples spread evenly, and the taper, the texture, the dome's height and the bake's skin
+weights all took sample k as k/23 of the way along. Bending the roots needed samples closer near the root, and every
+one of those had to change to the sample's own place (each guide's `t`), as did a check that measured "half way" at
+sample 12. Carry the place with the samples (or resample by arc length) instead of deriving it from an index.
