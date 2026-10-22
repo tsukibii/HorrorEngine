@@ -18,7 +18,9 @@ The user's answers, newest first. They override the plan, the research and the d
   the fringe, sidelocks, tails, length, colour; handles and word sliders, no numbers; East Asian styles first.
 - **The video stays the reference, as a locked overlay:** a camera per frame in the head's space; turning the view
   snaps to the nearest frame, laid half-transparent over the head, so the reference is right from every angle; a
-  video that only reaches the side is mirrored onto the other side. **Mirror is a toggle with a seam:** the middle
+  video that only reaches the side is mirrored onto the other side. The reference's scale, position and the orbit's
+  lock to the view (front frame, direction, sweep, height) are always adjustable by hand; a green screen is optional,
+  the overlay is transparent anyway. **Mirror is a toggle with a seam:** the middle
   by default, or the user's own (moved sideways, or drawn on the scalp); hair placed on one side is twinned on the
   other until the link is broken.
 

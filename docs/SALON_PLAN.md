@@ -134,8 +134,16 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
     angle the video never reached, the frame from the mirrored angle is flipped left-right and its camera
     reflected across the head's sagittal plane. Photos are the same mechanism with three fixed cameras (front, side,
     back, the user saying which is which), flipped for the missing side.
-  - **Fit**: move, turn, scale sliders on the reference as a whole (the fit from `gshair.html`), for when the
-    landmark alignment is off or the head is a mannequin; "Glue again" re-fits.
+  - **Fit, always by hand as well** (the user's note): the automatic alignment is only a starting point. The
+    reference has handles the user drags on the overlay itself and matching sliders: **scale** and **position** of
+    the picture (the same for every frame, so one fit holds round the turn), and **the orbit's lock to the view**:
+    which frame is the front (a turn offset), the direction of the turn (clockwise or not), how many degrees the
+    video covers (the sweep) and the camera's height (above, level, below). Dragging the view turns the head; the
+    "turn offset" slider turns the video under it until the two face the same way, and from then on they stay locked.
+    "Glue again" goes back to the automatic fit. The fit is saved in `salon.json` with the reference.
+  - **No green screen needed.** The overlay is drawn half-transparent, so the frame's background simply shows through
+    faintly; the key is an option (it cleans the overlay up when the backdrop is green), not a requirement. Without a
+    face and without a key the orbit prior and the hand fit alone place the frames.
   - The visual hull (`gshair.py hull`, the keyed frames' hull from the orbit poses as a translucent mesh) stays an
     optional layer for later; the locked frames are the reference the user draws against.
 - [ ] Load and save `salon.json`; the presets list; `node tools/character/salontest.js`: loads, draws the head, the
