@@ -58,3 +58,22 @@ trained on USC-HairSalon), HAAR (CVPR 2024: text to strands; research release), 
 Sources: the list above; HairStep's repository (licence, README); Perm's repository (MIT, README); the HairNet
 reimplementation (MIT); Hair-GAN (GPL-3.0); Epic's Hair Card Generator documentation; the DiffLocks, HAAR and
 NeuralHDHair project pages and abstracts.
+
+## The Asian cuts in hair.js (2026-10-22)
+
+The procedural styles are stand-ins for a Perm blend: quick to grow, they show the silhouette in a POV medium shot.
+What each cut is, and the knob that makes it:
+
+| Style | What it is | How hair.js makes it |
+|---|---|---|
+| `hime` | Hime cut: long and straight, blunt bangs, sidelocks cut level at the chin | `bangs: true`, `sidelocks: "chin"` (front side strands stop at the chin) |
+| `seethrough` | Korean see-through bangs: a sparse, fine fringe to the brows, the forehead showing through | `bangs: "thin"` (45% of the fringe roots, half-width cards, a ragged end) |
+| `curtain` | Curtain bangs: parted in the middle, swept out, longest at the sides, to the cheekbones | `bangs: "curtain"` |
+| `layered_bob` | Layered bob (C-curl bob): chin length, shorter layers on top, thin bangs | `cut: "chin"`, `layers` |
+| `wolf` | Wolf cut: shaggy short crown, longer nape, curtain bangs, volume | `layers: 0.7`, high volume and wave |
+| `two_block` | Two-block (Korean men's): short sides and nape, a longer top falling to the brows | `under` (the lower scalp cut short) |
+| `half_up` | Half-up: the top gathered to a tie at the back, the rest down | `tails: "half"` |
+| `low_pony` | Low ponytail at the nape with curtain bangs | `tails: "pony"`, a low `tie` |
+
+The Hair tab's sliders override each style's numbers (`layers` is one of them); the Bangs switch keeps a style's own
+kind of bangs.

@@ -14,6 +14,17 @@ export const STYLES = {
   pony:  { label: "Ponytail", length: 0.3, bangs: false, tails: "pony", part: 0.4, volume: 0.006, wave: 0.1, tie: 0.6 },
   short: { label: "Short", length: 0.07, bangs: false, tails: "none", part: 0.5, volume: 0.008, wave: 0 },
   wavy:  { label: "Long, wavy", length: 0.38, bangs: false, tails: "none", part: 0.3, volume: 0.016, wave: 0.6 },
+  // the Asian cuts (docs/research/hair.md): bangs blunt (true), see-through ("thin": sparse, fine, to the brows) or
+  // curtain (parted, swept to the cheekbones); sidelocks cut at the chin; layers shorter on top; under: the sides and
+  // the nape cut short (two-block); tails "half": only the top gathered to the tie
+  hime:  { label: "Hime cut", length: 0.46, bangs: true, sidelocks: "chin", tails: "none", part: 0, volume: 0.006, wave: 0 },
+  seethrough: { label: "Long, see-through bangs", length: 0.4, bangs: "thin", tails: "none", part: 0, volume: 0.008, wave: 0.1 },
+  curtain: { label: "Long, curtain bangs", length: 0.42, bangs: "curtain", tails: "none", part: 0, volume: 0.01, wave: 0.2 },
+  layered_bob: { label: "Layered bob", length: 0.21, cut: "chin", bangs: "thin", layers: 0.45, tails: "none", part: 0, volume: 0.014, wave: 0.15 },
+  wolf:  { label: "Wolf cut", length: 0.27, bangs: "curtain", layers: 0.7, tails: "none", part: 0, volume: 0.018, wave: 0.3 },
+  two_block: { label: "Two-block (short)", length: 0.11, bangs: true, under: 0.22, tails: "none", part: 0, volume: 0.012, wave: 0.05 },
+  half_up: { label: "Half-up", length: 0.4, bangs: "thin", tails: "half", tie: 0.55, part: 0, volume: 0.008, wave: 0.1 },
+  low_pony: { label: "Low ponytail", length: 0.32, bangs: "curtain", tails: "pony", tie: 0.08, part: 0, volume: 0.006, wave: 0.05 },
 };
 export const DEFAULTS = { style: "long", cards: 900, width: 0.012, bangsAt: -0.006, hairline: 0, color: "#2a1d17", brows: true, lashes: true };
 
@@ -183,12 +194,16 @@ export function grow(pos, tris, lm, scale, opts = {}) {
   }
   const length = (opts.length ?? sty.length) * S, vol = (opts.volume ?? sty.volume) * S, wave = opts.wave ?? sty.wave;
   const part = (opts.part ?? sty.part) * 0.035 * S, bangs = opts.bangs ?? sty.bangs, tails = opts.tails ?? sty.tails;
+  const base = STYLES[o.style] || STYLES.long;             // bangs switched on keep the style's own kind
+  const bangKind = bangs === true ? (typeof base.bangs === "string" ? base.bangs : "blunt") : bangs || null;
+  const layers = opts.layers ?? sty.layers ?? 0, under = sty.under ?? 0;
   const browY = (lm(105)[1] + lm(334)[1]) / 2, chinY = lm(152)[1];
-  const bangsStop = browY - (o.bangsAt || 0) * S;
+  const bangsStop = browY - (o.bangsAt || 0) * S - (bangKind === "thin" ? 0.003 * S : 0);
+  const curtainStop = browY + (lm(4)[1] - browY) * 0.6 - (o.bangsAt || 0) * S;   // curtain bangs: down to the cheekbones
   const cutY = sty.cut === "chin" ? chinY - 0.005 * S : -Infinity;
   const tieUp = ((opts.tie ?? sty.tie) ?? 0.5) * fr.top;
   const ties = tails === "twin" ? [-1, 1].map(s => add(fr.C, add(mul(fr.X, s * 0.085 * S), add(mul(fr.U, tieUp), mul(fr.F, -0.035 * S)))))
-             : tails === "pony" ? [add(fr.C, add(mul(fr.U, tieUp), mul(fr.F, -0.1 * S)))] : [];
+             : tails === "pony" || tails === "half" ? [add(fr.C, add(mul(fr.U, tieUp), mul(fr.F, -0.1 * S)))] : [];
   const DOWN = [0, -1, 0], SEG = 0.012 * S;
   let inside = 0, points = 0, cards = 0;
   const strands = [];
@@ -207,14 +222,22 @@ export function grow(pos, tris, lm, scale, opts = {}) {
     const root = add(A, add(mul(sub(Bq, A), u), mul(sub(Cq, A), v))), n = norm(cross(sub(Bq, A), sub(Cq, A)));
     const d = sub(root, fr.C), x = dot(d, fr.X), f = dot(d, fr.F), hh = dot(d, fr.U);
     const side = Math.abs(x - part) < 0.004 * S ? (rand() < 0.5 ? -1 : 1) : Math.sign(x - part);
-    const isBang = bangs && f > 0.02 * S && Math.abs(x) < 0.055 * S && hh < hfront + 0.06 * S;
-    const tie = isBang ? null : tails === "twin" ? ties[side < 0 ? 0 : 1] : tails === "pony" ? ties[0] : null;
+    const up0 = hh / fr.top;
+    let isBang = !!bangKind && f > 0.02 * S && Math.abs(x) < (bangKind === "curtain" ? 0.06 : 0.055) * S && hh < hfront + 0.06 * S;
+    if (isBang && bangKind === "thin" && rand() > 0.45) isBang = false;      // see-through: a sparse fringe, the rest to the sides
+    const tie = isBang ? null : tails === "twin" ? ties[side < 0 ? 0 : 1] : tails === "pony" ? ties[0] : tails === "half" && up0 > 0.5 ? ties[0] : null;
     const proj = a => norm(sub(a, mul(n, dot(a, n))));
     const pts = [root];
     let dir, p = add(root, mul(n, vol * 0.5)), stop = -Infinity, L = length * (0.85 + 0.3 * rand());
-    if (isBang) {
+    L *= 1 - 0.6 * layers * Math.min(1, Math.max(0, up0));            // layers: shorter toward the crown
+    if (under && up0 < 0.45 && !isBang) L = Math.min(L, under * length * (0.8 + 0.4 * rand()));   // two-block: short sides and nape
+    if (sty.sidelocks === "chin" && !isBang && f > 0 && Math.abs(x) > 0.05 * S) stop = chinY + (rand() - 0.5) * 0.004 * S;   // hime sidelocks
+    if (isBang && bangKind === "curtain") {                          // parted in the middle, swept out to the cheekbones
+      dir = proj(add(mul(fr.F, 0.4), add(mul(fr.U, -1), mul(fr.X, side * 0.9))));
+      L = 0.3 * S; stop = curtainStop + (rand() - 0.5) * 0.008 * S + 0.01 * S - Math.abs(x) * 0.35;   // longer at the sides: framing the face
+    } else if (isBang) {
       dir = proj(add(mul(fr.F, 0.5), add(mul(fr.U, -1), mul(fr.X, side * 0.25))));
-      L = 0.25 * S; stop = bangsStop + (rand() - 0.5) * 0.006 * S;
+      L = 0.25 * S; stop = bangsStop + (rand() - 0.5) * (bangKind === "thin" ? 0.01 : 0.006) * S;
     } else if (tie) {                                            // gathered over the head to the tie, then hanging from it
       const n0 = 8;
       for (let k = 1; k <= n0; k++) {
@@ -256,7 +279,7 @@ export function grow(pos, tris, lm, scale, opts = {}) {
     });
     strands.push({ pts, pin: tie ? 10 : 1, bang: isBang, tail: !!tie, spin });   // for the wig: pinned up to the tie
     if (o.guidesOnly) { points += pts.length; cards++; continue; }
-    ribbon(G, pts, across, o.width * S * (isBang ? 0.8 : 1), 0.85 + 0.3 * rand(), tie ? 0.25 : 0.4);
+    ribbon(G, pts, across, o.width * S * (isBang ? (bangKind === "thin" ? 0.5 : 0.8) : 1), 0.85 + 0.3 * rand(), tie ? 0.25 : 0.4);
     cards++; points += pts.length;
     for (const q of pts.slice(2)) if (push(q, 0)[1]) inside++;
   }

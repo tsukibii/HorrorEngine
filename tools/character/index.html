@@ -864,7 +864,7 @@ const hairSet = {};
   const NUM = [   // [key, label, lo, hi, step, help]: a style's own numbers, overridden here
     ["length", "Length (m)", 0.03, 0.7, 0.01, "Along the strand, at MHR's 1.7 m."], ["volume", "Volume", 0, 0.04, 0.001, "How far the hair stands off the head."],
     ["wave", "Wave", 0, 1, 0.05, "Waves along the strand."], ["part", "Parting", -1, 1, 0.05, "−1 left, 0 the middle, +1 right."],
-    ["tie", "Tie height", 0, 1, 0.05, "Twin tails and ponytails: how high they're tied."]];
+    ["tie", "Tie height", 0, 1, 0.05, "Twin tails, ponytails, half-up: how high they're tied."], ["layers", "Layers", 0, 1, 0.05, "Shorter toward the crown: a layered cut, a wolf cut."]];
   const fill = () => { const sty = HAIR.STYLES[st.hair.style] || {}; for (const [k] of NUM) hairSet[k](st.hair.over[k] ?? sty[k] ?? 0); hairSet.bangs(st.hair.over.bangs ?? !!sty.bangs); };
   for (const [k, label, lo, hi, step, help] of NUM) hairSet[k] = slider(box, "hair_" + k, label, lo, hi, step, 0, help, v => { st.hair.over[k] = v; hairDirty = true; });
   const bangs = el("input", { type: "checkbox" }); box.append(el("label", { className: "tog" }, bangs, el("span", { textContent: "Bangs" })));
