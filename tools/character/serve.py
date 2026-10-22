@@ -135,8 +135,10 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("batch.json", "batch.bin"):
             f = PEOPLE / clean(parts[2]) / "hair" / parts[3]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no strands yet"})
-        if parts[:2] == ["api", "skin"] and len(parts) == 3 and clean(parts[2]):        # the photo skin texture (?mask: its coverage)
-            f = PEOPLE / clean(parts[2]) / ("skin_mask.png" if "mask" in urllib.parse.urlparse(self.path).query else "skin.png")
+        if parts[:2] == ["api", "skin"] and len(parts) == 3 and clean(parts[2]):        # the photo skin texture (?mask: its coverage;
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)           # ?paint, ?touch: the touch-up's layers)
+            f = PEOPLE / clean(parts[2]) / next((n for k, n in (("mask", "skin_mask.png"), ("paint", "skin_paint.png"), ("touch", "skin_touch.png"))
+                                                 if k in q), "skin.png")
             return self.send(200, f.read_bytes(), "image/png") if f.exists() else self.send(404, {"error": "no skin yet"})
         if parts[:2] == ["api", "picture"] and len(parts) == 4 and clean(parts[2]) and parts[3] in SLOTS:
             f = pictures(clean(parts[2])).get(parts[3])
@@ -166,6 +168,13 @@ class Handler(BaseHTTPRequestHandler):
             data = self.body()
             if data:                                                           # an empty body clears the slot
                 (d / (parts[3] + ext)).write_bytes(data)
+            return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "skin"] and len(parts) == 4 and name and parts[3] in ("paint", "touch"):   # the touch-up's layers
+            data = self.body()
+            if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+                return self.send(400, {"error": "a PNG"})
+            (PEOPLE / name).mkdir(parents=True, exist_ok=True)
+            (PEOPLE / name / f"skin_{parts[3]}.png").write_bytes(data)
             return self.send(200, {"ok": True})
         if parts[:2] == ["api", "export"] and len(parts) == 4 and name and clean(parts[3]) and \
                 Path(parts[3]).suffix in EXPORTS:

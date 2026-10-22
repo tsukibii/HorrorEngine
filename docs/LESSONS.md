@@ -179,3 +179,11 @@ Since r152 `Color.set("#hex")` turns the sRGB hex into linear itself (ColorManag
 strand hair also called `.convertSRGBToLinear()` after it, so their colours went through twice: the skin came out an
 orange tan, darker than the same tone without the shader, and the hair darker than picked. Set a uniform colour with
 `.set()` alone. Compare a shader's colour against plain `material.color` with the same hex when a look seems off.
+
+## A frame with a wig in it is never the same twice (2026-10-22)
+
+The touch-up's check compared the picture before a stroke and after its undo, byte for byte, and failed although the
+paint layer was back to empty: two shots taken one after the other with nothing changed differ by thousands of pixels,
+because the wig keeps swinging. Measure where the change is meant to be (the mouth, where no hair falls) and the layer
+itself, not the whole frame. "A changed picture" alone proves nothing for the same reason: check it changed where it
+should.

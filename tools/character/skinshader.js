@@ -69,11 +69,11 @@ const POINTS = { uNose: 4, uCheekL: 425, uCheekR: 205, uBoneL: 280, uBoneR: 50, 
   uMouthL: 291, uMouthR: 61, uLipTop: 0, uLipBot: 17, uAlaL: 358, uAlaR: 129, uEyeOutL: 263, uEyeOutR: 33, uLidCL: 386, uLidCR: 159, uLowCL: 374, uLowCR: 145 };
 
 const COMMON = `
-uniform float uProc, uScale, uHasPhoto, ${FEATURES.map(f => "uf_" + f[0]).join(", ")};
+uniform float uProc, uScale, uHasPhoto, uHasTouch, ${FEATURES.map(f => "uf_" + f[0]).join(", ")};
 uniform vec3 uTone, ${COLOURS.map(c => "uc_" + c[0]).join(", ")};
 uniform vec3 ${Object.keys(POINTS).join(", ")}, uEarL, uEarR, uFaceC, uMouthC, uRight, uUp, uFwd;
 uniform vec3 uLidUL[9], uLidUR[9], uLidLL[9], uLidLR[9];
-uniform sampler2D uPhotoMap, uPhotoMask;
+uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask;
 varying vec3 vObj; varying vec2 vSkinUv;
 float skinH, skinRough, skinCoat;
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
@@ -199,7 +199,8 @@ vec3 makeup(vec3 c, vec3 p) {
 // the material's shader, with the skin added; uniforms are shared so sliders only change numbers
 export function procedural(material) {
   const u = { uProc: { value: 0 }, uScale: { value: 1 }, uHasPhoto: { value: 0 }, uTone: { value: new THREE.Color() },
-              uPhotoMap: { value: null }, uPhotoMask: { value: null } };
+              uPhotoMap: { value: null }, uPhotoMask: { value: null },
+              uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null } };   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
@@ -215,7 +216,9 @@ if (uProc > 0.5) {
   if (uHasPhoto > 0.5) {                                             // the picture inside its mask, the procedural skin outside
     float h0 = skinH, r0 = skinRough, c0 = skinCoat;
     vec3 ph = texture2D(uPhotoMap, vSkinUv).rgb;
-    float mk = texture2D(uPhotoMask, vSkinUv).r * uf_photo;
+    float mk = texture2D(uPhotoMask, vSkinUv).r;
+    if (uHasTouch > 0.5) mk = clamp(mk + (floor(texture2D(uTouchMask, vSkinUv).r * 255.0 + 0.5) - 128.0) / 127.0, 0.0, 1.0);   // the touch-up's mask edits: grey 128 exactly none
+    mk *= uf_photo;
     vec3 detail = proceduralSkin(ph, vObj) / max(ph, vec3(0.02));     // the procedural detail as a ratio, laid on the photo
     vec3 phd = ph * mix(vec3(1.0), detail, uf_over);
     skinH = mix(h0, skinH * uf_over, mk); skinRough = r0; skinCoat = c0;
@@ -223,6 +226,7 @@ if (uProc > 0.5) {
   } else diffuseColor.rgb = skinP;
   diffuseColor.rgb = makeup(diffuseColor.rgb, vObj);
 }
+if (uHasTouch > 0.5) { vec4 tp = texture2D(uTouchPaint, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, tp.rgb, tp.a); }   // the touch-up's paint, over all
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
 if (uProc > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)

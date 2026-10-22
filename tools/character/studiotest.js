@@ -36,7 +36,9 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
   const headShot = async yaw => {
     await page.click('#views button[data-v="head"]'); await page.click(`#views button[data-yaw="${yaw}"]`);
     await page.waitForTimeout(400);
-    return page.locator("#view canvas").screenshot();
+    // the canvas's box, not its element: with the skin shader a software-rendered frame is slow, and the element shot waits for still frames
+    const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+    return page.screenshot({ clip, timeout: 120000 });
   };
   await page.goto(BASE);
 
@@ -48,6 +50,8 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!/: \w/.test(label)) throw new Error(`no label: ${label}`);
   });
   await step("a new character", async () => {
+    // a run that stopped early leaves its pictures behind (the last step clears them): clear them first
+    await page.evaluate(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" }))), NAME);
     await page.fill("#newName", NAME); await page.click("#make");
     await page.waitForFunction(n => window.__body.who === n, NAME);
   });
@@ -111,6 +115,44 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (Buffer.compare(a, b) === 0) throw new Error("the features don't change the picture");
     await page.click('#tabs button[data-tab="skin"]');
     await page.click("#procRows label.tog input");                         // back off for the rest
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("touch-up: a stroke across the lips shows, undo takes it back, saved as two pictures", async () => {
+    // the frame isn't still while the wig swings: measure the mouth (no hair over it) and the paint layer itself
+    await page.click('#tabs button[data-tab="skin"]');
+    const a = await headShot(0);
+    const mouth = await page.evaluate(() => {
+      const r = document.querySelector("#view canvas").getBoundingClientRect(), p = [61, 291, 0, 17].map(i => window.__body.onScreen(i));
+      const xs = p.map(q => q[0] - r.left), ys = p.map(q => q[1] - r.top);
+      return { x: Math.round(Math.min(...xs)), y: Math.round(Math.min(...ys)) - 2, w: Math.round(Math.max(...xs) - Math.min(...xs)), h: Math.round(Math.max(...ys) - Math.min(...ys)) + 4 };
+    });
+    const red = png => page.evaluate(async ([b64, m]) => {                 // red over green, averaged over the mouth
+      const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+      const d = g.getImageData(m.x, m.y, Math.max(1, m.w), Math.max(1, m.h)).data; let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += d[i] - d[i + 1];
+      return s / (d.length / 4);
+    }, [png.toString("base64"), mouth]);
+    const layer = () => page.evaluate(() => { const g = window.__body.TOUCH.pg.getImageData(0, 0, 2048, 2048).data; let s = 0; for (let i = 3; i < g.length; i += 4) s += g[i]; return s; });
+    const alpha0 = await layer();
+    await page.click("#touchRows label.tog input");
+    await page.evaluate(() => { const c = document.querySelector("#touchRows input[type=color]"); c.value = "#d0203a"; c.dispatchEvent(new Event("input")); });
+    const [x0, y0] = await page.evaluate(() => window.__body.onScreen(61)), [x1, y1] = await page.evaluate(() => window.__body.onScreen(291));   // the mouth's corners
+    await page.mouse.move(x0, y0); await page.mouse.down();
+    for (let i = 1; i <= 4; i++) await page.mouse.move(x0 + (x1 - x0) * i / 4, y0 + (y1 - y0) * i / 4);
+    await page.mouse.up();
+    const ra = await red(a), rb = await red(await headShot(0));
+    if (!(rb > ra + 3)) throw new Error(`the paint doesn't show on the mouth (red ${ra.toFixed(1)} -> ${rb.toFixed(1)})`);
+    await page.click("#touchUndo");
+    const rc = await red(await headShot(0));
+    if (await layer() !== alpha0 || Math.abs(rc - ra) > 1.5) throw new Error(`undo doesn't take the stroke back (red ${ra.toFixed(1)} -> ${rc.toFixed(1)})`);
+    await page.click("#touchSave");
+    await page.waitForFunction(() => document.querySelector("#touchSave").textContent === "Saved", null, { timeout: 60000 });
+    for (const k of ["paint", "touch"]) {
+      const ok = await page.evaluate(async k => (await fetch(`api/skin/${encodeURIComponent(window.__body.who)}?${k}=1`)).ok, k);
+      if (!ok) throw new Error(`skin_${k}.png wasn't saved`);
+    }
+    await page.click("#touchRows label.tog input");                        // painting off for the rest
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("clothes: pants made to this body, draped, worn", async () => {
@@ -194,7 +236,11 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
   if (shot) await page.screenshot({ path: shot });
   await step("cleared pictures take the face away", async () => {
     await page.click('#tabs button[data-tab="face"]');
-    for (let k = 0; k < 2; k++) { await page.click("#slots .slot .x"); await page.waitForTimeout(800); }
+    // the button itself: by now a software-rendered frame (wig, strands, clothes) is too slow for the pointer's wait for still frames
+    for (let n; (n = await page.$$eval("#slots .slot .x", x => x.length)) > 0;) {    // one at a time: the slots redraw after each
+      await page.$eval("#slots .slot .x", b => b.click());
+      await page.waitForFunction(n => document.querySelectorAll("#slots .slot .x").length < n, n, { timeout: 60000 });
+    }
     await page.waitForFunction(() => !window.__body.delta && window.__body.pics.length === 0, null, { timeout: 60000 });
   });
   if (errors.length) fail("page errors: " + errors.join(" | "));

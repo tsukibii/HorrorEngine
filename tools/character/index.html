@@ -93,6 +93,8 @@
       <div id="photoSkin"></div>
       <h3>Procedural skin</h3>
       <div id="procRows"></div>
+      <h3>Touch-up</h3>
+      <div id="touchRows"></div>
       <h3>Eyes</h3>
       <div id="eyeRows"></div>
     </section>
@@ -124,6 +126,7 @@ import * as HAIR from "./hair.js";
 import { Wig } from "./wig.js";
 import { StrandHair } from "./strands.js";
 import * as SKINSH from "./skinshader.js";
+import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const api = async (u, body) => {
@@ -280,7 +283,9 @@ async function loadSkin() {
   } catch (e) { SKIN = null; }
   try { const m = await loader.loadAsync(`api/skin/${encodeURIComponent(WHO)}?mask=1&v=${Date.now()}`); SKINMASK?.dispose(); SKINMASK = m; }
   catch (e) { SKINMASK = null; }
-  usePhoto.disabled = !SKIN; skinLook();
+  usePhoto.disabled = !SKIN;
+  await TOUCH.load(`api/skin/${encodeURIComponent(WHO)}?paint=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?touch=1&v=${Date.now()}`);
+  touchState(); skinLook();
 }
 // the procedural skin's controls: a toggle, every feature its own slider, two colours
 st.skin.proc = { ...SKINSH.DEFAULTS };
@@ -564,9 +569,13 @@ function place() {
 function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 addEventListener("resize", resize);
 let drag = null;
-renderer.domElement.onpointerdown = e => { drag = [e.clientX, e.clientY]; renderer.domElement.setPointerCapture(e.pointerId); };
-renderer.domElement.onpointermove = e => { if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
-renderer.domElement.onpointerup = () => { drag = null; };
+renderer.domElement.onpointerdown = e => {
+  renderer.domElement.setPointerCapture(e.pointerId);
+  if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
+  drag = [e.clientX, e.clientY];
+};
+renderer.domElement.onpointermove = e => { if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onpointerup = () => { drag = null; if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
 for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   if (b.dataset.v) orbit.focus = b.dataset.v; else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
@@ -581,6 +590,64 @@ renderer.setAnimationLoop(() => {
   place(); renderer.render(scene, camera);
 });
 resize();
+
+// ---- the touch-up: paint on the body over the photo and the procedural skin (touchup.js) ------------------------------
+const TOUCH = new TouchUp();
+SKU.uTouchPaint.value = TOUCH.paintTex; SKU.uTouchMask.value = TOUCH.maskTex;
+let PAINTING = false, STROKE = false, TOUCH_SAVED = true;
+const ray = new THREE.Raycaster();
+function touchAt(e, first) {                           // a dab where the pointer is on the body; false when it's off the body
+  const r = renderer.domElement.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), camera);
+  if (first) dgeo.computeBoundingSphere();
+  const h = touchHit(ray, mesh, dgeo.attributes.uv);
+  if (!h) return false;
+  if (first) TOUCH.begin();
+  TOUCH.dab(h.uv, TOUCH.size / 1000 * h.perMetre);
+  SKU.uHasTouch.value = 1; TOUCH_SAVED = false;
+  return true;
+}
+function touchState() {
+  SKU.uHasTouch.value = TOUCH.used ? 1 : 0;
+  $("#touchUndo").disabled = !TOUCH.undo.length;
+  $("#touchSave").textContent = TOUCH_SAVED ? "Saved" : "Save the touch-up";
+}
+{
+  const box = $("#touchRows"), on = el("input", { type: "checkbox" }), col = el("input", { type: "color", value: TOUCH.color });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Paint on the body", el("small", { textContent: "Dragging on the body paints with the brush below; Alt-drag still turns the view. Painted on MHR's UVs, so it goes with the character into Unreal." }))));
+  on.onchange = () => { PAINTING = on.checked; renderer.domElement.style.cursor = PAINTING ? "crosshair" : ""; };
+  const chips = el("div", { className: "chips" });
+  for (const [k, label, help] of BRUSHES) {
+    const b = el("button", { textContent: label, title: help }); b.dataset.brush = k;
+    b.onclick = () => {
+      TOUCH.brush = k; chips.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+      if ((k === "skin" || k === "photo") && !st.skin.proc.on) { $("#procRows label.tog input").click(); status("the procedural skin is on: it's what shows where the photo is taken away"); }
+    };
+    if (k === TOUCH.brush) b.classList.add("on");
+    chips.append(b);
+  }
+  box.append(chips, el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")));
+  col.oninput = () => { TOUCH.color = col.value; };
+  slider(box, "touchSize", "Size (mm)", 1, 40, 0.5, TOUCH.size, "The brush's radius on the body.", v => { TOUCH.size = v; });
+  slider(box, "touchStrength", "Strength", 0.05, 1, 0.01, TOUCH.strength, "How fast a stroke builds up.", v => { TOUCH.strength = v; });
+  slider(box, "touchHard", "Hardness", 0, 0.95, 0.01, TOUCH.hard, "0 a soft airbrush, near 1 a hard edge.", v => { TOUCH.hard = v; });
+  const undo = el("button", { id: "touchUndo", textContent: "Undo", title: "The last stroke (Ctrl+Z)" }), clear = el("button", { textContent: "Clear" }),
+        save = el("button", { id: "touchSave", textContent: "Saved" });
+  undo.onclick = () => { if (TOUCH.back()) { TOUCH_SAVED = false; touchState(); } };
+  clear.onclick = () => { if (!confirm("Clear all the touch-up?")) return; TOUCH.clear(); TOUCH_SAVED = false; touchState(); };
+  save.onclick = async () => {
+    if (!WHO) return status("make or pick a character first", "bad");
+    const [p, m] = await TOUCH.blobs();
+    try {
+      await api(`api/skin/${encodeURIComponent(WHO)}/paint`, p); await api(`api/skin/${encodeURIComponent(WHO)}/touch`, m);
+      TOUCH_SAVED = true; touchState(); status(`touch-up saved: People/${WHO}/skin_paint.png, skin_touch.png`, "ok");
+    } catch (e) { status(e.message, "bad"); }
+  };
+  box.append(el("div", { className: "row" }, undo, clear, save),
+    el("p", { className: "note", textContent: "Paint: lips, liner, brows, a fixed eye. Skin takes the photo away (hair or a shadow baked into the picture) for the procedural skin; Photo brings it back. Soften blurs both." }));
+  addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "z" && PAINTING) { e.preventDefault(); undo.onclick(); } });
+  touchState();
+}
 
 // ---- the eyes' controls ---------------------------------------------------------------------------------------------
 {
@@ -988,7 +1055,9 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 $("#raking").onchange = place;
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N };   // bodytest.js
+window.__body = { st, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH,
+  onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect();
+    return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();
 document.querySelector('#views button[data-v="body"]').classList.add("on");
 await open(list.length ? list[0].name : null);
