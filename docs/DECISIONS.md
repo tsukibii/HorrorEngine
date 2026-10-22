@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-22, evening (characters stay editable at every stage; one app with a top bar)
+
+- **A character stays editable at every stage, baked or not.** While a character lives in the Character Studio (and
+  after it goes to Unreal), every stage keeps what it was made from and the settings that made it: the pictures, the
+  body's weights, the face's settings, the skin's layers, the hair's source and its fit, each garment's design and how
+  it was draped. A bake (a texture, a draped garment, batched strands, an export) is only ever made from those, never
+  over them, and says what it was made from, so it can be made again after an edit and a stale one shows.
+  docs/CHARACTER_STUDIO.md §2 and §3.
+- **The Character Studio becomes one app**: no typing page addresses. A bar across the top swaps between the steps
+  and the editing stages (body, face, skin, paint, hair, clothes, motion, look, export), and the pages that live on the
+  desk today (face mesh, body shape, flesh, poses, pigment) move in as stages. docs/CHARACTER_STUDIO.md §4.
+- **Hair from a 360° video as a Gaussian splat**, glued to big invisible "clay" clumps that wiggle (no strands, no real
+  physics): being researched on its own branch first; docs/research/hair_splats.md.
+
 ## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
 
 - **Interactables are buttons** (E, or a click): no Amnesia-style dragging of doors and drawers, no sliders. A hiding
