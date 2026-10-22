@@ -284,3 +284,11 @@ touching the cheek with its other edge 5 cm out made a spike; count each point u
 The salon draws on the next animation frame, and a step that read a new lock's evaluated guides straight after the
 click passed for days, then failed once (the frame hadn't come). Every step that reads drawn state (EVAL, meshes)
 calls the page's render() first.
+
+## Hair laid along the head is already where gravity leaves it (2026-10-22)
+
+The cover's check said "it didn't fall" three times: a cover made over the crown follows the head's curve, so its
+sheets lie draped from the seam down the sides, and pinned at the top on a smooth head that's already the lowest they
+can go; only what reaches past the head's widest (or off the hair's edge) hangs and falls. To check that gravity acts,
+make something that can fall (the cover 40 cm wide, its sides round under the widest part), and expect laid hair to
+stay put.

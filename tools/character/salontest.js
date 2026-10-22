@@ -6,7 +6,8 @@
 // gives a sheet a twin across the seam that follows a pulled handle; no guide point inside the body; undo and redo; the
 // pull (Blender's proportional editing: the falloffs, the handles in reach on its lock and the next, the wheel growing the
 // reach mid-drag, O, a twin's pull); a bundle line (the line its width, the wheel's oval, Height); thickness on a strand
-// and a sheet (off by default, the dome's height, its taper); the
+// and a sheet (off by default, the dome's height, its taper); the cover (the plane, its hair over the rest, falling onto
+// it, kept as shown); the
 // darkened scalp (full on the crown, none on the face, faded at the hairline, Thickness); physics on the bundle (a shake swings it, still settles it); the bake (a
 // skinned mesh for it, one simplified mesh for the rest, a glTF that loads back and bends on its bones, the hair's look
 // in it); the look (the strand atlas, the shader on every card, a look restyling them); a save and a reload.
@@ -319,6 +320,41 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (sheet.guides <= sheet.base || Math.abs(sheet.root - 0.5) > 0.03 || sheet.tip > 0.01 || !strands) throw new Error(`the sheet: ${JSON.stringify(sheet)}, ${strands} strand vertices`);
     await ev(ids => { for (const id of ids) window.__salon.deleteLock(id); }, ids);
     console.log(`       a strand: 1 card flat, 4 at 1 (the dome at the root ${(round.root * 100).toFixed(0)}% of half its width, half way ${(round.half * 100).toFixed(0)}%, the tip ${(round.tip * 100).toFixed(0)}%; taper 0: ${(even.tip * 100).toFixed(0)}% at the tip); a sheet at 0.5: ${sheet.base} -> ${sheet.guides} guides, ${(sheet.root * 100).toFixed(0)}% at the root; its strands drawn round the dome`);
+  });
+  await step("the cover: a plane over a gap following the head and the hair, Make the hair puts two sheets from its seam over all the other hair, they fall onto it, switched off they stay", async () => {
+    const n0 = await count();
+    await view(Math.PI, 1.1, 0.9); await page.keyboard.press("c");
+    await page.mouse.click(...await scr(await surf([0, 0.2, -0.04])));
+    const slide = (label, v) => page.$$eval("#coverbox .row", (rows, [label, v]) => { const row = rows.find(x => x.querySelector("span").textContent === label); const i = row.querySelector("input"); i.value = v; i.dispatchEvent(new Event("input")); }, [label, v]);
+    await slide("Width", 12); await slide("Height", 9);
+    const plane = await ev(() => { const s = window.__salon, SL = s.SL, R = s.cover.rows(), mid = R[0].length >> 1, arc = A => A.slice(1).reduce((a, p, i) => a + SL.len(SL.sub(p, A[i])), 0);
+      const over = new SL.Layers(s.COL); for (const l of s.st.locks.filter(l => l.visible && !l.cover).sort((a, b) => a.id < b.id ? -1 : 1)) over.add(s.EVAL[l.id]);   // laid as the page lays them (layers off)
+      let inside = 0, under = 0; for (const r of R) for (const p of r) { if (s.COL.push(p, 0)[1]) inside++; if (SL.len(SL.sub(over.push(p), p)) > 1e-6) under++; }
+      return { seam: arc(R.map(r => r[mid])), across: arc(R[R.length >> 1]), inside, under }; });
+    if (Math.abs(plane.seam / 0.09 - 1) > 0.15 || Math.abs(plane.across / 0.12 - 1) > 0.15 || plane.inside || plane.under) throw new Error(`the plane: ${JSON.stringify(plane)}`);
+    const drawn = () => ev(() => { const s = window.__salon, out = {}; s.render(); for (const l of s.st.locks) { const g = s.MESHES[l.id], c = g && g.children.find(o => o.userData.role === "cards"); if (c) out[l.id] = Array.from(c.geometry.attributes.position.array); } return out; });
+    await slide("Width", 40);                                       // wide: its sides reach round under the head's widest, to fall from there
+    const before = await drawn();
+    await page.click("#coverbox button:text-is('Make the hair')");
+    const made = await ev(() => { const s = window.__salon, L = s.st.locks.filter(l => l.cover); s.drop.pause(); s.drop.show(0);
+      return { n: L.length, ids: L.map(l => l.id), group: L.every(l => l.group === "cover"), only: s.drop.state && s.drop.state.frames > 0, roots: Math.max(...L.flatMap(l => l.root.map(p => s.COL.depth(p)))), tips: L.flatMap(l => l.edges.map(E => E[E.length - 1][1])) }; });
+    if (made.n !== 2 || !made.group || !made.only || made.roots > 0.003) throw new Error(`made: ${JSON.stringify(made)}`);
+    await ev(() => window.__salon.drop.run());
+    await page.waitForFunction(() => window.__salon.drop.state && window.__salon.drop.state.frames > 60, null, { timeout: 60000 });
+    await ev(() => { const s = window.__salon; s.drop.pause(); s.drop.show(s.drop.state.frames - 1); });
+    const shown = await drawn(); await page.click("#dropSwitch"); const kept = await drawn();
+    let off = 0, still = 0; for (const id in kept) { const a = shown[id], b = kept[id]; if (!a || a.length !== b.length) { off = Infinity; continue; } for (let i = 0; i < a.length; i++) off = Math.max(off, Math.abs(a[i] - b[i])); if (before[id]) for (let i = 0; i < b.length; i++) still = Math.max(still, Math.abs(before[id][i] - b[i])); }
+    const lay = await ev(ids => { const s = window.__salon, SL = s.SL, over = new SL.Layers(s.COL); for (const l of s.st.locks.filter(l => l.visible && !l.cover).sort((a, b) => a.id < b.id ? -1 : 1)) over.add(s.EVAL[l.id]);
+      let n = 0, under = 0; for (const id of ids) for (const G of s.EVAL[id]) G.pts.forEach((p, k) => { if (!k || p[1] < s.COL.chin - 0.03) return; const d = SL.sub(p, s.COL.C), R = over.radius(d); if (R > 0) { n++; if (SL.len(d) < R + over.gap - 1e-6) under++; } });
+      return { n, under, tips: ids.flatMap(id => s.st.locks.find(l => l.id === id).edges.map(E => E[E.length - 1][1])) }; }, made.ids);
+    const fell = Math.max(...lay.tips.map((y, i) => made.tips[i] - y));
+    if (off > 1e-6 || still > 1e-6) throw new Error(`switched off, the cover moved ${off} m from what was shown; the other hair moved ${still} m`);
+    if (!lay.n || lay.under) throw new Error(`${lay.under} of ${lay.n} cover points over other hair are under it`);
+    if (fell < 0.005) throw new Error(`the cover didn't fall (${fell} m)`);
+    await page.keyboard.press("Control+z"); await page.keyboard.press("Control+z");
+    if (await count() !== n0 || await ev(() => window.__salon.st.groups.some(g => g.id === "cover"))) throw new Error("two undos didn't take the cover away");
+    await page.keyboard.press("v");
+    console.log(`       the plane ${(plane.seam * 100).toFixed(1)} cm along its seam, ${(plane.across * 100).toFixed(1)} across, on the hair; 2 sheets rooted on the seam (${(made.roots * 1000).toFixed(1)} mm off the skin), over the other hair (${lay.n} points, none under); fell ${(fell * 100).toFixed(1)} cm onto it; kept as shown, the rest unmoved; undone`);
   });
   await step("the darkened scalp: on by default in the roots' colour, full on the crown, nothing on the face, faded at the hairline; Thickness changes it", async () => {
     // the face: every vertex in front (within 28 degrees of straight ahead) below 4 cm over the ears' line

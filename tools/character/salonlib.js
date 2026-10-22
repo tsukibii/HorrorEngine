@@ -236,6 +236,38 @@ export function makeBundleLine(rootLine, tip, col, o = {}) {
   return makeBundle(col ? col.surface(mid) : mid, tip, col, Object.assign({ name: "bundle line", r0: r, r1: Math.max(0.002, r * 0.3), axis: norm(sub(b, a)) }, o));
 }
 
+// ---- the cover: the finishing helper -----------------------------------------------------------------------------------
+// A plane laid over a gap, following the head: its seam (the plane's middle, `height` long, running `t` from the centre
+// `c`) is the roots, and it reaches `width` / 2 to each side. Points go round the skull's middle by arc length (along
+// the seam, then across from it), each on the skin or, through `over(p)`, on the hair laid there.
+//   coverPlane(col, {c, t, width, height}, over, ns, nw) -> rows along the seam, each nw points across, left to right
+export function coverPlane(col, P, over = null, ns = 9, nw = 13) {
+  const n = col.normal(P.c), t = norm(sub(P.t, mul(n, dot(P.t, n)))), b = cross(n, t), R0 = len(sub(P.c, col.C)), rows = [];
+  for (let i = 0; i < ns; i++) {
+    const al = (i / (ns - 1) - 0.5) * P.height / R0, row = [];
+    for (let j = 0; j < nw; j++) {
+      const be = (j / (nw - 1) - 0.5) * P.width / R0;
+      const d = norm(add(add(mul(n, Math.cos(al) * Math.cos(be)), mul(t, Math.sin(al) * Math.cos(be))), mul(b, Math.sin(be))));
+      const q = add(col.C, mul(d, col.radius(d) + GAP));
+      row.push(over ? over(q) : q);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+// the cover's hair: two sheets rooted on the seam (on the skin), combed out over the plane to each side; `cover` lays
+// them over all the other hair
+export function makeCover(col, P, over = null, o = {}) {
+  const G = coverPlane(col, P, over, 9, 2 * CTRL - 1), ns = G.length, mid = CTRL - 1;
+  const root = G.map(row => col.surface(row[mid]));
+  const guides = clamp(Math.round(P.height / 0.008) + 1, 4, 14);
+  return [-1, 1].map(side => {
+    const edge = i => [root[i], ...Array.from({ length: CTRL - 1 }, (_, k) => G[i][mid + side * (k + 1)])];
+    return { id: newId(), type: "sheet", name: side < 0 ? "cover 1" : "cover 2", group: o.group || "g1", visible: true, cover: true,
+             root: root.map(p => p.slice()), edges: [edge(0), edge(ns >> 1), edge(ns - 1)], guides, taper: 0.3, render: "cards", density: 80, color: null, mirror_of: null };
+  });
+}
+
 // every point array of a lock (the handles and the roots), for moving, mirroring, saving
 export function handles(lock) {
   if (lock.type === "strand") return lock.pts.map((p, i) => ({ p, root: i === 0, path: ["pts", i] }));

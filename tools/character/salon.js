@@ -347,23 +347,29 @@ function poseLockMesh(l, posed, laid = null) {
     if (o.userData.role === "cards") { o.geometry.computeVertexNormals(); const T = o.geometry.attributes.aTangent; T.array.set(cardTangents(guides)); T.needsUpdate = true; }
   }
 }
+// the shown hair as it's drawn: with Layer by height on, lowest root first, each laid over the ones before; the covers
+// (the finishing helper's hair) always last, over all the rest, layers on or off. list: the shown locks (or their posed
+// copies); fixed: guides already laid for locks that haven't moved. A map id -> guides, or null when nothing's layered.
+const layOrder = list => list.slice().sort((a, b) => (!!a.cover - !!b.cover) || (st.layering ? SL.rootHeight(a) - SL.rootHeight(b) : 0) || (a.id < b.id ? -1 : 1));
+function layOut(list, fixed = null) {
+  if (!st.layering && !list.some(l => l.cover)) return null;
+  const layers = new SL.Layers(COL), out = new Map();
+  for (const l of layOrder(list)) {
+    const g = fixed && fixed.has(l.id) ? fixed.get(l.id) : SL.evaluate(l, COL, st.layering || l.cover ? layers : null);
+    layers.add(g); out.set(l.id, g);
+  }
+  return out;
+}
+const isShown = () => { const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])); return l => l.visible && vis[l.group] !== false; };
 function refreshLocks() {
   const ids = new Set(st.locks.map(l => l.id));
-  if (st.layering && DIRTY.size) for (const l of st.locks) DIRTY.add(l.id);   // a change re-lays the layers (all of them: simple, quick enough)
+  if ((st.layering || st.locks.some(l => l.cover)) && DIRTY.size) for (const l of st.locks) DIRTY.add(l.id);   // a change re-lays the layers (all of them: simple, quick enough)
   for (const id of Object.keys(MESHES)) if (!ids.has(id) || DIRTY.has(id)) { HAIR.remove(MESHES[id]); MESHES[id].traverse(disposeOf); delete MESHES[id]; delete EVAL[id]; }
-  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible]));
-  const order = st.locks.map((l, i) => [l, i]);
-  let layers = null;
-  if (st.layering && order.some(([l]) => !MESHES[l.id])) {                // lowest root first, each laid over the ones before
-    order.sort((a, b) => SL.rootHeight(a[0]) - SL.rootHeight(b[0]) || (a[0].id < b[0].id ? -1 : 1));
-    layers = new SL.Layers(COL);
-  }
-  for (const [l, i] of order) {
-    const shown = l.visible && vis[l.group] !== false;
-    if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, layers && shown ? SL.evaluate(l, COL, layers) : null); HAIR.add(MESHES[l.id]); }
-    if (layers && shown) layers.add(EVAL[l.id]);
-    MESHES[l.id].visible = shown;
-  }
+  const shown = isShown(), laid = st.locks.some(l => !MESHES[l.id]) ? layOut(st.locks.filter(shown)) : null;
+  st.locks.forEach((l, i) => {
+    if (!MESHES[l.id]) { MESHES[l.id] = buildLockMesh(l, i, laid && laid.get(l.id) || null); HAIR.add(MESHES[l.id]); }
+    MESHES[l.id].visible = shown(l);
+  });
   DIRTY.clear();
   drawHandles();
 }
@@ -463,6 +469,55 @@ function play(now) {
   }
   requestAnimationFrame(play);
 }
+// ---- the cover: the finishing helper ----------------------------------------------------------------------------------
+// A plane over a gap (the Cover tool: a click on the head), following the head and the hair on it, its seam running up
+// the view (Turn turns it). Make the hair: two sheets rooted on the seam, out to both sides over the plane, laid over
+// all the other hair (covers always lie on top), then they fall onto it (gravity on, only the cover). Not saved: a helper.
+let PLANE = null, PLANEM = null;
+function planeOf(P) {                                                  // the seam's way: the view's up on the head, turned
+  const n = COL.normal(P.c), t0 = SL.norm(SL.sub(P.up, SL.mul(n, SL.dot(P.up, n)))), b0 = SL.cross(n, t0), a = P.turn * Math.PI / 180;
+  return { c: P.c, t: SL.add(SL.mul(t0, Math.cos(a)), SL.mul(b0, Math.sin(a))), width: P.width, height: P.height };
+}
+function hairOver() {                                                  // a point lifted onto the hair shown (not covers)
+  const map = new SL.Layers(COL); for (const l of layOrder(st.locks.filter(isShown()).filter(l => !l.cover))) if (EVAL[l.id]) map.add(EVAL[l.id]);
+  return p => map.push(p);
+}
+function placePlane(c, up) { PLANE = Object.assign({ width: 0.1, height: 0.08, turn: 0 }, PLANE || {}, { c, up }); drawPlane(); coverPanel(); draw(); }
+function drawPlane() {
+  if (PLANEM) { HAIR.remove(PLANEM); PLANEM.traverse(disposeOf); PLANEM = null; }
+  if (!PLANE) return;
+  const rows = SL.coverPlane(COL, planeOf(PLANE), hairOver()), ns = rows.length, nw = rows[0].length, pos = [], idx = [];
+  rows.forEach(r => r.forEach(p => pos.push(...p)));
+  for (let i = 0; i < ns - 1; i++) for (let j = 0; j < nw - 1; j++) { const a = i * nw + j; idx.push(a, a + 1, a + nw, a + 1, a + nw + 1, a + nw); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  PLANEM = new THREE.Group();
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x7fb2ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })); m.renderOrder = 5;
+  const line = (pts, color) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color, depthTest: false })); l.renderOrder = 10; return l; };
+  const rim = [...rows[0], ...rows.map(r => r[nw - 1]), ...rows[ns - 1].slice().reverse(), ...rows.map(r => r[0]).reverse()];
+  PLANEM.add(m, line(rim, 0x9cc4ff), line(rows.map(r => r[nw >> 1]), 0x5aa65a));
+  HAIR.add(PLANEM);
+}
+function makeCoverHair() {
+  if (!PLANE) return null;
+  render(); remember();
+  if (!st.groups.find(g => g.id === "cover")) st.groups.push({ id: "cover", name: "Cover", visible: true });
+  const locks = SL.makeCover(COL, planeOf(PLANE), hairOver(), { group: "cover" });
+  st.locks.push(...locks);
+  PLANE = null; drawPlane(); SELECTED = null; locksPanel(); selPanel(); coverPanel(); render();
+  startDrop(locks.map(l => l.id));
+  return locks;
+}
+function coverPanel() {
+  const box = $("#coverbox"); if (!box) return; box.innerHTML = "";
+  box.append(el("p", { className: "note", textContent: "A plane over a gap (Cover, C: click on the head). Make the hair: hair from its seam out to both sides, over all the other hair, then it falls onto it (switch gravity off to keep it)." }));
+  if (!PLANE) { box.append(el("button", { textContent: "Place a plane", onclick: () => setTool("cover") })); return; }
+  const set = () => { drawPlane(); draw(); };
+  slider(box, "Width", 2, 40, 0.5, +(PLANE.width * 100).toFixed(1), v => { PLANE.width = v / 100; set(); }, "cm across the seam (half to each side)");
+  slider(box, "Height", 2, 40, 0.5, +(PLANE.height * 100).toFixed(1), v => { PLANE.height = v / 100; set(); }, "cm along the seam: how long the root line is");
+  slider(box, "Turn", -90, 90, 1, PLANE.turn, v => { PLANE.turn = v; set(); }, "degrees: the seam turned from the view's up");
+  box.append(el("button", { textContent: "Make the hair", onclick: makeCoverHair }), el("button", { textContent: "Remove the plane", onclick: () => { PLANE = null; drawPlane(); coverPanel(); draw(); } }));
+}
+
 // ---- gravity: all the hair falls -------------------------------------------------------------------------------------------
 // The switch drops every visible lock (physics or not): nothing holds it to its style, it falls and lies on the head and
 // shoulders or hangs. Every step is recorded; the slider goes back to any of them; switching off (or Keep this frame)
@@ -471,23 +526,27 @@ function play(now) {
 // hidden), and with Layer by height on, every frame is laid in layers as the kept hair will be.
 let DROP = null;
 const ID3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], IDP = p => p;
-function startDrop() {
+function startDrop(only = null) {                                     // only: the ids that fall (a cover); the rest stays, in their way
   if (MOTION !== "still") setMotion("still");
-  RIG.identity(); applyRig();
-  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), locks = st.locks.filter(l => l.visible && vis[l.group] !== false);
+  RIG.identity(); applyRig(); render();
+  const all = st.locks.filter(isShown()), locks = only ? all.filter(l => only.includes(l.id)) : all;
   const ids = new Set(locks.map(l => l.id)), twin = l => l.mirror_of && ids.has(l.mirror_of);
   const down = SL.norm(SR.MV(SR.T(HF.B), [0, -1, 0]));               // the world's down in the head's space
-  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), COL, { drop: true, down, strength: st.dropStrength ?? 1 }), twins: locks.filter(twin), frames: [], frame: 0, running: true };
+  let col = COL;
+  if (only) {                                                          // the hair that stays is a layer they land on
+    const map = new SL.Layers(COL); for (const l of layOrder(all.filter(l => !ids.has(l.id)))) if (EVAL[l.id]) map.add(EVAL[l.id]);
+    col = { push: (p, gap) => { const [q, m] = COL.push(p, gap), r = map.push(q); return [r, m || r !== q]; } };
+  }
+  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1 }), twins: locks.filter(twin), only, frames: [], frame: 0, running: true };
   DROP.sim.step(IDP, IDP, ID3, 0, 0); DROP.frames.push(DROP.sim.snapshot());
   dropPanel(); requestAnimationFrame(dropLoop);
 }
 function showDropFrame(i) {
   if (!DROP) return;
   DROP.frame = Math.max(0, Math.min(DROP.frames.length - 1, i)); DROP.sim.restoreFrame(DROP.frames[DROP.frame]);
-  const posed = dropPoses(), order = [...posed.values()];
-  let layers = null;
-  if (st.layering) { order.sort((a, b) => SL.rootHeight(a) - SL.rootHeight(b) || (a.id < b.id ? -1 : 1)); layers = new SL.Layers(COL); }
-  for (const p of order) { const g = SL.evaluate(p, COL, layers); if (layers) layers.add(g); poseLockMesh(lockById(p.id), p, g); }
+  const posed = dropPoses(), shown = st.locks.filter(isShown());       // laid as the kept hair will be (the still hair as it is)
+  const laid = layOut(shown.map(l => posed.get(l.id) || l), new Map(shown.filter(l => !posed.has(l.id) && EVAL[l.id]).map(l => [l.id, EVAL[l.id]])));
+  for (const [id, p] of posed) poseLockMesh(lockById(id), p, laid ? laid.get(id) : null);
   const sl = $("#dropFrame"); if (sl) { sl.max = DROP.frames.length - 1; sl.value = DROP.frame; } const o = $("#dropTime"); if (o) o.textContent = `${(DROP.frame / 30).toFixed(1)} s`;
 }
 function dropPoses() {                                                // every lock shown, where the fall has it (the sim's frame)
@@ -525,7 +584,7 @@ function keepDrop() {                                                  // the fr
 function revertDrop() { DROP = null; for (const l of st.locks) DIRTY.add(l.id); dropPanel(); draw(); }
 function dropPanel() {
   const box = $("#dropbox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
+  box.append(el("p", { className: "note", textContent: DROP && DROP.only ? "The cover is falling onto the hair. Slide back to any moment; switch off (or Keep this frame) and that's its shape." : "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
   const sw = el("button", { textContent: DROP ? "Gravity: on" : "Gravity: off", className: DROP ? "on" : "", onclick: () => DROP ? keepDrop() : startDrop() }); sw.id = "dropSwitch"; box.append(sw);
   slider(box, "Strength", 0.2, 2, 0.1, st.dropStrength ?? 1, v => { st.dropStrength = v; if (DROP) DROP.sim.strength = v, DROP.sim.items.forEach(it => { it.ph.gravity = v; }); }, "how hard gravity pulls (1: the real thing)");
   if (!DROP) return;
@@ -725,12 +784,13 @@ function deleteLock(id) {
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
-const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
+const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["cover", "Cover (C)", "c"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
   select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). The handles in the ring move with it, less the farther they are: the wheel while dragging grows (down) or shrinks (up) the ring, O turns it off. Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
   bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
+  cover: "Click where the hair has a gap: a plane lies over it, its seam (green) running up the view, the roots of its hair. The wheel sizes it; Width, Height and Turn are in Finish. Make the hair: hair from the seam out to both sides, over all the other hair, then it falls onto it.",
   bline: "Drag a line along the blue scalp: it's the bundle's width (its diameter). Let go, then click the tip. The wheel makes it an oval (its height) while you place it.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
@@ -800,6 +860,10 @@ cv.addEventListener("pointerdown", e => {
   if (!orbitOnly && (TOOL === "strand" || TOOL === "bundle")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.root = p; PLACE.stage = 1; showPreview(previewFrom(e)); draw(); return; } }
     else { const l = previewFrom(e); if (l) { resetPlace(); addLock(l); } return; }
+  }
+  if (!orbitOnly && TOOL === "cover") {
+    const p = headAt(e.clientX, e.clientY);
+    if (p) { const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion); placePlane(COL.surface(p), SR.MV(SR.T(HF.B), up.toArray())); return; }
   }
   if (!orbitOnly && (TOOL === "sheet" || TOOL === "bline")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.line = [p]; DRAG = { kind: "rootline" }; showRootLine(PLACE.line); draw(); return; } }
@@ -873,6 +937,7 @@ cv.addEventListener("wheel", e => {
     draw(); return;
   }
   if (TOOL === "fit" && SNAP) { st.reference.fit.scale *= s < 0 ? 1.02 : 1 / 1.02; recam(); fitPanelSync(); draw(); return; }
+  if (TOOL === "cover" && PLANE) { const k = s < 0 ? 1.1 : 1 / 1.1; PLANE.width = Math.min(0.4, Math.max(0.02, PLANE.width * k)); PLANE.height = Math.min(0.4, Math.max(0.02, PLANE.height * k)); drawPlane(); coverPanel(); draw(); return; }
   if (e.shiftKey && SNAP) { stepFrame(s); return; }
   if (SNAP) orbit.zoom = Math.max(0.5, Math.min(6, orbit.zoom * (s < 0 ? 1.1 : 1 / 1.1)));
   else orbit.dist = Math.max(0.25, Math.min(3, orbit.dist * (s < 0 ? 1 / 1.1 : 1.1)));
@@ -1060,7 +1125,7 @@ async function load(name) {
   $("#hairName").value = name; UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; st.look.showBake = false; st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
-  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
+  refPanel(); mirrorPanel(); locksPanel(); selPanel(); headPanel(); scalpPanel(); coverPanel(); movePanel(); bakePanel(); status(`loaded ${name}`, "ok"); draw();
 }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
 $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value).catch(e => status(e.message, "bad"));
@@ -1068,7 +1133,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 // ---- start ------------------------------------------------------------------------------------------------------------
 (async () => {
   try {
-    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
+    await loadMHR(); await buildHead(); headPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); coverPanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair();
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
     resize(); status("ready", "ok");
@@ -1080,7 +1145,8 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)) } : null,
-  PULL, pullPanel, setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
+  PULL, pullPanel, cover: { place: placePlane, make: makeCoverHair, get plane() { return PLANE; }, rows: () => PLANE && SL.coverPlane(COL, planeOf(PLANE), hairOver()) }, coverPanel,
+  setMotion, bake, showBake, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();
