@@ -60,13 +60,14 @@ vec3 proceduralSkin(vec3 base, vec3 p) {
   c *= 1.0 + g * 0.14 * uGrain * gfade;
   float ps = uPoreSize * 0.001, pfade = 1.0 - smoothstep(ps * 0.35, ps * 0.9, px);
   vec2 pc = cells(p / ps);                                           // pores
-  float pore = (1.0 - smoothstep(0.08, 0.32, pc.x)) * step(0.25, pc.y) * (0.45 + 0.55 * max(tzone, face * 0.6)) * pfade;
-  c *= 1.0 - 0.28 * uPores * pore;
+  float pore = (1.0 - smoothstep(0.05, 0.3, pc.x)) * step(0.25, pc.y) * (0.45 + 0.55 * max(tzone, face * 0.6)) * pfade;
+  c *= 1.0 - 0.1 * uPores * pore;                                    // mostly relief: only a little darker
   skinH = -pore * uPores;
   float fs = uFreckleSize * 0.001; vec2 fc = cells(p / fs + 3.1);    // freckles
   float where = mix(max(tzone, near(p, uNose, 0.05)) * face, 1.0, uSpread);
-  float spot = (1.0 - smoothstep(0.12, 0.4, fc.x + 0.25 * vnoise(p / fs * 2.0))) * step(1.0 - uFreckles * 0.85, fc.y) * where;
-  c = mix(c, uFreckleCol, clamp(spot * (0.4 + 0.6 * fc.y), 0.0, 1.0) * step(0.001, uFreckles));
+  float edge = fc.x + 0.35 * (vnoise(p / fs * 2.5) - 0.5);           // soft, uneven edges
+  float spot = (1.0 - smoothstep(0.2, 0.55, edge)) * step(1.0 - uFreckles * 0.7, fc.y) * where;
+  c = mix(c, uFreckleCol, clamp(spot * (0.25 + 0.45 * h31(floor(p / fs + 3.1))), 0.0, 1.0) * step(0.001, uFreckles));
   float fl = max(max(near(p, uCheekL, 0.03), near(p, uCheekR, 0.03)), max(near(p, uNose, 0.016) * 0.8, max(near(p, uEarL, 0.025), near(p, uEarR, 0.025))));
   c = mix(c, c * uFlushCol * 1.6, uFlush * fl * 0.5);                 // flush
   float v = 1.0 - abs(fbm(p * 38.0) * 2.0 - 1.0);                    // veins: thin ridges of the noise
