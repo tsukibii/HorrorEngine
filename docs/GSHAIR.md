@@ -42,7 +42,7 @@ stopped; each step is also its own command (`python tools/gshair.py STEP --out D
 |---|---|---|
 | `frames` | the sharpest frame in each of 90 windows of the video, saved at 1080 px with the lens's focal guess (`--focal35`, a phone's main camera is 24 to 26 mm) | `frames/` |
 | `masks` | the hair cut out: `green` a chroma key (`--hue`), the largest piece kept, the spill taken out; `hair` MediaPipe's segmenter; `keyed:DIR` PNGs with alpha from a better keyer (CorridorKey) used as the pictures too. Always the face points where a face is seen, and a Gabor bank's 2D hair orientation per pixel | `masks/*_hair.png`, `masks.json` |
-| `poses` | where the camera was in each frame, no COLMAP: with a face, PnP of its 468 points against the same points pinned on the character's head (the world is the head's); without, the essential matrix of a starting pair; then features (SIFT) chained round the head and one bundle adjustment over poses, points and the focal | `poses_sheet.jpg` (the head's points or the feature points drawn over frames), `cameras.json` report: `rms`, `sweep_deg`, `anchored` |
+| `poses` | where the camera was in each frame, no COLMAP. `--orbit` for a turntable (a rotating head on a plain backdrop, a MiniMax orbit): cameras on an even circle (`--sweep`, `--elevation`, `--distance`, `--front`), refined with the splat; otherwise with a face, PnP of its 468 points against the same points pinned on the character's head (the world is the head's); without, the essential matrix of a starting pair; then features (SIFT) chained round the head and one bundle adjustment over poses, points and the focal | `poses_sheet.jpg` (the head's points or the feature points drawn over frames), `cameras.json` report: `rms`, `sweep_deg`, `anchored` |
 | `splat` | 3DGS of the hair: ellipsoid Gaussians seeded in the hair's visual hull (the masks carve it), trained against the keyed frames with L1 + D-SSIM, an alpha loss and the orientation loss (the long Gaussians along the hair's direction); clone, split and prune as 3DGS. Every tenth frame held out | `splat_sheet.jpg` (held-out: the picture, the render, the orientation as hue), `splat.json`: `psnr_heldout`, `gaussians`, `anisotropy_mean` |
 | `clumps` | the clay: the splat fitted onto the character's head (a wig's world is free: up from the cameras, front from the first frame, scaled to the skull: a guess the page finishes), grouped into `--clumps` blobs (k-means, the vertical squashed so a lock stays one blob), each a chain of `--joints` pinned to the scalp; every Gaussian kept in its chain's frame | `splat.json` report: `clump_size`, `chain_m`; `align.json` |
 
@@ -57,6 +57,21 @@ segment's depth each frame, which is right within a clump's thickness.
 The shading on the page is the paper's: the UE4 approximation of Marschner (R, TT, TRT along each Gaussian's long axis;
 Karis 2016) plus its local scattering term, with how deep a Gaussian sits in the hair standing in for the light's
 transmittance. The splat's colours keep the capture's light: film flat, and the page's light adds the game's.
+
+## The first real capture (2026-10-22)
+
+A MiniMax orbit of a wig on a green bust (640 px, 124 frames, 5 s). What it taught:
+
+- **The key** had to go by brightness as well as hue: the bust is a paler, less saturated green than the backdrop
+  (hue 43 to 48 in OpenCV's units, saturation down to 0.17), and the black wig carries green spill (its hue is the
+  backdrop's). Green is now: the hue in range, saturation over 0.12, value over 0.4; dark pixels are hair whatever
+  their hue (`--val` lower for a light wig). The result: the wig alone, the face opening cut out.
+- **A plain green world has nothing to match features on**, and MediaPipe's face on the bust doesn't fit MHR's
+  points well enough to anchor; so `poses --orbit`: the frames on an even circle, which is what a turntable or an
+  AI orbit is. The sweep, the front frame and the elevation are told, not found; the splat's pose refinement
+  takes up the slack; the clay's fit does the scale.
+- A generated video isn't a photograph of one object: MiniMax's wig may change a little as it turns. The held-out
+  PSNR says how consistent it was.
 
 ## The check
 
