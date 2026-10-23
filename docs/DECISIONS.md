@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24 (the eyes on the model's own lids)
+
+- **The eye's cut starts on MHR's sculpted lids, not MediaPipe's points:** the landmarks mapped onto MHR sit inside its
+  lids (the opening came out about half the size of the model's). The opening is found in the mesh (the strip its
+  blink squeezes shut), and the eyelid line's sliders adjust that. Lines saved against MediaPipe's points start
+  again from zero.
+
 ## 2026-10-23, night (the eyelid line by hand)
 
 - **The eye's cut is set by hand, not guessed:** every one of the lid's 16 points has a slider (mm), both eyes mirrored

@@ -382,3 +382,10 @@ script, grep for it (`\bNAME\b`).
 - **A frame that's already open doesn't see new data:** the Hair tab saved the body every visit, but the salon's frame
   only loaded it the first time (the address hadn't changed), so later body and face edits never reached it. Tell an
   open frame to reload (`__salon.refreshBody`), and check it with a second visit after a change.
+- **Find a model's features by what its shapes do, not by landmarks mapped onto it:** MediaPipe's lid points sat
+  3 to 4 mm inside MHR's sculpted lids, and no slider range fixed that well. The triangles MHR's own blink squeezes
+  shut are exactly its eye opening (as jawDrop's stretched ones are the mouth's): their edge, walked as one loop, is
+  the lid line, and it rides every expression.
+- **A measure that adds geometry can fail where the render doesn't:** the gap test's magenta inner surfaces blocked
+  the eye's stencil where the lower lid folds in (looking down), a line no normal render shows. Check a measured fault
+  in real colours before fixing it.
