@@ -51,6 +51,15 @@ const sleeveEnd = (F, side, L) => {
   return Math.max(A.seam + 0.03 * s, L * s);
 };
 
+/** a front opening: half its width at height y (a gap down the middle, widening into a V from `from` up to the neck, `top`
+    wide each side there); value(x, y, z) is how far a point is from its edge (>= 0 on the cloth), the back untouched */
+export function opening(F, o) {
+  const s = F.s, y0 = height(F, o.from ?? "bust-0.06"), y1 = F.neckBaseY, g = (o.gap ?? 0.006) * s / 2, top = (o.top ?? 0.07) * s;
+  const half = y => (y <= y0 ? g : g + (top - g) * Math.min(1, ((y - y0) / Math.max(0.01, y1 - y0)) ** (o.curve ?? 1)));
+  const value = (x, y, z) => { const [cx, cz] = F.torsoAxis(y); return z < cz ? 1 : Math.abs(x - cx) - half(y); };
+  return { half, value, y0, y1, top };
+}
+
 /** a garment's value at a point (>= 0 on the cloth) and, for the fit, its ease and clearance */
 function cutter(F, p) {
   const s = F.s;
@@ -58,11 +67,12 @@ function cutter(F, p) {
   const ends = p.sleeve === undefined || p.sleeve === false ? null : { L: sleeveEnd(F, "L", p.sleeve), R: sleeveEnd(F, "R", p.sleeve) };
   const hem = p.hem ? torsoHem(F, p.hem.at, p.hem) : null;
   const waist = p.waist ? waistline(F, p.waist.at, p.waist) : null;
-  const legY = p.legs ? height(F, p.legs.to) : null;
+  const legY = p.legs ? height(F, p.legs.to) : null, open = p.open ? opening(F, p.open) : null;
   return (x, y, z) => {
     const a = F.arm(x, y, z);
     let v = 1;
     if (neck) v = Math.min(v, neck(x, y, z));
+    if (open && !a) v = Math.min(v, open.value(x, y, z));
     if (a) return Math.min(v, ends ? ends[a.side] - a.t : -1);
     if (hem) v = Math.min(v, hem(x, y, z));
     if (waist) v = Math.min(v, waist(x, y, z));
@@ -75,8 +85,23 @@ function cutter(F, p) {
 
 /** the body once per character: its frame and the surface to keep the cloth off */
 export function prepare(P, T, F) {
-  const surf = new Surface(P, T);
-  return { F, P, T, surf, N: surf.N };
+  const surf = new Surface(P, T), n = P.length / 3, region = new Uint8Array(n);   // each skin point's part: torso, an arm, a leg
+  for (let i = 0; i < n; i++) {
+    const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2], a = F.arm(x, y, z);
+    region[i] = a ? (a.side === "L" ? 1 : 2) : y < F.crotchY ? (x >= F.torsoAxis(F.crotchY)[0] ? 3 : 4) : 0;
+  }
+  return { F, P, T, surf, N: surf.N, region };
+}
+
+/** the points (of a crop of the skin) another part of the body comes within `reach` of: they need a proper search
+    when they're kept off the skin, not a walk from their own part */
+function contested(B, C, reach) {
+  const out = new Uint8Array(C.keep.length), R = B.region, G = B.surf.grid;
+  for (let j = 0; j < C.keep.length; j++) {
+    const own = R[C.keep[j]];
+    out[j] = G.any(C.P[j * 3], C.P[j * 3 + 1], C.P[j * 3 + 2], reach[j], q => R[q] !== own && !(own === 0 || R[q] === 0)) ? 1 : 0;
+  }
+  return out;
 }
 
 /** how far out the clothes already worn reach over each of `pts` (points on the skin, flat xyz): their outsides'
@@ -130,17 +155,18 @@ export function shell(B, p, under) {
     ease[j] += eb + (el - eb) * legW + fl * smooth(knee + 0.1 * s, legTo, y) * legW;
     if (p.legs) ease[j] += (e.crotch ?? 0.014) * s * Math.exp(-((dc / (0.08 * s)) ** 2));
   }
-  const Q = relax(C.P, C.T, N, ease, { iters: p.tension ?? 16, weight: W, colliders: [{ surf: B.surf }] });
+  const near = contested(B, C, Array.from(ease, e => 2 * e + 0.02 * s));
+  const H = {}, Q = relax(C.P, C.T, N, ease, { iters: p.tension ?? 16, weight: W, colliders: [{ surf: B.surf }], hints: C.keep, hintsOut: H, contested: near });
   // four times the triangles, the new points between their parents, settled a few rounds at that size
   const fine = subdivide(Q, C.T), m = fine.P.length / 3, n = Q.length / 3;
-  const ease2 = new Float32Array(m), W2 = new Float32Array(m); ease2.set(ease); W2.set(W);
-  for (let k = 0; k < m - n; k++) { const a = fine.parents[2 * k], b = fine.parents[2 * k + 1]; ease2[n + k] = (ease[a] + ease[b]) / 2; W2[n + k] = (W[a] + W[b]) / 2; }
-  const Qf = relax(fine.P, fine.T, new Float32Array(fine.P.length), ease2, { iters: 4, weight: W2, clear: ease2, colliders: [{ surf: B.surf }] });
+  const ease2 = new Float32Array(m), W2 = new Float32Array(m), hint2 = new Int32Array(m), near2 = new Uint8Array(m); ease2.set(ease); W2.set(W); hint2.set(H.hints); near2.set(near);
+  for (let k = 0; k < m - n; k++) { const a = fine.parents[2 * k], b = fine.parents[2 * k + 1]; ease2[n + k] = (ease[a] + ease[b]) / 2; W2[n + k] = (W[a] + W[b]) / 2; hint2[n + k] = H.hints[a]; near2[n + k] = near[a] | near[b]; }
+  const Qf = relax(fine.P, fine.T, new Float32Array(fine.P.length), ease2, { iters: 4, weight: W2, clear: ease2, colliders: [{ surf: B.surf }], hints: hint2, contested: near2 });
   const v = new Float32Array(m);
   for (let j = 0; j < m; j++) v[j] = V(Qf[j * 3], Qf[j * 3 + 1], Qf[j * 3 + 2]);
   const c = cut(Qf, fine.T, v);
   const ends = p.sleeve === undefined || p.sleeve === false ? null : { L: sleeveEnd(F, "L", p.sleeve), R: sleeveEnd(F, "R", p.sleeve) };
-  return { outer: { P: c.P, T: c.T }, V, neck: p.neck === false ? null : neckline(F, { ease: p.ease?.body, ...(p.neck || {}) }), ends,
+  return { outer: { P: c.P, T: c.T }, V, neck: p.neck === false ? null : neckline(F, { ease: p.ease?.body, ...(p.neck || {}) }), ends, open: p.open ? opening(F, p.open) : null,
            legY: p.legs ? height(F, p.legs.to) : null, waist: p.waist ? waistline(F, p.waist.at, p.waist) : null };
 }
 
@@ -245,10 +271,27 @@ export function detail(F, G, d) {
         value: (x, y, z) => {
           const fr = front(z, F.neck.cz, 0.03 * s), u = N(x, y, z), side = Math.abs(x - F.neck.cx);
           const wid = w + tips * fr * smooth(0.06 * s, 0.0, side);
+          if (d.front === false) return Math.min(u, wid - u, F.neck.cz + 0.01 * s - z);   // round the back only: lapels take the front
           return Math.min(u, wid - u, side - gap * s * fr + (1 - fr) * 1);
         },
         lift: val => (d.lift ?? 0.003) * s + (d.roll ?? 0.006) * s * smooth(w * 0.6, 0, val),
       };
+    }
+    case "lapel": {                                                  // a jacket's lapels: along the opening's V, widest at the neck, nothing at the top button
+      const O = G.open; if (!O) return null;
+      const wTop = (d.width ?? 0.075) * s;
+      return {
+        value: (x, y, z) => {
+          if (y < O.y0) return -1;
+          const u = O.value(x, y, z), w = wTop * Math.min(1, ((y - O.y0) / Math.max(0.01, O.y1 - O.y0)) ** (d.curve ?? 0.8));
+          return Math.min(u + 0.002 * s, w - u, G.V ? G.V(x, y, z) + 0.004 * s : 1);
+        },
+        lift: val => (d.lift ?? 0.004) * s + (d.roll ?? 0.004) * s * smooth(wTop * 0.5, 0, val),
+      };
+    }
+    case "edgeband": {                                               // a band all down the opening's edges (a cardigan's, a zip's tape)
+      const O = G.open; if (!O) return null;
+      return { value: (x, y, z) => { const u = O.value(x, y, z); return z < F.torsoAxis(y)[1] ? -1 : Math.min(u + 0.002 * s, w - u); }, lift: (d.lift ?? 0.0015) * s };
     }
     case "placket": {                                                // a button band down the front, from the neck to the hem
       const top = d.from ? height(F, d.from) : 9, bot = d.to ? height(F, d.to) : -9;
@@ -358,6 +401,10 @@ export function handles(F, G, p) {
     const N = F.neck;
     add({ key: "neck", label: "Neckline depth", path: ["neck", "depth"], kind: "number", value: p.neck.depth ?? 0.012, axis: [0, -1, 0], rate: s },
       best((x, y, z) => Math.abs(x - N.cx) < 0.012 * s && z > N.cz && y < N.y + 0.03 * s && y > F.armpitY, (x, y) => y));
+  }
+  if (p.open && G.open) {
+    const [a, v] = parseHeight(p.open.from ?? "bust-0.06"), y = G.open.y0;
+    add({ key: "open", label: "Opening's V", path: ["open", "from"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s }, frontAt(y, F.torsoAxis(y)[0] + G.open.half(y) + 0.004 * s));
   }
   if (p.hem) {
     const [a, v] = parseHeight(p.hem.at), y = height(F, p.hem.at);

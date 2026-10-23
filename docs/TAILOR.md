@@ -17,7 +17,7 @@ simulated. It replaces the GarmentCode route, which was removed.
 | Relax | `tension` rounds of smoothing along the cloth's normals only, each followed by a push back out to its ease from the body: a stretched membrane that lies on what bulges and bridges what dips (under the bust, the waist, the spine, the small of the back). More rounds hang it looser. It's held back at the armpits and between the legs so it doesn't web them | `tailor/fit.js` `relax` |
 | Refine | split in four (about 5 mm triangles), settled four more rounds at that size, then cut along the lines: the cut edges are interpolated, so every hem and neckline is one clean curve | `shell`, `mesh.js` `cut` |
 | Skirts | rings hung from the waist instead: at every height the convex outline of the body (both legs, and what's worn under it) plus the ease, never narrowing below the hips (`flare` widens it; `taper` makes a pencil skirt), knife or box `pleats` stitched down to the hip, or `waves` | `skirt` |
-| Details | parts of the garment's outside lifted a few millimetres off it: `neckband`, `collar` (rolled at the neck, points at the front), `placket` (a button band, or a fly with `x`), `band` (on the waistline: a waistband, a belt; or between two heights: a hem band), `cuff` (sleeves or trouser legs), `pocket` (a rounded rectangle seen from the front, the back or the side: patch pockets, flaps, cargo pockets); `buttons` are discs down a line (one big one is a buckle) | `detail`, `buttons` |
+| Details | parts of the garment's outside lifted a few millimetres off it: `neckband`, `collar` (rolled at the neck, points at the front), `placket` (a button band, or a fly with `x`), `band` (on the waistline: a waistband, a belt; or between two heights: a hem band), `cuff` (sleeves or trouser legs), `pocket` (a rounded rectangle seen from the front, the back or the side: patch pockets, flaps, cargo pockets), `lapel` (along a jacket's V, widest at the neck, rolled), `edgeband` (down an opening's edges: a cardigan's rib, a jacket's front band); a `collar` with `front: false` goes round the back only, for lapels; `buttons` are discs down a line (one big one is a buckle) | `detail`, `buttons` |
 | Thickness | an inner surface and a crisp rim round every open edge; the rim and the outside's last row of points are shaded darker (`S`), so hems, pockets and collars read as stitched edges with a shadow | `fit.js` `thicken` |
 | Fabric coordinates | every point gets (u, v) in metres, laid the way a sewn garment's panels lie: the torso a front and a back panel (u the arc length across each row's own outline from the middle, over the shoulders a yoke by x; side seams), a sleeve round the arm's line (the seam underneath), a trouser leg round its own line from the waist down (the seam at the back, a stocking's), a skirt a front and a back panel spreading to the hem; every ring's own radius, so a tile is its real size all round. The mesh is split exactly along each seam first, so seams are clean lines; normals come from the joined mesh, so the light doesn't break there. `sheet.mjs --uv` shows them as a 5 cm checker | `tailor/uv.js`, `frame.js` `torsoArcs` |
 
@@ -26,8 +26,10 @@ body (how far out the earlier garments reach at each point of the skin), and the
 Nothing is pushed off another garment's open mesh: that tore at hems and pockets. **Bottoms first** and the top hangs
 over them; **a top first** and it's tucked in.
 
-A garment is 25k to 145k triangles (the check prints them all). Cutting one on a body takes about 0.5 to 3 s; the
-Studio does it in a worker.
+A garment is 25k to 165k triangles (the check prints them all). Cutting one on a body takes about 0.5 to 3.5 s; the
+Studio does it in a worker. Keeping the cloth off the skin walks the skin's mesh from the point each bit of cloth
+came from (a few steps, not a search), except where another part of the body is near (between the thighs, at the
+armpits), where it searches properly every round.
 
 ## 1b. Fabrics, patterns, prints
 
@@ -62,6 +64,7 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
 | `legs` | `{to}`: where the trouser legs end |
+| `open` | `{from, gap, top, curve}`: a jacket's front opening, a `gap` down the middle (a closed front's edge when it's a couple of millimetres) widening into a V from `from` to `top` each side at the neck |
 | `ease` | `{body, sleeve, leg, flare, crotch}` in metres off the skin |
 | `tension` | rounds of relaxing: 18 clings, 48 hangs like a work shirt |
 | skirt | `waist.at`, `length`, `ease`, `flare` (m per m), `taper`, `pleats: {n, depth, stitched, box}`, `waves: {n, depth}` |
@@ -72,7 +75,9 @@ tucked into work trousers with a waistband, a belt and buckle, a fly, cargo and 
 sleeves, a **coverall**, a **t-shirt** with pants, shorts or an A-line skirt, and a long-sleeved top with a pleated
 skirt; a pencil skirt is a design of its own. Legwear: **tights** (black pantyhose), **fishnet tights**,
 **stockings** (thigh-high, a lace top) and **leggings**, worn first; a school uniform with a plaid pleated skirt, and
-outfits that show a print and a stripe.
+outfits that show a print and a stripe. Jackets: a **blazer** (wool, lapels, two buttons, flap pockets, a breast pocket),
+a **work jacket** (canvas, a collar, flapped chest pockets, a front band, a hem band) and a **cardigan** (knit, a deep
+V, rib edge bands, cuffs and hem); worn last, over a shirt.
 
 ## 3. Where it runs
 

@@ -25,14 +25,16 @@ export function crop(P, T, v, margin) {
 export function relax(P, T, N, ease, opts = {}) {
   const n = P.length / 3, Q = new Float32Array(P.length), adj = adjacency(n, T);
   const iters = opts.iters ?? 16, lam = opts.lambda ?? 0.5, cols = opts.colliders || [], W = opts.weight;
-  const clear = opts.clear || ease;
+  const clear = opts.clear || ease, hints = opts.hints ? Int32Array.from(opts.hints) : null;   // the skin's vertex each point came from
   for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) Q[i * 3 + k] = P[i * 3 + k] + N[i * 3 + k] * ease[i];
   const hit = {};
-  const push = () => {
-    for (const c of cols) {
-      for (let i = 0; i < n; i++) {
+  const push = (exact = false) => {
+    for (const [ci, c] of cols.entries()) {
+      const walk = hints && ci === 0 && !exact;                      // the body: walk from where the point was last (a full search at the end,
+      for (let i = 0; i < n; i++) {                                  // and always where another part of the body is near: the other leg, an arm)
         const need = c.clear === undefined ? clear[i] : c.clear;
-        const r = c.surf.closest(Q[i * 3], Q[i * 3 + 1], Q[i * 3 + 2], need + 0.04, hit);
+        const r = c.surf.closest(Q[i * 3], Q[i * 3 + 1], Q[i * 3 + 2], need + 0.04, hit, walk && !(opts.contested && opts.contested[i]) ? hints[i] : -1);
+        if (r && walk) hints[i] = r.v;
         if (!r || r.d >= need) continue;
         const m = need - r.d;
         Q[i * 3] += r.nx * m; Q[i * 3 + 1] += r.ny * m; Q[i * 3 + 2] += r.nz * m;
@@ -53,8 +55,10 @@ export function relax(P, T, N, ease, opts = {}) {
       D[i * 3] = G[i * 3] * d; D[i * 3 + 1] = G[i * 3 + 1] * d; D[i * 3 + 2] = G[i * 3 + 2] * d;
     }
     for (let i = 0; i < Q.length; i++) Q[i] += D[i];
-    push();
+    push(it === iters - 1);                                          // the last round searches properly: a walk can stop at the wrong leg
   }
+  if (!iters) push(true);
+  if (opts.hintsOut) opts.hintsOut.hints = hints;
   return Q;
 }
 

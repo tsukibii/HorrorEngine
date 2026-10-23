@@ -470,7 +470,7 @@ const OPEN = new Set();                                // which of the worn list
 const keepOpen = (box, key) => { box.open = OPEN.has(key); box.ontoggle = () => { if (box.open) OPEN.add(key); else OPEN.delete(key); }; return box; };
 const GH = new THREE.Group(); GH.name = "garment handles"; GH.userData.on = true;
 let GDRAG = null, shapeTimer = 0;
-const HUE = { hem: 0xffd166, waist: 0xffd166, neck: 0x7ee08a, sleeve: 0x5ec8ff, legs: 0x5ec8ff, length: 0xffd166, flare: 0xff7a8a };
+const HUE = { hem: 0xffd166, waist: 0xffd166, neck: 0x7ee08a, open: 0x7ee08a, sleeve: 0x5ec8ff, legs: 0x5ec8ff, length: 0xffd166, flare: 0xff7a8a };
 const pieceOf = c => { const D = DESIGNS[c.design]; if (!D) return {}; const m = (a, b) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b || {})) o[k] = v && typeof v === "object" && !Array.isArray(v) && typeof o[k] === "object" ? m(o[k], v) : v; return o; }; return m(D.piece, c.edit); };
 function setEdit(c, h, v) {                            // a handle's new value into the garment's own edits (kept with the character)
   c.edit = c.edit || {};

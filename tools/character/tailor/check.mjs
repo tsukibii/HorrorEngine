@@ -14,7 +14,7 @@ import { height } from "./frame.js";
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const { designs } = JSON.parse(readFileSync(join(CLOTHES, "designs.json")));
 const { outfits } = JSON.parse(readFileSync(join(CLOTHES, "outfits.json")));
-const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons"]), SLOTS = new Set(["top", "bottom", "full", "legs", "feet"]);
+const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons", "lapel", "edgeband"]), SLOTS = new Set(["top", "bottom", "full", "legs", "feet", "jacket"]);
 
 for (const [name, d] of Object.entries(designs)) {
   if (!d.label) errs.push(`${name}: no label`);

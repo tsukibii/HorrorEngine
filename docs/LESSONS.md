@@ -372,3 +372,12 @@ The same look comes from relaxing longer: smoothing along the normals with a pus
 and with enough rounds it spans from the bust to the belly by itself. Rounds are cheap on the coarse body (four times
 fewer points, each round reaching twice as far), so relax there and split the triangles after.
 
+## A walk finds its own leg (2026-10-23)
+
+The tailor's push off the skin was slow for loose garments (a jacket 5 cm out: every nearest-point search grew to that
+radius, 12 s a blazer). Walking the skin's mesh from where each bit of cloth came from made it 15 times faster, but a
+walk stops at a local nearest: between the thighs the trousers found their own leg while the other was closer, and
+1% of the shorts went under the skin. One proper search at the end didn't fix it (pushed off one leg, the cloth landed
+in the other's clearance). What did: find up front the points another part of the body comes near and search properly
+for those every round; walk the rest. Run TAILOR on all five bodies before calling a speed-up done.
+

@@ -78,6 +78,18 @@ export class PointGrid {
     ids.forEach((i, j) => { items[fill[cid[j]]++] = i; });
     this.start = start; this.items = items;
   }
+  /** is any point within r of (x, y, z) one that ok(index) accepts? */
+  any(x, y, z, r, ok) {
+    const c = this.cell, R = Math.ceil(r / c), ix = Math.floor((x - this.lo[0]) / c), iy = Math.floor((y - this.lo[1]) / c), iz = Math.floor((z - this.lo[2]) / c), P = this.P, r2 = r * r;
+    for (let k = Math.max(0, iz - R); k <= Math.min(this.nz - 1, iz + R); k++) for (let j = Math.max(0, iy - R); j <= Math.min(this.ny - 1, iy + R); j++) {
+      const row = (k * this.ny + j) * this.nx;
+      for (let i = Math.max(0, ix - R); i <= Math.min(this.nx - 1, ix + R); i++)
+        for (let q = this.start[row + i], e = this.start[row + i + 1]; q < e; q++) {
+          const p = this.items[q]; if ((P[p * 3] - x) ** 2 + (P[p * 3 + 1] - y) ** 2 + (P[p * 3 + 2] - z) ** 2 < r2 && ok(p)) return true;
+        }
+    }
+    return false;
+  }
   cellOf(x, y, z) {
     const c = this.cell, ix = Math.floor((x - this.lo[0]) / c), iy = Math.floor((y - this.lo[1]) / c), iz = Math.floor((z - this.lo[2]) / c);
     return (iz * this.ny + iy) * this.nx + ix;
@@ -136,9 +148,20 @@ export class Surface {
     this.vt = vertexTris(n, T);
     this._a = [0, 0, 0]; this._b = [0, 0, 0]; this._c = [0, 0, 0]; this._o = [0, 0, 0, 0, 0];
   }
-  /** {d, x, y, z, nx, ny, nz} or null when nothing is within `reach` */
-  closest(x, y, z, reach = 0.08, out = {}) {
-    const v = this.grid.nearest(x, y, z, reach); if (v < 0) return null;
+  /** the nearest vertex by walking the mesh from `hint` (a vertex near the last answer): a few steps, not a search */
+  walk(x, y, z, hint) {
+    const P = this.P, A = this.adj || (this.adj = adjacency(P.length / 3, this.T));
+    let v = hint, d = (P[v * 3] - x) ** 2 + (P[v * 3 + 1] - y) ** 2 + (P[v * 3 + 2] - z) ** 2;
+    for (let step = 0; step < 200; step++) {
+      let best = -1, bd = d;
+      for (let q = A.start[v]; q < A.start[v + 1]; q++) { const n = A.list[q], dn = (P[n * 3] - x) ** 2 + (P[n * 3 + 1] - y) ** 2 + (P[n * 3 + 2] - z) ** 2; if (dn < bd) { bd = dn; best = n; } }
+      if (best < 0) break; v = best; d = bd;
+    }
+    return v;
+  }
+  /** {d, x, y, z, nx, ny, nz, v} or null when nothing is within `reach`; from a `hint` vertex it walks instead of searching */
+  closest(x, y, z, reach = 0.08, out = {}, hint = -1) {
+    const v = hint >= 0 ? this.walk(x, y, z, hint) : this.grid.nearest(x, y, z, reach); if (v < 0) return null;
     const P = this.P, T = this.T, N = this.N, p = [x, y, z], a = this._a, b = this._b, c = this._c, o = this._o;
     let bd = 1e9, bt = -1, bo = null;
     for (let q = this.vt.start[v]; q < this.vt.start[v + 1]; q++) {
@@ -153,7 +176,7 @@ export class Surface {
     let nx = N[i] * s + N[j] * u + N[k] * w, ny = N[i + 1] * s + N[j + 1] * u + N[k + 1] * w, nz = N[i + 2] * s + N[j + 2] * u + N[k + 2] * w;
     const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
     const dist = Math.sqrt(bd), side = (x - bo[0]) * nx + (y - bo[1]) * ny + (z - bo[2]) * nz;
-    out.d = side >= 0 ? dist : -dist; out.x = bo[0]; out.y = bo[1]; out.z = bo[2]; out.nx = nx; out.ny = ny; out.nz = nz;
+    out.d = side >= 0 ? dist : -dist; out.x = bo[0]; out.y = bo[1]; out.z = bo[2]; out.nx = nx; out.ny = ny; out.nz = nz; out.v = v;
     return out;
   }
 }

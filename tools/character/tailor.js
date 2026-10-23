@@ -36,7 +36,7 @@ export function make(B, name, design, opts = {}) {
     if (d.kind === "buttons") { const b = buttons(F, G.outer, d); if (b.T.length) part(`${name}_buttons`, d.color || design.buttons || "#222222", b, false); continue; }
     const D = detail(F, G, d); if (!D) continue;
     const L = lifted(cut, G.outer, D.value, D.lift); if (!L) continue;
-    outer.push(L);
+    if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L);   // what goes over it eases over pockets and belts, not the roll of a collar
     part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim, d.surface);
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);

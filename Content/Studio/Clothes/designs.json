@@ -144,6 +144,44 @@
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.04, "lift": 0.0012}
       ]
+    },
+    "blazer": {
+      "label": "Blazer", "slot": "jacket", "color": "#1d2840", "surface": "wool", "buttons": "#c8b88a", "thickness": 0.003,
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.015, "width": 0.07}, "open": {"from": "bust-0.07", "gap": 0.0016, "top": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch-0.02"}, "ease": {"body": 0.024, "sleeve": 0.022}, "tension": 56},
+      "details": [
+        {"kind": "collar", "width": 0.04, "tips": 0.0, "lift": 0.004, "roll": 0.006, "thickness": 0.003, "front": false},
+        {"kind": "lapel", "width": 0.075, "lift": 0.004, "roll": 0.004, "thickness": 0.003},
+        {"kind": "buttons", "from": "bust-0.1", "to": "bust-0.19", "count": 2, "x": -0.016, "r": 0.009},
+        {"kind": "pocket", "at": "crotch+0.07", "x": 0.1, "w": 0.15, "h": 0.05, "r": 0.004, "lift": 0.004},
+        {"kind": "pocket", "at": "crotch+0.07", "x": -0.1, "w": 0.15, "h": 0.05, "r": 0.004, "lift": 0.004},
+        {"kind": "pocket", "at": "armpit-0.035", "x": 0.095, "w": 0.1, "h": 0.022, "r": 0.003, "lift": 0.003},
+        {"kind": "cuff", "length": 0.06, "lift": 0.0012}
+      ]
+    },
+    "work-jacket": {
+      "label": "Work jacket", "slot": "jacket", "color": "#5a4a32", "surface": "canvas", "buttons": "#2a2622", "thickness": 0.003,
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.07}, "open": {"from": "neck-0.03", "gap": 0.0018, "top": 0.012}, "sleeve": "wrist", "hem": {"at": "crotch+0.07"}, "ease": {"body": 0.026, "sleeve": 0.024}, "tension": 52},
+      "details": [
+        {"kind": "collar", "width": 0.05, "tips": 0.035, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
+        {"kind": "edgeband", "width": 0.022, "lift": 0.0022},
+        {"kind": "buttons", "from": "neck-0.08", "to": "crotch+0.13", "count": 6, "x": -0.012, "r": 0.008},
+        {"kind": "pocket", "at": "armpit-0.08", "x": 0.1, "w": 0.13, "h": 0.15, "lift": 0.0035},
+        {"kind": "pocket", "at": "armpit-0.08", "x": -0.1, "w": 0.13, "h": 0.15, "lift": 0.0035},
+        {"kind": "pocket", "at": "armpit-0.025", "x": 0.1, "w": 0.138, "h": 0.05, "r": 0.005, "lift": 0.006},
+        {"kind": "pocket", "at": "armpit-0.025", "x": -0.1, "w": 0.138, "h": 0.05, "r": 0.005, "lift": 0.006},
+        {"kind": "band", "from": "crotch+0.12", "to": "crotch+0.065", "lift": 0.0025},
+        {"kind": "cuff", "length": 0.06, "lift": 0.002}
+      ]
+    },
+    "cardigan": {
+      "label": "Cardigan", "slot": "jacket", "color": "#8a7a68", "surface": "knit", "buttons": "#e8e0d0", "thickness": 0.0032,
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.01, "width": 0.07}, "open": {"from": "waist-0.05", "gap": 0.002, "top": 0.06, "curve": 1.3}, "sleeve": "wrist", "hem": {"at": "crotch+0.06"}, "ease": {"body": 0.018, "sleeve": 0.018}, "tension": 40},
+      "details": [
+        {"kind": "edgeband", "width": 0.028, "lift": 0.0025, "surface": "rib"},
+        {"kind": "buttons", "from": "waist-0.07", "to": "crotch+0.1", "count": 4, "x": -0.012, "r": 0.007},
+        {"kind": "band", "from": "crotch+0.115", "to": "crotch+0.055", "lift": 0.002, "surface": "rib"},
+        {"kind": "cuff", "length": 0.07, "lift": 0.002, "surface": "rib"}
+      ]
     }
   }
 }
