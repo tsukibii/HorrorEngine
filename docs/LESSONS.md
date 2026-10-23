@@ -500,3 +500,7 @@ its log before re-running it.
   snarl) and left a jagged edge. Growing the triangle set by stretch either left slivers or ate into the lips. The lip
   line is now the seal's points (upper or lower by how far the jaw carries them), the upper lip's lowest edge and the
   lower's highest, sampled corner to corner and smoothed, cut in the skin's shader, a dark bag behind it.
+- **Try the presets before engineering around a test pose:** the "flap" in a pout was a full pucker stacked on a 0.6
+  funnel, a pair no preset makes; MHR folds the lower lip out over itself there. Two cut changes didn't remove it
+  (it is the face's own geometry, with nothing behind it). The fix is a pairing limit on the weights (`paired()`), the
+  place mocap goes through too.

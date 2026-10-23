@@ -87,6 +87,13 @@ uniform float uHasLay, uShowSel;
 varying float vSel;
 varying vec3 vObj; varying vec2 vSkinUv;
 uniform float uMouthOn; uniform vec2 uMouthZ; uniform vec2 uMouthP[32]; uniform vec4 uMouthBox;   // the mouth's opening (index.html)
+uniform vec2 uMouthD[16];                                          // the opening's front depth along x: (x, z), corner to corner
+float mouthFront(float x) {                                        // how far forward the opening is at x: skin in front of it stays
+  float z = uMouthD[0].y;
+  for (int i = 0; i < 15; i++) if (x >= min(uMouthD[i].x, uMouthD[i + 1].x) && x <= max(uMouthD[i].x, uMouthD[i + 1].x)) {
+    float dx = uMouthD[i + 1].x - uMouthD[i].x; z = mix(uMouthD[i].y, uMouthD[i + 1].y, abs(dx) < 1e-6 ? 0.0 : (x - uMouthD[i].x) / dx); }
+  return z;
+}
 float skinH, skinRough, skinCoat, skinCoatR = -1.0, skinSm = 0.0;   // skinSm: a layer's smoothing (evens out the pores, grain and relief)
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
@@ -227,7 +234,7 @@ export function procedural(material) {
               uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
               uCutOn: { value: 0 }, uCutL: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uCutR: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) },
               uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() },
-              uMouthOn: { value: 0 }, uMouthZ: { value: new THREE.Vector2() }, uMouthP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uMouthBox: { value: new THREE.Vector4() } };   // the layers (layers.js)   // the touch-up (touchup.js)
+              uMouthOn: { value: 0 }, uMouthZ: { value: new THREE.Vector2() }, uMouthP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uMouthBox: { value: new THREE.Vector4() }, uMouthD: { value: Array.from({ length: 16 }, () => new THREE.Vector2()) } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
@@ -237,7 +244,7 @@ export function procedural(material) {
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < uMouthZ.y && inCut(uMouthP, uMouthBox, vObj.xy)) discard;   // the mouth's opening: index.html draws the inside behind it
+      .replace("#include <color_fragment>", `if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x) && inCut(uMouthP, uMouthBox, vObj.xy)) discard;   // the mouth's opening: index.html draws the inside behind it
 if (uCutOn > 0.5 && ((vObj.z > uCutZ.x && inCut(uCutL, uCutBoxL, vObj.xy)) || (vObj.z > uCutZ.y && inCut(uCutR, uCutBoxR, vObj.xy)))) discard;   // the eyes cut out
 skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {

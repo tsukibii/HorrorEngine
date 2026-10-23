@@ -717,6 +717,16 @@ function shutFitted({ js, ws }, k) {                   // k: how shut, times the
   for (let a = 0; a < 3; a++) ref[a] /= sw || 1;
   for (let q = 0; q < js.length; q++) { const i = EIDX[js[q]] * 3, w = ws[q] * k; for (let a = 0; a < 3; a++) POS[i + a] += w * (ref[a] - F[i + a]); }
 }
+// the expressions as they're applied: the weights, with the pairings MHR's shapes can't take together. A pucker and a
+// funnel both push the lips forward: past 1.1 between them on a side, MHR folds the lower lip out over itself (a flap),
+// so the funnel gives way to the pucker (the Studio's presets stay under it; mocap can go over)
+const PAIRS = [["lipPucker_L", ["lipFunneler_LB", "lipFunneler_LT"]], ["lipPucker_R", ["lipFunneler_RB", "lipFunneler_RT"]]]
+  .map(([p, fs]) => [ENAMES.indexOf(p), fs.map(f => ENAMES.indexOf(f))]).filter(([p, fs]) => p >= 0 && fs.every(f => f >= 0));
+function paired() {
+  const W = Float32Array.from(st.expr, v => v * st.exprAmt);
+  for (const [p, fs] of PAIRS) for (const f of fs) W[f] = Math.min(W[f], Math.max(0, 1.1 - W[p]));
+  return W;
+}
 function compose() {                                   // POS: RAW + the face, scaled to the height, feet on the floor; then the eyes, the expressions
   let lo = Infinity, hi = -Infinity;
   for (let i = 1; i < RAW.length; i += 3) { lo = Math.min(lo, RAW[i]); hi = Math.max(hi, RAW[i]); }
@@ -726,11 +736,12 @@ function compose() {                                   // POS: RAW + the face, s
   if (fitted) for (let i = 0; i < N * 3; i++) POS[i] += SCALE * FIT[i];
   placeEyes();                                         // from the neutral face
   placeTeeth();
+  const W = paired();
   for (let e = 0; e < ENAMES.length; e++) {
-    const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
+    const a = W[e] * SCALE; if (!a) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
     for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; POS[i] += a * X[j * 3]; POS[i + 1] += a * X[j * 3 + 1]; POS[i + 2] += a * X[j * 3 + 2]; }
-    if (fitted && SHUT[e]) shutFitted(SHUT[e], st.expr[e] * st.exprAmt * SCALE);
+    if (fitted && SHUT[e]) shutFitted(SHUT[e], W[e] * SCALE);
   }
   geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); openings();   // the openings from the lids as they are now: a blink closes them
   const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
@@ -762,8 +773,8 @@ function lmk(i) {                                       // a landmark's place on
 function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
 // the mouth: MHR's shell is sealed between the lips by a membrane of triangles whose corners all sit on the lip line;
 // when the jaw drops they stretch into the open mouth. Those (near the mouth, ten times their area or more on jawDrop)
-// are coloured dark, per corner (vertex colours multiply the skin's texture); their points give the mouth (below) its
-// lip line.
+// are tinted as the lips' inside, per corner (vertex colours multiply the skin's texture); where they stretch across the
+// opening the mouth (below) cuts them away.
 function mouthShade() {
   const col = new Float32Array(C * 3).fill(1), e = ENAMES.indexOf("jawDrop");
   if (!LMK || e < 0) return col;
@@ -803,7 +814,7 @@ function mouthShade() {
       inside.add(u); MEMBRANE.push(u); todo.push(u);
     }
   }
-  for (const t of MEMBRANE) for (let k = 0; k < 3; k++) { const j = (t + k) * 3; col[j] = 0.16; col[j + 1] = 0.05; col[j + 2] = 0.05; }
+  for (const t of MEMBRANE) for (let k = 0; k < 3; k++) { const j = (t + k) * 3; col[j] = 0.85; col[j + 1] = 0.6; col[j + 2] = 0.6; }   // the lips' inside, redder (a pout turns it out); what's inside the opening is cut away
   return col;
 }
 const MEM_GROW = 5;
@@ -1088,6 +1099,7 @@ function mouthCut() {
   const xsR = ring.map(p => p[0]), ysR = ring.map(p => p[1]);
   SKU.uMouthBox.value.set(Math.min(...xsR), Math.min(...ysR), Math.max(...xsR), Math.max(...ysR));
   const mm = MOUTH.mm || 0.001 * SCALE; SKU.uMouthZ.value.set(Math.min(...ring.map(p => p[2])) - 8 * mm, Math.max(...ring.map(p => p[2])) + 2 * mm);; SKU.uMouthOn.value = 1;
+  for (let k = 0; k < n; k++) SKU.uMouthD.value[k].set(xs[k], Math.max(up[k][2], lo[k][2]) + 1.5 * mm);   // the front at each x: the nearer of its two lip edges, and 1.5 mm
   // (the cut runs from the opening's back to just in front of it: a lip standing forward of it stays)
   const c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / ring.length), B = BAGG.attributes.position.array;
   BAGR.forEach(([kx, ky, back], r) => ring.forEach((p, i) => B.set([c[0] + (p[0] - c[0]) * kx, c[1] + (p[1] - c[1]) * ky, p[2] - back * mm], (r * 32 + i) * 3)));
@@ -1774,7 +1786,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { THREE, renderer, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { THREE, renderer, paired, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

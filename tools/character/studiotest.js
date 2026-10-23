@@ -164,6 +164,9 @@ const png = rgb => {
     await pose({ lipPucker_L: 1, lipPucker_R: 1, chinRaiser_B: 1, chinRaiser_T: 1, lipSuck_LB: 1, lowerLipDepressor_L: 1 }); const j2 = await jaw();
     if (j2.jaw.some((v, i) => Math.abs(v - (i % 5 === 0 ? 1 : 0)) > 1e-6)) throw new Error("a lip shape moved the jaw");
     if ([j1, j2].some(j => j.upper.some((v, i) => Math.abs(v - m.upper[i]) > 1e-9))) throw new Error("an expression moved the upper teeth");
+    const fold = await page.evaluate(() => { const b = window.__body, E = n => b.ENAMES.indexOf(n); b.st.expr.fill(0); b.st.expr[E("lipPucker_L")] = 1; b.st.expr[E("lipFunneler_LB")] = 0.6;
+      const w = b.paired(); return [w[E("lipPucker_L")], w[E("lipFunneler_LB")]]; });   // a full pucker and a funnel together fold the lower lip out: the funnel gives way
+    if (fold[0] !== 1 || fold[1] > 0.1 + 1e-6) throw new Error(`a pucker with a funnel isn't limited: ${fold}`);
     // the opening as a mask: the membrane drawn green with the teeth off; then with them on, every pixel they change must be in it
     await page.click('#views button[data-v="head"]');
     const shot = async () => { await page.waitForTimeout(300); const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
@@ -193,7 +196,7 @@ const png = rgb => {
           for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inP(x, y)) { area++; const i = (y * W + x) * 4; if (!(d[i + 1] > 150 && d[i] < 90 && d[i + 2] < 90)) skin++; } }
         return { changed, out, skin, area };
       }, [a, t, ring]);
-      if (yaw === 0 && name !== "oo" && r.area > 200 && r.skin > 0.03 * r.area)   // (a pout's lips stand in front of its hole) throw new Error(`${name} at ${yaw}: ${r.skin} of the ${r.area} pixels inside the opening's outline aren't the mouth's inside`);
+      if (yaw === 0 && name !== "oo" && r.area > 200 && r.skin > 0.03 * r.area)   // (a pucker's lips stand in front of its opening and are kept) throw new Error(`${name} at ${yaw}: ${r.skin} of the ${r.area} pixels inside the opening's outline aren't the mouth's inside`);
       if (r.out > Math.max(6, 0.005 * r.changed)) throw new Error(`${name} at ${yaw}: ${r.out} of the ${r.changed} pixels the teeth change are outside the opening`);
       if (name !== "oo" && r.changed < 200) throw new Error(`${name} at ${yaw}: the teeth hardly show (${r.changed} pixels)`);
     }

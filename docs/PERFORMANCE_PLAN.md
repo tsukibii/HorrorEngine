@@ -144,7 +144,8 @@ face of *that actor* to every frame and reads the rig's controls off the fit:
   plus depth (an iPhone's, stereo, or estimated from mono video). Ours: MediaPipe's 478 points, densest round the eyes and lips.
 - **A solver that only knows real faces:** trained on 3Lateral's large 4D scan library, so it can only land on
   combinations a face makes; the rig's correctives (RigLogic) and wrinkle maps then add what makes it read as skin.
-  Ours: limits and pairings on the 72 shapes (no blink with eyes wide), learned from our own good takes over time.
+  Ours: limits and pairings on the 72 shapes (no blink with eyes wide), learned from our own good takes over time. The
+  first is in the Studio's `paired()`: a pucker and a funnel past 1.1 together fold MHR's lower lip out, so the funnel gives way.
 - **Offline, the whole take at once:** future frames are known, so it smooths without lag. Ours: the zero-phase filter (§5.2).
 - **The teeth fix the jaw:** a stable upper-teeth anchor separates head motion from jaw motion.
 
