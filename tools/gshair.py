@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
-"""GaussianHair for the Character Studio (docs/GSHAIR.md): hair reconstructed from a phone video of a head as strands
-of cylindrical 3D Gaussians (Luo et al. 2024), our own implementation: a differentiable splatter in plain PyTorch, the
-poses from the head itself (no COLMAP), strands grown through the oriented field (no pre-trained decoder), the result
-riding guide chains with wig.js's physics on the Studio's splat page. Everything runs on this machine, sealed off the
-network (unshare -rn), with MediaPipe's usage stats blocked.
+"""The salon's reference from a video (docs/SALON.md, The reference): the frames picked, the hair keyed (a green screen,
+CorridorKey's keyed frames, or MediaPipe on a person), the cameras found from the head itself (no COLMAP; --orbit for a
+turntable or a MiniMax orbit), and the frames written in the head's space for the salon to lock to its view. Everything
+runs on this machine, sealed off the network (unshare -rn), with MediaPipe's usage stats blocked. The name is historical:
+this was the GaussianHair splat's pipeline, and the splat was removed (DECISIONS 2026-10-23).
 
-    python tools/gshair.py setup [--cpu] [--home DIR]   the environment (uv, Python 3.12: torch, OpenCV, scipy, MediaPipe)
+    python tools/gshair.py setup [--cpu] [--home DIR]   the environment (uv, Python 3.12: OpenCV, scipy, MediaPipe; torch only for the check)
                                                         and MediaPipe's models (hair, person and face) under vendor/gshair/
-    python tools/gshair.py run VIDEO --name NAME [--head mhr|NAME|head.obj] [--iters N] [--res PX] [--from STEP]
-                                                        every step; the result in Content/Studio/People/NAME/gshair/
-                                                        (--out DIR instead of --name for any folder)
-    python tools/gshair.py frames|masks|poses|field|grow|refine|export --out DIR ...   one step (its --help)
-    python tools/gshair.py reference --out CAPTURE --name REF    the salon's locked reference from a capture (or --photos F [S] [B])
-    python tools/gshair.py run VIDEO --orbit --to reference --ref REF   a video straight to a salon reference, no splat
-    python tools/gshair.py check [--keep] [--full]      GSHAIR ok: the whole pipeline on a synthetic head, on the CPU
-    python tools/gshair.py page [--name NAME]           the splat page: python tools/character/serve.py, then
-                                                        http://127.0.0.1:8793/gshair.html?name=NAME
+    python tools/gshair.py run VIDEO --orbit --ref REF  a video straight to a salon reference (Content/Studio/Hair/References/REF)
+    python tools/gshair.py frames|masks|poses --out DIR ...   one step (its --help)
+    python tools/gshair.py reference --out CAPTURE --name REF    the reference from a capture (or --photos F [S] [B])
+    python tools/gshair.py check [--keep] [--full]      GSHAIR ok: the pipeline on a synthetic head, on the CPU
 
-The capture (the paper's): the subject still, even light, a phone about a metre away swept slowly round the head,
-front, both sides and as much of the back as you can; 4K 60 fps if you have it. 80 to 100 sharp frames are picked.
+The capture: the subject still, even light, the camera swept slowly round the head (or the head turning on a turntable),
+front, both sides and as much of the back as you can.
 """
 import argparse
 import os
@@ -100,14 +95,9 @@ def main():
     if a.help and a.cmd is None or a.cmd is None:
         print(__doc__); return
     if a.cmd == "setup": return cmd_setup(a)
-    if a.cmd == "page":
-        print(f"python tools/character/serve.py, then http://127.0.0.1:8793/gshair.html" + (f"?name={a.name}" if a.name else "")); return
     argv = [a.cmd] + rest
-    if a.name and a.cmd in ("preset", "reference"):
+    if a.name and a.cmd == "reference":
         argv += ["--name", a.name]
-    elif a.name:
-        out = ROOT / "Content" / "Studio" / "People" / a.name / "gshair"
-        if "--out" not in rest: argv += ["--out", str(out)]
     if a.help: argv.append("--help")
     sealed(home_dir(a), argv, a.unsealed)
 

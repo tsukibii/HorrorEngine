@@ -1,4 +1,7 @@
-"""A differentiable splatter for cylindrical 3D Gaussians in plain PyTorch (no CUDA extension to build; a GPU when torch
+"""Kept only to draw the GSHAIR check's synthetic capture (synth.py): the hair splat this renderer served was removed
+(DECISIONS 2026-10-23).
+
+A differentiable splatter for cylindrical 3D Gaussians in plain PyTorch (no CUDA extension to build; a GPU when torch
 sees one). GaussianHair (Luo et al. 2024) renders its hair as 3DGS does: each Gaussian projected to a 2D Gaussian
 (the EWA Jacobian, eq. 2), composited front to back (eq. 3). Here the projection, the pixel pairs and the compositing
 are tensor ops: every (Gaussian, pixel) pair inside the Gaussian's 3-sigma box is listed, sorted by pixel then depth,

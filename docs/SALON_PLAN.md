@@ -1,6 +1,6 @@
 # The salon: hair drawn by hand on the head (the plan)
 
-The user's call (DECISIONS 2026-10-22, "the salon"): the Gaussian splat route (docs/GSHAIR.md) was worth testing and
+The user's call (DECISIONS 2026-10-22, "the salon"): the Gaussian splat route (removed since, DECISIONS 2026-10-23) was worth testing and
 isn't good enough. Hair is made in a **virtual salon** instead: the head (or the whole clothed body) is there, a rough
 3D guide from the orbit video floats round it, and the user draws the hair onto it as **vector locks**, the way
 Blender's hair curves and Illustrator's pen work, but far easier. Stylised options for most of it (a lock is a sheet or
@@ -57,15 +57,14 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
 
 | Piece | Where | Reuse for |
 |---|---|---|
-| The Studio's body: MHR from presets or a character's weights, scaled to a height | `tools/character/hairbuilder.html` (`loadMHR`, `buildHead`), `index.html` | the head and body in the salon |
+| The Studio's body: MHR from presets or a character's weights, scaled to a height | `index.html` (the hair builder's `loadMHR`, `buildHead` were the model; removed) | the head and body in the salon |
 | The scalp and the head's frame from MediaPipe's landmarks | `tools/character/hair.js` (`scalp`, `frame`), `gshair/common.py` (`scalp`, `HeadField`) | where roots may go, the hairline, the cap |
-| Spring chains pinned at the root, gravity, hold to a rest shape, damping, pushed off the head and body | `tools/character/wig.js` (`Wig`), `splats.js` (`headPush`) | the locks' physics |
+| Spring chains pinned at the root, gravity, hold to a rest shape, damping, pushed off the head and body | `tools/character/wig.js` (`Wig`) | the locks' physics |
 | Ribbons with a strand alpha texture, drawn from polylines | `hair.js` (`ribbon`, `strandTexture` in `index.html`) | drawing a lock as a sheet |
 | GPU strands rebuilt from guide chains, the Kajiya-Kay hair shader | `tools/character/strands.js` | the realism option: strands interpolated inside a lock |
 | The clothes on the body: a draped garment mesh per design | `tools/character/clothes.py`, `drape.py`, `api/clothes/<name>/<design>` | collision so hair sits on clothing |
-| A rough 3D guide from an orbit video: the keyed frames' visual hull (no training), the orbit poses | `gshair/masks.py`, `gshair/poses.py --orbit`, `gshair/splat.py` (`hull`) | the translucent guide round the head |
-| The splat itself, cage, paint | `hairbuilder.html`, `hairsplat.js`, `lattice.js` | optional reference layer only; not the product |
-| Body collision as slices, the head as a radial field | `gshair/export.py` (`body_slices`), `splats.js` (`headPush`) | fast push-out for the locks |
+| A rough 3D guide from an orbit video: the keyed frames' visual hull (no training), the orbit poses | `gshair/masks.py`, `gshair/poses.py --orbit` (the hull went with the splat) | the translucent guide round the head |
+| Body collision as slices, the head as a radial field | the removed `gshair/export.py` (`body_slices`) and `splats.js` (`headPush`) were the model | fast push-out for the locks |
 
 ## Phase 0: research Blender's hair, then design (one session, no code yet)
 
@@ -303,7 +302,7 @@ runtime since they ride the guides.
 - [ ] Hair presets: whole heads of locks saved and reloaded onto any body (roots are scalp-relative so they land on a
   different head); the Asian cuts of `hair.js` rebuilt as salon presets (hime, see-through bangs, curtain, layered
   bob, wolf, two-block, half-up, low pony) so a game's cast starts from them.
-- [ ] The locked reference, the hull and the splat as **toggleable layers** with opacity; the Reference step asks
+- [ ] The locked reference (and a hull, if one comes back) as **toggleable layers** with opacity; the Reference step asks
   only three things: drop the file, how far the video turns (a full turn / to the side / to the back), and which
   frame is the front when there is no face to find it.
 - [x] docs/SALON.md: the tools, the shortcuts, the data, the checks; the launcher's lines; CLAUDE.md's table row.
@@ -323,5 +322,5 @@ runtime since they ride the guides.
 - Every tool works with click, click, wheel, drag; no modal dialogs; undo everywhere.
 - Measure, don't eyeball: inside percentage, drift, frame times in the stats line; the tests check them.
 - Blender's functions are ported freely (the user's call), with Blender's names kept and a GPL-2.0-or-later header on the files that carry them; THIRD_PARTY.md says so.
-- The Gaussian tools stay in the repo as the reference layer (and the record of what was tried); nothing of them is
+- The Gaussian tools were removed (DECISIONS 2026-10-23); only the reference's video front end stays. Nothing of them was
   needed to draw hair.

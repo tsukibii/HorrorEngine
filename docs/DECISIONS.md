@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (the Gaussian splat is removed)
+
+- **The hair splat is taken out of the repo**, not kept as a reference layer: the salon doesn't use it. Gone: the
+  splat and clay pages (`gshair.html`, `hairbuilder.html` and their scripts and tests), the splat, the clay, the wig
+  shell and the hair builder's presets in `tools/character/gshair/`, the server's routes for them, their launcher
+  lines and docs/GSHAIR.md. **Kept, because the salon's reference needs it:** the video to frames, the key, the
+  cameras and the reference in the head's space (`tools/gshair.py`, the name is historical), and its check.
+
 ## 2026-10-22, evening (characters stay editable at every stage; one app with a top bar)
 
 - **A character stays editable at every stage, baked or not.** While a character lives in the Character Studio (and

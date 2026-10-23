@@ -65,14 +65,9 @@ def perm_home():
     return Path(os.environ.get("PERM_HOME", ROOT / "vendor" / "perm"))
 
 
-GSHAIR_FILES = {"splat.json", "splat.bin", "head.json", "align.json", "cameras.json", "capture.json", "masks.json",
-                "splat_sheet.jpg", "poses_sheet.jpg", "run.log", "wig.json", "wig.png", "wig.obj"}
-GSHAIR_RUNS = {}                                       # name -> the running pipeline (subprocess.Popen)
-
-
-HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hair presets for the hair builder (tools/gshair.py preset)
-HAIR_FILES = {"hair.json", "gaussians.bin", "edit.bin", "bake.json", "bake.bin", "thumb.png", "salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}
-SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}   # a character's hair from the salon: People/<name>/salon/
+HAIR = ROOT / "Content" / "Studio" / "Hair"                     # hairstyles to start from (the salon's Save as a hairstyle)
+SALON_FILES = {"salon.json", "salon_bake.json", "salon.glb", "salon_base.glb"}   # the salon's hair: People/<name>/salon/ or Hair/<style>/
+HAIR_FILES = SALON_FILES
 REFS = HAIR / "References"                                       # the salon's locked references (tools/gshair.py reference)
 REF_RUNS = {}
 
@@ -83,19 +78,6 @@ def ref_status(name):
     if p is not None and not running: REF_RUNS.pop(name, None)
     log = (d / "run.log").read_text(encoding="utf-8", errors="replace")[-3000:] if (d / "run.log").exists() else ""
     return dict(running=running, exit=None if running or p is None else p.returncode, ready=(d / "reference.json").exists(), log=log)
-
-
-def gshair_dir(name):
-    return PEOPLE / name / "gshair"
-
-
-def gshair_status(name):
-    """the hair splat's state: what's made, whether a run is going, the log's tail"""
-    d = gshair_dir(name); p = GSHAIR_RUNS.get(name)
-    running = p is not None and p.poll() is None
-    if p is not None and not running: GSHAIR_RUNS.pop(name, None)
-    log = (d / "run.log").read_text(encoding="utf-8", errors="replace")[-3000:] if (d / "run.log").exists() else ""
-    return dict(running=running, exit=None if running or p is None else p.returncode, files=sorted(f.name for f in d.iterdir()) if d.exists() else [], log=log)
 
 
 def batch_hair(name, q):
@@ -223,13 +205,6 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "picture"] and len(parts) == 4 and clean(parts[2]) and parts[3] in SLOTS:
             f = pictures(clean(parts[2])).get(parts[3])
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f else self.send(404, {"error": "none"})
-        if parts[:2] == ["api", "hair"] and len(parts) == 2:                              # the hair presets
-            out = []
-            for d in sorted(HAIR.iterdir()) if HAIR.exists() else []:
-                if d.is_dir() and clean(d.name) and (d / "hair.json").exists():
-                    h = json.loads((d / "hair.json").read_text(encoding="utf-8"))
-                    out.append({"name": d.name, "gaussians": h.get("gaussians", {}).get("count", 0), "source": h.get("source", {}).get("video"), "baked": (d / "bake.json").exists()})
-            return self.send(200, {"presets": out})
         if parts[:2] == ["api", "salon"] and len(parts) == 2:                             # the salon's hair (salon.json)
             out = [d.name for d in sorted(HAIR.iterdir()) if d.is_dir() and clean(d.name) and (d / "salon.json").exists()] if HAIR.exists() else []
             return self.send(200, {"hair": out})
@@ -248,11 +223,6 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in HAIR_FILES:
             f = HAIR / clean(parts[2]) / parts[3]
             return self.send(200, f.read_bytes(), TYPES.get(f.suffix, "application/octet-stream")) if f.exists() else self.send(404, {"error": f"no {parts[3]} for {parts[2]}"})
-        if parts[:2] == ["api", "gshair"] and len(parts) == 4 and clean(parts[2]):        # the hair splat (tools/gshair.py)
-            if parts[3] == "status": return self.send(200, gshair_status(clean(parts[2])))
-            if parts[3] in GSHAIR_FILES:
-                f = gshair_dir(clean(parts[2])) / parts[3]
-                return self.send(200, f.read_bytes(), TYPES.get(f.suffix, "text/plain")) if f.exists() else self.send(404, {"error": f"no {parts[3]} yet: python tools/gshair.py run VIDEO --name {parts[2]}"})
         f = HERE.joinpath(*parts)
         if f.is_file() and f.suffix in TYPES and f.suffix != ".py":
             return self.send(200, f.read_bytes(), TYPES[f.suffix])
@@ -376,7 +346,7 @@ class Handler(BaseHTTPRequestHandler):
                 if "path" in res: res["path"] = str(Path(res["path"]).relative_to(ROOT))
                 return self.send(code, res)
             return self.send(*WORKER.call(req))
-        if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in HAIR_FILES:   # a preset saved by the builder
+        if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in HAIR_FILES:   # a hairstyle saved by the salon
             return self.keep(HAIR / name, parts[3])
         if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] == "body.bin":   # the body, with its face, no expression
             return self.keep(PEOPLE / name, "body.bin")
@@ -401,43 +371,6 @@ class Handler(BaseHTTPRequestHandler):
             log = open(d / "run.log", "w", encoding="utf-8")
             REF_RUNS[name] = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=ROOT)
             return self.send(200, {"started": True})
-        if parts[:2] == ["api", "gshair"] and len(parts) == 4 and name and parts[3] == "preset":   # the capture's splat as a hair preset
-            q = json.loads(self.body().decode("utf-8") or "{}")
-            pname = clean(q.get("preset")) or name
-            r = subprocess.run([sys.executable, str(ROOT / "tools" / "gshair.py"), "preset", "--out", str(gshair_dir(name)), "--name", pname] + (["--raw"] if q.get("raw") else []),
-                               capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
-            line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
-            if r.returncode or not line: return self.send(500, {"error": "the preset: " + (r.stderr or r.stdout)[-800:]})
-            return self.send(200, json.loads(line))
-        if parts[:2] == ["api", "gshair"] and len(parts) == 4 and name and parts[3] in ("body", "run", "clumps"):
-            d = gshair_dir(name); d.mkdir(parents=True, exist_ok=True)
-            tool = [sys.executable, str(ROOT / "tools" / "gshair.py")]
-            if parts[3] == "body":                       # the body as the Studio has it now: the head the splat sits on
-                (d / "body.f32").write_bytes(self.body()); return self.send(200, {"ok": True})
-            q = json.loads(self.body().decode("utf-8") or "{}")
-            if parts[3] == "run":                        # the whole pipeline in the background (sealed off the network)
-                if gshair_status(name)["running"]: return self.send(409, {"error": "already running"})
-                src = q.get("source", "")
-                if not src or not Path(src).exists(): return self.send(400, {"error": "a video, a folder of pictures or a picture on this machine"})
-                cmd = tool + ["run", src, "--name", name, "--key", str(q.get("key", "green")), "--iters", str(int(q.get("iters", 4000))),
-                              "--res", str(int(q.get("res", 540))), "--clumps", str(int(q.get("clumps", 16))), "--from", str(q.get("from", "frames")),
-                              "--count", str(int(q.get("count", 90)))]
-                if q.get("orbit"): cmd += ["--orbit", "--sweep", str(float(q.get("sweep", 360))), "--elevation", str(float(q.get("elevation", 0))), "--front", str(int(q.get("front", 0)))]
-                if q.get("hue") is not None: cmd += ["--hue", str(int(q["hue"]))]
-                if q.get("val") is not None: cmd += ["--val", str(float(q["val"]))]
-                if q.get("device"): cmd += ["--device", str(q["device"])]
-                if (d / "body.f32").exists(): cmd += ["--body", str(d / "body.f32")]
-                log = open(d / "run.log", "w", encoding="utf-8")
-                GSHAIR_RUNS[name] = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=ROOT)
-                return self.send(200, {"started": True})
-            if q.get("align"):                           # the page's fit, kept
-                (d / "align.json").write_text(json.dumps(q["align"]), encoding="utf-8")
-            r = subprocess.run(tool + ["clumps", "--name", name, "--clumps", str(int(q.get("clumps", 16))), "--joints", str(int(q.get("joints", 4)))],
-                               capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
-            line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
-            if r.returncode or not line or "GSHAIR clumps ok" not in r.stdout:
-                return self.send(500, {"error": "the clay: " + (r.stderr or r.stdout)[-800:]})
-            return self.send(200, json.loads(line))
         return self.send(404, {"error": "not found"})
 
 

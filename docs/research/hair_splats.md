@@ -1,5 +1,8 @@
 # Hair as a Gaussian splat: research note (2026-10-22)
 
+**Since:** the route was built on the salon's branch, tested, set aside for the salon (hair drawn by hand) and then
+removed from the repo (DECISIONS 2026-10-23). This note stays as the research behind that call.
+
 The user's question: could a head of hair be captured as a Gaussian splat from a 360° video, the background and the
 head taken away, the splat fitted to a character's head, and then bent in clumps by a few bendy bones, with no physics,
 "just the equivalent of image manipulation"?

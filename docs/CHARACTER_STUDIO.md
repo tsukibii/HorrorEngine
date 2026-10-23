@@ -29,9 +29,8 @@ cuffs on tops).
 Character pages that still live elsewhere, on the desk's server (port 8780): `face.html` (photos to a head, the
 MetaHuman route), `shape.html` (an MHR body shaped for MetaHuman), `bodies.html` (a body against every pose),
 `flesh.html` (soft bones, jiggle), `poses.html` (the pose library), `pigment.html` (the pigment test), `pbr.html` (the
-PBR shelf). On the Studio's own server but as separate pages: `salon.html` (the hair route), `hairbuilder.html` and
-`gshair.html` (the splat and clay route, set aside: reference only, docs/GSHAIR.md). That's the address typing the
-revamp ends.
+PBR shelf). On the Studio's own server but as a separate page: `salon.html` (the hair route). That's the address typing the
+revamp ends. (The splat and clay pages were removed, DECISIONS 2026-10-23.)
 
 ## 2. The rule: editable at every stage, even after a bake
 
@@ -109,7 +108,6 @@ move into the shell.
 | `pbr.html` (the shelf) | stays on the desk; Paint's fill picker reads the same shelf |
 | Kimodo motions (later) | Motion, a "Clips" step: the shot list's motions played on the character |
 | `salon.html` | **Hair**, the salon's fourteen steps as the stage's own (the Studio's Hair tab today just links to it and wears its bake); the procedural styles, the Perm library and the model wig as a "Quick hair" step |
-| `hairbuilder.html`, `gshair.html` | stay as reference pages (set aside, DECISIONS 2026-10-22) |
 
 **How it's built** (so the move is safe): each stage becomes its own module (`stages/body.js`, `stages/skin.js`...)
 with `mount(panel)`, `unmount()`, `status()` and its part of the save, around a small shell (`app.js`: the bar, the
