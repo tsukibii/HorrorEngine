@@ -321,6 +321,12 @@ a cool blue sheen in streaks along the strands, a few crimson strands, pointed s
   replaces the look's on that lock; **colour by lock** still tells them apart.
 - **The bake** carries it: the atlas with the look's colours baked in as the cards' texture (glTF's MASK cut-out, the
   shader can't go in a glTF), the look's numbers in the material's extras for a runtime that has the shader.
+- **Retro** (2026-10-23, hides imperfections; all off unless asked): **Flat (unlit)**, the hair's own colours whatever
+  the light (no highlights, no shading: card edges and spikes don't catch the light), a little darker inside; **Flat
+  brightness**; **Colour steps** (posterized, as old consoles' colours were; 0 off); **PSX dither** (the PlayStation's
+  4 x 4 ordered dither between the steps, 32 a channel unless Colour steps says fewer). In the shader the steps and
+  the dither are in the screen's colours; the bake carries them: Flat is an unlit material (glTF's
+  `KHR_materials_unlit`), the brightness, steps and dither go into the cards' texture (the dither in its pixels).
 
 `hime_demo` is a hime cut built like the reference (a blunt fringe at the brows, sidelocks to the collarbones, the
 crown and back, two low tails), on the darkened scalp.
@@ -355,7 +361,7 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   with fewer vertices, the scalp unlit and blended, a glTF whose bind pose is exact and whose root bone bends it, the
   look's texture in it); the bake's smoothing (Smooth curves: more points kept, fewer sharp corners; Tame flyaways:
   hair brought in only, never nearer the head than 3 mm, nothing below the chin; the hair you edit unchanged); the
-  look (the atlas see-through at its tips, every card on the hair shader, a look restyling them); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
+  retro look (Flat unlit on the hair shader, an unlit material in the bake); the look (the atlas see-through at its tips, every card on the hair shader, a look restyling them); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and
   none beyond the reach, the wheel mid-drag growing the reach until it takes the next strand, O, a twin's pull moving

@@ -627,6 +627,14 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!(r.b.pts > r.a.pts) || !(r.b.n <= r.a.n) || !(r.moved > 0) || r.outward || r.tooNear || r.belowChin || !r.same) throw new Error("the smoothing: " + JSON.stringify(r));
     console.log(`       Smooth curves 1: ${r.a.pts} -> ${r.b.pts} points kept, corners over 45 degrees ${r.a.n} -> ${r.b.n}; Tame flyaways 1: ${r.moved} points brought in (up to ${(r.most * 1000).toFixed(0)} mm), none out, none nearer the head than 3 mm; the live hair unchanged`);
   });
+  await step("the retro look: Flat shows the hair unlit and bakes an unlit material", async () => {
+    await ev(() => { const s = window.__salon; s.st.look.flat = true; s.restyle(); });
+    await page.click("#previewBake"); await page.waitForFunction(() => window.__salon.BAKEVIEW, null, { timeout: 60000 });
+    const f = await ev(() => { const s = window.__salon; let unlit = false; s.BAKEG.traverse(o => { if (o.isMesh && o.material && o.material.name === "hair_cards" && o.material.isMeshBasicMaterial) unlit = true; }); return { unlit, uniform: s.HAIRU.uFlat.value }; });
+    await page.click("#previewBake"); await ev(() => { const s = window.__salon; s.st.look.flat = false; s.restyle(); });
+    if (!f.unlit || f.uniform !== 1) throw new Error("the flat look: " + JSON.stringify(f));
+    console.log(`       the hair shader unlit (uFlat ${f.uniform}); the bake's cards an unlit material`);
+  });
   await step("saved as salon.json and loaded back the same", async () => {
     const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
     await ev(n => { document.querySelector("#hairName").value = n; return window.__salon.save(); }, TEST);

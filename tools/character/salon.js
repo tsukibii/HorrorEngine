@@ -322,7 +322,8 @@ function tintScalp() {
 // ---- drawing the locks ------------------------------------------------------------------------------------------------
 const MESHES = {}, DIRTY = new Set(), EVAL = {};
 // the hair's look: one strand atlas, one set of uniforms every hair material shares (a look changed restyles them all)
-const look = () => Object.assign({}, LOOKS[st.look.hair] || LOOKS[DEFAULT_LOOK], st.look.custom || {});
+const look = () => Object.assign({}, LOOKS[st.look.hair] || LOOKS[DEFAULT_LOOK], st.look.custom || {},   // the preset, its colours by hand, and the retro look
+  { flat: !!st.look.flat, flatGain: st.look.flatGain ?? 1, steps: st.look.steps || 0, dither: !!st.look.dither });
 const ATLAS = makeAtlas(), HAIRU = hairUniforms(atlasTexture(ATLAS), LOOKS[DEFAULT_LOOK]);
 const HAIR_MAT = hairMaterial(HAIRU), PREVIEW_MAT = hairMaterial(HAIRU, { transparent: true, opacity: 0.7 });
 for (const m of [HAIR_MAT, PREVIEW_MAT]) m.userData.shared = true;
@@ -770,8 +771,24 @@ function geometryOf(parts) {                                            // cards
 // the cards' look in the file: the strand atlas with the look's colours baked in (glTF can't carry the hair shader; its
 // numbers ride in the material's extras for a runtime that has one), cut out at 0.4 (glTF's MASK); the vertex colours
 // are white unless a lock has its own colour
+function retroAlbedo(rgba, k) {                                       // the retro look into the baked colours: brighter (flat), stepped, dithered in texture space
+  if (!k.flat && !k.steps && !k.dither) return rgba;
+  const out = new Uint8ClampedArray(rgba), g = k.flat ? (k.flatGain ?? 1) : 1, lv = k.steps || (k.dither ? 31 : 0), W = ATLAS.W;
+  const B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  for (let i = 0; i < out.length; i += 4) {
+    const x = (i / 4) % W, y = Math.floor(i / 4 / W), d = k.dither ? (B[(x % 4) + 4 * (y % 4)] + 0.5) / 16 - 0.5 : 0;
+    for (let c = 0; c < 3; c++) {
+      let v = Math.min(1, rgba[i + c] / 255 * (g === 1 ? 1 : Math.pow(g, 1 / 2.2)));   // the gain is the shader's, in linear light
+      if (lv) v = Math.min(1, Math.max(0, Math.floor(v * lv + 0.5 + d) / lv));
+      out[i + c] = Math.round(v * 255);
+    }
+  }
+  return out;
+}
 function bakeMat() {
-  const k = look(), cards = new THREE.MeshStandardMaterial({ name: "hair_cards", map: albedoTexture(ATLAS, albedo(ATLAS, k)), alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide });
+  const k = look(), map = albedoTexture(ATLAS, retroAlbedo(albedo(ATLAS, k), k));
+  const cards = k.flat ? new THREE.MeshBasicMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, side: THREE.DoubleSide })   // unlit: glTF's KHR_materials_unlit
+    : new THREE.MeshStandardMaterial({ name: "hair_cards", map, alphaTest: 0.4, vertexColors: true, roughness: 0.42, side: THREE.DoubleSide });
   cards.userData = { look: k, shader: "tools/character/hairshader.js (Kajiya-Kay, shifted per strand; the atlas's R brightness, G strand, B clump, A coverage)" };
   return cards;
 }
@@ -1426,6 +1443,15 @@ function lookPanel() {                                                  // the h
   slider(box, "Glossy", 0, 2, 0.05, k0.shine, v => set("shine", v), "how strong the highlights are");
   slider(box, "Highlight", -0.3, 0.3, 0.01, k0.shift1, v => { set("shift1", v); set("shift2", v + 0.19); }, "where the highlights sit along the strands (towards the roots or the tips)");
   slider(box, "Streaks", 0, 1, 0.05, k0.shiftNoise, v => set("shiftNoise", v), "how much each strand's highlight wanders: smooth band to broken streaks");
+  box.append(el("h4", { textContent: "Retro (hides imperfections)" }));
+  const r = el("div");
+  tick(r, "Flat (unlit)", !!st.look.flat, v => { st.look.flat = v; restyle(); }, "The hair's own colours whatever the light: no highlights, no shading, a PSX-style solid look that hides card edges and spikes. Baked as an unlit material.");
+  box.append(r);
+  slider(box, "Flat brightness", 0.5, 2.5, 0.05, st.look.flatGain ?? 1, v => { st.look.flatGain = v; restyle(); }, "how light the flat colours are");
+  slider(box, "Colour steps", 0, 24, 1, st.look.steps || 0, v => { st.look.steps = v; restyle(); }, "0 off; fewer steps, more banding (posterized, as old consoles' colours were)");
+  const d = el("div");
+  tick(d, "PSX dither", !!st.look.dither, v => { st.look.dither = v; restyle(); }, "The PlayStation's 4x4 ordered dither between colour steps (32 a channel unless Colour steps says fewer)");
+  box.append(d);
   const t = el("div");
   tick(t, "colour by lock", st.look.byLock, v => { st.look.byLock = v; for (const l of st.locks) DIRTY.add(l.id); draw(); }, "each lock its own colour, to see them apart");
   tick(t, "guides", st.look.guides, v => { st.look.guides = v; for (const l of st.locks) DIRTY.add(l.id); draw(); });

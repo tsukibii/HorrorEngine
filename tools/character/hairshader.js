@@ -3,6 +3,8 @@
 // ATI's hair, as Unreal's and most games' hair do): a sharp pale one shifted towards the root, a broad tinted one
 // towards the tip, every strand's shift its own so the highlights break into streaks. Soft wrapped diffuse, dark roots,
 // the inner colour on the strands the atlas picks, a cool rim. Cut out softly (alpha to coverage).
+// The retro look (a look's flat, flatGain, steps, dither): unlit, the strands' own colours whatever the light; colour
+// steps in the screen's colours; the PSX's 4x4 ordered dither between them. All off unless asked.
 //
 //   const U = hairUniforms(atlasTexture, look)   shared by every hair material; applyLook(U, look) restyles them all
 //   hairMaterial(U)   the cards' material
@@ -26,6 +28,8 @@ const FRAG = /* glsl */`
 uniform sampler2D atlas;
 uniform vec3 rootC, tipC, innerC, spec1C, spec2C, rimC, keyDir, keyC, fillDir, fillC, ambientC;
 uniform float innerAmt, shine, gloss1, gloss2, shift1, shift2, shiftNoise, rimAmt, rootLen, alphaCut;
+uniform float uFlat, uFlatGain, uSteps, uDither;                   // the retro look: unlit, colour steps, the PSX's ordered dither
+float bayer4(vec2 p) { int i = int(mod(p.x, 4.0)) + 4 * int(mod(p.y, 4.0)); const float m[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.); return (m[i] + 0.5) / 16.0; }
 varying vec3 vN; varying vec3 vT; varying vec3 vW; varying vec2 vUv; varying vec4 vTint; varying float vOcc;
 float kk(vec3 T, vec3 H, float g) { float th = dot(T, H); return pow(sqrt(max(0.0, 1.0 - th * th)), g); }
 void main() {
@@ -55,10 +59,15 @@ void main() {
   col += mix(spec2C, innerC * 0.8, inner) * sv * 0.35 * shine * mix(0.3, 1.0, root) * vOcc;
   col *= vOcc;
   col += rimC * rimAmt * pow(1.0 - abs(dot(N, V)), 3.0) * (0.5 + 0.5 * at.r) * vOcc;
+  if (uFlat > 0.5) col = base * uFlatGain * mix(1.0, vOcc, 0.5);  // unlit: the strands' own colours, whatever the light (a little darker inside)
   float alpha = smoothstep(alphaCut - 0.15, alphaCut + 0.15, at.a);
   gl_FragColor = vec4(col, alpha);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
+  if (uSteps > 0.5 || uDither > 0.5) {                               // colour steps (and the dither between them), in the screen's colours
+    float lv = uSteps > 0.5 ? uSteps : 31.0, d = uDither > 0.5 ? bayer4(gl_FragCoord.xy) - 0.5 : 0.0;
+    gl_FragColor.rgb = clamp(floor(gl_FragColor.rgb * lv + 0.5 + d) / lv, 0.0, 1.0);
+  }
 }`;
 
 const C = hex => new THREE.Color().setRGB(...linear(hex), THREE.LinearSRGBColorSpace);
@@ -68,6 +77,7 @@ export function hairUniforms(atlas, look) {
     spec1C: { value: new THREE.Color() }, spec2C: { value: new THREE.Color() }, rimC: { value: new THREE.Color() },
     innerAmt: { value: 0 }, shine: { value: 1 }, gloss1: { value: 120 }, gloss2: { value: 24 }, shift1: { value: -0.06 }, shift2: { value: 0.1 },
     shiftNoise: { value: 0.4 }, rimAmt: { value: 0.15 }, rootLen: { value: 0.3 }, alphaCut: { value: 0.4 },
+    uFlat: { value: 0 }, uFlatGain: { value: 1 }, uSteps: { value: 0 }, uDither: { value: 0 },
     keyDir: { value: new THREE.Vector3(0.3, 0.8, 0.5).normalize() }, keyC: { value: new THREE.Color(1.15, 1.12, 1.08) },
     fillDir: { value: new THREE.Vector3(-0.6, 0.1, 0.3).normalize() }, fillC: { value: new THREE.Color(0.28, 0.31, 0.38) }, ambientC: { value: new THREE.Color(0.22, 0.22, 0.24) },
   };
@@ -79,6 +89,7 @@ export function applyLook(U, k) {
   U.spec1C.value.copy(C(k.spec1)); U.spec2C.value.copy(C(k.spec2)); U.rimC.value.copy(C(k.rim));
   U.innerAmt.value = k.innerAmount; U.shine.value = k.shine; U.gloss1.value = k.gloss1; U.gloss2.value = k.gloss2;
   U.shift1.value = k.shift1; U.shift2.value = k.shift2; U.shiftNoise.value = k.shiftNoise; U.rimAmt.value = k.rimAmount; U.rootLen.value = k.rootLength;
+  U.uFlat.value = k.flat ? 1 : 0; U.uFlatGain.value = k.flatGain ?? 1; U.uSteps.value = k.steps || 0; U.uDither.value = k.dither ? 1 : 0;   // the retro look (off unless asked)
 }
 export function lightHair(U, keyDir, keyColour, fillDir, fillColour) {
   U.keyDir.value.copy(keyDir).normalize(); U.fillDir.value.copy(fillDir).normalize();
