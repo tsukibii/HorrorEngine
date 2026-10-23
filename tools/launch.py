@@ -120,7 +120,7 @@ TOOLS = [
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
-    ("Checks", "Tailor check (every clothing design on three bodies)", "node tools/character/tailor/check.mjs", {}),
+    ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
@@ -157,6 +157,7 @@ TOOLS = [
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
+    ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
     ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 

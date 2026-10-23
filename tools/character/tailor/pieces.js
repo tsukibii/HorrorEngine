@@ -1,7 +1,7 @@
 // The tailor's pieces: what each kind of garment keeps of the body (its cut lines as values, positive on the cloth),
 // how loose it sits, and the details lifted off it (bands, plackets, pockets, collars, belts, buttons).
 // Every length is in metres on MHR's average body (1.726 m) and scales with the body's height (F.s).
-import { cut, normals, adjacency, subdivide, PointGrid, Surface, smooth } from "./mesh.js";
+import { cut, normals, adjacency, subdivide, PointGrid, Surface, smooth, clamp } from "./mesh.js";
 import { crop, relax, thicken, lifted } from "./fit.js";
 import { height } from "./frame.js";
 
@@ -446,11 +446,14 @@ export function detail(F, G, d) {
     }
     case "pocket": {                                                 // a patch pocket (and its flap): a rounded rectangle seen from the front, the back or the side
       const look = d.on || "front", cw = (d.w ?? 0.11) * s / 2, ch = (d.h ?? 0.13) * s / 2, rr = (d.r ?? 0.012) * s;
-      const cy = height(F, d.at), dx = (d.x ?? 0) * s;
+      const cy = height(F, d.at), dx = (d.x ?? 0) * s, sx = Math.sign(dx || 1);
+      // a side pocket keeps to the outside of its leg (the crotch faces down, not away, and sits in its window too)
+      const leg = Object.values(F.legLines).find(l => Math.sign(l.p[l.p.length >> 1][0]) === sx);
+      const legX = y => { const P = leg.p; let i = 1; while (i < P.length - 1 && P[i][1] > y) i++; const a = P[i - 1], b = P[i], u = clamp((a[1] - y) / ((a[1] - b[1]) || 1), 0, 1); return a[0] + (b[0] - a[0]) * u; };
       return {
         value: (x, y, z, nx, ny, nz) => {
           let u, facing;
-          if (look === "side") { u = z - (d.z ?? 0) * s; facing = Math.sign(dx || 1) * nx; if (x * Math.sign(dx || 1) < 0) return -1; }
+          if (look === "side") { u = z - (d.z ?? 0) * s; facing = sx * nx; if ((x - (y < F.crotchY && leg ? legX(y) : 0)) * sx < 0) return -1; }
           else { u = x - dx; facing = look === "back" ? -nz : nz; if ((look === "back" ? -1 : 1) * (z - F.torsoAxis(y)[1]) < 0) return -1; }
           if (facing < -0.15 || F.arm(x, y, z)) return -1;           // it wraps round a curve (a bust, a thigh), but never onto the far side
           return Math.min(-rrect(u, y - cy, cw, ch, rr), G.V ? G.V(x, y, z) - 0.004 * s : 1);

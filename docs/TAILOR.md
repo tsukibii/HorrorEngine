@@ -98,18 +98,44 @@ lifted by them yet).
   in `tailor/worker.js` and refits on its own when the body's shape or height changes. What's worn is saved in
   `character.json` (`clothes`); the meshes are made live, like the hair styles, so there's nothing to go stale.
 - **Node:** `tools/character/tailor.js` is a plain module. `node tools/character/tailor/sheet.mjs --outfit "work
-  uniform" [--body feminine|masculine|average|slim_feminine|slim_masculine] [--height 1.62] [--close | --chest]
+  uniform" [--body feminine|masculine|average|slim_feminine|full_masculine...] [--height 1.62] [--close | --chest]
   [--uv | --debug] [--out x.png]` renders a contact sheet (Playwright); `node tools/character/tailor/check.mjs` is
-  TAILOR, on five bodies: MHR's average, its feminine and masculine presets, and the slim ones in
-  `tailor/bodies.json` (fitted with `mhr.py`'s `fit_measures` to a waist and hips 15 to 20% in).
+  TAILOR, on seven bodies: MHR's average, its feminine and masculine presets, and the slim and full ones in
+  `tailor/bodies.json` (fitted with `mhr.py`'s `fit_measures`: a waist and hips 15 to 20% in, or a waist 15% out with
+  a rounder belly, wider hips and thicker thighs). Where a gap in the body is narrower than the cloth's clearance
+  (between full thighs), the cloth settles in the middle of it, outside both sides.
 - **Export clothes OBJ** carries the fabric coordinates (`vt`, metres) and the normals (`vn`).
+
+## 3b. In motion
+
+The clothes move with the body by its own skinning, no simulation (the PSX-and-better target):
+`tailor/weights.js` gives every point of a garment four bones and their weights from the skin round it, a Gaussian
+over the skin's points near it, the same width for every layer close to the body (so a shirt and the trousers over it
+keep their few millimetres apart) and wider for cloth that stands off (a skirt's hem between the knees takes both
+thighs). It depends only on where the point is, so it's smooth over the cloth and the same on both sides of a seam.
+
+`node tools/character/tailor/motion.mjs --outfit "work uniform" --bodies feminine,slim_masculine,full_feminine,full_masculine
+[--poses rest,idle,walk0,walk0.5,walk1,sit,crouch,kneel,lunge] [--views 0,90] [--zoom 3 --at 0.03] [--marks]` builds
+each body as the desk does (`BodyFigure` on `MHR_lod1.fbx` with the body's identity weights), dresses it on its rest
+pose, skins the clothes to its skeleton and poses it with the desk's poses and its walk (`walkOverlay`'s two strides
+and between): a contact sheet, a pose a column and a body's views a block of rows, and a line per pose with how much
+of each garment's outside is under the skin (creases left out). `--marks` shows those points in red.
+
+What it shows (2026-10-23: the work uniform, the office blazer and the plaid-skirt school uniform on the average,
+feminine, masculine, slim and full bodies): standing and walking are clean on every body, the skirt swinging with the
+forward leg. In a deep sit or crouch the body's own skinning folds (the thighs swell up into the belly: plain linear
+skinning, without MHR's pose correctives) and the cloth follows the skin it's on, so trousers there rise over the belt
+as the bare thighs do; in a full body's walk the arms come down into its sides and the sleeves with them. Those are
+the body's, fixed where the body is (correctives in Unreal). A skirt in a sit is the cloth's: skinned to the thighs it
+turns up with them into a tube pointing forward, where a real one drapes over the lap and hangs at the sides. That
+needs cloth (Chaos Cloth on the hem in Unreal) or skirt bones; weights alone can't drape it.
 
 ## 4. Not done yet
 
-- **Into Unreal:** the clothes have no skin weights yet. Each vertex comes from a point on the body, so its weights
-  can be copied from the skin under it (the crop, the split and the cut each keep where their points came from). Then the clothes go to Unreal
-  as skeletal meshes on the character's skeleton. A skirt's hem or a coat's tails can take Chaos Cloth painted onto
-  that mesh. Hide the skin under tight clothes (Woohill's `hideSkinUnderCloth`) so it can't poke through in motion.
+- **Into Unreal:** the weights are there (§3b); the export isn't: the clothes still leave as OBJ. They go to Unreal
+  as skeletal meshes on the character's skeleton (an FBX or glTF with `weights.js`'s bones and weights), a skirt's hem
+  or a coat's tails with Chaos Cloth painted onto that mesh. Hide the skin under tight clothes (Woohill's
+  `hideSkinUnderCloth`) so it can't poke through in motion.
 - **Fabric in Unreal:** the export has the coordinates; the tiles and the look still have to go across (a material
   instance per garment with the tile, its size, the colour or pattern and the print).
 - **Seams and creases** are only where details are lifted; stitch lines and folds would be a normal map.

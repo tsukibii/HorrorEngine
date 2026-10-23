@@ -163,23 +163,26 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.selectOption("#clothesRows select >> nth=0", "work uniform");
     await page.click("#clothesRows >> text=Wear the outfit");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
-    // its look: denim and a print on the shirt, the materials only (nothing refits)
+    // its look: denim and a print on the shirt, the materials only (nothing refits). The outfit is socks and boots
+    // first: the shirt's row is found by its name
     const shirt = await page.evaluate(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").geometry.uuid);
-    await page.$eval("#worn details:has(summary:text-is('Fabric, pattern, print'))", d => { d.open = true; });
-    await page.selectOption("#worn details:has(summary:text-is('Fabric, pattern, print')) >> nth=0 >> select >> nth=0", "denim");
+    const SHIRT = "#worn > div:has(.row span:text-is('Work shirt (short sleeves)'))", LOOKS = `${SHIRT} details:has(summary:text-is('Fabric, pattern, print'))`;
+    const worn = d => `window.__body.st.clothes.find(c => c.design === "${d}")`;
+    await page.$eval(LOOKS, d => { d.open = true; });
+    await page.selectOption(`${LOOKS} >> select >> nth=0`, "denim");
     await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uFabricScale.value > 28);
-    await page.$eval("#worn details:has(summary:text-is('Fabric, pattern, print'))", d => { d.open = true; });
-    await page.fill("#worn details:has(summary:text-is('Fabric, pattern, print')) >> nth=0 >> input[type=text]", "STAFF"); await page.press("#worn details:has(summary:text-is('Fabric, pattern, print')) >> nth=0 >> input[type=text]", "Enter");
+    await page.$eval(LOOKS, d => { d.open = true; });
+    await page.fill(`${LOOKS} >> input[type=text]`, "STAFF"); await page.press(`${LOOKS} >> input[type=text]`, "Enter");
     await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uPrintOn.value === 1);
     if (await page.evaluate(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").geometry.uuid) !== shirt) throw new Error("a new look refitted the shirt");
-    if (!(await page.evaluate(() => window.__body.st.clothes[0].print?.text === "STAFF"))) throw new Error("the print isn't kept with the character");
+    if (!(await page.evaluate(`${worn("work-shirt")}.print?.text === "STAFF"`))) throw new Error("the print isn't kept with the character");
     // the shirt's hem dragged up by its handle in the view: kept as the garment's own edit, the shirt cut shorter
     const low = name => page.evaluate(n => { const m = window.__body.GARMENTS.children.find(g => g.name === n); let lo = 1e9; const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) lo = Math.min(lo, P[i]); return lo; }, name);
     const hem0 = await low("work-shirt");
-    await page.click('#views button[data-yaw="0"]'); await page.waitForTimeout(400);
+    await page.click('#views button[data-v="body"]'); await page.click('#views button[data-yaw="0"]'); await page.waitForTimeout(400);   // the earlier tabs left the view on the head
     const [hx, hy] = await page.evaluate(() => window.__body.garmentHandleOnScreen("work-shirt:hem"));
     await page.mouse.move(hx, hy); await page.mouse.down(); await page.mouse.move(hx, hy - 25, { steps: 5 }); await page.mouse.move(hx, hy - 50, { steps: 5 }); await page.mouse.up();
-    await page.waitForFunction(() => /^crotch\+/.test(window.__body.st.clothes[0].edit?.hem?.at || ""), null, { timeout: 20000 });
+    await page.waitForFunction(`/^crotch\\+/.test(${worn("work-shirt")}.edit?.hem?.at || "")`, null, { timeout: 20000 });
     await page.waitForFunction(async h => { const m = window.__body.GARMENTS.children.find(g => g.name === "work-shirt"); if (!m) return false; let lo = 1e9; const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) lo = Math.min(lo, P[i]); return lo > h + 0.03; }, hem0, { timeout: 120000 });
     const top = () => page.evaluate(() => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return t; });
     const was = await top(), h = await page.evaluate(() => window.__body.st.height);
@@ -187,10 +190,11 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.waitForFunction(w => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return t > w + 0.04; }, was, { timeout: 120000 });
     await page.$$eval("#baseRows input", (ins, v) => { ins[1].value = v; ins[1].dispatchEvent(new Event("input")); }, h);
     await page.waitForFunction(w => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return Math.abs(t - w) < 0.01; }, was, { timeout: 120000 });
-    await page.click("#worn button");                                       // the shirt off, the trousers stay
-    await page.waitForFunction(() => window.__body.st.clothes.length === 1 && window.__body.GARMENTS.children.every(m => m.name.startsWith("work-trousers")), null, { timeout: 120000 });
-    await page.click("#worn button");
-    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0);
+    await page.click(`${SHIRT} button[title='take it off']`);               // the shirt off, the rest stays
+    await page.waitForFunction(() => { const B = window.__body; return !B.st.clothes.some(c => c.design === "work-shirt") && B.st.clothes.length === 3 &&
+      !B.GARMENTS.children.some(m => m.name.startsWith("work-shirt")) && B.GARMENTS.children.some(m => m.name.startsWith("work-trousers")); }, null, { timeout: 120000 });
+    while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("hair: a twin-tail wig settles off the head and shoulders, survives a shake, exports its chains; grown cards too", async () => {

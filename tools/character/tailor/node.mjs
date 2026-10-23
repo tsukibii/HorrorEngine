@@ -45,7 +45,7 @@ export function objText(parts, header = "") {
 }
 export const writeObj = (path, parts, header) => writeFileSync(path, objText(parts, header));
 
-/** a test body's weights by name: MHR's presets (average, feminine, masculine) or the tailor's own (tailor/bodies.json: slim_feminine, slim_masculine) */
+/** a test body's weights by name: MHR's presets (average, feminine, masculine) or the tailor's own (tailor/bodies.json: slim_ and full_feminine, slim_ and full_masculine) */
 export function bodyWeights(name) {
   if (name === "average") return [];
   const pre = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_presets.json"))).presets;

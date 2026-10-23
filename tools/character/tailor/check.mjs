@@ -1,8 +1,8 @@
-// The tailor's check: every design in Content/Studio/Clothes/designs.json is cut on five bodies (MHR's average, its
-// feminine and masculine presets, and slim ones of each: tailor/bodies.json), every outfit in outfits.json on the
-// feminine one, in order. Each garment has
-// triangles, no stray numbers, indices in range, fabric coordinates and normals on every point, lies outside the body (its outside never under the skin), reaches the
-// heights its design names, and comes out the same twice. Ends "TAILOR ok".
+// The tailor's check: every design in Content/Studio/Clothes/designs.json is cut on seven bodies (MHR's average, its
+// feminine and masculine presets, and slim and full ones of each: tailor/bodies.json), every outfit in outfits.json on
+// the feminine one, in order. Each garment has triangles, no stray numbers, indices in range, fabric coordinates and
+// normals on every point, lies outside the body (its outside never under the skin), reaches the heights its design
+// names, and comes out the same twice. Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
 import { readFileSync } from "fs";
@@ -57,7 +57,7 @@ const look = (label, B, g) => {
 };
 
 const m = loadMhr(), t0 = Date.now(), counts = {};
-const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76]];
+const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76], ["full_feminine", 1.64], ["full_masculine", 1.78]];
 for (const [bname, h] of BODIES) {
   const b = mhrBody(m, bodyWeights(bname), h), B = TAILOR.body(b.P, b.T);
   for (const [name, d] of Object.entries(designs)) {

@@ -57,16 +57,21 @@ export function scan(P, T) {
   const rows = [];
   for (let r = 0; r < nr; r++) { const y = low + 0.01 + r * step; rows.push({ y, loops: slice(P, T, y, bucket[r]) }); }
   const central = r => r.loops.filter(l => l.x0 < 0 && l.x1 > 0).sort((a, b) => b.area - a.area)[0];
-  const at = y => rows[clamp(Math.round((y - 0.01) / step), 0, rows.length - 1)];
+  const at = y => rows[clamp(Math.round((y - low - 0.01) / step), 0, rows.length - 1)];
 
+  // the crotch: the first row down with no loop across the middle that reaches well to both sides of it (a full
+  // thigh's own loop can cross the middle by a few millimetres)
   let crotchY = 0;
-  for (const r of rows.filter(r => r.y > 0.40 * H && r.y < 0.62 * H).reverse()) if (!central(r)) { crotchY = r.y; break; }
+  const across = r => r.loops.some(l => Math.min(-l.x0, l.x1) > 0.3 * Math.max(-l.x0, l.x1));
+  for (const r of rows.filter(r => r.y > 0.40 * H && r.y < 0.62 * H).reverse()) if (!across(r)) { crotchY = r.y; break; }
   crotchY += step / 2;
 
   let armpitY = 0.75 * H;
   for (const r of rows.filter(r => r.y > 0.68 * H && r.y < 0.9 * H).reverse()) {
     const c = central(r); if (!c) continue;
-    if (c.x1 - c.x0 < 0.52 * s && r.loops.length >= 3) { armpitY = r.y + step; break; }
+    // the torso and an arm each side, beyond its edges (a slice under the chin cuts the neck and the jaw: three loops too)
+    const arms = r.loops.filter(l => l !== c && (l.cx > c.x1 || l.cx < c.x0));
+    if (c.x1 - c.x0 < 0.52 * s && arms.some(l => l.cx > 0) && arms.some(l => l.cx < 0)) { armpitY = r.y + step; break; }
   }
 
   const arm = { L: [], R: [] };

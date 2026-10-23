@@ -27,7 +27,7 @@ export function relax(P, T, N, ease, opts = {}) {
   const iters = opts.iters ?? 16, lam = opts.lambda ?? 0.5, cols = opts.colliders || [], W = opts.weight;
   const clear = opts.clear || ease, hints = opts.hints ? Int32Array.from(opts.hints) : null;   // the skin's vertex each point came from
   for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) Q[i * 3 + k] = P[i * 3 + k] + N[i * 3 + k] * ease[i];
-  const hit = {};
+  const hit = {}, h2 = {};
   const push = (exact = false) => {
     for (const [ci, c] of cols.entries()) {
       const walk = hints && ci === 0 && !exact;                      // the body: walk from where the point was last (a full search at the end,
@@ -36,8 +36,13 @@ export function relax(P, T, N, ease, opts = {}) {
         const r = c.surf.closest(Q[i * 3], Q[i * 3 + 1], Q[i * 3 + 2], need + 0.04, hit, walk && !(opts.contested && opts.contested[i]) ? hints[i] : -1);
         if (r && walk) hints[i] = r.v;
         if (!r || r.d >= need) continue;
-        const m = need - r.d;
+        const m = need - r.d, ox = r.x, oy = r.y, oz = r.z;
         Q[i * 3] += r.nx * m; Q[i * 3 + 1] += r.ny * m; Q[i * 3 + 2] += r.nz * m;
+        if (!exact) continue;
+        // a gap narrower than the clearance (between thighs that nearly touch): pushed out of one side it's in the other;
+        // then the middle of the gap, outside both
+        const q = c.surf.closest(Q[i * 3], Q[i * 3 + 1], Q[i * 3 + 2], need + 0.04, h2);
+        if (q && q.d < 0) { Q[i * 3] = (ox + q.x) / 2; Q[i * 3 + 1] = (oy + q.y) / 2; Q[i * 3 + 2] = (oz + q.z) / 2; }
       }
     }
   };

@@ -147,7 +147,7 @@
     },
     "blazer": {
       "label": "Blazer", "slot": "jacket", "color": "#1d2840", "surface": "wool", "buttons": "#c8b88a", "thickness": 0.003,
-      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.015, "width": 0.07}, "open": {"from": "bust-0.07", "gap": 0.0016, "top": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch-0.02"}, "ease": {"body": 0.024, "sleeve": 0.022}, "tension": 56},
+      "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.015, "width": 0.07}, "open": {"from": "bust-0.07", "gap": 0.0016, "top": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch+0.01"}, "ease": {"body": 0.024, "sleeve": 0.022}, "tension": 56},
       "details": [
         {"kind": "collar", "width": 0.04, "tips": 0.0, "lift": 0.004, "roll": 0.006, "thickness": 0.003, "front": false},
         {"kind": "lapel", "width": 0.075, "lift": 0.004, "roll": 0.004, "thickness": 0.003},

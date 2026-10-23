@@ -1,7 +1,7 @@
 // A contact sheet of the tailor's clothes on a body, rendered with three.js in headless Chromium (Playwright):
 // front, three-quarter, side and back, full length and close, so a garment is reviewed by looking, not by guessing.
 //
-//   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_feminine|slim_masculine] [--height 1.62]
+//   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_ or full_feminine|slim_ or full_masculine] [--height 1.62]
 //        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close | --chest | --legs | --feet] [--uv | --debug] [--look JSON]
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
