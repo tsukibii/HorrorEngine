@@ -220,7 +220,7 @@ let SCALPM = null, SCALP_DIRTY = true;
 function drawScalp() {
   if (!SCALP_DIRTY) return; SCALP_DIRTY = false;
   if (SCALPM) { SCALPM.parent?.remove(SCALPM); SCALPM.geometry.dispose(); SCALPM.material.dispose(); SCALPM = null; }
-  const sc = st.scalp; if (!sc || !sc.on || !HEAD || !LOCAL_PTS) return;
+  const sc = st.scalp; if (!sc || !sc.on || !HEAD || !LOCAL_PTS || !st.locks.length) return;   // no hair, no darkening: a bald head is bare
   const g = scalpGeometry(sc); if (!g) return;
   SCALPM = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
   SCALPM.renderOrder = 1; SCALPM.userData.alpha = scalpAlphas(sc); SCALPM.visible = !BAKEVIEW; HEAD.add(SCALPM); HAIRV++;
@@ -712,7 +712,7 @@ function buildBake(name) {                                             // the ba
   const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
   const mat = bakeMat();
   if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mat); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
-  if (st.scalp && st.scalp.on) {                                       // the darkened scalp: its own mesh, unlit, its alpha by vertex
+  if (st.scalp && st.scalp.on && st.locks.length) {                    // the darkened scalp: its own mesh, unlit, its alpha by vertex
     const g = scalpGeometry(st.scalp, true);
     if (g) { const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ name: "hair_scalp", vertexColors: true, transparent: true, depthWrite: false })); m.name = "hair_scalp"; root.add(m); summary.scalp = { vertices: g.attributes.position.count, thickness: st.scalp.thickness }; }
   }
@@ -1107,6 +1107,12 @@ function mirrorPanel() {
 // ---- the starting points: hairstyles laid out rough, finished by gravity (salonpresets.js) -----------------------------
 function applyPreset(id, fall = false) {
   remember();
+  if (id === "bald") {                                                 // a bald head: no locks, one empty group, the scalp bare
+    st.locks = []; st.groups = [{ id: "g1", name: "Hair", visible: true }]; st.layering = false; ACTIVE_GROUP = "g1"; SELECTED = null;
+    SCALP_DIRTY = true; locksPanel(); selPanel(); render();
+    status("Bald: no hair (Undo brings it back); draw locks or pick a preset to start one", "ok");
+    return { locks: [], groups: st.groups };
+  }
   const P = buildPreset(id, COL);
   st.locks = P.locks; st.groups = P.groups; st.layering = P.layering; ACTIVE_GROUP = st.groups[0].id; SELECTED = null;
   if (P.roots) { Object.assign(st.roots, P.roots); SL.setRoots(st.roots); rootsPanel(); }   // short hair lifts less at the root
@@ -1120,6 +1126,7 @@ function presetPanel() {
   const box = $("#presetbox"); if (!box) return; box.innerHTML = "";
   box.append(el("p", { className: "note", textContent: "A hairstyle laid out rough, in layers, to be finished by gravity: make it, let it fall, switch gravity off when it looks right. It replaces the hair (undo brings it back)." }));
   const sel = el("select");
+  sel.append(el("option", { value: "bald", textContent: "Bald (no hair)" }));
   for (const who of ["women", "men"]) { const g = el("optgroup", { label: who === "women" ? "Women" : "Men" }); for (const p of PRESETS.filter(p => p.who === who)) g.append(el("option", { value: p.id, textContent: `${p.label} (${Math.round(p.length * 100)} cm)` })); sel.append(g); }
   box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), sel, el("span")));
   box.append(el("button", { textContent: "Make it", onclick: () => applyPreset(sel.value) }), el("button", { textContent: "Make it and let it fall", onclick: () => applyPreset(sel.value, true) }));
@@ -1380,9 +1387,9 @@ async function openPerson(name) {                                     // a chara
   PERSON = await personBody(name);
   const r = await fetch(`api/people/${enc(name)}/salon/salon.json?v=${Date.now()}`);
   if (r.ok) await applyHair(await r.json(), name);
-  else { st.head.person = name; await buildHead(); characterPanel(); bakePanel(); }
+  else { st.head.person = name; await buildHead(); applyPreset("bald"); characterPanel(); bakePanel(); }   // no hair of its own yet: it starts bald
   $("#person").value = name;
-  status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet, the hair shown is put on it when you Save"}`, PERSON.face ? "ok" : "bad");
+  status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet: it starts bald (Start from: a preset or a hairstyle)"}`, PERSON.face ? "ok" : "bad");
 }
 function allPanels() { characterPanel(); refPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); lookPanel(); bakePanel(); }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));

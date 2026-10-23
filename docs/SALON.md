@@ -27,7 +27,7 @@ hair on, its animations) goes to Unreal. Nothing goes from the salon to Unreal o
   has only its weights and height (no face) until it is. The Character Studio's Hair tab links here
   (`salon.html?person=NAME`).
 - **Save** keeps the hair on the character: `People/<name>/salon/salon.json`. Opening the character again brings it
-  back. A character with no hair of its own yet takes the hair shown when you Save (a way to start from another's).
+  back. A character with no hair of its own yet opens **bald** (2026-10-23); to start from another's hair, Load it as a hairstyle.
 - **Bake** puts it on the character: `People/<name>/salon/salon.glb` and `salon_bake.json` (with the head frame it was
   made on). The Character Studio wears it (Hair: **made in the salon**): the GLB on the head by that frame, riding the
   body and its head motions; the brows and lashes are the studio's own. After changing the head in the studio, save
@@ -208,6 +208,9 @@ the base still holds the rest up, roots still go on the skull (the head is what'
 the hidden base. Saved as `volume.blend`.
 
 ## Presets: starting points finished by gravity (2026-10-22)
+
+**Bald** (2026-10-23) heads the list: no locks, one empty group; with no hair the darkened scalp isn't drawn or baked, so a
+bald head is bare. Undo brings the hair back.
 
 **Start from** makes a hairstyle laid out rough on purpose, in layers, to be finished by gravity: make it, switch
 Gravity on (or **Make it and let it fall**), and switch it off when it looks right; then refine. It replaces the hair

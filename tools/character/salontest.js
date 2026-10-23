@@ -625,6 +625,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__salon && window.__salon.ready, null, { timeout: 90000 }); await openSteps();
     const on = await ev(() => { const s = window.__salon, P = s.PERSON; let top = -1; for (let i = 1; i < P.body.length; i += 3) top = Math.max(top, P.body[i]); return { name: P.name, face: P.face, top, picked: document.querySelector("#person").value }; });
     if (on.name !== TEST || !on.face || on.picked !== TEST || Math.abs(on.top - 1.58) > 0.003) throw new Error(JSON.stringify(on));
+    await ev(() => { window.__salon.presets.apply("bald"); window.__salon.render(); });             // Bald: no locks, no darkened scalp
+    if (await count() !== 0 || await ev(() => window.__salon.scalpInfo())) throw new Error("Bald left hair or a darkened scalp");
     await ev(() => { window.__salon.presets.apply("m_crop"); window.__salon.render(); });
     const locks = await count();
     await ev(() => { document.querySelector("#status").textContent = ""; }); await page.click("#saveHair");
