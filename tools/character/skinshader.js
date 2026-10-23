@@ -75,6 +75,13 @@ uniform float uProc, uPigOn, uScale, uHasPhoto, uHasTouch, uHasPig, ${FEATURES.m
 uniform vec3 uTone, uPhotoTone, ${COLOURS.map(c => "uc_" + c[0]).join(", ")};
 uniform vec3 ${Object.keys(POINTS).join(", ")}, uEarL, uEarR, uFaceC, uMouthC, uRight, uUp, uFwd;
 uniform vec3 uLidUL[9], uLidUR[9], uLidLL[9], uLidLR[9];
+uniform float uCutOn; uniform vec2 uCutL[32], uCutR[32], uCutZ; uniform vec4 uCutBoxL, uCutBoxR;   // the eyes' openings (index.html)
+bool inCut(vec2 P[32], vec4 box, vec2 p) {                         // inside an eye's lid outline (a smoothed polygon)
+  if (p.x < box.x || p.y < box.y || p.x > box.z || p.y > box.w) return false;
+  bool c = false;
+  for (int i = 0, j = 31; i < 32; j = i++) if ((P[i].y > p.y) != (P[j].y > p.y) && p.x < (P[j].x - P[i].x) * (p.y - P[i].y) / (P[j].y - P[i].y) + P[i].x) c = !c;
+  return c;
+}
 uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf, uLayGlow;
 uniform float uHasLay, uShowSel;
 varying float vSel;
@@ -216,7 +223,9 @@ export function procedural(material) {
   const u = { uProc: { value: 0 }, uPigOn: { value: 0 }, uScale: { value: 1 }, uHasPhoto: { value: 0 }, uTone: { value: new THREE.Color() }, uPhotoTone: { value: new THREE.Color(1, 1, 1) },
               uPhotoMap: { value: null }, uPhotoMask: { value: null },
               uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null },
-              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null } };   // the layers (layers.js)   // the touch-up (touchup.js)
+              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
+              uCutOn: { value: 0 }, uCutL: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uCutR: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) },
+              uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
@@ -226,7 +235,8 @@ export function procedural(material) {
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
+      .replace("#include <color_fragment>", `if (uCutOn > 0.5 && ((vObj.z > uCutZ.x && inCut(uCutL, uCutBoxL, vObj.xy)) || (vObj.z > uCutZ.y && inCut(uCutR, uCutBoxR, vObj.xy)))) discard;   // the eyes cut out
+skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
   if (uHasPhoto > 0.5) {                                             // the picture inside its mask, the procedural skin outside
@@ -273,7 +283,7 @@ if (uProc > 0.5) {                                                   // light th
 if (uProc > 0.5 || uHasLay > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-7";
+  material.customProgramCacheKey = () => "studio-skin-8";
   return u;
 }
 

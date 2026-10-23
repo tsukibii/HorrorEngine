@@ -176,26 +176,28 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!body) throw new Error("the Hair tab didn't save the body for the salon");
     await page.click('#tabs button[data-tab="face"]');
     if (await page.evaluate(() => document.querySelector("main").hidden || !document.querySelector("#salonFrame").hidden)) throw new Error("the studio didn't come back from the salon");
-    const before = await page.evaluate(() => window.__body.hair ? window.__body.hair.brows.position.length : 0);
-    await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // brows and lashes off
+    if (await page.evaluate(() => window.__body.st.hair.brows || window.__body.st.hair.lashes)) throw new Error("brows and lashes should start off");
+    await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // brows and lashes on
+    await page.waitForFunction(() => window.__body.st.hair.brows && window.__body.st.hair.lashes && window.__body.hair && window.__body.hair.brows.position.length, null, { timeout: 10000 });
+    const before = await page.evaluate(() => window.__body.hair.brows.position.length);
+    await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // and off again
     await page.waitForFunction(() => !window.__body.st.hair.brows && !window.__body.st.hair.lashes, null, { timeout: 10000 });
-    await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // and back on
-    if (!before) throw new Error("no brows or lashes grown");
     console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"}); brows and lashes ${before / 3} points`);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("the eyes: the shell cut out inside the lid outlines; a bigger eyeball grows back from its pupil and shows only through the opening; Pupil size", async () => {
+  await step("the eyes: cut out of the skin along the smoothed lid outline, filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
     const r = await page.evaluate(() => {
-      const b = window.__body, L = b.EYES.L, front = () => L.position.z + L.scale.x, cut = () => b.CUT.reduce((a, x) => a + x, 0);
-      b.st.eyes.size = 1; b.compose(); const f1 = front(), r1 = L.scale.x, n = cut();
-      const left = (() => { let k = 0; for (let t = 0; t < b.CUT.length; t++) if (b.CUT[t] && b.POS[b.TRIS[t * 3] * 3] > 0) k++; return k; })();
-      b.st.eyes.size = 1.8; b.paintEyes(); b.compose(); const f2 = front(), r2 = L.scale.x;
-      const stencil = L.material.stencilWrite && L.material.stencilFunc === 514;   // THREE.EqualStencilFunc
-      b.st.eyes.on = false; b.compose(); const off = cut(); b.st.eyes.on = true; b.st.eyes.size = 1; b.paintEyes(); b.compose();
-      return { n, left, f1, f2, r1, r2, stencil, off, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
+      const b = window.__body, L = b.EYES.L, front = () => L.position.z + L.scale.x, i = n => b.ENAMES.indexOf(n);
+      const fan = () => { const P = b.HOLES.geometry.attributes.position.array; let a = 0; for (let k = 0; k < P.length; k += 9) a += Math.abs((P[k + 3] - P[k]) * (P[k + 7] - P[k + 1]) - (P[k + 6] - P[k]) * (P[k + 4] - P[k + 1])) / 2; return a; };
+      b.st.expr.fill(0); b.st.eyes.size = 1; b.compose(); const f1 = front(), r1 = L.scale.x, cut = b.SKU.uCutOn.value, open = fan(), pts = b.outline("L").pts.length;
+      b.st.eyes.size = 2; b.paintEyes(); b.compose(); const f2 = front(), r2 = L.scale.x, r0 = 0.0118 * b.scale;
+      const stencil = L.material.stencilWrite && L.material.stencilFunc === 514 && L.material.depthTest === false;   // THREE.EqualStencilFunc
+      b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const shut = fan(); b.st.expr.fill(0);
+      b.st.eyes.on = false; b.compose(); const off = b.SKU.uCutOn.value; b.st.eyes.on = true; b.st.eyes.size = 1; b.paintEyes(); b.compose();
+      return { cut, pts, open, shut, f1, f2, r1, r2, r0, stencil, off, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
     });
-    if (!(r.n > 20 && r.left > 5 && r.left < r.n) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r2 > 1.7 * r.r1) || !r.stencil || r.off || !r.pupil) throw new Error("the eyes: " + JSON.stringify(r));
-    console.log(`       ${r.n} triangles cut (left ${r.left}); size 1.8: radius ${(r.r1 * 1000).toFixed(1)} -> ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
+    if (r.cut !== 1 || r.pts !== 32 || !(r.open > 0) || !(r.shut < 0.05 * r.open) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r1 >= r.r0) || !(r.r2 >= 2 * r.r0 - 1e-9) || !r.stencil || r.off || !r.pupil) throw new Error("the eyes: " + JSON.stringify(r));
+    console.log(`       openings ${(r.open * 1e6).toFixed(0)} mm² open, ${(r.shut * 1e6).toFixed(1)} shut; the eyeball fitted at ${(r.r1 * 1000).toFixed(1)} mm (12 mm: ${(r.r0 * 1000).toFixed(1)}), size 2: ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
   });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");

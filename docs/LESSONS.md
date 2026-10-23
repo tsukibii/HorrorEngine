@@ -371,3 +371,8 @@ script, grep for it (`\bNAME\b`).
   paint projected onto picked vertices) was rejected by the user too: a real opening with a real eyeball reads better.
 - **Replacing a prefix of a line moves its tail:** swapping the `DP[...]` part of a line that also set the normals put
   `DN[...] = NP[...]` after the new line's comment; every normal was zero and the body rendered black. Replace whole lines.
+- **Cutting along MHR's triangles leaves teeth:** its lid edge is a few long thin triangles that poke into the opening
+  on one side; whichever rule picks them (the middle inside, all corners inside, two corners inside), some side gets
+  teeth. Cut per pixel in the skin's shader along MediaPipe's smoothed outline instead, and draw the eyeball over what's
+  inside the opening (MHR's lids fold inwards, in front of any eyeball). Measure it: the head's inside in magenta, the
+  magenta pixels counted over sixteen poses, front and three-quarter.
