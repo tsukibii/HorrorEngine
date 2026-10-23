@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24, evening (character creator v3: the branches together)
+
+- **The work moves to `claude/character-creator-v3`**, forked from v2, with the tailor (`port-woodhill-clothing`) and
+  `claude/practical-tesla-zncon6` merged in; `glassmorphism-theme` goes in later, when it's finished.
+- **The tailor replaces the GarmentCode garment tool for good:** the old tool isn't kept alongside it. The sculpt's
+  body (and a photo's face) is what the tailor cuts the clothes from, and they refit when the sculpt changes.
+
 ## 2026-10-24, later (circles on the body, a smoother bake, the view's buttons)
 
 - **Shape by hand, with circles on the body** (after the user's references: a game's face editor and body editor):
@@ -49,6 +56,26 @@ The user's answers, newest first. They override the plan, the research and the d
 - **Eyes: cut out, an eyeball behind.** Not the eye plane (tried and dropped the same day). The head's closed shell is
   cut out inside the lid outline; the eyeball behind each opening gets a size that grows from its pupil back into the
   head (it fills the opening, never clips out), and a pupil size.
+
+## 2026-10-23, evening (PBR sets: one folder at the root, a viewer in the Studio)
+
+- **PBR sets live in `assets/pbr/` at the project's root**, a folder each, and nothing inside it is tracked by git.
+  The shelf's first place, `Content/Studio/PBR`, is still read so nothing there goes missing; new sets go to
+  `assets/pbr`.
+- **Maps are found by the naming the user's sets use** (`denim1_albedo.png`, `_ao`, `_height`, `_metallic`,
+  `_normal-dx`, `_roughness`: the last word of the name) **and can be chosen by hand** when the names say wrong.
+- **A PBR viewer in the Character Studio** (its top bar's **PBR** button: each set on a sphere, cube, room corner and
+  close-up), so the sets don't have to be opened by hand to see them.
+- **A colour mask over a set isn't wanted for now**: the tint (the garment's colour over the set) is enough.
+
+## 2026-10-23, later (our own clothes: the tailor, after Woohill; GarmentCode removed)
+
+- **The GarmentCode garment maker is taken out** (its drapes were bad, and it's bloat we don't need): gone are
+  `tools/garment.py`, the Studio's `clothes.py`, `drape.py` and `make_designs.py`, the GarmentCode designs and
+  outfits, Mari's patterns in the Pilot, the server's routes, the launcher lines and the setup step.
+- **Clothes are our own generator, inspired by Woohill's character creator**, with far more polygons for our
+  realistic bodies. The cloth doesn't need to be properly simulated: the aim is **a bit better than PSX-style
+  clothing**. Success is a typical work uniform, a t-shirt, pants, shorts and a skirt.
 
 ## 2026-10-23 (the Gaussian splat is removed)
 

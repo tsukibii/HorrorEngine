@@ -107,8 +107,11 @@ rooms that can change between chapters. The panel under the 3D view counts what 
 - **Floor thresholds:** where a doorway joins two rooms with different footsteps (wood to tile at the washroom
   door, the genkan step), a thin strip under the door (1.2 cm to start; *threshold* under Finish, 0 for none).
 - **Looks:** the selected room's floor, walls, ceiling and trim from the texture sets (`cc0.py fetch`ed ones and the
-  ones the stories already use), saved as the room's `look`; *Same look for every <kind>* copies it to each room of
-  that kind on the level.
+  ones the stories already use, and your PBR shelf's), saved as the room's `look`; *Same look for every <kind>*
+  copies it to each room of that kind on the level. The **PBR** button (top bar) opens the shelf page (docs/ASSETS.md
+  §6: each set on a sphere, a cube, a room corner, a close-up; its maps by name or by hand) in its own tab. Back in
+  the builder, what was added or changed there is in the pickers and the walk view without a reload (and so are kit
+  presets saved in the kit maker).
 
 An existing level opens with its props. They stay in their rooms in room space, so they move with the room. Scenes
 and stitches that name a room id keep working as long as the id does; renaming a room that a scene names asks first.

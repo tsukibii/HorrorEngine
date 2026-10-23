@@ -28,7 +28,7 @@ from storykit import pbr as PBR  # noqa: E402 - the PBR shelf (Content/Studio/PB
 PORT = int(os.environ.get("BODY_PORT", 8793))
 PEOPLE = ROOT / "Content" / "Studio" / "People"
 BODIES = ROOT / "Content" / "Studio" / "Bodies"
-DESIGNS = ROOT / "Content" / "Studio" / "Clothes" / "designs"
+CLOTHES = ROOT / "Content" / "Studio" / "Clothes"           # the tailor's designs and outfits (tools/character/tailor.js)
 VENDOR = ROOT / "tools" / "director" / "vendor"     # three.js, shared with the desk
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
          ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -143,19 +143,22 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
             f = PEOPLE / clean(parts[2]) / "salon" / parts[4]                    # the character's hair from the salon
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
-        if parts[:2] == ["api", "outfits"]:                                         # garments made in order, each over the last
-            f = DESIGNS.parent / "outfits.json"
-            return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"outfits": {}})
-        if parts[:2] == ["api", "designs"]:                                         # the garment designs
-            return self.send(200, {"designs": sorted(f.stem for f in DESIGNS.glob("*.yaml"))})
-        if parts[:2] == ["api", "clothes"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a draped garment
-            f = PEOPLE / clean(parts[2]) / "clothes" / clean(parts[3]) / "garment.obj"
-            return self.send(200, f.read_bytes(), "text/plain") if f.exists() else self.send(404, {"error": "not made yet"})
-        if parts[:2] == ["api", "pbr"]:                    # the shelf's sets, for a PBR fill: {ref: {maps: {albedo: file...}}}
-            return self.send(200, {"sets": {r: {"maps": m["maps"], "tile_m": m.get("tile_m", 2.0)} for r, m in PBR.scan(write=False).items()}})
-        if parts[0] == "pbrfile" and len(parts) >= 3 and ".." not in parts:        # /pbrfile/<category>/<name>/<file>
-            f = PBR.ROOT.joinpath(*parts[1:])
-            return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
+        if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
+            return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
+        if parts[:2] == ["api", "pbr"]:                    # the shelf (assets/pbr), scanned: {root, sets: {ref: {maps: {albedo: file...},
+            sets = PBR.scan()                                 # tile_m, normal, orm, files, by_hand...}}} for PBR fills, clothes, pbr.html
+            for ref, m in sets.items():
+                m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
+            return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
+        if parts[0] in ("pbrfile", "pbr") and len(parts) >= 3:   # /pbrfile/<set path>/<file> (or /pbr/..., as the shelf page asks)
+            rel = [urllib.parse.unquote(p) for p in parts[1:]]
+            f = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None
+            return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f and f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
+        if parts[0] in ("pbr.html", "pbr.js") and len(parts) == 1:   # the PBR shelf page (the desk's: one viewer for both), back to here
+            page = (ROOT / "tools" / "director" / parts[0]).read_text(encoding="utf-8")
+            if parts[0] == "pbr.html":
+                page = page.replace('<a href="builder.html" style="color:var(--dim)">scene builder</a>', '<a href="/" style="color:var(--dim)">Character Studio</a>')
+            return self.send(200, page.encode("utf-8"), TYPES[".html" if parts[0].endswith("html") else ".js"])
         if parts[:2] == ["api", "layers"] and len(parts) == 3 and clean(parts[2]):      # the paint layers (layers.js), saved as one JSON
             f = PEOPLE / clean(parts[2]) / "layers.json"
             return self.send(200, f.read_bytes(), "application/json") if f.exists() else self.send(200, {"layers": []})
@@ -218,6 +221,19 @@ class Handler(BaseHTTPRequestHandler):
             if data:                                                           # an empty body clears the slot
                 (d / (parts[3] + ext)).write_bytes(data)
             return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "pbr"] and len(parts) >= 4 and Path(parts[-1]).suffix.lower() in PBR.IMG:   # /api/pbr/<set path>/<file>:
+            rel = [clean(p) for p in parts[2:]]                                    # a map into the shelf (a set from files)
+            if not all(rel) or Path(rel[-1]).suffix.lower() not in PBR.WEB:
+                return self.send(400, {"error": "a map: a JPG or PNG with a plain name"})
+            ref = "pbr/" + "/".join(rel[:-1]); d = PBR.set_dir(ref); d.mkdir(parents=True, exist_ok=True)
+            (d / rel[-1]).write_bytes(self.body())
+            m = PBR.meta(d, write=True)                                           # which map it is, by its name's last word
+            return self.send(200, {"ok": True, "ref": ref, "map": PBR.map_of(rel[-1]), "meta": m})
+        if parts[:2] == ["api", "pbr"] and len(parts) >= 3:                       # /api/pbr/<set path>: its tile, source, note, maps by hand
+            try:
+                return self.send(200, PBR.save("pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:]), json.loads(self.body().decode("utf-8"))))
+            except (ValueError, OSError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "skin"] and len(parts) == 4 and name and parts[3] in ("paint", "touch", "pigment"):   # the touch-up's layers
             data = self.body()
             if not data.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -235,27 +251,6 @@ class Handler(BaseHTTPRequestHandler):
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(self.body())
             return self.send(200, {"ok": True, "path": str(f.relative_to(ROOT))})
-        if parts[:2] == ["api", "clothes"] and len(parts) == 3 and name:          # make and drape a garment on this body
-            q = json.loads(self.body().decode("utf-8") or "{}")
-            design = clean(q.get("design"))
-            if not design or not (DESIGNS / f"{design}.yaml").exists():
-                return self.send(400, {"error": "pick a design"})
-            py = ROOT / "vendor" / "garmentcode" / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-            if not py.exists():
-                return self.send(400, {"error": "GarmentCode isn't set up: python tools/garment.py setup"})
-            out, body = PEOPLE / name / "clothes" / design, PEOPLE / name / "body.bin"
-            r = subprocess.run([str(py), str(HERE / "clothes.py"), "--out", str(out), "--design", design,
-                                "--height", str(float(q.get("height", 1.7))), "--weights", json.dumps(q.get("weights", [])),
-                                "--locks", str(q.get("locks", "auto")),
-                                "--under", ",".join(str(PEOPLE / name / "clothes" / u / "garment.obj") for u in q.get("under", [])
-                                                    if clean(u) and (PEOPLE / name / "clothes" / u / "garment.obj").exists())]
-                               + (["--body", str(body)] if q.get("body") and body.exists() else []),   # a sculpted body: made on it as the studio shows it
-                               capture_output=True, text=True, encoding="utf-8")
-            line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
-            if r.returncode or not line:
-                return self.send(500, {"error": "the garment failed: " + (r.stderr or r.stdout)[-600:]})
-            res = json.loads(line)
-            return self.send(200, {"design": design, "drape": res["drape"], "measures_cm": res["measures_cm"]})
         if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("mhr", "landmarks", "detect", "body", "skin"):
             req = json.loads(self.body().decode("utf-8") or "{}")
             req["op"] = parts[2]

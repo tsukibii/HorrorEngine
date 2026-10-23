@@ -408,3 +408,70 @@ script, grep for it (`\bNAME\b`).
   for good. Anything new in the loop gets its own guard.
 - **MediaPipe's points on MHR's base face aren't symmetric, the mesh is:** the jaw's angle came out 4.5 cm apart in
   depth between the sides. For anything mirrored, average each pair across the middle.
+
+## Cloth over cloth: measure what's under as a thickness, don't push off its mesh (2026-10-23)
+
+The tailor's first layering pushed each garment off the ones under it with the closest point on their meshes. An open
+mesh has no inside: at a hem, a waistband or a lifted pocket the closest point's normal points anywhere, and the
+t-shirt over the pants came out in a ruffle at the waist. Measuring the garments under it as a thickness over the
+body (how far out they reach above each point of the skin) and starting the new garment's ease there fixed it, and it
+was faster. Push only off closed surfaces (the body).
+
+## Don't move cloth onto a curtain; let it bridge (2026-10-23)
+
+Woohill's "hang" (below the bust the cloth may only fall, never follow the body in) ported as a radial push onto a
+vertical curtain flipped the triangles under the bust: their normals turned over, and pockets lifted along them tore.
+The same look comes from relaxing longer: smoothing along the normals with a push back out to the ease is a membrane,
+and with enough rounds it spans from the bust to the belly by itself. Rounds are cheap on the coarse body (four times
+fewer points, each round reaching twice as far), so relax there and split the triangles after.
+
+## A walk finds its own leg (2026-10-23)
+
+The tailor's push off the skin was slow for loose garments (a jacket 5 cm out: every nearest-point search grew to that
+radius, 12 s a blazer). Walking the skin's mesh from where each bit of cloth came from made it 15 times faster, but a
+walk stops at a local nearest: between the thighs the trousers found their own leg while the other was closer, and
+1% of the shorts went under the skin. One proper search at the end didn't fix it (pushed off one leg, the cloth landed
+in the other's clearance). What did: find up front the points another part of the body comes near and search properly
+for those every round; walk the rest. Run TAILOR on all five bodies before calling a speed-up done.
+
+
+## Cloth's skin weights: a smooth function of place, the same width for every layer (2026-10-23)
+
+Copying the closest skin point's weights onto each bit of cloth (its triangle's corners blended) looked exact, and a
+sit gave the trousers' waistband a spike at the small of the back: over the spine's groove, points either side project
+onto its two walls and the one on the line between takes weights of its own, then the bending back swings it out.
+Blending wider the farther the cloth stands off was smooth but gave a shirt and the trousers over it, a few
+millimetres apart, different widths and so different weights, and the shirt came through the waistband in a sit. What
+worked: a Gaussian over the skin's points near the cloth, the same width for everything close to the body (wider only
+for cloth that stands off, a skirt's hem). And before blaming the cloth in a deep pose, render the bare body in it: in
+plain linear skinning the thighs swell up into the belly in a sit, and the cloth only follows.
+
+## A full thigh crosses the middle (2026-10-23)
+
+The tailor found the crotch as the first slice down with no loop across x = 0. On a full body each thigh's own loop
+crosses the middle by a few millimetres, so the crotch came out 6 cm low (the clothes cut into the body there) or not
+at all, and the desk's figure of the same body crashed the frame. A torso's loop reaches well to both sides of the
+middle; a thigh's barely: count a loop as the torso's only when it does (and only there: the same test on the neck's
+rows lost the neck on the desk's figure, and a collar came up over the chin). Test new body shapes at their extremes
+(the full and slim ones in `tailor/bodies.json`) on the desk's figure as well as on the packed body: the figure
+stands with its foot bones on the floor, not its soles, and the slices' `at(y)` that forgot the lowest point gave a
+skirt the outline of a slice 2 cm off; under the chin, a slice cuts the neck and the jaw, three loops like an armpit's.
+
+## A test that takes the first row breaks when the data grows (2026-10-23)
+
+STUDIO's clothes step dyed "the first worn garment" denim and waited for the shirt to change: when the outfits got
+their socks and shoes, the first was the socks, and the step timed out (and its drag looked for the shirt's hem from
+the head view the skin and layer steps had left). Find a garment, a row or a handle by its name, and set the view the
+step needs. Run STUDIO after changing outfits or designs, not only TAILOR. In a fresh container it needs
+`python tools/face_mesh.py setup` and `libegl1` before its face steps run.
+
+## A click that was done can still time out (2026-10-23)
+
+STUDIO failed now and then on a step that had nothing to do with the change (the strand hair, then the procedural
+skin): the log said `click action done`, then `waiting for scheduled navigations to finish` until the timeout. With a
+heavy shader in software GL the page is too busy to answer Playwright's after-click check. The Studio never navigates
+on a click, so the test's clicks pass `noWaitAfter: true`; a flake that moves from step to step is the test's, look at
+its log before re-running it.
+- **A tab that saves the body must wait for the body's face:** changing the body schedules a face re-fit (350 ms, then
+  the worker); the Hair tab saved the body before it landed and the salon's head was 0.7 mm off. Entering the Hair
+  tab now runs a pending fit at once and waits for it.
