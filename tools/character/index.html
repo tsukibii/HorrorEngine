@@ -10,7 +10,10 @@
   button { cursor: pointer; } button:hover { border-color: var(--gold); } button.on { border-color: var(--gold); color: var(--gold); }
   main { display: grid; grid-template-columns: 1fr 400px; min-height: 0; }
   #view { position: relative; min-height: 0; } #view canvas { width: 100%; height: 100%; display: block; cursor: grab; }
-  #views { position: absolute; right: 10px; top: 10px; display: flex; gap: 4px; }
+  #views { position: absolute; right: 10px; top: 10px; display: flex; gap: 4px; z-index: 3; }
+  #splitBar { position: absolute; top: 0; bottom: 0; width: 7px; margin-left: -3px; cursor: col-resize; z-index: 2; background: linear-gradient(90deg, transparent 3px, var(--line) 3px, var(--line) 4px, transparent 4px); }
+  #splitBar:hover, #splitBar.drag { background: linear-gradient(90deg, transparent 2px, var(--gold) 2px, var(--gold) 5px, transparent 5px); }
+  #paneMark { position: absolute; top: 0; height: 2px; background: var(--gold); z-index: 2; pointer-events: none; }
   #hud { position: absolute; left: 10px; bottom: 10px; color: var(--dim); line-height: 1.6; background: #0009; padding: 6px 9px; border-radius: 4px; max-width: 60%; }
   #hud .warn { color: var(--gold); }
   aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
@@ -57,7 +60,7 @@
 </header>
 <main>
   <div id="view">
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -619,9 +622,10 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   };
   eyeMats[side].customProgramCacheKey = () => "studio-eye-1";
 }
-function outline(side, k = st.eyes.opening || 1) {      // the lid outline now, smoothed and scaled by Opening (or k): 32 points
+function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid outline now, smoothed and scaled by Opening (or k): 32 points
   const ring = LIDS[side].map(lmk), n = ring.length, out = [];
   const c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / n);
+  if (moved) lidMove(ring, side);                       // the eyelid line as the user set it (Skin, Eyes, Eyelid line)
   for (let i = 0; i < n; i++) {
     const p0 = ring[(i + n - 1) % n], p1 = ring[i], p2 = ring[(i + 1) % n], p3 = ring[(i + 2) % n];
     for (const t of [0, 0.5]) {
@@ -631,6 +635,37 @@ function outline(side, k = st.eyes.opening || 1) {      // the lid outline now, 
   }
   return { pts: out, c };
 }
+// the eyelid line: each of MediaPipe's 16 lid points moved by hand, in mm, so the cut follows the lid's real edge.
+// Ring order: 0 the outer corner, 1..7 the lower lid (outer to inner), 8 the inner corner, 9..15 the upper (inner to
+// outer). Kept as upper and lower (7 each, inner to outer, up positive) and the corners (wider and up), per eye.
+const lidEye = () => ({ upper: Array(7).fill(0), lower: Array(7).fill(-1), inner: [0, 0], outer: [0, 0] });
+const LID_BUILTIN = () => ({ link: true, L: lidEye(), R: lidEye() });
+const DEFAULTS = await api("api/defaults").catch(() => ({}));   // the studio's own (People/defaults.json): the eyelid line saved as the default
+const lidDefault = () => structuredClone(DEFAULTS.eyelids || LID_BUILTIN());
+function lidMove(ring, side) {
+  const L = st.eyes.lidLine?.[side]; if (!L) return;
+  const out = side === "L" ? 1 : -1, mm = v => v / 1000;      // the outer corner is +x on the character's left eye
+  const nudge = (i, dx, dy) => { ring[i] = [ring[i][0] + mm(dx), ring[i][1] + mm(dy), ring[i][2]]; };
+  nudge(0, out * L.outer[0], L.outer[1]); nudge(8, -out * L.inner[0], L.inner[1]);
+  for (let j = 0; j < 7; j++) { nudge(7 - j, 0, L.lower[j]); nudge(9 + j, 0, L.upper[j]); }
+}
+// the line drawn over the face while it's set: the outline and its 16 points
+const LIDVIEW = { line: {}, dots: {} };
+for (const side of ["L", "R"]) {
+  LIDVIEW.line[side] = new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xff2a55, depthTest: false }));
+  LIDVIEW.dots[side] = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xffd23f, size: 6, sizeAttenuation: false, depthTest: false }));
+  for (const o of [LIDVIEW.line[side], LIDVIEW.dots[side]]) { o.renderOrder = 10; o.frustumCulled = false; o.visible = false; }
+}
+function lidView() {
+  const on = !!LMK && st.eyes.on && !!st.eyes.showLid;
+  for (const side of ["L", "R"]) {
+    LIDVIEW.line[side].visible = LIDVIEW.dots[side].visible = on; if (!on) continue;
+    const { pts } = outline(side), ring = LIDS[side].map(lmk); lidMove(ring, side);
+    const k = st.eyes.opening || 1, c = [0, 1].map(a => ring.reduce((q, p) => q + p[a], 0) / ring.length);
+    LIDVIEW.line[side].geometry.setAttribute("position", new THREE.Float32BufferAttribute(pts.flatMap(p => [p[0], p[1], p[2] + 0.0004]), 3));
+    LIDVIEW.dots[side].geometry.setAttribute("position", new THREE.Float32BufferAttribute(ring.flatMap(p => [c[0] + (p[0] - c[0]) * k, c[1] + (p[1] - c[1]) * k, p[2] + 0.0004]), 3));
+  }
+}
 const AREA0 = {};                                      // each opening's area on the neutral face (placeEyes)
 const area = pts => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] + pts[i][0]) * (pts[j][1] - pts[i][1]); return Math.abs(a) / 2; };
 function openings() {
@@ -639,7 +674,7 @@ function openings() {
   const P = [];
   ["L", "R"].forEach((side, s) => {
     const { pts, c } = outline(side), U = SKU[`uCut${side}`].value;
-    const f = area(pts) / (AREA0[side] || area(pts)), t = Math.min(1, Math.max(0, (f - 0.25) / 0.2)), shut = t * t * (3 - 2 * t);   // a blink: the opening shrinks to nothing as the lids meet (MHR's shut lids still leave 15 to 20%)
+    const raw = area(outline(side, 1, false).pts), f = raw / (AREA0[side] || raw), t = Math.min(1, Math.max(0, (f - 0.25) / 0.2)), shut = t * t * (3 - 2 * t);   // a blink: the opening shrinks to nothing as the lids meet (MHR's shut lids still leave 15 to 20%)
     if (shut < 1) for (const p of pts) { p[0] = c[0] + (p[0] - c[0]) * shut; p[1] = c[1] + (p[1] - c[1]) * shut; }
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     pts.forEach((p, i) => U[i].set(p[0], p[1]));
@@ -655,9 +690,10 @@ function openings() {
   });
   holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P), 3)); holeGeo.computeBoundingSphere();
   HOLES.material.color.set(st.eyes.corner).multiplyScalar(0.55);   // what shows where the eyeball doesn't: the corner's pink, darker
+  lidView();
 }
 const EYEFIT = { size: 1, depth: 0, opening: 1, lidShade: 0.6 };   // the eyeball's size (grown back from the pupil), how far back, the opening's size
-st.eyes = { ...EYEPAINT.EYE_DEFAULTS, ...EYEFIT };
+st.eyes = { ...EYEPAINT.EYE_DEFAULTS, ...EYEFIT, lidLine: lidDefault(), showLid: false };
 paintEyes();
 function placeEyes() {
   for (const side of ["L", "R"]) {
@@ -665,9 +701,9 @@ function placeEyes() {
     if (!LMK || !st.eyes.on) { m.visible = false; continue; }
     const ring = LIDS[side].map(lmk), n = ring.length;
     const c = [0, 1, 2].map(a => ring.reduce((s, p) => s + p[a], 0) / n);
-    AREA0[side] = area(outline(side).pts);
-    const r0 = 0.0118 * SCALE, k = st.eyes.opening || 1;   // a 12 mm eyeball, with the body's scale
-    const reach = Math.max(...ring.map(p => Math.hypot(p[0] - c[0], p[1] - c[1]))) * k;   // the opening's farthest corner from its middle
+    AREA0[side] = area(outline(side, 1, false).pts);   // how open the eye is: MediaPipe's own lids (the line set by hand never holds a blink open)
+    const r0 = 0.0118 * SCALE;                          // a 12 mm eyeball, with the body's scale
+    const reach = Math.max(...outline(side).pts.map(p => Math.hypot(p[0] - c[0], p[1] - c[1])));   // the opening's farthest point from its middle (as the line is set)
     const r = Math.max(r0 * (st.eyes.size || 1), reach * EYE_FIT);   // never too small to fill the opening; bigger, it grows back into the head:
     const front = Math.max(...ring.map(p => p[2])) + 0.0008 - (st.eyes.depth || 0) / 1000;   // the pupil (its front) stays where it is
     m.scale.setScalar(r); m.position.set(c[0], c[1], front - r);
@@ -678,7 +714,16 @@ function placeEyes() {
   }
 }
 
-const orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vector3() };   // zoom: the wheel; pan: right-drag, a double-click centres on a point
+let orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vector3() };   // zoom: the wheel; pan: right-drag, a double-click centres on a point
+// the split view (like Blender's areas): two panes, each its own orbit; orbit is the one the pointer last touched
+const SPLIT = { on: false, at: 0.5, orbits: [orbit, null], active: 0 };
+const splitting = () => SPLIT.on && orbit.focus !== "pov";
+function panes(w, h) { const x = Math.round(w * SPLIT.at); return [{ x: 0, y: 0, w: x, h }, { x, y: 0, w: w - x, h }]; }
+function usePane(i) { SPLIT.active = i; orbit = SPLIT.orbits[i]; markPane(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus)); }
+function paneAt(e) {                                   // the pane under the pointer becomes the one everything moves
+  if (!splitting()) return; const r = renderer.domElement.getBoundingClientRect(), i = e.clientX - r.left < r.width * SPLIT.at ? 0 : 1;
+  if (i !== SPLIT.active) usePane(i); place(); const R = viewRect(r.width, r.height); camera.aspect = R.w / R.h; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+}
 function place() {
   const head = orbit.focus === "head", pov = orbit.focus === "pov", face = TOP - 0.12 * TOP / 1.7;
   if (pov) {                                           // the player's eye, standing, at the shot's distance, looking at the face
@@ -693,7 +738,8 @@ function place() {
   if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
   if (LIGHT.name === "studio") { key.position.set(...($("#raking").checked ? [3, 0.2, 0.5] : [1, 1.4, 2])); hemi.intensity = $("#raking").checked ? 0.2 : 0.7; }
 }
-function viewRect(w, h) {                              // where the picture goes: the whole canvas, or in POV the game's 16:9 screen (from the bottom left)
+function viewRect(w, h) {                              // where the picture goes: the whole canvas (or the active pane), or in POV the game's 16:9 screen (from the bottom left)
+  if (splitting()) return panes(w, h)[SPLIT.active];
   if (orbit.focus !== "pov") return { x: 0, y: 0, w, h };
   const vw = Math.min(w, h * 16 / 9), vh = vw * 9 / 16;
   return { x: (w - vw) / 2, y: (h - vh) / 2, w: vw, h: vh };
@@ -703,20 +749,20 @@ addEventListener("resize", resize);
 let drag = null, PAN = null, LSTROKE = false;
 const viewDist = () => (orbit.focus === "head" ? 0.9 : 4.6) * orbit.zoom;
 renderer.domElement.addEventListener("wheel", e => {   // the wheel zooms (not in POV: that's the player's distance)
-  if (orbit.focus === "pov") return; e.preventDefault();
+  paneAt(e); if (orbit.focus === "pov") return; e.preventDefault();
   orbit.zoom = Math.min(3, Math.max(0.06, orbit.zoom * Math.exp(e.deltaY * 0.0012)));
 }, { passive: false });
 renderer.domElement.addEventListener("contextmenu", e => e.preventDefault());
 renderer.domElement.ondblclick = e => {                // a double-click centres the view on that point of the body
-  if (orbit.focus === "pov") return;
-  const r = renderer.domElement.getBoundingClientRect(), ray = new THREE.Raycaster();
-  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), camera);
+  paneAt(e); if (orbit.focus === "pov") return;
+  const r = renderer.domElement.getBoundingClientRect(), ray = new THREE.Raycaster(), V = viewRect(r.width, r.height);
+  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left - V.x) / V.w * 2 - 1, (r.bottom - e.clientY - V.y) / V.h * 2 - 1), camera);
   dgeo.computeBoundingSphere(); const h = ray.intersectObject(mesh, false)[0]; if (!h) return;
   const ty = orbit.focus === "head" ? TOP - 0.12 * TOP / 1.7 : TOP * 0.52;
   orbit.pan.set(h.point.x, h.point.y - ty, h.point.z);
 };
 renderer.domElement.onpointerdown = e => {
-  renderer.domElement.setPointerCapture(e.pointerId);
+  renderer.domElement.setPointerCapture(e.pointerId); paneAt(e);
   if (orbit.focus !== "pov" && (e.button === 2 || e.button === 1)) { PAN = [e.clientX, e.clientY]; return; }   // right (or middle) drag pans
   if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
@@ -724,7 +770,7 @@ renderer.domElement.onpointerdown = e => {
 };
 renderer.domElement.onpointermove = e => {
   if (PAN) {                                           // the view's middle moves with the pointer, in the screen's plane
-    const r = renderer.domElement.getBoundingClientRect(), k = 2 * viewDist() * Math.tan(camera.fov * Math.PI / 360) / r.height;
+    const r = renderer.domElement.getBoundingClientRect(), k = 2 * viewDist() * Math.tan(camera.fov * Math.PI / 360) / viewRect(r.width, r.height).h;
     const X = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), Y = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
     orbit.pan.addScaledVector(X, -(e.clientX - PAN[0]) * k).addScaledVector(Y, (e.clientY - PAN[1]) * k); PAN = [e.clientX, e.clientY]; return;
   }
@@ -735,15 +781,46 @@ for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
 };
 $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
+{                                                      // the split's button, the line between the panes and the active pane's mark
+  const bar = el("div", { id: "splitBar", hidden: true, title: "Drag to resize the panes; double-click to even them" }), mark = el("div", { id: "paneMark", hidden: true });
+  view.append(bar, mark);
+  globalThis.markPane = () => {
+    bar.hidden = mark.hidden = !splitting(); if (!splitting()) return;
+    bar.style.left = SPLIT.at * 100 + "%"; mark.style.left = (SPLIT.active ? SPLIT.at * 100 : 0) + "%"; mark.style.width = (SPLIT.active ? 1 - SPLIT.at : SPLIT.at) * 100 + "%";
+  };
+  $("#splitBtn").onclick = () => {
+    SPLIT.on = !SPLIT.on; $("#splitBtn").classList.toggle("on", SPLIT.on);
+    if (SPLIT.on) {                                     // front on the left, side on the right, both on what the view shows now
+      const a = orbit.focus === "pov" ? { ...orbit, focus: "head" } : orbit;
+      SPLIT.orbits = [{ ...a, pan: a.pan.clone(), yaw: 0, pitch: 0.05 }, { ...a, pan: a.pan.clone(), yaw: Math.PI / 2, pitch: 0.05 }]; usePane(0);
+    } else { SPLIT.orbits = [orbit, null]; SPLIT.active = 0; markPane(); }
+    resize();
+  };
+  let dragging = false;
+  bar.onpointerdown = e => { dragging = true; bar.setPointerCapture(e.pointerId); bar.classList.add("drag"); };
+  bar.onpointermove = e => { if (!dragging) return; const r = view.getBoundingClientRect(); SPLIT.at = Math.min(0.85, Math.max(0.15, (e.clientX - r.left) / r.width)); markPane(); };
+  bar.onpointerup = () => { dragging = false; bar.classList.remove("drag"); };
+  bar.ondblclick = () => { SPLIT.at = 0.5; markPane(); };
+  addEventListener("resize", () => markPane());
+}
 let LAST = performance.now() / 1000, ACC = 0;
 renderer.setAnimationLoop(() => {
-  if (!EYES_IN) { rig.add(EYES.L, EYES.R, HOLES); EYES_IN = true; }
+  if (!EYES_IN) { rig.add(EYES.L, EYES.R, HOLES, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)); EYES_IN = true; }
   if (BL_READY) lightBrowLash();
   const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
   place(); STUDIO.tick();
   const sz = renderer.getSize(new THREE.Vector2()), R = viewRect(sz.x, sz.y), aspect = R.w / R.h;
   if (camera.aspect !== aspect) { camera.aspect = aspect; camera.updateProjectionMatrix(); }
-  if (orbit.focus === "pov") {                         // the game's 16:9 screen inside the canvas, black bars round it
+  if (splitting()) {                                   // the split: each pane its own orbit and camera, through a scissor
+    const keep = SPLIT.active; renderer.setScissorTest(true);
+    panes(sz.x, sz.y).forEach((P, i) => {
+      orbit = SPLIT.orbits[i]; if (orbit.focus === "pov") orbit.focus = "head";
+      place(); camera.aspect = P.w / P.h; camera.updateProjectionMatrix();
+      renderer.setViewport(P.x, P.y, P.w, P.h); renderer.setScissor(P.x, P.y, P.w, P.h); renderer.render(scene, camera);
+    });
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
+    orbit = SPLIT.orbits[keep]; place(); camera.aspect = R.w / R.h; camera.updateProjectionMatrix(); camera.updateMatrixWorld();   // back on the pane in use (for picking)
+  } else if (orbit.focus === "pov") {                  // the game's 16:9 screen inside the canvas, black bars round it
     renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y); renderer.setClearColor(0x000000, 1); renderer.clear();
     renderer.setScissorTest(true); renderer.setScissor(R.x, R.y, R.w, R.h); renderer.setViewport(R.x, R.y, R.w, R.h);
     renderer.render(scene, camera); renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
@@ -851,6 +928,43 @@ const eyeSet = {};
                ["opening", "Opening", 0.85, 1.2, 0.01, 1, "How much of the shell is cut away round the lid outline."],
                ["lidShade", "Lid shadow", 0, 1, 0.01, 0.6, "The lids' shadow on the eyeball: darker under the upper lid, a little over the lower. It sets the eye in the head."]];
   for (const [k, label, lo, hi, step, def, help] of fit) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; if (k === "size") repaint(); changed("expr"); });
+  // the eyelid line: every lid point by hand (mm), both eyes mirrored unless unlinked; saved with the character, and as
+  // the default for every character that has no line of its own (People/defaults.json)
+  box.append(el("h4", { textContent: "Eyelid line" }), el("p", { className: "note", textContent: "Where the eye is cut: MediaPipe's 16 lid points, each moved by hand so the cut sits on the lid's real edge (the red line and yellow points while you set it). Upper and lower run from the inner corner (1) to the outer (7); up is +. Linked, both eyes move as mirrors." }));
+  let lidSide = "L";
+  const lidOf = () => st.eyes.lidLine[lidSide], lidSet = {};
+  const showLid = el("input", { type: "checkbox" }), link = el("input", { type: "checkbox", checked: true });
+  const sideBtns = ["L", "R"].map(sd => { const b = el("button", { textContent: sd === "L" ? "Left eye" : "Right eye" }); b.onclick = () => { lidSide = sd; lidUI(); }; return b; });
+  const look = el("button", { textContent: "Look at the eye", title: "The head view, zoomed onto this eye" });
+  look.onclick = () => {
+    document.querySelector('#views button[data-v="head"]').click(); orbit.yaw = 0; orbit.pitch = 0.02;
+    const e = EYES[lidSide].position, ty = TOP - 0.12 * TOP / 1.7; orbit.pan.set(e.x, e.y - ty, e.z); orbit.zoom = 0.14;
+    st.eyes.showLid = true; showLid.checked = true; lidView();
+  };
+  showLid.onchange = () => { st.eyes.showLid = showLid.checked; lidView(); };
+  link.onchange = () => { st.eyes.lidLine.link = link.checked; if (link.checked) { st.eyes.lidLine[lidSide === "L" ? "R" : "L"] = structuredClone(lidOf()); changed("expr"); } lidUI(); };
+  box.append(el("div", { className: "chips" }, look, ...sideBtns),
+             el("label", { className: "tog" }, showLid, el("span", { textContent: "Show the line" })),
+             el("label", { className: "tog" }, link, el("span", { textContent: "Both eyes the same (mirrored)" })));
+  const put = (f, v) => { for (const sd of st.eyes.lidLine.link ? ["L", "R"] : [lidSide]) f(st.eyes.lidLine[sd], v); if (!st.eyes.showLid) { st.eyes.showLid = true; showLid.checked = true; } changed("expr"); };
+  const ctl = (key, label, get, setv, help) => { lidSet[key] = slider(box, "lid_" + key, label, -3, 3, 0.05, get(lidOf()), help, v => put(setv, v)); lidSet[key].get = get; };
+  ctl("innerX", "Inner corner ↔", L => L.inner[0], (L, v) => { L.inner[0] = v; }, "The inner corner: + further towards the nose.");
+  ctl("innerY", "Inner corner ↕", L => L.inner[1], (L, v) => { L.inner[1] = v; });
+  for (let j = 0; j < 7; j++) ctl("up" + j, `Upper ${j + 1}`, L => L.upper[j], (L, v) => { L.upper[j] = v; }, j === 0 ? "The upper lid, inner corner (1) to outer (7): up is +." : "");
+  for (let j = 0; j < 7; j++) ctl("lo" + j, `Lower ${j + 1}`, L => L.lower[j], (L, v) => { L.lower[j] = v; }, j === 0 ? "The lower lid, inner (1) to outer (7): down (-) takes the cut to the lid's front edge, where the lower lashes grow." : "");
+  ctl("outerX", "Outer corner ↔", L => L.outer[0], (L, v) => { L.outer[0] = v; }, "The outer corner: + further out.");
+  ctl("outerY", "Outer corner ↕", L => L.outer[1], (L, v) => { L.outer[1] = v; });
+  const saveDef = el("button", { textContent: "Save as default", title: "This line for every character without its own (People/defaults.json), from the next load" });
+  saveDef.onclick = async () => { try { const line = structuredClone(st.eyes.lidLine); await api("api/defaults", { eyelids: line }); DEFAULTS.eyelids = line; status("the eyelid line saved as the default (Content/Studio/People/defaults.json)", "ok"); } catch (e) { status(e.message, "bad"); } };
+  const useDef = el("button", { textContent: "Use the default" }); useDef.onclick = () => { st.eyes.lidLine = lidDefault(); lidUI(); changed("expr"); };
+  const reset = el("button", { textContent: "Reset", title: "MediaPipe's own points, the lower lid a millimetre down" }); reset.onclick = () => { st.eyes.lidLine = LID_BUILTIN(); lidUI(); changed("expr"); };
+  box.append(el("div", { className: "chips" }, saveDef, useDef, reset));
+  function lidUI() {
+    link.checked = !!st.eyes.lidLine.link; showLid.checked = !!st.eyes.showLid;
+    sideBtns.forEach((b, i) => { b.classList.toggle("on", ["L", "R"][i] === lidSide); b.disabled = !!st.eyes.lidLine.link; });
+    for (const f of Object.values(lidSet)) f(f.get(lidOf()));
+  }
+  eyeSet.lid = lidUI;
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
   let later = 0; const repaint = () => { clearTimeout(later); later = setTimeout(paintEyes, 60); };
   const cols = {};
@@ -859,7 +973,7 @@ const eyeSet = {};
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; for (const k of ["size", "depth", "opening", "lidShade"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
+  eyeSet.all = () => { on.checked = st.eyes.on; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
@@ -882,7 +996,7 @@ function browLash() {
   U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
   const lids = {}, brows = {};
   for (const side of ["L", "R"]) {
-    const { pts, c } = outline(side, 1), open = Math.min(1, area(pts) / (AREA0[side] || area(pts)));
+    const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     lids[side] = { upper: pts.slice(16).concat([pts[0]]), lower: pts.slice(0, 17), centre: c, open };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
@@ -1035,7 +1149,7 @@ async function open(name) {
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, c.eyes || {}); delete st.eyes.plane; eyeSet.all(); paintEyes();
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault() }, c.eyes || {}); st.eyes.showLid = false; delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
   computeBody(); compose(); hud();
   await loadSalon().catch(() => null);
@@ -1083,7 +1197,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { SPLIT, usePane, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();

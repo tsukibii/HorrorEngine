@@ -19,7 +19,7 @@ character on disk in `Content/Studio/People/<name>/` (git-ignored: real faces st
 | Layers | paint layers above the base: select by vertex, fill with colour, decal, PBR set or texture, opacity, shine, relief (docs/LAYERS.md) | `layers.js`, `layersui.js` |
 | Hair | **the salon** (DECISIONS 2026-10-22, 2026-10-23): the tab opens `salon.html` inside the Studio (`?embed=1&person=NAME`) on this character's own body and face (the tab posts `body.bin` first); locks drawn by hand against a reference video locked to the view; fourteen numbered steps, each a dropdown closed until opened; a new character starts bald; Bake writes `salon/salon.glb` and `salon_bake.json`, which the Studio wears on the head when you leave the tab (docs/SALON.md). Brows and lashes (`hair.js`) switch in the Face tab | `salon.html`, `salon.js`, `salonlib.js`, ... |
 | Clothes | GarmentCode designs draped with Blender's cloth (`clothes.py`, `drape.py`), lock points, presets and outfits worn in layers (`make_designs.py`) | |
-| View | the studio view (`tools/shared/studioview.js`); POV from the player's eye at MCU or MS through the game's 90° lens in 16:9, under studio, warm lamp, cold night and flashlight | |
+| View | the viewer: zoom, pan, a double-click centres; **Split**: front and side panes, each its own camera, the line between them dragged (double-click evens it), Split again for one; the studio view (`tools/shared/studioview.js`); POV from the player's eye at MCU or MS through the game's 90° lens in 16:9, under studio, warm lamp, cold night and flashlight | |
 
 Research behind it: docs/research/skin.md, docs/research/hair.md (and CC0 hair models), docs/research/hair_splats.md,
 docs/MHR_PIPELINE_RESEARCH.md. Lessons in docs/LESSONS.md (colour converted twice, the wig in a frame, the 16:9 lens,
@@ -58,7 +58,7 @@ export is a bake like any other (§3, Export).
 | Skin: procedural | every slider and colour in `character.json` | none (the shader) | none |
 | Skin: touch-up | `skin_paint.png`, `skin_touch.png`, `skin_pigment.png` (layers over the bake, not baked in) | none | none: they sit on the UVs, so they survive a remade `skin.png` |
 | Layers | `layers.json` (selections, fills, decals as data URLs) | the layer textures (made live) | big decals inside the JSON: move them to files beside it when it grows |
-| Eyes | `st.eyes` in `character.json` (the paint, size, depth, opening, lid shadow) | made live | none |
+| Eyes | `st.eyes` in `character.json` (the paint, size, depth, opening, lid shadow, the eyelid line); the default eyelid line in `People/defaults.json` | made live | none |
 | Brows and lashes | `st.lash`, `st.brow` in `character.json` | made live | not in the exports yet (the head OBJ is the skin only) |
 | Brows and lashes | on, off and a colour in `character.json` | made live | none |
 | Hair: salon | `salon/salon.json` (the locks, groups, look); the reference video in `Content/Studio/Hair/References/`; hairstyles to start from in `Content/Studio/Hair/` | `salon/salon.glb`, `salon_bake.json` (the head frame it was made on: a receipt already) | the Studio doesn't yet say when the head changed after the bake (the salon's note asks to bake again by hand): the first stale dot to add |

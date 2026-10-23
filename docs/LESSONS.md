@@ -376,3 +376,6 @@ script, grep for it (`\bNAME\b`).
   teeth. Cut per pixel in the skin's shader along MediaPipe's smoothed outline instead, and draw the eyeball over what's
   inside the opening (MHR's lids fold inwards, in front of any eyeball). Measure it: the head's inside in magenta, the
   magenta pixels counted over sixteen poses, front and three-quarter.
+- **Where a measurement can't settle a look, hand the user the control:** three tries at the lower lid's cut (a fixed
+  drop, tapered, even) each left a step somewhere on one face. The eyelid line as sliders, with the line drawn on the
+  face and a saved default, ended it.

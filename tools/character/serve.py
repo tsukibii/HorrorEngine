@@ -125,6 +125,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts[0] == "bodies" and len(parts) == 2 and Path(parts[1]).suffix in (".bin", ".json"):
             f = BODIES / parts[1]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.is_file() else self.send(404, {"error": "no body"})
+        if parts == ["api", "defaults"]:                                         # the studio's own defaults (the eyelid line...): People/defaults.json
+            f = PEOPLE / "defaults.json"
+            return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {})
         if parts[:2] == ["api", "people"] and len(parts) == 2:
             out = []
             for d in sorted(PEOPLE.iterdir()) if PEOPLE.exists() else []:
@@ -190,6 +193,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parts = [p for p in urllib.parse.urlparse(self.path).path.split("/") if p]
         name = clean(parts[2]) if len(parts) >= 3 else None
+        if parts == ["api", "defaults"]:                                         # merged into People/defaults.json, key by key
+            f = PEOPLE / "defaults.json"
+            PEOPLE.mkdir(parents=True, exist_ok=True)
+            data = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+            data.update(json.loads(self.body().decode("utf-8")))
+            f.write_text(json.dumps(data, indent=1), encoding="utf-8")
+            return self.send(200, {"ok": True, "path": str(f.relative_to(ROOT))})
         if parts[:2] == ["api", "people"] and len(parts) == 3 and name:          # the character's settings
             d = PEOPLE / name
             d.mkdir(parents=True, exist_ok=True)

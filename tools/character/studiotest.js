@@ -198,7 +198,7 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("the eyes: cut out of the skin along the smoothed lid outline, filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
+  await step("the eyes: cut out of the skin along the smoothed lid outline (the eyelid line moved by hand), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
     const r = await page.evaluate(() => {
       const b = window.__body, L = b.EYES.L, front = () => L.position.z + L.scale.x, i = n => b.ENAMES.indexOf(n);
       const fan = () => { const P = b.HOLES.geometry.attributes.position.array; let a = 0; for (let k = 0; k < P.length; k += 9) a += Math.abs((P[k + 3] - P[k]) * (P[k + 7] - P[k + 1]) - (P[k + 6] - P[k]) * (P[k + 4] - P[k + 1])) / 2; return a; };
@@ -207,10 +207,30 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
       const stencil = L.material.stencilWrite && L.material.stencilFunc === 514 && L.material.depthTest === false;   // THREE.EqualStencilFunc
       b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const shut = fan(); b.st.expr.fill(0);
       b.st.eyes.on = false; b.compose(); const off = b.SKU.uCutOn.value; b.st.eyes.on = true; b.st.eyes.size = 1; b.paintEyes(); b.compose();
-      return { cut, pts, open, shut, f1, f2, r1, r2, r0, stencil, off, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
+      const keep = structuredClone(b.st.eyes.lidLine);                   // the eyelid line: the lower points down open the cut further
+      for (const sd of ["L", "R"]) b.st.eyes.lidLine[sd].lower.fill(0); b.compose(); const at0 = fan();
+      for (const sd of ["L", "R"]) b.st.eyes.lidLine[sd].lower.fill(-1.5); b.compose(); const at15 = fan();
+      b.st.eyes.lidLine = keep; b.compose();
+      return { at0, at15, cut, pts, open, shut, f1, f2, r1, r2, r0, stencil, off, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
     });
-    if (r.cut !== 1 || r.pts !== 32 || !(r.open > 0) || !(r.shut < 0.05 * r.open) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r1 >= r.r0) || !(r.r2 >= 2 * r.r0 - 1e-9) || !r.stencil || r.off || !r.pupil) throw new Error("the eyes: " + JSON.stringify(r));
+    const defaults = await page.evaluate(async () => (await fetch("api/defaults")).ok);
+    if (!defaults || !(r.at15 > r.at0 * 1.05) || r.cut !== 1 || r.pts !== 32 || !(r.open > 0) || !(r.shut < 0.05 * r.open) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r1 >= r.r0) || !(r.r2 >= 2 * r.r0 - 1e-9) || !r.stencil || r.off || !r.pupil) throw new Error("the eyes: " + JSON.stringify(r));
+    console.log(`       the eyelid line's lower points 1.5 mm down: the opening ${(r.at0 * 1e6).toFixed(0)} -> ${(r.at15 * 1e6).toFixed(0)} mm²`);
     console.log(`       openings ${(r.open * 1e6).toFixed(0)} mm² open, ${(r.shut * 1e6).toFixed(1)} shut; the eyeball fitted at ${(r.r1 * 1000).toFixed(1)} mm (12 mm: ${(r.r0 * 1000).toFixed(1)}), size 2: ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
+  });
+  await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
+    await page.click('#views button[data-v="head"]'); await page.click("#splitBtn");
+    const c = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });
+    const before = await page.evaluate(() => window.__body.SPLIT.orbits.map(o => o.zoom));
+    await page.mouse.move(c[0] + c[2] * 0.75, c[1] + c[3] * 0.5); await page.mouse.wheel(0, 300); await page.waitForTimeout(200);
+    const bar = await page.evaluate(() => { const r = document.querySelector("#splitBar").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+    await page.mouse.move(bar[0], bar[1]); await page.mouse.down(); await page.mouse.move(bar[0] - c[2] * 0.2, bar[1], { steps: 4 }); await page.mouse.up();
+    const r = await page.evaluate(() => { const S = window.__body.SPLIT; return { on: S.on, active: S.active, at: S.at, zooms: S.orbits.map(o => o.zoom), yaws: S.orbits.map(o => o.yaw) }; });
+    await page.click("#splitBtn");
+    const off = await page.evaluate(() => ({ on: window.__body.SPLIT.on, bar: document.querySelector("#splitBar").hidden }));
+    if (!r.on || r.active !== 1 || !(r.zooms[1] > before[1]) || r.zooms[0] !== before[0] || Math.abs(r.yaws[1] - Math.PI / 2) > 1e-6 || r.yaws[0] !== 0 || !(r.at < 0.4) || off.on || !off.bar) throw new Error("the split: " + JSON.stringify({ r, before, off }));
+    console.log(`       front and side; the side pane zoomed ${before[1].toFixed(2)} -> ${r.zooms[1].toFixed(2)}, the front kept ${r.zooms[0].toFixed(2)}; the line at ${(r.at * 100).toFixed(0)}%; one view again`);
+    await page.click('#views button[data-v="body"]');
   });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");

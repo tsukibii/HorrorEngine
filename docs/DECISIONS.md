@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23, night (the eyelid line by hand)
+
+- **The eye's cut is set by hand, not guessed:** every one of the lid's 16 points has a slider (mm), both eyes mirrored
+  unless unlinked, the line drawn on the face while it's set. **Save as default** keeps it for every character without
+  its own line (`Content/Studio/People/defaults.json`, local). The built-in start: MediaPipe's points, the lower lid
+  1 mm down (MHR's lower lid has a ledge MediaPipe's line sits on top of).
+
 ## 2026-10-23, evening (character creator v2: eyes that fill, brows and lashes on the hair shader)
 
 - **The work moves to `claude/character-creator-v2`**, forked from the character creator branch.
