@@ -18,6 +18,7 @@ simulated. It replaces the GarmentCode route, which was removed.
 | Refine | split in four (about 5 mm triangles), settled four more rounds at that size, then cut along the lines: the cut edges are interpolated, so every hem and neckline is one clean curve | `shell`, `mesh.js` `cut` |
 | Skirts | rings hung from the waist instead: at every height the convex outline of the body (both legs, and what's worn under it) plus the ease, never narrowing below the hips (`flare` widens it; `taper` makes a pencil skirt), knife or box `pleats` stitched down to the hip, or `waves` | `skirt` |
 | Details | parts of the garment's outside lifted a few millimetres off it: `neckband`, `collar` (rolled at the neck, points at the front), `placket` (a button band, or a fly with `x`), `band` (on the waistline: a waistband, a belt; or between two heights: a hem band), `cuff` (sleeves or trouser legs), `pocket` (a rounded rectangle seen from the front, the back or the side: patch pockets, flaps, cargo pockets), `lapel` (along a jacket's V, widest at the neck, rolled), `edgeband` (down an opening's edges: a cardigan's rib, a jacket's front band); a `collar` with `front: false` goes round the back only, for lapels; `buttons` are discs down a line (one big one is a buckle) | `detail`, `buttons` |
+| Shoes | `kind: "shoe"`: the upper lofted round each foot as Woohill's footwear is (vertical sections across the foot every 3 mm, each the convex outline of the foot there, so the toes are one smooth toe box; the heel cup a wall, the toe rounded; the ease out; the ends rounded), its opening cut by `shoe` (`heel` and `vamp` heights, `from` where along the foot the upper is whole: a boot is high all round); the **sole** under it (`sole`: the footprint's outline pushed out by `overhang`, `thick` under the floor, `rise` up the side, toe spring, a `heel` block); `foot` details by where they are on the foot (a toe cap, a heel counter, a tongue) | `shoeShell`, `soles`, `frame.js` `feet` |
 | Thickness | an inner surface and a crisp rim round every open edge; the rim and the outside's last row of points are shaded darker (`S`), so hems, pockets and collars read as stitched edges with a shadow | `fit.js` `thicken` |
 | Fabric coordinates | every point gets (u, v) in metres, laid the way a sewn garment's panels lie: the torso a front and a back panel (u the arc length across each row's own outline from the middle, over the shoulders a yoke by x; side seams), a sleeve round the arm's line (the seam underneath), a trouser leg round its own line from the waist down (the seam at the back, a stocking's), a skirt a front and a back panel spreading to the hem; every ring's own radius, so a tile is its real size all round. The mesh is split exactly along each seam first, so seams are clean lines; normals come from the joined mesh, so the light doesn't break there. `sheet.mjs --uv` shows them as a 5 cm checker | `tailor/uv.js`, `frame.js` `torsoArcs` |
 
@@ -49,7 +50,7 @@ gloss; the bump map is three's own). A garment's look is its design's (`surface`
 
 ## 2. The designs are data
 
-`Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`top`, `bottom`, `full`, `legs`, `feet`), a
+`Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
 `color` (`trim` and `buttons` for its details), a `surface` (and `trimSurface`, `pattern`, `denier`), a `thickness`, a
 `piece` and its `details`. Heights are names on the body
 (`neck`, `armpit`, `bust`, `waist`, `hip`, `crotch`, `knee`, `ankle`) plus metres on MHR's 1.726 m average, scaled
@@ -77,7 +78,11 @@ skirt; a pencil skirt is a design of its own. Legwear: **tights** (black pantyho
 **stockings** (thigh-high, a lace top) and **leggings**, worn first; a school uniform with a plaid pleated skirt, and
 outfits that show a print and a stripe. Jackets: a **blazer** (wool, lapels, two buttons, flap pockets, a breast pocket),
 a **work jacket** (canvas, a collar, flapped chest pockets, a front band, a hem band) and a **cardigan** (knit, a deep
-V, rib edge bands, cuffs and hem); worn last, over a shirt.
+V, rib edge bands, cuffs and hem); worn last, over a shirt. Footwear: **sneakers** (canvas, a rubber sole, a tongue, a
+toe cap, a red heel tab), **work boots** (leather, a lug sole, a toe cap, a heel counter, a padded collar), **loafers**
+(a heel block, an apron) and **flats** (patent); **ankle, crew and knee socks** (a rib top). Every outfit has its shoes,
+worn after the socks and tights and before the rest. Soles sit under the floor the body stands on (the body isn't
+lifted by them yet).
 
 ## 3. Where it runs
 

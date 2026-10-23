@@ -60,6 +60,18 @@ export function opening(F, o) {
   return { half, value, y0, y1, top };
 }
 
+/** a shoe's opening: how high the upper comes at a point of the foot, from `heel` at the back to `vamp` over the
+    instep (`from` along the foot: in front of it the upper is whole), as heights over the floor in metres; a boot is
+    the same with both high */
+export function shoeLine(F, o) {
+  const s = F.s, heel = (o.heel ?? 0.07) * s, vamp = (o.vamp ?? o.heel ?? 0.07) * s, from = o.from ?? 0.62, toe = Math.max(vamp, 0.1 * s);
+  return (x, y, z) => {
+    const f = F.feet[x >= F.torsoAxis(F.crotchY)[0] ? "L" : "R"], [a] = f.at(x, z);
+    const top = a >= from ? toe : heel + (vamp - heel) * smooth(0.1, from, a);   // in front of the instep the upper is whole (over the toes)
+    return top - y;
+  };
+}
+
 /** a garment's value at a point (>= 0 on the cloth) and, for the fit, its ease and clearance */
 function cutter(F, p) {
   const s = F.s;
@@ -67,7 +79,7 @@ function cutter(F, p) {
   const ends = p.sleeve === undefined || p.sleeve === false ? null : { L: sleeveEnd(F, "L", p.sleeve), R: sleeveEnd(F, "R", p.sleeve) };
   const hem = p.hem ? torsoHem(F, p.hem.at, p.hem) : null;
   const waist = p.waist ? waistline(F, p.waist.at, p.waist) : null;
-  const legY = p.legs ? height(F, p.legs.to) : null, open = p.open ? opening(F, p.open) : null;
+  const legY = p.legs ? height(F, p.legs.to) : null, open = p.open ? opening(F, p.open) : null, shoe = p.shoe ? shoeLine(F, p.shoe) : null;
   return (x, y, z) => {
     const a = F.arm(x, y, z);
     let v = 1;
@@ -77,6 +89,7 @@ function cutter(F, p) {
     if (hem) v = Math.min(v, hem(x, y, z));
     if (waist) v = Math.min(v, waist(x, y, z));
     if (legY !== null) v = Math.min(v, y - legY);
+    if (shoe) v = Math.min(v, shoe(x, y, z));
     return v;
   };
 }
@@ -149,7 +162,7 @@ export function shell(B, p, under) {
     const x = C.P[j * 3], y = C.P[j * 3 + 1], z = C.P[j * 3 + 2], a = F.arm(x, y, z);
     // how freely it smooths: not at all into the armpit or down between the legs (it would web them), a little on the limbs
     const dp = Math.min(...pits.map(q => Math.hypot(x - q[0], y - q[1], z - q[2]))), dc = Math.hypot(x - ccx, y - crotch, z - ccz);
-    W[j] = smooth(0.03 * s, 0.11 * s, dp) * (a || y < crotch ? 0.3 : 1);
+    W[j] = p.shoe ? 1 : smooth(0.03 * s, 0.11 * s, dp) * (a || y < crotch ? 0.3 : 1);   // a shoe smooths all over: the toes into one toe box
     if (a) { ease[j] += ea; continue; }
     const legW = 1 - smooth(crotch - 0.02 * s, crotch + 0.06 * s, y);
     ease[j] += eb + (el - eb) * legW + fl * smooth(knee + 0.1 * s, legTo, y) * legW;
@@ -228,6 +241,106 @@ export function skirt(B, p, colliders) {
   return { outer: { P: out, T: new Uint32Array(T) }, V: null, neck: null, rings: { y0, y1, cx, cz, radius } };
 }
 
+/** a shoe's upper, lofted round each foot as Woohill's footwear is: vertical sections across the foot every few mm from
+    heel to toe, each the convex outline of the foot there (the toes one smooth box) plus the ease, smoothed along the
+    foot and rounded off at both ends; then its opening cut by `shoe` (shoeLine). Returns what shell() does */
+export function shoeShell(B, p) {
+  const F = B.F, s = F.s, P = B.P, T = B.T, ease = (p.ease?.body ?? 0.005) * s, NA = 72, step = 0.003 * s, line = shoeLine(F, p.shoe);
+  const top = Math.max((p.shoe.heel ?? 0.07), (p.shoe.vamp ?? 0.07), 0.1) * s + 0.03 * s;
+  const out = [], tri = [];
+  for (const side of ["L", "R"]) {
+    const f = F.feet[side], d = [f.d[0], 0, f.d[1]], perp = [f.d[1], 0, -f.d[0]], h = [f.heel[0], 0, f.heel[1]];
+    const tris = [];                                                 // the foot's triangles
+    for (let t = 0; t < T.length; t += 3) {
+      const a = T[t] * 3, b = T[t + 1] * 3, c = T[t + 2] * 3;
+      if (Math.min(P[a + 1], P[b + 1], P[c + 1]) > top || P[a] * f.sg < 0.05 * s) continue;
+      tris.push(t);
+    }
+    const along = q => (q[0] - h[0]) * d[0] + (q[2] - h[2]) * d[2], across = q => (q[0] - h[0]) * perp[0] + (q[2] - h[2]) * perp[2];
+    const sections = [];
+    for (let t0 = -0.004 * s; t0 <= f.len + 0.004 * s; t0 += step) {   // where the plane along = t0 cuts the foot's triangles
+      const pts = [];
+      for (const t of tris) {
+        const v = [0, 1, 2].map(k => [P[T[t + k] * 3], P[T[t + k] * 3 + 1], P[T[t + k] * 3 + 2]]), w = v.map(q => along(q) - t0);
+        for (let k = 0; k < 3; k++) { const a = k, b = (k + 1) % 3; if ((w[a] > 0) !== (w[b] > 0)) { const u = w[a] / (w[a] - w[b]), q = [0, 1, 2].map(i => v[a][i] + (v[b][i] - v[a][i]) * u); if (q[1] < top) pts.push([across(q), q[1]]); } }
+      }
+      if (pts.length < 6) continue;
+      const cx = pts.reduce((a, q) => a + q[0], 0) / pts.length, cy = pts.reduce((a, q) => a + q[1], 0) / pts.length;
+      sections.push({ t: t0, cx, cy, R: radii(pts.map(q => [q[0] - cx, q[1] - cy]), NA) });
+    }
+    // the heel cup: the outline from a few cm forward carried back to the heel, so its back is a wall, not the heel bone's knob
+    const k0 = sections.findIndex(q => q.t >= 0.035 * s);
+    if (k0 > 0) for (let i = 0; i < k0; i++) {
+      const q = sections[i], r = sections[k0], u = Math.max(0, q.t / r.t), k = 0.86 + 0.14 * u;
+      q.R = Array.from(q.R, (v, a) => Math.max(v, r.R[a] * k)); q.cx = q.cx * u + r.cx * (1 - u); q.cy = q.cy * u + r.cy * (1 - u);
+    }
+    // the toe box: rounded, not the big toe's point (the outline from 3 cm back, narrowing to 70% at the tip)
+    const kt = sections.findLastIndex(q => q.t <= f.len - 0.03 * s);
+    if (kt > 0) for (let i = kt + 1; i < sections.length; i++) {
+      const q = sections[i], r = sections[kt], u = Math.min(1, (q.t - r.t) / Math.max(1e-3, sections[sections.length - 1].t - r.t)), k = 1 - 0.3 * u * u;
+      q.R = Array.from(q.R, (v, a) => Math.max(v, r.R[a] * k)); q.cy = q.cy * u + r.cy * (1 - u);
+    }
+    // smooth along the foot (the sections' centres and radii), then the rounded ends: a quarter circle the ease's size and more
+    for (let pass = 0; pass < 3; pass++) for (let i = 1; i + 1 < sections.length; i++) {
+      const a = sections[i - 1], b = sections[i], c = sections[i + 1];
+      b.cx = (a.cx + 2 * b.cx + c.cx) / 4; b.cy = (a.cy + 2 * b.cy + c.cy) / 4;
+      b.R = b.R.map((r, k) => Math.max(r, (a.R[k] + 2 * r + c.R[k]) / 4));
+    }
+    const rings = [], cap = ease + 0.002 * s;                         // the ends round off by the ease: a quarter circle
+    const ring = (sec, t, k) => Array.from(sec.R, (r, a) => { const ang = (a / NA - 0.5) * Math.PI * 2, rr = r + ease * k; return [sec.cx + Math.sin(ang) * rr, sec.cy + Math.cos(ang) * rr, t]; });
+    const first = sections[0], last = sections[sections.length - 1];
+    for (let i = 4; i >= 1; i--) { const u = i / 5; rings.push(ring(first, first.t - cap * u, Math.sqrt(1 - u * u))); }
+    for (const sec of sections) rings.push(ring(sec, sec.t, 1));
+    for (let i = 1; i <= 4; i++) { const u = i / 5; rings.push(ring(last, last.t + cap * u, Math.sqrt(1 - u * u))); }
+    const base = out.length / 3;
+    const to3 = ([x, y, t]) => [h[0] + d[0] * t + perp[0] * x, y, h[2] + d[2] * t + perp[2] * x];
+    for (const r of rings) for (const q of r) out.push(...to3(q));
+    for (let i = 0; i + 1 < rings.length; i++) for (let k = 0; k < NA; k++) {
+      const a = base + i * NA + k, b = base + i * NA + (k + 1) % NA, c = base + (i + 1) * NA + k, e = base + (i + 1) * NA + (k + 1) % NA;
+      tri.push(a, c, b, b, c, e);                                    // both feet share the frame (the toe ahead): one winding, faces out
+    }
+    const ends = [[first, first.t - cap, 0], [last, last.t + cap, rings.length - 1]];
+    for (const [sec, t, ri] of ends) {                                 // close each end on its middle
+      const m = out.length / 3; out.push(...to3([sec.cx, sec.cy, t]));
+      for (let k = 0; k < NA; k++) { const a = base + ri * NA + k, b = base + ri * NA + (k + 1) % NA; if (ri === 0) tri.push(m, a, b); else tri.push(m, b, a); }
+    }
+  }
+  const Pm = new Float32Array(out), v = new Float32Array(Pm.length / 3);
+  for (let i = 0; i < v.length; i++) v[i] = line(Pm[i * 3], Pm[i * 3 + 1], Pm[i * 3 + 2]);
+  const c = cut(Pm, new Uint32Array(tri), v);
+  return { outer: { P: c.P, T: c.T }, V: (x, y, z) => line(x, y, z), neck: null, ends: null, legY: 0, waist: null, open: null };
+}
+
+/** a shoe's sole under each foot: the footprint's outline (the foot's points near the floor, hulled) pushed out by
+    `overhang`, `thick` deep under the floor and `rise` up its side, the toe sprung up a little; {P, T, S} for both feet */
+export function soles(F, B, o) {
+  const s = F.s, thick = (o.thick ?? 0.012) * s, rise = (o.rise ?? 0.008) * s, over = (o.overhang ?? 0.005) * s, spring = (o.spring ?? 0.012) * s, heelH = (o.heel ?? 0) * s;
+  const P = B.P, out = { P: [], T: [] }, NA = 128;
+  for (const side of ["L", "R"]) {
+    const f = F.feet[side], pts = [];
+    for (let i = 0; i < P.length; i += 3) if (P[i] * f.sg > 0.05 * s && P[i + 1] < 0.025 * s) pts.push([P[i], P[i + 2]]);
+    const cx = pts.reduce((a, q) => a + q[0], 0) / pts.length, cz = pts.reduce((a, q) => a + q[1], 0) / pts.length;
+    const R = radii(pts.map(q => [q[0] - cx, q[1] - cz]), NA);
+    const ring = [];                                                  // the outline, its rows from the top of the sole's side to under it
+    const rows = [[rise, 0], [rise * 0.3, 0.6], [0, 1], [-thick * 0.5, 1], [-thick + 0.002 * s, 0.85], [-thick, 0.6]];
+    for (const [h, w] of rows) for (let k = 0; k < NA; k++) {
+      const a = (k / NA - 0.5) * Math.PI * 2, r = R[k] + over * w, x = cx + Math.sin(a) * r, z = cz + Math.cos(a) * r;
+      const [along] = f.at(x, z), lift = spring * smooth(0.75, 1.05, along) + heelH * smooth(0.3, 0.1, along) * (h < 0 ? 1 : 0);
+      ring.push([x, h + lift, z]);
+    }
+    const base = out.P.length / 3;
+    for (const q of ring) out.P.push(...q);
+    for (let r = 0; r + 1 < rows.length; r++) for (let k = 0; k < NA; k++) {
+      const a = base + r * NA + k, b = base + r * NA + (k + 1) % NA, c = base + (r + 1) * NA + k, d = base + (r + 1) * NA + (k + 1) % NA;
+      out.T.push(a, c, b, b, c, d);
+    }
+    const bot = out.P.length / 3, last = base + (rows.length - 1) * NA;   // the tread: a fan from the middle
+    const [ax] = f.at(cx, cz); out.P.push(cx, -thick + spring * smooth(0.75, 1.05, ax), cz);
+    for (let k = 0; k < NA; k++) out.T.push(bot, last + (k + 1) % NA, last + k);
+  }
+  return { P: new Float32Array(out.P), T: new Uint32Array(out.T), S: new Float32Array(out.P.length / 3).fill(1) };
+}
+
 /** a radius per angle (NA of them, from -pi at k = 0) of the convex hull of 2D points round the origin */
 function radii(pts, NA) {
   const R = new Float32Array(NA);
@@ -292,6 +405,17 @@ export function detail(F, G, d) {
     case "edgeband": {                                               // a band all down the opening's edges (a cardigan's, a zip's tape)
       const O = G.open; if (!O) return null;
       return { value: (x, y, z) => { const u = O.value(x, y, z); return z < F.torsoAxis(y)[1] ? -1 : Math.min(u + 0.002 * s, w - u); }, lift: (d.lift ?? 0.0015) * s };
+    }
+    case "foot": {                                                   // a part of a shoe's upper by where it is on the foot: a toe cap, a heel counter, a tongue
+      const a0 = d.from ?? 0.8, a1 = d.to ?? 1.2, hw = d.width ? d.width * s / 2 : null;
+      return {
+        value: (x, y, z, nx, ny) => {
+          if (y > 0.25 * s) return -1;
+          const f = F.feet[x >= F.torsoAxis(F.crotchY)[0] ? "L" : "R"], [a, c] = f.at(x, z);
+          return Math.min(a - a0, a1 - a, hw ? hw - Math.abs(c + (d.offset ?? 0) * s) : 1, d.top ? ny - 0.35 : 1, d.above !== undefined ? y - d.above * s : 1);
+        },
+        lift: (d.lift ?? 0.0015) * s,
+      };
     }
     case "placket": {                                                // a button band down the front, from the neck to the hem
       const top = d.from ? height(F, d.from) : 9, bot = d.to ? height(F, d.to) : -9;

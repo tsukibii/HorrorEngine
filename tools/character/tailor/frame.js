@@ -126,8 +126,25 @@ export function frame(P, T) {
     legs[side] = { knee: knee ? knee.y : 0.28 * H, ankle: 0.05 * H };
   }
 
+  // the feet: heel to toe along the floor, from the points that touch it
+  const feet = {};
+  for (const side of ["L", "R"]) {
+    const sg = side === "L" ? 1 : -1; let heel = null, toe = null;
+    for (let i = 0; i < P.length; i += 3) {
+      const x = P[i], y = P[i + 1], z = P[i + 2];
+      if (x * sg < 0.05 * s || y > 0.03 * s) continue;
+      if (!heel || z < heel[1]) heel = [x, z]; if (!toe || z > toe[1]) toe = [x, z];
+    }
+    const dx = toe[0] - heel[0], dz = toe[1] - heel[1], len = Math.hypot(dx, dz), d = [dx / len, dz / len];
+    feet[side] = {
+      heel, toe, len, d, sg,
+      /** [along (0 heel .. 1 toe), across (metres, + to the outside)] of a point over this foot */
+      at(x, z) { const rx = x - heel[0], rz = z - heel[1]; return [(rx * d[0] + rz * d[1]) / len, (rx * d[1] - rz * d[0]) * -sg]; },
+    };
+  }
+
   const F = {
-    H, s, scan: S, neck, torsoAxis, crotchY: S.crotchY, armpitY: S.armpitY, waistY: waist.y, hipY: hips.y, bustY: bust.y, neckBaseY,
+    H, s, scan: S, neck, torsoAxis, feet, crotchY: S.crotchY, armpitY: S.armpitY, waistY: waist.y, hipY: hips.y, bustY: bust.y, neckBaseY,
     kneeY: avg([legs.L.knee, legs.R.knee]), ankleY: 0.045 * H, arms, legs, legLines,
     // the torso's panels as arc lengths, the parts' radii: fabric coordinates in metres (tailor/uv.js)
     torsoU: torsoArcs(S, torsoAxis, S.crotchY - 0.06 * s, S.armpitY - 0.015 * s),

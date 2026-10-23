@@ -2,7 +2,7 @@
 // front, three-quarter, side and back, full length and close, so a garment is reviewed by looking, not by guessing.
 //
 //   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_feminine|slim_masculine] [--height 1.62]
-//        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close | --chest | --legs] [--uv | --debug] [--look JSON]
+//        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close | --chest | --legs | --feet] [--uv | --debug] [--look JSON]
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 import { createServer } from "http";
@@ -36,7 +36,9 @@ const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV
 const lookOf = new Map(worn.flatMap(g => g.parts.map(q => [q.name, g.look])));
 const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, surface: q.surface, look: lookOf.get(q.name), n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
 const bin = Buffer.concat([Buffer.from(new Float32Array(b.P).buffer), Buffer.from(new Uint32Array(b.T).buffer), ...parts.flatMap(q => KEYS.map(([k, A]) => Buffer.from(new A(q[k]).buffer)))]);
-const views = has("legs")
+const views = has("feet")
+  ? [["front", 0, 0.1, 0.42, 0], ["3/4", 35, 0.07, 0.3, 0.19], ["side", 90, 0.07, 0.3, 0.19], ["back", 180, 0.08, 0.3, 0.19], ["inside", 290, 0.07, 0.3, 0.19]]
+  : has("legs")
   ? [["front", 0, 0.45, 0.42], ["3/4", 40, 0.45, 0.42], ["side", 90, 0.45, 0.42], ["back", 180, 0.45, 0.42], ["feet", 25, 0.12, 0.3]]
   : has("chest")
   ? [["front", 0, 1.3, 0.5], ["3/4", 45, 1.3, 0.5], ["side", 90, 1.3, 0.5], ["back", 180, 1.3, 0.5], ["low", 20, 0.85, 0.6]]
@@ -65,9 +67,9 @@ for (const m of head) {
   scene.add(LOOK.mesh(q, m.name, LOOKS.debug ? LOOKS : m.look));
 }
 const cam = new THREE.PerspectiveCamera(28, 1 / 1.5, 0.05, 20);
-views.forEach(([name, deg, ty, dist], i) => {
+views.forEach(([name, deg, ty, dist, tx = 0], i) => {
   const a = deg * Math.PI / 180, k = H / 1.726;
-  cam.position.set(Math.sin(a) * dist * 2.2 * k, ty * k + 0.1, Math.cos(a) * dist * 2.2 * k); cam.lookAt(0, ty * k, 0);
+  cam.position.set(tx * k + Math.sin(a) * dist * 2.2 * k, ty * k + 0.1 * dist / 0.5, Math.cos(a) * dist * 2.2 * k); cam.lookAt(tx * k, ty * k, 0);
   R.setViewport(i * S, 0, S, Math.round(S * 1.5)); R.setScissor(i * S, 0, S, Math.round(S * 1.5)); R.render(scene, cam);
 });
 window.done = true;

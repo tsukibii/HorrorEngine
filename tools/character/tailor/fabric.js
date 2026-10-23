@@ -27,6 +27,7 @@ export const SURFACES = {
   suede: ["Suede", 0.09, 0.03, 0.1, false],
   velvet: ["Velvet", 0.16, 0.3, 0.1, false],
   quilted: ["Quilted", 0.12, 0.1, 0.8, false],
+  rubber: ["Rubber", 0.05, 0.15, 0.2, false],
   sheer: ["Sheer (pantyhose)", 0.03, 0.4, 0, true],
   fishnet: ["Fishnet", 0.028, 0.2, 0.4, true],
   lace: ["Lace", 0.07, 0.1, 0.3, true],
@@ -117,6 +118,9 @@ export function surfaceTile(kind) {
     x.lineWidth = 1.4; x.setLineDash([2.5, 2.5]); x.strokeStyle = "rgba(0,0,0,0.3)";
     for (let k = -2; k <= 4; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); }
     x.setLineDash([]);
+  } else if (kind === "rubber") {                                    // a sole: fine grain and a few scuffs
+    for (let i = 0; i < 1600; i++) dot(rnd() * n, rnd() * n, 0.5, rnd() < 0.5 ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.05)");
+    for (let i = 0; i < 12; i++) { x.strokeStyle = "rgba(0,0,0,0.12)"; x.lineWidth = 0.8; const px = rnd() * n, py = rnd() * n; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 6 * rnd(), py + 2 * rnd()); x.stroke(); }
   } else if (kind === "sheer") {
     // tights: the nylon all over at its denier (the coverage, set again by the material), a fine mesh and a sheen down the leg
     x.fillStyle = "rgba(128,128,128,0.7)"; x.fillRect(0, 0, n, n);

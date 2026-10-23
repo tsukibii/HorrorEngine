@@ -6,7 +6,7 @@
 // has a thickness. The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
 import { frame } from "./tailor/frame.js";
-import { prepare, shell, skirt, detail, buttons, thicken, lifted, cut, handles } from "./tailor/pieces.js";
+import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles } from "./tailor/pieces.js";
 import { unwrap } from "./tailor/uv.js";
 import { height } from "./tailor/frame.js";
 
@@ -26,18 +26,22 @@ export function body(P, T) {
 export function make(B, name, design, opts = {}) {
   const t0 = Date.now(), F = B.F, s = F.s, under = opts.under || [];
   const p = design.piece, color = opts.color || design.color || "#888888", trim = design.trim || color;
-  const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : shell(B, p, under);
+  const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, p) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [], outer = [G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
   const part = (pname, col, m, fabric, surface) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo }) });
   part(name, color, thicken(G.outer.P, G.outer.T, th, design.rim ?? 0.7, design.edge ?? 0.82), true);
+  if (design.sole) {                                                 // a shoe's soles, under the floor
+    const so = soles(F, B, design.sole); outer.push({ P: so.P, T: so.T });
+    part(`${name}_sole`, design.sole.color || "#e8e4dc", so, false, design.sole.surface || "rubber");
+  }
   for (const d of design.details || []) {
     if (d.kind === "buttons") { const b = buttons(F, G.outer, d); if (b.T.length) part(`${name}_buttons`, d.color || design.buttons || "#222222", b, false); continue; }
     const D = detail(F, G, d); if (!D) continue;
     const L = lifted(cut, G.outer, D.value, D.lift); if (!L) continue;
     if (d.kind !== "collar" && d.kind !== "neckband") outer.push(L);   // what goes over it eases over pockets and belts, not the roll of a collar
-    part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim, d.surface);
+    part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim && !d.color, d.surface);
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own

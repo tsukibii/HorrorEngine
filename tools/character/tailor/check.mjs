@@ -14,13 +14,13 @@ import { height } from "./frame.js";
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const { designs } = JSON.parse(readFileSync(join(CLOTHES, "designs.json")));
 const { outfits } = JSON.parse(readFileSync(join(CLOTHES, "outfits.json")));
-const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons", "lapel", "edgeband"]), SLOTS = new Set(["top", "bottom", "full", "legs", "feet", "jacket"]);
+const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons", "lapel", "edgeband", "foot"]), SLOTS = new Set(["top", "bottom", "full", "legs", "feet", "jacket"]);
 
 for (const [name, d] of Object.entries(designs)) {
   if (!d.label) errs.push(`${name}: no label`);
   if (!SLOTS.has(d.slot)) errs.push(`${name}: slot ${d.slot}`);
   if (!/^#[0-9a-f]{6}$/i.test(d.color || "")) errs.push(`${name}: colour ${d.color}`);
-  if (!["shell", "skirt"].includes(d.piece?.kind)) errs.push(`${name}: piece kind ${d.piece?.kind}`);
+  if (!["shell", "skirt", "shoe"].includes(d.piece?.kind)) errs.push(`${name}: piece kind ${d.piece?.kind}`);
   for (const x of d.details || []) if (!DETAILS.has(x.kind)) errs.push(`${name}: a detail called ${x.kind}`);
 }
 for (const [name, list] of Object.entries(outfits)) for (const [d] of list) if (!designs[d]) errs.push(`outfit ${name}: no design ${d}`);
