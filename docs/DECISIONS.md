@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (choices float in the world)
+
+- **Every interaction is in the world, the talking isn't:** a choice's panel floats beside whoever asks (at their
+  shoulder, on the side of the frame with more room, so their face stays clear; the focus on them), at the thing it's
+  about, or under the reticle when it's about neither. The question, like every line, stays in the footer.
+- The pause menu's Quit keeps its choice in the menu (the game asking, not the world).
+
 ## 2026-10-23 (the camera person; the UI is what the lens is on)
 
 - **A direction to lean on (not every game yet): the player is the one holding the camera** (a friend filming,

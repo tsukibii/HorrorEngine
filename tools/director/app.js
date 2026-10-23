@@ -6,7 +6,7 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
-import { chooser, loadTheme, paintLine } from "./play/hud.js";
+import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
 
 const $ = s => document.querySelector(s);
@@ -721,13 +721,18 @@ function watchHud() {
   if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }
   return WHUD;
 }
-function choiceBox(spec, pick) { const c = chooser(spec, pick); watchHud().footer.append(c.el); return { box: c.el, c }; }
+// a choice in the Watch floats beside whoever asks (or under the middle of the view), as in Play
+function choiceBox(spec, pick, who) {
+  const c = chooser(spec, pick), root = watchHud().root, f = who && watchStage.cast[who];
+  const fl = floating(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
+  return { box: { remove: fl.remove }, c };
+}
 // a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
-function runReply(rp, frame) {
+function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
@@ -766,7 +771,7 @@ async function watchScene(sc, nid, sid, k) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
       const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
-        paintOv("#watchOv", { sub: c.en, ja: c.ja, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); });    // the question stays up, the options under it, while she waits
+        paintOv("#watchOv", { sub: c.en, ja: c.ja, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
       if (o) karmaAct(o.sets);

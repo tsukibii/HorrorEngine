@@ -1,7 +1,7 @@
 // The Play HUD (GAMEPLAY_PLAN §4, §10). Plain HTML; every colour, radius and shadow comes from the theme
 // (play/ui/themes/<name>.css), so a game can switch themes. Four places, one rule each (play/ui/hud.css says how):
 // on the thing (the reticle, and the prompt floating where you'd put your hand), the corners (the game talking:
-// objective, timer, log, stance), the footer (people talking and the answers), the middle (a card held up to read).
+// objective, timer, log, stance), the footer (people talking; choices float on the thing or beside who asks), the middle (a card held up to read).
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
 const FOCUS_MS = 350;                               // a glance doesn't pull focus, a held look does
@@ -118,24 +118,58 @@ export class Hud {
     });
   }
 
-  // a multiple choice in the footer: the question is the footer's line (who asks it above), the options under it in
-  // their own panel (see `chooser`); resolves with the index picked
+  // a multiple choice: the question is the footer's line (who asks it above, out of the world), the options float in
+  // the world (see `floating`): beside whoever asks (spec.anchor() each frame, {x, y, flip, fx, fy, speaker}), at the
+  // thing it's about, or under the reticle; resolves with the index picked
   choose(spec) {
     return new Promise(done => {
-      const c = chooser(spec, i => finish(i)), kd = c.keys;
+      const c = chooser(spec, i => finish(i)), kd = c.keys, f = floating(this.root, c, spec.anchor);
       if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who); this.lineUntil = 0; }
-      const finish = v => { window.removeEventListener("keydown", kd, true); c.el.remove(); this.modal(null); if (spec.prompt) this.lineEl.classList.remove("on"); done(v); };
+      const finish = v => { window.removeEventListener("keydown", kd, true); f.remove(); this.modal(null); if (spec.prompt) this.lineEl.classList.remove("on"); done(v); };
       window.addEventListener("keydown", kd, true);
-      this.modal(c.el); this.footer.append(c.el);
+      this.modal(c.el);
     });
   }
+}
+
+// A choice's panel floating in the world, in a `.play-hud` root: the mark on the point (a shoulder, a thing) and the
+// panel beside it, kept on the screen and above the footer; `anchor()` (or null: under the middle of the view) is asked
+// every frame, so it follows whoever it's beside. The camera's focus holds on them meanwhile (data-focus, --fx/--fy).
+// Returns {el, remove()}
+export function floating(root, c, anchor) {
+  const wrap = mk("div", "ph-float"); wrap.append(mk("span", "ph-mark"), c.el); root.append(wrap);
+  let raf = 0;
+  const place = () => {
+    const W = root.clientWidth, H = root.clientHeight, m = 40, w = wrap.offsetWidth, h = wrap.offsetHeight;
+    const at = (anchor && anchor()) || null, centre = !at;
+    wrap.classList.toggle("centre", centre); wrap.classList.toggle("flip", !!(at && at.flip));
+    let x = centre ? W / 2 : at.x, y = centre ? H * 0.62 : at.y;
+    if (!centre) x = at.flip ? Math.max(x, m + w) : Math.min(x, W - m - w);
+    y = Math.max(m + h / 2, Math.min(H * 0.72 - h / 2, y));
+    wrap.style.left = x + "px"; wrap.style.top = y + "px";
+    root.dataset.focus = centre ? "centre" : at.speaker ? "speaker" : "thing";
+    if (!centre) { root.style.setProperty("--fx", (at.fx ?? at.x) + "px"); root.style.setProperty("--fy", (at.fy ?? at.y) + "px"); }
+    raf = requestAnimationFrame(place);
+  };
+  place();
+  return { el: wrap, remove: () => { cancelAnimationFrame(raf); wrap.remove(); root.dataset.focus = ""; } };
+}
+// beside a person: the shoulder on the side of the screen with more room, at shoulder height, the panel outward; the
+// focus on their face. `f` a cast figure (the stage's previs Figure or a BodyFigure: both have headWorld and
+// jointWorld), `cam` the camera; null when they're behind it
+export function besideAt(cam, f, W, H) {
+  const s = v => { const q = v.clone().project(cam); return q.z > 1 ? null : { x: (q.x + 1) / 2 * W, y: (1 - q.y) / 2 * H }; };
+  const head = f.headWorld(), joint = n => f.jointWorld(n) || Object.assign(head.clone(), { y: head.y - 0.25 });
+  const h = s(head), a = s(joint("upperarm_l")), b = s(joint("upperarm_r")); if (!h || !a || !b) return null;
+  const right = h.x <= W / 2, sh = right ? (a.x > b.x ? a : b) : (a.x < b.x ? a : b);
+  return { x: sh.x + (right ? 28 : -28), y: sh.y, flip: !right, fx: h.x, fy: h.y, speaker: true };
 }
 
 // The options of a multiple choice: ONE glass panel, side by side with a dash between each pair (equal columns, so
 // the dashes stay centred), the one under the pointer (or the keys: A/D, arrows; 1-9 or Enter/Space picks) bright and
 // the rest dimmed. spec {options: [text or {label, sub}], timed}; `pick(i)` gets the index. Returns {el, keys, bar}:
-// the panel (it goes in a footer, under the question), the keydown handler, and the timer line (1 full, 0 out). The
-// Play HUD and the desk's Watch (replies, timed choices) both use it.
+// the panel (floating in the world, see `floating`; the pause menu's Quit keeps it in its footer), the keydown handler,
+// and the timer line (1 full, 0 out). The Play HUD and the desk's Watch (replies, timed choices) both use it.
 export function chooser(spec, pick) {
   const box = mk("div", "ph-choice"), opts = [], row = mk("div", "ph-opts"), bar = mk("div", "ph-meter on"), fill = mk("div");
   let at = -1;

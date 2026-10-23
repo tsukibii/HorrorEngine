@@ -62,7 +62,8 @@ blurred layer over the 3D view (`.ph-focus` in play/ui/hud.css, driven by `Hud.s
   so the camera is on the door handle and "E Open" sits on that plane. In 0.25 s, out 0.45 s (`data-focus="thing"`).
 - **The prompt sharpens as the reticle nears its point** (`--ph-clear`, from the screen distance: 1 within 40 px,
   softer and dimmer out to 300 px; never below 60 % opacity or past 1 px of blur).
-- **Answering someone:** a choice in the footer softens the edges and keeps the middle (the subject) sharp.
+- **Answering someone:** the choice floats beside them and the focus holds on their face (a bigger sharp patch,
+  `--ph-focus-hole-person`); a choice about a thing holds on the thing; about neither, the middle stays sharp.
 - **A card (a note, a code lock):** everything behind softens.
 
 In Unreal (the player's camera a `UCineCameraComponent`):

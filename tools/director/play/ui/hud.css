@@ -3,11 +3,12 @@
    player learns them once:
    - ON THE THING: the reticle at the centre (a dot that opens into a ring over something usable, red when locked)
      and the prompt floating where you'd put your hand (a door's handle on your side, a pickup's middle): a mark on
-     the point, the key, the verb, the thing's name under it. Nothing that's done in the world is written elsewhere.
+     the point, the key, the verb, the thing's name under it; and a choice's options in one panel, floating beside
+     whoever asks (their shoulder, on the side with more room) or at the thing it's about. Every interaction is here.
    - THE CORNERS: the game talking, small and boxless: the objective top-left, the timer and the log top-right, the
      stance bottom-left.
-   - THE FOOTER: people talking and the answers: the speaker above the line, the Japanese small over the words, and
-     a choice's options in one panel under the question, all on one soft scrim that's there only while someone talks.
+   - THE FOOTER: people talking, out of the world: the speaker above the line, the Japanese small over the words (a
+     choice's question too), on one soft scrim that's there only while someone talks.
    - THE MIDDLE: a card held up to read or work (a note, a code lock), the world veiled behind it.
    Two voices: --ph-font for what people say and write (lines, choices, notes), --ph-ui-font for the game's own words
    (prompts, objective, log, keys, labels). One type scale (--ph-fs-xs .. -l), one key chip, one meter (a thin line). */
@@ -50,16 +51,19 @@
 .play-hud .ph-seen>div{background:var(--ph-bad);width:0}
 
 /* the camera's focus (docs/VHS.md §4): a held look pulls focus onto the thing, the world round it softens (a hole stays
-   sharp at the thing); a choice in the footer or a card pulls it all the way. --ph-focus-blur 0 (the default) turns
+   sharp at the thing); a choice holds it on whoever asks (a bigger hole at their face) or the thing, or keeps the
+   middle sharp when it's about neither; a card pulls it all the way. --ph-focus-blur 0 (the default) turns
    it off. In quickly, out slowly, as a lens does */
 .play-hud .ph-focus{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s ease-out;
   -webkit-backdrop-filter:blur(var(--ph-focus-blur,0px));backdrop-filter:blur(var(--ph-focus-blur,0px))}
-.play-hud[data-focus="thing"] .ph-focus{opacity:1;transition-duration:.25s;
-  -webkit-mask-image:radial-gradient(circle at var(--fx) var(--fy),transparent var(--ph-focus-hole,120px),#000 calc(var(--ph-focus-hole,120px) * 2.4));
-  mask-image:radial-gradient(circle at var(--fx) var(--fy),transparent var(--ph-focus-hole,120px),#000 calc(var(--ph-focus-hole,120px) * 2.4))}
-.play-hud:has(.ph-footer .ph-choice) .ph-focus{opacity:1;transition-duration:.25s;   /* answering: the subject (the middle) stays sharp */
+.play-hud:is([data-focus="thing"],[data-focus="speaker"]) .ph-focus{opacity:1;transition-duration:.25s;
+  -webkit-mask-image:radial-gradient(circle at var(--fx) var(--fy),transparent var(--hole),#000 calc(var(--hole) * 2.4));
+  mask-image:radial-gradient(circle at var(--fx) var(--fy),transparent var(--hole),#000 calc(var(--hole) * 2.4))}
+.play-hud[data-focus="thing"]{--hole:var(--ph-focus-hole,120px)}
+.play-hud[data-focus="speaker"]{--hole:var(--ph-focus-hole-person,190px)}     /* answering someone: their face and shoulders stay sharp */
+.play-hud[data-focus="centre"] .ph-focus{opacity:1;transition-duration:.25s;   /* a choice about nothing in particular: the middle stays sharp */
   -webkit-mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%);mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%)}
-.play-hud.modal:not(:has(.ph-footer .ph-choice)) .ph-focus{opacity:1;transition-duration:.25s;-webkit-mask-image:none;mask-image:none}   /* a card: all of it */
+.play-hud:has(> .ph-panel) .ph-focus{opacity:1;transition-duration:.25s;-webkit-mask-image:none;mask-image:none}   /* a card: all of it */
 /* a floating prompt sharpens as the reticle nears its point (--ph-clear, 1 on it) */
 .play-hud .ph-prompt.at > *{opacity:calc(.6 + .4 * var(--ph-clear, 1));filter:blur(calc((1 - var(--ph-clear, 1)) * 1px));transition:opacity .12s,filter .12s}
 
@@ -102,6 +106,17 @@
 .play-hud .ph-line.on{opacity:1}
 .play-hud .ph-who{display:block;margin-bottom:2px;font-size:var(--ph-fs);font-weight:700;letter-spacing:.03em;color:var(--ph-who,var(--ph-accent))}
 .play-hud .ph-ja{display:block;margin-bottom:2px;font-size:var(--ph-fs-s);color:var(--ph-muted)}
+/* a choice floating in the world (hud.js floating): the mark on the point (a shoulder, a thing), the panel beside it,
+   outward; smaller than the footer's type so it sits with the thing, not over it */
+.play-hud .ph-float{position:absolute;display:flex;align-items:center;gap:10px;translate:-5px -50%;pointer-events:none;z-index:2}
+.play-hud .ph-float.flip{flex-direction:row-reverse;translate:calc(-100% + 5px) -50%}
+.play-hud .ph-float.centre{translate:-50% -50%}
+.play-hud .ph-float>.ph-mark{display:block;flex:none}
+.play-hud .ph-float.centre>.ph-mark{display:none}
+.play-hud .ph-float .ph-choice{min-width:0;max-width:none;padding:var(--ph-float-pad,4px 6px 8px)}
+.play-hud .ph-float .ph-opt{font-size:calc(var(--ph-fs) + 2px);padding:8px 16px}
+.play-hud .ph-float .ph-dash{width:var(--ph-float-dash,26px)}
+.play-hud .ph-float .ph-meter{margin:0 12px 2px}
 /* a choice: one panel, options in equal columns with a dash between each pair, so the dashes stay centred */
 .play-hud .ph-choice{pointer-events:auto;cursor:default;box-sizing:border-box;min-width:min(520px,100%);max-width:min(860px,100%);display:flex;flex-direction:column;gap:8px;
   padding:var(--ph-choice-pad,var(--ph-pad));border-radius:var(--ph-radius-l);background:var(--ph-surface);box-shadow:var(--ph-pop-l);font-family:var(--ph-font);

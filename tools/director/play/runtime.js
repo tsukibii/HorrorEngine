@@ -10,7 +10,7 @@ import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
-import { Hud } from "./hud.js";
+import { Hud, besideAt } from "./hud.js";
 import { pauseMenu } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
@@ -238,7 +238,11 @@ export class PlayRuntime {
   }
   lookedAt(id, within) { return this.look.id === id && this.look.dist <= within ? this.look.t : 0; }
   async panel(spec) { return this.modal(() => this.hud.panel(spec)); }
-  async choose(spec) { return this.modal(() => this.hud.choose(spec)); }      // a multiple choice: the index picked
+  async choose(spec) {                                 // a multiple choice: the index picked. Beside `who` (a cast member), at `on` (a thing), else under the reticle
+    const f = spec.who && this.stage.cast[spec.who], t = spec.on && this.byId[spec.on], W = () => this.hud.root.clientWidth, H = () => this.hud.root.clientHeight;
+    const anchor = f ? () => besideAt(this.stage.camera, f, W(), H()) : t ? () => this.anchorAt(t) : null;
+    return this.modal(() => this.hud.choose(Object.assign({}, spec, { anchor, who: f ? ((this.story.cast || {})[spec.who] || {}).name || spec.who : spec.who })));
+  }
   async modal(show) {                                  // a HUD panel with the pointer freed, then back to looking
     this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
