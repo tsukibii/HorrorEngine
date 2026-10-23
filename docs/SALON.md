@@ -14,6 +14,9 @@ the browser); each one's hint says what it's for, or what it's on now (the chara
 a hairstyle), **4. Mirror**, **5. Locks** (draw the hair, in groups; Layer by height), **6. Selected** (the lock
 picked), **7. Pull** (how the handles drag), **8. Roots**, **9. Gravity and motion** (let it fall; try the swing),
 **10. Finish** (the cover), **11. Volume** (Thicken, padding, the base), **12. Scalp**, **13. Look**, **14. Bake**.
+The view turns with the middle or right button (or the left on empty space); the mouse's back and forward buttons,
+right-click's menu and Backspace outside a text box don't leave the page, and leaving with unsaved hair asks first
+(alone; in the Studio's Hair tab, the Studio asks).
 
 ## On a character (2026-10-22)
 

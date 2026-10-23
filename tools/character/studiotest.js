@@ -256,6 +256,28 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     console.log(`       front and side; the side pane zoomed ${before[1].toFixed(2)} -> ${r.zooms[1].toFixed(2)}, the front kept ${r.zooms[0].toFixed(2)}; the line at ${(r.at * 100).toFixed(0)}%; one view again`);
     await page.click('#views button[data-v="body"]');
   });
+  await step("the view like Blender's: middle- (or right-) drag turns it, Shift+drag pans; the mouse's back button, right-click's menu and Backspace don't leave the page (Backspace still types)", async () => {
+    await page.click('#views button[data-v="body"]');
+    const c = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+    const at = () => page.evaluate(() => { const o = window.__body.orbit; return { yaw: o.yaw, pan: o.pan.toArray() }; });
+    const o0 = await at();
+    await page.mouse.move(c[0], c[1]); await page.mouse.down({ button: "middle" }); await page.mouse.move(c[0] + 90, c[1], { steps: 5 }); await page.mouse.up({ button: "middle" });
+    const o1 = await at();
+    await page.keyboard.down("Shift"); await page.mouse.move(c[0], c[1]); await page.mouse.down({ button: "middle" }); await page.mouse.move(c[0] + 60, c[1] + 30, { steps: 5 }); await page.mouse.up({ button: "middle" }); await page.keyboard.up("Shift");
+    const o2 = await at();
+    const g = await page.evaluate(() => {
+      const cv = document.querySelector("#view canvas");
+      const fire = (type, init) => { const e = new MouseEvent(type, { bubbles: true, cancelable: true, ...init }); cv.dispatchEvent(e); return e.defaultPrevented; };
+      const key = (k, t) => { const e = new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }); t.dispatchEvent(e); return e.defaultPrevented; };
+      return { back: fire("mouseup", { button: 3 }), forward: fire("mousedown", { button: 4 }), menu: fire("contextmenu", { button: 2 }), paste: fire("mousedown", { button: 1 }),
+               backspace: key("Backspace", document.body), altLeft: (() => { const e = new KeyboardEvent("keydown", { key: "ArrowLeft", altKey: true, bubbles: true, cancelable: true }); document.body.dispatchEvent(e); return e.defaultPrevented; })(),
+               typing: key("Backspace", document.querySelector("#newName")) };
+    });
+    await page.click('#views button[data-v="body"]');
+    const pan1 = Math.hypot(...o1.pan.map((v, i) => v - o0.pan[i])), pan2 = Math.hypot(...o2.pan.map((v, i) => v - o1.pan[i]));
+    if (!(Math.abs(o1.yaw - o0.yaw) > 0.3) || pan1 > 1e-9 || Math.abs(o2.yaw - o1.yaw) > 1e-9 || !(pan2 > 0.01) || !g.back || !g.forward || !g.menu || !g.paste || !g.backspace || !g.altLeft || g.typing) throw new Error("the view's controls: " + JSON.stringify({ o0, o1, o2, g }));
+    console.log(`       middle-drag turned the view ${((o1.yaw - o0.yaw) * 180 / Math.PI).toFixed(0)} degrees (no pan), Shift+middle-drag panned ${(pan2 * 100).toFixed(1)} cm (no turn); back and forward buttons, right-click's menu, middle-click's paste, Backspace and Alt+Left stopped; Backspace in a text box types`);
+  });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });

@@ -16,6 +16,7 @@
   #paneMark { position: absolute; top: 0; height: 2px; background: var(--gold); z-index: 2; pointer-events: none; }
   #hud { position: absolute; left: 10px; bottom: 10px; color: var(--dim); line-height: 1.6; background: #0009; padding: 6px 9px; border-radius: 4px; max-width: 60%; }
   #hud .warn { color: var(--gold); }
+  #viewHelp { position: absolute; right: 10px; bottom: 10px; color: var(--dim); font-size: 11px; background: #0007; padding: 3px 7px; border-radius: 4px; pointer-events: none; z-index: 2; }
   aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
   h3 { margin: 16px 0 6px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
   h3 button { font-size: 10px; padding: 1px 6px; }
@@ -60,6 +61,7 @@
 </header>
 <main>
   <div id="view">
+    <div id="viewHelp">drag or middle-drag: turn · Shift+drag: pan · wheel: zoom · double-click: centre</div>
     <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
     <div id="hud"></div>
   </div>
@@ -811,7 +813,7 @@ function placeEyes() {
   }
 }
 
-let orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vector3() };   // zoom: the wheel; pan: right-drag, a double-click centres on a point
+let orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vector3() };   // zoom: the wheel; pan: Shift-drag, a double-click centres on a point
 // the split view (like Blender's areas): two panes, each its own orbit; orbit is the one the pointer last touched
 const SPLIT = { on: false, at: 0.5, orbits: [orbit, null], active: 0 };
 const splitting = () => SPLIT.on && orbit.focus !== "pov";
@@ -860,10 +862,10 @@ renderer.domElement.ondblclick = e => {                // a double-click centres
 };
 renderer.domElement.onpointerdown = e => {
   renderer.domElement.setPointerCapture(e.pointerId); paneAt(e);
-  if (orbit.focus !== "pov" && (e.button === 2 || e.button === 1)) { PAN = [e.clientX, e.clientY]; return; }   // right (or middle) drag pans
+  if (orbit.focus !== "pov" && e.shiftKey) { PAN = [e.clientX, e.clientY]; return; }   // Shift with any drag pans (Blender's Shift+middle)
   if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
-  drag = [e.clientX, e.clientY];
+  drag = [e.clientX, e.clientY];                       // the middle or right button, Alt, or the left with no tool: the view turns (as in the salon)
 };
 renderer.domElement.onpointermove = e => {
   if (PAN) {                                           // the view's middle moves with the pointer, in the screen's plane
@@ -878,6 +880,25 @@ for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
 };
 $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
+// ---- guards: a slip of the mouse or a key mustn't leave the page: the mouse's back and forward buttons do nothing,
+// right-click has no menu in the view, the middle button neither scrolls nor pastes (Linux's primary selection),
+// Backspace and Alt+arrows never go back unless you're typing; and leaving with unsaved changes asks first
+let UNSAVED = false;
+for (const ev of ["mousedown", "mouseup", "auxclick", "pointerdown", "pointerup"])
+  addEventListener(ev, e => { if (e.button === 3 || e.button === 4) { e.preventDefault(); e.stopPropagation(); } }, true);
+view.addEventListener("contextmenu", e => e.preventDefault());
+view.addEventListener("mousedown", e => { if (e.button === 1) e.preventDefault(); });
+view.addEventListener("auxclick", e => { if (e.button === 1) e.preventDefault(); });
+const typing = t => t.isContentEditable || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !["checkbox", "radio", "range", "button", "color", "file"].includes(t.type));
+addEventListener("keydown", e => {
+  if (typing(e.target)) return;
+  if (e.key === "Backspace" || e.key === "BrowserBack" || e.key === "BrowserForward" || (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))) e.preventDefault();
+}, true);
+for (const ev of ["input", "change"]) $("aside").addEventListener(ev, () => { UNSAVED = true; });
+addEventListener("beforeunload", e => {
+  const salon = SALONF.contentWindow?.__salon?.unsaved;
+  if (UNSAVED || salon || !TOUCH_SAVED || (LAY && !LAY.saved())) { e.preventDefault(); e.returnValue = ""; }
+});
 {                                                      // the split's button, the line between the panes and the active pane's mark
   const bar = el("div", { id: "splitBar", hidden: true, title: "Drag to resize the panes; double-click to even them" }), mark = el("div", { id: "paneMark", hidden: true });
   view.append(bar, mark);
@@ -1278,7 +1299,7 @@ $("#save").onclick = async () => {
   if (!WHO) return status("make a character first", "bad");
   const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));   // the salon's head (its face too)
-  status(`saved ${r.path} (and its body, for the salon)`, "ok");
+  status(`saved ${r.path} (and its body, for the salon)`, "ok"); UNSAVED = false;
 };
 function objText(head) {                               // metres, Y up, facing +Z; the head cut 0.245 m under its top (as MHR_head.obj)
   const cut = TOP - 0.245 * SCALE, keep = new Int32Array(N).fill(-1), v = [], f = [];

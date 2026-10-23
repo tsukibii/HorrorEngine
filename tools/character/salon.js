@@ -51,7 +51,7 @@ const st = {
   bake: { along: 8, full: false, smooth: 0, tame: 0 },   // the bake's points along each card (a swinging lock's at least 12), or every point; its smoothing
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
-let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
+let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select", UNSAVED = false;   // UNSAVED: edits since the last Save (leaving asks)
 
 // ---- the scene --------------------------------------------------------------------------------------------------------
 const view = $("#view");
@@ -950,7 +950,7 @@ function lockAt(e) {
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
 const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp, roots: st.roots, volume: st.volume });
-function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; }
+function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; UNSAVED = true; }
 function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.roots) { st.roots = o.roots; SL.setRoots(st.roots); rootsPanel(); } if (o.volume) { st.volume = o.volume; SL.setThicken(st.volume.thicken); volumePanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
@@ -1045,6 +1045,21 @@ function reach(up, fine) {
 }
 const cv = renderer.domElement;
 cv.addEventListener("contextmenu", e => e.preventDefault());
+// ---- guards (as the Character Studio's): the mouse's back and forward buttons do nothing, no right-click menu or
+// middle-click paste in the view, Backspace and Alt+arrows never go back unless you're typing; alone (not in the
+// Studio's Hair tab, which asks for both), leaving with unsaved hair asks first
+for (const ev of ["mousedown", "mouseup", "auxclick", "pointerdown", "pointerup"])
+  addEventListener(ev, e => { if (e.button === 3 || e.button === 4) { e.preventDefault(); e.stopPropagation(); } }, true);
+view.addEventListener("contextmenu", e => e.preventDefault());
+view.addEventListener("mousedown", e => { if (e.button === 1) e.preventDefault(); });
+view.addEventListener("auxclick", e => { if (e.button === 1) e.preventDefault(); });
+const typing = t => t.isContentEditable || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !["checkbox", "radio", "range", "button", "color", "file"].includes(t.type));
+addEventListener("keydown", e => {
+  if (typing(e.target)) return;
+  if (e.key === "Backspace" || e.key === "BrowserBack" || e.key === "BrowserForward" || (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))) e.preventDefault();
+}, true);
+for (const ev of ["input", "change"]) document.querySelector("aside")?.addEventListener(ev, e => { if (e.target.id !== "person") UNSAVED = true; });
+if (!Q.get("embed")) addEventListener("beforeunload", e => { if (UNSAVED) { e.preventDefault(); e.returnValue = ""; } });
 cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId);
   const orbitOnly = e.button !== 0 || !!BAKEVIEW;                       // previewing the bake: the view only turns
@@ -1480,7 +1495,7 @@ async function listPeople() {
 }
 async function save() {
   const at = where();
-  await api(at.url("salon.json"), JSON.stringify(st, null, 1));
+  await api(at.url("salon.json"), JSON.stringify(st, null, 1)); UNSAVED = false;
   status(at.on ? `saved ${at.on}'s hair (${at.path("salon.json")}); Bake puts it on ${at.on}` : `saved the hairstyle ${at.path("salon.json")}`, "ok");
   if (at.on) listPeople(); else listHair();
 }
@@ -1521,7 +1536,7 @@ async function openPerson(name) {                                     // a chara
   const r = await fetch(`api/people/${enc(name)}/salon/salon.json?v=${Date.now()}`);
   if (r.ok) await applyHair(await r.json(), name);
   else { st.head.person = name; await buildHead(); applyPreset("bald"); characterPanel(); bakePanel(); }   // no hair of its own yet: it starts bald
-  $("#person").value = name;
+  $("#person").value = name; UNSAVED = false;           // as it was saved
   status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet: it starts bald (Start from: a preset or a hairstyle)"}`, PERSON.face ? "ok" : "bad");
 }
 function allPanels() { characterPanel(); refPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); lookPanel(); bakePanel(); }
@@ -1544,7 +1559,7 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 })();
 
 // for the tests and the renders
-window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
+window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,

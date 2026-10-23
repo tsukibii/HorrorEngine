@@ -635,9 +635,19 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!f.unlit || f.uniform !== 1) throw new Error("the flat look: " + JSON.stringify(f));
     console.log(`       the hair shader unlit (uFlat ${f.uniform}); the bake's cards an unlit material`);
   });
+  await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
+    const g = await ev(() => {
+      const cv = window.__salon.canvas, fire = (type, init) => { const e = new MouseEvent(type, { bubbles: true, cancelable: true, ...init }); cv.dispatchEvent(e); return e.defaultPrevented; };
+      const key = k => { const e = new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }); document.body.dispatchEvent(e); return e.defaultPrevented; };
+      return { unsaved: window.__salon.unsaved, back: fire("mouseup", { button: 3 }), menu: fire("contextmenu", { button: 2 }), backspace: key("Backspace") };
+    });
+    if (!g.unsaved || !g.back || !g.menu || !g.backspace) throw new Error(JSON.stringify(g));
+    console.log("       edited hair marked unsaved; back button, right-click's menu and Backspace stopped");
+  });
   await step("saved as salon.json and loaded back the same", async () => {
     const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
     await ev(n => { document.querySelector("#hairName").value = n; return window.__salon.save(); }, TEST);
+    if (await ev(() => window.__salon.unsaved)) throw new Error("still marked unsaved after Save");
     const f = path.join(ROOT, "Content", "Studio", "Hair", TEST, "salon.json");
     if (!fs.existsSync(f)) throw new Error("no " + f);
     await page.goto(BASE + "salon.html?hair=" + TEST);
