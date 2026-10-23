@@ -371,6 +371,7 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `{"all": [...]}`, `{"any": [...]}` | a combination |
 | `{"caught": true}`, `{"caught": "mari"}` | the player is caught (by anyone, or by that cast member): a cast member who `sees` (`behave`) filled the suspicion meter, or found them in a hiding place her route `check`s |
 | `{"hidden": true}`, `{"hidden": locker}` | the player is in any hiding place, or in that one (`use: locker`); holds while they stay |
+| `{"answered": ask}`, `"option": answer` | an `ask` was answered (any answer, or that one) |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
@@ -396,6 +397,17 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
   (walking into a place, sitting down, using a thing), blended in from where they are and back out to play, and the
   stitch goes on. `{"when": {"use": "sofa"}, "do": [{"scene": "s_talk"}]}`. Its `sets` and events count as usual. A
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
+- `ask`: a **question with answers**, asked in play. The answers float in the world, in one panel, the dashes
+  between them: beside `who` (a cast member: at their shoulder, on the side of the frame with more room, the
+  camera's focus on their face), or at `on` (a placed thing it's about), or under the reticle with neither. The
+  question is the footer's line, like every line: `line` (a line id: spoken, its Japanese over it, the speaker's name
+  above) or `text` (a thought). 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
+  (actions run when it's picked). `secs` times it, with `default` (an answer's id) taken when time runs out. Picking
+  one is heard as `{"answered": ask, "option": id}`, so a later beat in the stitch can follow it; to branch the
+  story, the answer's `do` sets a flag and a flag choice (§5) follows it.
+  `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}], "secs": 8, "default": "go"}`.
+  The walker (STORY, the playthrough's timing) answers with the `default`, else the first.
+  A reply inside a scene (§9.9) is the scene's own; `ask` is for the player's tasks.
 - `done`, which ends the stitch
 
 ## 5. The flow
@@ -717,7 +729,7 @@ waiting.
 the first time she finds you, a tease the second, the third is a death.
 
 **The HUD's theme** (Play mode, docs/GAMEPLAY_PLAN.md §10): `game.ui_theme` names a file in
-`tools/director/play/ui/themes/` (`neumorph`, the light neumorphic kit, when a game names none; `plain`). A theme sets
+`tools/director/play/ui/themes/` (`glass`, barely-there frosted glass, when a game names none; `glass-rose`, the same in warm romance colours; `neumorph`, the older light kit; `plain`). A theme sets
 only colours, radii, shadows and the font; the layout is the same for every game.
 
 **Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.

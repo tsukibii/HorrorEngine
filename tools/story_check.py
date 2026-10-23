@@ -24,11 +24,13 @@ from storykit import kit as KIT  # noqa: E402
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
-TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least"}
+TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
+            "answered"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option"}
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave"}
+           "karma", "count", "scene", "behave", "ask"}
+ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
@@ -75,6 +77,23 @@ MINOR = {"glimpse", "slam_behind", "knock", "whisper", "lights_die", "swap"}
 SCARE_GAP, MINOR_GAP = 240, 60
 MAX_HOLD = 2.5
 MAX_PATHS = 4096            # format 3 sweeps three answer styles and both secret modes
+
+
+def asks_of(story):
+    """Every ask in the stitches (nested in answers too): its id -> its answers' ids, for `answered` triggers."""
+    out = {}
+
+    def walk(acts):
+        for a in acts or []:
+            if isinstance(a.get("ask"), str):
+                out.setdefault(a["ask"], set()).update(o.get("id") for o in a.get("options") or [] if isinstance(o, dict))
+                for o in a.get("options") or []:
+                    walk(o.get("do") if isinstance(o, dict) else None)
+            walk(a.get("then"))
+    for st in story.get("stitches", {}).values():
+        for b in st.get("beats", []):
+            walk(b.get("do"))
+    return out
 
 
 def verbs(a):
@@ -643,6 +662,8 @@ def check_trigger(bid, w, story, things, beats, r):
         return
     k = keys.pop()
     v = w[k]
+    if "option" in w and k != "answered":
+        r.err(f"{bid}: `option` goes with an answered trigger")
     if k not in TRIGGERS:
         r.err(f"{bid}: unknown trigger {k!r}")
     elif k in ("all", "any"):
@@ -663,6 +684,12 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: caught {v!r}: true (by anyone) or a cast member")
     elif k == "hidden" and v is not True and (v not in things or things[v].use != "locker"):
         r.err(f"{bid}: hidden {v!r}: true (in any hiding place) or a locker's id")
+    elif k == "answered":                              # an ask answered: any answer, or `option`
+        asks = asks_of(story)
+        if v not in asks:
+            r.err(f"{bid}: answered {v!r} isn't an ask in any stitch")
+        elif "option" in w and w["option"] not in asks[v]:
+            r.err(f"{bid}: answered {v!r} option {w['option']!r} isn't one of its answers ({', '.join(sorted(map(str, asks[v])))})")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
         if v not in things or things[v].use != "roll":
             r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
@@ -703,6 +730,38 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: scene {v!r} isn't a scene")
         elif any(n.get("type") == "scene" and n.get("ref") == v for n in story.get("flow", {}).values()):
             r.warn(f"{bid}: scene {v!r} is also a flow node: it will play twice")
+        return
+    if k == "ask":                                     # a question with answers floating beside who / at on (STORY_FORMAT §4)
+        if not isinstance(v, str) or not v:
+            r.err(f"{bid}: ask needs an id (a word, for `answered`)")
+        if ("line" in a) == ("text" in a):
+            r.err(f"{bid}: ask {v!r}: the question is a `line` (spoken) or a `text` (a thought), one of them")
+        elif "line" in a and a["line"] not in lines:
+            r.err(f"{bid}: ask {v!r}: line {a['line']!r} isn't a line")
+        if "who" in a and a["who"] not in cast:
+            r.err(f"{bid}: ask {v!r}: who {a['who']!r} isn't in cast")
+        if "on" in a:
+            placed(a["on"])
+        if "who" in a and "on" in a:
+            r.err(f"{bid}: ask {v!r}: beside `who` or at `on`, not both")
+        opts = a.get("options")
+        if not isinstance(opts, list) or not 2 <= len(opts) <= 4 or not all(isinstance(o, dict) for o in opts):
+            r.err(f"{bid}: ask {v!r}: options are 2 to 4 answers, each {{id, label, ja?, do?}}")
+            return
+        ids = [o.get("id") for o in opts]
+        if len(set(ids)) != len(ids) or not all(isinstance(i, str) and i for i in ids):
+            r.err(f"{bid}: ask {v!r}: each answer needs its own id")
+        for o in opts:
+            if not o.get("label"):
+                r.err(f"{bid}: ask {v!r} answer {o.get('id')!r} needs a label")
+            for sub in o.get("do") or []:
+                check_action(f"{bid} ask {v} {o.get('id')}", sub, story, things, r, stage)
+        if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
+            r.err(f"{bid}: ask {v!r}: secs is a number of seconds")
+        if "secs" in a and a.get("default") not in ids:
+            r.err(f"{bid}: ask {v!r} is timed: `default` (the answer when time runs out) is one of {', '.join(map(str, ids))}")
+        elif "default" in a and a["default"] not in ids:
+            r.err(f"{bid}: ask {v!r}: default {a['default']!r} isn't one of its answers")
         return
     if k == "say" and v not in lines:
         r.err(f"{bid}: say {v!r} isn't a line")
@@ -1203,6 +1262,8 @@ class World:
             return (k, v) in self.done_events
         if k == "after":
             return v in self.fired
+        if k == "answered":                               # the walker gave the ask's default (else its first) answer
+            return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
         if k == "all":
@@ -1280,6 +1341,15 @@ class World:
                 self.add_karma(v)
             elif k == "count":
                 self.counters[v] = float(a["set"]) if "set" in a else self.counters.get(v, 0.0) + float(a.get("add", 1))
+            elif k == "ask":                              # the walker answers with the default (else the first)
+                q = lines.get(a.get("line")) if a.get("line") else None
+                self.add("dialogue", (L.line_secs(q) if q else max(1.5, len(a.get("text", "")) / 15)) + min(ASK_SECS, float(a.get("secs", ASK_SECS))))
+                opts = [o for o in a.get("options") or [] if isinstance(o, dict)]   # a broken ask is the check's to report
+                o = next((o for o in opts if o.get("id") == a.get("default")), opts[0] if opts else None)
+                if o:
+                    self.done_events.add(("answered", v, o.get("id")))
+                    if self.run_actions(where, o.get("do") or []):
+                        return True
             elif k == "done":
                 return True
         return False

@@ -10,12 +10,13 @@ import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
-import { Hud } from "./hud.js";
+import { Hud, besideAt } from "./hud.js";
+import { pauseMenu } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
 const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
-const THEME = "neumorph";                          // the HUD theme when a game names none (game.ui_theme)
+const THEME = "glass";                           // the HUD theme when a game names none (game.ui_theme)
 const LIT = 2.2;                                   // a lamp that starts off: its strength when it's switched on (stage.js's bulb)
 const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
 // a cast member who `sees` (behave): her cone (degrees, full width), its reach (m), how much of it a crouched player
@@ -40,7 +41,11 @@ export class PlayRuntime {
     this.listener = null; this.ray = new THREE.Raycaster();
     this.on = {
       click: () => { if (this.active && !this.busy) box.requestPointerLock(); },
-      lock: () => this.hud.locked(document.pointerLockElement === box),
+      lock: () => {                                 // the lock lost in play (Esc) pauses
+        const on = document.pointerLockElement === box;
+        if (this.wasLocked && !on && this.active && !this.busy) this.pause();
+        this.wasLocked = on; this.hud.locked(on);
+      },
       move: e => { if (this.active && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
       key: e => this.keyEvent(e, e.type === "keydown"),
     };
@@ -64,6 +69,9 @@ export class PlayRuntime {
   ability(name, fn, ...args) { const p = part("ability", name); if (p && p[fn]) p[fn](this, ...args, this.set(name)); }
   keyEvent(e, down) {
     if (!this.active || this.busy) return;
+    if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
+      e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
+    }
     if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyC", "Space"].includes(e.code)) e.preventDefault();
     this.keys[e.code] = down;
     if (down && e.code === "KeyE" && !e.repeat) this.use();
@@ -229,11 +237,17 @@ export class PlayRuntime {
       p1: Math.atan2(d.y, Math.hypot(d.x, d.z)) * 180 / Math.PI };
   }
   lookedAt(id, within) { return this.look.id === id && this.look.dist <= within ? this.look.t : 0; }
-  async panel(spec) {
+  async panel(spec) { return this.modal(() => this.hud.panel(spec)); }
+  async choose(spec) {                                 // a multiple choice: the index picked. Beside `who` (a cast member), at `on` (a thing), else under the reticle
+    const f = spec.who && this.stage.cast[spec.who], t = spec.on && this.byId[spec.on], W = () => this.hud.root.clientWidth, H = () => this.hud.root.clientHeight;
+    const anchor = f ? () => besideAt(this.stage.camera, f, W(), H()) : t ? () => this.anchorAt(t) : null;
+    return this.modal(() => this.hud.choose(Object.assign({}, spec, { anchor, who: f ? ((this.story.cast || {})[spec.who] || {}).name || spec.who : spec.who })));
+  }
+  async modal(show) {                                  // a HUD panel with the pointer freed, then back to looking
     this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
     this.hud.locked(false);
-    const v = await this.hud.panel(spec);
+    const v = await show();
     this.busy = false; this.hud.locked(false);
     try { await this.box.requestPointerLock(); } catch (e) { }   // back to looking (a click does it if the browser says no)
     return v;
@@ -254,7 +268,7 @@ export class PlayRuntime {
   // view (placeFromCamera)
   async scene(id) {
     if (!this.opts.playScene) { this.hud.log(`scene ${id}: not from here`); return; }
-    this.pause(); this.moving = null;
+    this.hold(); this.moving = null;
     const r = await this.opts.playScene(id);
     if (this.stopped || !r) return;
     this.placeFromCamera(r.level, r.cam);
@@ -392,7 +406,34 @@ export class PlayRuntime {
     this.target = ip ? o : null;
     if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
     const pr = ip.prompt(o, this, this.set(ip.name));
-    this.hud.setCursor(pr.cursor, pr.label);
+    this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o));
+  }
+  // where a thing's prompt floats, in the HUD's pixels: a door's handle (on your side of the leaf, so it's where your
+  // hand goes; the whole door still takes E), anything else its middle. Kept to the safe area (the screen's margin,
+  // above the footer, where lines and choices live); `flip` puts the words left of the mark near the right edge, and
+  // `bare` drops the mark when it would sit on the reticle or the point had to be pulled in; `fx, fy` the point itself
+  // (the focus pull's centre) and `clear` how near the reticle is to it. Null behind the eye
+  anchorAt(o) {
+    const p = this.doors[o.userData.id] ? this.handleOf(o) : this.middleOf(o), v = p.project(this.stage.camera);
+    if (v.z > 1) return null;
+    const W = this.hud.root.clientWidth, H = this.hud.root.clientHeight, m = 56, px = (v.x + 1) / 2 * W, py = (1 - v.y) / 2 * H;
+    const d = Math.hypot(px - W / 2, py - H / 2), fx = Math.min(W, Math.max(0, px)), fy = Math.min(H, Math.max(0, py));
+    if (d < 24) return { x: W / 2 + 16, y: H / 2, bare: true, fx, fy, clear: 1 };   // on the reticle: the words beside it
+    const x = Math.min(W - m, Math.max(m, px)), y = Math.min(H * 0.7, Math.max(m, py)), bare = x !== px || y !== py;
+    return { x, y, flip: x > W * 0.7, bare, fx, fy, clear: bare ? 1 : Math.max(0, Math.min(1, 1 - (d - 40) / 260)) };   // sharper as the reticle nears it
+  }
+  handleOf(o) {                                       // the leaf's edge away from its hinges, at handle height
+    const g = o.geometry.parameters || {}, sw = o.userData.swing || {}, w = sw.w || g.width || 0.9, h = g.height || 2.05, d = g.depth || 0.05;
+    const side = sw.pivot ? -Math.sign(sw.pivot.x) || 1 : 1, me = o.worldToLocal(this.eyePos());
+    return o.localToWorld(new THREE.Vector3(side * (w / 2 - (sw.handleIn ?? 0.065)), -h / 2 + (sw.handleZ ?? 0.95), (me.z < 0 ? -1 : 1) * (d / 2 + 0.02)));
+  }
+  middleOf(o) {                                       // its bounds' middle, kept in its own space so it moves with it
+    if (!o.userData.mid) o.userData.mid = o.worldToLocal(new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()));
+    return o.localToWorld(o.userData.mid.clone());
+  }
+  titleOf(t) {                                        // the name under the verb: an item, a note's title, a named thing
+    const d = (t.userData.piece || {}).d || {};
+    return d.item ? this.itemName(d.item) : d.note ? ((this.story.notes || {})[d.note] || {}).title || null : d.name || null;
   }
 
   // ---- running the story -----------------------------------------------------------------------------------------
@@ -400,6 +441,7 @@ export class PlayRuntime {
   runStitch(st, n, interrupts = []) {
     return new Promise(resolve => {
       const beats = (st.beats || []).map(b => ({ b, fired: false }));
+      this.stitchTitle = st.title || null;
       this.next = n.next;
       this.end = r => { this.listener = null; this.end = null; this.timerLeft = null; this.hud.timer(null); resolve(r); };
       this.timerLeft = st.timer ? +st.timer.secs : null;
@@ -425,13 +467,23 @@ export class PlayRuntime {
       this.go();
     });
   }
-  pause() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it
+  // the pause menu (play/menu.js): the world holds (no tick: the clock, timers, NPCs, doors all wait) while it's up
+  async pause() {
+    if (this.held) return;
+    this.held = true; this.busy = true; this.keys = {};
+    if (document.pointerLockElement === this.box) document.exitPointerLock();
+    const v = await pauseMenu(this.hud, { game: (this.story.game || {}).title || "game", where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock });
+    this.held = false; this.busy = false; this.last = performance.now();
+    if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
+    try { await this.box.requestPointerLock(); } catch (e) { }
+  }
+  hold() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it
   go() {
     if (this.stopped) return;
     this.hud.root.style.display = "";
     if (this.active) return;
-    this.active = true; this.last = performance.now();
-    const loop = now => { if (!this.active) return; this.tick(Math.min(0.05, (now - this.last) / 1000)); this.last = now; requestAnimationFrame(loop); };
+    this.active = true; this.last = this.since = performance.now();
+    const loop = now => { if (!this.active) return; if (!this.held) this.tick(Math.min(0.05, (now - this.last) / 1000)); this.last = now; requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }
   tick(dt) {

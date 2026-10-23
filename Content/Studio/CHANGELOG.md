@@ -4,6 +4,16 @@ Every game records the engine and format it was built with (`game.built_with`), 
 use and an old game knows what changed under it. Bump the version when a mechanic, a runner verb, a format word or a
 desk tool lands; the minor number for additions, the major for anything an old game must be changed to keep working.
 
+## 0.6.0 (2026-10-23): the glass HUD, the pause menu, questions in the world
+
+- **Format:** `ask`, a question with 2 to 4 answers in a stitch's beat (beside `who`, at `on`, or under the
+  reticle; `line` or `text`; `secs` and `default`; each answer's `do`), and the `answered` trigger (`option`).
+- **Play HUD:** the `glass` theme is the default (`glass-rose` for romance): four places, one rule each (on the thing,
+  the corners, the footer, the middle); prompts and choices float in the world, lines stay in the footer; the
+  camera's focus pulls onto what you're about to use. Esc pauses: save slots, settings (each naming its Unreal
+  setting), quit. docs/VHS.md: if a game is shot on tape.
+- **PLAY** waits on the game's clock, so it passes on slow machines too.
+
 ## 0.5.0 (2026-10-21): gameplay assets
 
 - A play's `seeker`, her `loops` by role (in-place looped Kimodo motions, `motions.in_place`) and her `barks` by

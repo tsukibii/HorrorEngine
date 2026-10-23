@@ -5,7 +5,7 @@ The user's answers, newest first. They override the plan, the research and the d
 ## 2026-10-24, evening (character creator v3: the branches together)
 
 - **The work moves to `claude/character-creator-v3`**, forked from v2, with the tailor (`port-woodhill-clothing`) and
-  `claude/practical-tesla-zncon6` merged in; `glassmorphism-theme` goes in later, when it's finished.
+  `claude/practical-tesla-zncon6` merged in; `glassmorphism-theme` went in later the same day, as asked (90 minutes on).
 - **The tailor replaces the GarmentCode garment tool for good:** the old tool isn't kept alongside it. The sculpt's
   body (and a photo's face) is what the tailor cuts the clothes from, and they refit when the sculpt changes.
 
@@ -27,6 +27,59 @@ The user's answers, newest first. They override the plan, the research and the d
   lids (the opening came out about half the size of the model's). The opening is found in the mesh (the strip its
   blink squeezes shut), and the eyelid line's sliders adjust that. Lines saved against MediaPipe's points start
   again from zero.
+
+## 2026-10-23 (a word for questions in play)
+
+- **`ask` joins the format:** a stitch's beat asks the player something in play, the answers floating beside who
+  asks or at the thing; an answer runs its own actions and is heard as `answered`. STORY_FORMAT §4.
+
+## 2026-10-23 (choices float in the world)
+
+- **Every interaction is in the world, the talking isn't:** a choice's panel floats beside whoever asks (at their
+  shoulder, on the side of the frame with more room, so their face stays clear; the focus on them), at the thing it's
+  about, or under the reticle when it's about neither. The question, like every line, stays in the footer.
+- The pause menu's Quit keeps its choice in the menu (the game asking, not the world).
+
+## 2026-10-23 (the camera person; the UI is what the lens is on)
+
+- **A direction to lean on (not every game yet): the player is the one holding the camera** (a friend filming,
+  someone on a shoot), the footage on tape. Not as harsh as the research's noisiest frame: a blend. docs/VHS.md is
+  how to set it up.
+- **The UI is clean because the camera is focused on it:** a held look pulls focus onto the thing (the world softens
+  round it), the floating prompt sharpens as the reticle nears its point, answering someone keeps the subject sharp and
+  softens the edges, a card softens everything. Built on the desk (`.ph-focus`); Unreal does it with the camera's focus.
+
+## 2026-10-23 (the pause menu)
+
+- **Esc in Play pauses:** the world holds (clock, timers, NPCs) and the lights go out (the frame flickers down to nearly
+  black, like a dying bulb); the menu is drawn over the dark: Resume, Save game (an autosave row and three slots,
+  overwrite asks), Settings (Display, Graphics, Audio), Quit (a footer choice: Stay, Quit to title, Quit to desktop).
+- **Settings step, never slide:** ‹ value › with A/D or a click; levels are ten dashes. Each setting names what it is
+  in Unreal (a console variable, a scalability group, a sound class): play/menu.js `SETTINGS` is the reference for
+  Unreal's menu. The desk applies brightness and the subtitle settings; the rest wait for Unreal.
+
+## 2026-10-23 (the HUD's four places; prompts float on the thing)
+
+- **Anything done in the world floats on the thing:** the prompt sits where your hand goes (a door's handle, on your
+  side of the leaf, though the whole door takes E; a pickup's or a note's middle), with the key, the verb and the
+  thing's name (an item, a note's title). Kept above the footer; the reticle is a dot that opens into a ring.
+- **Conversations and choices are an overlaid footer:** the speaker's name above the line, the Japanese small over the
+  words, the options in their panel under the question, on one soft scrim that's there only while someone talks. The
+  Watch's scene subtitles are the same footer.
+- **The rest:** the corners are the game talking (objective, timer, log, stance); a note or a code lock is a card in
+  the middle. One type scale, two voices (a serif for what people say and write, a sans for the game), one key chip,
+  one thin-line meter. play/ui/hud.css says the four places at its top.
+- **Romance-only games use the same layout:** themes change colours only; `glass-rose` is the warm one.
+
+## 2026-10-23 (the Play UI is glass, not neumorphic)
+
+- **The default Play HUD theme is `glass`:** frosted glass slabs with a little 3D (tilt, a thick lower edge), simple
+  click-me buttons, no sliders. It sits under a VHS lost-footage grade in Unreal later.
+- **Only the choices (and the reading and code cards) get a glass panel;** all other text is boxless with a soft, edge-fading blur behind it. The glass is nearly invisible on purpose (faint tint, soft blur, hairline edge); the weight and a liquid, chromatic
+  shader come in Unreal. Every chip sits on one frame (`--ph-margin`, `--ph-pad`, `--ph-gap`): objective top-left,
+  timer and log top-right, stance bottom-left, subtitles and choices bottom-centre.
+- **A multiple choice is two panels:** the question in its own panel above, then ONE panel with the options side by side with centred dashes between them; the one under the
+  pointer (or A/D, arrows, 1-9) brightens and the rest dim (`hud.choose`, `rt.choose`). The desk's Watch uses it too (replies, timed `choose` events), so a choice looks the same everywhere; the `chooser` in play/hud.js builds it. No new story word.
 
 ## 2026-10-23 (light: real day, a blue night, cheap tricks)
 

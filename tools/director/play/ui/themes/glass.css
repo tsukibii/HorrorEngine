@@ -1,0 +1,29 @@
+/* Play HUD theme "glass" (the default): frosted glass that's felt more than seen, for horror and horror romance under
+   a lost-footage grade later. Only what you answer or hold up gets glass (a choice's panel, a note or code card, its
+   buttons): a faint tint, a soft blur, a hairline edge brighter on top. Everything else is boxless text: the corners
+   and the floating prompt on a soft edgeless halo, the footer on a scrim that rises from the bottom while someone
+   talks. A serif for the voice, a quiet sans for the game. Variants (glass-rose) import this and change colours only. */
+.play-hud[data-theme^="glass"]{
+  --ph-font:"Source Serif 4","Noto Serif","Noto Serif JP","Hiragino Mincho ProN",Georgia,serif;
+  --ph-ui-font:"Inter","Noto Sans","Noto Sans JP","Hiragino Sans",system-ui,sans-serif;
+  --ph-text:rgba(255,250,240,.93); --ph-muted:rgba(255,250,240,.58); --ph-accent:#cfe6ff; --ph-who:#f6f1e8; --ph-lit:#fffaf0;   /* warm whites: pure white is the loudest "not from the tape" (docs/VHS.md §3) */ --ph-bad:#ff8c84;
+  --ph-hidden:rgba(8,10,16,.75); --ph-veil:rgba(6,8,14,.5);
+  --ph-surface:rgba(255,255,255,.05); --ph-glass:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,0) 55%);
+  --ph-border:1px solid rgba(255,255,255,.14); --ph-blur:blur(12px) saturate(1.2);
+  --ph-halo:blur(6px); --ph-halo-bg:rgba(0,0,0,.26);
+  --ph-scrim:linear-gradient(to top,rgba(4,6,10,.62),rgba(4,6,10,.18) 70%,rgba(4,6,10,0)); --ph-scrim-blur:none;   /* no blur in the footer: over tape noise it smears */
+  --ph-dot:4px; --ph-ring:18px; --ph-cursor:rgba(255,250,240,.88); --ph-cursor-shadow:0 0 4px rgba(0,0,0,.7);
+  --ph-radius-s:6px; --ph-radius:12px; --ph-radius-l:18px;
+  --ph-margin:28px; --ph-gap:10px; --ph-pad:9px 18px;
+  --ph-focus-blur:2.5px; --ph-focus-hole:120px;
+  --ph-key-bg:rgba(255,255,255,.12); --ph-key-text:#fffaf0; --ph-key-border:1px solid rgba(255,255,255,.24); --ph-key-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+  --ph-edge:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(0,0,0,.14);
+  --ph-pop:var(--ph-edge),0 6px 18px rgba(0,0,0,.22); --ph-pop-l:var(--ph-edge),0 16px 40px rgba(0,0,0,.32); --ph-inset:inset 0 1px 4px rgba(0,0,0,.35);
+  --ph-text-shadow:0 1px 4px rgba(0,0,0,.85);
+  --ph-choice-pad:10px 14px 12px; --ph-dash:40px; --ph-dash-line:1px dashed rgba(255,255,255,.42);
+  --ph-opt-glow:0 0 12px rgba(190,224,255,.7),0 1px 5px rgba(0,0,0,.6);
+}
+.play-hud[data-theme^="glass"] :is(.ph-card,.ph-choice,.ph-btn,.ph-page){background-image:var(--ph-glass);border:var(--ph-border)}
+.play-hud[data-theme^="glass"] .ph-btn{box-shadow:var(--ph-edge)}
+.play-hud[data-theme^="glass"] .ph-btn:hover{background-color:rgba(255,255,255,.12)}
+.play-hud[data-theme^="glass"] .ph-code{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1)}

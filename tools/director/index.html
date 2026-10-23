@@ -32,6 +32,7 @@ main{display:flex;height:calc(100% - 78px)}
 .ov .ja{position:absolute;bottom:58px;width:100%;text-align:center;color:#999;font-size:13px;text-shadow:0 0 4px #000}
 .ov .sub{position:absolute;bottom:22px;width:100%;text-align:center;font-size:18px;text-shadow:0 0 6px #000,0 0 2px #000}
 .ov .black{position:absolute;inset:0;background:#000;opacity:0}
+#watchOv .ja,#watchOv .sub{display:none}   /* the Watch shows them in the game's footer (play/hud.js) */
 .ov .tag{position:absolute;top:8px;right:10px;color:var(--accent);font-size:11px;text-shadow:0 0 4px #000}
 #inspector{width:680px;max-width:58%;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:10px 12px}
 .card{position:absolute;width:176px;min-height:54px;border:1px solid var(--line);border-left:5px solid;border-radius:6px;background:var(--panel2);padding:5px 8px;cursor:pointer;user-select:none}
@@ -72,9 +73,6 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 #watchBar{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
 .wcard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(0,0,0,.72);pointer-events:auto}
 .wcard .big{font-size:24px}.wcard .timer{font-size:30px;color:var(--warn);font-variant-numeric:tabular-nums}
-.reply{position:absolute;left:0;right:0;bottom:70px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 8%;pointer-events:none}
-.reply .ropt{pointer-events:auto;min-width:220px;max-width:38%;background:rgba(10,10,12,.72);border:1px solid rgba(217,164,65,.55);border-radius:6px;padding:8px 16px;text-align:center}
-.reply .ropt:hover{border-color:var(--accent);background:rgba(40,30,12,.85)}.reply .rja{font-size:13px;color:var(--dim)}.reply .ren{font-size:19px}
 .reply .rbar{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);width:200px}
 .rbar{height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}.rbar div{height:100%;background:var(--accent);width:100%}
 .barksub{position:absolute;left:50%;top:18%;transform:translateX(-50%);color:var(--dim);font-style:italic;font-size:16px;pointer-events:none}
@@ -150,7 +148,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
       <label><input type="checkbox" id="wSpeak"> speak the Japanese</label>
       <label><input type="checkbox" id="wSecrets"> finds the secrets</label>
       <label title="Play mode: the player's tasks are walked (WASD, mouse, E to use, C to crouch), not cards"><input type="checkbox" id="wPlay" checked> walk the tasks</label>
-      <label title="the HUD's theme (play/ui/themes): the game's own (game.ui_theme), or try another">theme <select id="wTheme"><option value="">the game's</option><option>neumorph</option><option>plain</option></select></label>
+      <label title="the HUD's theme (play/ui/themes): the game's own (game.ui_theme), or try another">theme <select id="wTheme"><option value="">the game's</option><option>glass</option><option>glass-rose</option><option>neumorph</option><option>plain</option></select></label>
       <label title="crouch: press C once, or hold it">crouch <select id="wCrouch"><option value="toggle">toggle</option><option value="hold">hold</option></select></label>
       <label><input type="checkbox" id="wFast" checked> tasks auto-finish after 2 s</label>
       <label title="Cutscenes can't be skipped in the game; this is for the desk only"><input type="checkbox" id="wSkip"> dev: Esc skips</label>

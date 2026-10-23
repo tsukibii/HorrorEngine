@@ -12,6 +12,18 @@ the fix.
 
 ## This project
 
+- **A headless test waits on the game's clock, not the wall's:** on slow frames (the cloud's software GPU) the
+  runtime clamps each step, so a second of real time is less play; fixed `waitForTimeout`s raced every walk, sit,
+  turn and meter. `gameWait`/`hold` in playtest.js wait for `rt.clock` (and stop when play ends: a walk that answers
+  a choice ends play). Upper bounds can be generous; they only cost time when something is broken. PLAY failed at
+  step 4 for a whole session before this was found.
+- **A test's search must not touch the story:** `goTo` tried 16 spots and ticked the game at each, so a spot on the
+  cellar stairs fired `enter` and answered a choice. Aim-test a candidate without a tick, and skip spots inside a
+  trigger the player isn't already in.
+- **Two of the same element is a test's trap:** the Watch's footer and Play's HUD both have a `.ph-line`; a bare
+  selector read the wrong one (and found a real bug: a triggered scene's last line stayed up in play). Read the
+  runtime's own element (`rt.hud.lineEl`).
+
 - **A box of absolutely placed cards has no height of its own:** the branch map's cards sat in a zero-height box and
   the page took the clicks; size the box to the cards (the map does now).
 - **Merge the other session's push before building on the same file:** the local session's `motion.py import` (one
