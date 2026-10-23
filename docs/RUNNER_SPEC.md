@@ -132,13 +132,14 @@ scene: a camera fade, and control taken and given back softly.
 | stalker | the class-mapped stalker with a route of spots |
 | trick | the composites in TRICKS.md §3 |
 | checkpoint | save slot `<Game>_<n>`: the state as JSON in a USaveGame |
+| ask | the question as the subtitle; the answers in one widget floating in the world: beside `who` (their shoulder on the side of the screen with more room, projected each frame), at `on` (a door's handle side, else the actor's bounds' middle), else under the crosshair; the camera's focus on them meanwhile (docs/VHS.md §4); input as the desk's (A/D, 1-9, the mouse); `secs` with `default`; then the answer's `do`, and `answered` is heard |
 | done | ends the stitch |
 
 **Interaction:**
 - Class-mapped template Blueprints call `NotifyUse` through a small interface (one call each, added through MCP).
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - Widgets (UMG, kept plain): subtitles, the objective, the note reader, the keypad, the inventory, the ending card,
-  the debug HUD.
+  the debug HUD, the floating prompt and the floating choice (play/ui/hud.css is the layout: four places, one rule each).
 
 ## Debug (the console), for Claude as much as for you
 

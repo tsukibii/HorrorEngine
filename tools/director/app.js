@@ -787,7 +787,7 @@ async function watchScene(sc, nid, sid, k) {
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
-  stopTakes();
+  stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
   karmaAct(sc.sets);

@@ -2,6 +2,11 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (a word for questions in play)
+
+- **`ask` joins the format:** a stitch's beat asks the player something in play, the answers floating beside who
+  asks or at the thing; an answer runs its own actions and is heard as `answered`. STORY_FORMAT §4.
+
 ## 2026-10-23 (choices float in the world)
 
 - **Every interaction is in the world, the talking isn't:** a choice's panel floats beside whoever asks (at their
