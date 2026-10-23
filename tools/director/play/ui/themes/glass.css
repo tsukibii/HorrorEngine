@@ -21,7 +21,7 @@
   --ph-choice-pad:10px 14px; --ph-dash:44px; --ph-dash-line:1.5px dashed rgba(255,255,255,.4);
   --ph-opt-glow:0 0 12px rgba(190,224,255,.7),0 1px 5px rgba(0,0,0,.6);
 }
-.play-hud[data-theme="glass"] :is(.ph-objective,.ph-card,.ph-btn,.ph-key,.ph-line,.ph-prompt,.ph-hint,.ph-choice,.ph-stance,.ph-log>div){background-image:var(--ph-glass);border:var(--ph-border)}
+.play-hud[data-theme="glass"] :is(.ph-objective,.ph-card,.ph-btn,.ph-key,.ph-line,.ph-prompt,.ph-hint,.ph-choice,.ph-ask,.ph-stance,.ph-log>div){background-image:var(--ph-glass);border:var(--ph-border)}
 .play-hud[data-theme="glass"] .ph-log>div{background-color:var(--ph-surface);-webkit-backdrop-filter:var(--ph-blur);backdrop-filter:var(--ph-blur)}
 .play-hud[data-theme="glass"] .ph-stance{-webkit-backdrop-filter:var(--ph-blur);backdrop-filter:var(--ph-blur)}
 .play-hud[data-theme="glass"] .ph-prompt,.play-hud[data-theme="glass"] .ph-hint{border-radius:999px}

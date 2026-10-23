@@ -65,15 +65,16 @@
 .play-hud .ph-seen.on{opacity:1}
 .play-hud .ph-seen-fill{height:100%;width:0;background:var(--ph-bad);border-radius:var(--ph-radius)}
 /* a theme can blur what's behind its surfaces (--ph-blur) and outline them (--ph-border) */
-.play-hud .ph-cursor:not([data-cursor="none"]),.play-hud .ph-key,.play-hud .ph-objective,.play-hud .ph-card,.play-hud .ph-btn,.play-hud .ph-line,.play-hud .ph-prompt,.play-hud .ph-hint,.play-hud .ph-choice{
+.play-hud .ph-cursor:not([data-cursor="none"]),.play-hud .ph-key,.play-hud .ph-objective,.play-hud .ph-card,.play-hud .ph-btn,.play-hud .ph-line,.play-hud .ph-prompt,.play-hud .ph-hint,.play-hud .ph-choice,.play-hud .ph-ask{
   -webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none)}
 /* the multiple choice: one panel, options in equal columns with a dash between each pair, so the dashes stay centred */
 .play-hud .ph-choose{align-items:flex-end;padding-bottom:calc(var(--ph-margin) * 2)}   /* the same zone as the subtitles */
-.play-hud .ph-choice{position:relative;display:flex;flex-direction:column;gap:12px;align-items:center;max-width:min(860px,88%);padding:var(--ph-choice-pad,var(--ph-pad));
+.play-hud .ph-choice{position:relative;min-width:min(520px,100%);box-sizing:border-box;display:flex;flex-direction:column;gap:12px;align-items:center;max-width:min(860px,88%);padding:var(--ph-choice-pad,var(--ph-pad));
   border-radius:var(--ph-radius-l);background:var(--ph-surface);box-shadow:var(--ph-pop-l)}
-.play-hud .ph-ask{font-size:17px;line-height:1.4;color:var(--ph-text);text-align:center;padding-bottom:var(--ph-gap)}
+.play-hud .ph-stack{display:flex;flex-direction:column;align-items:center;gap:var(--ph-gap);max-width:min(860px,88%)}
+.play-hud .ph-ask{font-size:17px;line-height:1.4;color:var(--ph-text);text-align:center;padding:var(--ph-line-pad,var(--ph-pad));border-radius:var(--ph-radius);background:var(--ph-surface);box-shadow:var(--ph-pop)}
 .play-hud .ph-opts{display:grid;grid-auto-flow:column;grid-auto-columns:1fr auto;align-items:center;width:100%}
-.play-hud .ph-opt{font:inherit;font-size:18px;color:var(--ph-text);background:none;border:0;padding:10px 26px;cursor:pointer;text-align:center;opacity:.9;
+.play-hud .ph-opt{white-space:nowrap;font:inherit;font-size:18px;color:var(--ph-text);background:none;border:0;padding:10px 26px;cursor:pointer;text-align:center;opacity:.9;
   transition:opacity .15s,color .15s,text-shadow .15s,transform .12s}
 .play-hud .ph-choice.lit .ph-opt{opacity:.45}
 .play-hud .ph-choice.lit .ph-opt.on{opacity:1;color:var(--ph-lit,var(--ph-accent));text-shadow:var(--ph-opt-glow,none)}

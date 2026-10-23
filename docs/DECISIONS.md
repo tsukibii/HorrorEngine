@@ -9,7 +9,7 @@ The user's answers, newest first. They override the plan, the research and the d
 - **The glass is nearly invisible on purpose** (faint tint, soft blur, hairline edge); the weight and a liquid, chromatic
   shader come in Unreal. Every chip sits on one frame (`--ph-margin`, `--ph-pad`, `--ph-gap`): objective top-left,
   timer and log top-right, stance bottom-left, subtitles and choices bottom-centre.
-- **A multiple choice is one panel:** the options side by side with centred dashes between them; the one under the
+- **A multiple choice is two panels:** the question in its own panel above, then ONE panel with the options side by side with centred dashes between them; the one under the
   pointer (or A/D, arrows, 1-9) brightens and the rest dim (`hud.choose`, `rt.choose`). The desk's Watch uses it too (replies, timed `choose` events), so a choice looks the same everywhere; the `chooser` in play/hud.js builds it. No new story word.
 
 ## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
