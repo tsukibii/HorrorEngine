@@ -48,6 +48,7 @@ const st = {
   scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
   roots: { lift: 40, length: 0.02, vary: 0.4 },                     // how hair comes out of the head (salonlib.js's rootBend)
   volume: { thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 },   // Thicken; the base's padding (salonpad.js); Clip blend
+  bake: { along: 8, full: false },     // the bake's points along each card (a swinging lock's at least 12), or every point the salon draws
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
@@ -669,8 +670,12 @@ function movePanel() {
 }
 
 // ---- the bake: the swinging locks each a skinned mesh on its chains' bones, everything else one simplified mesh -------
-const BAKE_ALONG = 8, BAKE_ALONG_PHYS = 12;
+const BAKE_ALONG_PHYS = 12;
 const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]), u: G.u, t: G.t && ix.map(i => G.t[i]) }; };
+function bakeGuide(G, phys) {                                          // a card as the bake keeps it: fewer points along it, or all of them
+  const n = G.pts.length, m = st.bake.full ? n : Math.min(n, phys ? Math.max(BAKE_ALONG_PHYS, st.bake.along) : st.bake.along);
+  return m >= n ? G : resampleGuide(G, m);
+}
 function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
   const pos = cardPositions(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
   guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
@@ -702,12 +707,12 @@ function buildBake(name) {                                             // the ba
   const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, person: st.head.person, preset: st.head.person ? null : st.head.preset, height: st.head.person ? PERSON?.height : st.head.height } };
   shown.forEach((l, i) => {
     const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = l.color || null;   // the look is in the atlas; a lock's own colour tints it
-    if (l.physics && l.physics.on) skinned.push([l, guides.map(G => resampleGuide(G, BAKE_ALONG_PHYS)), colour]);
-    else statics.push(cardsGeometry(guides.map(G => resampleGuide(G, BAKE_ALONG)), colour));
+    if (l.physics && l.physics.on) skinned.push([l, guides.map(G => bakeGuide(G, true)), colour]);
+    else statics.push(cardsGeometry(guides.map(G => bakeGuide(G)), colour));
   });
   if (st.volume.padding) {                                             // the padding: with the still hair
     if (PAD_DIRTY || !PAD) refreshPadding();
-    if (PAD && PAD.cards.length) { statics.push(cardsGeometry(PAD.cards.map(G => resampleGuide(G, BAKE_ALONG)), null)); summary.padding = { cards: PAD.cards.length, thickness: st.volume.thickness, smooth: st.volume.smooth }; }
+    if (PAD && PAD.cards.length) { statics.push(cardsGeometry(PAD.cards.map(G => bakeGuide(G)), null)); summary.padding = { cards: PAD.cards.length, thickness: st.volume.thickness, smooth: st.volume.smooth }; }
   }
   const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
   const mat = bakeMat();
@@ -773,6 +778,12 @@ function bakePanel() {
   const pv = el("button", { textContent: BAKEVIEW ? "Preview the bake: on" : "Preview the bake", className: BAKEVIEW ? "on" : "", title: "only the bake shown, as it would be written (the hair you edit hidden); made again as you change things; a drawing tool ends it",
     onclick: () => previewBake(!BAKEVIEW).catch(e => status(e.message, "bad")) }); pv.id = "previewBake";
   box.append(pv, el("button", { textContent: who ? `Bake onto ${who}` : "Bake the hairstyle", onclick: () => bake().catch(e => status(e.message, "bad")) }));
+  const again = () => { if (BAKEVIEW) previewBake(true).catch(e => status(e.message, "bad")); else bakePanel(); };   // the preview (and its numbers) made again
+  const detail = el("div", { id: "bakeDetail" }); box.append(detail);
+  slider(detail, "Points along a card", 3, 32, 1, st.bake.along, v => { st.bake.along = v; },
+    "How far the bake reduces the hair: each card keeps this many points from root to tip (a swinging lock at least 12). Fewer is lighter for a game with many characters; more keeps the curves. Never more than the salon draws.");
+  tick(detail, "Keep every point (no reduction)", st.bake.full, v => { st.bake.full = v; again(); }, "The bake keeps every point the salon draws along each card: the most faithful, the heaviest.");
+  detail.querySelector("input[type=range]").onchange = again;          // made again when the slider is let go
   const n = BAKEVIEW ? BAKEVIEW.summary : BAKED;
   if (n) box.append(el("p", { className: "note", textContent: `${BAKEVIEW ? "Preview" : "Baked"}: ${n.before.vertices} vertices live -> ${n.after.vertices}: one still mesh of ${n.static.vertices || 0}, ${n.physics.length} swinging (${n.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round((BAKEVIEW ? BAKEVIEW.bytes : n.glb_bytes) / 1024)} KB` }));
   box.append(el("p", { className: "note", textContent: (who ? `Bake puts the hair on ${who} (Content/Studio/People/${who}/salon/salon.glb): the Character Studio wears it (Hair: made in the salon), and so will the director's desk; ${who} goes to Unreal from there, finished, rigged and animated, hair and all. `
@@ -1149,8 +1160,8 @@ async function bakeBase() {
   const at = where();
   if (!baseGroups().length) throw new Error("tick the base's groups in Locks first");
   render(); if (PAD_DIRTY || (st.volume.padding && !PAD)) refreshPadding();
-  const parts = baseLocks().map(l => cardsGeometry((EVAL[l.id] || []).map(G => resampleGuide(G, BAKE_ALONG)), l.color || null));
-  if (st.volume.padding && PAD && PAD.cards.length) parts.push(cardsGeometry(PAD.cards.map(G => resampleGuide(G, BAKE_ALONG)), null));
+  const parts = baseLocks().map(l => cardsGeometry((EVAL[l.id] || []).map(G => bakeGuide(G)), l.color || null));
+  if (st.volume.padding && PAD && PAD.cards.length) parts.push(cardsGeometry(PAD.cards.map(G => bakeGuide(G)), null));
   const root = new THREE.Group(); root.name = "hair_base";
   const m = new THREE.Mesh(geometryOf(parts), bakeMat()); m.name = "hair_base"; root.add(m);
   const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
@@ -1373,6 +1384,7 @@ async function applyHair(o, person) {                                 // a salon
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
   st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 }, o.volume || {}); BASE_DIRTY = true; SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
+  st.bake = Object.assign({ along: 8, full: false }, o.bake || {});
   UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; delete st.look.showBake; if (BAKEVIEW) await previewBake(false); st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());

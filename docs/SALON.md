@@ -276,7 +276,9 @@ Character Studio shows it still on the head for now; Unreal gets it with the fin
 - Every lock with physics is **its own skinned mesh** on bones along its chains (a strand or bundle one chain of six,
   a sheet three), each vertex on the two nearest joints along and the two nearest chains across (four influences),
   its physics settings in the mesh's extras for the runtime.
-- Everything else is **one mesh**: each card simplified to 8 points along it (the live hair has 24), cut out at 0.4
+- Everything else is **one mesh**: each card simplified to **Points along a card** (8 by default; the live hair has 24;
+  a swinging lock keeps at least 12), or **Keep every point** for no reduction: lighter for a game with many
+  characters, heavier where few are on screen (saved with the hair, the preview follows it), cut out at 0.4
   and tinted by vertex colours; the darkened scalp is its own mesh, `hair_scalp`. `hime_demo`: 5 410 vertices live,
   1 440 baked, 503 KB.
 - **Preview the bake** shows only the bake: the file it would write, read back (three.js's GLTFLoader), the hair you

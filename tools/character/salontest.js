@@ -577,7 +577,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!(json.images || []).length || !cardsMat || cardsMat.alphaMode !== "MASK" || !(cardsMat.extras && cardsMat.extras.look && cardsMat.extras.look.label)) throw new Error("the bake's look: " + JSON.stringify({ images: (json.images || []).length, cards: cardsMat }).slice(0, 300));
     console.log(`       ${sum.before.vertices} vertices live -> ${sum.after.vertices} baked (static ${sum.static.vertices}); ${Math.round(glb.length / 1024)} KB`);
   });
-  await step("Preview the bake: only the bake shown (the editing hair and its scalp hidden), its bones bend it, made again when the hair changes; a drawing tool ends it", async () => {
+  await step("Preview the bake: only the bake shown (the editing hair and its scalp hidden), its bones bend it, made again when the hair changes or its detail; a drawing tool ends it", async () => {
     await page.click("#previewBake");
     await page.waitForFunction(() => window.__salon.BAKEVIEW, null, { timeout: 60000 });
     const shown = await ev(() => { const s = window.__salon, m = Object.values(s.MESHES); let baked = 0; s.BAKEG.traverse(o => { if (o.isMesh) baked++; });
@@ -589,11 +589,22 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__salon.BAKEVIEW && window.__salon.BAKEVIEW.summary.physics.length === 0, null, { timeout: 30000 });
     await ev(() => { const s = window.__salon; s.st.locks.find(l => l.physics && l.physics.on).visible = true; s.dirtyAll(); s.render(); });
     await page.waitForFunction(() => window.__salon.BAKEVIEW && window.__salon.BAKEVIEW.summary.physics.length === 1, null, { timeout: 30000 });
+    const detail = [];                                                  // the bake's detail: more points along a card, then every point, then back
+    for (const [along, full] of [[16, false], [16, true], [8, false]]) {
+      const was = await ev(() => window.__salon.BAKEVIEW);
+      await ev(([a, f]) => { const r = document.querySelector("#bakeDetail input[type=range]"), t = document.querySelector("#bakeDetail input[type=checkbox]");
+        if (t.checked !== f) t.click(); r.value = a; r.dispatchEvent(new Event("input")); r.dispatchEvent(new Event("change")); }, [along, full]);
+      await page.waitForFunction(w => window.__salon.BAKEVIEW && window.__salon.BAKEVIEW !== w, was, { timeout: 30000 }).catch(() => null);
+      await page.waitForFunction(([a, f]) => { const s = window.__salon; return s.BAKEVIEW && s.st.bake.along === a && s.st.bake.full === f; }, [along, full], { timeout: 30000 });
+      await page.waitForTimeout(600);
+      detail.push(await ev(() => window.__salon.BAKEVIEW.summary.after.vertices));
+    }
+    if (!(detail[1] >= detail[0] && detail[0] > detail[2])) throw new Error("the bake's detail: " + JSON.stringify(detail));
     await ev(() => window.__salon.setTool("strand"));
     const back = await ev(() => { const s = window.__salon; s.render(); return { preview: !!s.BAKEVIEW, editing: Object.values(s.MESHES).some(x => x.parent.visible && x.visible), scalp: s.scalpInfo() && s.scalpInfo().visible, bake: s.BAKEG.children.length }; });
     await ev(() => window.__salon.setTool("select"));
     if (back.preview || !back.editing || !back.scalp || back.bake) throw new Error(JSON.stringify(back));
-    console.log(`       ${shown.baked} baked meshes shown alone; ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; the swinging lock hidden and shown, the preview followed; the strand tool ended it`);
+    console.log(`       ${shown.baked} baked meshes shown alone; ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; the swinging lock hidden and shown, the preview followed; detail 16 points ${detail[0]}, every point ${detail[1]}, 8 points ${detail[2]} vertices; the strand tool ended it`);
   });
   await step("saved as salon.json and loaded back the same", async () => {
     const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
