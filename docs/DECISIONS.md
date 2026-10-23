@@ -28,6 +28,22 @@ The user's answers, newest first. They override the plan, the research and the d
   blink squeezes shut), and the eyelid line's sliders adjust that. Lines saved against MediaPipe's points start
   again from zero.
 
+## 2026-10-23 (light: real day, a blue night, cheap tricks)
+
+- **Realistic day and night by simple, cheap tricks**, as drag-and-drop pieces for any project (UnrealPlugins/LightKit),
+  working with PBR textures and some baked lighting. Day like the VHS test's smooth, soft shadows.
+- **Games start with day and night only. Night is a deep, pretty blue that feels real, never pitch black** (pitch
+  black is a windowless building, not night).
+- **Not as blurry as Chilla's Art:** the camcorder look (UltraVHS's Camcorder) is the aim; borrow their reflections
+  (metal, wet ground, moving reflections) and visible light (the moonlit strip on the ground).
+
+## 2026-10-23 (plugins for any project; the VHS look)
+
+- **`UnrealPlugins/` holds plugins that work in any Unreal project**, not only HorrorStudio; each comes with
+  instructions for Claude to add it to a project.
+- **The first is UltraVHS**, a rebuild of the user's lost "ultra realistic VHS" preset from a capture of it: a natural
+  camcorder look with a handheld camera (head bob). C++ is fine.
+
 ## 2026-10-23, night (the eyelid line by hand)
 
 - **The eye's cut is set by hand, not guessed:** every one of the lid's 16 points has a slider (mm), both eyes mirrored

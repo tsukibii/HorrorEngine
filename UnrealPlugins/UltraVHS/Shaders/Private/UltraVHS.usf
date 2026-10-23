@@ -1,0 +1,296 @@
+// UltraVHS: a camcorder recorded to VHS, after the tonemapper (display-referred colour).
+//
+// Three passes, all full-screen pixel shaders:
+//   CapturePS  the camera: lens (barrel distortion, chromatic aberration, vignette), the sensor's levels and
+//              saturation, sampled down into a small "tape" frame (480 lines by default, 4:3).
+//   TapePS     the recording: luma low-passed with the deck's edge enhancement, chroma bled wide and shared with
+//              the line above, tracking slips, the head-switching band, noise, dropouts, a little persistence.
+//   DisplayPS  the screen: the tape frame scaled back up (soft, as the TV did), pillarboxed, optional scanlines.
+//
+// Distances on the tape are in "480-line pixels" so a knob means the same thing at any TapeLines.
+
+#include "/Engine/Public/Platform.ush"
+
+Texture2D InputTexture;
+SamplerState InputSampler;
+Texture2D HistoryTexture;
+SamplerState HistorySampler;
+
+// CapturePS
+float2 InputExtentInverse;
+float2 InputViewMin;
+float2 InputViewSize;
+float2 TapeSize;
+float Distortion;
+float ChromaticAberration;
+float Vignette;
+float Saturation;
+float4 BlackLevel;
+float4 WhiteLevel;
+
+// TapePS
+float Time;
+uint FrameIndex;
+float LumaBlur;
+float Sharpen;
+float SharpenRadius;
+float ChromaBlur;
+float ChromaShift;
+float ChromaVerticalBlend;
+float Ghosting;
+float LumaNoise;
+float ChromaNoise;
+float TrackingJitter;
+float TrackingError;
+float HeadSwitch;
+float Dropouts;
+float Glitch;
+
+// DisplayPS
+float2 OutputViewMin;
+float2 OutputViewSize;
+float Scanlines;
+
+// ---------------------------------------------------------------------------------------------------------------
+// helpers
+
+uint HashU(uint X)
+{
+	X ^= X >> 16;
+	X *= 0x7feb352du;
+	X ^= X >> 15;
+	X *= 0x846ca68bu;
+	X ^= X >> 16;
+	return X;
+}
+
+// 0..1, deterministic in its three integers
+float Hash01(uint A, uint B, uint C)
+{
+	return float(HashU(A ^ HashU(B ^ HashU(C))) >> 8) * (1.0 / 16777216.0);
+}
+
+// value noise along a line: smooth from cell to cell
+float LineNoise(float X, uint Row, uint Seed)
+{
+	float Cell = floor(X);
+	float T = X - Cell;
+	T = T * T * (3.0 - 2.0 * T);
+	uint C = uint(Cell + 65536.0);
+	return lerp(Hash01(C, Row, Seed), Hash01(C + 1u, Row, Seed), T);
+}
+
+float Luma(float3 C)
+{
+	return dot(C, float3(0.299, 0.587, 0.114));
+}
+
+float3 RgbToYiq(float3 C)
+{
+	return float3(
+		dot(C, float3(0.299, 0.587, 0.114)),
+		dot(C, float3(0.596, -0.274, -0.322)),
+		dot(C, float3(0.211, -0.523, 0.312)));
+}
+
+float3 YiqToRgb(float3 Yiq)
+{
+	return float3(
+		Yiq.x + 0.956 * Yiq.y + 0.621 * Yiq.z,
+		Yiq.x - 0.272 * Yiq.y - 0.647 * Yiq.z,
+		Yiq.x - 1.106 * Yiq.y + 1.703 * Yiq.z);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// 1. the camera
+
+// a point on the tape (0..1) to where the lens saw it in the view (0..1). Positions are measured in half-heights
+// from the centre; the barrel is r' = r (1 + k r^2), zoomed so the corners land on the view's edge (no black).
+float2 TapeToView(float2 TapeUV, float Fringe)
+{
+	float TapeAspect = TapeSize.x / TapeSize.y;
+	float ViewAspect = InputViewSize.x / InputViewSize.y;
+	float2 P = (TapeUV - 0.5) * 2.0 * float2(TapeAspect, 1.0);
+	float R2 = dot(P, P);
+	float CornerR2 = TapeAspect * TapeAspect + 1.0;
+	float Zoom = max(1.0, 1.0 + Distortion * CornerR2);
+	P *= (1.0 + Distortion * R2) / Zoom;
+	P *= 1.0 + Fringe * R2;
+	return P / float2(ViewAspect, 1.0) * 0.5 + 0.5;
+}
+
+float3 SampleView(float2 ViewUV)
+{
+	float2 Pixel = InputViewMin + ViewUV * InputViewSize;
+	Pixel = clamp(Pixel, InputViewMin + 0.5, InputViewMin + InputViewSize - 0.5);
+	return InputTexture.SampleLevel(InputSampler, Pixel * InputExtentInverse, 0).rgb;
+}
+
+void CapturePS(float4 SvPosition : SV_POSITION, out float4 OutColor : SV_Target0)
+{
+	float2 TapeUV = SvPosition.xy / TapeSize;
+	float TapeAspect = TapeSize.x / TapeSize.y;
+	float CornerR2 = TapeAspect * TapeAspect + 1.0;
+
+	// ChromaticAberration is the red/blue fringe at the corner, in 480-line pixels
+	float Fringe = ChromaticAberration / (240.0 * CornerR2 * sqrt(CornerR2));
+
+	// four taps per tape pixel: a small box, since one tape pixel covers two or three screen pixels
+	float2 Half = 0.25 / TapeSize;
+	float3 C = 0;
+	[unroll]
+	for (int i = 0; i < 4; i++)
+	{
+		float2 UV = TapeUV + float2((i & 1) ? Half.x : -Half.x, (i & 2) ? Half.y : -Half.y);
+		C.r += SampleView(TapeToView(UV, Fringe)).r;
+		C.g += SampleView(TapeToView(UV, 0.0)).g;
+		C.b += SampleView(TapeToView(UV, -Fringe)).b;
+	}
+	C *= 0.25;
+
+	// the lens darkens toward the corners (an optical thing, before the camera's black level)
+	float2 P = (TapeUV - 0.5) * 2.0 * float2(TapeAspect, 1.0);
+	float V = 1.0 + Vignette * dot(P, P);
+	C /= V * V;
+
+	// the sensor: less colour, lifted (warm) blacks, whites that never reach full
+	C = lerp(Luma(C).xxx, C, Saturation);
+	C = BlackLevel.rgb + (WhiteLevel.rgb - BlackLevel.rgb) * saturate(C);
+
+	OutColor = float4(C, 1.0);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// 2. the tape
+
+float3 SampleCapture(float2 Pixel)
+{
+	return InputTexture.SampleLevel(InputSampler, Pixel / TapeSize, 0).rgb;
+}
+
+void TapePS(float4 SvPosition : SV_POSITION, out float4 OutColor : SV_Target0)
+{
+	float2 Pix = SvPosition.xy;
+	float Scale = TapeSize.y / 480.0;                 // tape pixels per 480-line pixel
+	uint Row = uint(Pix.y);
+	float V = Pix.y / TapeSize.y;
+	float G = saturate(Glitch);
+
+	// tracking: whole lines slip sideways, and the frame wobbles a little (tape stretch)
+	float Jitter = TrackingJitter + G * 3.0;
+	float Offset = (Hash01(Row, FrameIndex, 1u) - 0.5) * Jitter;
+	Offset += sin(Time * 2.3 + V * 4.0) * 0.4 * Jitter;
+
+	// a tracking-error band rolling down the frame
+	float Track = saturate(TrackingError + G * 0.8);
+	float BandAt = frac(Time * 0.09) * 1.4 - 0.2;
+	float Band = Track * saturate(1.0 - abs(V - BandAt) / 0.05);
+	Offset += Band * (Hash01(Row, FrameIndex, 2u) - 0.3) * 28.0;
+
+	// head switching: the bottom few lines tear to the right
+	float HS = saturate(HeadSwitch + G * 0.5);
+	float FromBottom = (TapeSize.y - Pix.y) / Scale;
+	float HSLines = 5.0 + 5.0 * HS;
+	float HSAmount = HS * saturate(1.0 - FromBottom / HSLines);
+	Offset += HSAmount * (14.0 + 12.0 * Hash01(Row, FrameIndex, 3u));
+
+	float X = Pix.x - Offset * Scale;
+
+	// luma: a soft low-pass (a few hundred lines across) with the deck's edge enhancement, which leaves the bright
+	// halo on edges that the reference shows
+	float SigmaL = max(LumaBlur, 0.35);
+	float SigmaS = max(SharpenRadius, SigmaL + 0.5);
+	float YL = 0, WL = 0, YS = 0, WS = 0;
+	[unroll]
+	for (int i = -8; i <= 8; i++)
+	{
+		float D = float(i);
+		float Y = Luma(SampleCapture(float2(X + D * Scale, Pix.y)));
+		float Wl = exp(-0.5 * D * D / (SigmaL * SigmaL));
+		float Ws = exp(-0.5 * D * D / (SigmaS * SigmaS));
+		YL += Y * Wl; WL += Wl;
+		YS += Y * Ws; WS += Ws;
+	}
+	YL /= WL;
+	YS /= WS;
+	float Yv = YL + Sharpen * (YL - YS);
+
+	// chroma: much less bandwidth than luma, a little late, and averaged with the line above
+	float SigmaC = max(ChromaBlur, 0.5);
+	float CStep = max(SigmaC * 0.3, 0.5);
+	float2 IQ = 0;
+	float WC = 0;
+	[unroll]
+	for (int j = -8; j <= 8; j++)
+	{
+		float D = float(j) * CStep;
+		float W = exp(-0.5 * D * D / (SigmaC * SigmaC));
+		float XC = X + (D - ChromaShift) * Scale;
+		float2 A = RgbToYiq(SampleCapture(float2(XC, Pix.y))).yz;
+		float2 B = RgbToYiq(SampleCapture(float2(XC, Pix.y - 1.0))).yz;
+		IQ += lerp(A, B, ChromaVerticalBlend * 0.5) * W;
+		WC += W;
+	}
+	IQ /= WC;
+
+	// noise: luma as fine horizontal streaks, chroma as long smears along the line
+	float LN = LumaNoise + G * 0.35 + Band * 0.8 + HSAmount * 0.6;
+	float Grain = LineNoise(X / (1.6 * Scale), Row, FrameIndex * 3u + 11u) - 0.5;
+	Yv += Grain * LN * 0.22;
+
+	float CN = ChromaNoise + G * 0.5 + Band * 0.5;
+	float2 Smear = float2(
+		LineNoise(X / (18.0 * Scale), Row, FrameIndex * 3u + 12u),
+		LineNoise(X / (18.0 * Scale), Row, FrameIndex * 3u + 13u)) - 0.5;
+	IQ += Smear * CN * 0.12;
+	IQ *= 1.0 - G * 0.45;
+
+	// dropouts: a missing bit of oxide, a short white streak
+	float DropChance = Dropouts * 0.004 + G * 0.01 + Band * 0.04;
+	if (Hash01(Row, FrameIndex, 7u) < DropChance)
+	{
+		float Start = Hash01(Row, FrameIndex, 8u) * TapeSize.x;
+		float Length = (8.0 + 48.0 * Hash01(Row, FrameIndex, 9u)) * Scale;
+		float T = (Pix.x - Start) / Length;
+		if (T >= 0.0 && T <= 1.0)
+		{
+			float Fade = 1.0 - T * T;
+			Yv = lerp(Yv, 0.85, Fade);
+			IQ *= 1.0 - Fade;
+		}
+	}
+
+	float3 C = YiqToRgb(float3(Yv, IQ));
+
+	// persistence: a little of the last frame stays (the camera tube, the deck's comb filter)
+	float3 Last = HistoryTexture.SampleLevel(HistorySampler, Pix / TapeSize, 0).rgb;
+	C = lerp(C, Last, Ghosting);
+
+	OutColor = float4(saturate(C), 1.0);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// 3. the screen
+
+void DisplayPS(float4 SvPosition : SV_POSITION, out float4 OutColor : SV_Target0)
+{
+	float2 UV = (SvPosition.xy - OutputViewMin) / OutputViewSize;
+	float TapeAspect = TapeSize.x / TapeSize.y;
+	float ViewAspect = OutputViewSize.x / OutputViewSize.y;
+	float2 Fit = TapeAspect < ViewAspect ? float2(TapeAspect / ViewAspect, 1.0) : float2(1.0, ViewAspect / TapeAspect);
+	float2 TapeUV = (UV - 0.5) / Fit + 0.5;
+
+	if (any(TapeUV < 0.0) || any(TapeUV > 1.0))
+	{
+		OutColor = float4(0.0, 0.0, 0.0, 1.0);
+		return;
+	}
+
+	float3 C = InputTexture.SampleLevel(InputSampler, TapeUV, 0).rgb;
+
+	// scanlines: dark between the tape's lines (only shows when the screen has far more lines than the tape)
+	float Line = TapeUV.y * TapeSize.y - 0.5;
+	C *= 1.0 - Scanlines * (0.5 - 0.5 * cos(Line * 6.2831853));
+
+	OutColor = float4(C, 1.0);
+}

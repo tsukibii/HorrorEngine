@@ -475,3 +475,6 @@ its log before re-running it.
 - **A tab that saves the body must wait for the body's face:** changing the body schedules a face re-fit (350 ms, then
   the worker); the Hair tab saved the body before it landed and the salon's head was 0.7 mm off. Entering the Hair
   tab now runs a pending fit at once and waits for it.
+- **Measure a lens's barrel on a lone straight line, not a grid** (UltraVHS): following the darkest pixel down a
+  checker grid slips onto the crossing lines and fits k twice too big. A chart of vertical lines only, each traced in
+  a narrow window, gives k back exactly (0.085 in, 0.085 out).
