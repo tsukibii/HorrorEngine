@@ -85,7 +85,7 @@ bool inCut(vec2 P[32], vec4 box, vec2 p) {                         // inside an 
 uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf, uLayGlow;
 uniform float uHasLay, uShowSel;
 varying float vSel;
-varying vec3 vObj; varying vec2 vSkinUv;
+varying vec3 vObj; varying vec2 vSkinUv; varying float vMouth;
 float skinH, skinRough, skinCoat, skinCoatR = -1.0, skinSm = 0.0;   // skinSm: a layer's smoothing (evens out the pores, grain and relief)
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
@@ -232,10 +232,11 @@ export function procedural(material) {
   for (const k of Object.keys(LIDS)) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute float mouthW; varying float vSel; varying float vMouth; varying vec3 vObj; varying vec2 vSkinUv;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW; vMouth = mouthW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `if (uCutOn > 0.5 && ((vObj.z > uCutZ.x && inCut(uCutL, uCutBoxL, vObj.xy)) || (vObj.z > uCutZ.y && inCut(uCutR, uCutBoxR, vObj.xy)))) discard;   // the eyes cut out
+      .replace("#include <color_fragment>", `if (vMouth > 0.5) discard;   // the membrane between the lips: index.html draws it apart, the mouth seen through it
+if (uCutOn > 0.5 && ((vObj.z > uCutZ.x && inCut(uCutL, uCutBoxL, vObj.xy)) || (vObj.z > uCutZ.y && inCut(uCutR, uCutBoxR, vObj.xy)))) discard;   // the eyes cut out
 skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);

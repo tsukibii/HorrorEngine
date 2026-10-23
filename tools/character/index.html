@@ -93,6 +93,8 @@
       <div id="faceRows"></div>
       <h3>Brows and lashes</h3>
       <div id="browRows"></div>
+      <h3>Teeth and tongue</h3>
+      <div id="teethRows"></div>
       <label class="tog"><input type="checkbox" id="relative" checked><span>Expressions against this face<small>Full lips read as a pout to MediaPipe; this keeps them from counting as an expression.</small></span></label>
     </section>
 
@@ -151,6 +153,7 @@ import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
 import * as EYEPAINT from "./eyes.js";
 import * as SC from "./sculpt.js";
+import * as TEETH from "./teeth.js";
 import * as LOOK from "./tailor/look.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
@@ -722,6 +725,7 @@ function compose() {                                   // POS: RAW + the face, s
   const fitted = fitOffsets();                         // the face's fit and the sculpt
   if (fitted) for (let i = 0; i < N * 3; i++) POS[i] += SCALE * FIT[i];
   placeEyes();                                         // from the neutral face
+  placeTeeth();
   for (let e = 0; e < ENAMES.length; e++) {
     const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
@@ -736,6 +740,8 @@ function compose() {                                   // POS: RAW + the face, s
     DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
+  { const M = MEMG.attributes.position.array; MEMBRANE.forEach((t, q) => M.set(DP.subarray(t * 3, t * 3 + 9), q * 9)); MEMG.attributes.position.needsUpdate = true; }
+  moveJaw();
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
@@ -757,7 +763,8 @@ function lmk(i) {                                       // a landmark's place on
 function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
 // the mouth: MHR's shell is sealed between the lips by a membrane of triangles whose corners all sit on the lip line;
 // when the jaw drops they stretch into the open mouth. Those (near the mouth, ten times their area or more on jawDrop)
-// are coloured dark, per corner (vertex colours multiply the skin's texture). Teeth and a tongue come with the face parts.
+// are coloured dark, per corner (vertex colours multiply the skin's texture); the mouth (below) cuts them out of the skin and
+// draws the teeth and the tongue through them.
 function mouthShade() {
   const col = new Float32Array(C * 3).fill(1), e = ENAMES.indexOf("jawDrop");
   if (!LMK || e < 0) return col;
@@ -775,9 +782,11 @@ function mouthShade() {
     if (cx < Math.min(L[0], R[0]) - 0.004 || cx > Math.max(L[0], R[0]) + 0.004 || Math.abs(cy - M[1]) > 0.012) continue;
     if (area(open, t) < 10 * area(BASEP, t) + 1e-9) continue;
     for (let k = 0; k < 3; k++) { const j = (t + k) * 3; col[j] = 0.16; col[j + 1] = 0.05; col[j + 2] = 0.05; }
+    MEMBRANE.push(t);
   }
   return col;
 }
+const MEMBRANE = [];                                   // the membrane's triangles (their first corner): the mouth's opening
 dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material.vertexColors = true;
 
 const eyeMats = { L: new THREE.MeshPhysicalMaterial({ ior: 1.4 }), R: new THREE.MeshPhysicalMaterial({ ior: 1.4 }) };   // one each: the corner tint is the inner one
@@ -997,6 +1006,87 @@ function placeEyes() {
     m.rotation.set(pitch, yaw, 0); m.visible = true;
     if (Math.abs((EYE_K[side] || 0) - r / r0) > 0.01) { EYE_K[side] = r / r0; paintEye(side); }   // the iris keeps its own size on a bigger eyeball
   }
+}
+
+// ---- the mouth: teeth, gums and a tongue (teeth.js; MHR has none). The membrane between the lips is cut out of the skin
+// (its shader) and drawn on its own, dark, marking the stencil; the teeth and the tongue are drawn only there, so they
+// show through the opening and never through the lips or the cheeks, whatever a shape does to them. The upper arch is
+// set from the neutral mouth (as wide as its corners say, behind the lips at the stomion); the lower arch and the
+// tongue ride the jaw, a rigid motion fitted once to each of MHR's jaw shapes and mixed by their weights, so a lip
+// shape never moves the teeth
+const MEMG = new THREE.BufferGeometry();
+{ const w = new Float32Array(C); for (const t of MEMBRANE) w[t] = w[t + 1] = w[t + 2] = 1; dgeo.setAttribute("mouthW", new THREE.BufferAttribute(w, 1));
+  MEMG.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MEMBRANE.length * 9), 3)); }
+const MEMBR = new THREE.Mesh(MEMG, new THREE.MeshBasicMaterial({ color: 0x3a1614, side: THREE.DoubleSide, depthWrite: false,   // the mouth's dark, unlit
+  stencilWrite: true, stencilRef: 2, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
+MEMBR.renderOrder = 1; MEMBR.frustumCulled = false; MEMBR.userData.noShadow = true; rig.add(MEMBR);
+const mouthMat = (color, rough) => new THREE.MeshStandardMaterial({ color, roughness: rough, vertexColors: true,
+  stencilWrite: true, stencilWriteMask: 0, stencilRef: 2, stencilFunc: THREE.EqualStencilFunc });
+const MOUTH = { teeth: mouthMat(0xf0ece2, 0.3), gums: mouthMat(0xa65c5a, 0.5), tongue: mouthMat(0x9e4a4e, 0.55),
+                upper: new THREE.Group(), jaw: new THREE.Group(), lower: new THREE.Group(), parts: {} };
+{
+  const B = TEETH.buildMouth();
+  for (const [jaw, grp] of [["upper", MOUTH.upper], ["lower", MOUTH.lower]]) for (const [part, d] of Object.entries(B[jaw])) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(d.pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(d.col, 3));
+    g.setIndex(d.idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, MOUTH[part]); m.renderOrder = 2; m.frustumCulled = false; m.userData.noShadow = true; m.name = `${jaw}-${part}`;
+    grp.add(m); MOUTH.parts[m.name] = m;
+  }
+  for (const g of [MOUTH.upper, MOUTH.jaw, MOUTH.lower]) g.matrixAutoUpdate = false;
+  MOUTH.jaw.add(MOUTH.lower); rig.add(MOUTH.upper, MOUTH.jaw);
+}
+// the jaw: the points jawDrop carries (and the other shapes hardly touch), trimmed to those that move as one, then each
+// jaw shape's rotation and shift on them
+const JAW = (() => {
+  const names = ["jawDrop", "jawSidewaysLeft", "jawSidewaysRight", "jawThrust"], es = names.map(n => ENAMES.indexOf(n));
+  if (!EN || es[0] < 0) return null;
+  const mag = (e, j) => { const o = (e * EN + j) * 3; return Math.hypot(EXPR[o], EXPR[o + 1], EXPR[o + 2]); };
+  let top = 0; for (let j = 0; j < EN; j++) top = Math.max(top, mag(es[0], j));
+  const cand = [];
+  for (let j = 0; j < EN; j++) {
+    const d = mag(es[0], j); if (d < 0.5 * top) continue;
+    let o = 0; for (let e = 0; e < ENAMES.length; e++) if (!es.includes(e)) o = Math.max(o, mag(e, j));
+    if (o < d) cand.push(j);
+  }
+  const pts = (js, e) => { const out = new Float32Array(js.length * 3);
+    js.forEach((j, q) => { for (let a = 0; a < 3; a++) out[q * 3 + a] = BASEP[EIDX[j] * 3 + a] + (e < 0 ? 0 : EXPR[(e * EN + j) * 3 + a]); }); return out; };
+  let keep = cand;
+  for (let it = 0; it < 4; it++) {                    // the best-fitting 70%, four times over
+    const f = TEETH.rigidFit(pts(keep, -1), pts(keep, es[0])), A = pts(cand, -1), Bp = pts(cand, es[0]);
+    const res = cand.map((j, q) => { const x = [0, 1, 2].map(a => A[q * 3 + a] - f.ca[a]);
+      return Math.hypot(...[0, 1, 2].map(a => f.R[a][0] * x[0] + f.R[a][1] * x[1] + f.R[a][2] * x[2] + f.cb[a] - Bp[q * 3 + a])); });
+    const inKeep = new Set(keep), r = cand.map((j, q) => [j, res[q]]), lim = r.filter(x => inKeep.has(x[0])).map(x => x[1]).sort((a, b) => a - b);
+    const cut = lim[Math.floor(0.7 * (lim.length - 1))]; keep = r.filter(x => inKeep.has(x[0]) && x[1] <= cut).map(x => x[0]);
+  }
+  const A = pts(keep, -1);
+  return { v: keep.map(j => EIDX[j]), shapes: es.map(e => { if (e < 0) return null;
+    const f = TEETH.rigidFit(A, pts(keep, e)); return { e, w: TEETH.rotVec(f.R), d: [0, 1, 2].map(a => f.cb[a] - f.ca[a]) }; }).filter(Boolean), c: [0, 0, 0] };
+})();
+const MW0 = (() => { if (!LMK) return 0.05; const lb = i => { const t = LMK.tri[i] * 3, b = LMK.bary[i]; let x = 0; for (let k = 0; k < 3; k++) x += b[k] * BASEP[TRIS[t + k] * 3]; return x; };
+  return Math.abs(lb(291) - lb(61)); })();          // MHR's own mouth, corner to corner (m)
+st.teeth = { ...TEETH.TEETH_DEFAULTS };
+function placeTeeth() {                                // from the neutral face, before the expressions
+  const on = !!LMK && !!JAW && st.teeth.on;
+  MOUTH.upper.visible = MOUTH.jaw.visible = on; if (!on) return;
+  MOUTH.parts["lower-tongue"].visible = st.teeth.tongue !== false;
+  const a = lmk(13), b = lmk(14), w = Math.abs(lmk(291)[0] - lmk(61)[0]), mm = 0.001 * w / MW0;   // a millimetre on this face
+  const k = mm * (st.teeth.size || 1);
+  MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5) * mm, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
+  MOUTH.lower.matrix.copy(MOUTH.upper.matrix);
+  const c = JAW.c; c.fill(0); for (const v of JAW.v) for (let q = 0; q < 3; q++) c[q] += POS[v * 3 + q] / JAW.v.length;   // the jaw's middle on this face
+  const g = 1 - st.teeth.shade * 0.35, sh = new THREE.Color(0xf2efe8).lerp(new THREE.Color(0xd8c294), st.teeth.shade).multiplyScalar(g + 0.35 * st.teeth.shade);
+  MOUTH.teeth.color.copy(sh);
+}
+function moveJaw() {                                   // the lower arch with the jaw shapes as they are now
+  if (!MOUTH.jaw.visible) return;
+  const r = [0, 0, 0], d = [0, 0, 0];
+  for (const s of JAW.shapes) { const w = st.expr[s.e] * st.exprAmt; if (!w) continue; for (let a = 0; a < 3; a++) { r[a] += w * s.w[a]; d[a] += w * s.d[a] * SCALE; } }
+  const ang = Math.hypot(...r), q = new THREE.Quaternion();
+  if (ang > 1e-9) q.setFromAxisAngle(new THREE.Vector3(r[0] / ang, r[1] / ang, r[2] / ang), ang);
+  const c = JAW.c;
+  MOUTH.jaw.matrix.makeTranslation(-c[0], -c[1], -c[2]).premultiply(new THREE.Matrix4().makeRotationFromQuaternion(q))
+    .premultiply(new THREE.Matrix4().makeTranslation(c[0] + d[0], c[1] + d[1], c[2] + d[2]));
 }
 
 let orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vector3() };   // zoom: the wheel; pan: Shift-drag, a double-click centres on a point
@@ -1292,6 +1382,29 @@ STUDIO.mountUI($("#studioRows"));                      // the studio view: a che
 LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, dgeo, viewRect, POS, TRIS, geo, SKU, material, skinLook,
                     lmk: i => lmk(i), lmkOk: () => !!LMK });
 
+// ---- the teeth's controls -------------------------------------------------------------------------------------------
+const teethSet = {};
+{
+  const box = $("#teethRows"), on = el("input", { type: "checkbox", checked: true }), tongue = el("input", { type: "checkbox", checked: true });
+  on.onchange = () => { st.teeth.on = on.checked; changed("expr"); };
+  tongue.onchange = () => { st.teeth.tongue = tongue.checked; changed("expr"); };
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Teeth", el("small", { textContent: "An adult's average teeth and gums, as wide as this mouth's corners and set behind the lips. The upper ones stay with the skull, the lower ones ride the jaw. They show only through the opening between the lips, never through the lips or cheeks, whatever the face does." }))),
+             el("label", { className: "tog" }, tongue, el("span", {}, "Tongue", el("small", { textContent: "A simple one, lying in the lower arch and riding the jaw." }))));
+  const rows = [["shade", "Shade", 0, 1, 0.01, TEETH.TEETH_DEFAULTS.shade, "White to ivory."],
+                ["size", "Size", 0.85, 1.15, 0.01, 1, "Bigger or smaller teeth for this mouth."],
+                ["forward", "Forward (mm)", -3, 3, 0.1, 0, "Toward the lips (+) or back into the mouth."],
+                ["up", "Up (mm)", -3, 3, 0.1, 0, "How high the upper teeth's edge sits against the lips: + shows less of them, − more."]];
+  for (const [k, label, lo, hi, step, def, help] of rows) teethSet[k] = slider(box, "teeth_" + k, label, lo, hi, step, def, help, v => { st.teeth[k] = v; changed("expr"); });
+  const say = el("button", { textContent: "Open the mouth", title: "A preview (an expression: not saved): the mouth open as on あ, the head view. Again: neutral." });
+  say.onclick = () => {
+    const open = !st.expr.some(Boolean), w = new Float32Array(ENAMES.length);
+    if (open) for (const [n, v] of [["jawDrop", 0.5], ["upperLipRaiser_L", 0.25], ["upperLipRaiser_R", 0.25], ["lipCornerPuller_L", 0.15], ["lipCornerPuller_R", 0.15]]) w[ENAMES.indexOf(n)] = v;
+    setExpr(w); markPreset(null);
+    if (open) document.querySelector('#views button[data-v="head"]').click();
+  };
+  box.append(el("div", { className: "bases" }, say));
+  teethSet.all = () => { on.checked = st.teeth.on; tongue.checked = st.teeth.tongue !== false; for (const [k] of rows) teethSet[k](st.teeth[k]); };
+}
 // ---- the eyes' controls ---------------------------------------------------------------------------------------------
 const eyeSet = {};
 {
@@ -1538,6 +1651,7 @@ async function open(name) {
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn();
   Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault() }, c.eyes || {}); st.eyes.showLid = false;
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
+  Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
   computeBody(); compose(); hud();
   dress();                                             // the clothes on this body (or none)
@@ -1545,7 +1659,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, lash: st.lash, brow: st.brow,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lash: st.lash, brow: st.brow,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -1586,7 +1700,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { THREE, MOUTH, MEMBR, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

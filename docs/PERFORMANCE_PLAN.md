@@ -163,7 +163,8 @@ non-commercial; NVIDIA Maxine (NGC account); Rokoko (account and cloud); LivePor
   unfiltered so they stay snappy. Offline, a zero-phase pass (forward and back) removes the lag entirely.
 - **Head:** rotation only, the take's mean subtracted, scaled 0.5 to 0.7 (MiniMax's camera moves too), split 40/60 over
   neck and head, added on top of the body.
-- **Tongue:** MediaPipe has none; the visemes' ん/る/ら moments drive MHR's tongue joints from the audio, or nothing.
+- **Tongue:** MediaPipe has none; MHR has none either (the Studio's simple tongue rides the jaw, `teeth.js`). The visemes'
+  ん/る/ら moments could lift its tip from the audio later; nothing until a shot needs it.
 
 ### 5.3 Where it runs
 
@@ -190,7 +191,10 @@ Saved as `face_edit.json`, kept when the take is re-solved.
 What crosses, so Unreal only dresses it:
 
 - **Bodies:** each person's body as the desk shows it, **with the 72 face shapes as morph targets** (today's
-  `Body_<who>.glb` bakes the identity in and drops the face shapes).
+  `Body_<who>.glb` bakes the identity in and drops the face shapes). **The mouth goes with them** (the Studio's
+  `teeth.js`): the upper teeth on the head bone, the lower teeth and tongue on a jaw bone driven by the same per-shape
+  rigid fits (a curve per jaw shape, or a Control Rig reading them), the mouth's inside a dark material behind the
+  membrane; in Unreal the lips' depth hides what the stencil hides in the Studio.
 - **Faces:** one AnimSequence per take, built in the editor from `<take>.face.json` (`unreal.AnimationLibrary`:
   curves named as the morph targets, so they drive them with no remapping), into `/Game/Games/<G>/Faces/`. Also written
   as Live Link Face CSV so Epic's importer and other tools can read them. Avoid 5.8's IK Retargeter "Copy All Source

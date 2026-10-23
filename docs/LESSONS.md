@@ -490,3 +490,8 @@ its log before re-running it.
 - **Measure a lens's barrel on a lone straight line, not a grid** (UltraVHS): following the darkest pixel down a
   checker grid slips onto the crossing lines and fits k twice too big. A chart of vertical lines only, each traced in
   a narrow window, gives k back exactly (0.085 in, 0.085 out).
+- **A jaw from the face's points follows the lips, not the bone:** fitting a rigid motion every frame to the points
+  jawDrop carries turned the teeth 27° on a pucker and 14° on a lip roll: the lip shapes move those points too. The
+  jaw is now fitted once to each of MHR's jaw shapes alone and mixed by their weights, so only jaw shapes move it.
+  The check that it rides the jaw compares the jaw's own points carried by the teeth's motion, not one landmark: the
+  chin and the lower lip are on different lever arms and drop more than the teeth's tip.

@@ -145,6 +145,55 @@ const png = rgb => {
     await page.click("#exprClear");
     await page.click('#tabs button[data-tab="body"]');
   });
+  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose", async () => {
+    const pose = w => page.evaluate(w => { const b = window.__body; b.st.expr.fill(0); for (const [k, v] of Object.entries(w)) b.st.expr[b.ENAMES.indexOf(k)] = v; b.compose(); }, w);
+    const m = await page.evaluate(() => {
+      const b = window.__body, M = b.MOUTH, mw = () => Math.abs(b.lmk(291)[0] - b.lmk(61)[0]), k = () => M.upper.matrix.elements[0];
+      const r0 = k() / mw(), w0 = mw(), was = b.st.sculpt.mouth_width || 0; b.st.sculpt.mouth_width = 1; b.compose(); const r1 = k() / mw(), wide = mw(); b.st.sculpt.mouth_width = was; b.compose();
+      return { on: M.upper.visible && M.jaw.visible && Object.keys(M.parts).length, r0, r1, grew: wide / w0, upper: Array.from(M.upper.matrix.elements) };
+    });
+    if (m.on !== 5) throw new Error(`the mouth's parts: ${m.on}`);
+    if (m.grew < 1.03 || Math.abs(m.r1 / m.r0 - 1) > 0.02) throw new Error(`the teeth don't follow the mouth's width (the mouth ×${m.grew.toFixed(3)}, teeth to mouth ${m.r0.toExponential(3)} → ${m.r1.toExponential(3)})`);
+    const jaw = () => page.evaluate(() => { const b = window.__body, M = b.MOUTH, tip = new b.THREE.Vector3(0, 1.6, -6).applyMatrix4(M.lower.matrix).applyMatrix4(M.jaw.matrix);
+      return { tip: tip.toArray(), pts: b.JAW.v.map(v => [b.POS[v * 3], b.POS[v * 3 + 1], b.POS[v * 3 + 2]]), jaw: Array.from(M.jaw.matrix.elements), upper: Array.from(M.upper.matrix.elements) }; });
+    await pose({}); const j0 = await jaw();
+    await pose({ jawDrop: 1 }); const j1 = await jaw();
+    const dTip = j1.tip.map((v, i) => v - j0.tip[i]), M = new Float64Array(j1.jaw);   // the jaw's own points, carried by the teeth's motion, against where the shape put them
+    let off = 0; j0.pts.forEach((p, q) => { const r = [0, 1, 2].map(a => M[a] * p[0] + M[4 + a] * p[1] + M[8 + a] * p[2] + M[12 + a]); off += Math.hypot(...r.map((v, a) => v - j1.pts[q][a])) / j0.pts.length; });
+    if (dTip[1] > -0.02 || off * 1000 > 2) throw new Error(`the lower teeth don't ride the jaw: the tip moved ${dTip.map(v => (v * 1000).toFixed(1))} mm, the jaw's points ${(off * 1000).toFixed(2)} mm off the teeth's motion`);
+    await pose({ lipPucker_L: 1, lipPucker_R: 1, chinRaiser_B: 1, chinRaiser_T: 1, lipSuck_LB: 1, lowerLipDepressor_L: 1 }); const j2 = await jaw();
+    if (j2.jaw.some((v, i) => Math.abs(v - (i % 5 === 0 ? 1 : 0)) > 1e-6)) throw new Error("a lip shape moved the jaw");
+    if ([j1, j2].some(j => j.upper.some((v, i) => Math.abs(v - m.upper[i]) > 1e-9))) throw new Error("an expression moved the upper teeth");
+    // the opening as a mask: the membrane drawn green with the teeth off; then with them on, every pixel they change must be in it
+    await page.click('#views button[data-v="head"]');
+    const shot = async () => { await page.waitForTimeout(300); const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      return (await page.screenshot({ clip, timeout: 120000 })).toString("base64"); };
+    const speech = { aa: { jawDrop: 0.5, upperLipRaiser_L: 0.25, upperLipRaiser_R: 0.25 }, wide: { jawDrop: 1 }, smile: { lipCornerPuller_L: 1, lipCornerPuller_R: 1, jawDrop: 0.25, upperLipRaiser_L: 0.3, upperLipRaiser_R: 0.3 },
+                     oo: { lipPucker_L: 1, lipPucker_R: 1, lipFunneler_LB: 0.6, lipFunneler_LT: 0.6, lipFunneler_RB: 0.6, lipFunneler_RT: 0.6, jawDrop: 0.25 } };
+    for (const [name, w] of Object.entries(speech)) for (const yaw of [0, 0.7]) {
+      await pose(w);
+      await page.evaluate(yaw => { const b = window.__body, o = b.orbit, h = b.st.height, p = b.lmk(13); o.yaw = yaw; o.pitch = 0; o.zoom = 0.42; o.pan.set(p[0], p[1] - (h - 0.12 * h / 1.7), p[2]);
+        b.MEMBR.material.color.set(0x00ff00); b.st.teeth.on = false; b.compose(); }, yaw);
+      const a = await shot();
+      await page.evaluate(() => { window.__body.st.teeth.on = true; window.__body.compose(); });
+      const t = await shot();
+      const r = await page.evaluate(async ([a, t]) => {
+        const px = async b64 => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); return g.getImageData(0, 0, i.width, i.height); };
+        const A = await px(a), T = await px(t), W = A.width, H = A.height, d = A.data, e = T.data, mask = new Uint8Array(W * H);
+        for (let i = 0; i < W * H; i++) if (d[i * 4 + 1] > 150 && d[i * 4] < 90 && d[i * 4 + 2] < 90) for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {   // the edge's soft pixels too
+          const j = i + y * W + x; if (j >= 0 && j < W * H) mask[j] = 1; }
+        let changed = 0, out = 0;
+        for (let i = 0; i < W * H; i++) if (Math.abs(d[i * 4] - e[i * 4]) + Math.abs(d[i * 4 + 1] - e[i * 4 + 1]) + Math.abs(d[i * 4 + 2] - e[i * 4 + 2]) > 30) { changed++; if (!mask[i]) out++; }
+        return { changed, out };
+      }, [a, t]);
+      if (r.out > Math.max(6, 0.005 * r.changed)) throw new Error(`${name} at ${yaw}: ${r.out} of the ${r.changed} pixels the teeth change are outside the opening`);
+      if (name !== "oo" && r.changed < 200) throw new Error(`${name} at ${yaw}: the teeth hardly show (${r.changed} pixels)`);
+    }
+    await page.evaluate(() => { const b = window.__body; b.MEMBR.material.color.set(0x3a1614); b.st.expr.fill(0); b.compose(); });
+    const saved = await page.evaluate(async () => { const b = window.__body; b.st.teeth.shade = 0.6; document.querySelector("#save").click(); await new Promise(r => setTimeout(r, 1500));
+      return (await (await fetch(`api/people/${encodeURIComponent(b.who)}`)).json()).teeth; });
+    if (saved?.shade !== 0.6 || saved.on !== true) throw new Error(`the teeth aren't saved with the character: ${JSON.stringify(saved)}`);
+  });
   await step("the skin from the front picture: a texture, worn", async () => {
     await page.click('#tabs button[data-tab="skin"]');
     await page.click("#photoSkin button");
