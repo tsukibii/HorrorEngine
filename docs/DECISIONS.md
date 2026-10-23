@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24, night (the desk plays the undressed game; Unreal dresses it)
+
+- **The undressed, unprocessed game is playable in the director's desk; Unreal is for cleaning up, decals, advanced
+  lighting, effects and UI.** Characters, their motions and faces, and how each scene plays are set up in the desk.
+- **Face mocap is set up in the desk:** after the scene, set the characters, load the Kimodo motions, say whether it
+  plays as a cinematic, gameplay or a hybrid, then the takes (video with voice) under the timeline and one click puts
+  their faces on whoever speaks. Conversations by interaction, triggered sequences and the rest get the same ease
+  (docs/PERFORMANCE_PLAN.md, a plan: not built yet).
+- **Work while the user is away goes on `claude/experiments-afk`.**
+
 ## 2026-10-24, evening (character creator v3: the branches together)
 
 - **The work moves to `claude/character-creator-v3`**, forked from v2, with the tailor (`port-woodhill-clothing`) and
