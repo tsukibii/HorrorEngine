@@ -327,3 +327,55 @@ function disc(out, c, n, r, h, lift, seg = 14) {
 }
 
 export { thicken, lifted, cut };
+
+// ---- handles: the lines a garment can be dragged by (the Studio's Clothes tab) --------------------------------------
+
+/** a named height's parts: "crotch+0.12" -> ["crotch", 0.12] (a number is metres from the floor) */
+export const parseHeight = h => {
+  if (typeof h === "number") return ["floor", h / 1];
+  const m = /^([a-z]+)\s*([+-]\s*[\d.]+)?$/.exec(String(h).trim());
+  return m ? [m[1], m[2] ? parseFloat(m[2].replace(/\s/g, "")) : 0] : ["floor", 0];
+};
+
+/**
+ * Where a garment can be pulled: [{key, label, path (into its piece), kind ("height": anchor + value scaled with the
+ * body, or "number"), anchor, value, at (a point on its outside), axis (the way the value grows), rate (metres a unit)}]
+ */
+export function handles(F, G, p) {
+  const s = F.s, O = G.outer.P, out = [];
+  const best = (ok, score) => { let b = -1, bs = -1e9; for (let i = 0; i < O.length; i += 3) { if (!ok(O[i], O[i + 1], O[i + 2])) continue; const v = score(O[i], O[i + 1], O[i + 2]); if (v > bs) { bs = v; b = i; } } return b < 0 ? null : [O[b], O[b + 1], O[b + 2]]; };
+  const frontAt = (y, x0) => best((x, yy) => Math.abs(yy - y) < 0.01 * s && Math.abs(x - x0) < 0.02 * s, (x, yy, z) => z);
+  const add = (h, at) => { if (at) out.push({ ...h, at }); };
+  if (p.kind === "skirt") {
+    const R = G.rings, [wa, wv] = parseHeight(p.waist?.at ?? "waist-0.04"), [la, lv] = parseHeight(p.length ?? "knee+0.06");
+    add({ key: "waist", label: "Waist", path: ["waist", "at"], kind: "height", anchor: wa, value: wv, axis: [0, 1, 0], rate: s }, frontAt(R.y0, R.cx));
+    add({ key: "length", label: "Length", path: ["length"], kind: "height", anchor: la, value: lv, axis: [0, 1, 0], rate: s }, best((x, y) => Math.abs(y - R.y1) < 0.006 * s, (x, y, z) => z - Math.abs(x - R.cx)));
+    if (!(p.taper > 0)) add({ key: "flare", label: "Flare", path: ["flare"], kind: "number", value: p.flare ?? 0.12, axis: [1, 0, 0], rate: Math.max(0.05, F.hipY - R.y1) }, best((x, y) => Math.abs(y - R.y1) < 0.006 * s, x => x));
+    return out;
+  }
+  const [cx0, cz0] = F.torsoAxis(F.crotchY);
+  if (p.neck) {
+    const N = F.neck;
+    add({ key: "neck", label: "Neckline depth", path: ["neck", "depth"], kind: "number", value: p.neck.depth ?? 0.012, axis: [0, -1, 0], rate: s },
+      best((x, y, z) => Math.abs(x - N.cx) < 0.012 * s && z > N.cz && y < N.y + 0.03 * s && y > F.armpitY, (x, y) => y));
+  }
+  if (p.hem) {
+    const [a, v] = parseHeight(p.hem.at), y = height(F, p.hem.at);
+    add({ key: "hem", label: "Hem", path: ["hem", "at"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s }, frontAt(y - (p.hem.front ?? 0) * s, F.torsoAxis(y)[0]));
+  }
+  if (p.sleeve !== undefined && p.sleeve !== false && G.ends) {
+    const A = F.arms.L, t = G.ends.L, c = A.line.at(t), d = A.line.dir(t);
+    add({ key: "sleeve", label: "Sleeve length", path: ["sleeve"], kind: "number", value: +(t / s).toFixed(4), axis: d, rate: s },
+      best((x, y, z) => { const a = F.arm(x, y, z); return a && a.side === "L" && Math.abs(a.t - t) < 0.012 * s; }, (x, y) => y - c[1]));
+  }
+  if (p.waist) {
+    const [a, v] = parseHeight(p.waist.at), y = height(F, p.waist.at);
+    add({ key: "waist", label: "Waist", path: ["waist", "at"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s }, frontAt(y - (p.waist.drop ?? 0.01) * s, F.torsoAxis(y)[0]));
+  }
+  if (p.legs) {
+    const [a, v] = parseHeight(p.legs.to), y = height(F, p.legs.to);
+    add({ key: "legs", label: "Leg length", path: ["legs", "to"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s },
+      best((x, yy) => Math.abs(yy - y) < 0.012 * s && x > cx0 + 0.02 * s, (x, yy, z) => z - Math.abs(yy - y) * 4));
+  }
+  return out;
+}

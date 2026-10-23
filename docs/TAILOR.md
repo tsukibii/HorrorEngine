@@ -79,7 +79,11 @@ outfits that show a print and a stripe.
 - **The Character Studio's Clothes tab** (`tools/character/index.html`): an outfit, or a garment and its colour,
   added over what's worn; the worn list (under to over) with a colour each and ×, and under each its **fabric,
   pattern and print** (the fabric, a denier for sheer ones, the pattern, its colours and repeat; a print's text and ink
-  or a picture, its panel, across, height, width and turn); **Export clothes OBJ** writes
+  or a picture, its panel, across, height, width and turn), and its **shape**: the garment's lines as **handles in
+  the view** (the hem, the neckline's depth, the sleeve's end, the waist, the legs' end, a skirt's length and flare:
+  drag one along its line and the garment is cut again on release) and the same as sliders, with the ease and the
+  hang; **As designed** takes them back. They're the garment's own edits (`edit` in `character.json`: a sparse piece
+  laid over the design's, `tailor.edited`), so the design stays as it is; **Export clothes OBJ** writes
   `People/<name>/<name>_clothes.obj` (one object per part, metres, Y up, facing +Z, the body's frame). The tailor runs
   in `tailor/worker.js` and refits on its own when the body's shape or height changes. What's worn is saved in
   `character.json` (`clothes`); the meshes are made live, like the hair styles, so there's nothing to go stale.

@@ -225,6 +225,7 @@ function tab(name) {
   document.querySelectorAll("aside section").forEach(x => { x.hidden = x.dataset.tab !== name; });
   if (["face", "expr", "skin", "layers", "hair"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
   try { localStorage.setItem("studio:tab", name); } catch (e) { }
+  if (typeof showGarmentHandles === "function") showGarmentHandles();
 }
 for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => tab(b.dataset.tab);
 
@@ -378,6 +379,8 @@ $("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { class
   el("h4", { textContent: "A garment" }), el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
   el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), addBtn, el("h4", { textContent: "Worn (under to over)" }));
 $("#worn").after(clothesExp);
+{ const t = el("input", { type: "checkbox", checked: true }); t.onchange = () => { GH.userData.on = t.checked; showGarmentHandles(); };
+  clothesExp.before(el("label", { className: "tog", title: "Drag a garment by its hem, neckline, sleeve, waist, legs or a skirt's length and flare" }, t, el("span", { textContent: "Handles in the view" }))); }
 Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json")]).then(([d, o]) => {
   DESIGNS = d.designs || {}; OUTFITS = o.outfits || {};
   designSel.replaceChildren(...Object.entries(DESIGNS).map(([k, v]) => el("option", { value: k, textContent: v.label || k })));
@@ -388,7 +391,7 @@ Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json")]).
 const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength]);
 function dress() {                                     // the worker makes every garment worn, on the body as it is now
   if (!Object.keys(DESIGNS).length) return;
-  const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c)]), id = ++TAILOR_JOB, key = bodyKey();
+  const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++TAILOR_JOB, key = bodyKey();
   FITTED = key;
   if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); return; }
   status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
@@ -403,6 +406,9 @@ TAILOR_W.onmessage = e => {
   GARMENTS.clear();
   for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name, g.look));   // tailor/look.js: the fabric, the pattern, the print, the edges' shade
   if (!GARMENTS.parent) rig.add(GARMENTS);
+  SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
+  drawGarmentHandles();
+  if (!$("#worn").contains(document.activeElement) || document.activeElement.type !== "range") drawWorn();   // the handles' sliders (not under a held slider)
   const ms = garments.reduce((a, g) => a + g.stats.ms, 0);
   status(garments.map(g => `${g.name} ${Math.round(g.stats.triangles / 1000)}k triangles`).join(", ") + ` (${(ms / 1000).toFixed(1)} s)`, "ok");
 };
@@ -417,7 +423,7 @@ function restyle(c) {                                  // a new fabric, pattern,
 }
 const PRINT_PARTS = [["front", "the front"], ["back", "the back"], ["arm L", "left sleeve"], ["arm R", "right sleeve"], ["leg L", "left leg"], ["leg R", "right leg"], ["skirt", "a skirt's front"]];
 function lookRows(c) {                                 // fabric, pattern, print for one worn garment
-  const box = el("details", {}, el("summary", { textContent: "Fabric, pattern, print" })), D = DESIGNS[c.design] || {};
+  const box = keepOpen(el("details", {}, el("summary", { textContent: "Fabric, pattern, print" })), c.design + ":look"), D = DESIGNS[c.design] || {};
   const pick = (label, opts, val, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === val }))); sel.onchange = () => on(sel.value); box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); return sel; };
   pick("Fabric", Object.entries(SURFACES).map(([k, v]) => [k, v[0]]), c.surface ?? D.surface ?? "flat", v => { c.surface = v; restyle(c); drawWorn(); });
   if ((SURFACES[c.surface ?? D.surface] || [])[4] && (c.surface ?? D.surface) === "sheer")
@@ -458,12 +464,80 @@ function placePrint(c) {                               // the print's place on i
   pr.u = back ? 2 + pr.across : pr.across;               // the back panel's middle is at 2
   pr.v = arm ? -pr.at : pr.at;                           // a sleeve's v runs down the arm from the shoulder
 }
+// ---- shaping a garment: its lines dragged in the view (the handles the tailor gives back) or set by sliders --------
+const SHAPE = new Map();                               // design -> its handles from the last fit
+const OPEN = new Set();                                // which of the worn list's sections are open (kept through a redraw)
+const keepOpen = (box, key) => { box.open = OPEN.has(key); box.ontoggle = () => { if (box.open) OPEN.add(key); else OPEN.delete(key); }; return box; };
+const GH = new THREE.Group(); GH.name = "garment handles"; GH.userData.on = true;
+let GDRAG = null, shapeTimer = 0;
+const HUE = { hem: 0xffd166, waist: 0xffd166, neck: 0x7ee08a, sleeve: 0x5ec8ff, legs: 0x5ec8ff, length: 0xffd166, flare: 0xff7a8a };
+const pieceOf = c => { const D = DESIGNS[c.design]; if (!D) return {}; const m = (a, b) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b || {})) o[k] = v && typeof v === "object" && !Array.isArray(v) && typeof o[k] === "object" ? m(o[k], v) : v; return o; }; return m(D.piece, c.edit); };
+function setEdit(c, h, v) {                            // a handle's new value into the garment's own edits (kept with the character)
+  c.edit = c.edit || {};
+  let o = c.edit; for (const k of h.path.slice(0, -1)) o = o[k] = (o[k] && typeof o[k] === "object") ? o[k] : {};
+  o[h.path[h.path.length - 1]] = h.kind === "height" ? `${h.anchor}${v >= 0 ? "+" : "-"}${Math.abs(v).toFixed(3)}` : +v.toFixed(4);
+}
+function drawGarmentHandles() {
+  for (const m of GH.children) m.geometry.dispose();
+  GH.clear();
+  for (const [design, hs] of SHAPE) for (const h of hs) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.011, 14, 10), new THREE.MeshBasicMaterial({ color: HUE[h.key] || 0xffffff, depthTest: false, transparent: true, opacity: 0.9 }));
+    m.position.set(...h.at); m.renderOrder = 11; m.userData = { design, h }; m.name = `${design}:${h.key}`; GH.add(m);
+  }
+  if (!GH.parent) rig.add(GH);
+  showGarmentHandles();
+}
+function showGarmentHandles() { GH.visible = GH.userData.on && !$('aside section[data-tab="clothes"]').hidden; }
+function grabGarment(e) {                              // a garment's handle under the pointer
+  if (!GH.visible || !GH.children.length) return false;
+  pointerRay(e);
+  const hit = ray.intersectObjects(GH.children, false)[0]; if (!hit) return false;
+  const m = hit.object, at = m.getWorldPosition(new THREE.Vector3());
+  GDRAG = { m, at, local: m.position.clone(), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), at), d: 0 };
+  return true;
+}
+function dragGarment(e) {                              // along the handle's own axis only
+  pointerRay(e);
+  const p = ray.ray.intersectPlane(GDRAG.plane, new THREE.Vector3()); if (!p) return;
+  const inv = rig.matrixWorld.clone().invert(), q = p.applyMatrix4(inv), s0 = GDRAG.at.clone().applyMatrix4(inv), h = GDRAG.m.userData.h;
+  GDRAG.d = [0, 1, 2].reduce((t, k) => t + (q.getComponent(k) - s0.getComponent(k)) * h.axis[k], 0);
+  GDRAG.m.position.copy(GDRAG.local).addScaledVector(new THREE.Vector3(...h.axis), GDRAG.d);
+  const v = h.value + GDRAG.d / h.rate;
+  status(`${DESIGNS[GDRAG.m.userData.design]?.label || GDRAG.m.userData.design}: ${h.label.toLowerCase()} ${h.kind === "height" ? `${h.anchor}${v >= 0 ? "+" : "-"}${Math.abs(v).toFixed(3)}` : v.toFixed(3)}`);
+}
+function dropGarment() {                               // let go: the new value, and the clothes cut again
+  const { m, d } = GDRAG; GDRAG = null;
+  if (Math.abs(d) < 0.002) { m.position.copy(m.userData.h.at); return; }
+  const c = st.clothes.find(x => x.design === m.userData.design); if (!c) return;
+  setEdit(c, m.userData.h, m.userData.h.value + d / m.userData.h.rate);
+  drawWorn(); dress();
+}
+function shapeRows(c) {                                // the same lines as sliders, and how loose it sits
+  const box = keepOpen(el("details", {}, el("summary", { textContent: "Shape" })), c.design + ":shape"), p = pieceOf(c);
+  const later = () => { clearTimeout(shapeTimer); shapeTimer = setTimeout(dress, 450); };
+  for (const h of SHAPE.get(c.design) || []) {
+    const [lo, hi, step] = h.kind === "height" ? [+(h.value - 0.4).toFixed(2), +(h.value + 0.4).toFixed(2), 0.005] : h.key === "neck" ? [0, 0.2, 0.002] : h.key === "sleeve" ? [0.06, 0.7, 0.005] : [0, 0.8, 0.01];
+    slider(box, "shape_" + h.key, h.label + (h.kind === "height" ? " (m)" : ""), lo, hi, step, h.value,
+      h.kind === "height" ? `From the ${h.anchor}, on MHR's 1.73 m body (scaled with this one).` : h.key === "sleeve" ? "Metres down the arm from the shoulder joint." : h.key === "flare" ? "How much wider per metre below the hips." : "", v => { setEdit(c, h, v); later(); });
+  }
+  const ease = (key, label, def) => slider(box, "ease_" + key, label, 0, 0.06, 0.001, p.ease?.[key] ?? def, "", v => { c.edit = c.edit || {}; c.edit.ease = { ...(c.edit.ease || {}), [key]: v }; later(); });
+  if (p.kind === "skirt") slider(box, "ease_skirt", "Ease (m)", 0, 0.04, 0.001, p.ease ?? 0.006, "How far off the body at the waist.", v => { c.edit = { ...(c.edit || {}), ease: v }; later(); });
+  else {
+    ease("body", "Ease, body (m)", 0.008);
+    if (p.sleeve !== undefined && p.sleeve !== false) ease("sleeve", "Ease, sleeves (m)", 0.008);
+    if (p.legs) { ease("leg", "Ease, legs (m)", 0.008); ease("flare", "Flare to hem (m)", 0); }
+    slider(box, "tension", "Hang", 2, 70, 1, p.tension ?? 16, "Fewer rounds cling to the body; more hang loose and bridge the hollows.", v => { c.edit = { ...(c.edit || {}), tension: v }; later(); });
+  }
+  const reset = el("button", { textContent: "As designed" }); reset.onclick = () => { delete c.edit; drawWorn(); dress(); };
+  box.append(reset);
+  return box;
+}
 function drawWorn() {
   $("#worn").replaceChildren(...st.clothes.map((c, i) => {
     const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
     col.oninput = () => { c.color = col.value; restyle(c); };
     x.onclick = () => { st.clothes.splice(i, 1); drawWorn(); dress(); };
-    return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), lookRows(c));
+    return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), shapeRows(c), lookRows(c));
   }));
 }
 addBtn.onclick = () => {
@@ -678,13 +752,14 @@ addEventListener("resize", resize);
 let drag = null, LSTROKE = false;
 renderer.domElement.onpointerdown = e => {
   renderer.domElement.setPointerCapture(e.pointerId);
+  if (e.button === 0 && !e.altKey && grabGarment(e)) return;                            // a garment's handle (the Clothes tab)
   if (HANDLES.visible && e.button === 0 && !e.altKey && grabHandle(e)) return;          // a wig handle
   if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
   drag = [e.clientX, e.clientY];
 };
-renderer.domElement.onpointermove = e => { if (DRAG) return dragHandle(e); if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
-renderer.domElement.onpointerup = () => { drag = null; if (LSTROKE) { LSTROKE = false; LAY.up(); } if (DRAG) { DRAG = null; fitWig(true); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
+renderer.domElement.onpointermove = e => { if (GDRAG) return dragGarment(e); if (DRAG) return dragHandle(e); if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onpointerup = () => { drag = null; if (GDRAG) dropGarment(); if (LSTROKE) { LSTROKE = false; LAY.up(); } if (DRAG) { DRAG = null; fitWig(true); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
 for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
   if (b.dataset.v) orbit.focus = b.dataset.v; else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
@@ -1394,7 +1469,9 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { get LAY() { return LAY; }, st, GARMENTS, dress, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
+window.__body = { get LAY() { return LAY; }, st, GARMENTS, GH, dress, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
+  garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+    return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   handleOnScreen(n) { const h = HANDLES.getObjectByName(n), v = h.position.clone().project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

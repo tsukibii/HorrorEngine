@@ -6,7 +6,7 @@
 // has a thickness. The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
 import { frame } from "./tailor/frame.js";
-import { prepare, shell, skirt, detail, buttons, thicken, lifted, cut } from "./tailor/pieces.js";
+import { prepare, shell, skirt, detail, buttons, thicken, lifted, cut, handles } from "./tailor/pieces.js";
 import { unwrap } from "./tailor/uv.js";
 import { height } from "./tailor/frame.js";
 
@@ -42,15 +42,26 @@ export function make(B, name, design, opts = {}) {
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
   const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, ...(opts.look || {}) };
-  return { name, design, look, parts, outer, thickness: th, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
+  return { name, design, look, parts, outer, thickness: th, handles: handles(F, G, p), stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
 }
 
-/** a whole outfit, in order (each garment over the ones before): list = [[design name, colour?, look?], ...] */
+/** a design with a garment's own edits laid over its piece (objects merged, the rest replaced) */
+export function edited(design, edit) {
+  if (!edit || !Object.keys(edit).length) return design;
+  const merge = (a, b) => {
+    const o = { ...(a && typeof a === "object" && !Array.isArray(a) ? a : {}) };
+    for (const [k, v] of Object.entries(b)) o[k] = v && typeof v === "object" && !Array.isArray(v) && a && typeof a[k] === "object" ? merge(a[k], v) : v;
+    return o;
+  };
+  return { ...design, piece: merge(design.piece, edit) };
+}
+
+/** a whole outfit, in order (each garment over the ones before): list = [[design name, colour?, look?, edit?], ...] */
 export function dress(B, list, designs) {
   const worn = [];
-  for (const [name, color, look] of list) {
+  for (const [name, color, look, edit] of list) {
     const d = designs[name]; if (!d) throw new Error(`no design called ${name}`);
-    worn.push(make(B, name, d, { color, look, under: worn.slice() }));
+    worn.push(make(B, name, edited(d, edit), { color, look, under: worn.slice() }));
   }
   return worn;
 }
