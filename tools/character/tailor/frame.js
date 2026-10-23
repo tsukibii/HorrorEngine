@@ -175,7 +175,7 @@ function torsoArcs(S, axis, y0, y1) {
     if (Math.abs(a) < HALF) a = a < 0 ? -HALF : HALF;
     let b = R.at(a) - R.pi;                                                          // the back: from its middle (a = +-pi), round the wrap
     if (b > R.total / 2) b -= R.total; else if (b < -R.total / 2) b += R.total;
-    return 2 - b;                                                                    // a panel of its own, mirrored to read from behind
+    return 2 + b;                                                                    // a panel of its own, reading left to right from behind
   };
   // above the top row (the armpit's) a yoke: that row's outline by x, so the lines stay upright over the shoulders
   const top = rows[rows.length - 1], yoke = top && (back => {

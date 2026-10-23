@@ -2,7 +2,7 @@
 // front, three-quarter, side and back, full length and close, so a garment is reviewed by looking, not by guessing.
 //
 //   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_feminine|slim_masculine] [--height 1.62]
-//        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close]
+//        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close | --chest | --legs] [--uv | --debug] [--look JSON]
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 import { createServer } from "http";
@@ -18,7 +18,9 @@ const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const designs = JSON.parse(readFileSync(join(CLOTHES, "designs.json"))).designs;
 const outfits = JSON.parse(readFileSync(join(CLOTHES, "outfits.json"))).outfits;
 const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculine/.test(bodyName) ? 1.76 : /feminine/.test(bodyName) ? 1.62 : 1.7));
-const list = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
+const extra = arg("look") ? JSON.parse(arg("look")) : null;               // --look '{"print": {...}}': on every garment, for a test
+const list0 = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
+const list = list0 && list0.map(([d, c, l]) => [d, c, extra ? { ...(l || {}), ...extra } : l]);
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 
@@ -31,9 +33,12 @@ console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
 const HUES = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe"];
 const parts = worn.flatMap(g => g.parts).map((q, i) => has("debug") && /_/.test(q.name) ? { ...q, color: HUES[i % HUES.length] } : q);   // --debug: each detail its own colour
 const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array]];
-const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
+const lookOf = new Map(worn.flatMap(g => g.parts.map(q => [q.name, g.look])));
+const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, surface: q.surface, look: lookOf.get(q.name), n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
 const bin = Buffer.concat([Buffer.from(new Float32Array(b.P).buffer), Buffer.from(new Uint32Array(b.T).buffer), ...parts.flatMap(q => KEYS.map(([k, A]) => Buffer.from(new A(q[k]).buffer)))]);
-const views = has("chest")
+const views = has("legs")
+  ? [["front", 0, 0.45, 0.42], ["3/4", 40, 0.45, 0.42], ["side", 90, 0.45, 0.42], ["back", 180, 0.45, 0.42], ["feet", 25, 0.12, 0.3]]
+  : has("chest")
   ? [["front", 0, 1.3, 0.5], ["3/4", 45, 1.3, 0.5], ["side", 90, 1.3, 0.5], ["back", 180, 1.3, 0.5], ["low", 20, 0.85, 0.6]]
   : has("close")
   ? [["front", 0, 1.15, 1.25], ["3/4", 40, 1.15, 1.25], ["side", 90, 1.15, 1.25], ["back", 180, 1.15, 1.25], ["3/4 back", 220, 1.15, 1.25], ["legs", 30, 0.55, 1.35]]
@@ -56,8 +61,8 @@ const take = (A, n) => { const a = new A(buf, o, n); o += n * 4; return a; };
 const body = new THREE.BufferGeometry(); body.setAttribute("position", new THREE.BufferAttribute(take(Float32Array, NB[0]), 3)); body.setIndex(new THREE.BufferAttribute(take(Uint32Array, NB[1]), 1)); body.computeVertexNormals();
 scene.add(new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: "#c8a28c", roughness: 0.6 })));
 for (const m of head) {
-  const q = { name: m.name, color: m.color, fabric: m.fabric, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
-  scene.add(LOOK.mesh(q, m.name, LOOKS));
+  const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
+  scene.add(LOOK.mesh(q, m.name, LOOKS.debug ? LOOKS : m.look));
 }
 const cam = new THREE.PerspectiveCamera(28, 1 / 1.5, 0.05, 20);
 views.forEach(([name, deg, ty, dist], i) => {

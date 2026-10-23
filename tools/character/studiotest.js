@@ -4,7 +4,7 @@
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
 // skin takes over the body with the photo on the face through its mask, and its features change the picture; the work uniform
-// is cut from the body and worn, and refits when the body grows;
+// is cut from the body and worn, takes denim and a print without refitting, and refits when the body grows;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
@@ -156,12 +156,22 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.click("#touchRows label.tog input");                        // painting off for the rest
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("clothes: the work uniform cut from this body and worn; a taller body refits it", async () => {
+  await step("clothes: the work uniform cut from this body and worn, in denim with a print; a taller body refits it", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
     await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 2);
     await page.selectOption("#clothesRows select >> nth=0", "work uniform");
     await page.click("#clothesRows >> text=Wear the outfit");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
+    // its look: denim and a print on the shirt, the materials only (nothing refits)
+    const shirt = await page.evaluate(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").geometry.uuid);
+    await page.click("#worn details >> nth=0 >> summary");
+    await page.selectOption("#worn details >> nth=0 >> select >> nth=0", "denim");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uFabricScale.value > 28);
+    await page.click("#worn details >> nth=0 >> summary");
+    await page.fill("#worn details >> nth=0 >> input[type=text]", "STAFF"); await page.press("#worn details >> nth=0 >> input[type=text]", "Enter");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uPrintOn.value === 1);
+    if (await page.evaluate(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").geometry.uuid) !== shirt) throw new Error("a new look refitted the shirt");
+    if (!(await page.evaluate(() => window.__body.st.clothes[0].print?.text === "STAFF"))) throw new Error("the print isn't kept with the character");
     const top = () => page.evaluate(() => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return t; });
     const was = await top(), h = await page.evaluate(() => window.__body.st.height);
     await page.$$eval("#baseRows input", (ins, v) => { ins[1].value = v; ins[1].dispatchEvent(new Event("input")); }, h + 0.1);

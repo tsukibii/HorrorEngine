@@ -24,7 +24,7 @@ function coords(F, part, x, y, z, rings, radii) {
   if (part === 0 || part === 6) return [F.torsoU(x, y, z, part === 6), y, 1];   // panels: no angle to wrap (the 1 is metres per unit)
   if (part === 5) {                                                   // a skirt: a front and a back panel spreading to the hem, seams at the sides
     const a = Math.atan2(x - rings.cx, z - rings.cz), r = rings.radius(y);
-    return [Math.abs(a) <= Math.PI / 2 ? a * r : 2 + (a > 0 ? Math.PI - a : -Math.PI - a) * r, y, 1];
+    return [Math.abs(a) <= Math.PI / 2 ? a * r : 2 - (a > 0 ? Math.PI - a : -Math.PI - a) * r, y, 1];   // each reads left to right from its side
   }
   if (part === 3 || part === 4) {
     const L = F.legLines[part === 3 ? "L" : "R"], [t] = L.project(x, y, z), [cx, , cz] = L.at(t);
@@ -35,7 +35,7 @@ function coords(F, part, x, y, z, rings, radii) {
   const up = [-d[1] * d[0], 1 - d[1] * d[1], -d[1] * d[2]], ul = Math.hypot(...up) || 1, e1 = up.map(v => v / ul);
   const e2 = [d[1] * e1[2] - d[2] * e1[1], d[2] * e1[0] - d[0] * e1[2], d[0] * e1[1] - d[1] * e1[0]];
   const r = [x - c[0], y - c[1], z - c[2]];
-  return [Math.atan2(r[0] * e2[0] + r[1] * e2[1] + r[2] * e2[2], r[0] * e1[0] + r[1] * e1[1] + r[2] * e1[2]), -t, (radii ? radii(part, t) : F.armR) * (part === 1 ? 1 : -1)];
+  return [Math.atan2(r[0] * e2[0] + r[1] * e2[1] + r[2] * e2[2], r[0] * e1[0] + r[1] * e1[1] + r[2] * e1[2]), -t, (radii ? radii(part, t) : F.armR) * (part === 1 ? -1 : 1)];   // reading left to right from beside the arm
 }
 
 /** the seams as values, each 0 along its line: the torso's sides, the sleeves' seams and their undersides, the legs'

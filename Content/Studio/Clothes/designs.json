@@ -2,7 +2,7 @@
   "about": "the tailor's designs (tools/character/tailor.js, docs/TAILOR.md): heights are names on the body (neck, armpit, bust, waist, hip, crotch, knee, ankle) plus metres on MHR's 1.726 m average, scaled with the body; ease is how far off the skin; details are lifted off the garment",
   "designs": {
     "t-shirt": {
-      "label": "T-shirt", "slot": "top", "color": "#d8d4cc", "thickness": 0.0018,
+      "label": "T-shirt", "slot": "top", "color": "#d8d4cc", "thickness": 0.0018, "surface": "jersey",
       "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.018, "width": 0.075}, "sleeve": "short", "hem": {"at": "crotch+0.12"}, "ease": {"body": 0.009, "sleeve": 0.013}, "tension": 24},
       "details": [
         {"kind": "neckband", "width": 0.017},
@@ -11,7 +11,7 @@
       ]
     },
     "long-sleeve": {
-      "label": "Long-sleeved top", "slot": "top", "color": "#3c4048", "thickness": 0.0018,
+      "label": "Long-sleeved top", "slot": "top", "color": "#3c4048", "thickness": 0.0018, "surface": "jersey",
       "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.02, "width": 0.075}, "sleeve": "wrist", "hem": {"at": "crotch+0.1"}, "ease": {"body": 0.008, "sleeve": 0.009}, "tension": 18},
       "details": [
         {"kind": "neckband", "width": 0.016},
@@ -20,7 +20,7 @@
       ]
     },
     "work-shirt": {
-      "label": "Work shirt (short sleeves)", "slot": "top", "color": "#7f97ad", "buttons": "#e6e2d8", "thickness": 0.002,
+      "label": "Work shirt (short sleeves)", "slot": "top", "color": "#7f97ad", "buttons": "#e6e2d8", "thickness": 0.002, "surface": "cotton",
       "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "short", "hem": {"at": "crotch+0.1", "front": 0.02, "back": 0.03, "side": -0.03}, "ease": {"body": 0.016, "sleeve": 0.02}, "tension": 48},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.04, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
@@ -34,7 +34,7 @@
       ]
     },
     "work-shirt-long": {
-      "label": "Work shirt (long sleeves)", "slot": "top", "color": "#7f97ad", "buttons": "#e6e2d8", "thickness": 0.002,
+      "label": "Work shirt (long sleeves)", "slot": "top", "color": "#7f97ad", "buttons": "#e6e2d8", "thickness": 0.002, "surface": "cotton",
       "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "hem": {"at": "crotch+0.1", "front": 0.02, "back": 0.03, "side": -0.03}, "ease": {"body": 0.016, "sleeve": 0.016}, "tension": 48},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.04, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
@@ -48,7 +48,7 @@
       ]
     },
     "work-trousers": {
-      "label": "Work trousers", "slot": "bottom", "color": "#2c3440", "trim": "#1b1c1f", "buttons": "#a8a8a0", "thickness": 0.0022,
+      "label": "Work trousers", "slot": "bottom", "color": "#2c3440", "trim": "#1b1c1f", "buttons": "#a8a8a0", "thickness": 0.0022, "surface": "twill", "trimSurface": "leather",
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.21", "drop": 0.012, "rise": 0.02}, "legs": {"to": "ankle+0.012"}, "ease": {"body": 0.012, "leg": 0.017, "flare": 0.006}, "tension": 28},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.042, "lift": 0.0022},
@@ -65,7 +65,7 @@
       ]
     },
     "pants": {
-      "label": "Pants", "slot": "bottom", "color": "#3b3f46", "thickness": 0.002,
+      "label": "Pants", "slot": "bottom", "color": "#3b3f46", "thickness": 0.002, "surface": "twill",
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.2", "drop": 0.015, "rise": 0.02}, "legs": {"to": "ankle+0.015"}, "ease": {"body": 0.01, "leg": 0.013, "flare": 0.004}, "tension": 22},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.038, "lift": 0.002},
@@ -75,7 +75,7 @@
       ]
     },
     "shorts": {
-      "label": "Shorts", "slot": "bottom", "color": "#4a5a48", "thickness": 0.002,
+      "label": "Shorts", "slot": "bottom", "color": "#4a5a48", "thickness": 0.002, "surface": "cotton",
       "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.2", "drop": 0.015, "rise": 0.02}, "legs": {"to": "crotch-0.13"}, "ease": {"body": 0.011, "leg": 0.02}, "tension": 24},
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.038, "lift": 0.002},
@@ -85,22 +85,22 @@
       ]
     },
     "skirt": {
-      "label": "A-line skirt", "slot": "bottom", "color": "#33384a", "thickness": 0.0018,
+      "label": "A-line skirt", "slot": "bottom", "color": "#33384a", "thickness": 0.0018, "surface": "wool",
       "piece": {"kind": "skirt", "waist": {"at": "crotch+0.2"}, "length": "knee+0.07", "ease": 0.006, "flare": 0.16},
       "details": []
     },
     "pleated-skirt": {
-      "label": "Pleated skirt", "slot": "bottom", "color": "#262c3c", "thickness": 0.0018,
+      "label": "Pleated skirt", "slot": "bottom", "color": "#262c3c", "thickness": 0.0018, "surface": "wool",
       "piece": {"kind": "skirt", "waist": {"at": "crotch+0.2"}, "length": "knee+0.1", "ease": 0.006, "flare": 0.22, "pleats": {"n": 24, "depth": 0.014, "stitched": 0.05}},
       "details": []
     },
     "pencil-skirt": {
-      "label": "Pencil skirt", "slot": "bottom", "color": "#1f2024", "thickness": 0.0018,
+      "label": "Pencil skirt", "slot": "bottom", "color": "#1f2024", "thickness": 0.0018, "surface": "twill",
       "piece": {"kind": "skirt", "waist": {"at": "crotch+0.21"}, "length": "knee+0.02", "ease": 0.005, "taper": 0.05},
       "details": []
     },
     "coverall": {
-      "label": "Coverall", "slot": "full", "color": "#3f5266", "trim": "#2a3644", "buttons": "#c9c6bc", "thickness": 0.0024,
+      "label": "Coverall", "slot": "full", "color": "#3f5266", "trim": "#2a3644", "buttons": "#c9c6bc", "thickness": 0.0024, "surface": "canvas", "trimSurface": "leather",
       "piece": {"kind": "shell", "neck": {"shape": "round", "depth": 0.03, "width": 0.07}, "sleeve": "wrist", "legs": {"to": "ankle+0.012"}, "ease": {"body": 0.018, "sleeve": 0.016, "leg": 0.019, "flare": 0.005}, "tension": 48},
       "details": [
         {"kind": "collar", "width": 0.045, "tips": 0.04, "lift": 0.0045, "roll": 0.008, "thickness": 0.003},
@@ -115,6 +115,34 @@
         {"kind": "pocket", "on": "back", "at": "crotch+0.095", "x": -0.085, "w": 0.12, "h": 0.13},
         {"kind": "cuff", "length": 0.06, "lift": 0.0018},
         {"kind": "cuff", "on": "legs", "length": 0.03, "lift": 0.0014}
+      ]
+    },
+    "tights": {
+      "label": "Tights (pantyhose)", "slot": "legs", "color": "#1d1a1c", "surface": "sheer", "thickness": 0.0006, "rim": 0.85, "edge": 0.9, "denier": 0.72,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.01, "rise": 0.015}, "legs": {"to": "floor"}, "ease": {"body": 0.0012, "leg": 0.001, "crotch": 0.004}, "tension": 6},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0008}
+      ]
+    },
+    "fishnet-tights": {
+      "label": "Fishnet tights", "slot": "legs", "color": "#151214", "surface": "fishnet", "thickness": 0.0006, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.01, "rise": 0.015}, "legs": {"to": "floor"}, "ease": {"body": 0.0012, "leg": 0.001, "crotch": 0.004}, "tension": 6},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0008}
+      ]
+    },
+    "stockings": {
+      "label": "Stockings (thigh-high)", "slot": "legs", "color": "#1d1a1c", "surface": "sheer", "thickness": 0.0006, "rim": 0.85, "edge": 0.9, "denier": 0.6,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch-0.08", "drop": 0.01, "rise": 0.015}, "legs": {"to": "floor"}, "ease": {"body": 0.0012, "leg": 0.001, "crotch": 0.004}, "tension": 6},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.06, "lift": 0.0008, "surface": "lace"}
+      ]
+    },
+    "leggings": {
+      "label": "Leggings", "slot": "legs", "color": "#202024", "surface": "spandex", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.19", "drop": 0.01, "rise": 0.015}, "legs": {"to": "ankle+0.005"}, "ease": {"body": 0.002, "leg": 0.0018, "crotch": 0.006}, "tension": 10},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.04, "lift": 0.0012}
       ]
     }
   }

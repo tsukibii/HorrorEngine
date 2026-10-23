@@ -10,8 +10,8 @@ self.onmessage = e => {
     if (key !== KEY || !B) { B = TAILOR.body(P, T); KEY = key; }
     const worn = TAILOR.dress(B, list, designs), move = [];
     const garments = worn.map(g => ({
-      name: g.name, stats: g.stats,
-      parts: g.parts.map(q => { const { name, color, fabric, P, T, N, UV, PART, S } = q; move.push(P.buffer, T.buffer, N.buffer, UV.buffer, PART.buffer, S.buffer); return { name, color, fabric, P, T, N, UV, PART, S }; }),
+      name: g.name, stats: g.stats, look: g.look,
+      parts: g.parts.map(q => { const { name, color, fabric, surface, P, T, N, UV, PART, S } = q; move.push(P.buffer, T.buffer, N.buffer, UV.buffer, PART.buffer, S.buffer); return { name, color, fabric, surface, P, T, N, UV, PART, S }; }),
     }));
     self.postMessage({ id, garments }, move);
   } catch (err) {

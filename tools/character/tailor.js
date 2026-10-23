@@ -30,25 +30,27 @@ export function make(B, name, design, opts = {}) {
   const th = (design.thickness ?? 0.002) * s, parts = [], outer = [G.outer];
   // a bottom's legs are panels from its waist down; a coverall's from a waist seam
   const legsTo = p.legs ? (p.waist ? height(F, p.waist.at) + 0.05 * s : F.crotchY + 0.2 * s) : -1;
-  const part = (pname, col, m, fabric) => parts.push({ name: pname, color: col, fabric, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo }) });
+  const part = (pname, col, m, fabric, surface) => parts.push({ name: pname, color: col, fabric, surface, ...unwrap(F, m.P, m.T, m.S, { rings: G.rings, legsTo }) });
   part(name, color, thicken(G.outer.P, G.outer.T, th, design.rim ?? 0.7, design.edge ?? 0.82), true);
   for (const d of design.details || []) {
     if (d.kind === "buttons") { const b = buttons(F, G.outer, d); if (b.T.length) part(`${name}_buttons`, d.color || design.buttons || "#222222", b, false); continue; }
     const D = detail(F, G, d); if (!D) continue;
     const L = lifted(cut, G.outer, D.value, D.lift); if (!L) continue;
     outer.push(L);
-    part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim);
+    part(`${name}_${d.kind}`, d.color || (d.trim ? trim : color), thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8, d.rim ?? 0.45, d.edge ?? 0.62), !d.trim, d.surface);
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
-  return { name, design, parts, outer, thickness: th, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
+  // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
+  const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, ...(opts.look || {}) };
+  return { name, design, look, parts, outer, thickness: th, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
 }
 
-/** a whole outfit, in order (each garment over the ones before): list = [[design name, colour?], ...] */
+/** a whole outfit, in order (each garment over the ones before): list = [[design name, colour?, look?], ...] */
 export function dress(B, list, designs) {
   const worn = [];
-  for (const [name, color] of list) {
+  for (const [name, color, look] of list) {
     const d = designs[name]; if (!d) throw new Error(`no design called ${name}`);
-    worn.push(make(B, name, d, { color, under: worn.slice() }));
+    worn.push(make(B, name, d, { color, look, under: worn.slice() }));
   }
   return worn;
 }

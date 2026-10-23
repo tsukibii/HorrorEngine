@@ -29,10 +29,27 @@ over them; **a top first** and it's tucked in.
 A garment is 25k to 145k triangles (the check prints them all). Cutting one on a body takes about 0.5 to 3 s; the
 Studio does it in a worker.
 
+## 1b. Fabrics, patterns, prints
+
+`tailor/fabric.js` ports Woohill's surfaces (`creator/src/js/60-character.js` `surfaceTile`, `surfaceAux`; their sizes,
+gloss and relief from `20-clothes.js`): each a seamless tile drawn in code at four times Woohill's size, the cloth's
+light and dark round a mid grey, laid on the fabric coordinates at its real size in metres. **Cotton, jersey, denim,
+canvas, twill, knit, rib, wool, tweed, silk, satin, spandex, leather, patent, suede, velvet, quilted**, and the three
+that let the skin through: **sheer** (pantyhose: the nylon at its `denier`, darker where the leg turns away, a sheen
+down the leg), **fishnet** and **lace** (their holes are empty). Each also gives a relief (a bump map) and a gloss
+(less rough). **Patterns** in the garment's own colours (stripes, pinstripe, vertical stripes, gingham, checks, plaid,
+polka dots, houndstooth, camouflage) at a repeat in metres; a **print**: text set in type, or a picture, placed on a
+panel (front, back, a sleeve, a leg, a skirt's front) across and up it, a width, a turn. `tailor/look.js` makes the
+material (`MeshStandardMaterial` with a small shader patch: the colour or pattern, the grain over it, the print, the
+gloss; the bump map is three's own). A garment's look is its design's (`surface`, `trimSurface` for its trim, `pattern`,
+`denier`) under its own (outfits.json's third field, or the Studio's controls); a detail can take its own `surface`
+(the stockings' lace top). Changing a look only rebuilds materials: nothing refits.
+
 ## 2. The designs are data
 
-`Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`top`, `bottom`, `full`), a `color`
-(`trim` and `buttons` for its details), a `thickness`, a `piece` and its `details`. Heights are names on the body
+`Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`top`, `bottom`, `full`, `legs`, `feet`), a
+`color` (`trim` and `buttons` for its details), a `surface` (and `trimSurface`, `pattern`, `denier`), a `thickness`, a
+`piece` and its `details`. Heights are names on the body
 (`neck`, `armpit`, `bust`, `waist`, `hip`, `crotch`, `knee`, `ankle`) plus metres on MHR's 1.726 m average, scaled
 with the body: `"crotch+0.12"`. The ones that carry the fit are the crotch, the armpit and the neck (the waist found
 on MHR's average body is high, so hems and waistlines are measured from the crotch).
@@ -53,12 +70,16 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 **work uniform** (a work shirt with a collar, a placket and buttons, flapped chest pockets and cuffed short sleeves,
 tucked into work trousers with a waistband, a belt and buckle, a fly, cargo and back pockets), the same with long
 sleeves, a **coverall**, a **t-shirt** with pants, shorts or an A-line skirt, and a long-sleeved top with a pleated
-skirt; a pencil skirt is a design of its own.
+skirt; a pencil skirt is a design of its own. Legwear: **tights** (black pantyhose), **fishnet tights**,
+**stockings** (thigh-high, a lace top) and **leggings**, worn first; a school uniform with a plaid pleated skirt, and
+outfits that show a print and a stripe.
 
 ## 3. Where it runs
 
 - **The Character Studio's Clothes tab** (`tools/character/index.html`): an outfit, or a garment and its colour,
-  added over what's worn; the worn list (under to over) with a colour each and ×; **Export clothes OBJ** writes
+  added over what's worn; the worn list (under to over) with a colour each and ×, and under each its **fabric,
+  pattern and print** (the fabric, a denier for sheer ones, the pattern, its colours and repeat; a print's text and ink
+  or a picture, its panel, across, height, width and turn); **Export clothes OBJ** writes
   `People/<name>/<name>_clothes.obj` (one object per part, metres, Y up, facing +Z, the body's frame). The tailor runs
   in `tailor/worker.js` and refits on its own when the body's shape or height changes. What's worn is saved in
   `character.json` (`clothes`); the meshes are made live, like the hair styles, so there's nothing to go stale.
@@ -75,6 +96,7 @@ skirt; a pencil skirt is a design of its own.
   can be copied from the skin under it (the crop, the split and the cut each keep where their points came from). Then the clothes go to Unreal
   as skeletal meshes on the character's skeleton. A skirt's hem or a coat's tails can take Chaos Cloth painted onto
   that mesh. Hide the skin under tight clothes (Woohill's `hideSkinUnderCloth`) so it can't poke through in motion.
-- **Fabric:** the coordinates are there (§1); the fabrics, patterns and prints on them come next.
+- **Fabric in Unreal:** the export has the coordinates; the tiles and the look still have to go across (a material
+  instance per garment with the tile, its size, the colour or pattern and the print).
 - **Seams and creases** are only where details are lifted; stitch lines and folds would be a normal map.
 - Hair doesn't collide with the clothes yet.

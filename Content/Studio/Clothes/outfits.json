@@ -7,6 +7,10 @@
     "t-shirt and pants": [["pants", "#3b3f46"], ["t-shirt", "#d8d4cc"]],
     "t-shirt and shorts": [["shorts", "#4a5a48"], ["t-shirt", "#9c3b36"]],
     "t-shirt and skirt": [["skirt", "#33384a"], ["t-shirt", "#e8e4dc"]],
-    "long sleeves and pleated skirt": [["long-sleeve", "#3c4048"], ["pleated-skirt", "#262c3c"]]
+    "long sleeves and pleated skirt": [["long-sleeve", "#3c4048"], ["pleated-skirt", "#262c3c"]],
+    "skirt, blouse and tights": [["tights", "#1d1a1c"], ["skirt", "#33384a"], ["long-sleeve", "#e8e4dc"]],
+    "fishnets and shorts": [["fishnet-tights", "#151214"], ["shorts", "#26262a", {"surface": "denim"}], ["t-shirt", "#9c3b36", {"print": {"text": "NIGHT SHIFT", "ink": "#f0e8dc", "part": "front", "u": 0, "v": 1.18, "w": 0.2}}]],
+    "leggings and long sleeves": [["leggings", "#202024"], ["long-sleeve", "#5b6b7a", {"pattern": {"kind": "stripes", "colors": ["#e8e4dc", "#2a3040"], "size": 0.035}}]],
+    "school uniform (plaid skirt)": [["stockings", "#1d1a1c"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}]]
   }
 }
