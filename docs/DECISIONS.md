@@ -10,8 +10,9 @@ The user's answers, newest first. They override the plan, the research and the d
   the photo match, fit and batching (`hair_match.py`, `hair_fit.py`, `hair_batch.py`), the GPU strands
   (`strands.js`) and the model wig (`wigify.js`). Brows and lashes stay, switched in the Face tab.
 - **The salon has a bald start and a Bald preset** (no locks, no scalp shade).
-- **Eyes:** the eyeball-and-lid fixes so far didn't look right and are dropped; next is an eye plane the user picks
-  by vertex, with the eyeball projected onto it.
+- **Eyes: the eye plane.** The eyeball-and-lid fixes didn't look right and are dropped. The user picks the head's
+  points that are the eye (by vertex, the Layers tab's tools); the eyeball's paint is projected onto them, the eyeball
+  sits inside the head; where it doesn't reach, a fill colour (the sclera's by default) or a bigger eyeball.
 
 ## 2026-10-23 (the Gaussian splat is removed)
 

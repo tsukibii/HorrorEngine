@@ -184,6 +184,22 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"}); brows and lashes ${before / 3} points`);
     await page.click('#tabs button[data-tab="body"]');
   });
+  await step("the eye plane: the lids' points picked in Layers, used as the eye plane; the shell stays, the eyeball goes inside the head, its paint on the shell; Clear sinks the shell again", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    await page.evaluate(() => [...document.querySelectorAll("#eyeRows button")].find(b => b.textContent === "Start from the lids").click());
+    await page.waitForFunction(() => !document.querySelector('section[data-tab="layers"]').hidden && window.__body.LAY.layers.count() > 0, null, { timeout: 10000 });
+    await page.evaluate(() => document.querySelector("#eyePlaneLay button").click());
+    const on = await page.evaluate(() => { const b = window.__body, p = b.st.eyes.plane, z = Math.max(...p.map(v => b.POS[v * 3 + 2]));
+      return { n: p.length, left: p.filter(v => b.POS[v * 3] > 0).length, on: b.SKU.uEyeOn.value, ball: b.EYES.L.visible, front: z - b.EYES.L.position.z, r: b.EYES.L.scale.x, count: document.querySelector("#planeCount").textContent }; });
+    if (!on.n || !on.left || on.left === on.n || on.on !== 1 || on.ball || !(on.front > on.r)) throw new Error("the eye plane: " + JSON.stringify(on));
+    await page.evaluate(() => { document.querySelector("#laySelect").checked && document.querySelector("#laySelect").click(); window.__body.LAY.layers.clear(); window.__body.LAY.showSel(); });
+    await page.click('#tabs button[data-tab="skin"]');
+    await page.evaluate(() => [...document.querySelectorAll("#eyeRows button")].find(b => b.textContent === "Clear").click());
+    const off = await page.evaluate(() => ({ n: window.__body.st.eyes.plane.length, on: window.__body.SKU.uEyeOn.value, ball: window.__body.EYES.L.visible }));
+    if (off.n || off.on || !off.ball) throw new Error("the eye plane cleared: " + JSON.stringify(off));
+    console.log(`       ${on.count}; the shell ${(on.front * 1000).toFixed(1)} mm in front of the eyeball's centre (radius ${(on.r * 1000).toFixed(1)} mm)`);
+    await page.click('#tabs button[data-tab="body"]');
+  });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });

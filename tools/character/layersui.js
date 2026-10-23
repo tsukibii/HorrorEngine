@@ -223,6 +223,8 @@ export function mountLayers(ctx) {
     L.update(); refreshAll(); drawList(); showSel(); SAVED = true;
   };
   api2.shapeChanged = () => L.shapeChanged();
+  api2.showSel = showSel;                                         // the selection changed from outside (the eye plane)
+  api2.selecting = on => { const c = $("#laySelect"); if (c.checked !== on) c.click(); };
   api2.saved = () => SAVED;
   return api2;
 }

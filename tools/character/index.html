@@ -96,6 +96,7 @@
     <section data-tab="layers" hidden>
       <h3>Paint layers</h3>
       <p class="note">Select vertices on the body, then fill: colour, a PNG, a PBR set, with a feathered edge, pigment, opacity and shine. Layers sit above the base mesh: delete them and the base is what's left.</p>
+      <div id="eyePlaneLay" class="chips"></div>
       <div id="layerRows"></div>
     </section>
 
@@ -283,7 +284,7 @@ function skinLook() {
   const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
   material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
-  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
+  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || SKU.uEyeOn.value > 0 ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
 }
@@ -542,8 +543,10 @@ function lmk(i) {                                       // a landmark's place on
   return out;
 }
 function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+let SUNK = new Uint8Array(0);                          // the points openEyes sank (the eye plane's start from the lids)
 function openEyes() {                                  // the closed shell inside the lid outline sinks behind the eyeball
-  if (!LMK || !st.eyes.on) return null;
+  SUNK = new Uint8Array(POS.length / 3);
+  if (!LMK || !st.eyes.on || planeOn()) return null;     // an eye plane keeps the shell: the eye is painted on it
   for (const side of ["L", "R"]) {
     const ring = LIDS[side].map(lmk), m = EYES[side];
     const cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cy = ring.reduce((a, p) => a + p[1], 0) / ring.length;
@@ -554,7 +557,7 @@ function openEyes() {                                  // the closed shell insid
     for (let i = 0; i < POS.length; i += 3) {
       const x = POS[i], y = POS[i + 1], z = POS[i + 2];
       if (x < x0 || x > x1 || y < y0 || y > y1 || z < front) continue;
-      if (inside(poly, x, y)) POS[i + 2] = back;
+      if (inside(poly, x, y)) { POS[i + 2] = back; SUNK[i / 3] = 1; }
     }
   }
   return null;
@@ -587,10 +590,13 @@ dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material
 const eyeMats = { L: new THREE.MeshPhysicalMaterial({ ior: 1.4 }), R: new THREE.MeshPhysicalMaterial({ ior: 1.4 }) };   // one each: the corner tint is the inner one
 function paintEyes() {                                  // eyes.js: the textures and the wet look from st.eyes
   for (const side of ["L", "R"]) { eyeMats[side].map?.dispose(); eyeMats[side].map = EYEPAINT.eyeTexture(st.eyes, side); EYEPAINT.eyeFinish(eyeMats[side], st.eyes); }
+  if (typeof planeUniforms === "function") planeUniforms();
 }
 const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
 const EYES = { L: new THREE.Mesh(eyeGeo, eyeMats.L), R: new THREE.Mesh(eyeGeo, eyeMats.R) };
-st.eyes = { ...EYEPAINT.EYE_DEFAULTS };
+const EYEPLANE = () => ({ plane: [], size: 1, depth: 4, fillOn: true, fill: "#f4efe9", showBall: false });   // the eye plane (below)
+st.eyes = { ...EYEPAINT.EYE_DEFAULTS, ...EYEPLANE() };
+const planeOn = () => st.eyes.on && (st.eyes.plane || []).length > 0 && !!LMK;
 paintEyes();
 function placeEyes() {
   for (const side of ["L", "R"]) {
@@ -598,11 +604,13 @@ function placeEyes() {
     if (!LMK || !st.eyes.on) { m.visible = false; continue; }
     const ring = LIDS[side].map(lmk), n = ring.length;
     const c = [0, 1, 2].map(a => ring.reduce((s, p) => s + p[a], 0) / n);
-    const r = 0.0118 * SCALE;                          // a 12 mm eyeball, with the body's scale
-    m.scale.setScalar(r); m.position.set(c[0], c[1], Math.max(...ring.map(p => p[2])) - r + 0.0008);
+    const r = 0.0118 * SCALE * (st.eyes.size || 1), plane = planeOn();   // a 12 mm eyeball, with the body's scale
+    m.scale.setScalar(r); m.position.set(c[0], c[1], Math.max(...ring.map(p => p[2])) - r + 0.0008 - (plane ? st.eyes.depth / 1000 : 0));
     const w = n => st.expr[ENAMES.indexOf(n)] * st.exprAmt;
     const yaw = (w(`eyesLookLeft_${side}`) - w(`eyesLookRight_${side}`)) * 0.45, pitch = (w(`eyesLookDown_${side}`) - w(`eyesLookUp_${side}`)) * 0.35;
-    m.rotation.set(pitch, yaw, 0); m.visible = true;
+    m.rotation.set(pitch, yaw, 0); m.visible = !plane || !!st.eyes.showBall;
+    m.updateMatrix(); SKU[`uEyeInv${side}`].value.copy(m.matrix).invert();   // the eye plane's projection: the body's space into the eyeball's
+    SKU.uEyeShut.value.setComponent(side === "L" ? 0 : 1, w(`eyesClosed_${side}`));
   }
 }
 
@@ -764,6 +772,64 @@ const eyeSet = {};
   eyeSet.all = () => { on.checked = st.eyes.on; for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
 }
 
+// ---- the eye plane: the points of the closed shell picked for the eye (by vertex, with the Layers tab's tools); the
+// eyeball's paint is projected onto them along its axis in the skin's shader (skinshader.js), past the eyeball the fill
+// colour; the shell isn't sunk and the eyeball sits inside the head, hidden. The gaze turns the projection, a blink
+// brings the lid's skin back ---------------------------------------------------------------------------------------------
+const eyeAttr = new THREE.BufferAttribute(new Float32Array(C), 1); dgeo.setAttribute("eyeW", eyeAttr);
+function planeAttr() {                                  // +1 on the left eye's points (+x), -1 on the right's, 0 elsewhere
+  const on = new Uint8Array(N); for (const v of st.eyes.plane || []) on[v] = 1;
+  for (let c = 0; c < C; c++) { const v = TRIS[c]; eyeAttr.array[c] = on[v] ? (BASEP[v * 3] > 0 ? 1 : -1) : 0; }
+  eyeAttr.needsUpdate = true; planeUniforms(); skinLook();
+}
+function planeUniforms() {
+  SKU.uEyeOn.value = planeOn() ? 1 : 0;
+  SKU.uEyeTexL.value = eyeMats.L.map; SKU.uEyeTexR.value = eyeMats.R.map;
+  SKU.uEyeFill.value.set(st.eyes.fill); SKU.uEyeFillOn.value = st.eyes.fillOn ? 1 : 0;
+  SKU.uEyeRough.value = eyeMats.L.roughness; SKU.uEyeCoatR.value = eyeMats.L.clearcoatRoughness;
+}
+function lidPoints() {                                  // a start: the points inside MediaPipe's lid outlines, in front
+  const out = [];
+  for (const side of ["L", "R"]) {
+    const ring = LIDS[side].map(lmk), cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cy = ring.reduce((a, p) => a + p[1], 0) / ring.length;
+    const poly = ring.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]), front = Math.min(...ring.map(p => p[2])) - 0.006;
+    for (let i = 0; i < N; i++) if ((POS[i * 3 + 2] >= front || SUNK[i]) && Math.abs(POS[i * 3] - cx) < 0.03 && Math.abs(POS[i * 3 + 1] - cy) < 0.02 && inside(poly, POS[i * 3], POS[i * 3 + 1])) out.push(i);
+  }
+  return out;
+}
+const planeUI = {};
+{
+  const box = $("#eyeRows");
+  box.append(el("h4", { textContent: "Eye plane" }), el("p", { className: "note", textContent: "Pick the points of the head that are the eye (the Layers tab's brush and flood, or start from the lids), then Use the selection: the eyeball's paint is projected onto them, the eyeball goes inside the head. Past the eyeball the fill colour, or a bigger eyeball covers it all." }));
+  const count = el("p", { className: "note", id: "planeCount" });
+  const toLayers = pts => { const S = LAY.layers.sel; S.fill(0); for (const v of pts) S[v] = 1; LAY.showSel(); tab("layers"); LAY.selecting(true); };
+  const b = (t, title, fn) => { const x = el("button", { textContent: t, title }); x.onclick = fn; return x; };
+  box.append(el("div", { className: "chips" },
+    b("Start from the lids", "The points inside MediaPipe's lid outlines into the Layers tab's selection, to grow, shrink or brush there", () => { if (!LMK) return status("no landmarks: the face isn't set up", "bad"); toLayers(lidPoints()); status("the lids' points selected: brush, grow or shrink them, then Use the selection as the eye plane", "ok"); }),
+    b("Edit in Layers", "The eye plane into the Layers tab's selection", () => toLayers(st.eyes.plane)),
+    b("Clear", "No eye plane: the shell sunk behind the eyeball, as before", () => { st.eyes.plane = []; planeChanged(); })), count);
+  planeUI.size = slider(box, "eye_size", "Eyeball size", 0.8, 2.2, 0.01, 1, "The eyeball (and its projection) bigger, so it covers all the eye's points; the iris grows with it (Iris size takes it back).", v => { st.eyes.size = v; changed("expr"); });
+  planeUI.depth = slider(box, "eye_depth", "Eyeball depth (mm)", 0, 12, 0.5, 4, "How far the eyeball sits behind the lids with an eye plane: inside the head. The projection doesn't change.", v => { st.eyes.depth = v; changed("expr"); });
+  const fillOn = el("input", { type: "checkbox", checked: true }), fill = el("input", { type: "color", value: "#f4efe9" }), pick = b("= sclera", "The fill takes the sclera's colour", () => { st.eyes.fill = st.eyes.sclera; fill.value = st.eyes.fill; planeUniforms(); });
+  fillOn.onchange = () => { st.eyes.fillOn = fillOn.checked; planeUniforms(); }; fill.oninput = () => { st.eyes.fill = fill.value; planeUniforms(); };
+  box.append(el("label", { className: "tog" }, fillOn, el("span", {}, "Fill past the eyeball", el("small", { textContent: "Points of the eye plane the eyeball doesn't reach take this colour; off, they keep the skin." }))),
+             el("div", { className: "row" }, el("span", { textContent: "Fill colour" }), fill, pick));
+  const show = el("input", { type: "checkbox" }); show.onchange = () => { st.eyes.showBall = show.checked; changed("expr"); };
+  box.append(el("label", { className: "tog" }, show, el("span", {}, "Show the eyeball", el("small", { textContent: "With an eye plane the eyeball is hidden inside the head: this shows where it sits." }))));
+  planeUI.all = () => {
+    planeUI.size(st.eyes.size); planeUI.depth(st.eyes.depth); fillOn.checked = st.eyes.fillOn; fill.value = st.eyes.fill; show.checked = !!st.eyes.showBall;
+    const n = (st.eyes.plane || []).length, l = (st.eyes.plane || []).filter(v => BASEP[v * 3] > 0).length;
+    count.textContent = n ? `Eye plane: ${n} points (left ${l}, right ${n - l})` : "No eye plane: the shell is sunk behind the eyeball.";
+  };
+  const lay = $("#eyePlaneLay");
+  lay.append(b("Use the selection as the eye plane", "The selected points become the eyes (each side by where it is); the eyeball's paint is projected onto them (Skin, Eyes)", () => {
+    const S = LAY.layers.sel, pts = []; for (let i = 0; i < N; i++) if (S[i]) pts.push(i);
+    if (!pts.length) return status("select the eye's points first (Select on the body)", "bad");
+    st.eyes.plane = pts; planeChanged(); status(`the eye plane: ${pts.length} points`, "ok");
+  }));
+}
+function planeChanged() { planeAttr(); planeUI.all(); changed("expr"); }
+
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
 // Hair tab is the salon itself, in a frame on this character; the brows and lashes are grown here from the face's
 // landmarks (hair.js), their switches in the Face tab ---------------------------------------------------------------
@@ -913,7 +979,7 @@ async function open(name) {
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, c.eyes || {}); eyeSet.all(); paintEyes();
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEPLANE(), c.eyes || {}); eyeSet.all(); paintEyes(); planeAttr(); planeUI.all();
   const ch = c.hair || {};
   Object.assign(st.hair, { brows: ch.brows ?? true, lashes: ch.lashes ?? true, color: ch.color || "#2a1d17" });   // older files' hair settings are left out
   hairSet.all();
@@ -963,7 +1029,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get LAY() { return LAY; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, enterSalon, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
+window.__body = { get LAY() { return LAY; }, planeAttr, lidPoints, planeOn, compose, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, enterSalon, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();
