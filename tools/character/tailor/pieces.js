@@ -197,7 +197,9 @@ export function skirt(B, p, colliders) {
     const a = r * NA + k, b = r * NA + (k + 1) % NA, c = (r + 1) * NA + k, d = (r + 1) * NA + (k + 1) % NA;
     T.push(a, b, c, b, d, c);
   }
-  return { outer: { P: out, T: new Uint32Array(T) }, V: null, neck: null, rings: { y0, y1, cx, cz } };
+  const mean = R.map(row => row.reduce((a, v) => a + v, 0) / NA);   // each row's radius: the fabric spreads to the hem as a flared panel
+  const radius = y => mean[Math.max(0, Math.min(rows - 1, Math.round((y0 - y) / dy)))];
+  return { outer: { P: out, T: new Uint32Array(T) }, V: null, neck: null, rings: { y0, y1, cx, cz, radius } };
 }
 
 /** a radius per angle (NA of them, from -pi at k = 0) of the convex hull of 2D points round the origin */

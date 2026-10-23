@@ -1,19 +1,19 @@
-// The tailor's check: every design in Content/Studio/Clothes/designs.json is cut on three bodies (MHR's average, its
-// feminine and masculine presets), every outfit in outfits.json on the feminine one, in order. Each garment has
-// triangles, no stray numbers, indices in range, lies outside the body (its outside never under the skin), reaches the
+// The tailor's check: every design in Content/Studio/Clothes/designs.json is cut on five bodies (MHR's average, its
+// feminine and masculine presets, and slim ones of each: tailor/bodies.json), every outfit in outfits.json on the
+// feminine one, in order. Each garment has
+// triangles, no stray numbers, indices in range, fabric coordinates and normals on every point, lies outside the body (its outside never under the skin), reaches the
 // heights its design names, and comes out the same twice. Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
 import { readFileSync } from "fs";
 import { join } from "path";
-import { loadMhr, mhrBody, ROOT } from "./node.mjs";
+import { loadMhr, mhrBody, bodyWeights, ROOT } from "./node.mjs";
 import * as TAILOR from "../tailor.js";
 import { height } from "./frame.js";
 
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const { designs } = JSON.parse(readFileSync(join(CLOTHES, "designs.json")));
 const { outfits } = JSON.parse(readFileSync(join(CLOTHES, "outfits.json")));
-const presets = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_presets.json"))).presets;
 const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons"]), SLOTS = new Set(["top", "bottom", "full"]);
 
 for (const [name, d] of Object.entries(designs)) {
@@ -33,6 +33,9 @@ const look = (label, B, g) => {
     if (!q.T.length) errs.push(`${label}: ${q.name} has no triangles`);
     for (let i = 0; i < q.P.length; i++) if (!Number.isFinite(q.P[i])) { errs.push(`${label}: a stray number in ${q.name}`); break; }
     for (let i = 0; i < q.T.length; i++) if (q.T[i] >= n) { errs.push(`${label}: ${q.name} points past its vertices`); break; }
+    if (q.UV.length !== n * 2 || q.N.length !== n * 3 || q.PART.length !== n || q.S.length !== n) errs.push(`${label}: ${q.name}'s attributes don't match its points`);
+    for (let i = 0; i < q.UV.length; i++) if (!Number.isFinite(q.UV[i]) || Math.abs(q.UV[i]) > 5) { errs.push(`${label}: ${q.name} has fabric coordinates off its panels`); break; }
+    for (let i = 0; i < n; i += 7) if (Math.abs(Math.hypot(q.N[i * 3], q.N[i * 3 + 1], q.N[i * 3 + 2]) - 1) > 0.01) { errs.push(`${label}: ${q.name} has a normal that isn't one long`); break; }
   }
   // the outside never under the skin: every 5th point of the cloth's outside, against the body
   const o = g.outer[0], hit = {}; let under = 0, n = 0;
@@ -54,8 +57,9 @@ const look = (label, B, g) => {
 };
 
 const m = loadMhr(), t0 = Date.now(), counts = {};
-for (const [bname, h] of [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78]]) {
-  const b = mhrBody(m, bname === "average" ? [] : presets[bname], h), B = TAILOR.body(b.P, b.T);
+const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76]];
+for (const [bname, h] of BODIES) {
+  const b = mhrBody(m, bodyWeights(bname), h), B = TAILOR.body(b.P, b.T);
   for (const [name, d] of Object.entries(designs)) {
     let g;
     try { g = TAILOR.make(B, name, d); } catch (e) { errs.push(`${name} on ${bname}: ${e.message}`); continue; }
@@ -69,4 +73,4 @@ for (const [bname, h] of [["average", 1.7], ["feminine", 1.62], ["masculine", 1.
 }
 for (const [k, v] of Object.entries(counts)) console.log(`  ${k.padEnd(16)} ${v.map(t => `${Math.round(t / 1000)}k`).join(" / ")} triangles`);
 if (errs.length) { console.error(errs.map(e => "TAILOR FAIL: " + e).join("\n")); process.exit(1); }
-console.log(`TAILOR ok (${Object.keys(designs).length} designs on 3 bodies, ${Object.keys(outfits).length} outfits, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+console.log(`TAILOR ok (${Object.keys(designs).length} designs on ${BODIES.length} bodies, ${Object.keys(outfits).length} outfits, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);

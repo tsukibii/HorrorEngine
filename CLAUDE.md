@@ -60,7 +60,7 @@ Unreal build must match. Directing craft: docs/DIRECTING.md.
 - `python tools/check_all.py [--game G]`: STORY, LEVEL, SHOTS (plan) for every game, and PBR (the shelf) once
 - `node tools/score/check.js`: SCORE (the music cues and the palettes)
 - `node tools/kit/check.mjs`: KIT (the kit's types, presets and every game's kit props)
-- `node tools/character/tailor/check.mjs`: TAILOR (every clothing design on three bodies, every outfit)
+- `node tools/character/tailor/check.mjs`: TAILOR (every clothing design on five bodies, slim ones too, every outfit)
 - `python tools/motion.py --game G check`: MOTION
 - `python tools/perm.py check`: PERM (the sandbox has no network; what's set up)
 - `python tools/face_mesh.py check`: FACEMESH (after its `setup`); `node tools/director/facetest.js`: FACEPAGE (the face page, the desk's server running); `node tools/character/studiotest.js`: STUDIO (the Character Studio, its server running)

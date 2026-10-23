@@ -142,6 +142,7 @@ import { mountLayers } from "./layersui.js";
 import * as EYEPAINT from "./eyes.js";
 import { StudioView } from "/shared/studioview.js";
 import * as WIGIFY from "./wigify.js";
+import * as LOOK from "./tailor/look.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const api = async (u, body) => {
@@ -399,13 +400,7 @@ TAILOR_W.onmessage = e => {
   if (error) return status("the tailor failed: " + error.split("\n")[0], "bad");
   for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); }
   GARMENTS.clear();
-  for (const g of garments) for (const q of g.parts) {
-    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(q.P, 3)); geo.setIndex(new THREE.BufferAttribute(q.T, 1)); geo.computeVertexNormals();
-    const shade = new Float32Array(q.S.length * 3); for (let i = 0; i < q.S.length; i++) shade[i * 3] = shade[i * 3 + 1] = shade[i * 3 + 2] = q.S[i];
-    geo.setAttribute("color", new THREE.BufferAttribute(shade, 3));   // darker along the edges: a hem's or a pocket's shadow and stitching
-    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: q.color, roughness: 0.86, vertexColors: true }));
-    m.name = q.name; m.userData.garment = g.name; m.castShadow = m.receiveShadow = true; GARMENTS.add(m);
-  }
+  for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name));   // tailor/look.js: the fabric coordinates, the edges' shade
   if (!GARMENTS.parent) rig.add(GARMENTS);
   const ms = garments.reduce((a, g) => a + g.stats.ms, 0);
   status(garments.map(g => `${g.name} ${Math.round(g.stats.triangles / 1000)}k triangles`).join(", ") + ` (${(ms / 1000).toFixed(1)} s)`, "ok");
@@ -434,16 +429,8 @@ outfitBtn.onclick = () => {
 };
 clothesExp.onclick = async () => {
   if (!WHO || !GARMENTS.children.length) return status("make a character and dress it first", "bad");
-  const out = [`# ${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame`];
-  let base = 0;
-  for (const m of GARMENTS.children) {
-    const P = m.geometry.attributes.position.array, T = m.geometry.index.array;
-    out.push(`o ${m.name}`, `# colour #${m.material.color.getHexString()}`);
-    for (let i = 0; i < P.length; i += 3) out.push(`v ${P[i].toFixed(5)} ${P[i + 1].toFixed(5)} ${P[i + 2].toFixed(5)}`);
-    for (let t = 0; t < T.length; t += 3) out.push(`f ${T[t] + 1 + base} ${T[t + 1] + 1 + base} ${T[t + 2] + 1 + base}`);
-    base += P.length / 3;
-  }
-  const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_clothes.obj`)}`, out.join("\n") + "\n");
+  const text = LOOK.objText(GARMENTS.children, `${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame`);
+  const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_clothes.obj`)}`, text);
   status(`wrote ${r.path}`, "ok");
 };
 

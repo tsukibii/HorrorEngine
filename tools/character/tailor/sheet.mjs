@@ -1,7 +1,7 @@
 // A contact sheet of the tailor's clothes on a body, rendered with three.js in headless Chromium (Playwright):
 // front, three-quarter, side and back, full length and close, so a garment is reviewed by looking, not by guessing.
 //
-//   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine] [--height 1.62]
+//   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_feminine|slim_masculine] [--height 1.62]
 //        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close]
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
@@ -9,7 +9,7 @@ import { createServer } from "http";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { createRequire } from "module";
-import { loadMhr, mhrBody, ROOT } from "./node.mjs";
+import { loadMhr, mhrBody, bodyWeights, ROOT } from "./node.mjs";
 import * as TAILOR from "../tailor.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i < 0 ? d : process.argv[i + 1] ?? true; };
@@ -17,13 +17,12 @@ const has = k => process.argv.includes("--" + k);
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const designs = JSON.parse(readFileSync(join(CLOTHES, "designs.json"))).designs;
 const outfits = JSON.parse(readFileSync(join(CLOTHES, "outfits.json"))).outfits;
-const presets = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_presets.json"))).presets;
-const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", bodyName === "masculine" ? 1.76 : bodyName === "feminine" ? 1.62 : 1.7));
+const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculine/.test(bodyName) ? 1.76 : /feminine/.test(bodyName) ? 1.62 : 1.7));
 const list = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 
-const b = mhrBody(loadMhr(), presets[bodyName] || [], H);
+const b = mhrBody(loadMhr(), bodyWeights(bodyName), H);
 const t0 = Date.now(), B = TAILOR.body(b.P, b.T), worn = TAILOR.dress(B, list, designs);
 const stats = worn.map(g => `${g.name} ${g.stats.triangles} tris ${g.stats.ms} ms`);
 console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
@@ -31,9 +30,9 @@ console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
 // everything as one binary: [body, part, part...], each {color, P (f32), T (u32)}
 const HUES = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe"];
 const parts = worn.flatMap(g => g.parts).map((q, i) => has("debug") && /_/.test(q.name) ? { ...q, color: HUES[i % HUES.length] } : q);   // --debug: each detail its own colour
-const meshes = [{ color: "#c8a28c", P: b.P, T: b.T, S: new Float32Array(b.P.length / 3).fill(1), skin: true }, ...parts];
-const head = meshes.map(m => ({ color: m.color, skin: !!m.skin, np: m.P.length, nt: m.T.length }));
-const bin = Buffer.concat(meshes.flatMap(m => [Buffer.from(new Float32Array(m.P).buffer), Buffer.from(new Uint32Array(m.T).buffer), Buffer.from(new Float32Array(m.S).buffer)]));
+const KEYS = [["P", Float32Array], ["T", Uint32Array], ["N", Float32Array], ["UV", Float32Array], ["PART", Float32Array], ["S", Float32Array]];
+const head = parts.map(q => ({ name: q.name, color: q.color, fabric: q.fabric, n: Object.fromEntries(KEYS.map(([k]) => [k, q[k].length])) }));
+const bin = Buffer.concat([Buffer.from(new Float32Array(b.P).buffer), Buffer.from(new Uint32Array(b.T).buffer), ...parts.flatMap(q => KEYS.map(([k, A]) => Buffer.from(new A(q[k]).buffer)))]);
 const views = has("chest")
   ? [["front", 0, 1.3, 0.5], ["3/4", 45, 1.3, 0.5], ["side", 90, 1.3, 0.5], ["back", 180, 1.3, 0.5], ["low", 20, 0.85, 0.6]]
   : has("close")
@@ -43,7 +42,8 @@ const page = `<!doctype html><html><head><style>body{margin:0;background:#20232a
 <script type="importmap">{"imports":{"three":"/three.js"}}</script></head><body>
 <script type="module">
 import * as THREE from "three";
-const head = ${JSON.stringify(head)}, views = ${JSON.stringify(views)}, S = ${size}, H = ${H};
+import * as LOOK from "/tailor/look.js";
+const head = ${JSON.stringify(head)}, views = ${JSON.stringify(views)}, S = ${size}, H = ${H}, NB = [${b.P.length}, ${b.T.length}], LOOKS = ${JSON.stringify(has("uv") ? { debug: "uv" } : {})};
 const buf = await (await fetch("/data.bin")).arrayBuffer();
 const W = S * views.length, R = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 R.setSize(W, Math.round(S * 1.5)); document.body.appendChild(R.domElement); R.setScissorTest(true);
@@ -52,12 +52,12 @@ scene.add(new THREE.HemisphereLight("#dfe6f0", "#3a3530", 1.3));
 const key = new THREE.DirectionalLight("#fff4e8", 2.2); key.position.set(1.5, 3, 2.5); scene.add(key);
 const rim = new THREE.DirectionalLight("#bcd0ff", 1.0); rim.position.set(-2, 2, -2.5); scene.add(rim);
 let o = 0;
+const take = (A, n) => { const a = new A(buf, o, n); o += n * 4; return a; };
+const body = new THREE.BufferGeometry(); body.setAttribute("position", new THREE.BufferAttribute(take(Float32Array, NB[0]), 3)); body.setIndex(new THREE.BufferAttribute(take(Uint32Array, NB[1]), 1)); body.computeVertexNormals();
+scene.add(new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: "#c8a28c", roughness: 0.6 })));
 for (const m of head) {
-  const P = new Float32Array(buf, o, m.np); o += m.np * 4; const T = new Uint32Array(buf, o, m.nt); o += m.nt * 4; const S = new Float32Array(buf, o, m.np / 3); o += m.np / 3 * 4;
-  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(new THREE.BufferAttribute(T, 1)); g.computeVertexNormals();
-  const C = new Float32Array(m.np); for (let i = 0; i < S.length; i++) C[i * 3] = C[i * 3 + 1] = C[i * 3 + 2] = S[i];
-  g.setAttribute("color", new THREE.BufferAttribute(C, 3));
-  scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: m.color, roughness: m.skin ? 0.6 : 0.88, vertexColors: true })));
+  const q = { name: m.name, color: m.color, fabric: m.fabric, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
+  scene.add(LOOK.mesh(q, m.name, LOOKS));
 }
 const cam = new THREE.PerspectiveCamera(28, 1 / 1.5, 0.05, 20);
 views.forEach(([name, deg, ty, dist], i) => {
@@ -71,6 +71,7 @@ const three = readFileSync(join(ROOT, "tools", "director", "vendor", "three.modu
 const server = createServer((q, r) => {
   if (q.url === "/") { r.writeHead(200, { "content-type": "text/html" }); return r.end(page); }
   if (q.url === "/three.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(three); }
+  if (/^\/tailor\/[a-z]+\.js$/.test(q.url)) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(readFileSync(join(ROOT, "tools", "character", q.url))); }
   if (q.url === "/data.bin") { r.writeHead(200, { "content-type": "application/octet-stream" }); return r.end(bin); }
   r.writeHead(404); r.end();
 }).listen(0, "127.0.0.1");

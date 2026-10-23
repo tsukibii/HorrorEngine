@@ -44,3 +44,13 @@ export function objText(parts, header = "") {
   return out.join("\n") + "\n";
 }
 export const writeObj = (path, parts, header) => writeFileSync(path, objText(parts, header));
+
+/** a test body's weights by name: MHR's presets (average, feminine, masculine) or the tailor's own (tailor/bodies.json: slim_feminine, slim_masculine) */
+export function bodyWeights(name) {
+  if (name === "average") return [];
+  const pre = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_presets.json"))).presets;
+  if (pre[name]) return pre[name];
+  const own = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "bodies.json"))).bodies;
+  if (own[name]) return own[name];
+  throw new Error(`no body called ${name}: ${["average", ...Object.keys(pre), ...Object.keys(own)].join(", ")}`);
+}

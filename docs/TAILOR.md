@@ -18,7 +18,8 @@ simulated. It replaces the GarmentCode route, which was removed.
 | Refine | split in four (about 5 mm triangles), settled four more rounds at that size, then cut along the lines: the cut edges are interpolated, so every hem and neckline is one clean curve | `shell`, `mesh.js` `cut` |
 | Skirts | rings hung from the waist instead: at every height the convex outline of the body (both legs, and what's worn under it) plus the ease, never narrowing below the hips (`flare` widens it; `taper` makes a pencil skirt), knife or box `pleats` stitched down to the hip, or `waves` | `skirt` |
 | Details | parts of the garment's outside lifted a few millimetres off it: `neckband`, `collar` (rolled at the neck, points at the front), `placket` (a button band, or a fly with `x`), `band` (on the waistline: a waistband, a belt; or between two heights: a hem band), `cuff` (sleeves or trouser legs), `pocket` (a rounded rectangle seen from the front, the back or the side: patch pockets, flaps, cargo pockets); `buttons` are discs down a line (one big one is a buckle) | `detail`, `buttons` |
-| Thickness | an inner surface and a crisp rim round every open edge | `fit.js` `thicken` |
+| Thickness | an inner surface and a crisp rim round every open edge; the rim and the outside's last row of points are shaded darker (`S`), so hems, pockets and collars read as stitched edges with a shadow | `fit.js` `thicken` |
+| Fabric coordinates | every point gets (u, v) in metres, laid the way a sewn garment's panels lie: the torso a front and a back panel (u the arc length across each row's own outline from the middle, over the shoulders a yoke by x; side seams), a sleeve round the arm's line (the seam underneath), a trouser leg round its own line from the waist down (the seam at the back, a stocking's), a skirt a front and a back panel spreading to the hem; every ring's own radius, so a tile is its real size all round. The mesh is split exactly along each seam first, so seams are clean lines; normals come from the joined mesh, so the light doesn't break there. `sheet.mjs --uv` shows them as a 5 cm checker | `tailor/uv.js`, `frame.js` `torsoArcs` |
 
 Layering is by order: each garment goes over the ones before it. What's under it is measured as a thickness over the
 body (how far out the earlier garments reach at each point of the skin), and the new garment's ease starts there.
@@ -62,8 +63,11 @@ skirt; a pencil skirt is a design of its own.
   in `tailor/worker.js` and refits on its own when the body's shape or height changes. What's worn is saved in
   `character.json` (`clothes`); the meshes are made live, like the hair styles, so there's nothing to go stale.
 - **Node:** `tools/character/tailor.js` is a plain module. `node tools/character/tailor/sheet.mjs --outfit "work
-  uniform" [--body feminine|masculine|average] [--height 1.62] [--close | --chest] [--out x.png]` renders a contact
-  sheet (Playwright); `node tools/character/tailor/check.mjs` is TAILOR.
+  uniform" [--body feminine|masculine|average|slim_feminine|slim_masculine] [--height 1.62] [--close | --chest]
+  [--uv | --debug] [--out x.png]` renders a contact sheet (Playwright); `node tools/character/tailor/check.mjs` is
+  TAILOR, on five bodies: MHR's average, its feminine and masculine presets, and the slim ones in
+  `tailor/bodies.json` (fitted with `mhr.py`'s `fit_measures` to a waist and hips 15 to 20% in).
+- **Export clothes OBJ** carries the fabric coordinates (`vt`, metres) and the normals (`vn`).
 
 ## 4. Not done yet
 
@@ -71,7 +75,6 @@ skirt; a pencil skirt is a design of its own.
   can be copied from the skin under it (the crop, the split and the cut each keep where their points came from). Then the clothes go to Unreal
   as skeletal meshes on the character's skeleton. A skirt's hem or a coat's tails can take Chaos Cloth painted onto
   that mesh. Hide the skin under tight clothes (Woohill's `hideSkinUnderCloth`) so it can't poke through in motion.
-- **UVs and fabric:** no UVs yet; Woohill tiles a fabric in metres per piece (`docs/CLOTHING_PIPELINE.md` there). A
-  fabric normal (weave, denim, knit) would carry most of the remaining look.
+- **Fabric:** the coordinates are there (§1); the fabrics, patterns and prints on them come next.
 - **Seams and creases** are only where details are lifted; stitch lines and folds would be a normal map.
 - Hair doesn't collide with the clothes yet.

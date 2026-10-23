@@ -39,10 +39,15 @@ export class Line {
     }
     return [bt, Math.sqrt(best), bs];
   }
+  seg(t) { const i = this.t.findIndex(v => v >= t); return clamp(i < 0 ? this.p.length - 1 : i, 1, this.p.length - 1); }
   at(t) {
-    const i = clamp(this.t.findIndex(v => v >= t), 1, this.p.length - 1), a = this.p[i - 1], b = this.p[i];
+    const i = this.seg(t), a = this.p[i - 1], b = this.p[i];
     const u = (t - this.t[i - 1]) / ((this.t[i] - this.t[i - 1]) || 1);
     return [0, 1, 2].map(k => a[k] + (b[k] - a[k]) * u);
+  }
+  dir(t) {
+    const i = this.seg(t), a = this.p[i - 1], b = this.p[i], d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(...d) || 1;
+    return d.map(v => v / l);
   }
 }
 
@@ -112,16 +117,23 @@ export function frame(P, T) {
   }
 
   // the legs: their loops' centres from the crotch to the floor
-  const legs = {};
+  const legs = {}, legLines = {};
   for (const side of ["L", "R"]) {
     const pts = S.leg[side].slice().sort((a, b) => b.y - a.y);
+    const byRow = new Map(); for (const p of pts) { const q = byRow.get(p.y); if (!q || p.area > q.area) byRow.set(p.y, p); }
+    legLines[side] = new Line(resample([...byRow.values()].sort((a, b) => b.y - a.y).map(p => [p.cx, p.y, p.cz]), 0.02 * s, 6));
     const knee = pts.filter(p => p.y > 0.22 * H && p.y < 0.34 * H).reduce((m, p) => (!m || p.area < m.area ? p : m), null);
     legs[side] = { knee: knee ? knee.y : 0.28 * H, ankle: 0.05 * H };
   }
 
   const F = {
     H, s, scan: S, neck, torsoAxis, crotchY: S.crotchY, armpitY: S.armpitY, waistY: waist.y, hipY: hips.y, bustY: bust.y, neckBaseY,
-    kneeY: avg([legs.L.knee, legs.R.knee]), ankleY: 0.045 * H, arms, legs,
+    kneeY: avg([legs.L.knee, legs.R.knee]), ankleY: 0.045 * H, arms, legs, legLines,
+    // the torso's panels as arc lengths, the parts' radii: fabric coordinates in metres (tailor/uv.js)
+    torsoU: torsoArcs(S, torsoAxis, S.crotchY - 0.06 * s, S.armpitY - 0.015 * s),
+    torsoR: avg(tor.filter(t => t.y > waist.y && t.y < S.armpitY).map(t => t.l.perim / (2 * Math.PI))),
+    armR: avg(arms.L.profile.filter(([t]) => t > arms.L.seam && t < arms.L.wrist).map(p => p[1])) + 0.01 * s,
+    legR: avg(S.leg.L.filter(p => p.y > 0.3 * H).map(p => Math.sqrt(p.area / Math.PI))),
     /** the arm a point belongs to ("L", "R") with its t along that arm, or null for the rest of the body */
     arm(x, y, z) {
       if (y < S.crotchY || Math.abs(x) < 0.12 * s) return null;
@@ -132,6 +144,63 @@ export function frame(P, T) {
     theta(x, y, z) { const [cx, cz] = torsoAxis(y); return Math.atan2(x - cx, z - cz); },
   };
   return F;
+}
+
+/** the torso's outline at every row as arc lengths by angle round its middle, from the front's middle (the front half,
+    +-pi/2) and from the back's (the back half): u(x, y, z) is how far across a panel laid on the body a point is, in
+    metres, the way a flat front and back sewn at the sides would lie */
+function torsoArcs(S, axis, y0, y1) {
+  const rows = [];
+  for (const r of S.rows) {
+    if (r.y < y0 || r.y > y1) continue;
+    const l = S.central(r); if (!l) continue;
+    const [cx, cz] = axis(r.y);
+    const pts = l.pts.map(p => [Math.atan2(p[0] - cx, p[1] - cz), p[0], p[1]]).sort((a, b) => a[0] - b[0]);
+    const ang = [], arc = []; let acc = 0;
+    for (let i = 0; i < pts.length; i++) { if (i) acc += Math.hypot(pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]); ang.push(pts[i][0]); arc.push(acc); }
+    acc += Math.hypot(pts[0][1] - pts[pts.length - 1][1], pts[0][2] - pts[pts.length - 1][2]);   // round the back's middle to the start
+    ang.push(pts[0][0] + 2 * Math.PI); arc.push(acc);
+    const at = a => { let lo = 0, hi = ang.length - 1; if (a < ang[0]) a += 2 * Math.PI; if (a >= ang[hi]) return arc[hi];
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ang[m] <= a) lo = m; else hi = m; } return arc[lo] + (arc[hi] - arc[lo]) * (a - ang[lo]) / ((ang[hi] - ang[lo]) || 1); };
+    const zero = at(0), pi = at(Math.PI), total = acc;
+    const point = a => { let lo = 0, hi = ang.length - 2; if (a < ang[0]) a += 2 * Math.PI;   // the outline's point at an angle
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ang[m] <= a) lo = m; else hi = m; }
+      const p0 = pts[lo], p1 = pts[(lo + 1) % pts.length], u = (a - ang[lo]) / ((ang[lo + 1] - ang[lo]) || 1); return [p0[1] + (p1[1] - p0[1]) * u, p0[2] + (p1[2] - p0[2]) * u]; };
+    rows.push({ y: r.y, cx, cz, at, zero, pi, total, point });
+  }
+  const HALF = Math.PI / 2;
+  const one = (R, x, z, back) => {
+    let a = Math.atan2(x - R.cx, z - R.cz);
+    if (!back) return R.at(Math.max(-HALF, Math.min(HALF, a))) - R.zero;            // the front: from its middle
+    if (Math.abs(a) < HALF) a = a < 0 ? -HALF : HALF;
+    let b = R.at(a) - R.pi;                                                          // the back: from its middle (a = +-pi), round the wrap
+    if (b > R.total / 2) b -= R.total; else if (b < -R.total / 2) b += R.total;
+    return 2 - b;                                                                    // a panel of its own, mirrored to read from behind
+  };
+  // above the top row (the armpit's) a yoke: that row's outline by x, so the lines stay upright over the shoulders
+  const top = rows[rows.length - 1], yoke = top && (back => {
+    const xs = [], us = [];
+    for (let a = -HALF; a <= HALF + 1e-9; a += Math.PI / 180) {
+      const aa = back ? (a < 0 ? -Math.PI - a : Math.PI - a) : a;
+      const pt = top.point(aa); xs.push(pt[0]); us.push(one(top, pt[0], pt[1], back));
+    }
+    const ord = xs.map((v, i) => i).sort((i, j) => xs[i] - xs[j]), X = ord.map(i => xs[i]), U = ord.map(i => us[i]);
+    return x => { const n = X.length; if (x <= X[0]) return U[0] - (X[0] - x) * Math.sign(U[n - 1] - U[0]); if (x >= X[n - 1]) return U[n - 1] + (x - X[n - 1]) * Math.sign(U[n - 1] - U[0]);
+      let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (X[m] <= x) lo = m; else hi = m; } return U[lo] + (U[hi] - U[lo]) * (x - X[lo]) / ((X[hi] - X[lo]) || 1); };
+  });
+  const yokes = top ? [yoke(false), yoke(true)] : null;
+  return (x, y, z, back = z < (rows[0]?.cz ?? 0)) => {
+    if (!rows.length) return x;
+    const row = y2 => {
+      if (y2 <= rows[0].y) return one(rows[0], x, z, back);
+      if (y2 >= top.y) return one(top, x, z, back);
+      let lo = 0, hi = rows.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (rows[m].y <= y2) lo = m; else hi = m; }
+      const u = (y2 - rows[lo].y) / ((rows[hi].y - rows[lo].y) || 1);
+      return one(rows[lo], x, z, back) * (1 - u) + one(rows[hi], x, z, back) * u;
+    };
+    const w = Math.max(0, Math.min(1, (y - (top.y - 0.04)) / 0.04));                // into the yoke over the last 4 cm
+    return w <= 0 ? row(y) : row(y) * (1 - w) + yokes[back ? 1 : 0](x) * w;
+  };
 }
 
 /** a named height on this body: "waist", "hip+0.03", "crotch-0.1", or a number (metres) */

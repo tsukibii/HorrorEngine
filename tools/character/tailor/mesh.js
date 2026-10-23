@@ -16,7 +16,8 @@ export function normals(P, T) {
     for (const i of [a, b, c]) { N[i] += nx; N[i + 1] += ny; N[i + 2] += nz; }
   }
   for (let i = 0; i < N.length; i += 3) {
-    const l = Math.hypot(N[i], N[i + 1], N[i + 2]) || 1; N[i] /= l; N[i + 1] /= l; N[i + 2] /= l;
+    const l = Math.hypot(N[i], N[i + 1], N[i + 2]);
+    if (l > 1e-12) { N[i] /= l; N[i + 1] /= l; N[i + 2] /= l; } else { N[i] = 0; N[i + 1] = 1; N[i + 2] = 0; }
   }
   return N;
 }
@@ -167,10 +168,13 @@ export function cut(P, T, v) {
     const k = a < b ? a * n + b : b * n + a; let m = cutv.get(k);
     if (m === undefined) {
       const t = v[a] / (v[a] - v[b]), q = [P[a * 3] + (P[b * 3] - P[a * 3]) * t, P[a * 3 + 1] + (P[b * 3 + 1] - P[a * 3 + 1]) * t, P[a * 3 + 2] + (P[b * 3 + 2] - P[a * 3 + 2]) * t];
-      m = out.length / 3; out.push(...q); from.push([a, b, t]); cutv.set(k, m);
+      if (t < 1e-5) m = keep(a);                                     // the line goes through the kept point itself
+      else { m = out.length / 3; out.push(...q); from.push([a, b, t]); }
+      cutv.set(k, m);
     }
     return m;
   };
+  const push = (a, b, c) => { if (a !== b && b !== c && a !== c) tri.push(a, b, c); };
   for (let t = 0; t < T.length; t += 3) {
     const a = T[t], b = T[t + 1], c = T[t + 2], ia = v[a] >= 0, ib = v[b] >= 0, ic = v[c] >= 0, cnt = ia + ib + ic;
     if (cnt === 0) continue;
@@ -179,14 +183,45 @@ export function cut(P, T, v) {
     let A = a, B = b, C = c, ka = ia, kb = ib, kc = ic;
     if (cnt === 1) {                                              // one kept: a small triangle
       if (kb) { A = b; B = c; C = a; } else if (kc) { A = c; B = a; C = b; }
-      const p = keep(A), q = mid(A, B), r = mid(A, C); tri.push(p, q, r);
+      const p = keep(A), q = mid(A, B), r = mid(A, C); push(p, q, r);
     } else {                                                      // two kept: a quad cut in two
       if (!ia) { A = a; B = b; C = c; } else if (!ib) { A = b; B = c; C = a; } else { A = c; B = a; C = b; }
       const q = keep(B), r = keep(C), p1 = mid(B, A), p2 = mid(C, A);
-      tri.push(q, r, p2, q, p2, p1);
+      push(q, r, p2); push(q, p2, p1);
     }
   }
   return { P: new Float32Array(out), T: new Uint32Array(tri), from };
+}
+
+/** Split a mesh along v = 0, keeping both sides: the triangles it crosses are cut in three, the new points shared
+    along the line, so a seam can follow it exactly. `S` (a value per vertex) is carried. Returns {P, T, S} */
+export function split(P, T, v, S = null) {
+  const n = P.length / 3, out = Array.from(P), sh = S ? Array.from(S) : null, mids = new Map(), tri = [];
+  const mid = (a, b) => {
+    const k = a < b ? a * n + b : b * n + a; let m = mids.get(k);
+    if (m === undefined) {
+      const t = v[a] / (v[a] - v[b]);
+      if (t < 1e-5) m = a; else if (t > 1 - 1e-5) m = b;            // the line goes through a point: no new one there
+      else {
+        m = out.length / 3;
+        out.push(P[a * 3] + (P[b * 3] - P[a * 3]) * t, P[a * 3 + 1] + (P[b * 3 + 1] - P[a * 3 + 1]) * t, P[a * 3 + 2] + (P[b * 3 + 2] - P[a * 3 + 2]) * t);
+        if (sh) sh.push(S[a] + (S[b] - S[a]) * t);
+      }
+      mids.set(k, m);
+    }
+    return m;
+  };
+  const push = (a, b, c) => { if (a !== b && b !== c && a !== c) tri.push(a, b, c); };
+  for (let t = 0; t < T.length; t += 3) {
+    const a = T[t], b = T[t + 1], c = T[t + 2], sa = v[a] >= 0, sb = v[b] >= 0, sc = v[c] >= 0;
+    if (sa === sb && sb === sc) { tri.push(a, b, c); continue; }
+    // rotate so A is alone on its side
+    let A = a, B = b, C = c;
+    if (sb !== sa && sb !== sc) { A = b; B = c; C = a; } else if (sc !== sa && sc !== sb) { A = c; B = a; C = b; }
+    const p = mid(A, B), q = mid(A, C);
+    push(A, p, q); push(p, B, C); push(p, C, q);
+  }
+  return { P: new Float32Array(out), T: new Uint32Array(tri), S: sh ? new Float32Array(sh) : null };
 }
 
 /** edges used by one triangle, chained into loops of vertex indices */
