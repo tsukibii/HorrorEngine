@@ -126,3 +126,6 @@ the fix.
   whole view doesn't read as "I'm in a locker" either: the Pilot's locker scene looked like standing in the hall.
   Slats (an alpha map of bars, drawn both sides) read at once and keep the room visible between them
   (`stage.seeThrough`).
+- **Measure a lens's barrel on a lone straight line, not a grid** (UltraVHS): following the darkest pixel down a
+  checker grid slips onto the crossing lines and fits k twice too big. A chart of vertical lines only, each traced in
+  a narrow window, gives k back exactly (0.085 in, 0.085 out).

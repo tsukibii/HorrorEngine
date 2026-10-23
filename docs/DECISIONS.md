@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (plugins for any project; the VHS look)
+
+- **`UnrealPlugins/` holds plugins that work in any Unreal project**, not only HorrorStudio; each comes with
+  instructions for Claude to add it to a project.
+- **The first is UltraVHS**, a rebuild of the user's lost "ultra realistic VHS" preset from a capture of it: a natural
+  camcorder look with a handheld camera (head bob). C++ is fine.
+
 ## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
 
 - **Interactables are buttons** (E, or a click): no Amnesia-style dragging of doors and drawers, no sliders. A hiding
