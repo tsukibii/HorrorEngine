@@ -394,3 +394,12 @@ script, grep for it (`\bNAME\b`).
   cut was distorted. Found once on MHR's base face, each point a place along a mesh edge, it rides any shape or fit.
   And an additive expression made for the base face doesn't close a fitted one: the blink has to take the lids from
   the fit's own offsets to their common one as it closes. Test a feature on a fitted face, not only the bare one.
+- **Find what makes a spike before smoothing it:** the baked hair's sharp tents looked like the bake's fault, and three
+  smoothers in turn made it worse (easing curves cut into the skull or swung long strands out; flattening bumps
+  flattened the roots' lift and opened the partings). Measured (bumps and corners per card, live against baked, every
+  point kept against 8), the ring round the crown was in the styled hair itself, and only a few tents came from the
+  thinning. What worked: keep points where a card bends, and press what stands out of the hair's surface in towards it,
+  proportionally, eased along the card.
+- **A mesh builder that assumes equal cards breaks when they aren't:** the cards' triangles were offset by `j * n * 2`,
+  every card the same length; once the bake kept more points on some cards, triangles joined unrelated cards in long
+  pale bands. Offset by a running count.

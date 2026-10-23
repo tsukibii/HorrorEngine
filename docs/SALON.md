@@ -281,10 +281,23 @@ Character Studio shows it still on the head for now; Unreal gets it with the fin
   characters, heavier where few are on screen (saved with the hair, the preview follows it), cut out at 0.4
   and tinted by vertex colours; the darkened scalp is its own mesh, `hair_scalp`. `hime_demo`: 5 410 vertices live,
   1 440 baked, 503 KB.
+- **Smoothing** (2026-10-23; only in the bake, the hair you edit stays as it is). **Smooth curves**: evenly spaced, an
+  arch over the roots or a bend could be cut to a sharp tent; while a kept corner turns more than 60 degrees (down to 15
+  at 1), the point beside it the kept line misses most (its distance, plus how far the card's edge moves where it
+  twists) is kept too. The vertices go only where cards bend (the test's hair at 1: 256 -> 456 points, corners over 45
+  degrees 21 -> 14; the long cut at 0.5 looks like the bake that keeps every point). **Tame flyaways**: the hair's
+  outer surface is its radius in each direction from the head's middle (a 24 x 48 grid, the 70th percentile, the gaps
+  filled and blurred); what stands beyond it (by 12 mm at the least taming, 2 at the most) is pressed in towards it by
+  up to 85 %, so the layers keep their order, the pull eased along each card so it bends into it instead of buckling,
+  never nearer the head than 3 mm, nothing below the chin: a ring of roots standing round the crown comes down. Tried
+  and dropped: easing each card's curve (cut corners pulled cards into the skull; kept at their lengths, long strands
+  swung out), flattening each card's bumps (it flattened the roots' lift too and opened the partings), squaring a
+  pulled card's width to its new line (it flipped where the card turned: shards).
 - **Preview the bake** shows only the bake: the file it would write, read back (three.js's GLTFLoader), the hair you
   edit and its live scalp hidden; it's made again a moment after the hair changes (a lock, the padding, the scalp, the
   look), left-drag only turns the head, and a drawing tool (or Gravity) ends it. It's the file's own look (the strand
-  atlas on a plain material, as the Character Studio shows it), not the salon's hair shader.
+  atlas on a plain material, as the Character Studio shows it), not the salon's hair shader. Two changes at once (a
+  tick and a slider) start two previews; only the newest is shown.
 
 ## The look (2026-10-22)
 
@@ -340,7 +353,8 @@ skin weights), `hairtex.js` (the strand atlas, the looks), `hairshader.js` (the 
   thickness applied); physics on
   a bundle (a shake swings its tip 10 cm, the root stays, still settles it); the bake (one skinned mesh, one static
   with fewer vertices, the scalp unlit and blended, a glTF whose bind pose is exact and whose root bone bends it, the
-  look's texture in it); the
+  look's texture in it); the bake's smoothing (Smooth curves: more points kept, fewer sharp corners; Tame flyaways:
+  hair brought in only, never nearer the head than 3 mm, nothing below the chin; the hair you edit unchanged); the
   look (the atlas see-through at its tips, every card on the hair shader, a look restyling them); a strand, a sheet and a bundle placed with the mouse; Mirror's twin
   following a pulled handle; no guide point inside the body; undo, redo; the pull (Blender's seven curves exactly, the
   wheel's 1.1 and 1.01, a strand's pull moving its own handles and the next strand's where the smooth falloff says and

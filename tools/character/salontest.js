@@ -606,6 +606,27 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (back.preview || !back.editing || !back.scalp || back.bake) throw new Error(JSON.stringify(back));
     console.log(`       ${shown.baked} baked meshes shown alone; ${c.name}: ${c.bones} bones, bind pose exact (${c.bind.toExponential(1)} m), its root bone turned moves the tip ${(c.moveTip * 100).toFixed(1)} cm and the root ${(c.moveRoot * 1000).toFixed(2)} mm; the swinging lock hidden and shown, the preview followed; detail 16 points ${detail[0]}, every point ${detail[1]}, 8 points ${detail[2]} vertices; the strand tool ended it`);
   });
+  await step("the bake's smoothing: Smooth curves keeps more points only where a card bends sharply, Tame flyaways brings what stands out in (never nearer the head than 3 mm, nothing below the chin), the hair you edit untouched", async () => {
+    const r = await ev(() => {
+      const s = window.__salon, D = s.bakeDebug, COL = s.COL, sets = s.st.locks.filter(l => l.visible && s.EVAL[l.id]).map(l => [s.EVAL[l.id], !!(l.physics && l.physics.on)]);
+      const sig = () => sets.reduce((a, [gs]) => a + gs.reduce((b, G) => b + G.pts.reduce((c, p) => c + p[0] * 1.3 + p[1] * 0.7 + p[2], 0), 0), 0);
+      const corners = out => { let n = 0, pts = 0; for (const G of out.flat()) { pts += G.pts.length; for (let i = 1; i < G.pts.length - 1; i++) {
+        const u = G.pts[i].map((v, k) => v - G.pts[i - 1][k]), w = G.pts[i + 1].map((v, k) => v - G.pts[i][k]), c = (u[0] * w[0] + u[1] * w[1] + u[2] * w[2]) / (Math.hypot(...u) * Math.hypot(...w) || 1);
+        if (Math.acos(Math.max(-1, Math.min(1, c))) > Math.PI / 4) n++; } } return { n, pts }; };
+      const live = sig(), keep = { ...s.st.bake };
+      Object.assign(s.st.bake, { along: 8, full: false, smooth: 0, tame: 0 }); const a = corners(D.bakeCards(sets));
+      s.st.bake.smooth = 1; const b = corners(D.bakeCards(sets));
+      s.st.bake.smooth = 0; s.st.bake.tame = 1;
+      const flat = sets.flatMap(([gs]) => gs), tamed = D.tameGuides(flat, 1); let moved = 0, outward = 0, tooNear = 0, belowChin = 0, most = 0;
+      flat.forEach((G, k) => G.pts.forEach((p, i) => { const q = tamed[k].pts[i], d = Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]); if (d < 1e-7) return; moved++; most = Math.max(most, d);
+        const r0 = Math.hypot(p[0] - COL.C[0], p[1] - COL.C[1], p[2] - COL.C[2]), r1 = Math.hypot(q[0] - COL.C[0], q[1] - COL.C[1], q[2] - COL.C[2]); if (r1 > r0 + 1e-7) outward++;
+        if (D.clearance(q) < Math.min(D.clearance(p), 0.003) - 1e-6) tooNear++; if (p[1] < COL.chin - 0.03) belowChin++; }));
+      Object.assign(s.st.bake, keep);
+      return { a, b, moved, outward, tooNear, belowChin, most, same: Math.abs(sig() - live) < 1e-9 };
+    });
+    if (!(r.b.pts > r.a.pts) || !(r.b.n <= r.a.n) || !(r.moved > 0) || r.outward || r.tooNear || r.belowChin || !r.same) throw new Error("the smoothing: " + JSON.stringify(r));
+    console.log(`       Smooth curves 1: ${r.a.pts} -> ${r.b.pts} points kept, corners over 45 degrees ${r.a.n} -> ${r.b.n}; Tame flyaways 1: ${r.moved} points brought in (up to ${(r.most * 1000).toFixed(0)} mm), none out, none nearer the head than 3 mm; the live hair unchanged`);
+  });
   await step("saved as salon.json and loaded back the same", async () => {
     const before = await ev(() => [window.__salon.st.locks.map(l => [l.id, l.type, l.mirror_of]), window.__salon.st.scalp.thickness, window.__salon.st.layering]);
     await ev(n => { document.querySelector("#hairName").value = n; return window.__salon.save(); }, TEST);

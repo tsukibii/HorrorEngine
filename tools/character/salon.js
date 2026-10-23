@@ -48,7 +48,7 @@ const st = {
   scalp: { on: true, thickness: 0.7, soft: 0.012, colour: null },   // the darkened scalp: under the hair, its roots' colour (or its own), no shine
   roots: { lift: 40, length: 0.02, vary: 0.4 },                     // how hair comes out of the head (salonlib.js's rootBend)
   volume: { thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 },   // Thicken; the base's padding (salonpad.js); Clip blend
-  bake: { along: 8, full: false },     // the bake's points along each card (a swinging lock's at least 12), or every point the salon draws
+  bake: { along: 8, full: false, smooth: 0, tame: 0 },   // the bake's points along each card (a swinging lock's at least 12), or every point; its smoothing
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
 let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select";
@@ -673,16 +673,91 @@ function movePanel() {
 
 // ---- the bake: the swinging locks each a skinned mesh on its chains' bones, everything else one simplified mesh -------
 const BAKE_ALONG_PHYS = 12;
-const resampleGuide = (G, m) => { const n = G.pts.length, ix = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1))); return { pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]), u: G.u, t: G.t && ix.map(i => G.t[i]) }; };
+const resampleGuide = (G, ix) => ({ pts: ix.map(i => G.pts[i]), across: ix.map(i => G.across[i]), width: ix.map(i => G.width[i]), u: G.u, t: ix.map(i => G.t ? G.t[i] : i / (G.pts.length - 1)) });
+function keepWhere(G, m, lim) {                                        // which points a card keeps: m evenly along it, then more where it still turns sharper than lim
+  // Smooth curves: evenly spaced, an arch over the roots or a bend can be cut to a sharp tent. While a kept corner
+  // turns more than lim, the point beside it the kept line misses by most (its distance, plus how far the card's edge
+  // moves where it twists) is kept too: the bend stays round, and the vertices go only where it bends
+  const n = G.pts.length, keep = [...Array(m)].map((_, i) => Math.round(i * (n - 1) / (m - 1)));
+  if (!lim) return keep;
+  const err = (a, b, i) => {
+    const A = G.pts[a], B = G.pts[b], P = G.pts[i], ab = SL.sub(B, A), L2 = SL.dot(ab, ab), f = L2 > 0 ? Math.max(0, Math.min(1, SL.dot(SL.sub(P, A), ab) / L2)) : 0;
+    const off = SL.len(SL.sub(P, SL.add(A, SL.mul(ab, f)))), x = SL.norm(SL.add(SL.mul(G.across[a], 1 - f), SL.mul(G.across[b], f)));
+    return off + SL.len(SL.sub(G.across[i], x)) * G.width[i] * 0.5;
+  };
+  const worstIn = (a, b) => { let best = -1, bi = -1; for (let i = a + 1; i < b; i++) { const e = err(a, b, i); if (e > best) { best = e; bi = i; } } return [best, bi]; };
+  for (let guard = 0; guard < n; guard++) {
+    keep.sort((x, y) => x - y); let worst = lim, at = -1;
+    for (let k = 1; k < keep.length - 1; k++) {
+      if (keep[k + 1] - keep[k - 1] <= 2) continue;                    // nothing left to add on either side
+      const u = SL.norm(SL.sub(G.pts[keep[k]], G.pts[keep[k - 1]])), v = SL.norm(SL.sub(G.pts[keep[k + 1]], G.pts[keep[k]]));
+      const ang = Math.acos(Math.max(-1, Math.min(1, SL.dot(u, v)))); if (ang > worst) { worst = ang; at = k; }
+    }
+    if (at < 0) break;
+    const sides = [[keep[at - 1], keep[at]], [keep[at], keep[at + 1]]].filter(([a, b]) => b - a > 1).map(([a, b]) => worstIn(a, b));
+    keep.push(sides.sort((x, y) => y[0] - x[0])[0][1]);
+  }
+  return keep.sort((x, y) => x - y);
+}
 function bakeGuide(G, phys) {                                          // a card as the bake keeps it: fewer points along it, or all of them
   const n = G.pts.length, m = st.bake.full ? n : Math.min(n, phys ? Math.max(BAKE_ALONG_PHYS, st.bake.along) : st.bake.along);
-  return m >= n ? G : resampleGuide(G, m);
+  const sm = st.bake.smooth || 0, lim = sm > 0 ? (60 - 45 * sm) * Math.PI / 180 : 0;   // Smooth curves: no kept corner sharper than 60 degrees, down to 15
+  return m >= n ? G : resampleGuide(G, keepWhere(G, m, lim));
+}
+// Tame flyaways (the bake only; the live hair is left as it is): hair brought in towards the head, along the line from
+// its middle, never nearer it than it was nor than 3 mm
+function clearance(p) { if (p[1] < COL.chin - 0.03) return Infinity; const d = SL.sub(p, COL.C), R = COL.radius(d); return R > 0 ? SL.len(d) - R : Infinity; }
+function lowered(p, h) {                                               // p brought in to height h above the head
+  const d = SL.sub(p, COL.C), r = SL.len(d), R = COL.radius(d);
+  return SL.add(COL.C, SL.mul(d, (R + h) / (r || 1e-9)));
+}
+function tameGuides(list, amount) {                                    // what stands out of the hair's outer surface brought in (the spikes on the outline)
+  if (amount <= 0 || list.length < 4) return list;
+  // the surface: for each direction from the head's middle (a 24 x 48 latitude-longitude grid) the hair's radius there
+  // at its 70th percentile, the gaps filled from their neighbours and blurred. What stands further out than it (beyond
+  // 12 mm of slack at the least taming, 2 at the most) is pressed in towards it, up to 85% (layers keep their order,
+  // nothing collapses onto one height), the pull eased along each card so it bends into it instead of buckling.
+  // Below the chin (the shoulders, the back) is left as it is
+  const C = COL.C, NB = 24, NL = 48;
+  const cell = p => { const d = SL.sub(p, C), r = SL.len(d) || 1e-9, lat = Math.acos(Math.max(-1, Math.min(1, d[1] / r))), lon = Math.atan2(d[0], d[2]);
+    return [Math.min(NB - 1, Math.floor(lat / Math.PI * NB)), Math.floor((lon + Math.PI) / (2 * Math.PI) * NL) % NL, r]; };
+  const bins = Array.from({ length: NB * NL }, () => []);
+  for (const G of list) for (const p of G.pts) if (clearance(p) < Infinity) { const [a, b, r] = cell(p); bins[a * NL + b].push(r); }
+  let sh = bins.map(v => v.length >= 6 ? v.sort((x, y) => x - y)[Math.floor(v.length * 0.7)] : NaN);
+  for (let pass = 0; pass < 4; pass++) {                                 // the gaps from their neighbours, then a blur
+    const nx = sh.slice();
+    for (let a = 0; a < NB; a++) for (let b = 0; b < NL; b++) {
+      let s2 = 0, w = 0;
+      for (let da = -1; da <= 1; da++) for (let db = -1; db <= 1; db++) { const aa = a + da; if (aa < 0 || aa >= NB) continue; const v = sh[aa * NL + (b + db + NL) % NL]; if (v > 0) { const k = da || db ? 1 : 2; s2 += v * k; w += k; } }
+      nx[a * NL + b] = w ? s2 / w : NaN;
+    }
+    sh = nx;
+  }
+  const tol = 0.002 + 0.01 * (1 - amount), k = 0.85 * amount;
+  return list.map(G => {
+    const n = G.pts.length, h = G.pts.map(clearance);
+    let d = G.pts.map((p, i) => { if (!i || !(h[i] < Infinity)) return 0; const [a, b, r] = cell(p), s0 = sh[a * NL + b]; return s0 > 0 ? Math.max(0, r - s0 - tol) * k : 0; });
+    if (!d.some(x => x > 1e-5)) return G;
+    for (let pass = 0; pass < 3; pass++) d = d.map((x, i) => i && h[i] < Infinity ? Math.max(x, 0.5 * x + 0.25 * (d[i - 1] + (i < n - 1 ? d[i + 1] : x))) : 0);   // eased along the card
+    let moved = false;
+    const pts = G.pts.map((p, i) => { if (!(d[i] > 1e-5)) return p; const t = Math.max(h[i] - d[i], Math.min(h[i], 0.003)); if (!(h[i] - t > 1e-5)) return p; moved = true; return lowered(p, t); });
+    return moved ? { ...G, pts } : G;                                  // the width direction kept (squared to the new line it can flip where the card turns)
+  });
+}
+function bakeCards(sets) {                                             // [[guides, phys], ...] -> the same, as the bake keeps them: tamed, fewer points (the bends kept round)
+  const flat = [], phys = [], owner = [];
+  sets.forEach(([gs, ph], si) => gs.forEach(G => { flat.push(G); phys.push(ph); owner.push(si); }));
+  const out = sets.map(() => []);
+  tameGuides(flat, st.bake.tame || 0).forEach((G, k) => out[owner[k]].push(bakeGuide(G, phys[k])));
+  return out;
 }
 function cardsGeometry(guides, colour) {                                // plain arrays: positions, uvs, colours, triangles
   const pos = cardPositions(guides), uv = [], col = [], idx = [], c = colour ? new THREE.Color(colour) : new THREE.Color(1, 1, 1);
-  guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
+  let base = 0;                                                         // where each card's vertices start (cards can differ in points: Smooth curves)
+  guides.forEach((G, j) => { const n = G.pts.length, u0 = (j * 0.37) % 1;
     for (let k = 0; k < n; k++) { const v = G.t ? G.t[k] : k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); col.push(c.r, c.g, c.b, c.r, c.g, c.b); }
-    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
+    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    base += n * 2; });
   return { pos, uv, col, idx };
 }
 function geometryOf(parts) {                                            // cards merged into one BufferGeometry
@@ -707,15 +782,16 @@ let BAKED = null;
 function buildBake(name) {                                             // the bake's scene and numbers, nothing written
   const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])), shown = st.locks.filter(l => (l.visible && vis[l.group] !== false) || inBase(l));   // a hidden base is still the hair
   const statics = [], skinned = [], summary = { about: "the salon's bake (tools/character/salon.js): one static mesh, one skinned mesh per lock with physics; the head's local space (metres on MHR's base head: the origin between the ears, X the character's left, Y up, Z forward)", name, physics: [], static: {}, head: { C: HF.C, B: HF.B, S: HF.S, person: st.head.person, preset: st.head.person ? null : st.head.preset, height: st.head.person ? PERSON?.height : st.head.height } };
+  if (st.volume.padding && (PAD_DIRTY || !PAD)) refreshPadding();
+  const pad = st.volume.padding && PAD && PAD.cards.length ? PAD.cards : null;
+  const sets = bakeCards([...shown.map(l => [EVAL[l.id] || SL.evaluate(l, COL), !!(l.physics && l.physics.on)]), ...(pad ? [[pad, false]] : [])]);
   shown.forEach((l, i) => {
-    const guides = EVAL[l.id] || SL.evaluate(l, COL), colour = l.color || null;   // the look is in the atlas; a lock's own colour tints it
-    if (l.physics && l.physics.on) skinned.push([l, guides.map(G => bakeGuide(G, true)), colour]);
-    else statics.push(cardsGeometry(guides.map(G => bakeGuide(G)), colour));
+    const guides = sets[i], colour = l.color || null;                 // the look is in the atlas; a lock's own colour tints it
+    if (l.physics && l.physics.on) skinned.push([l, guides, colour]);
+    else statics.push(cardsGeometry(guides, colour));
   });
-  if (st.volume.padding) {                                             // the padding: with the still hair
-    if (PAD_DIRTY || !PAD) refreshPadding();
-    if (PAD && PAD.cards.length) { statics.push(cardsGeometry(PAD.cards.map(G => bakeGuide(G)), null)); summary.padding = { cards: PAD.cards.length, thickness: st.volume.thickness, smooth: st.volume.smooth }; }
-  }
+  if (pad) { statics.push(cardsGeometry(sets[shown.length], null)); summary.padding = { cards: PAD.cards.length, thickness: st.volume.thickness, smooth: st.volume.smooth }; }   // the padding: with the still hair
+  summary.smoothing = { curves: st.bake.smooth || 0, flyaways: st.bake.tame || 0 };
   const root = new THREE.Group(); root.name = "hair"; root.userData = { salon: summary.about };
   const mat = bakeMat();
   if (statics.length) { const m = new THREE.Mesh(geometryOf(statics), mat); m.name = "hair_static"; root.add(m); summary.static = { vertices: m.geometry.attributes.position.count, triangles: m.geometry.index.count / 3 }; }
@@ -760,14 +836,15 @@ async function bake() {
 }
 // Preview the bake: the file it would write, read back (GLTFLoader) and shown alone, the editing hair and its live scalp
 // hidden; made again a moment after anything changes the hair. Left-drag turns the head; a drawing tool ends it.
-let BAKEVIEW = null, BAKEVIEW_TIMER = null, HAIRV = 0;                   // HAIRV: counts the hair's changes (locks, padding, scalp, look)
+let BAKEVIEW = null, BAKEVIEW_TIMER = null, HAIRV = 0, BAKESEQ = 0;      // HAIRV: counts the hair's changes (locks, padding, scalp, look); BAKESEQ: the newest preview asked for
 function showOnly(bake) { HAIR.visible = !bake; if (SCALPM) SCALPM.visible = !bake; BAKEG.visible = bake; }
 function disposeBake() { BAKEG.traverse(o => { o.geometry?.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); }); BAKEG.clear(); }
 async function previewBake(on) {
-  clearTimeout(BAKEVIEW_TIMER);
+  clearTimeout(BAKEVIEW_TIMER); const mine = ++BAKESEQ;                // two changes at once (a tick and a slider) make two: only the newest is shown
   if (!on) { BAKEVIEW = null; disposeBake(); showOnly(false); bakePanel(); draw(); return null; }
   const { glb, summary } = await bakeFile(st.head.person || null);
   const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(glb, "", ok, bad));
+  if (mine !== BAKESEQ) { gltf.scene.traverse(o => { o.geometry?.dispose(); }); return null; }   // a newer one is on its way (or the preview was ended)
   let skinned = 0, bones = 0, meshes = 0; gltf.scene.traverse(o => { if (o.isSkinnedMesh) skinned++; if (o.isBone) bones++; if (o.isMesh) { meshes++; o.frustumCulled = false; } });
   disposeBake(); BAKEG.add(gltf.scene); showOnly(true);
   BAKEVIEW = { v: HAIRV, summary, bytes: glb.byteLength, meshes, skinned, bones }; bakePanel(); draw();
@@ -786,6 +863,10 @@ function bakePanel() {
     "How far the bake reduces the hair: each card keeps this many points from root to tip (a swinging lock at least 12). Fewer is lighter for a game with many characters; more keeps the curves. Never more than the salon draws.");
   tick(detail, "Keep every point (no reduction)", st.bake.full, v => { st.bake.full = v; again(); }, "The bake keeps every point the salon draws along each card: the most faithful, the heaviest.");
   detail.querySelector("input[type=range]").onchange = again;          // made again when the slider is let go
+  const smoothing = el("div", { id: "bakeSmooth" }); box.append(smoothing);
+  slider(smoothing, "Smooth curves", 0, 1, 0.05, st.bake.smooth || 0, v => { st.bake.smooth = v; }, "The bake keeps more points where a card bends sharply, so an arch over the roots or a bend stays round instead of a sharp tent: no corner sharper than 60 degrees, down to 15 at the most. Only where it bends (the vertex count shows below); the hair you edit stays as it is.");
+  slider(smoothing, "Tame flyaways", 0, 1, 0.05, st.bake.tame || 0, v => { st.bake.tame = v; }, "Hair standing out of the hair's outer surface pressed in towards it in the bake (the spikes on the outline, a ring standing round the crown): more, and it's pressed further, the layers kept in their order. The hair you edit stays as it is.");
+  smoothing.querySelectorAll("input[type=range]").forEach(r => { r.onchange = again; });
   const n = BAKEVIEW ? BAKEVIEW.summary : BAKED;
   if (n) box.append(el("p", { className: "note", textContent: `${BAKEVIEW ? "Preview" : "Baked"}: ${n.before.vertices} vertices live -> ${n.after.vertices}: one still mesh of ${n.static.vertices || 0}, ${n.physics.length} swinging (${n.physics.map(p => `${p.lock}: ${p.bones} bones`).join(", ") || "none"}); ${Math.round((BAKEVIEW ? BAKEVIEW.bytes : n.glb_bytes) / 1024)} KB` }));
   box.append(el("p", { className: "note", textContent: (who ? `Bake puts the hair on ${who} (Content/Studio/People/${who}/salon/salon.glb): the Character Studio wears it (Hair: made in the salon), and so will the director's desk; ${who} goes to Unreal from there, finished, rigged and animated, hair and all. `
@@ -1162,8 +1243,10 @@ async function bakeBase() {
   const at = where();
   if (!baseGroups().length) throw new Error("tick the base's groups in Locks first");
   render(); if (PAD_DIRTY || (st.volume.padding && !PAD)) refreshPadding();
-  const parts = baseLocks().map(l => cardsGeometry((EVAL[l.id] || []).map(G => bakeGuide(G)), l.color || null));
-  if (st.volume.padding && PAD && PAD.cards.length) parts.push(cardsGeometry(PAD.cards.map(G => bakeGuide(G)), null));
+  const bl = baseLocks(), padB = st.volume.padding && PAD && PAD.cards.length ? PAD.cards : null;
+  const sets = bakeCards([...bl.map(l => [EVAL[l.id] || [], false]), ...(padB ? [[padB, false]] : [])]);
+  const parts = bl.map((l, i) => cardsGeometry(sets[i], l.color || null));
+  if (padB) parts.push(cardsGeometry(sets[bl.length], null));
   const root = new THREE.Group(); root.name = "hair_base";
   const m = new THREE.Mesh(geometryOf(parts), bakeMat()); m.name = "hair_base"; root.add(m);
   const glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true }));
@@ -1193,9 +1276,11 @@ function refreshPadding() {
 // cards on the hair shader, from guides (the padding's)
 function cardsMesh(guides) {
   const uv = [], tints = [], idx = [];
-  guides.forEach((G, j) => { const n = G.pts.length, base = j * n * 2, u0 = (j * 0.37) % 1;
+  let base = 0;
+  guides.forEach((G, j) => { const n = G.pts.length, u0 = (j * 0.37) % 1;
     for (let k = 0; k < n; k++) { const v = G.t ? G.t[k] : k / (n - 1); uv.push(u0, v, u0 + UV_SPAN, v); tints.push(0, 0, 0, 0, 0, 0, 0, 0); }
-    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } });
+    for (let k = 0; k < n - 1; k++) { const a = base + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    base += n * 2; });
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(cardPositions(guides), 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   g.setAttribute("aTangent", new THREE.Float32BufferAttribute(cardTangents(guides), 3)); g.setAttribute("aTint", new THREE.Float32BufferAttribute(tints, 4)); g.setIndex(idx); g.computeVertexNormals();
   g.setAttribute("aDepth", new THREE.Float32BufferAttribute(depthsOf(g.attributes.position.array), 1));
@@ -1386,7 +1471,7 @@ async function applyHair(o, person) {                                 // a salon
   st.scalp = Object.assign({ on: true, thickness: 0.7, soft: 0.012, colour: null }, o.scalp || {}); SCALP_DIRTY = true;   // (an old save's glow and fill are left behind)
   st.roots = Object.assign({ lift: 40, length: 0.02, vary: 0.4 }, o.roots || {}); SL.setRoots(st.roots);
   st.volume = Object.assign({ thicken: 1, padding: false, thickness: 0.4, smooth: 0.5, blend: 1 }, o.volume || {}); BASE_DIRTY = true; SL.setThicken(st.volume.thicken); PAD_DIRTY = true;
-  st.bake = Object.assign({ along: 8, full: false }, o.bake || {});
+  st.bake = Object.assign({ along: 8, full: false, smooth: 0, tame: 0 }, o.bake || {});
   UNDO.length = 0; REDO.length = 0;
   await buildHead(); if (st.reference.name) { st.reference.fitFor = st.reference.name; await loadReference(st.reference.name); }
   SIM_DIRTY = true; BAKED = null; delete st.look.showBake; if (BAKEVIEW) await previewBake(false); st.look.hair = st.look.hair || DEFAULT_LOOK; st.look.custom = st.look.custom || {}; applyLook(HAIRU, look());
@@ -1437,7 +1522,7 @@ window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get SNAP() { 
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
-  setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
+  bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();
