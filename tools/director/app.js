@@ -715,11 +715,11 @@ function choiceBox(spec, pick) {
   return { box, c };
 }
 // a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
-function runReply(rp, frame) {
+function runReply(rp, frame, q) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    const { box, c } = choiceBox({ prompt: q && q.en, promptSub: q && q.ja, options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
@@ -758,7 +758,7 @@ async function watchScene(sc, nid, sid, k) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
       const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
-        paintOv("#watchOv", { sub: c.en, ja: c.ja, who: `${sc.title || ""} · ${c.who || ""}` }); });                 // the question stays up while she waits
+        paintOv("#watchOv", { who: `${sc.title || ""} · ${c.who || ""}` }); }, { en: c.en, ja: c.ja });                 // the question sits in the choice panel while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
       if (o) karmaAct(o.sets);

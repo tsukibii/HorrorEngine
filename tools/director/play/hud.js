@@ -93,14 +93,14 @@ export class Hud {
 
 // A multiple choice: ONE panel, the options side by side with a dash between each pair (always centred), the one under
 // the pointer (or the keys: A/D, arrows, 1-9, Enter or Space takes the lit one) bright and the rest dimmed. spec
-// {prompt, options: [text or {label, sub}]}; `pick(i)` is called with the index. Returns {el, keys, bar(0..1)}: the panel
+// {prompt, promptSub (small, above it: the Japanese), options: [text or {label, sub}]}; `pick(i)` is called with the index. Returns {el, keys, bar(0..1)}: the panel
 // to put inside a `.play-hud[data-theme]`, the keydown handler, and a thin timer line under the options. The Play HUD
 // and the desk's Watch (replies, timed choices) both use it, so a choice looks the same everywhere.
 export function chooser(spec, pick) {
   const p = mk("div", "ph-panel ph-choose"), box = mk("div", "ph-choice"), opts = [], row = mk("div", "ph-opts"), bar = mk("div", "ph-bar", ""), fill = mk("div");
   let at = -1;
   const light = i => { at = i; opts.forEach((o, j) => o.classList.toggle("on", j === i)); box.classList.toggle("lit", i >= 0); };
-  if (spec.prompt) box.append(mk("div", "ph-ask", spec.prompt));
+  if (spec.prompt) { const q = mk("div", "ph-ask"); if (spec.promptSub) q.append(mk("span", "ph-sub", spec.promptSub)); q.append(mk("span", "", spec.prompt)); box.append(q); }
   (spec.options || []).forEach((o, i) => {
     if (i) row.append(mk("span", "ph-dash"));
     const b = mk("button", "ph-opt"); if (o.sub) b.append(mk("span", "ph-sub", o.sub)); b.append(mk("span", "", typeof o === "string" ? o : o.label));
