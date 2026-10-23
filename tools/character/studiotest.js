@@ -3,7 +3,8 @@
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
-// skin takes over the body with the photo on the face through its mask, and its features change the picture;
+// skin takes over the body with the photo on the face through its mask, and its features change the picture; the work uniform
+// is cut from the body and worn, and refits when the body grows;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
@@ -153,6 +154,24 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
       if (!ok) throw new Error(`skin_${k}.png wasn't saved`);
     }
     await page.click("#touchRows label.tog input");                        // painting off for the rest
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("clothes: the work uniform cut from this body and worn; a taller body refits it", async () => {
+    await page.click('#tabs button[data-tab="clothes"]');
+    await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 2);
+    await page.selectOption("#clothesRows select >> nth=0", "work uniform");
+    await page.click("#clothesRows >> text=Wear the outfit");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
+    const top = () => page.evaluate(() => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return t; });
+    const was = await top(), h = await page.evaluate(() => window.__body.st.height);
+    await page.$$eval("#baseRows input", (ins, v) => { ins[1].value = v; ins[1].dispatchEvent(new Event("input")); }, h + 0.1);
+    await page.waitForFunction(w => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return t > w + 0.04; }, was, { timeout: 120000 });
+    await page.$$eval("#baseRows input", (ins, v) => { ins[1].value = v; ins[1].dispatchEvent(new Event("input")); }, h);
+    await page.waitForFunction(w => { let t = -1e9; for (const m of window.__body.GARMENTS.children) { const P = m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) t = Math.max(t, P[i]); } return Math.abs(t - w) < 0.01; }, was, { timeout: 120000 });
+    await page.click("#worn button");                                       // the shirt off, the trousers stay
+    await page.waitForFunction(() => window.__body.st.clothes.length === 1 && window.__body.GARMENTS.children.every(m => m.name.startsWith("work-trousers")), null, { timeout: 120000 });
+    await page.click("#worn button");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("hair: a twin-tail wig settles off the head and shoulders, survives a shake, exports its chains; grown cards too", async () => {

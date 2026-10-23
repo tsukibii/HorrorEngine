@@ -28,6 +28,7 @@ from storykit import pbr as PBR  # noqa: E402 - the PBR shelf (Content/Studio/PB
 PORT = int(os.environ.get("BODY_PORT", 8793))
 PEOPLE = ROOT / "Content" / "Studio" / "People"
 BODIES = ROOT / "Content" / "Studio" / "Bodies"
+CLOTHES = ROOT / "Content" / "Studio" / "Clothes"           # the tailor's designs and outfits (tools/character/tailor.js)
 VENDOR = ROOT / "tools" / "director" / "vendor"     # three.js, shared with the desk
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
          ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -171,6 +172,8 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
             f = PEOPLE / clean(parts[2]) / "salon" / parts[4]                    # the character's hair from the salon
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
+        if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
+            return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
         if parts[:2] == ["api", "wigs"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a hair model worn as a wig
             f = PEOPLE / clean(parts[2]) / "wigs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "application/octet-stream") if f.is_file() else self.send(404, {"error": "no such hair model"})

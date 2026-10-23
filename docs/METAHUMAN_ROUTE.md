@@ -160,6 +160,6 @@ a body changes. What Unreal has, and the route:
 **The route (2026-10-23).** GarmentCode was tried (`tools/garment.py`, its patterns draped with Blender's cloth in the
 Character Studio) and removed: the drapes came out bad, and a sewing-pattern pipeline is more than we need
 (DECISIONS 2026-10-23). Clothes are now our own generator, after Woohill's character creator, cut from the body
-itself: a bit better than PSX-style clothing, not a simulation. Chaos Cloth stays an option for a skirt's hem or a
+itself (**the tailor**, docs/TAILOR.md): a bit better than PSX-style clothing, not a simulation. Chaos Cloth stays an option for a skirt's hem or a
 coat's tails in Unreal, painted onto the generated mesh, not a pattern pipeline.
 

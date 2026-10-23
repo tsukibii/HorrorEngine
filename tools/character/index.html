@@ -118,6 +118,8 @@
     <section data-tab="clothes" hidden>
       <h3>Clothes</h3>
       <div id="clothesRows"></div>
+      <div id="worn"></div>
+      <p class="note">Cut from this body (tools/character/tailor.js, after Woohill's character creator): the skin under a garment lifted by its ease and relaxed into cloth, skirts hung from the waist as rings, the details lifted off it. Each garment goes over the ones above it in the list. They refit when the body changes. Designs: Content/Studio/Clothes/designs.json.</p>
     </section>
 
     <h3>View</h3>
@@ -362,6 +364,87 @@ photoBtn.onclick = async () => {
 };
 
 
+// ---- clothes: the tailor (tools/character/tailor.js) cuts them from this body, in a worker -------------------------
+st.clothes = [];                                       // [{design, color}], the first innermost
+const GARMENTS = new THREE.Group(); GARMENTS.name = "clothes";
+let DESIGNS = {}, OUTFITS = {}, TAILOR_JOB = 0, FITTED = "", fitTimer = 0;
+const TAILOR_W = new Worker("./tailor/worker.js", { type: "module" });
+const designSel = el("select"), addBtn = el("button", { textContent: "Wear it" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
+const outfitSel = el("select"), outfitBtn = el("button", { textContent: "Wear the outfit" });
+const clothesExp = el("button", { textContent: "Export clothes OBJ", title: "every garment worn, one object per part (metres, Y up, facing +Z): People/<name>/<name>_clothes.obj" });
+$("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { className: "row" }, el("span", { textContent: "Outfit" }), outfitSel, el("output")), outfitBtn,
+  el("h4", { textContent: "A garment" }), el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
+  el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), addBtn, el("h4", { textContent: "Worn (under to over)" }));
+$("#worn").after(clothesExp);
+Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json")]).then(([d, o]) => {
+  DESIGNS = d.designs || {}; OUTFITS = o.outfits || {};
+  designSel.replaceChildren(...Object.entries(DESIGNS).map(([k, v]) => el("option", { value: k, textContent: v.label || k })));
+  outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n })));
+  designSel.onchange = () => { gColor.value = DESIGNS[designSel.value]?.color || gColor.value; }; designSel.onchange();
+  drawWorn(); if (st.clothes.length) dress();
+}).catch(e => status("no designs: " + e.message, "bad"));
+const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength]);
+function dress() {                                     // the worker makes every garment worn, on the body as it is now
+  if (!Object.keys(DESIGNS).length) return;
+  const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color]), id = ++TAILOR_JOB, key = bodyKey();
+  FITTED = key;
+  if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); return; }
+  status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
+  const P = neutralBody();
+  TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS }, [P.buffer]);
+}
+TAILOR_W.onmessage = e => {
+  const { id, garments, error } = e.data;
+  if (id !== TAILOR_JOB) return;                       // a newer fit is on its way
+  if (error) return status("the tailor failed: " + error.split("\n")[0], "bad");
+  for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); }
+  GARMENTS.clear();
+  for (const g of garments) for (const q of g.parts) {
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(q.P, 3)); geo.setIndex(new THREE.BufferAttribute(q.T, 1)); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: q.color, roughness: 0.86 }));
+    m.name = q.name; m.userData.garment = g.name; m.castShadow = m.receiveShadow = true; GARMENTS.add(m);
+  }
+  if (!GARMENTS.parent) rig.add(GARMENTS);
+  const ms = garments.reduce((a, g) => a + g.stats.ms, 0);
+  status(garments.map(g => `${g.name} ${Math.round(g.stats.triangles / 1000)}k triangles`).join(", ") + ` (${(ms / 1000).toFixed(1)} s)`, "ok");
+};
+function refit() {                                     // after the body changes, once it holds still for a moment
+  if (!st.clothes.length || !FITTED || bodyKey() === FITTED) return;
+  clearTimeout(fitTimer); fitTimer = setTimeout(dress, 700);
+}
+function drawWorn() {
+  $("#worn").replaceChildren(...st.clothes.map((c, i) => {
+    const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
+    col.oninput = () => { c.color = col.value; for (const m of GARMENTS.children) if (m.name === c.design) m.material.color.set(c.color); };
+    col.onchange = () => dress();                      // the details take the new colour too
+    x.onclick = () => { st.clothes.splice(i, 1); drawWorn(); dress(); };
+    return el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x);
+  }));
+}
+addBtn.onclick = () => {
+  const design = designSel.value; if (!design) return;
+  st.clothes = st.clothes.filter(c => c.design !== design).concat([{ design, color: gColor.value }]);
+  drawWorn(); dress();
+};
+outfitBtn.onclick = () => {
+  st.clothes = (OUTFITS[outfitSel.value] || []).map(([design, color]) => ({ design, color: color || DESIGNS[design]?.color || "#888888" }));
+  drawWorn(); dress();
+};
+clothesExp.onclick = async () => {
+  if (!WHO || !GARMENTS.children.length) return status("make a character and dress it first", "bad");
+  const out = [`# ${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame`];
+  let base = 0;
+  for (const m of GARMENTS.children) {
+    const P = m.geometry.attributes.position.array, T = m.geometry.index.array;
+    out.push(`o ${m.name}`, `# colour #${m.material.color.getHexString()}`);
+    for (let i = 0; i < P.length; i += 3) out.push(`v ${P[i].toFixed(5)} ${P[i + 1].toFixed(5)} ${P[i + 2].toFixed(5)}`);
+    for (let t = 0; t < T.length; t += 3) out.push(`f ${T[t] + 1 + base} ${T[t + 1] + 1 + base} ${T[t + 2] + 1 + base}`);
+    base += P.length / 3;
+  }
+  const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_clothes.obj`)}`, out.join("\n") + "\n");
+  status(`wrote ${r.path}`, "ok");
+};
+
 // ---- the body ---------------------------------------------------------------------------------------------------
 const view = $("#view");
 const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(devicePixelRatio);
@@ -455,6 +538,7 @@ function compose() {                                   // POS: RAW + the face, s
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   hairDirty = true;
   LAY?.shapeChanged();
+  if (typeof refit === "function") refit();
 }
 
 // ---- eyes: MHR's closed shell sunk behind an eyeball inside MediaPipe's lid outline -----------------------------------
@@ -1218,12 +1302,13 @@ async function open(name) {
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
-  st.clothes = (c.clothes || []).map(x => ({ ...x }));
+  st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn();
   Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, c.eyes || {}); eyeSet.all(); paintEyes();
   Object.assign(st.hair, HAIR.DEFAULTS, HAIR_MORE, { over: {}, batch: { ...HAIR_MORE.batch }, blend: { weights: {}, vary: 0, seed: 0 }, model: null }, c.hair || {});
   if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
   hairSet.all();
   computeBody(); compose(); hud();
+  dress();                                             // the clothes on this body (or none)
   if (WHO && st.hair.source === "photo") await loadStrands();
   $("#salonLink").href = WHO ? `salon.html?person=${encodeURIComponent(WHO)}` : "salon.html";
   if (st.hair.source === "salon" || SALONH) await loadSalon().catch(() => null);
@@ -1271,7 +1356,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { get LAY() { return LAY; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
+window.__body = { get LAY() { return LAY; }, st, GARMENTS, dress, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
   handleOnScreen(n) { const h = HANDLES.getObjectByName(n), v = h.position.clone().project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

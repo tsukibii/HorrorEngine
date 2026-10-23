@@ -355,3 +355,20 @@ Hair tab "hid" the style's rows for strand hair and they stayed on screen. Pages
 The bake preview's `let PREVIEW` was already the lock tools' placement preview: a second `let` of the same name kills
 the whole module at load, and the salon came up blank with no status. Before adding a top-level name to a long page
 script, grep for it (`\bNAME\b`).
+
+## Cloth over cloth: measure what's under as a thickness, don't push off its mesh (2026-10-23)
+
+The tailor's first layering pushed each garment off the ones under it with the closest point on their meshes. An open
+mesh has no inside: at a hem, a waistband or a lifted pocket the closest point's normal points anywhere, and the
+t-shirt over the pants came out in a ruffle at the waist. Measuring the garments under it as a thickness over the
+body (how far out they reach above each point of the skin) and starting the new garment's ease there fixed it, and it
+was faster. Push only off closed surfaces (the body).
+
+## Don't move cloth onto a curtain; let it bridge (2026-10-23)
+
+Woohill's "hang" (below the bust the cloth may only fall, never follow the body in) ported as a radial push onto a
+vertical curtain flipped the triangles under the bust: their normals turned over, and pockets lifted along them tore.
+The same look comes from relaxing longer: smoothing along the normals with a push back out to the ease is a membrane,
+and with enough rounds it spans from the bust to the belly by itself. Rounds are cheap on the coarse body (four times
+fewer points, each round reaching twice as far), so relax there and split the triangles after.
+
