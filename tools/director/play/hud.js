@@ -4,6 +4,7 @@
 // objective, timer, log, stance), the footer (people talking and the answers), the middle (a card held up to read).
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
+const FOCUS_MS = 350;                               // a glance doesn't pull focus, a held look does
 import { applySettings } from "./menu.js";
 
 export function loadTheme(name) {
@@ -34,13 +35,16 @@ export class Hud {
     for (const [k, w] of [["Click", "look around"], ["W A S D", "walk"], ["E", "use"], ["C", "crouch"], ["Esc", "pause"]]) { const p = mk("span", "ph-pair"); p.append(key(k), mk("span", "", w)); this.hint.append(p); }
     this.stance = mk("div", "ph-stance");
     this.seenEl = mk("div", "ph-seen ph-meter"); this.seenEl.append(mk("div"));
-    this.root.append(this.obj, this.timerEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint);
+    this.focus = mk("div", "ph-focus");            // the camera's focus: the world softens round what you're about to use
+    this.root.append(this.focus, this.obj, this.timerEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint);
     box.append(this.root); applySettings(this.root);
     this.lineUntil = 0; this.panelEl = null; this.objTimer = 0;
   }
   remove() { this.root.remove(); }
   // what's under the reticle: its kind (the reticle opens into a ring; `locked` is red and has no key), the verb, the
-  // thing's name, and `at` {x, y, flip} where the prompt floats (the HUD's pixels), or null: under the reticle
+  // thing's name, and `at` {x, y, flip, bare, fx, fy, clear} where the prompt floats (the HUD's pixels), or null: under
+  // the reticle. `clear` (0..1, how near the reticle is to the point) sharpens the prompt; a look held FOCUS_MS pulls
+  // the camera's focus onto the thing: the world softens round it (data-focus="thing", the hole at fx, fy)
   setCursor(kind, label, at, name) {
     kind = kind || "none"; this.cursor.dataset.cursor = kind;
     const sig = `${kind}|${label}|${name || ""}`;
@@ -52,6 +56,11 @@ export class Hud {
     this.prompt.classList.toggle("on", !!label);
     this.prompt.classList.toggle("at", !!at); this.prompt.classList.toggle("flip", !!(at && at.flip)); this.prompt.classList.toggle("bare", !!(at && at.bare));
     this.prompt.style.left = at ? at.x + "px" : ""; this.prompt.style.top = at ? at.y + "px" : "";
+    this.prompt.style.setProperty("--ph-clear", at && at.clear !== undefined ? at.clear.toFixed(2) : 1);
+    const now = performance.now(); if (!label) this.focusSince = 0; else if (!this.focusSince || sig !== this.focusSig) { this.focusSince = now; this.focusSig = sig; }
+    const held = !!label && now - this.focusSince > FOCUS_MS;
+    this.root.dataset.focus = held ? "thing" : "";
+    if (held) { this.root.style.setProperty("--fx", (at ? at.fx ?? at.x : this.root.clientWidth / 2) + "px"); this.root.style.setProperty("--fy", (at ? at.fy ?? at.y : this.root.clientHeight / 2) + "px"); }
   }
   objective(text) {                                  // a new one says so, then rests dimmer
     if (text && text !== this.obj.textContent) { this.obj.classList.add("fresh"); clearTimeout(this.objTimer); this.objTimer = setTimeout(() => this.obj.classList.remove("fresh"), 4000); }

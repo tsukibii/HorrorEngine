@@ -715,7 +715,7 @@ let WHUD = null;
 function watchHud() {
   const th = $("#wTheme").value || (S && S.game || {}).ui_theme || "glass";
   if (!WHUD || !WHUD.root.isConnected) {
-    const root = el("div", { class: "play-hud free" }), footer = el("div", { class: "ph-footer" }), line = el("div", { class: "ph-line" });
+    const root = el("div", { class: "play-hud free" }, el("div", { class: "ph-focus" })), footer = el("div", { class: "ph-footer" }), line = el("div", { class: "ph-line" });
     footer.append(line); root.append(footer); $("#watchBox").append(root); applySettings(root); WHUD = { root, footer, line, theme: null };
   }
   if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }

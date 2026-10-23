@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (the camera person; the UI is what the lens is on)
+
+- **A direction to lean on (not every game yet): the player is the one holding the camera** (a friend filming,
+  someone on a shoot), the footage on tape. Not as harsh as the research's noisiest frame: a blend. docs/VHS.md is
+  how to set it up.
+- **The UI is clean because the camera is focused on it:** a held look pulls focus onto the thing (the world softens
+  round it), the floating prompt sharpens as the reticle nears its point, answering someone keeps the subject sharp and
+  softens the edges, a card softens everything. Built on the desk (`.ph-focus`); Unreal does it with the camera's focus.
+
 ## 2026-10-23 (the pause menu)
 
 - **Esc in Play pauses:** the world holds (clock, timers, NPCs) and the lights go out (the frame flickers down to nearly

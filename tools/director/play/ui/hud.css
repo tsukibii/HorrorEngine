@@ -49,6 +49,20 @@
 .play-hud .ph-seen.on{opacity:1}
 .play-hud .ph-seen>div{background:var(--ph-bad);width:0}
 
+/* the camera's focus (docs/VHS.md §4): a held look pulls focus onto the thing, the world round it softens (a hole stays
+   sharp at the thing); a choice in the footer or a card pulls it all the way. --ph-focus-blur 0 (the default) turns
+   it off. In quickly, out slowly, as a lens does */
+.play-hud .ph-focus{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s ease-out;
+  -webkit-backdrop-filter:blur(var(--ph-focus-blur,0px));backdrop-filter:blur(var(--ph-focus-blur,0px))}
+.play-hud[data-focus="thing"] .ph-focus{opacity:1;transition-duration:.25s;
+  -webkit-mask-image:radial-gradient(circle at var(--fx) var(--fy),transparent var(--ph-focus-hole,120px),#000 calc(var(--ph-focus-hole,120px) * 2.4));
+  mask-image:radial-gradient(circle at var(--fx) var(--fy),transparent var(--ph-focus-hole,120px),#000 calc(var(--ph-focus-hole,120px) * 2.4))}
+.play-hud:has(.ph-footer .ph-choice) .ph-focus{opacity:1;transition-duration:.25s;   /* answering: the subject (the middle) stays sharp */
+  -webkit-mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%);mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%)}
+.play-hud.modal:not(:has(.ph-footer .ph-choice)) .ph-focus{opacity:1;transition-duration:.25s;-webkit-mask-image:none;mask-image:none}   /* a card: all of it */
+/* a floating prompt sharpens as the reticle nears its point (--ph-clear, 1 on it) */
+.play-hud .ph-prompt.at > *{opacity:calc(.6 + .4 * var(--ph-clear, 1));filter:blur(calc((1 - var(--ph-clear, 1)) * 1px));transition:opacity .12s,filter .12s}
+
 /* ---- the corners ---- */
 .play-hud .ph-objective,.play-hud .ph-timer,.play-hud .ph-log,.play-hud .ph-stance{position:absolute;text-shadow:var(--ph-text-shadow);isolation:isolate;
   background:var(--ph-corner-bg,none);padding:var(--ph-corner-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-corner-shadow,none)}

@@ -407,14 +407,16 @@ export class PlayRuntime {
   // where a thing's prompt floats, in the HUD's pixels: a door's handle (on your side of the leaf, so it's where your
   // hand goes; the whole door still takes E), anything else its middle. Kept to the safe area (the screen's margin,
   // above the footer, where lines and choices live); `flip` puts the words left of the mark near the right edge, and
-  // `bare` drops the mark when it would sit on the reticle or the point had to be pulled in. Null behind the eye
+  // `bare` drops the mark when it would sit on the reticle or the point had to be pulled in; `fx, fy` the point itself
+  // (the focus pull's centre) and `clear` how near the reticle is to it. Null behind the eye
   anchorAt(o) {
     const p = this.doors[o.userData.id] ? this.handleOf(o) : this.middleOf(o), v = p.project(this.stage.camera);
     if (v.z > 1) return null;
     const W = this.hud.root.clientWidth, H = this.hud.root.clientHeight, m = 56, px = (v.x + 1) / 2 * W, py = (1 - v.y) / 2 * H;
-    if (Math.hypot(px - W / 2, py - H / 2) < 24) return { x: W / 2 + 16, y: H / 2, bare: true };   // on the reticle: the words beside it
-    const x = Math.min(W - m, Math.max(m, px)), y = Math.min(H * 0.7, Math.max(m, py));
-    return { x, y, flip: x > W * 0.7, bare: x !== px || y !== py };
+    const d = Math.hypot(px - W / 2, py - H / 2), fx = Math.min(W, Math.max(0, px)), fy = Math.min(H, Math.max(0, py));
+    if (d < 24) return { x: W / 2 + 16, y: H / 2, bare: true, fx, fy, clear: 1 };   // on the reticle: the words beside it
+    const x = Math.min(W - m, Math.max(m, px)), y = Math.min(H * 0.7, Math.max(m, py)), bare = x !== px || y !== py;
+    return { x, y, flip: x > W * 0.7, bare, fx, fy, clear: bare ? 1 : Math.max(0, Math.min(1, 1 - (d - 40) / 260)) };   // sharper as the reticle nears it
   }
   handleOf(o) {                                       // the leaf's edge away from its hinges, at handle height
     const g = o.geometry.parameters || {}, sw = o.userData.swing || {}, w = sw.w || g.width || 0.9, h = g.height || 2.05, d = g.depth || 0.05;
