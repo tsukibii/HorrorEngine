@@ -370,7 +370,7 @@ photoBtn.onclick = async () => {
 // ---- clothes: the tailor (tools/character/tailor.js) cuts them from this body, in a worker -------------------------
 st.clothes = [];                                       // [{design, color, surface?, pattern?, print?, denier?}], the first innermost
 const GARMENTS = new THREE.Group(); GARMENTS.name = "clothes";
-let DESIGNS = {}, OUTFITS = {}, TAILOR_JOB = 0, FITTED = "", fitTimer = 0;
+let DESIGNS = {}, OUTFITS = {}, SHELF = {}, TAILOR_JOB = 0, FITTED = "", fitTimer = 0;   // SHELF: the PBR shelf's sets (Content/Studio/PBR)
 const TAILOR_W = new Worker("./tailor/worker.js", { type: "module" });
 const designSel = el("select"), addBtn = el("button", { textContent: "Wear it" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
 const outfitSel = el("select"), outfitBtn = el("button", { textContent: "Wear the outfit" });
@@ -381,8 +381,8 @@ $("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { class
 $("#worn").after(clothesExp);
 { const t = el("input", { type: "checkbox", checked: true }); t.onchange = () => { GH.userData.on = t.checked; showGarmentHandles(); };
   clothesExp.before(el("label", { className: "tog", title: "Drag a garment by its hem, neckline, sleeve, waist, legs or a skirt's length and flare" }, t, el("span", { textContent: "Handles in the view" }))); }
-Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json")]).then(([d, o]) => {
-  DESIGNS = d.designs || {}; OUTFITS = o.outfits || {};
+Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), api("api/pbr").catch(() => ({}))]).then(([d, o, p]) => {
+  DESIGNS = d.designs || {}; OUTFITS = o.outfits || {}; SHELF = p.sets || {};
   designSel.replaceChildren(...Object.entries(DESIGNS).map(([k, v]) => el("option", { value: k, textContent: v.label || k })));
   outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n })));
   designSel.onchange = () => { gColor.value = DESIGNS[designSel.value]?.color || gColor.value; }; designSel.onchange();
@@ -417,15 +417,55 @@ function refit() {                                     // after the body changes
   clearTimeout(fitTimer); fitTimer = setTimeout(dress, 700);
 }
 // a garment's look: its design's fabric, pattern and trim, then what was chosen for it here
-const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, print: c.print }; };
+const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, print: c.print, pbr: pbrOf(c) }; };
+// a garment's PBR set off the shelf, as tailor/look.js draws it: its maps, a repeat in metres (the shelf's own default of
+// 2 m is a wall's: a cloth's is 0.3 unless the set or the garment says), the garment's colour over it if asked
+function pbrOf(c) {
+  const ref = c.pbr ?? DESIGNS[c.design]?.pbr, m = ref && SHELF[ref]; if (!m) return null;
+  return { ref, base: "pbrfile/" + ref.replace(/^pbr\//, "").split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
+           tile_m: c.pbrTile ?? (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: !!c.pbrTint };
+}
 function restyle(c) {                                  // a new fabric, pattern, print or colour: the materials only, no refit
-  for (const m of GARMENTS.children) if (m.userData.garment === c.design) { m.material.dispose(); m.material = LOOK.material(m.userData.q, lookOf(c)); }
+  const L = lookOf(c);
+  for (const m of GARMENTS.children) if (m.userData.garment === c.design) {
+    m.material.dispose(); m.material = LOOK.material(m.userData.q, L);
+    m.userData.pbr = m.userData.q.fabric !== false && L.pbr ? { ref: L.pbr.ref, tile_m: L.pbr.tile_m } : undefined;
+  }
+}
+// maps from disk into the shelf as a set of Content/Studio/PBR/Fabric (each file's last word says which map it is:
+// albedo, ao, height, metallic, normal-dx, roughness, orm...), then worn by this garment
+async function addSet(c, files, name) {
+  const stem = files.map(f => f.name).reduce((a, b) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return a.slice(0, i); });
+  const safe = n => n.replace(/[^\w.-]+/g, "_").replace(/^[_.]+/, "");          // the shelf hides a name starting _ or .
+  name = safe(name || stem.replace(/[_\-\s.]+$/, "")) || "fabric";
+  for (const f of files) {
+    const r = await fetch(`api/pbr/Fabric/${encodeURIComponent(name)}/${encodeURIComponent(safe(f.name))}`, { method: "POST", body: f });
+    if (!r.ok) return status(`${f.name}: ${(await r.json().catch(() => ({}))).error || r.status}`, "bad");
+  }
+  SHELF = (await api("api/pbr")).sets || {};
+  const ref = "pbr/Fabric/" + name, m = SHELF[ref];
+  if (!m) return status(`${name}: no colour map among them (a file ending albedo, color, basecolor or diff)`, "bad");
+  c.pbr = ref; restyle(c); drawWorn();
+  status(`${ref}: ${Object.keys(m.maps).join(", ")}${m.orm ? ", orm" : ""}${m.normal === "dx" ? " (DirectX normal)" : ""}`, "ok");
 }
 const PRINT_PARTS = [["front", "the front"], ["back", "the back"], ["arm L", "left sleeve"], ["arm R", "right sleeve"], ["leg L", "left leg"], ["leg R", "right leg"], ["skirt", "a skirt's front"]];
 function lookRows(c) {                                 // fabric, pattern, print for one worn garment
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Fabric, pattern, print" })), c.design + ":look"), D = DESIGNS[c.design] || {};
   const pick = (label, opts, val, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === val }))); sel.onchange = () => on(sel.value); box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); return sel; };
   pick("Fabric", Object.entries(SURFACES).map(([k, v]) => [k, v[0]]), c.surface ?? D.surface ?? "flat", v => { c.surface = v; restyle(c); drawWorn(); });
+  // or a PBR set off the shelf in its place (fabrics first), its repeat, the colour over it; or a new set from files
+  const sets = Object.keys(SHELF).sort((a, b) => (/^pbr\/Fabric\//.test(b) - /^pbr\/Fabric\//.test(a)) || a.localeCompare(b));
+  pick("PBR set", [["", "none: the fabric above"], ...sets.map(r => [r, r.replace(/^pbr\//, "")])], c.pbr ?? D.pbr ?? "", v => { if (v) c.pbr = v; else delete c.pbr; restyle(c); drawWorn(); });
+  const P = pbrOf(c);
+  if (P) {
+    slider(box, "pbrtile", "Its repeat (m)", 0.02, 2, 0.01, P.tile_m, "How much cloth one repeat of the set covers.", v => { c.pbrTile = v; restyle(c); });
+    const t = el("input", { type: "checkbox", checked: !!c.pbrTint }); t.onchange = () => { c.pbrTint = t.checked; restyle(c); };
+    box.append(el("label", { className: "tog", title: "The garment's colour (or its pattern) over the set's own" }, t, el("span", { textContent: "Tint it with the colour" })));
+  }
+  const setName = el("input", { type: "text", placeholder: "a name (or the files' own)" }), setFiles = el("input", { type: "file", accept: "image/png,image/jpeg", multiple: true });
+  setFiles.onchange = () => { if (setFiles.files.length) addSet(c, [...setFiles.files], setName.value.trim()); };
+  box.append(el("div", { className: "row", title: "Its maps from disk (albedo, normal or normal-dx, roughness, metallic, ao, height, opacity, or a packed orm): onto the PBR shelf, then on this garment" },
+    el("span", { textContent: "Add a set" }), setName, setFiles));
   if ((SURFACES[c.surface ?? D.surface] || [])[4] && (c.surface ?? D.surface) === "sheer")
     slider(box, "denier", "Denier", 0.1, 1, 0.01, c.denier ?? D.denier ?? 0.6, "How much of the skin the nylon hides.", v => { c.denier = v; restyle(c); });
   const pat = c.pattern ?? D.pattern ?? { kind: "none" };

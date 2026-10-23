@@ -3,10 +3,12 @@
 //
 //   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_ or full_feminine|slim_ or full_masculine] [--height 1.62]
 //        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close | --chest | --legs | --feet] [--uv | --debug] [--look JSON]
+//        [--pbr pants=pbr/Fabric/denim1[:0.3][,design=ref...]]   a PBR set off the shelf on a garment (its repeat in metres; + tints it)
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 import { createServer } from "http";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { spawnSync } from "child_process";
 import { join } from "path";
 import { createRequire } from "module";
 import { loadMhr, mhrBody, bodyWeights, ROOT } from "./node.mjs";
@@ -20,7 +22,18 @@ const outfits = JSON.parse(readFileSync(join(CLOTHES, "outfits.json"))).outfits;
 const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculine/.test(bodyName) ? 1.76 : /feminine/.test(bodyName) ? 1.62 : 1.7));
 const extra = arg("look") ? JSON.parse(arg("look")) : null;               // --look '{"print": {...}}': on every garment, for a test
 const list0 = arg("designs") ? String(arg("designs")).split(",").map(d => [d]) : outfits[arg("outfit", "work uniform")];
-const list = list0 && list0.map(([d, c, l]) => [d, c, extra ? { ...(l || {}), ...extra } : l]);
+// --pbr: a garment's set off the shelf (Content/Studio/PBR, docs/ASSETS.md §6), as the Studio's pbrOf gives it to tailor/look.js
+const SHELF = process.env.STUDIO_PBR || join(ROOT, "Content", "Studio", "PBR");
+const pbrSet = spec => {
+  const [ref, opt = ""] = spec.split(":"), rel = ref.replace(/^pbr\//, ""), f = join(SHELF, ...rel.split("/"), "meta.json");
+  if (!existsSync(f)) spawnSync("python3", [join(ROOT, "tools", "pbr.py")], { stdio: "ignore" });   // the shelf scanned: each set's meta.json
+  if (!existsSync(f)) { console.error(`no PBR set ${ref} on the shelf (${SHELF})`); process.exit(1); }
+  const m = JSON.parse(readFileSync(f));
+  return { ref, base: "/pbrfile/" + rel.split("/").map(encodeURIComponent).join("/"), maps: m.maps, normal: m.normal, orm: m.orm,
+           tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") };
+};
+const pbrs = Object.fromEntries((arg("pbr") ? String(arg("pbr")).split(",") : []).map(s => { const [d, r] = s.split("="); return [d, pbrSet(r)]; }));
+const list = list0 && list0.map(([d, c, l]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l]);
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 
@@ -66,6 +79,7 @@ for (const m of head) {
   const q = { name: m.name, color: m.color, fabric: m.fabric, surface: m.surface, P: take(Float32Array, m.n.P), T: take(Uint32Array, m.n.T), N: take(Float32Array, m.n.N), UV: take(Float32Array, m.n.UV), PART: take(Float32Array, m.n.PART), S: take(Float32Array, m.n.S) };
   scene.add(LOOK.mesh(q, m.name, LOOKS.debug ? LOOKS : m.look));
 }
+await LOOK.mapsLoaded();                                          // a PBR set's maps
 const cam = new THREE.PerspectiveCamera(28, 1 / 1.5, 0.05, 20);
 views.forEach(([name, deg, ty, dist, tx = 0], i) => {
   const a = deg * Math.PI / 180, k = H / 1.726;
@@ -80,6 +94,10 @@ const server = createServer((q, r) => {
   if (q.url === "/three.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(three); }
   if (/^\/tailor\/[a-z]+\.js$/.test(q.url)) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(readFileSync(join(ROOT, "tools", "character", q.url))); }
   if (q.url === "/data.bin") { r.writeHead(200, { "content-type": "application/octet-stream" }); return r.end(bin); }
+  if (q.url.startsWith("/pbrfile/")) {                               // a PBR set's map, off the shelf
+    const rel = decodeURIComponent(q.url.slice(9)).split("/"), f = join(SHELF, ...rel);
+    if (!rel.includes("..") && /\.(png|jpe?g)$/i.test(f) && existsSync(f)) { r.writeHead(200, { "content-type": /png$/i.test(f) ? "image/png" : "image/jpeg" }); return r.end(readFileSync(f)); }
+  }
   r.writeHead(404); r.end();
 }).listen(0, "127.0.0.1");
 await new Promise(r => server.once("listening", r));

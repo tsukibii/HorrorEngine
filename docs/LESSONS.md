@@ -411,3 +411,11 @@ their socks and shoes, the first was the socks, and the step timed out (and its 
 the head view the skin and layer steps had left). Find a garment, a row or a handle by its name, and set the view the
 step needs. Run STUDIO after changing outfits or designs, not only TAILOR. In a fresh container it needs
 `python tools/face_mesh.py setup` and `libegl1` before its face steps run.
+
+## A click that was done can still time out (2026-10-23)
+
+STUDIO failed now and then on a step that had nothing to do with the change (the strand hair, then the procedural
+skin): the log said `click action done`, then `waiting for scheduled navigations to finish` until the timeout. With a
+heavy shader in software GL the page is too busy to answer Playwright's after-click check. The Studio never navigates
+on a click, so the test's clicks pass `noWaitAfter: true`; a flake that moves from step to step is the test's, look at
+its log before re-running it.

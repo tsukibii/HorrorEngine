@@ -5,7 +5,9 @@
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
 // skin takes over the body with the photo on the face through its mask, and its features change the picture; the work uniform
 // is cut from the body and worn, takes denim and a print without refitting, its hem is dragged up by its handle,
-// and it refits when the body grows;
+// and it refits when the body grows; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
+// goes onto the shelf as Fabric/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX normal
+// turned for three.js;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
@@ -20,10 +22,22 @@ const BASE = process.env.BODY_URL || "http://127.0.0.1:8793/";
 const NAME = "_studiotest";
 const shot = process.argv[2];
 const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
+// a small PNG of one colour (no canvas in node): the maps of a PBR set the test makes
+const png = rgb => {
+  const W = 4, raw = Buffer.alloc((W * 3 + 1) * W);
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) rgb.forEach((v, k) => { raw[y * (W * 3 + 1) + 1 + x * 3 + k] = v; });
+  const crc = b => { let c = ~0; for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = c >>> 1 ^ (0xedb88320 & -(c & 1)); } return ~c >>> 0; };
+  const chunk = (t, d) => { const td = Buffer.concat([Buffer.from(t), d]), l = Buffer.alloc(4), c = Buffer.alloc(4); l.writeUInt32BE(d.length); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(W, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", require("zlib").deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+};
 
 (async () => {
   const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 820 } })).newPage();
+  // a click here never navigates: don't wait for one after it (with a heavy shader in software GL the page can be too
+  // busy to answer that wait, and a click that was done timed out)
+  const click0 = page.click.bind(page); page.click = (s, o) => click0(s, { noWaitAfter: true, ...o });
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("dialog", d => d.accept());                   // "start it again from the defaults?", "remove?"
@@ -172,7 +186,7 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.selectOption(`${LOOKS} >> select >> nth=0`, "denim");
     await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uFabricScale.value > 28);
     await page.$eval(LOOKS, d => { d.open = true; });
-    await page.fill(`${LOOKS} >> input[type=text]`, "STAFF"); await page.press(`${LOOKS} >> input[type=text]`, "Enter");
+    await page.fill(`${LOOKS} >> input[placeholder="text to print"]`, "STAFF"); await page.press(`${LOOKS} >> input[placeholder="text to print"]`, "Enter");
     await page.waitForFunction(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").material.userData.uniforms.uPrintOn.value === 1);
     if (await page.evaluate(() => window.__body.GARMENTS.children.find(m => m.name === "work-shirt").geometry.uuid) !== shirt) throw new Error("a new look refitted the shirt");
     if (!(await page.evaluate(`${worn("work-shirt")}.print?.text === "STAFF"`))) throw new Error("the print isn't kept with the character");
@@ -194,6 +208,24 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => { const B = window.__body; return !B.st.clothes.some(c => c.design === "work-shirt") && B.st.clothes.length === 3 &&
       !B.GARMENTS.children.some(m => m.name.startsWith("work-shirt")) && B.GARMENTS.children.some(m => m.name.startsWith("work-trousers")); }, null, { timeout: 120000 });
     while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("a PBR set from files on a garment: Unreal's names (albedo, normal-dx, roughness) onto the shelf, the pants wearing it", async () => {
+    await page.click('#tabs button[data-tab="clothes"]');
+    await page.selectOption("#clothesRows select >> nth=1", "pants");
+    await page.click("#clothesRows button:text-is('Wear it')");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "pants"), null, { timeout: 120000 });
+    const PANTS = "#worn > div:has(.row span:text-is('Pants'))", LOOKS = `${PANTS} details:has(summary:text-is('Fabric, pattern, print'))`;
+    await page.$eval(LOOKS, d => { d.open = true; });
+    await page.setInputFiles(`${LOOKS} input[type=file][multiple]`, [["albedo", [30, 42, 52]], ["normal-dx", [128, 128, 255]], ["roughness", [240, 240, 240]]]
+      .map(([k, rgb]) => ({ name: `_studiotest_denim_${k}.png`, mimeType: "image/png", buffer: png(rgb) })));
+    await page.waitForFunction(() => window.__body.st.clothes.find(c => c.design === "pants")?.pbr === "pbr/Fabric/studiotest_denim", null, { timeout: 30000 });   // the shelf hides _: it's taken off
+    const m = await page.evaluate(() => { const m = window.__body.GARMENTS.children.find(g => g.name === "pants").material;
+      return { normal: !!m.normalMap, dx: m.normalScale.y === -1, rough: !!m.roughnessMap, on: m.userData.uniforms.uPbrOn.value }; });
+    if (!m.normal || !m.rough || m.on !== 1) throw new Error("the set isn't on the pants: " + JSON.stringify(m));
+    if (!m.dx) throw new Error("a DirectX normal map wasn't turned for three.js");
+    await page.click(`${PANTS} button[title='take it off']`);
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');
   });

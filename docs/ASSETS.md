@@ -116,8 +116,12 @@ Content/Studio/PBR/                     ($STUDIO_PBR puts it elsewhere, e.g. ano
 - **The download:** Poly Haven's ZIP with Blend and glTF off, MaterialX off, the packed AO/Rough/Metal off, and AO, Diffuse
   and Rough as JPG, Displacement and Normal (DX) as PNG. Other names work too: the last word of each file name says
   which map it is (`diff`, `col`, `Color`, `ao`, `AmbientOcclusion`, `rough`, `Roughness`, `disp`, `Displacement`,
-  `nor_dx`, `NormalDX`, `nor_gl`, `NormalGL`, `metal`...); a resolution like `_2k` is ignored. A GL normal is used
-  before a DX one, JPG and PNG before EXR (the desk can't show EXR). A packed `arm` map is noted, not used.
+  `nor_dx`, `NormalDX`, `normal-dx`, `nor_gl`, `NormalGL`, `metal`, `metallic`...); a resolution like `_2k` is ignored,
+  so Unreal-ready names work as they are (`denim1_albedo.png`, `_normal-dx`, `_roughness`). A GL normal is used before
+  a DX one, JPG and PNG before EXR (the desk can't show EXR). A packed `arm`/`orm` map is noted (`orm` in meta.json):
+  the Character Studio's clothes use it where the separate maps are missing; Unreal's import takes the separate maps.
+- **Clothes** (docs/TAILOR.md §1b): fabric sets go in `Fabric/`; the Character Studio's *Add a set* puts maps picked
+  from disk there, and a garment wears one at a repeat in metres (0.3 unless the set's `tile_m` says).
 - **Scanning** (`python tools/pbr.py`, the shelf page, or the desk at start) unpacks new ZIPs (their images only),
   writes each set's `meta.json` (which file is which map, the normal's convention, `tile_m`, where it came from) and a
   small `_thumb.jpg` (when Pillow is there). Poly Haven and ambientCG names give the source and its page; what you

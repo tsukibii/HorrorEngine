@@ -34,7 +34,7 @@ WORDS = {
     "height": ("disp", "displacement", "height", "bump"),
     "metal": ("metal", "metalness", "metallic"),
     "opacity": ("opacity", "alpha", "mask"),
-    "arm": ("arm", "orm"),                      # packed AO/rough/metal: noted, not used (take the separate maps)
+    "arm": ("arm", "orm"),                      # packed AO/rough/metal (R, G, B): the clothes use it; Unreal takes the separate maps
 }
 _RES = re.compile(r"^\d+k(-(jpg|png|exr))?$|^\d+$")
 
@@ -70,7 +70,8 @@ def set_dir(ref):
 
 
 def read_maps(d):
-    """{map: file name} for the images in a folder (web formats before EXR), and the normal's convention."""
+    """{map: file name} for the images in a folder (web formats before EXR), the normal's convention, and a packed
+    AO/rough/metal map's file name (or None)."""
     found = {}
     for f in sorted(d.iterdir(), key=lambda f: (f.suffix.lower() not in WEB, f.name)):
         if f.is_file() and f.suffix.lower() in IMG and not f.name.startswith("_"):
@@ -81,7 +82,7 @@ def read_maps(d):
     conv = "gl"
     if "normal" not in maps and "normal_dx" in found:
         maps["normal"], conv = found["normal_dx"], "dx"
-    return maps, conv, "arm" in found
+    return maps, conv, found.get("arm")
 
 
 def guess_source(d, maps):
@@ -122,7 +123,8 @@ def meta(d, write=False):
     m.update(guess_source(d, maps))
     m.update({k: old[k] for k in KEEP if k in old})
     if arm:
-        m["arm"] = "packed AO/rough/metal map not used: download the separate maps"
+        m["arm"] = "packed AO/rough/metal map: the Studio's clothes use it where the separate maps are missing; Unreal takes the separate maps"
+        m["orm"] = arm
     m["stamp"] = stamp(d, maps)
     if write and {k: old.get(k) for k in m} != m:
         p.write_text(json.dumps(m, indent=1), encoding="utf-8")
