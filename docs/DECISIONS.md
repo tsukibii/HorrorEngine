@@ -6,7 +6,7 @@ The user's answers, newest first. They override the plan, the research and the d
 
 - **The default Play HUD theme is `glass`:** frosted glass slabs with a little 3D (tilt, a thick lower edge), simple
   click-me buttons, no sliders. It sits under a VHS lost-footage grade in Unreal later.
-- **The glass is nearly invisible on purpose** (faint tint, soft blur, hairline edge); the weight and a liquid, chromatic
+- **Only the choices (and the reading and code cards) get a glass panel;** all other text is boxless with a soft, edge-fading blur behind it. The glass is nearly invisible on purpose (faint tint, soft blur, hairline edge); the weight and a liquid, chromatic
   shader come in Unreal. Every chip sits on one frame (`--ph-margin`, `--ph-pad`, `--ph-gap`): objective top-left,
   timer and log top-right, stance bottom-left, subtitles and choices bottom-centre.
 - **A multiple choice is two panels:** the question in its own panel above, then ONE panel with the options side by side with centred dashes between them; the one under the
