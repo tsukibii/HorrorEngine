@@ -210,7 +210,7 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("the eyes: cut out of the skin along the model's own lid line (the strip its blink squeezes; moved by hand), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
+  await step("the eyes: cut out of the skin along the model's own lid line (the strip its blink squeezes, found on MHR's own face; moved by hand), on a face fitted to pictures too (its blink still meets), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
     const r = await page.evaluate(() => {
       const b = window.__body, L = b.EYES.L, front = () => L.position.z + L.scale.x, i = n => b.ENAMES.indexOf(n);
       const fan = () => { const P = b.HOLES.geometry.attributes.position.array; let a = 0; for (let k = 0; k < P.length; k += 9) a += Math.abs((P[k + 3] - P[k]) * (P[k + 7] - P[k + 1]) - (P[k + 6] - P[k]) * (P[k + 4] - P[k + 1])) / 2; return a; };
@@ -225,12 +225,21 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
       for (const sd of ["L", "R"]) b.st.eyes.lidLine[sd].lower.fill(0); b.compose(); const at0 = fan();
       for (const sd of ["L", "R"]) b.st.eyes.lidLine[sd].lower.fill(-1.5); b.compose(); const at15 = fan();
       b.st.eyes.lidLine = keep; b.compose();
-      return { mesh, base, mp, own, at0, at15, cut, pts, open, shut, f1, f2, r1, r2, r0, stencil, off, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
+      // on the face fitted to the pictures: the lid line still corner to corner, each lid in order outwards; a blink meets
+      const poly = P => { let a = 0; for (let k = 0, j = P.length - 1; k < P.length; j = k++) a += (P[j][0] + P[k][0]) * (P[j][1] - P[k][1]); return Math.abs(a) / 2; };
+      const wide = R => Math.hypot(R[0][0] - R[8][0], R[0][1] - R[8][1]), ownRing = b.lidRing("L");
+      b.st.eyes.meshLids = false; const mpRing = b.lidRing("L"); b.st.eyes.meshLids = true;
+      const ordered = [ownRing.slice(9, 16), ownRing.slice(1, 8).reverse()].every(ch => ch.every((p, k) => !k || p[0] > ch[k - 1][0]));   // the left eye: outwards is +x
+      const rawOpen = poly(b.outline("L", 1, false).pts); b.st.expr[i("eyesClosed_L")] = 1; b.compose(); const rawShut = poly(b.outline("L", 1, false).pts); b.st.expr.fill(0); b.compose();
+      const fit = { on: !!b.delta, width: wide(ownRing) / wide(mpRing), ordered, meet: rawShut / rawOpen };
+      return { mesh, base, mp, own, at0, at15, cut, pts, open, shut, f1, f2, r1, r2, r0, stencil, off, fit, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
     });
     const defaults = await page.evaluate(async () => (await fetch("api/defaults")).ok);
-    if (!defaults || !r.mesh || r.base !== "mesh" || !(r.own > 1.3 * r.mp) || !(r.at15 > r.at0 * 1.05) || r.cut !== 1 || r.pts !== 32 || !(r.open > 0) || !(r.shut < 0.05 * r.open) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r1 >= r.r0) || !(r.r2 >= 2 * r.r0 - 1e-9) || !r.stencil || r.off || !r.pupil) throw new Error("the eyes: " + JSON.stringify(r));
+    if (!defaults || !r.mesh || r.base !== "mesh" || !(r.own > 1.3 * r.mp) || !(r.at15 > r.at0 * 1.05) || r.cut !== 1 || r.pts !== 32 || !(r.open > 0) || !(r.shut < 0.05 * r.open) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r1 >= r.r0) || !(r.r2 >= 2 * r.r0 - 1e-9) || !r.stencil || r.off || !r.pupil
+        || !r.fit.on || !(r.fit.width > 0.8 && r.fit.width < 1.6) || !r.fit.ordered || !(r.fit.meet < 0.3)) throw new Error("the eyes: " + JSON.stringify(r));
     console.log(`       the model's own lids on both eyes: the opening ${(r.own * 1e6).toFixed(0)} mm² against MediaPipe's ${(r.mp * 1e6).toFixed(0)}`);
     console.log(`       the eyelid line's lower points 1.5 mm down: the opening ${(r.at0 * 1e6).toFixed(0)} -> ${(r.at15 * 1e6).toFixed(0)} mm²`);
+    console.log(`       on the face fitted to the pictures: the lid line ${r.fit.width.toFixed(2)} times MediaPipe's width, in order; a blink leaves ${(r.fit.meet * 100).toFixed(0)}% of the lids' opening`);
     console.log(`       openings ${(r.open * 1e6).toFixed(0)} mm² open, ${(r.shut * 1e6).toFixed(1)} shut; the eyeball fitted at ${(r.r1 * 1000).toFixed(1)} mm (12 mm: ${(r.r0 * 1000).toFixed(1)}), size 2: ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
   });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {

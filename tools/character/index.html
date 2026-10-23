@@ -508,6 +508,26 @@ function neutralBody() {                               // the body as saved for 
   if (DELTA) { const k = st.face.strength * SCALE; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; for (let a = 0; a < 3; a++) P[i + a] += k * DELTA.d[j * 3 + a]; } }
   return P;
 }
+// a blink on a face bent to a photo: MHR's eyesClosed was made for its own face, so where the fit moved the lids apart
+// they no longer meet (the shut lids' strip shows, the photo's eye painted on it). As the eye closes, every point the
+// blink moves gives up the fit's own offset for the lids' common one (their mean), by how much it takes part: shut,
+// the eye is MHR's own shut eye carried to where the fit put it; open, it's the fit's
+const SHUT = {};                                       // per eyesClosed expression: the points it moves (EIDX order) and their part in it
+for (const nm of ["eyesClosed_L", "eyesClosed_R"]) {
+  const e = ENAMES.indexOf(nm); if (e < 0) continue;
+  const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3), m = new Float32Array(EN); let top = 0;
+  for (let j = 0; j < EN; j++) { m[j] = Math.hypot(X[j * 3], X[j * 3 + 1], X[j * 3 + 2]); top = Math.max(top, m[j]); }
+  const js = [], ws = [];
+  for (let j = 0; j < EN; j++) { const t = Math.min(1, m[j] / (0.15 * top)); if (t > 0.01) { js.push(j); ws.push(t * t * (3 - 2 * t)); } }   // the lids whole, fading out round them
+  SHUT[e] = { js: Int32Array.from(js), ws: Float32Array.from(ws) };
+}
+function shutFitted({ js, ws }, k) {                   // k: how shut, times the fit's strength and the body's scale
+  if (!DELTA.full) { const F = DELTA.full = new Float32Array(N * 3); for (let j = 0; j < DELTA.idx.length; j++) for (let a = 0; a < 3; a++) F[DELTA.idx[j] * 3 + a] = DELTA.d[j * 3 + a]; }
+  const F = DELTA.full, ref = [0, 0, 0]; let sw = 0;
+  for (let q = 0; q < js.length; q++) { const i = EIDX[js[q]] * 3, w = ws[q]; sw += w; for (let a = 0; a < 3; a++) ref[a] += w * F[i + a]; }
+  for (let a = 0; a < 3; a++) ref[a] /= sw || 1;
+  for (let q = 0; q < js.length; q++) { const i = EIDX[js[q]] * 3, w = ws[q] * k; for (let a = 0; a < 3; a++) POS[i + a] += w * (ref[a] - F[i + a]); }
+}
 function compose() {                                   // POS: RAW + the face, scaled to the height, feet on the floor; then the eyes, the expressions
   let lo = Infinity, hi = -Infinity;
   for (let i = 1; i < RAW.length; i += 3) { lo = Math.min(lo, RAW[i]); hi = Math.max(hi, RAW[i]); }
@@ -522,6 +542,7 @@ function compose() {                                   // POS: RAW + the face, s
     const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
     for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; POS[i] += a * X[j * 3]; POS[i + 1] += a * X[j * 3 + 1]; POS[i + 2] += a * X[j * 3 + 2]; }
+    if (DELTA && SHUT[e]) shutFitted(SHUT[e], st.expr[e] * st.exprAmt * st.face.strength * SCALE);
   }
   geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); openings();   // the openings from the lids as they are now: a blink closes them
   const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
@@ -638,32 +659,34 @@ function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid ou
 // the model's own lid line: MHR's opening is a strip of triangles its blink squeezes shut; its outer edge, split at the
 // corners into the upper and lower lid, resampled into MediaPipe's layout (0 the outer corner, 1..7 the lower lid outer
 // to inner, 8 the inner corner, 9..15 the upper inner to outer), each point a place along a mesh edge, so it rides every
-// expression. Found on the neutral face (placeEyes); MediaPipe's ring when it can't be found or it's switched off
-const MESHLID = { L: null, R: null, key: "" };
+// expression, every shape and a photo's fit. Found once, on MHR's own base face (its blink was made for that face: on a
+// face bent to a photo the shut lids no longer meet, and the strip came out wrong); MediaPipe's ring when it can't be
+// found or it's switched off
+const MESHLID = { L: null, R: null, done: false };
 function findLids() {
-  const key = [lmk(386), lmk(159), SCALE].flat().map(v => v.toFixed(5)).join(",");
-  if (key === MESHLID.key) return; MESHLID.key = key;
-  const Q = Float32Array.from(POS);                    // the face with both eyes shut
+  if (MESHLID.done) return; MESHLID.done = true;
+  const Q = Float32Array.from(BASEP);                  // the base face with both eyes shut
   for (const nm of ["eyesClosed_L", "eyesClosed_R"]) {
     const e = ENAMES.indexOf(nm); if (e < 0) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
-    for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; Q[i] += SCALE * X[j * 3]; Q[i + 1] += SCALE * X[j * 3 + 1]; Q[i + 2] += SCALE * X[j * 3 + 2]; }
+    for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; Q[i] += X[j * 3]; Q[i + 1] += X[j * 3 + 1]; Q[i + 2] += X[j * 3 + 2]; }
   }
-  for (const side of ["L", "R"]) { try { MESHLID[side] = lidFrom(side, Q); } catch (e) { MESHLID[side] = null; } }
+  for (const side of ["L", "R"]) { try { MESHLID[side] = lidFrom(side, BASEP, Q); } catch (e) { MESHLID[side] = null; } }
 }
-function lidFrom(side, Q) {
-  const ring = LIDS[side].map(lmk), c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / ring.length);
+function lidFrom(side, A, Q) {                         // A: the face open, Q: the same face with the eyes shut
+  const at = i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0]; for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * A[v + a]; } return o; };
+  const ring = LIDS[side].map(at), c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / ring.length);
   const v3 = (A, i) => [A[i * 3], A[i * 3 + 1], A[i * 3 + 2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
   const tri = (A, t) => { const a = v3(A, TRIS[t * 3]), b = v3(A, TRIS[t * 3 + 1]), d = v3(A, TRIS[t * 3 + 2]), u = sub(b, a), w = sub(d, a);
     return Math.hypot(u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]) / 2; };
-  const near = [], R = 0.03 * SCALE / 0.93;
+  const near = [], R = 0.03 / 0.93;                    // 3 cm round the eye (MHR's base is 1.83 m)
   for (let t = 0; t < TRIS.length / 3; t++) {
-    let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { const i = TRIS[t * 3 + k] * 3; x += POS[i]; y += POS[i + 1]; z += POS[i + 2]; }
+    let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { const i = TRIS[t * 3 + k] * 3; x += A[i]; y += A[i + 1]; z += A[i + 2]; }
     if (Math.hypot(x / 3 - c[0], y / 3 - c[1], z / 3 - c[2]) < R) near.push(t);
   }
-  const squeezed = new Set(near.filter(t => tri(Q, t) < 0.45 * tri(POS, t)));
+  const squeezed = new Set(near.filter(t => tri(Q, t) < 0.45 * tri(A, t)));
   if (!squeezed.size) return null;
-  const mid = t => { let x = 0, y = 0; for (let k = 0; k < 3; k++) { const i = TRIS[t * 3 + k] * 3; x += POS[i]; y += POS[i + 1]; } return [x / 3, y / 3]; };
+  const mid = t => { let x = 0, y = 0; for (let k = 0; k < 3; k++) { const i = TRIS[t * 3 + k] * 3; x += A[i]; y += A[i + 1]; } return [x / 3, y / 3]; };
   let seed = -1, best = Infinity; for (const t of squeezed) { const m = mid(t), dd = Math.hypot(m[0] - c[0], m[1] - c[1]); if (dd < best) { best = dd; seed = t; } }
   const ek = (u, v) => u < v ? u * 65536 + v : v * 65536 + u, e2t = new Map();
   for (const t of near) for (let k = 0; k < 3; k++) { const key = ek(TRIS[t * 3 + k], TRIS[t * 3 + (k + 1) % 3]); (e2t.get(key) || e2t.set(key, []).get(key)).push(t); }
@@ -672,7 +695,7 @@ function lidFrom(side, Q) {
   const used = new Map(); for (const t of comp) for (let k = 0; k < 3; k++) { const key = ek(TRIS[t * 3 + k], TRIS[t * 3 + (k + 1) % 3]); used.set(key, (used.get(key) || 0) + 1); }
   const outs = new Map();                                 // the boundary's edges, in their triangles' winding
   for (const t of comp) for (let k = 0; k < 3; k++) { const u = TRIS[t * 3 + k], v = TRIS[t * 3 + (k + 1) % 3]; if (used.get(ek(u, v)) === 1) (outs.get(u) || outs.set(u, []).get(u)).push(v); }
-  const P = i => v3(POS, i), walk = sign => {             // round the outside, keeping out where the edge touches itself
+  const P = i => v3(A, i), walk = sign => {             // round the outside, keeping out where the edge touches itself
     let start = -1; for (const v of outs.keys()) if (start < 0 || P(v)[1] > P(start)[1]) start = v;
     const loop = [start]; let prev = -1, cur = start;
     for (let g = 0; g < 400; g++) {
@@ -772,7 +795,7 @@ function placeEyes() {
   for (const side of ["L", "R"]) {
     const m = EYES[side];
     if (!LMK || !st.eyes.on) { m.visible = false; continue; }
-    if (side === "L") findLids();                       // the model's own lid line, on the neutral face
+    findLids();                                         // the model's own lid line (once)
     const ring = lidRing(side), n = ring.length;
     const c = [0, 1, 2].map(a => ring.reduce((s, p) => s + p[a], 0) / n);
     AREA0[side] = area(outline(side, 1, false).pts);   // how open the eye is: the lids before the hand's offsets (they never hold a blink open)

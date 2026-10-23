@@ -389,3 +389,8 @@ script, grep for it (`\bNAME\b`).
 - **A measure that adds geometry can fail where the render doesn't:** the gap test's magenta inner surfaces blocked
   the eye's stencil where the lower lid folds in (looking down), a line no normal render shows. Check a measured fault
   in real colours before fixing it.
+- **Find a feature on the face its shapes were made for:** the lid line was found on the character's own face, so on a
+  face bent to a photo (bigger, rounder lids) the blink no longer met, the squeezed strip came out a fragment and the
+  cut was distorted. Found once on MHR's base face, each point a place along a mesh edge, it rides any shape or fit.
+  And an additive expression made for the base face doesn't close a fitted one: the blink has to take the lids from
+  the fit's own offsets to their common one as it closes. Test a feature on a fitted face, not only the bare one.
