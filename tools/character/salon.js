@@ -887,7 +887,7 @@ const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015,
 function setTool(t) {
   if (BAKEVIEW && t !== "select") previewBake(false);
   TOOL = t; resetPlace();
-  for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
+  for (const b of document.querySelectorAll("#tools button, #locks .tools button")) b.classList.toggle("on", b.dataset.t === t);   // the view's toolbar and step 5's
   $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
   tintScalp(); draw();
 }
@@ -1237,6 +1237,9 @@ function pullPanel() {
 function locksPanel() {
   if (COVER.length == null) coverPanel();                             // the cover's Length follows the top hair until it's set
   const box = $("#locks"); box.innerHTML = "";
+  const tools = el("div", { className: "tools" });                    // the drawing tools, as on the view's toolbar (keys V, S, L, B, D)
+  for (const [t, label] of TOOLS.filter(([t]) => t !== "fit")) { const b = el("button", { textContent: label, className: t === TOOL ? "on" : "", onclick: () => setTool(t) }); b.dataset.t = t; tools.append(b); }
+  box.append(tools, el("p", { className: "note", textContent: "Pick a tool, then click on the head: a strand is a root and an end, a sheet a root line dragged and its end, a bundle a root and a tip, a bundle line a line dragged (its width) and its tip. Select picks a lock to pull its handles." }));
   for (const g of st.groups) {
     const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group", onclick: () => { g.visible = !g.visible; locksPanel(); draw(); } });
     const base = el("span", { className: "eye", textContent: g.base ? "▣" : "□", title: "in the base (the mass the padding fills out, baked first)", onclick: () => { remember(); g.base = !g.base; PAD_DIRTY = true; BASE_DIRTY = true; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); volumePanel(); draw(); } });

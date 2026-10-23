@@ -117,7 +117,9 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   });
   await step("a strand: a root clicked on the scalp, an end clicked", async () => {
     await view(0.5, 0.1, 1.3);
-    const n0 = await count(); await page.keyboard.press("s");
+    const n0 = await count(); await page.click("#locks .tools button[data-t=strand]");   // step 5's tools (the same as the view's toolbar and the S key)
+    const on = await ev(() => [...document.querySelectorAll("button.on[data-t]")].map(b => b.closest("#tools") ? "view" : "step"));
+    if (on.join() !== "view,step") throw new Error("Strand isn't lit on both toolbars: " + on.join());
     await page.mouse.click(...await scr(await surf([0.04, 0.13, 0.0])));
     const e = await scr([0.12, -0.2, 0.03]); await page.mouse.move(...e); await page.mouse.wheel(0, -200); await page.mouse.click(...e);
     const l = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.render(); return { type: l.type, guides: s.EVAL[l.id] ? s.EVAL[l.id].length : 0 }; });

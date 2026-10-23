@@ -11,7 +11,7 @@ view. The plan, the decisions behind it and what comes next are in docs/SALON_PL
 The side panel is the work in order, each step a dropdown, all closed until opened (the ones open are remembered in
 the browser); each one's hint says what it's for, or what it's on now (the character, the lock picked):
 **1. Character** (whose head), **2. Reference** (a video to trace over, if you like), **3. Start from** (a preset or
-a hairstyle), **4. Mirror**, **5. Locks** (draw the hair, in groups; Layer by height), **6. Selected** (the lock
+a hairstyle), **4. Mirror**, **5. Locks** (the drawing tools, as on the view's toolbar at its top left: Select, Strand, Sheet, Bundle, Bundle line; the groups; Layer by height), **6. Selected** (the lock
 picked), **7. Pull** (how the handles drag), **8. Roots**, **9. Gravity and motion** (let it fall; try the swing),
 **10. Finish** (the cover), **11. Volume** (Thicken, padding, the base), **12. Scalp**, **13. Look**, **14. Bake**.
 
