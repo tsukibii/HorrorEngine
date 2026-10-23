@@ -379,3 +379,6 @@ script, grep for it (`\bNAME\b`).
 - **Where a measurement can't settle a look, hand the user the control:** three tries at the lower lid's cut (a fixed
   drop, tapered, even) each left a step somewhere on one face. The eyelid line as sliders, with the line drawn on the
   face and a saved default, ended it.
+- **A frame that's already open doesn't see new data:** the Hair tab saved the body every visit, but the salon's frame
+  only loaded it the first time (the address hadn't changed), so later body and face edits never reached it. Tell an
+  open frame to reload (`__salon.refreshBody`), and check it with a second visit after a change.

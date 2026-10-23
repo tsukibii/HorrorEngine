@@ -281,14 +281,15 @@ function bodyOf(w, height) {                                          // MHR wit
 }
 // the character the hair is drawn on (the Character Studio's): the body it saved (body.bin: its face on, no expression),
 // or, never saved there since its face, its weights and height
-let PERSON = null;
+let PERSON = null, TONE = Q.get("tone");
 async function personBody(name) {
   await loadMHR();
   const c = await api(`api/people/${enc(name)}`);
   const r = await fetch(`api/people/${enc(name)}/body.bin?v=${Date.now()}`);
-  if (r.ok) return { name, body: new Float32Array(await r.arrayBuffer()), face: true, height: c.height };
+  const tone = TONE || c.skin?.tone || null;                          // the head in the character's own skin tone (the Studio's, as it is now)
+  if (r.ok) return { name, body: new Float32Array(await r.arrayBuffer()), face: true, height: c.height, tone };
   if (!c.weights) throw new Error(`${name} has no body yet: save it in the Character Studio`);
-  return { name, body: bodyOf(c.weights, c.height || 1.7), face: false, height: c.height };
+  return { name, body: bodyOf(c.weights, c.height || 1.7), face: false, height: c.height, tone };
 }
 async function buildHead() {
   const m = await loadMHR();
@@ -296,7 +297,8 @@ async function buildHead() {
   const N = m.N, P = st.head.person && PERSON?.name === st.head.person ? Float32Array.from(PERSON.body) : bodyOf(m.presets[st.head.preset] || [], st.head.height);
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(new THREE.BufferAttribute(m.tris, 1)); g.computeVertexNormals();
   g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(N * 3).fill(1), 3));
-  HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x9a9690, roughness: 0.75, vertexColors: true })); HEAD.matrixAutoUpdate = false; scene.add(HEAD);
+  const tone = st.head.person && PERSON?.name === st.head.person && PERSON.tone ? PERSON.tone : 0x9a9690;
+  HEAD = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: tone, roughness: 0.75, vertexColors: true })); HEAD.matrixAutoUpdate = false; scene.add(HEAD);
   HF = SR.headFrame(P, REF?.local?.anchors || SR.DEFAULT_ANCHORS);
   const B = HF.B, s = HF.S;
   HFMAT.set(B[0][0] * s, B[0][1] * s, B[0][2] * s, HF.C[0], B[1][0] * s, B[1][1] * s, B[1][2] * s, HF.C[1], B[2][0] * s, B[2][1] * s, B[2][2] * s, HF.C[2], 0, 0, 0, 1);
@@ -1395,6 +1397,13 @@ async function load(name) {                                           // a hairs
   await applyHair(o, st.head.person); $("#hairName").value = name;
   status(st.head.person ? `the hairstyle ${name} on ${st.head.person}: Save keeps it on ${st.head.person}` : `loaded the hairstyle ${name}`, "ok");
 }
+async function refreshBody(name, tone) {                                    // the Character Studio changed the body (its Hair tab, again): the head again, the hair kept and laid on it
+  if (tone) TONE = tone;
+  if (!name || st.head.person !== name) return openPerson(name);
+  PERSON = await personBody(name); PAD_DIRTY = true; SIM_DIRTY = true;
+  await buildHead(); characterPanel(); if (BAKEVIEW) await previewBake(true);
+  status(`${name}: the body as the Character Studio has it now`, "ok");
+}
 async function openPerson(name) {                                     // a character: its body, and its hair if it has some (else the hair shown stays, to put on it)
   if (!name) { st.head.person = null; PERSON = null; await buildHead(); characterPanel(); bakePanel(); $("#person").value = ""; status("a base body (Save keeps the hair as a hairstyle)", "ok"); return; }
   PERSON = await personBody(name);
@@ -1424,7 +1433,7 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 })();
 
 // for the tests and the renders
-window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
+window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
@@ -1442,4 +1451,4 @@ window.__salon = { st, SL, SR, orbit, get SNAP() { return SNAP; }, get CAMS() { 
   }, get SIM() { return SIM; }, get MOTION() { return MOTION; }, stepPhysics, MESHES,
   tipOffset: id => { const l = lockById(id); if (!SIM || !l) return 0; const Mi = HAIR.matrix.clone().invert(), v = new THREE.Vector3(); return SIM.tipOffset(l, p => v.set(...p).applyMatrix4(Mi).toArray()); },
   overlay: () => ({ visible: OVL_MESH.visible, flipped: !!OVL_MESH.userData.flipped, loaded: !!(OVL_MESH.material.map && OVL_MESH.material.map.userData.loaded), pos: Array.from(OVL_MESH.geometry.attributes.position.array) }), cameraPosition: () => [camera.matrixWorld.elements[12], camera.matrixWorld.elements[13], camera.matrixWorld.elements[14]], loadReference, changed, undo, redo, remember, place: PLACE,
-  localPoints: () => LOCAL_PTS, dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); SCALP_DIRTY = true; } };
+  refreshBody, localPoints: () => LOCAL_PTS, dirtyAll: () => { for (const l of st.locks) DIRTY.add(l.id); SCALP_DIRTY = true; } };

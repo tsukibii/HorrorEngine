@@ -1030,10 +1030,16 @@ async function loadSalon() {
 // the Hair tab: the salon in a frame on this character, its body saved first so the salon draws on the head as it is
 // now; a bake there (or leaving the tab) puts the hair back on here
 const SALONF = $("#salonFrame");
-async function enterSalon() {
-  if (WHO) await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])).catch(() => {});
-  const want = `salon.html?embed=1${WHO ? `&person=${encodeURIComponent(WHO)}` : ""}`;
-  if (SALONF.dataset.for !== want) { SALONF.dataset.for = want; SALONF.src = want; }
+async function enterSalon() {                          // every time: the body as it is now saved, and the salon told (a frame already open on this character redraws its head)
+  if (!WHO) status("pick or make a character first (top bar): the salon is showing a base body", "bad");
+  else {
+    try { await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); }
+    catch (e) { status(`the body didn't save for the salon: ${e.message}`, "bad"); }
+  }
+  const want = `salon.html?embed=1${WHO ? `&person=${encodeURIComponent(WHO)}` : ""}`, tone = st.skin.tone;   // the tone as it is now, saved or not
+  if (SALONF.dataset.for !== want) { SALONF.dataset.for = want; SALONF.src = `${want}&tone=${encodeURIComponent(tone)}`; return; }
+  const sw = SALONF.contentWindow?.__salon;
+  if (sw?.ready && WHO) await sw.refreshBody(WHO, tone).catch(e => status(e.message, "bad"));
 }
 addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.salon === "baked") loadSalon().catch(() => null); });
 const blSet = {};

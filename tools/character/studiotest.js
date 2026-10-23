@@ -176,7 +176,19 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!body) throw new Error("the Hair tab didn't save the body for the salon");
     await page.click('#tabs button[data-tab="face"]');
     if (await page.evaluate(() => document.querySelector("main").hidden || !document.querySelector("#salonFrame").hidden)) throw new Error("the studio didn't come back from the salon");
-    console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"})`);
+    // a second visit after the body changed: the salon's head is the Studio's body as it is now, point for point
+    const same = () => page.evaluate(() => { const w = document.querySelector("#salonFrame").contentWindow;
+      const P = w.__salon.HEAD ? w.__salon.HEAD.geometry.attributes.position.array : null, B = window.__body.neutralBody();
+      if (!P) return -1; let d = 0; for (let i = 0; i < B.length; i += 997) d = Math.max(d, Math.abs(P[i] - B[i])); return d; });
+    const base0 = await page.evaluate(() => window.__body.st.base);
+    await page.evaluate(() => { const r = document.querySelector('#baseRows input[type=range]'); r.value = 0.6; r.dispatchEvent(new Event("input")); });
+    await page.click('#tabs button[data-tab="hair"]');
+    await page.waitForFunction(() => /as the Character Studio has it now/.test(document.querySelector("#salonFrame").contentWindow.document.querySelector("#status")?.textContent || ""), null, { timeout: 120000 });
+    const off = await same();
+    await page.click('#tabs button[data-tab="face"]');
+    await page.evaluate(b => { const r = document.querySelector('#baseRows input[type=range]'); r.value = b; r.dispatchEvent(new Event("input")); }, base0);
+    if (!(off >= 0 && off < 1e-5)) throw new Error("the salon's head isn't the Studio's body on a second visit: " + off);
+    console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"}); after a body change, a second visit shows the new body (within ${(off * 1e6).toFixed(1)} µm)`);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("brows and lashes (the hair shader): off at first; the lashes on the lids' edges swing down as the eyes shut, the brows ride a brow raise", async () => {
