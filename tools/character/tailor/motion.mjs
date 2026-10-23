@@ -111,9 +111,9 @@ try {
       measured.push({ sm: skinned(og, new THREE.MeshBasicMaterial(), g.outer[0].P), garment: g.name });
       measured.at(-1).sm.visible = false;
     }
-    const F = B.F, cm = y => Math.round(y * 100);
+    const F = B.F, y0 = B.floor || 0, cm = y => Math.round((y + y0) * 100);   // the frame's heights back in the figure's own space
     say(who.name + ": dressed in " + Math.round(t1 - t0) + " ms, skinned in " + Math.round(performance.now() - t1) + " ms: " + worn.map(g => g.name).join(", ") +
-      " (" + cm(F.H) + " cm tall, the neck at " + cm(F.neckBaseY) + ", armpits " + cm(F.armpitY) + ", waist " + cm(F.waistY) + ", crotch " + cm(F.crotchY) + ")");
+      " (" + Math.round(F.H * 100) + " cm tall, its soles at " + cm(0) + ", the neck at " + cm(F.neckBaseY) + ", armpits " + cm(F.armpitY) + ", waist " + cm(F.waistY) + ", crotch " + cm(F.crotchY) + ")");
     const restBones = body.skeleton.bones.map(b => [b.position.clone(), b.quaternion.clone()]);
     for (const [pi, name] of S.poses.entries()) {
       if (name === "rest") body.skeleton.bones.forEach((b, i) => { b.position.copy(restBones[i][0]); b.quaternion.copy(restBones[i][1]); });
@@ -134,11 +134,12 @@ try {
         }
         under[g.garment] = +(100 * bad / cnt).toFixed(1);
       }
-      say("  " + name + " " + JSON.stringify(under));
+      let sole = Infinity; for (let i = 1; i < PP.length; i += 3) sole = Math.min(sole, PP[i]);
+      say("  " + name + " " + JSON.stringify(under) + " (soles at " + Math.round(sole * 100) + " cm)");
       const dots = S.marks && marks.length ? new THREE.Points(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(marks, 3)),
         new THREE.PointsMaterial({ color: "#ff2020", size: 3, sizeAttenuation: false, depthTest: false })) : null;
       if (dots) { dots.renderOrder = 9; scene.add(dots); }
-      const mid = fig.map.pelvis.getWorldPosition(new THREE.Vector3()); mid.y = Math.max(0.5 * mid.y, mid.y + S.at * who.H);
+      const mid = fig.map.pelvis.getWorldPosition(new THREE.Vector3()); mid.y = Math.max(0.06 * who.H, mid.y + S.at * who.H);
       S.views.forEach((deg, row) => {
         const a = deg * Math.PI / 180, d = 3.4 * who.H / 1.7 / S.zoom, y = ((S.bodies.length - 1 - bi) * rows + rows - 1 - row) * S.size * 1.5;
         cam.position.set(mid.x + Math.sin(a) * d, mid.y + 0.1 / S.zoom, mid.z + Math.cos(a) * d); cam.lookAt(mid.x, mid.y, mid.z);

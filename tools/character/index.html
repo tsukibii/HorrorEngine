@@ -507,7 +507,7 @@ function dragGarment(e) {                              // along the handle's own
 }
 function dropGarment() {                               // let go: the new value, and the clothes cut again
   const { m, d } = GDRAG; GDRAG = null;
-  if (Math.abs(d) < 0.002) { m.position.copy(m.userData.h.at); return; }
+  if (Math.abs(d) < 0.002) { m.position.set(...m.userData.h.at); return; }
   const c = st.clothes.find(x => x.design === m.userData.design); if (!c) return;
   setEdit(c, m.userData.h, m.userData.h.value + d / m.userData.h.rate);
   drawWorn(); dress();

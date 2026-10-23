@@ -12,11 +12,16 @@ import { height } from "./tailor/frame.js";
 
 export const VERSION = 1;
 
-/** the body, read once per shape: P, T in metres, Y up, facing +Z, feet on the floor */
+/** the body, read once per shape: P, T in metres, Y up, facing +Z. One that doesn't stand on y = 0 (the desk's figure
+    stands its foot bones there, its soles a little under) is measured standing on it, and its clothes come back in its
+    own frame (B.floor, the height it stands at) */
 export function body(P, T) {
+  let low = Infinity; for (let i = 1; i < P.length; i += 3) low = Math.min(low, P[i]);
+  if (Math.abs(low) > 1e-4) { const B = body(raised(P, -low), T); B.floor = low; return B; }
   const F = frame(P, T);
   return prepare(P, T, F);
 }
+const raised = (P, dy) => { const Q = Float32Array.from(P); for (let i = 1; i < Q.length; i += 3) Q[i] += dy; return Q; };
 
 /**
  * One garment on the body, over what's already worn (`under`: garments this function made). Returns
@@ -24,7 +29,8 @@ export function body(P, T) {
  * PART, S (a shade per vertex: darker along the edges)}], outer: [{P, T}] (its outside, for what goes over it), stats}.
  */
 export function make(B, name, design, opts = {}) {
-  const t0 = Date.now(), F = B.F, s = F.s, under = opts.under || [];
+  const t0 = Date.now(), F = B.F, s = F.s, y0 = B.floor || 0;
+  const under = (opts.under || []).map(g => y0 ? { ...g, outer: g.outer.map(o => ({ ...o, P: raised(o.P, -y0) })) } : g);   // into the frame it's cut in
   const p = design.piece, color = opts.color || design.color || "#888888", trim = design.trim || color;
   const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, p) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [], outer = [G.outer];
@@ -46,7 +52,12 @@ export function make(B, name, design, opts = {}) {
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   // its look (tailor/look.js): the design's fabric, pattern and trim, then the garment's own
   const look = { color, surface: design.surface, trim: design.trimSurface, pattern: design.pattern, denier: design.denier, ...(opts.look || {}) };
-  return { name, design, look, parts, outer, thickness: th, handles: handles(F, G, p), stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
+  const hs = handles(F, G, p);
+  if (y0) {                                                          // back into the body's own frame
+    for (const q of [...parts, ...outer]) q.P = raised(q.P, y0);
+    for (const h of hs) h.at = [h.at[0], h.at[1] + y0, h.at[2]];
+  }
+  return { name, design, look, parts, outer, thickness: th, handles: hs, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
 }
 
 /** a design with a garment's own edits laid over its piece (objects merged, the rest replaced) */

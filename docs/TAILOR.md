@@ -130,6 +130,12 @@ the body's, fixed where the body is (correctives in Unreal). A skirt in a sit is
 turns up with them into a tube pointing forward, where a real one drapes over the lap and hangs at the sides. That
 needs cloth (Chaos Cloth on the hem in Unreal) or skirt bones; weights alone can't drape it.
 
+The desk's figure stands its ankle bones on the floor at rest, its soles 7 to 8 cm under it; the tailor measures any
+body standing on its own lowest point and gives the clothes back in the body's frame (`B.floor`), so shoes, soles and
+every height work on it as on the Studio's body. Posed by the desk, the soles are at the floor standing, 4 cm over it
+at both strides of `walkOverlay` (the legs swing, the hips keep their height) and 5 cm under it in `sit`: the desk's
+previs, not the clothes.
+
 ## 4. Not done yet
 
 - **Into Unreal:** the weights are there (§3b); the export isn't: the clothes still leave as OBJ. They go to Unreal
