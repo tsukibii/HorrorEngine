@@ -211,30 +211,21 @@ vec3 makeup(vec3 c, vec3 p) {
   return c;
 }`;
 
-// the eye plane: the eyeball's paint projected onto the points of the closed shell picked for the eye (index.html)
-const EYE_COMMON = `
-uniform float uEyeOn, uEyeFillOn, uEyeRough, uEyeCoatR; uniform sampler2D uEyeTexL, uEyeTexR; uniform mat4 uEyeInvL, uEyeInvR; uniform vec3 uEyeFill; uniform vec2 uEyeShut;
-varying float vEyeW;
-float eyeW = 0.0;
-`;
-
 // the material's shader, with the skin added; uniforms are shared so sliders only change numbers
 export function procedural(material) {
   const u = { uProc: { value: 0 }, uPigOn: { value: 0 }, uScale: { value: 1 }, uHasPhoto: { value: 0 }, uTone: { value: new THREE.Color() }, uPhotoTone: { value: new THREE.Color(1, 1, 1) },
               uPhotoMap: { value: null }, uPhotoMask: { value: null },
               uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null },
-              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
-              uEyeOn: { value: 0 }, uEyeTexL: { value: null }, uEyeTexR: { value: null }, uEyeInvL: { value: new THREE.Matrix4() }, uEyeInvR: { value: new THREE.Matrix4() },   // the eye plane (index.html)
-              uEyeFill: { value: new THREE.Color(1, 1, 1) }, uEyeFillOn: { value: 1 }, uEyeShut: { value: new THREE.Vector2() }, uEyeRough: { value: 0.1 }, uEyeCoatR: { value: 0.05 } };   // the layers (layers.js)   // the touch-up (touchup.js)
+              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
   for (const k of Object.keys(LIDS)) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute float eyeW; varying float vSel; varying float vEyeW; varying vec3 vObj; varying vec2 vSkinUv;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW; vEyeW = eyeW;");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON + EYE_COMMON)
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
       .replace("#include <color_fragment>", `skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
@@ -260,25 +251,10 @@ if (uHasLay > 0.5) {                                                   // the la
   vec4 sf = texture2D(uLaySurf, vSkinUv);
   skinRough *= max(sf.r * 4.0, 0.04); skinCoat = clamp(skinCoat + sf.g, 0.0, 1.0); skinH += (sf.b - 0.50196) * 14.0; if (sf.g > 0.01) skinCoatR = 1.0 - sf.a;
 }
-if (uEyeOn > 0.5 && abs(vEyeW) > 0.001) {                             // the eye plane: the eyeball's paint projected onto the points picked for it
-  bool lft = vEyeW > 0.0;
-  vec3 q = ((lft ? uEyeInvL : uEyeInvR) * vec4(vObj, 1.0)).xyz;      // in the eyeball's own frame (a unit sphere, the pole forward, turned by the gaze)
-  float d2 = dot(q.xy, q.xy);
-  vec3 sp = vec3(q.xy, sqrt(max(1.0 - d2, 0.0)));                     // straight back along the eye's axis onto its front
-  float ph = atan(-sp.y, -sp.x); if (ph < 0.0) ph += 6.2831853;
-  vec2 euv = vec2(ph / 6.2831853, 1.0 - acos(clamp(sp.z, -1.0, 1.0)) / 3.14159265);   // the sphere's own UVs (eyes.js draws round the pole)
-  vec2 gx = dFdx(euv), gy = dFdy(euv); gx.x -= floor(gx.x + 0.5); gy.x -= floor(gy.x + 0.5);   // no seam where the angle wraps
-  vec3 ec = lft ? textureGrad(uEyeTexL, euv, gx, gy).rgb : textureGrad(uEyeTexR, euv, gx, gy).rgb;
-  ec = mix(ec, uEyeFillOn > 0.5 ? uEyeFill : diffuseColor.rgb, smoothstep(0.93, 1.0, d2));   // past the eyeball: the fill, or the skin
-  eyeW = clamp(abs(vEyeW), 0.0, 1.0) * (1.0 - smoothstep(0.3, 0.8, lft ? uEyeShut.x : uEyeShut.y));   // a blink: the lid's skin comes back
-  diffuseColor.rgb = mix(diffuseColor.rgb, ec, eyeW);
-  skinH *= 1.0 - eyeW; skinRough = mix(skinRough, uEyeRough, eyeW); skinCoat = mix(skinCoat, 1.0, eyeW); if (eyeW > 0.5) skinCoatR = uEyeCoatR;
-}
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.55, 0.1), clamp(vSel, 0.0, 1.0) * 0.55 * uShowSel);   // the selection, shown
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-if (uProc > 0.5 || uHasLay > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);
-if (eyeW > 0.0) roughnessFactor = mix(roughnessFactor, uEyeRough, eyeW);`)
+if (uProc > 0.5 || uHasLay > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 if (uProc > 0.5 || uHasLay > 0.5) {                                                   // the relief (pores, wrinkles), from how the height changes across the pixel
   vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx);
@@ -294,10 +270,10 @@ if (uProc > 0.5) {                                                   // light th
 }`)
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_CLEARCOAT
-if (uProc > 0.5 || uHasLay > 0.5 || eyeW > 0.0) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
+if (uProc > 0.5 || uHasLay > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-8";
+  material.customProgramCacheKey = () => "studio-skin-7";
   return u;
 }
 

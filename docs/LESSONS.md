@@ -365,3 +365,9 @@ script, grep for it (`\bNAME\b`).
 - **A wide cut deletes what sits after it:** cutting from one `def` to the next `def` also took the module constants
   between them (`HAIR`, `SALON_FILES`): the server ran and failed on its first request. After a cut, `pyflakes` the
   file before restarting.
+- **An eyeball grown from its front still widens to the sides:** pinning the pupil keeps the front in place, but a
+  23 mm sphere reaches past the eye's corner and out of the temple. Drawing the eyeball only through the opening (the
+  cut triangles into the stencil, the eyeball where it's set) lets it grow freely. And the eye plane (the eyeball's
+  paint projected onto picked vertices) was rejected by the user too: a real opening with a real eyeball reads better.
+- **Replacing a prefix of a line moves its tail:** swapping the `DP[...]` part of a line that also set the normals put
+  `DN[...] = NP[...]` after the new line's comment; every normal was zero and the body rendered black. Replace whole lines.

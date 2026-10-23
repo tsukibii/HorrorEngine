@@ -6,7 +6,7 @@ import * as THREE from "three";
 export const EYE_COLOURS = [["iris", "Iris (rim)", "#3b2618"], ["iris2", "Iris (round the pupil)", "#7a5a3a"], ["sclera", "Sclera", "#f4efe9"], ["corner", "Corner tint", "#e08a8a"]];
 export const EYE_CONTROLS = [   // [key, label, lo, hi, step, default, help]
   ["irisSize", "Iris size", 20, 46, 0.5, 31, "The iris's angle round the front pole (degrees): a bigger one reads more doll-like and anime."],
-  ["pupil", "Pupil", 0.12, 0.6, 0.01, 0.34, "Its share of the iris."],
+  ["pupil", "Pupil size", 0.12, 0.6, 0.01, 0.34, "The pupil: its share of the iris (wide in the dark, small in light)."],
   ["fibres", "Iris fibres", 0, 1, 0.01, 0.3, "Fine radial streaks and a pale ring round the pupil."],
   ["limbal", "Limbal ring", 0, 1, 0.01, 0.5, "The dark band at the iris's edge."],
   ["limbalWidth", "Limbal width", 0.05, 0.45, 0.01, 0.18, "As a share of the iris."],

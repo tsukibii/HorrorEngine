@@ -184,21 +184,18 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"}); brows and lashes ${before / 3} points`);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("the eye plane: the lids' points picked in Layers, used as the eye plane; the shell stays, the eyeball goes inside the head, its paint on the shell; Clear sinks the shell again", async () => {
-    await page.click('#tabs button[data-tab="skin"]');
-    await page.evaluate(() => [...document.querySelectorAll("#eyeRows button")].find(b => b.textContent === "Start from the lids").click());
-    await page.waitForFunction(() => !document.querySelector('section[data-tab="layers"]').hidden && window.__body.LAY.layers.count() > 0, null, { timeout: 10000 });
-    await page.evaluate(() => document.querySelector("#eyePlaneLay button").click());
-    const on = await page.evaluate(() => { const b = window.__body, p = b.st.eyes.plane, z = Math.max(...p.map(v => b.POS[v * 3 + 2]));
-      return { n: p.length, left: p.filter(v => b.POS[v * 3] > 0).length, on: b.SKU.uEyeOn.value, ball: b.EYES.L.visible, front: z - b.EYES.L.position.z, r: b.EYES.L.scale.x, count: document.querySelector("#planeCount").textContent }; });
-    if (!on.n || !on.left || on.left === on.n || on.on !== 1 || on.ball || !(on.front > on.r)) throw new Error("the eye plane: " + JSON.stringify(on));
-    await page.evaluate(() => { document.querySelector("#laySelect").checked && document.querySelector("#laySelect").click(); window.__body.LAY.layers.clear(); window.__body.LAY.showSel(); });
-    await page.click('#tabs button[data-tab="skin"]');
-    await page.evaluate(() => [...document.querySelectorAll("#eyeRows button")].find(b => b.textContent === "Clear").click());
-    const off = await page.evaluate(() => ({ n: window.__body.st.eyes.plane.length, on: window.__body.SKU.uEyeOn.value, ball: window.__body.EYES.L.visible }));
-    if (off.n || off.on || !off.ball) throw new Error("the eye plane cleared: " + JSON.stringify(off));
-    console.log(`       ${on.count}; the shell ${(on.front * 1000).toFixed(1)} mm in front of the eyeball's centre (radius ${(on.r * 1000).toFixed(1)} mm)`);
-    await page.click('#tabs button[data-tab="body"]');
+  await step("the eyes: the shell cut out inside the lid outlines; a bigger eyeball grows back from its pupil and shows only through the opening; Pupil size", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, L = b.EYES.L, front = () => L.position.z + L.scale.x, cut = () => b.CUT.reduce((a, x) => a + x, 0);
+      b.st.eyes.size = 1; b.compose(); const f1 = front(), r1 = L.scale.x, n = cut();
+      const left = (() => { let k = 0; for (let t = 0; t < b.CUT.length; t++) if (b.CUT[t] && b.POS[b.TRIS[t * 3] * 3] > 0) k++; return k; })();
+      b.st.eyes.size = 1.8; b.paintEyes(); b.compose(); const f2 = front(), r2 = L.scale.x;
+      const stencil = L.material.stencilWrite && L.material.stencilFunc === 514;   // THREE.EqualStencilFunc
+      b.st.eyes.on = false; b.compose(); const off = cut(); b.st.eyes.on = true; b.st.eyes.size = 1; b.paintEyes(); b.compose();
+      return { n, left, f1, f2, r1, r2, stencil, off, pupil: [...document.querySelectorAll("#eyeRows .row span")].some(x => x.textContent === "Pupil size") };
+    });
+    if (!(r.n > 20 && r.left > 5 && r.left < r.n) || Math.abs(r.f2 - r.f1) > 1e-6 || !(r.r2 > 1.7 * r.r1) || !r.stencil || r.off || !r.pupil) throw new Error("the eyes: " + JSON.stringify(r));
+    console.log(`       ${r.n} triangles cut (left ${r.left}); size 1.8: radius ${(r.r1 * 1000).toFixed(1)} -> ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
   });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");

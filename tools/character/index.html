@@ -96,7 +96,6 @@
     <section data-tab="layers" hidden>
       <h3>Paint layers</h3>
       <p class="note">Select vertices on the body, then fill: colour, a PNG, a PBR set, with a feathered edge, pigment, opacity and shine. Layers sit above the base mesh: delete them and the base is what's left.</p>
-      <div id="eyePlaneLay" class="chips"></div>
       <div id="layerRows"></div>
     </section>
 
@@ -284,7 +283,7 @@ function skinLook() {
   const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
   material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
-  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || SKU.uEyeOn.value > 0 ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
+  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
 }
@@ -440,7 +439,7 @@ makeBtn.onclick = async () => {
 
 // ---- the body ---------------------------------------------------------------------------------------------------
 const view = $("#view");
-const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(devicePixelRatio);
+const renderer = new THREE.WebGLRenderer({ antialias: true, stencil: true });   // the stencil: the eyeballs drawn only through the eyes' openings renderer.setPixelRatio(devicePixelRatio);
 view.prepend(renderer.domElement);
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x202125);
 const camera = new THREE.PerspectiveCamera(26, 1, 0.02, 100);
@@ -474,7 +473,7 @@ function setLight(name) {
 }
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
-const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3 });   // the skin: a coat for oil and dew
+const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide });   // two-sided: through the eyes' openings the head's inside, not the background;   // the skin: a coat for oil and dew
 const geo = new THREE.BufferGeometry();                // shared points: the smooth normals
 const POS = new Float32Array(N * 3), RAW = new Float32Array(N * 3);
 geo.setAttribute("position", new THREE.BufferAttribute(POS, 3)); geo.setIndex(new THREE.BufferAttribute(TRIS, 1));
@@ -514,18 +513,19 @@ function compose() {                                   // POS: RAW + the face, s
     const k = st.face.strength * SCALE;
     for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; POS[i] += k * DELTA.d[j * 3]; POS[i + 1] += k * DELTA.d[j * 3 + 1]; POS[i + 2] += k * DELTA.d[j * 3 + 2]; }
   }
-  placeEyes();                                         // from the neutral face
+  placeEyes(); cutEyes();                              // from the neutral face: the eyeballs, and the openings cut round them
   for (let e = 0; e < ENAMES.length; e++) {
     const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
     for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; POS[i] += a * X[j * 3]; POS[i + 1] += a * X[j * 3 + 1]; POS[i + 2] += a * X[j * 3 + 2]; }
   }
-  openEyes();                                          // from the moving lids: a blink closes over the eyeball
-  geo.attributes.position.needsUpdate = true; geo.computeVertexNormals();
+  geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); holes();
   const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
   for (let c = 0; c < C; c++) {
     const i = TRIS[c] * 3, j = c * 3;
-    DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2]; DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
+    DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2];
+    DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
+    if (CUT[(c / 3) | 0]) { const k = TRIS[c - c % 3] * 3; DP[j] = POS[k]; DP[j + 1] = POS[k + 1]; DP[j + 2] = POS[k + 2]; }   // a cut triangle: its corners on one point, nothing drawn
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
@@ -533,7 +533,7 @@ function compose() {                                   // POS: RAW + the face, s
   LAY?.shapeChanged();
 }
 
-// ---- eyes: MHR's closed shell sunk behind an eyeball inside MediaPipe's lid outline -----------------------------------
+// ---- eyes: MHR's closed shell cut out inside MediaPipe's lid outline, an eyeball behind each opening ---------------------
 const LMK = await api("api/face/landmarks", {}).catch(() => null);   // {tri, bary}: the 468 points on MHR's body
 const LIDS = { L: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466],   // the character's left (+x)
                R: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] };
@@ -543,24 +543,23 @@ function lmk(i) {                                       // a landmark's place on
   return out;
 }
 function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
-let SUNK = new Uint8Array(0);                          // the points openEyes sank (the eye plane's start from the lids)
-function openEyes() {                                  // the closed shell inside the lid outline sinks behind the eyeball
-  SUNK = new Uint8Array(POS.length / 3);
-  if (!LMK || !st.eyes.on || planeOn()) return null;     // an eye plane keeps the shell: the eye is painted on it
+const CUT = new Uint8Array(TRIS.length / 3);           // the triangles cut out of the head: the eyes' openings
+function cutEyes() {                                   // MHR's closed shell inside MediaPipe's lid outline cut out (on the neutral face, so a blink's lids close over the eyeball)
+  CUT.fill(0);
+  if (!LMK || !st.eyes.on) return;
   for (const side of ["L", "R"]) {
-    const ring = LIDS[side].map(lmk), m = EYES[side];
+    const ring = LIDS[side].map(lmk), k = st.eyes.opening || 1;
     const cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cy = ring.reduce((a, p) => a + p[1], 0) / ring.length;
-    const poly = ring.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]);
+    const poly = ring.map(p => [cx + (p[0] - cx) * k, cy + (p[1] - cy) * k]);
     const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
-    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    const back = m.position.z - m.scale.x * 1.05, front = Math.min(...ring.map(p => p[2])) - 0.006;
-    for (let i = 0; i < POS.length; i += 3) {
-      const x = POS[i], y = POS[i + 1], z = POS[i + 2];
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), front = Math.min(...ring.map(p => p[2])) - 0.006;
+    for (let t = 0; t < CUT.length; t++) {
+      const a = TRIS[t * 3] * 3, b = TRIS[t * 3 + 1] * 3, c = TRIS[t * 3 + 2] * 3;
+      const x = (POS[a] + POS[b] + POS[c]) / 3, y = (POS[a + 1] + POS[b + 1] + POS[c + 1]) / 3, z = (POS[a + 2] + POS[b + 2] + POS[c + 2]) / 3;
       if (x < x0 || x > x1 || y < y0 || y > y1 || z < front) continue;
-      if (inside(poly, x, y)) { POS[i + 2] = back; SUNK[i / 3] = 1; }
+      if (inside(poly, x, y)) CUT[t] = 1;
     }
   }
-  return null;
 }
 // the mouth: MHR's shell is sealed between the lips by a membrane of triangles whose corners all sit on the lip line;
 // when the jaw drops they stretch into the open mouth. Those (near the mouth, ten times their area or more on jawDrop)
@@ -589,14 +588,27 @@ dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material
 
 const eyeMats = { L: new THREE.MeshPhysicalMaterial({ ior: 1.4 }), R: new THREE.MeshPhysicalMaterial({ ior: 1.4 }) };   // one each: the corner tint is the inner one
 function paintEyes() {                                  // eyes.js: the textures and the wet look from st.eyes
-  for (const side of ["L", "R"]) { eyeMats[side].map?.dispose(); eyeMats[side].map = EYEPAINT.eyeTexture(st.eyes, side); EYEPAINT.eyeFinish(eyeMats[side], st.eyes); }
-  if (typeof planeUniforms === "function") planeUniforms();
+  const iris = Math.asin(Math.min(1, Math.sin(st.eyes.irisSize * Math.PI / 180) / (st.eyes.size || 1))) * 180 / Math.PI;   // a bigger eyeball keeps the iris's own size: more white
+  for (const side of ["L", "R"]) { eyeMats[side].map?.dispose(); eyeMats[side].map = EYEPAINT.eyeTexture({ ...st.eyes, irisSize: iris }, side); EYEPAINT.eyeFinish(eyeMats[side], st.eyes); }
 }
 const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
 const EYES = { L: new THREE.Mesh(eyeGeo, eyeMats.L), R: new THREE.Mesh(eyeGeo, eyeMats.R) };
-const EYEPLANE = () => ({ plane: [], size: 1, depth: 4, fillOn: true, fill: "#f4efe9", showBall: false });   // the eye plane (below)
-st.eyes = { ...EYEPAINT.EYE_DEFAULTS, ...EYEPLANE() };
-const planeOn = () => st.eyes.on && (st.eyes.plane || []).length > 0 && !!LMK;
+// the openings on the screen: the cut triangles drawn into the stencil only (where the head doesn't hide them); the
+// eyeballs are drawn only there, so a bigger one grows inside the head and never shows outside it
+const holeGeo = new THREE.BufferGeometry(); holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3));
+const HOLES = new THREE.Mesh(holeGeo, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide,
+  stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
+HOLES.renderOrder = 1; HOLES.frustumCulled = false;
+for (const m of Object.values(eyeMats)) Object.assign(m, { stencilWrite: true, stencilWriteMask: 0, stencilRef: 1, stencilFunc: THREE.EqualStencilFunc });
+for (const e of Object.values(EYES)) e.renderOrder = 2;
+function holes() {                                     // the cut triangles where they are now (a blink closes them with the lids)
+  let n = 0; for (const c of CUT) n += c;
+  const P = new Float32Array(n * 9); let o = 0;
+  for (let t = 0; t < CUT.length; t++) if (CUT[t]) for (let k = 0; k < 3; k++) { const v = TRIS[t * 3 + k] * 3; P[o++] = POS[v]; P[o++] = POS[v + 1]; P[o++] = POS[v + 2]; }
+  holeGeo.setAttribute("position", new THREE.BufferAttribute(P, 3)); holeGeo.computeBoundingSphere();
+}
+const EYEFIT = { size: 1, depth: 0, opening: 1 };   // the eyeball's size (grown back from the pupil), how far back, the opening's size
+st.eyes = { ...EYEPAINT.EYE_DEFAULTS, ...EYEFIT };
 paintEyes();
 function placeEyes() {
   for (const side of ["L", "R"]) {
@@ -604,26 +616,25 @@ function placeEyes() {
     if (!LMK || !st.eyes.on) { m.visible = false; continue; }
     const ring = LIDS[side].map(lmk), n = ring.length;
     const c = [0, 1, 2].map(a => ring.reduce((s, p) => s + p[a], 0) / n);
-    const r = 0.0118 * SCALE * (st.eyes.size || 1), plane = planeOn();   // a 12 mm eyeball, with the body's scale
-    m.scale.setScalar(r); m.position.set(c[0], c[1], Math.max(...ring.map(p => p[2])) - r + 0.0008 - (plane ? st.eyes.depth / 1000 : 0));
+    const r = 0.0118 * SCALE * (st.eyes.size || 1);     // a 12 mm eyeball, with the body's scale; bigger, it grows back into the head:
+    const front = Math.max(...ring.map(p => p[2])) + 0.0008 - (st.eyes.depth || 0) / 1000;   // the pupil (its front) stays where it is
+    m.scale.setScalar(r); m.position.set(c[0], c[1], front - r);
     const w = n => st.expr[ENAMES.indexOf(n)] * st.exprAmt;
     const yaw = (w(`eyesLookLeft_${side}`) - w(`eyesLookRight_${side}`)) * 0.45, pitch = (w(`eyesLookDown_${side}`) - w(`eyesLookUp_${side}`)) * 0.35;
-    m.rotation.set(pitch, yaw, 0); m.visible = !plane || !!st.eyes.showBall;
-    m.updateMatrix(); SKU[`uEyeInv${side}`].value.copy(m.matrix).invert();   // the eye plane's projection: the body's space into the eyeball's
-    SKU.uEyeShut.value.setComponent(side === "L" ? 0 : 1, w(`eyesClosed_${side}`));
+    m.rotation.set(pitch, yaw, 0); m.visible = true;
   }
 }
 
-const orbit = { yaw: 0.3, pitch: 0.08, focus: "body" };
+const orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vector3() };   // zoom: the wheel; pan: right-drag, a double-click centres on a point
 function place() {
   const head = orbit.focus === "head", pov = orbit.focus === "pov", face = TOP - 0.12 * TOP / 1.7;
   if (pov) {                                           // the player's eye, standing, at the shot's distance, looking at the face
     const d = +$("#povShot").value + 0.1;              // the face is ~10 cm in front of the body's middle
     camera.position.set(d * Math.sin(orbit.yaw), 1.65, d * Math.cos(orbit.yaw)); camera.lookAt(0, face, 0);
   } else {
-    const ty = head ? face : TOP * 0.52, d = head ? 0.9 : 4.6;
-    camera.position.set(d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), ty + d * Math.sin(orbit.pitch), d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
-    camera.lookAt(0, ty, 0);
+    const ty = head ? face : TOP * 0.52, d = (head ? 0.9 : 4.6) * orbit.zoom, P = orbit.pan;
+    camera.position.set(P.x + d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), P.y + ty + d * Math.sin(orbit.pitch), P.z + d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
+    camera.lookAt(P.x, P.y + ty, P.z);
   }
   const fov = pov ? 2 * Math.atan(Math.tan(Math.PI / 4) * 9 / 16) * 180 / Math.PI : 26;   // game.fov: 90° across a 16:9 screen (59° up and down)
   if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
@@ -636,23 +647,44 @@ function viewRect(w, h) {                              // where the picture goes
 }
 function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 addEventListener("resize", resize);
-let drag = null, LSTROKE = false;
+let drag = null, PAN = null, LSTROKE = false;
+const viewDist = () => (orbit.focus === "head" ? 0.9 : 4.6) * orbit.zoom;
+renderer.domElement.addEventListener("wheel", e => {   // the wheel zooms (not in POV: that's the player's distance)
+  if (orbit.focus === "pov") return; e.preventDefault();
+  orbit.zoom = Math.min(3, Math.max(0.06, orbit.zoom * Math.exp(e.deltaY * 0.0012)));
+}, { passive: false });
+renderer.domElement.addEventListener("contextmenu", e => e.preventDefault());
+renderer.domElement.ondblclick = e => {                // a double-click centres the view on that point of the body
+  if (orbit.focus === "pov") return;
+  const r = renderer.domElement.getBoundingClientRect(), ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), camera);
+  dgeo.computeBoundingSphere(); const h = ray.intersectObject(mesh, false)[0]; if (!h) return;
+  const ty = orbit.focus === "head" ? TOP - 0.12 * TOP / 1.7 : TOP * 0.52;
+  orbit.pan.set(h.point.x, h.point.y - ty, h.point.z);
+};
 renderer.domElement.onpointerdown = e => {
   renderer.domElement.setPointerCapture(e.pointerId);
+  if (orbit.focus !== "pov" && (e.button === 2 || e.button === 1)) { PAN = [e.clientX, e.clientY]; return; }   // right (or middle) drag pans
   if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
   drag = [e.clientX, e.clientY];
 };
-renderer.domElement.onpointermove = e => { if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
-renderer.domElement.onpointerup = () => { drag = null; if (LSTROKE) { LSTROKE = false; LAY.up(); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
+renderer.domElement.onpointermove = e => {
+  if (PAN) {                                           // the view's middle moves with the pointer, in the screen's plane
+    const r = renderer.domElement.getBoundingClientRect(), k = 2 * viewDist() * Math.tan(camera.fov * Math.PI / 360) / r.height;
+    const X = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), Y = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+    orbit.pan.addScaledVector(X, -(e.clientX - PAN[0]) * k).addScaledVector(Y, (e.clientY - PAN[1]) * k); PAN = [e.clientX, e.clientY]; return;
+  }
+  if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onpointerup = () => { drag = null; PAN = null; if (LSTROKE) { LSTROKE = false; LAY.up(); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
 for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
-  if (b.dataset.v) orbit.focus = b.dataset.v; else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }
+  if (b.dataset.v) { orbit.focus = b.dataset.v; orbit.zoom = 1; orbit.pan.set(0, 0, 0); } else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }   // Body, Head, POV: the zoom and pan reset
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
 };
 $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
 let LAST = performance.now() / 1000, ACC = 0;
 renderer.setAnimationLoop(() => {
-  if (!EYES_IN) { rig.add(EYES.L, EYES.R); EYES_IN = true; }
+  if (!EYES_IN) { rig.add(EYES.L, EYES.R, HOLES); EYES_IN = true; }
   if (hairDirty && HAIR_OK) growHair();
   const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
   place(); STUDIO.tick();
@@ -760,7 +792,11 @@ LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, 
 const eyeSet = {};
 {
   const box = $("#eyeRows"), on = el("input", { type: "checkbox", checked: true });
-  box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Sinks MHR's closed shell inside MediaPipe's lid outline behind a 12 mm eyeball; the gaze shapes turn them, a blink closes the lid over them. Placeholders for the real eye parts. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Cuts MHR's closed shell out inside MediaPipe's lid outline and puts a 12 mm eyeball behind each opening; the gaze shapes turn them, a blink closes the lids over them. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
+  const fit = [["size", "Eyeball size", 1, 2.2, 0.01, 1, "Bigger, the eyeball grows back into the head from its pupil (the front stays put), so it fills the opening without coming out of it; the iris keeps its size."],
+               ["depth", "Eyeball depth (mm)", -1, 4, 0.1, 0, "How far behind the lids the eyeball's front sits."],
+               ["opening", "Opening", 0.85, 1.2, 0.01, 1, "How much of the shell is cut away round the lid outline."]];
+  for (const [k, label, lo, hi, step, def, help] of fit) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; if (k === "size") repaint(); changed("expr"); });
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
   let later = 0; const repaint = () => { clearTimeout(later); later = setTimeout(paintEyes, 60); };
   const cols = {};
@@ -769,66 +805,8 @@ const eyeSet = {};
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
+  eyeSet.all = () => { on.checked = st.eyes.on; for (const k of ["size", "depth", "opening"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
 }
-
-// ---- the eye plane: the points of the closed shell picked for the eye (by vertex, with the Layers tab's tools); the
-// eyeball's paint is projected onto them along its axis in the skin's shader (skinshader.js), past the eyeball the fill
-// colour; the shell isn't sunk and the eyeball sits inside the head, hidden. The gaze turns the projection, a blink
-// brings the lid's skin back ---------------------------------------------------------------------------------------------
-const eyeAttr = new THREE.BufferAttribute(new Float32Array(C), 1); dgeo.setAttribute("eyeW", eyeAttr);
-function planeAttr() {                                  // +1 on the left eye's points (+x), -1 on the right's, 0 elsewhere
-  const on = new Uint8Array(N); for (const v of st.eyes.plane || []) on[v] = 1;
-  for (let c = 0; c < C; c++) { const v = TRIS[c]; eyeAttr.array[c] = on[v] ? (BASEP[v * 3] > 0 ? 1 : -1) : 0; }
-  eyeAttr.needsUpdate = true; planeUniforms(); skinLook();
-}
-function planeUniforms() {
-  SKU.uEyeOn.value = planeOn() ? 1 : 0;
-  SKU.uEyeTexL.value = eyeMats.L.map; SKU.uEyeTexR.value = eyeMats.R.map;
-  SKU.uEyeFill.value.set(st.eyes.fill); SKU.uEyeFillOn.value = st.eyes.fillOn ? 1 : 0;
-  SKU.uEyeRough.value = eyeMats.L.roughness; SKU.uEyeCoatR.value = eyeMats.L.clearcoatRoughness;
-}
-function lidPoints() {                                  // a start: the points inside MediaPipe's lid outlines, in front
-  const out = [];
-  for (const side of ["L", "R"]) {
-    const ring = LIDS[side].map(lmk), cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cy = ring.reduce((a, p) => a + p[1], 0) / ring.length;
-    const poly = ring.map(p => [cx + (p[0] - cx) * 1.04, cy + (p[1] - cy) * 1.04]), front = Math.min(...ring.map(p => p[2])) - 0.006;
-    for (let i = 0; i < N; i++) if ((POS[i * 3 + 2] >= front || SUNK[i]) && Math.abs(POS[i * 3] - cx) < 0.03 && Math.abs(POS[i * 3 + 1] - cy) < 0.02 && inside(poly, POS[i * 3], POS[i * 3 + 1])) out.push(i);
-  }
-  return out;
-}
-const planeUI = {};
-{
-  const box = $("#eyeRows");
-  box.append(el("h4", { textContent: "Eye plane" }), el("p", { className: "note", textContent: "Pick the points of the head that are the eye (the Layers tab's brush and flood, or start from the lids), then Use the selection: the eyeball's paint is projected onto them, the eyeball goes inside the head. Past the eyeball the fill colour, or a bigger eyeball covers it all." }));
-  const count = el("p", { className: "note", id: "planeCount" });
-  const toLayers = pts => { const S = LAY.layers.sel; S.fill(0); for (const v of pts) S[v] = 1; LAY.showSel(); tab("layers"); LAY.selecting(true); };
-  const b = (t, title, fn) => { const x = el("button", { textContent: t, title }); x.onclick = fn; return x; };
-  box.append(el("div", { className: "chips" },
-    b("Start from the lids", "The points inside MediaPipe's lid outlines into the Layers tab's selection, to grow, shrink or brush there", () => { if (!LMK) return status("no landmarks: the face isn't set up", "bad"); toLayers(lidPoints()); status("the lids' points selected: brush, grow or shrink them, then Use the selection as the eye plane", "ok"); }),
-    b("Edit in Layers", "The eye plane into the Layers tab's selection", () => toLayers(st.eyes.plane)),
-    b("Clear", "No eye plane: the shell sunk behind the eyeball, as before", () => { st.eyes.plane = []; planeChanged(); })), count);
-  planeUI.size = slider(box, "eye_size", "Eyeball size", 0.8, 2.2, 0.01, 1, "The eyeball (and its projection) bigger, so it covers all the eye's points; the iris grows with it (Iris size takes it back).", v => { st.eyes.size = v; changed("expr"); });
-  planeUI.depth = slider(box, "eye_depth", "Eyeball depth (mm)", 0, 12, 0.5, 4, "How far the eyeball sits behind the lids with an eye plane: inside the head. The projection doesn't change.", v => { st.eyes.depth = v; changed("expr"); });
-  const fillOn = el("input", { type: "checkbox", checked: true }), fill = el("input", { type: "color", value: "#f4efe9" }), pick = b("= sclera", "The fill takes the sclera's colour", () => { st.eyes.fill = st.eyes.sclera; fill.value = st.eyes.fill; planeUniforms(); });
-  fillOn.onchange = () => { st.eyes.fillOn = fillOn.checked; planeUniforms(); }; fill.oninput = () => { st.eyes.fill = fill.value; planeUniforms(); };
-  box.append(el("label", { className: "tog" }, fillOn, el("span", {}, "Fill past the eyeball", el("small", { textContent: "Points of the eye plane the eyeball doesn't reach take this colour; off, they keep the skin." }))),
-             el("div", { className: "row" }, el("span", { textContent: "Fill colour" }), fill, pick));
-  const show = el("input", { type: "checkbox" }); show.onchange = () => { st.eyes.showBall = show.checked; changed("expr"); };
-  box.append(el("label", { className: "tog" }, show, el("span", {}, "Show the eyeball", el("small", { textContent: "With an eye plane the eyeball is hidden inside the head: this shows where it sits." }))));
-  planeUI.all = () => {
-    planeUI.size(st.eyes.size); planeUI.depth(st.eyes.depth); fillOn.checked = st.eyes.fillOn; fill.value = st.eyes.fill; show.checked = !!st.eyes.showBall;
-    const n = (st.eyes.plane || []).length, l = (st.eyes.plane || []).filter(v => BASEP[v * 3] > 0).length;
-    count.textContent = n ? `Eye plane: ${n} points (left ${l}, right ${n - l})` : "No eye plane: the shell is sunk behind the eyeball.";
-  };
-  const lay = $("#eyePlaneLay");
-  lay.append(b("Use the selection as the eye plane", "The selected points become the eyes (each side by where it is); the eyeball's paint is projected onto them (Skin, Eyes)", () => {
-    const S = LAY.layers.sel, pts = []; for (let i = 0; i < N; i++) if (S[i]) pts.push(i);
-    if (!pts.length) return status("select the eye's points first (Select on the body)", "bad");
-    st.eyes.plane = pts; planeChanged(); status(`the eye plane: ${pts.length} points`, "ok");
-  }));
-}
-function planeChanged() { planeAttr(); planeUI.all(); changed("expr"); }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
 // Hair tab is the salon itself, in a frame on this character; the brows and lashes are grown here from the face's
@@ -979,7 +957,7 @@ async function open(name) {
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
-  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEPLANE(), c.eyes || {}); eyeSet.all(); paintEyes(); planeAttr(); planeUI.all();
+  Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, c.eyes || {}); delete st.eyes.plane; eyeSet.all(); paintEyes();
   const ch = c.hair || {};
   Object.assign(st.hair, { brows: ch.brows ?? true, lashes: ch.lashes ?? true, color: ch.color || "#2a1d17" });   // older files' hair settings are left out
   hairSet.all();
@@ -1029,7 +1007,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get LAY() { return LAY; }, planeAttr, lidPoints, planeOn, compose, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, enterSalon, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
+window.__body = { get LAY() { return LAY; }, compose, CUT, paintEyes, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, enterSalon, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();
