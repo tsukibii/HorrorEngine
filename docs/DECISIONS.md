@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24, later (circles on the body, a smoother bake, the view's buttons)
+
+- **Shape by hand, with circles on the body** (after the user's references: a game's face editor and body editor):
+  each circle a named control MHR's shapes don't give (the forehead's height first: the user's forehead was too big),
+  both sides at once; dragging one moves its sliders, which turn **green while it's held**. Face circles in the Head
+  view, the body's in the Body view.
+- **A face fitted to a photo must keep the eye fix** (the user's bug report: the eye distorted with a face scan).
+- **The bake can be smoothed:** sharp edges and spikes taken out in the bake only (Smooth curves, Tame flyaways); and a
+  **retro look** that hides imperfections: unlit, flat colour, colour steps, the PSX's dither.
+- **The view turns with the middle mouse everywhere** (as in Blender; Shift pans), and nothing on the page goes back by
+  a slip (the mouse's back button, right-click, Backspace); leaving with unsaved work asks first.
+
 ## 2026-10-24 (the eyes on the model's own lids)
 
 - **The eye's cut starts on MHR's sculpted lids, not MediaPipe's points:** the landmarks mapped onto MHR sit inside its

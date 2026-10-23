@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "character"))
 sys.path.insert(0, str(ROOT / "tools"))
@@ -38,8 +40,10 @@ def blender_python():
     sys.exit("no Blender module: python tools/retarget.py setup (or BLENDER_PY=<a Python with bpy>)")
 
 
-def body_points(weights, height):
-    """the character's body (metres, feet on the floor, at its height) and that scale"""
+def body_points(weights, height, body=""):
+    """the character's body (metres, feet on the floor, at its height) and that scale; or, given, the body as the
+    Character Studio shows it (body.bin: float32 xyz, already so; its sculpt in it)"""
+    if body: return np.fromfile(body, np.float32).reshape(-1, 3).astype(np.float64), 1.0
     p = mhr.body(weights)
     lo = p[:, 1].min()
     k = height / (p[:, 1].max() - lo)
@@ -47,12 +51,12 @@ def body_points(weights, height):
     return p, k
 
 
-def body_file(weights, height):
+def body_file(weights, height, body=""):
     """GarmentCode's body parameters for this character"""
     import yaml
     presets = json.loads(mhr.PRESETS_FILE.read_text(encoding="utf-8"))["presets"]
     ref = mhr.measures(body_points(presets["feminine"], height)[0])
-    me = mhr.measures(body_points(weights, height)[0])
+    me = mhr.measures(body_points(weights, height, body)[0])
     base = yaml.safe_load((GC / "assets" / "bodies" / "mean_female.yaml").read_text(encoding="utf-8"))["body"]
     k = height * 100 / base["height"]
     b = {key: (v * k if isinstance(v, (int, float)) and key not in LENGTHS_SKIP else v) for key, v in base.items()}
@@ -92,18 +96,19 @@ def main():
     ap.add_argument("--frames", type=int, default=90)
     ap.add_argument("--under", default="", help="garments already worn (their garment.obj, comma separated): this one drapes over them")
     ap.add_argument("--locks", default="auto", help="openings held on the body: auto, none, or neck,waist,hips")
+    ap.add_argument("--body", default="", help="the body as the Character Studio shows it (body.bin), for a sculpted one; else MHR's from the weights")
     a = ap.parse_args()
     import yaml
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     design = Path(a.design) if a.design.endswith((".yaml", ".yml")) else DESIGNS / f"{a.design}.yaml"
     if not design.exists(): sys.exit(f"no design {design}")
     weights = json.loads(a.weights)
-    bf, meas = body_file(weights, a.height)
+    bf, meas = body_file(weights, a.height, a.body)
     (out / "body.yaml").write_text(yaml.safe_dump(bf), encoding="utf-8")
     spec = pattern(out / "body.yaml", design, out)
     panels = out / "panels.obj"
     garment.panels_obj(spec, panels)
-    pts, _ = body_points(weights, a.height)
+    pts, _ = body_points(weights, a.height, a.body)
     tris = mhr.load()["tris"]
     with open(out / "body.obj", "w", encoding="utf-8") as f:
         f.write("# the character's body for the drape: metres, Y up, facing +Z, feet on the floor\n")

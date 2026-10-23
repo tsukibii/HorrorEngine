@@ -16,6 +16,9 @@
   #paneMark { position: absolute; top: 0; height: 2px; background: var(--gold); z-index: 2; pointer-events: none; }
   #hud { position: absolute; left: 10px; bottom: 10px; color: var(--dim); line-height: 1.6; background: #0009; padding: 6px 9px; border-radius: 4px; max-width: 60%; }
   #hud .warn { color: var(--gold); }
+  #handles { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  #handles .h { position: absolute; width: 11px; height: 11px; margin: -7px 0 0 -7px; border: 1.5px solid #ffffffd0; border-radius: 50%; background: #0005; pointer-events: auto; cursor: grab; box-shadow: 0 0 2px #000c; }
+  #handles .h:hover, #handles .h.on { border-color: #7fe08a; background: #7fe08a55; transform: scale(1.3); }
   #viewHelp { position: absolute; right: 10px; bottom: 10px; color: var(--dim); font-size: 11px; background: #0007; padding: 3px 7px; border-radius: 4px; pointer-events: none; z-index: 2; }
   aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
   h3 { margin: 16px 0 6px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
@@ -25,6 +28,7 @@
   .row input[type=range] { width: 100%; padding: 0; accent-color: var(--gold); }
   .row output { text-align: right; font-variant-numeric: tabular-nums; }
   .row.moved span:first-child { color: var(--ink); }
+  .row.active { background: #1d3a22; border-radius: 3px; } .row.active span:first-child { color: #7fe08a; }
   [hidden] { display: none !important; }
   .tog { display: flex; gap: 6px; align-items: flex-start; margin: 6px 0; } .tog small { display: block; color: var(--dim); line-height: 1.35; }
   .tog input { accent-color: var(--gold); margin-top: 2px; }
@@ -73,6 +77,9 @@
       <h3>Base</h3>
       <div class="bases"><button data-base="-1">Feminine</button><button data-base="0">Average</button><button data-base="1">Masculine</button></div>
       <div id="baseRows"></div>
+      <h3>Sculpt <button id="resetSculpt" title="Every sculpt slider back to 0">Reset</button></h3>
+      <label class="tog"><input type="checkbox" id="handlesOn" checked><span>Handles on the body<small>Drag a circle to shape what's under it, both sides at once (Body shows the body's circles, Head the face's); the sliders it moves light up green while you hold it.</small></span></label>
+      <div id="sculptRows"></div>
       <h3>Shape <button id="resetShape" title="Every shape slider back to the base">Reset</button></h3>
       <div id="shapeRows"></div>
     </section>
@@ -142,6 +149,7 @@ import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
 import * as EYEPAINT from "./eyes.js";
+import * as SC from "./sculpt.js";
 import { StudioView } from "/shared/studioview.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -184,7 +192,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
   ["symmetry", "Symmetry", 0, 1, 0.05, 0.5, "Blends the face toward its mirror image."],
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
-             expr: new Float32Array(ENAMES.length), exprAmt: 1 };
+             expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {} };   // sculpt: the named controls' values (sculpt.js)
 let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null;   // LAY: the paint layers (layersui.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
@@ -219,7 +227,9 @@ function weights() {                                   // the base blended in, t
 }
 
 // ---- tabs ---------------------------------------------------------------------------------------------------------
+let TAB = "body";
 function tab(name) {
+  TAB = name;
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
   const salon = name === "hair", was = !$("#salonFrame").hidden;   // Hair is the salon: it takes the view and the panel
   $("main").hidden = salon; $("#salonFrame").hidden = !salon;
@@ -392,7 +402,7 @@ outfitBtn.onclick = async () => {
     st.clothes = []; drawWorn();
     for (const [i, [design, color]] of parts.entries()) {
       status(`${outfitSel.value}: ${design} (${i + 1} of ${parts.length})${under.length ? " over " + under.join(", ") : ""}…`);
-      await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: "auto", under: [...under] });
+      await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: "auto", under: [...under], body: await bodyForClothes() });
       st.clothes.push({ design, color }); await wear(design, color); drawWorn(); under.push(design);
     }
     status(`${outfitSel.value}: ${parts.map(p => p[0]).join(", ")}`, "ok");
@@ -434,7 +444,7 @@ makeBtn.onclick = async () => {
   const design = designSel.value;
   status(`sewing ${design} onto ${WHO}…`); makeBtn.disabled = true;
   try {
-    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: lockSel.value });
+    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: lockSel.value, body: await bodyForClothes() });
     if (!st.clothes.some(c => c.design === design)) st.clothes.push({ design, color: gColor.value });
     await wear(design, st.clothes.find(c => c.design === design).color); drawWorn();
     const held = Object.entries(r.drape.locks || {}).map(([k, n]) => `${k} (${n} points)`).join(", ");
@@ -507,13 +517,25 @@ function neutralBody() {                               // the body as saved for 
   let lo = Infinity; for (let i = 1; i < RAW.length; i += 3) lo = Math.min(lo, RAW[i]);
   const P = new Float32Array(N * 3);
   for (let i = 0; i < RAW.length; i += 3) { P[i] = RAW[i] * SCALE; P[i + 1] = (RAW[i + 1] - lo) * SCALE; P[i + 2] = RAW[i + 2] * SCALE; }
-  if (DELTA) { const k = st.face.strength * SCALE; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; for (let a = 0; a < 3; a++) P[i + a] += k * DELTA.d[j * 3 + a]; } }
+  if (fitOffsets()) for (let i = 0; i < N * 3; i++) P[i] += SCALE * FIT[i];   // the face and the sculpt
   return P;
 }
-// a blink on a face bent to a photo: MHR's eyesClosed was made for its own face, so where the fit moved the lids apart
-// they no longer meet (the shut lids' strip shows, the photo's eye painted on it). As the eye closes, every point the
-// blink moves gives up the fit's own offset for the lids' common one (their mean), by how much it takes part: shut,
-// the eye is MHR's own shut eye carried to where the fit put it; open, it's the fit's
+// what's added to the body before it's scaled: the face's fit (by its strength) and the sculpt (sculpt.js), in MHR's
+// metres. The fit is made on the body without the sculpt, so the sculpt stays as set over any picture
+const FIT = new Float32Array(N * 3);
+function fitOffsets() {                                // true if anything is added
+  FIT.fill(0); let on = false;
+  if (DELTA) { const k = st.face.strength; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; FIT[i] += k * DELTA.d[j * 3]; FIT[i + 1] += k * DELTA.d[j * 3 + 1]; FIT[i + 2] += k * DELTA.d[j * 3 + 2]; } on = true; }
+  if (SCULPT) for (const c of SCULPT.controls) {
+    const v = st.sculpt[c.id]; if (!v) continue; on = true;
+    for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; FIT[i] += v * c.d[q * 3]; FIT[i + 1] += v * c.d[q * 3 + 1]; FIT[i + 2] += v * c.d[q * 3 + 2]; }
+  }
+  return on;
+}
+// a blink on a face bent to a photo (or sculpted): MHR's eyesClosed was made for its own face, so where the fit moved
+// the lids apart they no longer meet (the shut lids' strip shows, the photo's eye painted on it). As the eye closes,
+// every point the blink moves gives up its own offset for the lids' common one (their mean), by how much it takes
+// part: shut, the eye is MHR's own shut eye carried to where the fit put it; open, it's the fit's
 const SHUT = {};                                       // per eyesClosed expression: the points it moves (EIDX order) and their part in it
 for (const nm of ["eyesClosed_L", "eyesClosed_R"]) {
   const e = ENAMES.indexOf(nm); if (e < 0) continue;
@@ -523,9 +545,8 @@ for (const nm of ["eyesClosed_L", "eyesClosed_R"]) {
   for (let j = 0; j < EN; j++) { const t = Math.min(1, m[j] / (0.15 * top)); if (t > 0.01) { js.push(j); ws.push(t * t * (3 - 2 * t)); } }   // the lids whole, fading out round them
   SHUT[e] = { js: Int32Array.from(js), ws: Float32Array.from(ws) };
 }
-function shutFitted({ js, ws }, k) {                   // k: how shut, times the fit's strength and the body's scale
-  if (!DELTA.full) { const F = DELTA.full = new Float32Array(N * 3); for (let j = 0; j < DELTA.idx.length; j++) for (let a = 0; a < 3; a++) F[DELTA.idx[j] * 3 + a] = DELTA.d[j * 3 + a]; }
-  const F = DELTA.full, ref = [0, 0, 0]; let sw = 0;
+function shutFitted({ js, ws }, k) {                   // k: how shut, times the body's scale
+  const F = FIT, ref = [0, 0, 0]; let sw = 0;
   for (let q = 0; q < js.length; q++) { const i = EIDX[js[q]] * 3, w = ws[q]; sw += w; for (let a = 0; a < 3; a++) ref[a] += w * F[i + a]; }
   for (let a = 0; a < 3; a++) ref[a] /= sw || 1;
   for (let q = 0; q < js.length; q++) { const i = EIDX[js[q]] * 3, w = ws[q] * k; for (let a = 0; a < 3; a++) POS[i + a] += w * (ref[a] - F[i + a]); }
@@ -535,16 +556,14 @@ function compose() {                                   // POS: RAW + the face, s
   for (let i = 1; i < RAW.length; i += 3) { lo = Math.min(lo, RAW[i]); hi = Math.max(hi, RAW[i]); }
   SCALE = st.height / (hi - lo); TOP = st.height;
   for (let i = 0; i < RAW.length; i += 3) { POS[i] = RAW[i] * SCALE; POS[i + 1] = (RAW[i + 1] - lo) * SCALE; POS[i + 2] = RAW[i + 2] * SCALE; }
-  if (DELTA) {
-    const k = st.face.strength * SCALE;
-    for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; POS[i] += k * DELTA.d[j * 3]; POS[i + 1] += k * DELTA.d[j * 3 + 1]; POS[i + 2] += k * DELTA.d[j * 3 + 2]; }
-  }
+  const fitted = fitOffsets();                         // the face's fit and the sculpt
+  if (fitted) for (let i = 0; i < N * 3; i++) POS[i] += SCALE * FIT[i];
   placeEyes();                                         // from the neutral face
   for (let e = 0; e < ENAMES.length; e++) {
     const a = st.expr[e] * st.exprAmt * SCALE; if (!a) continue;
     const X = EXPR.subarray(e * EN * 3, (e + 1) * EN * 3);
     for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3; POS[i] += a * X[j * 3]; POS[i + 1] += a * X[j * 3 + 1]; POS[i + 2] += a * X[j * 3 + 2]; }
-    if (DELTA && SHUT[e]) shutFitted(SHUT[e], st.expr[e] * st.exprAmt * st.face.strength * SCALE);
+    if (fitted && SHUT[e]) shutFitted(SHUT[e], st.expr[e] * st.exprAmt * SCALE);
   }
   geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); openings();   // the openings from the lids as they are now: a blink closes them
   const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
@@ -561,6 +580,9 @@ function compose() {                                   // POS: RAW + the face, s
 
 // ---- eyes: MHR's closed shell cut out (in the skin's shader) inside MediaPipe's lid outline, an eyeball behind each opening
 const LMK = await api("api/face/landmarks", {}).catch(() => null);   // {tri, bary}: the 468 points on MHR's body
+// the sculpt (sculpt.js): named shape controls, each an offset field built once on MHR's base body
+const SCULPT = LMK ? SC.buildSculpt({ P: BASEP, T: TRIS, lm: i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0];
+  for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * BASEP[v + a]; } return o; } }) : null;
 const LIDS = { L: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466],   // the character's left (+x)
                R: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] };
 function lmk(i) {                                       // a landmark's place on the body as it is now
@@ -899,6 +921,77 @@ addEventListener("beforeunload", e => {
   const salon = SALONF.contentWindow?.__salon?.unsaved;
   if (UNSAVED || salon || !TOUCH_SAVED || (LAY && !LAY.saved())) { e.preventDefault(); e.returnValue = ""; }
 });
+// ---- the sculpt's sliders (Body, Sculpt) and its handles on the body: a circle on each feature (its twin across the
+// middle), dragged; the sliders it moves follow the pointer as closely as their own motions there allow, and light up
+const sculptSet = {}, sculptRow = {};
+if (SCULPT) for (const g of SC.GROUPS) {
+  const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g }));
+  for (const c of SCULPT.controls.filter(c => c.group === g)) {
+    sculptSet[c.id] = slider(d, c.id, c.label, -1, 1, 0.01, 0, "", (v, row) => { st.sculpt[c.id] = v; row.classList.toggle("moved", v !== 0); changed("sculpt"); }, c.help);
+    sculptRow[c.id] = d.lastElementChild;
+  }
+  $("#sculptRows").append(d);
+}
+function sculptAll() { for (const id in sculptSet) { const v = st.sculpt[id] || 0; sculptSet[id](v); sculptRow[id].classList.toggle("moved", v !== 0); } }
+$("#resetSculpt").onclick = () => { st.sculpt = {}; sculptAll(); compose(); };
+async function bodyForClothes() {                     // a body sculpted: the clothes are made on it as it is (body.bin), not on MHR's shapes alone
+  if (!SCULPT || !WHO || !SCULPT.controls.some(c => c.group === "Body" && st.sculpt[c.id])) return false;
+  await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); return true;
+}
+const HANDLES = { box: el("div", { id: "handles" }), list: [], drag: null };
+view.append(HANDLES.box);
+const screenOf = (p, r, V) => { const s = p.clone().project(camera); return [V.x + (s.x + 1) / 2 * V.w, r.height - V.y - (s.y + 1) / 2 * V.h, s.z]; };   // in the canvas, from its top left
+const worldAt = v => new THREE.Vector3(POS[v * 3], POS[v * 3 + 1], POS[v * 3 + 2]).applyMatrix4(rig.matrixWorld);
+if (SCULPT) for (const h of SCULPT.handles) for (const v of h.at) if (v >= 0) {
+  const e = el("div", { className: "h", title: h.label }); HANDLES.box.append(e); HANDLES.list.push({ e, h, v, group: SCULPT.controls.find(c => c.id === h.controls[0]).group });
+  e.onpointerdown = ev => grab(ev, h, v);
+  e.onpointermove = ev => pull(ev);
+  e.onpointerup = e.onpointercancel = () => letGo();
+}
+function placeHandles() {                              // where each circle is now; those turned away hidden
+  const on = !!SCULPT && TAB === "body" && $("#handlesOn").checked && orbit.focus !== "pov" && !!geo.attributes.normal;   // (the normals come with the first compose)
+  HANDLES.box.hidden = !on; if (!on) return;
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), NP = geo.attributes.normal.array, nm = new THREE.Matrix3().getNormalMatrix(rig.matrixWorld);
+  const face = orbit.focus === "head";                 // the Head view: the face's circles (and the neck's); Body: the body's
+  for (const H of HANDLES.list) {
+    const p = worldAt(H.v), n = new THREE.Vector3(NP[H.v * 3], NP[H.v * 3 + 1], NP[H.v * 3 + 2]).applyMatrix3(nm).normalize(), [x, y, z] = screenOf(p, r, V);
+    const mine = face ? H.group !== "Body" || H.h.id === "neck" : H.group === "Body";
+    const seen = mine && n.dot(camera.position.clone().sub(p).normalize()) > -0.25 && z < 1 && x > V.x && x < V.x + V.w && y > r.height - V.y - V.h && y < r.height - V.y;   // turned away hidden; the outline's kept
+    H.e.style.display = seen ? "" : "none"; if (seen) { H.e.style.left = x + "px"; H.e.style.top = y + "px"; }
+  }
+}
+function grab(ev, h, v) {
+  ev.preventDefault(); ev.stopPropagation(); ev.target.setPointerCapture(ev.pointerId);
+  const cs = h.controls.map(id => SCULPT.controls.find(c => c.id === id)), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
+  const p0 = worldAt(v), s0 = screenOf(p0, r, V), f = V.h / 2 / Math.tan(camera.fov * Math.PI / 360), depth = p0.distanceTo(camera.position);
+  // each control's motion of this point on the screen, as a share of its full length (it can move towards you)
+  const D = cs.map(c => { const g = SC.offsetAt(c, v).map(x => x * SCALE), L = Math.hypot(...g) * f / depth; if (!(L > 1e-6)) return null;
+    const s1 = screenOf(new THREE.Vector3(POS[v * 3] + g[0], POS[v * 3 + 1] + g[1], POS[v * 3 + 2] + g[2]).applyMatrix4(rig.matrixWorld), r, V), J = [(s1[0] - s0[0]) / L, (s1[1] - s0[1]) / L];
+    return Math.hypot(...J) > 0.25 ? J : null; });
+  if (D.every(x => !x)) D[0] = [0, -1];                // nothing it moves crosses the screen from here: up is more
+  HANDLES.drag = { cs, D, x: ev.clientX, y: ev.clientY, start: cs.map(c => st.sculpt[c.id] || 0), h };
+  cs.forEach((c, i) => { if (D[i]) sculptRow[c.id].classList.add("active"); });   // green: the sliders this drag moves (from here)
+  for (const H of HANDLES.list) H.e.classList.toggle("on", H.h === h);
+  const first = cs[D.findIndex(x => x)]; sculptRow[first.id].closest("details").open = true; sculptRow[first.id].scrollIntoView({ block: "nearest" });
+}
+function pull(ev) {                                    // the sliders' change whose motions best follow the pointer (120 px a whole slider)
+  const d = HANDLES.drag; if (!d) return;
+  const t = [(ev.clientX - d.x) / 120, (ev.clientY - d.y) / 120], A = d.D.map(x => x || [0, 0]), lam = 0.02;
+  let u;
+  if (A.length === 1) u = [(A[0][0] * t[0] + A[0][1] * t[1]) / (A[0][0] ** 2 + A[0][1] ** 2 + lam)];
+  else {                                               // two: (AᵀA + λ) u = Aᵀ t
+    const a = A[0][0] ** 2 + A[0][1] ** 2 + lam, b = A[0][0] * A[1][0] + A[0][1] * A[1][1], c = A[1][0] ** 2 + A[1][1] ** 2 + lam;
+    const r0 = A[0][0] * t[0] + A[0][1] * t[1], r1 = A[1][0] * t[0] + A[1][1] * t[1], det = a * c - b * b;
+    u = [(c * r0 - b * r1) / det, (a * r1 - b * r0) / det];
+  }
+  d.cs.forEach((c, i) => { if (!d.D[i]) return; const v = Math.round(Math.min(1, Math.max(-1, d.start[i] + u[i])) * 100) / 100; st.sculpt[c.id] = v; sculptSet[c.id](v); sculptRow[c.id].classList.toggle("moved", v !== 0); });
+  UNSAVED = true; compose();
+}
+function letGo() {
+  const d = HANDLES.drag; if (!d) return; HANDLES.drag = null;
+  for (const c of d.cs) sculptRow[c.id].classList.remove("active");
+  for (const H of HANDLES.list) H.e.classList.remove("on");
+}
 {                                                      // the split's button, the line between the panes and the active pane's mark
   const bar = el("div", { id: "splitBar", hidden: true, title: "Drag to resize the panes; double-click to even them" }), mark = el("div", { id: "paneMark", hidden: true });
   view.append(bar, mark);
@@ -943,6 +1036,7 @@ renderer.setAnimationLoop(() => {
     renderer.setScissorTest(true); renderer.setScissor(R.x, R.y, R.w, R.h); renderer.setViewport(R.x, R.y, R.w, R.h);
     renderer.render(scene, camera); renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
   } else renderer.render(scene, camera);
+  try { placeHandles(); } catch (e) { console.error(e); }   // the sculpt's circles, over the picture (a throw here would stop the frames)
 });
 resize();
 
@@ -1271,6 +1365,7 @@ async function open(name) {
   set.base(st.base); set.height(st.height); for (const f of FACE) set[f[0]](st.face[f[0]]);
   st.shape.forEach((v, i) => { shapeSet[i](v); });
   document.querySelectorAll("#shapeRows .row").forEach((r, i) => r.classList.toggle("moved", st.shape[i] !== 0));
+  st.sculpt = { ...(c.sculpt || {}) }; sculptAll();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
@@ -1284,7 +1379,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, lash: st.lash, brow: st.brow,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, lash: st.lash, brow: st.brow,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -1325,7 +1420,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();

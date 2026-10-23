@@ -243,12 +243,13 @@ class Handler(BaseHTTPRequestHandler):
             py = ROOT / "vendor" / "garmentcode" / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
             if not py.exists():
                 return self.send(400, {"error": "GarmentCode isn't set up: python tools/garment.py setup"})
-            out = PEOPLE / name / "clothes" / design
+            out, body = PEOPLE / name / "clothes" / design, PEOPLE / name / "body.bin"
             r = subprocess.run([str(py), str(HERE / "clothes.py"), "--out", str(out), "--design", design,
                                 "--height", str(float(q.get("height", 1.7))), "--weights", json.dumps(q.get("weights", [])),
                                 "--locks", str(q.get("locks", "auto")),
                                 "--under", ",".join(str(PEOPLE / name / "clothes" / u / "garment.obj") for u in q.get("under", [])
-                                                    if clean(u) and (PEOPLE / name / "clothes" / u / "garment.obj").exists())],
+                                                    if clean(u) and (PEOPLE / name / "clothes" / u / "garment.obj").exists())]
+                               + (["--body", str(body)] if q.get("body") and body.exists() else []),   # a sculpted body: made on it as the studio shows it
                                capture_output=True, text=True, encoding="utf-8")
             line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
             if r.returncode or not line:

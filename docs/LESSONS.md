@@ -403,3 +403,8 @@ script, grep for it (`\bNAME\b`).
 - **A mesh builder that assumes equal cards breaks when they aren't:** the cards' triangles were offset by `j * n * 2`,
   every card the same length; once the bake kept more points on some cards, triangles joined unrelated cards in long
   pale bands. Offset by a running count.
+- **A throw in three.js's frame loop stops every frame after it:** `setAnimationLoop` asks for the next frame after the
+  callback returns, so one exception (the handles read the normals before the first compose made them) froze the view
+  for good. Anything new in the loop gets its own guard.
+- **MediaPipe's points on MHR's base face aren't symmetric, the mesh is:** the jaw's angle came out 4.5 cm apart in
+  depth between the sides. For anything mirrored, average each pair across the middle.

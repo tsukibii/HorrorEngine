@@ -67,6 +67,40 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     const d = await sample();
     if (Math.abs(d.top - 1.6) > 0.005) throw new Error(`height ${d.top}`);
   });
+  await step("the sculpt: named controls (the forehead's height among them), each mirrored and moving only its part; a circle on the body dragged moves its sliders, green while held; saved with the character", async () => {
+    await page.click('#tabs button[data-tab="body"]');
+    const r = await page.evaluate(() => {
+      const b = window.__body, S = b.SCULPT, P = () => Float32Array.from(b.POS);
+      b.st.sculpt = {}; b.compose(); const p0 = P();
+      b.st.sculpt = { forehead_height: 1 }; b.compose(); const p1 = P();
+      let hi = 1; for (let i = 1; i < p0.length; i += 3) if (p0[i] > p0[hi]) hi = i;
+      let below = 0; for (let i = 0; i < p0.length; i += 3) if (p0[i + 1] < 0.75 * b.st.height && Math.hypot(p1[i] - p0[i], p1[i + 1] - p0[i + 1], p1[i + 2] - p0[i + 2]) > 1e-7) below++;
+      b.st.sculpt = {}; b.compose();
+      const key = (x, y, z) => { const ax = Math.round(Math.abs(x) * 1e5); return `${ax},${Math.round(y * 1e5)},${Math.round(z * 1e5)},${ax ? Math.sign(x) : 0}`; };   // the points with an exact mirror image (the head's all; 96% of the body's)
+      const B = b.BASEP, M = new Map();
+      for (let i = 0; i < B.length / 3; i++) M.set(key(B[i * 3], B[i * 3 + 1], B[i * 3 + 2]), i);
+      let worst = 0, unmatched = 0;
+      for (const c of S.controls) {
+        const at = new Map(); for (let q = 0; q < c.idx.length; q++) at.set(c.idx[q], q);
+        for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q], m = M.get(key(-B[i * 3], B[i * 3 + 1], B[i * 3 + 2])); if (m === undefined) { unmatched++; continue; }
+          const k = at.get(m), o = k === undefined ? [0, 0, 0] : [c.d[k * 3], c.d[k * 3 + 1], c.d[k * 3 + 2]];
+          worst = Math.max(worst, Math.abs(c.d[q * 3] + o[0]), Math.abs(c.d[q * 3 + 1] - o[1]), Math.abs(c.d[q * 3 + 2] - o[2])); }
+      }
+      return { controls: S.controls.length, handles: b.HANDLES.list.length, topUp: p1[hi] - p0[hi], below, worst, unmatched, moved: S.controls.reduce((a, c) => a + c.idx.length, 0) };
+    });
+    if (!(r.controls >= 20) || !(r.handles >= 30) || !(r.topUp > 0.01) || r.below || r.worst > 1e-6 || r.unmatched > 0.05 * r.moved) throw new Error("the sculpt: " + JSON.stringify(r));
+    await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]'); await page.waitForTimeout(600);
+    const h = await page.evaluate(() => { const H = window.__body.HANDLES.list.find(x => x.h.id === "forehead"), q = H.e.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2, getComputedStyle(H.e).display]; });
+    await page.mouse.move(h[0], h[1]); await page.mouse.down(); await page.mouse.move(h[0], h[1] - 60, { steps: 4 });
+    const held = await page.evaluate(() => [...document.querySelectorAll("#sculptRows .row.active")].map(x => x.firstChild.textContent));
+    await page.mouse.up();
+    const after = await page.evaluate(() => ({ v: window.__body.st.sculpt.forehead_height, active: document.querySelectorAll("#sculptRows .row.active").length }));
+    await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    const saved = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).sculpt, NAME);
+    await page.click("#resetSculpt"); await page.click('#views button[data-v="body"]');
+    if (h[2] === "none" || held.join() !== "Forehead height" || !(after.v > 0.4 && after.v < 0.6) || after.active || !(saved && Math.abs(saved.forehead_height - after.v) < 1e-9)) throw new Error("the forehead's circle: " + JSON.stringify({ h, held, after, saved }));
+    console.log(`       ${r.controls} controls, ${r.handles} circles; Forehead height 1 raises the head's top ${(r.topUp * 1000).toFixed(0)} mm and nothing under the chest; every control mirrored (within ${r.worst.toExponential(0)} m where the base is: all but ${r.unmatched} of ${r.moved} points); the forehead's circle dragged 60 px up: Forehead height ${after.v} (its row green while held), saved`);
+  });
   await step("a front picture bends the face, not the body", async () => {
     front = await headShot("0"); side = await headShot("35");
     await page.setInputFiles("#slots .slot:nth-child(1) input", { name: "front.png", mimeType: "image/png", buffer: front });
@@ -154,7 +188,8 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.click("#touchRows label.tog input");                        // painting off for the rest
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("clothes: pants made to this body, draped, worn", async () => {
+  await step("clothes: pants made to this body (sculpted: as the studio shows it), draped, worn", async () => {
+    await page.evaluate(() => { const b = window.__body; b.st.sculpt = { waist: 1, thighs: 1 }; b.compose(); });   // a body the identity weights don't make
     await page.click('#tabs button[data-tab="clothes"]');
     await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 0);
     await page.selectOption("#clothesRows select", "pants");
@@ -162,6 +197,11 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__body.garments.has("pants"), null, { timeout: 180000 });
     const st = await page.textContent("#status");
     if (!/pants: \d+ points, seams within/.test(st)) throw new Error(st);
+    const fs = require("fs"), path = require("path");                 // the drape's body is the sculpted one
+    const obj = fs.readFileSync(path.join(__dirname, "..", "..", "Content", "Studio", "People", NAME, "clothes", "pants", "body.obj"), "utf-8").split("\n").filter(l => l.startsWith("v ")).map(l => l.split(" ").slice(1).map(Number));
+    const off = await page.evaluate(V => { const P = window.__body.neutralBody(); let m = 0; V.forEach((v, i) => { m = Math.max(m, Math.abs(v[0] - P[i * 3]), Math.abs(v[1] - P[i * 3 + 1]), Math.abs(v[2] - P[i * 3 + 2])); }); return m; }, obj);
+    await page.evaluate(() => { const b = window.__body; b.st.sculpt = {}; b.compose(); });
+    if (!(off < 1e-4)) throw new Error(`the drape's body is ${(off * 1000).toFixed(1)} mm off the sculpted body`);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("hair is the salon: the Hair tab opens it on this character, with this body", async () => {

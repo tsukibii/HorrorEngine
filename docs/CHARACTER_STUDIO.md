@@ -12,7 +12,7 @@ character on disk in `Content/Studio/People/<name>/` (git-ignored: real faces st
 
 | Tab | What it does | Its code |
 |---|---|---|
-| Body | MHR: a base (feminine to masculine), 45 identity sliders, a height | `index.html`, `mhr.py`, `MHR_lod1.bin` |
+| Body | MHR: a base (feminine to masculine), 45 identity sliders, a height; the **sculpt** (2026-10-23): 26 named controls MHR's shapes don't give (Forehead: height, width, slope, brow ridge, temples; Face: cheekbones, cheeks, jaw width, chin length, width and forward, nose length, tip, width and bridge, mouth width, lips; Body: neck, shoulders, chest, waist, hips, upper arms, forearms, thighs, calves), each a smooth offset field over MHR's base body, mirrored (the face's placed by MediaPipe's points on it, each pair averaged across the middle; the limbs' by their cross-sections), -1 to 1, added after a photo's fit (so a picture never undoes it) and before the expressions (a blink still shuts); **circles on the body** (the Body view shows the body's, the Head view the face's, both sides of each): a circle dragged moves its sliders as far as follows the pointer (120 px a whole slider; what moves towards you from this view stays, a chest seen from the front goes up for more), its rows green while it's held | `index.html`, `sculpt.js`, `mhr.py`, `MHR_lod1.bin` |
 | Face | front and side pictures bend the head (MediaPipe's landmarks); **brows and lashes** on the salon's hair shader: lashes on the lids' edges that turn with the lid and squash as it shuts, brows as fine hairs flat on the skin with a fill, shapes and looks (off until asked for) | `face_mesh.py` (worker), `browlash.js` |
 | Expressions | MHR's 72 shapes, presets written as ARKit-52 curves (the mocap's map) | `arkit_mhr.json` |
 | Skin | tone; the **photo skin** (the front picture projected onto MHR's UVs: `skin.py`, `skin.png` + `skin_mask.png`); the **procedural skin** (`skinshader.js`: noise layers, glass, oil, age, makeup, presets); the **touch-up** (`touchup.js`: paint, take the photo away, bring it back, soften, undo; pigment brushes); eyes (`eyes.js`): the shell **cut out** in the skin's shader along the model's own lid line (found once, on MHR's own face, from what its blink squeezes shut; a photo's fit carries it, and its blink still meets), an eyeball behind each opening drawn only through it and over what's inside (always full, any pose), fitted to the opening and grown back from its pupil, a blink shuts it, the lids' shadow, catchlights fixed to the light (size, depth, opening, lid shadow, pupil size) | |
@@ -51,7 +51,7 @@ export is a bake like any other (§3, Export).
 
 | Stage | Sources kept | Bakes | Gaps |
 |---|---|---|---|
-| Body | `character.json`: base, shape, height | none (computed live) | none |
+| Body | `character.json`: base, shape, height, sculpt (the controls not at 0) | none (computed live) | none |
 | Face | `pictures/` front and side; face settings in `character.json` | the face's fit (made live by the worker) | none |
 | Expressions | none: a preview, not saved | none | fine for now; a character's own expression set would be a source later |
 | Skin: photo | the front picture; size | `skin.png`, `skin_mask.png` | no receipt: a body or face change after the skin was made leaves it silently stale |
@@ -62,7 +62,7 @@ export is a bake like any other (§3, Export).
 | Brows and lashes | `st.lash`, `st.brow` in `character.json` | made live | not in the exports yet (the head OBJ is the skin only) |
 | Brows and lashes | on, off and a colour in `character.json` | made live | none |
 | Hair: salon | `salon/salon.json` (the locks, groups, look); the reference video in `Content/Studio/Hair/References/`; hairstyles to start from in `Content/Studio/Hair/` | `salon/salon.glb`, `salon_bake.json` (the head frame it was made on: a receipt already) | the Studio doesn't yet say when the head changed after the bake (the salon's note asks to bake again by hand): the first stale dot to add |
-| Body for the salon | the body's weights and the face (above) | `body.bin` (written by Save) | none: remade on every Save |
+| Body for the salon | the body's weights, the face and the sculpt (above) | `body.bin` (written by Save; and before clothes are made on a sculpted body, which are draped on it) | none: remade on every Save |
 | Clothes | each garment's design and colour; `design.yaml`, `body.yaml` beside the drape | `garment.obj` | **the lock choice and what it was draped over aren't saved** (an outfit remade alone would drape differently); no receipt |
 | Exports | none | `<name>_body.obj`, `<name>_head.obj`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with one receipt for the whole export |
 
