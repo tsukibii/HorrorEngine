@@ -238,6 +238,10 @@ for (const b of document.querySelectorAll("[data-shape]")) b.onclick = () => {
 $("#disp").oninput = dress; $("#orbit").onchange = draw;
 $("#q").oninput = () => { S.q = $("#q").value.toLowerCase(); drawLeft(); };
 $("#rescan").onclick = load;
+{ // the way back: to the tool that opened the shelf (the scene builder by default; the Character Studio's server rewrites it)
+  const back = document.querySelector('header a[href="builder.html"]'), from = new URLSearchParams(location.search).get("from");
+  if (back && from === "kit") Object.assign(back, { href: "kit.html", textContent: "kit maker" });
+}
 
 window.__pbrScene = scene;
 window.__pbr = { get S() { return S; }, select, shape: s => document.querySelector(`[data-shape="${s}"]`).click(), draw, load,

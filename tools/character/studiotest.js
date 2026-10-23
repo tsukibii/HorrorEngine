@@ -7,7 +7,7 @@
 // is cut from the body and worn, takes denim and a print without refitting, its hem is dragged up by its handle,
 // and it refits when the body grows; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
 // goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
-// normal turned for three.js; the PBR shelf page shows it, and a map chosen by hand there is kept;
+// normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
@@ -17,6 +17,7 @@
 //   node tools/character/studiotest.js [shot.png]
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
+const fs = require("fs"), path = require("path");
 const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const BASE = process.env.BODY_URL || "http://127.0.0.1:8793/";
 const NAME = "_studiotest";
@@ -235,6 +236,7 @@ const png = rgb => {
     await set("", "!m.maps.rough && m.by_hand.rough === ''");
     await set("*", "m.maps.rough === 'studiotest_denim_roughness.png' && !('rough' in (m.by_hand || {}))");
     await shelf.close();
+    fs.rmSync(path.join((await (await fetch(BASE + "api/pbr")).json()).root, "studiotest_denim"), { recursive: true, force: true });   // off the shelf again
     await page.click(`${PANTS} button[title='take it off']`);
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');

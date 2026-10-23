@@ -28,8 +28,9 @@ function libMesh(ref) {
 }
 export const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 function libMaterial(ref) {
-  if (matCache[ref]) return matCache[ref];
-  const meta = LIBRARY.textures[ref], tl = new THREE.TextureLoader(), maps = meta.maps || {};
+  const meta = LIBRARY.textures[ref], key = `${ref}|${meta.stamp || ""}|${meta.orm || ""}|${meta.normal || ""}|${meta.tile_m || 1}`;   // a set changed on the shelf: a new material
+  if (matCache[key]) return matCache[key];
+  const tl = new THREE.TextureLoader(), maps = meta.maps || {};
   const tex = (k, srgb) => {
     if (!maps[k]) return null;
     const t = tl.load(meta.base ? `${encPath(meta.base)}/${encodeURIComponent(maps[k])}?s=${meta.stamp || ""}` : `/library/textures/${ref}/${maps[k]}`);   // base: a PBR shelf set
@@ -38,10 +39,16 @@ function libMaterial(ref) {
     return t;
   };
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
-  m.map = tex("albedo", true); m.normalMap = tex("normal"); m.roughnessMap = tex("rough"); m.aoMap = tex("ao");
+  m.map = tex("albedo", true); m.normalMap = tex("normal"); m.roughnessMap = tex("rough"); m.metalnessMap = tex("metal"); m.aoMap = tex("ao");
+  if (meta.orm && meta.base) {         // a packed map (Unreal's ORM, Poly Haven's ARM): AO red, roughness green, metal blue
+    const t = !(m.roughnessMap && m.metalnessMap && m.aoMap) && tl.load(`${encPath(meta.base)}/${encodeURIComponent(meta.orm)}?s=${meta.stamp || ""}`);
+    if (t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; m.roughnessMap ||= t; m.metalnessMap ||= t; m.aoMap ||= t; }
+  }
+  if (m.metalnessMap) m.metalness = 1;
+  m.alphaMap = tex("opacity"); if (m.alphaMap) m.alphaTest = 0.5;       // a net, a grille: cut out where it's dark
   if (meta.normal === "dx" && m.normalMap) m.normalScale.set(1, -1);     // DirectX normals: green flipped
   m.userData.tile = meta.tile_m || 1;
-  return (matCache[ref] = m);
+  return (matCache[key] = m);
 }
 function tileUVs(geo, w, h, d, tile) {     // a box's UVs in metres / tile, so a texture keeps its real size on any block
   const uv = geo.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];  // px nx py ny pz nz

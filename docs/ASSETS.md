@@ -135,9 +135,11 @@ The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set
   set by hand (`tile_m`, source, url, licence, note) is kept on every rescan. Nothing here goes into git (only its
   README): the sets are big and yours.
 - **Using one:** its ref is `pbr/<its path>` (`pbr/denim1`, `pbr/Wood/old_planks`): a room's `look`, a prop's `mat`
-  or a garment's `pbr`, like any library texture. The scene builder's Look pickers list the shelf. `story_check` warns about a ref that isn't on
+  or a garment's `pbr`, like any library texture. The scene builder's Look pickers list the shelf, and take a set added or changed there when you come back to the
+  builder (no reload: the pickers and the walk view). `story_check` warns about a ref that isn't on
   the shelf.
-- **The shelf page** (the Character Studio's **PBR** button, http://127.0.0.1:8793/pbr.html, or the desk's
+- **The shelf page** (the **PBR** button in the Character Studio, the scene builder and the kit maker, each in its
+  own tab with the way back to the tool that opened it; http://127.0.0.1:8793/pbr.html, or the desk's
   http://127.0.0.1:8780/pbr.html, the launcher's *PBR shelf*): the sets (by category when there are any); each one on a
   1 m sphere, a 1 m cube, a 3 x 3 m room corner with a 1.7 m figure, or a close-up under a low light, at its real
   size, with the light turning round it. Click a map to see the set without it; the displacement slider pushes the
