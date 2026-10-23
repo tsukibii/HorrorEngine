@@ -1,0 +1,39 @@
+/* Play HUD theme "glass": frosted glass slabs over the dark frame, a little 3D so they read as panels, not stickers.
+   Every surface blurs what's behind it (--ph-blur), has a bright top edge and a thin lower edge (the glass's
+   thickness) stacked as hard shadows, and a soft diagonal sheen; panels tilt a few degrees toward the viewer. Text is
+   white and soft; the accent is a cool ice blue. Same variables as the other themes (copy a theme to make another). */
+.play-hud[data-theme="glass"]{
+  --ph-font:"Source Serif 4","Noto Serif",Georgia,"Hiragino Mincho ProN",serif; --ph-text:rgba(255,255,255,.92); --ph-muted:rgba(255,255,255,.58);
+  --ph-hidden:rgba(8,10,16,.75); --ph-accent:#bfe0ff; --ph-bad:#ff8c84; --ph-lit:#fff;
+  --ph-glass:linear-gradient(135deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.08) 42%,rgba(255,255,255,.04) 58%,rgba(190,215,255,.14) 100%);
+  --ph-surface:rgba(255,255,255,.09); --ph-veil:rgba(6,8,14,.38);
+  --ph-blur:blur(18px) saturate(1.5) brightness(1.08); --ph-border:1px solid rgba(255,255,255,.26);
+  --ph-dot:6px; --ph-ring:38px; --ph-cursor:rgba(255,255,255,.9); --ph-cursor-shadow:0 0 6px rgba(190,220,255,.8);
+  --ph-radius-s:8px; --ph-radius:14px; --ph-radius-l:22px;
+  --ph-edge:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08),inset 1px 0 0 rgba(255,255,255,.18);
+  --ph-pop:var(--ph-edge),0 2px 0 rgba(255,255,255,.1),0 3px 0 rgba(0,0,0,.35),0 8px 18px rgba(0,0,0,.45);
+  --ph-pop-l:var(--ph-edge),0 3px 0 rgba(255,255,255,.1),0 5px 0 rgba(0,0,0,.35),0 22px 44px -8px rgba(0,0,0,.65);
+  --ph-inset:inset 0 2px 6px rgba(0,0,0,.45),inset 0 -1px 0 rgba(255,255,255,.2);
+  --ph-text-shadow:0 1px 6px rgba(0,0,0,.85);
+  --ph-line-bg:rgba(255,255,255,.07); --ph-line-pad:10px 24px; --ph-line-shadow:var(--ph-pop);
+  --ph-chip-bg:rgba(255,255,255,.08); --ph-chip-pad:5px 14px 5px 6px; --ph-chip-shadow:var(--ph-pop);
+  --ph-choice-pad:14px 18px; --ph-dash:44px; --ph-dash-line:2px dashed rgba(255,255,255,.55);
+  --ph-opt-glow:0 0 14px rgba(190,224,255,.9),0 1px 6px rgba(0,0,0,.7);
+}
+/* every glass surface: the sheen over its tint, the outline, and (for the big ones) the tilt */
+.play-hud[data-theme="glass"] :is(.ph-objective,.ph-card,.ph-btn,.ph-key,.ph-line,.ph-prompt,.ph-hint,.ph-choice){background-image:var(--ph-glass);border:var(--ph-border)}
+.play-hud[data-theme="glass"] .ph-prompt,.play-hud[data-theme="glass"] .ph-hint{border-radius:999px}
+.play-hud[data-theme="glass"] :is(.ph-card,.ph-choice){transform:perspective(1100px) rotateX(3deg);transform-origin:50% 100%}
+.play-hud[data-theme="glass"] .ph-choice{--ph-radius-l:20px}
+.play-hud[data-theme="glass"] .ph-who{font-weight:700;display:block;margin:0 0 2px;color:var(--ph-text);font-size:.9em;letter-spacing:.04em}
+.play-hud[data-theme="glass"] .ph-line{font-weight:500}
+.play-hud[data-theme="glass"] .ph-key{box-shadow:var(--ph-pop);font-family:system-ui,sans-serif;font-size:12px;color:var(--ph-lit)}
+.play-hud[data-theme="glass"] .ph-title{color:var(--ph-muted)}
+.play-hud[data-theme="glass"] .ph-code{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.14)}
+.play-hud[data-theme="glass"] .ph-btn{background-color:rgba(255,255,255,.08);transition:box-shadow .12s,transform .12s,background-color .15s,color .15s}
+.play-hud[data-theme="glass"] .ph-btn:hover{background-color:rgba(255,255,255,.2);color:var(--ph-lit)}
+.play-hud[data-theme="glass"] .ph-btn:active{box-shadow:var(--ph-inset);transform:translateY(2px) scale(.98)}
+.play-hud[data-theme="glass"] .ph-btn.ph-close{background-color:rgba(190,224,255,.22)}
+.play-hud[data-theme="glass"] .ph-opt:hover,.play-hud[data-theme="glass"] .ph-opt.on{background:none}
+.play-hud[data-theme="glass"] .ph-seen{border:1px solid rgba(255,255,255,.25)}
+.play-hud[data-theme="glass"] .ph-cursor:not([data-cursor="none"]){background-image:var(--ph-glass);border:var(--ph-border)}

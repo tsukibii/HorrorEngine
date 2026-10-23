@@ -717,7 +717,7 @@ waiting.
 the first time she finds you, a tease the second, the third is a death.
 
 **The HUD's theme** (Play mode, docs/GAMEPLAY_PLAN.md §10): `game.ui_theme` names a file in
-`tools/director/play/ui/themes/` (`neumorph`, the light neumorphic kit, when a game names none; `plain`). A theme sets
+`tools/director/play/ui/themes/` (`glass`, frosted glass slabs, when a game names none; `neumorph`, the older light kit; `plain`). A theme sets
 only colours, radii, shadows and the font; the layout is the same for every game.
 
 **Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.

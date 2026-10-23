@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (the Play UI is glass, not neumorphic)
+
+- **The default Play HUD theme is `glass`:** frosted glass slabs with a little 3D (tilt, a thick lower edge), simple
+  click-me buttons, no sliders. It sits under a VHS lost-footage grade in Unreal later.
+- **A multiple choice is one panel:** the options side by side with centred dashes between them; the one under the
+  pointer (or A/D, arrows, 1-9) brightens and the rest dim (`hud.choose`, `rt.choose`). Not yet wired to a story word.
+
 ## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
 
 - **Interactables are buttons** (E, or a click): no Amnesia-style dragging of doors and drawers, no sliders. A hiding

@@ -138,7 +138,7 @@ playback; Generate stays the one button.
   never dragged (the user dropped Amnesia's dragging, 2026-10-21).
 - **The UI is CSS, in themes**: `tools/director/play/ui/` holds the HUD as HTML (cursor, prompt, subtitles,
   objective, choices, notes, pause), and every colour, radius and shadow comes from a theme file
-  (`themes/<name>.css`, the first is `neumorph`, light and a dark horror variant); `game.ui_theme` picks one. The
+  (`themes/<name>.css`: `glass` is the default now, `neumorph` and `plain` stay); `game.ui_theme` picks one. The
   neumorphic buttons pop out of the surface and press in when used. Text keeps enough contrast to read over a dark
   frame (neumorphism's weak point). Mini-games are small HTML panels in the same theme.
 - **In Unreal later**: either the same HTML through a web widget (CSS stays the truth) or UMG rebuilt from the theme's

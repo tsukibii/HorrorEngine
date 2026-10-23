@@ -15,7 +15,7 @@ import { Physics, dieMaterials } from "./physics.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
 const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
-const THEME = "neumorph";                          // the HUD theme when a game names none (game.ui_theme)
+const THEME = "glass";                           // the HUD theme when a game names none (game.ui_theme)
 const LIT = 2.2;                                   // a lamp that starts off: its strength when it's switched on (stage.js's bulb)
 const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
 // a cast member who `sees` (behave): her cone (degrees, full width), its reach (m), how much of it a crouched player
@@ -229,11 +229,13 @@ export class PlayRuntime {
       p1: Math.atan2(d.y, Math.hypot(d.x, d.z)) * 180 / Math.PI };
   }
   lookedAt(id, within) { return this.look.id === id && this.look.dist <= within ? this.look.t : 0; }
-  async panel(spec) {
+  async panel(spec) { return this.modal(() => this.hud.panel(spec)); }
+  async choose(spec) { return this.modal(() => this.hud.choose(spec)); }      // a multiple choice: the index picked
+  async modal(show) {                                  // a HUD panel with the pointer freed, then back to looking
     this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
     this.hud.locked(false);
-    const v = await this.hud.panel(spec);
+    const v = await show();
     this.busy = false; this.hud.locked(false);
     try { await this.box.requestPointerLock(); } catch (e) { }   // back to looking (a click does it if the browser says no)
     return v;
