@@ -740,8 +740,7 @@ function compose() {                                   // POS: RAW + the face, s
     DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
-  { const M = MEMG.attributes.position.array; MEMBRANE.forEach((t, q) => M.set(DP.subarray(t * 3, t * 3 + 9), q * 9)); MEMG.attributes.position.needsUpdate = true; }
-  moveJaw();
+  mouthCut(); moveJaw();
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
@@ -763,8 +762,8 @@ function lmk(i) {                                       // a landmark's place on
 function inside(poly, x, y) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
 // the mouth: MHR's shell is sealed between the lips by a membrane of triangles whose corners all sit on the lip line;
 // when the jaw drops they stretch into the open mouth. Those (near the mouth, ten times their area or more on jawDrop)
-// are coloured dark, per corner (vertex colours multiply the skin's texture); the mouth (below) cuts them out of the skin and
-// draws the teeth and the tongue through them.
+// are coloured dark, per corner (vertex colours multiply the skin's texture); their points give the mouth (below) its
+// lip line.
 function mouthShade() {
   const col = new Float32Array(C * 3).fill(1), e = ENAMES.indexOf("jawDrop");
   if (!LMK || e < 0) return col;
@@ -781,11 +780,33 @@ function mouthShade() {
     const cx = (BASEP[TRIS[t] * 3] + BASEP[TRIS[t + 1] * 3] + BASEP[TRIS[t + 2] * 3]) / 3, cy = (BASEP[TRIS[t] * 3 + 1] + BASEP[TRIS[t + 1] * 3 + 1] + BASEP[TRIS[t + 2] * 3 + 1]) / 3;
     if (cx < Math.min(L[0], R[0]) - 0.004 || cx > Math.max(L[0], R[0]) + 0.004 || Math.abs(cy - M[1]) > 0.012) continue;
     if (area(open, t) < 10 * area(BASEP, t) + 1e-9) continue;
-    for (let k = 0; k < 3; k++) { const j = (t + k) * 3; col[j] = 0.16; col[j + 1] = 0.05; col[j + 2] = 0.05; }
     MEMBRANE.push(t);
   }
+  // the corners: the lips' inner faces meet there in small triangles that open into skin-coloured wedges across the
+  // mouth (and a snarl or a lowered lip opens them without the jaw). The membrane grows over its neighbours near the
+  // lip line that some opening shape stretches MEM_GROW times or more
+  const posed = ws => { const Q = Float32Array.from(BASEP);
+    for (const [n, w] of ws) { const x = ENAMES.indexOf(n); if (x < 0) continue; for (let j = 0; j < EN; j++) { const i = EIDX[j] * 3, o = (x * EN + j) * 3; Q[i] += w * EXPR[o]; Q[i + 1] += w * EXPR[o + 1]; Q[i + 2] += w * EXPR[o + 2]; } }
+    return Q; };
+  const opens = [[["jawDrop", 1]], [["upperLipRaiser_L", 1], ["upperLipRaiser_R", 1]], [["lowerLipDepressor_L", 1], ["lowerLipDepressor_R", 1]],
+                 [["lipStretcher_L", 1], ["lipStretcher_R", 1], ["jawDrop", 0.5]], [["lipCornerPuller_L", 1], ["lipCornerPuller_R", 1], ["jawDrop", 0.5]]].map(posed);
+  const near = t => { const cy = (BASEP[TRIS[t] * 3 + 1] + BASEP[TRIS[t + 1] * 3 + 1] + BASEP[TRIS[t + 2] * 3 + 1]) / 3, cx = (BASEP[TRIS[t] * 3] + BASEP[TRIS[t + 1] * 3] + BASEP[TRIS[t + 2] * 3]) / 3;
+    return cx > Math.min(L[0], R[0]) - 0.004 && cx < Math.max(L[0], R[0]) + 0.004 && Math.abs(cy - M[1]) < 0.012; };
+  const byEdge = new Map(), key = (a, b) => a < b ? a * 1e6 + b : b * 1e6 + a;
+  for (let t = 0; t < TRIS.length; t += 3) for (let k = 0; k < 3; k++) { const e = key(TRIS[t + k], TRIS[t + (k + 1) % 3]); (byEdge.get(e) || byEdge.set(e, []).get(e)).push(t); }
+  const inside = new Set(MEMBRANE), todo = [...MEMBRANE];
+  while (todo.length) {
+    const t = todo.pop();
+    for (let k = 0; k < 3; k++) for (const u of byEdge.get(key(TRIS[t + k], TRIS[t + (k + 1) % 3]))) {
+      if (inside.has(u) || !near(u)) continue;
+      const a0 = area(BASEP, u) + 1e-12; if (Math.max(...opens.map(Q => area(Q, u))) < MEM_GROW * a0) continue;
+      inside.add(u); MEMBRANE.push(u); todo.push(u);
+    }
+  }
+  for (const t of MEMBRANE) for (let k = 0; k < 3; k++) { const j = (t + k) * 3; col[j] = 0.16; col[j + 1] = 0.05; col[j + 2] = 0.05; }
   return col;
 }
+const MEM_GROW = 5;
 const MEMBRANE = [];                                   // the membrane's triangles (their first corner): the mouth's opening
 dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material.vertexColors = true;
 
@@ -1008,18 +1029,71 @@ function placeEyes() {
   }
 }
 
-// ---- the mouth: teeth, gums and a tongue (teeth.js; MHR has none). The membrane between the lips is cut out of the skin
-// (its shader) and drawn on its own, dark, marking the stencil; the teeth and the tongue are drawn only there, so they
-// show through the opening and never through the lips or the cheeks, whatever a shape does to them. The upper arch is
+// ---- the mouth: teeth, gums and a tongue (teeth.js; MHR has none). The opening is cut out of the skin (its shader) along
+// the lip line, a dark bag behind it marking the stencil; the teeth and the tongue are drawn only there, so they show
+// through the opening and never through the lips or the cheeks, whatever a shape does to them. The upper arch is
 // set from the neutral mouth (as wide as its corners say, behind the lips at the stomion); the lower arch and the
 // tongue ride the jaw, a rigid motion fitted once to each of MHR's jaw shapes and mixed by their weights, so a lip
 // shape never moves the teeth
-const MEMG = new THREE.BufferGeometry();
-{ const w = new Float32Array(C); for (const t of MEMBRANE) w[t] = w[t + 1] = w[t + 2] = 1; dgeo.setAttribute("mouthW", new THREE.BufferAttribute(w, 1));
-  MEMG.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MEMBRANE.length * 9), 3)); }
-const MEMBR = new THREE.Mesh(MEMG, new THREE.MeshBasicMaterial({ color: 0x3a1614, side: THREE.DoubleSide, depthWrite: false,   // the mouth's dark, unlit
+// the mouth's inside: a dark bag behind the opening (the cut's outline carried back and in), unlit, darker at the back,
+// marking the stencil the teeth and the tongue draw through; it is there whatever angle the opening is seen from
+const BAGR = [[1, 1, 0, 0.075], [1, 1.12, 10, 0.05], [0.95, 1.05, 30, 0.03], [0.8, 0.75, 55, 0.015]];   // [x, y about the middle, mm back, shade (linear)]
+const BAGG = new THREE.BufferGeometry();
+{ const n = 32, R = BAGR.length, idx = [];
+  for (let r = 0; r < R - 1; r++) for (let i = 0; i < n; i++) { const a = r * n + i, b = r * n + (i + 1) % n; idx.push(a, b, a + n, b, b + n, a + n); }
+  for (let i = 0; i < n; i++) idx.push((R - 1) * n + i, (R - 1) * n + (i + 1) % n, R * n);   // the back, a fan
+  BAGG.setAttribute("position", new THREE.BufferAttribute(new Float32Array((R * n + 1) * 3), 3));
+  BAGG.setAttribute("color", new THREE.BufferAttribute(new Float32Array(Array.from({ length: R * n + 1 }, (_, i) => { const k = BAGR[Math.min(R - 1, Math.floor(i / n))][3]; return [k, k * 0.2, k * 0.17]; }).flat()), 3));
+  BAGG.setIndex(idx); }
+const BAG = new THREE.Mesh(BAGG, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, depthWrite: false,
   stencilWrite: true, stencilRef: 2, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
-MEMBR.renderOrder = 1; MEMBR.frustumCulled = false; MEMBR.userData.noShadow = true; rig.add(MEMBR);
+BAG.renderOrder = 1; BAG.frustumCulled = false; BAG.userData.noShadow = true; rig.add(BAG);
+// the opening as it is now: from corner to corner (the landmarks 61 and 291), how far up and down the seal's triangles
+// reach at 16 places (closer at the corners), smoothed, so MHR's coarse triangles along the lips never show as teeth or
+// wedges and a funnel's round hole is followed; cut out of the skin in its shader (inside the outline, at its depth:
+// a lip pushed forward over it stays), the bag behind it
+let MOUTHRING = null;                                 // the opening's outline now (for the test)
+function mouthCut() {
+  const off = () => { SKU.uMouthOn.value = 0; BAG.visible = false; MOUTHRING = null; };
+  if (!LMK || !MEMBRANE.length) return off();
+  const L = lmk(61), R = lmk(291), n = 16, xs = [], up = [], lo = [];
+  for (let k = 0; k < n; k++) xs.push(L[0] + (R[0] - L[0]) * (1 - Math.cos(Math.PI * k / (n - 1))) / 2);
+  const top = xs.map(() => null), bot = xs.map(() => null);   // the seal's extent up and down at each x: what's stretched open
+  for (const t of MEMBRANE) {
+    const p = [0, 1, 2].map(k => { const i = TRIS[t + k] * 3; return [POS[i], POS[i + 1], POS[i + 2]]; });
+    const x0 = Math.min(p[0][0], p[1][0], p[2][0]), x1 = Math.max(p[0][0], p[1][0], p[2][0]);
+    for (let k = 1; k < n - 1; k++) {
+      const x = xs[k]; if (x < x0 || x > x1) continue;
+      for (let e = 0; e < 3; e++) {                    // where the vertical line at x crosses this triangle's edges
+        const a = p[e], c = p[(e + 1) % 3]; if ((a[0] - x) * (c[0] - x) > 0 || a[0] === c[0]) continue;
+        const f = (x - a[0]) / (c[0] - a[0]), y = a[1] + (c[1] - a[1]) * f, z = a[2] + (c[2] - a[2]) * f;
+        if (!top[k] || y > top[k][1]) top[k] = [x, y, z];
+        if (!bot[k] || y < bot[k][1]) bot[k] = [x, y, z];
+      }
+    }
+  }
+  for (let k = 0; k < n; k++) {
+    const t = k / (n - 1), mid = [xs[k], L[1] + (R[1] - L[1]) * t, L[2] + (R[2] - L[2]) * t];
+    if (k === 0 || k === n - 1) { const c = k ? R : L; up.push([...c]); lo.push([...c]); continue; }
+    up.push(top[k] || mid); lo.push(bot[k] || [...mid]);
+  }
+  for (const line of [up, lo]) for (let pass = 0; pass < 2; pass++) {   // smoothed: no step from one triangle to the next
+    const c = line.map(p => [...p]); for (let k = 1; k < n - 1; k++) for (let a = 1; a < 3; a++) line[k][a] = (c[k - 1][a] + 2 * c[k][a] + c[k + 1][a]) / 4;
+  }
+  let gap = 0; for (let k = 0; k < n; k++) { up[k][0] = lo[k][0] = xs[k]; if (lo[k][1] > up[k][1]) lo[k][1] = up[k][1]; gap = Math.max(gap, up[k][1] - lo[k][1]); }
+  if (gap < 0.0003) return off();                      // closed
+  const ring = [...up, ...lo.slice().reverse()];       // 32 points round the opening
+  MOUTHRING = ring;
+  ring.forEach((p, i) => SKU.uMouthP.value[i].set(p[0], p[1]));
+  const xsR = ring.map(p => p[0]), ysR = ring.map(p => p[1]);
+  SKU.uMouthBox.value.set(Math.min(...xsR), Math.min(...ysR), Math.max(...xsR), Math.max(...ysR));
+  const mm = MOUTH.mm || 0.001 * SCALE; SKU.uMouthZ.value.set(Math.min(...ring.map(p => p[2])) - 8 * mm, Math.max(...ring.map(p => p[2])) + 2 * mm);; SKU.uMouthOn.value = 1;
+  // (the cut runs from the opening's back to just in front of it: a lip standing forward of it stays)
+  const c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / ring.length), B = BAGG.attributes.position.array;
+  BAGR.forEach(([kx, ky, back], r) => ring.forEach((p, i) => B.set([c[0] + (p[0] - c[0]) * kx, c[1] + (p[1] - c[1]) * ky, p[2] - back * mm], (r * 32 + i) * 3)));
+  B.set([c[0], c[1], c[2] - (BAGR[BAGR.length - 1][2] + 5) * mm], BAGR.length * 32 * 3);
+  BAGG.attributes.position.needsUpdate = true; BAG.visible = true;
+}
 const mouthMat = (color, rough) => new THREE.MeshStandardMaterial({ color, roughness: rough, vertexColors: true,
   stencilWrite: true, stencilWriteMask: 0, stencilRef: 2, stencilFunc: THREE.EqualStencilFunc });
 const MOUTH = { teeth: mouthMat(0xf0ece2, 0.3), gums: mouthMat(0xa65c5a, 0.5), tongue: mouthMat(0x9e4a4e, 0.55),
@@ -1071,7 +1145,7 @@ function placeTeeth() {                                // from the neutral face,
   MOUTH.upper.visible = MOUTH.jaw.visible = on; if (!on) return;
   MOUTH.parts["lower-tongue"].visible = st.teeth.tongue !== false;
   const a = lmk(13), b = lmk(14), w = Math.abs(lmk(291)[0] - lmk(61)[0]), mm = 0.001 * w / MW0;   // a millimetre on this face
-  const k = mm * (st.teeth.size || 1);
+  const k = mm * (st.teeth.size || 1); MOUTH.mm = mm;
   MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5) * mm, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
   MOUTH.lower.matrix.copy(MOUTH.upper.matrix);
   const c = JAW.c; c.fill(0); for (const v of JAW.v) for (let q = 0; q < 3; q++) c[q] += POS[v * 3 + q] / JAW.v.length;   // the jaw's middle on this face
@@ -1700,7 +1774,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { THREE, MOUTH, MEMBR, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { THREE, renderer, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

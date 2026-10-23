@@ -495,3 +495,8 @@ its log before re-running it.
   jaw is now fitted once to each of MHR's jaw shapes alone and mixed by their weights, so only jaw shapes move it.
   The check that it rides the jaw compares the jaw's own points carried by the teeth's motion, not one landmark: the
   chin and the lower lip are on different lever arms and drop more than the teeth's tip.
+- **Cut an opening along a smoothed line, not along triangles** (the mouth, as the eyes already were): the teeth first
+  showed through MHR's membrane triangles, which missed the lips' inner corners (grey wedges across the mouth in a
+  snarl) and left a jagged edge. Growing the triangle set by stretch either left slivers or ate into the lips. The lip
+  line is now the seal's points (upper or lower by how far the jaw carries them), the upper lip's lowest edge and the
+  lower's highest, sampled corner to corner and smoothed, cut in the skin's shader, a dark bag behind it.

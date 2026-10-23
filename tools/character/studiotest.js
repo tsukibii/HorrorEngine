@@ -145,7 +145,7 @@ const png = rgb => {
     await page.click("#exprClear");
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose", async () => {
+  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose; the opening clean to its corners (no skin left inside its outline)", async () => {
     const pose = w => page.evaluate(w => { const b = window.__body; b.st.expr.fill(0); for (const [k, v] of Object.entries(w)) b.st.expr[b.ENAMES.indexOf(k)] = v; b.compose(); }, w);
     const m = await page.evaluate(() => {
       const b = window.__body, M = b.MOUTH, mw = () => Math.abs(b.lmk(291)[0] - b.lmk(61)[0]), k = () => M.upper.matrix.elements[0];
@@ -169,27 +169,35 @@ const png = rgb => {
     const shot = async () => { await page.waitForTimeout(300); const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
       return (await page.screenshot({ clip, timeout: 120000 })).toString("base64"); };
     const speech = { aa: { jawDrop: 0.5, upperLipRaiser_L: 0.25, upperLipRaiser_R: 0.25 }, wide: { jawDrop: 1 }, smile: { lipCornerPuller_L: 1, lipCornerPuller_R: 1, jawDrop: 0.25, upperLipRaiser_L: 0.3, upperLipRaiser_R: 0.3 },
-                     oo: { lipPucker_L: 1, lipPucker_R: 1, lipFunneler_LB: 0.6, lipFunneler_LT: 0.6, lipFunneler_RB: 0.6, lipFunneler_RT: 0.6, jawDrop: 0.25 } };
+                     oo: { lipPucker_L: 1, lipPucker_R: 1, lipFunneler_LB: 0.6, lipFunneler_LT: 0.6, lipFunneler_RB: 0.6, lipFunneler_RT: 0.6, jawDrop: 0.25 },
+                     snarl: { upperLipRaiser_L: 1, upperLipRaiser_R: 1, jawDrop: 0.15, lowerLipDepressor_L: 0.6, lowerLipDepressor_R: 0.6 } };
     for (const [name, w] of Object.entries(speech)) for (const yaw of [0, 0.7]) {
       await pose(w);
       await page.evaluate(yaw => { const b = window.__body, o = b.orbit, h = b.st.height, p = b.lmk(13); o.yaw = yaw; o.pitch = 0; o.zoom = 0.42; o.pan.set(p[0], p[1] - (h - 0.12 * h / 1.7), p[2]);
-        b.MEMBR.material.color.set(0x00ff00); b.st.teeth.on = false; b.compose(); }, yaw);
+        b.BAG.material.color.set(0x00ff00); b.BAG.material.vertexColors = false; b.BAG.material.needsUpdate = true; b.st.teeth.on = false; b.compose(); }, yaw);
       const a = await shot();
+      const ring = await page.evaluate(() => { const b = window.__body, r = document.querySelector("#view canvas").getBoundingClientRect(), R = b.mouthRing; if (!R) return null;
+        return R.map(p => { const v = new b.THREE.Vector3(...p).applyMatrix4(b.rig.matrixWorld).project(b.camera); return [(v.x + 1) / 2 * r.width, (1 - v.y) / 2 * r.height]; }); });
       await page.evaluate(() => { window.__body.st.teeth.on = true; window.__body.compose(); });
       const t = await shot();
-      const r = await page.evaluate(async ([a, t]) => {
+      const r = await page.evaluate(async ([a, t, ring]) => {
         const px = async b64 => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); return g.getImageData(0, 0, i.width, i.height); };
         const A = await px(a), T = await px(t), W = A.width, H = A.height, d = A.data, e = T.data, mask = new Uint8Array(W * H);
         for (let i = 0; i < W * H; i++) if (d[i * 4 + 1] > 150 && d[i * 4] < 90 && d[i * 4 + 2] < 90) for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {   // the edge's soft pixels too
           const j = i + y * W + x; if (j >= 0 && j < W * H) mask[j] = 1; }
         let changed = 0, out = 0;
         for (let i = 0; i < W * H; i++) if (Math.abs(d[i * 4] - e[i * 4]) + Math.abs(d[i * 4 + 1] - e[i * 4 + 1]) + Math.abs(d[i * 4 + 2] - e[i * 4 + 2]) > 30) { changed++; if (!mask[i]) out++; }
-        return { changed, out };
-      }, [a, t]);
+        let skin = 0, area = 0;                          // inside the opening's outline, a little in from it: the bag everywhere, no skin
+        if (ring) { const c = ring.reduce((q, p) => [q[0] + p[0] / ring.length, q[1] + p[1] / ring.length], [0, 0]), P = ring.map(p => [c[0] + (p[0] - c[0]) * 0.9, c[1] + (p[1] - c[1]) * 0.8]);
+          const inP = (x, y) => { let k = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > y) !== (P[j][1] > y) && x < (P[j][0] - P[i][0]) * (y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) k = !k; return k; };
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inP(x, y)) { area++; const i = (y * W + x) * 4; if (!(d[i + 1] > 150 && d[i] < 90 && d[i + 2] < 90)) skin++; } }
+        return { changed, out, skin, area };
+      }, [a, t, ring]);
+      if (yaw === 0 && name !== "oo" && r.area > 200 && r.skin > 0.03 * r.area)   // (a pout's lips stand in front of its hole) throw new Error(`${name} at ${yaw}: ${r.skin} of the ${r.area} pixels inside the opening's outline aren't the mouth's inside`);
       if (r.out > Math.max(6, 0.005 * r.changed)) throw new Error(`${name} at ${yaw}: ${r.out} of the ${r.changed} pixels the teeth change are outside the opening`);
       if (name !== "oo" && r.changed < 200) throw new Error(`${name} at ${yaw}: the teeth hardly show (${r.changed} pixels)`);
     }
-    await page.evaluate(() => { const b = window.__body; b.MEMBR.material.color.set(0x3a1614); b.st.expr.fill(0); b.compose(); });
+    await page.evaluate(() => { const b = window.__body; b.BAG.material.color.set(0xffffff); b.BAG.material.vertexColors = true; b.BAG.material.needsUpdate = true; b.st.expr.fill(0); b.compose(); });
     const saved = await page.evaluate(async () => { const b = window.__body; b.st.teeth.shade = 0.6; document.querySelector("#save").click(); await new Promise(r => setTimeout(r, 1500));
       return (await (await fetch(`api/people/${encodeURIComponent(b.who)}`)).json()).teeth; });
     if (saved?.shade !== 0.6 || saved.on !== true) throw new Error(`the teeth aren't saved with the character: ${JSON.stringify(saved)}`);

@@ -85,7 +85,8 @@ bool inCut(vec2 P[32], vec4 box, vec2 p) {                         // inside an 
 uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf, uLayGlow;
 uniform float uHasLay, uShowSel;
 varying float vSel;
-varying vec3 vObj; varying vec2 vSkinUv; varying float vMouth;
+varying vec3 vObj; varying vec2 vSkinUv;
+uniform float uMouthOn; uniform vec2 uMouthZ; uniform vec2 uMouthP[32]; uniform vec4 uMouthBox;   // the mouth's opening (index.html)
 float skinH, skinRough, skinCoat, skinCoatR = -1.0, skinSm = 0.0;   // skinSm: a layer's smoothing (evens out the pores, grain and relief)
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
@@ -225,17 +226,18 @@ export function procedural(material) {
               uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null },
               uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
               uCutOn: { value: 0 }, uCutL: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uCutR: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) },
-              uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() } };   // the layers (layers.js)   // the touch-up (touchup.js)
+              uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() },
+              uMouthOn: { value: 0 }, uMouthZ: { value: new THREE.Vector2() }, uMouthP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uMouthBox: { value: new THREE.Vector4() } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
   for (const k of Object.keys(LIDS)) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute float mouthW; varying float vSel; varying float vMouth; varying vec3 vObj; varying vec2 vSkinUv;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW; vMouth = mouthW;");
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `if (vMouth > 0.5) discard;   // the membrane between the lips: index.html draws it apart, the mouth seen through it
+      .replace("#include <color_fragment>", `if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < uMouthZ.y && inCut(uMouthP, uMouthBox, vObj.xy)) discard;   // the mouth's opening: index.html draws the inside behind it
 if (uCutOn > 0.5 && ((vObj.z > uCutZ.x && inCut(uCutL, uCutBoxL, vObj.xy)) || (vObj.z > uCutZ.y && inCut(uCutR, uCutBoxR, vObj.xy)))) discard;   // the eyes cut out
 skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {
