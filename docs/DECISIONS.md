@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (the pause menu)
+
+- **Esc in Play pauses:** the world holds (clock, timers, NPCs) and the lights go out (the frame flickers down to nearly
+  black, like a dying bulb); the menu is drawn over the dark: Resume, Save game (an autosave row and three slots,
+  overwrite asks), Settings (Display, Graphics, Audio), Quit (a footer choice: Stay, Quit to title, Quit to desktop).
+- **Settings step, never slide:** ‹ value › with A/D or a click; levels are ten dashes. Each setting names what it is
+  in Unreal (a console variable, a scalability group, a sound class): play/menu.js `SETTINGS` is the reference for
+  Unreal's menu. The desk applies brightness and the subtitle settings; the rest wait for Unreal.
+
 ## 2026-10-23 (the HUD's four places; prompts float on the thing)
 
 - **Anything done in the world floats on the thing:** the prompt sits where your hand goes (a door's handle, on your

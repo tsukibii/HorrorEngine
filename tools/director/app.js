@@ -7,6 +7,7 @@ import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine } from "./play/hud.js";
+import { applySettings } from "./play/menu.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -715,7 +716,7 @@ function watchHud() {
   const th = $("#wTheme").value || (S && S.game || {}).ui_theme || "glass";
   if (!WHUD || !WHUD.root.isConnected) {
     const root = el("div", { class: "play-hud free" }), footer = el("div", { class: "ph-footer" }), line = el("div", { class: "ph-line" });
-    footer.append(line); root.append(footer); $("#watchBox").append(root); WHUD = { root, footer, line, theme: null };
+    footer.append(line); root.append(footer); $("#watchBox").append(root); applySettings(root); WHUD = { root, footer, line, theme: null };
   }
   if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }
   return WHUD;
@@ -897,7 +898,7 @@ async function watchStitch(st, nid, n) {
 // Play mode (play/runtime.js): the tasks walked. One runtime for the whole run, so what you carry and the doors you
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
-  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, playScene: sid => playTriggered(sid), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
+  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
   return RUN.play;
 }
 function playPlace(rt, lvl) {
@@ -918,7 +919,7 @@ async function playStitch(st, n, lvl) {
   const go = rt.runStitch(st, n, its);
   await fade(0, 0.5);
   const r = await go;
-  rt.pause();
+  rt.hold();
   RUN.secs += (performance.now() - t0) / 1000; wclock();
   const nx = S.flow[r.to];
   if (r.timeout || !nx || nx.type === "ending" || (nx.type === "stitch" && (S.stitches[nx.ref] || {}).play)) await fade(1, 0.4);   // a scene blends from here, walking goes on
@@ -930,7 +931,7 @@ async function playChoice(n) {
   const go = rt.runChoice(n);
   await fade(0, 0.4);
   const o = await go;
-  rt.pause();
+  rt.hold();
   return o;
 }
 function watchChoice(n) {
@@ -1010,7 +1011,7 @@ function renderBranches(hl) {
 }
 function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
   if (RELOAD_AFTER_WATCH && !DIRTY) { RELOAD_AFTER_WATCH = false; load().then(() => status("environment reloaded from the scene builder")); } }
-document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked) RUN.skip = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 
 /* ---------- takes and notes ---------- */
 function renderClips() {

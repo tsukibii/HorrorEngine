@@ -22,7 +22,7 @@
   --ph-choice-pad:10px 14px 12px; --ph-dash:40px; --ph-dash-line:1px dashed rgba(255,255,255,.42);
   --ph-opt-glow:0 0 12px rgba(190,224,255,.7),0 1px 5px rgba(0,0,0,.6);
 }
-.play-hud[data-theme^="glass"] :is(.ph-card,.ph-choice,.ph-btn){background-image:var(--ph-glass);border:var(--ph-border)}
+.play-hud[data-theme^="glass"] :is(.ph-card,.ph-choice,.ph-btn,.ph-page){background-image:var(--ph-glass);border:var(--ph-border)}
 .play-hud[data-theme^="glass"] .ph-btn{box-shadow:var(--ph-edge)}
 .play-hud[data-theme^="glass"] .ph-btn:hover{background-color:rgba(255,255,255,.12)}
 .play-hud[data-theme^="glass"] .ph-code{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1)}

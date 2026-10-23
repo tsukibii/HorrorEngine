@@ -4,6 +4,7 @@
 // objective, timer, log, stance), the footer (people talking and the answers), the middle (a card held up to read).
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
+import { applySettings } from "./menu.js";
 
 export function loadTheme(name) {
   let l = document.getElementById("playTheme");
@@ -30,11 +31,11 @@ export class Hud {
     this.logEl = mk("div", "ph-log");
     this.timerEl = mk("div", "ph-timer");
     this.hint = mk("div", "ph-hint");
-    for (const [k, w] of [["Click", "look around"], ["W A S D", "walk"], ["E", "use"], ["C", "crouch"], ["Esc", "free the mouse"]]) { const p = mk("span", "ph-pair"); p.append(key(k), mk("span", "", w)); this.hint.append(p); }
+    for (const [k, w] of [["Click", "look around"], ["W A S D", "walk"], ["E", "use"], ["C", "crouch"], ["Esc", "pause"]]) { const p = mk("span", "ph-pair"); p.append(key(k), mk("span", "", w)); this.hint.append(p); }
     this.stance = mk("div", "ph-stance");
     this.seenEl = mk("div", "ph-seen ph-meter"); this.seenEl.append(mk("div"));
     this.root.append(this.obj, this.timerEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint);
-    box.append(this.root);
+    box.append(this.root); applySettings(this.root);
     this.lineUntil = 0; this.panelEl = null; this.objTimer = 0;
   }
   remove() { this.root.remove(); }

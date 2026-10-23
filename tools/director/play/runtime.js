@@ -11,6 +11,7 @@ import "./abilities.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud } from "./hud.js";
+import { pauseMenu } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
@@ -40,7 +41,11 @@ export class PlayRuntime {
     this.listener = null; this.ray = new THREE.Raycaster();
     this.on = {
       click: () => { if (this.active && !this.busy) box.requestPointerLock(); },
-      lock: () => this.hud.locked(document.pointerLockElement === box),
+      lock: () => {                                 // the lock lost in play (Esc) pauses
+        const on = document.pointerLockElement === box;
+        if (this.wasLocked && !on && this.active && !this.busy) this.pause();
+        this.wasLocked = on; this.hud.locked(on);
+      },
       move: e => { if (this.active && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
       key: e => this.keyEvent(e, e.type === "keydown"),
     };
@@ -64,6 +69,9 @@ export class PlayRuntime {
   ability(name, fn, ...args) { const p = part("ability", name); if (p && p[fn]) p[fn](this, ...args, this.set(name)); }
   keyEvent(e, down) {
     if (!this.active || this.busy) return;
+    if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
+      e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
+    }
     if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyC", "Space"].includes(e.code)) e.preventDefault();
     this.keys[e.code] = down;
     if (down && e.code === "KeyE" && !e.repeat) this.use();
@@ -256,7 +264,7 @@ export class PlayRuntime {
   // view (placeFromCamera)
   async scene(id) {
     if (!this.opts.playScene) { this.hud.log(`scene ${id}: not from here`); return; }
-    this.pause(); this.moving = null;
+    this.hold(); this.moving = null;
     const r = await this.opts.playScene(id);
     if (this.stopped || !r) return;
     this.placeFromCamera(r.level, r.cam);
@@ -427,6 +435,7 @@ export class PlayRuntime {
   runStitch(st, n, interrupts = []) {
     return new Promise(resolve => {
       const beats = (st.beats || []).map(b => ({ b, fired: false }));
+      this.stitchTitle = st.title || null;
       this.next = n.next;
       this.end = r => { this.listener = null; this.end = null; this.timerLeft = null; this.hud.timer(null); resolve(r); };
       this.timerLeft = st.timer ? +st.timer.secs : null;
@@ -452,13 +461,23 @@ export class PlayRuntime {
       this.go();
     });
   }
-  pause() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it
+  // the pause menu (play/menu.js): the world holds (no tick: the clock, timers, NPCs, doors all wait) while it's up
+  async pause() {
+    if (this.held) return;
+    this.held = true; this.busy = true; this.keys = {};
+    if (document.pointerLockElement === this.box) document.exitPointerLock();
+    const v = await pauseMenu(this.hud, { game: (this.story.game || {}).title || "game", where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock });
+    this.held = false; this.busy = false; this.last = performance.now();
+    if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
+    try { await this.box.requestPointerLock(); } catch (e) { }
+  }
+  hold() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it
   go() {
     if (this.stopped) return;
     this.hud.root.style.display = "";
     if (this.active) return;
-    this.active = true; this.last = performance.now();
-    const loop = now => { if (!this.active) return; this.tick(Math.min(0.05, (now - this.last) / 1000)); this.last = now; requestAnimationFrame(loop); };
+    this.active = true; this.last = this.since = performance.now();
+    const loop = now => { if (!this.active) return; if (!this.held) this.tick(Math.min(0.05, (now - this.last) / 1000)); this.last = now; requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }
   tick(dt) {

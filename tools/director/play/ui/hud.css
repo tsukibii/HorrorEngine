@@ -122,5 +122,56 @@
 
 .play-hud .shake{animation:ph-shake .38s ease-in-out}
 @keyframes ph-shake{20%{margin-left:-6px}40%{margin-left:6px}60%{margin-left:-4px}80%{margin-left:3px}}
+/* the player's settings (play/menu.js applySettings): subtitles off (a choice's question stays), their size, no Japanese */
+.play-hud .ph-footer .ph-line{font-size:calc(var(--ph-fs-l) * var(--ph-sub-scale, 1))}
+.play-hud.no-subs .ph-footer:not(:has(.ph-choice)) .ph-line,.play-hud.no-ja .ph-ja{display:none}
+
+/* ---- the pause menu (play/menu.js): the lights go out, the menu over the dark ----
+   left: where you are (Paused, Settings), the list, the mark beside the one you're on (the reticle's ring); right: the
+   page on glass (save slots, settings rows with ‹ value ›, levels as ten dashes); the keys along the bottom */
+.play-hud .ph-menu{position:absolute;inset:0;z-index:10;pointer-events:auto;cursor:default;isolation:isolate;display:grid;grid-template-columns:minmax(220px,26%) minmax(0,640px);
+  align-items:center;gap:calc(var(--ph-margin) * 2);padding:calc(var(--ph-margin) * 2) calc(var(--ph-margin) * 3)}
+.play-hud .ph-menu.out{opacity:0;transition:opacity .18s}
+.play-hud .ph-dark{position:absolute;inset:0;z-index:-1;background:var(--ph-dark,rgba(2,3,5,.9));-webkit-backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));
+  backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));animation:ph-lights-out .75s linear both}
+@keyframes ph-lights-out{0%{opacity:0}10%{opacity:.75}18%{opacity:.3}30%{opacity:.85}38%{opacity:.6}100%{opacity:1}}   /* a bulb dying */
+.play-hud .ph-nav{display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:ph-rise .3s .25s ease-out both}
+.play-hud .ph-crumb{font-size:var(--ph-fs-xs);letter-spacing:.14em;text-transform:uppercase;color:var(--ph-accent)}
+.play-hud .ph-where{font-family:var(--ph-font);font-size:var(--ph-fs-s);color:var(--ph-muted);margin:2px 0 14px}
+.play-hud .ph-item{display:flex;align-items:center;gap:12px;padding:6px 0;background:none;border:0;cursor:pointer;font-family:var(--ph-ui-font,var(--ph-font));
+  font-size:calc(var(--ph-fs-l) + 2px);color:var(--ph-muted);transition:color .15s,translate .15s}
+.play-hud .ph-item .ph-mark{display:block;opacity:0;transition:opacity .15s}
+.play-hud .ph-item.open{color:var(--ph-text)}
+.play-hud .ph-item.on{color:var(--ph-lit,var(--ph-text));translate:4px 0}
+.play-hud .ph-item.on .ph-mark{opacity:1}
+.play-hud .ph-item:focus,.play-hud .ph-arrow:focus{outline:0}
+.play-hud .ph-page{visibility:hidden;max-height:calc(100% - var(--ph-margin) * 2);overflow:auto;box-sizing:border-box;padding:calc(var(--ph-margin) - 4px);border-radius:var(--ph-radius-l);
+  background:var(--ph-surface);box-shadow:var(--ph-pop-l);-webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none);scrollbar-width:thin}
+.play-hud .ph-page.on{visibility:visible;animation:ph-rise .25s ease-out both}
+.play-hud .ph-group{font-size:var(--ph-fs-xs);letter-spacing:.14em;text-transform:uppercase;color:var(--ph-muted);margin:14px 12px 6px}
+.play-hud .ph-group:first-child{margin-top:0}
+.play-hud .ph-row,.play-hud .ph-slot{border-radius:var(--ph-radius-s);transition:background-color .12s}
+.play-hud .ph-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;padding:7px 12px;font-size:var(--ph-fs)}
+.play-hud :is(.ph-row,.ph-slot).on{background:var(--ph-hover-bg,rgba(255,255,255,.07))}
+.play-hud .ph-row-label{color:var(--ph-text)}
+.play-hud .ph-val{display:flex;align-items:center;gap:6px;color:var(--ph-text)}
+.play-hud .ph-vtext{min-width:116px;text-align:center}
+.play-hud .ph-num{min-width:18px;text-align:right;font-size:var(--ph-fs-s);color:var(--ph-muted);font-variant-numeric:tabular-nums}
+.play-hud .ph-arrow{background:none;border:0;padding:0 6px;font:inherit;font-size:calc(var(--ph-fs) + 3px);line-height:1;color:var(--ph-muted);opacity:.35;cursor:pointer;transition:opacity .12s,color .12s}
+.play-hud .ph-row.on .ph-arrow{opacity:1}
+.play-hud .ph-arrow:hover{color:var(--ph-lit,var(--ph-text))}
+.play-hud .ph-steps{display:flex;gap:4px;padding:8px 0;cursor:pointer}
+.play-hud .ph-steps>i{width:11px;height:2px;border-radius:2px;background:var(--ph-meter-bg,rgba(255,255,255,.14))}
+.play-hud .ph-steps>i.on{background:var(--ph-accent)}
+.play-hud .ph-slot{display:grid;grid-template-columns:76px 1fr;grid-template-rows:auto auto;column-gap:14px;padding:10px 12px;cursor:pointer}
+.play-hud .ph-slot.auto{cursor:default;opacity:.7}
+.play-hud .ph-slot-name{grid-row:span 2;font-size:var(--ph-fs-xs);letter-spacing:.14em;text-transform:uppercase;color:var(--ph-muted);padding-top:4px}
+.play-hud .ph-slot-where{font-family:var(--ph-font);font-size:calc(var(--ph-fs) + 1px);color:var(--ph-text)}
+.play-hud .ph-meta{display:flex;align-items:center;gap:7px;min-height:22px;font-size:var(--ph-fs-s);color:var(--ph-muted)}
+.play-hud .ph-ask-inline{color:var(--ph-bad);margin-right:4px}
+.play-hud .ph-slot.saved .ph-meta{color:var(--ph-accent)}
+.play-hud .ph-legend{position:absolute;z-index:2;left:calc(var(--ph-margin) * 3);bottom:var(--ph-margin);display:flex;gap:20px;font-size:var(--ph-fs-s);color:var(--ph-muted)}
+.play-hud .ph-menu .ph-footer{z-index:1}
+.play-hud.paused > :not(.ph-menu){visibility:hidden}
 /* a card or a choice is up: the world's marks step back (last, so it wins over their own states) */
 .play-hud.modal :is(.ph-cursor,.ph-prompt,.ph-seen){opacity:0}
