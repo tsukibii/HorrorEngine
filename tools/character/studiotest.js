@@ -3,12 +3,12 @@
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
-// skin takes over the body with the photo on the face through its mask, and its features change the picture; pants are made to the body and worn;
+// skin takes over the body with the photo on the face through its mask, and its features change the picture;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
 //
-//   python tools/face_mesh.py setup, python tools/garment.py setup, python tools/retarget.py setup   (once)
+//   python tools/face_mesh.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
 //   node tools/character/studiotest.js [shot.png]
 //
@@ -153,16 +153,6 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
       if (!ok) throw new Error(`skin_${k}.png wasn't saved`);
     }
     await page.click("#touchRows label.tog input");                        // painting off for the rest
-    await page.click('#tabs button[data-tab="body"]');
-  });
-  await step("clothes: pants made to this body, draped, worn", async () => {
-    await page.click('#tabs button[data-tab="clothes"]');
-    await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 0);
-    await page.selectOption("#clothesRows select", "pants");
-    await page.click("#clothesRows button");
-    await page.waitForFunction(() => window.__body.garments.has("pants"), null, { timeout: 180000 });
-    const st = await page.textContent("#status");
-    if (!/pants: \d+ points, seams within/.test(st)) throw new Error(st);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("hair: a twin-tail wig settles off the head and shoulders, survives a shake, exports its chains; grown cards too", async () => {

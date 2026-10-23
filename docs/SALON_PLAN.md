@@ -62,7 +62,7 @@ Move (jiggle), Save. A newcomer goes top to bottom and is done; an expert jumps.
 | Spring chains pinned at the root, gravity, hold to a rest shape, damping, pushed off the head and body | `tools/character/wig.js` (`Wig`) | the locks' physics |
 | Ribbons with a strand alpha texture, drawn from polylines | `hair.js` (`ribbon`, `strandTexture` in `index.html`) | drawing a lock as a sheet |
 | GPU strands rebuilt from guide chains, the Kajiya-Kay hair shader | `tools/character/strands.js` | the realism option: strands interpolated inside a lock |
-| The clothes on the body: a draped garment mesh per design | `tools/character/clothes.py`, `drape.py`, `api/clothes/<name>/<design>` | collision so hair sits on clothing |
+| The clothes on the body: a garment mesh per design | (GarmentCode's drape was removed, 2026-10-23: the tailor's garments when they come) | collision so hair sits on clothing |
 | A rough 3D guide from an orbit video: the keyed frames' visual hull (no training), the orbit poses | `gshair/masks.py`, `gshair/poses.py --orbit` (the hull went with the splat) | the translucent guide round the head |
 | Body collision as slices, the head as a radial field | the removed `gshair/export.py` (`body_slices`) and `splats.js` (`headPush`) were the model | fast push-out for the locks |
 

@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23, later (our own clothes: the tailor, after Woohill; GarmentCode removed)
+
+- **The GarmentCode garment maker is taken out** (its drapes were bad, and it's bloat we don't need): gone are
+  `tools/garment.py`, the Studio's `clothes.py`, `drape.py` and `make_designs.py`, the GarmentCode designs and
+  outfits, Mari's patterns in the Pilot, the server's routes, the launcher lines and the setup step.
+- **Clothes are our own generator, inspired by Woohill's character creator**, with far more polygons for our
+  realistic bodies. The cloth doesn't need to be properly simulated: the aim is **a bit better than PSX-style
+  clothing**. Success is a typical work uniform, a t-shirt, pants, shorts and a skirt.
+
 ## 2026-10-23 (the Gaussian splat is removed)
 
 - **The hair splat is taken out of the repo**, not kept as a reference layer: the salon doesn't use it. Gone: the

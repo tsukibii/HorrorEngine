@@ -28,7 +28,6 @@ from storykit import pbr as PBR  # noqa: E402 - the PBR shelf (Content/Studio/PB
 PORT = int(os.environ.get("BODY_PORT", 8793))
 PEOPLE = ROOT / "Content" / "Studio" / "People"
 BODIES = ROOT / "Content" / "Studio" / "Bodies"
-DESIGNS = ROOT / "Content" / "Studio" / "Clothes" / "designs"
 VENDOR = ROOT / "tools" / "director" / "vendor"     # three.js, shared with the desk
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
          ".bin": "application/octet-stream", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -172,14 +171,6 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
             f = PEOPLE / clean(parts[2]) / "salon" / parts[4]                    # the character's hair from the salon
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
-        if parts[:2] == ["api", "outfits"]:                                         # garments made in order, each over the last
-            f = DESIGNS.parent / "outfits.json"
-            return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"outfits": {}})
-        if parts[:2] == ["api", "designs"]:                                         # the garment designs
-            return self.send(200, {"designs": sorted(f.stem for f in DESIGNS.glob("*.yaml"))})
-        if parts[:2] == ["api", "clothes"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a draped garment
-            f = PEOPLE / clean(parts[2]) / "clothes" / clean(parts[3]) / "garment.obj"
-            return self.send(200, f.read_bytes(), "text/plain") if f.exists() else self.send(404, {"error": "not made yet"})
         if parts[:2] == ["api", "wigs"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # a hair model worn as a wig
             f = PEOPLE / clean(parts[2]) / "wigs" / clean(parts[3])
             return self.send(200, f.read_bytes(), "application/octet-stream") if f.is_file() else self.send(404, {"error": "no such hair model"})
@@ -272,26 +263,6 @@ class Handler(BaseHTTPRequestHandler):
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(self.body())
             return self.send(200, {"ok": True, "path": str(f.relative_to(ROOT))})
-        if parts[:2] == ["api", "clothes"] and len(parts) == 3 and name:          # make and drape a garment on this body
-            q = json.loads(self.body().decode("utf-8") or "{}")
-            design = clean(q.get("design"))
-            if not design or not (DESIGNS / f"{design}.yaml").exists():
-                return self.send(400, {"error": "pick a design"})
-            py = ROOT / "vendor" / "garmentcode" / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-            if not py.exists():
-                return self.send(400, {"error": "GarmentCode isn't set up: python tools/garment.py setup"})
-            out = PEOPLE / name / "clothes" / design
-            r = subprocess.run([str(py), str(HERE / "clothes.py"), "--out", str(out), "--design", design,
-                                "--height", str(float(q.get("height", 1.7))), "--weights", json.dumps(q.get("weights", [])),
-                                "--locks", str(q.get("locks", "auto")),
-                                "--under", ",".join(str(PEOPLE / name / "clothes" / u / "garment.obj") for u in q.get("under", [])
-                                                    if clean(u) and (PEOPLE / name / "clothes" / u / "garment.obj").exists())],
-                               capture_output=True, text=True, encoding="utf-8")
-            line = next((l for l in r.stdout.splitlines() if l.startswith("{")), None)
-            if r.returncode or not line:
-                return self.send(500, {"error": "the garment failed: " + (r.stderr or r.stdout)[-600:]})
-            res = json.loads(line)
-            return self.send(200, {"design": design, "drape": res["drape"], "measures_cm": res["measures_cm"]})
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in ("match", "perm"):
             lib = perm_home() / "library"
             if not face_py().exists():

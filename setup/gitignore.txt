@@ -32,8 +32,6 @@ Footage/
 vendor/kimodo/
 # Blender's Python module for tools/retarget.py (rebuildable)
 vendor/blender/
-# GarmentCode's checkout and environment (tools/garment.py setup; rebuildable)
-vendor/garmentcode/
 # MediaPipe's environment and the Face Landmarker model (tools/face_mesh.py setup; rebuildable)
 vendor/face_mesh/
 

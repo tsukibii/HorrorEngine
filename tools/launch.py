@@ -157,7 +157,6 @@ TOOLS = [
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
     ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
-    ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),
@@ -173,7 +172,6 @@ TOOLS = [
     ("Setup", "Install or update Kimodo", "setup/setup.py kimodo", {}),
     ("Setup", "Kimodo demo additions: check", "setup/setup.py kimodo-patch check", {}),
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
-    ("Setup", "GarmentCode setup", "tools/garment.py setup", {}),
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
     ("Setup", "Perm setup (the hair library: 343 hairstyles)", "tools/perm.py setup", {}),
     ("Setup", "Perm library (thumbnails and outlines of every hairstyle)", "tools/perm.py library", {}),

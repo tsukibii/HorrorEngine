@@ -118,8 +118,6 @@
     <section data-tab="clothes" hidden>
       <h3>Clothes</h3>
       <div id="clothesRows"></div>
-      <p class="note">A design's sewing pattern made to this body by GarmentCode, sewn onto it with Blender's cloth (about 10 to 20 s), worn here. Skirts, trousers and tops drape on; the cloth is still coarse (2 cm triangles). Change the body, then make the garment again.</p>
-      <div id="worn"></div>
     </section>
 
     <h3>View</h3>
@@ -363,80 +361,6 @@ photoBtn.onclick = async () => {
   } catch (e) { status(e.message, "bad"); }
 };
 
-// ---- clothes: GarmentCode patterns draped on this body (tools/character/clothes.py) --------------------------------
-st.clothes = [];                                       // [{design, color}]
-const GARMENTS = new Map();                            // design -> mesh
-const designSel = el("select"), makeBtn = el("button", { textContent: "Make and drape" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
-const lockSel = el("select", { title: "An opening held on the body through the drape, so the garment can't slide off a body its pattern doesn't grip" },
-  ...[["auto", "auto (a waistband)"], ["none", "nothing"], ["waist", "the waist"], ["hips", "the hips"], ["neck", "the neck"], ["waist,neck", "waist and neck"]]
-    .map(([v, t]) => el("option", { value: v, textContent: t })));
-$("#clothesRows").append(el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
-  el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")),
-  el("div", { className: "row" }, el("span", { textContent: "Hold at" }), lockSel, el("output")), makeBtn);
-// outfits: several garments made in order, each draped over the ones before (Content/Studio/Clothes/outfits.json)
-const outfitSel = el("select"), outfitBtn = el("button", { textContent: "Make the outfit" });
-$("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { className: "row" }, el("span", { textContent: "Outfit" }), outfitSel, el("output")), outfitBtn);
-let OUTFITS = {};
-api("api/outfits").then(r => { OUTFITS = r.outfits || {}; outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n }))); }).catch(() => {});
-outfitBtn.onclick = async () => {
-  if (!WHO) return status("make or pick a character first", "bad");
-  const parts = OUTFITS[outfitSel.value] || [], under = [];
-  outfitBtn.disabled = true;
-  try {
-    for (const g of st.clothes.slice()) { const m = GARMENTS.get(g.design); if (m) { rig.remove(m); GARMENTS.delete(g.design); } }
-    st.clothes = []; drawWorn();
-    for (const [i, [design, color]] of parts.entries()) {
-      status(`${outfitSel.value}: ${design} (${i + 1} of ${parts.length})${under.length ? " over " + under.join(", ") : ""}…`);
-      await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: "auto", under: [...under] });
-      st.clothes.push({ design, color }); await wear(design, color); drawWorn(); under.push(design);
-    }
-    status(`${outfitSel.value}: ${parts.map(p => p[0]).join(", ")}`, "ok");
-  } catch (e) { status(e.message, "bad"); }
-  outfitBtn.disabled = false;
-};
-api("api/designs").then(r => designSel.replaceChildren(...r.designs.map(d => el("option", { value: d, textContent: d.replace(/_/g, " ") })))).catch(() => {});
-function parseObj(text) {
-  const v = [], f = [];
-  for (const line of text.split("\n")) {
-    if (line.startsWith("v ")) { const p = line.split(/\s+/); v.push(+p[1], +p[2], +p[3]); }
-    else if (line.startsWith("f ")) { const p = line.split(/\s+/).slice(1).map(x => parseInt(x) - 1); for (let k = 1; k + 1 < p.length; k++) f.push(p[0], p[k], p[k + 1]); }
-  }
-  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.setIndex(f); g.computeVertexNormals();
-  return g;
-}
-async function wear(design, color) {
-  const r = await fetch(`api/clothes/${encodeURIComponent(WHO)}/${encodeURIComponent(design)}?v=${Date.now()}`);
-  if (!r.ok) return false;
-  const old = GARMENTS.get(design); if (old) { rig.remove(old); old.geometry.dispose(); }
-  const m = new THREE.Mesh(parseObj(await r.text()), new THREE.MeshStandardMaterial({ color, roughness: 0.85, side: THREE.DoubleSide }));
-  GARMENTS.set(design, m); rig.add(m); return true;
-}
-function drawWorn() {
-  $("#worn").replaceChildren(...st.clothes.map(c => {
-    const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
-    col.oninput = () => { c.color = col.value; GARMENTS.get(c.design)?.material.color.set(c.color); };
-    x.onclick = () => { st.clothes = st.clothes.filter(o => o !== c); const m = GARMENTS.get(c.design); if (m) { rig.remove(m); GARMENTS.delete(c.design); } drawWorn(); };
-    return el("div", { className: "row" }, el("span", { textContent: c.design.replace(/_/g, " ") }), col, x);
-  }));
-}
-async function dressAll() {
-  for (const m of GARMENTS.values()) rig.remove(m);
-  GARMENTS.clear();
-  for (const c of st.clothes) await wear(c.design, c.color);
-}
-makeBtn.onclick = async () => {
-  if (!WHO) return status("make or pick a character first", "bad");
-  const design = designSel.value;
-  status(`sewing ${design} onto ${WHO}…`); makeBtn.disabled = true;
-  try {
-    const r = await api(`api/clothes/${encodeURIComponent(WHO)}`, { design, weights: weights(), height: st.height, locks: lockSel.value });
-    if (!st.clothes.some(c => c.design === design)) st.clothes.push({ design, color: gColor.value });
-    await wear(design, st.clothes.find(c => c.design === design).color); drawWorn();
-    const held = Object.entries(r.drape.locks || {}).map(([k, n]) => `${k} (${n} points)`).join(", ");
-    status(`${design}: ${r.drape.points} points, seams within ${r.drape.seam_gap_mm} mm${held ? ", held at the " + held : ""}, ${r.drape.seconds} s`, "ok");
-  } catch (e) { status(e.message, "bad"); }
-  makeBtn.disabled = false;
-};
 
 // ---- the body ---------------------------------------------------------------------------------------------------
 const view = $("#view");
@@ -882,6 +806,15 @@ for (const [name, c] of [["crown", 0xffd166], ["left", 0x5ec8ff], ["right", 0x5e
   const h = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true, opacity: 0.85 }));
   h.name = name; h.renderOrder = 10; HANDLES.add(h);
 }
+function parseObj(text) {                             // an OBJ's points and faces (a hair model worn as a wig)
+  const v = [], f = [];
+  for (const line of text.split("\n")) {
+    if (line.startsWith("v ")) { const p = line.split(/\s+/); v.push(+p[1], +p[2], +p[3]); }
+    else if (line.startsWith("f ")) { const p = line.split(/\s+/).slice(1).map(x => parseInt(x) - 1); for (let k = 1; k + 1 < p.length; k++) f.push(p[0], p[k], p[k + 1]); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); g.setIndex(f); g.computeVertexNormals();
+  return g;
+}
 async function loadModel() {                           // the model's file into points, triangles, UVs and its texture
   MODEL = null; MWIG = null; MFIT = null;
   const m = st.hair.model; if (!WHO || !m?.file) return false;
@@ -1285,7 +1218,7 @@ async function open(name) {
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
-  st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
+  st.clothes = (c.clothes || []).map(x => ({ ...x }));
   Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, c.eyes || {}); eyeSet.all(); paintEyes();
   Object.assign(st.hair, HAIR.DEFAULTS, HAIR_MORE, { over: {}, batch: { ...HAIR_MORE.batch }, blend: { weights: {}, vary: 0, seed: 0 }, model: null }, c.hair || {});
   if (STRANDS) { scene.remove(STRANDS.mesh); STRANDS.dispose(); STRANDS = null; }
@@ -1338,7 +1271,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body") tab(t); } catch (e) { }
-window.__body = { get LAY() { return LAY; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
+window.__body = { get LAY() { return LAY; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, get wig() { return WIG; }, get strands() { return STRANDS; }, loadStrands, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera, get modelWig() { return MWIG; }, get wigFit() { return MFIT; }, fitWig, loadModel,
   handleOnScreen(n) { const h = HANDLES.getObjectByName(n), v = h.position.clone().project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

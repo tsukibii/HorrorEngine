@@ -19,7 +19,7 @@ character on disk in `Content/Studio/People/<name>/` (git-ignored: real faces st
 | Layers | paint layers above the base: select by vertex, fill with colour, decal, PBR set or texture, opacity, shine, relief (docs/LAYERS.md) | `layers.js`, `layersui.js` |
 | Hair | a style grown here (`hair.js`, cards or the `wig.js` wig, Asian cuts); strands from the Perm library blended, fitted and batched (`perm.py`, `hair_match.py`, `hair_fit.py`, `hair_batch.py`, `strands.js`); a hair model worn as a wig (`wigify.js`: crown fit, six handles, the top locked, a swinging particle cage); **made in the salon**: the salon's bake worn on the head (below) | |
 | *(the salon, its own page)* | **the hair route** (DECISIONS 2026-10-22): locks drawn by hand on this character's own body and face (the Studio's Save writes `body.bin` for it), against a reference video locked to the view; fourteen numbered steps, each a dropdown closed until opened; Bake writes `salon/salon.glb` and `salon_bake.json`, which the Hair tab wears (docs/SALON.md) | `salon.html`, `salon.js`, `salonlib.js`, ... |
-| Clothes | GarmentCode designs draped with Blender's cloth (`clothes.py`, `drape.py`), lock points, presets and outfits worn in layers (`make_designs.py`) | |
+| Clothes | (GarmentCode's drape removed, DECISIONS 2026-10-23; our own generator next) | |
 | View | the studio view (`tools/shared/studioview.js`); POV from the player's eye at MCU or MS through the game's 90° lens in 16:9, under studio, warm lamp, cold night and flashlight | |
 
 Research behind it: docs/research/skin.md, docs/research/hair.md (and CC0 hair models), docs/research/hair_splats.md,
@@ -65,7 +65,7 @@ export is a bake like any other (§3, Export).
 | Hair: model wig | the model file in `wigs/`, its fit and lock in `character.json` | made live | none |
 | Hair: salon | `salon/salon.json` (the locks, groups, look); the reference video in `Content/Studio/Hair/References/`; hairstyles to start from in `Content/Studio/Hair/` | `salon/salon.glb`, `salon_bake.json` (the head frame it was made on: a receipt already) | the Studio doesn't yet say when the head changed after the bake (the salon's note asks to bake again by hand): the first stale dot to add |
 | Body for the salon | the body's weights and the face (above) | `body.bin` (written by Save) | none: remade on every Save |
-| Clothes | each garment's design and colour; `design.yaml`, `body.yaml` beside the drape | `garment.obj` | **the lock choice and what it was draped over aren't saved** (an outfit remade alone would drape differently); no receipt |
+| Clothes | each garment's design and colour in `character.json` | none yet | the generator is being replaced |
 | Exports | none | `<name>_head.obj`, `_hair.obj`, `_wig.json`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with one receipt for the whole export |
 
 The fixes are small and belong in the revamp's first steps (§5): a `made.json` receipt on each bake, the body's
