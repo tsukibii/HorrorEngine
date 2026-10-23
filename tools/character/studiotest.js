@@ -145,7 +145,7 @@ const png = rgb => {
     await page.click("#exprClear");
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose; the opening clean to its corners (no skin left inside its outline)", async () => {
+  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose; the opening clean to its corners (no skin left inside its outline); the lower lip's curl, closed at rest", async () => {
     const pose = w => page.evaluate(w => { const b = window.__body; b.st.expr.fill(0); for (const [k, v] of Object.entries(w)) b.st.expr[b.ENAMES.indexOf(k)] = v; b.compose(); }, w);
     const m = await page.evaluate(() => {
       const b = window.__body, M = b.MOUTH, mw = () => Math.abs(b.lmk(291)[0] - b.lmk(61)[0]), k = () => M.upper.matrix.elements[0];
@@ -204,6 +204,16 @@ const png = rgb => {
     const saved = await page.evaluate(async () => { const b = window.__body; b.st.teeth.shade = 0.6; document.querySelector("#save").click(); await new Promise(r => setTimeout(r, 1500));
       return (await (await fetch(`api/people/${encodeURIComponent(b.who)}`)).json()).teeth; });
     if (saved?.shade !== 0.6 || saved.on !== true) throw new Error(`the teeth aren't saved with the character: ${JSON.stringify(saved)}`);
+    // the lower lip's curl: it rolls the lip's inner edge in by its amount, and at rest the lips stay closed (no cut, no teeth) whatever it is
+    const curl = await page.evaluate(() => { const b = window.__body, C = b.CURL, at = () => Array.from(C.idx, i => [b.POS[i * 3], b.POS[i * 3 + 1], b.POS[i * 3 + 2]]);
+      b.st.expr.fill(0); const out = {}; let p0 = null, moved = 0;
+      for (const k of [0, 0.5, 1]) { b.st.teeth.curl = k; b.compose(); out[k] = b.SKU.uMouthOn.value || b.BAG.visible ? "open" : "closed";
+        const p = at(); if (k === 0) p0 = p; if (k === 0.5) moved = Math.max(...p.map((q, i) => Math.hypot(q[0] - p0[i][0], q[1] - p0[i][1], q[2] - p0[i][2]))) / b.scale; }
+      b.st.teeth.curl = 0.5; b.compose(); return { n: C.idx.length, out, moved: moved * 1000 }; });
+    if (curl.n < 50) throw new Error(`the lower lip's curl moves ${curl.n} points`);
+    if (Object.values(curl.out).some(v => v !== "closed")) throw new Error(`at rest the lips part with the curl: ${JSON.stringify(curl.out)}`);
+    if (Math.abs(curl.moved - 1.2) > 0.15) throw new Error(`the curl at 0.5 rolls the lip's edge ${curl.moved.toFixed(2)} mm, not 1.2`);
+    console.log(`       the lower lip's curl: ${curl.n} points, its edge rolled ${curl.moved.toFixed(2)} mm at 0.5; at rest closed at 0, 0.5 and 1`);
   });
   await step("the skin from the front picture: a texture, worn", async () => {
     await page.click('#tabs button[data-tab="skin"]');

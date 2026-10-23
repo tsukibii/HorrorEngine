@@ -15,7 +15,7 @@ const LOWER = [["central", 5.3, 9, 6, "incisor"], ["lateral", 5.9, 9.5, 6.2, "in
 // first molars
 const ARCH = [[0, -3.5], [4.4, -4], [10.5, -6], [15.6, -9.6], [19, -15], [21.3, -21], [23.5, -28.5], [25.5, -38], [26.8, -47], [27.6, -56]];
 export const LOWER_ARCH = { sx: 0.95, dz: -2.6, over: 1.6 };   // the lower arch: a little narrower, behind the upper incisors (overjet), their edges 1.6 mm above the upper's (overbite)
-export const TEETH_DEFAULTS = { on: true, shade: 0.35, size: 1, forward: 0, up: 0, tongue: true };
+export const TEETH_DEFAULTS = { on: true, shade: 0.35, size: 1, forward: 0, up: 0, tongue: true, curl: 0.5 };   // (curl: the lower lip's, index.html)
 
 function arch(sx = 1, dz = 0) {                         // the centre line sampled finely, with its length along it
   const P = []; for (let i = 0; i < ARCH.length - 1; i++) {

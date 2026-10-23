@@ -504,3 +504,7 @@ its log before re-running it.
   funnel, a pair no preset makes; MHR folds the lower lip out over itself there. Two cut changes didn't remove it
   (it is the face's own geometry, with nothing behind it). The fix is a pairing limit on the weights (`paired()`), the
   place mocap goes through too.
+- **An opening counts from rest:** MHR's lips overlap at rest (the lower one ~1 mm up inside the upper's curl), so the
+  seal's reach read as 0.6 mm open with no expression, and the first lower-lip curl parted the lips and showed the
+  teeth at rest. The opening is now what the seal reaches beyond its reach at rest; what's between the lips at rest
+  is the lips' inside, not the mouth.
