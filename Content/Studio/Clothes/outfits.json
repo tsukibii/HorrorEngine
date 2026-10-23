@@ -1,0 +1,20 @@
+{
+  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour]): a bottom first and the top hangs over it; a top first and it's tucked in",
+  "outfits": {
+    "work uniform": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"]],
+    "work uniform (long sleeves)": [["crew-socks", "#2a2c30"], ["work-boots", "#3a2c20"], ["work-shirt-long", "#8a9a86"], ["work-trousers", "#3a3a32"]],
+    "coverall": [["crew-socks", "#2a2c30"], ["work-boots", "#24201c"], ["coverall", "#3f5266"]],
+    "t-shirt and pants": [["ankle-socks", "#f0eee8"], ["sneakers", "#e8e6e0"], ["pants", "#3b3f46"], ["t-shirt", "#d8d4cc"]],
+    "t-shirt and shorts": [["ankle-socks", "#f0eee8"], ["sneakers", "#e8e6e0"], ["shorts", "#4a5a48"], ["t-shirt", "#9c3b36"]],
+    "t-shirt and skirt": [["flats", "#1c1a1e"], ["skirt", "#33384a"], ["t-shirt", "#e8e4dc"]],
+    "long sleeves and pleated skirt": [["knee-socks", "#1c1e26"], ["loafers", "#1c1816"], ["long-sleeve", "#3c4048"], ["pleated-skirt", "#262c3c"]],
+    "skirt, blouse and tights": [["tights", "#1d1a1c"], ["flats", "#1c1a1e"], ["skirt", "#33384a"], ["long-sleeve", "#e8e4dc"]],
+    "fishnets and shorts": [["fishnet-tights", "#151214"], ["shorts", "#26262a", {"surface": "denim"}], ["t-shirt", "#9c3b36", {"print": {"text": "NIGHT SHIFT", "ink": "#f0e8dc", "part": "front", "u": 0, "v": 1.18, "w": 0.2}}]],
+    "leggings and long sleeves": [["leggings", "#202024"], ["sneakers", "#2a2a2e"], ["long-sleeve", "#5b6b7a", {"pattern": {"kind": "stripes", "colors": ["#e8e4dc", "#2a3040"], "size": 0.035}}]],
+    "school uniform (plaid skirt)": [["stockings", "#1d1a1c"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}]],
+    "office (blazer)": [["crew-socks", "#1c1e26"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pants", "#2a2e36"], ["blazer", "#2a2e36"]],
+    "school uniform (blazer)": [["stockings", "#1d1a1c"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}], ["blazer", "#1d2840"]],
+    "work jacket": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"], ["work-jacket", "#5a4a32"]],
+    "cardigan and skirt": [["tights", "#1d1a1c"], ["flats", "#3a2a24"], ["long-sleeve", "#e8e4dc"], ["skirt", "#5a3a3a"], ["cardigan", "#8a7a68"]]
+  }
+}

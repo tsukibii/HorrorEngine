@@ -43,10 +43,12 @@ Anything made of boxes and cylinders is made here, from presets you change.
   Click one to keep working from it, then *Save as preset* (it offers `<preset>_v<n>`); *More 🎲* rolls six more.
   The same roll always gives the same six (`variations()` in `kit.js`, the rules in its `VARY` table).
 - **Save as preset:** writes it into `Content/Studio/Kit/presets.json` (marked yours). The scene builder lists it
-  once reloaded.
+  when you go back to it.
 - **Explode to parts:** turns any thing into a list of free parts, one card each: shape, base position, size,
   material, bevel and turn. Start from the nearest preset, then move, resize, recolour, duplicate or remove single
   boxes. This is how anything boxy gets made: a desk with a drawer, a step stool, a shoe rack, a bath panel.
+- **PBR:** the shelf page (docs/ASSETS.md §6) in its own tab: your texture sets on a sphere, a cube, a room corner
+  and a close-up, to choose a room's look by while you make its things.
 - **Export .glb:** the mesh for Blender or a hand import. It's in metres, Y up, with the front facing +Z.
 
 ## 2. The types

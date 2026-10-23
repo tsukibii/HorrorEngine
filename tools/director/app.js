@@ -6,6 +6,8 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
+import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
+import { applySettings } from "./play/menu.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -557,6 +559,7 @@ function scrubTo(T) {
 }
 function paintOv(sel, o) {
   const ov = $(sel); ov.querySelector(".sub").textContent = o.sub || ""; ov.querySelector(".ja").textContent = o.ja || ""; ov.querySelector(".who").textContent = o.who || "";
+  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || o.speaker, o.ja);   // the Watch's subtitles are the game's footer
   ov.querySelector(".black").style.opacity = o.black || 0; ov.querySelector(".tag").textContent = o.tag || "";
 }
 function playScene(sc, ver, fromClip) {
@@ -706,19 +709,34 @@ async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.
 function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
 function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); } wclock(); }
+// the Watch's footer: the Play HUD's footer in the game's theme (or the one picked), so scene subtitles, replies and
+// timed choices look as they will in the game: the speaker over the line, the options in their panel under it
+let WHUD = null;
+function watchHud() {
+  const th = $("#wTheme").value || (S && S.game || {}).ui_theme || "glass";
+  if (!WHUD || !WHUD.root.isConnected) {
+    const root = el("div", { class: "play-hud free" }, el("div", { class: "ph-focus" })), footer = el("div", { class: "ph-footer" }), line = el("div", { class: "ph-line" });
+    footer.append(line); root.append(footer); $("#watchBox").append(root); applySettings(root); WHUD = { root, footer, line, theme: null };
+  }
+  if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }
+  return WHUD;
+}
+// a choice in the Watch floats beside whoever asks (or under the middle of the view), as in Play
+function choiceBox(spec, pick, who) {
+  const c = chooser(spec, pick), root = watchHud().root, f = who && watchStage.cast[who];
+  const fl = floating(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
+  return { box: { remove: fl.remove }, c };
+}
 // a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
-function runReply(rp, frame) {
+function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
-    const box = el("div", { class: "reply" }), bar = el("div", { class: "rbar" }, el("div", {}));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
-    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", kd); box.remove(); resolve(id); };
-    const kd = e => { const k = e.key.toLowerCase(); if ((k === "arrowleft" || k === "a") && opts[0]) finish(opts[0].id); if ((k === "arrowright" || k === "d") && opts[1]) finish(opts[1].id); };
-    opts.forEach((o, i) => box.append(el("button", { class: "ropt " + (i ? "right" : "left"), title: o.sets && o.sets.length ? "sets " + JSON.stringify(o.sets) : "", on: { click: () => finish(o.id) } },
-      el("div", { class: "rja" }, o.ja || ""), el("div", { class: "ren" }, o.label || o.id))));
-    box.append(bar); $("#watchBox").append(box); window.addEventListener("keydown", kd);
-    const tick = () => { if (done) return; if (!RUN) return finish(null); const u = (performance.now() - t0) / 1000; frame(u); bar.firstChild.style.width = Math.max(0, 100 - u / secs * 100) + "%"; if (u >= secs) return finish(null); requestAnimationFrame(tick); };
+    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
+    window.addEventListener("keydown", c.keys, true);
+    const tick = () => { if (done) return; if (!RUN) return finish(null); const u = (performance.now() - t0) / 1000; frame(u); c.bar(1 - u / secs); if (u >= secs) return finish(null); requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   });
 }
@@ -753,7 +771,7 @@ async function watchScene(sc, nid, sid, k) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
       const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
-        paintOv("#watchOv", { sub: c.en, ja: c.ja, who: `${sc.title || ""} · ${c.who || ""}` }); });                 // the question stays up while she waits
+        paintOv("#watchOv", { sub: c.en, ja: c.ja, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
       if (o) karmaAct(o.sets);
@@ -764,12 +782,12 @@ async function watchScene(sc, nid, sid, k) {
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); watchStage.render();
-    paintOv("#watchOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
+    paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
     if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
-  stopTakes();
+  stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
   karmaAct(sc.sets);
@@ -791,7 +809,21 @@ async function blendIn(tl, from, secs) {
   }
 }
 const freePointer = () => { if (document.pointerLockElement) document.exitPointerLock(); };     // a card or a QTE needs the pointer
+function runChoose(ev) {              // a timed choice: the default is taken when time runs out
+  freePointer();
+  return new Promise(resolve => {
+    const secs = eventSecs(ev, S), opts = ev.options || [], t0 = performance.now();
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    paintLine(watchHud().line, ev.prompt);                                          // the question is the footer's line
+    let done = false;
+    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); paintLine(watchHud().line, ""); resolve(id); };
+    window.addEventListener("keydown", c.keys, true);
+    const tick = () => { if (done) return; if (!RUN) return finish(ev.default); const u = (performance.now() - t0) / (secs * 1000); c.bar(1 - u); if (u >= 1) return finish(ev.default); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+}
 function runEvent(ev) {
+  if (ev.type === "choose") return runChoose(ev);
   freePointer();
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), box = el("div", { class: "qte" }), bar = el("div", { class: "bar" }, el("div", {})), key = (ev.key || "E").toUpperCase();
@@ -804,17 +836,15 @@ function runEvent(ev) {
     const ku = e => { if (ev.type === "hold" && e.key.toUpperCase() === key && held) finish("fail"); };
     const mv = e => { if (ev.type === "breath") { if (lastMove && Math.hypot(e.movementX, e.movementY) > 6) finish("fail"); lastMove = 1; } };
     window.addEventListener("keydown", kd); window.addEventListener("keyup", ku); window.addEventListener("mousemove", mv); window.addEventListener("mousedown", md);
-    const label = { press: `Press <${key}>`, mash: `Mash <${key}>`, hold: `Hold <${key}>`, breath: "Keep still (don't move the mouse)", aim: "Click the mark", struggle: `Mash <${key}> or click!`, choose: "" }[ev.type];
+    const label = { press: `Press <${key}>`, mash: `Mash <${key}>`, hold: `Hold <${key}>`, breath: "Keep still (don't move the mouse)", aim: "Click the mark", struggle: `Mash <${key}> or click!` }[ev.type];
     box.append(el("div", { style: "font-size:20px" }, ev.prompt || ""), ...(label ? [el("div", { class: "key" }, label)] : []), bar);
-    if (ev.type === "choose") { const left = el("div", { class: "muted" }); box.append(left); const t1 = performance.now(); const cd = () => { if (done) return; left.textContent = `${Math.max(0, secs - (performance.now() - t1) / 1000).toFixed(0)} s · on time out: ${((ev.options || []).find(o => o.id === ev.default) || {}).label || ev.default}`; requestAnimationFrame(cd); }; cd();
-      for (const o of ev.options || []) box.append(el("button", { class: "primary", style: "margin:4px;display:block;width:100%", title: o.karma !== undefined ? "karma " + JSON.stringify(o.karma) : "", on: { click: () => finish(o.id) } }, o.label, o.ja ? el("div", { class: "muted", style: "font-size:12px" }, o.ja) : null)); }
     if (ev.type === "aim") { const dot = el("button", { style: "position:fixed;width:26px;height:26px;border-radius:13px;background:var(--bad);left:" + (30 + Math.random() * 40) + "%;top:" + (25 + Math.random() * 35) + "%", on: { click: () => finish("success") } }); box.append(dot); }
     $("#watchBox").append(box);
     const tick = () => { if (done || !RUN) return finish("fail");
       const u = (performance.now() - t0) / (secs * 1000);
       bar.firstChild.style.width = (ev.type === "mash" || ev.type === "struggle" ? Math.min(100, score * 100) : Math.max(0, 100 - u * 100)) + "%";
       if (score >= 1) return finish(ev.type === "struggle" ? "escape" : "success");
-      if (u >= 1) { if (ev.type === "hold") return finish(held ? "success" : "fail"); if (ev.type === "breath") return finish("success"); if (ev.type === "struggle") return finish("caught"); if (ev.type === "choose") return finish(ev.default); return finish("fail"); }
+      if (u >= 1) { if (ev.type === "hold") return finish(held ? "success" : "fail"); if (ev.type === "breath") return finish("success"); if (ev.type === "struggle") return finish("caught"); return finish("fail"); }
       requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   });
@@ -873,7 +903,7 @@ async function watchStitch(st, nid, n) {
 // Play mode (play/runtime.js): the tasks walked. One runtime for the whole run, so what you carry and the doors you
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
-  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, playScene: sid => playTriggered(sid), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
+  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
   return RUN.play;
 }
 function playPlace(rt, lvl) {
@@ -894,7 +924,7 @@ async function playStitch(st, n, lvl) {
   const go = rt.runStitch(st, n, its);
   await fade(0, 0.5);
   const r = await go;
-  rt.pause();
+  rt.hold();
   RUN.secs += (performance.now() - t0) / 1000; wclock();
   const nx = S.flow[r.to];
   if (r.timeout || !nx || nx.type === "ending" || (nx.type === "stitch" && (S.stitches[nx.ref] || {}).play)) await fade(1, 0.4);   // a scene blends from here, walking goes on
@@ -906,7 +936,7 @@ async function playChoice(n) {
   const go = rt.runChoice(n);
   await fade(0, 0.4);
   const o = await go;
-  rt.pause();
+  rt.hold();
   return o;
 }
 function watchChoice(n) {
@@ -986,7 +1016,7 @@ function renderBranches(hl) {
 }
 function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
   if (RELOAD_AFTER_WATCH && !DIRTY) { RELOAD_AFTER_WATCH = false; load().then(() => status("environment reloaded from the scene builder")); } }
-document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked) RUN.skip = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 
 /* ---------- takes and notes ---------- */
 function renderClips() {

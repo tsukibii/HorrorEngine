@@ -17,6 +17,7 @@ register("condition", "pickup", on("pickup", "item"));
 register("condition", "read", on("read", "note"));
 register("condition", "caught", { test: (v, w, ev) => ev.type === "caught" && (v === true || v === ev.by) });   // by anyone, or by that cast member
 register("condition", "hidden", { test: (v, w, ev, rt) => !!rt.player.hiding && (v === true || v === rt.player.hiding) });   // in any or that hiding place
+register("condition", "answered", { test: (v, w, ev) => ev.type === "answered" && ev.ask === v && (w.option === undefined || ev.option === w.option) });   // an ask, any or that answer
 register("condition", "flag", { test: (v, w, ev, rt) => rt.flags.has(v) });
 register("condition", "after", {                            // another beat ended, plus `secs`
   test: (v, w, ev, rt) => ev.type === "tick" && rt.ended[v] !== undefined && rt.clock - rt.ended[v] >= +(w.secs || 0) });

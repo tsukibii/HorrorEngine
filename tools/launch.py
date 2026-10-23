@@ -103,8 +103,12 @@ TOOLS = [
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
+    ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
+    ("Pages", "Character Studio (body, face, skin, hair in the salon, clothes)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
+    ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
-    ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
+    ("Pages", "PBR shelf (your texture sets in assets/pbr, on a sphere; the Character Studio has it as its PBR button)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
+    ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
@@ -116,6 +120,7 @@ TOOLS = [
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
+    ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
@@ -151,7 +156,10 @@ TOOLS = [
 
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
-    ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
+    ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
+    ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
+    ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
+    ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),
@@ -167,7 +175,8 @@ TOOLS = [
     ("Setup", "Install or update Kimodo", "setup/setup.py kimodo", {}),
     ("Setup", "Kimodo demo additions: check", "setup/setup.py kimodo-patch check", {}),
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
-    ("Setup", "GarmentCode setup", "tools/garment.py setup", {}),
+    ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
+    ("Setup", "Salon reference setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
 ]
 

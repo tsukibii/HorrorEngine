@@ -228,11 +228,6 @@ fix; use 48.
   VERIFY (the IK Rig and retargeter controller calls in 5.8, the MetaHuman IK Rig's path, the batch call), check the
   chains `IK_SOMA` got (Hips the retarget root; LeftLeg is SOMA's thigh, LeftShin its calf), look at a walk on her,
   and write what worked in docs/LESSONS.md.
-- [ ] Mari's t-shirt into Unreal (docs/METAHUMAN_ROUTE.md §6): `python tools/garment.py setup`, then
-  `python tools/garment.py --game Pilot pattern mari t-shirt`; import `Content/Games/Pilot/Garments/mari_t-shirt/
-  mari_t-shirt_panels.obj` into a Chaos Cloth Asset (the Dataflow editor's static-mesh panel import), add the
-  stitches from the `.seams.json`, collision from her body, and an Outfit Asset with sized sources so it resizes
-  with the parametric body; write what worked in docs/LESSONS.md.
 - [ ] **(user)** Make Mari's MetaHuman (from that conform, then the face and finer detail by hand). Record `Pilot_s_message_main_c1` to `c3` (MiniMax, from
   `story.py clips`): the Japanese voice as `.wav`, a close-up face video as `.mp4`, starting and ending on her
   anchor frame. Put them in one folder.

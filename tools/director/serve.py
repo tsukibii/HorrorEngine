@@ -32,6 +32,9 @@ BODIES = L.STUDIO / "Bodies"
 FOOTAGE = L.ROOT / "Footage"          # the takes, as intake.py copies them (Footage/<Game>/<take id>.mp4)
 MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4"}
 
+HEADS = L.STUDIO / "Heads"           # the face page's pictures and heads (git-ignored: real people's faces)
+FACE_FILES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
+FACE = {"proc": None}
 PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
 
@@ -40,6 +43,22 @@ def history_dir(game):
     d = ROOT / "Saved" / "Story" / game / "history"
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def face_call(req):
+    """one request to tools/face_mesh.py's worker (its Worker: MediaPipe's environment, started on first use and kept,
+    holding the pictures' points and the head templates, so a slider's fit takes a fraction of a second)"""
+    if FACE["proc"] is None:
+        import face_mesh  # noqa: PLC0415 - tools/, on the path above
+        FACE["proc"] = face_mesh.Worker(ROOT / "Saved" / "face_mesh_worker.log")
+    return FACE["proc"].call(req)
+
+
+def face_name(n):
+    """a face session's or a picture's name: letters, digits, _ - . and no leading dot"""
+    import urllib.parse
+    n = urllib.parse.unquote(n)
+    return n if n and not n.startswith(".") and all(ch.isalnum() or ch in "_-." for ch in n) else None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -88,6 +107,10 @@ class Handler(BaseHTTPRequestHandler):
         f = HERE.joinpath(*parts) if parts and ".." not in parts else None
         if f and f.suffix in STATIC and f.is_file() and HERE in f.resolve().parents:
             return self.send(200, f.read_bytes(), STATIC[f.suffix])
+        if parts[0] in ("shared", "env") and len(parts) == 2 and ".." not in parts:      # tools/shared (components any page can import) and Content/Studio/Env (HDRs)
+            f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
+            if f.is_file():
+                return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
         if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/
             return self.send(200, UL.status(parts[3]))
@@ -118,8 +141,8 @@ class Handler(BaseHTTPRequestHandler):
         if parts[0] == "pbr" and len(parts) >= 3:
             import urllib.parse
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
-            pf = PBR.ROOT.joinpath(*rel) if ".." not in rel else None
-            if pf and pf.is_file() and pf.suffix.lower() in BODY and PBR.ROOT.resolve() in pf.resolve().parents:
+            pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
+            if pf and pf.is_file() and pf.suffix.lower() in BODY:
                 return self.send(200, pf.read_bytes(), BODY[pf.suffix.lower()], cache=True)
             return self.send(404, {"error": "not on the PBR shelf"})
         if parts[0] == "library" and len(parts) >= 3 and ".." not in parts:
@@ -153,6 +176,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"inbox": str(inbox.relative_to(L.ROOT)).replace("\\", "/"),
                                    "saved": sorted(f.stem for f in inbox.glob("*.npz")) + sorted(f.stem for f in L.ROOT.glob("*.npz")),
                                    "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else []})
+        if parts[:3] == ["api", "face", "sessions"]:  # the face page: each name with its pictures
+            out = []
+            for d in sorted(HEADS.glob("*/pictures")):
+                out.append({"name": d.parent.name, "pictures": sorted(f.name for f in d.iterdir()
+                                                                       if f.suffix.lower() in FACE_FILES)})
+            return self.send(200, {"sessions": out})
         if parts[:2] == ["api", "kit"]:               # the kit's presets (Content/Studio/Kit/presets.json)
             return self.send(200, KIT.presets_file())
         if parts[:2] == ["api", "games"]:
@@ -208,6 +237,36 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parts = self.path.strip("/").split("/")
+        if parts[:3] in (["api", "face", "picture"], ["api", "face", "remove"]) and len(parts) == 5:
+            name, fname = face_name(parts[3]), face_name(parts[4])
+            if not name or not fname or Path(fname).suffix.lower() not in FACE_FILES:
+                return self.send(400, {"error": "a name of letters, digits, _ - . and a picture or video"})
+            f = HEADS / name / "pictures" / fname
+            if parts[2] == "remove":
+                f.unlink(missing_ok=True)
+                return self.send(200, {"ok": True})
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(self.body())
+            return self.send(200, {"ok": True, "kb": round(f.stat().st_size / 1024)})
+        if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("detect", "template", "fit", "save"):
+            req = json.loads(self.body().decode("utf-8") or "{}")
+            req["op"] = parts[2]
+            if parts[2] != "template":
+                name = face_name(req.get("name", ""))
+                if not name:
+                    return self.send(400, {"error": "a name of letters, digits, _ - ."})
+                req["name"] = name
+            if parts[2] == "detect":
+                d = HEADS / req["name"] / "pictures"
+                req["files"] = [str(f) for f in sorted(d.iterdir()) if f.suffix.lower() in FACE_FILES] if d.exists() else []
+                if not req["files"]:
+                    return self.send(400, {"error": "add pictures first"})
+            if parts[2] == "save":
+                req["out"] = str(HEADS)
+            code, res = face_call(req)
+            if parts[2] == "save" and "path" in res:
+                res["path"] = str(Path(res["path"]).relative_to(ROOT))
+            return self.send(code, res)
         if parts[:2] == ["api", "pbr"] and len(parts) >= 3:     # /api/pbr/<category>/<name>: its tile, source, url, note
             import urllib.parse
             ref = "pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:])

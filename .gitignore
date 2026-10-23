@@ -32,8 +32,17 @@ Footage/
 vendor/kimodo/
 # Blender's Python module for tools/retarget.py (rebuildable)
 vendor/blender/
-# GarmentCode's checkout and environment (tools/garment.py setup; rebuildable)
-vendor/garmentcode/
+# MediaPipe's environment and the Face Landmarker model (tools/face_mesh.py setup; rebuildable)
+vendor/face_mesh/
+# DiffLocks (removed 2026-10-22: it needs an account): if the folder is still there, delete it; never shared
+vendor/difflocks/
+# Perm: its code, environment, checkpoints, fitted hairstyles, the AVATAR NEO head, the library (tools/perm.py setup)
+vendor/perm/
+# the hair splat's environment (torch, OpenCV, MediaPipe) and models, and its check's output (tools/gshair.py setup)
+vendor/gshair/
+# a salon reference's working folder (frames, masks, poses before tools/gshair.py reference writes the reference)
+Content/Studio/Hair/References/*/capture/
+Content/Studio/Hair/References/*/run.log
 
 # generated: package_game.py's copies and builds; the UnrealClaude source checkout (the plugin copy is tracked)
 Content/StoryData/
@@ -76,9 +85,15 @@ Content/Studio/Library/index/kit.json
 Content/Studio/Library/meshes/local/
 Content/Studio/Library/index/local.json
 
-# the PBR shelf (docs/ASSETS.md §6): your texture sets, too big for git; only its README is shared
+# the PBR shelf (docs/ASSETS.md §6): your texture sets in assets/pbr/, a folder each, too big for git: nothing in it is
+# tracked (assets/README.md says what goes there); its old place, Content/Studio/PBR, still read, keeps only its README
+assets/pbr/
 Content/Studio/PBR/*
 !Content/Studio/PBR/README.md
+# faces from photos (tools/face_mesh.py): made from real people's pictures, they stay on your machine
+Content/Studio/Heads/
+# the body editor's characters (tools/body/): their face pictures, settings and exports stay on your machine
+Content/Studio/People/
 
 # made by the desk's Generate (storykit.generate) from story.json: rebuilt, never edited (CLAUDE.md, "text is the truth")
 Content/Games/*/Maps/
