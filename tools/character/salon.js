@@ -747,6 +747,7 @@ async function bake() {
   await fetch(at.url("salon.glb"), { method: "POST", body: glb }).then(r => { if (!r.ok) throw new Error("the GLB wasn't saved"); });
   await api(at.url("salon_bake.json"), JSON.stringify(summary, null, 1));
   summary.glb_bytes = glb.byteLength; BAKED = summary; bakePanel();
+  if (window.parent !== window) window.parent.postMessage({ salon: "baked", person: at.on }, location.origin);   // the Character Studio's Hair tab: wear it now
   status(at.on ? `baked onto ${at.on} (${at.path("salon.glb")}): the Character Studio wears it (Hair: made in the salon)` : `baked ${at.path("salon.glb")}`, "ok");
   return summary;
 }
@@ -1398,6 +1399,7 @@ $("#loadHair").onclick = () => $("#hairList").value && load($("#hairList").value
 $("#person").onchange = () => openPerson($("#person").value).catch(e => status(e.message, "bad"));
 
 // ---- start ------------------------------------------------------------------------------------------------------------
+if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? ["embed-person"] : []));   // inside the Character Studio's Hair tab
 (async () => {
   try {
     await loadMHR(); await buildHead(); characterPanel(); lookPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); bakePanel(); setTool("select"); await listHair(); await listPeople();

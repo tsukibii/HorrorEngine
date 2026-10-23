@@ -355,3 +355,13 @@ Hair tab "hid" the style's rows for strand hair and they stayed on screen. Pages
 The bake preview's `let PREVIEW` was already the lock tools' placement preview: a second `let` of the same name kills
 the whole module at load, and the salon came up blank with no status. Before adding a top-level name to a long page
 script, grep for it (`\bNAME\b`).
+
+## The eye is a picture problem, not a mesh problem (2026-10-23)
+
+- **Don't fix the eye by moving the shell's vertices or cutting the skin around the eyeball.** MHR's eye region is too
+  coarse: conforming the lid vertices onto the eyeball sank the eye and left shards of lid over the iris, and cutting
+  the skin per pixel in front of the eyeball with a darkened socket read as a hole. Both were dropped. The way the
+  user chose: they pick the eye's vertices themselves and the eyeball's picture is projected onto them.
+- **A wide cut deletes what sits after it:** cutting from one `def` to the next `def` also took the module constants
+  between them (`HAIR`, `SALON_FILES`): the server ran and failed on its first request. After a cut, `pyflakes` the
+  file before restarting.

@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (the Hair tab is the salon; the Studio's own hair is scrapped)
+
+- **The Studio's Hair tab opens the salon** on the character in hand: the salon's UI and steps inside the Studio,
+  the character fixed by the Studio, its bake worn when you leave the tab. Only the salon makes hair now.
+- **Scrapped:** the Studio's hair styles and wig (`wig.js`), the Perm library (`tools/perm.py`, `perm_run.py`, PERM),
+  the photo match, fit and batching (`hair_match.py`, `hair_fit.py`, `hair_batch.py`), the GPU strands
+  (`strands.js`) and the model wig (`wigify.js`). Brows and lashes stay, switched in the Face tab.
+- **The salon has a bald start and a Bald preset** (no locks, no scalp shade).
+- **Eyes:** the eyeball-and-lid fixes so far didn't look right and are dropped; next is an eye plane the user picks
+  by vertex, with the eyeball projected onto it.
+
 ## 2026-10-23 (the Gaussian splat is removed)
 
 - **The hair splat is taken out of the repo**, not kept as a reference layer: the salon doesn't use it. Gone: the

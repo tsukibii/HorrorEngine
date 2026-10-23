@@ -104,7 +104,7 @@ TOOLS = [
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
     ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
-    ("Pages", "Character Studio (body, face from pictures, expressions)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
+    ("Pages", "Character Studio (body, face, skin, hair in the salon, clothes)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
     ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
     ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
@@ -175,8 +175,6 @@ TOOLS = [
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
     ("Setup", "GarmentCode setup", "tools/garment.py setup", {}),
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
-    ("Setup", "Perm setup (the hair library: 343 hairstyles)", "tools/perm.py setup", {}),
-    ("Setup", "Perm library (thumbnails and outlines of every hairstyle)", "tools/perm.py library", {}),
     ("Setup", "Salon reference setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
 ]

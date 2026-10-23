@@ -646,8 +646,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.goto(BASE);                                           // the Character Studio wears it: on the head, over its top
     await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 90000 });
     await page.selectOption("#who", TEST); await page.waitForFunction(n => window.__body.who === n, TEST, { timeout: 30000 });
-    await page.click('#tabs button[data-tab="hair"]'); await page.selectOption("#hairRows select >> nth=1", "salon");
-    await page.waitForFunction(() => window.__body.salonHair && /the salon's hair/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    await page.waitForFunction(() => window.__body.salonHair, null, { timeout: 30000 });   // the studio wears the salon's bake on opening
     await page.waitForTimeout(300);
     const w = await ev(() => {
       const b = window.__body, H = b.salonHair; H.updateMatrixWorld(true); const v = new H.position.constructor(), lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];

@@ -30,6 +30,8 @@
   details.step > summary::before { content: "▸"; color: var(--dim); width: 10px; } details.step[open] > summary::before { content: "▾"; }
   details.step > summary b { font-size: 12px; } details.step > summary .hint { color: var(--dim); font-size: 11px; margin-left: auto; text-align: right; }
   details.step[open] { padding-bottom: 8px; }
+  body.embed header h1 { display: none; }   /* inside the Character Studio's Hair tab: the studio picks the character */
+  body.embed-person header label:has(#person), body.embed-person details.step[data-step=character] { display: none; }
 </style></head>
 <body>
 <header><h1>Salon</h1>
