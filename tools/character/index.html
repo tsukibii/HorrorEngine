@@ -401,7 +401,9 @@ TAILOR_W.onmessage = e => {
   GARMENTS.clear();
   for (const g of garments) for (const q of g.parts) {
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(q.P, 3)); geo.setIndex(new THREE.BufferAttribute(q.T, 1)); geo.computeVertexNormals();
-    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: q.color, roughness: 0.86 }));
+    const shade = new Float32Array(q.S.length * 3); for (let i = 0; i < q.S.length; i++) shade[i * 3] = shade[i * 3 + 1] = shade[i * 3 + 2] = q.S[i];
+    geo.setAttribute("color", new THREE.BufferAttribute(shade, 3));   // darker along the edges: a hem's or a pocket's shadow and stitching
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: q.color, roughness: 0.86, vertexColors: true }));
     m.name = q.name; m.userData.garment = g.name; m.castShadow = m.receiveShadow = true; GARMENTS.add(m);
   }
   if (!GARMENTS.parent) rig.add(GARMENTS);

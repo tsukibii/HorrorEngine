@@ -29,9 +29,11 @@ const stats = worn.map(g => `${g.name} ${g.stats.triangles} tris ${g.stats.ms} m
 console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
 
 // everything as one binary: [body, part, part...], each {color, P (f32), T (u32)}
-const meshes = [{ color: "#c8a28c", P: b.P, T: b.T, skin: true }, ...worn.flatMap(g => g.parts)];
+const HUES = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe"];
+const parts = worn.flatMap(g => g.parts).map((q, i) => has("debug") && /_/.test(q.name) ? { ...q, color: HUES[i % HUES.length] } : q);   // --debug: each detail its own colour
+const meshes = [{ color: "#c8a28c", P: b.P, T: b.T, S: new Float32Array(b.P.length / 3).fill(1), skin: true }, ...parts];
 const head = meshes.map(m => ({ color: m.color, skin: !!m.skin, np: m.P.length, nt: m.T.length }));
-const bin = Buffer.concat(meshes.flatMap(m => [Buffer.from(new Float32Array(m.P).buffer), Buffer.from(new Uint32Array(m.T).buffer)]));
+const bin = Buffer.concat(meshes.flatMap(m => [Buffer.from(new Float32Array(m.P).buffer), Buffer.from(new Uint32Array(m.T).buffer), Buffer.from(new Float32Array(m.S).buffer)]));
 const views = has("chest")
   ? [["front", 0, 1.3, 0.5], ["3/4", 45, 1.3, 0.5], ["side", 90, 1.3, 0.5], ["back", 180, 1.3, 0.5], ["low", 20, 0.85, 0.6]]
   : has("close")
@@ -51,9 +53,11 @@ const key = new THREE.DirectionalLight("#fff4e8", 2.2); key.position.set(1.5, 3,
 const rim = new THREE.DirectionalLight("#bcd0ff", 1.0); rim.position.set(-2, 2, -2.5); scene.add(rim);
 let o = 0;
 for (const m of head) {
-  const P = new Float32Array(buf, o, m.np); o += m.np * 4; const T = new Uint32Array(buf, o, m.nt); o += m.nt * 4;
+  const P = new Float32Array(buf, o, m.np); o += m.np * 4; const T = new Uint32Array(buf, o, m.nt); o += m.nt * 4; const S = new Float32Array(buf, o, m.np / 3); o += m.np / 3 * 4;
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(new THREE.BufferAttribute(T, 1)); g.computeVertexNormals();
-  scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: m.color, roughness: m.skin ? 0.6 : 0.88, side: THREE.DoubleSide })));
+  const C = new Float32Array(m.np); for (let i = 0; i < S.length; i++) C[i * 3] = C[i * 3 + 1] = C[i * 3 + 2] = S[i];
+  g.setAttribute("color", new THREE.BufferAttribute(C, 3));
+  scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: m.color, roughness: m.skin ? 0.6 : 0.88, vertexColors: true })));
 }
 const cam = new THREE.PerspectiveCamera(28, 1 / 1.5, 0.05, 20);
 views.forEach(([name, deg, ty, dist], i) => {

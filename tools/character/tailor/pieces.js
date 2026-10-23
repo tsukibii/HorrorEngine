@@ -283,7 +283,7 @@ export function detail(F, G, d) {
           let u, facing;
           if (look === "side") { u = z - (d.z ?? 0) * s; facing = Math.sign(dx || 1) * nx; if (x * Math.sign(dx || 1) < 0) return -1; }
           else { u = x - dx; facing = look === "back" ? -nz : nz; if ((look === "back" ? -1 : 1) * (z - F.torsoAxis(y)[1]) < 0) return -1; }
-          if (facing < 0.25 || F.arm(x, y, z)) return -1;
+          if (facing < -0.15 || F.arm(x, y, z)) return -1;           // it wraps round a curve (a bust, a thigh), but never onto the far side
           return Math.min(-rrect(u, y - cy, cw, ch, rr), G.V ? G.V(x, y, z) - 0.004 * s : 1);
         },
         lift: (d.lift ?? 0.0025) * s,
@@ -308,7 +308,7 @@ export function buttons(F, outer, d) {
     if (best < 0 || bd > (0.01 * s) ** 2) continue;
     disc(out, [P[best], P[best + 1], P[best + 2]], [N[best], N[best + 1], N[best + 2]], r, h, (d.lift ?? 0.0015) * s);
   }
-  return { P: new Float32Array(out.P), T: new Uint32Array(out.T) };
+  return { P: new Float32Array(out.P), T: new Uint32Array(out.T), S: new Float32Array(out.P.length / 3).fill(1) };
 }
 function disc(out, c, n, r, h, lift, seg = 14) {
   const up = Math.abs(n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];

@@ -60,10 +60,12 @@ export function relax(P, T, N, ease, opts = {}) {
 
 /**
  * Cloth with a thickness: the outer surface as it is, an inner one `t` in along the normals (turned over), and a strip
- * round every open edge joining them, with its own vertices so the edge stays crisp. Returns {P, T}.
+ * round every open edge joining them, with its own vertices so the edge stays crisp. Returns {P, T, S}: S is a shade
+ * per vertex (1; `rim` on the edge's strip and `edge` on the outside's last row of points: together they read as the
+ * shadow and the stitching along a hem or round a pocket).
  */
-export function thicken(P, T, t) {
-  if (!(t > 0)) return { P, T };
+export function thicken(P, T, t, rim = 1, edge = 1) {
+  if (!(t > 0)) return { P, T, S: new Float32Array(P.length / 3).fill(1) };
   const n = P.length / 3, N = normals(P, T), loops = boundaryLoops(T);
   const out = new Float32Array(n * 6 + loops.reduce((s, l) => s + l.length * 6, 0));
   out.set(P);
@@ -83,7 +85,9 @@ export function thicken(P, T, t) {
     }
     o += m * 2;
   }
-  return { P: out, T: new Uint32Array(tri) };
+  const S = new Float32Array(out.length / 3).fill(1); S.fill(rim, n * 2);
+  for (const loop of loops) for (const v of loop) S[v] = edge;
+  return { P: out, T: new Uint32Array(tri), S };
 }
 
 /** a piece of cloth lifted off another (a pocket on a shirt, a waistband on trousers): the part of `base` where

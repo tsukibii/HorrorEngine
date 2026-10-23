@@ -18,20 +18,21 @@ export function body(P, T) {
 
 /**
  * One garment on the body, over what's already worn (`under`: garments this function made). Returns
- * {design, parts: [{name, color, P, T}], outer: [{P, T}] (its outside, for what goes over it), stats}.
+ * {design, parts: [{name, color, P, T, S (a shade per vertex: darker along the edges)}], outer: [{P, T}] (its outside, for
+ * what goes over it), stats}.
  */
 export function make(B, name, design, opts = {}) {
   const t0 = Date.now(), F = B.F, s = F.s, under = opts.under || [];
   const p = design.piece, color = opts.color || design.color || "#888888", trim = design.trim || color;
   const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [], outer = [G.outer];
-  parts.push({ name: name, color, ...thicken(G.outer.P, G.outer.T, th) });
+  parts.push({ name: name, color, ...thicken(G.outer.P, G.outer.T, th, design.rim ?? 0.7, design.edge ?? 0.82) });
   for (const d of design.details || []) {
     if (d.kind === "buttons") { const b = buttons(F, G.outer, d); if (b.T.length) parts.push({ name: `${name}_buttons`, color: d.color || design.buttons || "#222222", ...b }); continue; }
     const D = detail(F, G, d); if (!D) continue;
     const L = lifted(cut, G.outer, D.value, D.lift); if (!L) continue;
     outer.push(L);
-    parts.push({ name: `${name}_${d.kind}`, color: d.color || (d.trim ? trim : color), ...thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8) });
+    parts.push({ name: `${name}_${d.kind}`, color: d.color || (d.trim ? trim : color), ...thicken(L.P, L.T, (d.thickness ?? design.thickness ?? 0.002) * s * 0.8, d.rim ?? 0.45, d.edge ?? 0.62) });
   }
   const tris = parts.reduce((a, q) => a + q.T.length / 3, 0), verts = parts.reduce((a, q) => a + q.P.length / 3, 0);
   return { name, design, parts, outer, thickness: th, stats: { triangles: tris, vertices: verts, ms: Date.now() - t0 } };
