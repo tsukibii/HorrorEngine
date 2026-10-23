@@ -80,35 +80,43 @@ export class Hud {
     });
   }
 
-  // a multiple choice: ONE panel, the options side by side with a dash between each pair (always centred), the one
-  // under the pointer (or the keys: A/D, arrows, 1-9) bright and the rest dimmed. spec {prompt, options: [text or
-  // {label}]}; resolves with the index picked (Enter or Space takes the lit one)
+  // a multiple choice (see `chooser`); resolves with the index picked
   choose(spec) {
     return new Promise(done => {
-      const p = mk("div", "ph-panel ph-choose"), box = mk("div", "ph-choice"), opts = [];
-      let at = -1, finish;
-      const light = i => { at = i; opts.forEach((o, j) => o.classList.toggle("on", j === i)); box.classList.toggle("lit", i >= 0); };
-      if (spec.prompt) box.append(mk("div", "ph-ask", spec.prompt));
-      const row = mk("div", "ph-opts");
-      (spec.options || []).forEach((o, i) => {
-        if (i) row.append(mk("span", "ph-dash"));
-        const b = mk("button", "ph-opt", typeof o === "string" ? o : o.label);
-        b.onmouseenter = () => light(i); b.onfocus = () => light(i); b.onclick = () => finish(i);
-        opts.push(b); row.append(b);
-      });
-      row.onmouseleave = () => light(-1);
-      box.append(row); p.append(box);
-      const n = opts.length, kd = e => {
-        const k = e.key.toLowerCase();
-        if (k === "arrowleft" || k === "a") light(at < 0 ? n - 1 : (at + n - 1) % n);
-        else if (k === "arrowright" || k === "d") light(at < 0 ? 0 : (at + 1) % n);
-        else if (/^[1-9]$/.test(k) && +k <= n) finish(+k - 1);
-        else if ((k === "enter" || k === " ") && at >= 0) finish(at); else return;
-        e.preventDefault();
-      };
-      finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.panelEl = null; done(v); };
+      const c = chooser(spec, i => finish(i)), kd = c.keys;
+      const finish = v => { window.removeEventListener("keydown", kd, true); c.el.remove(); this.panelEl = null; done(v); };
       window.addEventListener("keydown", kd, true);
-      this.panelEl = p; this.hint.classList.remove("on"); this.root.append(p);
+      this.panelEl = c.el; this.hint.classList.remove("on"); this.root.append(c.el);
     });
   }
+}
+
+// A multiple choice: ONE panel, the options side by side with a dash between each pair (always centred), the one under
+// the pointer (or the keys: A/D, arrows, 1-9, Enter or Space takes the lit one) bright and the rest dimmed. spec
+// {prompt, options: [text or {label, sub}]}; `pick(i)` is called with the index. Returns {el, keys, bar(0..1)}: the panel
+// to put inside a `.play-hud[data-theme]`, the keydown handler, and a thin timer line under the options. The Play HUD
+// and the desk's Watch (replies, timed choices) both use it, so a choice looks the same everywhere.
+export function chooser(spec, pick) {
+  const p = mk("div", "ph-panel ph-choose"), box = mk("div", "ph-choice"), opts = [], row = mk("div", "ph-opts"), bar = mk("div", "ph-bar", ""), fill = mk("div");
+  let at = -1;
+  const light = i => { at = i; opts.forEach((o, j) => o.classList.toggle("on", j === i)); box.classList.toggle("lit", i >= 0); };
+  if (spec.prompt) box.append(mk("div", "ph-ask", spec.prompt));
+  (spec.options || []).forEach((o, i) => {
+    if (i) row.append(mk("span", "ph-dash"));
+    const b = mk("button", "ph-opt"); if (o.sub) b.append(mk("span", "ph-sub", o.sub)); b.append(mk("span", "", typeof o === "string" ? o : o.label));
+    b.onmouseenter = () => light(i); b.onfocus = () => light(i); b.onclick = () => pick(i);
+    opts.push(b); row.append(b);
+  });
+  row.onmouseleave = () => light(-1);
+  bar.append(fill); box.append(row); if (spec.timed) box.append(bar); p.append(box);
+  const n = opts.length;
+  const keys = e => {
+    const k = e.key.toLowerCase();
+    if (k === "arrowleft" || k === "a") light(at < 0 ? n - 1 : (at + n - 1) % n);
+    else if (k === "arrowright" || k === "d") light(at < 0 ? 0 : (at + 1) % n);
+    else if (/^[1-9]$/.test(k) && +k <= n) pick(+k - 1);
+    else if ((k === "enter" || k === " ") && at >= 0) pick(at); else return;
+    e.preventDefault();
+  };
+  return { el: p, keys, bar: k => { fill.style.width = Math.max(0, Math.min(1, k)) * 100 + "%"; } };
 }

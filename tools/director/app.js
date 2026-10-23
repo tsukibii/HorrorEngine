@@ -6,6 +6,7 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
+import { chooser, loadTheme } from "./play/hud.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -706,19 +707,23 @@ async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.
 function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
 function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); } wclock(); }
+// the Play HUD's multiple-choice panel inside the Watch (same markup and theme as in Play)
+function choiceBox(spec, pick) {
+  const th = (S.game || {}).ui_theme || "glass"; loadTheme(th);
+  const c = chooser(spec, pick), box = el("div", { class: "play-hud", style: "z-index:6" }); box.dataset.theme = th;
+  c.el.classList.add("free-view"); box.append(c.el); $("#watchBox").append(box);
+  return { box, c };
+}
 // a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
 function runReply(rp, frame) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
-    const box = el("div", { class: "reply" }), bar = el("div", { class: "rbar" }, el("div", {}));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
     let done = false;
-    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", kd); box.remove(); resolve(id); };
-    const kd = e => { const k = e.key.toLowerCase(); if ((k === "arrowleft" || k === "a") && opts[0]) finish(opts[0].id); if ((k === "arrowright" || k === "d") && opts[1]) finish(opts[1].id); };
-    opts.forEach((o, i) => box.append(el("button", { class: "ropt " + (i ? "right" : "left"), title: o.sets && o.sets.length ? "sets " + JSON.stringify(o.sets) : "", on: { click: () => finish(o.id) } },
-      el("div", { class: "rja" }, o.ja || ""), el("div", { class: "ren" }, o.label || o.id))));
-    box.append(bar); $("#watchBox").append(box); window.addEventListener("keydown", kd);
-    const tick = () => { if (done) return; if (!RUN) return finish(null); const u = (performance.now() - t0) / 1000; frame(u); bar.firstChild.style.width = Math.max(0, 100 - u / secs * 100) + "%"; if (u >= secs) return finish(null); requestAnimationFrame(tick); };
+    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
+    window.addEventListener("keydown", c.keys, true);
+    const tick = () => { if (done) return; if (!RUN) return finish(null); const u = (performance.now() - t0) / 1000; frame(u); c.bar(1 - u / secs); if (u >= secs) return finish(null); requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   });
 }
@@ -791,7 +796,20 @@ async function blendIn(tl, from, secs) {
   }
 }
 const freePointer = () => { if (document.pointerLockElement) document.exitPointerLock(); };     // a card or a QTE needs the pointer
+function runChoose(ev) {              // a timed choice: the default is taken when time runs out
+  freePointer();
+  return new Promise(resolve => {
+    const secs = eventSecs(ev, S), opts = ev.options || [], t0 = performance.now();
+    const { box, c } = choiceBox({ prompt: ev.prompt, options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    let done = false;
+    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
+    window.addEventListener("keydown", c.keys, true);
+    const tick = () => { if (done) return; if (!RUN) return finish(ev.default); const u = (performance.now() - t0) / (secs * 1000); c.bar(1 - u); if (u >= 1) return finish(ev.default); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+}
 function runEvent(ev) {
+  if (ev.type === "choose") return runChoose(ev);
   freePointer();
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), box = el("div", { class: "qte" }), bar = el("div", { class: "bar" }, el("div", {})), key = (ev.key || "E").toUpperCase();
@@ -804,17 +822,15 @@ function runEvent(ev) {
     const ku = e => { if (ev.type === "hold" && e.key.toUpperCase() === key && held) finish("fail"); };
     const mv = e => { if (ev.type === "breath") { if (lastMove && Math.hypot(e.movementX, e.movementY) > 6) finish("fail"); lastMove = 1; } };
     window.addEventListener("keydown", kd); window.addEventListener("keyup", ku); window.addEventListener("mousemove", mv); window.addEventListener("mousedown", md);
-    const label = { press: `Press <${key}>`, mash: `Mash <${key}>`, hold: `Hold <${key}>`, breath: "Keep still (don't move the mouse)", aim: "Click the mark", struggle: `Mash <${key}> or click!`, choose: "" }[ev.type];
+    const label = { press: `Press <${key}>`, mash: `Mash <${key}>`, hold: `Hold <${key}>`, breath: "Keep still (don't move the mouse)", aim: "Click the mark", struggle: `Mash <${key}> or click!` }[ev.type];
     box.append(el("div", { style: "font-size:20px" }, ev.prompt || ""), ...(label ? [el("div", { class: "key" }, label)] : []), bar);
-    if (ev.type === "choose") { const left = el("div", { class: "muted" }); box.append(left); const t1 = performance.now(); const cd = () => { if (done) return; left.textContent = `${Math.max(0, secs - (performance.now() - t1) / 1000).toFixed(0)} s · on time out: ${((ev.options || []).find(o => o.id === ev.default) || {}).label || ev.default}`; requestAnimationFrame(cd); }; cd();
-      for (const o of ev.options || []) box.append(el("button", { class: "primary", style: "margin:4px;display:block;width:100%", title: o.karma !== undefined ? "karma " + JSON.stringify(o.karma) : "", on: { click: () => finish(o.id) } }, o.label, o.ja ? el("div", { class: "muted", style: "font-size:12px" }, o.ja) : null)); }
     if (ev.type === "aim") { const dot = el("button", { style: "position:fixed;width:26px;height:26px;border-radius:13px;background:var(--bad);left:" + (30 + Math.random() * 40) + "%;top:" + (25 + Math.random() * 35) + "%", on: { click: () => finish("success") } }); box.append(dot); }
     $("#watchBox").append(box);
     const tick = () => { if (done || !RUN) return finish("fail");
       const u = (performance.now() - t0) / (secs * 1000);
       bar.firstChild.style.width = (ev.type === "mash" || ev.type === "struggle" ? Math.min(100, score * 100) : Math.max(0, 100 - u * 100)) + "%";
       if (score >= 1) return finish(ev.type === "struggle" ? "escape" : "success");
-      if (u >= 1) { if (ev.type === "hold") return finish(held ? "success" : "fail"); if (ev.type === "breath") return finish("success"); if (ev.type === "struggle") return finish("caught"); if (ev.type === "choose") return finish(ev.default); return finish("fail"); }
+      if (u >= 1) { if (ev.type === "hold") return finish(held ? "success" : "fail"); if (ev.type === "breath") return finish("success"); if (ev.type === "struggle") return finish("caught"); return finish("fail"); }
       requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   });

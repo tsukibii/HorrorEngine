@@ -81,3 +81,7 @@
 .play-hud .ph-opt:focus{outline:0}
 .play-hud .ph-dash{width:var(--ph-dash,46px);height:0;border-top:var(--ph-dash-line,2px dashed var(--ph-muted));opacity:.7}
 .play-hud .ph-stance:empty,.play-hud .ph-objective:empty{display:none}
+.play-hud .ph-choose.free-view{background:none;pointer-events:none;padding-bottom:calc(var(--ph-margin) * 2 + 110px)}.play-hud .ph-choose.free-view .ph-choice{pointer-events:auto}   /* the desk's Watch: the scene stays visible */
+.play-hud .ph-sub{display:block;font-size:12px;color:var(--ph-muted);margin-bottom:2px}
+.play-hud .ph-bar{width:100%;height:2px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.play-hud .ph-bar>div{height:100%;width:100%;background:var(--ph-accent);opacity:.7}
