@@ -7,6 +7,7 @@ review and merge like code, and nothing in them depends on this project's folder
 | Plugin | What | Engine |
 |---|---|---|
 | [`UltraVHS/`](UltraVHS/README.md) | A camcorder recorded to VHS as a post-process (lens, sensor, tape, screen) plus a handheld camera (drift, gait, turn roll, weight), tuned to a reference video by measurement | 5.4 or newer, written for 5.8 |
+| [`LightKit/`](LightKit/README.md) | Drag-and-drop lighting for realistic day and a deep-blue night on a budget: a Day/Dusk/Night sky rig, window lights (sky fill, bake portal, fake bounce, shafts), headlight sweeps, flicker, moving light patterns (caustics, leaves, blinds, clouds), puddles | 5.4 or newer, written for 5.8 |
 
 How to add any of these to a project, for a person or for Claude: [CLAUDE.md](CLAUDE.md). Each plugin's own
 `CLAUDE.md` has its specifics.

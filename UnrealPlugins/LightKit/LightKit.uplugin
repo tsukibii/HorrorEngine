@@ -1,0 +1,30 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Light Kit",
+	"Description": "Drag-and-drop lighting tricks for realistic day and night on a budget: a Day/Dusk/Night sky rig (a deep blue night, never pitch black), window lights (sky fill, bake portal, fake bounce, light shafts), headlight sweeps, flicker, moving light patterns (caustics, leaves, blinds, clouds) and puddles.",
+	"Category": "Rendering",
+	"CreatedBy": "HorrorStudio",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "LightKit",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
+		}
+	]
+}
