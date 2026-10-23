@@ -13,7 +13,7 @@ export async function runAll(acts, rt) { for (const a of acts || []) { if (!rt.a
 const lineSecs = t => Math.min(6, 1.2 + String(t || "").length / 14);
 register("action", "objective", { run: (v, a, rt) => rt.hud.objective(v) });
 register("action", "think", { run: (v, a, rt) => rt.hud.line(v, "", lineSecs(v)) });
-register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who || "", lineSecs(a.line || v)) });
+register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? ((rt.story.cast || {})[a.who] || {}).name || a.who : "", lineSecs(a.line || v)) });
 register("action", "flag", { run: (v, a, rt) => rt.setFlag(v) });
 register("action", "unflag", { run: (v, a, rt) => rt.flags.delete(v) });
 register("action", "give", { run: (v, a, rt) => rt.give(v) });

@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23 (the HUD's four places; prompts float on the thing)
+
+- **Anything done in the world floats on the thing:** the prompt sits where your hand goes (a door's handle, on your
+  side of the leaf, though the whole door takes E; a pickup's or a note's middle), with the key, the verb and the
+  thing's name (an item, a note's title). Kept above the footer; the reticle is a dot that opens into a ring.
+- **Conversations and choices are an overlaid footer:** the speaker's name above the line, the Japanese small over the
+  words, the options in their panel under the question, on one soft scrim that's there only while someone talks. The
+  Watch's scene subtitles are the same footer.
+- **The rest:** the corners are the game talking (objective, timer, log, stance); a note or a code lock is a card in
+  the middle. One type scale, two voices (a serif for what people say and write, a sans for the game), one key chip,
+  one thin-line meter. play/ui/hud.css says the four places at its top.
+- **Romance-only games use the same layout:** themes change colours only; `glass-rose` is the warm one.
+
 ## 2026-10-23 (the Play UI is glass, not neumorphic)
 
 - **The default Play HUD theme is `glass`:** frosted glass slabs with a little 3D (tilt, a thick lower edge), simple

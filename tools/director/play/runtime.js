@@ -394,7 +394,32 @@ export class PlayRuntime {
     this.target = ip ? o : null;
     if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
     const pr = ip.prompt(o, this, this.set(ip.name));
-    this.hud.setCursor(pr.cursor, pr.label);
+    this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o));
+  }
+  // where a thing's prompt floats, in the HUD's pixels: a door's handle (on your side of the leaf, so it's where your
+  // hand goes; the whole door still takes E), anything else its middle. Kept to the safe area (the screen's margin,
+  // above the footer, where lines and choices live); `flip` puts the words left of the mark near the right edge, and
+  // `bare` drops the mark when it would sit on the reticle or the point had to be pulled in. Null behind the eye
+  anchorAt(o) {
+    const p = this.doors[o.userData.id] ? this.handleOf(o) : this.middleOf(o), v = p.project(this.stage.camera);
+    if (v.z > 1) return null;
+    const W = this.hud.root.clientWidth, H = this.hud.root.clientHeight, m = 56, px = (v.x + 1) / 2 * W, py = (1 - v.y) / 2 * H;
+    if (Math.hypot(px - W / 2, py - H / 2) < 24) return { x: W / 2 + 16, y: H / 2, bare: true };   // on the reticle: the words beside it
+    const x = Math.min(W - m, Math.max(m, px)), y = Math.min(H * 0.7, Math.max(m, py));
+    return { x, y, flip: x > W * 0.7, bare: x !== px || y !== py };
+  }
+  handleOf(o) {                                       // the leaf's edge away from its hinges, at handle height
+    const g = o.geometry.parameters || {}, sw = o.userData.swing || {}, w = sw.w || g.width || 0.9, h = g.height || 2.05, d = g.depth || 0.05;
+    const side = sw.pivot ? -Math.sign(sw.pivot.x) || 1 : 1, me = o.worldToLocal(this.eyePos());
+    return o.localToWorld(new THREE.Vector3(side * (w / 2 - (sw.handleIn ?? 0.065)), -h / 2 + (sw.handleZ ?? 0.95), (me.z < 0 ? -1 : 1) * (d / 2 + 0.02)));
+  }
+  middleOf(o) {                                       // its bounds' middle, kept in its own space so it moves with it
+    if (!o.userData.mid) o.userData.mid = o.worldToLocal(new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()));
+    return o.localToWorld(o.userData.mid.clone());
+  }
+  titleOf(t) {                                        // the name under the verb: an item, a note's title, a named thing
+    const d = (t.userData.piece || {}).d || {};
+    return d.item ? this.itemName(d.item) : d.note ? ((this.story.notes || {})[d.note] || {}).title || null : d.name || null;
   }
 
   // ---- running the story -----------------------------------------------------------------------------------------

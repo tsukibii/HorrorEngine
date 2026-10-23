@@ -248,7 +248,8 @@ export class Stage {
         if (p.kind === "door" && p.d && p.d.kit) {          // where a kit door turns: its hinge axis, in the block's space
           try {
             const f = KIT.withDefaults(KIT.resolve(p.d.kit, LIBRARY.kit)), pv = KIT.pivotOf(f);
-            m.userData.swing = { pivot: new THREE.Vector3(pv[0], 0, -pv[1]), hinge: f.hinge, slide: f.style === "slide" || f.style === "shoji" || (p.d.swing === "slide"), w: f.size[0] };
+            m.userData.swing = { pivot: new THREE.Vector3(pv[0], 0, -pv[1]), hinge: f.hinge, slide: f.style === "slide" || f.style === "shoji" || (p.d.swing === "slide"), w: f.size[0],
+                                 handleZ: f.handle_z, handleIn: f.handle_in };
           } catch (e) { }
         }
         this.world.add(m); if (!p.tags.includes("hollow") && !hidden) this.solid.push(m);     // a door frame: you see and walk through it

@@ -6,7 +6,7 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
-import { chooser, loadTheme } from "./play/hud.js";
+import { chooser, loadTheme, paintLine } from "./play/hud.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -558,6 +558,7 @@ function scrubTo(T) {
 }
 function paintOv(sel, o) {
   const ov = $(sel); ov.querySelector(".sub").textContent = o.sub || ""; ov.querySelector(".ja").textContent = o.ja || ""; ov.querySelector(".who").textContent = o.who || "";
+  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || o.speaker, o.ja);   // the Watch's subtitles are the game's footer
   ov.querySelector(".black").style.opacity = o.black || 0; ov.querySelector(".tag").textContent = o.tag || "";
 }
 function playScene(sc, ver, fromClip) {
@@ -707,19 +708,25 @@ async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.
 function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
 function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); } wclock(); }
-// the Play HUD's multiple-choice panel inside the Watch (same markup and theme as in Play)
-function choiceBox(spec, pick) {
-  const th = (S.game || {}).ui_theme || "glass"; loadTheme(th);
-  const c = chooser(spec, pick), box = el("div", { class: "play-hud", style: "z-index:6" }); box.dataset.theme = th;
-  c.el.classList.add("free-view"); box.append(c.el); $("#watchBox").append(box);
-  return { box, c };
+// the Watch's footer: the Play HUD's footer in the game's theme (or the one picked), so scene subtitles, replies and
+// timed choices look as they will in the game: the speaker over the line, the options in their panel under it
+let WHUD = null;
+function watchHud() {
+  const th = $("#wTheme").value || (S && S.game || {}).ui_theme || "glass";
+  if (!WHUD || !WHUD.root.isConnected) {
+    const root = el("div", { class: "play-hud free" }), footer = el("div", { class: "ph-footer" }), line = el("div", { class: "ph-line" });
+    footer.append(line); root.append(footer); $("#watchBox").append(root); WHUD = { root, footer, line, theme: null };
+  }
+  if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }
+  return WHUD;
 }
+function choiceBox(spec, pick) { const c = chooser(spec, pick); watchHud().footer.append(c.el); return { box: c.el, c }; }
 // a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
-function runReply(rp, frame, q) {
+function runReply(rp, frame) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
-    const { box, c } = choiceBox({ prompt: q && q.en, promptSub: q && q.ja, options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
@@ -758,7 +765,7 @@ async function watchScene(sc, nid, sid, k) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
       const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
-        paintOv("#watchOv", { who: `${sc.title || ""} · ${c.who || ""}` }); }, { en: c.en, ja: c.ja });                 // the question sits in the choice panel while she waits
+        paintOv("#watchOv", { sub: c.en, ja: c.ja, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); });    // the question stays up, the options under it, while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
       if (o) karmaAct(o.sets);
@@ -769,7 +776,7 @@ async function watchScene(sc, nid, sid, k) {
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); watchStage.render();
-    paintOv("#watchOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
+    paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
     if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
@@ -800,9 +807,10 @@ function runChoose(ev) {              // a timed choice: the default is taken wh
   freePointer();
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), opts = ev.options || [], t0 = performance.now();
-    const { box, c } = choiceBox({ prompt: ev.prompt, options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    paintLine(watchHud().line, ev.prompt);                                          // the question is the footer's line
     let done = false;
-    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
+    const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); paintLine(watchHud().line, ""); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
     const tick = () => { if (done) return; if (!RUN) return finish(ev.default); const u = (performance.now() - t0) / (secs * 1000); c.bar(1 - u); if (u >= 1) return finish(ev.default); requestAnimationFrame(tick); };
     requestAnimationFrame(tick);

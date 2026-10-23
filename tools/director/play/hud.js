@@ -1,7 +1,9 @@
-// The Play HUD (GAMEPLAY_PLAN §4, §10): the cursor that changes with what's under it, the prompt, the objective,
-// thoughts and lines, a timer, panels (a note, a thing looked at, a code lock) with the free pointer. Plain HTML; every
-// colour, radius and shadow comes from the theme (play/ui/themes/<name>.css), so a game can switch themes.
+// The Play HUD (GAMEPLAY_PLAN §4, §10). Plain HTML; every colour, radius and shadow comes from the theme
+// (play/ui/themes/<name>.css), so a game can switch themes. Four places, one rule each (play/ui/hud.css says how):
+// on the thing (the reticle, and the prompt floating where you'd put your hand), the corners (the game talking:
+// objective, timer, log, stance), the footer (people talking and the answers), the middle (a card held up to read).
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const key = k => mk("span", "ph-key", k);
 
 export function loadTheme(name) {
   let l = document.getElementById("playTheme");
@@ -9,38 +11,56 @@ export function loadTheme(name) {
   l.href = new URL(`./ui/themes/${name}.css`, import.meta.url).href;
 }
 
+// a spoken or written line into a footer line: the speaker above, the Japanese small, then the words. The Watch's
+// scenes and Play's lines both paint with this, so a subtitle looks the same wherever it comes from
+export function paintLine(el, text, who, ja) {
+  el.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), ...(ja ? [mk("span", "ph-ja", ja)] : []), mk("span", "", text || ""));
+  el.classList.toggle("on", !!(text || ja));
+}
+
 export class Hud {
   constructor(box, theme = "plain") {
     loadTheme(theme);
     this.root = mk("div", "play-hud"); this.root.dataset.theme = theme;
     this.cursor = mk("div", "ph-cursor"); this.cursor.dataset.cursor = "none";
-    this.prompt = mk("div", "ph-prompt");
+    this.prompt = mk("div", "ph-prompt"); this.shown = "";
     this.obj = mk("div", "ph-objective");
-    this.lineEl = mk("div", "ph-line");
+    this.footer = mk("div", "ph-footer");
+    this.lineEl = mk("div", "ph-line"); this.footer.append(this.lineEl);
     this.logEl = mk("div", "ph-log");
     this.timerEl = mk("div", "ph-timer");
-    this.hint = mk("div", "ph-hint", "Click to look around · WASD walk · E use · C crouch · Esc frees the mouse");
+    this.hint = mk("div", "ph-hint");
+    for (const [k, w] of [["Click", "look around"], ["W A S D", "walk"], ["E", "use"], ["C", "crouch"], ["Esc", "free the mouse"]]) { const p = mk("span", "ph-pair"); p.append(key(k), mk("span", "", w)); this.hint.append(p); }
     this.stance = mk("div", "ph-stance");
-    this.seenEl = mk("div", "ph-seen"); this.seenEl.append(mk("div", "ph-seen-fill"));
-    this.root.append(this.obj, this.timerEl, this.logEl, this.cursor, this.prompt, this.lineEl, this.stance, this.seenEl, this.hint);
+    this.seenEl = mk("div", "ph-seen ph-meter"); this.seenEl.append(mk("div"));
+    this.root.append(this.obj, this.timerEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint);
     box.append(this.root);
-    this.lineUntil = 0; this.panelEl = null;
+    this.lineUntil = 0; this.panelEl = null; this.objTimer = 0;
   }
   remove() { this.root.remove(); }
-  setCursor(kind, label) {
-    this.cursor.dataset.cursor = kind || "none";
-    this.prompt.replaceChildren(...(label ? [mk("span", "ph-key", "E"), mk("span", "ph-label", label)] : []));
+  // what's under the reticle: its kind (the reticle opens into a ring; `locked` is red and has no key), the verb, the
+  // thing's name, and `at` {x, y, flip} where the prompt floats (the HUD's pixels), or null: under the reticle
+  setCursor(kind, label, at, name) {
+    kind = kind || "none"; this.cursor.dataset.cursor = kind;
+    const sig = `${kind}|${label}|${name || ""}`;
+    if (sig !== this.shown) {
+      this.shown = sig; this.prompt.dataset.cursor = kind;
+      const words = mk("span", "ph-words"); words.append(mk("span", "ph-label", label || "")); if (name) words.append(mk("span", "ph-name", name));
+      this.prompt.replaceChildren(...(label ? [mk("span", "ph-mark"), ...(kind === "locked" ? [] : [key("E")]), words] : []));
+    }
     this.prompt.classList.toggle("on", !!label);
+    this.prompt.classList.toggle("at", !!at); this.prompt.classList.toggle("flip", !!(at && at.flip)); this.prompt.classList.toggle("bare", !!(at && at.bare));
+    this.prompt.style.left = at ? at.x + "px" : ""; this.prompt.style.top = at ? at.y + "px" : "";
   }
-  objective(text) { this.obj.textContent = text || ""; this.obj.classList.toggle("on", !!text); }
-  line(text, who, secs) {
-    this.lineEl.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), mk("span", "", text || ""));
-    this.lineEl.classList.add("on"); this.lineUntil = performance.now() + secs * 1000;
+  objective(text) {                                  // a new one says so, then rests dimmer
+    if (text && text !== this.obj.textContent) { this.obj.classList.add("fresh"); clearTimeout(this.objTimer); this.objTimer = setTimeout(() => this.obj.classList.remove("fresh"), 4000); }
+    this.obj.textContent = text || ""; this.obj.classList.toggle("on", !!text);
   }
+  line(text, who, secs) { paintLine(this.lineEl, text, who); this.lineUntil = performance.now() + secs * 1000; }
   log(text) {
     const e = mk("div", "", text); this.logEl.append(e);
     setTimeout(() => e.remove(), 5000);
-    while (this.logEl.children.length > 6) this.logEl.firstChild.remove();
+    while (this.logEl.children.length > 5) this.logEl.firstChild.remove();
   }
   timer(secs) { this.timerEl.textContent = secs === null ? "" : Math.max(0, secs).toFixed(1); }
   seen(k) {                                         // the suspicion meter: 0 hidden, 1 caught
@@ -49,11 +69,19 @@ export class Hud {
   }
   setStance(s) { this.stance.textContent = s; this.root.dataset.stance = s; }
   locked(on) { this.hint.classList.toggle("on", !on && !this.panelEl); this.root.classList.toggle("free", !on); }
-  press() {                                         // the cursor and the key press in when E is used
+  press() {                                         // the reticle and the key press in when E is used
     for (const e of [this.cursor, this.prompt.querySelector(".ph-key")].filter(Boolean)) { e.classList.add("press"); setTimeout(() => e.classList.remove("press"), 160); }
   }
-  shake() { for (const e of [this.cursor, this.panelEl].filter(Boolean)) { e.classList.remove("shake"); void e.offsetWidth; e.classList.add("shake"); } }
-  tick() { if (this.lineUntil && performance.now() > this.lineUntil) { this.lineEl.classList.remove("on"); this.lineUntil = 0; } }
+  modal(el) {                                       // a card or a choice is up: the world's marks step back
+    this.panelEl = el; this.root.classList.toggle("modal", !!el); if (el) this.hint.classList.remove("on");
+  }
+  shake() { for (const e of [this.prompt, this.panelEl].filter(Boolean)) { e.classList.remove("shake"); void e.offsetWidth; e.classList.add("shake"); } }
+  tick() {
+    if (this.lineUntil && performance.now() > this.lineUntil) {
+      this.lineEl.classList.remove("on"); this.lineUntil = 0;
+      setTimeout(() => { if (!this.lineEl.classList.contains("on")) this.lineEl.replaceChildren(); }, 300);   // gone from the footer once faded
+    }
+  }
 
   // a panel: {title, text} to read, or {title, code: n} for a code lock. Resolves with the code typed, true when a
   // text is closed, or null when it's left (Esc, Close)
@@ -71,44 +99,45 @@ export class Hud {
         card.append(shown, pad);
         p.keys = e => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === "Backspace") press("⌫"); else if (e.key === "Enter") press("OK"); };
       } else card.append(mk("div", "ph-text", spec.text || ""));
-      const close = mk("button", "ph-btn ph-close", "Close"); close.onclick = () => finish(spec.code ? null : true);
+      const close = mk("button", "ph-btn ph-close"); close.append(key("Esc"), mk("span", "", "Close")); close.onclick = () => finish(spec.code ? null : true);
       card.append(close); p.append(card);
       const kd = e => { if (e.key === "Escape") { e.preventDefault(); finish(null); } else if (p.keys) p.keys(e); };
-      finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.panelEl = null; done(v); };
+      finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(v); };
       window.addEventListener("keydown", kd, true);
-      this.panelEl = p; this.hint.classList.remove("on"); this.root.append(p);
+      this.modal(p); this.root.append(p);
     });
   }
 
-  // a multiple choice (see `chooser`); resolves with the index picked
+  // a multiple choice in the footer: the question is the footer's line (who asks it above), the options under it in
+  // their own panel (see `chooser`); resolves with the index picked
   choose(spec) {
     return new Promise(done => {
       const c = chooser(spec, i => finish(i)), kd = c.keys;
-      const finish = v => { window.removeEventListener("keydown", kd, true); c.el.remove(); this.panelEl = null; done(v); };
+      if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who); this.lineUntil = 0; }
+      const finish = v => { window.removeEventListener("keydown", kd, true); c.el.remove(); this.modal(null); if (spec.prompt) this.lineEl.classList.remove("on"); done(v); };
       window.addEventListener("keydown", kd, true);
-      this.panelEl = c.el; this.hint.classList.remove("on"); this.root.append(c.el);
+      this.modal(c.el); this.footer.append(c.el);
     });
   }
 }
 
-// A multiple choice: the question in its own panel above, the options in ONE panel under it, side by side with a dash between each pair (always centred), the one under
-// the pointer (or the keys: A/D, arrows, 1-9, Enter or Space takes the lit one) bright and the rest dimmed. spec
-// {prompt, promptSub (small, above it: the Japanese), options: [text or {label, sub}]}; `pick(i)` is called with the index. Returns {el, keys, bar(0..1)}: the panel
-// to put inside a `.play-hud[data-theme]`, the keydown handler, and a thin timer line under the options. The Play HUD
-// and the desk's Watch (replies, timed choices) both use it, so a choice looks the same everywhere.
+// The options of a multiple choice: ONE glass panel, side by side with a dash between each pair (equal columns, so
+// the dashes stay centred), the one under the pointer (or the keys: A/D, arrows; 1-9 or Enter/Space picks) bright and
+// the rest dimmed. spec {options: [text or {label, sub}], timed}; `pick(i)` gets the index. Returns {el, keys, bar}:
+// the panel (it goes in a footer, under the question), the keydown handler, and the timer line (1 full, 0 out). The
+// Play HUD and the desk's Watch (replies, timed choices) both use it.
 export function chooser(spec, pick) {
-  const p = mk("div", "ph-panel ph-choose"), stack = mk("div", "ph-stack"), box = mk("div", "ph-choice"), opts = [], row = mk("div", "ph-opts"), bar = mk("div", "ph-bar", ""), fill = mk("div");
+  const box = mk("div", "ph-choice"), opts = [], row = mk("div", "ph-opts"), bar = mk("div", "ph-meter on"), fill = mk("div");
   let at = -1;
   const light = i => { at = i; opts.forEach((o, j) => o.classList.toggle("on", j === i)); box.classList.toggle("lit", i >= 0); };
-  if (spec.prompt) { const q = mk("div", "ph-ask"); if (spec.promptSub) q.append(mk("span", "ph-sub", spec.promptSub)); q.append(mk("span", "", spec.prompt)); stack.append(q); }
-  (spec.options || []).forEach((o, i) => {
+  (spec.options || []).map(o => (typeof o === "string" ? { label: o } : o)).forEach((o, i) => {
     if (i) row.append(mk("span", "ph-dash"));
-    const b = mk("button", "ph-opt"); if (o.sub) b.append(mk("span", "ph-sub", o.sub)); b.append(mk("span", "", typeof o === "string" ? o : o.label));
+    const b = mk("button", "ph-opt"); if (o.sub) b.append(mk("span", "ph-ja", o.sub)); b.append(mk("span", "", o.label));
     b.onmouseenter = () => light(i); b.onfocus = () => light(i); b.onclick = () => pick(i);
     opts.push(b); row.append(b);
   });
   row.onmouseleave = () => light(-1);
-  bar.append(fill); box.append(row); if (spec.timed) box.append(bar); stack.append(box); p.append(stack);
+  bar.append(fill); box.append(row); if (spec.timed) box.append(bar);
   const n = opts.length;
   const keys = e => {
     const k = e.key.toLowerCase();
@@ -118,5 +147,5 @@ export function chooser(spec, pick) {
     else if ((k === "enter" || k === " ") && at >= 0) pick(at); else return;
     e.preventDefault();
   };
-  return { el: p, keys, bar: k => { fill.style.width = Math.max(0, Math.min(1, k)) * 100 + "%"; } };
+  return { el: box, keys, bar: k => { fill.style.width = Math.max(0, Math.min(1, k)) * 100 + "%"; } };
 }

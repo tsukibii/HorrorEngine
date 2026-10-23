@@ -1,0 +1,10 @@
+@import url("glass.css");
+/* Play HUD theme "glass-rose": the glass for a romance (or a horror romance's softer chapters): the same layout and
+   glass, warmer: blush accents, a rose scrim, a gentler red for warnings. Colours only. */
+.play-hud[data-theme="glass-rose"]{
+  --ph-accent:#ffd0dc; --ph-who:#ffe6ec; --ph-bad:#ff9fb2;
+  --ph-glass:linear-gradient(160deg,rgba(255,226,236,.13),rgba(255,255,255,0) 55%);
+  --ph-scrim:linear-gradient(to top,rgba(32,10,20,.58),rgba(32,10,20,.16) 70%,rgba(32,10,20,0));
+  --ph-cursor-shadow:0 0 5px rgba(60,10,25,.7);
+  --ph-opt-glow:0 0 12px rgba(255,200,216,.75),0 1px 5px rgba(0,0,0,.55);
+}
