@@ -101,17 +101,21 @@ corrected) and rebuild; the material instance is remade when its folder is delet
 - Later, for final art: real meshes get their own UVs and materials (a Blender pass or bought packs); the library is
   for greybox-plus and for props that are fine as they are.
 
-## 6. The PBR shelf: your own texture sets (`Content/Studio/PBR/`)
+## 6. The PBR shelf: your own texture sets (`assets/pbr/`)
 
-The sets you download (Poly Haven, ambientCG, bought ones you may use) live on a shelf of category folders, one folder
-per set; categories can nest:
+The sets you download (Poly Haven, ambientCG, Unreal-ready ones, bought ones you may use) live on a shelf at the
+project's root, one folder per set (DECISIONS 2026-10-23); category folders are there if you want them, and can nest:
 
 ```
-Content/Studio/PBR/                     ($STUDIO_PBR puts it elsewhere, e.g. another drive)
+assets/pbr/                             ($STUDIO_PBR puts it elsewhere, e.g. another drive; nothing in it is tracked)
+  denim1/                               denim1_albedo.png, _ao.png, _height.png, _metallic.png, _normal-dx.png, _roughness.png
   Wood/old_planks/                      the maps as they came: old_planks_diff_2k.jpg, _ao_2k.jpg, _disp_2k.png,
                                         _nor_dx_2k.png, _rough_2k.jpg
   Stone/Walls/rough_brick_2k.zip        a ZIP dropped in is unpacked into rough_brick/ on the next scan
 ```
+
+The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set in `assets/pbr` wins), new ones go to
+`assets/pbr`.
 
 - **The download:** Poly Haven's ZIP with Blend and glTF off, MaterialX off, the packed AO/Rough/Metal off, and AO, Diffuse
   and Rough as JPG, Displacement and Normal (DX) as PNG. Other names work too: the last word of each file name says
@@ -120,17 +124,21 @@ Content/Studio/PBR/                     ($STUDIO_PBR puts it elsewhere, e.g. ano
   so Unreal-ready names work as they are (`denim1_albedo.png`, `_normal-dx`, `_roughness`). A GL normal is used before
   a DX one, JPG and PNG before EXR (the desk can't show EXR). A packed `arm`/`orm` map is noted (`orm` in meta.json):
   the Character Studio's clothes use it where the separate maps are missing; Unreal's import takes the separate maps.
-- **Clothes** (docs/TAILOR.md §1b): fabric sets go in `Fabric/`; the Character Studio's *Add a set* puts maps picked
-  from disk there, and a garment wears one at a repeat in metres (0.3 unless the set's `tile_m` says).
+- **By hand:** when a name says the wrong thing (a `_mask` that's a colour mask, not an opacity; two colour maps), the
+  shelf page has a picker under each map: by its name, any image in the set, or none, and the normal's convention
+  (OpenGL or DirectX). It's saved at once as `by_hand` in the set's meta.json and kept on every rescan.
+- **Clothes** (docs/TAILOR.md §1b): the Character Studio's *Add a set* puts maps picked from disk into
+  `assets/pbr/<name>/`, and a garment wears a set at a repeat in metres (0.3 unless the set's `tile_m` says).
 - **Scanning** (`python tools/pbr.py`, the shelf page, or the desk at start) unpacks new ZIPs (their images only),
   writes each set's `meta.json` (which file is which map, the normal's convention, `tile_m`, where it came from) and a
   small `_thumb.jpg` (when Pillow is there). Poly Haven and ambientCG names give the source and its page; what you
   set by hand (`tile_m`, source, url, licence, note) is kept on every rescan. Nothing here goes into git (only its
   README): the sets are big and yours.
-- **Using one:** its ref is `pbr/<category>/<name>` (`pbr/Wood/old_planks`): a room's `look` or a prop's `mat`, like
-  any library texture. The scene builder's Look pickers list the shelf. `story_check` warns about a ref that isn't on
+- **Using one:** its ref is `pbr/<its path>` (`pbr/denim1`, `pbr/Wood/old_planks`): a room's `look`, a prop's `mat`
+  or a garment's `pbr`, like any library texture. The scene builder's Look pickers list the shelf. `story_check` warns about a ref that isn't on
   the shelf.
-- **The shelf page** (http://127.0.0.1:8780/pbr.html, the launcher's *PBR shelf*): the sets by category; each one on a
+- **The shelf page** (the Character Studio's **PBR** button, http://127.0.0.1:8793/pbr.html, or the desk's
+  http://127.0.0.1:8780/pbr.html, the launcher's *PBR shelf*): the sets (by category when there are any); each one on a
   1 m sphere, a 1 m cube, a 3 x 3 m room corner with a 1.7 m figure, or a close-up under a low light, at its real
   size, with the light turning round it. Click a map to see the set without it; the displacement slider pushes the
   sphere and the close-up. Set **one repeat** (`tile_m`, the metres one repeat covers: planks 1 to 2.5, bricks 1 to

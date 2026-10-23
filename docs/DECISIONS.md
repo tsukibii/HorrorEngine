@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23, evening (PBR sets: one folder at the root, a viewer in the Studio)
+
+- **PBR sets live in `assets/pbr/` at the project's root**, a folder each, and nothing inside it is tracked by git.
+  The shelf's first place, `Content/Studio/PBR`, is still read so nothing there goes missing; new sets go to
+  `assets/pbr`.
+- **Maps are found by the naming the user's sets use** (`denim1_albedo.png`, `_ao`, `_height`, `_metallic`,
+  `_normal-dx`, `_roughness`: the last word of the name) **and can be chosen by hand** when the names say wrong.
+- **A PBR viewer in the Character Studio** (its top bar's **PBR** button: each set on a sphere, cube, room corner and
+  close-up), so the sets don't have to be opened by hand to see them.
+- **A colour mask over a set isn't wanted for now**: the tint (the garment's colour over the set) is enough.
+
 ## 2026-10-23, later (our own clothes: the tailor, after Woohill; GarmentCode removed)
 
 - **The GarmentCode garment maker is taken out** (its drapes were bad, and it's bloat we don't need): gone are

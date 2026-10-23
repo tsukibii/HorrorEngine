@@ -1,11 +1,13 @@
-// The PBR shelf (docs/ASSETS.md §6): your texture sets in Content/Studio/PBR/<category>/<name>/, browsed and tried on
-// a sphere, a cube, a room corner and a close-up at their real size (tile_m: the metres one repeat covers).
+// The PBR shelf (docs/ASSETS.md §6): your texture sets in assets/pbr/<name>/ (or <category>/<name>/), browsed and tried
+// on a sphere, a cube, a room corner and a close-up at their real size (tile_m: the metres one repeat covers). Each map
+// is found by its file name's last word (denim1_albedo.png, _normal-dx, _roughness...) or chosen by hand (meta.json's
+// by_hand). The desk's server and the Character Studio's both serve this page.
 import * as THREE from "three";
 
 const $ = s => document.querySelector(s);
 const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 const S = { sets: {}, root: "", cat: "", q: "", sel: null, shape: "sphere", off: new Set() };
-const MAPS = [["albedo", "colour"], ["normal", "normal"], ["rough", "rough"], ["ao", "AO"], ["height", "disp"]];
+const MAPS = [["albedo", "colour"], ["normal", "normal"], ["rough", "rough"], ["metal", "metal"], ["ao", "AO"], ["height", "disp"], ["opacity", "opacity"]];
 
 function status(t, bad) { const s = $("#status"); s.textContent = t; s.className = bad ? "bad" : ""; }
 const url = (m, f) => `${encPath(m.base)}/${encodeURIComponent(f)}?s=${m.stamp || ""}`;
@@ -16,7 +18,7 @@ async function load() {
     const r = await (await fetch("/api/pbr")).json();
     S.sets = r.sets || {}; S.root = r.root || "";
     status(`${Object.keys(S.sets).length} sets in ${S.root}`);
-  } catch (e) { status("the desk's server didn't answer: python3 tools/director/serve.py", true); }
+  } catch (e) { status("the server didn't answer: python3 tools/director/serve.py (or the Character Studio's)", true); }
   if (S.sel && !S.sets[S.sel]) S.sel = null;
   if (!S.sel) S.sel = Object.keys(S.sets).sort()[0] || null;
   drawLeft(); select(S.sel);
@@ -27,7 +29,8 @@ function drawLeft() {
   const counts = {};
   for (const m of Object.values(S.sets)) { const top = (m.category || "").split("/")[0] || "(none)"; counts[top] = (counts[top] || 0) + 1; }
   const cats = $("#cats"); cats.innerHTML = "";
-  for (const c of ["", ...Object.keys(counts).sort()]) {
+  const filed = Object.keys(counts).some(c => c !== "(none)");     // sets a folder each with no categories: no chips, no headings
+  for (const c of filed ? ["", ...Object.keys(counts).sort()] : []) {
     const b = document.createElement("button"); b.className = S.cat === c ? "on" : "";
     b.innerHTML = c ? `${c} <small>${counts[c]}</small>` : `all <small>${Object.keys(S.sets).length}</small>`;
     b.onclick = () => { S.cat = c; drawLeft(); }; cats.append(b);
@@ -41,12 +44,12 @@ function drawLeft() {
     (groups[cat] = groups[cat] || []).push([ref, m]);
   }
   if (!Object.keys(S.sets).length) {
-    list.innerHTML = `<div class="empty">The shelf is empty. Put sets in category folders under <code>${S.root}</code> (a folder of maps, or the ZIP as it downloads), then Rescan. <code>python tools/pbr.py demo</code> makes five to try.</div>`;
+    list.innerHTML = `<div class="empty">The shelf is empty. Put sets under <code>${S.root}</code>, a folder each (its maps named like <code>denim1_albedo.png</code>, <code>denim1_normal-dx.png</code>; in category folders if you like; or the ZIP as it downloads), then Rescan. <code>python tools/pbr.py demo</code> makes five to try.</div>`;
     return;
   }
   for (const [cat, rows] of Object.entries(groups)) {
     const g = document.createElement("div"); g.className = "group";
-    g.innerHTML = `<h3>${cat}</h3>`;
+    g.innerHTML = filed ? `<h3>${cat}</h3>` : "";
     const grid = document.createElement("div"); grid.className = "grid";
     for (const [ref, m] of rows) {
       const f = document.createElement("figure"); f.className = ref === S.sel ? "on" : ""; f.title = ref;
@@ -66,7 +69,7 @@ function drawRight() {
   R.innerHTML = `<h2>${name}</h2>
     <div class="hint">Ref <code>${S.sel}</code>: a room's look (the scene builder lists it) or a prop's <code>mat</code>.</div>
     <h2>Maps</h2><div class="maps" id="maps"></div>
-    <div class="hint">Click a map to try the set without it. ${m.normal === "dx" ? "The normal is DirectX (Unreal's own): the desk flips its green." : "The normal is OpenGL: Unreal flips its green on import."}${m.arm ? `<br><span class="warn">${m.arm}</span>` : ""}</div>
+    <div class="hint">Each map by its name's last word, or chosen by hand under it (saved at once to meta.json). Click a map to try the set without it. ${m.normal === "dx" ? "The normal is DirectX (Unreal's own): the desk flips its green." : "The normal is OpenGL: Unreal flips its green on import."}${m.arm ? `<br><span class="warn">${m.arm}</span>` : ""}</div>
     <h2>Size</h2>
     <div class="kv"><span>one repeat</span><div><input id="tile" type="number" min="0.05" max="50" step="0.05" value="${m.tile_m}" style="width:80px"> m <small style="color:var(--dim)">(a plank floor 1 to 2.5, bricks 1 to 1.5, plaster 2 to 3)</small></div></div>
     <h2>Where it came from</h2>
@@ -76,12 +79,26 @@ function drawRight() {
     <div class="hint">The importer checks for <code>${m.unreal}</code> when a level using it is built, and if Unreal hasn't got it (or a map changed since), imports the maps into that folder and makes the material instance of M_StudioSurface. <code>storykit.surfaces.sync_pbr()</code> does the whole shelf at once.</div>
     <h2>Kimodo</h2>
     <div class="hint">The stage sent to Kimodo stays boxes: no materials go with it.</div>`;
-  const maps = $("#maps");
-  for (const [k, label] of MAPS) {
-    const f = document.createElement("figure"); const file = m.maps[k];
+  const maps = $("#maps"), hand = m.by_hand || {};
+  for (const [k, label] of [...MAPS, ["orm", "packed ORM"]]) {
+    const f = document.createElement("figure"), file = k === "orm" ? m.orm : m.maps[k];
     f.className = !file || S.off.has(k) ? "off" : ""; f.title = file || `no ${label} map`;
     f.innerHTML = file ? `<img loading="lazy" src="${url(m, file)}"><figcaption>${label} · ${file.split(".").pop()}</figcaption>` : `<div style="aspect-ratio:1"></div><figcaption>${label}: none</figcaption>`;
-    if (file) f.onclick = () => { S.off.has(k) ? S.off.delete(k) : S.off.add(k); drawRight(); dress(); };
+    if (file) f.querySelector("img").onclick = () => { S.off.has(k) ? S.off.delete(k) : S.off.add(k); drawRight(); dress(); };
+    // by hand: which file (or none) over what the names say; the normal also says whose convention it is
+    const keys = k === "normal" ? ["normal", "normal_dx"] : [k], mine = keys.find(x => x in hand);
+    const pick = document.createElement("select"); pick.title = `the ${label} map: by its name, or a file chosen by hand`;
+    pick.innerHTML = `<option value="*">${mine ? "by name" : "by name ✓"}</option><option value="">none</option>` + (m.files || []).map(x => `<option>${x}</option>`).join("");
+    pick.value = mine ? hand[mine] : "*";
+    pick.onchange = () => setHand(m, keys, pick.value === "*" ? null : { [k === "normal" && m.normal === "dx" ? "normal_dx" : k]: pick.value });
+    pick.style.cssText = "width:100%;font-size:11px;padding:0 2px";
+    f.append(pick);
+    if (k === "normal" && file) {
+      const gd = document.createElement("select"); gd.title = "OpenGL (green up: three.js, Blender) or DirectX (green down: Unreal)";
+      gd.innerHTML = `<option value="gl">OpenGL</option><option value="dx">DirectX</option>`; gd.value = m.normal;
+      gd.onchange = () => setHand(m, keys, { [gd.value === "dx" ? "normal_dx" : "normal"]: file });
+      gd.style.cssText = "width:100%;font-size:11px;padding:0 2px"; f.append(gd);
+    }
     maps.append(f);
   }
   $("#tile").oninput = () => { const v = +$("#tile").value; if (v >= 0.05) { m.tile_m = v; dress(); } };
@@ -92,6 +109,19 @@ function drawRight() {
     if (!r.ok) { $("#saved").textContent = j.error; return; }
     Object.assign(m, j); $("#saved").textContent = "saved to meta.json";
   };
+}
+
+// a map chosen by hand (or given back to its name): saved to the set's meta.json, the set read again
+async function setHand(m, keys, v) {
+  const hand = { ...(m.by_hand || {}) };
+  for (const k of keys) delete hand[k];
+  Object.assign(hand, v || {});
+  const r = await fetch(`/api/pbr/${encPath(S.sel.slice(4))}`, { method: "POST", body: JSON.stringify({ by_hand: hand }) });
+  const j = await r.json();
+  if (!r.ok) return status(j.error, true);
+  for (const k of ["maps", "orm", "arm", "normal", "by_hand", "stamp", "files"]) { if (k in j) m[k] = j[k]; else delete m[k]; }
+  status(`${S.sel}: ${Object.entries(m.maps).map(([k, f]) => `${k} ${f}`).join(", ")}`);
+  drawRight(); dress();
 }
 
 function select(ref) {
@@ -115,7 +145,7 @@ const cam = { yaw: 0.6, pitch: 0.25, dist: 2.6, target: new THREE.Vector3(0, 0.5
 const texCache = {};
 
 function texture(m, k) {
-  const file = m.maps[k]; if (!file || S.off.has(k)) return null;
+  const file = k === "orm" ? m.orm : m.maps[k]; if (!file || S.off.has(k)) return null;
   const key = url(m, file);
   if (!texCache[key]) {
     const t = new THREE.TextureLoader().load(key, () => dress());     // clones are made per surface: remake them once it's here
@@ -130,7 +160,11 @@ function texture(m, k) {
 function material(m, wm, hm) {
   const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
   const set = (slot, k) => { const t = texture(m, k); if (!t) return; const c = t.clone(); c.repeat.set(wm / m.tile_m, hm / m.tile_m); c.needsUpdate = true; mat[slot] = c; };
-  set("map", "albedo"); set("normalMap", "normal"); set("roughnessMap", "rough"); set("aoMap", "ao"); set("displacementMap", "height");
+  set("map", "albedo"); set("normalMap", "normal"); set("roughnessMap", "rough"); set("metalnessMap", "metal"); set("aoMap", "ao"); set("displacementMap", "height");
+  // a packed map (Unreal's ORM, Poly Haven's ARM): AO red, roughness green, metal blue, as three reads them
+  if (!mat.roughnessMap) set("roughnessMap", "orm"); if (!mat.metalnessMap) set("metalnessMap", "orm"); if (!mat.aoMap) set("aoMap", "orm");
+  if (mat.metalnessMap) mat.metalness = 1;
+  set("alphaMap", "opacity"); if (mat.alphaMap) mat.alphaTest = 0.5;      // a net, lace: cut out where it's dark
   if (!mat.map) mat.color.set(0x888888);
   if (mat.normalMap && m.normal === "dx") mat.normalScale.set(1, -1);     // DirectX normals: green flipped for three
   mat.displacementScale = +$("#disp").value; mat.displacementBias = -mat.displacementScale / 2;

@@ -85,7 +85,9 @@ Content/Studio/Library/index/kit.json
 Content/Studio/Library/meshes/local/
 Content/Studio/Library/index/local.json
 
-# the PBR shelf (docs/ASSETS.md §6): your texture sets, too big for git; only its README is shared
+# the PBR shelf (docs/ASSETS.md §6): your texture sets in assets/pbr/, a folder each, too big for git: nothing in it is
+# tracked (assets/README.md says what goes there); its old place, Content/Studio/PBR, still read, keeps only its README
+assets/pbr/
 Content/Studio/PBR/*
 !Content/Studio/PBR/README.md
 # faces from photos (tools/face_mesh.py): made from real people's pictures, they stay on your machine

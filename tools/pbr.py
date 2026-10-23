@@ -183,7 +183,11 @@ def cmd_check(_args):
              "Planks012_2K-JPG_Color.jpg": "albedo", "Planks012_2K-JPG_NormalDX.jpg": "normal_dx",
              "Planks012_2K-JPG_AmbientOcclusion.jpg": "ao", "Planks012_2K-JPG_Displacement.jpg": "height",
              "Planks012_2K-JPG_Roughness.jpg": "rough", "Planks012.png": None, "albedo.jpg": "albedo",
-             "brick_preview.jpg": None, "metal_plate_metal_2k.jpg": "metal"}
+             "brick_preview.jpg": None, "metal_plate_metal_2k.jpg": "metal",
+             # Unreal-ready names: the last word, after _ or -
+             "denim1_albedo.png": "albedo", "denim1_ao.png": "ao", "denim1_height.png": "height", "denim1_metallic.png": "metal",
+             "denim1_normal-dx.png": "normal_dx", "denim1_roughness.png": "rough", "T_Denim_BaseColor.png": "albedo",
+             "T_Denim_ORM.png": "arm"}
     for fn, want in names.items():
         got = PBR.map_of(fn)
         ok(got == want, f"map_of({fn}) = {got}, wanted {want}")
@@ -222,6 +226,22 @@ def cmd_check(_args):
         m = PBR.scan()[ref]
         ok(m["tile_m"] == 1.25 and m.get("note") == "mine", "what you set survives a rescan")
         ok(m["stamp"] != s0, "a changed map changes the stamp (Unreal re-imports)")
+        # a set straight in the shelf (no category), and its maps chosen by hand over what the names say
+        flat = tmp / "denim1"; flat.mkdir()
+        for f in ("denim1_albedo.png", "denim1_normal-dx.png", "denim1_roughness.png", "denim1_worn.png", "denim1_mask.png"):
+            (flat / f).write_bytes(b"png")
+        m = PBR.scan()["pbr/denim1"]
+        ok(m["category"] == "" and m["normal"] == "dx" and m["maps"].get("opacity") == "denim1_mask.png", f"flat set {m['maps']}")
+        PBR.save("pbr/denim1", {"by_hand": {"albedo": "denim1_worn.png", "opacity": "", "normal": "denim1_normal-dx.png"}})
+        m = PBR.scan()["pbr/denim1"]
+        ok(m["maps"]["albedo"] == "denim1_worn.png" and "opacity" not in m["maps"] and m["normal"] == "gl", f"by hand {m['maps']} {m['normal']}")
+        ok("denim1_worn.png" in m["files"] and m["by_hand"]["opacity"] == "", "the files to choose from, and by_hand kept")
+        try:
+            PBR.save("pbr/denim1", {"by_hand": {"albedo": "nothing.png"}})
+            bad.append("by_hand took a file that isn't in the set")
+        except ValueError:
+            pass
+        ok(PBR.set_dir("pbr/denim1") == flat and PBR.roots() == [tmp], "a moved ROOT reads only itself")
         ok(LIB.split(ref) == ("pbr", "Stone/Walls/rough_brick") and LIB.is_texture(ref), "library refs")
         ok(LIB.fetched(ref, "texture") and not LIB.fetched("pbr/Stone/nothing", "texture"), "fetched = on the shelf")
         ok(LIB.texture_dir(ref) == cat / "rough_brick", "texture_dir")

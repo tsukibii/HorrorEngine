@@ -141,8 +141,8 @@ class Handler(BaseHTTPRequestHandler):
         if parts[0] == "pbr" and len(parts) >= 3:
             import urllib.parse
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
-            pf = PBR.ROOT.joinpath(*rel) if ".." not in rel else None
-            if pf and pf.is_file() and pf.suffix.lower() in BODY and PBR.ROOT.resolve() in pf.resolve().parents:
+            pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
+            if pf and pf.is_file() and pf.suffix.lower() in BODY:
                 return self.send(200, pf.read_bytes(), BODY[pf.suffix.lower()], cache=True)
             return self.send(404, {"error": "not on the PBR shelf"})
         if parts[0] == "library" and len(parts) >= 3 and ".." not in parts:

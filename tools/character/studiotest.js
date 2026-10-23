@@ -6,8 +6,8 @@
 // skin takes over the body with the photo on the face through its mask, and its features change the picture; the work uniform
 // is cut from the body and worn, takes denim and a print without refitting, its hem is dragged up by its handle,
 // and it refits when the body grows; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
-// goes onto the shelf as Fabric/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX normal
-// turned for three.js;
+// goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
+// normal turned for three.js; the PBR shelf page shows it, and a map chosen by hand there is kept;
 // a twin-tail wig (clumps with physics) settles off the head and shoulders, survives a shake and exports its chains,
 // the grown cards still grow; brows and lashes; strands from elsewhere (a stand-in) batched into clumps,
 // rebuilt from guide chains on the GPU, off the body through a shake; the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
@@ -220,11 +220,21 @@ const png = rgb => {
     await page.$eval(LOOKS, d => { d.open = true; });
     await page.setInputFiles(`${LOOKS} input[type=file][multiple]`, [["albedo", [30, 42, 52]], ["normal-dx", [128, 128, 255]], ["roughness", [240, 240, 240]]]
       .map(([k, rgb]) => ({ name: `_studiotest_denim_${k}.png`, mimeType: "image/png", buffer: png(rgb) })));
-    await page.waitForFunction(() => window.__body.st.clothes.find(c => c.design === "pants")?.pbr === "pbr/Fabric/studiotest_denim", null, { timeout: 30000 });   // the shelf hides _: it's taken off
+    await page.waitForFunction(() => window.__body.st.clothes.find(c => c.design === "pants")?.pbr === "pbr/studiotest_denim", null, { timeout: 30000 });   // the shelf hides _: it's taken off
     const m = await page.evaluate(() => { const m = window.__body.GARMENTS.children.find(g => g.name === "pants").material;
       return { normal: !!m.normalMap, dx: m.normalScale.y === -1, rough: !!m.roughnessMap, on: m.userData.uniforms.uPbrOn.value }; });
     if (!m.normal || !m.rough || m.on !== 1) throw new Error("the set isn't on the pants: " + JSON.stringify(m));
     if (!m.dx) throw new Error("a DirectX normal map wasn't turned for three.js");
+    // the PBR button's shelf page shows the set on its sphere, and a map chosen by hand (the roughness: none) is kept
+    const shelf = await page.context().newPage(), ref = "pbr/studiotest_denim";
+    await shelf.goto(BASE + "pbr.html");
+    await shelf.click(`.grid figure[data-ref="${ref}"]`, { noWaitAfter: true });
+    const rough = "#maps figure:nth-child(3) select";                       // colour, normal, rough...
+    const set = async (v, ok) => { await shelf.selectOption(rough, v); await shelf.waitForFunction(async ([r, ok]) =>
+      new Function("m", "return " + ok)((await (await fetch("/api/pbr")).json()).sets[r]), [ref, ok], { timeout: 20000 }); };
+    await set("", "!m.maps.rough && m.by_hand.rough === ''");
+    await set("*", "m.maps.rough === 'studiotest_denim_roughness.png' && !('rough' in (m.by_hand || {}))");
+    await shelf.close();
     await page.click(`${PANTS} button[title='take it off']`);
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');

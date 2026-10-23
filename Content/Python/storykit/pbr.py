@@ -1,15 +1,18 @@
-"""The PBR shelf (docs/ASSETS.md §6): your own texture sets, in category folders, used like the library's.
+"""The PBR shelf (docs/ASSETS.md §6): your own texture sets, a folder each (in category folders if you like), used like
+the library's.
 
-    Content/Studio/PBR/            (or $STUDIO_PBR, e.g. a folder on another drive)
-      Wood/
-        old_planks/                one set: its maps as they came (old_planks_diff_2k.jpg, _ao_, _disp_, _nor_dx_, _rough_)
-        dark_wood_2k.zip           a ZIP dropped in is unpacked into dark_wood/ on the next scan
-      Stone/Walls/rough_brick/     categories can nest
+    assets/pbr/                    (or $STUDIO_PBR, e.g. a folder on another drive; nothing in it is tracked by git)
+      denim1/                      one set: its maps as they came (denim1_albedo.png, _ao, _height, _metallic, _normal-dx,
+                                   _roughness: the last word of each name says which map it is)
+      Wood/old_planks/             in a category: old_planks_diff_2k.jpg, _ao_, _disp_, _nor_dx_, _rough_
+      Wood/dark_wood_2k.zip        a ZIP dropped in is unpacked into dark_wood/ on the next scan
 
-A set's ref is `pbr/<its path>` (`pbr/Wood/old_planks`), in a room's `look` or a prop's `mat`, like `ambientcg/...`.
-Scanning writes a meta.json next to the maps (which file is which map, the normal's convention, `tile_m`: the metres
-one repeat covers) and a small `_thumb.jpg`; what you set by hand in meta.json (tile_m, source, url, licence) is kept.
-Plain Python, no `unreal` import: the tools, the desk's server and the importer all use it.
+A set's ref is `pbr/<its path>` (`pbr/denim1`, `pbr/Wood/old_planks`), in a room's `look`, a prop's `mat` or a garment's
+`pbr`. Scanning writes a meta.json next to the maps (which file is which map, the normal's convention, `tile_m`: the
+metres one repeat covers) and a small `_thumb.jpg`; what you set by hand in meta.json (tile_m, source, url, licence,
+note, and `by_hand`: a map's file chosen by hand over its name) is kept. The shelf used to be Content/Studio/PBR: sets
+still there are read too (the new place wins), new ones go to assets/pbr.
+Plain Python, no `unreal` import: the tools, the desk's and the Studio's servers and the importer all use it.
 """
 import hashlib
 import json
@@ -20,10 +23,19 @@ from pathlib import Path
 
 from . import storylib as L
 
-ROOT = Path(os.environ.get("STUDIO_PBR") or (L.STUDIO / "PBR"))
+DEFAULT = Path(os.environ.get("STUDIO_PBR") or (L.ROOT / "assets" / "pbr"))
+ROOT = DEFAULT                                  # where new sets go (pbr.py's check points it at a scratch folder)
+OLD = L.STUDIO / "PBR"                          # the shelf's first place: still read, unless ROOT was moved
+
+
+def roots():
+    """The folders sets are read from, the first winning: ROOT, and the old place while ROOT is the default."""
+    return [ROOT] + ([OLD] if ROOT == DEFAULT and not os.environ.get("STUDIO_PBR") and OLD.is_dir() and OLD != ROOT else [])
 IMG = (".jpg", ".jpeg", ".png", ".tga", ".tif", ".tiff", ".exr")
 WEB = (".jpg", ".jpeg", ".png")                 # what the desk can show (and what's preferred when both are there)
-KEEP = ("tile_m", "source", "url", "licence", "note")
+KEEP = ("tile_m", "source", "url", "licence", "note", "by_hand")
+# the maps a set can have, as `by_hand` names them: a file name, or "" for none (`normal_dx`: a DirectX normal)
+SLOTS = ("albedo", "normal", "normal_dx", "rough", "metal", "ao", "height", "opacity", "orm")
 # the last word(s) of a map's file name, after its resolution (2k, 4K-JPG) is taken off: Poly Haven, ambientCG and plain names
 WORDS = {
     "albedo": ("diff", "diffuse", "color", "colour", "col", "albedo", "basecolor", "base_color"),
@@ -66,7 +78,12 @@ def split_ref(ref):
 
 
 def set_dir(ref):
-    return ROOT.joinpath(*split_ref(ref).split("/"))
+    """The set's folder: where it is on the shelf, or where it would go in ROOT."""
+    rel = split_ref(ref).split("/")
+    for r in roots():
+        if r.joinpath(*rel).is_dir():
+            return r.joinpath(*rel)
+    return ROOT.joinpath(*rel)
 
 
 def read_maps(d):
@@ -116,7 +133,8 @@ def meta(d, write=False):
             old = json.loads(p.read_text(encoding="utf-8"))
         except ValueError:
             old = {}
-    maps, conv, arm = read_maps(d)
+    hand = old.get("by_hand") if isinstance(old.get("by_hand"), dict) else {}
+    maps, conv, arm = with_hand(d, hand, *read_maps(d))
     if "albedo" not in maps:
         return None
     m = {"maps": maps, "normal": conv, "tile_m": 2.0}
@@ -131,7 +149,33 @@ def meta(d, write=False):
     if write:
         _thumb(d, maps["albedo"])
     m["thumb"] = "_thumb.jpg" if (d / "_thumb.jpg").exists() else maps["albedo"]
+    m["files"] = images(d)                     # every image in the folder, for choosing a map by hand
     return m
+
+
+def images(d):
+    return sorted(f.name for f in d.iterdir() if f.is_file() and f.suffix.lower() in IMG and not f.name.startswith("_"))
+
+
+def with_hand(d, hand, maps, conv, arm):
+    """`by_hand` over what the names say: a slot's file (when it's in the folder) or "" for none; `normal_dx` makes the
+    normal a DirectX one, `normal` a GL one, `orm` the packed AO/rough/metal map."""
+    maps = dict(maps)
+    for k, f in hand.items():
+        if k not in SLOTS or not isinstance(f, str) or (f and not (d / f).is_file()):
+            continue
+        if k == "orm":
+            arm = f or None
+        elif k in ("normal", "normal_dx"):
+            if f:
+                maps["normal"], conv = f, "dx" if k == "normal_dx" else "gl"
+            else:
+                maps.pop("normal", None)
+        elif f:
+            maps[k] = f
+        else:
+            maps.pop(k, None)
+    return maps, conv, arm
 
 
 def _thumb(d, albedo):
@@ -174,24 +218,28 @@ def unpack(z):
 def scan(write=True):
     """Every set on the shelf: {ref: meta}. Unpacks new ZIPs and refreshes meta.json and thumbnails when `write`."""
     out = {}
-    if not ROOT.exists():
-        return out
-    if write:
-        for z in sorted(ROOT.rglob("*.zip")):
-            unpack(z)
-    for d in sorted({f.parent for f in ROOT.rglob("*") if f.is_file() and f.suffix.lower() in IMG}):
-        rel = d.relative_to(ROOT).as_posix()
-        if rel == "." or any(part.startswith((".", "_")) for part in rel.split("/")):
+    if write and ROOT == DEFAULT:
+        ROOT.mkdir(parents=True, exist_ok=True)     # somewhere to put the first set
+    for root in roots():
+        if not root.exists():
             continue
-        m = meta(d, write=write)
-        if m:
-            m["category"] = rel.rsplit("/", 1)[0] if "/" in rel else ""
-            out[f"pbr/{rel}"] = m
+        if write:
+            for z in sorted(root.rglob("*.zip")):
+                unpack(z)
+        for d in sorted({f.parent for f in root.rglob("*") if f.is_file() and f.suffix.lower() in IMG}):
+            rel = d.relative_to(root).as_posix()
+            if rel == "." or any(part.startswith((".", "_")) for part in rel.split("/")) or f"pbr/{rel}" in out:
+                continue
+            m = meta(d, write=write)
+            if m:
+                m["category"] = rel.rsplit("/", 1)[0] if "/" in rel else ""
+                out[f"pbr/{rel}"] = m
     return out
 
 
 def save(ref, fields):
-    """Set tile_m, source, url, licence or note on a set (the shelf page's Save)."""
+    """Set tile_m, source, url, licence, note or by_hand ({slot: file or ""}: a map chosen by hand) on a set (the shelf
+    page's Save)."""
     d = set_dir(ref)
     m = meta(d)
     if m is None:
@@ -199,7 +247,13 @@ def save(ref, fields):
     p = d / "meta.json"
     old = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
     for k in KEEP:
-        if k in fields:
+        if k in fields and k == "by_hand":
+            hand = fields[k] if isinstance(fields[k], dict) else {}
+            bad = [f for k2, f in hand.items() if k2 not in SLOTS or not isinstance(f, str) or (f and f not in images(d))]
+            if bad:
+                raise ValueError(f"by_hand: a map is one of {', '.join(SLOTS)} and a file in the set, or \"\" for none")
+            old[k] = {k2: f for k2, f in hand.items()}
+        elif k in fields:
             old[k] = float(fields[k]) if k == "tile_m" else str(fields[k])
     if "tile_m" in old and not (0.05 <= old["tile_m"] <= 50):
         raise ValueError("tile_m: the metres one repeat covers, 0.05 to 50")

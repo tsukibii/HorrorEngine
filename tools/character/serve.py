@@ -183,11 +183,20 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("batch.json", "batch.bin"):
             f = PEOPLE / clean(parts[2]) / "hair" / parts[3]
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no strands yet"})
-        if parts[:2] == ["api", "pbr"]:                    # the shelf's sets, for a PBR fill: {ref: {maps: {albedo: file...}}}
-            return self.send(200, {"sets": {r: {"maps": m["maps"], "tile_m": m.get("tile_m", 2.0), "normal": m.get("normal"), "orm": m.get("orm")} for r, m in PBR.scan(write=False).items()}})
-        if parts[0] == "pbrfile" and len(parts) >= 3 and ".." not in parts:        # /pbrfile/<category>/<name>/<file>
-            f = PBR.ROOT.joinpath(*[urllib.parse.unquote(p) for p in parts[1:]])
-            return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f.is_file() and f.suffix.lower() in PBR.WEB and ".." not in f.parts else self.send(404, {"error": "no such map"})
+        if parts[:2] == ["api", "pbr"]:                    # the shelf (assets/pbr), scanned: {root, sets: {ref: {maps: {albedo: file...},
+            sets = PBR.scan()                                 # tile_m, normal, orm, files, by_hand...}}} for PBR fills, clothes, pbr.html
+            for ref, m in sets.items():
+                m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
+            return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
+        if parts[0] in ("pbrfile", "pbr") and len(parts) >= 3:   # /pbrfile/<set path>/<file> (or /pbr/..., as the shelf page asks)
+            rel = [urllib.parse.unquote(p) for p in parts[1:]]
+            f = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None
+            return self.send(200, f.read_bytes(), TYPES.get(f.suffix.lower(), "image/jpeg")) if f and f.is_file() and f.suffix.lower() in PBR.WEB else self.send(404, {"error": "no such map"})
+        if parts[0] in ("pbr.html", "pbr.js") and len(parts) == 1:   # the PBR shelf page (the desk's: one viewer for both), back to here
+            page = (ROOT / "tools" / "director" / parts[0]).read_text(encoding="utf-8")
+            if parts[0] == "pbr.html":
+                page = page.replace('<a href="builder.html" style="color:var(--dim)">scene builder</a>', '<a href="/" style="color:var(--dim)">Character Studio</a>')
+            return self.send(200, page.encode("utf-8"), TYPES[".html" if parts[0].endswith("html") else ".js"])
         if parts[:2] == ["api", "layers"] and len(parts) == 3 and clean(parts[2]):      # the paint layers (layers.js), saved as one JSON
             f = PEOPLE / clean(parts[2]) / "layers.json"
             return self.send(200, f.read_bytes(), "application/json") if f.exists() else self.send(200, {"layers": []})
@@ -243,14 +252,19 @@ class Handler(BaseHTTPRequestHandler):
             if data:                                                           # an empty body clears the slot
                 (d / (parts[3] + ext)).write_bytes(data)
             return self.send(200, {"ok": True})
-        if parts[:2] == ["api", "pbr"] and len(parts) == 5 and name and clean(parts[3]) and clean(parts[4]):   # /api/pbr/<category>/<set>/<file>:
-            f = clean(parts[4])                                                   # a map into the PBR shelf (a garment's fabric)
-            if Path(f).suffix.lower() not in PBR.WEB:
-                return self.send(400, {"error": "a map: JPG or PNG"})
-            d = PBR.ROOT / name / clean(parts[3]); d.mkdir(parents=True, exist_ok=True)
-            (d / f).write_bytes(self.body())
+        if parts[:2] == ["api", "pbr"] and len(parts) >= 4 and Path(parts[-1]).suffix.lower() in PBR.IMG:   # /api/pbr/<set path>/<file>:
+            rel = [clean(p) for p in parts[2:]]                                    # a map into the shelf (a set from files)
+            if not all(rel) or Path(rel[-1]).suffix.lower() not in PBR.WEB:
+                return self.send(400, {"error": "a map: a JPG or PNG with a plain name"})
+            ref = "pbr/" + "/".join(rel[:-1]); d = PBR.set_dir(ref); d.mkdir(parents=True, exist_ok=True)
+            (d / rel[-1]).write_bytes(self.body())
             m = PBR.meta(d, write=True)                                           # which map it is, by its name's last word
-            return self.send(200, {"ok": True, "ref": f"pbr/{name}/{clean(parts[3])}", "map": PBR.map_of(f), "meta": m})
+            return self.send(200, {"ok": True, "ref": ref, "map": PBR.map_of(rel[-1]), "meta": m})
+        if parts[:2] == ["api", "pbr"] and len(parts) >= 3:                       # /api/pbr/<set path>: its tile, source, note, maps by hand
+            try:
+                return self.send(200, PBR.save("pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:]), json.loads(self.body().decode("utf-8"))))
+            except (ValueError, OSError) as e:
+                return self.send(400, {"error": str(e)})
         if parts[:2] == ["api", "wigs"] and len(parts) == 4 and name and clean(parts[3]):   # a hair model (GLB, glTF, FBX, OBJ) for the wig
             if Path(clean(parts[3])).suffix.lower() not in (".glb", ".gltf", ".fbx", ".obj"):
                 return self.send(400, {"error": "a hair model: GLB, glTF, FBX or OBJ"})

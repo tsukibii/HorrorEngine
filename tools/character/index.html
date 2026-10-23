@@ -51,6 +51,7 @@
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
   <button id="expBody" title="The whole body, A-pose, metres, Y up, facing +Z: People/&lt;name&gt;/&lt;name&gt;_body.obj">Export body OBJ</button>
   <button id="expHead" title="The head alone, cut at the neck (People/&lt;name&gt;/&lt;name&gt;_head.obj)">Export head OBJ</button>
+  <button id="pbrShelf" onclick="window.open('pbr.html', '_blank')" title="The PBR sets in assets/pbr (a folder each) on a sphere, a cube, a room corner and a close-up, each map found by its name or chosen by hand: in a new tab">PBR</button>
   <span id="status"></span>
 </header>
 <main>
@@ -432,18 +433,18 @@ function restyle(c) {                                  // a new fabric, pattern,
     m.userData.pbr = m.userData.q.fabric !== false && L.pbr ? { ref: L.pbr.ref, tile_m: L.pbr.tile_m } : undefined;
   }
 }
-// maps from disk into the shelf as a set of Content/Studio/PBR/Fabric (each file's last word says which map it is:
+// maps from disk into the shelf as a set of its own, assets/pbr/<name>/ (each file's last word says which map it is:
 // albedo, ao, height, metallic, normal-dx, roughness, orm...), then worn by this garment
 async function addSet(c, files, name) {
   const stem = files.map(f => f.name).reduce((a, b) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return a.slice(0, i); });
   const safe = n => n.replace(/[^\w.-]+/g, "_").replace(/^[_.]+/, "");          // the shelf hides a name starting _ or .
   name = safe(name || stem.replace(/[_\-\s.]+$/, "")) || "fabric";
   for (const f of files) {
-    const r = await fetch(`api/pbr/Fabric/${encodeURIComponent(name)}/${encodeURIComponent(safe(f.name))}`, { method: "POST", body: f });
+    const r = await fetch(`api/pbr/${encodeURIComponent(name)}/${encodeURIComponent(safe(f.name))}`, { method: "POST", body: f });
     if (!r.ok) return status(`${f.name}: ${(await r.json().catch(() => ({}))).error || r.status}`, "bad");
   }
   SHELF = (await api("api/pbr")).sets || {};
-  const ref = "pbr/Fabric/" + name, m = SHELF[ref];
+  const ref = "pbr/" + name, m = SHELF[ref];
   if (!m) return status(`${name}: no colour map among them (a file ending albedo, color, basecolor or diff)`, "bad");
   c.pbr = ref; restyle(c); drawWorn();
   status(`${ref}: ${Object.keys(m.maps).join(", ")}${m.orm ? ", orm" : ""}${m.normal === "dx" ? " (DirectX normal)" : ""}`, "ok");
@@ -464,7 +465,7 @@ function lookRows(c) {                                 // fabric, pattern, print
   }
   const setName = el("input", { type: "text", placeholder: "a name (or the files' own)" }), setFiles = el("input", { type: "file", accept: "image/png,image/jpeg", multiple: true });
   setFiles.onchange = () => { if (setFiles.files.length) addSet(c, [...setFiles.files], setName.value.trim()); };
-  box.append(el("div", { className: "row", title: "Its maps from disk (albedo, normal or normal-dx, roughness, metallic, ao, height, opacity, or a packed orm): onto the PBR shelf, then on this garment" },
+  box.append(el("div", { className: "row", title: "Its maps from disk (albedo, normal or normal-dx, roughness, metallic, ao, height, opacity, or a packed orm): into assets/pbr/<name>/, then on this garment (the PBR button above looks at them)" },
     el("span", { textContent: "Add a set" }), setName, setFiles));
   if ((SURFACES[c.surface ?? D.surface] || [])[4] && (c.surface ?? D.surface) === "sheer")
     slider(box, "denier", "Denier", 0.1, 1, 0.01, c.denier ?? D.denier ?? 0.6, "How much of the skin the nylon hides.", v => { c.denier = v; restyle(c); });

@@ -48,8 +48,8 @@ gloss; the bump map is three's own). A garment's look is its design's (`surface`
 `denier`) under its own (outfits.json's third field, or the Studio's controls); a detail can take its own `surface`
 (the stockings' lace top). Changing a look only rebuilds materials: nothing refits.
 
-**PBR sets** (2026-10-23): a garment can wear a texture set off the PBR shelf (`Content/Studio/PBR`, docs/ASSETS.md §6)
-in place of the made-up grain: `pbr: "pbr/Fabric/denim1"` on a worn garment (or a design), a repeat in metres
+**PBR sets** (2026-10-23): a garment can wear a texture set off the PBR shelf (`assets/pbr`, docs/ASSETS.md §6)
+in place of the made-up grain: `pbr: "pbr/denim1"` on a worn garment (or a design), a repeat in metres
 (`pbrTile`, 0.3 unless the set's own `tile_m` says, the shelf's default of 2 m being a wall's) and `pbrTint` (the
 garment's colour or pattern over the set's). Its colour goes through the fabric shader, so a print still lands on it;
 its normal (a DirectX one, Unreal's convention, turned for three.js), roughness, metal, AO and opacity (a net cut out)
@@ -57,7 +57,8 @@ take three's own slots; a height map is the bump when there's no normal; a packe
 map stands in for the separate AO, roughness and metal (AO red, roughness green, metal blue, as three reads them). The
 maps are found by their names' last word, so Unreal-ready names work as they are: `denim1_albedo.png`, `_ao`,
 `_height`, `_metallic`, `_normal-dx`, `_roughness`, `_orm`. The parts that are the garment's fabric (bands, pockets)
-take the set; trim keeps its own. `sheet.mjs --pbr pants=pbr/Fabric/denim1:0.12` renders one.
+take the set; trim keeps its own. A map the names get wrong is chosen by hand on the shelf page (the Studio's **PBR**
+button). `sheet.mjs --pbr pants=pbr/denim1:0.12` renders one.
 
 ## 2. The designs are data
 
@@ -100,7 +101,7 @@ lifted by them yet).
 - **The Character Studio's Clothes tab** (`tools/character/index.html`): an outfit, or a garment and its colour,
   added over what's worn; the worn list (under to over) with a colour each and ×, and under each its **fabric,
   pattern and print** (the fabric, a denier for sheer ones, a **PBR set** off the shelf with its repeat and a tint, or
-  **Add a set**: maps picked from disk go onto the shelf as `Fabric/<name>` and onto the garment; the pattern, its
+  **Add a set**: maps picked from disk go onto the shelf as `assets/pbr/<name>/` and onto the garment; the pattern, its
   colours and repeat; a print's text and ink or a picture, its panel, across, height, width and turn), and its **shape**: the garment's lines as **handles in
   the view** (the hem, the neckline's depth, the sleeve's end, the waist, the legs' end, a skirt's length and flare:
   drag one along its line and the garment is cut again on release) and the same as sliders, with the ease and the
