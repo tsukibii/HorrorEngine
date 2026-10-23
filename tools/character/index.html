@@ -130,7 +130,8 @@
 // Content/Studio/Bodies/MHR_lod1.bin (tools/character/pack_mhr.py); the face from up to two pictures is fitted in Python
 // (tools/face_mesh.py's body op, through serve.py) and laid on top. docs/METAHUMAN_LOOKS.md §1.3.
 import * as THREE from "three";
-import * as HAIR from "./hair.js";
+import * as BL from "./browlash.js";
+import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture } from "./hairshader.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
@@ -528,7 +529,7 @@ function compose() {                                   // POS: RAW + the face, s
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
-  hairDirty = true;
+  if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
 }
 
@@ -618,8 +619,8 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   };
   eyeMats[side].customProgramCacheKey = () => "studio-eye-1";
 }
-function outline(side) {                               // the lid outline now, smoothed and scaled by Opening: 32 points
-  const ring = LIDS[side].map(lmk), n = ring.length, k = st.eyes.opening || 1, out = [];
+function outline(side, k = st.eyes.opening || 1) {      // the lid outline now, smoothed and scaled by Opening (or k): 32 points
+  const ring = LIDS[side].map(lmk), n = ring.length, out = [];
   const c = [0, 1, 2].map(a => ring.reduce((q, p) => q + p[a], 0) / n);
   for (let i = 0; i < n; i++) {
     const p0 = ring[(i + n - 1) % n], p1 = ring[i], p2 = ring[(i + 1) % n], p3 = ring[(i + 2) % n];
@@ -737,7 +738,7 @@ $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
 let LAST = performance.now() / 1000, ACC = 0;
 renderer.setAnimationLoop(() => {
   if (!EYES_IN) { rig.add(EYES.L, EYES.R, HOLES); EYES_IN = true; }
-  if (hairDirty && HAIR_OK) growHair();
+  if (BL_READY) lightBrowLash();
   const now = performance.now() / 1000, dt = Math.min(0.1, now - LAST); LAST = now;
   place(); STUDIO.tick();
   const sz = renderer.getSize(new THREE.Vector2()), R = viewRect(sz.x, sz.y), aspect = R.w / R.h;
@@ -862,26 +863,38 @@ const eyeSet = {};
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
-// Hair tab is the salon itself, in a frame on this character; the brows and lashes are grown here from the face's
-// landmarks (hair.js), their switches in the Face tab ---------------------------------------------------------------
-st.hair = { brows: false, lashes: false, color: "#2a1d17" };   // off until asked for
-const browMat = new THREE.MeshStandardMaterial({ color: st.hair.color, roughness: 0.7, side: THREE.DoubleSide, vertexColors: true });
-const HM = { brows: new THREE.Mesh(new THREE.BufferGeometry(), browMat) };
-rig.add(HM.brows);
-var HAIRNOW = null, hairDirty = true, HAIR_OK = false;   // var: the render loop starts before this block
-function toGeo(m, G) {
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(G.position, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(G.shade.flatMap(v => [v, v, v]), 3)); g.setIndex(G.index); g.computeVertexNormals();
-  m.geometry.dispose(); m.geometry = g;
+// Hair tab is the salon itself, in a frame on this character -----------------------------------------------------------
+// ---- brows and lashes (browlash.js): cards for the salon's hair shader; the lashes on the lids' edges, turning with the
+// lids and squashing as they shut, the brows flat on the skin between MediaPipe's brow rows; both off until asked for
+st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS };
+var BL_READY = false, BLNOW = null;                    // var: compose and the render loop run before this block
+const BLU = { lash: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };
+for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
+const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
+BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
+for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
+const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
+const BROWROWS = { R: { upper: [107, 66, 105, 63, 70], lower: [55, 65, 52, 53, 46] }, L: { upper: [336, 296, 334, 293, 300], lower: [285, 295, 282, 283, 276] } };
+function browLash() {
+  BLM.lash.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
+  if (!LMK || (!st.lash.on && !st.brow.on)) { BLNOW = null; return; }
+  const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));
+  U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
+  const lids = {}, brows = {};
+  for (const side of ["L", "R"]) {
+    const { pts, c } = outline(side, 1), open = Math.min(1, area(pts) / (AREA0[side] || area(pts)));
+    lids[side] = { upper: pts.slice(16).concat([pts[0]]), lower: pts.slice(0, 17), centre: c, open };
+    brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
+  }
+  const C = v(234).add(v(454)).multiplyScalar(0.5);
+  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow);
+  for (const [k, g] of [["lash", r.lashes], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
+  BLNOW = r.cards;
 }
-function growHair() {                                  // the brows and lashes on the face as it is now
-  if (!geo.attributes.normal) return;                  // the body isn't composed yet
-  hairDirty = false;
-  HM.brows.visible = !!LMK && (st.hair.brows || st.hair.lashes);
-  if (!HM.brows.visible) return;
-  const r = HAIR.grow(POS, TRIS, lmk, SCALE, { style: "long", cards: 0, guidesOnly: true, brows: st.hair.brows, lashes: st.hair.lashes });
-  HAIRNOW = r; toGeo(HM.brows, r.brows);
+const _k = new THREE.Vector3(), _t = new THREE.Vector3(), _kc = new THREE.Color();
+function lightBrowLash() {                             // the hair shader's lights: the scene's key (it rides the camera) and a fill from above
+  key.getWorldPosition(_k).sub(key.target.getWorldPosition(_t)); _kc.copy(key.color).multiplyScalar(key.intensity * 0.6);
+  for (const U of Object.values(BLU)) lightHair(U, _k, _kc, new THREE.Vector3(-0.3, 1, 0.4), null);
 }
 // the salon's bake: salon.glb in the head's space, placed by the head frame the salon used (salon_bake.json); rides the
 // body (rig) like everything it wears
@@ -909,16 +922,28 @@ async function enterSalon() {
   if (SALONF.dataset.for !== want) { SALONF.dataset.for = want; SALONF.src = want; }
 }
 addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.salon === "baked") loadSalon().catch(() => null); });
-const hairSet = {};
+const blSet = {};
 {
-  const box = $("#browRows"), brows = el("input", { type: "checkbox", checked: true }), lashes = el("input", { type: "checkbox", checked: true });
-  const color = el("input", { type: "color", value: st.hair.color });
-  box.append(el("label", { className: "tog" }, brows, el("span", { textContent: "Brows" })), el("label", { className: "tog" }, lashes, el("span", { textContent: "Lashes" })),
-    el("div", { className: "row" }, el("span", { textContent: "Colour" }), color, el("output")));
-  brows.onchange = () => { st.hair.brows = brows.checked; hairDirty = true; }; lashes.onchange = () => { st.hair.lashes = lashes.checked; hairDirty = true; };
-  color.oninput = () => { st.hair.color = color.value; browMat.color.set(st.hair.color).multiplyScalar(0.8); };
-  hairSet.all = () => { brows.checked = st.hair.brows; lashes.checked = st.hair.lashes; color.value = st.hair.color; browMat.color.set(st.hair.color).multiplyScalar(0.8); hairDirty = true; };
-  hairSet.all(); HAIR_OK = true;
+  const box = $("#browRows"), sets = [];
+  const part = (o, label, controls, looks, help) => {
+    const on = el("input", { type: "checkbox" }), look = el("select", {}, ...Object.entries(BL.LOOKS).filter(([k]) => k.startsWith(looks)).map(([k, l]) => el("option", { value: k, textContent: l.label })));
+    box.append(el("label", { className: "tog" }, on, el("span", {}, label, el("small", { textContent: help }))), el("div", { className: "row" }, el("span", { textContent: "Look" }), look, el("output")));
+    on.onchange = () => { o.on = on.checked; browLash(); }; look.onchange = () => { o.look = look.value; applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); fillColour(); };
+    const sl = {}; for (const [k, lab, lo, hi, step, h] of controls) sl[k] = slider(box, `${looks}_${k}`, lab, lo, hi, step, o[k], h, val => { o[k] = val; browLash(); });
+    sets.push(() => { on.checked = o.on; look.value = o.look; applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); for (const [k] of controls) sl[k](o[k]); });
+  };
+  box.append(el("h4", { textContent: "Lashes" }));
+  part(st.lash, "Lashes", BL.LASH_CONTROLS, "lash", "Rooted on the lids' edges: they turn with the lid and squash as it shuts. The salon's hair shader.");
+  const style = el("select", {}, el("option", { value: "", textContent: "a style…" }), ...Object.entries(BL.LASH_STYLES).map(([k, x]) => el("option", { value: k, textContent: x.label })));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")));
+  style.onchange = () => { if (!style.value) return; const x = { ...BL.LASH_STYLES[style.value] }; delete x.label; Object.assign(st.lash, x); style.value = ""; blSet.all(); browLash(); };
+  box.append(el("h4", { textContent: "Brows" }));
+  const shape = el("select", {}, ...Object.entries(BL.BROW_SHAPES).map(([k, s]) => el("option", { value: k, textContent: s.label })));
+  part(st.brow, "Brows", BL.BROW_CONTROLS, "brow", "Hairs lying flat on the skin between the brow's two rows: the front up, the rest swept out; they ride the brows' expressions.");
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Shape" }), shape, el("output")));
+  shape.onchange = () => { Object.assign(st.brow, BL.BROW_SHAPES[shape.value]); delete st.brow.label; st.brow.shape = shape.value; blSet.all(); browLash(); };
+  blSet.all = () => { for (const f of sets) f(); fillColour(); shape.value = st.brow.shape in BL.BROW_SHAPES ? st.brow.shape : "natural"; };
+  blSet.all(); BL_READY = true;
 }
 
 // ---- changes: the body here at once, the face from the worker after a pause ----------------------------------------
@@ -1011,15 +1036,13 @@ async function open(name) {
   SKIN = null; await loadSkin(); await LAY.load();
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn(); if (WHO) dressAll();
   Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, c.eyes || {}); delete st.eyes.plane; eyeSet.all(); paintEyes();
-  const ch = c.hair || {};
-  Object.assign(st.hair, { brows: ch.brows ?? false, lashes: ch.lashes ?? false, color: ch.color || "#2a1d17" });   // older files' hair settings are left out
-  hairSet.all();
+  Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
   computeBody(); compose(); hud();
   await loadSalon().catch(() => null);
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, hair: st.hair,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, lash: st.lash, brow: st.brow,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -1060,7 +1083,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get hair() { return HAIRNOW; }, enterSalon, lmk, TRIS, get scale() { return SCALE; }, growHair, rig, POS, N, TOUCH, camera,
+window.__body = { get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, get garments() { return GARMENTS; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; } };   // bodytest.js, studiotest.js (a landmark on the page)
 const list = await people();

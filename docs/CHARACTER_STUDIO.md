@@ -13,7 +13,7 @@ character on disk in `Content/Studio/People/<name>/` (git-ignored: real faces st
 | Tab | What it does | Its code |
 |---|---|---|
 | Body | MHR: a base (feminine to masculine), 45 identity sliders, a height | `index.html`, `mhr.py`, `MHR_lod1.bin` |
-| Face | front and side pictures bend the head (MediaPipe's landmarks) | `face_mesh.py` (worker) |
+| Face | front and side pictures bend the head (MediaPipe's landmarks); **brows and lashes** on the salon's hair shader: lashes on the lids' edges that turn with the lid and squash as it shuts, brows as fine hairs flat on the skin with a fill, shapes and looks (off until asked for) | `face_mesh.py` (worker), `browlash.js` |
 | Expressions | MHR's 72 shapes, presets written as ARKit-52 curves (the mocap's map) | `arkit_mhr.json` |
 | Skin | tone; the **photo skin** (the front picture projected onto MHR's UVs: `skin.py`, `skin.png` + `skin_mask.png`); the **procedural skin** (`skinshader.js`: noise layers, glass, oil, age, makeup, presets); the **touch-up** (`touchup.js`: paint, take the photo away, bring it back, soften, undo; pigment brushes); eyes (`eyes.js`): the shell **cut out** in the skin's shader along the smoothed lid outline, an eyeball behind each opening drawn only through it and over what's inside (always full, any pose), fitted to the opening and grown back from its pupil, a blink shuts it, the lids' shadow, catchlights fixed to the light (size, depth, opening, lid shadow, pupil size) | |
 | Layers | paint layers above the base: select by vertex, fill with colour, decal, PBR set or texture, opacity, shine, relief (docs/LAYERS.md) | `layers.js`, `layersui.js` |
@@ -58,7 +58,8 @@ export is a bake like any other (§3, Export).
 | Skin: procedural | every slider and colour in `character.json` | none (the shader) | none |
 | Skin: touch-up | `skin_paint.png`, `skin_touch.png`, `skin_pigment.png` (layers over the bake, not baked in) | none | none: they sit on the UVs, so they survive a remade `skin.png` |
 | Layers | `layers.json` (selections, fills, decals as data URLs) | the layer textures (made live) | big decals inside the JSON: move them to files beside it when it grows |
-| Eyes | `st.eyes` in `character.json` (the paint, size, depth, opening) | made live | none |
+| Eyes | `st.eyes` in `character.json` (the paint, size, depth, opening, lid shadow) | made live | none |
+| Brows and lashes | `st.lash`, `st.brow` in `character.json` | made live | not in the exports yet (the head OBJ is the skin only) |
 | Brows and lashes | on, off and a colour in `character.json` | made live | none |
 | Hair: salon | `salon/salon.json` (the locks, groups, look); the reference video in `Content/Studio/Hair/References/`; hairstyles to start from in `Content/Studio/Hair/` | `salon/salon.glb`, `salon_bake.json` (the head frame it was made on: a receipt already) | the Studio doesn't yet say when the head changed after the bake (the salon's note asks to bake again by hand): the first stale dot to add |
 | Body for the salon | the body's weights and the face (above) | `body.bin` (written by Save) | none: remade on every Save |

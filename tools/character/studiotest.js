@@ -164,7 +164,7 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!/pants: \d+ points, seams within/.test(st)) throw new Error(st);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("hair is the salon: the Hair tab opens it on this character, with this body; brows and lashes switch in the Face tab", async () => {
+  await step("hair is the salon: the Hair tab opens it on this character, with this body", async () => {
     await page.click('#tabs button[data-tab="hair"]');
     await page.waitForFunction(n => {
       const f = document.querySelector("#salonFrame");
@@ -176,13 +176,26 @@ const fail = m => { console.error("STUDIO FAIL: " + m); process.exit(1); };
     if (!body) throw new Error("the Hair tab didn't save the body for the salon");
     await page.click('#tabs button[data-tab="face"]');
     if (await page.evaluate(() => document.querySelector("main").hidden || !document.querySelector("#salonFrame").hidden)) throw new Error("the studio didn't come back from the salon");
-    if (await page.evaluate(() => window.__body.st.hair.brows || window.__body.st.hair.lashes)) throw new Error("brows and lashes should start off");
-    await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // brows and lashes on
-    await page.waitForFunction(() => window.__body.st.hair.brows && window.__body.st.hair.lashes && window.__body.hair && window.__body.hair.brows.position.length, null, { timeout: 10000 });
-    const before = await page.evaluate(() => window.__body.hair.brows.position.length);
+    console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"})`);
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("brows and lashes (the hair shader): off at first; the lashes on the lids' edges swing down as the eyes shut, the brows ride a brow raise", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    if (await page.evaluate(() => window.__body.st.lash.on || window.__body.st.brow.on)) throw new Error("brows and lashes should start off");
+    await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // lashes and brows on
+    await page.waitForFunction(() => window.__body.st.lash.on && window.__body.st.brow.on && window.__body.browlash && window.__body.browlash.lashes && window.__body.browlash.brows, null, { timeout: 15000 });
+    const r = await page.evaluate(() => {
+      const b = window.__body, i = n => b.ENAMES.indexOf(n), meanY = g => { const P = g.attributes.position.array; let y = 0; for (let k = 1; k < P.length; k += 3) y += P[k]; return y / (P.length / 3); };
+      b.st.expr.fill(0); b.compose(); const cards = b.browlash, lift = cards.lift, brow = meanY(b.BLM.brow.geometry), lid = b.lmk(386)[1];
+      b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const liftShut = b.browlash.lift, lidShut = b.lmk(386)[1];
+      b.st.expr.fill(0); for (const n of ["innerBrowRaiser_L", "innerBrowRaiser_R", "outerBrowRaiser_L", "outerBrowRaiser_R"]) b.st.expr[i(n)] = 1; b.compose(); const browUp = meanY(b.BLM.brow.geometry);
+      b.st.expr.fill(0); b.compose();
+      return { cards, lift, liftShut, lidDrop: (lid - lidShut) * 1000, raise: (browUp - brow) * 1000, shader: !!b.BLM.lash.material.uniforms && !!b.BLM.lash.material.uniforms.atlas };
+    });
+    if (!(r.cards.lashes > 100 && r.cards.brows > 200) || !(r.lift - r.liftShut > 20) || !(r.raise > 1) || !r.shader) throw new Error("brows and lashes: " + JSON.stringify(r));
     await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // and off again
-    await page.waitForFunction(() => !window.__body.st.hair.brows && !window.__body.st.hair.lashes, null, { timeout: 10000 });
-    console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"}); brows and lashes ${before / 3} points`);
+    await page.waitForFunction(() => !window.__body.st.lash.on && !window.__body.st.brow.on, null, { timeout: 10000 });
+    console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the eyes: cut out of the skin along the smoothed lid outline, filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {

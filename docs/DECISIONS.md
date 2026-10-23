@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-23, evening (character creator v2: eyes that fill, brows and lashes on the hair shader)
+
+- **The work moves to `claude/character-creator-v2`**, forked from the character creator branch.
+- **Eyes always fill their opening, in any face pose;** they move with the gaze, a blink shuts them. The eye plane and
+  vertex-based cuts are dropped (DECISIONS above, docs/LESSONS.md).
+- **Brows and lashes are a new tool on the salon's hair shader** (not the old hair.js cards, removed): lashes rooted on
+  the lid's edge, following the lid's rotation with a simple squash, no physics; brows flatter and simpler, on the
+  skin. The look aimed at: the user's reference pictures (natural fine lashes, defined clumped lashes, soft straight
+  brows). **New characters start with no brows and no lashes.**
+
 ## 2026-10-23 (the Hair tab is the salon; the Studio's own hair is scrapped)
 
 - **The Studio's Hair tab opens the salon** on the character in hand: the salon's UI and steps inside the Studio,
