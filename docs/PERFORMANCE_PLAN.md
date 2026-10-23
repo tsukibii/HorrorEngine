@@ -71,6 +71,30 @@ none) → eye correction to the target (the player, or what the shot needs).
 Why hybrid matters for horror: she can talk while you search the room; the line keeps playing behind you; you turn and
 she's closer than she was.
 
+### 3.1 The look-at: a toggle (the user's ask, 2026-10-24)
+
+A character's head follows the player within limits, then lets go and returns to the animation. One word, `look`, on a
+clip, a scene or a cast member (the nearest wins): `look: player`, `look: <thing id>`, or `look: false`. New: it goes into
+STORY_FORMAT, the runner and the check in one commit when it's built. Its settings, all optional:
+
+| setting | default | what |
+|---|---|---|
+| `reach` | `[70, 30]` | how far she turns, degrees left/right and up/down from where the animation faces; past it she lets go |
+| `leave` | `snap` | past the reach: `snap` (eyes flick back first, head back to the animation in ~0.25 s), `ease` (~0.8 s), `hold` (stays at the limit, watching from the corner of her eye) |
+| `back` | `[10, 0.4]` | picks the player up again only inside the reach less 10°, after 0.4 s there: no flicker on the edge |
+| `share` | eyes → head → chest | within ~15° only the eyes move; then head and neck; the chest takes the last ~20% |
+| `lag` | `[0.1, 0.3, 0.5]` | eyes, head, chest: the eyes lead, the chest arrives last; a blink on a big turn |
+| `weight` | `1` | blended over the motion (0.5: she glances, the animation still leads) |
+| `stare` | `false` | horror: no blinks, no saccades while she's on you |
+
+`reach: 180` lets the head go past what a neck can, and keep following you round.
+
+Defaults per mode: cinematic off (the take already looks down the lens, which is the player); hybrid on; gameplay on when
+she's near and you're in front of her. The same numbers drive the desk (bodies.js: after the Kimodo pose, a rotation
+per joint, eyes through MHR's `eyesLook*` shapes and the eyeballs) and Unreal (§6: a Control Rig layer with an Aim per
+joint, spine to head, weighted by `share`; its alpha and target set by StoryPreview / the runner, which owns reach,
+snap and the hysteresis, so the two never disagree).
+
 ## 4. Every way a character might perform (and the word for each)
 
 | Situation | How it's set up | Face | Status |
@@ -109,7 +133,24 @@ she's closer than she was.
    under NVIDIA's Open Model License, Linux with CUDA; Japanese untested: test first; skip Audio2Emotion, it needs a
    Hugging Face login). Switched in only where the track's confidence drops, crossfaded over ~80 ms.
 4. **Later: fit MHR directly** to the landmarks (identity frozen from a neutral frame, the 72 weights solved per frame
-   with a smoothness term): no ARKit hop, our own code; the Studio's face fit already does half of it.
+   with a smoothness term): no ARKit hop, our own code; the Studio's face fit already does half of it. This is how
+   MetaHuman Animator works (below), on our rig.
+
+**Why MetaHuman Animator looks so good, and what we copy.** It doesn't score expressions from points; it fits a 3D
+face of *that actor* to every frame and reads the rig's controls off the fit:
+- **An identity per actor:** a neutral frame (and one showing the teeth) builds the actor's own face first, so the solve
+  separates who they are from what they're doing. Ours: the speaker's photo fit, frozen per take.
+- **Dense contours, not sparse points:** trackers trained for the lid lines, the inner and outer lips and the brows,
+  plus depth (an iPhone's, stereo, or estimated from mono video). Ours: MediaPipe's 478 points, densest round the eyes and lips.
+- **A solver that only knows real faces:** trained on 3Lateral's large 4D scan library, so it can only land on
+  combinations a face makes; the rig's correctives (RigLogic) and wrinkle maps then add what makes it read as skin.
+  Ours: limits and pairings on the 72 shapes (no blink with eyes wide), learned from our own good takes over time.
+- **Offline, the whole take at once:** future frames are known, so it smooths without lag. Ours: the zero-phase filter (§5.2).
+- **The teeth fix the jaw:** a stable upper-teeth anchor separates head motion from jaw motion.
+
+The other half of the difference is the rig, not the capture: MetaHuman faces have far more joints, correctives and
+wrinkle maps than 72 shapes. Our MHR faces will look stiffer for the same solve; animated normal maps for brows, eyes and
+mouth (§6, Wrinkles) are the cheap way to close it.
 
 **Not used:** the FLAME family (SMIRK, EMOCA, SPECTRE, Pixel3DMM, UniTalker): FLAME needs an account and is
 non-commercial; NVIDIA Maxine (NGC account); Rokoko (account and cloud); LivePortrait (no FACS out).
@@ -159,6 +200,8 @@ What crosses, so Unreal only dresses it:
 - **The game:** the StoryRunner reads `mode` and the layer stack (§3) as an AnimBP: slot for the take's face, additive
   idle and reaction, procedural blinks and eye look-at to the player, the body's look-at. Hero shots can be re-solved
   with MetaHuman Animator in Unreal and swapped in by take id.
+- **Wrinkles:** animated normal maps (brows, eyes, nasolabial folds, mouth corners) blended by the face shapes' own
+  weights in the skin material, as MetaHumans do: the cheapest way to make 72 shapes read as skin.
 - `storykit.media` (named in UNREAL_FLOW but never written) becomes that importer: voices as SoundWaves, faces as
   AnimSequences, screens as media textures.
 
@@ -170,7 +213,7 @@ What crosses, so Unreal only dresses it:
    moved to a shared module), from a hand-made test curve.
 3. **`face_take.py solve`** (MediaPipe video, calibration, filter, ARKit → MHR) and the FACE check; the Capture button and
    the lane.
-4. **Modes**: `mode` in the format, Play's hybrid (scenes that don't freeze the player), the look-at layers.
+4. **Modes**: `mode` in the format, Play's hybrid (scenes that don't freeze the player), the look-at toggle (§3.1).
 5. **`talk`** on cast members, barks with `when`, the idle face.
 6. **Unreal:** morph targets on the bodies, faces in preview.json, `storykit.media`, StoryPreview's morphs and audio.
 7. The MHA comparison and the CTRL → MHR table; the mouth fallback if the tests say so; the curve editor.
