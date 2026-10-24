@@ -1,16 +1,21 @@
 // accessories.js: what a character wears on the face and the neck (Character Studio, Accessories tab): glasses,
-// piercings, stickers, an eyepatch, a choker. Made in code, no models: glasses from the eyes and the face's own
-// points, a piercing or a sticker held to the skin where it sits (a triangle of MHR's mesh and a place in it), so it
-// follows every shape and expression, a choker round the neck as it is. Each is a few plain settings in the
-// character's file (st.accessories): the character stays editable, nothing here is baked.
+// piercings, earrings, stickers, an eyepatch, necklaces. Made in code, no models: glasses from the eyes and the face's
+// own points, a piercing, an earring or a sticker held to the skin where it sits (a triangle of MHR's mesh and a place
+// in it), so it follows every shape and expression; earrings in pairs, hanging as gravity has them; a necklace dropped
+// round the neck by gravity onto the body as it is (jewellery.js, which also makes the metals, gems, pearls and charms).
+// Each is a few plain settings in the character's file (st.accessories): the character stays editable, nothing here
+// is baked.
 import * as THREE from "three";
+import * as JW from "./jewellery.js";
+export { JW };
 
 export const KINDS = {
-  glasses: { label: "Glasses", styles: ["round", "square", "cat-eye", "aviator", "rimless", "sunglasses"] },
-  piercing: { label: "Piercing", styles: ["stud", "gem", "ring", "hoop", "barbell", "spike"] },
+  glasses: { label: "Glasses", styles: ["round", "square", "cat-eye", "aviator", "rimless", "sunglasses", "heart"] },
+  piercing: { label: "Piercing", styles: ["stud", "gem", "ring", "hoop", "nose hoop", "barbell", "spike"] },
+  earring: { label: "Earrings", styles: ["stud", "pearl", "gem", "huggie", "hoop", "drop", "chain drop"] },
   sticker: { label: "Sticker", styles: ["heart", "star", "bandage", "tear", "sparkle", "moon", "flower", "beauty mark", "gem"] },
   patch: { label: "Eyepatch", styles: ["eyepatch"] },
-  neck: { label: "Neck", styles: ["choker", "chain"] },
+  neck: { label: "Necklace", styles: ["chain", "pearls", "beads", "cord", "choker"] },
 };
 // where a piercing or a sticker goes without clicking: a MediaPipe point on the face, or (the ears, which MediaPipe
 // hasn't got) a point on MHR's own base mesh, found once as the nearest place on it
@@ -24,23 +29,41 @@ export const SPOTS = {
   "forehead": { lm: 151 }, "left temple": { lm: 251 }, "right temple": { lm: 21 }, "chin": { lm: 175 },
   "left eye": { lm: 386 }, "right eye": { lm: 159 },
 };
+// `material`: a metal by name (jewellery.js METALS), "colour" (the colour, as metal), or a PBR set off the shelf
+// ("pbr/<name>"); glasses' "" keeps the frame's colour, plastic to metal by its slider
 export const DEFAULTS = {
-  glasses: { style: "round", colour: "#1d1b1a", metal: 0.2, lens: "#9fb3c8", tint: 0.12, size: 1, height: 0, forward: 0, thick: 1 },
-  piercing: { style: "stud", spot: "left earlobe", colour: "#d8d8dc", gem: "#e8f4ff", size: 1, turn: 0 },
+  glasses: { style: "round", colour: "#1d1b1a", metal: 0.2, material: "", lens: "#9fb3c8", tint: 0.12, size: 1, height: 0, forward: 0, thick: 1 },
+  piercing: { style: "stud", spot: "left earlobe", material: "silver", colour: "#d8d8dc", shine: 0.75, gem: "#e8f4ff", size: 1, turn: 0 },
+  earring: { style: "hoop", spot: "left earlobe", pair: true, material: "gold", colour: "#d8d8dc", shine: 0.8, gem: "#9ad7ff", charm: "pearl", size: 1, length: 16 },
   sticker: { style: "heart", spot: "under the left eye", colour: "#ff5c8a", size: 1, turn: 0, shine: 0.3 },
   patch: { style: "eyepatch", spot: "right eye", colour: "#141414", size: 1, turn: 0, shine: 0.1, strap: true },
-  neck: { style: "choker", colour: "#151515", size: 1, height: 0.5 },
+  neck: { style: "chain", material: "gold", colour: "#151515", shine: 0.8, length: 45, ease: 0, size: 1, pendant: "none", gem: "#d4245a" },
 };
-const LENS = { round: [1, 0.84, 2.2], square: [1.04, 0.74, 5], "cat-eye": [1.06, 0.72, 3], aviator: [1.08, 0.9, 2.4], rimless: [1, 0.74, 3.5], sunglasses: [1.12, 0.82, 3] };
+const LENS = { round: [1, 0.84, 2.2], square: [1.04, 0.74, 5], "cat-eye": [1.06, 0.72, 3], aviator: [1.08, 0.9, 2.4], rimless: [1, 0.74, 3.5], sunglasses: [1.12, 0.82, 3], heart: [1.06, 0.98, 2] };
 
 export function fresh(kind, style) {
   const a = { id: "a" + Math.random().toString(36).slice(2, 8), kind, ...DEFAULTS[kind], ...(style ? { style } : {}) };
   if (style === "sunglasses") Object.assign(a, { lens: "#1c1c1e", tint: 0.85 });
+  if (style === "heart" && kind === "glasses") Object.assign(a, { colour: "#e2416c", lens: "#ff7aa2", tint: 0.5, metal: 0 });
   if (style === "gem" && kind === "sticker") a.colour = "#7fd8ff";
   if (style === "beauty mark") a.spot = "left lip (Monroe)";
   if (style === "bandage") Object.assign(a, { colour: "#e8c9a8", spot: "right cheek" });
+  if (style === "nose hoop") a.spot = "left nostril";
+  if (kind === "earring" && (style === "stud" || style === "pearl" || style === "gem")) a.material = "silver";
+  if (kind === "neck" && style === "choker") Object.assign(a, { length: 0, colour: "#151515" });   // 0: as long as the neck is round, snug (worked out when it's first drawn)
+  if (kind === "neck" && style === "pearls") a.length = 48;
+  if (kind === "neck" && style === "cord") Object.assign(a, { colour: "#2a1d16", pendant: "coin", length: 50 });
   return a;
 }
+// a saved accessory with today's fields (an older file's choker had a height, its piercings a colour only)
+export function normalize(a) {
+  const b = { ...DEFAULTS[a.kind], ...a };
+  if (a.kind === "piercing" && a.material === undefined && a.colour && a.colour !== DEFAULTS.piercing.colour) b.material = "colour";
+  if (a.kind === "neck" && a.length === undefined) Object.assign(b, a.style === "choker" ? { length: 0 } : { material: a.colour && a.colour !== DEFAULTS.neck.colour ? "colour" : "gold" });
+  return b;
+}
+const SIDE = { "left lip (Monroe)": "right lip (Madonna)", "right lip (Madonna)": "left lip (Monroe)" };
+const mirrorSpot = s => SIDE[s] || (/\bleft\b/.test(s) ? s.replace(/\bleft\b/, "right") : /\bright\b/.test(s) ? s.replace(/\bright\b/, "left") : null);
 
 // ---- stickers: drawn on a canvas, laid on the skin -------------------------------------------------------------------
 const TEX = {};
@@ -79,7 +102,7 @@ function stickerTexture(style, colour) {
 // ---- the set of accessories on one character --------------------------------------------------------------------------
 export class Accessories {
   // ctx: { rig, POS, TRIS, BASEP, normals(): the smooth normals now, lmk(i), LMK ({tri, bary}), scale(): metres per
-  // MHR unit, eyes: {L, R} (the eyeballs, centres and sizes in the rig's space) }
+  // MHR unit, eyes: {L, R} (the eyeballs, centres and sizes in the rig's space), shelf(): the PBR shelf's sets }
   constructor(ctx) {
     this.c = ctx; this.list = []; this.made = new Map(); this.group = new THREE.Group(); ctx.rig.add(this.group);
   }
@@ -129,7 +152,7 @@ export class Accessories {
     const ipd = eye("L").distanceTo(eye("R")), [kw, kh, n] = LENS[a.style] || LENS.round;
     const w = ipd * 0.37 * kw * a.size, h = ipd * 0.37 * kh * a.size, gap = 13 * mm + a.forward * mm;   // a lens about 47 mm wide on a 63 mm IPD
     const rad = (a.style === "rimless" ? 0.6 : 1.3) * a.thick * mm;
-    const frame = new THREE.MeshPhysicalMaterial({ color: a.colour, metalness: a.metal, roughness: a.metal > 0.5 ? 0.3 : 0.22, clearcoat: a.metal > 0.5 ? 0 : 1, clearcoatRoughness: 0.15 });
+    const frame = a.material ? this.metalOf(a) : new THREE.MeshPhysicalMaterial({ color: a.colour, metalness: a.metal, roughness: a.metal > 0.5 ? 0.3 : 0.22, clearcoat: a.metal > 0.5 ? 0 : 1, clearcoatRoughness: 0.15 });
     const glass = new THREE.MeshPhysicalMaterial({ color: a.lens, metalness: 0, roughness: 0.05, transparent: true, opacity: a.style === "sunglasses" ? Math.max(0.75, a.tint) : a.tint,
                                                     clearcoat: 1, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.5 });
     const outline = side => {                         // a lens's rim: a superellipse (cat-eye lifted outward, aviator dropped inward)
@@ -137,6 +160,9 @@ export class Accessories {
       for (let i = 0; i < 64; i++) {
         const t = i / 64 * 2 * Math.PI, cx = Math.cos(t), cy = Math.sin(t);
         let x = Math.sign(cx) * Math.abs(cx) ** (2 / n), y = Math.sign(cy) * Math.abs(cy) ** (2 / n);
+        if (a.style === "heart") {                    // the heart curve, its lobes up (x -16..16, y -17..11.6), into -1..1
+          const T = Math.PI / 2 - t; x = Math.sin(T) ** 3; y = (13 * Math.cos(T) - 5 * Math.cos(2 * T) - 2 * Math.cos(3 * T) - Math.cos(4 * T) + 2.7) / 14.3;
+        }
         if (a.style === "cat-eye" && y > 0) y += 0.35 * Math.max(0, x) ** 2;          // the outer top corner up
         if (a.style === "aviator" && y < 0) { y *= 1.15; x -= 0.18 * (1 + y) * (1 - Math.abs(y)); }   // a teardrop toward the nose
         const p = c.clone().addScaledVector(right, s * x * w).addScaledVector(up, y * h).addScaledVector(fwd, -(x > 0 ? 0.12 : 0.03) * x * x * w);   // wrapping back toward the temples
@@ -171,8 +197,8 @@ export class Accessories {
   draw_piercing(a, m) {
     this.clear(m);
     const at = this.anchorOf(a); if (!at) return;
-    const mm = 0.001 * this.c.scale(), p = this.point(at), n = this.normal(at), { up } = this.faceFrame();
-    const metal = new THREE.MeshStandardMaterial({ color: a.colour, metalness: 1, roughness: 0.22 });
+    const mm = 0.001 * this.c.scale(), p = this.point(at), n = this.normal(at), { up, right, fwd } = this.faceFrame();
+    const metal = this.metalOf(a);
     const t = new THREE.Vector3().crossVectors(up, n).normalize(); if (t.lengthSq() < 0.5) t.set(1, 0, 0);
     const u = new THREE.Vector3().crossVectors(n, t).normalize();   // up along the skin
     t.applyAxisAngle(n, (a.turn || 0) * Math.PI / 180); u.applyAxisAngle(n, (a.turn || 0) * Math.PI / 180);
@@ -182,6 +208,14 @@ export class Accessories {
     else if (a.style === "gem") {
       put(new THREE.CylinderGeometry(1.9 * mm * k, 1.9 * mm * k, 0.8 * mm, 16).rotateX(Math.PI / 2), metal, p.clone().addScaledVector(n, 0.4 * mm), q);
       put(new THREE.OctahedronGeometry(1.7 * mm * k, 0).scale(1, 1, 0.6), new THREE.MeshPhysicalMaterial({ color: a.gem, metalness: 0.1, roughness: 0.02, clearcoat: 1, iridescence: 0.6, envMapIntensity: 2.5 }), p.clone().addScaledVector(n, 1.4 * mm * k), q);
+    } else if ((a.style === "ring" || a.style === "nose hoop") && a.spot === "septum" && !a.at) {   // through the septum, hanging under the nose, facing out
+      const R = 5 * mm * k, tube = 0.7 * mm * k, hole = p.clone().addScaledVector(up, 4 * mm).addScaledVector(fwd, 1.5 * mm);
+      const ring = put(new THREE.TorusGeometry(R, tube, 10, 48), metal, hole.clone().addScaledVector(up, -(R - tube)));
+      ring.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, fwd));
+    } else if (a.style === "nose hoop") {             // through the nostril's wing, round its rim and back up inside: hugging, not standing out
+      const d = up.clone().negate().addScaledVector(n, up.dot(n)).normalize(), R = 4.2 * mm * k, tube = 0.55 * mm * k;
+      const ring = put(new THREE.TorusGeometry(R, tube, 10, 48), metal, p.clone().addScaledVector(d, R - 0.5 * mm).addScaledVector(n, -0.42 * R));
+      ring.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(d, n, new THREE.Vector3().crossVectors(d, n)));
     } else if (a.style === "ring" || a.style === "hoop") {   // through the skin at its top, hanging below it, in the plane of the normal and the skin's up
       const R = (a.style === "hoop" ? 7.5 : 4) * mm * k, tube = (a.style === "hoop" ? 0.55 : 0.7) * mm * k;
       const ring = put(new THREE.TorusGeometry(R, tube, 10, 48), metal, p.clone().addScaledVector(u, -R + tube).addScaledVector(n, 0.2 * mm));
@@ -191,6 +225,84 @@ export class Accessories {
       put(new THREE.CylinderGeometry(0.5 * mm, 0.5 * mm, L2, 8), metal, p.clone().addScaledVector(n, 0.8 * mm), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), u));
       for (const s of [-1, 1]) put(new THREE.SphereGeometry(1.3 * mm * k, 12, 10), metal, p.clone().addScaledVector(u, s * L2 / 2).addScaledVector(n, 1.2 * mm));
     } else if (a.style === "spike") put(new THREE.ConeGeometry(1.5 * mm * k, 5 * mm * k, 16), metal, p.clone().addScaledVector(n, 2.5 * mm * k), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n));
+  }
+
+  // how far q is outside the skin (m; less than 0 inside): from the nearest of the triangles given, along its face's normal
+  outside(q, tris) {
+    let best = null, bd = Infinity;
+    for (const t of tris) {
+      const [a, b, c] = triVerts(this.c.POS, this.c.TRIS, t), w = closestOnTri(q, a, b, c), x = a.clone().multiplyScalar(w[0]).addScaledVector(b, w[1]).addScaledVector(c, w[2]), dist = x.distanceToSquared(q);
+      if (dist < bd) { bd = dist; best = { x, N: new THREE.Vector3().crossVectors(b.clone().sub(a), c.clone().sub(a)).normalize() }; }
+    }
+    return best ? q.clone().sub(best.x).dot(best.N) : Infinity;
+  }
+  // how far q is outside the skin (metres; inside it's negative), from the triangles within r of it
+  skinGap(q, r = 0.02) { return this.outside(q, trianglesNear(this.c.POS, this.c.TRIS, q, r)); }
+  // what a metal part is made of (jewellery.js): a metal by name, the colour as metal, or a set off the shelf
+  metalOf(a) { return JW.metal(a.material && a.material !== "colour" ? a.material : null, a.colour, a.shine ?? 0.75, this.c.shelf ? this.c.shelf() : {}); }
+
+  // ---- earrings: a pair (or one), through the lobe (or high on the rim), hanging as gravity has them -----------------
+  draw_earring(a, m) {
+    this.clear(m);
+    const at = this.anchorOf(a); if (!at) return;
+    this.earring(a, m, at);
+    if (a.pair) { const twin = this.mirrorOf(a, m); if (twin) this.earring(a, m, twin); }
+  }
+  // the other ear's place: the named spot's twin, or the clicked place mirrored across the face's middle
+  mirrorOf(a, m) {
+    if (!a.at) { const sp = mirrorSpot(a.spot); return sp && SPOTS[sp] ? this.anchorOf({ kind: a.kind, spot: sp }) : null; }
+    const key = JSON.stringify(a.at);
+    if (m.twin?.key !== key) {
+      const { right, L } = this.faceFrame(), p = this.point(a.at), mid = L(168);
+      m.twin = { key, at: nearestOn(this.c.POS, this.c.TRIS, p.addScaledVector(right, -2 * p.clone().sub(mid).dot(right)).toArray()) };
+    }
+    return m.twin.at;
+  }
+  earring(a, m, at) {
+    const mm = 0.001 * this.c.scale(), k = a.size, p = this.point(at), n = this.normal(at), down = new THREE.Vector3(0, -1, 0), metal = this.metalOf(a);
+    const add = (geo, mat, pos, quat) => { const o = new THREE.Mesh(geo, mat); o.position.copy(pos); if (quat) o.quaternion.copy(quat); m.obj.add(o); return o; };
+    const frame = (X, Y) => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, new THREE.Vector3().crossVectors(X, Y)));
+    const d = down.clone().addScaledVector(n, -down.dot(n)).normalize();   // down along the lobe: a hoop through it swings in the plane of d and n
+    const out = n.clone().addScaledVector(down, -n.dot(down)).normalize();  // outward, level: what a hanging charm faces
+    const up = new THREE.Vector3(0, 1, 0);
+    if (a.style === "stud") add(new THREE.SphereGeometry(1.8 * mm * k, 16, 12), metal, p.clone().addScaledVector(n, 1.1 * mm * k));
+    else if (a.style === "pearl") add(new THREE.SphereGeometry(3.6 * mm * k, 24, 16), JW.pearl(), p.clone().addScaledVector(n, 3.2 * mm * k));
+    else if (a.style === "gem") {
+      const q = frame(new THREE.Vector3().crossVectors(up, n).normalize(), up.clone().addScaledVector(n, -up.dot(n)).normalize());
+      add(new THREE.CylinderGeometry(2.6 * mm * k, 2.6 * mm * k, 1 * mm, 20).rotateX(Math.PI / 2), metal, p.clone().addScaledVector(n, 0.5 * mm), q);
+      add(new THREE.OctahedronGeometry(2.4 * mm * k, 0).scale(1, 1, 0.6), JW.gem(a.gem), p.clone().addScaledVector(n, 1.8 * mm * k), q);
+    } else if (a.style === "huggie") {               // a small thick hoop hugging the lobe's edge
+      const R = 5.2 * mm * k, r = 1.25 * mm * k;
+      add(new THREE.TorusGeometry(R, r, 12, 48), metal, p.clone().addScaledVector(d, R - 1.5 * r).addScaledVector(n, R * 0.45), frame(d, n));
+    } else if (a.style === "hoop") {                  // through the lobe, hanging; swung out about the hole as far as the jaw and neck push it
+      const R = 13 * mm * k, r = 0.85 * mm * Math.sqrt(k), swing = al => [d.clone().multiplyScalar(Math.cos(al)).addScaledVector(n, Math.sin(al)), n.clone().multiplyScalar(Math.cos(al)).addScaledVector(d, -Math.sin(al))];
+      const key = p.toArray().map(v => Math.round(v / mm)).join(",") + "|" + k;
+      const sw = (this.swings ||= new Map()), id = at.tri + "|" + key;   // kept by where it hangs: a rebuild (anything added) doesn't search again
+      if (!sw.has(id)) {                               // found once for where it hangs (an expression barely moves a lobe)
+        const near = trianglesNear(this.c.POS, this.c.TRIS, p, 2 * R + 8 * mm);
+        const clear = deg => {
+          const [dd, nn] = swing(deg * Math.PI / 180), c = p.clone().addScaledVector(dd, R);
+          for (let i = 0; i < 36; i++) {
+            const th = i / 36 * 2 * Math.PI, q = c.clone().addScaledVector(dd, Math.cos(th) * R).addScaledVector(nn, Math.sin(th) * R);
+            if (q.distanceTo(p) > 4 * mm && this.outside(q, near) < r + 0.4 * mm) return false;   // (the hole itself is in the lobe)
+          }
+          return true;
+        };
+        let lo = 0, hi = 15;                           // the least swing (5° steps) that clears: swung further out it only clears more
+        if (clear(0)) hi = 0; else { while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (clear(mid * 5)) hi = mid; else lo = mid; } }
+        if (sw.size > 64) sw.clear();
+        sw.set(id, hi * 5);
+      }
+      const [dd, nn] = swing(sw.get(id) * Math.PI / 180);
+      add(new THREE.TorusGeometry(R, r, 12, 96), metal, p.clone().addScaledVector(dd, R - r), frame(dd, nn));
+    } else {                                          // a drop: a little ring through the lobe, a wire or a fine chain straight down, the charm at its end
+      add(new THREE.TorusGeometry(2.2 * mm, 0.45 * mm, 8, 24), metal, p.clone().addScaledVector(d, 1.6 * mm).addScaledVector(n, 1.2 * mm), frame(d, n));
+      const top = p.clone().addScaledVector(d, 3.6 * mm).addScaledVector(n, 1.6 * mm), len = (a.style === "chain drop" ? a.length : Math.min(a.length, 5)) * mm, end = top.clone().addScaledVector(down, len);
+      if (len > 0.5 * mm) add(new THREE.TubeGeometry(new THREE.LineCurve3(top, end), 1, (a.style === "chain drop" ? 0.3 : 0.4) * mm, 6, false), metal, new THREE.Vector3());
+      const q = frame(new THREE.Vector3().crossVectors(up, out).normalize(), up);
+      for (const part of JW.charm(a.charm, (a.charm === "pearl" || a.charm === "ball" ? 7 : 10) * mm * k))
+        add(part.geo, part.part === "gem" ? JW.gem(a.gem) : part.part === "pearl" ? JW.pearl() : metal, end, q);
+    }
   }
 
   // ---- stickers (and the eyepatch): a small sheet held to the skin, a grid of places on it found once ----------------
@@ -295,21 +407,80 @@ export class Accessories {
     sh.geometry.attributes.position.needsUpdate = true; sh.geometry.computeVertexNormals();
   }
 
-  // ---- the neck: a choker or a chain round the neck as it is, at a height between the chin and the collarbone -------
+  // ---- a necklace: a strand dropped round the neck by gravity onto the body as it is (jewellery.js), drawn as a chain,
+  // pearls, beads, a cord or a choker's ribbon, a pendant at its front. Settled again only when the neck, shoulders or
+  // chest change (an expression doesn't), or its own length, style or pendant; a moment after they stop changing
+  neckKey(a) { return this.torsoKey() + "|" + JSON.stringify([a.style, a.style === "choker" ? a.ease || 0 : a.length, a.size, a.pendant]); }
   draw_neck(a, m) {
-    this.clear(m);
-    const { right, up, fwd, L } = this.faceFrame(), mm = 0.001 * this.c.scale();
-    // round the neck in a tilted plane, as a choker sits: low at the throat, higher at the back (the neck leans forward)
-    const yF = L(152).y - (24 + 30 * (a.height ?? 0.5)) * mm, yB = yF + 26 * mm, H = this.headMap(yF - 4 * mm, yB + 4 * mm, 0.078, 0.16), ring = [];
-    for (let b = 0; b < 72; b++) {
-      const phi = b / 72 * 2 * Math.PI, y = yF + (yB - yF) * (1 - Math.cos(phi)) / 2, r = H.r(phi, y) + 1.6 * mm;
-      ring.push(H.c.clone().setY(y).addScaledVector(fwd, Math.cos(phi) * r).addScaledVector(right, Math.sin(phi) * r));
+    const body = this.torsoKey(), key = this.neckKey(a);
+    if (m.neck?.key === key) return this.dressNeck(a, m, false);
+    if (m.neck) { clearTimeout(m.wait); m.wait = setTimeout(() => { if (this.made.get(a.id) === m) this.settleNeck(a, m, key, body); }, 300); return; }   // still being changed: in a moment
+    this.settleNeck(a, m, key, body);
+  }
+  // Put on loose just under the chin and tightened to its length (no shorter than the neck is round: `length` is raised
+  // to what it could be). A choker goes round the neck's narrowest part, snug with a few millimetres to spare whatever
+  // the neck is like; `ease` (cm) makes it longer, and past a centimetre it hangs
+  settleNeck(a, m, key, body) {
+    const field = this.torsoField(body), t0 = performance.now(), heavy = a.pendant && a.pendant !== "none" ? 6 : 1, choker = a.style === "choker";
+    let y = field.chin - 0.014, tilt = 0, length = (a.length || 20) / 100, gravity = 1;
+    if (choker) { const w = JW.neckWaist(field.sdf, field.mid.x, field.chin - 0.005, field.chin - 0.075, field.chin - 0.03); if (w) ({ y, tilt } = w); }
+    const ring = JW.neckRing(field.sdf, field.mid.x, y, 48, 0.0012, tilt);
+    if (choker) { length = (ring ? ring.length : 0.36) + 0.004 + (a.ease || 0) / 100; gravity = (a.ease || 0) > 1 ? 1 : 0; }
+    let res = JW.dropNecklace(field, { y, start: ring?.points, length, heavy, gravity });
+    if (!choker && (!a.length || res.length > a.length / 100 + 1e-4)) {
+      a.length = Math.ceil(res.length * 1000) / 10; this.c.settled?.(a);   // what it is (cm)
+      if (Math.abs(res.length - a.length / 100) > 1e-3) res = JW.dropNecklace(field, { y, start: ring?.points, length: a.length / 100, heavy });
     }
-    const chain = a.style === "chain", mat = chain ? new THREE.MeshStandardMaterial({ color: a.colour === DEFAULTS.neck.colour ? "#d4af37" : a.colour, metalness: 1, roughness: 0.25 })
-                                                    : new THREE.MeshStandardMaterial({ color: a.colour, roughness: 0.55 });
-    const geo = chain ? new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ring, true), 144, 0.9 * mm * a.size, 8, true)
-                      : bandAround(ring, up, 12 * mm * a.size, 1.2 * mm);
-    m.obj.add(new THREE.Mesh(geo, mat));
+    m.neck = { key: this.neckKey(a), body, points: res.points, steps: res.steps, fell: res.fell, ms: performance.now() - t0 };
+    this.dressNeck(a, m, true);
+  }
+  dressNeck(a, m, fresh) {
+    if (fresh) {
+      this.clear(m);
+      const field = this.torsoField(m.neck.body), { geos, length } = JW.strand(m.neck.points, a.style, a.size, p => field.sdf.normal(p) || field.slices.normal(p), p => field.sdf.push(p, 0.0012));
+      m.neck.length = length;
+      for (const [part, geo] of Object.entries(geos)) { const o = new THREE.Mesh(geo, this.neckMat(a, part)); o.userData.part = part; m.obj.add(o); }
+      if (a.pendant && a.pendant !== "none") this.pendant(a, m, field);
+    }
+    for (const o of m.obj.children) o.material = this.neckMat(a, o.userData.part);
+  }
+  neckMat(a, part) {
+    return part === "metal" || part === "bead" ? this.metalOf(a) : part === "pearl" ? JW.pearl() : part === "gem" ? JW.gem(a.gem)
+         : JW.plain(a.colour, a.style === "choker" ? 0.85 : 0.65);
+  }
+  // the pendant: from the strand's front point, down along the chest and lying on it, out from the skin by its thickness
+  pendant(a, m, field) {
+    const P = m.neck.points, p = P[P.length >> 1].clone(), face = field.sdf.normal(p) || field.slices.normal(p), down = new THREE.Vector3(0, -1, 0);
+    const d = down.clone().addScaledVector(face, -down.dot(face)).normalize(), up = d.clone().negate(), X = new THREE.Vector3().crossVectors(up, face).normalize();
+    const h = 0.016 * a.size, q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, up, face));
+    let lift = 0.0022 * a.size;
+    for (const f of [0.25, 0.5, 0.75, 0.95]) { const at = p.clone().addScaledVector(d, f * h).addScaledVector(face, lift), hit = field.sdf.push(at, 0.0012); if (hit) lift += hit.moved; }   // where the chest bulges under it
+    for (const part of JW.charm(a.pendant, h)) {
+      const kind = part.part === "gem" ? "gem" : part.part === "pearl" ? "pearl" : "metal", o = new THREE.Mesh(part.geo, this.neckMat(a, kind));
+      o.position.copy(p).addScaledVector(face, lift); o.quaternion.copy(q); o.userData.part = kind; o.userData.pendant = true; m.obj.add(o);
+    }
+  }
+  // the neck, the shoulders and the chest as they are now: a key from some of their points (not the face's, so an
+  // expression leaves it), and the slices built from it once (jewellery.js TorsoField)
+  torsoKey() {
+    const P = this.c.POS;
+    if (!this.torsoIdx) {
+      const chin = this.c.lmk(152)[1], idx = [];
+      for (let i = 0; i < P.length / 3; i++) { const y = P[i * 3 + 1]; if (y < chin - 0.04 && y > chin - 0.45 && Math.abs(P[i * 3]) < 0.15) idx.push(i); }
+      this.torsoIdx = idx.filter((v, k) => k % Math.max(1, Math.floor(idx.length / 64)) === 0);
+    }
+    return this.torsoIdx.map(i => [0, 1, 2].map(k => Math.round(P[i * 3 + k] * 2000)).join(",")).join(";");
+  }
+  torsoField(body) {
+    if (this.field?.body !== body) {
+      const { L } = this.faceFrame(), chin = L(152).y, mid = L(234).add(L(454)).multiplyScalar(0.5), P = this.c.POS, t0 = performance.now();
+      let z0 = Infinity, z1 = -Infinity;
+      for (let i = 0; i < P.length; i += 3) if (P[i + 1] < chin + 0.04 && P[i + 1] > chin - 0.5 && Math.abs(P[i] - mid.x) < 0.2) { z0 = Math.min(z0, P[i + 2]); z1 = Math.max(z1, P[i + 2]); }
+      const slices = new JW.TorsoField(P, this.c.TRIS, chin - 0.012, chin - 0.5, 0.004, 0.17, 0.2, mid);
+      const sdf = new JW.BodySDF(P, this.c.TRIS, { x0: mid.x - 0.2, x1: mid.x + 0.2, y0: chin - 0.5, y1: chin + 0.04, z0: z0 - 0.03, z1: z1 + 0.03 });
+      this.field = { body, f: { slices, sdf, chin, mid, ms: performance.now() - t0 } };
+    }
+    return this.field.f;
   }
 }
 

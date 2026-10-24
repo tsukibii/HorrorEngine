@@ -15,7 +15,7 @@
 //
 //   python tools/face_mesh.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
-//   node tools/character/studiotest.js [shot.png]
+//   node tools/character/studiotest.js [shot.png]        (ONLY=jewellery: just the steps whose words match, after the new character)
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 const fs = require("fs"), path = require("path");
@@ -48,7 +48,11 @@ const png = rgb => {
     await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
     await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
   };
-  const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "studiotest_fail.png" }); fail(`${what}: ${e.message}`); } };
+  const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY, "i") : null;   // ONLY=jewellery: those steps alone (after the new character)
+  const step = async (what, fn) => {
+    if (ONLY && !ONLY.test(what) && !/^(MHR loads|a new character)/.test(what)) return;
+    try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "studiotest_fail.png" }); fail(`${what}: ${e.message}`); }
+  };
   const sample = () => page.evaluate(() => { const P = window.__body.POS; let s = 0, top = -1e9; for (let i = 0; i < P.length; i += 3) { s += P[i] * 7 + P[i + 2] * 3; top = Math.max(top, P[i + 1]); } return { s, top }; });
   const below = () => page.evaluate(() => {                 // how far the face moved anything under the neck
     const b = window.__body, d = b.delta; if (!d) return 0;
@@ -552,6 +556,54 @@ const png = rgb => {
     const left = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).accessories, NAME);
     if ((left || []).length) throw new Error(`taken off, but ${left.length} saved`);
     console.log(`       the lenses ${r.lens.map(l => l.ahead.toFixed(1)).join(" and ")} mm in front of the eyes; the sticker moved ${r.moved.toFixed(1)} mm with a smile and stayed on the skin; clicked onto the nose ${c.off.toFixed(1)} mm from its tip`);
+  });
+  await step("jewellery: heart lenses; hoops in both ears swung clear of the jaw, a nose hoop through the nostril; a necklace dropped by gravity keeps its length and lies on the body (its front lower than its back, the pendant on the chest), a longer one hangs lower, a choker snug round the neck; saved and back on reopening", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, W = b.WEAR, V = b.THREE.Vector3, mm = 0.001 * b.scale, mk = (k, s, o) => Object.assign(b.ACCS.fresh(k, s), o || {});
+      const A = [mk("glasses", "heart"), mk("earring", "hoop", { spot: "left earlobe" }), mk("piercing", "nose hoop"), mk("neck", "chain", { length: 45, pendant: "heart" }), mk("neck", "choker")];
+      b.st.accessories = A; W.set(A); b.drawAcc();
+      const verts = (o, every = 1) => { o.updateMatrixWorld(); const g = o.geometry.attributes.position, out = []; for (let i = 0; i < g.count; i += every) out.push(new V(g.getX(i), g.getY(i), g.getZ(i)).applyMatrix4(o.matrixWorld)); return out; };
+      const { right, up } = W.faceFrame(), mid = new V(...b.lmk(168));
+      // the heart: its tip under the lens's middle, its top dipping between two lobes
+      const L = verts(W.made.get(A[0].id).obj.children.filter(o => o.renderOrder === 6)[0]), c = L[0], xy = L.map(v => [v.clone().sub(c).dot(right), v.clone().sub(c).dot(up)]);
+      const w = Math.max(...xy.map(p => p[0])) - Math.min(...xy.map(p => p[0])), h = Math.max(...xy.map(p => p[1])) - Math.min(...xy.map(p => p[1]));
+      const tip = xy.reduce((a, p) => p[1] < a[1] ? p : a), top = Math.max(...xy.map(p => p[1])), dip = Math.max(...xy.filter(p => Math.abs(p[0]) < 0.08 * w).map(p => p[1]));
+      const heart = { tipOff: Math.abs(tip[0]) / w, dip: (top - dip) / h };
+      // the hoops: both ears, mirrored, every part away from the hole outside the skin
+      const em = W.made.get(A[1].id), holes = [W.point(W.anchorOf(A[1])), W.point(W.mirrorOf(A[1], em))], hoops = em.obj.children;
+      let inHoop = Infinity; hoops.forEach((o, k) => { for (const v of verts(o, 7)) if (v.distanceTo(holes[k]) > 9 * mm) inHoop = Math.min(inHoop, W.skinGap(v)); });   // (through the lobe it's in the skin: that's the hole)
+      const at = hoops.map(o => o.position.clone().sub(mid)), sides = at[0].dot(right) * at[1].dot(right) < 0, level = Math.abs(at[0].dot(up) - at[1].dot(up)) / mm;   // a face fitted to pictures isn't a mirror image
+      // the nose hoop: through the nostril, most of it outside
+      const nv = verts(W.made.get(A[2].id).obj.children[0], 3), nostril = new V(...b.lmk(358));
+      const nose = { through: Math.min(...nv.map(v => v.distanceTo(nostril))) / mm, out: nv.filter(v => W.skinGap(v) > 0).length / nv.length };   // (MHR's nostril is shallow: the ring's inner half reads as in the skin)
+      // the necklaces
+      const neck = a => { const m = W.made.get(a.id), F = W.torsoField(m.neck.body), P = m.neck.points, val = P.map(p => F.sdf.value(p.x, p.y, p.z)).filter(isFinite);
+        const pend = m.obj.children.filter(o => o.userData.pendant).flatMap(o => verts(o, 5)).map(v => F.sdf.value(v.x, v.y, v.z)).filter(isFinite);
+        return { fell: m.neck.fell, made: m.neck.length, want: a.length / 100, inside: Math.min(...val) / mm, front: P[P.length >> 1].y, back: P[0].y, pendant: pend.length ? Math.min(...pend) / mm : null, chin: b.lmk(152)[1] }; };
+      const n45 = neck(A[3]), choker = neck(A[4]);
+      A[3].length = 70; W.rebuild(A[3]); W.update(); const n70 = neck(A[3]);
+      return { made: A.map(a => W.made.get(a.id).obj.children.length), heart, inHoop: inHoop / mm, sides, level, nose, n45, n70, choker };
+    });
+    if (r.made.some(n => !n)) throw new Error(`nothing drawn for some: ${JSON.stringify(r.made)}`);
+    if (!(r.heart.tipOff < 0.15 && r.heart.dip > 0.08)) throw new Error(`the heart lens isn't a heart: ${JSON.stringify(r.heart)}`);
+    if (r.made[1] !== 2 || !(r.inHoop > -0.2) || !r.sides || !(r.level < 10)) throw new Error(`the hoops: ${r.made[1]} drawn, ${(-r.inHoop).toFixed(2)} mm into the skin away from the hole, ${r.sides ? "one each side" : "both one side"}, ${r.level.toFixed(1)} mm apart in height`);
+    if (!(r.nose.through < 3 && r.nose.out > 0.2)) throw new Error(`the nose hoop: ${r.nose.through.toFixed(1)} mm from the nostril, ${(100 * r.nose.out).toFixed(0)}% of it outside the skin (the rest through the nostril's rim)`);
+    for (const [name, n] of [["45 cm", r.n45], ["70 cm", r.n70], ["choker", r.choker]]) {
+      if (n.fell || !(n.inside > 0)) throw new Error(`the ${name} necklace went into the body: ${JSON.stringify(n)}`);
+      if (name !== "choker" && Math.abs(n.made - n.want) > 0.02) throw new Error(`the ${name} necklace is ${(n.made * 100).toFixed(1)} cm long`);
+    }
+    if (!(r.n45.front < r.n45.back - 0.03) || !(r.n45.pendant > -0.3)) throw new Error(`the 45 cm necklace: front ${((r.n45.front - r.n45.back) * 100).toFixed(1)} cm under its back, its pendant ${r.n45.pendant} mm into the chest`);
+    if (!(r.n70.front < r.n45.front - 0.05)) throw new Error(`70 cm hangs only ${((r.n45.front - r.n70.front) * 100).toFixed(1)} cm lower than 45`);
+    if (!(r.choker.made > 0.25 && r.choker.made < r.n45.made && r.choker.front < r.choker.chin - 0.01 && r.choker.front > r.choker.chin - 0.1)) throw new Error(`the choker: ${JSON.stringify(r.choker)}`);
+    await saveNow();
+    await page.evaluate(n => { window.__body.WEAR.set([]); const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);
+    await page.waitForFunction(() => window.__body.WEAR.made.size === 5, null, { timeout: 60000 });
+    const back = await page.evaluate(() => { const b = window.__body, A = b.st.accessories; return { kinds: A.map(a => a.kind + ":" + a.style).join(" "), length: A[3].length, pair: A[1].pair, drawn: A.map(a => b.WEAR.made.get(a.id).obj.children.length) }; });
+    if (back.length !== 70 || !back.pair || back.drawn.some(n => !n)) throw new Error(`reopened: ${JSON.stringify(back)}`);
+    await page.evaluate(() => { const b = window.__body; b.st.accessories = []; b.WEAR.set([]); b.drawAcc(); });
+    await saveNow();
+    console.log(`       a heart's tip ${(r.heart.tipOff * 100).toFixed(0)}% off the lens's middle; hoops ${r.inHoop.toFixed(1)} mm clear of the skin, one each side within ${r.level.toFixed(1)} mm in height; the nose hoop ${r.nose.through.toFixed(1)} mm from the nostril`);
+    console.log(`       necklaces: 45 cm made ${(r.n45.made * 100).toFixed(1)} (front ${((r.n45.back - r.n45.front) * 100).toFixed(1)} cm under the back), 70 cm ${((r.n45.front - r.n70.front) * 100).toFixed(1)} cm lower, the choker ${(r.choker.made * 100).toFixed(1)} cm`);
   });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
     await page.click('#views button[data-v="head"]'); await page.click("#splitBtn");

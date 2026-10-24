@@ -529,3 +529,20 @@ wait for it to come back; and read the file to check a save landed.
   contact is used): a physics kind's `friction` and `bounce` would do nothing against the floor, so the level's static
   bodies have one too (friction 1, bounce 1: the product is the thing's own). Found by reading its narrowphase before
   tuning a plushie; read how an engine combines settings before tuning them.
+
+## Lay a necklace on the body itself, not on a model of it (2026-10-24)
+
+The first necklace fell through the body: its collisions were a stack of polar slices (the outermost skin by angle
+round each slice's middle), and near the chin a slice holds the jaw too, so round the neck it measured 77 cm; with the
+start fixed it caught on a saddle the slices invented and hid under the jaw. A narrow-band distance field built from
+the mesh's own triangles (4 mm grid, a band either side of the skin, signed by the nearest triangle) gave the drape at
+once: the back on the nape, a V down the chest. And a ring round the neck is found from the neck's middle outward (the
+first skin met), not from outside inward: on a short neck the shoulders stand further out than the neck at the same
+height, and a ring found from outside goes round them. When something lies on the body, test it against the body's
+triangles; a simplified shape is wrong exactly where things touch.
+- **Pick a character only once the list is in:** a probe set the character picker before the page's own list had
+  loaded, so the pick was lost (the page opened "no one", then the first character), and the accessories it put on
+  were wiped when that load finished. The Studio's `open()` now stops at its next wait if another character is
+  picked meanwhile (an earlier load could also have finished last and saved the wrong character's state over the
+  new one); a probe waits for the picker's option before choosing it.
+

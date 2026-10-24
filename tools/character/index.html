@@ -1662,19 +1662,40 @@ function useLook(name) {
 }
 // ---- accessories (accessories.js): glasses, piercings, stickers, an eyepatch, a choker: plain settings in the file ----
 st.accessories = [];
-WEAR = new ACCS.Accessories({ rig, POS, TRIS, BASEP, normals: () => geo.attributes.normal.array, lmk, LMK, scale: () => SCALE, eyes: EYES });
+WEAR = new ACCS.Accessories({ rig, POS, TRIS, BASEP, normals: () => geo.attributes.normal.array, lmk, LMK, scale: () => SCALE, eyes: EYES, shelf: () => SHELF,
+  settled: a => { if (a.id === ACCSEL) accSet.length?.(a.length); } });
 let ACCSEL = null, ACCPLACE = null;
 const ACC_FIELDS = {
-  glasses: [["colour", "Frame", "color"], ["metal", "Metal", 0, 1, 0.05], ["lens", "Lenses", "color"], ["tint", "Lens tint", 0, 1, 0.01],
+  glasses: [["material", "Frame", "material"], ["colour", "Frame colour", "color"], ["metal", "Metal", 0, 1, 0.05], ["lens", "Lenses", "color"], ["tint", "Lens tint", 0, 1, 0.01],
             ["size", "Size", 0.8, 1.3, 0.01], ["height", "Height (mm)", -6, 6, 0.5], ["forward", "Forward (mm)", -6, 10, 0.5], ["thick", "Thickness", 0.5, 2.5, 0.05]],
-  piercing: [["spot", "Where", "spot"], ["colour", "Metal", "color"], ["gem", "Gem", "color"], ["size", "Size", 0.5, 2, 0.05], ["turn", "Turn (°)", -180, 180, 5]],
+  piercing: [["spot", "Where", "spot"], ["material", "Metal", "material"], ["colour", "Colour", "color"], ["shine", "Shine", 0, 1, 0.05], ["gem", "Gem", "color"], ["size", "Size", 0.5, 2, 0.05], ["turn", "Turn (°)", -180, 180, 5]],
+  earring: [["spot", "Where", "spot"], ["pair", "A pair (both ears)", "check"], ["material", "Metal", "material"], ["colour", "Colour", "color"], ["shine", "Shine", 0, 1, 0.05],
+            ["charm", "Charm", "charm"], ["gem", "Gem", "color"], ["size", "Size", 0.5, 2, 0.05], ["length", "Chain (mm)", 4, 50, 1]],
   sticker: [["spot", "Where", "spot"], ["colour", "Colour", "color"], ["size", "Size", 0.4, 3, 0.05], ["turn", "Turn (°)", -180, 180, 5], ["shine", "Shine", 0, 1, 0.05]],
   patch: [["spot", "Where", "spot"], ["colour", "Colour", "color"], ["size", "Size", 0.7, 1.4, 0.01], ["turn", "Turn (°)", -45, 45, 1], ["strap", "Strap", "check"]],
-  neck: [["colour", "Colour", "color"], ["size", "Width", 0.5, 2, 0.05], ["height", "Height", 0, 1, 0.05]],
+  neck: [["length", "Length (cm)", 28, 90, 0.5], ["ease", "Looser (cm)", 0, 8, 0.1], ["pendant", "Pendant", "charm"], ["material", "Metal", "material"], ["colour", "Colour", "color"], ["shine", "Shine", 0, 1, 0.05],
+         ["gem", "Gem", "color"], ["size", "Thickness", 0.5, 2.5, 0.05]],
 };
+// which fields an accessory shows, by what it is now (a field for a part it hasn't got stays out of the way)
+function accShows(a, k) {
+  const pbr = (a.material || "").startsWith("pbr/"), metalParts = a.kind !== "neck" || a.style === "chain" || a.style === "beads" || (a.pendant && a.pendant !== "none");
+  switch (k) {
+    case "material": return metalParts;
+    case "colour": return a.kind === "glasses" ? !a.material : a.kind === "neck" ? ["cord", "choker", "beads"].includes(a.style) || a.material === "colour"
+                        : a.kind === "piercing" || a.kind === "earring" ? a.material === "colour" : true;
+    case "metal": return !a.material;               // glasses: their colour, plastic to metal
+    case "shine": return a.kind === "sticker" || (metalParts && !pbr);
+    case "gem": return a.kind === "piercing" ? a.style === "gem" : a.kind === "earring" ? a.style === "gem" || (/drop/.test(a.style) && a.charm === "gem") : a.pendant === "gem";
+    case "charm": return a.kind === "neck" || /drop/.test(a.style);
+    case "length": return a.kind === "neck" ? a.style !== "choker" : a.style === "chain drop";
+    case "ease": return a.style === "choker";        // a choker fits the neck: only how much looser
+  }
+  return true;
+}
 function accChanged(a, rebuild) { if (a && rebuild) WEAR.rebuild(a); WEAR.update(); UNSAVED = true; }
+const accSet = {};                                    // the shown accessory's sliders (a necklace's length can be raised as it settles)
 function drawAcc() {
-  const list = $("#accList"), edit = $("#accEdit"); list.replaceChildren(); edit.replaceChildren();
+  const list = $("#accList"), edit = $("#accEdit"); list.replaceChildren(); edit.replaceChildren(); for (const k in accSet) delete accSet[k];
   for (const a of st.accessories) {
     const name = el("span", { className: "lname" + (a.id === ACCSEL ? " on" : ""), textContent: `${ACCS.KINDS[a.kind].label} · ${a.style}` + (a.spot && a.kind !== "glasses" && a.kind !== "neck" ? ` · ${a.spot}` : "") });
     name.onclick = () => { ACCSEL = a.id; drawAcc(); };
@@ -1687,18 +1708,26 @@ function drawAcc() {
   style.onchange = () => { a.style = style.value; accChanged(a, true); drawAcc(); };
   edit.append(el("h4", { textContent: ACCS.KINDS[a.kind].label }), el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")));
   for (const [k, label, lo, hi, step] of ACC_FIELDS[a.kind]) {
-    if (k === "gem" && a.style !== "gem") continue;
-    if (lo === "color") { const c = el("input", { type: "color", value: a[k] }); c.oninput = () => { a[k] = c.value; accChanged(a, true); }; edit.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output"))); continue; }
+    if (!accShows(a, k)) continue;
+    const pick = (opts, on) => { const sel = el("select", {}, ...opts.map(([v, t]) => el("option", { value: v, textContent: t, selected: v === (a[k] ?? "") }))); sel.onchange = () => { on(sel.value); drawAcc(); }; edit.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"))); };
+    if (lo === "material") {                        // a metal, the colour, or a PBR set off the shelf (metals first)
+      const sets = Object.keys(SHELF).sort((x, y) => (/metal/i.test(y) - /metal/i.test(x)) || x.localeCompare(y));
+      pick([...(a.kind === "glasses" ? [["", "its colour (plastic to metal)"]] : []), ...ACCS.JW.METAL_NAMES.map(n => [n, n]), ["colour", "the colour below, as metal"], ...sets.map(r => [r, "PBR: " + r.replace(/^pbr\//, "")])],
+           v => { a[k] = v; accChanged(a, false); });
+      continue;
+    }
+    if (lo === "charm") { pick([...(a.kind === "neck" ? [["none", "none"]] : []), ...ACCS.JW.CHARMS.map(c => [c, c])], v => { a[k] = v; accChanged(a, a.kind !== "neck"); }); continue; }
+    if (lo === "color") { const c = el("input", { type: "color", value: a[k] }); c.oninput = () => { a[k] = c.value; accChanged(a, a.kind !== "neck"); }; edit.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output"))); continue; }
     if (lo === "check") { const c = el("input", { type: "checkbox", checked: !!a[k] }); c.onchange = () => { a[k] = c.checked; accChanged(a, true); }; edit.append(el("label", { className: "tog" }, c, el("span", { textContent: label }))); continue; }
     if (lo === "spot") {
-      const names = Object.keys(ACCS.SPOTS).filter(s => a.kind !== "patch" || / eye$/.test(s)), sel = el("select", {}, ...(a.at ? [el("option", { value: "", textContent: "where you clicked", selected: true })] : []),
+      const names = Object.keys(ACCS.SPOTS).filter(s => a.kind === "patch" ? / eye$/.test(s) : a.kind === "earring" ? / ear/.test(s) : true), sel = el("select", {}, ...(a.at ? [el("option", { value: "", textContent: "where you clicked", selected: true })] : []),
         ...names.map(s => el("option", { value: s, textContent: s, selected: !a.at && s === a.spot })));
       sel.onchange = () => { if (!sel.value) return; a.spot = sel.value; delete a.at; accChanged(a, true); drawAcc(); };
       const place = el("button", { textContent: ACCPLACE === a.id ? "Click on the body…" : "Place by clicking", title: "The next click on the body puts it there (it then follows the skin there through every expression)" });
       place.onclick = () => { ACCPLACE = ACCPLACE === a.id ? null : a.id; status(ACCPLACE ? "click on the body where it goes" : ""); drawAcc(); };
       edit.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, place)); continue;
     }
-    slider(edit, "acc_" + k, label, lo, hi, step, a[k] ?? 0, "", v => { a[k] = v; accChanged(a, k === "size" || k === "turn"); });
+    accSet[k] = slider(edit, "acc_" + k, label, lo, hi, step, a[k] ?? 0, "", v => { a[k] = v; accChanged(a, (k === "size" || k === "turn") && a.kind !== "neck"); });
   }
 }
 {
@@ -1965,9 +1994,12 @@ async function people(pick) {
   if (pick) $("#who").value = pick;
   return list;
 }
+let OPENING = 0;                                      // the latest open(): an earlier one still loading stops at its next await
 async function open(name) {
+  const me = ++OPENING;
   WHO = name || null; PICS = []; DELTA = null; REPORT = null; drawSlots();
   const c = WHO ? await api(`api/people/${encodeURIComponent(WHO)}`) : {};
+  if (me !== OPENING) return;                          // another character was picked meanwhile: its own open() sets everything
   st.base = c.base ?? 0; st.height = c.height ?? 1.7;
   st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
   Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
@@ -1980,19 +2012,21 @@ async function open(name) {
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
+  if (me !== OPENING) return;
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn();
   Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault() }, c.eyes || {}); st.eyes.showLid = false;
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
   Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
-  st.accessories = (c.accessories || []).filter(a => ACCS.KINDS[a.kind]).map(a => ({ ...ACCS.DEFAULTS[a.kind], ...a })); ACCSEL = ACCPLACE = null;
+  st.accessories = (c.accessories || []).filter(a => ACCS.KINDS[a.kind]).map(ACCS.normalize); ACCSEL = ACCPLACE = null;
   computeBody(); compose(); hud();
   WEAR.set(st.accessories); drawAcc();                  // on the face as it is now
   dress();                                             // the clothes on this body (or none)
   await loadSalon().catch(() => null);
+  if (me !== OPENING) return;
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
-  if (WHO) detect();
+  if (me === OPENING && WHO) detect();
 }
 const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, lash: st.lash, brow: st.brow, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
