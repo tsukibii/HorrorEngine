@@ -441,8 +441,8 @@ export class Stage {
     const body = c.body || {}, h = +((this.story.cast || {})[c.who] || {}).height || 1.7;
     const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
     const file = body.file && files && files[body.file];
-    const segs = (body.segments || []).length && body.segments.every(g => g.file && files && files[g.file]) ? body.segments : null;
-    if (segs) return this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);   // the Kimodo motions made from the shot list, chained
+    const segs = (body.segments || []).length && body.segments.some(g => g.file && files && files[g.file]) ? body.segments : null;
+    if (segs) return this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);   // the Kimodo motions made from the shot list, chained (any not made yet held)
     if (!file) return null;
     const src = M.fitTime(body.fit, M.remap(body.mods, u, dur), dur, file.pos.length / (file.fps || 30));
     const pos = M.sampleBaked(file, src).pos, k = file.height ? h / file.height : 1;   // Kimodo's body is 1.76 m: scale to the cast member
@@ -488,38 +488,47 @@ export class Stage {
   }
 
   // a clip's segments played one after another: each starts where the last ended (its root moved there and turned
-  // to the last one's facing), blending in over its first 0.25 s; `fit` stretches the chain over the clip
+  // to the last one's facing), blending in inertially over its first 0.25 s; one not made yet holds where the last one
+  // ended (or the next one's start) for its seconds, so a clip plays as soon as any of its motions is made; `fit`
+  // stretches the chain over the clip
   chainPose(segs, u, dur, files, fit, h) {
-    const BL = 0.25, Y = new THREE.Vector3(0, 1, 0);
-    const key = segs.map(g => g.file).join("|");
+    const BL = 0.25;
+    const key = segs.map(g => g.file || "-").join("|") + "@" + h;
     let ch = this._chains && this._chains[key];
+    if (ch && segs.some((g, i) => ch.parts[i].f !== (files[g.file] || null))) ch = null;   // a take imported (again) under its name
     if (!ch) {
-      const facing = p => { const l = p["soma:LeftLeg"], r = p["soma:RightLeg"]; const lv = new THREE.Vector3().subVectors(l, r); lv.y = 0; const f = new THREE.Vector3().crossVectors(lv, Y); return Math.atan2(f.x, f.z); };
-      const parts = []; let t = 0, off = new THREE.Vector3(), yaw = 0;
+      const parts = []; let t = 0, off = new THREE.Vector3(), yaw = 0, made = 0;
+      const scaled = (part, u) => { const p = M.sampleBaked(part.f, u).pos; for (const n in p) p[n].multiplyScalar(part.k); return p; };
       for (const g of segs) {
-        const f = files[g.file], len = f.pos.length / (f.fps || 30), k = f.height ? h / f.height : 1;
-        const first = M.sampleBaked(f, 0).pos, last = M.sampleBaked(f, 1).pos;
-        for (const n in first) { first[n].multiplyScalar(k); last[n].multiplyScalar(k); }
+        const f = files[g.file] || null;
+        if (!f) { parts.push({ f: null, start: t, len: Math.max(0.1, +g.secs || 2) }); t += parts[parts.length - 1].len; continue; }
+        const len = f.pos.length / (f.fps || 30), k = f.height ? h / f.height : 1;
         const part = { f, k, start: t, len, yaw: 0, origin: new THREE.Vector3(), off: new THREE.Vector3() };
-        if (parts.length) {                                    // line this one's first frame up with the last one's end
+        const first = scaled(part, 0), last = scaled(part, 1);
+        if (made) {                                            // line this one's first frame up with the last one's end
           const r0 = first["soma:Hips"].clone(); r0.y = 0;
           part.yaw = yaw - facing(first); part.origin = r0; part.off = off.clone();
-        } else { part.origin = new THREE.Vector3(); part.off = new THREE.Vector3(); }
-        const end = this._place(part, last);                    // where this one ends, placed
-        const re = end["soma:Hips"].clone(); re.y = 0; off = re; yaw = facing(end);
-        parts.push(part); t += len;
+        }
+        part.head = this._place(part, first); part.tail = this._place(part, last);   // where it starts and ends, placed
+        const re = part.tail["soma:Hips"].clone(); re.y = 0; off = re; yaw = facing(part.tail);
+        parts.push(part); t += len; made++;
+      }
+      for (let i = 0; i < parts.length; i++) if (!parts[i].f) {     // a hold: the last made one's end, or the next one's start
+        const prev = parts.slice(0, i).reverse().find(p => p.f), next = parts.slice(i).find(p => p.f);
+        parts[i].hold = prev ? prev.tail : next.head;
       }
       ch = { parts, total: t }; (this._chains = this._chains || {})[key] = ch;
     }
     const src = M.fitTime(fit, u, dur, ch.total) * ch.total;
     const i = Math.max(0, ch.parts.findIndex((p, j) => src < p.start + p.len || j === ch.parts.length - 1));
     const p = ch.parts[i], lu = Math.min(1, Math.max(0, (src - p.start) / p.len));
+    const clone = q => { const o = {}; for (const n in q) o[n] = q[n].clone(); return o; };
+    if (!p.f) return clone(p.hold);
     const raw = M.sampleBaked(p.f, lu).pos; for (const n in raw) raw[n].multiplyScalar(p.k);
     let pos = this._place(p, raw);
-    if (i > 0 && src - p.start < BL) {                         // blend in from the last one's final pose
-      const q = ch.parts[i - 1], last = M.sampleBaked(q.f, 1).pos; for (const n in last) last[n].multiplyScalar(q.k);
-      const a = this._place(q, last), w = M.EASES.inout((src - p.start) / BL);
-      for (const n in pos) if (a[n]) pos[n] = a[n].clone().lerp(pos[n], w);     // every joint, SOMA's too
+    if (i > 0 && src - p.start < BL) {                         // the join with the last one fades out under this one
+      const q = ch.parts[i - 1], from = q.f ? q.tail : q.hold;
+      pos = M.inertialBlend(this.lib, from, p.head, pos, M.EASES.inout((src - p.start) / BL), h);
     }
     return pos;
   }
@@ -550,9 +559,8 @@ export class Stage {
         const prev = mine[mine.indexOf(cur) - 1];
         const b = cur.clip.body || {}, win = b.bridge ? +(b.bridge.secs || 0.6) : (b.blend ?? 0.25);
         if (prev && T - cur.start < win && win > 0) {   // from the pose the last clip was cut at, not its unplayed end
-          const pb = prev.clip.body || {}, from = this.clipPose(prev.clip, this.cutAt(prev, cur), +pb.secs || prev.dur, files, this.startOf(tl, prev, files));
-          const w = M.EASES.inout(Math.max(0, (T - cur.start)) / win);
-          pos = M.blendPositions(this.lib, from, pos, w, +(this.story.cast[who] || {}).height || 1.7);
+          const [from, start] = this.handOff(tl, prev, cur, files), w = M.EASES.inout(Math.max(0, (T - cur.start)) / win);
+          pos = M.inertialBlend(this.lib, from, start, pos, w, +(this.story.cast[who] || {}).height || 1.7);   // this clip's motion at full speed, the join fading out
         }
       }
       const moving = cur && T < cur.start + cur.dur && ((cur.clip.body || {}).segments || (cur.clip.body || {}).file || ((cur.clip.body || {}).block || []).length > 1);
@@ -959,7 +967,7 @@ export class Stage {
     root.updateMatrixWorld(true);
     mesh.bind(new THREE.Skeleton(list));
     for (const c of v.clips || []) {
-      if (c.body && c.body.file) continue;                              // generated motions already live in Unreal
+      if (c.body && (c.body.file || ((c.body.segments || []).length && c.body.segments.every(g => g.file)))) continue;   // generated motions already live in Unreal
       const dur = clipSecs(c), n = Math.max(2, Math.round(dur * fps) + 1), times = [];
       const qv = {}, pv = [];
       for (const j of lib.joints) qv[j.name] = [];

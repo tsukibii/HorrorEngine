@@ -76,7 +76,10 @@ export function evalBlock(lib, keys, t, dur, startMove) {
       const u = b.t > a.t ? (t - a.t) / (b.t - a.t) : 1;
       const w = (EASES[b.ease] || EASES.inout)(Math.min(1, Math.max(0, u)));
       let p = mixPose(P(a), P(b), w);
-      if (b.walk) p = walkOverlay(lib, p, t);
+      if (b.walk) {                            // the stride eases in as a walk sets off and out as it arrives (not a snap of the legs)
+        const n = ks[i + 2], fi = a.walk ? 1 : (t - a.t) / WALK_FADE, fo = n && n.walk ? 1 : (b.t - t) / WALK_FADE;
+        p = walkOverlay(lib, p, t, Math.max(0, Math.min(1, fi, fo)));
+      }
       p.move.copy(a.moveVec).lerp(b.moveVec, b.walk ? u : w);
       return p;
     }
@@ -84,11 +87,12 @@ export function evalBlock(lib, keys, t, dur, startMove) {
   return P(ks[ks.length - 1]);
 }
 
-export function walkOverlay(lib, p, t) {
+const WALK_FADE = 0.3;                          // seconds the blocking's stride takes to ease in and out
+export function walkOverlay(lib, p, t, w = 1) {
   const phase = (Math.sin(t * Math.PI * 1.8 * 2) + 1) / 2;   // ~1.8 steps a second
   const stride = mixPose(lib.poses.walk_a, lib.poses.walk_b, phase);
   const out = clonePose(p);
-  for (const j of ["thigh_l", "calf_l", "thigh_r", "calf_r", "upperarm_l", "upperarm_r"]) out.q[j].copy(stride.q[j]);
+  for (const j of ["thigh_l", "calf_l", "thigh_r", "calf_r", "upperarm_l", "upperarm_r"]) out.q[j].slerp(stride.q[j], w);
   return out;
 }
 
@@ -102,14 +106,14 @@ export function fk(lib, pose, height) {
   for (const j of lib.joints) {
     if (!j.parent) {
       rot[j.name] = base.clone().multiply(pose.q[j.name]);
-      world[j.name] = j.off.clone().add(pose.root.clone().applyQuaternion(yawQ)).add(pose.move);
+      world[j.name] = j.off.clone().add(pose.root.clone().applyQuaternion(yawQ));
       continue;
     }
     const pr = rot[j.parent];
     world[j.name] = j.off.clone().applyQuaternion(pr).add(world[j.parent]);
     rot[j.name] = pr.clone().multiply(pose.q[j.name]);
   }
-  for (const k in world) world[k].multiplyScalar(s);
+  for (const k in world) world[k].multiplyScalar(s).add(pose.move);   // the body to the cast member's height; the travel stays metres (a mark is where it is)
   return { pos: world, rot };
 }
 
@@ -188,13 +192,24 @@ export function mirrorPositions(pos) {
 
 // blend two position sets, then put bone lengths back (lerped positions shrink limbs)
 export function blendPositions(lib, a, b, w, height) {
-  const s = (height || lib.height) / lib.height;
   const out = {};
   for (const j of lib.joints) {
     if (!a[j.name] || !b[j.name]) continue;
     out[j.name] = a[j.name].clone().lerp(b[j.name], w);
   }
   for (const k of Object.keys(a)) if (k.startsWith("soma:") && b[k]) out[k] = a[k].clone().lerp(b[k], w);   // Kimodo's full skeleton
+  return keepBones(lib, out, height);
+}
+// an inertial blend (as Unreal's Inertialization): the incoming motion plays at full speed from its first frame, and
+// the difference at the join (where the last motion left the body, `from`, against where this one starts, `start`)
+// fades out over the blend; a crossfade from a held pose drags the new motion back while it lasts
+export function inertialBlend(lib, from, start, pos, w, height) {
+  const out = {}, k = 1 - w;
+  for (const n in pos) out[n] = from[n] && start[n] ? pos[n].clone().addScaledVector(from[n].clone().sub(start[n]), k) : pos[n].clone();
+  return keepBones(lib, out, height);
+}
+function keepBones(lib, out, height) {         // the previs bones back to their lengths after a blend
+  const s = (height || lib.height) / lib.height;
   for (const j of lib.joints) {
     if (!j.parent || !out[j.name] || !out[j.parent]) continue;
     const len = j.off.length() * s, d = out[j.name].clone().sub(out[j.parent]);

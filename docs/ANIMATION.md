@@ -202,8 +202,11 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   asked (draw a Path at Sneak pace).
 - **A Kimodo fix:** Make Smooth Path with no 2D Root waypoints no longer crashes generation.
 - **Send to Studio** (Exports): Game, Name and Clip, then Send: the motion as exported (In place, Drop last frame)
-  goes through `motion.py import` into `Content/Games/<Game>/Motion/<Name>.json`, and the clip (every version of
-  it) plays it, so the desk shows it on the real body in the blocking at once.
+  goes through `motion.py import` into `Content/Games/<Game>/Motion/<Name>.json`. A Name from the shot list (any
+  case) puts it on that **segment** and keeps its NPZ with the game's others (`Saved/Story/<Game>/kimodo/`); any
+  other name plays on the Clip picked (every version of it). The desk shows it on the real body in the blocking at
+  once: Import on the Kimodo page tells an open desk, which loads the motions again (a take made again under the
+  same name replaces the old one; edits not saved yet are kept, and Save carries the new motions into them).
 - Or by hand: Download as NPZ, then `python tools/motion.py --game G import <file.npz> <name> [--clip
   <scene>:<clip>]` writes the director file (`Motion/<name>.json`) and points the clip's `body.file` at it, so the
   desk plays it on the real body in the blocking.

@@ -91,14 +91,16 @@ def main(argv):
             cons.append(FullBodyConstraintSet(skel, torch.tensor(frames), torch.stack(P), torch.stack(R)))
             print(f"{j['id']}: {len(keys)} pose keys, worst bone {worst:.1f} degrees off the blocking ({worst_bone})")
         path, rk = c.get("root_path"), c.get("root_keys")
+        rs = kh / float(j.get("height") or kh)                            # the room at Kimodo's scale (as `kimodo.py stage`): the desk
+                                                                           # scales the motion back to the cast member, so it lands on the mark
         if rk and len(rk) > 1:                                             # blocked walks, keyed when each move lands
             fi = [min(max(0, k["frame"]), nf - 1) for k in rk]
-            xy = torch.tensor([[k["pos"][1], k["pos"][0]] for k in rk], dtype=torch.float32)
+            xy = torch.tensor([[k["pos"][1] * rs, k["pos"][0] * rs] for k in rk], dtype=torch.float32)
             cons.append(Root2DConstraintSet(skel, torch.tensor(fi), xy))
             print(f"{j['id']}: blocked walk, {len(rk)} root keys")
         elif path and len(path) > 1:                                       # job axes: x forward, y left -> Kimodo (x left, z forward)
             fi = [round(i * (nf - 1) / (len(path) - 1)) for i in range(len(path))]
-            xy = torch.tensor([[p[1], p[0]] for p in path], dtype=torch.float32)        # metres stay metres
+            xy = torch.tensor([[p[1] * rs, p[0] * rs] for p in path], dtype=torch.float32)
             cons.append(Root2DConstraintSet(skel, torch.tensor(fi), xy))
             print(f"{j['id']}: root path, {len(path)} points")
         out = jobs_path.parent / f"{j['id']}.kimodo.json"

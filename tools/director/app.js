@@ -25,6 +25,7 @@ const MOODS = {
   aftermath: { text: "Wide, quiet, the room after: WS, slow drift, ringing ears, a dip to black when it's done.", cone: [40, 24], shot: "ws", push: 0 },
 };
 let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {}, TAKES = {}, MADE = [];   // MADE: the game's generated motions (Motion/*.json), for the clips' picker
+let MADE_MT = {}, FILE_MT = {};   // when each made motion was written, and when the one in FILES was: a take imported again under its name replaces it
 let flowStage = null, watchStage = null, PLAY = null, BODIES = [];
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -60,7 +61,8 @@ async function load() {
   S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none";
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
-  await replan(); await loadFiles(); await loadMade(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
+  try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
+  await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
 }
 /* ---------- the takes (MiniMax videos) on the timeline ---------- */
 const takeId = (sid, k, cid) => `${GAME}_${sid}_${k || "main"}_${cid}`;
@@ -132,10 +134,13 @@ function stopTakes() { for (const v of Object.values(PIPS)) { v.pause(); v.style
 async function replan() { try { PLAN = await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }); } catch (e) { status(e.message); } }
 let replanTimer = null;
 function scheduleReplan() { clearTimeout(replanTimer); replanTimer = setTimeout(async () => { await replan(); showStage(); }, 700); }
-async function loadMade() { try { MADE = (await api(`/api/kimodo/${encodeURIComponent(GAME)}`)).made || []; } catch (e) { MADE = []; } }
+async function loadMade() {                         // the motions made, and which loaded ones were made again since (dropped: loadFiles fetches them anew)
+  try { const j = await api(`/api/kimodo/${encodeURIComponent(GAME)}`); MADE = j.made || []; MADE_MT = j.mtimes || {}; } catch (e) { MADE = []; MADE_MT = {}; }
+  for (const f of Object.keys(FILES)) { const n = f.replace(/\.json$/, ""); if (n in MADE_MT && FILE_MT[f] !== MADE_MT[n]) { delete FILES[f]; delete FILE_MT[f]; } }
+}
 async function loadFile(f) {                       // one motion into FILES (a clip just pointed at it): the stage plays it at once
   if (!f || FILES[f]) return !!FILES[f];
-  try { FILES[f] = await api(`/api/motion/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`); return true; } catch (e) { return false; }
+  try { FILES[f] = await api(`/api/motion/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`); FILE_MT[f] = MADE_MT[f.replace(/\.json$/, "")]; return true; } catch (e) { return false; }
 }
 // a clip's generated motion: picked from the ones made (Kimodo, motion.py import) or typed; its length against the clip's,
 // or why it doesn't play (not made yet: the clip falls back to its blocking)
@@ -154,7 +159,7 @@ async function loadFiles() {
   for (const sc of Object.values(S.scenes || {})) for (const ver of [sc, ...Object.values(sc.variants || {})]) for (const c of ver.clips || []) {
     for (const f of [c.body && c.body.file, ...((c.body && c.body.segments) || []).map(g => g.file)]) {
       if (!f || FILES[f]) continue;
-      try { FILES[f] = await api(`/api/motion/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`); } catch (e) { }
+      await loadFile(f);
     }
   }
 }
@@ -174,7 +179,26 @@ async function loadBodies() {
 async function save(force) {
   if (!S) return;
   try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; dirty(false); status("saved " + new Date().toLocaleTimeString()); }
-  catch (e) { if (e.status === 409) { if (confirm(e.message + "\n\nOK = overwrite with your version, Cancel = keep editing (then Reload)")) save(true); } else alert("save failed: " + e.message); }
+  catch (e) {
+    if (e.status !== 409) { alert("save failed: " + e.message); return false; }
+    const kept = await carryLinks();
+    if (confirm(e.message + (kept ? `\n\n${kept} motion${kept > 1 ? "s" : ""} imported meanwhile (Kimodo) will be kept in your version.` : "") + "\n\nOK = overwrite with your version, Cancel = keep editing (then Reload)")) return save(true);
+    return false;
+  }
+  return true;
+}
+// story.json changed on disk while there are edits here: the motions an import put on segments and clips (their `file`)
+// come into this version, so saving it over the disk's doesn't drop them
+async function carryLinks() {
+  let disk; try { disk = (await api("/api/story/" + encodeURIComponent(GAME))).story; } catch (e) { return 0; }
+  const segs = {}, clips = {}; let n = 0;
+  const each = (st, f) => { for (const [sid, sc] of Object.entries(st.scenes || {})) for (const [k, ver] of [["", sc], ...Object.entries(sc.variants || {})]) for (const c of ver.clips || []) f(`${sid}/${k}/${c.id}`, c); };
+  each(disk, (key, c) => { const b = c.body || {}; if (b.file) clips[key] = b.file; for (const g of b.segments || []) if (g.name && g.file) segs[g.name] = g.file; });
+  for (const [k, m] of Object.entries(disk.motions || {})) if (m.name && m.file) segs[m.name] = m.file;
+  each(S, (key, c) => { const b = c.body; if (!b) return; if (!b.file && clips[key]) { b.file = clips[key]; n++; } for (const g of b.segments || []) if (!g.file && segs[g.name]) { g.file = segs[g.name]; n++; } });
+  for (const m of Object.values(S.motions || {})) if (m.name && !m.file && segs[m.name]) { m.file = segs[m.name]; n++; }
+  if (n) { await loadMade(); await loadFiles(); }
+  return n;
 }
 // the scene builder (builder.html) says when it saved a level: reload it here unless there are edits to keep, and
 // not in the middle of a playthrough (then right after it)
@@ -184,11 +208,11 @@ function openBuilder(level, node) {
 }
 try {
   new BroadcastChannel("horrorstudio-story").onmessage = async e => {
-    const m = e.data || {};
-    if (m.type !== "saved" || m.game !== GAME) return;
-    if (DIRTY) { $("#banner").style.display = "block"; return; }
-    if (RUN) { RELOAD_AFTER_WATCH = true; status("the scene builder saved " + m.level + ": it loads when this playthrough ends"); return; }
-    await load(); status(`environment ${m.level} reloaded from the scene builder`);
+    const m = e.data || {}, what = m.type === "motions" ? "the motions imported from Kimodo" : "the scene builder's " + m.level;
+    if (!["saved", "motions"].includes(m.type) || m.game !== GAME) return;
+    if (DIRTY) { $("#banner").style.display = "block"; if (m.type === "motions") status("motions imported: Save keeps them with your edits"); return; }
+    if (RUN) { RELOAD_AFTER_WATCH = true; status(what + ": they load when this playthrough ends"); return; }
+    await load(); status(m.type === "motions" ? "the motions imported from Kimodo are on their clips" : `environment ${m.level} reloaded from the scene builder`);
   };
 } catch (e) { }
 async function poll() { if (!GAME) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) $("#banner").style.display = "block"; } catch (e) { } }
@@ -1109,14 +1133,14 @@ $("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.t
 $("#newGame").onclick = async () => { const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; await load(); } catch (e) { alert(e.message); } };
 $("#gameSettings").onclick = () => { if (S) gameEditor(); };
 $("#check").onclick = async () => {
-  if (DIRTY) await save();
+  if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Checks"), el("p", { class: "muted" }, "running…"));
   const j = await api("/api/check/" + encodeURIComponent(GAME), { method: "POST" }); box.innerHTML = "";
   const okk = /STORY ok/.test(j.output) && /LEVEL ok/.test(j.output);
   box.append(el("h2", {}, "Checks"), el("p", { class: okk ? "ok" : "err" }, okk ? "All checks pass." : "Something to fix:"), el("pre", {}, j.output), el("button", { on: { click: renderInspector } }, "Back to the node"));
 };
 $("#generate").onclick = async () => {
-  if (DIRTY) await save();
+  if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
   stopWatch(); await loadFiles(); await loadMade(); if (!PLAN) await replan();
   try {                                        // the Watch, recorded: what Unreal's preview plays (bake.js)
@@ -1153,5 +1177,5 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

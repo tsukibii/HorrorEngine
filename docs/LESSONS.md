@@ -552,3 +552,8 @@ triangles; a simplified shape is wrong exactly where things touch.
 - **A sparse fabric on a small garment is a pattern of dots:** the stockings' lace (a fine net, mostly holes) on a bra's
   7 mm straps and small cups read as dotted outlines, and nude lace on skin as nothing. Lingerie got solid fabrics
   (silk, satin, velvet, jersey); the lace stays for the legwear it was made for.
+- **Scale the body, never the road:** the desk's forward kinematics scaled every joint by the cast member's height,
+  the blocking's travel included, so Mari (1.62 m on a 1.70 m skeleton) stopped 5% short of every mark, and where a
+  Kimodo walk (whose travel was added after the scaling) met blocking she slid 22 cm. Walk a whole scene frame by
+  frame and print the biggest jump of any joint (and which): it found this and the blocking's stride switching off
+  in one frame (a foot 41 cm), neither visible in a still.

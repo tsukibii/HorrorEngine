@@ -100,7 +100,7 @@ def build_jobs(story, game):
                 start = things.get(stage.get(who))
                 job = {"id": f"{game}_{sid}_{var or 'main'}_{c['id']}", "scene": sid, "variant": var or "main", "clip": c["id"],
                        "who": who, "prompt": body["prompt"], "secs": round(float(body.get("secs") or L.clip_secs(c)), 2),
-                       "fps": FPS, "constraints": {}, "notes": []}
+                       "fps": FPS, "height": height, "constraints": {}, "notes": []}
                 if not start:
                     job["notes"].append(f"{who} isn't staged in this version: positions are left out")
                 o = here.get(who) or (start.pos if start else (0.0, 0.0, 0.0))   # this clip starts where the last left them
@@ -261,10 +261,22 @@ def main():
             except ImportError:
                 sys.exit("pip install numpy")
             name = args[2].removesuffix(".json")
+            segs = [g for *_, g in segments(story) if str(g.get("name", "")).lower() == name.lower()]
+            if segs:                                       # a shot-list name (the demo's Send keeps what you typed)
+                name = segs[0]["name"]
             mdir = spath.parent / "Motion"
             mdir.mkdir(exist_ok=True)
             (mdir / f"{name}.json").write_text(json.dumps(desk_motion(args[1], FPS), separators=(",", ":")), encoding="utf-8")
-            msg = f"MOTION import: {mdir / name}.json"
+            msg, changed = f"MOTION import: {mdir / name}.json", False
+            if segs:                                       # its segments play it, and the NPZ waits with the game's others
+                inbox = ROOT / "Saved" / "Story" / game / "kimodo"
+                inbox.mkdir(parents=True, exist_ok=True)
+                if Path(args[1]).resolve() != (inbox / f"{name}.npz").resolve():
+                    (inbox / f"{name}.npz").write_bytes(Path(args[1]).read_bytes())
+                for g in segs:
+                    g["file"] = f"{name}.json"
+                changed = True
+                msg += f"; the shot list's {name} plays it"
             if "--clip" in args:
                 clip = args[args.index("--clip") + 1]
                 scene, _, cid = clip.rpartition(":")
@@ -274,11 +286,16 @@ def main():
                     sys.exit(f"{msg}, but no clip {clip!r}")
                 if len(scenes) > 1:
                     sys.exit(f"{msg}, but {cid!r} is in several scenes: say which, " + ", ".join(f"{sid}:{cid}" for sid in scenes))
-                hit = [c for _, c in found]
+                hit = [c for _, c in found if not (segs and (c.get("body") or {}).get("segments"))]   # a clip made of segments plays them
                 for c in hit:
                     c.setdefault("body", {})["file"] = f"{name}.json"
+                changed = changed or bool(hit)
+                if hit:
+                    msg += f"; clip {clip} plays it ({len(hit)} version{'s' if len(hit) > 1 else ''})"
+            elif not segs:
+                msg += " (no segment has that name: pick it on a clip in the desk, its motion box)"
+            if changed:
                 spath.write_text(json.dumps(story, ensure_ascii=False, indent=1), encoding="utf-8")
-                msg += f"; clip {clip} plays it ({len(hit)} version{'s' if len(hit) > 1 else ''})"
             print(msg)
         else:                                                          # every shot-list name (format 3 segments)
             try:
@@ -288,26 +305,30 @@ def main():
             inbox = ROOT / "Saved" / "Story" / game / "kimodo"
             inbox.mkdir(parents=True, exist_ok=True)
             dirs = [inbox, ROOT] + [Path(a) for a in args[1:]]
+            sent = ROOT / "Saved" / "Kimodo"                 # the demo's Send to Studio keeps its NPZ here as send_<name>
             mdir = spath.parent / "Motion"
             mdir.mkdir(exist_ok=True)
             rows = list(segments(story))
             found, missing = 0, []
             for sid, k, c, i, g in rows:
                 src = next((d / f"{g['name']}.npz" for d in dirs if (d / f"{g['name']}.npz").exists()), None)
+                if not src and (sent / f"send_{g['name']}.npz").exists():
+                    src = sent / f"send_{g['name']}.npz"
                 if not src:
                     if not (mdir / f"{g['name']}.json").exists():
                         missing.append(g["name"])
+                    elif not g.get("file"):                  # made before (Send, or by hand) but never put on its segment
+                        g["file"] = f"{g['name']}.json"
+                        print(f"ok    {g['name']}  (made earlier: now on its segment)")
                     continue
                 if src.parent != inbox:                      # keep the raw NPZ with the game's other Kimodo files
-                    dst = inbox / src.name
+                    dst = inbox / f"{g['name']}.npz"
                     src.replace(dst) if src.parent == ROOT else dst.write_bytes(src.read_bytes())
                     src = dst
                 dm = desk_motion(src, FPS)
                 (mdir / f"{g['name']}.json").write_text(json.dumps(dm, separators=(",", ":")), encoding="utf-8")
                 n = len(dm["pos"])
-                g["file"] = f"{g['name']}.json"
-                if c is None:
-                    g["file"] = f"{g['name']}.json"          # a motions-table entry (an idle)
+                g["file"] = f"{g['name']}.json"              # a clip's segment, or a motions-table entry (an idle)
                 want = float(g.get("secs", 0)) * FPS
                 note = f"  ({n / FPS:.1f} s, the shot list says {g.get('secs')} s)" if want and abs(n - want) > 0.2 * FPS else ""
                 print(f"ok    {g['name']}  {n} frames{note}")
@@ -317,37 +338,32 @@ def main():
                 print(f"not made yet ({len(missing)}): {', '.join(missing[:12])}{' ...' if len(missing) > 12 else ''}")
             print(f"MOTION import: {found} motions -> {mdir} (the desk chains each clip's segments)")
     elif cmd == "check":
+        # the shot list (format 3): every segment made is on its segment, as long as it says, its feet planted; the
+        # clips playing a file by hand; then the command-line route's jobs, when there are any
         try:
             import numpy as np
         except ImportError:
-            sys.exit("pip install numpy")
+            np = None                                     # the desk files are still checked; the NPZs need numpy
         conf = json.loads((ROOT / "setup" / "kimodo.json").read_text(encoding="utf-8"))["npz"]
         names77 = json.loads((ROOT / conf.get("skeleton", "Content/Studio/soma77.json")).read_text(encoding="utf-8"))["names"]
         idx = {"left_hand": names77.index("LeftHand"), "right_hand": names77.index("RightHand"),
                "left_foot": names77.index("LeftToeBase"), "right_foot": names77.index("RightToeBase")}
-        jobs = json.loads((out / "jobs.json").read_text(encoding="utf-8"))
-        bad = 0
-        for j in jobs:
-            f = out / f"{j['id']}.npz"
-            if not f.exists():
-                print(f"MISS  {j['id']}: no result yet")
-                continue
+
+        def npz_errors(f, secs, fps, ee=None, planted=True):
             d = np.load(f)
-            joints = d[conf["joints"]]                        # frames x joints x 3 (Kimodo: x left, y up, z forward)
+            joints = d[conf["joints"]]                    # frames x joints x 3 (Kimodo: x left, y up, z forward)
             if joints.ndim == 4:
                 joints = joints[0]
-            secs = joints.shape[0] / j["fps"]
             errs = []
-            if abs(secs - j["secs"]) > 0.15:
-                errs.append(f"{secs:.2f} s, wanted {j['secs']:.2f}")
-            ee = j["constraints"].get("end_effector")
-            if ee:                                            # job positions: x forward, y left, z up
+            if secs and abs(joints.shape[0] / fps - secs) > 0.15:
+                errs.append(f"{joints.shape[0] / fps:.2f} s, wanted {secs:.2f}")
+            if ee:                                        # job positions: x forward, y left, z up
                 p = joints[min(ee["frame"], joints.shape[0] - 1), idx[ee["joint"]]]
                 want = np.array([ee["position"][1], ee["position"][2], ee["position"][0]])
                 miss = float(np.linalg.norm(want - p))
                 if miss > 0.12:
                     errs.append(f"{ee['joint']} misses its target by {miss * 100:.0f} cm")
-            if conf.get("contacts") in d:
+            if planted and conf.get("contacts") in d:     # In place takes the root's travel out: its feet slide by design
                 c = d[conf["contacts"]]
                 c = c[0] if c.ndim == 3 else c
                 skate = 0.0
@@ -356,10 +372,63 @@ def main():
                     skate = max(skate, float((v * c[1:, k]).sum()))
                 if skate > 0.15:
                     errs.append(f"feet slide {skate * 100:.0f} cm while planted")
-            print(f"{'ok  ' if not errs else 'FAIL'}  {j['id']}  {'; '.join(errs)}")
+            return errs
+
+        mdir, inbox = spath.parent / "Motion", ROOT / "Saved" / "Story" / game / "kimodo"
+        bad, made, todo, unread = 0, 0, [], 0
+        for sid, k, c, i, g in segments(story):
+            name, f = g["name"], g.get("file")
+            if not f:
+                if (mdir / f"{name}.json").exists():
+                    print(f"FAIL  {name}: made, but not on its segment (motion.py import puts it there)")
+                    bad += 1
+                else:
+                    todo.append(name)
+                continue
+            if not (mdir / f).exists():
+                print(f"FAIL  {name}: its file {f} is missing (the desk plays the blocking instead)")
+                bad += 1
+                continue
+            dm = json.loads((mdir / f).read_text(encoding="utf-8"))
+            n, fps, want = len(dm.get("pos") or []), dm.get("fps") or FPS, float(g.get("secs") or 0)
+            errs = [] if n else ["no frames"]
+            notes = [f"{n / fps:.1f} s, the shot list says {want:g} s (fit takes it up)"] if n and want and abs(n / fps - want) > 0.2 else []
+            if np is not None and (inbox / f"{name}.npz").exists():
+                errs += npz_errors(inbox / f"{name}.npz", 0, fps, planted=not g.get("in_place"))
+            else:
+                unread += 1
+            print(f"{'ok  ' if not errs else 'FAIL'}  {name}  {n} frames{'  ' + '; '.join(errs + notes) if errs or notes else ''}")
+            made += 1
             bad += bool(errs)
-        print("MOTION ok" if not bad else f"MOTION FAILED ({bad})")
-        sys.exit(1 if bad else 0)
+        for sid, k, c in clips_of(story):                 # a clip playing a motion picked by hand
+            f = (c.get("body") or {}).get("file")
+            if f and not (mdir / f).exists():
+                print(f"FAIL  {sid}{'/' + k if k else ''}/{c['id']}: its motion {f} is missing (the desk plays the blocking instead)")
+                bad += 1
+        jf = out / "jobs.json"
+        if jf.exists():                                   # the command-line route (jobs, run, preview)
+            for j in json.loads(jf.read_text(encoding="utf-8")):
+                f = out / f"{j['id']}.npz"
+                if not f.exists():
+                    todo.append(j["id"])
+                    continue
+                if np is None:
+                    unread += 1
+                    continue
+                errs = npz_errors(f, j["secs"], j["fps"], j["constraints"].get("end_effector"))
+                print(f"{'ok  ' if not errs else 'FAIL'}  {j['id']}  {'; '.join(errs)}")
+                made += 1
+                bad += bool(errs)
+        if todo:
+            print(f"to make ({len(todo)}): {', '.join(todo[:12])}{' ...' if len(todo) > 12 else ''}")
+        if unread:
+            print(f"{unread} without their NPZ to measure{' (pip install numpy)' if np is None else ''}: checked by their desk files only")
+        if bad:
+            print(f"MOTION FAILED ({bad})")
+            sys.exit(1)
+        print("MOTION ok (no motions in this game)" if not made and not todo else
+              f"MOTION ok (none made yet: {len(todo)} to make)" if not made else
+              f"MOTION ok ({made} made{f'; {len(todo)} to make' if todo else ', all of them'})")
     else:
         print(__doc__)
 

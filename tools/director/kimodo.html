@@ -63,7 +63,10 @@ const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
 const api = async (p, o) => { const r = await fetch(p, o); const j = await r.json(); if (!r.ok) throw new Error(j.error || j.output || r.status); return j; };
 const FPS = 30;
-let GAME = null, S = null, TH = {}, ST = null;
+let GAME = null, S = null, TH = {}, ST = null, KH = 1.76;   // KH: Kimodo's body, feet to the top of the head (soma77's rest)
+// metres on this page are Kimodo's: the room scaled by its body's height over the cast member's, as the demo's Load Stage
+// scales it, so a walk drawn to a mark lands on it after the desk scales the motion back to the cast member
+const kim = who => KH / (+((S.cast || {})[who] || {}).height || KH);
 
 function copyBtn(text, label = "copy") { return el("button", { class: "copy", title: text, on: { click: e => { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => { e.target.textContent = "copied"; setTimeout(() => e.target.textContent = label, 900); }, () => prompt("Copy:", text)); } } }, label); }
 // world -> the actor's own frame at its start spot: x ahead, y to its left (motion.py's rel)
@@ -84,10 +87,10 @@ function statusOf(name) { return ST.made.includes(name) ? "made" : ST.saved.incl
 function segRow(g, ctx) {
   const st = statusOf(g.name), secs = +g.secs || 0, frames = Math.round(secs * FPS);
   const o = (g.path || []).length && TH[g.path[0]] ? TH[g.path[0]].pos : ctx.o;      // a motion's path starts where it starts
-  const path = (g.path || []).filter(p => TH[p]).map(p => rel(o, ctx.yaw, TH[p].pos));
-  const eye = ctx.view ? rel(o, ctx.yaw, ctx.view.pos) : ctx.eye;
+  const k = ctx.k || 1, path = (g.path || []).filter(p => TH[p]).map(p => rel(o, ctx.yaw, TH[p].pos).map(v => v * k));
+  const eye = ctx.view ? rel(o, ctx.yaw, ctx.view.pos).map(v => v * k) : ctx.eye;
   const cons = [];
-  if (path.length) cons.push(el("div", {}, el("b", {}, "root path "), path.map((p, i) => `${i + 1}: ${where(p)}`).join(" · ")));
+  if (path.length) cons.push(el("div", { title: k !== 1 ? `in Kimodo's metres: the real path ×${k.toFixed(2)} (its ${KH.toFixed(2)} m body over the cast member's height)` : "" }, el("b", {}, "root path "), path.map((p, i) => `${i + 1}: ${where(p)}`).join(" · "), k !== 1 ? el("span", { class: "kv" }, `  (×${k.toFixed(2)}: Kimodo's body)`) : null));
   for (const k of g.keys || []) cons.push(el("div", {}, el("b", {}, "full-body key "), `${k.pose} at frame ${Math.round(+(k.at || 0) * (frames - 1))}`));
   if (g.loop) cons.push(el("div", {}, el("b", {}, "Loop "), "on (the first full-body key repeats at the last frame)"));
   if (g.in_place) cons.push(el("div", {}, el("b", {}, "In place "), "on: export without the root's travel (the game moves her along her route)"));
@@ -115,16 +118,17 @@ function render() {
       const rules = el("ul", { class: "rules" });
       for (const [who, spot] of Object.entries(stage)) {
         const t = TH[spot]; if (!t) continue;
-        const eye = view ? rel(t.pos, t.yaw, view.pos) : null;
+        const eye = view ? rel(t.pos, t.yaw, view.pos).map(v => v * kim(who)) : null;
         rules.append(el("li", {}, `${who} starts at ${spot}` + (eye ? `; you (the player's eye) are ${where(eye)} of ${who}, ${Math.hypot(...eye).toFixed(1)} m away` : "")));
       }
+      rules.append(el("li", {}, "Metres here are Kimodo's: the room scaled by its body's height over the cast member's (as Load Stage scales it), so a walk drawn to a mark lands on it after the desk scales the motion back."));
       rules.append(el("li", {}, "The head's look is added on top in the desk: prompts never say where to look."));
       rules.append(el("li", {}, "Each motion stands alone and starts from a neutral version of where the last one ended; the desk chains them."));
       box.append(rules);
       for (const c of clips) {
         const b = c.body, spot = TH[stage[c.who]], first = (b.segments.find(g => (g.path || []).length) || {}).path;
         const o = first && TH[first[0]] ? TH[first[0]].pos : spot ? spot.pos : [0, 0, 0], yaw = spot ? spot.yaw : 0;
-        const ctx = { o, yaw, view, eye: view ? rel(o, yaw, view.pos) : null, tier: b.tier, hero: b.hero };
+        const ctx = { o, yaw, view, k: kim(c.who), eye: view ? rel(o, yaw, view.pos).map(v => v * kim(c.who)) : null, tier: b.tier, hero: b.hero };
         const cb = el("div", { class: "clip" }, el("div", {}, el("b", {}, `${c.id} · ${c.who}`), "  ", el("span", { class: "line" }, `“${c.en || ""}”`), c.act ? el("span", { class: "kv" }, `  acting: ${c.act}`) : null));
         for (const g of b.segments) { all++; const st = statusOf(g.name); if (st === "made") made++; if (only && st === "made") continue; cb.append(segRow(g, ctx)); }
         if (cb.querySelector(".seg")) box.append(cb);
@@ -137,7 +141,7 @@ function render() {
     const box = el("div", { class: "scene" }, el("h2", {}, "Reusable and gameplay motions (idles, walk cycles, the seeker's loops)"), el("div", { class: "kv" }, "made once, looped while a scene holds or a character waits"));
     for (const [mid, mo] of mots) { all++; const st = statusOf(mo.name); if (st === "made") made++; if (only && st === "made") continue;
       const roles = [...new Set(Object.values(S.stitches || {}).flatMap(t => Object.entries((t.play || {}).loops || {}).filter(([, m]) => m === mid).map(([role]) => `${t.play.type} · ${role}`)))].join(", ");
-      box.append(segRow(mo, { o: [0, 0, 0], yaw: 0, eye: null, tier: "simple", roles })); }
+      box.append(segRow(mo, { o: [0, 0, 0], yaw: 0, k: kim(mo.who), eye: null, tier: "simple", roles })); }
     if (box.querySelector(".seg")) list.append(box);
   }
   $("#prog").textContent = `${made} / ${all} made`;
@@ -149,6 +153,7 @@ async function load() {
   S = (await api("/api/story/" + encodeURIComponent(GAME))).story;
   try { TH = (await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) })).things; } catch (e) { TH = {}; }
   ST = await api("/api/kimodo/" + encodeURIComponent(GAME));
+  try { const ys = (await api("/api/soma")).rest.map(p => p[1]); KH = Math.max(...ys) - Math.min(...ys); } catch (e) { }
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
   $("#status").textContent = ""; render();
 }
@@ -159,7 +164,9 @@ async function boot() {
   GAME = g.includes(pick) ? pick : g[0]; sel.value = GAME;
   sel.onchange = () => { GAME = sel.value; load(); };
   $("#todo").onchange = render; $("#refresh").onclick = load;
-  $("#import").onclick = async () => { const out = $("#out"); out.classList.remove("hide"); out.textContent = "importing…"; try { out.textContent = (await api("/api/import/" + encodeURIComponent(GAME), { method: "POST" })).output; } catch (e) { out.textContent = e.message; } load(); };
+  $("#import").onclick = async () => { const out = $("#out"); out.classList.remove("hide"); out.textContent = "importing…"; try { out.textContent = (await api("/api/import/" + encodeURIComponent(GAME), { method: "POST" })).output; } catch (e) { out.textContent = e.message; }
+    try { new BroadcastChannel("horrorstudio-story").postMessage({ type: "motions", game: GAME }); } catch (e) { }   // the desk puts them on their clips
+    load(); };
   await load();
 }
 boot();

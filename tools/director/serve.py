@@ -157,8 +157,13 @@ class Handler(BaseHTTPRequestHandler):
             if lf.is_file() and lf.suffix.lower() in BODY and LIB.LIB.resolve() in lf.resolve().parents:
                 return self.send(200, lf.read_bytes(), BODY[lf.suffix.lower()])
             return self.send(404, {"error": "not in the library"})
-        if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions
-            return self.send(200, (L.STUDIO / "soma77.json").read_bytes())
+        if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions, and its twin of each previs joint
+            soma = json.loads((L.STUDIO / "soma77.json").read_text(encoding="utf-8"))
+            try:
+                soma["map"] = json.loads((L.ROOT / "setup" / "kimodo.json").read_text(encoding="utf-8"))["npz"]["joint_map"]
+            except (OSError, KeyError, ValueError):
+                pass
+            return self.send(200, soma)
         if parts[:2] == ["api", "poses"]:
             return self.send(200, (L.STUDIO / "poses.json").read_bytes())
         if parts[:2] == ["api", "motion"] and len(parts) >= 4:
@@ -182,7 +187,8 @@ class Handler(BaseHTTPRequestHandler):
             mdir = L.GAMES / parts[2] / "Motion"
             return self.send(200, {"inbox": str(inbox.relative_to(L.ROOT)).replace("\\", "/"),
                                    "saved": sorted(f.stem for f in inbox.glob("*.npz")) + sorted(f.stem for f in L.ROOT.glob("*.npz")),
-                                   "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else []})
+                                   "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else [],
+                                   "mtimes": {f.stem: f.stat().st_mtime for f in mdir.glob("*.json")} if mdir.is_dir() else {}})
         if parts[:3] == ["api", "face", "sessions"]:  # the face page: each name with its pictures
             out = []
             for d in sorted(HEADS.glob("*/pictures")):

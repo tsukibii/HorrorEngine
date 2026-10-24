@@ -634,7 +634,7 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
 | segment `path` | stage marks the root travels through (a 2D root path constraint) |
 | segment `keys` | `[{"at": 0..1, "pose": ...}]`: full-body keyframes from the pose library for poses Kimodo doesn't know |
 | segment `loop` | the demo's Loop checkbox (idles, walk cycles) |
-| segment `file` | the made motion (`motion.py import` writes it) |
+| segment `file` | the made motion (`motion.py import` writes it, or the demo's Send to Studio named after the segment). A clip plays as soon as any of its segments is made: one not made yet holds where the last one ended for its `secs` |
 
 ### 9.6 The look and the trackers (where a head points)
 
