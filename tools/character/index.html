@@ -86,6 +86,8 @@
     </section>
 
     <section data-tab="face" hidden>
+      <h3>Look</h3>
+      <div id="lookRows"></div>
       <h3>Pictures</h3>
       <div id="slots"></div>
       <p class="note">Optional. A front picture shapes the face; a side picture (or a three-quarter one: MediaPipe needs to find the face, so up to about 70°) gives its depth. With none, the base and the head sliders make the face.</p>
@@ -156,6 +158,7 @@ import * as EYEPAINT from "./eyes.js";
 import * as SC from "./sculpt.js";
 import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
+import * as LOOKS from "./looks.js";
 import * as LOOK from "./tailor/look.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
@@ -337,6 +340,7 @@ async function loadSkin() {
 // the procedural skin's controls: a toggle, every feature its own slider, two colours
 st.skin.proc = { ...SKINSH.DEFAULTS };
 const procSet = {};
+let skinPreset = null;                                 // a preset into the skin's sliders (the presets' menus, and the whole looks)
 {
   const box = $("#procRows"), on = el("input", { type: "checkbox" });
   box.append(el("label", { className: "tog" }, on, el("span", {}, "Procedural skin", el("small", { textContent: "The body's colour and fine relief made from noise where each point sits (no seams): every feature below is its own layer, makeup too. With a photo skin, the picture shows on the face through its mask and this skin carries the rest." }))));
@@ -351,6 +355,7 @@ const procSet = {};
     for (const [k, v] of Object.entries(pre)) { if (k === "rough") { st.skin.rough = v; set.rough(v); } else st.skin.proc[k] = v; }
     st.skin.proc.on = true; procSet.all(); skinLook();
   };
+  skinPreset = usePreset;
   skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], ["freckleColor", "flushColor"]); skinPre.value = ""; };
   makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]); makePre.value = ""; };
   let group = null;
@@ -1605,6 +1610,27 @@ const teethSet = {};
   box.append(el("div", { className: "bases" }, say));
   teethSet.all = () => { on.checked = st.teeth.on; tongue.checked = st.teeth.tongue !== false; for (const [k] of rows) teethSet[k](st.teeth[k]); };
 }
+// ---- whole looks (looks.js): the eyes, the lips, the teeth and the skin together; a new character starts from one ----
+function useLook(name) {
+  const L = LOOKS.LOOKS[name]; if (!L) return;
+  if (L.eyes) { Object.assign(st.eyes, L.eyes); eyeSet.all(); paintEyes(); }
+  if (L.lips) { Object.assign(st.lips, L.lips); lipSet.all(); }
+  if (L.teeth) { Object.assign(st.teeth, L.teeth); teethSet.all(); }
+  if (L.skin?.off) { st.skin.proc.on = false; procSet.all(); }
+  else if (L.skin) {
+    if (L.skin.preset) skinPreset(SKINSH.SKIN_PRESETS[L.skin.preset], ["Skin", "Age"], ["freckleColor", "flushColor"]);
+    if (L.skin.makeup) skinPreset(L.skin.makeup, ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]);
+    if (L.skin.tweak) { Object.assign(st.skin.proc, L.skin.tweak); procSet.all(); }
+  }
+  skinLook(); changed("expr"); UNSAVED = true;
+}
+{
+  const sel = el("select"), go = el("button", { textContent: "Apply" }), about = el("p", { className: "note" });
+  sel.append(...Object.keys(LOOKS.LOOKS).map(k => el("option", { value: k, textContent: k })));
+  const tell = () => { about.textContent = LOOKS.LOOKS[sel.value].about + " New characters start from " + LOOKS.NEW_LOOK + "."; };
+  sel.onchange = tell; go.onclick = () => { useLook(sel.value); status(`${sel.value}: applied, every setting still yours to move (Save keeps it)`, "ok"); };
+  $("#lookRows").append(el("div", { className: "row" }, el("span", { textContent: "Look" }), sel, go), about); tell();
+}
 // ---- the lipstick's controls (lips.js) ------------------------------------------------------------------------------
 const lipSet = {};
 {
@@ -1890,7 +1916,9 @@ $("#make").onclick = async () => {
   const exists = [...$("#who").options].some(o => o.value === n);
   if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures stay)`)) return;
   await api(`api/people/${encodeURIComponent(n)}`, {}); $("#newName").value = "";   // a fresh character: the defaults
-  await people(n); await open(n); status(`${n}: drop a front picture, or just shape the body`, "ok");
+  await people(n); await open(n); useLook(LOOKS.NEW_LOOK);   // a new character starts from the studio's look
+  await api(`api/people/${encodeURIComponent(n)}`, character()); UNSAVED = false;
+  status(`${n}: drop a front picture, or just shape the body (it starts from the ${LOOKS.NEW_LOOK} look: Face, Look)`, "ok");
 };
 $("#save").onclick = async () => {
   if (!WHO) return status("make a character first", "bad");
@@ -1922,7 +1950,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

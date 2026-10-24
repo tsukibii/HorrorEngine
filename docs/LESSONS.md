@@ -511,3 +511,5 @@ its log before re-running it.
 - **The painted iris isn't the Iris size on a grown eyeball:** the eye painter shrinks the iris's angle when the eyeball
   grows (it keeps its real size), so a check that looked for the iris's edge at the slider's angle sampled plain
   white. Measure where two paintings differ, not where a setting says the feature is.
+- **Wait for what a step is about, not its first sign:** a new character's name shows as soon as it starts loading; its
+  look is applied (and saved) only once loading is done. The check that read the look on the name saw the old values.

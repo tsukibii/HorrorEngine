@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24, late night (the look: after the user's reference)
+
+- **The Character Studio's default look follows the user's reference** (three frames from a Unity viewport: eyes,
+  face, lips and teeth; docs/research/look_reference.md): the iris melting into the white, wet eyes, gradient lipstick
+  with a guide and an on/off switch, wet teeth translucent at their edges, hair with soft edges. New characters start
+  from it ("soft cinematic", `tools/character/looks.js`); Face, Look applies it (or "MHR plain") to any character.
+- **The lips' and mouth's lines stay MHR's own when an expression tucks the lower lip** (a pucker's creases are fine);
+  at rest the lower lip curls into the mouth (Lower lip curl) instead of ending in a hard line.
+
 ## 2026-10-24, night (the desk plays the undressed game; Unreal dresses it)
 
 - **The undressed, unprocessed game is playable in the director's desk; Unreal is for cleaning up, decals, advanced

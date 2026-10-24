@@ -70,6 +70,13 @@ const png = rgb => {
     await page.evaluate(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" }))), NAME);
     await page.fill("#newName", NAME); await page.click("#make");
     await page.waitForFunction(n => window.__body.who === n, NAME);
+    // it starts from the studio's look (soft cinematic), applied and saved once it's open: the steps below were written for MHR's plain one
+    await page.waitForFunction(() => /starts from the/.test(document.querySelector("#status").textContent), null, { timeout: 90000 });
+    const look = await page.evaluate(async n => { const b = window.__body, s = b.st, saved = await (await fetch(`api/people/${n}`)).json();
+      const got = { lips: s.lips.on, soft: s.eyes.limbalSoft, tear: s.eyes.tearline, proc: s.skin.proc.on, savedLips: saved.lips?.on };
+      b.useLook("MHR plain"); return { got, plain: { lips: s.lips.on, soft: s.eyes.limbalSoft, proc: s.skin.proc.on } }; }, NAME);
+    if (!look.got.lips || look.got.soft !== 0.6 || !(look.got.tear > 0) || !look.got.proc || !look.got.savedLips) throw new Error(`a new character's look: ${JSON.stringify(look.got)}`);
+    if (look.plain.lips || look.plain.soft !== 0 || look.plain.proc) throw new Error(`MHR plain: ${JSON.stringify(look.plain)}`);
   });
   let a, front, side;
   await step("the base and a slider move the body; the height scales it", async () => {
