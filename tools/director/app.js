@@ -24,7 +24,7 @@ const MOODS = {
   chase: { text: "Free camera, the player runs; shake, music `chase`; the threat behind and to the side, never in front, closing the distance.", cone: [60, 30], shot: "fs", push: 0, shake: 0.3 },
   aftermath: { text: "Wide, quiet, the room after: WS, slow drift, ringing ears, a dip to black when it's done.", cone: [40, 24], shot: "ws", push: 0 },
 };
-let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {}, TAKES = {};
+let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {}, TAKES = {}, MADE = [];   // MADE: the game's generated motions (Motion/*.json), for the clips' picker
 let flowStage = null, watchStage = null, PLAY = null, BODIES = [];
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -60,7 +60,7 @@ async function load() {
   S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none";
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
-  await replan(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
+  await replan(); await loadFiles(); await loadMade(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
 }
 /* ---------- the takes (MiniMax videos) on the timeline ---------- */
 const takeId = (sid, k, cid) => `${GAME}_${sid}_${k || "main"}_${cid}`;
@@ -132,6 +132,24 @@ function stopTakes() { for (const v of Object.values(PIPS)) { v.pause(); v.style
 async function replan() { try { PLAN = await api("/api/plan/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) }); } catch (e) { status(e.message); } }
 let replanTimer = null;
 function scheduleReplan() { clearTimeout(replanTimer); replanTimer = setTimeout(async () => { await replan(); showStage(); }, 700); }
+async function loadMade() { try { MADE = (await api(`/api/kimodo/${encodeURIComponent(GAME)}`)).made || []; } catch (e) { MADE = []; } }
+async function loadFile(f) {                       // one motion into FILES (a clip just pointed at it): the stage plays it at once
+  if (!f || FILES[f]) return !!FILES[f];
+  try { FILES[f] = await api(`/api/motion/${encodeURIComponent(GAME)}/${encodeURIComponent(f)}`); return true; } catch (e) { return false; }
+}
+// a clip's generated motion: picked from the ones made (Kimodo, motion.py import) or typed; its length against the clip's,
+// or why it doesn't play (not made yet: the clip falls back to its blocking)
+function motionPick(b, c, segDur) {
+  const id = "made_" + c.id + "_" + Math.random().toString(36).slice(2, 7), f = b.file, have = f && FILES[f];
+  const made = f && MADE.includes(f.replace(/\.json$/, ""));
+  const secs = have ? have.pos.length / (have.fps || 30) : 0;
+  const tag = !f ? null : have ? el("span", { class: "ok", title: `${f}: ${secs.toFixed(1)} s of motion over a ${segDur.toFixed(1)} s clip (fit: ${b.fit || "stretch"})` }, ` ✓ ${secs.toFixed(1)} s`)
+    : el("span", { class: "err", title: made ? "made but not loaded: Reload" : "no such motion in Motion/: make it in Kimodo (the Kimodo page's shot list), then import it; until then the clip plays its blocking" }, made ? " not loaded" : " not made yet");
+  const inp = el("input", { list: id, value: f || "", placeholder: MADE.length ? `pick a motion (${MADE.length} made)` : "none made yet (Kimodo)", style: "width:180px",
+    title: "the generated motion this clip plays (Content/Games/<game>/Motion/<name>.json); empty: the blocking keys above",
+    on: { change: async e => { const v = e.target.value.trim().replace(/^.*Motion[\\/]/, ""); if (!v) delete b.file; else b.file = /\.json$/.test(v) ? v : v + ".json"; touch(); await loadFile(b.file); renderInspector(); showStage(); } } });
+  return el("span", {}, inp, el("datalist", { id }, ...MADE.map(n => el("option", { value: n + ".json" }))), tag);
+}
 async function loadFiles() {
   for (const sc of Object.values(S.scenes || {})) for (const ver of [sc, ...Object.values(sc.variants || {})]) for (const c of ver.clips || []) {
     for (const f of [c.body && c.body.file, ...((c.body && c.body.segments) || []).map(g => g.file)]) {
@@ -362,12 +380,17 @@ function sceneEditor(box, sc, sid) {
     if (s.type === "seam") bar.append(el("div", { class: "seam", style: `left:${s.start / total * 100}%`, title: "seam: " + s.seam.kind }));
     if (s.type === "reply") bar.append(el("div", { class: "seg", style: `left:${s.start / total * 100}%;width:${(s.end - s.start) / total * 100}%;background:#2c3f4d`, title: "reply: she waits for your answer" }, "↔"));
     if (s.type === "clip") bar.append(el("div", { class: "seg" + (s.clip.dur ? "" : " est"), style: `left:${s.start / total * 100}%;width:${s.dur / total * 100}%`, title: `${s.clip.id}: ${s.dur.toFixed(1)} s` }, s.clip.id + (s.clip.shot ? " · " + s.clip.shot : "")));
+    if (s.type === "clip") {                                           // its blend in from the same actor's last clip, drawn over its start
+      const prev = [...tl.segs.slice(0, tl.segs.indexOf(s))].reverse().find(p => p.type === "clip" && p.clip.who === s.clip.who), b = s.clip.body || {};
+      const win = b.bridge ? +(b.bridge.secs || 0.6) : +(b.blend ?? 0.25);
+      if (prev && win > 0) bar.append(el("div", { class: "blendw", style: `left:${s.start / total * 100}%;width:${Math.min(win, s.dur) / total * 100}%`, title: `${b.bridge ? "in-between" : "blend"} ${win} s from ${prev.clip.id} (${s.clip.who})` }));
+    }
     if (s.type === "event") bar.append(el("div", { class: "seg ev", style: `left:${s.start / total * 100}%;width:${(s.end - s.start) / total * 100}%`, title: "event " + s.event.type }, "⚡" + s.event.type));
   }
   const starts = {}, ends = {}; for (const s of tl.segs) if (s.type === "clip") { starts[s.clip.id] = s.start; ends[s.clip.id] = s.end; }
   for (const cu of ver.cues || []) { const a = cu.at || {}, base = a.edge === "end" ? ends[a.clip] : starts[a.clip]; if (base === undefined) continue; bar.append(el("div", { class: "cue", style: `left:${Math.max(0, Math.min(100, (base + (+a.offset || 0)) / total * 100))}%` }, el("span", {}, Object.keys(cu.do || {})[0] || "cue"))); }
   bar.append(el("div", { class: "playhead", id: "playhead", style: "left:0%" }));
-  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "striped = estimated length · red = an event (QTE) · cues ride on clip edges, so a longer take carries them"));
+  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "striped = estimated length · red = an event (QTE) · light wedge = a blend in from the actor's last clip · cues ride on clip edges, so a longer take carries them"));
   ver.clips.forEach((c, i) => box.append(clipCard(sc, ver, c, i, lvl, sid)));
   box.append(el("div", { class: "row" }, el("button", { on: { click: () => { ver.clips.push({ id: "c" + (ver.clips.length + 1), who: castIds()[0] || "", ja: "", en: "", act: "", shot: "mcu", seam: ver.clips.length ? { kind: "blink" } : undefined, body: { block: [{ at: 0, pose: "idle" }] } }); touch(); renderInspector(); } } }, "+ clip"),
     el("span", { class: "muted" }, "one clip = one take of " + (S.game.clip_max || 10) + " s or less; long speeches are several clips joined by seams")));
@@ -464,7 +487,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   bodySec.append(kt, el("div", { class: "row" }, el("button", { on: { click: () => { c.body = b; b.block = b.block || []; const last = b.block[b.block.length - 1]; b.block.push({ at: last ? Math.min(1, +(last.at || 0) + 0.3) : 0, pose: last ? last.pose : "idle", ease: "inout" }); touch(); renderInspector(); } } }, "+ key"),
     el("span", { class: "lab" }, "fit"), sel(b, "fit", M.FITS, { blank: "stretch", drop: true, title: "when a generated motion and the take differ in length" }),
     el("span", { class: "lab" }, "blend"), txt(b, "blend", { num: true, step: "0.05", ph: "0.25", style: "width:52px", title: "seconds of crossfade from the previous clip" }),
-    chk(b, "bridge", "in-between", renderInspector), el("span", { class: "lab" }, "file"), txt(b, "file", { ph: "Motion/… (generated)", drop: true, style: "width:180px" })));
+    chk(b, "bridge", "in-between", renderInspector), el("span", { class: "lab" }, "motion"), motionPick(b, c, clipSecs(c))));
   // modifiers
   b.mods = b.mods || [];
   const mt = el("div", {});
@@ -633,7 +656,7 @@ function checkBodies() {
     }
     const prev = [...clipSegs.slice(0, i)].reverse().find(s => s.clip.who === c.who);
     if (prev && v && !v.offstage) {
-      const a = flowStage.clipPose(prev.clip, prev.dur, prev.dur, FILES), z = flowStage.clipPose(c, 0, seg.dur, FILES);
+      const [a, z] = flowStage.handOff(tl, prev, seg, FILES);      // as the last clip is cut, and as this one begins
       const joints = v.visible.length ? v.visible : LIB.joints.map(j => j.name);
       const d = M.poseDistance(a, z, joints), covered = c.seam && ["blink", "glance", "cutaway", "dip", "flicker", "occlude", "stumble"].includes(c.seam.kind);
       if (d > 0.08) {
@@ -1095,7 +1118,7 @@ $("#check").onclick = async () => {
 $("#generate").onclick = async () => {
   if (DIRTY) await save();
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
-  stopWatch(); await loadFiles(); if (!PLAN) await replan();
+  stopWatch(); await loadFiles(); await loadMade(); if (!PLAN) await replan();
   try {                                        // the Watch, recorded: what Unreal's preview plays (bake.js)
     const saveBody = (who, blob) => fetch(`/api/export/${encodeURIComponent(GAME)}/Body_${encodeURIComponent(who)}.glb`, { method: "POST", body: blob });
     const pv = await bakePreview(watchStage, S, PLAN, FILES, 30, (i, n, id) => { $("#genState").textContent = `baking the scenes… ${i + 1}/${n} (${id})`; }, GLTFExporter, saveBody);

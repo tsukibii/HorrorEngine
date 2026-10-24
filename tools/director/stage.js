@@ -7,6 +7,13 @@ import * as K3 from "./kit3.js";
 import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
+const Y_UP = new THREE.Vector3(0, 1, 0);
+// which way a body faces (radians about up, 0 toward +z): square to the line from its right hip to its left (Kimodo's
+// SOMA legs, or the previs thighs)
+function facing(p) {
+  const l = p["soma:LeftLeg"] || p.thigh_l, r = p["soma:RightLeg"] || p.thigh_r; if (!l || !r) return 0;
+  const lv = new THREE.Vector3().subVectors(l, r); lv.y = 0; const f = new THREE.Vector3().crossVectors(lv, Y_UP); return Math.atan2(f.x, f.z);
+}
 
 // The studio's CC0 library (Content/Studio/Library, docs/ASSETS.md): what's been fetched, from /api/library. A prop
 // tagged art:<ref> shows that mesh in its block (the block stays, invisible, for the visibility test); mat:<ref> puts
@@ -407,31 +414,77 @@ export class Stage {
     }
   }
 
-  // the body of clip c at local time t (seconds), in its actor's frame
-  clipPose(c, t, dur, files) {
+  // the body of clip c at local time t (seconds), in its actor's frame, starting where `start` puts it ({move, yaw}:
+  // where their last clip left them, startOf; by default only blocking's own carry)
+  clipPose(c, t, dur, files, start = null) {
     const lib = this.lib, body = c.body || {}, h = +((this.story.cast || {})[c.who] || {}).height || 1.7;
-    const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
-    let pos;
-    const file = body.file && files && files[body.file];
-    const segs = (body.segments || []).length && body.segments.every(g => g.file && files && files[g.file]) ? body.segments : null;
-    if (segs) {                                                    // the Kimodo motions made from the shot list, chained
-      pos = this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);
-      if (c._startMove) for (const n in pos) pos[n].add(c._startMove);
-    } else if (file) {
-      const src = M.fitTime(body.fit, M.remap(body.mods, u, dur), dur, file.pos.length / (file.fps || 30));
-      pos = M.sampleBaked(file, src).pos;
-      const k = file.height ? h / file.height : 1;                 // Kimodo's body is 1.76 m: scale to the cast member
-      for (const n in pos) pos[n].multiplyScalar(k);
-      if (c._startMove) for (const n in pos) pos[n].add(c._startMove);   // where the last clip left them (its walk is in the file)
+    const st = start || { move: c._startMove || new THREE.Vector3(), yaw: 0 };
+    let pos = this.ownPose(c, t, dur, files);
+    if (pos) {                                                     // a generated motion: turned and moved to where the actor is
+      if (st.yaw) for (const n in pos) pos[n].applyAxisAngle(Y_UP, st.yaw);
+      for (const n in pos) pos[n].add(st.move);
     } else {
+      const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
       const keys = body.block && body.block.length ? body.block : [{ at: 0, pose: "idle" }];
-      const p = M.evalBlock(lib, keys, M.remap(body.mods, u, dur) * dur, dur, c._startMove);
+      const p = M.evalBlock(lib, keys, M.remap(body.mods, u, dur) * dur, dur, st.move);
+      p.yaw += st.yaw || 0;                                        // facing where a generated turn left them
       const br = Math.sin(t * 2.2) * 0.012;                        // breathing, so nothing is ever a statue
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), br));
       pos = M.fk(lib, p, h).pos;
     }
     if ((body.mods || []).some(m => m.type === "mirror")) pos = M.mirrorPositions(pos);
     return pos;
+  }
+  // a generated motion's own frame at local time t (its file, or the shot list's segments chained), scaled to the cast
+  // member, in the clip's own frame (where it starts is clipPose's); null for a blocked clip
+  ownPose(c, t, dur, files) {
+    const body = c.body || {}, h = +((this.story.cast || {})[c.who] || {}).height || 1.7;
+    const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
+    const file = body.file && files && files[body.file];
+    const segs = (body.segments || []).length && body.segments.every(g => g.file && files && files[g.file]) ? body.segments : null;
+    if (segs) return this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);   // the Kimodo motions made from the shot list, chained
+    if (!file) return null;
+    const src = M.fitTime(body.fit, M.remap(body.mods, u, dur), dur, file.pos.length / (file.fps || 30));
+    const pos = M.sampleBaked(file, src).pos, k = file.height ? h / file.height : 1;   // Kimodo's body is 1.76 m: scale to the cast member
+    for (const n in pos) pos[n].multiplyScalar(k);
+    return pos;
+  }
+  // how far a generated motion has carried its actor by local time t: the hips' travel over the floor and the turn of
+  // the body (the legs' line), from its first frame; null for a blocked clip (blocking moves to marks: evalBlock)
+  travel(c, t, dur, files) {
+    const a = this.ownPose(c, 0, dur, files); if (!a) return null;
+    const b = this.ownPose(c, t, dur, files), hips = p => p["soma:Hips"] || p.pelvis;
+    const move = hips(b).clone().sub(hips(a)); move.y = 0;
+    return { move, yaw: facing(b) - facing(a) };
+  }
+  // where an actor stands and faces as a clip begins: where their last clip left them when it was cut ({move: metres
+  // in the actor's frame, yaw}): a generated walk carries them on, turning with it; blocking ends where its keys put
+  // them. Cached on the timeline
+  startOf(tl, seg, files) {
+    const cache = tl._starts || (Object.defineProperty(tl, "_starts", { value: new Map(), enumerable: false }), tl._starts);
+    if (cache.has(seg)) return cache.get(seg);
+    const mine = tl.segs.filter(s => s.type === "clip" && s.clip.who === seg.clip.who), prev = mine[mine.indexOf(seg) - 1];
+    let st = { move: (seg.clip._startMove || new THREE.Vector3()).clone(), yaw: 0 };
+    if (prev) {
+      const pb = prev.clip.body || {}, ps = +pb.secs || prev.dur, cut = this.cutAt(prev, seg), s0 = this.startOf(tl, prev, files);
+      const tr = this.travel(prev.clip, cut, ps, files);
+      if (tr) st = { move: s0.move.clone().add(tr.move.applyAxisAngle(Y_UP, s0.yaw)), yaw: s0.yaw + tr.yaw };
+      else {                                                       // blocked: its keys' travel at the cut, carried from its start
+        const keys = pb.block && pb.block.length ? pb.block : [{ at: 0, pose: "idle" }];
+        st = { move: M.evalBlock(this.lib, keys, M.remap(pb.mods, cut / Math.max(0.001, ps), ps) * ps, ps, s0.move).move.clone(), yaw: s0.yaw };
+      }
+    }
+    cache.set(seg, st); return st;
+  }
+  cutAt(prev, seg) {               // how far into its own action (body.secs, after its delay) a clip had got when the next began
+    const pb = prev.clip.body || {}, ps = +pb.secs || prev.dur;
+    return Math.min(ps, Math.max(0, seg.start - prev.start - (+pb.delay || 0)));
+  }
+  // an actor's hand-off between two of their clips: their pose as the last one is cut, and as this one begins
+  handOff(tl, prev, seg, files) {
+    const pb = prev.clip.body || {}, b = seg.clip.body || {};
+    return [this.clipPose(prev.clip, this.cutAt(prev, seg), +pb.secs || prev.dur, files, this.startOf(tl, prev, files)),
+            this.clipPose(seg.clip, 0, +b.secs || seg.dur, files, this.startOf(tl, seg, files))];
   }
 
   // a clip's segments played one after another: each starts where the last ended (its root moved there and turned
@@ -493,11 +546,11 @@ export class Stage {
       if (!cur) pos = this.clipPose({ who, body: { block: [{ at: 0, pose: "idle" }] } }, T, 1, files);
       else {
         const bd = cur.clip.body || {}, bs = +bd.secs || cur.dur, lt = Math.min(bs, Math.max(0, T - cur.start - (+bd.delay || 0)));
-        pos = this.clipPose(cur.clip, lt, bs, files);     // the action plays over its own length (body.secs), after its delay
+        pos = this.clipPose(cur.clip, lt, bs, files, this.startOf(tl, cur, files));   // the action over its own length (body.secs), after its delay, from where the last one left them
         const prev = mine[mine.indexOf(cur) - 1];
         const b = cur.clip.body || {}, win = b.bridge ? +(b.bridge.secs || 0.6) : (b.blend ?? 0.25);
-        if (prev && T - cur.start < win && win > 0) {
-          const ps = +(prev.clip.body || {}).secs || prev.dur, from = this.clipPose(prev.clip, ps, ps, files);
+        if (prev && T - cur.start < win && win > 0) {   // from the pose the last clip was cut at, not its unplayed end
+          const pb = prev.clip.body || {}, from = this.clipPose(prev.clip, this.cutAt(prev, cur), +pb.secs || prev.dur, files, this.startOf(tl, prev, files));
           const w = M.EASES.inout(Math.max(0, (T - cur.start)) / win);
           pos = M.blendPositions(this.lib, from, pos, w, +(this.story.cast[who] || {}).height || 1.7);
         }
