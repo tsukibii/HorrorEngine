@@ -8,6 +8,7 @@ Claude edits, so both see each other's changes; every save keeps the previous fi
 Plain Python, no installs. Listens on 127.0.0.1 only.
 """
 import json
+import re
 import os
 import subprocess
 import sys
@@ -250,6 +251,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parts = self.path.strip("/").split("/")
+        if parts[:2] == ["api", "take"] and len(parts) == 4 and self.game_path(parts[2]):   # a take dropped on its clip in the desk
+            name = parts[3]
+            if not re.fullmatch(r"[A-Za-z0-9_]+\.[A-Za-z0-9]+", name) or Path(name).suffix.lower() not in MEDIA:
+                return self.send(400, {"error": "a take is <take id>.mp4 (or .mov .webm .wav .mp3 .m4a)"})
+            f = FOOTAGE / parts[2] / name
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(self.body())
+            return self.send(200, {"ok": True, "file": name, "kb": round(f.stat().st_size / 1024)})
         if parts[:3] in (["api", "face", "picture"], ["api", "face", "remove"]) and len(parts) == 5:
             name, fname = face_name(parts[3]), face_name(parts[4])
             if not name or not fname or Path(fname).suffix.lower() not in FACE_FILES:

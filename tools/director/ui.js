@@ -200,7 +200,7 @@ export function triggerPill(slot, ctx, { prefix = "When", after = null } = {}) {
 
 // ---- lists you drag: rows by their grip, to another place in the list or into another list of the same kind ---------
 let DRAG = null;
-function sortable(box, arr, kind, ctx, rowSel) {
+export function sortable(box, arr, kind, ctx, rowSel) {
   const marker = h("div", { class: "drop-at" });
   const rows = () => [...box.children].filter(e => e.matches && e.matches(rowSel));
   const at = y => { const rs = rows(); for (let i = 0; i < rs.length; i++) { const r = rs[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return i; } return rs.length; };
@@ -220,7 +220,7 @@ function sortable(box, arr, kind, ctx, rowSel) {
     arr.splice(j, 0, x); ctx.changed(); ctx.rerender();
   });
 }
-function grip(row, arr, i, kind) {
+export function grip(row, arr, i, kind) {
   const g = h("span", { class: "grip", title: "drag to move" }, icon("grip", 14));
   g.addEventListener("mousedown", () => { row.draggable = true; });
   g.addEventListener("mouseup", () => { row.draggable = false; });

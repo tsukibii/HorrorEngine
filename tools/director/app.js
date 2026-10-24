@@ -8,7 +8,7 @@ import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip } from "./ui.js";
 import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
@@ -108,8 +108,7 @@ async function autoClean(keepTrim) {
   for (const { c, id } of allClips()) {
     const t = TAKES[id]; if (!t) continue;
     try {
-      const m = await measureTake(t); c.dur = m.dur;
-      if (!(keepTrim && c.trim)) { const tr = {}, a = +(m.lead - TK.padIn).toFixed(2), b = +(m.tail - TK.padOut).toFixed(2); if (a >= TK.min) tr.in = a; if (b >= TK.min) tr.out = b; if (Object.keys(tr).length) c.trim = tr; else delete c.trim; }
+      const m = await cleanTake(c, t, keepTrim);
       rows.push(`${id}: ${m.dur} s${c.trim ? `, trimmed ${c.trim.in || 0} in / ${c.trim.out || 0} out` : ""} → ${clipSecs(c).toFixed(2)} s`);
     } catch (e) { rows.push(`${id}: couldn't read (${e.message})`); }
   }
@@ -494,17 +493,21 @@ function addNode(type) {
 
 function sceneEditor(box, sc, sid) {
   const lvl = sc.level || Object.keys(S.levels)[0]; CTX_LEVEL = lvl;
-  box.append(el("h2", {}, "Scene"), field("title", txt(sc, "title", { w: true })),
+  const lv0 = sc.level || Object.keys(S.levels)[0], ft0 = flowTimes(S)[SEL];
+  const setting = el("details", { class: "setting", open: localStorage.getItem("dd.settingOpen") === "1" ? true : null, on: { toggle: e => { try { localStorage.setItem("dd.settingOpen", e.target.open ? "1" : "0"); } catch (x) { } } } },
+    el("summary", {}, el("b", {}, "Setting the scene"), el("span", { class: "kv" }, ` · ${lv0}${sc.view ? " · from " + sc.view : ""}${sc.stance && sc.stance !== "stand" ? " · " + sc.stance : ""}${sc.mood ? " · " + sc.mood : ""}${ft0 ? " · " + TIME_MARK[ft0.time] + " " + ft0.time : ""} · ${(sc.camera || {}).mode || "free"} camera`)));
+  box.append(el("h2", {}, "Scene"), field("title", txt(sc, "title", { w: true })), setting);
+  setting.append(
     field("level", sel(sc, "level", Object.keys(S.levels || {}), { after: showStage })), field("view", sel(sc, "view", spots(lvl), { title: "where the player stands", after: showStage }), "stance", sel(sc, "stance", ["stand", "crouch", "kneel", "sit", "lie", "hide"], { drop: true, title: "the player's eye height (sit: standing people loom; lie: everything looms)", after: showStage })));
   const mood = MOODS[sc.mood];
-  box.append(field("mood", sel(sc, "mood", Object.keys(MOODS), { after: renderInspector }), mood ? el("button", { on: { click: () => applyMood(sc) } }, "apply to camera and clips") : null),
+  setting.append(field("mood", sel(sc, "mood", Object.keys(MOODS), { after: renderInspector }), mood ? el("button", { on: { click: () => applyMood(sc) } }, "apply to camera and clips") : null),
     mood ? el("div", { class: "kv", style: "margin:0 0 4px 70px" }, mood.text) : null);
   // the time of day: the scene's own, or the time it was (the scene it branched from, back to the game's start)
   const ft = flowTimes(S)[SEL], was = ft && !ft.own ? ft : null, from = was && was.from !== "game" ? nodeRef(S.flow[was.from]) : null;
   const before = was ? `as before: ${was.paths.join(" or ")} (${was.from === "game" ? "the game's start" : "from " + ((from && from.title) || was.from)})` : "as before (the scene it branched from)";
-  box.append(field("time", sel(sc, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: before, drop: true, title: "day, dusk or night from this scene on; left as before, it keeps the time of the scene it branched from", after: () => { renderBoard(); renderInspector(); showStage(); } })));
+  setting.append(field("time", sel(sc, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: before, drop: true, title: "day, dusk or night from this scene on; left as before, it keeps the time of the scene it branched from", after: () => { renderBoard(); renderInspector(); showStage(); } })));
   sc.camera = sc.camera || { mode: "free" };
-  box.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
+  setting.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
     " cone ", el("input", { type: "number", value: (sc.camera.cone || [30, 18])[0], style: "width:52px", on: { change: e => { sc.camera.cone = [+e.target.value, (sc.camera.cone || [30, 18])[1]]; touch(); } } }), "°×",
     el("input", { type: "number", value: (sc.camera.cone || [30, 18])[1], style: "width:52px", on: { change: e => { sc.camera.cone = [(sc.camera.cone || [30, 18])[0], +e.target.value]; touch(); } } }), "°"),
     field("look", jsonArea(sc, "look", "the head's look for the whole scene, per actor: {\"mari\": {\"at\": \"player\", \"limit\": [70, 20, 30], \"past\": \"hold\"}} (a clip's own look wins)", { small: true, compact: true })),
@@ -547,9 +550,11 @@ function sceneEditor(box, sc, sid) {
   for (const cu of ver.cues || []) { const a = cu.at || {}, base = a.edge === "end" ? ends[a.clip] : starts[a.clip]; if (base === undefined) continue; bar.append(el("div", { class: "cue", style: `left:${Math.max(0, Math.min(100, (base + (+a.offset || 0)) / total * 100))}%` }, el("span", {}, Object.keys(cu.do || {})[0] || "cue"))); }
   bar.append(el("div", { class: "playhead", id: "playhead", style: "left:0%" }));
   box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "striped = estimated length · red = an event (QTE) · light wedge = a blend in from the actor's last clip · cues ride on clip edges, so a longer take carries them"));
-  ver.clips.forEach((c, i) => box.append(clipCard(sc, ver, c, i, lvl, sid)));
-  box.append(el("div", { class: "row" }, el("button", { on: { click: () => { ver.clips.push({ id: "c" + (ver.clips.length + 1), who: castIds()[0] || "", ja: "", en: "", act: "", shot: "mcu", seam: ver.clips.length ? { kind: "blink" } : undefined, body: { block: [{ at: 0, pose: "idle" }] } }); touch(); renderInspector(); } } }, "+ clip"),
-    el("span", { class: "muted" }, "one clip = one take of " + (S.game.clip_max || 10) + " s or less; long speeches are several clips joined by seams")));
+  const script = el("div", { class: "script" });
+  ver.clips.forEach((c, i) => script.append(clipCard(sc, ver, c, i, lvl, sid)));
+  sortable(script, ver.clips, "clip", CTX, ".clip");
+  box.append(script, el("div", { class: "row" }, el("button", { class: "a-add big", on: { click: () => { const id = newClipId(ver), last = ver.clips[ver.clips.length - 1]; ver.clips.push({ id, who: last ? last.who : castIds()[0] || "", ja: "", en: "", act: "", shot: last ? last.shot : "mcu", seam: ver.clips.length ? { kind: "blink" } : undefined, body: { block: [{ at: 0, pose: "idle" }] } }); OPEN[sid] = { id, tab: "line" }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Add a line"),
+    el("span", { class: "muted" }, "one clip = one take of " + (S.game.clip_max || 10) + " s or less; long speeches are several clips joined by seams · drag a row to move it · drop a take's video on its row")));
   box.append(el("h2", {}, "Cues"), el("p", { class: "kv" }, "A command at a clip's start or end (a door slams as she turns): it rides the clip, so a longer take carries it."), cuesEditor(ver),
     el("h2", {}, "When the scene ends"), actionList(...slot(sc, "sets"), { empty: "nothing" }));
   box.append(advanced(jsonArea(ver, "cues", "cues: [{at: {clip, edge: start|end, offset}, do: {action}}]"), jsonArea(sc, "sets", "sets: actions when the scene ends")));
@@ -605,94 +610,197 @@ function takeRow(sc, c, sid) {             // the take against the director's ac
   if (!Object.keys(c.trim).length) delete c.trim;
   return r;
 }
+// a scene as a script (RPG Maker's message list): each clip one row (who, the line, its shot, take, motion, event),
+// dragged to reorder; the open one shows its tabs. A take's video dropped on its row is stored under its take id
+const OPEN = {};                                   // per scene: the clip open in the script, and its tab
+const CLIP_TABS = [["line", "Line"], ["take", "Take"], ["camera", "Camera"], ["body", "Body"], ["event", "Event"], ["reply", "Reply"]];
+function clipRow(sc, ver, c, i, sid, open) {
+  const max = S.game.clip_max || 10, secs = clipSecs(c), k = sc.variants ? (VTAB[sid] || sc.pick) : null, t = TAKES[takeId(sid, k, c.id)], b = c.body || {};
+  const segs = b.segments || [], made = segs.filter(g => g.file && FILES[g.file]).length;
+  const chips = [
+    c.shot ? el("span", { class: "lchip", title: SHOTS[c.shot] ? `${SHOTS[c.shot].zone}: ${SHOTS[c.shot].use}` : "" }, c.shot.toUpperCase()) : null,
+    i && c.seam ? el("span", { class: "lchip dim", title: "how the cut into this clip is hidden" }, c.seam.kind) : null,
+    el("span", { class: "lchip " + (t ? "ok" : "dim"), title: t ? "take: " + t.name : "no take yet: drop its video on this row" }, icon("film", 11), t ? " ✓" : " —"),
+    b.file || segs.length ? el("span", { class: "lchip " + ((b.file && FILES[b.file]) || (segs.length && made === segs.length) ? "ok" : "dim"), title: segs.length ? `${made} of ${segs.length} Kimodo segments made` : b.file }, icon("motion", 11), segs.length ? ` ${made}/${segs.length}` : " ✓") : null,
+    c.event ? el("span", { class: "lchip ev", title: "an event: " + c.event.type }, icon("trick", 11), " " + c.event.type) : null,
+    c.reply ? el("span", { class: "lchip rp", title: "a hanging line: the player replies" }, icon("ask", 11), " reply") : null];
+  const row = el("div", { class: "lrow", title: open ? "click to close" : "click to open its tabs; drop a take's video here",
+    on: { click: e => { if (e.target.closest("button,select,input,.grip")) return; OPEN[sid] = open ? null : { id: c.id, tab: (OPEN[sid] || {}).tab || "line" }; CTX.rerender(); } } },
+    el("span", { class: "lnum" }, i + 1),
+    el("span", { class: "who " + (c.who === "player" ? "pl" : "") }, ((S.cast || {})[c.who] || {}).name || c.who || "?"),
+    el("span", { class: "ltext" }, el("span", { class: "en" }, c.en || c.ja || "(no line yet)"), c.en && c.ja ? el("span", { class: "ja" }, c.ja) : null),
+    el("span", { class: "lchips" }, ...chips),
+    el("span", { class: "lsecs" + (secs > max ? " err" : ""), title: secs > max ? `over ${max} s: split it into two clips` : (c.dur ? "the take's length" : "estimated") }, secs.toFixed(1) + " s"),
+    el("button", { class: "ghost", title: "play from this clip", on: { click: () => playScene(sc, ver, c.id) } }, icon("play", 13)),
+    el("button", { class: "ghost", title: "duplicate this clip", on: { click: () => { const cp = JSON.parse(JSON.stringify(c)); cp.id = newClipId(ver); ver.clips.splice(i + 1, 0, cp); touch(); CTX.rerender(); } } }, icon("copy", 13)),
+    el("button", { class: "ghost", title: "delete this clip", on: { click: () => { if (confirm("Delete clip " + c.id + "?")) { ver.clips.splice(i, 1); touch(); CTX.rerender(); } } } }, icon("x", 13)));
+  return row;
+}
+function newClipId(ver) { let n = (ver.clips || []).length + 1; while ((ver.clips || []).some(x => x.id === "c" + n)) n++; return "c" + n; }
+async function dropTake(e, sc, c, sid) {          // a take's video (or audio) dropped on its clip: Footage/<game>/<take id>.<ext>
+  const f = [...(e.dataTransfer.files || [])].find(x => /\.(mp4|mov|webm|wav|mp3|m4a)$/i.test(x.name));
+  if (!f) { status("drop a video or audio file (mp4, mov, webm, wav, mp3, m4a)"); return; }
+  const k = sc.variants ? (VTAB[sid] || sc.pick) : null, id = takeId(sid, k, c.id), name = id + f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+  status(`saving ${f.name} as ${name}…`);
+  try {
+    await api(`/api/take/${encodeURIComponent(GAME)}/${encodeURIComponent(name)}`, { method: "POST", body: f });
+    await loadTakes(); const t = TAKES[id];
+    if (t) { try { await cleanTake(c, t); } catch (x) { } }
+    touch(); CTX.rerender(); status(`take ${name} on ${c.id}: ${clipSecs(c).toFixed(1)} s`);
+  } catch (x) { alert("couldn't save the take: " + x.message); }
+}
+async function dropTakes(files) {                 // many takes at once (the Takes page): each matched to its clip by name
+  const byId = Object.fromEntries(allClips().map(x => [x.id, x])), rows = [];
+  for (const f of files) {
+    const m = f.name.match(/^(.+)\.(mp4|mov|webm|wav|mp3|m4a)$/i); if (!m) { rows.push(`${f.name}: not a video or audio file`); continue; }
+    const hit = byId[m[1]], lineHit = (S.lines || {})[m[1]];
+    if (!hit && !lineHit) { rows.push(`${f.name}: no clip or line has that take id`); continue; }
+    try {
+      await api(`/api/take/${encodeURIComponent(GAME)}/${encodeURIComponent(m[1] + "." + m[2].toLowerCase())}`, { method: "POST", body: f });
+      rows.push(`${f.name}: stored`);
+    } catch (x) { rows.push(`${f.name}: ${x.message}`); }
+  }
+  await loadTakes();
+  for (const f of files) { const id = f.name.replace(/\.[^.]+$/, ""), hit = byId[id]; if (hit && TAKES[id]) try { await cleanTake(hit.c, TAKES[id]); } catch (x) { } }
+  touch(); renderClips(); status(rows.filter(r => r.endsWith("stored")).length + " takes stored");
+  if (rows.some(r => !r.endsWith("stored"))) alert(rows.join("\n"));
+}
+async function cleanTake(c, t, keepTrim) {        // the take's length and the dead air at either end, into dur and trim
+  const m = await measureTake(t); c.dur = m.dur;
+  if (!(keepTrim && c.trim)) { const tr = {}, a = +(m.lead - TK.padIn).toFixed(2), b = +(m.tail - TK.padOut).toFixed(2); if (a >= TK.min) tr.in = a; if (b >= TK.min) tr.out = b; if (Object.keys(tr).length) c.trim = tr; else delete c.trim; }
+  return m;
+}
 function clipCard(sc, ver, c, i, lvl, sid) {
-  const max = S.game.clip_max || 10, over = clipSecs(c) > max;
-  const card = el("div", { class: "clip" + (over ? " over" : "") });
-  const oldTake = takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id);
-  card.append(el("h3", {}, txt(c, "id", { style: "width:46px", title: "the clip's id: its take is found by it (game_scene_version_id)", after: () => { if (TAKES[oldTake]) alert(`The take ${TAKES[oldTake].name} was found by the old id: rename the file to ${takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id)} too, or it won't match.`); renderInspector(); } }),
-    sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip" }),
-    txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:60px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s"),
-    el("button", { on: { click: () => playScene(sc, ver, c.id) } }, "▶ clip"),
-    el("button", { title: "move up", on: { click: () => { if (i) { [ver.clips[i - 1], ver.clips[i]] = [ver.clips[i], ver.clips[i - 1]]; touch(); renderInspector(); } } } }, "↑"),
-    el("button", { title: "move down", on: { click: () => { if (i < ver.clips.length - 1) { [ver.clips[i + 1], ver.clips[i]] = [ver.clips[i], ver.clips[i + 1]]; touch(); renderInspector(); } } } }, "↓"),
-    el("button", { title: "delete", on: { click: () => { if (confirm("Delete clip " + c.id + "?")) { ver.clips.splice(i, 1); touch(); renderInspector(); } } } }, "×")));
-  card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
-  if ((S.format || 2) >= 3) card.append(takeSec(c));
-  card.append(takeRow(sc, c, sid));
-  card.append(el("div", { class: "sec" }, jsonArea(c, "reply", "reply (left and right): {\"wait\": 6, \"timeout\": null, \"options\": [{\"id\": \"good\", \"label\": \"Good.\", \"ja\": \"よかったよ。\", \"then\": {\"ja\": \"…\", \"en\": \"…\", \"expr\": \"…\", \"voice\": \"says softly\"}, \"sets\": []}, {…}]}", { small: true, compact: true }),
-    c.reply ? txt(c, "wait_expr", { w: true, ph: "the face she holds while she waits (MiniMax): a hopeful, expectant expression", drop: true }) : null));
-  const lk = c.look || {}, looks = ["player", ...Object.keys(sc.trackers || {}), ...castIds().filter(x => x !== c.who), ...placed(lvl)];
-  card.append(el("div", { class: "sec row" }, el("span", { class: "lab" }, "look"),
-    sel({ at: c.look ? lk.at || "player" : "" }, "at", looks, { blank: "(the scene's, or none)", after: () => {}, title: "what the head follows: the player, a tracker, someone, a thing" }),
-    "yaw ±", el("input", { type: "number", value: (lk.limit || [70])[0], style: "width:50px" }), "up", el("input", { type: "number", value: (lk.limit || [70, 20])[1], style: "width:46px" }), "down", el("input", { type: "number", value: (lk.limit || [70, 20, 30])[2], style: "width:46px" }),
-    "past", sel({ past: lk.past || "hold" }, "past", ["hold", "snap"], { blank: false }),
-    el("span", { class: "kv" }, c.look ? "" : "(set by choosing what it follows)")));
-  { const r = card.lastChild; r.addEventListener("change", () => { const s = r.querySelectorAll("select"), n = r.querySelectorAll("input"); if (!s[0].value) delete c.look; else c.look = { at: s[0].value, limit: [+n[0].value, +n[1].value, +n[2].value], past: s[1].value }; touch(); }); }
-  // seam, shot, camera
-  const look = [...castIds(), ...placed(lvl)];
-  const sec1 = el("div", { class: "sec row" });
-  if (i) { c.seam = c.seam || { kind: "blink" }; sec1.append(el("span", { class: "lab" }, "seam in"), sel(c.seam, "kind", SEAMS, { blank: false, after: renderInspector }), ["glance", "cutaway"].includes(c.seam.kind) ? sel(c.seam, "look", look, { blank: "look at…" }) : null); }
-  sec1.append(el("span", { class: "lab" }, "shot"), sel(c, "shot", Object.entries(SHOTS).map(([k, v]) => [k, `${k} · ${v.dist}`]), { drop: true, title: c.shot && SHOTS[c.shot] ? `${SHOTS[c.shot].zone}: ${SHOTS[c.shot].use}` : "how close the actor comes to the player's eye" }));
-  c.cam = c.cam || {};
-  sec1.append(el("span", { class: "lab" }, "cam"), "lean", txt(c.cam, "push", { num: true, step: "0.05", style: "width:48px", title: "the player leans in over the clip, metres (up to 0.35)" }), "zoom", txt(c.cam, "zoom", { num: true, step: "0.01", style: "width:48px", title: "a held focus narrows the view a little (0 to 0.15); framing is distance, not lens" }),
-    "roll", txt(c.cam, "roll", { num: true, style: "width:44px" }), "shake", txt(c.cam, "shake", { num: true, step: "0.1", style: "width:44px" }), "look", sel(c.cam, "look", look, { drop: true }));
-  card.append(sec1);
-  // event (QTE)
-  const evs = el("div", { class: "sec row" }, el("span", { class: "lab" }, "event"));
-  const evHolder = { type: c.event ? c.event.type : "" };
-  evs.append(sel(evHolder, "type", EVENTS, { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
-  if (c.event) {
-    const e = c.event;
-    evs.append("secs", txt(e, "secs", { num: true, style: "width:48px" }), "warn", txt(e, "warn", { num: true, step: "0.1", style: "width:48px", title: "seconds of warning sign before it (Little Hope's indicator)" }), txt(e, "prompt", { ph: "on-screen prompt" }));
-    if (e.type === "struggle") evs.append("pull", sel(e, "pull", PULLS, { blank: false }), "need", txt(e, "need", { num: true, step: "0.1", style: "width:48px" }));
-    if (e.type === "mash") evs.append("need", txt(e, "need", { num: true, step: "0.1", style: "width:48px" }));
-    if (["press", "mash", "hold"].includes(e.type)) evs.append("key", txt(e, "key", { ph: "E", style: "width:40px" }));
-    card.append(evs);
-    if (e.type === "choose") {                                  // the answers (timed: the default when time runs out)
-      e.options = e.options || [];
-      const ob = el("div", { class: "sec" }, el("span", { class: "lab" }, "answers"));
-      e.options.forEach((o, oi) => ob.append(el("div", { class: "row" }, txt(o, "label", { ph: "what the player picks", style: "flex:1", after: renderInspector }), txt(o, "id", { style: "width:90px", title: "its id (a result choice after the scene branches on it)" }),
-        e.options.length > 2 ? el("button", { class: "ghost", title: "remove", on: { click: () => { e.options.splice(oi, 1); touch(); renderInspector(); } } }, icon("x", 14)) : null)));
-      ob.append(el("div", { class: "row" }, el("button", { on: { click: () => { e.options.push({ id: "opt" + (e.options.length + 1), label: "" }); touch(); renderInspector(); } } }, icon("plus", 14), " answer"),
-        el("span", { class: "lab" }, "when time runs out"), sel(e, "default", e.options.map(o => [o.id, o.label || o.id]), { blank: false })));
-      card.append(ob);
-    }
-    const on = e.on || {}, rb = el("div", { class: "sec" });
-    for (const res of eventResults(e)) {
-      const [arr, cx] = slot(on, res, e, "on");
-      rb.append(el("div", { class: "result" }, el("div", { class: "result-h" }, "If the result is ", el("b", {}, res)), actionList(arr, cx, { empty: "nothing (a result choice after the scene can branch on it)" })));
-    }
-    card.append(rb);
-  } else card.append(evs);
-  // body
-  c.body = c.body || {};
-  const b = c.body, bodySec = el("div", { class: "sec" });
-  if ((S.format || 2) < 3 || b.prompt) bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), txt(b, "prompt", { w: true, ph: "Kimodo prompt (what the body does, in plain words)", drop: true })));
-  else bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), el("span", { class: "kv" }, "the blocking below plays until the Kimodo segments under it are made")));
-  b.block = b.block || [];
-  const kt = el("table", {}, el("tr", {}, ...["at (0..1)", "pose", "ease in", "walk", "move to", ""].map(h => el("th", {}, h))));
-  b.block.forEach((k, ki) => kt.append(el("tr", {}, el("td", { style: "width:64px" }, txt(k, "at", { num: true, step: "0.05" })), el("td", {}, sel(k, "pose", poseNames(), { blank: false })),
-    el("td", {}, sel(k, "ease", M.EASE_NAMES, { blank: "inout", drop: true })), el("td", { style: "width:40px" }, el("input", { type: "checkbox", checked: !!k.walk, on: { change: e => { if (e.target.checked) k.walk = true; else delete k.walk; touch(); } } })),
-    el("td", {}, sel(k, "move", spots(lvl), { drop: true })), el("td", { style: "width:28px" }, el("button", { on: { click: () => { b.block.splice(ki, 1); touch(); renderInspector(); } } }, "×")))));
-  bodySec.append(kt, el("div", { class: "row" }, el("button", { on: { click: () => { c.body = b; b.block = b.block || []; const last = b.block[b.block.length - 1]; b.block.push({ at: last ? Math.min(1, +(last.at || 0) + 0.3) : 0, pose: last ? last.pose : "idle", ease: "inout" }); touch(); renderInspector(); } } }, "+ key"),
-    el("span", { class: "lab" }, "fit"), sel(b, "fit", M.FITS, { blank: "stretch", drop: true, title: "when a generated motion and the take differ in length" }),
-    el("span", { class: "lab" }, "blend"), txt(b, "blend", { num: true, step: "0.05", ph: "0.25", style: "width:52px", title: "seconds of crossfade from the previous clip" }),
-    chk(b, "bridge", "in-between", renderInspector), el("span", { class: "lab" }, "motion"), motionPick(b, c, clipSecs(c))));
-  if ((S.format || 2) >= 3 || (b.segments || []).length) bodySec.append(segmentsEditor(sid, c, b, lvl));
-  bodySec.append(layersEditor(c, b));
-  // modifiers
-  b.mods = b.mods || [];
-  const mt = el("div", {});
-  b.mods.forEach((m, mi) => { const r = el("div", { class: "row" }, el("span", { class: "lab" }, "mod"), sel(m, "type", Object.keys(M.MOD_TYPES), { blank: false, after: renderInspector })); for (const f of M.MOD_TYPES[m.type] || []) r.append(f, txt(m, f, { num: true, step: "0.05", style: "width:52px" })); r.append(el("button", { on: { click: () => { b.mods.splice(mi, 1); touch(); renderInspector(); } } }, "×")); mt.append(r); });
-  bodySec.append(mt, el("div", { class: "row" }, el("button", { on: { click: () => { c.body = b; b.mods = b.mods || []; b.mods.push({ type: "ease", in: 0.2, out: 0.2 }); touch(); renderInspector(); } } }, "+ modifier"),
-    el("span", { class: "kv" }, "ease (in/out s) · speed · ramp · hold (at, secs) · snap (creep then strike) · twitch (uncanny stutter) · trim · loop · mirror")));
-  if (!b.block.length) delete b.block; if (!b.mods.length) delete b.mods;
-  card.append(bodySec);
+  const max = S.game.clip_max || 10, over = clipSecs(c) > max, open = !!(OPEN[sid] && OPEN[sid].id === c.id);
+  if (i) c.seam = c.seam || { kind: "blink" };
+  const card = el("div", { class: "clip line" + (over ? " over" : "") + (open ? " open" : ""), style: `--who:${whoColor(c.who)}` });
+  card.append(el("div", { class: "lhead" }, grip(card, ver.clips, i, "clip"), clipRow(sc, ver, c, i, sid, open)));
+  card.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); card.classList.add("droptake"); } });
+  card.addEventListener("dragleave", e => { if (!card.contains(e.relatedTarget)) card.classList.remove("droptake"); });
+  card.addEventListener("drop", e => { if (![...e.dataTransfer.types].includes("Files")) return; e.preventDefault(); e.stopPropagation(); card.classList.remove("droptake"); dropTake(e, sc, c, sid); });
   const fx = FIX[`${sid}.${c.id}`];
   if (fx) for (const f of fx) card.append(el("div", { class: "fix" }, f.text, f.apply ? el("button", { on: { click: () => { f.apply(); delete FIX[`${sid}.${c.id}`]; touch(); renderInspector(); } } }, f.label || "Apply") : null));
-  if (!Object.keys(c.cam).length) delete c.cam;
-  if (!Object.keys(c.body).length) delete c.body;
+  if (!open) return card;
+  const tab = OPEN[sid].tab || "line", has = { take: !!TAKES[takeId(sid, sc.variants ? (VTAB[sid] || sc.pick) : null, c.id)], event: !!c.event, reply: !!c.reply, body: !!((c.body || {}).segments || (c.body || {}).file || ((c.body || {}).block || []).length > 1) };
+  card.append(el("div", { class: "ltabs" }, ...CLIP_TABS.map(([k, l]) => el("button", { class: (k === tab ? "on" : "") + (has[k] ? " has" : ""), on: { click: () => { OPEN[sid].tab = k; CTX.rerender(); } } }, l))));
+  const pane = el("div", { class: "lpane" }); card.append(pane);
+  if (tab === "line") {
+    const oldTake = takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id);
+    pane.append(el("div", { class: "row" }, el("span", { class: "lab" }, "id"), txt(c, "id", { style: "width:62px", title: "the clip's id: its take is found by it (game_scene_version_id)", after: () => { if (TAKES[oldTake]) alert(`The take ${TAKES[oldTake].name} was found by the old id: rename the file to ${takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id)} too, or it won't match.`); OPEN[sid].id = c.id; renderInspector(); } }),
+      el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: renderInspector }),
+      el("span", { class: "lab" }, "length"), txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:64px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s")));
+    pane.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
+    if ((S.format || 2) >= 3) pane.append(takeSec(c));
+  }
+  if (tab === "take") {
+    pane.append(takeRow(sc, c, sid), el("div", { class: "dropzone", on: {
+      click: () => { const inp = el("input", { type: "file", accept: "video/*,audio/*", style: "display:none", on: { change: () => { if (inp.files[0]) dropTake({ dataTransfer: { files: inp.files } }, sc, c, sid); inp.remove(); } } }); document.body.append(inp); inp.click(); } } },
+      icon("upload", 18), el("div", {}, el("b", {}, "Drop this clip's take here"), el("div", { class: "kv" }, `or click to choose it: its video or audio, saved as ${takeId(sid, sc.variants ? (VTAB[sid] || sc.pick) : null, c.id)} and measured (its length, the dead air at either end)`))));
+  }
+  if (tab === "camera") {
+    const lk = c.look || {}, looks = ["player", ...Object.keys(sc.trackers || {}), ...castIds().filter(x => x !== c.who), ...placed(lvl)];
+    pane.append(el("div", { class: "sec row" }, el("span", { class: "lab" }, "look"),
+      sel({ at: c.look ? lk.at || "player" : "" }, "at", looks, { blank: "(the scene's, or none)", after: () => {}, title: "what the head follows: the player, a tracker, someone, a thing" }),
+      "yaw ±", el("input", { type: "number", value: (lk.limit || [70])[0], style: "width:50px" }), "up", el("input", { type: "number", value: (lk.limit || [70, 20])[1], style: "width:46px" }), "down", el("input", { type: "number", value: (lk.limit || [70, 20, 30])[2], style: "width:46px" }),
+      "past", sel({ past: lk.past || "hold" }, "past", ["hold", "snap"], { blank: false }),
+      el("span", { class: "kv" }, c.look ? "" : "(set by choosing what it follows)")));
+    { const r = pane.lastChild; r.addEventListener("change", () => { const s = r.querySelectorAll("select"), n = r.querySelectorAll("input"); if (!s[0].value) delete c.look; else c.look = { at: s[0].value, limit: [+n[0].value, +n[1].value, +n[2].value], past: s[1].value }; touch(); }); }
+    // seam, shot, camera
+    const look = [...castIds(), ...placed(lvl)];
+    const sec1 = el("div", { class: "sec row" });
+    if (i) { c.seam = c.seam || { kind: "blink" }; sec1.append(el("span", { class: "lab" }, "seam in"), sel(c.seam, "kind", SEAMS, { blank: false, after: renderInspector }), ["glance", "cutaway"].includes(c.seam.kind) ? sel(c.seam, "look", look, { blank: "look at…" }) : null); }
+    sec1.append(el("span", { class: "lab" }, "shot"), sel(c, "shot", Object.entries(SHOTS).map(([k, v]) => [k, `${k} · ${v.dist}`]), { drop: true, title: c.shot && SHOTS[c.shot] ? `${SHOTS[c.shot].zone}: ${SHOTS[c.shot].use}` : "how close the actor comes to the player's eye" }));
+    c.cam = c.cam || {};
+    sec1.append(el("span", { class: "lab" }, "cam"), "lean", txt(c.cam, "push", { num: true, step: "0.05", style: "width:48px", title: "the player leans in over the clip, metres (up to 0.35)" }), "zoom", txt(c.cam, "zoom", { num: true, step: "0.01", style: "width:48px", title: "a held focus narrows the view a little (0 to 0.15); framing is distance, not lens" }),
+      "roll", txt(c.cam, "roll", { num: true, style: "width:44px" }), "shake", txt(c.cam, "shake", { num: true, step: "0.1", style: "width:44px" }), "look", sel(c.cam, "look", look, { drop: true }));
+    pane.append(sec1);
+
+  }
+  if (tab === "event") {
+    if (c.reply) pane.append(el("p", { class: "kv" }, "This clip has a reply: a clip has a reply or an event, not both (put the event on the next clip)."));
+    // event (QTE)
+    const evs = el("div", { class: "sec row" }, el("span", { class: "lab" }, "event"));
+    const evHolder = { type: c.event ? c.event.type : "" };
+    evs.append(sel(evHolder, "type", EVENTS, { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
+    if (c.event) {
+      const e = c.event;
+      evs.append("secs", txt(e, "secs", { num: true, style: "width:48px" }), "warn", txt(e, "warn", { num: true, step: "0.1", style: "width:48px", title: "seconds of warning sign before it (Little Hope's indicator)" }), txt(e, "prompt", { ph: "on-screen prompt" }));
+      if (e.type === "struggle") evs.append("pull", sel(e, "pull", PULLS, { blank: false }), "need", txt(e, "need", { num: true, step: "0.1", style: "width:48px" }));
+      if (e.type === "mash") evs.append("need", txt(e, "need", { num: true, step: "0.1", style: "width:48px" }));
+      if (["press", "mash", "hold"].includes(e.type)) evs.append("key", txt(e, "key", { ph: "E", style: "width:40px" }));
+      pane.append(evs);
+      if (e.type === "choose") {                                  // the answers (timed: the default when time runs out)
+        e.options = e.options || [];
+        const ob = el("div", { class: "sec" }, el("span", { class: "lab" }, "answers"));
+        e.options.forEach((o, oi) => ob.append(el("div", { class: "row" }, txt(o, "label", { ph: "what the player picks", style: "flex:1", after: renderInspector }), txt(o, "id", { style: "width:90px", title: "its id (a result choice after the scene branches on it)" }),
+          e.options.length > 2 ? el("button", { class: "ghost", title: "remove", on: { click: () => { e.options.splice(oi, 1); touch(); renderInspector(); } } }, icon("x", 14)) : null)));
+        ob.append(el("div", { class: "row" }, el("button", { on: { click: () => { e.options.push({ id: "opt" + (e.options.length + 1), label: "" }); touch(); renderInspector(); } } }, icon("plus", 14), " answer"),
+          el("span", { class: "lab" }, "when time runs out"), sel(e, "default", e.options.map(o => [o.id, o.label || o.id]), { blank: false })));
+        pane.append(ob);
+      }
+      const on = e.on || {}, rb = el("div", { class: "sec" });
+      for (const res of eventResults(e)) {
+        const [arr, cx] = slot(on, res, e, "on");
+        rb.append(el("div", { class: "result" }, el("div", { class: "result-h" }, "If the result is ", el("b", {}, res)), actionList(arr, cx, { empty: "nothing (a result choice after the scene can branch on it)" })));
+      }
+      pane.append(rb);
+    } else pane.append(evs);
+
+  }
+  if (tab === "reply") pane.append(c.event ? el("p", { class: "kv" }, "This clip has an event: a clip has a reply or an event, not both (put the reply on the clip before).") : replyEditor(c));
+  if (tab === "body") {
+    // body
+    c.body = c.body || {};
+    const b = c.body, bodySec = el("div", { class: "sec" });
+    if ((S.format || 2) < 3 || b.prompt) bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), txt(b, "prompt", { w: true, ph: "Kimodo prompt (what the body does, in plain words)", drop: true })));
+    else bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), el("span", { class: "kv" }, "the blocking below plays until the Kimodo segments under it are made")));
+    b.block = b.block || [];
+    const kt = el("table", {}, el("tr", {}, ...["at (0..1)", "pose", "ease in", "walk", "move to", ""].map(h => el("th", {}, h))));
+    b.block.forEach((k, ki) => kt.append(el("tr", {}, el("td", { style: "width:64px" }, txt(k, "at", { num: true, step: "0.05" })), el("td", {}, sel(k, "pose", poseNames(), { blank: false })),
+      el("td", {}, sel(k, "ease", M.EASE_NAMES, { blank: "inout", drop: true })), el("td", { style: "width:40px" }, el("input", { type: "checkbox", checked: !!k.walk, on: { change: e => { if (e.target.checked) k.walk = true; else delete k.walk; touch(); } } })),
+      el("td", {}, sel(k, "move", spots(lvl), { drop: true })), el("td", { style: "width:28px" }, el("button", { on: { click: () => { b.block.splice(ki, 1); touch(); renderInspector(); } } }, "×")))));
+    bodySec.append(kt, el("div", { class: "row" }, el("button", { on: { click: () => { c.body = b; b.block = b.block || []; const last = b.block[b.block.length - 1]; b.block.push({ at: last ? Math.min(1, +(last.at || 0) + 0.3) : 0, pose: last ? last.pose : "idle", ease: "inout" }); touch(); renderInspector(); } } }, "+ key"),
+      el("span", { class: "lab" }, "fit"), sel(b, "fit", M.FITS, { blank: "stretch", drop: true, title: "when a generated motion and the take differ in length" }),
+      el("span", { class: "lab" }, "blend"), txt(b, "blend", { num: true, step: "0.05", ph: "0.25", style: "width:52px", title: "seconds of crossfade from the previous clip" }),
+      chk(b, "bridge", "in-between", renderInspector), el("span", { class: "lab" }, "motion"), motionPick(b, c, clipSecs(c))));
+    if ((S.format || 2) >= 3 || (b.segments || []).length) bodySec.append(segmentsEditor(sid, c, b, lvl));
+    bodySec.append(layersEditor(c, b));
+    // modifiers
+    b.mods = b.mods || [];
+    const mt = el("div", {});
+    b.mods.forEach((m, mi) => { const r = el("div", { class: "row" }, el("span", { class: "lab" }, "mod"), sel(m, "type", Object.keys(M.MOD_TYPES), { blank: false, after: renderInspector })); for (const f of M.MOD_TYPES[m.type] || []) r.append(f, txt(m, f, { num: true, step: "0.05", style: "width:52px" })); r.append(el("button", { on: { click: () => { b.mods.splice(mi, 1); touch(); renderInspector(); } } }, "×")); mt.append(r); });
+    bodySec.append(mt, el("div", { class: "row" }, el("button", { on: { click: () => { c.body = b; b.mods = b.mods || []; b.mods.push({ type: "ease", in: 0.2, out: 0.2 }); touch(); renderInspector(); } } }, "+ modifier"),
+      el("span", { class: "kv" }, "ease (in/out s) · speed · ramp · hold (at, secs) · snap (creep then strike) · twitch (uncanny stutter) · trim · loop · mirror")));
+    if (!b.block.length) delete b.block; if (!b.mods.length) delete b.mods;
+    pane.append(bodySec);
+
+  }
+  if (c.cam && !Object.keys(c.cam).length) delete c.cam;
+  if (c.body && !Object.keys(c.body).length) delete c.body;
   return card;
+}
+const WHO_COLORS = ["#e07aa8", "#6fb3d9", "#d9a441", "#3fb3a2", "#9b7be0", "#e0805a"];
+function whoColor(who) { if (who === "player") return "#a8a59c"; const i = castIds().indexOf(who); return WHO_COLORS[(i < 0 ? 0 : i) % WHO_COLORS.length]; }
+// a hanging line (STORY_FORMAT §9.9): she asks and waits; the player answers left or right; each answer gets her line back
+function replyEditor(c) {
+  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player answers left or right, and each answer gets her own line back (its own take, named after this clip's and the answer's)."),
+    el("button", { on: { click: () => { c.reply = { wait: 6, timeout: null, options: [{ id: "yes", label: "", ja: "", then: { ja: "", en: "" } }, { id: "no", label: "", ja: "", then: { ja: "", en: "" } }] }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make this a hanging line"));
+  const rp = c.reply, box = el("div", { class: "reply" });
+  rp.options = rp.options || [];
+  box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "she waits"), txt(rp, "wait", { num: true, ph: "6", style: "width:58px", title: "2 to 15 s" }), "s, then",
+    sel({ t: rp.timeout || "" }, "t", rp.options.map(o => [o.id, `answers your silence with “${o.label || o.id}”'s line`]), { blank: "carries on (no answer)", after: function () { } })));
+  box.lastChild.querySelector("select").addEventListener("change", e => { rp.timeout = e.target.value || null; touch(); });
+  box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "her face"), txt(c, "wait_expr", { w: true, ph: "the face she holds while she waits (MiniMax): a hopeful, expectant expression", drop: true })));
+  rp.options.forEach((o, oi) => {
+    o.then = o.then || {};
+    box.append(el("div", { class: "ropt" },
+      el("div", { class: "row" }, el("b", { class: "side" }, oi === 0 ? "Left" : oi === 1 ? "Right" : `Answer ${oi + 1}`), txt(o, "label", { ph: "what the player says (English)", style: "flex:1", after: renderInspector }), txt(o, "ja", { ph: "日本語", style: "width:150px", drop: true }), txt(o, "id", { style: "width:72px", title: "its id: her answer's take is this clip's take id + _ + this" })),
+      el("div", { class: "row" }, el("span", { class: "lab" }, "she says"), txt(o.then, "ja", { ph: "日本語", style: "flex:1" }), txt(o.then, "en", { ph: "English", style: "flex:1" })),
+      el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(o.then, "expr", { ph: "her expression", style: "flex:1", drop: true }), sel(o.then, "voice", VOICES, { drop: true, blank: "voice…" })),
+      el("div", {}, el("span", { class: "lab" }, "picking it also does"), actionList(...slot(o, "sets"), { empty: "nothing (most replies set nothing: they're there so it feels like you)" }))));
+  });
+  box.append(el("div", { class: "row" }, el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Take the reply off this clip?")) { delete c.reply; delete c.wait_expr; touch(); CTX.rerender(); } } } }, "No reply")));
+  return box;
 }
 // ---- a clip's Kimodo segments (STORY_FORMAT §9.5): one behaviour each, made in Kimodo's demo from the shot list and
 // chained here; each says whether it's made (its length) or not (the clip holds a pose for its seconds meanwhile)
@@ -1359,7 +1467,11 @@ function renderClips() {
       el("td", { class: "muted" }, ln.ja_note || ""), el("td", {}), el("td", {}, ln.face === false ? "heard" : ""), el("td", { class: ln.dur ? "ok" : "muted" }, (TAKES[lid] ? "▶ " : "") + (ln.dur ? (+ln.dur).toFixed(1) : "est")), el("td", {}, "—"),
       ...(v3 ? [el("td", { style: "font-size:12px" }, pr), el("td", {}, el("button", { on: { click: e => copyText(pr, e.target) } }, "copy"))] : [])));
   }
-  v.append(el("h2", {}, `Takes · ${rec}/${all} recorded`), el("p", { class: "muted" }, "Record each row as one MiniMax clip, named by its take id (.wav and .mp4), starting and ending on the anchor frame. Then: python tools/intake.py --game " + GAME + " <folder>."),
+  const drop = el("div", { class: "dropzone wide", on: {
+    dragover: e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); drop.classList.add("over"); } }, dragleave: () => drop.classList.remove("over"),
+    drop: async e => { e.preventDefault(); drop.classList.remove("over"); await dropTakes([...e.dataTransfer.files]); } } },
+    icon("upload", 20), el("div", {}, el("b", {}, "Drop take files here"), el("div", { class: "kv" }, "videos or audio named by their take id (as in the first column): each is stored in Footage/" + GAME + "/ and measured (its length, the dead air at either end). One clip's take can also be dropped on its row in the scene.")));
+  v.append(el("h2", {}, `Takes · ${rec}/${all} recorded`), el("p", { class: "muted" }, "Record each row as one MiniMax clip, named by its take id (.wav and .mp4), starting and ending on the anchor frame. Then drop them below (or: python tools/intake.py --game " + GAME + " <folder>)."), drop,
     v3 ? el("div", { class: "row" }, el("button", { on: { click: e => copyText(prompts.join("\n\n"), e.target) } }, "copy every prompt"), el("span", { class: "muted" }, "or python tools/story.py --game " + GAME + " minimax")) : null,
     el("div", { class: "row" }, el("button", { on: { click: pickTakes } }, "Load takes folder…"), el("span", { class: loaded ? "ok" : "muted" }, `${loaded} take files on the timeline`),
       el("button", { class: "primary", disabled: !loaded, title: "measure each take: its length and the dead air at either end, into dur and trim; the subtitles, body and cues follow", on: { click: async () => { const out = $("#cleanOut"); out.textContent = "measuring…"; const rows = await autoClean(false); $("#cleanOut") && ($("#cleanOut").textContent = rows.join("\n") || "no takes matched a take id"); } } }, "Auto-clean"),

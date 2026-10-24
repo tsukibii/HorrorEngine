@@ -114,3 +114,34 @@ select.secret{max-width:170px}
 .ol-i.scene .dot{background:var(--scene)}.ol-i.stitch .dot{background:var(--stitch)}.ol-i.choice .dot{background:var(--choice)}.ol-i.ending .dot{background:var(--ending)}
 .ol-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ol-id{font-size:10px;color:#5e5b55;font-family:ui-monospace,Consolas,monospace;flex:none;max-width:70px;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- a scene as a script ---- */
+.script{display:flex;flex-direction:column;gap:5px;position:relative;margin:6px 0}
+.clip.line{padding:0;margin:0;border-left:4px solid var(--who,var(--scene));overflow:hidden;background:#202026}
+.clip.line.open{box-shadow:0 0 0 1px #4a3b1f;background:#1d1d22}
+.clip.line.droptake{outline:2px dashed var(--accent);outline-offset:-2px}
+.lhead{display:flex;align-items:center;gap:4px;padding:0 4px 0 2px}
+.lrow{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:7px 2px;cursor:pointer}
+.lnum{font-size:10.5px;color:#5e5b55;width:16px;text-align:right;flex:none}
+.who{flex:none;font-size:11px;font-weight:600;padding:1px 7px;border-radius:9px;background:color-mix(in srgb,var(--who) 22%,transparent);color:var(--who)}
+.ltext{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.ltext .en{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.ltext .ja{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--dim)}
+.lchips{display:flex;gap:3px;flex:none}
+.lchip{display:inline-flex;align-items:center;gap:2px;font-size:10px;padding:1px 6px;border-radius:8px;background:#2a2a31;color:var(--text);border:1px solid var(--line)}
+.lchip.dim{color:#6d6a63}.lchip.ok{color:var(--good);border-color:#2f4a2f}.lchip.ev{color:#ff9a8f;border-color:#5b2a2a}.lchip.rp{color:#8fb7ff;border-color:#2c3f5d}
+.lsecs{font-size:11px;color:var(--dim);flex:none;width:42px;text-align:right}.lsecs.err{color:var(--bad)}
+.ltabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--line);background:#19191d}
+.ltabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--dim);padding:6px 10px;font-size:12px}
+.ltabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.ltabs button.has::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:middle}
+.lpane{padding:8px 12px 12px}
+.lpane .sec:first-child{border-top:0;margin-top:0;padding-top:0}
+.dropzone{display:flex;align-items:center;gap:12px;margin-top:10px;padding:14px;border:1.5px dashed var(--line);border-radius:10px;color:var(--dim);cursor:pointer;background:#18181c}
+.dropzone:hover,.dropzone.over{border-color:var(--accent);color:var(--text);background:#211d16}
+.dropzone.wide{margin:8px 0 12px;cursor:default}
+.reply{display:flex;flex-direction:column;gap:6px}
+.ropt{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#202026;display:flex;flex-direction:column;gap:4px}
+.ropt .side{color:#8fb7ff;width:46px;font-size:12px}
+.setting{margin:6px 0 4px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;background:#1c1c21}
+.setting summary{cursor:pointer;font-size:12.5px}.setting[open] summary{margin-bottom:8px}
