@@ -76,6 +76,16 @@ register("interactable", "roll", {                // a die: E throws it from you
   prompt: (t, rt, s) => (rt.physics && rt.physics.rolling(t) ? { cursor: "none", label: "" } : { cursor: "roll", label: s.label }),
   use: (t, rt, s) => { if (!(rt.physics && rt.physics.rolling(t))) rt.roll(t, s); },
 });
+register("interactable", "carry", {               // a plushie, a box: hold E to pick it up (runtime.pickUp), hold E again to put it down
+  settings: { cursor: "take", label: "Pick up", drop: "Put down", hold: 0.45 },   // hold: the seconds E is held, both ways
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label, hold: true }),
+  use: () => {},                                   // a tap does nothing: it takes a hold
+});
+register("interactable", "game", {                // a table with a board game: E sits you down to play it (runtime.boardGame; the rules in Content/Studio/BoardGames/)
+  settings: { cursor: "use", label: "Play", eye: EYES.sit, secs: 0.7, back: 0.22, house: "The dealer" },   // back: the eye from the table's edge, leaning in
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
+  use: (t, rt, s) => rt.boardGame(t, s),
+});
 register("interactable", "hide", {                // a locker, a wardrobe: E gets in (runtime.hide), E gets out
   settings: { cursor: "hide", label: "Hide", leave: "Get out", eye: EYES.hide, secs: 0.7, look: [70, 35] },   // look: yaw, pitch cone (deg)
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.hiding === t.userData.id ? s.leave : s.label }),

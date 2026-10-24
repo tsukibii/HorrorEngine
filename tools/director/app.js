@@ -912,7 +912,7 @@ async function watchStitch(st, nid, n) {
 // Play mode (play/runtime.js): the tasks walked. One runtime for the whole run, so what you carry and the doors you
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
-  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
+  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
   return RUN.play;
 }
 function playPlace(rt, lvl) {

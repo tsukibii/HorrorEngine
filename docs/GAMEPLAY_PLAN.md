@@ -136,6 +136,19 @@ playback; Generate stays the one button.
   or a **side path that rejoins the main line** (a flow branch whose last node's `next` is back on the spine). The
   desk needs a physics engine beside three.js (vendored, like three.js). Doors and drawers open and close with E,
   never dragged (the user dropped Amnesia's dragging, 2026-10-21).
+- **Things you carry** (**built 2026-10-24**, DECISIONS 2026-10-24: `use: carry`, hold E to pick up and hold E to put
+  down, a tap still uses a door; the `carrying` and `dropped` (`in`) triggers): how a thing moves is a **physics kind**,
+  a part (`register("physics", name, ...)` in `play/physics.js`): `rigid` follows the hands stiffly, `plushie` lags,
+  swings past, squashes and stretches with the hands' acceleration, bobs with the steps and flops its top behind a turn
+  (a vertex bend by height, so any imported mesh goes soft), and lands soft (`jiggle` 0..2). A new kind (glass that
+  breaks, a liquid that slops) is a new part and a word in `storylib.PHYSICS`. Put down, a thing falls and stays where
+  it settles (kept per level, like the die).
+- **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
+  JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
+  JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,
+  choices floating at the table, and pieces (dice, cards, cups, a ball, a revolver) that `play/boardgames.js` draws and
+  moves on the game's clock. Seven to start: Russian roulette, high dice, chō-han, spin the cup, find the ball,
+  high card, blackjack. `boardtest.mjs` (BOARD) plays each hundreds of times offline. Not in Unreal yet.
 - **The UI is CSS, in themes**: `tools/director/play/ui/` holds the HUD as HTML (cursor, prompt, subtitles,
   objective, choices, notes, pause), and every colour, radius and shadow comes from a theme file
   (`themes/<name>.css`: `glass` is the default now, `glass-rose` its warm romance colours, `neumorph` and `plain` stay; the layout's four places, on the thing, the corners, the footer and the middle, are at the top of `hud.css`; Esc opens the pause menu, `play/menu.js`, whose `SETTINGS` name their Unreal console variables); `game.ui_theme` picks one. The

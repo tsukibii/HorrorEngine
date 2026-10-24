@@ -111,6 +111,13 @@ class Handler(BaseHTTPRequestHandler):
             f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
             if f.is_file():
                 return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
+        if parts[0] == "boardgames" and len(parts) == 3 and parts[2].endswith(".js") and self.game_path(parts[1]):   # a board game's rules: the game's own, else the studio's
+            for d in (L.GAMES / parts[1] / "BoardGames", L.BOARD_GAMES):
+                if (d / parts[2]).is_file() and d.resolve() in (d / parts[2]).resolve().parents:
+                    return self.send(200, (d / parts[2]).read_bytes(), "text/javascript")
+            return self.send(404, {"error": f"no board game {parts[2]}"})
+        if parts[:2] == ["api", "boardgames"] and len(parts) == 3 and self.game_path(parts[2]):   # the games a table can have
+            return self.send(200, {"games": [dict(m, id=k) for k, m in L.board_games(parts[2]).items()]})
         if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/
             return self.send(200, UL.status(parts[3]))

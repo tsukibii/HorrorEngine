@@ -1,79 +1,62 @@
 # Continue: the next session
 
-Written 2026-10-21 at the end of a session. Read this after CLAUDE.md's start list (DECISIONS, notes, SETUP), then
-**ask the user what they're doing now**; §4 is the menu, not an order. Overwrite this file at the end of the next
-session.
+Written 2026-10-24 (small hours, the user away) at the end of a long stretch on `claude/experiments-afk`. Read this
+after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
+not an order. Overwrite this file at the end of the next session.
 
 ## 1. Where we are
 
-The director's desk has **Play mode** (`tools/director/play/`, docs/GAMEPLAY_PLAN.md): the Watch's tasks walked from
-the player's eye. Steps 1 to 4 of GAMEPLAY_PLAN §8 are built **on the desk**; nothing of steps 2 to 4 is in Unreal yet.
-
-Built and pushed this session (newest last):
+The user left a list before going AFK (DECISIONS 2026-10-24, small hours); all of it is built, checked and pushed:
 
 | Commit | What |
 |---|---|
-| `cd645af` | **Hiding works.** `use: locker`: E gets in (its `inside` spot, else its middle facing its `rot`), hiding eye height, the look held to a cone, no walking; E gets out. From inside, the walls are slats (`stage.seeThrough`; `see_through` on the locker, else `game.see_through`, else 0.6), also for scenes' `camera.through`. `{"hidden": true \| locker}` trigger. A scene played from inside keeps you hidden (`placeFromCamera`). **The grab's struggle is mashed** (E, Space, left click), not dragged. |
-| `c4d5e3a` | **NPC behaviours.** The `behave` action: `idle` (at, pose, face), `sit`, `path` (route, mode, speed, from), `patrol` (routes, pick), `off`. Routes: `levels.<id>.routes`, spots with `wait` and `pose`, `loop` / `pingpong` / `once`. A new part kind, `behaviour` (`play/behaviours.js`); the runtime draws the cast with the pose library and the walk overlay. |
-| `e5a71d1` | **Stealth.** `behave` `sees` (cone, a reach that's shorter crouched, line of sight against the level's blocks) fills a suspicion meter under the cursor (`SIGHT` in runtime.js: 1.2 s to fill, 1.5 s to drain, 3 s calm after a catch); full, `caught` fires (`{"caught": true \| cast id}`). Unseen when hidden or in a safe zone (trigger `safe: true`), unless a route point `check`s that locker. |
+| `bedf5b7` | **UltraVHS's night mode**: at night black records as a cool blue (0.02, 0.03, 0.05), not the camcorder's warm lift; `r.UltraVHS.Night`, `SetNightMode`; Light Kit's sky turns it on at Night. |
+| `5e99709` | **Day or night per scene** on the desk: a scene starts at the time of the scene it branched from, changed by hand (`time`; `game.time`, default night); the stage's sky, ambient and a light in every window by time (`TIME_LOOK`); into Unreal through Light Kit's sky. TIMES. |
+| `485a3a7` | **The plugins into any Unreal project in one command**: `python tools/unreal_plugins.py on UltraVHS LightKit [--project X.uproject] [--build]`; Light Kit builds its own materials on the editor's first start. |
+| `896a052` | **The same look in Blender**: `tools/blender_look.py` (Light Kit's day, dusk and night, UltraVHS's camcorder as compositor nodes, window lights, the handheld drift), docs/BLENDER_LOOK.md, BLENDERLOOK measured against UltraVHS's reference. |
+| `e9cb763` | **Accessories** in the Character Studio: glasses (six styles), piercings, stickers, an eyepatch with its strap, a choker or chain; held to the skin's triangles so they ride every expression; Place by clicking. |
+| `a7ebc1a` | **Export for desk / Unreal, and Import**: one GLB of the character (neutral, the eyes' openings cut) carrying its recipe, every file it's made from; Import brings it back editable (CHARACTER_STUDIO §3.1). |
+| (the last) | **Things you carry and board games in Play**: `use: carry` (hold E to pick up, hold E to put down; physics kinds `rigid` and `plushie`: lag, squash and stretch, the top's flop, a soft landing, on any mesh; `carrying`, `dropped` `in`) and `use: game` (rules as JS modules in `Content/Studio/BoardGames/`: Russian roulette, high dice, chō-han, spin the cup, find the ball, high card, blackjack; `played` `result`). BOARD; PLAY walks both. |
 
-The user's decisions from this session are in DECISIONS (2026-10-21, "buttons, not dragging"): every interactable is a
-button (E or a click), no dragging and no sliders; the struggle is mashed; the Play UI gets its touch-ups much later.
+Earlier the same night (before the list): the eyes' iris softening, eye occlusion and tear line, wet teeth, lipstick
+with a guide, soft hair edges, the default "soft cinematic" look after the user's reference.
 
 ## 2. Where things are
 
-- `play/runtime.js`: the player, collision, triggers, doors, hiding (`hide`, `unhide`, `leaveHiding`), the cast
-  (`route`, `behave`, `drawNpcs`), sight (`sees`, `watch`, `caught`), the cursor, stitches and act choices.
-- `play/behaviours.js` (new), `actions.js` (`behave`), `conditions.js` (`hidden`, `caught` by whom),
-  `interactables.js` (`hide`, with `locker` as the format's word), `abilities.js` (the look's cone, `p.limit`),
-  `hud.js` + `ui/hud.css` (the hidden vignette, the meter `.ph-seen`; colours from the themes' `--ph-hidden`,
-  `--ph-bad`).
-- `stage.js`: `seeThrough`, `seeThroughOf`, `SEE_THROUGH`, the slat texture; `apply` uses a scene's `camera.through`.
-- `motion.js`: `walkOverlay` is exported now.
-- `app.js` `runEvent`: the struggle's mashing.
-- `tools/story_check.py`: routes, `behave` (`BEHAVE`, `SIGHT`), `hidden`, `caught`, a locker's `inside` and
-  `see_through`, a trigger's `safe`, `game.see_through`; the walker can fire `hidden`.
-- Docs: STORY_FORMAT (§2 routes, uses table, triggers, actions), GAMEPLAY_PLAN §3, §8, §10, §11, TRICKS §5,
-  DIRECTING, ANIMATION (the struggle), LESSONS (slats).
+- Play: `tools/director/play/physics.js` (physics kinds as parts; carrying; the soft bend), `boardgames.js` (the table
+  and its pieces), `boardgames-ctx.js` (seeded chance), `runtime.js` (`pickUp`, `putDown`, `carryTick`, `pressE` and
+  `holdTick`: hold E; `boardGame`, `seatAt`, `anim`: tweens on the game's clock), `interactables.js` (`carry`,
+  `game`), `conditions.js` (`carrying`, `dropped`, `played`), `hud.js` (the hold ring, the score line, the flash).
+- The rules: `Content/Studio/BoardGames/` (README: the games, `ctx`, how to add one); `storylib.board_games()` reads
+  their one-line JSON `meta`; the desk serves them at `/boardgames/<game>/<id>.js` and lists them at
+  `/api/boardgames/<game>`.
+- The Studio: `tools/character/accessories.js`; `serve.py`'s `api/recipe`, `api/package`, `api/import`.
+- Format: STORY_FORMAT §2 (`carry`, `game`) and §4 (`carrying`, `dropped`, `played`); story_check checks them and its
+  walker carries things and plays games.
 
 ## 3. Testing
 
-- `python tools/check_all.py`: CHECKS ok.
-- `node tools/director/playtest.js`: PLAY ok. It walks the Pilot to its good ending and, **in memory only**, adds a
-  route (`r_hall`), Mari's `behave` path, a safe zone (`hall_safe`), hiding, and being seen. The Pilot's story.json has
-  none of these, so on the desk Mari doesn't walk or watch until a story gives her a `behave` beat.
-- Run a test desk beside the user's: `DESK_PORT=8781 python tools/director/serve.py` in the background and
-  `DESK_URL=http://127.0.0.1:8781/`. Playwright was installed in an old scratchpad
-  (`/tmp/claude-1000/-run-media-hal-Derick-Unreal-HorrorEngine/c845f1b2-fe12-4864-92ba-55aa33ece5a8/scratchpad/pw/node_modules/playwright`,
-  passed as `PLAYWRIGHT=`). If /tmp was cleared, run `npm i playwright` in the new scratchpad; the browsers are in
-  `~/.cache/ms-playwright`.
-- Stop only the 8781 server: find its PID, check `/proc/<pid>/environ` for `DESK_PORT=8781`, then kill that PID in a
-  separate command. The user's server on 8780 stays.
-- A probe: copy playtest.js to `tools/director/_probe.js` with a step inserted, screenshot into the scratchpad, then
-  delete the probe. This is how hiding and the meter were looked at.
+- `python tools/check_all.py`: CHECKS ok. `node tools/director/play/boardtest.mjs`: BOARD ok.
+- `node tools/director/playtest.js`: PLAY ok (it adds, in memory only, a plushie in the hall and chō-han on the hall
+  table). `node tools/character/studiotest.js`: STUDIO ok (it exports `_studiotest` and imports it back as
+  `_studiotest_back`, left in `People/`, git-ignored). TIMES ok, BLENDERLOOK ok.
+- **Run the browser checks one at a time**: two at once on this machine's software GPU starve each other (LESSONS
+  2026-10-24). Restart a desk or Studio server after changing its Python (find the PID, kill it in a second command).
 
 ## 4. What's next (ask which)
 
-1. **Draw routes and safe zones in the scene builder** (GAMEPLAY_PLAN §6). They're typed into story.json for now. The
-   builder keeps unknown level keys in `model.levelExtra`, so routes survive a builder save already; spots are placed
-   on the desk.
-2. **Talk lines** (GAMEPLAY_PLAN §2): use a cast member for the first line, then again, then a reminder of the task, or
-   a scene or a choice.
-3. **Interactive cinematics** (§1, §8 step 2): you walk while she talks; if you leave, she waits and calls you back.
-4. **The blend when a scene takes an NPC** and hands them back (they jump to the scene's stage spot now).
-5. Smaller things: footstep noise (crouch quieter), the `gaze` part (§11), the Florence-like tracker (§11),
-   the old `stalker` action (`spawn despawn patrol hunt chase`), which overlaps `behave` and could become an alias of it.
-6. **Unreal's side** (§8 step 6): hiding, behaviours, sight and the mashed struggle in the StoryRunner, with the
-   desk as the reference. Nothing of the struggle is in `Source/` yet.
+1. **Look at the board games and the plushie in play** and say what feels wrong: the pieces' sizes, how close the
+   seat leans in, the plushie's softness (`jiggle`, the kind's `follow`, `squash`, `floppy`), the revolver's moment.
+2. **More board games or a game's own** (a card game of the story's, hanafuda, a ouija board): one file each, BOARD.
+3. **More physics kinds**: glass that breaks when dropped, a bottle that rolls, a liquid that slops (a part each).
+4. **The export in the desk**: the desk's bodies could wear a Studio export (`export/<name>.glb`) for a cast member,
+   which PERFORMANCE_PLAN wants; then into Unreal.
+5. **Unreal's side** of carrying and board games (the StoryRunner; the tables are greybox blocks tagged `use:game`
+   there for now), and Kimodo's motions on the characters (task 6, last, with Unreal).
+6. From before: routes and safe zones drawn in the scene builder, talk lines, interactive cinematics (GAMEPLAY_PLAN).
 
-## 5. The user's machine (from this session, outside the repo)
+## 5. The user's machine (unchanged, outside the repo)
 
-- `ue` now starts Unreal on **native Wayland** by default (`~/.config/unreal-omarchy/wayland` = 1; the template is
-  `unreal-omarchy/scripts/04-integrate.sh`). A dialog that opens blank is 5.8.3's SDL bug: run `UE_WAYLAND=0 ue` for
-  XWayland once. Not yet checked: whether the Hyprland rules for `UnrealEditor` (no fade-in, no blur) still match
-  that class on native Wayland.
-- MetaHuman Creator crashed (a SIGSEGV in its mesh import tool) when the target mesh changed while the tool was open.
-  Close the conform tool before editing a mesh. The PC froze because systemd wrote a 3.4 GB core dump. The user was
-  given a command to turn those dumps off, but hadn't run it at the time of writing.
-- `MHR_feminine.fbx` in the repo root: a one-off export of Mari's MHR body for an Unreal test. Not committed.
-- `test.json` in the repo root is not ours: leave it.
+- `ue` starts Unreal on native Wayland (`UE_WAYLAND=0 ue` for XWayland when a dialog opens blank).
+- Close MetaHuman Creator's conform tool before editing a mesh (it crashed once); systemd's core dumps can freeze the PC.
+- `MHR_feminine.fbx` and `test.json` in the repo root are not ours to commit.

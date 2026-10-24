@@ -25,8 +25,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option"}
+            "answered", "carrying", "dropped", "played"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result"}
+BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask"}
@@ -298,6 +299,31 @@ def check_world(story, things, r):
             r.err(f"{t.id}: safe is for a trigger: true when the player can't be seen in it")
         if "see_through" in p and not (u == "locker" and isinstance(p["see_through"], (int, float)) and 0 <= p["see_through"] <= 1):
             r.err(f"{t.id}: see_through is for a locker, a number 0..1 (how much of its slats are gaps)")
+        if u == "carry":                                # held E picks it up, held E puts it down; its shape is its body
+            if str(p.get("shape", "")).split()[:1] not in (["box"], ["cyl"], ["sphere"], ["asset"]):
+                r.err(f"{t.id}: carry needs a shape (box, cyl, sphere or asset): its size is the body that falls and rolls")
+            elif max(t.size) > 1.0:
+                r.warn(f"{t.id}: {max(t.size):.2f} m: too big to carry in the hands (keep a thing to carry under 1 m)")
+            if p.get("physics", "rigid") not in L.PHYSICS:
+                r.err(f"{t.id}: physics {p.get('physics')!r} ({', '.join(L.PHYSICS)})")
+        if "physics" in p and u != "carry":
+            r.err(f"{t.id}: physics is for a thing you carry (use: carry)")
+        if u == "game":                                 # a table with a board game: its rules in Content/Studio/BoardGames/ (or the game's own)
+            g, gs = p.get("game"), p.get("settings") or {}
+            if g not in BOARDS:
+                r.err(f"{t.id}: game {g!r} isn't a board game ({', '.join(sorted(BOARDS)) or 'none in Content/Studio/BoardGames'})")
+            elif not isinstance(gs, dict) or any(k != "seed" and k not in BOARDS[g].get("settings", {}) for k in gs):
+                r.err(f"{t.id}: {g}'s settings are {', '.join(BOARDS[g].get('settings', {})) or 'none'} (and seed), not {gs!r}")
+            if p.get("vs") is not None and p["vs"] not in cast:
+                r.err(f"{t.id}: vs {p['vs']!r} isn't in cast")
+            if "shape" not in p and "kit" not in p:
+                r.err(f"{t.id}: a board game needs its table (a shape or a kit)")
+        for f in ("game", "vs", "settings"):
+            if f in p and u != "game":
+                r.err(f"{t.id}: {f} is for a board game's table (use: game)")
+        if "jiggle" in p and not (u == "carry" and p.get("physics") == "plushie" and isinstance(p["jiggle"], (int, float))
+                                  and not isinstance(p["jiggle"], bool) and 0 <= p["jiggle"] <= 2):
+            r.err(f"{t.id}: jiggle is a plushie's softness, 0..2 (0 still, 1 a plushie, 2 jelly; physics: plushie)")
 
 
 STORY = None
@@ -666,6 +692,10 @@ def check_trigger(bid, w, story, things, beats, r):
     v = w[k]
     if "option" in w and k != "answered":
         r.err(f"{bid}: `option` goes with an answered trigger")
+    if "in" in w and k != "dropped":
+        r.err(f"{bid}: `in` goes with a dropped trigger")
+    if "result" in w and k != "played":
+        r.err(f"{bid}: `result` goes with a played trigger")
     if k not in TRIGGERS:
         r.err(f"{bid}: unknown trigger {k!r}")
     elif k in ("all", "any"):
@@ -692,6 +722,20 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: answered {v!r} isn't an ask in any stitch")
         elif "option" in w and w["option"] not in asks[v]:
             r.err(f"{bid}: answered {v!r} option {w['option']!r} isn't one of its answers ({', '.join(sorted(map(str, asks[v])))})")
+    elif k == "carrying" and v is not True and (v not in things or things[v].use != "carry"):
+        r.err(f"{bid}: carrying {v!r}: true (anything) or a thing with use: carry")
+    elif k == "dropped":                               # put down and settled: anywhere, or in a room or a trigger
+        if v not in things or things[v].use != "carry":
+            r.err(f"{bid}: dropped {v!r} isn't a placed thing with use: carry")
+        elif "in" in w:
+            z = things.get(w["in"])
+            if not z or (z.kind != "room" and z.use != "trigger") or z.level != things[v].level:
+                r.err(f"{bid}: dropped in {w['in']!r}: a room or a trigger on {v}'s level")
+    elif k == "played":                                # a board game ended (use: game): any result, or one of its game's
+        if v not in things or things[v].use != "game":
+            r.err(f"{bid}: played {v!r} isn't a table with use: game")
+        elif "result" in w and w["result"] not in BOARDS.get(things[v].d.get("game"), {}).get("results", [w["result"]]):
+            r.err(f"{bid}: played result {w['result']!r}: {things[v].d.get('game')} ends {', '.join(BOARDS[things[v].d['game']]['results'])}")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
         if v not in things or things[v].use != "roll":
             r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
@@ -860,6 +904,8 @@ def check_stitch(tid, st, story, things, r):
         w = b.get("when", {})
         if "rolled" in w and ("face" in w or "at_least" in w) and not (b.get("optional") or b.get("secret")):
             r.warn(f"{b['id']}: a roll is chance: a beat that needs a face should be optional or secret, or the player may never get it")
+        if "played" in w and "result" in w and not (b.get("optional") or b.get("secret")):
+            r.warn(f"{b['id']}: a game's result is chance: a beat that needs one result should be optional or secret (a flag the flow branches on), or the player may never get it")
         if b.get("secret") and b["secret"] not in story.get("secrets", {}):
             r.err(f"{b['id']}: secret {b['secret']!r} isn't in secrets")
         cued = "look" in b.get("when", {})
@@ -1252,10 +1298,14 @@ class World:
         v = w[k]
         if k == "start":
             return ("start", self.cur) in self.done_events
-        if k in ("enter", "exit", "look", "rolled"):      # rolled: the walker rolls until the face comes up
+        if k in ("enter", "exit", "look", "rolled", "played"):   # rolled, played: the walker plays until the face, the result, comes up
             return self.can_reach(v)
         if k == "hidden":                                 # the walker gets into that locker, or the nearest one it can reach
             return any(self.can_reach(t.id) for t in self.things.values() if t.use == "locker" and (v is True or t.id == v))
+        if k == "carrying":                               # the walker picks it up (that thing, or any it can reach)
+            return any(self.can_reach(t.id) for t in self.things.values() if t.use == "carry" and (v is True or t.id == v))
+        if k == "dropped":                                # ... and carries it there to put it down
+            return self.can_reach(v) and (w.get("in") is None or self.can_reach(w["in"]))
         if k == "use":
             t = self.things[v]
             if t.use == "pickup":
@@ -1282,7 +1332,7 @@ class World:
     def where(self, w):
         k = next(iter(set(w) - TRIGGER_EXTRA))
         v = w[k]
-        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden") and v in self.things else None
+        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden", "carrying", "dropped", "played") and v in self.things else None
 
     def apply_state(self, a):
         k = verbs(a)[0]
@@ -1435,6 +1485,14 @@ class World:
                         k = next(iter(set(b["when"]) - TRIGGER_EXTRA))
                         if k in ("use", "look"):
                             self.route.append({"node": nid, "do": k, "id": at, "secs": b["when"].get("secs", 1.0)})
+                        if k in ("carrying", "dropped"):           # picked up; put down where it's asked for, and it lies there
+                            self.route.append({"node": nid, "do": "carry", "id": at})
+                        if k == "dropped":
+                            to = b["when"].get("in")
+                            if to in self.things:
+                                self.go(to)
+                                self.things[at].room, self.things[at].pos = self.things[to].room, self.things[to].pos
+                            self.route.append({"node": nid, "do": "drop", "id": at, **({"in": to} if to else {})})
                     self.route.append({"node": nid, "do": "expect", "beat": b["id"]})
                     self.fired.add(b["id"])
                     fired_one = True
@@ -1624,8 +1682,9 @@ def main():
         route_out = argv[i + 1]
         del argv[i:i + 2]
     verbose = "-v" in argv
-    global GAME_DIR, POSES, FORMAT, STORY
+    global GAME_DIR, POSES, FORMAT, STORY, BOARDS
     story, path = L.load(game)
+    BOARDS = L.board_games(game)
     FORMAT, STORY = story.get("format"), story
     GAME_DIR = path.parent
     POSES = set(L.poses()["poses"])

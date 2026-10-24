@@ -3,7 +3,7 @@
 // level's solid blocks, the trigger volumes, doors, and the cursor; everything the story names is a registered part
 // (play/parts.js): conditions, actions, interactables, abilities.
 import * as THREE from "three";
-import { part, names, settingsOf } from "./parts.js";
+import { part, names, settingsOf, KINDS } from "./parts.js";
 import { matches } from "./conditions.js";
 import { runAll } from "./actions.js";
 import { interactableOf } from "./interactables.js";
@@ -13,6 +13,7 @@ import * as M from "../motion.js";
 import { Hud, besideAt } from "./hud.js";
 import { pauseMenu } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
+import { loadRules, boardCtx, Table } from "./boardgames.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
 const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
@@ -22,6 +23,7 @@ const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
 // a cast member who `sees` (behave): her cone (degrees, full width), its reach (m), how much of it a crouched player
 // is seen at, the seconds the suspicion meter takes to fill and to drain, and how long she's calm after a catch
 export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1.5, calm: 3 };
+const UP = new THREE.Vector3(0, 1, 0);
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 export class PlayRuntime {
@@ -38,6 +40,9 @@ export class PlayRuntime {
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
     this.suspicion = 0; this.calm = 0; this.lastCaught = null;
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
+    this.carried = null; this.holding = null;          // the thing in the hands ({m, id, level, yaw, r}); E being held ({t, secs, on | put})
+    this.playing = null; this.anims = []; this.boardTitles = {};   // a board game going on (its id); tweens on the game's clock
+    fetch(`/api/boardgames/${encodeURIComponent(opts.game || "_")}`).then(r => (r.ok ? r.json() : {})).then(j => { for (const g of j.games || []) this.boardTitles[g.id] = g.title; }).catch(() => { });
     this.listener = null; this.ray = new THREE.Raycaster();
     this.on = {
       click: () => { if (this.active && !this.busy) box.requestPointerLock(); },
@@ -58,6 +63,7 @@ export class PlayRuntime {
   stop() {
     this.active = false; this.listener = null; this.stopped = true;
     for (const w of this.waits) w.res(); this.waits = [];
+    for (const a of this.anims) a.done(); this.anims = [];
     this.box.removeEventListener("click", this.on.click);
     document.removeEventListener("pointerlockchange", this.on.lock);
     document.removeEventListener("mousemove", this.on.move);
@@ -73,8 +79,9 @@ export class PlayRuntime {
       e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
     }
     if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyC", "Space"].includes(e.code)) e.preventDefault();
+    if (this.playing) return;                          // at a board game: its choices take the keys
     this.keys[e.code] = down;
-    if (down && e.code === "KeyE" && !e.repeat) this.use();
+    if (e.code === "KeyE" && !e.repeat) { if (down) this.pressE(); else this.releaseE(); }
     if (!this.player.hiding) for (const a of ABILITIES) this.ability(a, "key", e, down);
   }
 
@@ -98,12 +105,21 @@ export class PlayRuntime {
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
     if (this.player.hiding) this.stage.seeThrough(this.player.hiding, this.stage.seeThroughOf(this.player.hiding));
     for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // shown again by their behaviour (drawNpcs)
-    const movers = this.stage.world.children.filter(o => o.isMesh && o.userData.use === "roll");   // things that roll: dice
+    const movers = this.stage.world.children.filter(o => o.isMesh && (o.userData.use === "roll" || o.userData.use === "carry"));   // dice, things you carry
     for (const m of movers) {
-      m.material = dieMaterials();
+      if (m.userData.use === "roll") m.material = dieMaterials();
       const k = kept.bodies[m.userData.id]; if (k) { m.position.copy(k.p); m.quaternion.copy(k.q); }
     }
-    this.physics = movers.length ? new Physics(this.stage, movers) : null;
+    this.physics = movers.length ? new Physics(this.stage, movers, m => m.userData.use === "carry" ? this.physicsOf(m) : { name: "rigid" }) : null;
+    // what's in the hands goes on with the player: picked up again in the rebuilt world (a scene played), or, to another
+    // level, left at their feet in its own
+    const was = this.carried; this.carried = null; this.holding = null; this.hud.hold(null);
+    if (was && was.level === level && this.byId[was.id]) { this.pickUp(this.byId[was.id], was.yaw); if (this.carried) this.carried.snap = true; }
+    else if (was) {
+      const p = this.player, a = p.yaw * Math.PI / 180, g = was.m.geometry.parameters, h = g.height ?? (g.radius || 0.15) * 2;
+      this.kept[was.level].bodies[was.id] = { p: new THREE.Vector3(p.pos.x + Math.cos(a) * 0.35, p.pos.y + h / 2, p.pos.z - Math.sin(a) * 0.35),
+                                              q: new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180 + was.yaw) };
+    }
     this.triggers = this.plan.pieces.filter(p => p.level === level && p.kind === "trigger").map(p => {
       const rv = p.tags.find(t => t.startsWith("room_volume:")), [w, d, h] = p.size, [x, y, z] = p.pos;
       return { id: rv ? rv.slice(12) : p.id, safe: !!(p.d || {}).safe, min: [x - w / 2, y - d / 2, z - h / 2], max: [x + w / 2, y + d / 2, z + h / 2] };
@@ -132,7 +148,7 @@ export class PlayRuntime {
   }
 
   // ---- collision: the player is an upright circle against every solid block, stepping onto low ones ----------------
-  blocks() { return this.stage.solid.filter(m => m.visible && m.geometry && m.geometry.parameters); }
+  blocks() { return this.stage.solid.filter(m => m.visible && m.geometry && m.geometry.parameters && m.userData.use !== "carry"); }   // a thing you carry never stops you
   extent(m) {
     const g = m.geometry.parameters, cy = m.getWorldPosition(new THREE.Vector3()).y;
     if (g.radiusTop !== undefined) return { r: g.radiusTop, hy: g.height / 2, cy };
@@ -181,10 +197,8 @@ export class PlayRuntime {
     }
     return best > -Infinity ? best : pos.y;
   }
-  isIn(t) {
-    const p = this.player.pos, x = p.x, y = -p.z, z = p.y + 0.5;
-    return x >= t.min[0] && x <= t.max[0] && y >= t.min[1] && y <= t.max[1] && z >= t.min[2] && z <= t.max[2];
-  }
+  isIn(t) { const p = this.player.pos; return this.pointIn(t, p.x, -p.z, p.y + 0.5); }
+  pointIn(t, x, y, z) { return x >= t.min[0] && x <= t.max[0] && y >= t.min[1] && y <= t.max[1] && z >= t.min[2] && z <= t.max[2]; }   // story coordinates
 
   // ---- what the story's parts call -------------------------------------------------------------------------------
   emit(ev) { if (this.listener) this.listener(ev); }
@@ -228,6 +242,7 @@ export class PlayRuntime {
     }
   }
   wait(secs) { return new Promise(res => this.waits.push({ at: this.clock + secs, res })); }
+  anim(secs, fn) { return new Promise(done => this.anims.push({ t: 0, secs: Math.max(0.01, secs), fn, done })); }   // fn(0..1) each frame, on the game's clock
   fade(to, secs) { return this.opts.fade ? this.opts.fade(to, secs) : Promise.resolve(); }
   lookAt(id, secs) {
     const o = this.byId[id]; if (!o) return;
@@ -263,6 +278,91 @@ export class PlayRuntime {
       this.hud.log(`rolled ${face}`);
       this.emit({ type: "rolled", id: t.userData.id, face });
     });
+  }
+  // carrying (use: carry): a thing held E picks up rides in the hands, springing after them as its physics kind says
+  // (physics.js: a plushie lags, squashes and flops), until E is held again to put it down; it falls from there, and
+  // when it has settled it's kept where it lies and heard: {type: "dropped", id, in: [the rooms and triggers it's in]}
+  physicsOf(m) { const d = (m.userData.piece || {}).d || {}; return { name: d.physics || "rigid", settings: d.jiggle !== undefined ? { jiggle: +d.jiggle } : null }; }
+  pickUp(m, yaw) {
+    if (!this.physics || this.carried) return;
+    if (!this.physics.pick(m)) return;
+    const g = m.geometry.parameters;
+    this.carried = { m, id: m.userData.id, level: this.level, r: Math.max(g.width || 0, g.depth || 0, (g.radius || g.radiusTop || 0) * 2) / 2,
+                     yaw: yaw ?? new THREE.Euler().setFromQuaternion(m.quaternion, "YXZ").y - (this.player.yaw - 90) * Math.PI / 180 };   // its turn to the player, kept
+    this.emit({ type: "carry", id: m.userData.id });
+  }
+  putDown() {
+    const c = this.carried; if (!c) return;
+    this.carried = null;
+    this.physics.drop(c.m, () => {
+      const at = c.m.position;
+      this.kept[this.level].bodies[c.id] = { p: at.clone(), q: c.m.quaternion.clone() };
+      this.emit({ type: "dropped", id: c.id, in: this.triggers.filter(t => this.pointIn(t, at.x, -at.z, at.y)).map(t => t.id) });
+    });
+  }
+  // in the hands: ahead of the eye, a little right and down (its kind's `hand`), bobbing with the steps, pulled in short
+  // of a wall; turned with the player
+  carryTick(dt) {
+    const c = this.carried, s = this.physics && this.physics.settingsOf(c.m); if (!s) return;
+    const cam = this.stage.camera, p = this.player, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...s.hand);
+    this.stepPhase = ((this.stepPhase || 0) + dt * walk * Math.PI * 2 * 1.8) % (Math.PI * 2);      // about two steps a second at a walk
+    hand.y += Math.sin(this.stepPhase) * 0.012 * walk;
+    const eye = cam.position.clone(), want = cam.localToWorld(hand), d = want.clone().sub(eye), len = d.length();
+    this.ray.set(eye, d.divideScalar(len)); this.ray.far = len + c.r;
+    const hit = this.ray.intersectObjects(this.blocks(), false)[0];
+    if (hit) want.copy(eye).addScaledVector(d, Math.max(0.12, hit.distance - c.r));
+    const q = new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180 + c.yaw);
+    if (c.snap) { const st = this.physics.moverOf(c.m).st; st.pos.copy(want); st.vel.set(0, 0, 0); st.quat.copy(q); c.snap = false; }
+    c.at = want; this.physics.carry(c.m, want, q, dt);
+  }
+  // E: a use at once, or held for a thing whose interactable has `hold` (seconds: picking it up), the reticle's ring
+  // filling. With a thing in the hands, held puts it down, and a tap uses what's under the reticle when it's let go
+  pressE() {
+    const t = this.target, ip = t && interactableOf(t), s = ip && this.set(ip.name);
+    if (this.carried) this.holding = { t: 0, secs: this.set("carry").hold, put: true };
+    else if (s && s.hold) this.holding = { t: 0, secs: s.hold, on: t };
+    else this.use();
+  }
+  releaseE() {
+    const h = this.holding; if (!h) return;
+    this.holding = null; this.hud.hold(null);
+    if (h.put) this.use();                              // a tap: the door, the switch (or standing up)
+  }
+  holdTick(dt) {
+    const h = this.holding;
+    if (!this.keys.KeyE || this.busy || (h.on && this.target !== h.on)) { this.holding = null; this.hud.hold(null); return; }   // let go, or looked away
+    h.t += dt; this.hud.hold(h.t / h.secs);
+    if (h.t < h.secs) return;
+    this.holding = null; this.hud.hold(null); this.hud.press();
+    if (h.put) this.putDown(); else this.pickUp(h.on);
+  }
+  // a board game (use: game): the player sits down at the table (seatAt) and its rules (Content/Studio/BoardGames/,
+  // or the game's own BoardGames/) play it out through ctx (play/boardgames.js); then they stand up again, and the
+  // story hears {type: "played", id, game, result}. `vs` names who they play (the dealer when no one)
+  async boardGame(t, s) {
+    if (this.playing) return;
+    const d = (t.userData.piece || {}).d || {}, id = t.userData.id;
+    let rules; try { rules = await loadRules(this.opts.game, d.game); } catch (e) { this.hud.log(`no rules for ${d.game}`); return; }
+    if (this.carried) this.putDown();                   // set down to play
+    this.playing = id; this.keys = {}; this.holding = null; this.hud.hold(null); this.hud.setCursor("none", "");
+    const p = this.player, back = { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs }, seat = this.seatAt(t, s);
+    await this.tween(seat);
+    const them = d.vs ? ((this.story.cast || {})[d.vs] || {}).name || d.vs : s.house, table = new Table(this, t, seat.yaw);
+    let result = null;
+    try { result = await rules.default(boardCtx(this, table, rules.meta, d.settings, them, id)); }
+    catch (e) { console.error(e); this.hud.log(`${d.game}: ${e.message}`); }
+    if (!this.stopped) await this.wait(1.0);
+    table.clear(); this.hud.board(null);
+    if (!this.stopped) await this.tween(back);
+    this.playing = null;
+    if (result) { this.hud.log(`${rules.meta.title}: ${result}`); this.emit({ type: "played", id, game: d.game, result }); }
+  }
+  seatAt(t, s) {                                      // at a long side of the table (the player's half), `back` from its edge, facing its middle and looking down at it
+    const g = t.geometry.parameters || {}, hw = (g.width || 1) / 2, hd = (g.depth || 1) / 2, L = t.worldToLocal(this.player.pos.clone());
+    const side = hw > hd ? new THREE.Vector3(0, 0, Math.sign(L.z) || 1) : new THREE.Vector3(Math.sign(L.x) || 1, 0, 0);
+    const at = t.localToWorld(side.clone().multiplyScalar(Math.min(hw, hd) + s.back)), mid = t.getWorldPosition(new THREE.Vector3());
+    const dx = mid.x - at.x, dz = mid.z - at.z, top = mid.y + (g.height || 0.75) / 2, feet = new THREE.Vector3(at.x, this.player.pos.y, at.z);
+    return { pos: feet, eye: s.eye, yaw: Math.atan2(-dz, dx) * 180 / Math.PI, pitch: Math.atan2(top - feet.y - s.eye, Math.hypot(dx, dz)) * 180 / Math.PI, secs: s.secs };
   }
   // a triggered scene (the `scene` action): blended in from where the player is; afterwards they carry on from its last
   // view (placeFromCamera)
@@ -384,7 +484,8 @@ export class PlayRuntime {
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
   aim() {
-    return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible), false)[0] || null;
+    const held = this.carried && this.carried.m;
+    return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && o !== held), false)[0] || null;
   }
   async use() {
     const seat = this.player.seat;
@@ -402,11 +503,13 @@ export class PlayRuntime {
     const hit = this.aim(), o = hit && hit.object, id = o && o.userData.id;
     if (id && id === this.look.id) this.look.t += dt; else this.look = { id, t: 0, dist: hit ? hit.distance : Infinity };
     if (hit) this.look.dist = hit.distance;
-    const ip = o && hit.distance <= USE_RANGE ? interactableOf(o) : null;
+    let ip = o && hit.distance <= USE_RANGE ? interactableOf(o) : null;
+    if (ip && this.carried && this.set(ip.name).hold) ip = null;          // the hands are full: another thing to carry waits
     this.target = ip ? o : null;
+    if (!ip && this.carried) { this.hud.setCursor("drop", this.set("carry").drop, null, this.titleOf(this.carried.m), true); return; }
     if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
     const pr = ip.prompt(o, this, this.set(ip.name));
-    this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o));
+    this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o), pr.hold);
   }
   // where a thing's prompt floats, in the HUD's pixels: a door's handle (on your side of the leaf, so it's where your
   // hand goes; the whole door still takes E), anything else its middle. Kept to the safe area (the screen's margin,
@@ -431,9 +534,10 @@ export class PlayRuntime {
     if (!o.userData.mid) o.userData.mid = o.worldToLocal(new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()));
     return o.localToWorld(o.userData.mid.clone());
   }
-  titleOf(t) {                                        // the name under the verb: an item, a note's title, a named thing
+  titleOf(t) {                                        // the name under the verb: an item, a note's title, a board game's, a named thing
     const d = (t.userData.piece || {}).d || {};
-    return d.item ? this.itemName(d.item) : d.note ? ((this.story.notes || {})[d.note] || {}).title || null : d.name || null;
+    return d.item ? this.itemName(d.item) : d.note ? ((this.story.notes || {})[d.note] || {}).title || null
+         : t.userData.use === "game" && d.game ? this.boardTitles[d.game] || d.game.replace(/_/g, " ") : d.name || null;
   }
 
   // ---- running the story -----------------------------------------------------------------------------------------
@@ -500,8 +604,10 @@ export class PlayRuntime {
       const L = this.lookTween; L.t += dt; const u = Math.min(1, L.t / L.secs), k = u * u * (3 - 2 * u);
       p.yaw = L.y0 + (L.y1 - L.y0) * k; p.pitch = L.p0 + (L.p1 - L.p0) * k; if (u >= 1) this.lookTween = null;
     }
-    if (!this.busy && !p.seat && !p.hiding && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
-    this.hud.setStance(p.hiding ? "hidden" : p.crouched ? "crouched" : "");
+    const feet = p.pos.clone();
+    if (!this.busy && !this.playing && !p.seat && !p.hiding && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
+    p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
+    this.hud.setStance(p.hiding ? "hidden" : [p.crouched && "crouched", this.carried && "carrying"].filter(Boolean).join(" · "));
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {
       d.t = Math.min(1, d.t + dt / d.secs); const k = 1 - (1 - d.t) * (1 - d.t);
       d.deg = d.from + (d.to - d.from) * k; this.stage.swingDoor(d.mesh, d.deg);
@@ -521,18 +627,22 @@ export class PlayRuntime {
     c.position.copy(eye); c.rotation.order = "YXZ";
     c.rotation.set(p.pitch * Math.PI / 180, (p.yaw - 90) * Math.PI / 180, 0);
     c.fov = vfov(+((this.story.game || {}).fov || FOV_H), c.aspect || 16 / 9); c.updateProjectionMatrix();
+    c.updateMatrixWorld();                               // the cursor's ray (and the hands) from where the eye is now, not the last frame
     const T = this.clock;
     for (const l of this.stage.lights) {
       const u = l.userData; let k = u.on ? (u.dim || 1) : 0;
       if (u.flicker) k *= 1 - u.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
       l.intensity = (u.base || 1) * k;
     }
+    if (this.holding) this.holdTick(dt);
+    if (this.carried) this.carryTick(dt);
+    for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
     this.watch(dt);
-    if (!this.busy) this.updateCursor(dt);
+    if (!this.busy && !this.playing) this.updateCursor(dt);
     this.emit({ type: "tick" });
     this.hud.tick();
     this.stage.render();
   }
 }
-export const PARTS = () => Object.fromEntries(["condition", "action", "interactable", "ability", "behaviour"].map(k => [k, names(k)]));
+export const PARTS = () => Object.fromEntries(KINDS.map(k => [k, names(k)]));

@@ -34,9 +34,10 @@ export class Hud {
     this.hint = mk("div", "ph-hint");
     for (const [k, w] of [["Click", "look around"], ["W A S D", "walk"], ["E", "use"], ["C", "crouch"], ["Esc", "pause"]]) { const p = mk("span", "ph-pair"); p.append(key(k), mk("span", "", w)); this.hint.append(p); }
     this.stance = mk("div", "ph-stance");
+    this.boardEl = mk("div", "ph-board"); this.flashEl = mk("div", "ph-flash");     // a board game's score; a muzzle's flash
     this.seenEl = mk("div", "ph-seen ph-meter"); this.seenEl.append(mk("div"));
     this.focus = mk("div", "ph-focus");            // the camera's focus: the world softens round what you're about to use
-    this.root.append(this.focus, this.obj, this.timerEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint);
+    this.root.append(this.focus, this.obj, this.timerEl, this.boardEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint, this.flashEl);
     box.append(this.root); applySettings(this.root);
     this.lineUntil = 0; this.panelEl = null; this.objTimer = 0;
   }
@@ -44,14 +45,15 @@ export class Hud {
   // what's under the reticle: its kind (the reticle opens into a ring; `locked` is red and has no key), the verb, the
   // thing's name, and `at` {x, y, flip, bare, fx, fy, clear} where the prompt floats (the HUD's pixels), or null: under
   // the reticle. `clear` (0..1, how near the reticle is to the point) sharpens the prompt; a look held FOCUS_MS pulls
-  // the camera's focus onto the thing: the world softens round it (data-focus="thing", the hole at fx, fy)
-  setCursor(kind, label, at, name) {
+  // the camera's focus onto the thing: the world softens round it (data-focus="thing", the hole at fx, fy). `hold`: E
+  // is held for it (picking up, putting down), the key says so and the ring fills while it's held (hold())
+  setCursor(kind, label, at, name, hold) {
     kind = kind || "none"; this.cursor.dataset.cursor = kind;
-    const sig = `${kind}|${label}|${name || ""}`;
+    const sig = `${kind}|${label}|${name || ""}|${hold ? 1 : 0}`;
     if (sig !== this.shown) {
       this.shown = sig; this.prompt.dataset.cursor = kind;
       const words = mk("span", "ph-words"); words.append(mk("span", "ph-label", label || "")); if (name) words.append(mk("span", "ph-name", name));
-      this.prompt.replaceChildren(...(label ? [mk("span", "ph-mark"), ...(kind === "locked" ? [] : [key("E")]), words] : []));
+      this.prompt.replaceChildren(...(label ? [mk("span", "ph-mark"), ...(kind === "locked" ? [] : [key(hold ? "Hold E" : "E")]), words] : []));
     }
     this.prompt.classList.toggle("on", !!label);
     this.prompt.classList.toggle("at", !!at); this.prompt.classList.toggle("flip", !!(at && at.flip)); this.prompt.classList.toggle("bare", !!(at && at.bare));
@@ -73,6 +75,12 @@ export class Hud {
     while (this.logEl.children.length > 5) this.logEl.firstChild.remove();
   }
   timer(secs) { this.timerEl.textContent = secs === null ? "" : Math.max(0, secs).toFixed(1); }
+  board(text) { this.boardEl.textContent = text || ""; }   // a board game's score at the top (null clears it)
+  flash() { const e = this.flashEl; e.classList.remove("on"); void e.offsetWidth; e.classList.add("on"); }
+  hold(k) {                                         // E held: the reticle's ring fills (0..1); null: let go
+    this.root.classList.toggle("holding", k !== null && k !== undefined);
+    this.cursor.style.setProperty("--ph-hold", Math.max(0, Math.min(1, k || 0)).toFixed(3));
+  }
   seen(k) {                                         // the suspicion meter: 0 hidden, 1 caught
     this.seenEl.classList.toggle("on", k > 0.01);
     this.seenEl.firstChild.style.width = Math.round(Math.min(1, k) * 100) + "%";

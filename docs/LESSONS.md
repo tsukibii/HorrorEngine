@@ -513,3 +513,19 @@ its log before re-running it.
   white. Measure where two paintings differ, not where a setting says the feature is.
 - **Wait for what a step is about, not its first sign:** a new character's name shows as soon as it starts loading; its
   look is applied (and saved) only once loading is done. The check that read the look on the name saw the old values.
+
+## A state that's already true isn't a wait (2026-10-24)
+
+STUDIO's accessories step reopened the character and waited for its four accessories to be drawn: they already were,
+from before the reopen, so the wait passed at once, the cleanup ran while the character was still loading, and the
+loaded file put the four back (the save the step then waited for matched the last save's word, "saved"). Before
+waiting for a state an action brings, take it away first (clear the drawn accessories, clear the status line), then
+wait for it to come back; and read the file to check a save landed.
+- **Two headless browsers at once starve each other:** PLAY failed on its second step ("the play clock stopped") while
+  STUDIO ran beside it: on the cloud's software GPU each frame took so long that the game's clock barely moved, and a
+  wait on it timed out. Run the browser checks one after another. Even alone, a long run slows as it goes (the locker
+  late in PLAY draws 2 frames a second), so every wait on something the game does has a 60 s bound, not 10 or 15.
+- **cannon-es mixes two bodies' own friction and bounce only when both have a material** (else the world's default
+  contact is used): a physics kind's `friction` and `bounce` would do nothing against the floor, so the level's static
+  bodies have one too (friction 1, bounce 1: the product is the thing's own). Found by reading its narrowphase before
+  tuning a plushie; read how an engine combines settings before tuning them.

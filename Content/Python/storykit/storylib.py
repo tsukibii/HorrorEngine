@@ -14,7 +14,26 @@ STUDIO = ROOT / "Content" / "Studio"                # shared by every game: clas
 WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
-USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll"}
+USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
+        "carry", "game"}
+PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
+BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/
+
+
+def board_games(game=None):
+    """{id: meta} for every board game a game can put on a table (use: game): the studio's, then the game's own (which
+    win). The meta is the rules file's one line of JSON, `export const meta = {...};`: title, players, results, settings."""
+    import re
+    out = {}
+    for d in (BOARD_GAMES, GAMES / game / "BoardGames" if game else None):
+        for f in sorted(d.glob("*.js")) if d and d.is_dir() else []:
+            m = None if f.name.startswith("_") else re.search(r"^export const meta = (\{.*\});$", f.read_text(encoding="utf-8"), re.M)
+            try:
+                if m:
+                    out[f.stem] = dict(json.loads(m.group(1)), file=f.relative_to(ROOT).as_posix())
+            except ValueError:
+                pass
+    return out
 WALLS = ("n", "e", "s", "w")
 # what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
 ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",
