@@ -46,7 +46,7 @@ Everything rides on the take id, so nothing anchors to scene time (the rule in C
 | a hand fix | `Footage/<G>/<take>.face_edit.json` | per-channel offsets, gains, mutes and keyed patches over the solve (§5.5); re-solving keeps them |
 | who it plays on | the clip's `who`; `clip.face_on` to override | a reaction take on the listener, a face on a different actor |
 | the character | `cast.<id>.person` | the Studio's character; the desk reads `body.bin`, `character.json`, `salon/salon.glb`, `<name>_clothes.obj` |
-| motions | `cast.<id>.moves: {idle, walk, run, talk[], sit, …}` → `Motion/<file>` | the set gameplay draws from; scenes keep their own segments |
+| motions | `cast.<id>.moves: {idle, walk, run, talk[], sit, …}` → `Motion/<file>` | the set gameplay draws from; scenes keep their own segments. Grouped by style (calm, uneasy, hunting...) in PATTERNS_PLAN §5; a set with no styles is `calm` |
 | the mode | `scene.mode` / `clip.mode`: `cinematic` \| `hybrid` \| `gameplay` | §3 |
 
 STORY_FORMAT grows `person`, `moves`, `mode` and `face_on` in the same commit as the runner and the check (the rule:

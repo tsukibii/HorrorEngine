@@ -33,6 +33,9 @@ During gameplay each cast member runs **one behaviour** (a function with a few s
 - `patrol`: cycle or pick among several routes; the story can swap the set
 - `follow` the player at a distance (later)
 
+States (calm, uneasy, hunting...), reusable patterns of them and the motions each state plays (a character's motion
+set by style and role, falling back to the pose library): docs/PATTERNS_PLAN.md (a plan, 2026-10-24).
+
 They're set by a beat (`{"behave": "mari", "as": "patrol", "routes": ["r_library", "r_hall"]}`) or per flow node, and
 a scene takes the actor over and hands them back to their behaviour when it ends (blended, §1). **Routes** are named
 lists of spots with optional waits and poses, drawn in the scene builder on the floor plan. Interactive cinematics

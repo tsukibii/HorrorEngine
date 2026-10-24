@@ -76,6 +76,9 @@ and blending between things (docs/DESK_REVIEW.md has the findings, what changed 
    name, a layer (arms over a walk), the blends; then DESK_REVIEW §3, the open items: the shot list loaded into the
    demo by name (needs Kimodo here), the reach into Kimodo, the `motions` table (idles, the seeker's loops) playing
    in the Watch and Play, a mark tool on the desk's stage.
+0c. **NPC patterns** (docs/PATTERNS_PLAN.md, a plan): states such as calm, uneasy and hunting, each with its own
+   motions (a per-character motion set by style and role); reusable patterns; routines and patrols. Its §13 has
+   five questions for the user, and §12 the build order (motion sets on NPCs first).
 1. **Look at the board games and the plushie in play** and say what feels wrong: the pieces' sizes, how close the
    seat leans in, the plushie's softness (`jiggle`, the kind's `follow`, `squash`, `floppy`), the revolver's moment.
 2. **More board games or a game's own** (a card game of the story's, hanafuda, a ouija board): one file each, BOARD.
