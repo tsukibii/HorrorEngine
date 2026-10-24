@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24, evening (NPC states parked; the desk made easy, like RPG Maker)
+
+- **No NPC states or behaviour patterns for the first few games:** what a cast member does in play is sequenced in the
+  story (beats with `behave`, the play rounds' own phases), which is enough; docs/PATTERNS_PLAN.md stays as a plan for
+  a later game that needs an NPC reacting on her own (a free-roaming stalker).
+- **The director's desk should be much easier to use:** an intuitive, drag-and-drop tool in the spirit of RPG Maker MV
+  (Claude as lead designer and UI artist): no JSON to type, things picked from lists of what exists, commands that
+  read like sentences, drag to place, connect and reorder.
+
 ## 2026-10-24, small hours (day and night; the look's plugins; accessories; plushies and board games)
 
 - **Each scene is day or night, chosen on the desk:** a scene starts at whatever time the scene it branched from was,

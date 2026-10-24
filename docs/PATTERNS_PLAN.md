@@ -1,5 +1,8 @@
 # NPC patterns: states, motion sets, routines (a plan)
 
+**Parked** (DECISIONS 2026-10-24, evening): the first games sequence their NPCs in the story; this is for a later game
+with an NPC that reacts on her own.
+
 A plan, written 2026-10-24 from the user's ask: "a behaviour pattern (for different states, e.g. calm, hunting) for
 NPCs to have different idle animations, easy to use and reusable, accounting for patrol cycles and loops". Nothing
 here is built yet. §12 is the build order and §13 the questions for the user.
