@@ -96,6 +96,11 @@ float mouthFront(float x) {                                        // how far fo
 }
 uniform float uLipOn, uLipZ, uLipAmt, uLipGrad, uLipGloss, uLipSoft, uLipLines, uLipDepth, uLipFar, uLipN; uniform vec2 uLipP[32], uLipC; uniform vec3 uLipCol; uniform vec4 uLipBox;   // the lipstick (index.html, lips.js)
 float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-14), 0.0, 1.0); return length(pa - ba * h); }
+float cutCover(vec2 P[32], vec4 box, vec2 p, float px) {           // the skin at an opening: 0 inside, 1 outside, the edge over a
+  if (p.x < box.x - 2.0 * px || p.y < box.y - 2.0 * px || p.x > box.z + 2.0 * px || p.y > box.w + 2.0 * px) return 1.0;   // pixel (px:
+  float d = 1e9; for (int i = 0, j = 31; i < 32; j = i++) d = min(d, segD(p, P[j], P[i]));   // a pixel's size here), as alpha to
+  return clamp(0.5 + (inCut(P, box, p) ? -d : d) / px, 0.0, 1.0);                           // coverage: no stair-steps
+}
 float lipSD(vec2 p) {                                              // how far inside the lipstick's outline (+) or outside it (-)
   float d = 1e9; for (int i = 0, j = 31; i < 32; j = i++) d = min(d, segD(p, uLipP[j], uLipP[i]));
   return inCut(uLipP, uLipBox, p) ? d : -d;
@@ -252,8 +257,11 @@ export function procedural(material) {
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
-      .replace("#include <color_fragment>", `if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x) && inCut(uMouthP, uMouthBox, vObj.xy)) discard;   // the mouth's opening: index.html draws the inside behind it
-if (uCutOn > 0.5 && ((vObj.z > uCutZ.x && inCut(uCutL, uCutBoxL, vObj.xy)) || (vObj.z > uCutZ.y && inCut(uCutR, uCutBoxR, vObj.xy)))) discard;   // the eyes cut out
+      .replace("#include <color_fragment>", `vec2 cutFw = fwidth(vObj.xy); float cutPx = max(max(cutFw.x, cutFw.y), 1e-7), cutA = 1.0;   // a pixel's size, taken before any branch
+if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x)) cutA = cutCover(uMouthP, uMouthBox, vObj.xy, cutPx);   // the mouth's opening: index.html draws the inside behind it
+if (uCutOn > 0.5) { if (vObj.z > uCutZ.x) cutA = min(cutA, cutCover(uCutL, uCutBoxL, vObj.xy, cutPx)); if (vObj.z > uCutZ.y) cutA = min(cutA, cutCover(uCutR, uCutBoxR, vObj.xy, cutPx)); }   // the eyes cut out
+if (cutA <= 0.0) discard;
+diffuseColor.a = cutA;                                             // the skin is opaque but at the openings' edges (alphaToCoverage)
 skinH = 0.0; skinRough = 1.0; skinCoat = 0.0; skinCoatR = -1.0; skinSm = uHasLay > 0.5 ? texture2D(uLayGlow, vSkinUv).a : 0.0;
 if (uProc > 0.5) {
   vec3 skinP = proceduralSkin(uTone, vObj);
@@ -310,7 +318,7 @@ if (uProc > 0.5) {                                                   // light th
 if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-9";
+  material.customProgramCacheKey = () => "studio-skin-10";
   return u;
 }
 

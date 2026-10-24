@@ -662,7 +662,7 @@ function setLight(name) {
 }
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
-const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3 });   // the skin: a coat for oil and dew
+const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.62, ior: 1.4, clearcoatRoughness: 0.3, alphaToCoverage: true });   // the skin: a coat for oil and dew; opaque but where the openings' edges fade over a pixel (skinshader.js cutCover)
 const geo = new THREE.BufferGeometry();                // shared points: the smooth normals
 const POS = new Float32Array(N * 3), RAW = new Float32Array(N * 3);
 geo.setAttribute("position", new THREE.BufferAttribute(POS, 3)); geo.setIndex(new THREE.BufferAttribute(TRIS, 1));
@@ -929,14 +929,28 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   eyeMats[side].customProgramCacheKey = () => "studio-eye-2";
 }
 // the tear line: a thin wet strip along each lower lid's edge (MetaHuman's lacrimal fluid), black and added on, so only
-// what it reflects shows: the lid's wet rim catching the light. Built each frame on the opening's lower lid line
-const TEARM = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.03, side: THREE.DoubleSide,
-  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, envMapIntensity: 1.5 });
+// what it reflects shows: the lid's wet rim catching the light. Built each frame on the opening's lower lid line, in
+// three rows (on the eye, the meniscus, the lid's rim): the middle one raised, so the normals turn across it and only
+// a sliver of it catches a light, and faded to nothing at both edges and toward the corners (a `fade` per point), so
+// it reads as a wet glint and never as a hard white line. Rough enough that a light's highlight spreads; Tear line
+// scales all of it (uTear: at 0.5, 0.4 of what the strip reflects)
+const TEARM = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.18, side: THREE.DoubleSide,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, envMapIntensity: 1 });
+TEARM.userData.k = { value: 0 };
+TEARM.onBeforeCompile = sh => {
+  sh.uniforms.uTear = TEARM.userData.k;
+  sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute float fade; varying float vFade;")
+    .replace("#include <begin_vertex>", "#include <begin_vertex>\nvFade = fade;");
+  sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vFade; uniform float uTear;")
+    .replace("#include <opaque_fragment>", "#include <opaque_fragment>\ngl_FragColor.rgb *= vFade * uTear;");
+};
+TEARM.customProgramCacheKey = () => "studio-tear-2";
 const TEAR = {};
 for (const side of ["L", "R"]) {
-  const g = new THREE.BufferGeometry(), idx = [];
-  for (let i = 0; i < 16; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-  g.setIndex(idx); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(17 * 2 * 3), 3));
+  const g = new THREE.BufferGeometry(), idx = [], fade = new Float32Array(17 * 3);
+  for (let i = 0; i < 16; i++) { const a = i * 3; idx.push(a, a + 1, a + 3, a + 1, a + 4, a + 3, a + 1, a + 2, a + 4, a + 2, a + 5, a + 4); }
+  for (let i = 0; i <= 16; i++) fade[i * 3 + 1] = Math.pow(Math.sin(Math.PI * i / 16), 1.5);   // the middle row only; the edges stay 0
+  g.setIndex(idx); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(17 * 3 * 3), 3)); g.setAttribute("fade", new THREE.BufferAttribute(fade, 1));
   const m = TEAR[side] = new THREE.Mesh(g, TEARM); m.renderOrder = 4; m.frustumCulled = false; m.userData.noShadow = true; m.visible = false; rig.add(m);
 }
 function tearLine(side, pts, c) {                      // pts: the opening's outline now (0..16 the lower lid, outer corner to inner)
@@ -944,11 +958,12 @@ function tearLine(side, pts, c) {                      // pts: the opening's out
   const P = m.geometry.attributes.position.array, mm = 0.001 * SCALE;
   for (let i = 0; i <= 16; i++) {
     const p = pts[i], t = Math.sqrt(Math.sin(Math.PI * i / 16)), dx = c[0] - p[0], dy = c[1] - p[1], l = Math.hypot(dx, dy) || 1;
-    P.set([p[0] + dx / l * 0.45 * mm * t, p[1] + dy / l * 0.45 * mm * t, p[2] + 0.3 * mm], i * 6);   // onto the eye
-    P.set([p[0] - dx / l * 0.2 * mm * t, p[1] - dy / l * 0.2 * mm * t, p[2] + 0.3 * mm], i * 6 + 3);  // and onto the lid's rim
+    P.set([p[0] + dx / l * 0.45 * mm * t, p[1] + dy / l * 0.45 * mm * t, p[2] + 0.2 * mm], i * 9);           // onto the eye
+    P.set([p[0] + dx / l * 0.1 * mm * t, p[1] + dy / l * 0.1 * mm * t, p[2] + (0.2 + 0.25 * t) * mm], i * 9 + 3);   // the meniscus, raised
+    P.set([p[0] - dx / l * 0.2 * mm * t, p[1] - dy / l * 0.2 * mm * t, p[2] + 0.2 * mm], i * 9 + 6);         // onto the lid's rim
   }
   m.geometry.attributes.position.needsUpdate = true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere();
-  TEARM.envMapIntensity = 0.5 + 2.5 * k;
+  TEARM.userData.k.value = 0.8 * k;
 }
 function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid outline now, smoothed and scaled by Opening (or k): 32 points
   const ring = lidRing(side), n = ring.length, out = [];

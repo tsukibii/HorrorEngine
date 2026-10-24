@@ -487,6 +487,29 @@ const png = rgb => {
     if (Math.abs(r.occ - 0.7) > 1e-6) throw new Error(`the eye occlusion isn't set: ${r.occ}`);
     if (!r.tear || r.tearOff || !(r.far < 1.2)) throw new Error(`the tear line: on ${r.tear}, off at 0 ${!r.tearOff}, ${r.far.toFixed(2)} mm from the lower lid`);
     console.log(`       the iris's edge: its steepest step ${r.hard.toFixed(0)} -> ${r.soft.toFixed(0)} (softness 0 -> 0.8); the tear line within ${r.far.toFixed(2)} mm of the lower lid`);
+    // the tear line seen close from the front: a soft glint, never a hard white line (the user's screenshot, 2026-10-24:
+    // it added up to 228 of 255 in a band with hard edges); the openings' edges faded over a pixel (alpha to coverage)
+    await page.click('#views button[data-v="head"]');
+    const eye = async k => {
+      await page.evaluate(k => { const b = window.__body, o = b.orbit, h = b.st.height, e = b.EYES.R.position; b.st.expr.fill(0); b.st.eyes.tearline = k; b.compose();
+        o.yaw = 0.05; o.pitch = 0.05; o.zoom = 0.09; o.pan.set(e.x, e.y - 0.004 * b.scale - (h - 0.12 * h / 1.7), e.z); }, k);
+      await page.waitForTimeout(500);
+      const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x + r.width * 0.3, y: r.y + r.height * 0.3, width: r.width * 0.4, height: r.height * 0.4 }; });
+      return (await page.screenshot({ clip, timeout: 120000 })).toString("base64");
+    };
+    const was = await page.evaluate(() => window.__body.st.eyes.tearline);
+    const off = await eye(0), on = await eye(0.5);
+    const t = await page.evaluate(async ([off, on, was]) => {
+      const px = async b64 => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height;
+        const g = c.getContext("2d"); g.drawImage(i, 0, 0); return g.getImageData(0, 0, c.width, c.height).data; };
+      const a = await px(off), b = await px(on); let peak = 0;
+      for (let k = 0; k < a.length; k += 4) peak = Math.max(peak, (b[k] + b[k + 1] + b[k + 2] - a[k] - a[k + 1] - a[k + 2]) / 3);
+      const B = window.__body; B.st.eyes.tearline = was; B.compose();
+      return { peak, a2c: B.material.alphaToCoverage };
+    }, [off, on, was]);
+    if (!(t.peak > 10 && t.peak < 115)) throw new Error(`the tear line adds up to ${t.peak.toFixed(0)} of 255 (a glint is 10 to 115)`);
+    if (!t.a2c) throw new Error("the skin's openings are cut with a hard edge (no alpha to coverage)");
+    console.log(`       the tear line close up: at most ${t.peak.toFixed(0)} of 255 added, faded at its edges`);
   });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
     await page.click('#views button[data-v="head"]'); await page.click("#splitBtn");
