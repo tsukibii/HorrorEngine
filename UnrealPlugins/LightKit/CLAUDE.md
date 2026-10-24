@@ -94,6 +94,7 @@ Written for 5.8 against the 5.4 to 5.8 API. Where it touches the engine, and wha
 | `ULightmassPortalComponent`: its box assumed to be a unit extent (scale = half size); check the portal's drawn box matches the window | window | `.../LightmassPortalComponent.h`, `Engine/Private/LightmassPortal.cpp` |
 | `UProceduralMeshComponent::CreateMeshSection_LinearColor` | window shaft | `Plugins/Runtime/ProceduralMeshComponent/Source/.../ProceduralMeshComponent.h` |
 | Python: `MaterialEditingLibrary`, `MaterialExpressionCustom` (`code`, `inputs`, `output_type`), `CustomInput.input_name`, `MaterialExpressionEyeAdaptationInverse` (falls back if missing), `MaterialDomain`/`BlendMode`/`MaterialProperty` names | the material script | the editor's Python API (`help(unreal.MaterialExpressionCustom)`) |
+| `FindObject<UClass>(nullptr, "/Script/UltraVHS.UltraVHSComponent")`, `ForEachObjectOfClass`, `UObject::FindFunction` + `ProcessEvent` (a `{bool, float}` parameter block, checked against `ParmsSize`), `UWorld::AddOnActorSpawnedHandler` | sky `TellCamcorder` (UltraVHS's night mode by name) | `CoreUObject/Public/UObject/UObjectHash.h`, `.../UObjectGlobals.h`, `Engine/Classes/Engine/World.h` |
 | Light functions see light-space coordinates as texture coordinates (`LightFunctionPixelShader.usf`: TexCoords = LightVector.zy) | the pattern HLSL | `Engine/Shaders/Private/LightFunctionPixelShader.usf` |
 
 Fix with `UE_VERSION_OLDER_THAN(...)` guards (`Misc/EngineVersionComparison.h`) and add a row here.

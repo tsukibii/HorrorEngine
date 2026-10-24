@@ -22,6 +22,10 @@ and a new knob goes in five places: `FUltraVHSSettings` (with its meta and comme
 `UltraVHS::ToRenderParams` (subsystem), the shader's parameter struct and the `Params->` line in the view extension,
 and the `.usf`. The README's knob table too.
 
+**Night mode** (`bNightMode`, `NightBlackLevel`, `SetNightMode`, `r.UltraVHS.Night`) lives on the component, not in
+`FUltraVHSSettings`: the subsystem blends `BlackLevel` toward the night's before `ToRenderParams`, so the shader and
+the presets don't change and a preset applied at night stays at night. LightKit's sky calls `SetNightMode` by name.
+
 ## 1. Install
 
 Follow `../CLAUDE.md` steps 1 to 3 with `<Plugin>` = `UltraVHS`. The folder must stay named `UltraVHS` (the render
@@ -86,7 +90,7 @@ It prints each number next to the reference's. What to move when a number is off
 | edge rise | `LumaBlur` (and `TapeLines`: fewer lines, wider edges) |
 | halo | `Sharpen` (amount), `SharpenRadius` (width) |
 | colour edges vs luma | `ChromaBlur` |
-| black, white, shadows' tint | `BlackLevel`, `WhiteLevel` |
+| black, white, shadows' tint | `BlackLevel`, `WhiteLevel` (at night: `NightBlackLevel`) |
 | vignette | `Vignette` (only over many frames: one frame's corners are just the scene) |
 | noise | the Wear knobs (the reference has none) |
 | motion peaks and size | the handheld settings: `DriftSpeed` and `Drift*` for the slow wander, `StepsPerSecond` and `Bob*` for the walk |

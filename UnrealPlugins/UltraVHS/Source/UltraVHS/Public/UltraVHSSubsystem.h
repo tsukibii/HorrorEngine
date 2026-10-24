@@ -13,7 +13,8 @@ struct FUltraVHSRenderParams;
  * the active UUltraVHSComponent: the enabled one with the highest Priority, the newest on a tie.
  *
  * Console: r.UltraVHS -1 (components decide), 0 (off), 1 Camcorder, 2 WornTape, 3 Nightmare (on without a
- * component, also in the editor's viewport); r.UltraVHS.Glitch 0..1 adds damage on top.
+ * component, also in the editor's viewport); r.UltraVHS.Glitch 0..1 adds damage on top; r.UltraVHS.Night -1
+ * (the component's night mode), 0 day, 1 night.
  */
 UCLASS()
 class ULTRAVHS_API UUltraVHSSubsystem : public UWorldSubsystem

@@ -61,6 +61,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light Kit|Camera")
 	bool bManagePostProcess = true;
 
+	/** With UltraVHS in the project, its camcorder follows the time: night mode (a cool blue black) at Night, off at
+	 * Day and Dusk, blended with SetTime. Found by name, so neither plugin needs the other; nothing happens without it. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light Kit|Camera")
+	bool bTellCamcorder = true;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Light Kit|Components")
 	TObjectPtr<UDirectionalLightComponent> Sun;
 
@@ -100,6 +105,7 @@ public:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -109,6 +115,10 @@ private:
 	void ApplyMobility();
 	void Apply(const FLightKitTimeSettings& S);
 	void TellFollowers();
+	void TellCamcorder(float BlendSeconds, AActor* OnlyActor = nullptr) const;
+	void OnActorSpawned(AActor* Actor);
+
+	FDelegateHandle SpawnedHandle;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> CloudMaterial;

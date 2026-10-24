@@ -1,7 +1,7 @@
 """UltraVHS offline: the shader's three passes in numpy, for previewing settings without Unreal.
 
     uv run --with numpy --with pillow python preview.py IN.png OUT.png [--preset camcorder|worn|nightmare]
-        [--set Name=value ...] [--frame N] [--side-by-side]
+        [--set Name=value ...] [--night] [--frame N] [--side-by-side]
     uv run --with numpy --with pillow python preview.py --chart chart.png    # a test chart to feed it
 
 It follows Shaders/Private/UltraVHS.usf line for line (same names), except the persistence (no last frame here)
@@ -28,6 +28,8 @@ PRESETS = {
                       LumaBlur=1.8, ChromaBlur=4.5, ChromaShift=3.0, Ghosting=0.3, LumaNoise=0.5, ChromaNoise=0.7,
                       TrackingJitter=1.0, TrackingError=0.5, HeadSwitch=1.0, Dropouts=1.0, Scanlines=0.15),
 }
+
+NIGHT_BLACK = (0.02, 0.03, 0.05)   # the component's NightBlackLevel: night mode records black as a cool blue
 
 M32 = np.uint32(0xFFFFFFFF)
 
@@ -236,6 +238,7 @@ def main():
     ap.add_argument("output", nargs="?")
     ap.add_argument("--preset", default="camcorder", choices=list(PRESETS))
     ap.add_argument("--set", action="append", default=[], help="Name=value (a knob from FUltraVHSSettings)")
+    ap.add_argument("--night", action="store_true", help="night mode: BlackLevel becomes the night's cool blue")
     ap.add_argument("--frame", type=int, default=0)
     ap.add_argument("--side-by-side", action="store_true")
     ap.add_argument("--chart", help="write the test chart here and stop")
@@ -246,6 +249,8 @@ def main():
         print("wrote", a.chart)
         return
     p = dict(CAMCORDER, **PRESETS[a.preset])
+    if a.night:
+        p["BlackLevel"] = NIGHT_BLACK
     for kv in a.set:
         k, v = kv.split("=", 1)
         if k not in p:

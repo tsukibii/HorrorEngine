@@ -54,8 +54,27 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UltraVHS|Camera", meta = (EditCondition = "bSetMotionBlur", ClampMin = "0", ClampMax = "100"))
 	float MotionBlurMax = 6.f;
 
+	/**
+	 * Night: black records as NightBlackLevel, a cool blue, instead of the preset's warm lift, so a deep-blue night
+	 * (Light Kit's Night) stays blue on the tape. Works with every preset; SetNightMode can blend it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UltraVHS|Night")
+	bool bNightMode = false;
+
+	/** What black records as at night. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UltraVHS|Night")
+	FLinearColor NightBlackLevel = FLinearColor(0.02f, 0.03f, 0.05f, 1.f);
+
 	UFUNCTION(BlueprintCallable, Category = "UltraVHS")
 	void SetVHSEnabled(bool bInEnabled);
+
+	/** Night on or off, blended over BlendSeconds (0: at once), e.g. alongside Light Kit Sky's SetTime. */
+	UFUNCTION(BlueprintCallable, Category = "UltraVHS|Night")
+	void SetNightMode(bool bNight, float BlendSeconds = 0.f);
+
+	/** How much of the night is on right now: 0 day, 1 night, between while blending. */
+	UFUNCTION(BlueprintPure, Category = "UltraVHS|Night")
+	float GetNight() const;
 
 	UFUNCTION(BlueprintCallable, Category = "UltraVHS")
 	void ApplyPreset(EUltraVHSPreset InPreset);
@@ -93,6 +112,9 @@ private:
 	TWeakObjectPtr<APlayerCameraManager> ModifierOwner;
 
 	double GlitchStart = -1.0;
+	double NightStart = -1.0;   // a blend's start (real time), -1 when none is running
+	float NightBlend = 0.f;
+	float NightFrom = 0.f;
 	float GlitchDuration = 0.f;
 	float GlitchStrength = 0.f;
 };

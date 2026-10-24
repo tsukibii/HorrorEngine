@@ -58,8 +58,9 @@ with a blue sky glow and fill (key-to-fill about 8:1), and the sky itself stays 
 - *Warm against cool:* practical lights at 2700 to 3000 K (bulbs), sodium street lights at 2000 K, LEDs at 4000 K.
   Night reads as night by contrast, not by darkness.
 - *Blue haze in the distance:* a little height fog in deep blue gives depth to streets and courtyards.
-- With UltraVHS, give the Camcorder a bluer black for night scenes (`BlackLevel` about 0.02, 0.03, 0.05): its default
-  is warm.
+- With UltraVHS, its camcorder's default black is warm and would grey the blue: the sky turns UltraVHS's **night
+  mode** on at Night (black records as 0.02, 0.03, 0.05) and off by day, blended with `SetTime`
+  (`bTellCamcorder`, on by default; found by name, so neither plugin needs the other).
 
 **Reflections (metal, glass, water)**
 - *Reflection captures:* one Box Reflection Capture per room, sized to the room (Unreal's own, drag in). They're

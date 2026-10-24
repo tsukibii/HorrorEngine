@@ -154,6 +154,27 @@ void UUltraVHSComponent::SetHandheldEnabled(bool bInEnabled)
 	}
 }
 
+void UUltraVHSComponent::SetNightMode(bool bNight, float BlendSeconds)
+{
+	const UWorld* World = GetWorld();
+	NightFrom = GetNight();
+	bNightMode = bNight;
+	NightStart = World && BlendSeconds > 0.f ? World->GetRealTimeSeconds() : -1.0;
+	NightBlend = FMath::Max(BlendSeconds, 0.01f);
+}
+
+float UUltraVHSComponent::GetNight() const
+{
+	const float Target = bNightMode ? 1.f : 0.f;
+	const UWorld* World = GetWorld();
+	if (!World || NightStart < 0.0)
+	{
+		return Target;
+	}
+	const float T = FMath::Clamp(float(World->GetRealTimeSeconds() - NightStart) / NightBlend, 0.f, 1.f);
+	return FMath::Lerp(NightFrom, Target, FMath::SmoothStep(0.f, 1.f, T));
+}
+
 void UUltraVHSComponent::TriggerGlitch(float Strength, float Duration)
 {
 	if (const UWorld* World = GetWorld())
@@ -192,6 +213,10 @@ void UUltraVHSComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 	else if (Name == GET_MEMBER_NAME_CHECKED(UUltraVHSComponent, Settings))
 	{
 		Preset = EUltraVHSPreset::Custom;
+	}
+	else if (Name == GET_MEMBER_NAME_CHECKED(UUltraVHSComponent, bNightMode))
+	{
+		NightStart = -1.0; // the box ticked in the editor: at once
 	}
 }
 #endif

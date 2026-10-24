@@ -41,6 +41,11 @@ From Blueprint or C++ on the component: `SetVHSEnabled`, `ApplyPreset`, `SetHand
 `Handheld` (read and write), and **`TriggerGlitch(Strength, Duration)`**: a moment of tape damage that fades out (a
 scare, a cut, a rewind, a cast member too close to the lens).
 
+**Night mode.** A camcorder lifts black to a warm grey, which fights a deep-blue night. Tick **Night Mode** on the
+component (or `SetNightMode(true, BlendSeconds)`) and black records as `NightBlackLevel` instead, a cool blue
+(0.02, 0.03, 0.05), with any preset; `GetNight()` says how far a blend has got. With LightKit in the project its
+**Light Kit Sky** does this by itself: night mode at Night, off at Day and Dusk, blended along with `SetTime`.
+
 With more than one component in a world (a cutscene camera that records differently), the enabled one with the
 highest `Priority` is on screen.
 
@@ -52,6 +57,7 @@ highest `Priority` is on screen.
 | `r.UltraVHS 0` | off everywhere |
 | `r.UltraVHS 1` / `2` / `3` | on with Camcorder / WornTape / Nightmare, with or without a component, **also in the editor's viewport** |
 | `r.UltraVHS.Glitch 0..1` | damage on top, to try the glitch by hand |
+| `r.UltraVHS.Night -1` / `0` / `1` | the component's night mode (default) / day / night, to compare by hand |
 
 ## The knobs
 
@@ -65,6 +71,7 @@ Distances on the tape are in 480-line pixels, so they mean the same at any `Tape
 | | `ChromaticAberration` | 0 | the red/blue fringe at the corners, in tape pixels |
 | | `Vignette` | 0.08 | 1 / (1 + v r²)²: the corners at about 75% of the centre |
 | Camera | `BlackLevel` | 0.035, 0.027, 0.022 | what black records as (lifted, warm) |
+| Night (on the component) | `bNightMode`, `NightBlackLevel` | off, 0.02, 0.03, 0.05 | at night black records as this cool blue instead of `BlackLevel` |
 | | `WhiteLevel` | 0.82, 0.81, 0.78 | what full white records as |
 | | `Saturation` | 0.8 | |
 | Tape | `LumaBlur` | 1.4 | softness along the line (Gaussian sigma) |
@@ -113,8 +120,10 @@ levels and the hand-held motion, not tape damage. WornTape and Nightmare add the
 
 No Unreal needed (Python with numpy and Pillow; `uv run --with numpy --with pillow python ...`):
 
-- `Tools/preview.py IN.png OUT.png [--preset camcorder|worn|nightmare] [--set Knob=value ...]`: the three passes in
-  numpy, line for line with the shader (`--chart chart.png` writes a test chart).
+- `Tools/preview.py IN.png OUT.png [--preset camcorder|worn|nightmare] [--night] [--set Knob=value ...]`: the three
+  passes in numpy, line for line with the shader (`--chart chart.png` writes a test chart; `--night` the night mode's
+  black). A night frame with shadows at (0.01, 0.02, 0.05): black records as 0.04, 0.035, 0.041 by day (the blue
+  gone grey) and 0.027, 0.039, 0.069 in night mode.
 - `Tools/measure.py CAPTURE.mp4 | frames...`: the numbers above, from a capture or stills, printed next to the
   reference's.
 

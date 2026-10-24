@@ -9,6 +9,7 @@
 #include "LightKitPattern.h"
 #include "LightKitWindow.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/UObjectHash.h"
 
 ALightKitSky::ALightKitSky()
 {
@@ -77,6 +78,55 @@ void ALightKitSky::BeginPlay()
 	Current = Settings;
 	Apply(Current);
 	TellFollowers();
+	TellCamcorder(0.f);
+	if (UWorld* World = GetWorld())
+	{
+		// a player (and its camcorder) spawned after the sky, or respawned, gets the time too
+		SpawnedHandle = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateUObject(this, &ALightKitSky::OnActorSpawned));
+	}
+}
+
+void ALightKitSky::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->RemoveOnActorSpawnedHandler(SpawnedHandle);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void ALightKitSky::OnActorSpawned(AActor* Actor)
+{
+	TellCamcorder(0.f, Actor);
+}
+
+void ALightKitSky::TellCamcorder(float BlendSeconds, AActor* OnlyActor) const
+{
+	UWorld* World = GetWorld();
+	if (!bTellCamcorder || Time == ELightKitTime::Custom || !World || !World->IsGameWorld())
+	{
+		return;
+	}
+	// UltraVHS's component by name: no module dependency, and nothing to do when the project hasn't got it
+	UClass* Camcorder = FindObject<UClass>(nullptr, TEXT("/Script/UltraVHS.UltraVHSComponent"));
+	if (!Camcorder)
+	{
+		return;
+	}
+	struct FParams { bool bNight; float BlendSeconds; } Params{ Time == ELightKitTime::Night, BlendSeconds };
+	ForEachObjectOfClass(Camcorder, [&](UObject* Obj)
+	{
+		UActorComponent* Comp = Cast<UActorComponent>(Obj);
+		if (!Comp || Comp->GetWorld() != World || (OnlyActor && Comp->GetOwner() != OnlyActor))
+		{
+			return;
+		}
+		UFunction* Fn = Comp->FindFunction(TEXT("SetNightMode"));
+		if (Fn && Fn->ParmsSize == sizeof(FParams))
+		{
+			Comp->ProcessEvent(Fn, &Params);
+		}
+	});
 }
 
 void ALightKitSky::ApplyMobility()
@@ -198,6 +248,7 @@ void ALightKitSky::SetTime(ELightKitTime NewTime, float BlendSeconds)
 	if (NewTime != ELightKitTime::Custom)
 	{
 		SetSettings(FLightKitTimeSettings::FromPreset(NewTime), BlendSeconds);
+		TellCamcorder(BlendSeconds);
 	}
 }
 

@@ -20,6 +20,13 @@ static TAutoConsoleVariable<float> CVarUltraVHSGlitch(
 	TEXT("Tape damage added on top of everything, 0..1 (for trying the glitch without a trigger)."),
 	ECVF_Default);
 
+static TAutoConsoleVariable<int32> CVarUltraVHSNight(
+	TEXT("r.UltraVHS.Night"),
+	-1,
+	TEXT("-1: the component decides (its night mode, default). 0: day. 1: night (black records as a cool blue, ")
+	TEXT("the component's NightBlackLevel or 0.02, 0.03, 0.05 without one)."),
+	ECVF_Default);
+
 namespace UltraVHS
 {
 	static void ToRenderParams(const FUltraVHSSettings& S, float Glitch, FUltraVHSRenderParams& Out)
@@ -126,6 +133,15 @@ bool UUltraVHSSubsystem::BuildRenderParams(FUltraVHSRenderParams& Out) const
 	else
 	{
 		return false;
+	}
+
+	// night: black goes from the preset's warm lift to the component's cool blue
+	const int32 NightMode = CVarUltraVHSNight.GetValueOnGameThread();
+	const float Night = NightMode >= 0 ? (NightMode > 0 ? 1.f : 0.f) : (Active ? Active->GetNight() : 0.f);
+	if (Night > 0.f)
+	{
+		const FLinearColor NightBlack = Active ? Active->NightBlackLevel : FLinearColor(0.02f, 0.03f, 0.05f, 1.f);
+		Settings.BlackLevel = Settings.BlackLevel + (NightBlack - Settings.BlackLevel) * Night;
 	}
 
 	const float Glitch = (Active ? Active->GetGlitch() : 0.f) + CVarUltraVHSGlitch.GetValueOnGameThread();
