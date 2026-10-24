@@ -432,7 +432,29 @@ export class Stage {
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), br));
       pos = M.fk(lib, p, h).pos;
     }
+    if ((body.layers || []).length) pos = this.layered(c, pos, t, dur, files, h);
     if ((body.mods || []).some(m => m.type === "mirror")) pos = M.mirrorPositions(pos);
+    return pos;
+  }
+  // a clip's layers over its body, in order: each a part of the body (its mask) from a made motion or a pose, over its
+  // window of the clip (from..to), faded in and out (a layer at the clip's edge doesn't fade there: the blend does it)
+  layered(c, pos, t, dur, files, h) {
+    const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
+    for (const ly of c.body.layers) {
+      const a = +(ly.from ?? 0), b = +(ly.to ?? 1); if (!(b > a) || u < a || u > b) continue;
+      const ws = (b - a) * dur, lt = (u - a) * dur, fade = +(ly.fade ?? 0.3);
+      let w = +(ly.weight ?? 1);
+      if (a > 0 && fade > 0) w *= M.EASES.inout(Math.min(1, lt / fade));
+      if (b < 1 && fade > 0) w *= M.EASES.inout(Math.min(1, (ws - lt) / fade));
+      if (!(w > 0)) continue;
+      let src = null;
+      if (ly.file && files && files[ly.file]) {
+        const f = files[ly.file], k = f.height ? h / f.height : 1;
+        src = M.sampleBaked(f, M.fitTime(ly.fit || "loop", lt / Math.max(0.001, ws), ws, f.pos.length / (f.fps || 30))).pos;
+        for (const n in src) src[n].multiplyScalar(k);
+      } else if (ly.pose && this.lib.poses[ly.pose]) src = M.fk(this.lib, M.clonePose(this.lib.poses[ly.pose]), h).pos;
+      if (src) pos = M.layerPositions(this.lib, pos, src, ly.mask, w, h, Stage.SOMA);
+    }
     return pos;
   }
   // a generated motion's own frame at local time t (its file, or the shot list's segments chained), scaled to the cast
@@ -493,7 +515,7 @@ export class Stage {
   // stretches the chain over the clip
   chainPose(segs, u, dur, files, fit, h) {
     const BL = 0.25;
-    const key = segs.map(g => g.file || "-").join("|") + "@" + h;
+    const key = segs.map(g => [g.file || "-", g.blend ?? "", g.file ? "" : g.secs].join(":")).join("|") + "@" + h;
     let ch = this._chains && this._chains[key];
     if (ch && segs.some((g, i) => ch.parts[i].f !== (files[g.file] || null))) ch = null;   // a take imported (again) under its name
     if (!ch) {
@@ -501,9 +523,9 @@ export class Stage {
       const scaled = (part, u) => { const p = M.sampleBaked(part.f, u).pos; for (const n in p) p[n].multiplyScalar(part.k); return p; };
       for (const g of segs) {
         const f = files[g.file] || null;
-        if (!f) { parts.push({ f: null, start: t, len: Math.max(0.1, +g.secs || 2) }); t += parts[parts.length - 1].len; continue; }
+        if (!f) { parts.push({ f: null, start: t, len: Math.max(0.1, +g.secs || 2), bl: +(g.blend ?? BL) }); t += parts[parts.length - 1].len; continue; }
         const len = f.pos.length / (f.fps || 30), k = f.height ? h / f.height : 1;
-        const part = { f, k, start: t, len, yaw: 0, origin: new THREE.Vector3(), off: new THREE.Vector3() };
+        const part = { f, k, start: t, len, bl: +(g.blend ?? BL), yaw: 0, origin: new THREE.Vector3(), off: new THREE.Vector3() };
         const first = scaled(part, 0), last = scaled(part, 1);
         if (made) {                                            // line this one's first frame up with the last one's end
           const r0 = first["soma:Hips"].clone(); r0.y = 0;
@@ -526,9 +548,9 @@ export class Stage {
     if (!p.f) return clone(p.hold);
     const raw = M.sampleBaked(p.f, lu).pos; for (const n in raw) raw[n].multiplyScalar(p.k);
     let pos = this._place(p, raw);
-    if (i > 0 && src - p.start < BL) {                         // the join with the last one fades out under this one
+    if (i > 0 && p.bl > 0 && src - p.start < p.bl) {           // the join with the last one fades out under this one (its `blend`)
       const q = ch.parts[i - 1], from = q.f ? q.tail : q.hold;
-      pos = M.inertialBlend(this.lib, from, p.head, pos, M.EASES.inout((src - p.start) / BL), h);
+      pos = M.inertialBlend(this.lib, from, p.head, pos, M.EASES.inout((src - p.start) / p.bl), h);
     }
     return pos;
   }

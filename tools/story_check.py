@@ -474,8 +474,32 @@ def check_body_v3(cw, sid, c, body, story, things, lvl, r):
         for k in g.get("keys", []):
             if k.get("pose") not in POSES:
                 r.err(f"{gw}: key pose {k.get('pose')!r} isn't in Content/Studio/poses.json")
+        if "blend" in g and not (isinstance(g["blend"], (int, float)) and 0 <= g["blend"] <= 2):
+            r.err(f"{gw}: blend {g['blend']!r}: seconds it blends in from the segment before (0 to 2; 0.25 when not given)")
     if segs and not c.get("dur") and abs(secs - L.clip_secs(c)) > max(2.0, 0.35 * L.clip_secs(c)):
         r.warn(f"{cw}: its segments run {secs:.1f} s against the clip's {L.clip_secs(c):.1f} s (fit will stretch, hold or trim)")
+
+
+def check_layer(lw, ly, r):
+    """A body layer (STORY_FORMAT §3.5): a part of the body (`mask`) played from another motion or a pose, over a window."""
+    if ly.get("mask") not in L.MASKS:
+        r.err(f"{lw}: mask {ly.get('mask')!r} (one of {', '.join(L.MASKS)})")
+    if bool(ly.get("file")) == bool(ly.get("pose")):
+        r.err(f"{lw}: a layer plays a `file` (a made motion) or a `pose` (from the library): one of them")
+    if ly.get("pose") and ly["pose"] not in POSES:
+        r.err(f"{lw}: pose {ly['pose']!r} isn't in Content/Studio/poses.json")
+    if ly.get("file") and GAME_DIR and not (GAME_DIR / "Motion" / ly["file"]).exists():
+        r.warn(f"{lw}: file Motion/{ly['file']} isn't there yet (the layer waits for it)")
+    a, b = ly.get("from", 0), ly.get("to", 1)
+    if not all(isinstance(v, (int, float)) for v in (a, b)) or not 0 <= a < b <= 1:
+        r.err(f"{lw}: from {a!r} to {b!r}: fractions of the clip, from before to")
+    for k, lo, hi in (("fade", 0, 5), ("weight", 0, 1)):
+        if k in ly and not (isinstance(ly[k], (int, float)) and lo <= ly[k] <= hi):
+            r.err(f"{lw}: {k} {ly[k]!r} ({lo} to {hi})")
+    if ly.get("fit", "loop") not in L.FITS:
+        r.err(f"{lw}: fit {ly.get('fit')!r} (one of {', '.join(L.FITS)})")
+    if set(ly) - {"mask", "file", "pose", "from", "to", "fade", "weight", "fit"}:
+        r.err(f"{lw}: unknown fields {', '.join(sorted(set(ly) - {'mask', 'file', 'pose', 'from', 'to', 'fade', 'weight', 'fit'}))}")
 
 
 def check_scene(sid, sc, story, things, r):
@@ -652,10 +676,12 @@ def check_scene(sid, sc, story, things, r):
                 for spot in body.get("path", []):
                     if spot not in things or things[spot].use != "spot" or things[spot].level != lvl:
                         r.err(f"{cw}: body path spot {spot!r} isn't a spot in level {lvl}")
+                for li, ly in enumerate(body.get("layers") or []):
+                    check_layer(f"{cw} layer {li + 1}", ly, r)
                 rc = body.get("reach")
                 if rc:
-                    if rc.get("hand", "right") not in ("right", "left"):
-                        r.err(f"{cw}: reach hand {rc.get('hand')!r} (right or left)")
+                    if rc.get("hand", "right") not in ("right", "left", "both"):
+                        r.err(f"{cw}: reach hand {rc.get('hand')!r} (right, left or both)")
                     if rc.get("to") not in ("player_collar", "player_face") and rc.get("to") not in things:
                         r.err(f"{cw}: reach to {rc.get('to')!r} (player_collar, player_face or a placed thing)")
                     if rc.get("to", "").startswith("player") and not sc.get("view"):

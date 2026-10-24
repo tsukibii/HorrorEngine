@@ -198,7 +198,7 @@ export function blendPositions(lib, a, b, w, height) {
     out[j.name] = a[j.name].clone().lerp(b[j.name], w);
   }
   for (const k of Object.keys(a)) if (k.startsWith("soma:") && b[k]) out[k] = a[k].clone().lerp(b[k], w);   // Kimodo's full skeleton
-  return keepBones(lib, out, height);
+  return keepBones(lib, out, height, a, b, w);
 }
 // an inertial blend (as Unreal's Inertialization): the incoming motion plays at full speed from its first frame, and
 // the difference at the join (where the last motion left the body, `from`, against where this one starts, `start`)
@@ -206,16 +206,87 @@ export function blendPositions(lib, a, b, w, height) {
 export function inertialBlend(lib, from, start, pos, w, height) {
   const out = {}, k = 1 - w;
   for (const n in pos) out[n] = from[n] && start[n] ? pos[n].clone().addScaledVector(from[n].clone().sub(start[n]), k) : pos[n].clone();
-  return keepBones(lib, out, height);
+  return keepBones(lib, out, height, from, pos, w);
 }
-function keepBones(lib, out, height) {         // the previs bones back to their lengths after a blend
-  const s = (height || lib.height) / lib.height;
+// the previs bones back to their lengths after a blend: a's and b's own, w of the way (a Kimodo body's proportions
+// aren't the previs skeleton's), the skeleton's scaled to the height where neither has the bone
+function keepBones(lib, out, height, a, b, w) {
+  const s = (height || lib.height) / lib.height, len = (P, j) => P && P[j.name] && P[j.parent] ? P[j.name].distanceTo(P[j.parent]) : null;
   for (const j of lib.joints) {
     if (!j.parent || !out[j.name] || !out[j.parent]) continue;
-    const len = j.off.length() * s, d = out[j.name].clone().sub(out[j.parent]);
-    if (d.length() > 1e-6) out[j.name] = out[j.parent].clone().add(d.setLength(len));
+    const la = len(a, j), lb = len(b, j), l = la !== null && lb !== null ? la + (lb - la) * w : la ?? lb ?? j.off.length() * s;
+    const d = out[j.name].clone().sub(out[j.parent]);
+    if (d.length() > 1e-6) out[j.name] = out[j.parent].clone().add(d.setLength(l));
   }
   return out;
+}
+
+// ---- layers: a part of the body played from another motion or a pose, over the clip's own (STORY_FORMAT §3.5) ----
+// each mask: the previs joints whose subtrees it takes (`tops`), the joint they hang from (`at`, kept where the base
+// has it), and the frame that lines the layer's body up with the base's there: a bone (its two ends) and a line
+// across the body (the hips for the upper body, the shoulders above), so the layer leans and turns with the base
+export const MASKS = {
+  upper: { tops: ["spine_02"], at: "spine_01", frame: ["pelvis", "spine_01", "thigh_l", "thigh_r"] },
+  arms: { tops: ["clavicle_l", "clavicle_r"], at: "spine_03", frame: ["spine_02", "spine_03", "clavicle_l", "clavicle_r"] },
+  left_arm: { tops: ["clavicle_l"], at: "spine_03", frame: ["spine_02", "spine_03", "clavicle_l", "clavicle_r"] },
+  right_arm: { tops: ["clavicle_r"], at: "spine_03", frame: ["spine_02", "spine_03", "clavicle_l", "clavicle_r"] },
+  head: { tops: ["neck_01"], at: "spine_03", frame: ["spine_02", "spine_03", "clavicle_l", "clavicle_r"] },
+};
+export const MASK_NAMES = Object.keys(MASKS);
+function maskFrame(P, [a, b, l, r]) {          // a bone and a line across the body -> a rotation (null if a joint is missing)
+  if (!P[a] || !P[b] || !P[l] || !P[r]) return null;
+  const up = P[b].clone().sub(P[a]).normalize(), side = P[l].clone().sub(P[r]);
+  side.addScaledVector(up, -side.dot(up)).normalize();
+  if (!(up.lengthSq() > 0.5 && side.lengthSq() > 0.5)) return null;
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(side, up, new THREE.Vector3().crossVectors(side, up)));
+}
+function subtreeOf(tops, parentOf) {           // the tops and everything below them
+  const out = new Set(tops); let grew = true;
+  while (grew) { grew = false; for (const [n, p] of parentOf) if (p && out.has(p) && !out.has(n)) { out.add(n); grew = true; } }
+  return out;
+}
+// the base with the mask's part of the body taken from `layer` (joint positions in the same space), w of the way:
+// each bone there pointing the layer's way, turned to the base's frame, and as long as the base's (the base's body
+// keeps its proportions, as the retarget does), hung from the base's joint. Kimodo's 77 joints ("soma:") follow the
+// layer's when both have them; when the layer is a pose (25 previs joints), the base's SOMA joints there ride the
+// previs bones that carry them, so the body keeps its fingers
+export function layerPositions(lib, base, layer, mask, w, height, soma) {
+  const m = MASKS[mask]; if (!m || !(w > 0)) return base;
+  const qb = maskFrame(base, m.frame), ql = maskFrame(layer, m.frame); if (!qb || !ql || !base[m.at] || !layer[m.at]) return base;
+  const q = qb.clone().multiply(ql.clone().invert()), A = base[m.at];
+  const prevParent = new Map(lib.joints.map(j => [j.name, j.parent]));
+  const part = subtreeOf(m.tops, prevParent), tg = {};
+  const aim = (order, parentOf, key) => {      // parents first: the layer's bone direction, turned, at the base's length
+    for (const n of order) {
+      const k = key(n), pk = key(parentOf.get(n)); if (!base[k] || !layer[k] || !base[pk] || !layer[pk]) continue;
+      tg[k] = (tg[pk] || base[pk]).clone().add(layer[k].clone().sub(layer[pk]).normalize().applyQuaternion(q).multiplyScalar(base[k].distanceTo(base[pk])));
+    }
+  };
+  aim(lib.joints.map(j => j.name).filter(n => part.has(n)), prevParent, n => n);
+  if (base["soma:Hips"] && soma && soma.map && soma.parents) {
+    const somaParent = new Map(soma.names.map((n, i) => [n, soma.parents[i]]));
+    const sPart = subtreeOf(m.tops.map(t => soma.map[t]).filter(Boolean), somaParent);
+    if (layer["soma:Hips"]) aim(soma.names.filter(n => sPart.has(n)), somaParent, n => "soma:" + n);
+    else {                                     // carried: each SOMA joint by its nearest previs joint (the bone from it, turned)
+      const ofSoma = new Map(Object.entries(soma.map).map(([pv, sn]) => [sn, pv]));
+      const kids = new Map(); for (const j of lib.joints) if (j.parent && !kids.has(j.parent)) kids.set(j.parent, j.name);
+      const turn = P => {                      // the base's bone at previs joint P, turned onto the layered one
+        const c = kids.get(P), pp = prevParent.get(P), [a, b] = c && tg[c] ? [P, c] : [pp, P];
+        if (!a || !tg[a] || !tg[b] || !base[a] || !base[b]) return new THREE.Quaternion();
+        return new THREE.Quaternion().setFromUnitVectors(base[b].clone().sub(base[a]).normalize(), tg[b].clone().sub(tg[a]).normalize());
+      };
+      const turns = new Map();
+      for (const n of sPart) {
+        let k = n; while (k && !(ofSoma.has(k) && part.has(ofSoma.get(k)))) k = somaParent.get(k);
+        const P = k && ofSoma.get(k), key = "soma:" + n; if (!P || !tg[P] || !base[key] || !base[P]) continue;
+        if (k === n) { tg[key] = tg[P].clone(); continue; }
+        if (!turns.has(P)) turns.set(P, turn(P));
+        tg[key] = tg[P].clone().add(base[key].clone().sub(base[P]).applyQuaternion(turns.get(P)));
+      }
+    }
+  }
+  const out = {}; for (const n in base) out[n] = tg[n] ? base[n].clone().lerp(tg[n], w) : base[n].clone();
+  return keepBones(lib, out, height, base, Object.assign({ [m.at]: A }, tg), w);   // the rest of the body exactly the base's
 }
 
 export function poseDistance(a, b, joints) {   // mean joint distance in metres over the given joints

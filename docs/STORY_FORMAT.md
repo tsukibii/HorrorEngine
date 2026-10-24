@@ -315,6 +315,7 @@ motions and estimates follow.
 | `fit` | when a generated motion's length differs from the take: `stretch` (×0.8 to ×1.25), `hold`, `loop`, `pad`, `trim` |
 | `blend` | seconds of crossfade from this actor's previous clip (default 0.25), from the pose that clip had reached when it was cut (not its unplayed end). Wherever a generated motion (a walk, a turn) left the actor, the next clip starts there and faces that way; blocking ends where its keys put them. The desk draws each blend as a light wedge over the clip's start |
 | `bridge` | an in-between from the previous clip's last pose to this one's first: the desk blends it, `motion.py` makes a Kimodo job for it |
+| `layers` | parts of the body played from another motion or a pose, over this one, in order (ANIMATION.md §0c): `[{"mask": "upper", "pose": "arms_crossed", "from": 0.2, "to": 0.7}, {"mask": "right_arm", "file": "x.json", "fit": "hold"}]`. `mask`: `upper` (from the waist up), `arms`, `left_arm`, `right_arm`, `head`; `file` (a made motion) or `pose` (from the library); `from`, `to` the window (0..1 of the clip; 0 and 1); `fade` seconds in and out (0.3; none at the clip's own edges); `weight` 0..1 (1); `fit` how a motion meets its window (`loop`, or any of fit's). The part leans and turns with the body under it and keeps that body's proportions; the bake for Unreal carries it like the rest |
 | `file` | the generated motion (`Content/Games/<Game>/Motion/<file>`, made by `motion.py preview` or `import`; picked in the desk's **motion** box from the ones made, which says its length or that it isn't made yet): it plays instead of the blocking |
 
 `tools/motion.py jobs` turns these into Kimodo jobs: the prompt, the constraints, and the blocking as full-body pose
@@ -634,6 +635,7 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
 | segment `path` | stage marks the root travels through (a 2D root path constraint) |
 | segment `keys` | `[{"at": 0..1, "pose": ...}]`: full-body keyframes from the pose library for poses Kimodo doesn't know |
 | segment `loop` | the demo's Loop checkbox (idles, walk cycles) |
+| segment `blend` | seconds it blends in from the segment before (0.25; 0 cuts): inertial, so this one plays at full speed while the join fades |
 | segment `file` | the made motion (`motion.py import` writes it, or the demo's Send to Studio named after the segment). A clip plays as soon as any of its segments is made: one not made yet holds where the last one ended for its `secs` |
 
 ### 9.6 The look and the trackers (where a head points)

@@ -502,7 +502,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   // body
   c.body = c.body || {};
   const b = c.body, bodySec = el("div", { class: "sec" });
-  bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), txt(b, "prompt", { w: true, ph: "Kimodo prompt (what the body does, in plain words)", drop: true })));
+  if ((S.format || 2) < 3 || b.prompt) bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), txt(b, "prompt", { w: true, ph: "Kimodo prompt (what the body does, in plain words)", drop: true })));
+  else bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), el("span", { class: "kv" }, "the blocking below plays until the Kimodo segments under it are made")));
   b.block = b.block || [];
   const kt = el("table", {}, el("tr", {}, ...["at (0..1)", "pose", "ease in", "walk", "move to", ""].map(h => el("th", {}, h))));
   b.block.forEach((k, ki) => kt.append(el("tr", {}, el("td", { style: "width:64px" }, txt(k, "at", { num: true, step: "0.05" })), el("td", {}, sel(k, "pose", poseNames(), { blank: false })),
@@ -512,6 +513,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     el("span", { class: "lab" }, "fit"), sel(b, "fit", M.FITS, { blank: "stretch", drop: true, title: "when a generated motion and the take differ in length" }),
     el("span", { class: "lab" }, "blend"), txt(b, "blend", { num: true, step: "0.05", ph: "0.25", style: "width:52px", title: "seconds of crossfade from the previous clip" }),
     chk(b, "bridge", "in-between", renderInspector), el("span", { class: "lab" }, "motion"), motionPick(b, c, clipSecs(c))));
+  if ((S.format || 2) >= 3 || (b.segments || []).length) bodySec.append(segmentsEditor(sid, c, b, lvl));
+  bodySec.append(layersEditor(c, b));
   // modifiers
   b.mods = b.mods || [];
   const mt = el("div", {});
@@ -525,6 +528,73 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   if (!Object.keys(c.cam).length) delete c.cam;
   if (!Object.keys(c.body).length) delete c.body;
   return card;
+}
+// ---- a clip's Kimodo segments (STORY_FORMAT §9.5): one behaviour each, made in Kimodo's demo from the shot list and
+// chained here; each says whether it's made (its length) or not (the clip holds a pose for its seconds meanwhile)
+const SEG_SKIP = new Set(["slowly", "quickly", "then", "and", "is", "the", "a", "an", "her", "his", "their", "its", "very", "suddenly", "carefully", "softly", "still", "to", "into", "at"]);
+const SEG_DIRS = new Set(["forward", "back", "backward", "backwards", "left", "right", "up", "down", "away", "in", "out", "around", "over", "off"]);
+function segName(sid, c, n, prompt) {          // <game>_<scene>_<clip>_<nn>_<verb> (KIMODO.md §3), the verb from the prompt
+  const w = (prompt || "").toLowerCase().replace(/^(a|an)\s+([a-z-]+\s+){0,3}?person\s+/, "").match(/[a-z]+/g) || [];
+  const ws = w.filter(x => !SEG_SKIP.has(x)), i = ws.findIndex((x, k) => !/ing$/.test(x) || k === ws.length - 1);
+  const v = i < 0 ? "move" : ws[i].replace(/ies$/, "y").replace(/(ss|sh|ch|x)es$/, "$1").replace(/([^s])s$/, "$1");
+  const d = ws.slice(i + 1, i + 3).find(x => SEG_DIRS.has(x));
+  const low = x => String(x).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return [low(GAME), low(sid.replace(/^s_/, "")), low(c.id), String(n).padStart(2, "0"), (v + (d || "")).slice(0, 20)].join("_");
+}
+function segmentsEditor(sid, c, b, lvl) {
+  const segs = b.segments || [], box = el("div", { class: "segs" });
+  const made = segs.filter(g => g.file && FILES[g.file]).length, total = segs.reduce((t, g) => t + (+g.secs || 0), 0);
+  const redo = () => { touch(); renderInspector(); };
+  box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "Kimodo"),
+    el("span", { class: "kv" }, segs.length ? `${segs.length} segment${segs.length > 1 ? "s" : ""}, ${made} made · ${total.toFixed(1)} s for the clip's ${clipSecs(c).toFixed(1)} s` : "no segments: the blocking plays (one segment per behaviour, 2 to 10 s)"),
+    sel(b, "tier", ["simple", "activity", "action"], { blank: "tier…", drop: true, title: "the animation budget: simple (80% of the game's motion), activity (15%), action (5%)" }),
+    chk(b, "hero", "hero"), el("a", { href: `kimodo.html?game=${encodeURIComponent(GAME)}`, target: "kimodo", title: "the shot list: every motion to make in Kimodo's demo, its constraints and save name" }, "shot list ↗")));
+  segs.forEach((g, gi) => {
+    const f = g.file && FILES[g.file], person = /^(A|An) ([A-Za-z-]+ ){0,3}person\b/.test(g.prompt || "");
+    const state = f ? el("span", { class: "ok", title: `${g.file}: made and on this segment` }, `✓ ${(f.pos.length / (f.fps || 30)).toFixed(1)} s`)
+      : el("span", { class: "muted", title: MADE.includes(g.name) ? "made: Import on the shot list puts it here" : "not made yet: the clip holds a pose for its seconds" }, MADE.includes(g.name) ? "made: import" : "to make");
+    const pathRow = el("span", { class: "row" }, el("span", { class: "lab" }, "path"), ...(g.path || []).map((sp, pi) => el("span", { class: "chip", title: "a mark the root travels through (the demo's 2D root path)" }, sp,
+      el("button", { class: "x", on: { click: () => { g.path.splice(pi, 1); if (!g.path.length) delete g.path; redo(); } } }, "×"))),
+      sel({ v: "" }, "v", spots(lvl), { blank: "+ mark", title: "add a stage mark to the root's path", after: () => {} }));
+    pathRow.lastChild.addEventListener("change", e => { if (!e.target.value) return; (g.path = g.path || []).push(e.target.value); redo(); });
+    const keyRow = el("span", { class: "row" }, el("span", { class: "lab" }, "keys"), ...(g.keys || []).map((k, ki) => el("span", { class: "chip" }, sel(k, "pose", poseNames(), { blank: false }), "@", txt(k, "at", { num: true, step: "0.05", style: "width:46px", title: "where in the segment (0..1)" }),
+      el("button", { class: "x", on: { click: () => { g.keys.splice(ki, 1); if (!g.keys.length) delete g.keys; redo(); } } }, "×"))),
+      el("button", { title: "a full-body key from the pose library, for a pose Kimodo doesn't know", on: { click: () => { (g.keys = g.keys || []).push({ at: g.keys.length ? 1 : 0, pose: "idle" }); redo(); } } }, "+ key"));
+    box.append(el("div", { class: "seg-card" },
+      el("div", { class: "row" }, el("b", {}, `${gi + 1}`), state, txt(g, "name", { style: "width:210px", title: "its save name in Kimodo: <game>_<scene>_<clip>_<nn>_<verb>" }),
+        el("button", { title: "name it by the shot list's rule, from its prompt", on: { click: () => { g.name = segName(sid, c, gi + 1, g.prompt); redo(); } } }, "↻"),
+        txt(g, "secs", { num: true, step: "0.5", style: "width:52px", title: "seconds, 2 to 10: one behaviour" }), "s",
+        chk(g, "loop", "loop"), chk(g, "in_place", "in place"),
+        "blend", txt(g, "blend", { num: true, step: "0.05", ph: "0.25", style: "width:56px", title: "seconds it blends in from the segment before (inertial: this one plays at full speed while the join fades)" }),
+        el("button", { title: "move up", on: { click: () => { if (gi) { [segs[gi - 1], segs[gi]] = [segs[gi], segs[gi - 1]]; redo(); } } } }, "↑"),
+        el("button", { title: "move down", on: { click: () => { if (gi < segs.length - 1) { [segs[gi + 1], segs[gi]] = [segs[gi], segs[gi + 1]]; redo(); } } } }, "↓"),
+        el("button", { title: "delete this segment", on: { click: () => { if (!confirm(`Delete segment ${g.name}?`)) return; segs.splice(gi, 1); if (!segs.length) delete b.segments; redo(); } } }, "×")),
+      el("div", { class: "row" }, txt(g, "prompt", { w: true, ph: "A person … (one behaviour, standing alone; never where to look)", after: renderInspector }), person ? null : el("span", { class: "err", title: "Kimodo's prompts start \"A person\" (or \"A scared person\"...)" }, "A person …")),
+      el("div", { class: "row" }, pathRow, keyRow, el("span", { class: "lab" }, "motion"), motionPick(g, c, +g.secs || 0))));
+  });
+  box.append(el("div", { class: "row" }, el("button", { on: { click: () => { b.segments = b.segments || []; const n = b.segments.length + 1; b.segments.push({ name: segName(sid, c, n, "A person moves"), prompt: "A person ", secs: 3 }); if (!b.tier) b.tier = "simple"; redo(); } } }, "+ segment"),
+    el("span", { class: "kv" }, "each one behaviour of 2 to 10 s, chained here; ↻ names it from its prompt")));
+  return box;
+}
+// ---- a clip's layers (STORY_FORMAT §3.5 `layers`): a part of the body from another motion or a pose, over this one
+function layersEditor(c, b) {
+  const box = el("div", {}), redo = () => { touch(); renderInspector(); };
+  (b.layers || []).forEach((ly, li) => {
+    const kind = { k: ly.file ? "motion" : "pose" };
+    box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "layer"),
+      sel(ly, "mask", M.MASK_NAMES, { blank: false, title: "the part of the body it plays: upper (from the waist up), arms, left_arm, right_arm, head" }),
+      sel(kind, "k", ["pose", "motion"], { blank: false, title: "a pose from the library, or a made motion", after: () => { if (kind.k === "pose") { delete ly.file; delete ly.fit; ly.pose = ly.pose || "idle"; } else { delete ly.pose; } redo(); } }),
+      kind.k === "pose" ? sel(ly, "pose", poseNames(), { blank: false }) : motionPick(ly, c, clipSecs(c)),
+      "from", txt(ly, "from", { num: true, step: "0.05", ph: "0", style: "width:48px", title: "where in the clip it comes in (0..1)" }),
+      "to", txt(ly, "to", { num: true, step: "0.05", ph: "1", style: "width:48px", title: "where it goes (0..1)" }),
+      "fade", txt(ly, "fade", { num: true, step: "0.05", ph: "0.3", style: "width:48px", title: "seconds it eases in and out (not at the clip's edges: the clip's blend does that)" }),
+      "weight", txt(ly, "weight", { num: true, step: "0.1", ph: "1", style: "width:48px", title: "how much of it (0..1)" }),
+      kind.k === "motion" ? sel(ly, "fit", M.FITS, { blank: "loop", drop: true, title: "the motion against the layer's window: loop it, play it once and hold, stretch it..." }) : null,
+      el("button", { title: "delete this layer", on: { click: () => { b.layers.splice(li, 1); if (!b.layers.length) delete b.layers; redo(); } } }, "×")));
+  });
+  box.append(el("div", { class: "row" }, el("button", { on: { click: () => { (b.layers = b.layers || []).push({ mask: "upper", pose: "idle" }); redo(); } } }, "+ layer"),
+    el("span", { class: "kv" }, "a part of the body from another motion or a pose, over this one: arms held over a walk, a gesture, the head")));
+  return box;
 }
 function stitchEditor(box, st, tid) {
   box.append(el("h2", {}, "Stitch (player task)"), field("title", txt(st, "title", { w: true })), field("goal", txt(st, "goal", { w: true, ph: "what the player is doing" })),

@@ -407,6 +407,7 @@ EASES = ("linear", "in", "out", "inout", "snap", "hold", "overshoot")
 MODS = {"ease": ("in", "out"), "speed": ("x",), "ramp": ("from", "to"), "hold": ("at", "secs"), "snap": ("at", "secs"),
         "twitch": ("amount",), "trim": ("in", "out"), "loop": ("from", "to", "times"), "mirror": ()}
 FITS = ("stretch", "hold", "loop", "pad", "trim")
+MASKS = ("upper", "arms", "left_arm", "right_arm", "head")   # what a body layer drives (the desk's MASKS, motion.js)
 MOODS = ("intimate", "dread", "panic", "reveal", "calm", "grief", "chase", "aftermath")
 VOICES = ("says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly",
           "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums")   # docs/VOICES.md
