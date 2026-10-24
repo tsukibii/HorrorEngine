@@ -445,6 +445,9 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 **Branching and rejoining:** branches may rejoin (`n_hide` → `n_cellar`). Loops need a flag choice to leave.
 
+**On the desk's board:** a node's `xy` is where it sits on the director's desk's flow board (`[x, y]`, pixels at 100%).
+The desk writes every node's once you move one (until then they're laid out in reading order); nothing else reads it.
+
 **Endings:** `kind` is `good neutral bad secret other`. `short_ok` exempts an early death ending from `target_min` and
 `fast_min`.
 

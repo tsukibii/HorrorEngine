@@ -1034,6 +1034,8 @@ def check_flow(story, things, r):
             r.warn(f"flow {nid}: its scene plays at {' or '.join(ft['paths'])} depending on the path; give it a `time` if it's staged for one")
     for nid, n in flow.items():
         t = n.get("type")
+        if "xy" in n and not (isinstance(n["xy"], list) and len(n["xy"]) == 2 and all(isinstance(v, (int, float)) for v in n["xy"])):
+            r.err(f"flow {nid}: xy {n['xy']!r}: where it sits on the desk's board, [x, y]")
         if t in ("scene", "stitch"):
             table = scenes if t == "scene" else stitches
             if n.get("ref") not in table:

@@ -22,8 +22,10 @@ nav button.on{color:var(--text);border-bottom-color:var(--accent)}
 main{display:flex;height:calc(100% - 78px)}
 .view{display:none;flex:1;min-width:0}.view.on{display:flex}
 #leftcol{flex:1;display:flex;flex-direction:column;min-width:0}
-#board{flex:1;overflow:auto;position:relative;background:radial-gradient(#1f1f24 1px,transparent 1px) 0 0/18px 18px;min-height:120px}
-#stagePanel{height:44%;min-height:220px;border-top:1px solid var(--line);display:flex;flex-direction:column;background:#000}
+#boardRow{flex:1;display:flex;min-height:140px}
+#board{flex:1;overflow:hidden;position:relative;background:radial-gradient(#26262c 1px,transparent 1px) 0 0/18px 18px;min-height:120px;cursor:grab;outline:none}
+#board.panning{cursor:grabbing}
+#stagePanel{height:44%;min-height:160px;display:flex;flex-direction:column;background:#000}
 #stageBox{flex:1;position:relative;overflow:hidden}
 #stageBar{display:flex;gap:6px;align-items:center;padding:4px 8px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
 #scrub{flex:1;min-width:120px}
@@ -130,7 +132,8 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 <main>
   <section id="flowView" class="view on">
     <div id="leftcol">
-      <div id="board"><svg id="edges"></svg></div>
+      <div id="boardRow"><aside id="flowSide"></aside><div id="board"></div></div>
+      <div id="split" title="drag to give the board or the stage more room"></div>
       <div id="stagePanel">
         <div id="stageBox"><div class="ov" id="stageOv"><div class="black"></div><div class="who"></div><div class="tag"></div><div class="ja"></div><div class="sub"></div></div></div>
         <div id="stageBar">

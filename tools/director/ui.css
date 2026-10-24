@@ -79,3 +79,38 @@ select.secret{max-width:170px}
 .round{border:1px solid var(--line);border-radius:10px;padding:10px;background:#1f1f24}
 .advanced{margin-top:8px}.advanced summary{color:#6d6a63;font-size:11px;cursor:pointer}.advanced summary:hover{color:var(--dim)}
 .cuerow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0}
+
+/* ---- the flow board (board.js) and its side: the palette, the outline ---- */
+.bworld{position:absolute;left:0;top:0;transform-origin:0 0}
+.bworld svg#edges{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+#board .card{transition:box-shadow .12s,outline-color .12s;box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer}
+#board .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.5)}
+#board .card.lifting{box-shadow:0 12px 28px rgba(0,0,0,.6);z-index:5;cursor:grabbing;opacity:.95}
+#board .card.target{outline:2px dashed var(--accent);outline-offset:3px}
+#board .card .t{display:flex;align-items:center;gap:4px}
+.port{position:absolute;right:-7px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:var(--panel);border:2px solid #77777f;cursor:crosshair;transition:transform .1s,border-color .1s}
+.port:hover{transform:scale(1.35);border-color:var(--accent);background:var(--accent)}
+.btools{position:absolute;right:8px;top:8px;display:flex;gap:2px;background:rgba(27,27,31,.9);border:1px solid var(--line);border-radius:8px;padding:2px;z-index:6}
+.bhint{position:absolute;left:10px;bottom:8px;font-size:11px;color:var(--dim);z-index:6;background:rgba(27,27,31,.92);border:1px solid var(--line);border-radius:7px;padding:3px 4px 3px 10px;display:flex;align-items:center;gap:6px}
+#split{height:6px;flex:none;cursor:row-resize;background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}#split:hover,#split.on{background:#3a3020}
+.bmenu{position:fixed;z-index:120;background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 34px rgba(0,0,0,.6);padding:5px;display:flex;flex-direction:column;min-width:150px}
+.bmenu-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);padding:3px 8px 5px}
+.bmenu-i{display:flex;align-items:center;gap:7px;border:0;background:none;text-align:left;padding:6px 8px;border-radius:6px}
+.bmenu-i:hover{background:var(--panel2)}
+.bmenu-i.scene .ic{color:var(--scene)}.bmenu-i.stitch .ic{color:var(--stitch)}.bmenu-i.choice .ic{color:var(--choice)}.bmenu-i.ending .ic{color:var(--ending)}
+#flowSide{width:208px;flex:none;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;padding:8px;gap:6px;overflow:hidden}
+.side-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-top:2px}
+.palette{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pchip{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid;cursor:grab;font-size:12px;user-select:none}
+.pchip:hover{background:#2a2a31}.pchip:active{cursor:grabbing}
+.pchip.scene{border-left-color:var(--scene)}.pchip.scene .ic{color:var(--scene)}.pchip.stitch{border-left-color:var(--stitch)}.pchip.stitch .ic{color:var(--stitch)}
+.pchip.choice{border-left-color:var(--choice)}.pchip.choice .ic{color:var(--choice)}.pchip.ending{border-left-color:var(--ending)}.pchip.ending .ic{color:var(--ending)}
+.ol-search{width:100%;padding:4px 8px;font-size:12px}
+.outline{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1px;margin:0 -4px;padding:0 4px}
+.ol-i{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px;min-height:24px}
+.ol-i:hover{background:var(--panel2)}.ol-i.sel{background:#33291a;color:#f0d9a6}
+.ol-i.lost{opacity:.55}
+.ol-i .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--dim)}
+.ol-i.scene .dot{background:var(--scene)}.ol-i.stitch .dot{background:var(--stitch)}.ol-i.choice .dot{background:var(--choice)}.ol-i.ending .dot{background:var(--ending)}
+.ol-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ol-id{font-size:10px;color:#5e5b55;font-family:ui-monospace,Consolas,monospace;flex:none;max-width:70px;overflow:hidden;text-overflow:ellipsis}

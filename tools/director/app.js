@@ -11,6 +11,7 @@ import { applySettings } from "./play/menu.js";
 import { beatsEditor, actionList, triggerPill, modal, form } from "./ui.js";
 import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
+import { Board, CARD_W, CARD_H } from "./board.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -351,46 +352,82 @@ function outs(id) {
   }
   return o;
 }
-function layout() {
-  const pos = {}, col = {}, order = [], start = S.game.start, q = [[start, 0]], seen = new Set();
-  while (q.length) { const [id, c] = q.shift(); if (!S.flow[id]) continue; if (seen.has(id)) continue; seen.add(id); col[id] = c; order.push(id); for (const t of outs(id)) q.push([t.to, c + 1]); }
-  const maxc = Math.max(0, ...Object.values(col));
-  for (const id of Object.keys(S.flow)) if (!seen.has(id)) { col[id] = maxc + 1; order.push(id); }
-  const rows = {};
-  for (const id of order) { const c = col[id]; rows[c] = rows[c] || 0; pos[id] = { x: 20 + c * 206, y: 20 + rows[c] * 82 }; rows[c]++; }
-  return pos;
+// the board (board.js): what's on a card, and what moving, connecting and adding do to the story
+let BOARD = null;
+function cardOf(id, n) {
+  const ref = nodeRef(n), times = flowTimes(S); let meta = "";
+  if (n.type === "scene" && ref) { const v = version(ref), ft = times[id]; meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : ""); }
+  if (n.type === "stitch" && ref) meta = (ref.play ? `${ref.play.type} round` : `${(ref.beats || []).length} beats`) + ` · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
+  if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
+  const probs = problems(id), nn = openNotes(notesHost(id));
+  return { title: probs.join("\n"), kids: [
+    el("div", { class: "t" }, icon({ scene: "film", stitch: "task", choice: "choice", ending: "ending" }[n.type] || "box", 11), " ", n.type === "stitch" ? "task" : n.type, id === S.game.start ? " · start" : ""),
+    el("div", { class: "n" }, nodeTitle(id, n)),
+    el("div", { class: "m" }, id + (meta ? " · " + meta : "")),
+    probs.length ? el("span", { class: "badge", style: "background:var(--bad);color:#fff" }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
+}
+function nodeTitle(id, n) { const ref = nodeRef(n); return (ref && ref.title) || n.title || n.prompt || (n.type === "choice" ? `choice by ${n.by}${n.of ? " of " + n.of : ""}` : id); }
+function selectNode(id) { SEL = id; renderBoard(); renderInspector(); showStage(); }
+function freezeLayout() {                          // the first node moved: every node keeps where it is now
+  if (!BOARD || Object.values(S.flow).every(n => Array.isArray(n.xy))) return;
+  for (const [id, p] of Object.entries(BOARD.layout())) if (S.flow[id] && !Array.isArray(S.flow[id].xy)) S.flow[id].xy = [Math.round(p.x), Math.round(p.y)];
+}
+function connectNodes(from, to) {
+  const n = S.flow[from]; if (!n || from === to) return;
+  if (n.type === "ending") return;
+  if (n.type === "choice") { (n.options = n.options || []).push({ label: "", to }); status(`${from}: a new option to ${to} (say when it's taken)`); SEL = from; }
+  else { n.next = to; status(`${from} → ${to}`); }
+  touch(); renderInspector();
+}
+function newNodeOf(type, lvl, next) {
+  if (type === "scene") { const sid = newId("s_", S.scenes); S.scenes[sid] = { title: "New scene", level: lvl, mood: "dread", stage: {}, camera: { mode: "soft", look: castIds()[0] || null, cone: [30, 18] }, clips: [{ id: "c1", who: castIds()[0] || "", ja: "", en: "", act: "", shot: "ms", body: { block: [{ at: 0, pose: "idle" }] } }] }; return { type, ref: sid, next }; }
+  if (type === "stitch") { const tid = newId("t_", S.stitches); S.stitches[tid] = { title: "New task", level: lvl, goal: "", target_min: 5, beats: [{ id: "b_" + tid.slice(2) + "_start", when: { start: true }, do: [{ objective: "…" }, { done: true }] }] }; return { type, ref: tid, next }; }
+  if (type === "choice") return { type, by: "act", prompt: "", options: next ? [{ label: "A", when: { use: "" }, to: next }, { label: "B", when: { use: "" }, to: next }] : [] };
+  return { type, kind: "good", title: "An ending" };
+}
+function createNode(type, xy, from) {             // dropped on the board (from the palette, or off a node's port)
+  const f = from && S.flow[from], cur = nodeRef(f || S.flow[SEL] || {}), lvl = (cur && cur.level) || Object.keys(S.levels)[0];
+  freezeLayout();
+  const nid = newId(type === "ending" ? "e_" : "n_", S.flow), node = newNodeOf(type, lvl, null);
+  if (xy) node.xy = [Math.round(xy[0] / 8) * 8, Math.round(xy[1] / 8) * 8];
+  S.flow[nid] = node;
+  if (f) { if (f.type === "choice") (f.options = f.options || []).push({ label: "", to: nid }); else f.next = nid; }
+  SEL = nid; touch(); renderInspector(); showStage();
+}
+function removeNode(id) {
+  if (!S.flow[id] || !confirm(`Delete node ${id}? (its scene or task stays in the file)`)) return;
+  delete S.flow[id]; if (SEL === id) SEL = S.game.start; touch(); renderInspector(); showStage();
 }
 function renderBoard() {
   if (!S) return;
-  const b = $("#board"); b.querySelectorAll(".card").forEach(c => c.remove());
-  const pos = layout(), svg = $("#edges");
-  let W = 0, H = 0; for (const p of Object.values(pos)) { W = Math.max(W, p.x + 220); H = Math.max(H, p.y + 90); }
-  svg.setAttribute("width", W); svg.setAttribute("height", H);
-  let paths = '<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#666"/></marker></defs>';
-  for (const id of Object.keys(S.flow)) {
-    const a = pos[id];
-    for (const o of outs(id)) {
-      const t = pos[o.to]; if (!a || !t) continue;
-      const x1 = a.x + 176, y1 = a.y + 27, x2 = t.x, y2 = t.y + 27, back = x2 <= x1;
-      const d = back ? `M${x1},${y1} C${x1 + 60},${y1 - 70} ${x2 - 60},${y2 - 70} ${x2},${y2}` : `M${x1},${y1} C${x1 + 30},${y1} ${x2 - 30},${y2} ${x2},${y2}`;
-      const col = o.kind === "interrupt" ? "#a33" : o.kind === "timer" ? "#a80" : "#555";
-      paths += `<path d="${d}" stroke="${col}" fill="none" stroke-width="1.6" ${o.kind ? 'stroke-dasharray="5 4"' : ""} marker-end="url(#ar)"/>`;
-      if (o.label) paths += `<text x="${(x1 + x2) / 2 - 20}" y="${(y1 + y2) / 2 - 4}" fill="${o.kind ? col : "#c98a2b"}" font-size="10">${esc(o.label).slice(0, 26)}</text>`;
-    }
+  if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs,
+    moved: all => { for (const [id, xy] of Object.entries(all)) if (S.flow[id]) S.flow[id].xy = xy; touch(); },
+    connect: connectNodes, create: createNode, remove: removeNode });
+  BOARD.render(); renderOutline();
+}
+// the side of the board: the palette (drag a node onto the board, or click to add one after the selected node) and
+// the story's outline (every node in reading order; click to go to it)
+function renderOutline() {
+  const side = $("#flowSide"); if (!side || !S) return;
+  const q = side.querySelector(".ol-search") ? side.querySelector(".ol-search").value : "", focus = document.activeElement && document.activeElement.classList.contains("ol-search");
+  side.innerHTML = "";
+  side.append(el("div", { class: "side-h" }, "Add to the story"), el("div", { class: "palette" },
+    ...[["scene", "film", "Scene", "an actor scene: lines, takes, bodies"], ["stitch", "task", "Task", "the player's task between scenes"], ["choice", "choice", "Choice", "where the story branches"], ["ending", "ending", "Ending", "an ending (good, bad, a death)"]].map(([t, ic, l, tip]) =>
+      el("div", { class: "pchip " + t, draggable: "true", title: `drag onto the board, or click to add after the selected node: ${tip}`,
+        on: { dragstart: e => { e.dataTransfer.setData("text/x-node", t); e.dataTransfer.effectAllowed = "copy"; }, click: () => addNode(t) } }, icon(ic, 15), l))));
+  const search = el("input", { class: "ol-search", placeholder: "Find a node…", value: q, on: { input: () => renderOutline() } });
+  const order = [], seen = new Set(), queue = [S.game.start];
+  while (queue.length) { const id = queue.shift(); if (!S.flow[id] || seen.has(id)) continue; seen.add(id); order.push(id); for (const o of outs(id)) queue.push(o.to); }
+  for (const id of Object.keys(S.flow)) if (!seen.has(id)) order.push(id);
+  const list = el("div", { class: "outline" }), ql = q.trim().toLowerCase();
+  for (const id of order) {
+    const n = S.flow[id], title = nodeTitle(id, n);
+    if (ql && !(title + " " + id).toLowerCase().includes(ql)) continue;
+    list.append(el("div", { class: `ol-i ${n.type}${SEL === id ? " sel" : ""}${seen.has(id) ? "" : " lost"}`, title: seen.has(id) ? id : id + ": not reached from the start",
+      on: { click: () => { selectNode(id); BOARD && BOARD.center(id); } } }, el("span", { class: "dot" }), el("span", { class: "ol-t" }, title), el("span", { class: "ol-id" }, id)));
   }
-  svg.innerHTML = paths;
-  const times = flowTimes(S);
-  for (const [id, n] of Object.entries(S.flow)) {
-    const p = pos[id], ref = nodeRef(n); let meta = "";
-    if (n.type === "scene" && ref) { const v = version(ref), ft = times[id]; meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : ""); }
-    if (n.type === "stitch" && ref) meta = `${(ref.beats || []).length} beats · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
-    if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
-    const probs = problems(id), nn = openNotes(notesHost(id));
-    b.append(el("div", { class: `card ${n.type}${SEL === id ? " sel" : ""}`, style: `left:${p.x}px;top:${p.y}px`, title: probs.join("\n"), on: { click: () => { SEL = id; renderBoard(); renderInspector(); showStage(); } } },
-      el("div", { class: "t" }, n.type + (id === S.game.start ? " · start" : "")), el("div", { class: "n" }, (ref && ref.title) || n.title || n.prompt || id),
-      el("div", { class: "m" }, id + (meta ? " · " + meta : "")),
-      probs.length ? el("span", { class: "badge", style: "background:var(--bad);color:#fff" }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null));
-  }
+  side.append(el("div", { class: "side-h" }, "The story", el("span", { class: "muted" }, ` · ${Object.keys(S.flow).length}`)), search, list);
+  if (focus) { search.focus(); search.setSelectionRange(search.value.length, search.value.length); }
 }
 
 /* ---------- small form helpers ---------- */
@@ -451,7 +488,8 @@ function addNode(type) {
   if (type === "stitch") { const tid = newId("t_", S.stitches); S.stitches[tid] = { title: "New task", level: lvl, goal: "", target_min: 5, beats: [{ id: "b_" + tid.slice(2) + "_start", when: { start: true }, do: [{ objective: "…" }, { done: true }] }] }; node = { type, ref: tid, next: n.next || null }; }
   if (type === "choice") node = { type, by: "act", prompt: "", options: [{ label: "A", when: { use: "" }, to: n.next || "" }, { label: "B", when: { use: "" }, to: n.next || "" }] };
   if (type === "ending") node = { type, kind: "good", title: "An ending" };
-  S.flow[nid] = node; if ("next" in n) n.next = nid; SEL = nid; touch(); renderInspector(); showStage();
+  if (BOARD && Object.values(S.flow).some(x => Array.isArray(x.xy))) { freezeLayout(); const p = BOARD.pos[SEL] || { x: 0, y: 0 }; node.xy = [Math.round(p.x + 214), Math.round(p.y + 84)]; }
+  S.flow[nid] = node; if ("next" in n) n.next = nid; SEL = nid; touch(); renderInspector(); showStage(); if (BOARD) BOARD.center(nid);
 }
 
 function sceneEditor(box, sc, sid) {
@@ -1275,7 +1313,7 @@ function renderBranches(hl) {
   v.append(el("div", { class: "row" }, el("h2", { style: "margin:0" }, "Branch map"),
     el("span", { class: "muted" }, `${ids.filter(k => seen[k]).length} / ${ids.length} reached · endings ${allEnds.filter(k => ends.has(k)).length} / ${allEnds.length} · click a reached node to play from it (its state as you first got there)`),
     el("button", { on: { click: () => { if (confirm("Forget every branch reached in " + GAME + "?")) { saveProgress({}); renderBranches(); } } } }, "Reset progress")));
-  const pos = layout(), wrap = el("div", { class: "bmap" }); let W = 0, Hh = 0;
+  const pos = BOARD ? BOARD.layout() : {}, wrap = el("div", { class: "bmap" }); let W = 0, Hh = 0;
   for (const q of Object.values(pos)) { W = Math.max(W, q.x + 220); Hh = Math.max(Hh, q.y + 90); }
   let svg = `<svg width="${W}" height="${Hh}" style="position:absolute;left:0;top:0">`;
   for (const id of ids) for (const o of outs(id)) { const a = pos[id], t = pos[o.to]; if (!a || !t) continue; const both = seen[id] && seen[o.to];
@@ -1351,7 +1389,7 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 $("#save").onclick = () => save();
 $("#reload").onclick = () => { if (!DIRTY || confirm("Drop your unsaved edits?")) load(); };
 $("#bannerReload").onclick = () => load();
-$("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } GAME = e.target.value; SEL = null; FILES = {}; load(); };
+$("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } GAME = e.target.value; SEL = null; FILES = {}; if (BOARD) BOARD.viewSet = false; load(); };
 $("#newGame").onclick = async () => { const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; await load(); } catch (e) { alert(e.message); } };
 $("#gameSettings").onclick = () => { if (S) gameEditor(); };
 $("#keysHelp").onclick = () => alert(["The desk", "  Ctrl+S  save", "  Ctrl+Z  undo · Ctrl+Shift+Z or Ctrl+Y  redo (outside a text box; up to 150 edits back)",
@@ -1397,6 +1435,16 @@ $("#generate").onclick = async () => {
   };
   poll();
 };
+{ // the divider between the board and the stage: dragged, and kept
+  const sp = $("#split"), panel = $("#stagePanel"); let h0 = null; try { h0 = +localStorage.getItem("dd.stageH"); } catch (e) { }
+  if (h0 > 120) panel.style.height = h0 + "px";
+  sp.addEventListener("mousedown", e => {
+    e.preventDefault(); const y0 = e.clientY, start = panel.getBoundingClientRect().height; sp.classList.add("on");
+    const mv = ev => { panel.style.height = Math.max(160, Math.min(window.innerHeight - 260, start - (ev.clientY - y0))) + "px"; flowStage && flowStage.resize(); };
+    const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); sp.classList.remove("on"); try { localStorage.setItem("dd.stageH", Math.round(panel.getBoundingClientRect().height)); } catch (x) { } showStage(); };
+    window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+  });
+}
 $("#sPlay").onclick = () => { const sc = currentScene(); if (sc) playScene(sc); };
 $("#sStop").onclick = stopPlay;
 $("#scrub").oninput = e => { stopPlay(); scrubTo(+e.target.value); };
