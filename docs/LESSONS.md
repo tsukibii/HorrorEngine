@@ -508,3 +508,6 @@ its log before re-running it.
   seal's reach read as 0.6 mm open with no expression, and the first lower-lip curl parted the lips and showed the
   teeth at rest. The opening is now what the seal reaches beyond its reach at rest; what's between the lips at rest
   is the lips' inside, not the mouth.
+- **The painted iris isn't the Iris size on a grown eyeball:** the eye painter shrinks the iris's angle when the eyeball
+  grows (it keeps its real size), so a check that looked for the iris's edge at the slider's angle sampled plain
+  white. Measure where two paintings differ, not where a setting says the feature is.

@@ -425,6 +425,30 @@ const png = rgb => {
     console.log(`       on the face fitted to the pictures: the lid line ${r.fit.width.toFixed(2)} times MediaPipe's width, in order; a blink leaves ${(r.fit.meet * 100).toFixed(0)}% of the lids' opening`);
     console.log(`       openings ${(r.open * 1e6).toFixed(0)} mm² open, ${(r.shut * 1e6).toFixed(1)} shut; the eyeball fitted at ${(r.r1 * 1000).toFixed(1)} mm (12 mm: ${(r.r0 * 1000).toFixed(1)}), size 2: ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
   });
+  await step("the eyes softened: the iris melts into the white (Iris edge softness), the eye occlusion shades the white at the lids and corners, a tear line along each lower lid (only when set)", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, column = () => {                     // the eye's texture down a few meridians, from the front pole: brightness per row
+        const cv = b.eyeMats.L.map.image, H = cv.height, d = cv.getContext("2d").getImageData(0, 0, cv.width, H).data;
+        return [0, cv.width / 4, cv.width / 2].map(x => Array.from({ length: H }, (_, y) => { const i = (y * cv.width + x) * 4; return (d[i] + d[i + 1] + d[i + 2]) / 3; }));
+      };
+      const was = { ...b.st.eyes }; b.st.expr.fill(0);
+      b.st.eyes.limbalSoft = 0; b.paintEyes(); const H0 = column();
+      b.st.eyes.limbalSoft = 0.8; b.paintEyes(); const S0 = column();
+      let hard = 0, soft = 0;                                      // where the two differ is the iris's edge (the painted iris shrinks on a grown eyeball): the steepest step there
+      H0.forEach((h, c) => { const s = S0[c], rows = h.map((v, y) => Math.abs(v - s[y]) > 6 ? y : -1).filter(y => y >= 0); if (!rows.length) return;
+        for (let y = Math.max(0, rows[0] - 3); y < Math.min(h.length - 1, rows[rows.length - 1] + 3); y++) { hard = Math.max(hard, Math.abs(h[y + 1] - h[y])); soft = Math.max(soft, Math.abs(s[y + 1] - s[y])); } });
+      b.st.eyes.occlusion = 0.7; b.st.eyes.tearline = 0.5; b.compose();
+      const occ = b.EYESH.L.uOcc.value, tear = b.TEAR.L.visible && b.TEAR.R.visible, lo = b.outline("L").pts.slice(0, 17), P = b.TEAR.L.geometry.attributes.position.array;
+      let far = 0; for (let i = 0; i < P.length; i += 3) far = Math.max(far, Math.min(...lo.map(q => Math.hypot(P[i] - q[0], P[i + 1] - q[1], P[i + 2] - q[2]))));
+      b.st.eyes.tearline = 0; b.compose(); const tearOff = b.TEAR.L.visible || b.TEAR.R.visible;
+      Object.assign(b.st.eyes, was); b.paintEyes(); b.compose();
+      return { hard, soft, occ, tear, far: far / b.scale * 1000, tearOff };
+    });
+    if (!(r.soft < 0.5 * r.hard)) throw new Error(`the iris's edge isn't softer: the steepest step ${r.hard.toFixed(0)} -> ${r.soft.toFixed(0)}`);
+    if (Math.abs(r.occ - 0.7) > 1e-6) throw new Error(`the eye occlusion isn't set: ${r.occ}`);
+    if (!r.tear || r.tearOff || !(r.far < 1.2)) throw new Error(`the tear line: on ${r.tear}, off at 0 ${!r.tearOff}, ${r.far.toFixed(2)} mm from the lower lid`);
+    console.log(`       the iris's edge: its steepest step ${r.hard.toFixed(0)} -> ${r.soft.toFixed(0)} (softness 0 -> 0.8); the tear line within ${r.far.toFixed(2)} mm of the lower lid`);
+  });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
     await page.click('#views button[data-v="head"]'); await page.click("#splitBtn");
     const c = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });

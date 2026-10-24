@@ -1,6 +1,8 @@
 // The eyes' paint (Character Studio): the eyeball's texture drawn in polar coordinates round the front pole: an iris with two
 // tones, fibres and a pale ring, a dark limbal ring, a pupil, catchlights, a sclera that darkens toward the rim and
 // goes pink at the corners; and how wet it looks. Our own code. Each eye gets its own texture: the pink corner is the inner one.
+// The iris's edge melts into the white (Iris edge softness): a living eye's limbus is a translucent band seen through the
+// cornea, so the iris's rim fades into a grey shadow on the white instead of stopping at a line.
 import * as THREE from "three";
 
 export const EYE_COLOURS = [["iris", "Iris (rim)", "#3b2618"], ["iris2", "Iris (round the pupil)", "#7a5a3a"], ["sclera", "Sclera", "#f4efe9"], ["corner", "Corner tint", "#e08a8a"]];
@@ -10,6 +12,7 @@ export const EYE_CONTROLS = [   // [key, label, lo, hi, step, default, help]
   ["fibres", "Iris fibres", 0, 1, 0.01, 0.3, "Fine radial streaks and a pale ring round the pupil."],
   ["limbal", "Limbal ring", 0, 1, 0.01, 0.5, "The dark band at the iris's edge."],
   ["limbalWidth", "Limbal width", 0.05, 0.45, 0.01, 0.18, "As a share of the iris."],
+  ["limbalSoft", "Iris edge softness", 0, 1, 0.01, 0.6, "How the iris melts into the white: 0 a crisp line, 1 a wide soft shadow (the limbus seen through the cornea)."],
   ["catch1", "Catchlight", 0, 1, 0.01, 0.9, "The main highlight, painted on the eye."],
   ["catchSize", "Catchlight size", 0.05, 0.45, 0.01, 0.17, "As a share of the iris."],
   ["catchX", "Catchlight across", -0.8, 0.8, 0.01, -0.35, "Left to right on the iris."],
@@ -45,21 +48,26 @@ export function eyeTexture(p, side) {
     const co = smooth(0.55, 1.0, -sx * inner);                      // a little at the outer corner
     const lid = smooth(0.4, 0.95, Math.abs(sy)) * 0.5;               // and along the lids (the waterline)
     col = mix(col, cor, Math.min(1, p.cornerPink * (ci * 0.9 + co * 0.3 + lid * 0.4)) * smooth(R * 0.9, R * 1.5, th));
-    if (rr <= 1.03) {
+    const soft = p.limbalSoft ?? 0, w = 0.03 + 0.24 * soft;           // the iris's edge: how wide its fade into the white
+    if (soft > 0) {                                                    // a cool grey shadow on the white round the iris
+      const g = Math.exp(-Math.pow(Math.max(0, rr - 1 + 0.2 * w) / (0.06 + 0.22 * soft), 2));
+      col = mix(col, [col[0] * 0.66, col[1] * 0.68, col[2] * 0.74], 0.55 * soft * g);
+    }
+    if (rr <= 1 + w) {
       let ic = mix(iris2, iris, smooth(0.1, 0.95, rr));
       const fib = vn(ph * 26 / (Math.PI * 2) * 6, rr * 5) * 0.7 + vn(ph * 90, rr * 9) * 0.3;
       ic = ic.map(v => v * (1 + (fib - 0.5) * 0.7 * p.fibres));
       ic = mix(ic, ic.map(v => Math.min(255, v * 1.35 + 14)), p.fibres * 0.5 * Math.exp(-Math.pow((rr - 0.42) / 0.06, 2)));      // the pale ring round the pupil
-      ic = mix(ic, dark, p.limbal * smooth(1 - p.limbalWidth, 1, rr));
+      ic = mix(ic, dark, p.limbal * smooth(1 - p.limbalWidth - 0.3 * w, 1, rr));
       ic = mix(ic, [3, 3, 3], 1 - smooth(p.pupil - 0.025, p.pupil + 0.025, rr));                                                   // the pupil
-      col = mix(col, ic, 1 - smooth(0.985, 1.03, rr));
+      col = mix(col, ic, 1 - smooth(1 - 0.35 * w, 1 + 0.65 * w, rr));
     }
     // catchlights, on the iris's disc (x right, y up, in iris radii)
     const ux = sx / sinR, uy = sy / sinR;
     if (th < Math.PI / 2) {
       const a1 = 1 - smooth(p.catchSize * 0.6, p.catchSize, Math.hypot(ux - p.catchX, uy - p.catchY));
       const a2 = 1 - smooth(p.catchSize * 0.3, p.catchSize * 0.5, Math.hypot(ux + p.catchX * 0.7, uy + p.catchY * 0.8));
-      col = mix(col, [255, 255, 255], Math.min(1, a1 * p.catch1 + a2 * p.catch2) * (1 - smooth(1.0, 1.1, rr)));
+      col = mix(col, [255, 255, 255], Math.min(1, a1 * p.catch1 + a2 * p.catch2) * (1 - smooth(1.0, 1.1 + w, rr)));
     }
     const o = (y * W + x) * 4; img.data[o] = col[0]; img.data[o + 1] = col[1]; img.data[o + 2] = col[2]; img.data[o + 3] = 255;
   }

@@ -894,14 +894,14 @@ for (const e of Object.values(EYES)) e.renderOrder = 2;
 const EYESH = {};
 for (const side of ["L", "R"]) {
   const u = EYESH[side] = { uUp: { value: Array.from({ length: 17 }, () => new THREE.Vector2()) }, uLo: { value: Array.from({ length: 17 }, () => new THREE.Vector2()) },
-                            uToRig: { value: new THREE.Matrix4() }, uLidShade: { value: 0.6 },
+                            uToRig: { value: new THREE.Matrix4() }, uLidShade: { value: 0.6 }, uOcc: { value: 0.5 },
                             uCatch: { value: new THREE.Vector4() }, uCatchA: { value: new THREE.Vector2() }, uCatchR: { value: 0.001 } };   // two catchlights' places (x, y each), strengths, the first's radius
   eyeMats[side].onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform mat4 uToRig; varying vec3 vRig;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvRig = (uToRig * vec4(position, 1.0)).xyz;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
-uniform vec2 uUp[17], uLo[17]; uniform float uLidShade; varying vec3 vRig; uniform vec4 uCatch; uniform vec2 uCatchA; uniform float uCatchR;
+uniform vec2 uUp[17], uLo[17]; uniform float uLidShade, uOcc; varying vec3 vRig; uniform vec4 uCatch; uniform vec2 uCatchA; uniform float uCatchR;
 float lidY(vec2 P[17], float x) {                                  // a lid's height at x: along its line, the nearest end past it
   float y = P[0].y, d = 1e9;
   for (int i = 0; i < 16; i++) {
@@ -914,9 +914,34 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
 { float up = lidY(uUp, vRig.x) - vRig.y, lo = vRig.y - lidY(uLo, vRig.x);
   float c1 = 1.0 - smoothstep(0.6, 1.0, length(vRig.xy - uCatch.xy) / uCatchR), c2 = 1.0 - smoothstep(0.5, 1.0, length(vRig.xy - uCatch.zw) / (uCatchR * 0.5));
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), clamp(c1 * uCatchA.x + c2 * uCatchA.y, 0.0, 1.0));   // the catchlights: where the light is, whichever way the eye looks
-  diffuseColor.rgb *= 1.0 - uLidShade * (0.6 * (1.0 - smoothstep(0.0, 0.0032, up)) + 0.25 * (1.0 - smoothstep(0.0, 0.0014, lo))); }`);
+  float wUp = 0.0032 * (1.0 + 2.0 * uOcc), wLo = 0.0014 * (1.0 + 3.5 * uOcc);   // the eye occlusion: wider all round, into the corners
+  float cn = max(1.0 - smoothstep(0.0, 0.0065, length(vRig.xy - uLo[0])), 1.0 - smoothstep(0.0, 0.0055, length(vRig.xy - uLo[16])));
+  float sh = (0.6 + 0.3 * uOcc) * (1.0 - smoothstep(0.0, wUp, up)) + (0.25 + 0.5 * uOcc) * (1.0 - smoothstep(0.0, wLo, lo)) + 0.7 * uOcc * cn * cn;
+  diffuseColor.rgb *= 1.0 - min(0.95, uLidShade * sh); }`);
   };
-  eyeMats[side].customProgramCacheKey = () => "studio-eye-1";
+  eyeMats[side].customProgramCacheKey = () => "studio-eye-2";
+}
+// the tear line: a thin wet strip along each lower lid's edge (MetaHuman's lacrimal fluid), black and added on, so only
+// what it reflects shows: the lid's wet rim catching the light. Built each frame on the opening's lower lid line
+const TEARM = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.03, side: THREE.DoubleSide,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, envMapIntensity: 1.5 });
+const TEAR = {};
+for (const side of ["L", "R"]) {
+  const g = new THREE.BufferGeometry(), idx = [];
+  for (let i = 0; i < 16; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  g.setIndex(idx); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(17 * 2 * 3), 3));
+  const m = TEAR[side] = new THREE.Mesh(g, TEARM); m.renderOrder = 4; m.frustumCulled = false; m.userData.noShadow = true; m.visible = false; rig.add(m);
+}
+function tearLine(side, pts, c) {                      // pts: the opening's outline now (0..16 the lower lid, outer corner to inner)
+  const k = st.eyes.tearline ?? 0, m = TEAR[side]; m.visible = k > 0 && !!pts; if (!m.visible) return;
+  const P = m.geometry.attributes.position.array, mm = 0.001 * SCALE;
+  for (let i = 0; i <= 16; i++) {
+    const p = pts[i], t = Math.sqrt(Math.sin(Math.PI * i / 16)), dx = c[0] - p[0], dy = c[1] - p[1], l = Math.hypot(dx, dy) || 1;
+    P.set([p[0] + dx / l * 0.45 * mm * t, p[1] + dy / l * 0.45 * mm * t, p[2] + 0.3 * mm], i * 6);   // onto the eye
+    P.set([p[0] - dx / l * 0.2 * mm * t, p[1] - dy / l * 0.2 * mm * t, p[2] + 0.3 * mm], i * 6 + 3);  // and onto the lid's rim
+  }
+  m.geometry.attributes.position.needsUpdate = true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere();
+  TEARM.envMapIntensity = 0.5 + 2.5 * k;
 }
 function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid outline now, smoothed and scaled by Opening (or k): 32 points
   const ring = lidRing(side), n = ring.length, out = [];
@@ -1041,7 +1066,7 @@ const AREA0 = {};                                      // each opening's area on
 const area = pts => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] + pts[i][0]) * (pts[j][1] - pts[i][1]); return Math.abs(a) / 2; };
 function openings() {
   const on = !!LMK && st.eyes.on; SKU.uCutOn.value = on ? 1 : 0;
-  if (!on) { holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3)); return; }
+  if (!on) { holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3)); TEAR.L.visible = TEAR.R.visible = false; return; }
   const P = [];
   ["L", "R"].forEach((side, s) => {
     const { pts, c } = outline(side), U = SKU[`uCut${side}`].value;
@@ -1053,7 +1078,8 @@ function openings() {
     SKU.uCutZ.value.setComponent(s, Math.min(...pts.map(p => p[2])) - 0.006);   // only the front: not the back of the head behind it
     const mid = [c[0], c[1], pts.reduce((q, p) => q + p[2], 0) / pts.length - 0.002];
     const E = EYESH[side]; for (let i = 0; i <= 16; i++) { E.uLo.value[i].set(pts[i][0], pts[i][1]); E.uUp.value[i].set(pts[(16 + i) % 32][0], pts[(16 + i) % 32][1]); }
-    EYES[side].updateMatrix(); E.uToRig.value.copy(EYES[side].matrix); E.uLidShade.value = st.eyes.lidShade ?? 0.6;
+    EYES[side].updateMatrix(); E.uToRig.value.copy(EYES[side].matrix); E.uLidShade.value = st.eyes.lidShade ?? 0.6; E.uOcc.value = st.eyes.occlusion ?? 0.5;
+    tearLine(side, pts, c);
     const ec = EYES[side].position, ir = 0.0118 * SCALE * Math.sin(st.eyes.irisSize * Math.PI / 180);   // the iris's radius on the head: the catchlights' scale
     E.uCatch.value.set(ec.x + st.eyes.catchX * ir, ec.y + st.eyes.catchY * ir, ec.x - st.eyes.catchX * ir * 0.7, ec.y - st.eyes.catchY * ir * 0.8);
     E.uCatchA.value.set(st.eyes.catch1, st.eyes.catch2); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
@@ -1063,7 +1089,7 @@ function openings() {
   HOLES.material.color.set(st.eyes.corner).multiplyScalar(0.55);   // what shows where the eyeball doesn't: the corner's pink, darker
   lidView();
 }
-const EYEFIT = { size: 1, depth: 0, opening: 1, lidShade: 0.6 };   // the eyeball's size (grown back from the pupil), how far back, the opening's size
+const EYEFIT = { size: 1, depth: 0, opening: 1, lidShade: 0.6, occlusion: 0.5, tearline: 0.5 };   // the eyeball's size (grown back from the pupil), how far back, the opening's size
 st.eyes = { ...EYEPAINT.EYE_DEFAULTS, ...EYEFIT, lidLine: lidDefault(), showLid: false };
 paintEyes();
 function placeEyes() {
@@ -1558,7 +1584,9 @@ const eyeSet = {};
   const fit = [["size", "Eyeball size", 1, 2.2, 0.01, 1, "The eyeball is always at least big enough to fill the opening; bigger, it grows back into the head from its pupil (the front stays put) and never shows outside the opening. The iris keeps its size and its travel."],
                ["depth", "Eyeball depth (mm)", -1, 4, 0.1, 0, "How far behind the lids the eyeball's front sits."],
                ["opening", "Opening", 0.85, 1.2, 0.01, 1, "How much of the shell is cut away round the lid outline."],
-               ["lidShade", "Lid shadow", 0, 1, 0.01, 0.6, "The lids' shadow on the eyeball: darker under the upper lid, a little over the lower. It sets the eye in the head."]];
+               ["lidShade", "Lid shadow", 0, 1, 0.01, 0.6, "The lids' shadow on the eyeball: darker under the upper lid, a little over the lower. It sets the eye in the head."],
+               ["occlusion", "Eye occlusion", 0, 1, 0.01, 0.5, "How softly the lids sit on the eye: the shadow widened all round and into the corners (MetaHuman's eye occlusion), so no hard line where lid meets eye."],
+               ["tearline", "Tear line", 0, 1, 0.01, 0.5, "A wet strip along the lower lid's edge that only reflects: the tear film's bright line (MetaHuman's lacrimal fluid)."]];
   for (const [k, label, lo, hi, step, def, help] of fit) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; if (k === "size") repaint(); changed("expr"); });
   // the eyelid line: every lid point by hand (mm), both eyes mirrored unless unlinked; saved with the character, and as
   // the default for every character that has no line of its own (People/defaults.json)
@@ -1608,7 +1636,7 @@ const eyeSet = {};
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
+  eyeSet.all = () => { on.checked = st.eyes.on; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
@@ -1845,7 +1873,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { THREE, renderer, paired, CURL, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
