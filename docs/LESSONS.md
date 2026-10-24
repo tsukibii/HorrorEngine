@@ -525,6 +525,8 @@ wait for it to come back; and read the file to check a save landed.
   STUDIO ran beside it: on the cloud's software GPU each frame took so long that the game's clock barely moved, and a
   wait on it timed out. Run the browser checks one after another. Even alone, a long run slows as it goes (the locker
   late in PLAY draws 2 frames a second), so every wait on something the game does has a 60 s bound, not 10 or 15.
+  PLAY's triggered scene (sitting on the second chair) still waited 5 s for the scene to take over and missed once
+  after a long TIMES run; it passed alone. It has the 60 s bound now: a short bound proves nothing about speed here.
 - **cannon-es mixes two bodies' own friction and bounce only when both have a material** (else the world's default
   contact is used): a physics kind's `friction` and `bounce` would do nothing against the floor, so the level's static
   bodies have one too (friction 1, bounce 1: the product is the thing's own). Found by reading its narrowphase before

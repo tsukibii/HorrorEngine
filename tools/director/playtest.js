@@ -162,7 +162,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   await step("a triggered scene: sitting on the other chair plays one, then walking goes on", async () => {
     await goTo("chair_b", 0.8);
     await press("KeyE");
-    await playing(false, 5000);
+    await playing(false, 60000);                   // the scene takes over; 60 s, not 5: it missed once on the software GPU (LESSONS)
     await scenesUntilPlay();
     const st = await page.evaluate(() => { const rt = window.__dd.play; return { seat: !!rt.player.seat, stitch: !!rt.end, y: -rt.player.pos.z }; });
     if (st.seat || !st.stitch) throw new Error(JSON.stringify(st));
