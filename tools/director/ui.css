@@ -1,0 +1,81 @@
+/* The desk's editing parts (ui.js): the dialog, the command palette, forms, command lists you drag, beats as event
+   pages, the trigger pill. The desk's own colours (index.html :root). */
+.ic{flex:none;vertical-align:-2px}
+button.ghost{background:none;border-color:transparent;color:var(--dim);padding:2px 4px;line-height:0}
+button.ghost:hover{color:var(--text);border-color:var(--line);background:var(--panel2)}
+button.danger{border-color:#7a2c27;color:#ff9a8f}button.danger:hover{background:#3a1715}
+button.small,select.small{font-size:11px;padding:1px 5px}
+.grow{flex:1}
+.hint{color:var(--dim);font-size:12px;margin:0 0 10px}
+
+/* ---- the dialog ---- */
+.mdl-back{position:fixed;inset:0;background:rgba(6,6,8,.62);backdrop-filter:blur(2px);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding-top:9vh;animation:mdl-in .12s ease-out}
+.mdl{width:520px;max-width:92vw;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 60px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:80vh}
+.mdl.wide{width:780px}
+.mdl-h{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px 16px;border-bottom:1px solid var(--line);font-weight:600;letter-spacing:.02em}
+.mdl-b{padding:14px 16px;overflow:auto}
+.mdl-f{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--line)}
+@keyframes mdl-in{from{opacity:0}to{opacity:1}}
+
+/* ---- the palette ---- */
+.pal-search{width:100%;padding:8px 10px;font-size:14px;margin-bottom:12px;border-radius:7px}
+.pal-g{margin-bottom:12px}.pal-gh{font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 6px 2px;font-weight:600}
+.pal-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
+.pal-tiles.small{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-bottom:12px}
+.tile{display:flex;align-items:center;gap:9px;text-align:left;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);transition:transform .08s,border-color .08s,background .08s}
+.tile:hover{border-color:var(--g,var(--accent));background:#2a2a31;transform:translateY(-1px)}
+.tile.on{border-color:var(--accent);background:#33291a}
+.tile-ic{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:color-mix(in srgb,var(--g,var(--accent)) 22%,transparent);color:var(--g,var(--accent));flex:none}
+.tile-l{font-size:12.5px;line-height:1.25}
+
+/* ---- forms ---- */
+.frm{display:flex;flex-direction:column;gap:8px}
+.frm-r{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center}
+.frm-l{color:var(--dim);font-size:12px}
+.frm-r input:not([type=checkbox]),.frm-r select,.frm-r textarea{width:100%}
+.frm-r input.num{width:110px}
+.rowi{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chk{display:inline-flex;align-items:center;gap:4px;color:var(--dim);font-size:12px;cursor:pointer}
+.chk.small{font-size:11px}
+.chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.chip.neg{border-color:#7a2c27;color:#ff9a8f}
+.preview{margin-top:14px;padding:8px 10px;border-radius:7px;background:#151518;border:1px dashed var(--line);color:var(--text);font-size:12.5px}
+.answers{margin-top:12px;display:flex;flex-direction:column;gap:6px}.answers .ans input{flex:1;min-width:90px}.answers input.id{max-width:110px;color:var(--dim)}
+
+/* ---- the pill (when) ---- */
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#2b2417;border:1px solid #6b5124;color:#f0d9a6;font-size:12.5px;max-width:100%;text-align:left}
+.pill:hover{border-color:var(--accent);background:#33291a}
+.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nest{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px}
+
+/* ---- command lists ---- */
+.alist{display:flex;flex-direction:column;gap:3px;position:relative}
+.alist.nested{margin-left:16px;padding-left:10px;border-left:1px dashed var(--line)}
+.arow{display:flex;align-items:center;gap:7px;padding:5px 6px 5px 4px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--g);min-height:32px}
+.arow:hover{background:#29292f}
+.arow.dragging,.beat.dragging{opacity:.35}
+.a-ic{display:inline-flex;width:22px;height:22px;border-radius:6px;align-items:center;justify-content:center;background:color-mix(in srgb,var(--g) 22%,transparent);color:var(--g);flex:none}
+.a-t{flex:1;min-width:0;font-size:12.5px;cursor:default;overflow:hidden;text-overflow:ellipsis}
+.a-tools{display:flex;gap:1px;opacity:0;transition:opacity .1s}.arow:hover .a-tools{opacity:1}
+.grip{display:inline-flex;color:#55555e;cursor:grab;padding:2px 0;flex:none}.grip:hover{color:var(--dim)}.grip:active{cursor:grabbing}
+.a-empty{color:var(--dim);font-size:12px;font-style:italic;padding:4px 2px}.a-empty.big{padding:12px;border:1px dashed var(--line);border-radius:8px;font-style:normal}
+.a-add{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;background:none;border:1px dashed var(--line);color:var(--dim);font-size:12px;padding:4px 10px;border-radius:6px;margin-top:2px}
+.a-add:hover{color:var(--accent);border-color:var(--accent)}
+.a-add.big{padding:7px 14px;font-size:13px}
+.branch{margin-left:30px}.br-h{display:flex;align-items:center;gap:4px;color:var(--dim);font-size:12px;margin:2px 0}
+.drop-at{height:3px;border-radius:2px;background:var(--accent);box-shadow:0 0 8px var(--accent);margin:-1px 0}
+
+/* ---- beats as event pages ---- */
+.beats{display:flex;flex-direction:column;gap:10px;position:relative}
+.beat{border:1px solid var(--line);border-radius:10px;background:#1f1f24;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px}
+.beat-h{display:flex;align-items:center;gap:6px}
+.beat-h .pill{flex:0 1 auto;min-width:0}.beat-h .pill span{white-space:normal}
+select.secret{max-width:170px}
+.beat-id{font-size:11px;color:#6d6a63;font-family:ui-monospace,Consolas,monospace}
+.beat-if{display:flex;gap:5px;align-items:center;flex-wrap:wrap;font-size:11px}
+.beat-if .lab,.round .lab{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.result{margin:6px 0 10px}.result-h{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px;color:var(--text)}
+.result-h b{color:var(--accent);font-weight:600}
+.round{border:1px solid var(--line);border-radius:10px;padding:10px;background:#1f1f24}
+.advanced{margin-top:8px}.advanced summary{color:#6d6a63;font-size:11px;cursor:pointer}.advanced summary:hover{color:var(--dim)}
+.cuerow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0}

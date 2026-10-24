@@ -8,6 +8,9 @@ import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
+import { beatsEditor, actionList, triggerPill, modal, form } from "./ui.js";
+import { triggerText } from "./commands.js";
+import { icon } from "./icons.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -262,6 +265,80 @@ const TIME_MARK = { day: "☀", dusk: "◐", night: "☾" };   // a scene's time
 function newId(prefix, table) { let i = 1; while (table[prefix + i]) i++; return prefix + i; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
+/* ---------- what the editing parts (ui.js) can pick from: the story's lines, items, flags, things, routes... ---------- */
+let CTX_LEVEL = null, CTX_BEATS = [];
+function storyFlags() {
+  const out = new Set(), walk = x => {
+    if (!x || typeof x !== "object") return; if (Array.isArray(x)) return x.forEach(walk);
+    for (const [k, v] of Object.entries(x)) {
+      if ((k === "flag" || k === "unflag") && typeof v === "string" && v) out.add(v);
+      else if (k === "if" && Array.isArray(v)) v.forEach(f => typeof f === "string" && out.add(f.replace(/^!/, "")));
+      else if (v && typeof v === "object") walk(v);
+    }
+  };
+  walk(S); return [...out].sort();
+}
+function asksOf() { const out = {}; for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) for (const a of b.do || []) if (a.ask) out[a.ask] = a; return out; }
+const CTX = {
+  refs(kind) {
+    const lv = CTX_LEVEL, T = f => Object.entries(things()).filter(([, t]) => (!lv || t.level === lv) && f(t))
+      .map(([id, t]) => [id, t.room && t.room !== id ? `${id} · ${t.room}` : id]).sort((a, b) => a[0].localeCompare(b[0]));
+    if (kind.startsWith("askanswer:")) { const a = asksOf()[kind.slice(10)]; return a ? (a.options || []).map(o => [o.id, o.label || o.id]) : []; }
+    switch (kind) {
+      case "line": return Object.entries(S.lines || {}).map(([id, l]) => [id, `${id} · ${l.who ? ((S.cast || {})[l.who] || {}).name || l.who : ""}: ${(l.en || l.ja || "").slice(0, 60)}`]);
+      case "sound": return Object.keys(S.sounds || {}).map(k => [k, k]);
+      case "item": return Object.entries(S.items || {}).map(([k, v]) => [k, v.name || k]);
+      case "note": return Object.entries(S.notes || {}).map(([k, v]) => [k, v.title || k]);
+      case "counter": return Object.entries(S.game.counters || {}).map(([k, v]) => [k, v.label ? `${k} · ${v.label}` : k]);
+      case "axis": return Object.keys(((S.game.karma || {}).axes) || { karma: {} }).map(k => [k, k]);
+      case "scene": return Object.entries(S.scenes || {}).map(([k, v]) => [k, v.title ? `${v.title} (${k})` : k]);
+      case "cast": return Object.entries(S.cast || {}).map(([k, v]) => [k, v.name || k]);
+      case "spot": return T(t => t.use === "spot");
+      case "thing": return T(t => t.kind !== "room");
+      case "door": return T(t => t.kind === "door");
+      case "light": return T(t => t.use === "light");
+      case "room": return T(t => t.kind === "room");
+      case "zone": return T(t => t.kind === "room" || t.use === "trigger");
+      case "locker": return T(t => t.use === "locker");
+      case "carry": return T(t => t.use === "carry");
+      case "die": return T(t => t.use === "roll");
+      case "table": return T(t => t.use === "game");
+      case "route": return Object.entries(S.levels || {}).filter(([l]) => !lv || l === lv).flatMap(([, v]) => Object.keys(v.routes || {}).map(r => [r, r]));
+      case "beat": return CTX_BEATS.map(b => [b.id, `${b.id}: ${triggerText(b.when, CTX.name)}`]);
+      case "ask": return Object.entries(asksOf()).map(([k, a]) => [k, a.text ? `${k} · ${a.text}` : k]);
+      case "pose": return poseNames().map(p => [p, p]);
+      case "motion": return Object.keys(S.motions || {}).map(k => [k, k]);
+      case "flag": return storyFlags().map(f => [f, f]);
+      case "secret": return Object.entries(S.secrets || {}).map(([k, v]) => [k, v.hint ? `${k} · ${v.hint}` : k]);
+    }
+    return [];
+  },
+  name(kind, v) {
+    if (v === undefined || v === null || v === "") return "…";
+    if (kind === "line") { const l = (S.lines || {})[v]; return l ? `“${(l.en || l.ja || v).slice(0, 48)}”` : v; }
+    if (kind === "item") return ((S.items || {})[v] || {}).name || v;
+    if (kind === "note") return `“${((S.notes || {})[v] || {}).title || v}”`;
+    if (kind === "scene") return `“${((S.scenes || {})[v] || {}).title || v}”`;
+    if (kind === "cast") return ((S.cast || {})[v] || {}).name || v;
+    if (kind === "counter") return ((S.game.counters || {})[v] || {}).label || v;
+    return String(v);
+  },
+  changed() { touch(); },
+  rerender() { const sc = $("#inspector").scrollTop; renderInspector(); $("#inspector").scrollTop = sc; },
+};
+// a command list's array, written back into the story only when it changes (no empty lists left behind): obj[key],
+// and obj itself into parent[pkey] once it holds something
+function slot(obj, key, parent = null, pkey = null) {
+  const arr = obj[key] || [];
+  return [arr, Object.assign({}, CTX, { changed() {
+    if (arr.length) { obj[key] = arr; if (parent) parent[pkey] = obj; }
+    else { delete obj[key]; if (parent && parent[pkey] === obj && !Object.keys(obj).length) delete parent[pkey]; }
+    touch();
+  } })];
+}
+// the old JSON box, kept behind "Advanced" for what the forms don't cover yet
+const advanced = (...kids) => el("details", { class: "advanced" }, el("summary", {}, "Advanced: edit as JSON"), ...kids);
+
 /* ---------- the flow board ---------- */
 function karmaLabel(o) { const a = o.axis && o.axis !== "karma" ? o.axis + " " : ""; return o.min !== undefined && o.max !== undefined ? `${a}${o.min}..${o.max}` : o.min !== undefined ? `${a}≥ ${o.min}` : o.max !== undefined ? `${a}≤ ${o.max}` : "else"; }
 function outs(id) {
@@ -338,7 +415,7 @@ function jsonArea(obj, key, label, o = {}) {
 
 /* ---------- the inspector ---------- */
 function renderInspector() {
-  const box = $("#inspector"); box.innerHTML = "";
+  const box = $("#inspector"); box.innerHTML = ""; CTX_LEVEL = null; CTX_BEATS = [];
   if (!S || !SEL || !S.flow[SEL]) { box.append(el("p", { class: "muted" }, "Select a node.")); return; }
   const n = S.flow[SEL], nodeIds = Object.keys(S.flow);
   box.append(el("h2", {}, `${n.type} · ${SEL}`), el("div", { class: "row" },
@@ -378,7 +455,7 @@ function addNode(type) {
 }
 
 function sceneEditor(box, sc, sid) {
-  const lvl = sc.level || Object.keys(S.levels)[0];
+  const lvl = sc.level || Object.keys(S.levels)[0]; CTX_LEVEL = lvl;
   box.append(el("h2", {}, "Scene"), field("title", txt(sc, "title", { w: true })),
     field("level", sel(sc, "level", Object.keys(S.levels || {}), { after: showStage })), field("view", sel(sc, "view", spots(lvl), { title: "where the player stands", after: showStage }), "stance", sel(sc, "stance", ["stand", "crouch", "kneel", "sit", "lie", "hide"], { drop: true, title: "the player's eye height (sit: standing people loom; lie: everything looms)", after: showStage })));
   const mood = MOODS[sc.mood];
@@ -435,7 +512,23 @@ function sceneEditor(box, sc, sid) {
   ver.clips.forEach((c, i) => box.append(clipCard(sc, ver, c, i, lvl, sid)));
   box.append(el("div", { class: "row" }, el("button", { on: { click: () => { ver.clips.push({ id: "c" + (ver.clips.length + 1), who: castIds()[0] || "", ja: "", en: "", act: "", shot: "mcu", seam: ver.clips.length ? { kind: "blink" } : undefined, body: { block: [{ at: 0, pose: "idle" }] } }); touch(); renderInspector(); } } }, "+ clip"),
     el("span", { class: "muted" }, "one clip = one take of " + (S.game.clip_max || 10) + " s or less; long speeches are several clips joined by seams")));
-  box.append(jsonArea(ver, "cues", "cues: [{at: {clip, edge: start|end, offset}, do: {action}}]"), jsonArea(sc, "sets", "sets: actions when the scene ends"));
+  box.append(el("h2", {}, "Cues"), el("p", { class: "kv" }, "A command at a clip's start or end (a door slams as she turns): it rides the clip, so a longer take carries it."), cuesEditor(ver),
+    el("h2", {}, "When the scene ends"), actionList(...slot(sc, "sets"), { empty: "nothing" }));
+  box.append(advanced(jsonArea(ver, "cues", "cues: [{at: {clip, edge: start|end, offset}, do: {action}}]"), jsonArea(sc, "sets", "sets: actions when the scene ends")));
+}
+function cuesEditor(ver) {
+  const box = el("div", {}), cues = ver.cues || [], ids = (ver.clips || []).map(c => [c.id, `${c.id}: ${(c.en || c.ja || "").slice(0, 28)}`]);
+  cues.forEach((cu, i) => {
+    cu.at = cu.at || { clip: (ver.clips[0] || {}).id, edge: "start" };
+    const list = [cu.do];                              // one command, edited as a list of one
+    const one = actionList(list, Object.assign({}, CTX, { changed() { cu.do = list[0]; if (!cu.do) cues.splice(i, 1); if (!cues.length) delete ver.cues; touch(); } }), { empty: "no command" });
+    one.querySelector(".a-add") && list.length && one.querySelector(".a-add").remove();
+    box.append(el("div", { class: "cuerow" }, "at the", sel(cu.at, "edge", [["start", "start"], ["end", "end"]], { blank: false }), "of", sel(cu.at, "clip", ids, { blank: false, after: () => CTX.rerender() }),
+      txt(cu.at, "offset", { num: true, step: "0.1", ph: "0", style: "width:58px", title: "seconds after (or before, negative)" }), "s:", el("div", { style: "flex:1;min-width:260px" }, one),
+      el("button", { class: "ghost", title: "delete this cue", on: { click: () => { cues.splice(i, 1); if (!cues.length) delete ver.cues; touch(); CTX.rerender(); } } }, icon("x", 14))));
+  });
+  box.append(el("button", { class: "a-add", on: { click: () => { ver.cues = cues; cues.push({ at: { clip: (ver.clips[0] || {}).id, edge: "start", offset: 0 }, do: { sound: "" } }); touch(); CTX.rerender(); } } }, icon("plus", 14), " Add a cue"));
+  return box;
 }
 function applyMood(sc) {
   const m = MOODS[sc.mood]; if (!m) return;
@@ -517,8 +610,21 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     if (e.type === "mash") evs.append("need", txt(e, "need", { num: true, step: "0.1", style: "width:48px" }));
     if (["press", "mash", "hold"].includes(e.type)) evs.append("key", txt(e, "key", { ph: "E", style: "width:40px" }));
     card.append(evs);
-    if (e.type === "choose") card.append(jsonArea(e, "options", "options [{id, label}] (timed: the default is taken when time runs out)", { small: true, compact: true }), field("default", sel(e, "default", (e.options || []).map(o => o.id))));
-    card.append(jsonArea(e, "on", `on: {${eventResults(e).join(", ")}: [actions]} (flags, doors…; a result choice after the scene branches on it)`, { small: true, compact: true }));
+    if (e.type === "choose") {                                  // the answers (timed: the default when time runs out)
+      e.options = e.options || [];
+      const ob = el("div", { class: "sec" }, el("span", { class: "lab" }, "answers"));
+      e.options.forEach((o, oi) => ob.append(el("div", { class: "row" }, txt(o, "label", { ph: "what the player picks", style: "flex:1", after: renderInspector }), txt(o, "id", { style: "width:90px", title: "its id (a result choice after the scene branches on it)" }),
+        e.options.length > 2 ? el("button", { class: "ghost", title: "remove", on: { click: () => { e.options.splice(oi, 1); touch(); renderInspector(); } } }, icon("x", 14)) : null)));
+      ob.append(el("div", { class: "row" }, el("button", { on: { click: () => { e.options.push({ id: "opt" + (e.options.length + 1), label: "" }); touch(); renderInspector(); } } }, icon("plus", 14), " answer"),
+        el("span", { class: "lab" }, "when time runs out"), sel(e, "default", e.options.map(o => [o.id, o.label || o.id]), { blank: false })));
+      card.append(ob);
+    }
+    const on = e.on || {}, rb = el("div", { class: "sec" });
+    for (const res of eventResults(e)) {
+      const [arr, cx] = slot(on, res, e, "on");
+      rb.append(el("div", { class: "result" }, el("div", { class: "result-h" }, "If the result is ", el("b", {}, res)), actionList(arr, cx, { empty: "nothing (a result choice after the scene can branch on it)" })));
+    }
+    card.append(rb);
   } else card.append(evs);
   // body
   c.body = c.body || {};
@@ -626,10 +732,34 @@ function stitchEditor(box, st, tid) {
     hasT ? txt(st.timer, "secs", { num: true }) : null, hasT ? "s, on timeout go to" : null, hasT ? sel(st.timer, "fail", Object.keys(S.flow), { blank: false }) : null, hasT ? txt(st.timer, "label", { ph: "on-screen label" }) : null));
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(tid));
   if (its.length) box.append(el("div", { class: "kv" }, "trigger cutscenes here: " + its.map(i => `${i.label || i.id} → ${i.to}`).join("; ")));
-  const list = el("div", {});
-  for (const b of st.beats || []) list.append(el("div", { class: "muted" }, `• ${b.id}: when ${JSON.stringify(b.when)} → ${(b.do || []).map(a => Object.keys(a)[0]).join(", ")}${b.optional ? " (optional)" : ""}${b.secret ? " (secret)" : ""}`));
-  box.append(el("h2", {}, "Gameplay"), jsonArea(st, "play", `play: {"type": "${Object.keys(PLAYS).join("|")}", "secs": 40, "rule": "one line a child could say", "warn": "what tells you it's coming", "spots": [...], "on": {"found": [{"count": "found"}]}} (a result choice after it branches)`, { small: true, compact: true }));
-  box.append(el("h2", {}, "Beats"), list, jsonArea(st, "beats", "beats (STORY_FORMAT §4)"));
+  CTX_LEVEL = st.level || Object.keys(S.levels || {})[0] || null; CTX_BEATS = st.beats = st.beats || [];
+  box.append(el("h2", {}, "Gameplay round"), roundEditor(st),
+    el("h2", {}, "Beats"), el("p", { class: "kv" }, "When something happens, do these: drag a beat or a command by its grip to move it, double-click a command to change it."),
+    beatsEditor(st.beats, CTX, { secrets: CTX.refs("secret") }),
+    advanced(jsonArea(st, "play", "play (the round)", { small: true, compact: true }), jsonArea(st, "beats", "beats (STORY_FORMAT §4)")));
+}
+// a gameplay round (STORY_FORMAT §9.8): hide, run, collect...: its rule, timer, places, the seeker, and what each result does
+function roundEditor(st) {
+  if (!st.play) return el("div", { class: "row" }, el("span", { class: "kv" }, "Not a round: the beats below are the task."),
+    el("button", { on: { click: () => { st.play = { type: "hide", secs: 40, rule: "", spots: [], on: {} }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make it a gameplay round (hide, run, collect…)"));
+  const p = st.play, box = el("div", { class: "round" }), redo = () => { touch(); CTX.rerender(); };
+  box.append(form([
+    { key: "type", label: "Round", kind: "choice", opts: Object.keys(PLAYS), labels: { hide: "hide (hidden or found)", run: "run (escaped or caught)", collect: "collect (done or failed)", sneak: "sneak (made it or spotted)", hold: "hold (held or broke)", search: "search (found or out of time)", escape: "escape (out or caught)" } },
+    { key: "secs", label: "Seconds", kind: "number", ph: "40" }, { key: "rule", label: "The rule (one line)", kind: "text", ph: "Hide before she finishes counting to ten" },
+    { key: "warn", label: "What warns the player", kind: "text", ph: "she counts out loud, eyes covered", opt: true }, { key: "seeker", label: "Who hunts", kind: "cast", opt: true },
+  ], p, CTX, redo));
+  box.addEventListener("change", () => touch());
+  const spots = p.spots = p.spots || [], chips = el("span", { class: "chips" });
+  spots.forEach((x, i) => chips.append(el("span", { class: "chip" }, x, el("button", { class: "x", on: { click: () => { spots.splice(i, 1); redo(); } } }, "×"))));
+  const add = el("select", { on: { change: e => { if (e.target.value) { spots.push(e.target.value); redo(); } } } }, el("option", { value: "" }, "+ add a place"), ...CTX.refs("thing").filter(([v]) => !spots.includes(v)).map(([v, l]) => el("option", { value: v }, l)));
+  box.append(el("div", { class: "frm-r" }, el("span", { class: "frm-l" }, "Hiding places, targets"), el("span", { class: "chips" }, chips, add)));
+  const on = p.on || {};
+  for (const res of PLAYS[p.type] || []) {
+    const [arr, cx] = slot(on, res, p, "on");
+    box.append(el("div", { class: "result" }, el("div", { class: "result-h" }, "If the result is ", el("b", {}, res.replace(/_/g, " "))), actionList(arr, cx, { empty: "nothing more (a result choice after the task can branch on it)" })));
+  }
+  box.append(el("div", { class: "row" }, el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Stop this task being a gameplay round?")) { delete st.play; redo(); } } } }, "Not a round")));
+  return box;
 }
 function choiceEditor(box, n, nodeIds) {
   box.append(el("h2", {}, "Choice"), field("by", sel(n, "by", ["act", "flag", "result", "karma", "count"], { blank: false, after: renderInspector, title: "what picks the branch: the player's act, flags set, an event's result, karma, or a counter (game.counters)" })), field("prompt", txt(n, "prompt", { w: true })));
@@ -638,7 +768,7 @@ function choiceEditor(box, n, nodeIds) {
   const tb = el("table", {}, el("tr", {}, el("th", {}, "label"), el("th", {}, n.by === "act" ? "when (trigger JSON)" : n.by === "flag" ? "if flags (comma)" : n.by === "karma" ? "karma min · max (last: otherwise)" : n.by === "count" ? "counter min · max (last: otherwise)" : "result"), el("th", {}, "to"), el("th", {})));
   (n.options = n.options || []).forEach((o, i) => {
     let cond;
-    if (n.by === "act") cond = el("input", { class: "w", value: JSON.stringify(o.when || {}), on: { change: e => { try { o.when = JSON.parse(e.target.value); e.target.style.outline = ""; touch(); } catch (x) { e.target.style.outline = "1px solid var(--bad)"; } } } });
+    if (n.by === "act") cond = triggerPill({ get: () => o.when, set: v => { o.when = v; } }, CTX, { prefix: "" });
     else if (n.by === "flag") cond = el("input", { class: "w", value: (o.if || []).join(","), placeholder: "(last option: otherwise)", on: { change: e => { const v = e.target.value.trim(); if (v) o.if = v.split(",").map(s => s.trim()); else delete o.if; touch(); } } });
     else if (n.by === "karma") cond = el("span", { class: "row" }, txt(o, "min", { num: true, ph: "min", style: "width:60px", drop: true }), txt(o, "max", { num: true, ph: "max", style: "width:60px", drop: true }), txt(o, "axis", { ph: "axis", style: "width:70px", drop: true }));
     else if (n.by === "count") cond = el("span", { class: "row" }, sel(o, "count", Object.keys(S.game.counters || {}), { blank: "counter…", drop: true }), txt(o, "min", { num: true, ph: "min", style: "width:60px", drop: true }), txt(o, "max", { num: true, ph: "max", style: "width:60px", drop: true }));
