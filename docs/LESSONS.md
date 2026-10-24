@@ -549,3 +549,6 @@ triangles; a simplified shape is wrong exactly where things touch.
   (Dijkstra) came out as hexagons, its rings following the edges' directions. A straight coordinate along the finger
   is smooth; what was wrong with it was only where the nail ended (on the tip's curve, so the free edge wrapped over
   the end): the end moved 2.5 mm back, the outline stayed smooth. Fix the parameter before the method.
+- **A sparse fabric on a small garment is a pattern of dots:** the stockings' lace (a fine net, mostly holes) on a bra's
+  7 mm straps and small cups read as dotted outlines, and nude lace on skin as nothing. Lingerie got solid fabrics
+  (silk, satin, velvet, jersey); the lace stays for the legwear it was made for.

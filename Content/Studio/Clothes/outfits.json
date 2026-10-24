@@ -15,6 +15,12 @@
     "office (blazer)": [["crew-socks", "#1c1e26"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pants", "#2a2e36"], ["blazer", "#2a2e36"]],
     "school uniform (blazer)": [["stockings", "#1d1a1c"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}], ["blazer", "#1d2840"]],
     "work jacket": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"], ["work-jacket", "#5a4a32"]],
-    "cardigan and skirt": [["tights", "#1d1a1c"], ["flats", "#3a2a24"], ["long-sleeve", "#e8e4dc"], ["skirt", "#5a3a3a"], ["cardigan", "#8a7a68"]]
+    "cardigan and skirt": [["tights", "#1d1a1c"], ["flats", "#3a2a24"], ["long-sleeve", "#e8e4dc"], ["skirt", "#5a3a3a"], ["cardigan", "#8a7a68"]],
+    "lingerie: black lace": [["thong", "#141416"], ["triangle-bralette", "#141416"]],
+    "lingerie: satin nude": [["tanga", "#e7c9c0"], ["balconette-bra", "#e7c9c0"]],
+    "lingerie: red": [["high-leg-thong", "#a8122f"], ["plunge-bra", "#a8122f"]],
+    "underwear: sporty": [["boy-shorts", "#2a2d34"], ["sports-bra", "#2a2d34"]],
+    "underwear: boxer briefs": [["boxer-briefs", "#22252b"]],
+    "underwear: trunks": [["trunks", "#1d3a5f"]]
   }
 }

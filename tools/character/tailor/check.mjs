@@ -10,11 +10,12 @@ import { join } from "path";
 import { loadMhr, mhrBody, bodyWeights, ROOT } from "./node.mjs";
 import * as TAILOR from "../tailor.js";
 import { height } from "./frame.js";
+import { bust } from "./pieces.js";
 
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const { designs } = JSON.parse(readFileSync(join(CLOTHES, "designs.json")));
 const { outfits } = JSON.parse(readFileSync(join(CLOTHES, "outfits.json")));
-const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons", "lapel", "edgeband", "foot"]), SLOTS = new Set(["top", "bottom", "full", "legs", "feet", "jacket"]);
+const errs = [], DETAILS = new Set(["neckband", "collar", "placket", "band", "cuff", "pocket", "buttons", "lapel", "edgeband", "foot", "trim"]), SLOTS = new Set(["under", "top", "bottom", "full", "legs", "feet", "jacket"]);
 
 for (const [name, d] of Object.entries(designs)) {
   if (!d.label) errs.push(`${name}: no label`);
@@ -51,7 +52,12 @@ const look = (label, B, g) => {
   if (p.legs) want.push(["legs", height(F, p.legs.to), lo]);
   if (p.hem) want.push(["hem", height(F, p.hem.at) - Math.max(p.hem.front || 0, p.hem.back || 0) * F.s, lo]);   // its tails lowest
   if (p.neck) want.push(["neck", F.neckBaseY + 0.02 * F.s, hi]);                  // the back of the neckline rises (its tilt)
-  for (const [what, y, got] of want) if (Math.abs(got - y) > 0.035 * F.s) errs.push(`${label}: its ${what} at ${got.toFixed(3)} m, not ${y.toFixed(3)}`);
+  if (p.bra) {                                                                     // a bra: its band under the bust, its straps over the shoulders
+    want.push(["band", bust(F).under + (p.bra.drop ?? 0) * F.s - (p.bra.band ?? 0.02) * F.s, lo]);
+    if (p.bra.style !== "bandeau") want.push(["straps", F.neckBaseY, hi]);
+  }
+  if (p.brief) want.push(["gusset", F.crotchY - (p.brief.deep ?? 0.035) * F.s, lo]);   // briefs: down between the legs
+  for (const [what, y, got] of want) if (Math.abs(got - y) > (what === "straps" ? 0.06 : 0.035) * F.s) errs.push(`${label}: its ${what} at ${got.toFixed(3)} m, not ${y.toFixed(3)}`);
   if (tris > 250000) errs.push(`${label}: ${tris} triangles`);
   return tris;
 };

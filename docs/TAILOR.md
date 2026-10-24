@@ -19,6 +19,7 @@ simulated. It replaces the GarmentCode route, which was removed.
 | Skirts | rings hung from the waist instead: at every height the convex outline of the body (both legs, and what's worn under it) plus the ease, never narrowing below the hips (`flare` widens it; `taper` makes a pencil skirt), knife or box `pleats` stitched down to the hip, or `waves` | `skirt` |
 | Details | parts of the garment's outside lifted a few millimetres off it: `neckband`, `collar` (rolled at the neck, points at the front), `placket` (a button band, or a fly with `x`), `band` (on the waistline: a waistband, a belt; or between two heights: a hem band), `cuff` (sleeves or trouser legs), `pocket` (a rounded rectangle seen from the front, the back or the side: patch pockets, flaps, cargo pockets), `lapel` (along a jacket's V, widest at the neck, rolled), `edgeband` (down an opening's edges: a cardigan's rib, a jacket's front band); a `collar` with `front: false` goes round the back only, for lapels; `buttons` are discs down a line (one big one is a buckle) | `detail`, `buttons` |
 | Shoes | `kind: "shoe"`: the upper lofted round each foot as Woohill's footwear is (vertical sections across the foot every 3 mm, each the convex outline of the foot there, so the toes are one smooth toe box; the heel cup a wall, the toe rounded; the ease out; the ends rounded), its opening cut by `shoe` (`heel` and `vamp` heights, `from` where along the foot the upper is whole: a boot is high all round); the **sole** under it (`sole`: the footprint's outline pushed out by `overhang`, `thick` under the floor, `rise` up the side, toe spring, a `heel` block); `foot` details by where they are on the foot (a toe cap, a heel counter, a tongue) | `shoeShell`, `soles`, `frame.js` `feet` |
+| Underwear | `bra`: a band round the ribs under the bust (the fold found under each breast's fullest point, `bust`), cups laid on the torso's front as a flat panel (the fabric coordinates' `torsoU` across, the height up): `triangle`, `balconette` (a nearly level top), `plunge` (the inner edges in a V down to the band), the gore between them, straps from each cup's highest point over the shoulder and down to the back band (or meeting between the shoulder blades: `racer`); `sports` one front panel to a scoop with wide straps; `bandeau` a band over the bust. `brief`: under the waistline, the leg openings: a `gusset` between the legs, the front panel widening to the hips, its edge rising to `side` over the crotch (`curve`: under 1 cut high at once, over 1 low and then up); the back from its own gusset (a thong's strip) with its own `curve` and `drop` over the seat, or (`band`) rising from the strip to just under the waistline: a thong's V or a G-string's T. Skin tight (1.5 mm of ease, `tension` 8); `fine: 2` splits the cloth once more (about 2.5 mm) so straps and strings have clean edges; a `trim` detail lifts a band along every edge (the elastic) | `bra`, `brief`, `bust` |
 | Thickness | an inner surface and a crisp rim round every open edge; the rim and the outside's last row of points are shaded darker (`S`), so hems, pockets and collars read as stitched edges with a shadow | `fit.js` `thicken` |
 | Fabric coordinates | every point gets (u, v) in metres, laid the way a sewn garment's panels lie: the torso a front and a back panel (u the arc length across each row's own outline from the middle, over the shoulders a yoke by x; side seams), a sleeve round the arm's line (the seam underneath), a trouser leg round its own line from the waist down (the seam at the back, a stocking's), a skirt a front and a back panel spreading to the hem; every ring's own radius, so a tile is its real size all round. The mesh is split exactly along each seam first, so seams are clean lines; normals come from the joined mesh, so the light doesn't break there. `sheet.mjs --uv` shows them as a 5 cm checker | `tailor/uv.js`, `frame.js` `torsoArcs` |
 
@@ -62,7 +63,7 @@ button). `sheet.mjs --pbr pants=pbr/denim1:0.12` renders one.
 
 ## 2. The designs are data
 
-`Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
+`Content/Studio/Clothes/designs.json`: each design has a `label`, a `slot` (`under`, `top`, `bottom`, `full`, `legs`, `feet`, `jacket`), a
 `color` (`trim` and `buttons` for its details), a `surface` (and `trimSurface`, `pattern`, `denier`), a `thickness`, a
 `piece` and its `details`. Heights are names on the body
 (`neck`, `armpit`, `bust`, `waist`, `hip`, `crotch`, `knee`, `ankle`) plus metres on MHR's 1.726 m average, scaled
@@ -80,6 +81,9 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `open` | `{from, gap, top, curve}`: a jacket's front opening, a `gap` down the middle (a closed front's edge when it's a couple of millimetres) widening into a V from `from` to `top` each side at the neck |
 | `ease` | `{body, sleeve, leg, flare, crotch}` in metres off the skin |
 | `tension` | rounds of relaxing: 18 clings, 48 hangs like a work shirt |
+| `fine` | 2: the cloth split once more (about 2.5 mm triangles), for narrow parts: straps, strings |
+| `bra` | `{style: triangle \| balconette \| plunge \| sports \| bandeau, band, top, outer, gore, strap, rise, drop, racer}` (sports: `scoop`, `panel`, `strapX`, `bottom`): metres on the average body |
+| `brief` | `{side, gusset, curve, deep, back: {gusset, curve, drop, band}}`: the leg openings under the `waist` |
 | skirt | `waist.at`, `length`, `ease`, `flare` (m per m), `taper`, `pleats: {n, depth, stitched, box}`, `waves: {n, depth}` |
 
 `Content/Studio/Clothes/outfits.json`: an outfit is `[[design, colour], ...]` in the order worn. Built now: the
@@ -92,7 +96,12 @@ outfits that show a print and a stripe. Jackets: a **blazer** (wool, lapels, two
 a **work jacket** (canvas, a collar, flapped chest pockets, a front band, a hem band) and a **cardigan** (knit, a deep
 V, rib edge bands, cuffs and hem); worn last, over a shirt. Footwear: **sneakers** (canvas, a rubber sole, a tongue, a
 toe cap, a red heel tab), **work boots** (leather, a lug sole, a toe cap, a heel counter, a padded collar), **loafers**
-(a heel block, an apron) and **flats** (patent); **ankle, crew and knee socks** (a rib top). Every outfit has its shoes,
+(a heel block, an apron) and **flats** (patent); **ankle, crew and knee socks** (a rib top). **Underwear** (2026-10-24,
+slot `under`, all skin tight, worn first): bras (a **triangle bralette** in silk, a **balconette** and a **plunge** in
+satin, a **sports bra** with a racer back, a **bandeau**, a **longline bralette** in velvet), thongs and briefs (a
+**thong**, a **G-string**, a **tanga**, a **high-leg thong**, **bikini briefs**) and boxers (**boxer briefs** with a fly
+seam, **trunks**, **long boxer briefs**, **boy shorts**); outfits `lingerie: black lace`, `lingerie: satin nude`,
+`lingerie: red`, `underwear: sporty`, `underwear: boxer briefs` and `underwear: trunks`. Every outfit has its shoes,
 worn after the socks and tights and before the rest. Soles sit under the floor the body stands on (the body isn't
 lifted by them yet).
 

@@ -432,7 +432,11 @@ $("#worn").after(clothesExp);
   clothesExp.before(el("label", { className: "tog", title: "Drag a garment by its hem, neckline, sleeve, waist, legs or a skirt's length and flare" }, t, el("span", { textContent: "Handles in the view" }))); }
 Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), api("api/pbr").catch(() => ({}))]).then(([d, o, p]) => {
   DESIGNS = d.designs || {}; OUTFITS = o.outfits || {}; SHELF = p.sets || {};
-  designSel.replaceChildren(...Object.entries(DESIGNS).map(([k, v]) => el("option", { value: k, textContent: v.label || k })));
+  const SLOTS = [["under", "Underwear"], ["top", "Tops"], ["bottom", "Bottoms"], ["full", "One piece"], ["legs", "Legwear"], ["feet", "Footwear and socks"], ["jacket", "Jackets"]];   // the designs by what they are
+  const opt = ([k, v]) => el("option", { value: k, textContent: v.label || k }), all = Object.entries(DESIGNS);
+  designSel.replaceChildren(...SLOTS.map(([sl, label]) => el("optgroup", { label }, ...all.filter(([, v]) => v.slot === sl).map(opt))).filter(g => g.children.length),
+                            ...all.filter(([, v]) => !SLOTS.some(([sl]) => sl === v.slot)).map(opt));
+  designSel.value = all.find(([, v]) => v.slot !== "under")?.[0] ?? "";   // a garment first, not underwear
   outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n })));
   designSel.onchange = () => { gColor.value = DESIGNS[designSel.value]?.color || gColor.value; }; designSel.onchange();
   drawWorn(); if (st.clothes.length) dress();

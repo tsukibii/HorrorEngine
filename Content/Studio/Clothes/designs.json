@@ -239,6 +239,120 @@
       "details": [
         {"kind": "band", "follow": "waist", "width": 0.025, "lift": 0.0012, "surface": "rib"}
       ]
+    },
+    "triangle-bralette": {
+      "label": "Triangle bralette", "slot": "under", "color": "#16161a", "surface": "silk", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trimSurface": "satin",
+      "piece": {"kind": "shell", "neck": false, "bra": {"style": "triangle", "band": 0.014, "top": 0.042, "outer": 0.064, "gore": 0.012, "strap": 0.007, "rise": 0.012}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "trim", "width": 0.005, "lift": 0.0006}
+      ]
+    },
+    "balconette-bra": {
+      "label": "Balconette bra", "slot": "under", "color": "#e6cfc4", "surface": "satin", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "bra": {"style": "balconette", "band": 0.022, "top": 0.022, "outer": 0.07, "gore": 0.014, "strap": 0.011, "rise": 0.01}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "trim", "width": 0.005, "lift": 0.0006}
+      ]
+    },
+    "plunge-bra": {
+      "label": "Plunge bra", "slot": "under", "color": "#121214", "surface": "satin", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "bra": {"style": "plunge", "band": 0.02, "top": 0.032, "outer": 0.07, "gore": 0.012, "strap": 0.01, "rise": 0.01}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "trim", "width": 0.005, "lift": 0.0006}
+      ]
+    },
+    "sports-bra": {
+      "label": "Sports bra", "slot": "under", "color": "#2a2d34", "surface": "spandex", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "bra": {"style": "sports", "band": 0.042, "top": 0.034, "scoop": 0.032, "panel": 0.1, "strap": 0.03, "strapX": 0.085, "racer": true, "bottom": 0.15, "rise": 0}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "trim", "width": 0.008, "lift": 0.0008}
+      ]
+    },
+    "bandeau": {
+      "label": "Bandeau", "slot": "under", "color": "#f2efe8", "surface": "rib", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "bra": {"style": "bandeau", "band": 0.006, "top": 0.034, "rise": 0}, "ease": {"body": 0.0015}, "tension": 8},
+      "details": [
+        {"kind": "trim", "width": 0.007, "lift": 0.0006}
+      ]
+    },
+    "longline-bralette": {
+      "label": "Longline bralette", "slot": "under", "color": "#5b1f33", "surface": "velvet", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trimSurface": "satin",
+      "piece": {"kind": "shell", "neck": false, "bra": {"style": "triangle", "band": 0.075, "top": 0.04, "outer": 0.066, "gore": 0.012, "strap": 0.008, "rise": 0.008}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "trim", "width": 0.005, "lift": 0.0006}
+      ]
+    },
+    "thong": {
+      "label": "Thong", "slot": "under", "color": "#16161a", "surface": "spandex", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.14", "drop": 0.02, "rise": 0.025}, "brief": {"side": 0.1, "gusset": 0.03, "curve": 0.9, "back": {"gusset": 0.012, "curve": 0.3, "drop": 0, "band": 0.012}}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.01, "lift": 0.0007},
+        {"kind": "trim", "width": 0.004, "lift": 0.0005}
+      ]
+    },
+    "g-string": {
+      "label": "G-string", "slot": "under", "color": "#16161a", "surface": "satin", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.13", "drop": 0.018, "rise": 0.022}, "brief": {"side": 0.122, "gusset": 0.022, "curve": 0.55, "back": {"gusset": 0.006, "curve": 0.15, "drop": 0, "band": 0.006}}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "trim", "width": 0.003, "lift": 0.0005}
+      ]
+    },
+    "tanga": {
+      "label": "Tanga (Brazilian)", "slot": "under", "color": "#e6cfc4", "surface": "satin", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trimSurface": "satin",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.14", "drop": 0.02, "rise": 0.025}, "brief": {"side": 0.095, "gusset": 0.032, "curve": 1.0, "back": {"gusset": 0.032, "curve": 0.7, "drop": 0}}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.01, "lift": 0.0007},
+        {"kind": "trim", "width": 0.004, "lift": 0.0005}
+      ]
+    },
+    "high-leg-thong": {
+      "label": "High-leg thong", "slot": "under", "color": "#a8122f", "surface": "spandex", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.015, "rise": 0.02}, "brief": {"side": 0.155, "gusset": 0.03, "curve": 0.55, "back": {"gusset": 0.012, "curve": 0.3, "drop": 0, "band": 0.015}}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.01, "lift": 0.0007},
+        {"kind": "trim", "width": 0.004, "lift": 0.0005}
+      ]
+    },
+    "bikini-briefs": {
+      "label": "Bikini briefs", "slot": "under", "color": "#f2efe8", "surface": "jersey", "thickness": 0.0012, "rim": 0.85, "edge": 0.9,
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.14", "drop": 0.02, "rise": 0.025}, "brief": {"side": 0.085, "gusset": 0.034, "curve": 1.2, "back": {"gusset": 0.034, "curve": 2.2, "drop": 0.03}}, "ease": {"body": 0.0015}, "tension": 8, "fine": 2},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.01, "lift": 0.0007},
+        {"kind": "trim", "width": 0.004, "lift": 0.0005}
+      ]
+    },
+    "boxer-briefs": {
+      "label": "Boxer briefs", "slot": "under", "color": "#22252b", "surface": "jersey", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trim": "#101114",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.012, "rise": 0.02}, "legs": {"to": "crotch-0.13"}, "ease": {"body": 0.0018, "leg": 0.0016, "crotch": 0.004}, "tension": 8},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.035, "lift": 0.0012, "trim": true},
+        {"kind": "cuff", "on": "legs", "length": 0.012, "lift": 0.0006},
+        {"kind": "placket", "from": "crotch+0.12", "to": "crotch+0.01", "width": 0.04, "lift": 0.0006}
+      ]
+    },
+    "trunks": {
+      "label": "Trunks", "slot": "under", "color": "#1d3a5f", "surface": "spandex", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trim": "#e8e8ea",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.14", "drop": 0.015, "rise": 0.02}, "legs": {"to": "crotch-0.05"}, "ease": {"body": 0.0018, "leg": 0.0016, "crotch": 0.004}, "tension": 8},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.03, "lift": 0.0012, "trim": true},
+        {"kind": "cuff", "on": "legs", "length": 0.012, "lift": 0.0006}
+      ]
+    },
+    "long-boxer-briefs": {
+      "label": "Long boxer briefs", "slot": "under", "color": "#3b3f46", "surface": "jersey", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trim": "#1c1e22",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.17", "drop": 0.012, "rise": 0.02}, "legs": {"to": "crotch-0.22"}, "ease": {"body": 0.0018, "leg": 0.0016, "crotch": 0.004}, "tension": 8},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.035, "lift": 0.0012, "trim": true},
+        {"kind": "cuff", "on": "legs", "length": 0.012, "lift": 0.0006}
+      ]
+    },
+    "boy-shorts": {
+      "label": "Boy shorts", "slot": "under", "color": "#e9b8c4", "surface": "jersey", "thickness": 0.0012, "rim": 0.85, "edge": 0.9, "trim": "#e9b8c4", "trimSurface": "satin",
+      "piece": {"kind": "shell", "neck": false, "waist": {"at": "crotch+0.13", "drop": 0.02, "rise": 0.022}, "legs": {"to": "crotch-0.035"}, "ease": {"body": 0.0018, "leg": 0.0016, "crotch": 0.004}, "tension": 8},
+      "details": [
+        {"kind": "band", "follow": "waist", "width": 0.012, "lift": 0.0012, "trim": true},
+        {"kind": "cuff", "on": "legs", "length": 0.012, "lift": 0.0006}
+      ]
     }
   }
 }

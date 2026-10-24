@@ -72,6 +72,112 @@ export function shoeLine(F, o) {
   };
 }
 
+// ---- underwear: a bra's band, cups and straps; briefs' leg openings ---------------------------------------------------
+
+/** the bust's two points (the fullest forward each side, between the bust's height and a little under it) and the fold
+    under each (going down from the point, where the front stops coming back in before the belly); a chest with no fold
+    has it 7 cm under its point. On F once */
+export function bust(F) {
+  if (F._bust) return F._bust;
+  const S = F.scan, s = F.s, [cx, cz] = F.torsoAxis(F.bustY), out = {};
+  for (const [k, sg] of [["L", 1], ["R", -1]]) {
+    let best = null;
+    for (const r of S.rows) {
+      if (r.y < F.bustY - 0.06 * s || r.y > Math.min(F.bustY + 0.05 * s, F.armpitY)) continue;
+      const l = S.central(r); if (!l) continue;
+      for (const [x, z] of l.pts) if ((x - cx) * sg > 0.03 * s && (x - cx) * sg < 0.14 * s && (!best || z > best[2])) best = [x, r.y, z];
+    }
+    if (!best) best = [cx + sg * 0.09 * s, F.bustY, cz + 0.1 * s];
+    let fold = null, low = Infinity;
+    for (const r of S.rows.filter(r => r.y < best[1] - 0.03 * s && r.y > best[1] - 0.14 * s).reverse()) {
+      const l = S.central(r); if (!l) continue;
+      let z = -Infinity; for (const [x, zz] of l.pts) if (Math.abs(x - best[0]) < 0.012 * s) z = Math.max(z, zz);
+      if (!Number.isFinite(z)) continue;
+      if (z <= low) { low = z; fold = r.y; } else if (z > low + 0.002 * s) break;   // the front comes out again: the belly
+    }
+    out[k] = { x: best[0], y: best[1], z: best[2], fold: clamp(fold ?? best[1] - 0.07 * s, best[1] - 0.1 * s, best[1] - 0.045 * s) };
+  }
+  out.under = (out.L.fold + out.R.fold) / 2;
+  return (F._bust = out);
+}
+const sdPoly = (P, u, v) => {                                       // a polygon's signed distance at (u, v): < 0 inside
+  let d = Infinity, inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [ax, ay] = P[j], [bx, by] = P[i], ex = bx - ax, ey = by - ay, t = clamp(((u - ax) * ex + (v - ay) * ey) / (ex * ex + ey * ey || 1), 0, 1);
+    d = Math.min(d, Math.hypot(u - ax - ex * t, v - ay - ey * t));
+    if ((ay > v) !== (by > v) && u < ax + (v - ay) / (by - ay) * ex) inside = !inside;
+  }
+  return inside ? -d : d;
+};
+
+/** a bra: a band round the ribs under the bust (a little higher at the back by `rise`), cups over the bust laid on the
+    torso's front as a flat panel (tailor's torsoU across, the height up; `top` how far over the bust's point a cup
+    comes, `outer` how far out past it, `gore` the gap between them at the band), and straps from each cup's highest
+    point up over the shoulder and down to the back band (or, `racer`, meeting between the shoulder blades). Styles:
+    triangle, balconette, plunge (the cups' inner edges in a V down to the band), sports (one front panel to a scoop,
+    wide straps, a racer back), bandeau (a band over the bust, no straps). value >= 0 on the cloth */
+export function bra(F, o) {
+  const s = F.s, B = bust(F), style = o.style || "balconette", [cx0] = F.torsoAxis(F.bustY);
+  const band = (o.band ?? 0.02) * s, under = B.under + (o.drop ?? 0) * s, top = (o.top ?? 0.03) * s, outer = (o.outer ?? 0.07) * s, gore = (o.gore ?? 0.016) * s / 2;
+  const sw = (o.strap ?? 0.012) * s / 2, rise = (o.rise ?? 0.01) * s, apexY = (B.L.y + B.R.y) / 2;
+  const cups = [["L", 1], ["R", -1]].map(([k, sg]) => {
+    const A = B[k], uA = Math.max(0.02 * s, Math.abs(F.torsoU(A.x, A.y, A.z, false))), yA = A.y;
+    let poly;
+    if (style === "triangle") poly = [[gore, under], [uA + outer, under], [uA + 0.006 * s, yA + top]];
+    else if (style === "plunge") poly = [[gore, under + 0.006 * s], [uA + outer, under], [uA + 0.62 * outer, yA + top + 0.008 * s], [uA - 0.3 * outer, yA + top - 0.012 * s], [gore + 0.003 * s, under + 0.028 * s]];
+    else poly = [[gore, under + 0.004 * s], [uA + outer, under], [uA + 0.72 * outer, yA + top + 0.01 * s], [uA - 0.25 * outer, yA + top - 0.003 * s], [gore + 0.004 * s, yA - 0.006 * s]];   // balconette
+    const hi = poly.reduce((a, p) => (p[1] > a[1] ? p : a)), kx = Math.abs(A.x - cx0) / uA;   // the strap leaves the cup's highest point
+    return { sg, poly, xs: cx0 + sg * (style === "sports" ? (o.strapX ?? 0.075) * s : hi[0] * kx), ys: style === "sports" ? apexY + top : hi[1] };
+  });
+  const scoop = (o.scoop ?? 0.03) * s, sideW = (o.panel ?? 0.11) * s;   // sports: the front panel's scoop and the width where it's full height
+  const backTop = under + rise, midY = Math.min(F.armpitY - 0.02 * s, backTop + 0.08 * s), topY = F.neckBaseY - 0.01 * s;
+  const strapX = (c, y, back) => {                                   // where a strap's middle is at height y
+    if (!back || !o.racer) return c.xs;
+    const t = clamp((y - midY) / Math.max(0.01 * s, topY - midY), 0, 1);   // a racer: from the shoulder down into the middle of the back
+    return cx0 + (c.xs - cx0) * Math.sqrt(t) + c.sg * sw * 0.9 * (1 - Math.sqrt(t));
+  };
+  return (x, y, z) => {
+    if (F.arm(x, y, z)) return -1;
+    const [cx, cz] = F.torsoAxis(y), fr = front(z, cz, 0.03 * s), back = z < cz, lift = rise * (1 - fr);
+    if (style === "bandeau") return Math.min(y - (under - band + lift), apexY + top + lift * 0.5 - y);
+    let v = Math.min(y - (under - band + lift), under + lift - y);    // the band
+    if (style === "sports") {                                         // one panel over the front, to a scoop between the straps
+      if (!back) { const u = Math.abs(F.torsoU(x, y, z, false)), t = clamp(1 - u / sideW, 0, 1); v = Math.max(v, Math.min(y - (under - band), apexY + top - scoop * t * t * (3 - 2 * t) - y)); }
+      else if (o.racer) { const w = (o.bottom ?? 0.1) * s / 2 * (1 - clamp((y - backTop) / Math.max(0.01 * s, midY - backTop), 0, 1)) + sw; v = Math.max(v, Math.min(y - (under - band + lift), w - Math.abs(x - cx), midY + 0.01 * s - y)); }
+    } else for (const c of cups) {                                   // the cups, on the front
+      if (back) continue;
+      const u = c.sg * F.torsoU(x, y, z, false); if (u < 0) continue;
+      v = Math.max(v, -sdPoly(c.poly, u, y));
+    }
+    for (const c of cups) {                                           // the straps: up from the cup, over the shoulder, down the back
+      if ((x - cx) * c.sg < -0.01 * s) continue;
+      const from = back ? (o.racer ? backTop - 0.004 * s : backTop + lift - 0.004 * s) : c.ys - 0.006 * s;
+      v = Math.max(v, Math.min(sw - Math.abs(x - strapX(c, y, back)), y - from, F.neckBaseY + 0.05 * s - y));
+    }
+    return v;
+  };
+}
+
+/** briefs, a thong, a G-string, a tanga, under the waistline: the leg openings. Between the legs a `gusset` that goes
+    `deep` under the crotch; the front panel widens from it to the hips, its edge rising to `side` over the crotch at the
+    hip's side (`curve` under 1: cut high at once, over 1: low and then up); the back the same from its own gusset (a
+    thong's strip) with its own `curve`, and `drop`: how far under the crotch's height it reaches over the seat; a thong's
+    back (`band`) rises from its strip to just that far under the waistline. The front and back blend over a few
+    centimetres between the legs and at the hips. value >= 0 on the cloth */
+export function brief(F, o, waist = null) {
+  const s = F.s, cy = F.crotchY, side = cy + (o.side ?? 0.08) * s, b = o.back || {}, bandB = b.band !== undefined && waist ? b.band * s : null;
+  const gf = (o.gusset ?? 0.03) * s / 2, cf = o.curve ?? 1, gb = (b.gusset ?? o.gusset ?? 0.03) * s / 2, cb = b.curve ?? 2.2, drop = (b.drop ?? 0.03) * s, deep = (o.deep ?? 0.035) * s;
+  const l = F.scan.central(F.scan.at(side)), [hx] = F.torsoAxis(side), Wh = l ? Math.max(hx - l.x0, l.x1 - hx) : 0.17 * s;
+  return (x, y, z) => {
+    if (F.arm(x, y, z)) return -1;
+    const [cx, cz] = F.torsoAxis(Math.max(y, cy)), u = Math.abs(x - cx), w = front(z, cz, 0.035 * s);
+    const g = gb + (gf - gb) * w, c = cb + (cf - cb) * w, low = cy - drop * (1 - w);
+    const top = bandB === null ? side : side + (waist(x, y, z) + y - bandB - side) * (1 - w);   // the back's edge up to its waistband
+    const t = clamp((u - g) / Math.max(0.01 * s, Wh - g), 0, 1), e = low + (top - low) * t ** c;
+    return Math.max(Math.min(g - u, y - (cy - deep)), y - e);
+  };
+}
+
 /** a garment's value at a point (>= 0 on the cloth) and, for the fit, its ease and clearance */
 function cutter(F, p) {
   const s = F.s;
@@ -80,9 +186,10 @@ function cutter(F, p) {
   const hem = p.hem ? torsoHem(F, p.hem.at, p.hem) : null;
   const waist = p.waist ? waistline(F, p.waist.at, p.waist) : null;
   const legY = p.legs ? height(F, p.legs.to) : null, open = p.open ? opening(F, p.open) : null, shoe = p.shoe ? shoeLine(F, p.shoe) : null;
+  const under = p.bra ? bra(F, p.bra) : p.brief ? brief(F, p.brief, waist) : null;   // underwear: its own shape, within the rest
   return (x, y, z) => {
     const a = F.arm(x, y, z);
-    let v = 1;
+    let v = under ? Math.min(1, under(x, y, z)) : 1;
     if (neck) v = Math.min(v, neck(x, y, z));
     if (open && !a) v = Math.min(v, open.value(x, y, z));
     if (a) return Math.min(v, ends ? ends[a.side] - a.t : -1);
@@ -174,10 +281,16 @@ export function shell(B, p, under) {
   const fine = subdivide(Q, C.T), m = fine.P.length / 3, n = Q.length / 3;
   const ease2 = new Float32Array(m), W2 = new Float32Array(m), hint2 = new Int32Array(m), near2 = new Uint8Array(m); ease2.set(ease); W2.set(W); hint2.set(H.hints); near2.set(near);
   for (let k = 0; k < m - n; k++) { const a = fine.parents[2 * k], b = fine.parents[2 * k + 1]; ease2[n + k] = (ease[a] + ease[b]) / 2; W2[n + k] = (W[a] + W[b]) / 2; hint2[n + k] = H.hints[a]; near2[n + k] = near[a] | near[b]; }
-  const Qf = relax(fine.P, fine.T, new Float32Array(fine.P.length), ease2, { iters: 4, weight: W2, clear: ease2, colliders: [{ surf: B.surf }], hints: hint2, contested: near2 });
-  const v = new Float32Array(m);
-  for (let j = 0; j < m; j++) v[j] = V(Qf[j * 3], Qf[j * 3 + 1], Qf[j * 3 + 2]);
-  const c = cut(Qf, fine.T, v);
+  let Qf = relax(fine.P, fine.T, new Float32Array(fine.P.length), ease2, { iters: 4, weight: W2, clear: ease2, colliders: [{ surf: B.surf }], hints: hint2, contested: near2 }), Tf = fine.T, mf = m;
+  if (p.fine > 1) {                                                  // narrow parts (straps, strings): split in four again, about 2.5 mm, settled twice
+    const f2 = subdivide(Qf, fine.T), m2 = f2.P.length / 3, e3 = new Float32Array(m2), W3 = new Float32Array(m2), h3 = new Int32Array(m2), n3 = new Uint8Array(m2);
+    e3.set(ease2); W3.set(W2); h3.set(hint2); n3.set(near2);
+    for (let k = 0; k < m2 - m; k++) { const a = f2.parents[2 * k], b = f2.parents[2 * k + 1]; e3[m + k] = (ease2[a] + ease2[b]) / 2; W3[m + k] = (W2[a] + W2[b]) / 2; h3[m + k] = hint2[a]; n3[m + k] = near2[a] | near2[b]; }
+    Qf = relax(f2.P, f2.T, new Float32Array(f2.P.length), e3, { iters: 2, weight: W3, clear: e3, colliders: [{ surf: B.surf }], hints: h3, contested: n3 }); Tf = f2.T; mf = m2;
+  }
+  const v = new Float32Array(mf);
+  for (let j = 0; j < mf; j++) v[j] = V(Qf[j * 3], Qf[j * 3 + 1], Qf[j * 3 + 2]);
+  const c = cut(Qf, Tf, v);
   const ends = p.sleeve === undefined || p.sleeve === false ? null : { L: sleeveEnd(F, "L", p.sleeve), R: sleeveEnd(F, "R", p.sleeve) };
   return { outer: { P: c.P, T: c.T }, V, neck: p.neck === false ? null : neckline(F, { ease: p.ease?.body, ...(p.neck || {}) }), ends, open: p.open ? opening(F, p.open) : null,
            legY: p.legs ? height(F, p.legs.to) : null, waist: p.waist ? waistline(F, p.waist.at, p.waist) : null };
@@ -423,6 +536,10 @@ export function detail(F, G, d) {
         value: (x, y, z, nx, ny, nz) => { const [cx, cz] = F.torsoAxis(y); return Math.min(w / 2 - Math.abs(x - cx - (d.x ?? 0) * s), (z - cz) * 4, top - y, y - bot, G.V ? G.V(x, y, z) : 1); },
         lift: (d.lift ?? 0.0015) * s,
       };
+    }
+    case "trim": {                                                   // a band along every edge the garment has (underwear's elastic): where its value is under w
+      if (!G.V) return null;
+      return { value: (x, y, z) => { const v = G.V(x, y, z); return Math.min(v + 0.0005 * s, w - v); }, lift: (d.lift ?? 0.0008) * s };
     }
     case "band": {                                                   // a band round the torso: on the waistline (a waistband, a belt) or between two heights (a hem band)
       if (d.follow === "waist" && G.waist) {
