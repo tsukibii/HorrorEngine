@@ -106,6 +106,12 @@ float lipSD(vec2 p) {                                              // how far in
   return inCut(uLipP, uLipBox, p) ? d : -d;
 }
 float skinH, skinRough, skinCoat, skinCoatR = -1.0, skinSm = 0.0;   // skinSm: a layer's smoothing (evens out the pores, grain and relief)
+// the fingernails (nails.js): vNail per point (along: 0 the cuticle to 1 the free edge's end, across -1..1, how much it
+// faces the finger's back, the finger 0..9 or -1)
+uniform float uNailOn, uNailTint, uNailHalf, uNailFree, uNailShine, uNailShape, uNailPaint, uNailStyle, uNailFinish, uNailCover, uNailAccent;
+uniform vec3 uNailCol, uNailCol2;
+varying vec4 vNail;
+float nailM = 0.0, nailRough = 1.0, nailCoat = 0.0, nailCoatR = 0.1, nailMetal = 0.0, nailH = 0.0;
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
 float vnoise(vec3 p) {
@@ -195,6 +201,67 @@ vec3 proceduralSkin(vec3 base, vec3 p) {
   return c;
 }
 
+// ---- the fingernails, painted on the fingertips ------------------------------------------------------------------------
+float nailEnd(float x) {                                       // the free edge's end across the nail, by its shape (1 at the middle)
+  float ax = min(abs(x), 1.0), s = uNailShape;
+  if (s < 0.5) return 1.0 - 0.05 * pow(ax, 8.0);                // square: straight across, its corners just softened
+  if (s < 1.5) return 1.0 - 0.12 * pow(ax, 4.0);                // squoval
+  if (s < 2.5) return 1.0 - 0.2 * (1.0 - sqrt(max(1.0 - ax * ax, 0.0)));   // round: an arc
+  if (s < 3.5) return 1.0 - 0.3 * ax * ax;                       // oval
+  return 1.0 - 0.45 * pow(ax, 1.4);                              // almond: toward a point
+}
+vec3 paintNail(vec3 c) {
+  float x = vNail.y, y = vNail.x, fx = max(fwidth(x), 1e-4), fy = max(fwidth(y), 1e-4), back = clamp(vNail.z, 0.0, 1.0), ax = abs(x);
+  float y0 = 0.2 * x * x, y1 = nailEnd(x);                       // the cuticle's arc (lowest in the middle) and the free edge's end
+  float m = smoothstep(-fx, fx, 1.0 - ax) * smoothstep(-fy, fy, y - y0) * smoothstep(-fy, fy, y1 - y) * back;
+  float inner = min(min((1.0 - ax) * 0.5, y - y0), y1 - y);       // how far inside the plate's edge (nail lengths)
+  // round the plate: the skin's folds (the cuticle, the grooves at its sides), a little raised, darker and pinker
+  float outd = max(max(ax - 1.0, y0 - y), 0.0), fold = (1.0 - m) * back * exp(-pow(outd / 0.14, 2.0)) * smoothstep(y1 + 0.06, y1 - 0.02, y) * smoothstep(-0.65, -0.45, y);
+  c = mix(c, c * vec3(0.93, 0.8, 0.8), 0.45 * fold);
+  nailH = 0.35 * fold + 0.9 * smoothstep(-0.015, 0.06, inner) * back;   // the plate a little proud of the folds, its edge rounded over a few pixels (a step would speckle)
+  if (m <= 0.0) return c;
+  nailM = m;
+  // the bare nc: its bed seen through it, pinker; the pale hmoon moon at its base; the free edge past the bed off-white
+  vec3 bed = mix(c, c * vec3(1.1, 0.84, 0.86) + vec3(0.05, 0.012, 0.02), uNailTint);
+  float hmEdge = y0 + 0.24 * sqrt(max(1.0 - 1.2 * x * x, 0.0)), hmoon = uNailHalf * (1.0 - smoothstep(-fy, 2.0 * fy + 0.03, y - hmEdge));
+  float fw = (0.035 + 0.3 * uNailFree) * (1.0 + 0.8 * x * x), ys = y1 - fw;   // the smile line: deeper at the sides
+  float tip = smoothstep(-fy, fy, y - ys) * step(0.001, uNailFree + 0.001);
+  vec3 nc = mix(bed, mix(bed, vec3(0.98, 0.92, 0.9), 0.6), hmoon);
+  nc = mix(nc, vec3(0.97, 0.95, 0.9), 0.85 * tip);
+  float rid = 0.6 * sin(x * 29.0 + 1.3) + 0.4 * sin(x * 61.0 + 0.4);   // faint ridges along it
+  nc *= 1.0 + 0.012 * rid;
+  nc *= 1.0 - 0.1 * smoothstep(0.75, 1.0, ax) * (1.0 - tip); // darker where it curves down at its sides
+  nailH += 0.04 * rid * m;                                       // its ridges
+  nailRough = mix(0.62, 0.16, uNailShine); nailCoat = mix(0.15, 0.85, uNailShine); nailCoatR = mix(0.4, 0.06, uNailShine);
+  if (uNailPaint > 0.5) {                                        // the polish over it
+    float id = vNail.w, acc = uNailAccent > 0.5 && (abs(id - 3.0) < 0.5 || abs(id - 8.0) < 0.5) ? 1.0 : 0.0;   // the ring fingers
+    vec3 A = acc > 0.5 ? uNailCol2 : uNailCol, B = acc > 0.5 ? uNailCol : uNailCol2, pc = A;
+    float st = uNailStyle, a = smoothstep(-fy, fy, y - (y0 + 0.035)) * smoothstep(-fx, fx, 0.96 - ax);   // a hair's margin at the cuticle and the sides
+    float ftip = smoothstep(-fy, fy, y - (ys - 0.04));
+    if (st < 0.5) { }                                            // full
+    else if (st < 1.5) { pc = mix(B, A, ftip); a *= mix(0.45, 1.0, ftip); }   // French: the tip, a sheer pink over the rest
+    else if (st < 2.5) a *= smoothstep(-fy, fy + 0.02, y - (hmEdge + 0.02));  // hmoon moon: the moon left bare
+    else if (st < 3.5) pc = mix(A, B, smoothstep(0.1, 0.95, y)); // ombré: base to tip
+    else if (st < 4.5) a *= ftip;                                // tips
+    else { vec2 q = vec2(x * 1.25, y * 2.2) * 1.6; q.x += 0.5 * floor(q.y); vec2 f = fract(q) - 0.5;   // dots
+           float r = length(f * vec2(1.0, 1.2)); pc = mix(A, B, 1.0 - smoothstep(0.17 - 0.06, 0.17 + 0.06, r)); }
+    a *= uNailCover;
+    float fin = uNailFinish, see = fin > 3.5 ? 0.55 : 1.0;      // jelly: the nc shows through
+    vec3 coat = pc;
+    if (fin > 2.5 && fin < 3.5) {                                // glitter: flakes catching the light
+      vec2 g = cells(vec3(x * 9.0, y * 14.0, id * 3.7));
+      float flake = (1.0 - smoothstep(0.1, 0.25, g.x)) * step(0.4, g.y);
+      coat = mix(pc, mix(pc, vec3(1.0), 0.6) * 1.35, flake * (0.4 + 0.6 * g.y));
+    }
+    nc = mix(nc, coat, clamp(a * see, 0.0, 1.0));
+    float r = fin < 0.5 ? 0.07 : fin < 1.5 ? 0.75 : fin < 2.5 ? 0.12 : fin < 3.5 ? 0.1 : 0.06;
+    nailRough = mix(nailRough, r, a); nailCoat = mix(nailCoat, fin > 0.5 && fin < 1.5 ? 0.0 : 1.0, a); nailCoatR = mix(nailCoatR, fin > 0.5 && fin < 1.5 ? 0.6 : 0.03, a);
+    if (fin > 1.5 && fin < 2.5) nailMetal = a;                   // chrome: a metal, its colour the reflection's
+    nailH += 0.25 * a * smoothstep(0.0, 0.05, inner);             // the polish's own thickness
+  }
+  return mix(c, nc, m);
+}
+
 // makeup, over the skin (and the photo)
 vec3 makeup(vec3 c, vec3 p) {
   float s = uScale, fr = front(p);
@@ -247,6 +314,8 @@ export function procedural(material) {
               uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() },
               uLipOn: { value: 0 }, uLipZ: { value: 0 }, uLipAmt: { value: 0.8 }, uLipGrad: { value: 0.5 }, uLipGloss: { value: 0.6 }, uLipSoft: { value: 0.001 }, uLipLines: { value: 0.3 },
               uLipDepth: { value: 0.004 }, uLipFar: { value: 0.06 }, uLipN: { value: 300 }, uLipP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uLipC: { value: new THREE.Vector2() }, uLipCol: { value: new THREE.Color() }, uLipBox: { value: new THREE.Vector4() },
+              uNailOn: { value: 0 }, uNailTint: { value: 0.5 }, uNailHalf: { value: 0.5 }, uNailFree: { value: 0.35 }, uNailShine: { value: 0.5 }, uNailShape: { value: 2 },
+              uNailPaint: { value: 0 }, uNailStyle: { value: 0 }, uNailFinish: { value: 0 }, uNailCover: { value: 1 }, uNailAccent: { value: 0 }, uNailCol: { value: new THREE.Color() }, uNailCol2: { value: new THREE.Color() },
               uMouthOn: { value: 0 }, uMouthZ: { value: new THREE.Vector2() }, uMouthP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uMouthBox: { value: new THREE.Vector4() }, uMouthD: { value: Array.from({ length: 16 }, () => new THREE.Vector2()) } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
@@ -254,8 +323,8 @@ export function procedural(material) {
   for (const k of Object.keys(LIDS)) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW;");
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW; vNail = nail;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
       .replace("#include <color_fragment>", `vec2 cutFw = fwidth(vObj.xy); float cutPx = max(max(cutFw.x, cutFw.y), 1e-7), cutA = 1.0;   // a pixel's size, taken before any branch
 if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x)) cutA = cutCover(uMouthP, uMouthBox, vObj.xy, cutPx);   // the mouth's opening: index.html draws the inside behind it
@@ -288,6 +357,7 @@ if (uLipOn > 0.5 && vObj.z > uLipZ && vObj.x > uLipBox.x - uLipSoft && vObj.y > 
   skinRough *= 1.0 - 0.7 * uLipGloss * m * (1.0 - 0.5 * ln);
   skinCoat = max(skinCoat, 0.85 * uLipGloss * m * (1.0 - 0.6 * ln));
 }
+if (uNailOn > 0.5 && vNail.w > -0.5 && vNail.z > 0.001 && vNail.x > -0.7 && vNail.x < 1.1) diffuseColor.rgb = paintNail(diffuseColor.rgb);   // the fingernails
 if (uHasTouch > 0.5) { vec4 tp = texture2D(uTouchPaint, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, tp.rgb, tp.a); }
 if (uHasPig > 0.5 && uPigOn > 0.5) diffuseColor.rgb *= pow(texture2D(uTouchPig, vSkinUv).rgb, vec3(uf_pigStrength / 1.4));   // the pigment strokes: filters, multiplied together   // the touch-up's paint, over all
 if (uHasLay > 0.5) {                                                   // the layers above the base: pigment (filters), paint over, then the surface (gloss, relief)
@@ -299,11 +369,14 @@ if (uHasLay > 0.5) {                                                   // the la
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.55, 0.1), clamp(vSel, 0.0, 1.0) * 0.55 * uShowSel);   // the selection, shown
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)
+if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);
+roughnessFactor = mix(roughnessFactor, nailRough, nailM);`)
+      .replace("#include <metalnessmap_fragment>", `#include <metalnessmap_fragment>
+metalnessFactor = mix(metalnessFactor, 1.0, nailMetal * nailM);   // a chrome polish`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
-if (uProc > 0.5 || uHasLay > 0.5) {                                                   // the relief (pores, wrinkles), from how the height changes across the pixel
+if (uProc > 0.5 || uHasLay > 0.5 || uNailOn > 0.5) {                                  // the relief (pores, wrinkles, a nail's edge), from how the height changes across the pixel
   vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx);
-  float det = dot(sx, r1); vec2 dh = vec2(dFdx(skinH), dFdy(skinH)) * 0.00025;
+  float hh = skinH + nailH, det = dot(sx, r1); vec2 dh = vec2(dFdx(hh), dFdy(hh)) * 0.00025;
   normal = normalize(abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2));
 }`)
       .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
@@ -315,10 +388,11 @@ if (uProc > 0.5) {                                                   // light th
 }`)
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_CLEARCOAT
-if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
+if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5 || uNailOn > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
+if (nailM > 0.0) { material.clearcoat = mix(material.clearcoat, nailCoat, nailM); material.clearcoatRoughness = mix(material.clearcoatRoughness, nailCoatR, nailM); }   // a nail's gloss, a polish's
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-10";
+  material.customProgramCacheKey = () => "studio-skin-11";
   return u;
 }
 

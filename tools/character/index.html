@@ -128,6 +128,8 @@
       <div id="procRows"></div>
       <h3>Touch-up</h3>
       <div id="touchRows"></div>
+      <h3>Nails</h3>
+      <div id="nailRows"></div>
       <h3>Eyes</h3>
       <div id="eyeRows"></div>
     </section>
@@ -168,6 +170,7 @@ import * as EYEPAINT from "./eyes.js";
 import * as SC from "./sculpt.js";
 import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
+import * as NAILS from "./nails.js";
 import * as LOOKS from "./looks.js";
 import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
@@ -216,7 +219,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {} };   // sculpt: the named controls' values (sculpt.js)
-let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null, WEAR = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js)
+let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
 function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
@@ -323,9 +326,18 @@ function skinLook() {
   const proc = st.skin.proc?.on, photo = st.skin.photo && SKIN;
   material.map = photo && !proc ? SKIN : null;         // the procedural skin samples the photo itself, through its mask
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
-  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
+  material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on || (NAILAT && st.nails?.on) ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+  nailLook();
+}
+function nailLook() {                                  // the fingernails into the skin's shader (nails.js; skinshader.js paints them)
+  const n = st.nails || NAILS.NAIL_DEFAULTS, on = !!NAILAT && !!n.on;
+  SKU.uNailOn.value = on ? 1 : 0; if (!on) return;
+  SKU.uNailTint.value = n.tint; SKU.uNailHalf.value = n.half; SKU.uNailFree.value = n.free; SKU.uNailShine.value = n.shine;
+  SKU.uNailShape.value = Math.max(0, NAILS.NAIL_SHAPES.indexOf(n.shape)); SKU.uNailPaint.value = n.paint ? 1 : 0;
+  SKU.uNailStyle.value = Math.max(0, NAILS.NAIL_STYLES.indexOf(n.style)); SKU.uNailFinish.value = Math.max(0, NAILS.NAIL_FINISHES.indexOf(n.finish));
+  SKU.uNailCover.value = n.cover; SKU.uNailAccent.value = n.accent ? 1 : 0; SKU.uNailCol.value.set(n.colour); SKU.uNailCol2.value.set(n.colour2);
 }
 async function loadSkin() {
   if (!WHO) return;
@@ -842,6 +854,12 @@ function mouthShade() {
 const MEM_GROW = 5;
 const MEMBRANE = [];                                   // the membrane's triangles (their first corner): the mouth's opening
 dgeo.setAttribute("color", new THREE.BufferAttribute(mouthShade(), 3)); material.vertexColors = true;
+NAILAT = NAILS.findNails(BASEP, TRIS);                 // the fingernails' places on MHR's fingertips, once (nails.js): a coordinate per corner for the shader
+{
+  const a = new Float32Array(C * 4);
+  for (let c = 0; c < C; c++) { const v = TRIS[c]; if (NAILAT) a.set(NAILAT.attr.subarray(v * 4, v * 4 + 4), c * 4); else a.set([-9, 0, 0, -1], c * 4); }
+  dgeo.setAttribute("nail", new THREE.BufferAttribute(a, 4));
+}
 // the lower lip's curl: MHR's lower lip runs straight up to its inner edge and, at rest, about a millimetre up inside the
 // upper lip (the hard line where the lips meet). The curl rolls the top of the lower lip down and back into the mouth,
 // most at its inner edge and nothing CURL_R along the lip from it, fading out at the corners: a rounded lip at rest and
@@ -1293,6 +1311,7 @@ const MW0 = (() => { if (!LMK) return 0.05; const lb = i => { const t = LMK.tri[
   return Math.abs(lb(291) - lb(61)); })();          // MHR's own mouth, corner to corner (m)
 st.teeth = { ...TEETH.TEETH_DEFAULTS };
 st.lips = { ...LIPS.LIPS_DEFAULTS };
+st.nails = { ...NAILS.NAIL_DEFAULTS };
 function placeTeeth() {                                // from the neutral face, before the expressions
   const on = !!LMK && !!JAW && st.teeth.on;
   MOUTH.upper.visible = MOUTH.jaw.visible = on; if (!on) return;
@@ -1760,6 +1779,45 @@ const lipSet = {};
   for (const [k, label, lo, hi, step, help] of LIPS.LIP_SHAPE) lipSet[k] = slider(box, "lip_" + k, label, lo, hi, step, 0, help, v => { st.lips[k] = v; changed("expr"); });
   lipSet.all = () => { on.checked = !!st.lips.on; guide.checked = !!st.lips.guide; col.value = st.lips.colour; for (const [k] of [...LIPS.LIP_PAINT, ...LIPS.LIP_SHAPE]) lipSet[k](st.lips[k]); };
 }
+// ---- the fingernails' controls (nails.js) ---------------------------------------------------------------------------
+const nailSet = {};
+{
+  const box = $("#nailRows"), on = el("input", { type: "checkbox" }), paint = el("input", { type: "checkbox" }), accent = el("input", { type: "checkbox" });
+  const pick = (label, opts, key) => { const s = el("select", {}, ...opts.map(o => el("option", { value: o, textContent: o }))); s.onchange = () => { st.nails[key] = s.value; skinLook(); };
+                                       box.append(el("div", { className: "row" }, el("span", { textContent: label }), s, el("output"))); return s; };
+  const pre = el("select", {}, el("option", { value: "", textContent: "nail preset…" }), ...Object.keys(NAILS.NAIL_PRESETS).map(k => el("option", { value: k, textContent: k })));
+  const look = el("button", { textContent: "Look at the nails", title: "The view on the left hand's nails" });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Fingernails", el("small", { textContent: "Painted on the fingertips by the skin's shader: the nail over its pink bed, its pale half moon, the free edge, the cuticle and the folds round it, a gloss; and a polish over it. Found once on MHR's hands, so every body has them." }))),
+             el("div", { className: "row" }, el("span", { textContent: "Preset" }), pre, look));
+  on.onchange = () => { st.nails.on = on.checked; skinLook(); };
+  pre.onchange = () => { if (pre.value) { Object.assign(st.nails, NAILS.NAIL_PRESETS[pre.value], { on: true }); nailSet.all(); skinLook(); } pre.value = ""; };
+  look.onclick = () => lookAtNails();
+  const shape = pick("Shape", NAILS.NAIL_SHAPES, "shape");
+  for (const [k, label, lo, hi, step, help] of NAILS.NAIL_SLIDERS) nailSet[k] = slider(box, "nail_" + k, label, lo, hi, step, NAILS.NAIL_DEFAULTS[k], help, v => { st.nails[k] = v; skinLook(); });
+  box.append(el("h4", { textContent: "Polish" }), el("label", { className: "tog" }, paint, el("span", {}, "Nail polish", el("small", { textContent: "A polish over the nails: a style, a finish, its colours." }))));
+  paint.onchange = () => { st.nails.paint = paint.checked; skinLook(); };
+  const style = pick("Style", NAILS.NAIL_STYLES, "style"), finish = pick("Finish", NAILS.NAIL_FINISHES, "finish");
+  const col = el("input", { type: "color" }), col2 = el("input", { type: "color" });
+  col.oninput = () => { st.nails.colour = col.value; skinLook(); }; col2.oninput = () => { st.nails.colour2 = col2.value; skinLook(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Colour" }), col, el("output")),
+             el("div", { className: "row", title: "French: the sheer base under the white tip; ombré: the tip's colour; dots: the dots; the accent nails" }, el("span", { textContent: "Second colour" }), col2, el("output")));
+  nailSet.cover = slider(box, "nail_cover", "Coverage", 0, 1, 0.01, 1, "How opaque the polish is (a jelly finish shows the nail through it anyway).", v => { st.nails.cover = v; skinLook(); });
+  box.append(el("label", { className: "tog" }, accent, el("span", {}, "Accent nails", el("small", { textContent: "The ring fingers' nails in the colours the other way round." }))));
+  accent.onchange = () => { st.nails.accent = accent.checked; skinLook(); };
+  nailSet.all = () => { const n = st.nails; on.checked = !!n.on; paint.checked = !!n.paint; accent.checked = !!n.accent; shape.value = n.shape; style.value = n.style; finish.value = n.finish;
+                        col.value = n.colour; col2.value = n.colour2; for (const [k] of NAILS.NAIL_SLIDERS) nailSet[k](n[k]); nailSet.cover(n.cover); };
+  nailSet.all();
+}
+function lookAtNails() {                               // the camera over the back of the left hand, its nails filling the view
+  const f = NAILAT?.fingers.find(x => x.hand === "left" && x.finger === "middle"); if (!f) return status("this body's hands have no nails found", "bad");
+  if (orbit.focus !== "head") $('#views button[data-v="head"]').click();
+  const hand = NAILAT.fingers.filter(x => x.hand === "left").map(x => x.vertex), p = new THREE.Vector3();
+  for (const v of hand) p.add(new THREE.Vector3(POS[v * 3], POS[v * 3 + 1], POS[v * 3 + 2]).applyMatrix4(rig.matrixWorld));
+  p.multiplyScalar(1 / hand.length);
+  const b = new THREE.Vector3(...f.back).normalize();
+  orbit.yaw = Math.atan2(b.x, b.z); orbit.pitch = Math.asin(Math.max(-0.95, Math.min(0.95, b.y))); orbit.zoom = 0.3;
+  orbit.pan.set(p.x, p.y - (TOP - 0.12 * TOP / 1.7), p.z); place();
+}
 // ---- the eyes' controls ---------------------------------------------------------------------------------------------
 const eyeSet = {};
 {
@@ -2018,6 +2076,7 @@ async function open(name) {
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
+  Object.assign(st.nails, NAILS.NAIL_DEFAULTS, c.nails || {}); nailSet.all();
   Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
   st.accessories = (c.accessories || []).filter(a => ACCS.KINDS[a.kind]).map(ACCS.normalize); ACCSEL = ACCPLACE = null;
   computeBody(); compose(); hud();
@@ -2028,7 +2087,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, lash: st.lash, brow: st.brow, accessories: st.accessories,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -2137,7 +2196,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get WEAR() { return WEAR; }, ACCS, drawAcc, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

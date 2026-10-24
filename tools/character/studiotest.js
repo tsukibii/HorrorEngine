@@ -605,6 +605,40 @@ const png = rgb => {
     console.log(`       a heart's tip ${(r.heart.tipOff * 100).toFixed(0)}% off the lens's middle; hoops ${r.inHoop.toFixed(1)} mm clear of the skin, one each side within ${r.level.toFixed(1)} mm in height; the nose hoop ${r.nose.through.toFixed(1)} mm from the nostril`);
     console.log(`       necklaces: 45 cm made ${(r.n45.made * 100).toFixed(1)} (front ${((r.n45.back - r.n45.front) * 100).toFixed(1)} cm under the back), 70 cm ${((r.n45.front - r.n70.front) * 100).toFixed(1)} cm lower, the choker ${(r.choker.made * 100).toFixed(1)} cm`);
   });
+  await step("fingernails: found on all ten fingertips and painted there by the skin's shader (the nail over its bed); a polish shows its colour on the nails and only there; saved with the character", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    const found = await page.evaluate(() => (window.__body.nails?.fingers || []).map(f => `${f.hand} ${f.finger} ${(f.length * 1000).toFixed(1)}x${(f.width * 1000).toFixed(1)}`));
+    if (found.length !== 10) throw new Error(`${found.length} nails found: ${found.join(", ")}`);
+    const bad = found.filter(f => { const [l, w] = f.split(" ").pop().split("x").map(Number); return !(l > 6 && l < 16 && w > 6 && w < 16); });
+    if (bad.length) throw new Error(`nails of odd sizes: ${bad.join(", ")}`);
+    await page.click('#nailRows button:has-text("Look at the nails")'); await page.waitForTimeout(500);
+    const boxes = await page.evaluate(() => {                         // the left middle finger's nail and the skin behind it, on the screen
+      const b = window.__body, f = b.nails.fingers.find(x => x.hand === "left" && x.finger === "middle"), V = b.THREE.Vector3, c = b.renderer.domElement.getBoundingClientRect();
+      const at = k => { const tip = new V(b.POS[f.vertex * 3], b.POS[f.vertex * 3 + 1], b.POS[f.vertex * 3 + 2]), q = tip.addScaledVector(new V(...f.axis), -k * f.length).addScaledVector(new V(...f.back), 0.004).applyMatrix4(b.rig.matrixWorld).project(b.camera);
+        return { x: Math.round((q.x + 1) / 2 * c.width - 4), y: Math.round((1 - q.y) / 2 * c.height - 4), w: 8, h: 8 }; };
+      return { nail: at(0.55), skin: at(1.9), canvas: { x: c.x, y: c.y, width: c.width, height: c.height } };
+    });
+    const colour = async () => {
+      await page.waitForTimeout(400);
+      const png = (await page.screenshot({ clip: boxes.canvas, timeout: 120000 })).toString("base64");
+      return page.evaluate(async ([b64, B]) => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height;
+        const g = c.getContext("2d"); g.drawImage(i, 0, 0); const mean = m => { const d = g.getImageData(m.x, m.y, m.w, m.h).data, o = [0, 0, 0]; for (let k = 0; k < d.length; k += 4) for (let j = 0; j < 3; j++) o[j] += d[k + j] / (d.length / 4); return o; };
+        return { nail: mean(B.nail), skin: mean(B.skin) }; }, [png, boxes]);
+    };
+    const set = o => page.evaluate(o => { const b = window.__body; Object.assign(b.st.nails, o); b.nailSet.all(); b.nailLook(); }, o);
+    await set({ on: false }); const off = await colour();
+    await set({ on: true, paint: false }); const bare = await colour();
+    await page.selectOption("#nailRows select", "classic red"); const red = await colour();
+    const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]), rg = c => c[0] - c[1];
+    if (!(d(bare.nail, off.nail) > 6)) throw new Error(`the bare nail doesn't show: ${off.nail.map(Math.round)} -> ${bare.nail.map(Math.round)}`);
+    if (!(rg(red.nail) > rg(off.nail) + 25)) throw new Error(`the red polish doesn't show on the nail: ${off.nail.map(Math.round)} -> ${red.nail.map(Math.round)}`);
+    if (!(d(red.skin, off.skin) < 6)) throw new Error(`the polish isn't only on the nail: the skin behind it ${off.skin.map(Math.round)} -> ${red.skin.map(Math.round)}`);
+    await saveNow();
+    const saved = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).nails, NAME);
+    if (!saved?.paint || saved.colour !== "#b0122e") throw new Error(`the nails aren't saved with the character: ${JSON.stringify(saved)}`);
+    await page.selectOption("#nailRows select", "bare"); await saveNow();
+    console.log(`       ten nails (${found.slice(0, 2).join(", ")} mm...); the nail ${off.nail.map(Math.round)} -> bare ${bare.nail.map(Math.round)} -> red ${red.nail.map(Math.round)}; the skin behind it ${off.skin.map(Math.round)} -> ${red.skin.map(Math.round)}`);
+  });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
     await page.click('#views button[data-v="head"]'); await page.click("#splitBtn");
     const c = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });

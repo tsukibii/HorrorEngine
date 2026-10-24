@@ -545,4 +545,7 @@ triangles; a simplified shape is wrong exactly where things touch.
   were wiped when that load finished. The Studio's `open()` now stops at its next wait if another character is
   picked meanwhile (an earlier load could also have finished last and saved the wrong character's state over the
   new one); a probe waits for the picker's option before choosing it.
-
+- **A distance along a mesh's edges draws polygons:** the nails measured from the fingertip along the skin's edges
+  (Dijkstra) came out as hexagons, its rings following the edges' directions. A straight coordinate along the finger
+  is smooth; what was wrong with it was only where the nail ended (on the tip's curve, so the free edge wrapped over
+  the end): the end moved 2.5 mm back, the outline stayed smooth. Fix the parameter before the method.
