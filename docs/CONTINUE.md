@@ -1,6 +1,6 @@
 # Continue: the next session
 
-Written 2026-10-24 (small hours, the user away) at the end of a long stretch on `claude/experiments-afk`. Read this
+Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon) on `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -21,6 +21,14 @@ The user left a list before going AFK (DECISIONS 2026-10-24, small hours); all o
 Earlier the same night (before the list): the eyes' iris softening, eye occlusion and tear line, wet teeth, lipstick
 with a guide, soft hair edges, the default "soft cinematic" look after the user's reference.
 
+Then (2026-10-24, the user back), three more asks, built, checked and pushed:
+
+| Commit | What |
+|---|---|
+| `ff4d1f8` | **Jewellery** (`jewellery.js`): heart lenses; earrings (stud, pearl, gem, huggie, hoop swung clear of the jaw, drop, chain drop; pairs mirrored); a nose hoop and a septum ring; metals by name, the colour, or a PBR set off the shelf; domed charms; **necklaces dropped by gravity** onto the body (chain, pearls, beads, cord; a choker snug round the neck's narrowest part, Looser lets it out), their length kept. The Studio's `open()` guarded against an earlier load finishing last. STUDIO `ONLY=<words>` runs just some steps. |
+| `a3c044e` | **Fingernails** painted on the skin (`nails.js` finds each nail on MHR's fingertips once; the skin's shader paints the nail, its half moon, the free edge, the cuticle) and **nail polish** (full, French, half moon, ombré, tips, dots; gloss, matte, chrome, glitter, jelly; presets; Look at the nails). |
+| `b65b09c` | **Underwear** in the tailor, skin tight (`bra` and `brief` cuts): six bras, five thongs and briefs, four boxers; lingerie, sporty and boxer outfits; the garment picker grouped by kind. TAILOR ok. |
+
 ## 2. Where things are
 
 - Play: `tools/director/play/physics.js` (physics kinds as parts; carrying; the soft bend), `boardgames.js` (the table
@@ -30,7 +38,11 @@ with a guide, soft hair edges, the default "soft cinematic" look after the user'
 - The rules: `Content/Studio/BoardGames/` (README: the games, `ctx`, how to add one); `storylib.board_games()` reads
   their one-line JSON `meta`; the desk serves them at `/boardgames/<game>/<id>.js` and lists them at
   `/api/boardgames/<game>`.
-- The Studio: `tools/character/accessories.js`; `serve.py`'s `api/recipe`, `api/package`, `api/import`.
+- The Studio: `tools/character/accessories.js` and `jewellery.js` (the necklace's drop: `dropNecklace`, `neckRing`,
+  `neckWaist`, `BodySDF`); `nails.js` and the `paintNail` part of `skinshader.js`; `serve.py`'s `api/recipe`,
+  `api/package`, `api/import`.
+- The tailor's underwear: `tailor/pieces.js` `bra`, `brief`, `bust`, the `trim` detail, `fine`; the designs with slot
+  `under` in `Content/Studio/Clothes/designs.json`.
 - Format: STORY_FORMAT §2 (`carry`, `game`) and §4 (`carrying`, `dropped`, `played`); story_check checks them and its
   walker carries things and plays games.
 
@@ -39,12 +51,17 @@ with a guide, soft hair edges, the default "soft cinematic" look after the user'
 - `python tools/check_all.py`: CHECKS ok. `node tools/director/play/boardtest.mjs`: BOARD ok.
 - `node tools/director/playtest.js`: PLAY ok (it adds, in memory only, a plushie in the hall and chō-han on the hall
   table). `node tools/character/studiotest.js`: STUDIO ok (it exports `_studiotest` and imports it back as
-  `_studiotest_back`, left in `People/`, git-ignored). TIMES ok, BLENDERLOOK ok.
+  `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
+  whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
+  bodies). TIMES ok, BLENDERLOOK ok.
 - **Run the browser checks one at a time**: two at once on this machine's software GPU starve each other (LESSONS
   2026-10-24). Restart a desk or Studio server after changing its Python (find the PID, kill it in a second command).
 
 ## 4. What's next (ask which)
 
+0. **Look at the jewellery, the nails and the underwear** in the Studio and say what to change: necklace lengths and
+   weights, the hoops' size, the nails' length and shape (painted: a long acrylic would need a modelled nail), more
+   underwear styles (a lace that reads on small pieces, a push-up's padding, a bodysuit, a slip), and colours.
 1. **Look at the board games and the plushie in play** and say what feels wrong: the pieces' sizes, how close the
    seat leans in, the plushie's softness (`jiggle`, the kind's `follow`, `squash`, `floppy`), the revolver's moment.
 2. **More board games or a game's own** (a card game of the story's, hanafuda, a ouija board): one file each, BOARD.
