@@ -43,7 +43,7 @@ export const BROW_SHAPES = {   // presets for the brow's own settings
 };
 // the looks, in hairtex.js's words (the hair shader's colours and highlights): soft, little shine
 const look = (root, tip, spec, shine, rim) => ({ root, tip, inner: tip, innerAmount: 0, spec1: spec, spec2: tip, shine, gloss1: 160, gloss2: 40,
-  shift1: -0.05, shift2: 0.08, shiftNoise: 0.25, rim, rimAmount: 0.08, rootLength: 0.35 });
+  shift1: -0.05, shift2: 0.08, shiftNoise: 0.25, rim, rimAmount: 0.08, rootLength: 0.35, soft: 0 });   // (soft: the hair's soft edges; lashes and brows stay crisp)
 export const LOOKS = {
   lash_black: { label: "Black", ...look("#050505", "#141210", "#8f8a85", 0.5, "#2a2826") },
   lash_brown_black: { label: "Brown-black", ...look("#0a0605", "#2a1b14", "#9a8574", 0.45, "#3a2a20") },

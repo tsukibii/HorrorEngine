@@ -635,6 +635,19 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!f.unlit || f.uniform !== 1) throw new Error("the flat look: " + JSON.stringify(f));
     console.log(`       the hair shader unlit (uFlat ${f.uniform}); the bake's cards an unlit material`);
   });
+  await step("soft edges: the look's Soft edges reaches the hair's shader and softens the strands' outlines (the brows and lashes stay crisp)", async () => {
+    const shotOf = async soft => { await ev(v => { const s = window.__salon; s.st.look.custom.soft = v; s.restyle(); s.render(); }, soft); await page.waitForTimeout(300);
+      const r = await ev(() => { const c = window.__salon.canvas.getBoundingClientRect(); return { x: c.x, y: c.y, width: c.width, height: c.height }; });
+      return (await page.screenshot({ clip: r })).toString("base64"); };
+    const view = await ev(() => { const s = window.__salon, o = { ...s.orbit }; Object.assign(s.orbit, { yaw: 1.2, pitch: 0.05, dist: 0.75, zoom: 1, pan: [0, 0] }); s.draw(); return o; });   // the hair from the side, close
+    const a = await shotOf(0), b = await shotOf(1), u = await ev(() => window.__salon.HAIRU.uSoft.value);
+    await ev(o => { Object.assign(window.__salon.orbit, o); window.__salon.draw(); }, view);
+    const changed = await ev(async ([a, b]) => { const px = async s => { const i = new Image(); i.src = "data:image/png;base64," + s; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); return g.getImageData(0, 0, i.width, i.height).data; };
+      const A = await px(a), B = await px(b); let n = 0; for (let i = 0; i < A.length; i += 4) if (Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]) > 20) n++; return n / (A.length / 4); }, [a, b]);
+    await ev(() => { const s = window.__salon; delete s.st.look.custom.soft; s.restyle(); });
+    if (u !== 1 || !(changed > 0.003)) throw new Error(`soft edges: uSoft ${u}, ${(changed * 100).toFixed(2)}% of the picture changed`);
+    console.log(`       Soft edges 0 -> 1: ${(changed * 100).toFixed(1)}% of the picture changes, along the strands' edges`);
+  });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {
       const cv = window.__salon.canvas, fire = (type, init) => { const e = new MouseEvent(type, { bubbles: true, cancelable: true, ...init }); cv.dispatchEvent(e); return e.defaultPrevented; };

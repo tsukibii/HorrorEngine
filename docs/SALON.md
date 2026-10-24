@@ -330,6 +330,11 @@ a cool blue sheen in streaks along the strands, a few crimson strands, pointed s
   4 x 4 ordered dither between the steps, 32 a channel unless Colour steps says fewer). In the shader the steps and
   the dither are in the screen's colours; the bake carries them: Flat is an unlit material (glTF's
   `KHR_materials_unlit`), the brightness, steps and dither go into the cards' texture (the dither in its pixels).
+- **Soft edges** (2026-10-24, 0.5 unless set; brows and lashes 0): the hair's outline dissolves instead of ending in
+  spikes, after the user's reference (docs/research/look_reference.md): the cut's fade wider, the last fifth of each
+  card feathered, a card seen edge-on fading, all through alpha to coverage (the browser's 4x MSAA). The Studio draws
+  the baked cards the same way (their faint fringe as coverage, not cut at a hard line). Unity's and Unreal's hair is
+  softer still with temporal anti-aliasing (docs/research/hair_cards_unreal.md); SALON measures the edges change.
 
 `hime_demo` is a hime cut built like the reference (a blunt fringe at the brows, sidelocks to the collarbones, the
 crown and back, two low tails), on the darkened scalp.

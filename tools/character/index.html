@@ -1720,6 +1720,10 @@ function lightBrowLash() {                             // the hair shader's ligh
 // the salon's bake: salon.glb in the head's space, placed by the head frame the salon used (salon_bake.json); rides the
 // body (rig) like everything it wears
 var SALONH = null;
+function soften(m) {                                   // the baked cards' soft edges: their faint fringe drawn as coverage (4x MSAA), not cut at a hard line
+  if (m?.name !== "hair_cards") return;
+  m.alphaToCoverage = true; m.alphaTest = 0.12; m.needsUpdate = true;
+}
 async function loadSalon() {
   if (SALONH) { rig.remove(SALONH); SALONH.traverse(o => { o.geometry?.dispose(); if (o.material) [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); }); SALONH = null; }
   if (!WHO) return null;
@@ -1730,7 +1734,7 @@ async function loadSalon() {
   const gltf = await new Promise((ok, bad) => new GLTFLoader().parse(buf, "", ok, bad));
   const { C, B, S } = info.head, g = new THREE.Group(); g.name = "salon hair"; g.matrixAutoUpdate = false;
   g.matrix.set(B[0][0] * S, B[0][1] * S, B[0][2] * S, C[0], B[1][0] * S, B[1][1] * S, B[1][2] * S, C[1], B[2][0] * S, B[2][1] * S, B[2][2] * S, C[2], 0, 0, 0, 1);
-  let meshes = 0, swinging = 0; gltf.scene.traverse(o => { if (o.isMesh) { meshes++; o.frustumCulled = false; } if (o.isSkinnedMesh) swinging++; });
+  let meshes = 0, swinging = 0; gltf.scene.traverse(o => { if (o.isMesh) { meshes++; o.frustumCulled = false; soften(o.material); } if (o.isSkinnedMesh) swinging++; });
   g.add(gltf.scene); rig.add(g); SALONH = g;
   return { meshes, swinging, head: info.head };
 }

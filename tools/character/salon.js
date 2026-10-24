@@ -1458,6 +1458,7 @@ function lookPanel() {                                                  // the h
   slider(box, "Glossy", 0, 2, 0.05, k0.shine, v => set("shine", v), "how strong the highlights are");
   slider(box, "Highlight", -0.3, 0.3, 0.01, k0.shift1, v => { set("shift1", v); set("shift2", v + 0.19); }, "where the highlights sit along the strands (towards the roots or the tips)");
   slider(box, "Streaks", 0, 1, 0.05, k0.shiftNoise, v => set("shiftNoise", v), "how much each strand's highlight wanders: smooth band to broken streaks");
+  slider(box, "Soft edges", 0, 1, 0.05, k0.soft ?? 0.5, v => set("soft", v), "how softly the hair's outline dissolves: the cut's fade wider, the tips feathered, cards seen edge-on fading (Unreal does the rest with its temporal anti-aliasing)");
   box.append(el("h4", { textContent: "Retro (hides imperfections)" }));
   const r = el("div");
   tick(r, "Flat (unlit)", !!st.look.flat, v => { st.look.flat = v; restyle(); }, "The hair's own colours whatever the light: no highlights, no shading, a PSX-style solid look that hides card edges and spikes. Baked as an unlit material.");
