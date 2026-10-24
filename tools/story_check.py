@@ -470,6 +470,8 @@ def check_scene(sid, sc, story, things, r):
                     r.warn(f"scene {sid}: variant {k!r} isn't a hiding spot of any play (pick_by found_at): it only plays as the pick")
     if sc.get("mood") and sc["mood"] not in L.MOODS:
         r.err(f"scene {sid}: mood {sc['mood']!r} (one of {', '.join(L.MOODS)})")
+    if "time" in sc and sc["time"] not in L.TIMES:
+        r.err(f"scene {sid}: time {sc['time']!r} (one of {', '.join(L.TIMES)}; leave it out to keep the time it was)")
     for edge in ("enter", "exit"):
         if sc.get(edge) and sc[edge].get("kind") not in TRANSITIONS:
             r.err(f"scene {sid}: {edge} kind {sc[edge].get('kind')!r} (one of {', '.join(sorted(TRANSITIONS))})")
@@ -953,6 +955,11 @@ def check_flow(story, things, r):
         r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")
     if story["game"].get("start") not in flow:
         r.err(f"game.start {story['game'].get('start')!r} isn't a flow node")
+    if "time" in story["game"] and story["game"]["time"] not in L.TIMES:
+        r.err(f"game.time {story['game']['time']!r}: the time the game starts at, one of {', '.join(L.TIMES)} ({L.TIME_DEFAULT} when unset)")
+    for nid, ft in L.flow_times(story).items():          # a scene staged for one time that a path brings at another
+        if flow[nid].get("type") == "scene" and not ft["own"] and len(ft["paths"]) > 1:
+            r.warn(f"flow {nid}: its scene plays at {' or '.join(ft['paths'])} depending on the path; give it a `time` if it's staged for one")
     for nid, n in flow.items():
         t = n.get("type")
         if t in ("scene", "stitch"):

@@ -29,6 +29,7 @@ struct FPvEvent { float T = 0, End = 0; FString Type, Prompt, Default; TArray<FP
 struct FPvScene
 {
 	FString Level, Title;
+	FString Time;                               // its own time of day (day, dusk, night); empty keeps the time it was
 	float Total = 0, Fps = 30, EnterSecs = 0.6f, ExitSecs = 0.6f;
 	float LookYaw = 0, LookPitch = 0;            // the cone the player may look round the recorded view in (degrees each side)
 	bool bEnterCut = false, bExitCut = false;
@@ -113,8 +114,14 @@ private:
 	void Later(TFunction<void()> Fn) { Pending = MoveTemp(Fn); }
 	FString NodeTitle(const FString& NodeId) const;
 	FString CurrentLevel() const;
+	/** The time of day on screen: Light Kit's sky (and through it UltraVHS's night mode), each found by name, so the
+	 *  preview needs neither plugin; without a sky, only the camcorder's night mode. */
+	void ApplyTime(const FString& Time);
 
 	TSharedPtr<FJsonObject> Root, Flow, Stitches;
+	TMap<FString, FString> NodeTimes;           // the desk's time of day at every node (playing from one)
+	FString StartTime, CurrentTime;
+	bool bToldNoSky = false;
 	TMap<FString, FPvScene> Scenes;
 	TArray<FString> JointNames;
 	struct FBone { int32 A, B; float R; };

@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-24, small hours (day and night; the look's plugins; accessories; plushies and board games)
+
+- **Each scene is day or night, chosen on the desk:** a scene starts at whatever time the scene it branched from was,
+  and can be changed by hand (STORY_FORMAT §3.1 `time`; dusk too, Light Kit has it). A game starts at `game.time`;
+  unset, that's **night** (Claude's call: the studio's games so far are dark interiors; change it on the desk's Game
+  page). In Unreal, Light Kit's sky follows the scene's time.
+- **The VHS filter has a night mode:** at night black records as a cool blue, (0.02, 0.03, 0.05), instead of the
+  camcorder's warm lift, which fought the deep-blue night. Light Kit's sky turns it on at Night.
+- **Baked day and night are two bakes** (a Lighting Scenario each); only the Dynamic sky changes time in play.
+- **The plugins should be easy to bring into Unreal** (UltraVHS and Light Kit), and there should be a **guide to set
+  scenes up in Blender** with the same effects.
+- **The Character Studio gets a tab for facial accessories** (piercings, glasses, stickers and whatever else can be
+  made), and **a saved character keeps enough to come back into the Studio and be changed** after it has gone to the
+  desk and to Unreal, never starting from scratch.
+- **The desk's game gets physics anyone can script:** plushies the player carries (hold E to pick up, hold E to drop)
+  that jiggle like a plushie, on simple imported objects with plushie physics applied, extensible to other physics
+  later; and **board games in the world** with predefined rules that are easy to add (Claude writes each game's rules,
+  kept in storage: simple card games, dice, spin the cup, Russian roulette).
+
 ## 2026-10-24, late night (the look: after the user's reference)
 
 - **The Character Studio's default look follows the user's reference** (three frames from a Unity viewport: eyes,

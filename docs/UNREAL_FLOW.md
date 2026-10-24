@@ -15,6 +15,7 @@ setup these steps rely on.
 | the takes (MiniMax videos) | `Footage/<G>/<take id>.mp4` (`intake.py`, trimmed) | SoundWaves for the voice, face animation by MetaHuman Animator: `storykit.media.import_takes` **(to do, local: SETUP S11)** |
 | the levels' kit things, doors and textures (the scene builder, docs/KIT.md, ASSETS.md §6) | `levels` in story.json; `Library/meshes/kit/` (built by the importer); `Content/Studio/PBR/` | kit meshes (static), doors as frame + leaf on its hinges + handle (tagged `door_part:*`), material instances of M_StudioSurface in `/Game/Studio/PBR/` imported only when missing **(built, untested: docs/HANDOFF_SCENE_BUILDER.md §3)** |
 | the look, trackers and idle | scene `look`, `trackers`; the idle has no field | one Control Rig layer for the whole cast, driven by the runner **(to do, local)** |
+| the time of day | `game.time`, each scene's `time` (STORY_FORMAT §3.1) | Light Kit's sky (Day, Dusk, Night) and a Light Kit Window in every window, UltraVHS's night mode with the night: §1c **(built, untested)** |
 
 ## 1. The blocked game, playable as blocks
 
@@ -44,9 +45,29 @@ desk's figure of cylinders), events and act-choices as cards with buttons,
 stitches as task cards (walk the level, then Task done or the interrupts; timers count down; gameplay stitches offer
 their results), endings with Return to and Play from the start. **N** the node menu (play from any node), **Tab** the
 mouse for the cards or the walk back. It computes nothing: change the desk, Generate, play again.
+The **time of day** goes across too: the bake holds each scene's own `time` and the time the desk worked out at every
+node (`times`), and the preview sets the level's Light Kit Sky to it (found by name: `SetTime`) when it starts, when
+you play from a node and when a scene with its own time begins; the sky turns UltraVHS's night mode on and off with it.
+Without Light Kit in the project the level keeps the importer's dark interior and says so once in the log.
 Not yet: voices and takes (subtitles only), the cues (lights_die, sounds, door tricks), replies (the first option
 plays), choices by karma or count (picked by hand), scenes in another level's map (a card says so), MetaHumans (the
 shaped MHR bodies stand in).
+
+## 1c. The look: day and night with Light Kit, the camcorder with UltraVHS (built, untested)
+
+The look comes last, per game (DECISIONS 2026-10-21), so neither plugin is on until a game wants it. With Light Kit
+on in the project, the importer gives every level **Light Kit's sky** (Dynamic: the time can change in play) at the
+time the level is first seen in the flow, and a **Light Kit Window** in every window of the builder's rooms (sized to
+the opening, its arrow into the room), instead of its dark interior's held exposure and faint sky light; the rooms'
+faint fills stay. The preview then sets each scene's time (§1b).
+
+**Baked lighting** holds one time of day per bake: a game that bakes makes a Lighting Scenario sublevel per time it
+uses, each with its own Light Kit Sky set to that time (Baked), builds lighting with each one visible in turn and
+loads the scenario a scene needs (LightKit's CLAUDE.md §3). Dynamic (Lumen) needs none of that and is the default.
+
+**UltraVHS** goes on the player (the class map's player Blueprint, SETUP S6): Add Component, Ultra VHS. Its night mode
+records black as a cool blue instead of the camcorder's warm lift, so the deep-blue night stays blue; Light Kit's sky
+turns it on at night by itself.
 
 ## 2. The MetaHumans in their roles
 

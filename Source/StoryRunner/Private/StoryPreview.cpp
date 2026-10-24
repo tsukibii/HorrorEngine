@@ -21,6 +21,7 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Styling/CoreStyle.h"
+#include "UObject/UObjectHash.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -151,6 +152,7 @@ bool AStoryPreview::Load()
 			FPvScene P;
 			P.Level = Str(S, TEXT("level"));
 			P.Title = Str(S, TEXT("title"));
+			P.Time = Str(S, TEXT("time"));
 			P.Total = S->GetNumberField(TEXT("total"));
 			P.Fps = S->GetNumberField(TEXT("fps"));
 			if (const auto* C = Arr(S, TEXT("cast"))) for (const auto& V : *C) P.Cast.Add(V->AsString());
@@ -232,6 +234,9 @@ bool AStoryPreview::Load()
 				}
 			Scenes.Add(FString(*Pair.Key), MoveTemp(P));
 		}
+	StartTime = Str(Root, TEXT("time"));
+	if (const TSharedPtr<FJsonObject> Tm = Obj(Root, TEXT("times")))
+		for (const auto& Pair : Tm->Values) NodeTimes.Add(Pair.Key, Pair.Value->AsString());
 	UE_LOG(LogStoryPreview, Log, TEXT("STORY: preview of %s: %d scenes, %d flow nodes"), *Game, Scenes.Num(), Flow.IsValid() ? Flow->Values.Num() : 0);
 	return Flow.IsValid();
 }
@@ -472,7 +477,56 @@ void AStoryPreview::PlayFrom(const FString& NodeId)
 	Results.Reset();
 	Trail.Reset();
 	HideCard();
+	const FString* At = NodeTimes.Find(NodeId);       // from any node: the time the desk worked out for it
+	ApplyTime(At ? *At : StartTime);
 	Go(NodeId);
+}
+
+void AStoryPreview::ApplyTime(const FString& Time)
+{
+	static const TCHAR* Times[] = { TEXT("day"), TEXT("dusk"), TEXT("night") };   // Light Kit's ELightKitTime order
+	const int32 Index = Time.IsEmpty() ? INDEX_NONE : (Time == Times[0] ? 0 : Time == Times[1] ? 1 : Time == Times[2] ? 2 : INDEX_NONE);
+	if (Index == INDEX_NONE || Time == CurrentTime)
+	{
+		return;
+	}
+	CurrentTime = Time;
+	UWorld* World = GetWorld();
+	int32 Skies = 0;
+	if (UClass* Sky = FindObject<UClass>(nullptr, TEXT("/Script/LightKit.LightKitSky")))
+	{
+		struct FParams { uint8 NewTime; float BlendSeconds; } P{ (uint8)Index, 0.f };
+		for (TActorIterator<AActor> It(World, Sky); It; ++It)
+		{
+			UFunction* Fn = It->FindFunction(TEXT("SetTime"));
+			if (Fn && Fn->ParmsSize == sizeof(FParams))
+			{
+				It->ProcessEvent(Fn, &P);
+				++Skies;
+			}
+		}
+	}
+	if (Skies)
+	{
+		return;                                       // the sky tells the camcorder itself
+	}
+	if (!bToldNoSky)
+	{
+		bToldNoSky = true;
+		UE_LOG(LogStoryPreview, Log, TEXT("STORY: no Light Kit Sky in this level: the time of day (%s) isn't shown (docs/UNREAL_FLOW.md, the look)"), *Time);
+	}
+	if (UClass* Camcorder = FindObject<UClass>(nullptr, TEXT("/Script/UltraVHS.UltraVHSComponent")))
+	{
+		struct FParams { bool bNight; float BlendSeconds; } P{ Index == 2, 0.f };
+		ForEachObjectOfClass(Camcorder, [&](UObject* Comp)
+		{
+			UFunction* Fn = Comp->GetWorld() == World ? Comp->FindFunction(TEXT("SetNightMode")) : nullptr;
+			if (Fn && Fn->ParmsSize == sizeof(FParams))
+			{
+				Comp->ProcessEvent(Fn, &P);
+			}
+		});
+	}
 }
 
 void AStoryPreview::Go(const FString& NodeId)
@@ -516,6 +570,7 @@ void AStoryPreview::StartScene(const FString& NodeId, const FString& Sid)
 		return;
 	}
 	SceneId = Sid;
+	ApplyTime(S->Time);                                      // a scene's own time of day, from here on
 	T = 0;
 	PhaseT = 0;
 	NextEvent = 0;

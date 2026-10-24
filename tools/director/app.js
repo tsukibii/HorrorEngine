@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip } from "./stage.js";
+import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -200,6 +200,7 @@ function problems(nid) {
   for (const o of n.options || []) if (!S.flow[o.to]) p.push("option to " + o.to + " missing");
   return p;
 }
+const TIME_MARK = { day: "☀", dusk: "◐", night: "☾" };   // a scene's time on the board and in the pickers
 function newId(prefix, table) { let i = 1; while (table[prefix + i]) i++; return prefix + i; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
@@ -243,9 +244,10 @@ function renderBoard() {
     }
   }
   svg.innerHTML = paths;
+  const times = flowTimes(S);
   for (const [id, n] of Object.entries(S.flow)) {
     const p = pos[id], ref = nodeRef(n); let meta = "";
-    if (n.type === "scene" && ref) { const v = version(ref); meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : ""); }
+    if (n.type === "scene" && ref) { const v = version(ref), ft = times[id]; meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : ""); }
     if (n.type === "stitch" && ref) meta = `${(ref.beats || []).length} beats · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
     if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
     const probs = problems(id), nn = openNotes(notesHost(id));
@@ -323,6 +325,10 @@ function sceneEditor(box, sc, sid) {
   const mood = MOODS[sc.mood];
   box.append(field("mood", sel(sc, "mood", Object.keys(MOODS), { after: renderInspector }), mood ? el("button", { on: { click: () => applyMood(sc) } }, "apply to camera and clips") : null),
     mood ? el("div", { class: "kv", style: "margin:0 0 4px 70px" }, mood.text) : null);
+  // the time of day: the scene's own, or the time it was (the scene it branched from, back to the game's start)
+  const ft = flowTimes(S)[SEL], was = ft && !ft.own ? ft : null, from = was && was.from !== "game" ? nodeRef(S.flow[was.from]) : null;
+  const before = was ? `as before: ${was.paths.join(" or ")} (${was.from === "game" ? "the game's start" : "from " + ((from && from.title) || was.from)})` : "as before (the scene it branched from)";
+  box.append(field("time", sel(sc, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: before, drop: true, title: "day, dusk or night from this scene on; left as before, it keeps the time of the scene it branched from", after: () => { renderBoard(); renderInspector(); showStage(); } })));
   sc.camera = sc.camera || { mode: "free" };
   box.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
     " cone ", el("input", { type: "number", value: (sc.camera.cone || [30, 18])[0], style: "width:52px", on: { change: e => { sc.camera.cone = [+e.target.value, (sc.camera.cone || [30, 18])[1]]; touch(); } } }), "°×",
@@ -520,7 +526,8 @@ function gameEditor() {
   box.append(el("h2", {}, "Game · " + GAME), field("title", txt(g, "title", { w: true })),
     field("playtime", "typical ≥", txt(g, "target_min", { num: true }), "min · fast player ≥", txt(g, "fast_min", { num: true, ph: "120" }), "min"),
     el("div", { class: "kv", style: "margin-left:70px" }, "Cutscenes can't be skipped; tasks can be done fast. Steam refunds under 2 hours, so the fastest normal path must stay over fast_min."),
-    field("takes", "≤", txt(g, "clip_max", { num: true }), "s a clip · voice", txt(g, "voice", { style: "width:40px" }), "text", txt(g, "text", { style: "width:40px" })));
+    field("takes", "≤", txt(g, "clip_max", { num: true }), "s a clip · voice", txt(g, "voice", { style: "width:40px" }), "text", txt(g, "text", { style: "width:40px" })),
+    field("starts at", sel(g, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: `${TIME_MARK[TIME_DEFAULT]} ${TIME_DEFAULT} (when unset)`, drop: true, title: "the time of day the game starts at; a scene's own time changes it from there on", after: () => { renderBoard(); showStage(); } })));
   const bodyChoices = [["capsules", "capsule figure"], ...BODIES];
   box.append(el("h2", {}, "Bodies in the desk"), field("default", sel(g, "previs_body", bodyChoices, { blank: BODIES.length ? "first file in Bodies" : "capsule figure", drop: true, after: async () => { await loadBodies(); showStage(); } })),
     el("div", { class: "kv", style: "margin-left:70px" }, BODIES.length ? `Content/Studio/Bodies: ${BODIES.join(", ")}` : "Drop a rigged human (Manny exported from Unreal, a Mixamo character, a MetaHuman body: .fbx or .glb) into Content/Studio/Bodies and reload; see its README."));
@@ -540,6 +547,7 @@ function showStage() {
   const n = S.flow[SEL]; const ref = n && nodeRef(n);
   const lvl = (ref && ref.level) || Object.keys(S.levels)[0];
   flowStage.setWorld(PLAN, S, lvl);
+  flowStage.setTime((flowTimes(S)[SEL] || {}).time || S.game.time || TIME_DEFAULT);
   const sc = currentScene();
   if (sc) { const tl = flowStage.timeline(sc); $("#scrub").max = tl.total.toFixed(2); scrubTo(+$("#scrub").value || 0); }
   else { // a stitch or choice: the level from its start spot
@@ -762,6 +770,7 @@ async function watchScene(sc, nid, sid, k) {
   let T = 0, last = performance.now(), spoken = null, warned = null;
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
+    if (!RUN) break;                                       // stopped while it waited for the frame
     const now = performance.now(); T += (now - last) / 1000; last = now;
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
@@ -961,8 +970,10 @@ async function watch(fromNid, snap) {
   wclock();
   $("#watchOv .black").style.opacity = 1;
   let nid = fromNid || S.game.start, guard = 0;
+  RUN.time = (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; watchStage.setTime(RUN.time);   // from any node: its time
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
     const n = S.flow[nid]; reach(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
+    if (n.type === "scene" && (S.scenes[n.ref] || {}).time) { RUN.time = S.scenes[n.ref].time; watchStage.setTime(RUN.time); }   // a scene's own time, from here on
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
       await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next;
@@ -1119,5 +1130,5 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

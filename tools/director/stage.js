@@ -93,6 +93,45 @@ export function shotFor(d) { return ["ecu", "cu", "mcu", "ms", "fs", "ws"].find(
 export const SEAM_SECS = { none: 0, blink: 0.2, glance: 1, flicker: 0.4, occlude: 0.8, cutaway: 1.5, turn: 0, stumble: 1, dip: 2, jcut: 0, heartbeat: 0.6 };
 
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);       // story (x east, y north, z up) -> three (y up)
+
+// the time of day (STORY_FORMAT §3.1; storylib's TIMES, flow_outs, flow_times): a scene's own `time`, else the time it
+// was when the flow got there, from the scene it branched from back to game.time
+export const TIMES = ["day", "dusk", "night"], TIME_DEFAULT = "night";
+export function flowOuts(story, nid) {
+  const n = (story.flow || {})[nid] || {}, out = n.next ? [n.next] : [];
+  for (const o of n.options || []) if (o.to) out.push(o.to);
+  if (n.type === "stitch") {
+    const st = (story.stitches || {})[n.ref] || {};
+    if (st.timer && st.timer.fail) out.push(st.timer.fail);
+    for (const it of story.interrupts || []) { const during = it.during || "all"; if (it.to && (during === "all" || during.includes(n.ref))) out.push(it.to); }
+  }
+  return out;
+}
+export function flowTimes(story) {        // {nid: {time, from (the scene node that set it, or "game"), own, paths}}
+  const flow = story.flow || {}, scenes = story.scenes || {}, game = story.game || {}, came = {};
+  const ownOf = n => n.type === "scene" ? ((scenes[n.ref] || {}).time || null) : null;
+  const todo = [[game.start, game.time || TIME_DEFAULT, "game"]];
+  for (let i = 0; i < todo.length; i++) {   // breadth first: the nearest scene before a node wins
+    const [nid, t, src] = todo[i]; if (!flow[nid]) continue;
+    const seen = came[nid] || (came[nid] = new Map()); if (seen.has(t)) continue; seen.set(t, src);
+    const own = ownOf(flow[nid]);
+    for (const to of flowOuts(story, nid)) todo.push([to, own || t, own ? nid : src]);
+  }
+  const out = {};
+  for (const [nid, seen] of Object.entries(came)) {
+    const own = ownOf(flow[nid]), [t, src] = seen.entries().next().value;
+    out[nid] = { time: own || t, from: own ? nid : src, own: !!own, paths: [...seen.keys()].sort() };
+  }
+  return out;
+}
+// how each time looks on the desk, as Light Kit does in Unreal: the sky (seen through the windows, and the fog), the
+// ambient and the sky's fill, and a soft light in each window of the level (its colour, candela a square metre of
+// glass, its reach). Night is a deep blue, never black (DECISIONS 2026-10-23)
+export const TIME_LOOK = {
+  day:   { sky: 0xb7c6d6, amb: [0xd6dae2, 0.65], hemi: [0xdce7f5, 0x5a4a3a, 0.8], win: [0xeef3ff, 20, 8] },
+  dusk:  { sky: 0x2e2030, amb: [0xa08c88, 0.32], hemi: [0xd8a07e, 0x1a1410, 0.38], win: [0xffb27a, 6, 6] },
+  night: { sky: 0x070a16, amb: [0x7a86aa, 0.22], hemi: [0x6474ac, 0x0c0a12, 0.24], win: [0x8fa8ff, 1.2, 5] },
+};
 const yawToThree = rot => (rot + 90) * Math.PI / 180;               // character +Z faces the spot's rot
 
 // how long a Japanese line takes (storylib.ja_secs): kana a mora, kanji about 1.7, pauses for punctuation, at 6.5 morae a second
@@ -199,8 +238,8 @@ export class Stage {
     this.scene.background = new THREE.Color(0x050506);
     this.scene.fog = new THREE.Fog(0x050506, 4, 16);
     this.camera = new THREE.PerspectiveCamera(PLAYER_FOV, 16 / 9, 0.05, 60);
-    this.scene.add(new THREE.AmbientLight(0x8a8f9a, 0.22));
-    this.scene.add(new THREE.HemisphereLight(0x9aa0b0, 0x1a1410, 0.25));
+    this.amb = new THREE.AmbientLight(0x8a8f9a, 0.22); this.hemi = new THREE.HemisphereLight(0x9aa0b0, 0x1a1410, 0.25);   // set by the time (setTime)
+    this.scene.add(this.amb, this.hemi); this.time = TIME_DEFAULT; this.windows = [];
     this.world = new THREE.Group(); this.scene.add(this.world);
     this.lights = []; this.solid = []; this.cast = {}; this.things = {}; this.level = null;
     this.bodies = {}; this.defaultBody = null;      // loaded body templates by file name (app.js fills them)
@@ -284,6 +323,27 @@ export class Stage {
       f.group.visible = false;
       this.world.add(f.group); this.cast[cid] = f;
     }
+    this.windows = [];                     // a soft light just inside every window, into the room (Light Kit Window's sky fill)
+    for (const room of ((story.levels || {})[level] || {}).rooms || []) for (const op of room.openings || []) {
+      if (!op.window && !((op.sill || 0) > 0.05)) continue;
+      const [x0, y0, z0] = room.at, [w, d] = room.size;
+      const line = { n: ["y", y0 + d, x0, -1], s: ["y", y0, x0, 1], e: ["x", x0 + w, y0, -1], w: ["x", x0, y0, 1] }[op.wall];
+      if (!line) continue;
+      const [axis, v, lo, inward] = line, along = lo + op.at, z = z0 + (op.sill || 0) + op.h / 2;
+      const at = k => axis === "y" ? [along, v + inward * k, z - (k > 1 ? 0.8 : 0)] : [v + inward * k, along, z - (k > 1 ? 0.8 : 0)];
+      const l = new THREE.SpotLight(0xffffff, 1, 6, 1.1, 1, 1.5);
+      l.position.copy(s2t(...at(0.05))); l.target.position.copy(s2t(...at(2))); l.userData = { window: room.id, area: op.w * op.h };
+      this.world.add(l, l.target); this.windows.push(l);
+    }
+    this.applyTime();
+  }
+  setTime(t) { this.time = TIME_LOOK[t] ? t : TIME_DEFAULT; this.applyTime(); }
+  applyTime() {
+    const L = TIME_LOOK[this.time] || TIME_LOOK[TIME_DEFAULT];
+    this.scene.background.set(L.sky); this.scene.fog.color.set(L.sky);
+    this.amb.color.set(L.amb[0]); this.amb.intensity = L.amb[1];
+    this.hemi.color.set(L.hemi[0]); this.hemi.groundColor.set(L.hemi[1]); this.hemi.intensity = L.hemi[2];
+    for (const l of this.windows) { l.color.set(L.win[0]); l.intensity = L.win[1] * l.userData.area; l.distance = L.win[2]; }
   }
 
   bodyFor(c) {

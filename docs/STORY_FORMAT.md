@@ -34,7 +34,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | Key | Holds |
 |---|---|
 | `format` | `2` |
-| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body) |
+| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1) |
 | `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body) |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect}}`, `{id: {title, text}}`, `{id: {file}}` |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
@@ -217,6 +217,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `view` | the spot where we expect the player: **the camera, since the camera is the player's eye**. It must be a place the player can stand (in its room, not inside a prop, unless that prop is in `camera.through`). It's for the desk, the shot review, the motion jobs (the `player_collar` target) and the playtime estimate; the runner never moves the player there |
 | `stance` | the player's eye height in this scene: `stand` (1.65 m, the default) `crouch` (1.05) `kneel` (1.2) `sit` (1.15) `lie` (0.3) `hide` (1.6, in a locker or wardrobe): first person's low and high angles |
 | `mood` | `intimate dread panic reveal calm grief chase aftermath`: the recipe (DIRECTING.md §2); the desk can apply its camera and shot defaults |
+| `time` | the time of day from this scene on: `day`, `dusk` or `night`. **Left out, the scene keeps the time it was**: the time of the scene it branched from (the nearest scene before it in the flow that set one), back to `game.time` at the start. Stitches play at the time of the scene before them. The desk shows each scene's time on the board (☀ ◐ ☾) and in its picker ("as before: night (from …)"), and lights the stage, the Watch and Play by it (the sky through the windows, the ambient, a light in every window). In Unreal, Light Kit's sky follows it, with UltraVHS's night mode (UNREAL_FLOW §1c). A scene reached at different times by different paths, with no time of its own, is a STORY warning |
 | `enter`, `exit` | `{"kind": "blend"|"fade"|"cut"|"blink"|"dip", "secs": 0.8}`: how the scene comes in from the game and goes back to it. The default is `blend` (0.8 s): the view eases from wherever the player's eye is into the scene's framing, and at the end the player carries on from the scene's last view, with no black between (GAMEPLAY_PLAN §1). `fade` goes through black; `cut` is for a scare |
 | `camera.mode` | `free` (the player walks and looks), `soft` (movement stops; the look stays inside a cone round `look`, with a spring back), `hard` (a cinematic camera), `held` (an actor has hold of the player: struggles) |
 | `camera.through` | props the camera sees through (a locker's slats): the shot review and the visibility test ignore them |
@@ -489,6 +490,8 @@ If the stitch isn't `done` in time, the flow jumps to `fail`. The checks:
 - **playtime per ending, typical and fast:** the shortest path to every ending not marked `short_ok` must reach
   `target_min` (typical) and `fast_min` (fast)
 - shot sizes, cameras, events, blocking (poses exist, eases, modifiers, fits), moods, transitions, timers, interrupts
+- times of day: `game.time` and each scene's `time` are `day`, `dusk` or `night`; a scene without one that different
+  paths bring at different times is a warning
 - `--route` writes the main path's steps for the playthrough bot
 
 `level_check.py`: overlaps, props in walls, blocked doorways, standing room at interactables.
