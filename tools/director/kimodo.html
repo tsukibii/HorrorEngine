@@ -160,7 +160,7 @@ async function load() {
 async function boot() {
   const g = (await api("/api/games")).games, sel = $("#game");
   for (const n of g) sel.append(el("option", { value: n }, n));
-  let pick = null; try { pick = localStorage.getItem("dd.game"); } catch (e) { }
+  let pick = new URLSearchParams(location.search).get("game"); if (!g.includes(pick)) try { pick = localStorage.getItem("dd.game"); } catch (e) { }
   GAME = g.includes(pick) ? pick : g[0]; sel.value = GAME;
   sel.onchange = () => { GAME = sel.value; load(); };
   $("#todo").onchange = render; $("#refresh").onclick = load;

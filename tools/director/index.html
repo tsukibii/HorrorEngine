@@ -100,19 +100,20 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 <body>
 <header>
   <h1>DIRECTOR'S DESK</h1>
-  <select id="game"></select>
+  <select id="game" title="the game you're directing (Content/Games/<name>)"></select>
   <button id="newGame" title="Start a new game: a folder in Content/Games with a minimal story">+ New game</button>
   <button id="gameSettings">Game</button>
   <button id="save" class="primary" title="Ctrl+S">Save</button>
-  <button id="reload">Reload</button>
-  <button id="check">Run checks</button>
+  <button id="reload" title="story.json from disk again (asks first if you have edits here)">Reload</button>
+  <button id="check" title="the story and level checks (STORY, LEVEL) on the saved story">Run checks</button>
   <button id="generate" title="The checks, then the game built in Unreal: every level 1:1, the start level open (docs/UNREAL_FLOW.md §1). Save first.">Generate in Unreal</button>
   <a href="poses.html" target="_blank"><button>Poses</button></a>
   <a href="bodies.html" target="_blank"><button title="Check how a body file in Content/Studio/Bodies follows the blocking">Bodies</button></a>
   <a href="flesh.html" target="_blank"><button title="The fat-suit experiment: jiggle and sag worked out from body fat (docs/FLESH.md)">Fat suit</button></a>
-  <a href="kimodo.html" target="_blank"><button title="The Kimodo shot list: every motion to make in the demo, with its prompt, length, constraints and save name">Kimodo</button></a>
-  <a href="shape.html" target="_blank"><button title="Shape each cast member's body (MHR), save it to the story, export it for MetaHuman">Shape</button></a>
+  <a href="kimodo.html" data-page="kimodo.html" target="_blank"><button title="The Kimodo shot list: every motion to make in the demo, with its prompt, length, constraints and save name">Kimodo</button></a>
+  <a href="shape.html" data-page="shape.html" target="_blank"><button title="Shape each cast member's body (MHR), save it to the story, export it for MetaHuman">Shape</button></a>
   <a href="builder.html" target="scenebuilder" onclick="this.href='builder.html?game='+encodeURIComponent(document.getElementById('game').value)"><button title="The scene builder: a level as a floor plan (rooms, doors, sliding doors, windows; Japanese reference layouts), walked from the player's eye">Scene builder</button></a>
+  <button id="keysHelp" title="the keyboard shortcuts">?</button>
   <span id="status">loading…</span>
 </header>
 <div id="offline">The desk needs its server: run <code>python tools/director/serve.py</code> and open http://127.0.0.1:8780</div>
@@ -133,7 +134,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
         <div id="stageBox"><div class="ov" id="stageOv"><div class="black"></div><div class="who"></div><div class="tag"></div><div class="ja"></div><div class="sub"></div></div></div>
         <div id="stageBar">
           <button id="sPlay">▶ scene</button><button id="sStop">■</button>
-          <input type="range" id="scrub" min="0" max="10" step="0.01" value="0"><span id="sTime" class="muted">0.0 s</span>
+          <input type="range" id="scrub" min="0" max="10" step="0.01" value="0" title="scrub through the selected scene"><span id="sTime" class="muted">0.0 s</span>
           <button id="sFree" title="Inspect from outside (drag to orbit, wheel to zoom)">Free cam</button>
           <button id="sFix" title="Which parts the player sees; mismatches; joins">Check bodies</button>
           <button id="sExport" title="The blocking as glTF for Unreal (Content/Games/&lt;Game&gt;/Previs)">Export glTF</button>

@@ -55,11 +55,13 @@ async function boot() {
     }
   } catch (e) { console.error(e); $("#offline").style.display = "block"; status("no server"); }
 }
+function gameLinks() { for (const a of document.querySelectorAll("header a[data-page]")) a.href = `${a.dataset.page}?game=${encodeURIComponent(GAME || "")}`; }
 function fillGames(list) { const sel = $("#game"); sel.innerHTML = ""; for (const n of list) sel.append(el("option", { value: n }, n)); }
 async function load() {
   const j = await api("/api/story/" + encodeURIComponent(GAME));
-  S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none";
+  S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none"; UNDO = []; REDO = []; LAST = JSON.stringify(S);
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
+  gameLinks();
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
   await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
@@ -218,9 +220,23 @@ try {
 async function poll() { if (!GAME) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) $("#banner").style.display = "block"; } catch (e) { } }
 function dirty(d) { DIRTY = d; status(d ? "unsaved changes" : "saved"); $("#status").classList.toggle("dirty", d); }
 function status(t) { $("#status").textContent = (GAME ? GAME + " · " : "") + t; }
-function touch(world) { dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); }
+function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); }
+let UNDO = [], REDO = [], LAST = null;
+function snapshot() { const now = JSON.stringify(S); if (LAST !== null && now !== LAST) { UNDO.push(LAST); if (UNDO.length > 150) UNDO.shift(); REDO = []; } LAST = now; }
+function undoTo(from, to, what) {
+  if (!from.length) { status(`nothing to ${what}`); return; }
+  to.push(JSON.stringify(S)); S = JSON.parse(from.pop()); LAST = JSON.stringify(S);
+  if (!S.flow[SEL]) SEL = S.game.start;
+  dirty(true); renderAll(); scheduleReplan(); status(`${what}: ${from.length} more`);
+}
 window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
-document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); } });
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); }
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "");
+  if ((e.ctrlKey || e.metaKey) && !typing && !RUN && (e.key === "z" || e.key === "Z" || e.key === "y")) {   // the text box keeps its own undo
+    e.preventDefault(); if (e.key === "y" || e.shiftKey) undoTo(REDO, UNDO, "redo"); else undoTo(UNDO, REDO, "undo");
+  }
+});
 
 /* ---------- story helpers ---------- */
 const things = () => (PLAN && PLAN.things) || {};
@@ -326,6 +342,7 @@ function renderInspector() {
   if (!S || !SEL || !S.flow[SEL]) { box.append(el("p", { class: "muted" }, "Select a node.")); return; }
   const n = S.flow[SEL], nodeIds = Object.keys(S.flow);
   box.append(el("h2", {}, `${n.type} · ${SEL}`), el("div", { class: "row" },
+    n.type === "scene" || n.type === "stitch" ? el("button", { class: "primary", title: "the Watch from this node on, as the game plays it", on: { click: () => { const nid = SEL; document.querySelector('nav button[data-v="watchView"]').click(); watch(nid); } } }, "▶ Watch from here") : null,
     el("button", { on: { click: () => { S.game.start = SEL; touch(); renderInspector(); } } }, "Make start"),
     el("button", { on: { click: () => renameNode(SEL) } }, "Rename"),
     el("button", { on: { click: () => { if (confirm("Delete node " + SEL + "? (its scene or stitch stays in the file)")) { delete S.flow[SEL]; SEL = S.game.start; touch(); renderInspector(); } } } }, "Delete")));
@@ -352,7 +369,7 @@ function renameNode(old) {
   if (S.game.start === old) S.game.start = nid; SEL = nid; touch(); renderInspector();
 }
 function addNode(type) {
-  const n = S.flow[SEL], nid = newId(type === "ending" ? "e_" : "n_", S.flow), lvl = Object.keys(S.levels)[0]; let node;
+  const n = S.flow[SEL], nid = newId(type === "ending" ? "e_" : "n_", S.flow), cur = nodeRef(n), lvl = (cur && cur.level) || Object.keys(S.levels)[0]; let node;
   if (type === "scene") { const sid = newId("s_", S.scenes); S.scenes[sid] = { title: "New scene", level: lvl, mood: "dread", stage: {}, camera: { mode: "soft", look: castIds()[0] || null, cone: [30, 18] }, clips: [{ id: "c1", who: castIds()[0] || "", ja: "", en: "", act: "", shot: "ms", body: { block: [{ at: 0, pose: "idle" }] } }] }; node = { type, ref: sid, next: n.next || null }; }
   if (type === "stitch") { const tid = newId("t_", S.stitches); S.stitches[tid] = { title: "New task", level: lvl, goal: "", target_min: 5, beats: [{ id: "b_" + tid.slice(2) + "_start", when: { start: true }, do: [{ objective: "…" }, { done: true }] }] }; node = { type, ref: tid, next: n.next || null }; }
   if (type === "choice") node = { type, by: "act", prompt: "", options: [{ label: "A", when: { use: "" }, to: n.next || "" }, { label: "B", when: { use: "" }, to: n.next || "" }] };
@@ -460,10 +477,13 @@ function takeRow(sc, c, sid) {             // the take against the director's ac
 function clipCard(sc, ver, c, i, lvl, sid) {
   const max = S.game.clip_max || 10, over = clipSecs(c) > max;
   const card = el("div", { class: "clip" + (over ? " over" : "") });
-  card.append(el("h3", {}, txt(c, "id", { style: "width:46px" }), sel(c, "who", [...castIds(), "player"], { blank: false }),
+  const oldTake = takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id);
+  card.append(el("h3", {}, txt(c, "id", { style: "width:46px", title: "the clip's id: its take is found by it (game_scene_version_id)", after: () => { if (TAKES[oldTake]) alert(`The take ${TAKES[oldTake].name} was found by the old id: rename the file to ${takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id)} too, or it won't match.`); renderInspector(); } }),
+    sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip" }),
     txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:60px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s"),
     el("button", { on: { click: () => playScene(sc, ver, c.id) } }, "▶ clip"),
     el("button", { title: "move up", on: { click: () => { if (i) { [ver.clips[i - 1], ver.clips[i]] = [ver.clips[i], ver.clips[i - 1]]; touch(); renderInspector(); } } } }, "↑"),
+    el("button", { title: "move down", on: { click: () => { if (i < ver.clips.length - 1) { [ver.clips[i + 1], ver.clips[i]] = [ver.clips[i], ver.clips[i + 1]]; touch(); renderInspector(); } } } }, "↓"),
     el("button", { title: "delete", on: { click: () => { if (confirm("Delete clip " + c.id + "?")) { ver.clips.splice(i, 1); touch(); renderInspector(); } } } }, "×")));
   card.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
   if ((S.format || 2) >= 3) card.append(takeSec(c));
@@ -475,7 +495,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     sel({ at: c.look ? lk.at || "player" : "" }, "at", looks, { blank: "(the scene's, or none)", after: () => {}, title: "what the head follows: the player, a tracker, someone, a thing" }),
     "yaw ±", el("input", { type: "number", value: (lk.limit || [70])[0], style: "width:50px" }), "up", el("input", { type: "number", value: (lk.limit || [70, 20])[1], style: "width:46px" }), "down", el("input", { type: "number", value: (lk.limit || [70, 20, 30])[2], style: "width:46px" }),
     "past", sel({ past: lk.past || "hold" }, "past", ["hold", "snap"], { blank: false }),
-    el("button", { title: "set this clip's look", on: { click: e => { const r = e.target.parentNode, s = r.querySelectorAll("select"), n = r.querySelectorAll("input"); if (!s[0].value) delete c.look; else c.look = { at: s[0].value, limit: [+n[0].value, +n[1].value, +n[2].value], past: s[1].value }; touch(); renderInspector(); } } }, c.look ? "update" : "set")));
+    el("span", { class: "kv" }, c.look ? "" : "(set by choosing what it follows)")));
+  { const r = card.lastChild; r.addEventListener("change", () => { const s = r.querySelectorAll("select"), n = r.querySelectorAll("input"); if (!s[0].value) delete c.look; else c.look = { at: s[0].value, limit: [+n[0].value, +n[1].value, +n[2].value], past: s[1].value }; touch(); }); }
   // seam, shot, camera
   const look = [...castIds(), ...placed(lvl)];
   const sec1 = el("div", { class: "sec row" });
@@ -611,15 +632,16 @@ function stitchEditor(box, st, tid) {
   box.append(el("h2", {}, "Beats"), list, jsonArea(st, "beats", "beats (STORY_FORMAT §4)"));
 }
 function choiceEditor(box, n, nodeIds) {
-  box.append(el("h2", {}, "Choice"), field("by", sel(n, "by", ["act", "flag", "result", "karma"], { blank: false, after: renderInspector })), field("prompt", txt(n, "prompt", { w: true })));
+  box.append(el("h2", {}, "Choice"), field("by", sel(n, "by", ["act", "flag", "result", "karma", "count"], { blank: false, after: renderInspector, title: "what picks the branch: the player's act, flags set, an event's result, karma, or a counter (game.counters)" })), field("prompt", txt(n, "prompt", { w: true })));
   if (n.by === "result") box.append(field("of", sel(n, "of", nodeIds.filter(k => S.flow[k].type === "scene"), { after: renderInspector })));
   const ev = n.by === "result" && S.flow[n.of] && S.scenes[S.flow[n.of].ref] ? (version(S.scenes[S.flow[n.of].ref]).clips || []).filter(c => c.event).map(c => c.event).pop() : null;
-  const tb = el("table", {}, el("tr", {}, el("th", {}, "label"), el("th", {}, n.by === "act" ? "when (trigger JSON)" : n.by === "flag" ? "if flags (comma)" : n.by === "karma" ? "karma min · max (last: otherwise)" : "result"), el("th", {}, "to"), el("th", {})));
+  const tb = el("table", {}, el("tr", {}, el("th", {}, "label"), el("th", {}, n.by === "act" ? "when (trigger JSON)" : n.by === "flag" ? "if flags (comma)" : n.by === "karma" ? "karma min · max (last: otherwise)" : n.by === "count" ? "counter min · max (last: otherwise)" : "result"), el("th", {}, "to"), el("th", {})));
   (n.options = n.options || []).forEach((o, i) => {
     let cond;
     if (n.by === "act") cond = el("input", { class: "w", value: JSON.stringify(o.when || {}), on: { change: e => { try { o.when = JSON.parse(e.target.value); e.target.style.outline = ""; touch(); } catch (x) { e.target.style.outline = "1px solid var(--bad)"; } } } });
     else if (n.by === "flag") cond = el("input", { class: "w", value: (o.if || []).join(","), placeholder: "(last option: otherwise)", on: { change: e => { const v = e.target.value.trim(); if (v) o.if = v.split(",").map(s => s.trim()); else delete o.if; touch(); } } });
     else if (n.by === "karma") cond = el("span", { class: "row" }, txt(o, "min", { num: true, ph: "min", style: "width:60px", drop: true }), txt(o, "max", { num: true, ph: "max", style: "width:60px", drop: true }), txt(o, "axis", { ph: "axis", style: "width:70px", drop: true }));
+    else if (n.by === "count") cond = el("span", { class: "row" }, sel(o, "count", Object.keys(S.game.counters || {}), { blank: "counter…", drop: true }), txt(o, "min", { num: true, ph: "min", style: "width:60px", drop: true }), txt(o, "max", { num: true, ph: "max", style: "width:60px", drop: true }));
     else cond = sel(o, "result", eventResults(ev), { blank: false });
     tb.append(el("tr", {}, el("td", {}, txt(o, "label", { ph: "label" })), el("td", {}, cond), el("td", {}, sel(o, "to", nodeIds)), el("td", {}, el("button", { on: { click: () => { n.options.splice(i, 1); touch(); renderInspector(); } } }, "×"))));
   });
@@ -1202,6 +1224,10 @@ $("#bannerReload").onclick = () => load();
 $("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } GAME = e.target.value; SEL = null; FILES = {}; load(); };
 $("#newGame").onclick = async () => { const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; await load(); } catch (e) { alert(e.message); } };
 $("#gameSettings").onclick = () => { if (S) gameEditor(); };
+$("#keysHelp").onclick = () => alert(["The desk", "  Ctrl+S  save", "  Ctrl+Z  undo · Ctrl+Shift+Z or Ctrl+Y  redo (outside a text box; up to 150 edits back)",
+  "  ▶ Watch from here (a scene or a task's inspector): the Watch from that node", "", "The Watch (walking the tasks)", "  WASD or arrows  move · mouse  look (click the view to lock it)",
+  "  E  use · hold E  pick up or put down", "  C  crouch (toggle or hold: the Watch bar)", "  Esc  pause (dev: Esc skips a scene, when ticked)", "",
+  "The stage", "  Free cam: drag to orbit, wheel to zoom"].join("\n"));
 $("#check").onclick = async () => {
   if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Checks"), el("p", { class: "muted" }, "running…"));
@@ -1219,14 +1245,17 @@ $("#generate").onclick = async () => {
     await api("/api/preview/" + encodeURIComponent(GAME), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pv) });
   } catch (e) { $("#genState").className = "err"; $("#genState").textContent = "The bake failed: " + e.message; return; }
   $("#genState").textContent = "running the checks…";
-  const j = await api("/api/unreal/generate/" + encodeURIComponent(GAME), { method: "POST" });
+  let j; try { j = await api("/api/unreal/generate/" + encodeURIComponent(GAME), { method: "POST" }); }
+  catch (e) { $("#genState").className = "err"; $("#genState").textContent = "Generate failed: " + e.message + (e.body && e.body.trace ? "" : " (the desk's server log has more)"); if (e.body && e.body.trace) box.append(el("pre", {}, e.body.trace)); return; }
   box.append(el("pre", {}, (j.checks || []).join("\n")));
   const st = $("#genState");
   if (!j.ok) { st.className = "err"; st.textContent = j.error; return; }
   st.textContent = j.how === "started" ? "Starting the editor with the build (the first open takes a few minutes)…" : "Building in the open editor…";
-  const t0 = Date.now();
+  const t0 = Date.now(); let misses = 0;
   const poll = async () => {
-    const r = await api("/api/unreal/status/" + encodeURIComponent(GAME));
+    let r; try { r = await api("/api/unreal/status/" + encodeURIComponent(GAME)); misses = 0; }
+    catch (e) { if (++misses > 5) { st.className = "err"; st.textContent = "Lost the desk's server: " + e.message; return; } setTimeout(poll, 3000); return; }
+    if (Date.now() - t0 > 20 * 60 * 1000 && r.state !== "done") { st.className = "err"; st.textContent = `No answer from Unreal after 20 minutes: its log is Saved/Story/${GAME}/editor.log (UNREAL_FLOW.md §1 has what to look for)`; return; }
     if (r.state === "done") {
       st.className = r.ok ? "ok" : "err";
       st.textContent = r.ok ? `Built: ${Object.entries(r.levels || {}).map(([k, v]) => `${k} (${v.pieces} pieces)`).join(", ")}. ${r.open || ""} is open in Unreal.` : "Failed: " + (r.errors || []).join("; ");

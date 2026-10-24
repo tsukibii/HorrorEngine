@@ -29,6 +29,16 @@ Then (2026-10-24, the user back), three more asks, built, checked and pushed:
 | `a3c044e` | **Fingernails** painted on the skin (`nails.js` finds each nail on MHR's fingertips once; the skin's shader paints the nail, its half moon, the free edge, the cuticle) and **nail polish** (full, French, half moon, ombré, tips, dots; gloss, matte, chrome, glitter, jelly; presets; Look at the nails). |
 | `b65b09c` | **Underwear** in the tailor, skin tight (`bra` and `brief` cuts): six bras, five thongs and briefs, four boxers; lingerie, sporty and boxer outfits; the garment picker grouped by kind. TAILOR ok. |
 
+Then the user asked for a lead developer's review of the director's desk: its ease of use, adding Kimodo motions,
+and blending between things (docs/DESK_REVIEW.md has the findings, what changed and what's still open):
+
+| Commit | What |
+|---|---|
+| `da2674b` | A Kimodo walk **carries its actor into the next clip** (no snap back to the mark); the blend starts from the pose at the cut; the timeline's blend wedges; the clip's **motion picker** (made, its length, or not made yet). |
+| `87ca35e` | **Kimodo into the desk:** a take imported again shows at once; Send to Studio by a segment's name links it; MOTION checks the shot list; partly made clips play; **inertial blends**; the blocking's stride eases; travel in metres (Mari stopped 5% short); the shot list's metres in Kimodo's scale; the demo runs in the project folder. |
+| `59fbeed` | **Body layers** (`layers`: upper, arms, one arm, head, from a motion or a pose) and the **Kimodo segment editor** on the clip card. |
+| (last) | **Ease of use:** Watch from here, undo and redo, a shortcuts list, clips move down, choices by count, the look row applies at once, Generate shows the checks' errors and gives up after 20 minutes, the launcher's number reopens a running page. |
+
 ## 2. Where things are
 
 - Play: `tools/director/play/physics.js` (physics kinds as parts; carrying; the soft bend), `boardgames.js` (the table
@@ -62,6 +72,10 @@ Then (2026-10-24, the user back), three more asks, built, checked and pushed:
 0. **Look at the jewellery, the nails and the underwear** in the Studio and say what to change: necklace lengths and
    weights, the hoops' size, the nails' length and shape (painted: a long acrylic would need a modelled nail), more
    underwear styles (a lace that reads on small pieces, a push-up's padding, a bodysuit, a slip), and colours.
+0b. **Try the desk's new motion work** on a real Kimodo take: a segment from the clip card, Send to Studio by its
+   name, a layer (arms over a walk), the blends; then DESK_REVIEW §3, the open items: the shot list loaded into the
+   demo by name (needs Kimodo here), the reach into Kimodo, the `motions` table (idles, the seeker's loops) playing
+   in the Watch and Play, a mark tool on the desk's stage.
 1. **Look at the board games and the plushie in play** and say what feels wrong: the pieces' sizes, how close the
    seat leans in, the plushie's softness (`jiggle`, the kind's `follow`, `squash`, `floppy`), the revolver's moment.
 2. **More board games or a game's own** (a card game of the story's, hanafuda, a ouija board): one file each, BOARD.

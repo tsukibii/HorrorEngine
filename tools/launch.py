@@ -135,7 +135,7 @@ TOOLS = [
     ("Story", "Cast", "tools/story.py --game {game} cast", {}),
     ("Story", "Props still blocks (art to place)", "tools/story.py --game {game} art", {}),
     ("Story", "Plan view picture (needs Pillow)", "tools/plan_view.py --game {game}", {}),
-    ("Story", "New game", "tools/story.py --game {game} new {ask:New game's name}", {}),
+    ("Story", "New game", "tools/story.py new {ask:New game's name}", {}),
 
     ("Script", "Script generator: outline to story (Ollama)", "tools/scriptgen.py --game {game} new {ask:Outline file}", {}),
     ("Script", "Script generator: review pack", "tools/scriptgen.py --game {game} review", {}),
@@ -325,8 +325,9 @@ def run(label, args, opts, dry=False, state=None):
     if opts.get("url") and state is not None and not dry:
         key = shown(args)
         r = running(state).get(key)
-        if r and label in r["labels"]:
-            stop(state, key)                                     # the same number again: stop it
+        if r and label in r["labels"]:                           # the same number again: the page again (x<number> stops it)
+            webbrowser.open(opts["url"])
+            say("%s: %s %s" % (label, paint(opts["url"], 4, *BONE), paint("(already running: x%s stops it)" % (TOOLS.index(next(t for t in TOOLS if t[1] == label)) + 1), *ASH)), "ok")
             return 0
         if r:                                                    # its server is up for another page: just open this one
             r["labels"].append(label)
@@ -393,8 +394,8 @@ def show_menu(idx, state):
         print("\n" + rule("Recent", width))
         for n, r in enumerate(recent[:5], 1):
             print("  " + paint("r%d" % n, 1, *RED) + "   " + r["label"] + (paint("  " + r["shown"], *ASH) if width >= 100 else ""))
-    keys = [("number", "run" + (", or stop a ●" if up else "")), ("words", "filter"), ("r1-r5", "recent"), ("g", "game")] \
-        + ([("close", "stop the pages")] if up else []) + [("q", "quit")]
+    keys = [("number", "run" + (" (a ● again: open it)" if up else "")), ("words", "filter"), ("r1-r5", "recent"), ("g", "game")] \
+        + ([("x<number>", "stop a ●"), ("close", "stop the pages")] if up else []) + [("q", "quit")]
     print("\n " + paint("  ·  ", *DARK).join(paint(k, 1, *RED) + " " + paint(t, *ASH) for k, t in keys))
 
 
@@ -438,6 +439,14 @@ def main(argv):
             return 0
         if v.lower() in ("close", "c", "stop"):
             close_all(state)
+            continue
+        if v.lower()[0] == "x" and v[1:].isdigit():             # stop one page's server
+            n = int(v[1:]) - 1
+            hit = [k for k, r in running(state).items() if 0 <= n < len(TOOLS) and TOOLS[n][1] in r["labels"]]
+            if not hit:
+                say("%s isn't running." % (TOOLS[n][1] if 0 <= n < len(TOOLS) else "No tool " + v[1:]), "warn")
+            for k in hit:
+                stop(state, k)
             continue
         if not v:
             idx = list(range(len(TOOLS)))
