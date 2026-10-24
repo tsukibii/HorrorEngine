@@ -511,6 +511,40 @@ const png = rgb => {
     if (!t.a2c) throw new Error("the skin's openings are cut with a hard edge (no alpha to coverage)");
     console.log(`       the tear line close up: at most ${t.peak.toFixed(0)} of 255 added, faded at its edges`);
   });
+  await step("accessories: glasses round the eyes, a sticker and a piercing held to the skin (a smile carries the sticker), a choker round the neck, one put where you click; saved with the character and back on reopening", async () => {
+    await page.click('#tabs button[data-tab="acc"]');
+    for (const v of ["glasses:round", "sticker:heart", "piercing:ring", "neck:choker"]) { await page.selectOption("#accAdd select", v); await page.click("#accAdd button"); }
+    const r = await page.evaluate(() => {
+      const b = window.__body, W = b.WEAR, A = b.st.accessories, mm = 0.001 * b.scale, made = A.map(a => W.made.get(a.id).obj.children.length);
+      const lensAt = side => { const g = W.made.get(A[0].id).obj.children.filter(o => o.renderOrder === 6)[side === "L" ? 0 : 1].geometry.attributes.position; return new b.THREE.Vector3(g.getX(0), g.getY(0), g.getZ(0)); };
+      const eye = s => b.EYES[s].position.clone().add(new b.THREE.Vector3(0, 0, b.EYES[s].scale.x));
+      const lens = ["L", "R"].map(s => { const l = lensAt(s), e = eye(s); return { side: Math.hypot(l.x - e.x, l.y - e.y) / mm, ahead: (l.z - e.z) / mm }; });
+      const sheet = () => { const o = W.made.get(A[1].id).obj.children.find(x => x.renderOrder === 5), g = o.geometry.attributes.position, c = new b.THREE.Vector3(); for (let i = 0; i < g.count; i++) c.add(new b.THREE.Vector3(g.getX(i), g.getY(i), g.getZ(i))); return c.multiplyScalar(1 / g.count); };
+      const s0 = sheet(); b.st.expr.set(b.fromArkit({ mouthSmileLeft: 0.9, mouthSmileRight: 0.9, cheekSquintLeft: 0.7, cheekSquintRight: 0.7 })); b.compose();
+      const s1 = sheet(), onSkin = W.point(W.anchorOf(A[1])).distanceTo(s1) / mm; b.st.expr.fill(0); b.compose();
+      return { made, lens, moved: s0.distanceTo(s1) / mm, onSkin };
+    });
+    if (r.made.some(n => !n)) throw new Error(`nothing drawn for some: ${JSON.stringify(r.made)}`);
+    if (r.lens.some(l => l.side > 3 || l.ahead < 5 || l.ahead > 25)) throw new Error(`the lenses aren't in front of the eyes: ${JSON.stringify(r.lens)}`);
+    if (!(r.moved > 0.5) || !(r.onSkin < 3)) throw new Error(`the sticker under the eye: moved ${r.moved.toFixed(2)} mm with a smile, ${r.onSkin.toFixed(2)} mm off its place`);
+    // put the piercing on the nose's tip by clicking there
+    await page.evaluate(() => { const b = window.__body; b.orbit.yaw = 0; b.orbit.pitch = 0; b.orbit.zoom = 0.5; });
+    await page.waitForTimeout(500);
+    await page.click("#accList .layrow:nth-child(3) .lname");
+    await page.click('#accEdit button:has-text("Place by clicking")');
+    const at = await page.evaluate(() => window.__body.onScreen(1));
+    await page.mouse.click(at[0], at[1]); await page.waitForTimeout(300);
+    const c = await page.evaluate(() => { const b = window.__body, W = b.WEAR, a = b.st.accessories[2], p = W.point(W.anchorOf(a)), n = b.lmk(1); return { at: !!a.at, spot: a.spot, off: Math.hypot(p.x - n[0], p.y - n[1], p.z - n[2]) / (0.001 * b.scale) }; });
+    if (!c.at || c.off > 4) throw new Error(`Place by clicking: ${JSON.stringify(c)}`);
+    await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    const saved = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).accessories, NAME);
+    await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);
+    await page.waitForFunction(() => window.__body.WEAR.made.size === 4, null, { timeout: 60000 });
+    if ((saved || []).length !== 4 || !saved[2].at) throw new Error(`saved: ${JSON.stringify(saved)}`);
+    await page.evaluate(() => { const b = window.__body; b.st.accessories = []; b.WEAR.set([]); b.drawAcc(); });
+    await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    console.log(`       the lenses ${r.lens.map(l => l.ahead.toFixed(1)).join(" and ")} mm in front of the eyes; the sticker moved ${r.moved.toFixed(1)} mm with a smile and stayed on the skin; clicked onto the nose ${c.off.toFixed(1)} mm from its tip`);
+  });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
     await page.click('#views button[data-v="head"]'); await page.click("#splitBtn");
     const c = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });

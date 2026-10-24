@@ -55,7 +55,7 @@
 <body>
 <header>
   <b>CHARACTER STUDIO</b>
-  <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button></nav>
+  <nav id="tabs"><button data-tab="body" class="on">Body</button><button data-tab="face">Face</button><button data-tab="expr">Expressions</button><button data-tab="skin">Skin</button><button data-tab="layers">Layers</button><button data-tab="hair">Hair</button><button data-tab="clothes">Clothes</button><button data-tab="acc">Accessories</button></nav>
   <select id="who" title="Each character keeps its pictures and settings in Content/Studio/People/&lt;name&gt;/ (git-ignored)"></select>
   <input id="newName" placeholder="new character" style="width:120px"> <button id="make">New</button>
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
@@ -130,6 +130,14 @@
       <div id="eyeRows"></div>
     </section>
 
+    <section data-tab="acc" hidden>
+      <h3>Accessories</h3>
+      <div id="accAdd" class="row"></div>
+      <div id="accList" class="laylist"></div>
+      <div id="accEdit"></div>
+      <p class="note">Made here, no models (tools/character/accessories.js): glasses from the eyes and the face's own points; a piercing, a sticker or the eyepatch held to the skin where it sits, so it follows every expression (put it on a spot from the list, or Place by clicking on the body); a choker round the neck as it is. Saved with the character as plain settings: change any of it later.</p>
+    </section>
+
     <section data-tab="clothes" hidden>
       <h3>Clothes</h3>
       <div id="clothesRows"></div>
@@ -159,6 +167,7 @@ import * as SC from "./sculpt.js";
 import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
 import * as LOOKS from "./looks.js";
+import * as ACCS from "./accessories.js";
 import * as LOOK from "./tailor/look.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
@@ -204,7 +213,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {} };   // sculpt: the named controls' values (sculpt.js)
-let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null;   // LAY: the paint layers (layersui.js)
+let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null, WEAR = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
 function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
@@ -248,7 +257,7 @@ function tab(name) {
   if (salon) { try { localStorage.setItem("studio:tab", name); } catch (e) { } return; }
   document.querySelectorAll("aside section").forEach(x => { x.hidden = x.dataset.tab !== name; });
   if (typeof showGarmentHandles === "function") showGarmentHandles();
-  if (["face", "expr", "skin", "layers", "hair"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
+  if (["face", "expr", "skin", "layers", "hair", "acc"].includes(name) && orbit.focus !== "head") $('#views button[data-v="head"]').click();
   try { localStorage.setItem("studio:tab", name); } catch (e) { }
 }
 for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => tab(b.dataset.tab);
@@ -764,6 +773,7 @@ function compose() {                                   // POS: RAW + the face, s
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
+  WEAR?.update();                                       // the accessories on the face as it is now
   if (typeof refit === "function") refit();           // the clothes cut again once the body holds still
 }
 
@@ -1358,6 +1368,7 @@ renderer.domElement.ondblclick = e => {                // a double-click centres
 renderer.domElement.onpointerdown = e => {
   renderer.domElement.setPointerCapture(e.pointerId); paneAt(e);
   if (e.button === 0 && !e.altKey && !e.shiftKey && grabGarment(e)) return;          // a garment's handle (the Clothes tab)
+  if (ACCPLACE && e.button === 0 && !e.altKey && !e.shiftKey && accClick(e)) return;   // an accessory put where you click
   if (orbit.focus !== "pov" && e.shiftKey) { PAN = [e.clientX, e.clientY]; return; }   // Shift with any drag pans (Blender's Shift+middle)
   if (LAY?.active() && e.button === 0 && !e.altKey && LAY.down(e)) { LSTROKE = true; return; }   // the Layers tab selects vertices
   if (PAINTING && e.button === 0 && !e.altKey && touchAt(e, true)) { STROKE = true; return; }   // the touch-up paints; Alt-drag still turns
@@ -1646,6 +1657,62 @@ function useLook(name) {
   sel.onchange = tell; go.onclick = () => { useLook(sel.value); status(`${sel.value}: applied, every setting still yours to move (Save keeps it)`, "ok"); };
   $("#lookRows").append(el("div", { className: "row" }, el("span", { textContent: "Look" }), sel, go), about); tell();
 }
+// ---- accessories (accessories.js): glasses, piercings, stickers, an eyepatch, a choker: plain settings in the file ----
+st.accessories = [];
+WEAR = new ACCS.Accessories({ rig, POS, TRIS, BASEP, normals: () => geo.attributes.normal.array, lmk, LMK, scale: () => SCALE, eyes: EYES });
+let ACCSEL = null, ACCPLACE = null;
+const ACC_FIELDS = {
+  glasses: [["colour", "Frame", "color"], ["metal", "Metal", 0, 1, 0.05], ["lens", "Lenses", "color"], ["tint", "Lens tint", 0, 1, 0.01],
+            ["size", "Size", 0.8, 1.3, 0.01], ["height", "Height (mm)", -6, 6, 0.5], ["forward", "Forward (mm)", -6, 10, 0.5], ["thick", "Thickness", 0.5, 2.5, 0.05]],
+  piercing: [["spot", "Where", "spot"], ["colour", "Metal", "color"], ["gem", "Gem", "color"], ["size", "Size", 0.5, 2, 0.05], ["turn", "Turn (°)", -180, 180, 5]],
+  sticker: [["spot", "Where", "spot"], ["colour", "Colour", "color"], ["size", "Size", 0.4, 3, 0.05], ["turn", "Turn (°)", -180, 180, 5], ["shine", "Shine", 0, 1, 0.05]],
+  patch: [["spot", "Where", "spot"], ["colour", "Colour", "color"], ["size", "Size", 0.7, 1.4, 0.01], ["turn", "Turn (°)", -45, 45, 1], ["strap", "Strap", "check"]],
+  neck: [["colour", "Colour", "color"], ["size", "Width", 0.5, 2, 0.05], ["height", "Height", 0, 1, 0.05]],
+};
+function accChanged(a, rebuild) { if (a && rebuild) WEAR.rebuild(a); WEAR.update(); UNSAVED = true; }
+function drawAcc() {
+  const list = $("#accList"), edit = $("#accEdit"); list.replaceChildren(); edit.replaceChildren();
+  for (const a of st.accessories) {
+    const name = el("span", { className: "lname" + (a.id === ACCSEL ? " on" : ""), textContent: `${ACCS.KINDS[a.kind].label} · ${a.style}` + (a.spot && a.kind !== "glasses" && a.kind !== "neck" ? ` · ${a.spot}` : "") });
+    name.onclick = () => { ACCSEL = a.id; drawAcc(); };
+    const x = el("button", { textContent: "×", title: "Take it off" });
+    x.onclick = () => { st.accessories = st.accessories.filter(b => b !== a); if (ACCSEL === a.id) ACCSEL = null; WEAR.set(st.accessories); drawAcc(); UNSAVED = true; };
+    list.append(el("div", { className: "layrow" }, name, x));
+  }
+  const a = st.accessories.find(b => b.id === ACCSEL); if (!a) return;
+  const style = el("select", {}, ...ACCS.KINDS[a.kind].styles.map(s => el("option", { value: s, textContent: s, selected: s === a.style })));
+  style.onchange = () => { a.style = style.value; accChanged(a, true); drawAcc(); };
+  edit.append(el("h4", { textContent: ACCS.KINDS[a.kind].label }), el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")));
+  for (const [k, label, lo, hi, step] of ACC_FIELDS[a.kind]) {
+    if (k === "gem" && a.style !== "gem") continue;
+    if (lo === "color") { const c = el("input", { type: "color", value: a[k] }); c.oninput = () => { a[k] = c.value; accChanged(a, true); }; edit.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output"))); continue; }
+    if (lo === "check") { const c = el("input", { type: "checkbox", checked: !!a[k] }); c.onchange = () => { a[k] = c.checked; accChanged(a, true); }; edit.append(el("label", { className: "tog" }, c, el("span", { textContent: label }))); continue; }
+    if (lo === "spot") {
+      const names = Object.keys(ACCS.SPOTS).filter(s => a.kind !== "patch" || / eye$/.test(s)), sel = el("select", {}, ...(a.at ? [el("option", { value: "", textContent: "where you clicked", selected: true })] : []),
+        ...names.map(s => el("option", { value: s, textContent: s, selected: !a.at && s === a.spot })));
+      sel.onchange = () => { if (!sel.value) return; a.spot = sel.value; delete a.at; accChanged(a, true); drawAcc(); };
+      const place = el("button", { textContent: ACCPLACE === a.id ? "Click on the body…" : "Place by clicking", title: "The next click on the body puts it there (it then follows the skin there through every expression)" });
+      place.onclick = () => { ACCPLACE = ACCPLACE === a.id ? null : a.id; status(ACCPLACE ? "click on the body where it goes" : ""); drawAcc(); };
+      edit.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, place)); continue;
+    }
+    slider(edit, "acc_" + k, label, lo, hi, step, a[k] ?? 0, "", v => { a[k] = v; accChanged(a, k === "size" || k === "turn"); });
+  }
+}
+{
+  const pick = el("select", { title: "What to put on" });
+  for (const [kind, K] of Object.entries(ACCS.KINDS)) pick.append(el("optgroup", { label: K.label }, ...K.styles.map(s => el("option", { value: `${kind}:${s}`, textContent: s }))));
+  const add = el("button", { textContent: "Add" });
+  add.onclick = () => { const [kind, style] = pick.value.split(":"), a = ACCS.fresh(kind, style); st.accessories.push(a); ACCSEL = a.id; WEAR.set(st.accessories); drawAcc(); UNSAVED = true; };
+  $("#accAdd").append(pick, add);
+}
+function accClick(e) {                                 // Place by clicking: where the pointer meets the body
+  const a = st.accessories.find(b => b.id === ACCPLACE); if (!a) { ACCPLACE = null; return false; }
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), rc = new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2((e.clientX - r.left - V.x) / V.w * 2 - 1, (r.bottom - e.clientY - V.y) / V.h * 2 - 1), camera);
+  dgeo.computeBoundingSphere(); const h = rc.intersectObject(mesh, false)[0]; if (!h) return false;
+  WEAR.placeAt(a, h.faceIndex, rig.worldToLocal(h.point.clone())); ACCPLACE = null; status(""); drawAcc(); UNSAVED = true;
+  return true;
+}
 // ---- the lipstick's controls (lips.js) ------------------------------------------------------------------------------
 const lipSet = {};
 {
@@ -1916,13 +1983,15 @@ async function open(name) {
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
   Object.assign(st.lips, LIPS.LIPS_DEFAULTS, c.lips || {}); st.lips.guide = false; lipSet.all();
   Object.assign(st.lash, BL.LASH_DEFAULTS, c.lash || {}); Object.assign(st.brow, BL.BROW_DEFAULTS, c.brow || {}); blSet.all();   // (an older file's hair settings are left out)
+  st.accessories = (c.accessories || []).filter(a => ACCS.KINDS[a.kind]).map(a => ({ ...ACCS.DEFAULTS[a.kind], ...a })); ACCSEL = ACCPLACE = null;
   computeBody(); compose(); hud();
+  WEAR.set(st.accessories); drawAcc();                  // on the face as it is now
   dress();                                             // the clothes on this body (or none)
   await loadSalon().catch(() => null);
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, lash: st.lash, brow: st.brow,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, lash: st.lash, brow: st.brow, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -1965,7 +2034,7 @@ $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { get WEAR() { return WEAR; }, ACCS, drawAcc, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
