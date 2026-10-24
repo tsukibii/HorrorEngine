@@ -12,6 +12,7 @@ import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip } fro
 import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
+import { Database } from "./database.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -59,13 +60,11 @@ async function boot() {
     }
   } catch (e) { console.error(e); $("#offline").style.display = "block"; status("no server"); }
 }
-function gameLinks() { for (const a of document.querySelectorAll("header a[data-page]")) a.href = `${a.dataset.page}?game=${encodeURIComponent(GAME || "")}`; }
 function fillGames(list) { const sel = $("#game"); sel.innerHTML = ""; for (const n of list) sel.append(el("option", { value: n }, n)); }
 async function load() {
   const j = await api("/api/story/" + encodeURIComponent(GAME));
-  S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none"; UNDO = []; REDO = []; LAST = JSON.stringify(S);
+  S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none"; UNDO = []; REDO = []; LAST = JSON.stringify(S); undoState();
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
-  gameLinks();
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
   await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
@@ -225,12 +224,13 @@ function dirty(d) { DIRTY = d; status(d ? "unsaved changes" : "saved"); $("#stat
 function status(t) { $("#status").textContent = (GAME ? GAME + " · " : "") + t; }
 function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); }
 let UNDO = [], REDO = [], LAST = null;
-function snapshot() { const now = JSON.stringify(S); if (LAST !== null && now !== LAST) { UNDO.push(LAST); if (UNDO.length > 150) UNDO.shift(); REDO = []; } LAST = now; }
+function snapshot() { const now = JSON.stringify(S); if (LAST !== null && now !== LAST) { UNDO.push(LAST); if (UNDO.length > 150) UNDO.shift(); REDO = []; } LAST = now; undoState(); }
+function undoState() { $("#undo").disabled = !UNDO.length; $("#redo").disabled = !REDO.length; }
 function undoTo(from, to, what) {
   if (!from.length) { status(`nothing to ${what}`); return; }
   to.push(JSON.stringify(S)); S = JSON.parse(from.pop()); LAST = JSON.stringify(S);
   if (!S.flow[SEL]) SEL = S.game.start;
-  dirty(true); renderAll(); scheduleReplan(); status(`${what}: ${from.length} more`);
+  dirty(true); renderAll(); scheduleReplan(); undoState(); status(`${what}: ${from.length} more`);
 }
 window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
 document.addEventListener("keydown", e => {
@@ -325,6 +325,8 @@ const CTX = {
   },
   changed() { touch(); },
   rerender() { const sc = $("#inspector").scrollTop; renderInspector(); $("#inspector").scrollTop = sc; },
+  creates: kind => ["line", "item", "note", "sound", "counter", "secret", "motion", "cast"].includes(kind),   // "+ New…" in their pickers
+  create: kind => DB.quickNew(kind),
 };
 // a command list's array, written back into the story only when it changes (no empty lists left behind): obj[key],
 // and obj itself into parent[pkey] once it holds something
@@ -510,10 +512,9 @@ function sceneEditor(box, sc, sid) {
   setting.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
     " cone ", el("input", { type: "number", value: (sc.camera.cone || [30, 18])[0], style: "width:52px", on: { change: e => { sc.camera.cone = [+e.target.value, (sc.camera.cone || [30, 18])[1]]; touch(); } } }), "°×",
     el("input", { type: "number", value: (sc.camera.cone || [30, 18])[1], style: "width:52px", on: { change: e => { sc.camera.cone = [(sc.camera.cone || [30, 18])[0], +e.target.value]; touch(); } } }), "°"),
-    field("look", jsonArea(sc, "look", "the head's look for the whole scene, per actor: {\"mari\": {\"at\": \"player\", \"limit\": [70, 20, 30], \"past\": \"hold\"}} (a clip's own look wins)", { small: true, compact: true })),
-    field("trackers", jsonArea(sc, "trackers", "invisible trackers a head can follow: {\"t_shadow\": {\"height\": 1.6, \"keys\": [{\"clip\": \"c1\", \"at\": 0, \"to\": \"a_spot\"}, {\"clip\": \"c2\", \"at\": 1, \"to\": [x, y, z]}]}} (keys ride clip edges)", { small: true, compact: true })),
-    field("through", el("input", { value: (sc.camera.through || []).join(","), placeholder: "props the camera sees through (a locker's slats), comma list", style: "width:320px",
-      on: { change: e => { const v = e.target.value.split(",").map(x => x.trim()).filter(Boolean); if (v.length) sc.camera.through = v; else delete sc.camera.through; touch(); } } })),
+    field("look", sceneLookEditor(sc, lvl)),
+    field("trackers", trackersEditor(sc, lvl)),
+    field("through", throughEditor(sc, lvl)),
     field("in / out", sel(sc.enter = sc.enter || Object.assign({}, BLEND), "kind", TRANS, { blank: false }), txt(sc.enter, "secs", { num: true }), " → ", sel(sc.exit = sc.exit || Object.assign({}, BLEND), "kind", TRANS, { blank: false }), txt(sc.exit, "secs", { num: true })),
     field("hold", "min ", txt(sc.hold = sc.hold || {}, "min", { num: true }), " max ", txt(sc.hold, "max", { num: true }), " s after the last clip"));
   // versions
@@ -558,6 +559,64 @@ function sceneEditor(box, sc, sid) {
   box.append(el("h2", {}, "Cues"), el("p", { class: "kv" }, "A command at a clip's start or end (a door slams as she turns): it rides the clip, so a longer take carries it."), cuesEditor(ver),
     el("h2", {}, "When the scene ends"), actionList(...slot(sc, "sets"), { empty: "nothing" }));
   box.append(advanced(jsonArea(ver, "cues", "cues: [{at: {clip, edge: start|end, offset}, do: {action}}]"), jsonArea(sc, "sets", "sets: actions when the scene ends")));
+}
+// what each actor's head follows for the whole scene (STORY_FORMAT §9.6); a clip's own look (its Camera tab) wins
+function sceneLookEditor(sc, lvl) {
+  const box = el("div", { class: "looks" }), onStage = new Set([sc, ...Object.values(sc.variants || {})].flatMap(v => Object.keys(v.stage || {})));
+  const who = castIds().filter(c => onStage.has(c)), list = who.length ? who : castIds();
+  for (const cid of list) {
+    const lk = (sc.look || {})[cid] || {}, lim = lk.limit || [70, 20, 30];
+    const follows = [["player", "the player"], ...Object.keys(sc.trackers || {}).map(t => [t, "tracker " + t]), ...castIds().filter(x => x !== cid).map(x => [x, (S.cast[x] || {}).name || x]), ...placed(lvl)];
+    const at = el("select", {}, el("option", { value: "" }, "nothing (the body's own)"), follows.map(f => { const [v, l] = Array.isArray(f) ? f : [f, f]; return el("option", { value: v, selected: lk.at === v }, l); }));
+    const num = (v, ph, w = 46) => el("input", { type: "number", value: v ?? "", placeholder: ph, style: `width:${w}px` });
+    const yaw = num(lim[0], "70"), up = num(lim[1], "20"), down = num(lim[2], "30"), lag = num(lk.lag, "0.25"), wgt = num(lk.w, "1");
+    const past = el("select", {}, ["hold", "snap"].map(x => el("option", { value: x, selected: (lk.past || "hold") === x }, x)));
+    const row = el("div", { class: "cuerow", title: "the head turns toward it within the limits; the turn shared down the spine" }, el("b", { style: `color:${whoColor(cid)};min-width:52px` }, (S.cast[cid] || {}).name || cid), "follows", at,
+      "yaw ±", yaw, "up", up, "down", down, "past", past, "lag", lag, "w", wgt);
+    row.addEventListener("change", () => {
+      if (!at.value) { if (sc.look) { delete sc.look[cid]; if (!Object.keys(sc.look).length) delete sc.look; } }
+      else {
+        const o = { at: at.value, limit: [+yaw.value || 70, +up.value || 20, +down.value || 30], past: past.value };
+        if (lag.value !== "") o.lag = +lag.value; if (wgt.value !== "") o.w = +wgt.value;
+        sc.look = sc.look || {}; sc.look[cid] = o;
+      }
+      touch();
+    });
+    box.append(row);
+  }
+  return box;
+}
+// invisible boxes a head can follow: a height, and keys that ride clip edges (a spot, a thing or a point)
+function trackersEditor(sc, lvl) {
+  const box = el("div", { class: "trackers" }), clips = (version(sc).clips || []).map(c => c.id), spotsHere = placed(lvl);
+  const redo = () => { touch(); CTX.rerender(); };
+  for (const [tid, tr] of Object.entries(sc.trackers || {})) {
+    const keys = tr.keys = tr.keys || [];
+    const card = el("div", { class: "trk" }, el("div", { class: "cuerow" }, icon("target", 14), el("b", {}, tid), "height", txt(tr, "height", { num: true, step: "0.1", style: "width:56px" }), "m",
+      el("span", { class: "grow" }), el("button", { class: "ghost", title: "remove this tracker", on: { click: () => { delete sc.trackers[tid]; if (!Object.keys(sc.trackers).length) delete sc.trackers; redo(); } } }, icon("x", 13))));
+    keys.forEach((k, i) => {
+      const pt = Array.isArray(k.to), to = el("select", { on: { change: e => { if (e.target.value === "__xyz") k.to = [0, 0, 1]; else k.to = e.target.value; redo(); } } },
+        el("option", { value: "" }, "choose…"), spotsHere.map(x => el("option", { value: x, selected: k.to === x }, x)), el("option", { value: "__xyz", selected: pt }, "a point (x, y, z)…"));
+      card.append(el("div", { class: "cuerow" }, el("span", { class: "kv" }, "on"), sel(k, "clip", clips, { blank: false }), "at", txt(k, "at", { num: true, step: "0.1", style: "width:52px" }), "of it, at", to,
+        pt ? el("input", { value: k.to.join(", "), style: "width:120px", title: "metres in the level: x east, y north, z up", on: { change: e => { const v = e.target.value.split(/[\s,]+/).filter(Boolean).map(Number); if (v.length === 3 && v.every(x => !isNaN(x))) { k.to = v; touch(); } } } }) : null,
+        el("button", { class: "ghost", title: "remove this key", on: { click: () => { keys.splice(i, 1); redo(); } } }, icon("x", 13))));
+    });
+    card.append(el("button", { class: "a-add", on: { click: () => { keys.push({ clip: clips[0] || "c1", at: keys.length ? 1 : 0, to: spotsHere[0] || [0, 0, 1] }); redo(); } } }, icon("plus", 13), " key"));
+    box.append(card);
+  }
+  box.append(el("button", { class: "a-add", title: "an invisible box a head can follow (STORY_FORMAT §9.6); the stage shows it as a small blue wire box", on: { click: () => {
+    sc.trackers = sc.trackers || {}; let n = 1; while (sc.trackers["t_track" + n]) n++;
+    sc.trackers["t_track" + n] = { height: 1.6, keys: [{ clip: clips[0] || "c1", at: 0, to: spotsHere[0] || [0, 0, 1] }] }; redo();
+  } } }, icon("plus", 13), " tracker"));
+  return box;
+}
+// the props the camera sees through (a locker's slats): chips, picked from what's placed
+function throughEditor(sc, lvl) {
+  const cam = sc.camera, list = cam.through || [], box = el("span", { class: "chips" });
+  list.forEach((t, i) => box.append(el("span", { class: "chip" }, t, el("button", { class: "x", on: { click: () => { list.splice(i, 1); if (!list.length) delete cam.through; touch(); CTX.rerender(); } } }, "×"))));
+  box.append(el("select", { title: "the camera sees through these (a locker's slats)", on: { change: e => { if (e.target.value) { cam.through = [...list, e.target.value]; touch(); CTX.rerender(); } } } },
+    el("option", { value: "" }, list.length ? "+ another" : "+ a prop the camera sees through"), placed(lvl).filter(x => !list.includes(x)).map(x => el("option", { value: x }, x))));
+  return box;
 }
 function cuesEditor(ver) {
   const box = el("div", {}), cues = ver.cues || [], ids = (ver.clips || []).map(c => [c.id, `${c.id}: ${(c.en || c.ja || "").slice(0, 28)}`]);
@@ -647,6 +706,15 @@ async function dropTake(e, sc, c, sid) {          // a take's video (or audio) d
     await loadTakes(); const t = TAKES[id];
     if (t) { try { await cleanTake(c, t); } catch (x) { } }
     touch(); CTX.rerender(); status(`take ${name} on ${c.id}: ${clipSecs(c).toFixed(1)} s`);
+  } catch (x) { alert("couldn't save the take: " + x.message); }
+}
+async function dropLineTake(f, lid) {
+  const m = f.name.match(/\.(mp4|mov|webm|wav|mp3|m4a)$/i), ln = (S.lines || {})[lid];
+  if (!m || !ln) { status("drop a video or audio file (mp4, mov, webm, wav, mp3, m4a)"); return; }
+  try {
+    await api(`/api/take/${encodeURIComponent(GAME)}/${encodeURIComponent(lid + "." + m[1].toLowerCase())}`, { method: "POST", body: f });
+    await loadTakes(); if (TAKES[lid]) { try { await cleanTake(ln, TAKES[lid]); } catch (x) { } }
+    touch(); status(`take for ${lid}: ${clipSecs(ln).toFixed(1)} s`);
   } catch (x) { alert("couldn't save the take: " + x.message); }
 }
 async function dropTakes(files) {                 // many takes at once (the Takes page): each matched to its clip by name
@@ -877,7 +945,8 @@ function stitchEditor(box, st, tid) {
   box.append(field("timer", el("label", { class: "kv" }, el("input", { type: "checkbox", checked: hasT, on: { change: e => { if (e.target.checked) st.timer = { secs: 30, label: "", fail: S.game.start }; else delete st.timer; touch(); renderInspector(); } } }), " timed"),
     hasT ? txt(st.timer, "secs", { num: true }) : null, hasT ? "s, on timeout go to" : null, hasT ? sel(st.timer, "fail", Object.keys(S.flow), { blank: false }) : null, hasT ? txt(st.timer, "label", { ph: "on-screen label" }) : null));
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(tid));
-  if (its.length) box.append(el("div", { class: "kv" }, "trigger cutscenes here: " + its.map(i => `${i.label || i.id} → ${i.to}`).join("; ")));
+  if (its.length) box.append(el("div", { class: "kv" }, "trigger cutscenes here: ", ...its.flatMap((i, j) => [j ? "; " : "",
+    el("a", { href: "#", title: "open it in the Database", on: { click: e => { e.preventDefault(); openDb("interrupts", i.id); } } }, `${i.label || i.id} → ${i.to}`)])));
   CTX_LEVEL = st.level || Object.keys(S.levels || {})[0] || null; CTX_BEATS = st.beats = st.beats || [];
   box.append(el("h2", {}, "Gameplay round"), roundEditor(st),
     el("h2", {}, "Beats"), el("p", { class: "kv" }, "When something happens, do these: drag a beat or a command by its grip to move it, double-click a command to change it."),
@@ -936,24 +1005,6 @@ function noteEl(x, where) {
   return el("div", { class: "note" + (x.done ? " done" : "") }, el("div", { class: "by " + (x.by || "") }, (x.by === "claude" ? "Claude" : "You") + " · " + (x.at || "") + (where ? " · " + where : "")),
     el("div", {}, x.text), el("label", { class: "kv" }, el("input", { type: "checkbox", checked: !!x.done, on: { change: e => { x.done = e.target.checked; touch(); if ($("#notesView").classList.contains("on")) renderNotes(); } } }), " done"));
 }
-function gameEditor() {
-  const box = $("#inspector"); box.innerHTML = ""; const g = S.game;
-  box.append(el("h2", {}, "Game · " + GAME), field("title", txt(g, "title", { w: true })),
-    field("playtime", "typical ≥", txt(g, "target_min", { num: true }), "min · fast player ≥", txt(g, "fast_min", { num: true, ph: "120" }), "min"),
-    el("div", { class: "kv", style: "margin-left:70px" }, "Cutscenes can't be skipped; tasks can be done fast. Steam refunds under 2 hours, so the fastest normal path must stay over fast_min."),
-    field("takes", "≤", txt(g, "clip_max", { num: true }), "s a clip · voice", txt(g, "voice", { style: "width:40px" }), "text", txt(g, "text", { style: "width:40px" })),
-    field("starts at", sel(g, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: `${TIME_MARK[TIME_DEFAULT]} ${TIME_DEFAULT} (when unset)`, drop: true, title: "the time of day the game starts at; a scene's own time changes it from there on", after: () => { renderBoard(); showStage(); } })));
-  const bodyChoices = [["capsules", "capsule figure"], ...BODIES];
-  box.append(el("h2", {}, "Bodies in the desk"), field("default", sel(g, "previs_body", bodyChoices, { blank: BODIES.length ? "first file in Bodies" : "capsule figure", drop: true, after: async () => { await loadBodies(); showStage(); } })),
-    el("div", { class: "kv", style: "margin-left:70px" }, BODIES.length ? `Content/Studio/Bodies: ${BODIES.join(", ")}` : "Drop a rigged human (Manny exported from Unreal, a Mixamo character, a MetaHuman body: .fbx or .glb) into Content/Studio/Bodies and reload; see its README."));
-  box.append(el("h2", {}, "Cast"));
-  for (const [cid, c] of Object.entries(S.cast || {})) box.append(field(cid, txt(c, "name", { ph: "name" }), "height", txt(c, "height", { num: true, step: "0.01", world: true }), "body", sel(c, "previs_body", bodyChoices, { blank: "game default", drop: true, after: async () => { await loadBodies(); showStage(); } }), txt(c, "metahuman", { ph: "MetaHuman Blueprint path (later)", nullable: true }), el("button", { on: { click: () => { if (confirm("Remove " + cid + "?")) { delete S.cast[cid]; touch(true); gameEditor(); } } } }, "×")));
-  box.append(el("button", { on: { click: () => { const id = prompt("cast id (snake_case)"); if (id && !S.cast[id]) { S.cast[id] = { name: id, height: 1.7, metahuman: null }; touch(true); gameEditor(); } } } }, "+ cast member"));
-  box.append(el("h2", {}, "Trigger cutscenes (interrupts)"), el("div", { class: "kv" }, 'Alien Isolation style: [{"id", "label", "when": {"pickup": "doll"}, "during": ["t_search"] | "all", "to": "n_doll"}]. The checks play each one; bait is skipped on the main path.'),
-    jsonArea(S, "interrupts", "interrupts"), el("h2", {}, "Secrets"), jsonArea(S, "secrets", "secrets {id: {flag, hint}}"),
-    el("h2", {}, "Reusable motions"), jsonArea(S, "motions", "motions {id: {who, prompt, secs, loop, block}}"));
-}
-
 /* ---------- the stage under the board ---------- */
 function currentScene() { const n = S && S.flow[SEL]; if (!n || n.type !== "scene") return null; const sc = S.scenes[n.ref]; if (!sc) return null; const vt = VTAB[n.ref]; return vt && sc.variants && sc.variants[vt] ? Object.assign({}, sc, sc.variants[vt], { pick: vt }) : sc; }
 function showStage() {
@@ -1491,11 +1542,17 @@ function renderNotes() {
 }
 
 /* ---------- wiring ---------- */
-function renderAll() { renderBoard(); renderInspector(); if ($("#clipsView").classList.contains("on")) renderClips(); if ($("#notesView").classList.contains("on")) renderNotes(); }
+function renderAll() { renderBoard(); renderInspector(); if ($("#clipsView").classList.contains("on")) renderClips(); if ($("#notesView").classList.contains("on")) renderNotes(); if ($("#dbView").classList.contains("on")) DB.render(); notesBadge(); }
+function notesBadge() {                            // what's left on the desk for the other one to read
+  if (!S) return; let n = (S.board || []).filter(x => !x.done).length; for (const nid of Object.keys(S.flow)) n += openNotes(notesHost(nid));
+  $("#notesBadge").textContent = n || ""; $("#notesBadge").title = n ? `${n} open note${n > 1 ? "s" : ""}` : "";
+}
+function openView(v) { document.querySelector(`nav button[data-v="${v}"]`).click(); }
+function openDb(tab, id) { openView("dbView"); DB.open(tab, id); }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === b.dataset.v));
-  if (b.dataset.v === "branchView") renderBranches(); if (b.dataset.v === "clipsView") renderClips(); if (b.dataset.v === "notesView") renderNotes(); if (b.dataset.v === "boardView") renderStoryboard();
+  if (b.dataset.v === "branchView") renderBranches(); if (b.dataset.v === "clipsView") renderClips(); if (b.dataset.v === "notesView") renderNotes(); if (b.dataset.v === "boardView") renderStoryboard(); if (b.dataset.v === "dbView") DB.render();
   if (b.dataset.v !== "watchView") stopWatch(); if (b.dataset.v === "flowView") { flowStage.resize(); showStage(); } if (b.dataset.v === "watchView") watchStage.resize();
 }));
 $("#save").onclick = () => save();
@@ -1503,11 +1560,40 @@ $("#reload").onclick = () => { if (!DIRTY || confirm("Drop your unsaved edits?")
 $("#bannerReload").onclick = () => load();
 $("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } GAME = e.target.value; SEL = null; FILES = {}; if (BOARD) BOARD.viewSet = false; load(); };
 $("#newGame").onclick = async () => { const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; await load(); } catch (e) { alert(e.message); } };
-$("#gameSettings").onclick = () => { if (S) gameEditor(); };
-$("#keysHelp").onclick = () => alert(["The desk", "  Ctrl+S  save", "  Ctrl+Z  undo · Ctrl+Shift+Z or Ctrl+Y  redo (outside a text box; up to 150 edits back)",
-  "  ▶ Watch from here (a scene or a task's inspector): the Watch from that node", "", "The Watch (walking the tasks)", "  WASD or arrows  move · mouse  look (click the view to lock it)",
-  "  E  use · hold E  pick up or put down", "  C  crouch (toggle or hold: the Watch bar)", "  Esc  pause (dev: Esc skips a scene, when ticked)", "",
-  "The stage", "  Free cam: drag to orbit, wheel to zoom"].join("\n"));
+$("#gameSettings").onclick = () => { if (S) openDb(); };
+$("#undo").onclick = () => undoTo(UNDO, REDO, "undo");
+$("#redo").onclick = () => undoTo(REDO, UNDO, "redo");
+$("#playtest").onclick = () => { if (!S) return; openView("watchView"); watch(); };
+const TOOLS = [                                    // the desk's other pages, each told the game
+  { page: "builder.html", label: "Scene builder", icon: "build", win: "scenebuilder", hint: "a level as a floor plan: rooms, doors, windows, walked from the player's eye" },
+  { page: "kimodo.html", label: "Kimodo shot list", icon: "motion", hint: "every motion to make in the demo: prompt, length, constraints, save name" },
+  { page: "shape.html", label: "Shape the cast", icon: "person", hint: "each cast member's body (MHR), for the desk and MetaHuman" },
+  { page: "poses.html", label: "Poses", icon: "motion", hint: "the pose library the blocking uses" },
+  { page: "bodies.html", label: "Bodies", icon: "person", hint: "how a body file in Content/Studio/Bodies follows the blocking" },
+  { page: "flesh.html", label: "Fat suit", icon: "wand", hint: "the soft-body experiment (docs/FLESH.md)" },
+];
+$("#toolsMenu").onclick = e => {
+  document.querySelectorAll(".bmenu").forEach(m => m.remove());
+  const r = e.currentTarget.getBoundingClientRect(), m = el("div", { class: "bmenu", style: `left:${Math.round(r.left)}px;top:${Math.round(r.bottom + 4)}px` }, el("div", { class: "bmenu-h" }, "Tools"));
+  for (const t of TOOLS) {
+    const b = el("button", { class: "bmenu-i", title: t.hint, on: { click: () => { m.remove(); window.open(`${t.page}?game=${encodeURIComponent(GAME || "")}`, t.win || "_blank"); } } }, el("span", { class: "tbi" }), t.label);
+    b.querySelector(".tbi").replaceWith(icon(t.icon, 15)); m.append(b);
+  }
+  document.body.append(m);
+  setTimeout(() => window.addEventListener("mousedown", function off(ev) { if (!m.contains(ev.target)) { m.remove(); window.removeEventListener("mousedown", off); } }), 0);
+};
+for (const b of document.querySelectorAll("[data-ic]")) b.prepend(icon(b.dataset.ic, 16));
+$("#keysHelp").onclick = () => {
+  const sec = (t, rows) => el("div", { class: "helpsec" }, el("h4", {}, t), ...rows.map(([k, v]) => el("div", { class: "helprow" }, el("kbd", {}, k), el("span", {}, v))));
+  modal({ title: "Keys and help", wide: true, ok: "Close", cancel: null, body: el("div", { class: "help" },
+    sec("The desk", [["Ctrl+S", "save"], ["Ctrl+Z", "undo (outside a text box; 150 edits back)"], ["Ctrl+Shift+Z · Ctrl+Y", "redo"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"]]),
+    sec("The flow board", [["drag a card", "move it (the layout is kept in the story)"], ["drag its ●", "onto another card to connect them, or onto empty space for a new one"], ["palette", "drag Scene, Task, Choice or Ending onto the board"], ["double-click", "empty space: add a card there"], ["wheel · drag the background", "zoom · pan"], ["F · Delete", "fit everything · remove the selected card"]]),
+    sec("A task's beats", [["When … pill", "click to choose when the beat happens"], ["+ Add a command", "the palette: type to search, Enter picks"], ["grip ⋮⋮", "drag a command or a beat to move it, into another beat too"], ["double-click", "a command: edit it"], ["+ New…", "in a picker: make the line, item or sound there and then"]]),
+    sec("A scene", [["a row", "one line: click it for its tabs (Line, Take, Camera, Body, Event, Reply)"], ["grip ⋮⋮", "drag lines to reorder them"], ["drop a file", "a take's video or audio on its line: stored, measured, trimmed"]]),
+    sec("The Database", [["tabs", "the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets, trigger cutscenes"], ["Used in …", "every place an entry is used: click one to go there"], ["Rename", "a new id, changed everywhere it's used"]]),
+    sec("The Watch", [["WASD · arrows", "move"], ["mouse", "look (click the view to lock it)"], ["E · hold E", "use · pick up or put down"], ["C", "crouch (toggle or hold: the Watch bar)"], ["Esc", "pause (dev: skips a scene, when ticked)"]]),
+    sec("The stage", [["Free cam", "drag to orbit, wheel to zoom"]])) });
+};
 $("#check").onclick = async () => {
   if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Checks"), el("p", { class: "muted" }, "running…"));
@@ -1566,5 +1652,14 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+const DB = new Database($("#dbView"), {
+  story: () => S, game: () => GAME, ctx: CTX, touch, status, whoColor, takes: () => TAKES, playLine, dropTake: dropLineTake, secs: c => clipSecs(c),
+  prompt: ln => minimaxPrompt(ln, S.cast), copy: copyText, voices: VOICES, eases: M.EASE_NAMES, poses: () => poseNames(), times: TIMES, timeMark: TIME_MARK, timeDefault: TIME_DEFAULT,
+  bodies: () => [["capsules", "capsule figure"], ...BODIES], afterBody: async () => { await loadBodies(); showStage(); },
+  nodes: () => Object.entries(S.flow).map(([id, n]) => [id, `${nodeTitle(id, n)} (${id})`]), redraw: () => { renderBoard(); showStage(); },
+  page: name => `${name}?game=${encodeURIComponent(GAME || "")}`,
+  goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },
+  goLevel: lid => openBuilder(lid),
+});
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, DB, openDb, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

@@ -145,3 +145,81 @@ select.secret{max-width:170px}
 .ropt .side{color:#8fb7ff;width:46px;font-size:12px}
 .setting{margin:6px 0 4px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;background:#1c1c21}
 .setting summary{cursor:pointer;font-size:12.5px}.setting[open] summary{margin-bottom:8px}
+
+/* ---- the toolbar (after RPG Maker's: icons in groups) and the views' tabs ---- */
+header.tb{gap:2px;padding:4px 8px;flex-wrap:nowrap;overflow-x:auto}
+header.tb h1{white-space:nowrap}
+.tg{display:flex;gap:2px;align-items:center;padding:0 6px;border-right:1px solid var(--line);flex:none}
+.tg:last-of-type{border-right:0}
+.tbb{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 9px;border-radius:7px;background:none;border:1px solid transparent;color:var(--text);white-space:nowrap}
+.tbb:hover:not(:disabled){background:var(--panel2);border-color:var(--line)}
+.tbb:disabled{opacity:.3;cursor:default}
+.tbb.primary{background:#5b4318;border-color:var(--accent)}.tbb.primary:hover:not(:disabled){background:#6b5020;border-color:var(--accent)}
+.tbb.play .ic{color:var(--good)}
+.tbb span{font-size:12.5px}
+#game{height:30px;max-width:170px}
+@media (max-width:1280px){.tbb span{display:none}.tbb{padding:0 7px}}
+#status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:80px;padding-left:8px}
+nav button{display:inline-flex;align-items:center;gap:6px}
+nav button .ic{opacity:.75}nav button.on .ic{opacity:1;color:var(--accent)}
+.nbadge:empty{display:none}
+.nbadge{font-size:10px;background:var(--warn);color:#000;border-radius:8px;padding:0 5px;line-height:15px}
+
+/* ---- the Database (database.js) ---- */
+#dbView{min-height:0}
+.db{flex:1;display:grid;grid-template-columns:200px 280px minmax(0,1fr);min-height:0;height:100%}
+.db.nolist{grid-template-columns:200px minmax(0,1fr)}.db.nolist .db-list{display:none}
+.db-tabs{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:8px;display:flex;flex-direction:column;gap:1px}
+.db-title{display:flex;align-items:center;gap:7px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);padding:4px 8px 10px}
+.db-tab{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:7px;color:var(--dim)}
+.db-tab:hover{background:var(--panel2);color:var(--text)}
+.db-tab.on{background:#33291a;color:#f0d9a6}.db-tab.on .ic{color:var(--accent)}
+.db-tab .n{margin-left:auto;font-size:11px;color:#6d6a63}
+.db-list{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:#18181c}
+.db-search{margin:8px 8px 4px;padding:5px 9px}
+.db-items{flex:1;overflow:auto;padding:2px 6px;display:flex;flex-direction:column;gap:1px;position:relative}
+.db-group{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);padding:10px 8px 4px}
+.db-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;min-height:38px}
+.db-item:hover{background:var(--panel2)}.db-item.on{background:#33291a}
+.db-item .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.db-item.dragging{opacity:.35}
+.db-l{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.25}
+.db-l .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.db-l .sub{font-size:10.5px;color:#6d6a63;font-family:ui-monospace,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-none{color:var(--dim);font-style:italic;font-size:12px;padding:10px}
+.db-new{margin:6px 8px 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px}
+.db-adds{display:flex;gap:6px;margin:6px 8px 10px}.db-adds button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.db-form{overflow:auto;padding:14px 26px 30px;min-width:0}
+.db-form>.hint{max-width:760px}
+.db-form .frm{max-width:760px}
+.db-form .frm-r{grid-template-columns:140px 1fr}
+.db-form .frm-r .rowi>input:not([type=checkbox]):not([type=color]):not(.num):not(.id),.db-form .frm-r .rowi>textarea,.db-form .frm-r .rowi>select{flex:1;min-width:120px}
+.db-form textarea{font-family:inherit;font-size:13px}
+.db-head{display:flex;align-items:center;gap:10px;margin:2px 0 14px;max-width:760px}
+.db-head h3{margin:0;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-head button{display:inline-flex;align-items:center;gap:4px;font-size:12px}
+.db-ic{display:inline-flex;width:34px;height:34px;border-radius:9px;align-items:center;justify-content:center;background:#33291a;color:var(--accent);flex:none}
+.db-id{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--dim);background:#24242a;border:1px solid var(--line);border-radius:6px;padding:1px 7px;flex:none}
+.db-sec{margin:18px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+.db-uses{display:flex;flex-direction:column;gap:3px;max-width:760px}
+.db-use{display:flex;align-items:center;gap:8px;padding:5px 9px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);font-size:12px;cursor:pointer}
+.db-use:hover{border-color:var(--accent)}
+.db-empty{color:var(--dim);padding:40px 10px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.db-keys{display:flex;flex-direction:column;gap:4px}
+.hint.tight{margin:-4px 0 4px 150px;font-size:11.5px}
+.paper{margin-top:6px;background:#e9e2d0;color:#2b2722;border-radius:4px;padding:16px 20px;font-family:Georgia,serif;font-size:14px;line-height:1.55;white-space:pre-wrap;box-shadow:0 6px 18px rgba(0,0,0,.4);max-width:520px}
+.paper .pt{font-weight:600;margin-bottom:8px}
+.db-form code{font-size:11.5px;background:#151518;border:1px solid var(--line);border-radius:5px;padding:4px 7px;white-space:normal}
+input.id{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.db-form input[type=color]{width:64px;height:28px;padding:2px}
+.db-form .chips{flex:1}
+.help{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px}
+.helpsec h4{margin:6px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+.helprow{display:grid;grid-template-columns:150px 1fr;gap:8px;font-size:12px;margin:3px 0;align-items:baseline}
+.helprow kbd{font-family:inherit;font-size:11px;color:var(--text);background:#24242a;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;justify-self:start}
+.helprow span{color:var(--dim)}
+.db-form .chips select{width:auto;flex:0 1 220px}
+/* a scene's look, trackers and see-through props (the scene's setting) */
+.looks,.trackers{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.trk{border:1px solid var(--line);border-radius:8px;padding:4px 8px 6px;background:#1c1c21}
+.trk .cuerow{margin:2px 0}

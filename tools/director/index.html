@@ -9,6 +9,7 @@
 :root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#d9a441;
 --scene:#8a63d2;--stitch:#2f9e8f;--choice:#c98a2b;--ending:#c0473f;--good:#5aa65a;--warn:#e0a030;--bad:#e05a4f;--cue:#6fb3d9}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.4 system-ui,Segoe UI,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column}
 button,select,input,textarea{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:3px 7px}
 button{cursor:pointer}button:hover{border-color:var(--accent)}button.primary{background:#5b4318;border-color:var(--accent)}button.on{border-color:var(--accent);color:var(--accent)}
 textarea{width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px;min-height:70px}
@@ -19,7 +20,7 @@ header h1{font-size:14px;margin:0 8px 0 0;color:var(--accent);letter-spacing:.04
 nav{display:flex;gap:2px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line)}
 nav button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:6px 12px;color:var(--dim)}
 nav button.on{color:var(--text);border-bottom-color:var(--accent)}
-main{display:flex;height:calc(100% - 78px)}
+main{display:flex;flex:1;min-height:0}
 .view{display:none;flex:1;min-width:0}.view.on{display:flex}
 #leftcol{flex:1;display:flex;flex-direction:column;min-width:0}
 #boardRow{flex:1;display:flex;min-height:140px}
@@ -101,33 +102,32 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 <link rel="stylesheet" href="ui.css">
 </head>
 <body>
-<header>
-  <h1>DIRECTOR'S DESK</h1>
-  <select id="game" title="the game you're directing (Content/Games/<name>)"></select>
-  <button id="newGame" title="Start a new game: a folder in Content/Games with a minimal story">+ New game</button>
-  <button id="gameSettings">Game</button>
-  <button id="save" class="primary" title="Ctrl+S">Save</button>
-  <button id="reload" title="story.json from disk again (asks first if you have edits here)">Reload</button>
-  <button id="check" title="the story and level checks (STORY, LEVEL) on the saved story">Run checks</button>
-  <button id="generate" title="The checks, then the game built in Unreal: every level 1:1, the start level open (docs/UNREAL_FLOW.md §1). Save first.">Generate in Unreal</button>
-  <a href="poses.html" target="_blank"><button>Poses</button></a>
-  <a href="bodies.html" target="_blank"><button title="Check how a body file in Content/Studio/Bodies follows the blocking">Bodies</button></a>
-  <a href="flesh.html" target="_blank"><button title="The fat-suit experiment: jiggle and sag worked out from body fat (docs/FLESH.md)">Fat suit</button></a>
-  <a href="kimodo.html" data-page="kimodo.html" target="_blank"><button title="The Kimodo shot list: every motion to make in the demo, with its prompt, length, constraints and save name">Kimodo</button></a>
-  <a href="shape.html" data-page="shape.html" target="_blank"><button title="Shape each cast member's body (MHR), save it to the story, export it for MetaHuman">Shape</button></a>
-  <a href="builder.html" target="scenebuilder" onclick="this.href='builder.html?game='+encodeURIComponent(document.getElementById('game').value)"><button title="The scene builder: a level as a floor plan (rooms, doors, sliding doors, windows; Japanese reference layouts), walked from the player's eye">Scene builder</button></a>
-  <button id="keysHelp" title="the keyboard shortcuts">?</button>
+<header class="tb">
+  <h1 title="the director's desk: the game plotted, blocked and played before it's built in Unreal">DIRECTOR'S DESK</h1>
+  <div class="tg"><select id="game" title="the game you're directing (Content/Games/&lt;name&gt;)"></select>
+    <button id="newGame" class="tbb" data-ic="plus" title="Start a new game: a folder in Content/Games with a minimal story"><span>New</span></button></div>
+  <div class="tg"><button id="save" class="tbb primary" data-ic="save" title="Save (Ctrl+S)"><span>Save</span></button>
+    <button id="reload" class="tbb" data-ic="reload" title="story.json from disk again (asks first if you have edits here)"></button></div>
+  <div class="tg"><button id="undo" class="tbb" data-ic="undo" title="Undo (Ctrl+Z, outside a text box)" disabled></button>
+    <button id="redo" class="tbb" data-ic="redo" title="Redo (Ctrl+Shift+Z or Ctrl+Y)" disabled></button></div>
+  <div class="tg"><button id="gameSettings" class="tbb" data-ic="data" title="The Database: the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets, trigger cutscenes"><span>Database</span></button></div>
+  <div class="tg"><button id="playtest" class="tbb play" data-ic="play" title="Playtest: the game from the start, as the player plays it (the Watch)"><span>Playtest</span></button>
+    <button id="check" class="tbb" data-ic="check" title="the story and level checks (STORY, LEVEL) on the saved story"><span>Check</span></button>
+    <button id="generate" class="tbb" data-ic="build" title="The checks, then the game built in Unreal: every level 1:1, the start level open (docs/UNREAL_FLOW.md §1). Save first."><span>Unreal</span></button></div>
+  <div class="tg"><button id="toolsMenu" class="tbb" data-ic="tools" title="the desk's other pages: the scene builder, the Kimodo shot list, bodies and poses"><span>Tools</span></button>
+    <button id="keysHelp" class="tbb" data-ic="help" title="the keyboard shortcuts"></button></div>
   <span id="status">loading…</span>
 </header>
 <div id="offline">The desk needs its server: run <code>python tools/director/serve.py</code> and open http://127.0.0.1:8780</div>
 <div id="banner">story.json changed on disk (Claude edited it?). <button id="bannerReload">Reload</button> <span class="muted">your unsaved edits here would be lost</span></div>
 <nav>
-  <button data-v="flowView" class="on">Flow</button>
-  <button data-v="boardView">Storyboard</button>
-  <button data-v="watchView">Watch</button>
-  <button data-v="branchView" title="every branch reached, and the ones missed; play from any reached node">Branches</button>
-  <button data-v="clipsView">Takes</button>
-  <button data-v="notesView">Notes</button>
+  <button data-v="flowView" data-ic="flow" class="on" title="the game as cards: drag them, wire them, click one to edit it">Flow</button>
+  <button data-v="boardView" data-ic="film" title="every scene's frames, as the player sees them">Storyboard</button>
+  <button data-v="watchView" data-ic="play" title="play the game on the desk: scenes, tasks walked, choices">Watch</button>
+  <button data-v="branchView" data-ic="branch" title="every branch reached, and the ones missed; play from any reached node">Branches</button>
+  <button data-v="clipsView" data-ic="camera" title="every take to record, its MiniMax prompt; drop the files here">Takes</button>
+  <button data-v="dbView" data-ic="data" title="the game's tables: cast, items, notes, sounds, lines, motions, flags, secrets, trigger cutscenes">Database</button>
+  <button data-v="notesView" data-ic="notes" title="notes between you and Claude">Notes <span id="notesBadge" class="nbadge"></span></button>
 </nav>
 <main>
   <section id="flowView" class="view on">
@@ -166,6 +166,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
   </section>
   <section id="branchView" class="view page"></section>
   <section id="clipsView" class="view page"></section>
+  <section id="dbView" class="view"></section>
   <section id="notesView" class="view page"></section>
 </main>
 <script type="module" src="./app.js"></script>

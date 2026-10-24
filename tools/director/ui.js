@@ -25,6 +25,7 @@ export function modal({ title, body, ok = "OK", cancel = "Cancel", wide = false,
   return new Promise(res => {
     const close = v => { back.remove(); document.removeEventListener("keydown", key, true); res(v); };
     const key = e => {
+      if ([...document.querySelectorAll(".mdl-back")].pop() !== back) return;    // a dialog over a dialog: the top one answers
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(null); }
       else if (e.key === "Enter" && !e.shiftKey && !/^(TEXTAREA|SELECT|BUTTON)$/.test((e.target || {}).tagName) && ok) { e.preventDefault(); e.stopPropagation(); close(true); }
     };
@@ -71,7 +72,8 @@ export function pickVerb(kind = "action", title) {
 }
 
 // ---- a form from fields: each field an input of its kind, bound to obj --------------------------------------------
-const BLANK = "";
+const BLANK = "", NEW = "__new__";
+const NOUN = { line: "line", item: "item", note: "note", sound: "sound", counter: "counter", secret: "secret", motion: "motion", cast: "cast member" };
 function options(sel, list, cur, blank) {
   if (blank !== false) sel.append(h("option", { value: BLANK }, blank || "—"));
   let found = false;
@@ -122,7 +124,13 @@ export function fieldInput(f, obj, ctx, redraw) {
     }
     case "answer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, (obj.options || []).map(o => [o.id, o.label || o.id]), cur, "—"); return s; }
     case "askanswer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, ctx.refs("askanswer:" + (obj.answered || "")), cur, "(any answer)"); return s; }
-    default: { const s = h("select", { on: { change: e => { set(e.target.value); if (redraw) redraw(); } } }); options(s, ctx.refs(f.kind), cur, f.opt ? "—" : "choose…"); return s; }
+    default: {                                   // what exists of the kind, and "+ New…" to make one there and then (ctx.create)
+      const fill = v => { s.innerHTML = ""; options(s, ctx.refs(f.kind), v, f.opt ? "—" : "choose…"); if (ctx.creates && ctx.creates(f.kind)) s.append(h("option", { value: NEW }, `+ New ${NOUN[f.kind] || f.kind}…`)); };
+      const s = h("select", { on: { change: async e => {
+        if (e.target.value === NEW) { const id = await ctx.create(f.kind); fill(id || obj[k]); if (id) set(id); if (redraw) redraw(); return; }
+        set(e.target.value); if (redraw) redraw(); } } });
+      fill(cur); return s;
+    }
   }
 }
 export function form(fields, obj, ctx, redraw) {

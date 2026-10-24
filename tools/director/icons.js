@@ -64,6 +64,12 @@ const P = {
   zoomout: "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM16 16l5 5M8 11h6",
   tree: "M4 5h6M4 12h6M4 19h6M14 5h6M14 12h6M14 19h6M10 5v14",
   film: "M4 4h16v16H4zM8 4v16M16 4v16M4 8h4M4 12h4M4 16h4M16 8h4M16 12h4M16 16h4",
+  data: "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3s-3.6 3-8 3s-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3",
+  reload: "M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7",
+  tools: "M14.7 6.3a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3zM14.7 6.3L17 4l3 3l-2.3 2.3M5 5l4 4M3 7l4-4",
+  flow: "M3 5h6v5H3zM15 14h6v5h-6zM9 7.5h3a2 2 0 0 1 2 2v5a2 2 0 0 0 1 1.7",
+  branch: "M6 3v18M6 15c0-4 12-2 12-8M18 7a2 2 0 1 0 0-.1M6 21a2 2 0 1 0 0-.1",
+  notes: "M5 4h14v12l-4 4H5zM15 20v-4h4M8 9h8M8 13h5",
 };
 export const ICONS = Object.keys(P);
 export function icon(name, size = 16, cls = "") {
