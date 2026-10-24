@@ -10,6 +10,9 @@ settings in Content/Studio/People/<name>/ (git-ignored: real people's faces).
 Plain Python, no installs (the face fit runs in face_mesh.py's environment: python tools/face_mesh.py setup).
 Listens on 127.0.0.1 only.
 """
+import base64
+import datetime
+import hashlib
 import json
 import os
 import subprocess
@@ -58,6 +61,36 @@ def ref_status(name):
     if p is not None and not running: REF_RUNS.pop(name, None)
     log = (d / "run.log").read_text(encoding="utf-8", errors="replace")[-3000:] if (d / "run.log").exists() else ""
     return dict(running=running, exit=None if running or p is None else p.returncode, ready=(d / "reference.json").exists(), log=log)
+
+
+# what a character is made from (and its live bakes): it travels inside an export (the GLB's extras, and a .studio.json
+# beside it) so the character comes back into the Studio as it was, every setting editable (docs/CHARACTER_STUDIO.md §2)
+RECIPE_FILES = ("character.json", "layers.json", "skin.png", "skin_mask.png", "skin_paint.png", "skin_touch.png", "skin_pigment.png", "body.bin")
+RECIPE_DIRS = {"pictures": PICTURES, "salon": {".json", ".glb"}}
+
+
+def recipe(name):
+    d, files = PEOPLE / name, {}
+    for f in RECIPE_FILES:
+        if (d / f).is_file():
+            files[f] = (d / f).read_bytes()
+    for sub, exts in RECIPE_DIRS.items():
+        for f in sorted((d / sub).iterdir()) if (d / sub).is_dir() else []:
+            if f.is_file() and f.suffix.lower() in exts and clean(f.name):
+                files[f"{sub}/{f.name}"] = f.read_bytes()
+    return {"format": 1, "name": name, "made": datetime.datetime.now().isoformat(timespec="seconds"), "tool": "Character Studio (tools/character/)",
+            "sha1": {k: hashlib.sha1(v).hexdigest() for k, v in files.items()},
+            "files": {k: base64.b64encode(v).decode("ascii") for k, v in files.items()}}
+
+
+def recipe_path(rel):
+    """where a recipe's file goes in a character's folder, or None if it isn't one a recipe carries"""
+    parts = rel.split("/")
+    if len(parts) == 1 and parts[0] in RECIPE_FILES:
+        return Path(parts[0])
+    if len(parts) == 2 and parts[0] in RECIPE_DIRS and clean(parts[1]) and Path(parts[1]).suffix.lower() in RECIPE_DIRS[parts[0]]:
+        return Path(parts[0]) / parts[1]
+    return None
 
 
 def body_bytes():
@@ -134,6 +167,11 @@ class Handler(BaseHTTPRequestHandler):
                 if d.is_dir() and clean(d.name): out.append({"name": d.name, "pictures": sorted(pictures(d.name)), "body": (d / "body.bin").exists(),
                                                              "hair": (d / "salon" / "salon.json").exists(), "baked": (d / "salon" / "salon.glb").exists()})
             return self.send(200, {"people": out})
+        if parts[:2] == ["api", "package"] and len(parts) == 4 and clean(parts[2]) and clean(parts[3]):   # an export (People/<name>/export/)
+            f = PEOPLE / clean(parts[2]) / "export" / clean(parts[3])
+            return self.send(200, f.read_bytes(), TYPES.get(f.suffix, "application/octet-stream")) if f.is_file() else self.send(404, {"error": "not exported yet"})
+        if parts[:2] == ["api", "recipe"] and len(parts) == 3 and clean(parts[2]):    # everything the character is made from
+            return self.send(200, recipe(clean(parts[2]))) if (PEOPLE / clean(parts[2])).is_dir() else self.send(404, {"error": "no such character"})
         if parts[:2] == ["api", "people"] and len(parts) == 3 and clean(parts[2]):
             f = PEOPLE / clean(parts[2]) / "character.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {})
@@ -245,6 +283,28 @@ class Handler(BaseHTTPRequestHandler):
             (PEOPLE / name).mkdir(parents=True, exist_ok=True)
             (PEOPLE / name / "layers.json").write_bytes(self.body())
             return self.send(200, {"ok": True})
+        if parts[:2] == ["api", "package"] and len(parts) == 4 and name and clean(parts[3]) and Path(parts[3]).suffix in (".glb", ".json"):
+            return self.keep(PEOPLE / name / "export", clean(parts[3]))        # the export for the desk and Unreal: People/<name>/export/
+        if parts[:2] == ["api", "import"] and len(parts) == 3 and name:          # a recipe (from an export) back into People/<name>/
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            if (PEOPLE / name).exists() and not q.get("replace"):
+                return self.send(409, {"error": f"{name} exists: pick another name (or replace it)"})
+            try:
+                rec = json.loads(self.body().decode("utf-8"))
+                files = {k: base64.b64decode(v) for k, v in (rec.get("files") or {}).items()}
+            except (ValueError, TypeError) as e:
+                return self.send(400, {"error": f"not a character's recipe: {e}"})
+            if "character.json" not in files:
+                return self.send(400, {"error": "the recipe has no character.json"})
+            wrote = []
+            for rel, data in files.items():
+                to = recipe_path(rel)
+                if to is None:
+                    continue                                               # only what a recipe carries, nowhere else
+                (PEOPLE / name / to).parent.mkdir(parents=True, exist_ok=True)
+                (PEOPLE / name / to).write_bytes(data)
+                wrote.append(str(to))
+            return self.send(200, {"ok": True, "name": name, "files": sorted(wrote)})
         if parts[:2] == ["api", "export"] and len(parts) == 4 and name and clean(parts[3]) and \
                 Path(parts[3]).suffix in EXPORTS:
             f = PEOPLE / name / clean(parts[3])

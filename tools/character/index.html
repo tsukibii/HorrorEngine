@@ -61,6 +61,8 @@
   <button id="save" title="The settings into Content/Studio/People/&lt;name&gt;/character.json">Save</button>
   <button id="expBody" title="The whole body, A-pose, metres, Y up, facing +Z: People/&lt;name&gt;/&lt;name&gt;_body.obj">Export body OBJ</button>
   <button id="expHead" title="The head alone, cut at the neck (People/&lt;name&gt;/&lt;name&gt;_head.obj)">Export head OBJ</button>
+  <button id="expPack" title="The character for the desk and Unreal: People/&lt;name&gt;/export/&lt;name&gt;.glb (the body with its openings, eyes, teeth, hair, clothes, accessories, neutral), carrying everything it's made from, so Import brings it back here as it was">Export for desk / Unreal</button>
+  <button id="impPack" title="A character exported from here (its .glb, or its .studio.json) back into the Studio, every setting editable">Import…</button><input id="impFile" type="file" accept=".glb,.json" hidden>
   <button id="pbrShelf" onclick="window.open('pbr.html', '_blank')" title="The PBR sets in assets/pbr (a folder each) on a sphere, a cube, a room corner and a close-up, each map found by its name or chosen by hand: in a new tab">PBR</button>
   <span id="status"></span>
 </header>
@@ -168,6 +170,7 @@ import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
 import * as LOOKS from "./looks.js";
 import * as ACCS from "./accessories.js";
+import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
@@ -2029,12 +2032,78 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
   const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_${head ? "head" : "body"}.obj`)}`, objText(head));
   status(`wrote ${r.path}`, "ok");
 };
+// ---- the export for the desk and Unreal, and back: one GLB carrying what the character is made from -------------------
+// (DECISIONS 2026-10-24: a character saved for the desk and Unreal comes back into the Studio to be changed, never from
+// scratch). The GLB is the character as it looks, neutral, in metres, Y up, facing +Z: MHR's skin with the eyes'
+// openings cut out (as the shader cuts them), the photo skin its texture (the procedural skin is the Studio's shader:
+// Unreal has its own), the eyeballs, teeth, brows and lashes, the salon's hair, the clothes and the accessories; the
+// scene's extras hold the recipe (server: api/recipe): character.json, the layers, the touch-up, the pictures, the
+// salon's hair, each file's sha1. <name>.studio.json beside it carries the same; export.made.json is the receipt.
+function exportSkin() {
+  const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [];
+  const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
+  const inBox = (b, x, y) => x >= b.x && y >= b.y && x <= b.z && y <= b.w;
+  for (let t = 0; t < DP.length; t += 9) {
+    const x = (DP[t] + DP[t + 3] + DP[t + 6]) / 3, y = (DP[t + 1] + DP[t + 4] + DP[t + 7]) / 3, zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
+    if (on && ((zz > z.x && inBox(SKU.uCutBoxL.value, x, y) && inside(L, x, y)) || (zz > z.y && inBox(SKU.uCutBoxR.value, x, y) && inside(R, x, y)))) continue;   // an eye's opening
+    for (let k = 0; k < 3; k++) { const i = t + k * 3, u = (t / 3 + k) * 2; pos.push(DP[i], DP[i + 1], DP[i + 2]); nrm.push(DN[i], DN[i + 1], DN[i + 2]); uv.push(UV[u], UV[u + 1]); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: st.skin.rough ?? 0.62 }));
+  m.name = `${WHO}_skin`; return m;
+}
+async function exportPackage() {
+  if (!WHO) return status("make a character first", "bad");
+  status("exporting for the desk and Unreal…");
+  await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
+  await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));
+  const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice();
+  st.expr.fill(0); compose();                          // neutral
+  const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
+  root.add(exportSkin());
+  const skip = new Set([mesh, GH, BAG, HOLES, TEAR.L, TEAR.R, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);
+  for (const o of rig.children) if (!skip.has(o) && o.visible) root.add(o.clone(true));
+  let glb;
+  try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
+  finally { st.expr.set(was); compose(); }
+  const at = `api/package/${encodeURIComponent(WHO)}/`;
+  await api(at + encodeURIComponent(`${WHO}.glb`), new Blob([glb]));
+  await api(at + encodeURIComponent(`${WHO}.studio.json`), rec);
+  await api(at + "export.made.json", { made: rec.made, glb: `${WHO}.glb`, bytes: glb.byteLength, sources: rec.sha1,
+                                       about: "Character Studio export: the GLB is the character neutral, in metres, Y up, facing +Z; its scene's extras.studio (and the .studio.json) bring it back with Import" });
+  status(`wrote People/${WHO}/export/${WHO}.glb (${(glb.byteLength / 1048576).toFixed(1)} MB), carrying what it's made from: Import brings it back`, "ok");
+}
+async function recipeOf(file) {                       // a .glb from Export (its scene's extras), or its .studio.json
+  if (/\.json$/i.test(file.name)) return JSON.parse(await file.text());
+  const buf = await file.arrayBuffer(), dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== 0x46546C67) throw new Error("not a binary glTF");
+  const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, dv.getUint32(12, true))));
+  return (json.scenes || []).map(s => s.extras && s.extras.studio).find(Boolean);
+}
+async function importPackage(file, as) {
+  const rec = await recipeOf(file).catch(e => { status(e.message, "bad"); return null; });
+  if (!rec || !rec.files || !rec.files["character.json"]) return status("that file doesn't carry a Studio character (export one with Export for desk / Unreal)", "bad");
+  let name = as || prompt("Bring it back as", rec.name);
+  while (name) {
+    if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(name)) { name = prompt("A name is letters, digits, _ - .", rec.name); continue; }
+    try { await api(`api/import/${encodeURIComponent(name)}${as ? "?replace=1" : ""}`, rec); break; }
+    catch (e) { name = prompt(`${e.message}. Another name:`, name + "_2"); }
+  }
+  if (!name) return;
+  await people(name); await open(name);
+  status(`${name}: back from ${file.name}, every setting as it was exported`, "ok");
+  return name;
+}
+$("#expPack").onclick = () => exportPackage().catch(e => status(e.message, "bad"));
+$("#impPack").onclick = () => $("#impFile").click();
+$("#impFile").onchange = () => { const f = $("#impFile").files[0]; $("#impFile").value = ""; if (f) importPackage(f).catch(e => status(e.message, "bad")); };
 $("#raking").onchange = place;
 $("#lightSel").onchange = () => setLight($("#lightSel").value);
 $("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get WEAR() { return WEAR; }, ACCS, drawAcc, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { get WEAR() { return WEAR; }, ACCS, drawAcc, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

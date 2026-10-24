@@ -9,7 +9,9 @@
 // goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
 // normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
 // the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab;
-// the head OBJ exports; the pictures clear and the face goes. Ends "STUDIO ok".
+// accessories are held to the skin; the head OBJ exports; the export for the desk and Unreal carries the character's
+// recipe and Import brings it back with every file and setting the same; the pictures clear and the face goes.
+// Ends "STUDIO ok".
 //
 //   python tools/face_mesh.py setup, python tools/retarget.py setup   (once)
 //   python tools/character/serve.py              (in another shell)
@@ -42,6 +44,10 @@ const png = rgb => {
   page.on("pageerror", e => errors.push(e.message));
   page.on("dialog", d => d.accept());                   // "start it again from the defaults?", "remove?"
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  const saveNow = async () => {                       // Save, and wait for this save's word (not the last one's)
+    await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
+    await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+  };
   const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "studiotest_fail.png" }); fail(`${what}: ${e.message}`); } };
   const sample = () => page.evaluate(() => { const P = window.__body.POS; let s = 0, top = -1e9; for (let i = 0; i < P.length; i += 3) { s += P[i] * 7 + P[i + 2] * 3; top = Math.max(top, P[i + 1]); } return { s, top }; });
   const below = () => page.evaluate(() => {                 // how far the face moved anything under the neck
@@ -536,13 +542,15 @@ const png = rgb => {
     await page.mouse.click(at[0], at[1]); await page.waitForTimeout(300);
     const c = await page.evaluate(() => { const b = window.__body, W = b.WEAR, a = b.st.accessories[2], p = W.point(W.anchorOf(a)), n = b.lmk(1); return { at: !!a.at, spot: a.spot, off: Math.hypot(p.x - n[0], p.y - n[1], p.z - n[2]) / (0.001 * b.scale) }; });
     if (!c.at || c.off > 4) throw new Error(`Place by clicking: ${JSON.stringify(c)}`);
-    await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    await saveNow();
     const saved = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).accessories, NAME);
-    await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);
+    await page.evaluate(n => { window.__body.WEAR.set([]); const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);   // none drawn until it's open again
     await page.waitForFunction(() => window.__body.WEAR.made.size === 4, null, { timeout: 60000 });
     if ((saved || []).length !== 4 || !saved[2].at) throw new Error(`saved: ${JSON.stringify(saved)}`);
     await page.evaluate(() => { const b = window.__body; b.st.accessories = []; b.WEAR.set([]); b.drawAcc(); });
-    await page.click("#save"); await page.waitForFunction(() => /saved/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    await saveNow();
+    const left = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).accessories, NAME);
+    if ((left || []).length) throw new Error(`taken off, but ${left.length} saved`);
     console.log(`       the lenses ${r.lens.map(l => l.ahead.toFixed(1)).join(" and ")} mm in front of the eyes; the sticker moved ${r.moved.toFixed(1)} mm with a smile and stayed on the skin; clicked onto the nose ${c.off.toFixed(1)} mm from its tip`);
   });
   await step("the split view: front and side panes, each its own camera (the wheel in one moves only it), the line between them dragged; Split again for one view", async () => {
@@ -584,6 +592,32 @@ const png = rgb => {
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+  });
+  await step("the export for the desk and Unreal: one GLB, neutral, in metres, the eyes' openings cut out of its skin, carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
+    const pics = await page.evaluate(() => window.__body.pics.length);
+    await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
+    await page.click("#expPack");
+    await page.waitForFunction(() => /wrote People\/_studiotest\/export\/_studiotest\.glb/.test(document.querySelector("#status").textContent), null, { timeout: 180000 });
+    const r = await page.evaluate(async n => {
+      const b = window.__body, buf = await (await fetch(`api/package/${n}/${n}.glb`)).arrayBuffer(), dv = new DataView(buf);
+      const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, dv.getUint32(12, true))));
+      const node = json.nodes.find(x => x.name === `${n}_skin`), prim = node && json.meshes[node.mesh].primitives[0], acc = prim && json.accessors[prim.attributes.POSITION];
+      const before = JSON.stringify(b.character()), rec = await b.recipeOf(new File([buf], `${n}.glb`)), made = await (await fetch(`api/package/${n}/export.made.json`)).json();
+      const back = await b.importPackage(new File([buf], `${n}.glb`), n + "_back");
+      const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
+      return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
+               files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576 };
+    }, NAME);
+    if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
+    if (!(r.skin < r.corners && r.skin > 0.97 * r.corners)) throw new Error(`the skin: ${r.skin} of ${r.corners} corners (only the eyes' openings come out)`);
+    if (Math.abs(r.h - r.height) > 0.03 * r.height || Math.abs(r.foot) > 0.005) throw new Error(`not the character's size: ${r.h.toFixed(3)} m tall, feet at ${r.foot.toFixed(3)} (height ${r.height})`);
+    if (!["character.json", "layers.json", "body.bin"].every(f => r.files.includes(f)) || (pics && !r.files.some(f => f.startsWith("pictures/"))) || !r.receipt)
+      throw new Error(`the recipe carries ${r.files.join(", ")}; the receipt ${r.receipt}`);
+    if (r.back !== NAME + "_back" || r.who !== NAME + "_back" || !r.same || !r.settings) throw new Error(`the import: ${JSON.stringify(r)}`);
+    await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);   // back to this test's character
+    await page.waitForFunction(([n, k]) => window.__body.who === n && window.__body.pics.length === k, [NAME, pics], { timeout: 120000 });
+    console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
   });
   if (shot) await page.screenshot({ path: shot });
   await step("cleared pictures take the face away", async () => {

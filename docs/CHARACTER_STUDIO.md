@@ -66,10 +66,29 @@ export is a bake like any other (§3, Export).
 | Body for the salon | the body's weights, the face and the sculpt (above) | `body.bin` (written by Save) | none: remade on every Save |
 | Clothes | each garment's design and colour, in the order worn, in `character.json`; the designs in `Content/Studio/Clothes/` | none (made live in a worker) | the export has no skin weights or UVs yet (docs/TAILOR.md §4) |
 | Accessories | `st.accessories` in `character.json`: each one's kind, style, colours and sliders, its spot or the place clicked (a triangle and where in it) | none (made live) | none |
-| Exports | none | `<name>_body.obj`, `<name>_head.obj`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with one receipt for the whole export |
+| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and unrigged, the procedural skin and the eyes' shaders come out as plain materials; the clothes have no skin weights yet (docs/TAILOR.md §4) |
+| Exports (OBJ) | none | `<name>_body.obj`, `<name>_head.obj`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with the rest |
 
 The fixes are small and belong in the revamp's first steps (§5): a `made.json` receipt on each bake, the body's
 fingerprint in it, the clothes' lock and order saved, exports in their own folder.
+
+### 3.1 Out to the desk and Unreal, and back (DECISIONS 2026-10-24)
+
+**Export for desk / Unreal** (the header) saves, writes `body.bin`, and writes `People/<name>/export/<name>.glb`: the
+character as it looks, neutral, in metres, Y up, feet on the floor, facing +Z. MHR's skin with the eyes' openings cut
+out as the shader cuts them (its texture the photo skin; the procedural skin is the Studio's shader, Unreal has its
+own), the eyeballs, the teeth and the tongue, brows and lashes, the salon's baked hair, the clothes and the accessories.
+The GLB's scene carries **the recipe** in its extras (`extras.studio`, the server's `api/recipe/<name>`): every file
+the character is made from (`character.json`, `layers.json`, the skin's pictures and paint, `body.bin`, the front and
+side pictures, the salon's `salon/*.json` and bakes), base64, each with its sha1. `<name>.studio.json` beside it is the
+same recipe on its own, and `export.made.json` the receipt.
+
+**Import…** takes either file back (`api/import/<name>`, asking for a name; an existing one is never written over
+unless asked) and opens it: every setting, picture, paint stroke and hairstyle as it was exported, so a character that
+went to the desk or to Unreal comes back to be changed, never remade. What the recipe doesn't carry is what's shared
+by name: the clothes' designs (`Content/Studio/Clothes/`), PBR sets from the shelf (`assets/pbr/`), the salon's
+reference videos and hairstyles. STUDIO exports the test character, checks the GLB (its size, the openings cut, the
+recipe) and imports it back as `_studiotest_back`: the same files, the same settings.
 
 ## 4. The revamp: one app, a bar of stages at the top
 
@@ -122,7 +141,8 @@ Each a commit, STUDIO ok at each:
 2. **Receipts and the stale dots:** `made.json` on `skin.png`, garments and the hair batch; the body's fingerprint;
    clothes keep their lock and order. A stale bake shows; one button remakes it.
 3. **Export as a stage:** everything to `export/` with one receipt (the OBJs, the salon's bake, the textures), ready for
-   Unreal; the character's folder keeps only sources and live bakes.
+   Unreal; the character's folder keeps only sources and live bakes. (A first cut done 2026-10-24: the GLB with its
+   recipe and Import, §3.1; the OBJs still land beside the sources.)
 4. **The salon moves in** as the Hair stage (a first cut done 2026-10-23: the page framed in the tab, the character
    fixed by the tab; still its own save), then
    **Flesh** (Body, Flesh), then **Poses** (Motion), then **the MetaHuman head** (Face). `shape.html` and
