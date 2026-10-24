@@ -140,8 +140,8 @@ export function charm(kind, h) {
 // ---- the neck and the chest as slices -------------------------------------------------------------------------------
 // From the triangles each slice's plane cuts (MHR's points are far apart in places: an outline from them alone cuts
 // through the body), within `side` of the middle (the arms left out); each slice's outline round its own middle as the
-// outermost skin by angle. push(p, gap) moves p out of the body along the skin's normal (from the outline's radius and
-// how it changes with height), returning how far it moved.
+// outermost skin by angle. Coarse (a slice near the chin holds the jaw too, one under a short neck the shoulders): the
+// distance field below is what a necklace lies on; the slices give a start when neckRing can't and a normal off it.
 const BINS = 96;
 export class TorsoField {
   constructor(P, T, top, bottom, step, side, depth, mid) {
@@ -191,21 +191,6 @@ export class TorsoField {
     const f = Math.min(this.S - 1.0001, Math.max(0, (y - this.bottom) / this.step)), s = Math.floor(f), t = f - s;
     const r0 = this.at(s, phi), r1 = this.at(s + 1, phi);
     return { cx: this.cx[s] + (this.cx[s + 1] - this.cx[s]) * t, cz: this.cz[s] + (this.cz[s + 1] - this.cz[s]) * t, r: r0 + (r1 - r0) * t, dr: (r1 - r0) / this.step };
-  }
-  // push p (a Vector3, moved in place) out of the body by gap along the skin's normal; returns {moved, n}
-  push(p, gap) {
-    if (p.y < this.bottom || p.y > this.top) return null;
-    const c0 = this.shape(p.y, 0), dx = p.x - c0.cx, dz = p.z - c0.cz, phi = Math.atan2(dx, dz), o = this.shape(p.y, phi), r = Math.hypot(p.x - o.cx, p.z - o.cz);
-    const F = r - o.r - gap; if (F >= 0) return null;
-    const ex = r > 1e-6 ? (p.x - o.cx) / r : Math.sin(phi), ez = r > 1e-6 ? (p.z - o.cz) / r : Math.cos(phi), g = Math.hypot(1, o.dr);
-    const n = new THREE.Vector3(ex / g, -o.dr / g, ez / g), d = -F / g;   // the outward normal of r = R(y), and how far in
-    p.addScaledVector(n, d);
-    return { moved: d, n };
-  }
-  around(y) {                                          // the outline's length round the body at height y (m)
-    let L = 0, prev = null;
-    for (let b = 0; b <= BINS; b++) { const phi = b / BINS * 2 * Math.PI, o = this.shape(y, phi), q = [o.cx + Math.sin(phi) * o.r, o.cz + Math.cos(phi) * o.r]; if (prev) L += Math.hypot(q[0] - prev[0], q[1] - prev[1]); prev = q; }
-    return L;
   }
   normal(p) {                                          // the skin's outward normal under p
     const c0 = this.shape(p.y, 0), phi = Math.atan2(p.x - c0.cx, p.z - c0.cz), o = this.shape(p.y, phi), g = Math.hypot(1, o.dr);
