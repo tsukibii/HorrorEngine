@@ -105,8 +105,9 @@ open. How blending works now is ANIMATION.md §0c.
    - The Watch could put a cast member's idle motion under the procedural idle while they hold still.
 4. **A mark tool on the desk's stage.** Marks are made only in the scene builder; "drop a mark here" would save the
    trip.
-5. **JSON boxes.** Replies, beats, an event's `on` and the act choices' triggers are typed as JSON. Rows for replies
-   first (the most used).
+5. ~~**JSON boxes.**~~ Done in the redesign after RPG Maker (docs/DESK_DESIGN.md): replies, beats, an event's `on`,
+   the act choices' triggers, the Database's tables and a scene's look and trackers are forms; JSON is left only
+   behind Advanced.
 6. **One word per thing:** stitch or task, push or lean, in-between or bridge, "★ play this one".
 7. **Takes from a folder are forgotten on refresh.** The folder handle isn't kept; the server already serves
    `Footage/`, which could be the default.

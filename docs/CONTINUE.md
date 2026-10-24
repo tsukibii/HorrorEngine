@@ -1,6 +1,7 @@
 # Continue: the next session
 
-Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon) on `claude/experiments-afk`. Read this
+Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening) on
+`claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -39,6 +40,17 @@ and blending between things (docs/DESK_REVIEW.md has the findings, what changed 
 | `59fbeed` | **Body layers** (`layers`: upper, arms, one arm, head, from a motion or a pose) and the **Kimodo segment editor** on the clip card. |
 | `b919cbb` | **Ease of use:** Watch from here, undo and redo, a shortcuts list, clips move down, choices by count, the look row applies at once, Generate shows the checks' errors and gives up after 20 minutes, the launcher's number reopens a running page. |
 
+Then the user parked NPC states (DECISIONS 2026-10-24, evening) and asked for the desk to be made much easier: an
+intuitive drag-and-drop tool like RPG Maker MV, Claude as lead designer and UI artist. Built in four steps (docs/DESK_DESIGN.md
+has the rules, the parts and how to grow it):
+
+| Commit | What |
+|---|---|
+| `39eb4d8` | **An event editor after RPG Maker's**: every action and trigger as data (`commands.js`), a beat as an event page ("When the player picks up the doll" as a pill; its commands as sentences), the command palette with search, forms that pick from what exists, commands and beats dragged to reorder or into another beat. CMDS. |
+| `1aa249a` | **The flow board by drag and drop** (`board.js`): cards dragged where you want them (`xy` kept in the flow), wired port to port, Scene, Task, Choice and Ending dragged in from the palette, the outline to find a node. |
+| `194a91f` | **A scene reads as a script**: a row a line (the speaker in their colour, the words, chips for what's set), dragged to reorder; a line's settings in tabs; the reply as a form; a take's file dropped on its line is stored, measured and trimmed. |
+| `ae51947` | **The Database** (`database.js`, `refs.js`): the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets and trigger cutscenes as tabs; each entry's uses, clicked to go there; a rename moves every use (REFS); `+ New…` in any picker. **The toolbar** in groups with icons (Save, Undo, Redo, Database, Playtest, Check, Unreal, Tools, Help); help as a dialog; a scene's look, trackers and see-through props as forms. |
+
 ## 2. Where things are
 
 - Play: `tools/director/play/physics.js` (physics kinds as parts; carrying; the soft bend), `boardgames.js` (the table
@@ -58,7 +70,8 @@ and blending between things (docs/DESK_REVIEW.md has the findings, what changed 
 
 ## 3. Testing
 
-- `python tools/check_all.py`: CHECKS ok. `node tools/director/play/boardtest.mjs`: BOARD ok.
+- `python tools/check_all.py`: CHECKS ok. `node tools/director/play/boardtest.mjs`: BOARD ok. `node
+  tools/director/cmdtest.mjs`: CMDS ok. `node tools/director/refstest.mjs`: REFS ok (both games' entries renamed).
 - `node tools/director/playtest.js`: PLAY ok (it adds, in memory only, a plushie in the hall and chō-han on the hall
   table). `node tools/character/studiotest.js`: STUDIO ok (it exports `_studiotest` and imports it back as
   `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
@@ -68,6 +81,11 @@ and blending between things (docs/DESK_REVIEW.md has the findings, what changed 
   2026-10-24). Restart a desk or Studio server after changing its Python (find the PID, kill it in a second command).
 
 ## 4. What's next (ask which)
+
+00. **Try the new desk** and say what's still awkward: make a small task from the palette (a beat, a few commands, a
+   `+ New…` line), drag cards on the board, write a scene as lines and drop a take on one, rename something in the
+   Database. DESK_DESIGN §5 lists what is still JSON (only the boxes behind Advanced) and ideas not built (a minimap,
+   several cards moved at once, beats copied between tasks, task templates dropped whole).
 
 0. **Look at the jewellery, the nails and the underwear** in the Studio and say what to change: necklace lengths and
    weights, the hoops' size, the nails' length and shape (painted: a long acrylic would need a modelled nail), more
