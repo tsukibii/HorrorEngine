@@ -10,7 +10,14 @@ review and merge like code, and nothing in them depends on this project's folder
 | [`LightKit/`](LightKit/README.md) | Drag-and-drop lighting for realistic day and a deep-blue night on a budget: a Day/Dusk/Night sky rig, window lights (sky fill, bake portal, fake bounce, shafts), headlight sweeps, flicker, moving light patterns (caustics, leaves, blinds, clouds), puddles | 5.4 or newer, written for 5.8 |
 
 How to add any of these to a project, for a person or for Claude: [CLAUDE.md](CLAUDE.md). Each plugin's own
-`CLAUDE.md` has its specifics.
+`CLAUDE.md` has its specifics. In HorrorStudio, one command does the copying, the `.uproject` and the build for this
+project or any other:
+
+```bash
+python tools/unreal_plugins.py                                   # what's on
+python tools/unreal_plugins.py on UltraVHS LightKit --build      # this project
+python tools/unreal_plugins.py on LightKit --project /path/to/Game.uproject --build   # another (a copy in its Plugins/)
+```
 
 ## Rules for a plugin in this folder
 

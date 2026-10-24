@@ -13,6 +13,7 @@ general steps (copy, enable, build, Blueprint-only projects) are in `../CLAUDE.m
 | `LightKitWindow.*` | sky fill, portal, fake bounce (a trace for the sun's patch), shaft card (a procedural mesh) |
 | `LightKitPattern.*`, `LightKitSweep.*`, `LightKitFlicker.*`, `LightKitPuddle.*` | the rest |
 | `Content/Python/lightkit_materials.py` | the six materials as HLSL text and the editor code that builds them |
+| `Content/Python/init_unreal.py` | at the editor's start, once it has loaded: builds any of the materials that's missing |
 | `Tools/check_hlsl.py`, `Tools/preview_patterns.py` | the HLSL compiled with DXC; the patterns drawn in numpy |
 
 **Keep the HLSL and the preview in step:** a change to a Custom node's code in `lightkit_materials.py` gets the same
@@ -23,10 +24,12 @@ change in `Tools/preview_patterns.py`, then `check_hlsl.py` and a look at the pr
 `../CLAUDE.md` steps 1 to 3 with `<Plugin>` = `LightKit`. Also enable **PythonScriptPlugin** and
 **EditorScriptingUtilities** (the material script needs them; HorrorEngine has both).
 
-## 2. Make the materials (once per checkout)
+## 2. The materials (made by themselves)
 
-The materials are made from text, not stored: they land in the plugin's `Content/Materials/` (git-ignored). In the
-editor (Python console, or `unreal_execute_script` through UnrealClaude):
+The materials are made from text, not stored: they land in the plugin's `Content/Materials/` (git-ignored). The
+plugin's `init_unreal.py` makes any that's missing a moment after the editor has loaded (the log says
+`lightkit: making the materials it hasn't got`), so a fresh checkout needs nothing by hand. To rebuild them after
+changing the HLSL, in the editor (Python console, or `unreal_execute_script` through UnrealClaude):
 
 ```python
 import lightkit_materials; lightkit_materials.build()
@@ -108,10 +111,9 @@ uv run --with numpy --with pillow python Tools/preview_patterns.py /tmp/patterns
 
 ## 7. In HorrorStudio
 
-The look comes last, per game (DECISIONS 2026-10-21), so the kit isn't enabled in `HorrorEngine.uproject` yet; the
-`.uproject` lines are the same as UltraVHS's (`AdditionalPluginDirectories` and `{ "Name": "LightKit", "Enabled":
-true }`). The importer already makes per-room fills (`storykit.importer.room_fills`) and a sky light
-(`environment`); with the kit in, `environment` would place a Light Kit Sky and each builder window a Light Kit
-Window. That needs words in the format first (a level's time of day; a light's `flicker` already exists and maps to
-Light Kit Flicker), grown with STORY_FORMAT.md, the runner and `story_check` in one commit. Ask the user before
-doing it.
+The look comes last, per game (DECISIONS 2026-10-21), so the kit isn't enabled in `HorrorEngine.uproject` until a
+game wants it: then `python tools/unreal_plugins.py on LightKit --build` (it adds `"AdditionalPluginDirectories":
+["UnrealPlugins"]`, enables the kit and what it needs, and builds). With the kit on, the importer's `environment`
+places a Light Kit Sky (Dynamic, at the time the level is first seen in the flow) and a Light Kit Window in every
+builder window (`storykit.importer.light_kit`), and the story preview sets each scene's time (a scene's `time`,
+STORY_FORMAT §3.1; docs/UNREAL_FLOW.md §1c). Still to do: a light's `flicker` onto Light Kit Flicker.

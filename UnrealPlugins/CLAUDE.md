@@ -13,6 +13,10 @@ touching anything, and say what you'll change in their project.
 - Find the engine: on the user's machine Unreal 5.8.3 is at `/run/media/hal/Derick/Unreal/UnrealEngine` (Linux
   prebuilt, started with `ue`). Elsewhere, ask.
 
+**In HorrorStudio, `python tools/unreal_plugins.py on <Plugin> [--project X.uproject] [--build]` does steps 2 and 3**
+(a copy or a link, the `.uproject`, the engine plugins it needs, the build; `--dry` shows it first). The steps below
+are what it does, for a project outside the studio or when it can't.
+
 ## 2. Put the plugin in
 
 Either copy it (the project owns its copy, simplest to ship):

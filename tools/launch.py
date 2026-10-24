@@ -178,6 +178,9 @@ TOOLS = [
     ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
     ("Setup", "Salon reference setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
+    ("Setup", "Unreal plugins (UltraVHS, Light Kit): which are on", "tools/unreal_plugins.py", {}),
+    ("Setup", "Unreal plugins: turn on in this project and build", "tools/unreal_plugins.py on {ask:Plugins (UltraVHS LightKit)} --build", {}),
+    ("Setup", "Unreal plugins: into another project (a copy in its Plugins/)", "tools/unreal_plugins.py on {ask:Plugins (UltraVHS LightKit)} --project {ask:The other project's .uproject} --build", {}),
 ]
 
 

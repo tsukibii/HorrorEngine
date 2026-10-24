@@ -133,8 +133,10 @@ uv run --with numpy --with pillow python Tools/measure.py /tmp/vhs/out.png
 ## 7. In HorrorStudio
 
 The decision of 2026-10-21 stands: the look comes last, per game. This plugin is ready for when a game wants it;
-until then it isn't enabled in `HorrorEngine.uproject`. To enable it there: add
-`"AdditionalPluginDirectories": ["UnrealPlugins"]` and `{ "Name": "UltraVHS", "Enabled": true }` to the `.uproject`,
-build, and add the component to the player Blueprint the importer uses (SETUP S6's class map). A story that wants
+until then it isn't enabled in `HorrorEngine.uproject`. To enable it there: `python tools/unreal_plugins.py on
+UltraVHS --build` (it adds `"AdditionalPluginDirectories": ["UnrealPlugins"]` and `{ "Name": "UltraVHS", "Enabled":
+true }` to the `.uproject` and builds), then add the component to the player Blueprint the importer uses (SETUP S6's
+class map). Its night mode follows the scenes' time of day through Light Kit's sky, or the story preview's own call
+when there's no sky (docs/UNREAL_FLOW.md §1c). A story that wants
 the look per scene or a glitch on a cue needs words in the format first (`STORY_FORMAT.md`, the runner and
 `story_check` in one commit); don't use a word the format doesn't have.
