@@ -219,6 +219,34 @@ const png = rgb => {
       return { coat: m.material.clearcoat, blue }; });   // wet (a clear coat), the biting edges translucent blue-grey
     if (!(look.coat > 0.5) || !(look.blue > 1.1)) throw new Error(`the teeth's look: coat ${look.coat}, the bluest edge ${look.blue.toFixed(2)}`);
   });
+  await step("lipstick: painted inside the lips' outline (its guide, shown on request) over the photo skin or none, following the lips when the jaw drops; saved with the character", async () => {
+    await page.click('#tabs button[data-tab="face"]'); await page.click('#views button[data-v="head"]');
+    const redness = async () => {                                   // red over green, averaged over the lower lip on the screen
+      await page.waitForTimeout(400);
+      const box = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(), b = window.__body, a = b.onScreen(14), c = b.onScreen(17);
+        const x = (a[0] + c[0]) / 2 - r.left, y = (a[1] + c[1]) / 2 - r.top; return { x: Math.round(x - 12), y: Math.round(y - 4), w: 24, h: 8 }; });
+      const png = (await page.screenshot({ clip: await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }) })).toString("base64");
+      return page.evaluate(async ([b64, m]) => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height;
+        const g = c.getContext("2d"); g.drawImage(i, 0, 0); const d = g.getImageData(m.x, m.y, m.w, m.h).data; let s = 0; for (let k = 0; k < d.length; k += 4) s += d[k] - d[k + 1]; return s / (d.length / 4); }, [png, box]);
+    };
+    await page.evaluate(() => { const b = window.__body, o = b.orbit, h = b.st.height, p = b.lmk(14); b.st.expr.fill(0); b.compose(); o.yaw = 0; o.pitch = 0; o.zoom = 0.3; o.pan.set(p[0], p[1] - (h - 0.12 * h / 1.7), p[2]); });
+    const off = await redness();
+    await page.click("#lipRows label.tog input");                 // Lipstick on
+    const on = await redness();
+    if (!(on > off + 12)) throw new Error(`the lipstick doesn't show on the lower lip: red over green ${off.toFixed(1)} -> ${on.toFixed(1)}`);
+    const r = await page.evaluate(() => { const b = window.__body, low = () => Math.min(...b.SKU.uLipP.value.map(v => v.y));
+      const guides = [...document.querySelectorAll("#lipRows label.tog input")]; guides[1].click();
+      const shown = b.LIPGUIDE.line.visible && b.LIPGUIDE.line.geometry.attributes.position.count === 32;
+      const y0 = low(); b.st.expr[b.ENAMES.indexOf("jawDrop")] = 0.6; b.compose(); const y1 = low(); b.st.expr.fill(0); b.compose();
+      guides[1].click(); return { shown, hidden: !b.LIPGUIDE.line.visible, drop: (y0 - y1) / b.scale * 1000, on: b.SKU.uLipOn.value };
+    });
+    if (!r.shown || !r.hidden || r.on !== 1) throw new Error(`the guide: shown ${r.shown}, hidden again ${r.hidden}, lipstick ${r.on}`);
+    if (!(r.drop > 8)) throw new Error(`the lipstick's outline doesn't follow the jaw: its lowest point moved ${r.drop.toFixed(1)} mm`);
+    const saved = await page.evaluate(async () => { document.querySelector("#save").click(); await new Promise(r => setTimeout(r, 1500)); return (await (await fetch(`api/people/${encodeURIComponent(window.__body.who)}`)).json()).lips; });
+    if (!saved?.on || saved.guide !== undefined) throw new Error(`the lipstick isn't saved with the character: ${JSON.stringify(saved)}`);
+    await page.click("#lipRows label.tog input");                 // off again for the rest
+    console.log(`       the lower lip red over green ${off.toFixed(1)} -> ${on.toFixed(1)}; its outline follows the jaw ${r.drop.toFixed(1)} mm down`);
+  });
   await step("the skin from the front picture: a texture, worn", async () => {
     await page.click('#tabs button[data-tab="skin"]');
     await page.click("#photoSkin button");

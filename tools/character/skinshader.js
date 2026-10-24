@@ -94,6 +94,12 @@ float mouthFront(float x) {                                        // how far fo
     float dx = uMouthD[i + 1].x - uMouthD[i].x; z = mix(uMouthD[i].y, uMouthD[i + 1].y, abs(dx) < 1e-6 ? 0.0 : (x - uMouthD[i].x) / dx); }
   return z;
 }
+uniform float uLipOn, uLipZ, uLipAmt, uLipGrad, uLipGloss, uLipSoft, uLipLines, uLipDepth, uLipFar, uLipN; uniform vec2 uLipP[32], uLipC; uniform vec3 uLipCol; uniform vec4 uLipBox;   // the lipstick (index.html, lips.js)
+float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-14), 0.0, 1.0); return length(pa - ba * h); }
+float lipSD(vec2 p) {                                              // how far inside the lipstick's outline (+) or outside it (-)
+  float d = 1e9; for (int i = 0, j = 31; i < 32; j = i++) d = min(d, segD(p, uLipP[j], uLipP[i]));
+  return inCut(uLipP, uLipBox, p) ? d : -d;
+}
 float skinH, skinRough, skinCoat, skinCoatR = -1.0, skinSm = 0.0;   // skinSm: a layer's smoothing (evens out the pores, grain and relief)
 float h31(vec3 p) { p = fract(p * vec3(0.1031, 0.1137, 0.1279)); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 vec3 h33(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
@@ -234,6 +240,8 @@ export function procedural(material) {
               uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
               uCutOn: { value: 0 }, uCutL: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uCutR: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) },
               uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() },
+              uLipOn: { value: 0 }, uLipZ: { value: 0 }, uLipAmt: { value: 0.8 }, uLipGrad: { value: 0.5 }, uLipGloss: { value: 0.6 }, uLipSoft: { value: 0.001 }, uLipLines: { value: 0.3 },
+              uLipDepth: { value: 0.004 }, uLipFar: { value: 0.06 }, uLipN: { value: 300 }, uLipP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uLipC: { value: new THREE.Vector2() }, uLipCol: { value: new THREE.Color() }, uLipBox: { value: new THREE.Vector4() },
               uMouthOn: { value: 0 }, uMouthZ: { value: new THREE.Vector2() }, uMouthP: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uMouthBox: { value: new THREE.Vector4() }, uMouthD: { value: Array.from({ length: 16 }, () => new THREE.Vector2()) } };   // the layers (layers.js)   // the touch-up (touchup.js)
   for (const f of FEATURES) u["uf_" + f[0]] = { value: f[5] };
   for (const c of COLOURS) u["uc_" + c[0]] = { value: new THREE.Color(c[2]) };
@@ -263,6 +271,15 @@ if (uProc > 0.5) {
   } else diffuseColor.rgb = skinP;
   diffuseColor.rgb = makeup(diffuseColor.rgb, vObj);
 }
+if (uLipOn > 0.5 && vObj.z > uLipZ && vObj.x > uLipBox.x - uLipSoft && vObj.y > uLipBox.y - uLipSoft && vObj.x < uLipBox.z + uLipSoft && vObj.y < uLipBox.w + uLipSoft) {
+  float sd = lipSD(vObj.xy), m = smoothstep(-0.5 * uLipSoft, uLipSoft, sd);   // the lipstick: soft at its border
+  float gr = mix(1.0, smoothstep(0.0, uLipDepth, sd), uLipGrad);              // a gradient: strongest in the middle
+  vec2 far = uLipC + vec2(0.0, vObj.y < uLipC.y ? uLipFar : -uLipFar);   // fine creases square to the lip's border: nearly upright, fanning a little
+  float ln = uLipLines * smoothstep(0.6, 0.95, 0.5 + 0.5 * sin(atan(vObj.x - far.x, abs(vObj.y - far.y)) * uLipN + 2.5 * fbm(vObj * 600.0)));
+  diffuseColor.rgb = tint(diffuseColor.rgb, uLipCol, clamp(uLipAmt * m * gr, 0.0, 1.0), 1.3) * (1.0 - 0.16 * ln * m);
+  skinRough *= 1.0 - 0.7 * uLipGloss * m * (1.0 - 0.5 * ln);
+  skinCoat = max(skinCoat, 0.85 * uLipGloss * m * (1.0 - 0.6 * ln));
+}
 if (uHasTouch > 0.5) { vec4 tp = texture2D(uTouchPaint, vSkinUv); diffuseColor.rgb = mix(diffuseColor.rgb, tp.rgb, tp.a); }
 if (uHasPig > 0.5 && uPigOn > 0.5) diffuseColor.rgb *= pow(texture2D(uTouchPig, vSkinUv).rgb, vec3(uf_pigStrength / 1.4));   // the pigment strokes: filters, multiplied together   // the touch-up's paint, over all
 if (uHasLay > 0.5) {                                                   // the layers above the base: pigment (filters), paint over, then the surface (gloss, relief)
@@ -274,7 +291,7 @@ if (uHasLay > 0.5) {                                                   // the la
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.55, 0.1), clamp(vSel, 0.0, 1.0) * 0.55 * uShowSel);   // the selection, shown
 #include <color_fragment>`)
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-if (uProc > 0.5 || uHasLay > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)
+if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) roughnessFactor = clamp(roughnessFactor * skinRough, 0.06, 1.0);`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 if (uProc > 0.5 || uHasLay > 0.5) {                                                   // the relief (pores, wrinkles), from how the height changes across the pixel
   vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition), r1 = cross(sy, normal), r2 = cross(normal, sx);
@@ -290,10 +307,10 @@ if (uProc > 0.5) {                                                   // light th
 }`)
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_CLEARCOAT
-if (uProc > 0.5 || uHasLay > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
+if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5) { material.clearcoat = clamp(skinCoat, 0.0, 1.0); if (skinCoatR >= 0.0) material.clearcoatRoughness = clamp(skinCoatR, 0.03, 1.0); }  // the coat: the dewy glow, the oil, the gloss
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-8";
+  material.customProgramCacheKey = () => "studio-skin-9";
   return u;
 }
 
