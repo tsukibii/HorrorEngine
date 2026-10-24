@@ -145,7 +145,7 @@ const png = rgb => {
     await page.click("#exprClear");
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose; the opening clean to its corners (no skin left inside its outline); the lower lip's curl, closed at rest", async () => {
+  await step("teeth and tongue: as wide as the mouth, the lower ones on the jaw (a lip shape never moves them), seen only through the opening in every speech pose; the opening clean to its corners (no skin left inside its outline); the lower lip's curl, closed at rest; the teeth wet, their edges translucent", async () => {
     const pose = w => page.evaluate(w => { const b = window.__body; b.st.expr.fill(0); for (const [k, v] of Object.entries(w)) b.st.expr[b.ENAMES.indexOf(k)] = v; b.compose(); }, w);
     const m = await page.evaluate(() => {
       const b = window.__body, M = b.MOUTH, mw = () => Math.abs(b.lmk(291)[0] - b.lmk(61)[0]), k = () => M.upper.matrix.elements[0];
@@ -214,6 +214,10 @@ const png = rgb => {
     if (Object.values(curl.out).some(v => v !== "closed")) throw new Error(`at rest the lips part with the curl: ${JSON.stringify(curl.out)}`);
     if (Math.abs(curl.moved - 1.2) > 0.15) throw new Error(`the curl at 0.5 rolls the lip's edge ${curl.moved.toFixed(2)} mm, not 1.2`);
     console.log(`       the lower lip's curl: ${curl.n} points, its edge rolled ${curl.moved.toFixed(2)} mm at 0.5; at rest closed at 0, 0.5 and 1`);
+    const look = await page.evaluate(() => { const m = window.__body.MOUTH.parts["upper-teeth"], c = m.geometry.attributes.color.array; let blue = 0;
+      for (let i = 0; i < c.length; i += 3) blue = Math.max(blue, c[i + 2] / Math.max(c[i], 1e-3));
+      return { coat: m.material.clearcoat, blue }; });   // wet (a clear coat), the biting edges translucent blue-grey
+    if (!(look.coat > 0.5) || !(look.blue > 1.1)) throw new Error(`the teeth's look: coat ${look.coat}, the bluest edge ${look.blue.toFixed(2)}`);
   });
   await step("the skin from the front picture: a texture, worn", async () => {
     await page.click('#tabs button[data-tab="skin"]');

@@ -54,8 +54,12 @@ function pushCrown(out, at, [, w, h, t, kind], up, edgeY, shade) {
       const a = k / RING * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
       const u = Math.sign(c) * Math.pow(Math.abs(c), 0.6) * w / 2 * kw, n = Math.sign(s) * Math.pow(Math.abs(s), 0.6) * t / 2 * kt;   // a superellipse: squarish, rounded
       out.pos.push(at.x + at.tx * u + at.nx * n, y, at.z + at.tz * u + at.nz * n);
-      const g = shade * (0.82 + 0.18 * (1 - v));      // a little darker toward the gum
-      out.col.push(g, g, g);
+      // enamel is never plain white: translucent blue-grey at a front tooth's biting edge (light passes through it),
+      // warmer at the gum, darker at the sides where the teeth meet (the gaps), the back teeth in the mouth's shadow
+      const g = shade * (0.84 + 0.16 * (1 - v)) * (1 - 0.32 * Math.pow(Math.abs(c), 4));
+      const edge = kind === "incisor" || kind === "canine" ? 0.6 * Math.pow(Math.max(0, 1 - v / 0.3), 1.5) : 0;
+      const gum = Math.max(0, (v - 0.7) / 0.3);
+      out.col.push(g * (1 - 0.24 * edge) * (1 + 0.02 * gum), g * (1 - 0.14 * edge) * (1 - 0.03 * gum), g * (1 - 0.03 * edge) * (1 - 0.12 * gum));
     }
   }
   const t0 = out.idx.length;

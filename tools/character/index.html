@@ -1176,6 +1176,7 @@ function mouthCut() {
     const c = line.map(p => [...p]); for (let k = 1; k < n - 1; k++) for (let a = 1; a < 3; a++) line[k][a] = (c[k - 1][a] + 2 * c[k][a] + c[k + 1][a]) / 4;
   }
   let gap = 0; for (let k = 0; k < n; k++) { up[k][0] = lo[k][0] = xs[k]; if (lo[k][1] > up[k][1]) lo[k][1] = up[k][1]; gap = Math.max(gap, up[k][1] - lo[k][1]); }
+  mouthLight(gap / (Math.abs(R[0] - L[0]) || 1));     // how open, against the mouth's width
   if (gap < 0.0003) return off();                      // closed
   const ring = [...up, ...lo.slice().reverse()];       // 32 points round the opening
   MOUTHRING = ring;
@@ -1190,9 +1191,9 @@ function mouthCut() {
   B.set([c[0], c[1], c[2] - (BAGR[BAGR.length - 1][2] + 5) * mm], BAGR.length * 32 * 3);
   BAGG.attributes.position.needsUpdate = true; BAG.visible = true;
 }
-const mouthMat = (color, rough) => new THREE.MeshStandardMaterial({ color, roughness: rough, vertexColors: true,
+const mouthMat = (color, rough, wet) => new THREE.MeshPhysicalMaterial({ color, roughness: rough, vertexColors: true, clearcoat: wet, clearcoatRoughness: 0.06,   // wet: a clear coat's small sharp highlights
   stencilWrite: true, stencilWriteMask: 0, stencilRef: 2, stencilFunc: THREE.EqualStencilFunc });
-const MOUTH = { teeth: mouthMat(0xf0ece2, 0.3), gums: mouthMat(0xa65c5a, 0.5), tongue: mouthMat(0x9e4a4e, 0.55),
+const MOUTH = { teeth: mouthMat(0xf0ece2, 0.35, 1), gums: mouthMat(0xa65c5a, 0.45, 0.6), tongue: mouthMat(0x9e4a4e, 0.55, 0.25),
                 upper: new THREE.Group(), jaw: new THREE.Group(), lower: new THREE.Group(), parts: {} };
 {
   const B = TEETH.buildMouth();
@@ -1245,8 +1246,13 @@ function placeTeeth() {                                // from the neutral face,
   MOUTH.upper.matrix.makeScale(k, k, k).setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + (st.teeth.up - 3.5) * mm, (a[2] + b[2]) / 2 + (st.teeth.forward - 6) * mm);
   MOUTH.lower.matrix.copy(MOUTH.upper.matrix);
   const c = JAW.c; c.fill(0); for (const v of JAW.v) for (let q = 0; q < 3; q++) c[q] += POS[v * 3 + q] / JAW.v.length;   // the jaw's middle on this face
-  const g = 1 - st.teeth.shade * 0.35, sh = new THREE.Color(0xf2efe8).lerp(new THREE.Color(0xd8c294), st.teeth.shade).multiplyScalar(g + 0.35 * st.teeth.shade);
-  MOUTH.teeth.color.copy(sh);
+  const sh = new THREE.Color(0xf3f3f1).lerp(new THREE.Color(0xe2d3b4), st.teeth.shade);   // a bright neutral white to ivory: the enamel's own tints are in the teeth's colours (teeth.js)
+  MOUTH.base = { teeth: sh.clone(), gums: new THREE.Color(0xa65c5a), tongue: new THREE.Color(0x9e4a4e) };
+}
+function mouthLight(open) {                            // less light gets into a mouth barely open: the teeth, gums and tongue darker
+  if (!MOUTH.base) return;
+  const k = 0.68 + 0.32 * Math.min(1, Math.max(0, open / 0.15)) ** 0.6;
+  for (const p of ["teeth", "gums", "tongue"]) MOUTH[p].color.copy(MOUTH.base[p]).multiplyScalar(k);
 }
 function moveJaw() {                                   // the lower arch with the jaw shapes as they are now
   if (!MOUTH.jaw.visible) return;
