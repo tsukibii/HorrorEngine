@@ -284,7 +284,7 @@ export async function editAction(a, ctx, { isNew = false } = {}) {
     body.append(h("div", { class: "preview" }, icon(d.icon, 14), " ", actionText(draft, ctx.name)));
   };
   draw();
-  body.addEventListener("input", () => { const p = body.querySelector(".preview"); if (p) p.lastChild.textContent = " " + actionText(draft, ctx.name); });
+  for (const ev of ["input", "change"]) body.addEventListener(ev, () => { const p = body.querySelector(".preview"); if (p) p.lastChild.textContent = " " + actionText(draft, ctx.name); });   // a select's input comes before its change sets it
   const r = await modal({ title: (isNew ? "Add: " : "Edit: ") + d.label, body, ok: isNew ? "Add" : "OK" });
   return r ? clean(draft, fieldsOf(d, draft)) : null;
 }
@@ -317,7 +317,7 @@ export async function editTrigger(w, ctx, { title = "When should it happen?" } =
     body.append(h("div", { class: "preview" }, icon("clock", 14), " When ", triggerText(draft, ctx.name)));
   };
   draw();
-  body.addEventListener("input", () => { const p = body.querySelector(".preview"); if (p) p.lastChild.textContent = triggerText(draft, ctx.name); });
+  for (const ev of ["input", "change"]) body.addEventListener(ev, () => { const p = body.querySelector(".preview"); if (p) p.lastChild.textContent = triggerText(draft, ctx.name); });
   const r = await modal({ title, body, wide: true });
   return r ? draft : null;
 }

@@ -1,6 +1,6 @@
 # Continue: the next session
 
-Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, and on
+Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, and twice on
 2026-10-25) on `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
@@ -68,7 +68,21 @@ Then the user asked for every further enhancement proposed for the desk, and an 
 | `219b28f` | **Reusable motions play**: behave's `motion` (format grown with the check), the seeker's loops by phase in the Watch's rounds, the motions table as pictures. |
 | `d6b2c5d` | **Screenplay typing** (`screenplay.js`): "Mari: …" under the script, Edit as text, a pasted draft; lines kept with their takes. |
 | `64e380b` | **A draft kept in the browser** and **the saves kept** (the toolbar's clock: what differs, bring one back). |
-| (this) | **The guide**: `tools/director/guide.html` (Help, Tools), its pictures made by `guide_shots.mjs`, which is also the GUIDE check. |
+| `e94c1fc` | **The guide**: `tools/director/guide.html` (Help, Tools), its pictures made by `guide_shots.mjs`, which is also the GUIDE check. |
+
+Then the user asked for immersion (2026-10-25): "kettle steaming, electric hob with leds, steam, cup of tea filling,
+kettles etc, little things that help build immersion, maybe cigarettes, lit cigarette". Planned in docs/IMMERSION.md
+and built on the desk, in six steps:
+
+| Commit | What |
+|---|---|
+| `62d12ab` | **The plan** (docs/IMMERSION.md): the catalogue, a life per thing, the `state` word, the desk, Unreal. |
+| `ea9964d` | **The things in the kit** (KIT.md §9), at their real size, with **sockets** where their effects come from: kettles (jug, gooseneck, whistling, tetsubin), hobs (ceramic, IH, gas konro), pots, cups (mug, teacup, yunomi, glass, takeaway), teapots, ashtrays, cigarettes, lighters, clocks, a rice cooker, a mosquito coil, incense, phones, taps, candles; 45 presets. KIT ok. |
+| `288eb2f` | **Lives** (`Content/Studio/Life/lives.json`, `life.js`, `storykit/life.py`): states with timers, acts, a pot following its hob, a cup poured from its kettle; the word `state` (an action and a trigger) grown with the check, STORY_FORMAT and RUNNER_SPEC; the walker plays a `state` trigger through; Play's E does a thing's act. |
+| `1e99bed` | **Effects** on the stage (`lifefx.js`), each a function of time: steam, a cigarette's smoke thread and its burn back, embers, LEDs, digits, glowing rings, gas flames, the fill and the pour, drips, screens (static, a call), a clock's hands. |
+| `f3d6260` | **Sounds** (`lifesound.js`) made by Web Audio, no files, placed in the room: the kettle's rumble, its boil and click, a whistle, a hob's beep, the gas and its igniter, a pot's bubbling, the pour, a cigarette's crackle, a clock's tick, a phone ringing, static, a tap's drip and run, a fridge's hum, the rice cooker's tune. PLAY checks each renders and doesn't clip. |
+| `7d07175` | **On the desk:** right-click the stage, *Add a little thing here…* from pictures; *It starts …* on a thing; quick beats (a kettle put on, a cigarette still burning, the phone rings, the TV on by itself, the clock stops); the Sample dressed (a kettle and tea in the kitchen, a clock at 2:47, a cigarette burning in the hall, a phone and a TV in the study). |
+| (this) | **The guide's §11** (Little things, with pictures GUIDE makes), the state command's thing picked by its picture, a form's sentence following a picked state; CLAUDE.md, IMMERSION.md (§5: what goes to Unreal now and what's next). |
 
 ## 2. Where things are
 
@@ -89,6 +103,12 @@ Then the user asked for every further enhancement proposed for the desk, and an 
 
 - The desk: docs/DESK_DESIGN.md (the rules, the parts, how to grow it); the guide `tools/director/guide.html` at
   http://127.0.0.1:8780/guide.html; the saves kept in `Saved/Story/<Game>/history/` (git-ignored).
+- The little things (docs/IMMERSION.md §4 has the files): the shapes in `kit.js` (`TYPES` with `cat: "small"`,
+  sockets from `build()`), the lives in `Content/Studio/Life/lives.json`, their logic in `life.js` (`States`) and
+  `storykit/life.py` (`reach`, for the walker), the effects in `lifefx.js` (attached by `stage.js` after `setWorld`;
+  the stage's `lifeAt` says the states shown), the sounds in `lifesound.js`; Play's side in `play/runtime.js`
+  (`stateOf`, `lifeActs`, `setState`) and the `life` interactable; the desk's in `blocking.js` (the menu),
+  `marks.js` (`newThing`) and `app.js` (`addThing`, `thingPic`).
 
 ## 3. Testing
 
@@ -100,13 +120,21 @@ Then the user asked for every further enhancement proposed for the desk, and an 
   whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
   bodies). TIMES ok, BLENDERLOOK ok.
 - `node tools/director/desktest.mjs`: DESK ok (the desk's logic without a browser; it maps `three` to the vendored
-  copy, so modules that draw are tested too). `node tools/director/guide_shots.mjs`: GUIDE ok (every part the guide
+  copy, so modules that draw are tested too; the lives: node and Python agree on every preset, the timers, a pot
+  following its hob, the burnt time kept, the acts; every effect and sound known). `node tools/director/guide_shots.mjs`: GUIDE ok (every part the guide
   shows, driven in a browser and pictured; it makes and removes a scratch game `ZzGuide` and a take in
   `Footage/Sample/`).
 - **Run the browser checks one at a time**: two at once on this machine's software GPU starve each other (LESSONS
   2026-10-24). Restart a desk or Studio server after changing its Python (find the PID, kill it in a second command).
 
 ## 4. What's next (ask which)
+
+000. **Look at the little things and listen to them**: the Sample's kitchen (the kettle: switch it on in Play with E;
+   the tea), the hall's cigarette, the study's phone and TV; the guide's §11. Say what to change: how much steam, the
+   sounds (made in the browser, so any of them can be tuned or swapped for a recording), the sizes, and which
+   things next (IMMERSION.md §1's "Later": a fan, a kerosene heater, a kotatsu, a wind chime, a microwave, a
+   washing machine, a butsudan's bell). Unreal's side is IMMERSION §5 (a Blueprint per life, Niagara, the
+   `life` table in class_map), with the editor.
 
 00. **Try the new desk with the guide open** (Help, Open the guide) and say what's still awkward: type a scene, drag
    Mari onto a mark, trim a real take on its waveform, a quick task, an act, Ctrl+K, F9 in the Watch, bring back a

@@ -591,3 +591,6 @@ load the page once after an edit.
 - **Click the desk by selector, not by a handle held across a wait:** GUIDE's quick task failed one run in three
   with "Element is not attached", because the live check redraws the side panel a few seconds after an edit (the
   step before had edited), and the button held was the old one. `page.click(selector)` finds it again.
+- **The desk's stage draws when asked:** GUIDE's first pictures of the kettle and the tea came out as the free
+  camera's wide default, because the camera was moved from a script and nothing drew it again. Moving the camera
+  from a probe, call `camera.updateMatrixWorld()` (a pick reads it) and `render()`.

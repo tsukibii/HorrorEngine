@@ -6,9 +6,10 @@ an ashtray. They're also the horror's best tools: the same things, wrong. A kett
 house. A cigarette still smouldering: someone was here a minute ago. The TV on by itself, all static. The clock
 stopped at 2:47.
 
-This is the plan for them (asked 2026-10-25): **little things you put in a scene**, each made from numbers like the
-rest of the kit, with **a life of its own**: states it moves through, the steam, smoke, glow and LEDs each state
-shows, its sounds, and what the player can do to it. The story drives them with one new word, `state`.
+Asked for on 2026-10-25 and built on the desk the same day (the stage, the Watch, Play and the story check; Unreal
+is §5): **little things you put in a scene**, each made from numbers like the rest of the kit, with **a life of its
+own**: states it moves through, the steam, smoke, glow and LEDs each state shows, its sounds, and what the player can
+do to it. The story drives them with one new word, `state`. The desk's guide shows them (`guide.html` §11).
 
 ## 1. The catalogue
 
@@ -46,7 +47,7 @@ A prop gets a `life` (or its kit's own: a kit kettle is a kettle) and the `state
 ```json
 {"id": "kitchen_kettle", "kit": "kettle_jug", "on": "kitchen_counter", "at": [1.4, 0.35], "rot": 180, "state": "off"},
 {"id": "kitchen_mug", "kit": "mug", "on": "kitchen_table", "at": [2.1, 1.9], "state": "full", "liquid": "tea", "from": "kitchen_kettle"},
-{"id": "hall_cig", "kit": "cigarette_resting", "on": "hall_ashtray", "at": [3.0, 5.2], "state": "lit"}
+{"id": "hall_ash", "kit": "ashtray_burning", "on": "hall_table", "at": [2.75, 5.15], "state": "lit"}
 ```
 
 - `life`: the life it has (the kit type's own when it has one). `state`: where it starts (the life's first state).
@@ -68,14 +69,18 @@ counts from its cue.
 
 ## 3. On the desk
 
-- **Add one from the stage:** right-click a counter, a table or the floor, *Add a little thing here*, pick it from
-  pictures; it lands on what you clicked, facing you, alive.
+- **Add one from the stage:** right-click a counter, a table or the floor, *Add a little thing here…*, pick it from
+  pictures; it lands on what you clicked, facing the player, alive.
+- **Right-click one:** *It starts …* for each of its states (the tick on the one it starts in).
 - **The scene view** shows them as the scene stands at that moment: scrub, and the kettle boils on its cue.
 - **The Watch and Play** run them: a kettle you switch on boils, clicks and steams; a cup you pour fills.
-- **The palette:** *Set a thing's state* and *When a thing is …*; quick beats: *The kettle boils*, *A cigarette
-  still burning*, *The phone rings*, *The TV comes on by itself*, *The clock stops*.
-- **Sounds** are made in the browser (no files), placed where the thing is and quieter with distance. In Unreal they
-  become the game's own (§5).
+- **The palette:** the command *Set a thing's state* and the trigger *A thing is in a state*, the thing picked by
+  its picture, then one of its states; quick beats: *A kettle put on (it boils by itself)*, *A cigarette still
+  burning*, *The phone rings*, *The TV comes on by itself*, *The clock stops*.
+- **Sounds** are made in the browser (no files), placed where the thing is and quieter with distance; the Watch's
+  *things' sounds* turns them off. In Unreal they become the game's own (§5).
+- **The Sample** has a kettle on the kitchen stove, a cup of green tea poured from it on the table, a wall clock
+  at 2:47, an ashtray with a cigarette burning in the hall, a flip phone and a TV in the study.
 
 ## 4. Under the hood
 
@@ -92,7 +97,22 @@ counts from its cue.
 
 ## 5. Into Unreal
 
-The kit's meshes go across as they do now. Each prop with a life is tagged `life:<name>` and `state:<state>`, and
-`Content/Studio/class_map.json`'s `life` table (empty until they're made) names the Blueprint that brings it alive
-there (Niagara steam and smoke, the materials' glow and digits, the sounds as the game's own). Until then it's a still
-mesh, as a carried plushie is. Docs/RUNNER_SPEC.md has the `state` word for the StoryRunner.
+**What goes across now:** the kit's meshes, as for every kit prop (`tools/kit/build.mjs`), and on each prop with a
+life the tags `life:<name>` and `state:<state>` (where it starts; `storykit/plan.py`). RUNNER_SPEC.md has the `state`
+word for the StoryRunner. In Unreal a little thing is a still mesh for now, as a carried plushie is.
+
+**What brings them alive there** needs the editor, so it's not built yet; each is its own step, PLAYTHROUGH after:
+
+1. **A Blueprint per life**, `BP_Life_<Name>` in `/Game/Studio/Life/`: its states set by `SetState`, the timers on the
+   game's clock from the same `lives.json` (read at runtime, so the desk and the game agree), and the kit's sockets
+   (the spout, the tip, the rim, the rings) as scene components where its effects come from.
+2. **The effects** at the sockets: steam as a soft sprite plume in Niagara, its rate from the state's `rate`; a
+   cigarette's smoke as a ribbon; embers, LEDs, a hob's rings and digits as material parameters; the fill as a plane
+   moved by a parameter, the pour as a spline mesh, the burn back as a material mask. The desk's numbers
+   (`lifefx.js`) are the reference: the same rates, sizes and colours.
+3. **The sounds** as the game's own (MetaSounds after `lifesound.js`'s recipes, or recordings), on the actor,
+   attenuated as on the desk.
+4. **The import:** `Content/Studio/class_map.json` gets a `life` table (a life's name: its Blueprint class), and
+   `storykit.importer.spawn` puts that Blueprint on a prop tagged `life:*`, with its `state`, keeping the kit's mesh.
+
+Until then, the desk is where they're seen and heard.

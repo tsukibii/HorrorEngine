@@ -1,8 +1,9 @@
 // GUIDE: the pictures in the desk's guide (guide.html), made by driving the desk in a headless browser through what
 // each one shows: the board, a quick task, an act, a scene's script, typing it, a take's waveform, the timeline, the
-// stage by mouse, the pickers with pictures, a task's beats, the Database, the problems, Go to, the Watch, the debug
-// panel, a round, the saves kept, the keys. Every step is checked as it's done, so it's also a test of them: it ends
-// "GUIDE ok". Nothing is saved to the games: a take and a scratch game it makes are removed after.
+// stage by mouse, the little things (alive, added from pictures, their start, the state command), the pickers with
+// pictures, a task's beats, the Database, the problems, Go to, the Watch, the debug panel, a round, the saves kept,
+// the keys. Every step is checked as it's done, so it's also a test of them: it ends "GUIDE ok". Nothing is saved to
+// the games: a take and a scratch game it makes are removed after.
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/guide_shots.mjs      (DESK_URL for another port; the pictures go to tools/director/guide/)
 import { createRequire } from "module";
@@ -52,6 +53,17 @@ const open = async (game = "Sample") => {
   await wait(600);
 };
 const scr = (x, y, z) => p.evaluate(([x, y, z]) => { const st = window.__dd.flowStage, V = st.camera.position.constructor, v = new V(x, z, -y).project(st.camera), r = st.renderer.domElement.getBoundingClientRect(); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; }, [x, y, z]);
+// a prop's setting changed (null takes it off), the free camera aimed at a point (the story's x, y, z), and the middle of
+// where a thing shows on the stage (what the stage's own pick finds there)
+const propSet = (id, k, v) => p.evaluate(([id, k, v]) => { const S = window.__dd.S; for (const lv of Object.values(S.levels || {})) for (const r of lv.rooms || []) for (const q of r.props || []) if (q.id === id) { if (v === null) delete q[k]; else q[k] = v; } window.__dd.touch(); }, [id, k, v]);
+const aim = (t, dist, yaw, pitch) => p.evaluate(([t, dist, yaw, pitch]) => { const st = window.__dd.flowStage, V = st.camera.position.constructor; Object.assign(st.free, { target: new V(t[0], t[2], -t[1]), dist, yaw, pitch }); st.applyFree(); st.camera.updateMatrixWorld(); st.render(); }, [t, dist, yaw, pitch]);
+const spotOf = (id, step) => p.evaluate(([id, step]) => {
+  const st = window.__dd.flowStage, r = st.renderer.domElement.getBoundingClientRect(), pts = [];
+  for (let y = Math.ceil(r.top) + 6; y < r.bottom - 6; y += step) for (let x = Math.ceil(r.left) + 6; x < r.right - 6; x += step) { const h = st.pickAt(x, y); if (h && h.kind === "thing" && h.id === id) pts.push([x, y]); }
+  if (!pts.length) return null;
+  const mx = pts.reduce((a, q) => a + q[0], 0) / pts.length, my = pts.reduce((a, q) => a + q[1], 0) / pts.length;
+  return pts.sort((a, b) => Math.hypot(a[0] - mx, a[1] - my) - Math.hypot(b[0] - mx, b[1] - my))[0];
+}, [id, step]);
 const tab = async name => { for (const t of await p.$$(".ltabs button")) if ((await t.textContent()).trim() === name) { await t.click(); return; } throw new Error("no tab " + name); };
 const take = join(ROOT, "Footage", "Sample", "Sample_s_message_main_c1.wav");
 
@@ -136,6 +148,31 @@ try {
     await p.click("#sFree"); await wait(600); await shot("free-cam", await box("#stageBox"), "the free camera: the player's marker in orange");
     await p.click("#sFree"); await wait(300);
   });
+  console.log("little things");
+  await step("little things: alive on the stage", async () => {
+    await p.evaluate(() => window.__dd.select("n_doll")); await wait(800);
+    await propSet("kitchen_kettle", "state", "boiling"); await wait(1200);          // for the picture; taken back below
+    await p.click("#sFree"); await wait(500);
+    await aim([0.55, 9.55, 1.1], 1.25, 0.7, 0.3); await wait(900);
+    await shot("thing-kettle", await box("#stageBox"), "the kettle boiling on the stove: its steam");
+    await aim([2.45, 7.85, 0.82], 0.55, 0.5, 0.45); await wait(900);
+    await shot("thing-tea", await box("#stageBox"), "the cup of green tea poured from it: a wisp of steam");
+  });
+  await step("little things: added from the stage", async () => {
+    const t = await spotOf("kitchen_table", 6); if (!t) throw new Error("no table in view");
+    await p.mouse.click(t[0], t[1], { button: "right" }); await p.waitForSelector(".cmenu"); await wait(150);
+    await p.click(".cmenu .bmenu-i:has-text('Add a little thing here')"); await p.waitForSelector(".ppk-pop"); await ready(".ppk-pop img.pic-kit", 12, 120000); await wait(400);
+    await shot("thing-picker", pad(await box(".ppk-pop")), "Add a little thing here: picked from pictures");
+    await p.keyboard.press("Escape"); await wait(200);
+    const c = await spotOf("kitchen_tea", 2); if (!c) throw new Error("no tea in view");
+    await p.mouse.click(c[0], c[1], { button: "right" }); await p.waitForSelector(".cmenu"); await wait(150);
+    if (!(await p.$(".cmenu .bmenu-i:has-text('It starts full')"))) throw new Error("no start states in the tea's menu");
+    const sb = await box("#stageBox"), m = await box(".cmenu"), x0 = Math.min(sb.x, m.x), y0 = Math.min(sb.y, m.y);
+    await shot("thing-menu", pad({ x: x0, y: y0, width: Math.max(sb.x + sb.width, m.x + m.width) - x0, height: Math.max(sb.y + sb.height, m.y + m.height) - y0 }, 0), "a little thing's right-click menu: the state it starts in");
+    await p.keyboard.press("Escape");
+    await propSet("kitchen_kettle", "state", null); await p.click("#sFree"); await wait(300);
+    await p.evaluate(() => window.__dd.select("n_message")); await wait(600);
+  });
   await step("the pose picker", async () => {
     if (!(await p.$(".ltabs"))) { await p.click(".clip.line >> nth=0 >> .ltext"); await wait(200); }    // the line open (it may be already)
     await tab("Body"); await wait(300);
@@ -153,6 +190,15 @@ try {
     const m = await box(".mdl"), pp = await box(".ppk-pop");
     await shot("command-form", pad({ x: m.x, y: m.y, width: Math.max(m.x + m.width, pp.x + pp.width) - m.x, height: Math.max(m.y + m.height, pp.y + pp.height) - m.y }), "a command's form, the cast picked by face");
     await p.keyboard.press("Escape"); await wait(150); await p.keyboard.press("Escape"); await wait(200);
+  });
+  await step("the state command", async () => {
+    await p.click("#inspector .a-add >> nth=0"); await p.waitForSelector(".pal-search"); await wait(200);
+    await p.keyboard.type("thing's state"); await wait(200); await p.keyboard.press("Enter"); await p.waitForSelector(".mdl .ppk", { timeout: 5000 });
+    await p.click(".mdl .ppk"); await p.waitForSelector(".ppk-pop"); await ready(".ppk-pop img.pic-kit", 3, 90000); await wait(300);
+    await p.click(".ppk-pop .ppk-t[title^='kitchen_kettle']"); await wait(300);
+    await p.selectOption(".mdl select:has(option[value='heating'])", "heating"); await wait(200);
+    await shot("state-command", pad(await box(".mdl")), "Set a thing's state: the kettle picked by its picture, switched on");
+    await p.keyboard.press("Escape"); await wait(200);
   });
   await step("the Database", async () => {
     await p.click('nav button[data-v="dbView"]'); await p.evaluate(() => window.__dd.openDb("cast")); await ready(".db-portrait img.pic", 1, 60000); await wait(400);

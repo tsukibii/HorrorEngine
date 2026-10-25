@@ -97,6 +97,8 @@ function pictures() {
     timeOf: sid => { const nid = Object.keys(S.flow).find(k => S.flow[k].type === "scene" && S.flow[k].ref === sid); return (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; } });
 }
 const pic = (kind, id, o) => PICS ? PICS.img(kind, id, o) : null;
+// a little thing's picture: its kit preset's
+const thingPic = id => { const q = propById(id), k = q && q.kit, pre = typeof k === "string" ? k : k && k.preset; return pre ? pic("kit", pre) : el("span", { class: "ppk-none" }, "?"); };
 function propById(id) { for (const lv of Object.values(S.levels || {})) for (const r of lv.rooms || []) for (const p of r.props || []) if (p.id === id) return p; return null; }
 // the stage's right-click: a little thing (a kit preset of the "small" kind), picked from pictures, put where it was
 // clicked: on the thing clicked (a table, a counter) or the floor, its front to the player, alive (docs/IMMERSION.md)
@@ -514,7 +516,7 @@ const CTX = {
     }
     return [];
   },
-  pic(kind, id) { if (id === undefined) return kind === "cast" || kind === "pose"; return kind === "cast" ? face(id) || el("span", { class: "ppk-none" }, "?") : pic(kind, id); },
+  pic(kind, id) { if (id === undefined) return kind === "cast" || kind === "pose" || kind === "life"; return kind === "cast" ? face(id) || el("span", { class: "ppk-none" }, "?") : kind === "life" ? thingPic(id) : pic(kind, id); },
   name(kind, v) {
     if (v === undefined || v === null || v === "") return "…";
     if (kind === "line") { const l = (S.lines || {})[v]; return l ? `“${(l.en || l.ja || v).slice(0, 48)}”` : v; }

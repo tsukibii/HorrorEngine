@@ -84,6 +84,7 @@ footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:v
     <li><a href="#stage">Blocking on the stage</a></li>
     <li><a href="#bodies">Bodies, poses and motions</a></li>
     <li><a href="#tasks">Tasks: beats and commands</a></li>
+    <li><a href="#things">Little things</a></li>
     <li><a href="#database">The Database</a></li>
     <li><a href="#playtest">Playtesting</a></li>
     <li><a href="#problems">Problems and checks</a></li>
@@ -227,7 +228,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 <ul>
   <li><b>Drag someone across the floor</b> to put them somewhere. Rings show the level's marks; let go near one and
     they stand on it, or anywhere else for a new mark there, turned to face the player.</li>
-  <li><b>Right-click the floor:</b> put someone here, the player stands here, or a new mark for later.</li>
+  <li><b>Right-click the floor:</b> put someone here, the player stands here, a new mark for later, or a <a href="#things">little thing</a>.</li>
   <li><b>Right-click someone:</b> the camera follows them, or take them off the stage. Right-click a thing: the camera follows it, or put someone beside it.</li>
   <li><b>From the free camera</b> the player is an orange marker: drag it to where the scene is seen from.</li>
 </ul>
@@ -275,8 +276,42 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </div>
 </section>
 
+<section id="things">
+<h2><span class="n">11</span>Little things</h2>
+<p>A kettle that boils by itself, a cup of tea going cold, a cigarette burning down in an ashtray, a clock ticking,
+  a phone that rings, a TV of static: the little things that make a room somebody's. Each one has a <b>life</b>: the
+  states it goes through (a kettle heats, boils and clicks off by itself), what it shows in each (steam, smoke, an
+  ember, a glow, its LEDs), its sound in the room, and what the player can do to it in play
+  (<kbd>E</kbd>: switch it on, drink, put it out).</p>
+<div class="cols">
+  <figure><img src="guide/thing-kettle.jpg" width="820" height="349" alt="A kettle boiling on the stove" loading="lazy"><figcaption>The kettle boiling: its steam.</figcaption></figure>
+  <figure><img src="guide/thing-tea.jpg" width="820" height="349" alt="A cup of green tea on the table" loading="lazy"><figcaption>The tea poured from it, a wisp of steam.</figcaption></figure>
+</div>
+<ul>
+  <li><b>Right-click a table, a counter or the floor</b> on the stage: <span class="ui">Add a little thing here…</span>
+    picks one from pictures. It lands where you clicked, on what you clicked, its front turned to the player.</li>
+  <li><b>Right-click a little thing:</b> <span class="ui">It starts …</span> sets the state it's in when the game gets
+    there: the kettle already boiling, the cigarette lit, the clock stopped.</li>
+  <li><b>The story changes them:</b> the command <span class="ui">Set a thing's state</span> (the kettle on, the phone
+    ringing) and the trigger <span class="ui">A thing is in a state</span> (when the kettle has boiled). The thing is
+    picked by its picture, then one of its states.</li>
+  <li><b>Quick beats</b> do the common ones in one go: a kettle put on, a cigarette still burning, the phone rings,
+    the TV comes on by itself, the clock stops.</li>
+  <li><b>In the Watch and in play they keep time:</b> a kettle put on boils a little later, a cigarette burns down,
+    tea poured cools. Their sounds are made in the browser and come from where the thing is;
+    <span class="ui">things' sounds</span> in the Watch turns them off.</li>
+</ul>
+<div class="cols">
+  <figure><img src="guide/thing-picker.jpg" width="556" height="488" alt="Picking a little thing from pictures" loading="lazy"><figcaption>Add a little thing here: kettles, hobs, pots, cups, ashtrays, clocks, phones, candles...</figcaption></figure>
+  <figure><img src="guide/thing-menu.jpg" width="820" height="380" alt="A little thing's right-click menu" loading="lazy"><figcaption>The tea's menu: the state it starts in.</figcaption></figure>
+</div>
+<figure class="half"><img src="guide/state-command.jpg" width="536" height="289" alt="The state command" loading="lazy"><figcaption>Set a thing's state: the kettle, switched on.</figcaption></figure>
+<div class="note">The things, their sizes and styles are in docs/KIT.md §9; their lives (states, timers, what the
+  player can do) in <code>Content/Studio/Life/lives.json</code>, docs/IMMERSION.md.</div>
+</section>
+
 <section id="database">
-<h2><span class="n">11</span>The Database</h2>
+<h2><span class="n">12</span>The Database</h2>
 <p>The game's own tables, as tabs: the game's settings, the cast, items, notes, sounds, lines, motions, flags and
   counters, secrets and trigger cutscenes. Each is a list and a form.</p>
 <figure class="wide"><img src="guide/database.jpg" width="1500" height="560" alt="The Database" loading="lazy"><figcaption>The cast: a portrait from each one's desk body, their settings, and every place they're used.</figcaption></figure>
@@ -288,7 +323,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </section>
 
 <section id="playtest">
-<h2><span class="n">12</span>Playtesting</h2>
+<h2><span class="n">13</span>Playtesting</h2>
 <p><span class="ui">Playtest</span> plays the game from the start in the <span class="ui">Watch</span>;
   <span class="ui">▶ Watch from here</span> (on a card, or its right-click menu) starts anywhere. Scenes play as an
   animatic with their takes; with <span class="ui">walk the tasks</span> ticked, you play the tasks yourself:
@@ -306,16 +341,16 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </section>
 
 <section id="problems">
-<h2><span class="n">13</span>Problems and checks</h2>
+<h2><span class="n">14</span>Problems and checks</h2>
 <p>The desk checks the story as you edit. The <span class="ui">Problems</span> button counts what's wrong (a line by
   someone not in the cast, a beat that waits for a flag nothing sets, a door locked by an item that doesn't exist);
   click one to go straight there. Cards and lines with a problem show a badge.</p>
-<figure class="half"><img src="guide/problems.jpg" width="456" height="487" alt="The problems panel" loading="lazy"><figcaption>Problems, found as you edit.</figcaption></figure>
+<figure class="half"><img src="guide/problems.jpg" width="456" height="659" alt="The problems panel" loading="lazy"><figcaption>Problems, found as you edit.</figcaption></figure>
 <p><span class="ui">Check</span> runs the full story and level checks on the saved story (it saves first).</p>
 </section>
 
 <section id="goto">
-<h2><span class="n">14</span>Go to anything</h2>
+<h2><span class="n">15</span>Go to anything</h2>
 <p><kbd>Ctrl</kbd>+<kbd>K</kbd> (or <span class="ui">Go to</span>) is one search box over the whole game: cards, every
   line by its words in English or Japanese, beats by when they fire and what they do, the Database's entries, flags,
   and the desk's own actions (Playtest, Save, Check, the tools). Arrows and <kbd>Enter</kbd> go there.</p>
@@ -323,7 +358,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </section>
 
 <section id="claude">
-<h2><span class="n">15</span>Working beside Claude</h2>
+<h2><span class="n">16</span>Working beside Claude</h2>
 <p>Claude edits the same <code>story.json</code> you do. When it (or another window, or the scene builder) saves, the
   desk merges those changes with yours and tells you what changed, with an <span class="ui">Undo</span>. Only when you
   both changed the same thing does it ask which to keep.</p>
@@ -332,7 +367,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </section>
 
 <section id="safety">
-<h2><span class="n">16</span>Nothing gets lost</h2>
+<h2><span class="n">17</span>Nothing gets lost</h2>
 <ul>
   <li><b>Undo everything:</b> <kbd>Ctrl</kbd>+<kbd>Z</kbd>, 150 edits back; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> redoes.</li>
   <li><b>A draft in the browser:</b> every unsaved edit is kept a second after you make it. If the tab closes or the
@@ -346,7 +381,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </section>
 
 <section id="unreal">
-<h2><span class="n">17</span>Into Unreal</h2>
+<h2><span class="n">18</span>Into Unreal</h2>
 <p>When a stretch of the game plays right on the desk, <span class="ui">Unreal</span> saves, runs the checks, records
   the Watch's blocking and builds the game in the editor: every level one to one, the scenes as you blocked them. The
   desk's storyboard and blocking are the reference the Unreal build must match.</p>
@@ -354,7 +389,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 </section>
 
 <section id="keys">
-<h2><span class="n">18</span>Every key</h2>
+<h2><span class="n">19</span>Every key</h2>
 <p>The <span class="ui">?</span> button in the toolbar shows these in the desk too.</p>
 <table class="keys">
   <tr class="h"><td colspan="2">The desk</td></tr>
