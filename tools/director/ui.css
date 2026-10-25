@@ -281,3 +281,12 @@ input.id{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 .dbg-num{display:flex;align-items:center;gap:6px;margin:3px 0}.dbg-num b{min-width:26px;text-align:center}
 .dbg-beat{display:grid;grid-template-columns:34px auto;column-gap:6px;padding:5px 6px;border-radius:6px;cursor:pointer}.dbg-beat:hover{background:var(--panel2)}
 .dbg-beat .dbg-bt{grid-column:2;color:var(--dim);font-size:11.5px}
+
+/* ---- quick events (templates.js) ---- */
+details.quick{flex:none}details.quick summary{cursor:pointer;list-style:none}details.quick summary::before{content:"▸ ";color:var(--dim)}details.quick[open] summary::before{content:"▾ "}
+.qlist{display:flex;flex-direction:column;gap:3px;margin-top:5px}
+.qchip{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--stitch);cursor:grab;font-size:11.5px;user-select:none}
+.qchip:hover{background:#2a2a31}.qchip .ic{color:var(--stitch)}
+.qprev{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding:10px;border-radius:8px;background:#151518;border:1px dashed var(--line);font-size:12.5px}
+.qrow .ic{color:var(--accent)}.qdo{margin-left:20px;color:var(--dim)}
+.qbeat{margin-top:6px}

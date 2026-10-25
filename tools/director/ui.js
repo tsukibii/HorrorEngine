@@ -200,6 +200,15 @@ export function fieldInput(f, obj, ctx, redraw) {
       };
       draw(); return box;
     }
+    case "many": {                                 // several of a kind (f.of): chips, and a list to add one more
+      const list = Array.isArray(cur) ? cur : (obj[k] = []), box = h("span", { class: "chips" });
+      const draw = () => {
+        box.innerHTML = "";
+        list.forEach((r, i) => box.append(h("span", { class: "chip" }, ctx.name(f.of, r), h("button", { class: "x", on: { click: () => { list.splice(i, 1); draw(); box.dispatchEvent(new Event("input", { bubbles: true })); } } }, "×"))));
+        const s = h("select", { on: { change: e => { if (e.target.value) { list.push(e.target.value); draw(); box.dispatchEvent(new Event("input", { bubbles: true })); } } } }); options(s, ctx.refs(f.of).filter(([v]) => !list.includes(v)), undefined, "+ add one"); box.append(s);
+      };
+      draw(); return box;
+    }
     case "answer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, (obj.options || []).map(o => [o.id, o.label || o.id]), cur, "—"); return s; }
     case "askanswer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, ctx.refs("askanswer:" + (obj.answered || "")), cur, "(any answer)"); return s; }
     default: {                                   // what exists of the kind, and "+ New…" to make one there and then (ctx.create)

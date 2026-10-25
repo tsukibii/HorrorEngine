@@ -134,10 +134,11 @@ export class Board {
       this.cb.context(card ? card.dataset.id : null, e.clientX, e.clientY, this.toWorld(e.clientX, e.clientY));
     });
     host.addEventListener("dblclick", e => { if (!e.target.closest(".card,.btools")) { const [x, y] = this.toWorld(e.clientX, e.clientY); this.menu(e.clientX, e.clientY, type => this.cb.create(type, [x, y], null)); } });
-    host.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("text/x-node")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    host.addEventListener("dragover", e => { const t = [...e.dataTransfer.types]; if (t.includes("text/x-node") || t.includes("text/x-quick")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
     host.addEventListener("drop", e => {
-      const type = e.dataTransfer.getData("text/x-node"); if (!type) return;
-      e.preventDefault(); const [x, y] = this.toWorld(e.clientX, e.clientY); this.cb.create(type, [x - CARD_W / 2, y - CARD_H / 2], null);
+      const type = e.dataTransfer.getData("text/x-node"), quick = e.dataTransfer.getData("text/x-quick"); if (!type && !quick) return;
+      e.preventDefault(); const [x, y] = this.toWorld(e.clientX, e.clientY), at = [x - CARD_W / 2, y - CARD_H / 2];
+      if (quick) { if (this.cb.quick) this.cb.quick(quick, at); } else this.cb.create(type, at, null);
     });
     host.addEventListener("keydown", e => {
       if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;

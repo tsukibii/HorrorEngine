@@ -2,7 +2,8 @@
 // check passes, and find each fault put in on purpose, at its place (the node, the beat, the line, the level). The
 // merge (merge.js) puts the desk's edits and Claude's together, asking only where both changed the same thing.
 //   node tools/director/desktest.mjs
-import { readFileSync, readdirSync, existsSync } from "fs";
+import { readFileSync, readdirSync, existsSync, writeFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
 import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -16,7 +17,12 @@ const poses = Object.keys(JSON.parse(readFileSync(join(ROOT, "Content", "Studio"
 const thingsOf = S => JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
 from storykit import storylib as L
 th, _ = L.index(json.load(sys.stdin))
-print(json.dumps({k: {"kind": t.kind, "use": t.use, "level": t.level} for k, t in th.items()}))`], { input: JSON.stringify(S), encoding: "utf8" }));
+print(json.dumps({k: {"kind": t.kind, "use": t.use, "level": t.level, "shape": str(t.d.get("shape", ""))} for k, t in th.items()}))`], { input: JSON.stringify(S), encoding: "utf8" }));
+const storyCheck = (g, S) => {                     // the story check on a story not saved (story_check.py --story)
+  const f = join(tmpdir(), `desk_${g}_${process.pid}.json`); writeFileSync(f, JSON.stringify(S));
+  try { return execFileSync("python3", [join(ROOT, "tools", "story_check.py"), "--game", g, "--story", f], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }); }
+  catch (e) { return (e.stdout || "") + (e.stderr || ""); } finally { rmSync(f, { force: true }); }
+};
 const secs = c => c.dur ? c.dur - ((c.trim || {}).in || 0) - ((c.trim || {}).out || 0) : 0;
 const run = (S, th) => lint(S, { things: th, poses, secs });
 
@@ -118,6 +124,40 @@ console.log("copy and paste (clipboard.js)");
   errs.length ? fail(`the paste broke something else: ${errs[0].text}`) : ok("nothing outside the pasted cards has a problem");
   C.unpack(JSON.stringify([{ say: "mari_002" }, { flag: "x" }])).kind === "commands" && C.unpack(JSON.stringify(st.beats.slice(0, 2))).kind === "beats" && C.unpack(JSON.stringify(ver.clips.slice(0, 1))).kind === "clips" && C.unpack("hello") === null
     ? ok("plain JSON of commands, beats or lines reads back as them") : fail("unpack");
+}
+
+// ---- quick events: every task and beat template built into a game, and the story check passes
+console.log("quick events (templates.js)");
+{
+  const Q = await import("./templates.js");
+  const S = story("Sample"), th = thingsOf(S), of = f => Object.keys(th).filter(k => f(th[k]));
+  const room = of(t => t.kind === "room"), door = of(t => t.kind === "door"), locker = of(t => t.use === "locker"), person = of(t => /^person/.test(t.shape || ""));
+  const ending = Object.keys(S.flow).find(k => S.flow[k].type === "ending"), back = S.game.start;
+  const values = {
+    key_door: { title: "The test key", item: "cellar_key", door: "cellar_door", beyond: room[room.length - 1], find: "Find the key" },
+    read_note: { note: Object.keys(S.notes)[0], thought: "Shaky." }, fetch: { item: Object.keys(S.items)[1], place: room[1] },
+    timed_escape: { exit: room[0], secs: 30, fail: ending }, hide_round: { seeker: Object.keys(S.cast)[0], places: locker.slice(0, 2), secs: 40 },
+    chase: { seeker: Object.keys(S.cast)[0], exit: door[0], secs: 25 },
+  };
+  const made = [];
+  for (const tpl of Q.TASKS) {
+    const r = Q.buildTask(S, tpl, values[tpl.id] || {}), nid = "n_qe_" + tpl.id;
+    S.flow[nid] = { type: "stitch", ref: r.tid, next: back };
+    if (r.round) { S.flow[nid].next = nid + "_r"; S.flow[nid + "_r"] = { type: "choice", by: "result", of: nid, options: Object.values({ hide: ["hidden", "found"], run: ["escaped", "caught"] }[r.round]).map(x => ({ result: x, to: back })) }; }
+    made.push(nid);
+  }
+  const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 },
+    slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] } };
+  const bst = Q.buildTask(S, Q.TASK.read_note, values.read_note), beats = Q.BEATS.map(t => Object.assign(Q.buildBeat(S, t, bv[t.id] || {}), { optional: true }));
+  bst.stitch.beats.push(...beats); S.flow.n_qe_beats = { type: "stitch", ref: bst.tid, next: back }; made.push("n_qe_beats");
+  ok(`${Q.TASKS.length} tasks and ${Q.BEATS.length} beats built: ${Q.TASKS.map(t => t.id).join(", ")}; ${Q.BEATS.map(t => t.id).join(", ")}`);
+  const errs = run(S, th).filter(p => p.sev === "error");
+  errs.length ? fail(`the live checks: ${errs.slice(0, 3).map(p => p.text + " (" + p.at.text + ")").join("; ")}`) : ok("the live checks find nothing wrong in them");
+  const out = storyCheck("Sample", S), last = out.trim().split("\n").pop();
+  /STORY ok/.test(last) ? ok(`the story check passes with all of them in: ${last}`) : fail(`the story check: ${out.split("\n").filter(l => l.startsWith("ERROR")).slice(0, 4).join(" · ") || last}`);
+  const blank = clone(story("Sample")); Q.buildTask(blank, Q.TASK.key_door, {});
+  const left = run(blank, th).filter(p => p.sev === "error" && /choose/.test(p.text));
+  left.length >= 2 ? ok(`a quick task with its blanks left: ${left.length} problems saying what to choose (${left[0].text})`) : fail("blanks left didn't show");
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");

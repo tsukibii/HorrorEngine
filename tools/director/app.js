@@ -11,11 +11,12 @@ import { applySettings } from "./play/menu.js";
 import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
 const { pack, unpack, pasteClips, copyNodes, pasteNodes } = CLIPBOARD;
-import { triggerText } from "./commands.js";
+import { triggerText, actionText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
 import { DebugPanel } from "./debug.js";
+import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
@@ -391,6 +392,7 @@ const CTX = {
       case "motion": return Object.keys(S.motions || {}).map(k => [k, k]);
       case "flag": return storyFlags().map(f => [f, f]);
       case "secret": return Object.entries(S.secrets || {}).map(([k, v]) => [k, v.hint ? `${k} · ${v.hint}` : k]);
+      case "node": return Object.entries(S.flow || {}).map(([k, n]) => [k, `${nodeTitle(k, n)} (${k})`]);
     }
     return [];
   },
@@ -527,7 +529,7 @@ function renderBoard() {
   if (!S) return;
   if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs, multi: () => SELS,
     moved: all => { for (const [id, xy] of Object.entries(all)) if (S.flow[id]) S.flow[id].xy = xy; touch(); },
-    connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu });
+    connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu, quick: (id, at) => quickTask(id, at) });
   BOARD.render(); renderOutline();
 }
 // the side of the board: the palette (drag a node onto the board, or click to add one after the selected node) and
@@ -540,6 +542,11 @@ function renderOutline() {
     ...[["scene", "film", "Scene", "an actor scene: lines, takes, bodies"], ["stitch", "task", "Task", "the player's task between scenes"], ["choice", "choice", "Choice", "where the story branches"], ["ending", "ending", "Ending", "an ending (good, bad, a death)"]].map(([t, ic, l, tip]) =>
       el("div", { class: "pchip " + t, draggable: "true", title: `drag onto the board, or click to add after the selected node: ${tip}`,
         on: { dragstart: e => { e.dataTransfer.setData("text/x-node", t); e.dataTransfer.effectAllowed = "copy"; }, click: () => addNode(t) } }, icon(ic, 15), l))));
+  const qOpen = (() => { try { return localStorage.getItem("dd.quickOpen") !== "0"; } catch (e) { return true; } })();
+  side.append(el("details", { class: "quick", open: qOpen || null, on: { toggle: e => { try { localStorage.setItem("dd.quickOpen", e.target.open ? "1" : "0"); } catch (x) { } } } },
+    el("summary", { class: "side-h" }, "Quick tasks"),
+    el("div", { class: "qlist" }, QUICK_TASKS.map(t => el("div", { class: "qchip", draggable: "true", title: `${t.hint}: drag onto the board, or click to add after the selected node`,
+      on: { dragstart: e => { e.dataTransfer.setData("text/x-quick", t.id); e.dataTransfer.effectAllowed = "copy"; }, click: () => quickTask(t.id, null, SEL) } }, icon(t.icon, 14), t.label)))));
   const search = el("input", { class: "ol-search", placeholder: "Find a node…", value: q, on: { input: () => renderOutline() } });
   const order = [], seen = new Set(), queue = [S.game.start];
   while (queue.length) { const id = queue.shift(); if (!S.flow[id] || seen.has(id)) continue; seen.add(id); order.push(id); for (const o of outs(id)) queue.push(o.to); }
@@ -598,6 +605,50 @@ function renderInspector() {
   if (n.type === "ending") box.append(field("title", txt(n, "title", { w: true })), field("kind", sel(n, "kind", ENDS)), field("", chk(n, "short_ok", "short ok (an early death: exempt from the playtime minimum)")));
   box.append(el("h2", {}, "Grow the flow"), el("div", { class: "row" }, el("span", { class: "muted" }, "add after this:"), ...["scene", "stitch", "choice", "ending"].map(t => el("button", { on: { click: () => addNode(t) } }, "+ " + t))));
   notesEditor(box, notesHost(SEL), SEL);
+}
+const QUICK_RESULTS = { hide: ["hidden", "found"], run: ["escaped", "caught"] };
+async function quickFill(tpl, kind) {           // the blanks, with what it will build shown as it's filled
+  const values = {}, lvls = Object.keys(S.levels || {}), lv = { level: (nodeRef(S.flow[SEL] || {}) || {}).level || lvls[0] };
+  CTX_LEVEL = lv.level;
+  const fields = tpl.blanks.map(b => Object.assign({ opt: true }, b)), prev = el("div", { class: "qprev" });
+  const show = () => {
+    const T = JSON.parse(JSON.stringify(S)); prev.innerHTML = "";
+    const beats = kind === "task" ? (buildTask(T, tpl, values, lv).stitch.beats || []) : [buildBeat(T, tpl, values)];
+    if (kind === "task" && tpl.round) prev.append(el("div", { class: "qrow" }, icon("hide", 13), ` a ${tpl.round} round: ${(QUICK_RESULTS[tpl.round] || []).join(" or ")} decides what's next`));
+    for (const b of beats) prev.append(el("div", { class: "qrow" }, icon("clock", 13), el("b", {}, " When " + triggerText(b.when, CTX.name)), (b.do || []).map(a => el("div", { class: "qdo" }, "· " + actionText(a, CTX.name)))));
+    if (!beats.length && !tpl.round) prev.append(el("div", { class: "kv" }, "(nothing yet)"));
+  };
+  const body = el("div", {}, el("p", { class: "hint" }, tpl.hint[0].toUpperCase() + tpl.hint.slice(1) + ". Leave a blank and the Problems list will say what's missing."),
+    kind === "task" && lvls.length > 1 ? form([{ key: "level", label: "In the level", kind: "choice", opts: lvls }], lv, CTX, () => { CTX_LEVEL = lv.level; }) : null,
+    form(fields, values, CTX, show), el("div", { class: "frm-l", style: "margin-top:12px" }, "It makes"), prev);
+  body.addEventListener("input", show); body.addEventListener("change", show); show();
+  const ok = await modal({ title: (kind === "task" ? "Quick task: " : "Quick beat: ") + tpl.label, body, ok: "Make it", wide: true });
+  return ok ? { values, level: lv.level } : null;
+}
+async function quickTask(id, at, after) {
+  const tpl = QUICK_TASK[id]; if (!tpl || !S) return;
+  const got = await quickFill(tpl, "task"); if (!got) return;
+  const r = buildTask(S, tpl, got.values, { level: got.level }), nid = r.id("n_" + tpl.id), node = { type: "stitch", ref: r.tid, next: null };
+  const prevNode = after && S.flow[after];
+  if (!at && BOARD) { freezeLayout(); const p = BOARD.pos[after] || { x: 0, y: 0 }; at = [Math.round(p.x + 214), Math.round(p.y + 84)]; }
+  else if (at) freezeLayout();
+  if (at) node.xy = at = at.map(Math.round);
+  if (prevNode && "next" in prevNode) { node.next = prevNode.next || null; prevNode.next = nid; }
+  S.flow[nid] = node;
+  if (r.round) {                                 // what decides the way on: a result choice after the round
+    const cid = r.id("n_" + tpl.id + "_result"), go = node.next || "";
+    S.flow[cid] = { type: "choice", by: "result", of: nid, options: QUICK_RESULTS[r.round].map(x => ({ result: x, to: go })), xy: at ? [at[0] + 214, at[1]] : undefined };
+    if (!S.flow[cid].xy) delete S.flow[cid].xy;
+    node.next = cid;
+  }
+  SEL = nid; SELS = new Set([nid]); touch(true); renderInspector(); showStage(); if (BOARD) BOARD.center(nid);
+  toast(`${tpl.label}: made. What's still blank shows in the Problems list.`, { ms: 6000 });
+}
+async function quickBeat(id, st) {
+  const tpl = QUICK_BEAT[id]; if (!tpl) return;
+  const got = await quickFill(tpl, "beat"); if (!got) return;
+  st.beats = st.beats || []; st.beats.push(buildBeat(S, tpl, got.values)); touch(); renderInspector();
+  setTimeout(() => flashIn(`[data-beat="${st.beats[st.beats.length - 1].id}"]`), 50);
 }
 function renameNode(old) {
   const nid = prompt("New id for this node", old); if (!nid || nid === old || S.flow[nid]) return;
@@ -1106,6 +1157,8 @@ function stitchEditor(box, st, tid) {
   box.append(el("h2", {}, "Gameplay round"), roundEditor(st),
     el("h2", {}, "Beats"), el("p", { class: "kv" }, "When something happens, do these: drag a beat or a command by its grip to move it, double-click a command to change it."),
     beatsEditor(st.beats, CTX, { secrets: CTX.refs("secret") }),
+    el("button", { class: "a-add big qbeat", title: "a whole beat from a few blanks: a jump scare, a knock, the lights dying, a door slamming, a whisper, a line, a checkpoint",
+      on: { click: e => { const r = e.currentTarget.getBoundingClientRect(); contextMenu(r.left, r.bottom + 4, QUICK_BEATS.map(t => ({ label: t.label, icon: t.icon, hint: t.hint, on: () => quickBeat(t.id, st) })), "Quick beats"); } } }, icon("wand", 14), " Quick beat"),
     advanced(jsonArea(st, "play", "play (the round)", { small: true, compact: true }), jsonArea(st, "beats", "beats (STORY_FORMAT §4)")));
 }
 // a gameplay round (STORY_FORMAT §9.8): hide, run, collect...: its rule, timer, places, the seeker, and what each result does
