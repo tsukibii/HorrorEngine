@@ -46,6 +46,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | `secrets` | `{id: {flag, hint}}`: easter eggs; a beat that finds one says `"secret": id` |
 | `interrupts` | trigger cutscenes (§5.1): something the player does during a stitch jumps the flow to a scene, usually a death |
 | `board` | notes for the whole game (§7) |
+| `frames` | the desk's board: acts, coloured frames behind groups of cards (§5) |
 
 ## 2. The world
 
@@ -447,6 +448,9 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 **On the desk's board:** a node's `xy` is where it sits on the director's desk's flow board (`[x, y]`, pixels at 100%).
 The desk writes every node's once you move one (until then they're laid out in reading order); nothing else reads it.
+The story's `frames` are the board's acts: `[{"id": "f_act1", "title": "Act 1: the house", "color": "#8a63d2", "nodes":
+["n_arrive", "n_message"]}]`, a coloured frame behind each group of cards, moved and folded together on the desk; a node
+is in one act at most. Only the desk reads them.
 
 **Endings:** `kind` is `good neutral bad secret other`. `short_ok` exempts an early death ending from `target_min` and
 `fast_min`.

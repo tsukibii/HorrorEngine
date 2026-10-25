@@ -126,6 +126,7 @@ export function placeOf(S, path) {
     return { text: `level ${a}${id ? " · " + id : ""}`, level: a };
   }
   if (t === "interrupts") return { text: `trigger cutscene ${((S.interrupts || [])[a] || {}).id || a}`, db: "interrupts" };
+  if (t === "frames") { const f = (S.frames || [])[a] || {}; return { text: `act “${f.title || f.id || a}”`, node: (f.nodes || []).find(n => (S.flow || {})[n]) || null }; }
   const tabs = { lines: "line", motions: "motion", secrets: "secret", cast: "cast member", items: "item", notes: "note", sounds: "sound" };
   if (tabs[t]) return { text: `${tabs[t]} ${a}`, db: t, id: a };
   if (t === "game") return { text: "the game's settings", db: "game" };

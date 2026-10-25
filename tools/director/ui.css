@@ -290,3 +290,14 @@ details.quick{flex:none}details.quick summary{cursor:pointer;list-style:none}det
 .qprev{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding:10px;border-radius:8px;background:#151518;border:1px dashed var(--line);font-size:12.5px}
 .qrow .ic{color:var(--accent)}.qdo{margin-left:20px;color:var(--dim)}
 .qbeat{margin-top:6px}
+
+/* ---- acts on the board, the box that picks, the minimap (board.js) ---- */
+.bframe{position:absolute;border:1.5px solid color-mix(in srgb,var(--fc) 55%,transparent);background:color-mix(in srgb,var(--fc) 9%,transparent);border-radius:12px;pointer-events:none}
+.bframe-h{position:absolute;left:0;right:0;top:0;height:28px;display:flex;align-items:center;gap:6px;padding:0 8px;border-radius:11px 11px 0 0;background:color-mix(in srgb,var(--fc) 22%,transparent);color:color-mix(in srgb,var(--fc) 35%,#fff);font-size:12px;font-weight:600;letter-spacing:.02em;cursor:grab;pointer-events:auto;user-select:none}
+.bframe-h:active{cursor:grabbing}
+.bframe-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bframe-n{font-size:10.5px;font-weight:500;opacity:.75;background:rgba(0,0,0,.25);border-radius:8px;padding:0 6px}
+.bframe-fold{background:none;border:0;padding:0;color:inherit;line-height:0;cursor:pointer}
+#board .card.folded{border-left:5px solid var(--fc);background:color-mix(in srgb,var(--fc) 16%,var(--panel2));cursor:grab;box-shadow:4px 4px 0 -1px color-mix(in srgb,var(--fc) 30%,transparent),8px 8px 0 -2px color-mix(in srgb,var(--fc) 18%,transparent)}
+.bsel{position:absolute;border:1px dashed #6fb3d9;background:rgba(111,179,217,.12);pointer-events:none;z-index:7}
+.bmini{position:absolute;right:8px;bottom:8px;width:168px;height:104px;border:1px solid var(--line);border-radius:8px;background:rgba(18,18,20,.88);z-index:6;cursor:crosshair}

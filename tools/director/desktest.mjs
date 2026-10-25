@@ -160,5 +160,19 @@ console.log("quick events (templates.js)");
   left.length >= 2 ? ok(`a quick task with its blanks left: ${left.length} problems saying what to choose (${left[0].text})`) : fail("blanks left didn't show");
 }
 
+// ---- the board's acts (frames): the story check reads them, the live checks see one gone wrong
+console.log("acts on the board (frames)");
+{
+  const S = story("Sample"), ids = Object.keys(S.flow).slice(0, 3);
+  S.frames = [{ id: "f_act1", title: "Act 1", color: "#8a63d2", nodes: ids }];
+  const out = storyCheck("Sample", S).trim().split("\n").pop();
+  /STORY ok/.test(out) ? ok(`an act of ${ids.length} cards: the story check passes (${out})`) : fail(`an act: ${out}`);
+  const bad = clone(S); bad.frames[0].nodes.push("n_gone"); bad.frames.push({ id: "f_act2", title: "Act 2", color: "red", nodes: [ids[0]] });
+  const errs = storyCheck("Sample", bad).split("\n").filter(l => l.startsWith("ERROR")), want = [/n_gone/, /color/, /two acts/];
+  want.every(w => errs.some(e => w.test(e))) ? ok(`acts gone wrong: the story check says so (${errs.length} errors)`) : fail(`bad acts: ${errs.join(" · ")}`);
+  const ps = run(bad, thingsOf(bad)).filter(p => p.at && /act/.test(p.at.text || ""));
+  ps.length >= 2 ? ok(`… and the live checks too: ${ps.map(p => p.text).join("; ")}`) : fail("the live checks on bad acts");
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

@@ -474,7 +474,31 @@ function pasteCards(clip, at) {
 function removeCards(ids) {
   if (ids.length < 2) return removeNode(ids[0]);
   if (!confirm(`Delete ${ids.length} nodes (${ids.join(", ")})? Their scenes and tasks stay in the file.`)) return;
-  for (const id of ids) delete S.flow[id]; SELS = new Set(); if (!S.flow[SEL]) SEL = S.game.start; touch(); renderInspector(); showStage();
+  for (const id of ids) delete S.flow[id]; leaveActs(ids); SELS = new Set(); if (!S.flow[SEL]) SEL = S.game.start; touch(); renderInspector(); showStage();
+}
+const ACT_COLORS = ["#8a63d2", "#2f9e8f", "#c98a2b", "#c0473f", "#3f7fbf", "#7a8a3a"];
+async function makeAct(ids) {
+  const v = { title: "" }, body = form([{ key: "title", label: "The act's name", kind: "text", ph: "Act 1: the house" }], v, CTX);
+  if (!await modal({ title: `An act of ${ids.length} card${ids.length === 1 ? "" : "s"}`, body, ok: "Make it" })) return;
+  S.frames = S.frames || [];
+  for (const f of S.frames) f.nodes = (f.nodes || []).filter(x => !ids.includes(x));
+  S.frames = S.frames.filter(f => f.nodes.length);
+  let n = 1; while (S.frames.some(f => f.id === "f_act" + n)) n++;
+  S.frames.push({ id: "f_act" + n, title: v.title.trim() || "Act " + n, color: ACT_COLORS[(n - 1) % ACT_COLORS.length], nodes: ids });
+  freezeLayout(); touch(); renderBoard();
+}
+function frameMenu(fid, x, y) {
+  const f = (S.frames || []).find(z => z.id === fid); if (!f) return;
+  const ids = pickedCards().filter(id => !(f.nodes || []).includes(id)), folded = BOARD.folded().has(fid);
+  contextMenu(x, y, [
+    { label: folded ? "Open it" : "Fold it into one card", icon: folded ? "chevron" : "down", on: () => BOARD.fold(fid, !folded) },
+    { label: "Rename", icon: "edit", on: async () => { const v = { title: f.title }; if (await modal({ title: "The act's name", body: form([{ key: "title", label: "Name", kind: "text" }], v, CTX) })) { f.title = (v.title || "").trim() || f.title; touch(); renderBoard(); } } },
+    { label: "Pick its cards", icon: "check", on: () => { SELS = new Set(f.nodes); SEL = f.nodes[0]; setFocus("cards"); renderBoard(); renderInspector(); } },
+    ids.length ? { label: `Add the ${ids.length} picked card${ids.length === 1 ? "" : "s"}`, icon: "plus", on: () => { for (const g of S.frames) g.nodes = g.nodes.filter(z => !ids.includes(z)); f.nodes.push(...ids); S.frames = S.frames.filter(g => g.nodes.length); touch(); renderBoard(); } } : null,
+    "-",
+    ...ACT_COLORS.map((c, i) => ({ label: ["violet", "teal", "amber", "red", "blue", "olive"][i], icon: "box", on: () => { f.color = c; touch(); renderBoard(); } })),
+    "-",
+    { label: "Ungroup (the cards stay)", icon: "x", danger: true, on: () => { S.frames = S.frames.filter(z => z !== f); if (!S.frames.length) delete S.frames; touch(); renderBoard(); } }], `act “${f.title}”`);
 }
 function cardMenu(id, x, y, at) {
   if (!id) return contextMenu(x, y, [                // the board itself
@@ -492,6 +516,8 @@ function cardMenu(id, x, y, at) {
     { label: "Paste here", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("nodes"), on: () => pasteCards(CLIP.get(), at) },
     { label: many ? `Duplicate ${ids.length} cards` : "Duplicate", icon: "copy", kbd: "Ctrl+D", on: () => pasteCards(copyNodes(S, ids, BOARD.pos), [BOARD.pos[ids[0]].x + 40, BOARD.pos[ids[0]].y + 40]) },
     many ? null : { label: "Rename", icon: "edit", on: () => renameNode(id) },
+    { label: many ? "Make an act of these" : "Make an act of it", icon: "box", hint: "a coloured frame behind them, with a name: moved and folded together", on: () => makeAct(ids) },
+    (S.frames || []).some(f => (f.nodes || []).some(n => ids.includes(n))) ? { label: "Take out of its act", icon: "x", on: () => { for (const f of S.frames) f.nodes = f.nodes.filter(n => !ids.includes(n)); S.frames = S.frames.filter(f => f.nodes.length); if (!S.frames.length) delete S.frames; touch(); renderBoard(); } } : null,
     "-",
     { label: many ? `Delete ${ids.length} cards` : "Delete", icon: "x", danger: true, kbd: "Del", on: () => removeCards(ids) }], many ? `${ids.length} cards` : nodeTitle(id, n));
 }
@@ -521,15 +547,21 @@ function createNode(type, xy, from) {             // dropped on the board (from 
   if (f) { if (f.type === "choice") (f.options = f.options || []).push({ label: "", to: nid }); else f.next = nid; }
   SEL = nid; touch(); renderInspector(); showStage();
 }
+function leaveActs(ids) {                          // nodes gone: out of their acts too (an empty act goes)
+  if (!S.frames) return; for (const f of S.frames) f.nodes = (f.nodes || []).filter(n => !ids.includes(n));
+  S.frames = S.frames.filter(f => f.nodes.length); if (!S.frames.length) delete S.frames;
+}
 function removeNode(id) {
   if (!S.flow[id] || !confirm(`Delete node ${id}? (its scene or task stays in the file)`)) return;
-  delete S.flow[id]; if (SEL === id) SEL = S.game.start; touch(); renderInspector(); showStage();
+  delete S.flow[id]; leaveActs([id]); if (SEL === id) SEL = S.game.start; touch(); renderInspector(); showStage();
 }
 function renderBoard() {
   if (!S) return;
   if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs, multi: () => SELS,
     moved: all => { for (const [id, xy] of Object.entries(all)) if (S.flow[id]) S.flow[id].xy = xy; touch(); },
-    connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu, quick: (id, at) => quickTask(id, at) });
+    connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu, quick: (id, at) => quickTask(id, at),
+    pickMany: ids => { SELS = new Set(ids); SEL = ids[0]; setFocus("cards"); renderBoard(); renderInspector(); showStage(); },
+    frameMenu, join: (fid, id) => { for (const f of S.frames || []) f.nodes = (f.nodes || []).filter(x => x !== id); const f = (S.frames || []).find(x => x.id === fid); if (f) { f.nodes.push(id); toast(`${nodeTitle(id, S.flow[id])} is in “${f.title}” now`, { ms: 3000 }); } } });
   BOARD.render(); renderOutline();
 }
 // the side of the board: the palette (drag a node onto the board, or click to add one after the selected node) and
@@ -656,6 +688,7 @@ function renameNode(old) {
   for (const m of Object.values(S.flow)) { if (m.next === old) m.next = nid; for (const o of m.options || []) if (o.to === old) o.to = nid; if (m.of === old) m.of = nid; }
   for (const st of Object.values(S.stitches || {})) if (st.timer && st.timer.fail === old) st.timer.fail = nid;
   for (const it of S.interrupts || []) if (it.to === old) it.to = nid;
+  for (const f of S.frames || []) f.nodes = (f.nodes || []).map(n => (n === old ? nid : n));
   if (S.game.start === old) S.game.start = nid; SEL = nid; touch(); renderInspector();
 }
 function addNode(type) {

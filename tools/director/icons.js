@@ -71,6 +71,7 @@ const P = {
   branch: "M6 3v18M6 15c0-4 12-2 12-8M18 7a2 2 0 1 0 0-.1M6 21a2 2 0 1 0 0-.1",
   notes: "M5 4h14v12l-4 4H5zM15 20v-4h4M8 9h8M8 13h5",
   alert: "M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.4v.1",
+  map: "M3 6l6-3l6 3l6-3v15l-6 3l-6-3l-6 3zM9 3v15M15 6v15",
 };
 export const ICONS = Object.keys(P);
 export function icon(name, size = 16, cls = "") {

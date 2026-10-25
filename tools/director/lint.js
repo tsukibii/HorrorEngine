@@ -158,6 +158,10 @@ export function lint(S, { things = {}, poses = null, secs = null } = {}) {
   for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); st.push(...outs(flow[id])); } }
   for (const [nid, n] of Object.entries(flow)) if (!seen.has(nid) && flow[game.start]) add(n.type === "ending" ? "error" : "warn", n.type === "ending" ? "no path reaches this ending" : "nothing leads here", ["flow", nid], n);
 
+  // ---- the board's acts
+  const inAct = {};
+  (S.frames || []).forEach((f, i) => { for (const nid of (f && f.nodes) || []) { if (!flow[nid]) add("error", `act “${f.title || f.id}”: ${nid} isn't on the board`, ["frames", i], f); else if (inAct[nid]) add("error", `${nid} is in two acts`, ["frames", i], f); inAct[nid] = true; } });
+
   // ---- trigger cutscenes
   (S.interrupts || []).forEach((it, i) => {
     const p = ["interrupts", i];

@@ -1032,6 +1032,25 @@ def check_flow(story, things, r):
     for nid, ft in L.flow_times(story).items():          # a scene staged for one time that a path brings at another
         if flow[nid].get("type") == "scene" and not ft["own"] and len(ft["paths"]) > 1:
             r.warn(f"flow {nid}: its scene plays at {' or '.join(ft['paths'])} depending on the path; give it a `time` if it's staged for one")
+    frames, in_act = story.get("frames", []), {}        # the board's acts: coloured frames behind groups of cards
+    if not isinstance(frames, list):
+        r.err("frames: a list of the board's acts, each {id, title, color, nodes}")
+        frames = []
+    for f in frames:
+        fid = f.get("id") if isinstance(f, dict) else None
+        if not isinstance(fid, str) or not fid:
+            r.err(f"frames: {f!r}: an act needs an id, a title, a color and its nodes")
+            continue
+        if any(x is not f and isinstance(x, dict) and x.get("id") == fid for x in frames):
+            r.err(f"frame {fid}: two acts with this id")
+        if "color" in f and not re.fullmatch(r"#[0-9a-fA-F]{6}", str(f["color"])):
+            r.err(f"frame {fid}: color {f['color']!r}: #rrggbb")
+        for nid in f.get("nodes", []):
+            if nid not in flow:
+                r.err(f"frame {fid}: {nid!r} isn't a flow node")
+            elif nid in in_act and in_act[nid] != fid:
+                r.err(f"flow {nid}: in two acts ({in_act[nid]} and {fid})")
+            in_act[nid] = fid
     for nid, n in flow.items():
         t = n.get("type")
         if "xy" in n and not (isinstance(n["xy"], list) and len(n["xy"]) == 2 and all(isinstance(v, (int, float)) for v in n["xy"])):
