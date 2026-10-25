@@ -105,6 +105,7 @@ async function load() {
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
   await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
   CHECK.list = []; CHECK.key = null; scheduleCheck(1500);
+  offerDraft();
 }
 /* ---------- the takes (MiniMax videos) on the timeline ---------- */
 const takeId = (sid, k, cid) => `${GAME}_${sid}_${k || "main"}_${cid}`;
@@ -228,7 +229,7 @@ async function loadBodies() {
 async function save(force) {
   if (!S) return;
   const sent = JSON.stringify(S);
-  try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; BASE = sent; dirty(DIRTY && JSON.stringify(S) !== sent); status("saved " + new Date().toLocaleTimeString()); scheduleCheck(300); }
+  try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; BASE = sent; dirty(DIRTY && JSON.stringify(S) !== sent); status("saved " + new Date().toLocaleTimeString()); scheduleCheck(300); if (DIRTY) keepDraft(); else dropDraft(); }
   catch (e) {
     if (e.status !== 409) { alert("save failed: " + e.message); return false; }
     if (await syncFromDisk("save")) return save();   // the disk had changes of its own: they're merged in, save the two together
@@ -302,17 +303,69 @@ try {
 async function poll() { if (!GAME || SYNCING) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) syncFromDisk(); } catch (e) { } }
 function dirty(d) { DIRTY = d; status(d ? "unsaved changes" : "saved"); $("#status").classList.toggle("dirty", d); }
 function status(t) { $("#status").textContent = (GAME ? GAME + " · " : "") + t; }
-function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); scheduleCheck(); problemsButton(); }
+function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); scheduleCheck(); problemsButton(); keepDraft(); }
 let UNDO = [], REDO = [], LAST = null;
 function snapshot() { const now = JSON.stringify(S); if (LAST !== null && now !== LAST) { UNDO.push(LAST); if (UNDO.length > 150) UNDO.shift(); REDO = []; } LAST = now; undoState(); }
 function undoState() { $("#undo").disabled = !UNDO.length; $("#redo").disabled = !REDO.length; }
 function undoTo(from, to, what) {
   if (!from.length) { status(`nothing to ${what}`); return; }
-  to.push(JSON.stringify(S)); S = JSON.parse(from.pop()); LAST = JSON.stringify(S);
+  to.push(JSON.stringify(S)); S = JSON.parse(from.pop()); LAST = JSON.stringify(S); keepDraft();
   if (!S.flow[SEL]) SEL = S.game.start;
   dirty(true); renderAll(); scheduleReplan(); undoState(); status(`${what}: ${from.length} more`);
 }
 window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("pagehide", () => { if (DIRTY) { clearTimeout(DRAFT_T); writeDraft(); } });   // the tab closing: the draft now, not in a second
+// ---- the draft in the browser: every edit kept (a second after it) until it's saved, so a closed tab or a crash
+// loses nothing; opening the game again offers it back, merged with whatever the disk has now
+const draftKey = () => "dd.draft." + GAME;
+let DRAFT_T = null, DRAFT_FULL = false;
+function writeDraft() {
+  if (!GAME || !S) return;
+  try { if (DIRTY) localStorage.setItem(draftKey(), JSON.stringify({ at: Date.now(), mtime: MTIME, base: BASE, story: LAST })); else localStorage.removeItem(draftKey()); DRAFT_FULL = false; }
+  catch (e) { if (!DRAFT_FULL) { DRAFT_FULL = true; toast("The browser has no room left to keep a draft of your edits: save to be safe."); } }
+}
+function keepDraft() { clearTimeout(DRAFT_T); DRAFT_T = setTimeout(writeDraft, 1000); }
+function dropDraft() { clearTimeout(DRAFT_T); try { localStorage.removeItem(draftKey()); } catch (e) { } }
+function offerDraft() {
+  let d = null; try { d = JSON.parse(localStorage.getItem(draftKey()) || "null"); } catch (e) { }
+  if (!d || !d.story) return;
+  if (d.story === LAST) { dropDraft(); return; }
+  toast(`Edits from ${new Date(d.at).toLocaleString()} were never saved: this browser kept them.`, { ms: 120000, action: { label: "Bring them back", on: () => restoreDraft(d) } });
+}
+async function restoreDraft(d) {
+  const mine = JSON.parse(d.story), disk = S;
+  let value = mine;
+  if (Math.abs((d.mtime || 0) - MTIME) > 0.001 && d.base) {   // saved since (Claude, another window): the two merged, asking where both changed one thing
+    const r = merge3(JSON.parse(d.base), mine, disk); value = r.value;
+    if (r.conflicts.length) value = await conflicts(r.conflicts, value, disk, "the version saved since");
+  }
+  S = value; if (!S.flow[SEL]) SEL = S.game.start;
+  touch(true); renderAll(); toast("Your unsaved edits are back: Save keeps them.", { action: { label: "Undo", on: () => undoTo(UNDO, REDO, "undo") } });
+}
+// ---- the saves kept (Saved/Story/<Game>/history, the last 50): what each was, what's different now, one brought back
+async function historyDialog() {
+  if (!GAME || !S) return;
+  let list = []; try { list = (await api(`/api/history/${encodeURIComponent(GAME)}`)).saves; } catch (e) { alert("couldn't read the saves: " + e.message); return; }
+  const fmt = t => new Date(t * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const left = el("div", { class: "hist-list" }), right = el("div", { class: "hist-diff" }, el("p", { class: "muted" }, list.length ? "Pick a save to see what's different from now." : "No saves kept yet: each save keeps the version before it here."));
+  let chosen = null;
+  const where = (v, p) => { for (const st of [S, v]) { try { const t = placeOf(st, indexPath(st, p)).text; if (t) return t; } catch (e) { } } return p.map(x => typeof x === "object" ? x.id : x).join(" › "); };
+  const show = async (it, row) => {
+    left.querySelectorAll(".hist-i").forEach(x => x.classList.toggle("on", x === row)); chosen = null;
+    right.innerHTML = ""; right.append(el("p", { class: "muted" }, "reading…"));
+    const v = (await api(`/api/history/${encodeURIComponent(GAME)}/${it.name}`)).story, ps = [...new Set(changedPaths(v, S).map(p => where(v, p)))];
+    chosen = v; right.innerHTML = "";
+    right.append(el("h4", {}, `As it was until ${fmt(it.at)}`), el("p", { class: "kv" }, ps.length ? `${ps.length} place${ps.length === 1 ? "" : "s"} differ from the desk now:` : "the same as the desk now"),
+      el("ul", { class: "hist-ch" }, ...ps.slice(0, 80).map(w => el("li", {}, w))), ps.length > 80 ? el("p", { class: "kv" }, `and ${ps.length - 80} more`) : null);
+  };
+  for (const it of list) { const row = el("div", { class: "hist-i", on: { click: () => show(it, row) } }, icon("clock", 13), el("b", {}, fmt(it.at)), el("span", { class: "kv" }, `${Math.max(1, Math.round(it.size / 1024))} KB`)); left.append(row); }
+  const ok = await modal({ title: "Saves kept", wide: true, ok: "Bring this version back", body: el("div", { class: "hist" },
+    el("p", { class: "hint" }, `Each save keeps the version before it (the last 50, in Saved/Story/${GAME}/history). Bringing one back makes it your unsaved edits: look it over, then Save keeps it and Undo takes it back.`),
+    el("div", { class: "hist-cols" }, left, right)) });
+  if (!ok || !chosen) return;
+  S = JSON.parse(JSON.stringify(chosen)); if (!S.flow[SEL]) SEL = S.game.start;
+  touch(true); renderAll(); toast("That version is back as unsaved edits: Save keeps it.", { action: { label: "Undo", on: () => undoTo(UNDO, REDO, "undo") } });
+}
 const typingNow = () => /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "") || !!window.getSelection().toString();
 function copySelection() {
   const f = focusOf();
@@ -2123,9 +2176,10 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
   if (b.dataset.v !== "watchView") stopWatch(); if (b.dataset.v === "flowView") { flowStage.resize(); showStage(); } if (b.dataset.v === "watchView") watchStage.resize();
 }));
 $("#save").onclick = () => save();
-$("#reload").onclick = () => { if (!DIRTY || confirm("Drop your unsaved edits?")) load(); };
+$("#reload").onclick = () => { if (!DIRTY || confirm("Drop your unsaved edits?")) { dropDraft(); load(); } };
+$("#history").onclick = () => historyDialog();
 $("#bannerReload").onclick = () => load();
-$("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } GAME = e.target.value; SEL = null; FILES = {}; if (BOARD) BOARD.viewSet = false; load(); };
+$("#game").onchange = e => { if (DIRTY && !confirm("Drop unsaved edits?")) { e.target.value = GAME; return; } if (DIRTY) dropDraft(); GAME = e.target.value; SEL = null; FILES = {}; if (BOARD) BOARD.viewSet = false; load(); };
 $("#newGame").onclick = async () => { const name = prompt("New game's name (letters and digits, e.g. LanternHouse)"); if (!name) return; try { const j = await api("/api/new/" + encodeURIComponent(name), { method: "POST" }); fillGames(j.games); GAME = name; $("#game").value = name; SEL = null; await load(); } catch (e) { alert(e.message); } };
 $("#gameSettings").onclick = () => { if (S) openDb(); };
 $("#undo").onclick = () => undoTo(UNDO, REDO, "undo");
@@ -2249,6 +2303,7 @@ function goto() {
       { label: "Problems", hint: "what's wrong, found as you edit", on: () => toggleProblems(true) },
       { label: "Database", hint: "the game's tables", on: () => openDb() }, { label: "Takes", hint: "every take to record", on: () => openView("clipsView") },
       { label: "Storyboard", on: () => openView("boardView") }, { label: "Branches", on: () => openView("branchView") }, { label: "Notes", on: () => openView("notesView") },
+      { label: "Saves kept", hint: "the history: what changed, bring one back", keys: "history versions restore", on: () => historyDialog() },
       { label: "Undo", hint: "Ctrl+Z", on: () => undoTo(UNDO, REDO, "undo") }, { label: "Redo", hint: "Ctrl+Shift+Z", on: () => undoTo(REDO, UNDO, "redo") },
       { label: "Fit the board", hint: "F", on: () => { openView("flowView"); BOARD && BOARD.fit(); } },
       { label: "Keys and help", on: () => $("#keysHelp").click() },

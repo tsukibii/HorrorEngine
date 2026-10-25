@@ -205,6 +205,15 @@ class Handler(BaseHTTPRequestHandler):
             if not p or not p.exists():
                 return self.send(404, {"error": "no such game"})
             return self.send(200, {"story": json.loads(p.read_text(encoding="utf-8")), "mtime": p.stat().st_mtime})
+        if parts[:2] == ["api", "history"] and len(parts) in (3, 4) and self.game_path(parts[2]):   # the saves kept, newest first; one of them
+            hist = ROOT / "Saved" / "Story" / parts[2] / "history"
+            if len(parts) == 3:
+                files = sorted(hist.glob("*.json"), reverse=True) if hist.is_dir() else []
+                return self.send(200, {"saves": [{"name": f.stem, "at": f.stat().st_mtime, "size": f.stat().st_size} for f in files]})
+            f = hist / (parts[3] + ".json")
+            if not re.fullmatch(r"\d{8}-\d{6}", parts[3]) or not f.is_file():
+                return self.send(404, {"error": "no such save"})
+            return self.send(200, {"name": parts[3], "story": json.loads(f.read_text(encoding="utf-8"))})
         if parts[:2] == ["api", "mtime"] and len(parts) == 3:
             p = self.game_path(parts[2])
             return self.send(200, {"mtime": p.stat().st_mtime if p and p.exists() else 0})

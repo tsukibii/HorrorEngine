@@ -385,3 +385,13 @@ canvas.wave{display:block;width:100%;height:84px;border:1px solid var(--line);bo
 .sp-row{display:flex;align-items:flex-start;gap:8px;padding:5px 6px;border-radius:6px;background:var(--panel2);border-left:3px solid var(--who)}
 .sp-t{flex:1;display:flex;flex-direction:column;min-width:0}.sp-t .ja{font-size:11.5px;color:var(--dim)}
 .sp-act{font-size:11.5px;color:var(--dim);font-style:italic}
+
+/* ---- the saves kept (app.js historyDialog) ---- */
+.hist-cols{display:grid;grid-template-columns:220px 1fr;gap:12px;min-height:300px}
+.hist-list{max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);padding-right:8px}
+.hist-i{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer}
+.hist-i:hover{background:var(--panel2)}.hist-i.on{background:#33291a}
+.hist-i .kv{margin-left:auto}
+.hist-diff{max-height:420px;overflow:auto}
+.hist-diff h4{margin:2px 0 4px}
+.hist-ch{margin:4px 0;padding-left:18px;font-size:12.5px;line-height:1.6}
