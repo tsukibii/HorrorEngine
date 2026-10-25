@@ -19,6 +19,7 @@ import { DebugPanel } from "./debug.js";
 import { openGoto } from "./goto.js";
 import { Pictures } from "./pictures.js";
 import { wireStageDrag } from "./blocking.js";
+import * as SCRIPT from "./screenplay.js";
 import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
@@ -810,7 +811,8 @@ function sceneEditor(box, sc, sid) {
   const script = el("div", { class: "script" });
   ver.clips.forEach((c, i) => script.append(clipCard(sc, ver, c, i, lvl, sid)));
   sortable(script, ver.clips, "clip", CTX, ".clip");
-  box.append(script, el("div", { class: "row" }, el("button", { class: "a-add big", on: { click: () => { const id = newClipId(ver), last = ver.clips[ver.clips.length - 1]; ver.clips.push({ id, who: last ? last.who : castIds()[0] || "", ja: "", en: "", act: "", shot: last ? last.shot : "mcu", seam: ver.clips.length ? { kind: "blink" } : undefined, body: { block: [{ at: 0, pose: "idle" }] } }); OPEN[sid] = { id, tab: "line" }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Add a line"),
+  box.append(script, typeLine(sc, ver, sid), el("div", { class: "row" }, el("button", { class: "a-add big", on: { click: () => { const id = newClipId(ver), last = ver.clips[ver.clips.length - 1]; ver.clips.push({ id, who: last ? last.who : castIds()[0] || "", ja: "", en: "", act: "", shot: last ? last.shot : "mcu", seam: ver.clips.length ? { kind: "blink" } : undefined, body: { block: [{ at: 0, pose: "idle" }] } }); OPEN[sid] = { id, tab: "line" }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Add a line"),
+    el("button", { title: "the whole scene as a script, typed or pasted: Name: words, (acting notes); lines still there keep their takes and bodies", on: { click: () => scriptDialog(ver) } }, icon("edit", 14), " Edit as text"),
     el("span", { class: "muted" }, "one clip = one take of " + (S.game.clip_max || 10) + " s or less; long speeches are several clips joined by seams · drag a row to move it · drop a take's video on its row")));
   box.append(el("h2", {}, "Cues"), el("p", { class: "kv" }, "A command at a clip's start or end (a door slams as she turns): it rides the clip, so a longer take carries it."), cuesEditor(ver),
     el("h2", {}, "When the scene ends"), actionList(...slot(sc, "sets"), { empty: "nothing" }));
@@ -1085,6 +1087,60 @@ function pasteLines(clip, after) {               // after a line (the last picke
   ver.clips.splice(i, 0, ...items); pickAll("clips", items); touch(); CTX.rerender();
   return items.length;
 }
+// screenplay typing (screenplay.js): "Mari: You came." under the script adds a line, "(she steps back)" a note to the
+// last one; a draft pasted there, or the whole scene as text (Edit as text), goes through a preview first
+const scriptOpts = () => ({ cast: S.cast || {}, clipMax: S.game.clip_max || 10, secs: c => clipSecs(c) });
+let TYPE_FOCUS = false;
+function typeLine(sc, ver, sid) {
+  const last = (ver.clips || [])[(ver.clips || []).length - 1], who = last ? (last.who === "player" ? "You" : ((S.cast || {})[last.who] || {}).name || last.who) : ((S.cast || {})[castIds()[0]] || {}).name || "Mari";
+  const inp = el("input", { class: "typeline", placeholder: `Type a line: “${who}: what they say” · “(an acting note)” · Enter adds it · paste a whole draft`,
+    on: { keydown: e => {
+      if (e.key !== "Enter" || !inp.value.trim()) return; e.preventDefault();
+      const t = inp.value.trim(), note = t.match(/^[(（](.*)[)）]$/);
+      if (note) {                                  // a note for the line open, else the last one
+        const c = (OPEN[sid] && ver.clips.find(x => x.id === OPEN[sid].id)) || ver.clips[ver.clips.length - 1]; if (!c) { status("a note needs a line before it"); return; }
+        c.act = [c.act, note[1].trim()].filter(Boolean).join("; "); TYPE_FOCUS = true; touch(); CTX.rerender(); status(`the acting note on ${c.id}`); return;
+      }
+      const r = SCRIPT.parse(t, scriptOpts());
+      if (!r.lines.length) { status(r.warns[0] || "write it as “Name: what they say”"); return; }
+      ver.clips = ver.clips || [];
+      for (const l of r.lines) { const c = { id: newClipId(ver), who: l.who }; for (const k of ["ja", "en", "act", "shot"]) if (l[k]) c[k] = l[k]; if (ver.clips.length) c.seam = { kind: "blink" }; c.body = { block: [{ at: 0, pose: "idle" }] }; ver.clips.push(c); }
+      TYPE_FOCUS = true; touch(); CTX.rerender();
+      status(r.warns.length ? r.warns.join(" · ") : `added: ${r.lines.map(l => l.en || l.ja).join(" / ")}`);
+    },
+    paste: e => {                                  // a draft of several lines: the preview, to add after the last line
+      const t = (e.clipboardData || window.clipboardData).getData("text"); if (!/\n/.test(t.trim())) return;
+      e.preventDefault(); scriptDialog(ver, SCRIPT.toText(ver.clips || [], S.cast || {}) + "\n" + t.trim());
+    } } });
+  if (TYPE_FOCUS) { TYPE_FOCUS = false; setTimeout(() => { inp.focus(); inp.scrollIntoView({ block: "nearest" }); }, 0); }
+  return el("div", { class: "typerow" }, icon("say", 14), inp);
+}
+async function scriptDialog(ver, text) {
+  const ta = el("textarea", { class: "scripttext", spellcheck: "false" }), prev = el("div", { class: "scriptprev" }), sum = el("div", { class: "kv" });
+  ta.value = text !== undefined ? text : SCRIPT.toText(ver.clips || [], S.cast || {});
+  const nid = list => { let n = (ver.clips || []).length + 1; while (list.some(c => c.id === "c" + n) || (ver.clips || []).some(c => c.id === "c" + n)) n++; return "c" + n; };
+  const draw = () => {
+    const r = SCRIPT.parse(ta.value, scriptOpts()), copy = JSON.parse(JSON.stringify(ver.clips || [])), a = SCRIPT.applyTo(copy, r.lines, nid);
+    prev.innerHTML = "";
+    for (const l of r.lines) prev.append(el("div", { class: "sp-row", style: `--who:${whoColor(l.who)}` }, el("span", { class: "who" }, face(l.who), l.who === "player" ? "you" : ((S.cast || {})[l.who] || {}).name || l.who),
+      el("span", { class: "sp-t" }, el("span", {}, l.en || l.ja || ""), l.ja && l.en ? el("span", { class: "ja" }, l.ja) : null, l.act ? el("span", { class: "sp-act" }, `(${l.act})`) : null),
+      l.shot ? el("span", { class: "lchip" }, l.shot.toUpperCase()) : null, l.split ? el("span", { class: "lchip dim", title: "a long line split at its sentences" }, "part " + l.split) : null,
+      el("span", { class: "lsecs" }, clipSecs(l).toFixed(1) + " s")));
+    const gone = (ver.clips || []).filter(c => !a.clips.some(x => x.id === c.id)), takes = gone.filter(c => TAKES[takeId(SEL_SID(), sceneK(), c.id)]);
+    sum.textContent = `${r.lines.length} lines: ${a.kept} as they were · ${a.changed} with new words (their takes and bodies kept) · ${a.added} new · ${a.removed} gone` + (takes.length ? ` (${takes.map(c => c.id).join(", ")} had a take)` : "");
+    for (const w of r.warns) prev.append(el("div", { class: "warnc" }, w));
+    return a;
+  };
+  ta.addEventListener("input", draw); draw();
+  const ok = await modal({ title: "The scene as a script", wide: true, ok: "Apply", body: el("div", { class: "scriptdlg" },
+    el("p", { class: "hint" }, "One line a clip: “Mari: words”, or “Mari: 日本語 / English”; “(an acting note)” under a line; a shot at the end: [CU]. You, Me or I is the player. A line too long for a take is split at its sentences."),
+    el("div", { class: "scriptcols" }, ta, prev), sum) });
+  if (!ok) return;
+  const a = draw(); ver.clips = a.clips;
+  for (const c of ver.clips) if (!c.body) c.body = { block: [{ at: 0, pose: "idle" }] };
+  touch(); CTX.rerender(); status(sum.textContent);
+}
+const SEL_SID = () => (S.flow[SEL] || {}).ref, sceneK = () => { const sc = S.scenes[SEL_SID()]; return sc && sc.variants ? (VTAB[SEL_SID()] || sc.pick) : null; };
 function newClipId(ver) { let n = (ver.clips || []).length + 1; while ((ver.clips || []).some(x => x.id === "c" + n)) n++; return "c" + n; }
 async function dropTake(e, sc, c, sid) {          // a take's video (or audio) dropped on its clip: Footage/<game>/<take id>.<ext>
   const f = [...(e.dataTransfer.files || [])].find(x => /\.(mp4|mov|webm|wav|mp3|m4a)$/i.test(x.name));

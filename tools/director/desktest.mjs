@@ -215,5 +215,38 @@ console.log("reusable motions (motion.js, behave motion)");
   o2.some(l => l.startsWith("ERROR") && /no_such_motion/.test(l)) && o2.some(l => /mari_idle walks a route: make it in_place/.test(l)) ? ok("… a motion not in the table is an error, one walked without in_place a warning") : fail("behave motion's errors: " + o2.filter(l => /b_desk_motion/.test(l)).join(" · "));
 }
 
+// ---- screenplay typing: lines typed or pasted as a script, and the scene's clips kept where the lines are
+console.log("screenplay typing (screenplay.js)");
+{
+  const SP = await import("./screenplay.js"), { clipSecs } = await import("./stage.js");
+  const S = story("Sample"), o = { cast: S.cast, clipMax: S.game.clip_max || 10, secs: clipSecs };
+  const r = SP.parse(`(she waits at the end of the hall)
+Mari: 来てくれたんだ。 / You came. [CU]
+You: Mari?
+(a long silence)
+Mari: 聞いて。今夜、何が聞こえても、誰が地下室からあなたの名前を呼んでも、あのドアは絶対に開けないで。約束して。今すぐ約束して、あの人が戻ってくる前に。お願いだから、ね。
+Kenji: Hello?
+a line with no speaker`, o);
+  const L = r.lines;
+  L[0].who === "mari" && L[0].ja === "来てくれたんだ。" && L[0].en === "You came." && L[0].shot === "cu" && L[0].act === "she waits at the end of the hall" ? ok("“Mari: 日本語 / English [CU]” with a note before it: her line, both languages, the shot, the note") : fail("a line: " + JSON.stringify(L[0]));
+  L[1].who === "player" && L[1].act === "a long silence" ? ok("“You:” is the player; a note under a line is that line's") : fail("the player's line: " + JSON.stringify(L[1]));
+  const parts = L.filter(l => l.split);
+  parts.length >= 2 && parts.every(l => clipSecs(l) <= o.clipMax) ? ok(`a line longer than a take: split at its sentences into ${parts.length} clips, each ${o.clipMax} s or less`) : fail("the split: " + JSON.stringify(parts.map(l => [l.ja, clipSecs(l)])));
+  r.warns.some(w => /Kenji isn't in the cast/.test(w)) && r.warns.some(w => /no speaker/.test(w)) ? ok("someone not in the cast, and a line with no speaker: warnings, not lines lost silently") : fail("warns: " + r.warns.join(" · "));
+  const sc = S.scenes.s_message, before = JSON.parse(JSON.stringify(sc.clips));
+  const back = SP.parse(SP.toText(sc.clips, S.cast), o).lines;
+  back.length === sc.clips.length && back.every((l, i) => l.who === sc.clips[i].who && (l.en || "") === (sc.clips[i].en || "") && (l.ja || "") === (sc.clips[i].ja || "")) ? ok(`a scene as text and back: the same ${back.length} lines`) : fail("the round trip");
+  const nid = list => { let n = list.length + 1; while (list.some(c => c.id === "c" + n)) n++; return "c" + n; };
+  let t = SP.toText(sc.clips, S.cast).split("\n"); const i2 = t.findIndex(x => x.startsWith("Mari: ") && x.includes(sc.clips[2].en));
+  t[i2] = t[i2].replace(sc.clips[2].en, "Father's diary is in the study. It says where the key is."); t.splice(1, 0, "You: Mari, is that you?");
+  const a = SP.applyTo(JSON.parse(JSON.stringify(sc.clips)), SP.parse(t.join("\n"), o).lines, nid);
+  const kept2 = a.clips.find(c => c.id === sc.clips[2].id);
+  a.added === 1 && a.changed === 1 && a.removed === 0 && kept2 && kept2.en.startsWith("Father's diary is in the study. It says") && JSON.stringify(kept2.body) === JSON.stringify(before[2].body)
+    ? ok(`an inserted line is new, an edited one keeps its clip (its id, body and camera): ${a.kept} kept, ${a.changed} changed, ${a.added} added`) : fail("applyTo: " + JSON.stringify({ kept: a.kept, changed: a.changed, added: a.added, removed: a.removed }));
+  sc.clips = a.clips; for (const c of sc.clips) if (!c.body) c.body = { block: [{ at: 0, pose: "idle" }] };
+  const out = storyCheck("Sample", S).trim().split("\n").pop();
+  /STORY ok/.test(out) ? ok(`the scene typed again: the story check passes (${out})`) : fail("typed scene: " + out);
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);
