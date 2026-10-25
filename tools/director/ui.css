@@ -315,3 +315,46 @@ details.quick{flex:none}details.quick summary{cursor:pointer;list-style:none}det
 .goto-t{display:flex;flex-direction:column;min-width:0}.goto-t>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .goto-s{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .goto-none{color:var(--dim);padding:16px}
+
+/* ---- pictures (pictures.js): faces, poses, motions, what the player sees ---- */
+img.pic{display:block;background:#1c1c21;transition:opacity .25s}
+img.pic.stale{opacity:.5}
+img.pic.none{visibility:hidden}
+img.pic.face{width:18px;height:18px;border-radius:50%;object-fit:cover;flex:none}
+.who{display:inline-flex;align-items:center;gap:5px}
+.who img.face{margin-left:-5px;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--who) 50%,transparent)}
+.lpicw{flex:none;width:80px;height:45px;border-radius:5px;overflow:hidden;background:#141417;border:1px solid var(--line);cursor:zoom-in}
+.lpicw img.pic{width:80px;height:45px;object-fit:cover}
+.lpicw:hover{outline:1px solid var(--accent);outline-offset:1px}
+#board .card .cardpic{position:absolute;right:0;top:0;height:100%;width:96px;object-fit:cover;border-radius:0 5px 5px 0;pointer-events:none;opacity:.9;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 72%);mask-image:linear-gradient(90deg,transparent,#000 72%)}
+#board .card .t,#board .card .n,#board .card .m{position:relative}
+#board .card .n,#board .card .m{text-shadow:0 1px 2px #000,0 0 6px #000}
+#board .card .faces{display:inline-flex;gap:2px;margin-left:6px}
+#board .card .faces img.face{width:16px;height:16px;box-shadow:0 0 0 1.5px var(--panel2)}
+.ppk{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 3px;min-height:28px;max-width:100%;vertical-align:middle}
+.ppk img.pic{height:24px;width:18px;border-radius:4px;object-fit:cover}
+.ppk img.pic-cast{width:22px;height:22px;border-radius:50%}
+.ppk-l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppk-b{padding:2px 4px;min-height:28px;display:inline-flex;align-items:center}
+.ppk-b img.pic{width:36px;height:24px;border-radius:4px}
+.ppk-pop{position:fixed;z-index:130;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.6);padding:8px;width:min(540px,94vw)}
+.ppk-q{width:100%;margin-bottom:8px;box-sizing:border-box}
+.ppk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;max-height:min(420px,60vh);overflow:auto}
+.ppk-t{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:8px;background:var(--panel2);border:1px solid transparent;min-width:0;cursor:pointer}
+.ppk-t:hover{border-color:var(--accent)}
+.ppk-t.on{border-color:var(--accent);background:#33291a}
+.ppk-t img.pic{width:60px;height:80px;border-radius:6px;object-fit:cover}
+.ppk-t img.pic-cast{width:64px;height:64px;border-radius:50%}
+.ppk-t img.pic-motion{width:96px;height:64px}
+.ppk-tl{font-size:11.5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppk-none{display:flex;align-items:center;justify-content:center;width:60px;height:60px;color:var(--dim);font-size:20px}
+.ppk-t.new{color:var(--accent);justify-content:center;border:1px dashed var(--line)}
+.db-item img.face{width:24px;height:24px}
+.db-portrait{display:flex;gap:14px;align-items:center;margin:2px 0 12px}
+.db-portrait img.pic{width:96px;height:96px;border-radius:14px;flex:none}
+.db-portrait .hint{margin:0;max-width:360px}
+.bhint{max-width:calc(100% - 200px)}
+.frm-r .ppk{width:100%}
+.ppk .ppk-l{flex:1;text-align:left}
+.ppk-t.new .ppk-tl{white-space:normal;text-align:center}

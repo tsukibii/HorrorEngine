@@ -8,7 +8,7 @@ import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
 const { pack, unpack, pasteClips, copyNodes, pasteNodes } = CLIPBOARD;
 import { triggerText, actionText } from "./commands.js";
@@ -17,6 +17,7 @@ import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
 import { DebugPanel } from "./debug.js";
 import { openGoto } from "./goto.js";
+import { Pictures } from "./pictures.js";
 import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
@@ -40,7 +41,7 @@ const MOODS = {
 let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {}, TAKES = {}, MADE = [];   // MADE: the game's generated motions (Motion/*.json), for the clips' picker
 let BASE = null;                                  // the story as it was on disk when the desk last loaded or saved it: the merge's base
 let MADE_MT = {}, FILE_MT = {};   // when each made motion was written, and when the one in FILES was: a take imported again under its name replaces it
-let flowStage = null, watchStage = null, PLAY = null, BODIES = [];
+let flowStage = null, watchStage = null, PLAY = null, BODIES = [], PICS = null;
 const today = () => new Date().toISOString().slice(0, 10);
 
 /* ---------- server ---------- */
@@ -57,6 +58,7 @@ async function boot() {
     $("#stageBox").prepend(flowStage.renderer.domElement);
     watchStage = new Stage($("#watchBox"), LIB);
     $("#watchBox").prepend(watchStage.renderer.domElement);
+    PICS = pictures();
     wireFreeCam();
     const q = new URLSearchParams(location.search);
     if (q.get("game") && g.games.includes(q.get("game"))) { GAME = q.get("game"); $("#game").value = GAME; }
@@ -68,6 +70,24 @@ async function boot() {
       if (q.get("watch")) { document.querySelector('nav button[data-v="watchView"]').click(); watch(node); }
     }
   } catch (e) { console.error(e); $("#offline").style.display = "block"; status("no server"); }
+}
+function pictures() {
+  const ps = new Stage(document.createElement("div"), LIB);
+  ps.thumbR = ps.renderer; ps.render = () => {};      // one GL context: its frames are made by thumb() alone
+  Object.defineProperty(ps, "bodies", { get: () => flowStage.bodies }); Object.defineProperty(ps, "defaultBody", { get: () => flowStage.defaultBody });
+  return new Pictures({ stage: ps, story: () => S, plan: () => PLAN, files: () => FILES, rev: () => LAST, color: whoColor, load: f => loadFile(f),
+    timeOf: sid => { const nid = Object.keys(S.flow).find(k => S.flow[k].type === "scene" && S.flow[k].ref === sid); return (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; } });
+}
+const pic = (kind, id, o) => PICS ? PICS.img(kind, id, o) : null;
+const face = (who, o = {}) => who && who !== "player" && (S.cast || {})[who] ? pic("cast", who, Object.assign({ cls: "face" }, o)) : null;
+// a pose picked from pictures (the blocking, the segments' keys, the layers, the Database's motions)
+function posePick(obj, key, after) {
+  return picPick({ get: () => obj[key], set: v => { obj[key] = v || "idle"; touch(); if (after) after(); }, choices: () => poseNames().map(p => [p, p]), pic: p => pic("pose", p), title: "the pose: click to pick from pictures" });
+}
+function seekClip(cid) {                          // the stage to a line of the scene shown, where its picture was taken
+  const sc = currentScene(); if (!sc) return;
+  const s = flowStage.timeline(sc).segs.find(x => x.type === "clip" && x.clip.id === cid && !x.answer); if (!s) return;
+  stopPlay(); const T = s.start + s.dur * 0.45; $("#scrub").value = T; scrubTo(T);
 }
 function fillGames(list) { const sel = $("#game"); sel.innerHTML = ""; for (const n of list) sel.append(el("option", { value: n }, n)); }
 async function load() {
@@ -167,7 +187,10 @@ function motionPick(b, c, segDur) {
   const inp = el("input", { list: id, value: f || "", placeholder: MADE.length ? `pick a motion (${MADE.length} made)` : "none made yet (Kimodo)", style: "width:180px",
     title: "the generated motion this clip plays (Content/Games/<game>/Motion/<name>.json); empty: the blocking keys above",
     on: { change: async e => { const v = e.target.value.trim().replace(/^.*Motion[\\/]/, ""); if (!v) delete b.file; else b.file = /\.json$/.test(v) ? v : v + ".json"; touch(); await loadFile(b.file); renderInspector(); showStage(); } } });
-  return el("span", {}, inp, el("datalist", { id }, ...MADE.map(n => el("option", { value: n + ".json" }))), tag);
+  const browse = el("button", { class: "ppk-b", title: "the made motions, as pictures of their bodies at four moments", on: { click: e => { e.preventDefault(); pickGrid(browse, {
+    get: () => b.file || "", blank: "none (the blocking keys)", choices: () => MADE.map(n => [n + ".json", n]), pic: f => pic("motion", f) },
+    async v => { if (!v) delete b.file; else b.file = v; touch(); await loadFile(b.file); renderInspector(); showStage(); }); } } }, have ? pic("motion", f) : icon("motion", 14));
+  return el("span", { class: "rowi" }, browse, inp, el("datalist", { id }, ...MADE.map(n => el("option", { value: n + ".json" }))), tag);
 }
 async function loadFiles() {
   for (const sc of Object.values(S.scenes || {})) for (const ver of [sc, ...Object.values(sc.variants || {})]) for (const c of ver.clips || []) {
@@ -397,6 +420,7 @@ const CTX = {
     }
     return [];
   },
+  pic(kind, id) { if (id === undefined) return kind === "cast" || kind === "pose"; return kind === "cast" ? face(id) || el("span", { class: "ppk-none" }, "?") : pic(kind, id); },
   name(kind, v) {
     if (v === undefined || v === null || v === "") return "…";
     if (kind === "line") { const l = (S.lines || {})[v]; return l ? `“${(l.en || l.ja || v).slice(0, 48)}”` : v; }
@@ -447,8 +471,12 @@ function cardOf(id, n) {
   if (n.type === "stitch" && ref) meta = (ref.play ? `${ref.play.type} round` : `${(ref.beats || []).length} beats`) + ` · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
   if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
   const probs = problems(id), nn = openNotes(notesHost(id)), worst = probs.some(p => p.sev === "error") ? "var(--bad)" : "var(--warn)";
+  const v = n.type === "scene" && ref ? version(ref) : null, first = v && (v.clips || [])[0];
+  const who = v ? [...new Set((v.clips || []).map(c => c.who).filter(w => w && w !== "player" && (S.cast || {})[w]))].slice(0, 3) : [];
   return { title: probs.map(p => (p.sev === "error" ? "✖ " : "⚠ ") + p.text).join("\n"), kids: [
-    el("div", { class: "t" }, icon({ scene: "film", stitch: "task", choice: "choice", ending: "ending" }[n.type] || "box", 11), " ", n.type === "stitch" ? "task" : n.type, id === S.game.start ? " · start" : ""),
+    first ? pic("line", [n.ref, ref.variants ? ref.pick : null, first.id], { cls: "cardpic" }) : null,
+    el("div", { class: "t" }, icon({ scene: "film", stitch: "task", choice: "choice", ending: "ending" }[n.type] || "box", 11), " ", n.type === "stitch" ? "task" : n.type, id === S.game.start ? " · start" : "",
+      who.length ? el("span", { class: "faces" }, ...who.map(w => face(w, { title: (S.cast[w] || {}).name || w }))) : null),
     el("div", { class: "n" }, nodeTitle(id, n)),
     el("div", { class: "m" }, id + (meta ? " · " + meta : "")),
     probs.length ? el("span", { class: "badge", style: `background:${worst};color:${worst === "var(--bad)" ? "#fff" : "#000"}` }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
@@ -898,7 +926,8 @@ function clipRow(sc, ver, c, i, sid, open) {
     on: { click: e => { if (e.target.closest("button,select,input,.grip")) return; if (e.ctrlKey || e.metaKey || e.shiftKey) { pick("clips", c, { add: true }); return; } pick("clips", c); OPEN[sid] = open ? null : { id: c.id, tab: (OPEN[sid] || {}).tab || "line" }; CTX.rerender(); },
       contextmenu: e => { e.preventDefault(); lineMenu(e, sc, ver, c, i, sid, open); } } },
     el("span", { class: "lnum" }, i + 1),
-    el("span", { class: "who " + (c.who === "player" ? "pl" : "") }, ((S.cast || {})[c.who] || {}).name || c.who || "?"),
+    el("span", { class: "lpicw", title: "what the player sees on this line: click to show it on the stage", on: { click: e => { e.stopPropagation(); seekClip(c.id); } } }, pic("line", [sid, k, c.id])),
+    el("span", { class: "who " + (c.who === "player" ? "pl" : "") }, face(c.who), ((S.cast || {})[c.who] || {}).name || c.who || "?"),
     el("span", { class: "ltext" }, el("span", { class: "en" }, c.en || c.ja || "(no line yet)"), c.en && c.ja ? el("span", { class: "ja" }, c.ja) : null),
     el("span", { class: "lchips" }, ...chips),
     el("span", { class: "lsecs" + (secs > max ? " err" : ""), title: secs > max ? `over ${max} s: split it into two clips` : (c.dur ? "the take's length" : "estimated") }, secs.toFixed(1) + " s"),
@@ -1064,7 +1093,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     else bodySec.append(el("div", { class: "row" }, el("span", { class: "lab" }, "body"), el("span", { class: "kv" }, "the blocking below plays until the Kimodo segments under it are made")));
     b.block = b.block || [];
     const kt = el("table", {}, el("tr", {}, ...["at (0..1)", "pose", "ease in", "walk", "move to", ""].map(h => el("th", {}, h))));
-    b.block.forEach((k, ki) => kt.append(el("tr", {}, el("td", { style: "width:64px" }, txt(k, "at", { num: true, step: "0.05" })), el("td", {}, sel(k, "pose", poseNames(), { blank: false })),
+    b.block.forEach((k, ki) => kt.append(el("tr", {}, el("td", { style: "width:64px" }, txt(k, "at", { num: true, step: "0.05" })), el("td", {}, posePick(k, "pose", renderInspector)),
       el("td", {}, sel(k, "ease", M.EASE_NAMES, { blank: "inout", drop: true })), el("td", { style: "width:40px" }, el("input", { type: "checkbox", checked: !!k.walk, on: { change: e => { if (e.target.checked) k.walk = true; else delete k.walk; touch(); } } })),
       el("td", {}, sel(k, "move", spots(lvl), { drop: true })), el("td", { style: "width:28px" }, el("button", { on: { click: () => { b.block.splice(ki, 1); touch(); renderInspector(); } } }, "×")))));
     bodySec.append(kt, el("div", { class: "row" }, el("button", { on: { click: () => { c.body = b; b.block = b.block || []; const last = b.block[b.block.length - 1]; b.block.push({ at: last ? Math.min(1, +(last.at || 0) + 0.3) : 0, pose: last ? last.pose : "idle", ease: "inout" }); touch(); renderInspector(); } } }, "+ key"),
@@ -1138,7 +1167,7 @@ function segmentsEditor(sid, c, b, lvl) {
       el("button", { class: "x", on: { click: () => { g.path.splice(pi, 1); if (!g.path.length) delete g.path; redo(); } } }, "×"))),
       sel({ v: "" }, "v", spots(lvl), { blank: "+ mark", title: "add a stage mark to the root's path", after: () => {} }));
     pathRow.lastChild.addEventListener("change", e => { if (!e.target.value) return; (g.path = g.path || []).push(e.target.value); redo(); });
-    const keyRow = el("span", { class: "row" }, el("span", { class: "lab" }, "keys"), ...(g.keys || []).map((k, ki) => el("span", { class: "chip" }, sel(k, "pose", poseNames(), { blank: false }), "@", txt(k, "at", { num: true, step: "0.05", style: "width:46px", title: "where in the segment (0..1)" }),
+    const keyRow = el("span", { class: "row" }, el("span", { class: "lab" }, "keys"), ...(g.keys || []).map((k, ki) => el("span", { class: "chip" }, posePick(k, "pose", redo), "@", txt(k, "at", { num: true, step: "0.05", style: "width:46px", title: "where in the segment (0..1)" }),
       el("button", { class: "x", on: { click: () => { g.keys.splice(ki, 1); if (!g.keys.length) delete g.keys; redo(); } } }, "×"))),
       el("button", { title: "a full-body key from the pose library, for a pose Kimodo doesn't know", on: { click: () => { (g.keys = g.keys || []).push({ at: g.keys.length ? 1 : 0, pose: "idle" }); redo(); } } }, "+ key"));
     box.append(el("div", { class: "seg-card" },
@@ -1165,7 +1194,7 @@ function layersEditor(c, b) {
     box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "layer"),
       sel(ly, "mask", M.MASK_NAMES, { blank: false, title: "the part of the body it plays: upper (from the waist up), arms, left_arm, right_arm, head" }),
       sel(kind, "k", ["pose", "motion"], { blank: false, title: "a pose from the library, or a made motion", after: () => { if (kind.k === "pose") { delete ly.file; delete ly.fit; ly.pose = ly.pose || "idle"; } else { delete ly.pose; } redo(); } }),
-      kind.k === "pose" ? sel(ly, "pose", poseNames(), { blank: false }) : motionPick(ly, c, clipSecs(c)),
+      kind.k === "pose" ? posePick(ly, "pose", redo) : motionPick(ly, c, clipSecs(c)),
       "from", txt(ly, "from", { num: true, step: "0.05", ph: "0", style: "width:48px", title: "where in the clip it comes in (0..1)" }),
       "to", txt(ly, "to", { num: true, step: "0.05", ph: "1", style: "width:48px", title: "where it goes (0..1)" }),
       "fade", txt(ly, "fade", { num: true, step: "0.05", ph: "0.3", style: "width:48px", title: "seconds it eases in and out (not at the clip's edges: the clip's blend does that)" }),
@@ -2018,6 +2047,7 @@ const DB = new Database($("#dbView"), {
   story: () => S, game: () => GAME, ctx: CTX, touch, status, whoColor, takes: () => TAKES, playLine, dropTake: dropLineTake, secs: c => clipSecs(c),
   prompt: ln => minimaxPrompt(ln, S.cast), copy: copyText, voices: VOICES, eases: M.EASE_NAMES, poses: () => poseNames(), times: TIMES, timeMark: TIME_MARK, timeDefault: TIME_DEFAULT,
   bodies: () => [["capsules", "capsule figure"], ...BODIES], afterBody: async () => { await loadBodies(); showStage(); },
+  pic: (kind, id, cls) => pic(kind, id, { cls }), posePick, made: () => MADE,
   nodes: () => Object.entries(S.flow).map(([id, n]) => [id, `${nodeTitle(id, n)} (${id})`]), redraw: () => { renderBoard(); showStage(); },
   page: name => `${name}?game=${encodeURIComponent(GAME || "")}`,
   goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },

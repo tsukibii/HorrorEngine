@@ -70,7 +70,7 @@ export class Database {
   entries() {
     const S = this.S, D = this.D, cast = id => ((S.cast || {})[id] || {}).name || id;
     switch (this.tab) {
-      case "cast": return Object.entries(S.cast || {}).map(([id, c]) => ({ id, label: c.name || id, sub: id, dot: D.whoColor(id) }));
+      case "cast": return Object.entries(S.cast || {}).map(([id, c]) => ({ id, label: c.name || id, sub: id, dot: D.whoColor(id), pic: D.pic ? () => D.pic("cast", id, "face") : null }));
       case "items": return Object.entries(S.items || {}).map(([id, v]) => ({ id, label: v.name || id, sub: id }));
       case "notes": return Object.entries(S.notes || {}).map(([id, v]) => ({ id, label: v.title || id, sub: id }));
       case "sounds": return Object.entries(S.sounds || {}).map(([id, v]) => ({ id, label: id, sub: v.file || "" }));
@@ -97,7 +97,7 @@ export class Database {
       if (x.group) { items.append(h("div", { class: "db-group" }, x.group)); continue; }
       if (q && !(x.label + " " + x.sub).toLowerCase().includes(q)) continue;
       const row = h("div", { class: "db-item" + (x.id === this.pick[this.tab] ? " on" : ""), title: x.sub, on: { click: () => { this.pick[this.tab] = x.id; this.renderList(); this.renderForm(); } } },
-        x.dot ? h("span", { class: "dot", style: `background:${x.dot}` }) : x.ic ? icon(x.ic, 13) : null,
+        x.pic ? x.pic() : x.dot ? h("span", { class: "dot", style: `background:${x.dot}` }) : x.ic ? icon(x.ic, 13) : null,
         h("span", { class: "db-l" }, h("span", { class: "t" }, x.label), h("span", { class: "sub" }, x.sub)), x.take ? h("span", { class: "lchip ok", title: "its take is in Footage" }, "take") : null);
       if (this.tab === "interrupts") { const i = (this.S.interrupts || []).findIndex((it, j) => (it.id || String(j)) === x.id); row.prepend(grip(row, this.S.interrupts, i, "interrupt")); }
       items.append(row);
@@ -201,6 +201,7 @@ export class Database {
   castForm(c, id) {
     const D = this.D, m = c.measures;
     return h("div", { class: "frm" },
+      D.pic ? h("div", { class: "db-portrait" }, D.pic("cast", id, "portrait"), h("p", { class: "hint" }, "their desk body, as the player meets them: the body below, the height, the skin tone and the shape all show here")) : null,
       this.row("Name", this.f(c, "name", { after: () => this.retitle(c.name || id) })),
       (this.S.format || 2) >= 3 ? this.row("Subject", this.sel(c, "subject", [["she", "she"], ["he", "he"]], { blank: "—" }), h("span", { class: "muted" }, "for the MiniMax prompts")) : null,
       this.row("Height", this.f(c, "height", { num: true, step: "0.01", world: true }), "m"),
@@ -266,7 +267,7 @@ export class Database {
     const drawKeys = () => {
       keys.innerHTML = "";
       block.forEach((b, i) => keys.append(h("div", { class: "rowi" }, h("span", { class: "muted" }, "at"), this.f(b, "at", { num: true, step: "0.05", min: 0, max: 1 }),
-        this.sel(b, "pose", D.poses(), { blank: false }), this.sel(b, "ease", D.eases, { blank: "inout (default)" }),
+        D.posePick ? D.posePick(b, "pose", () => this.changed()) : this.sel(b, "pose", D.poses(), { blank: false }), this.sel(b, "ease", D.eases, { blank: "inout (default)" }),
         h("button", { class: "ghost", title: "remove this key", on: { click: () => { block.splice(i, 1); if (!block.length) delete m.block; this.changed(); drawKeys(); } } }, icon("x", 13)))));
       keys.append(h("button", { class: "a-add", on: { click: () => { m.block = block; block.push({ at: block.length ? 1 : 0, pose: "idle", ease: block.length ? "inout" : undefined }); if (!block[block.length - 1].ease) delete block[block.length - 1].ease; this.changed(); drawKeys(); } } }, icon("plus", 13), " key"));
     };

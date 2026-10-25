@@ -212,6 +212,8 @@ export function fieldInput(f, obj, ctx, redraw) {
     case "answer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, (obj.options || []).map(o => [o.id, o.label || o.id]), cur, "—"); return s; }
     case "askanswer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, ctx.refs("askanswer:" + (obj.answered || "")), cur, "(any answer)"); return s; }
     default: {                                   // what exists of the kind, and "+ New…" to make one there and then (ctx.create)
+      if (ctx.pic && ctx.pic(f.kind)) return picPick({ get: () => obj[k], set: v => { set(v || undefined); if (redraw) redraw(); }, choices: () => ctx.refs(f.kind), pic: id => ctx.pic(f.kind, id),
+        blank: f.opt ? "—" : null, create: ctx.creates && ctx.creates(f.kind) ? () => ctx.create(f.kind) : null, createLabel: `New ${NOUN[f.kind] || f.kind}…` });
       const fill = v => { s.innerHTML = ""; options(s, ctx.refs(f.kind), v, f.opt ? "—" : "choose…"); if (ctx.creates && ctx.creates(f.kind)) s.append(h("option", { value: NEW }, `+ New ${NOUN[f.kind] || f.kind}…`)); };
       const s = h("select", { on: { change: async e => {
         if (e.target.value === NEW) { const id = await ctx.create(f.kind); fill(id || obj[k]); if (id) set(id); if (redraw) redraw(); return; }
@@ -219,6 +221,45 @@ export function fieldInput(f, obj, ctx, redraw) {
       fill(cur); return s;
     }
   }
+}
+// ---- a picker with pictures, after RPG Maker's face and character pickers: a button with the chosen one's picture and
+// name; a click opens every choice as a picture in a grid, searchable (type), Enter or a click picks, Esc closes
+//   picPick({ get, set, choices: () => [[id, label]], pic: id => <img>, blank, title, create: async () => id, createLabel })
+export function picPick(o) {
+  const b = h("button", { class: "ppk", type: "button", title: o.title || "" });
+  const draw = () => {
+    b.innerHTML = ""; const v = o.get(), hit = o.choices().find(([id]) => String(id) === String(v));
+    if (v) b.append(o.pic(v)); b.append(h("span", { class: "ppk-l" }, hit ? hit[1] : v ? `${v} (not found)` : o.blank || "choose…"), icon("down", 11));
+  };
+  b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); pickGrid(b, o, v => { o.set(v); draw(); }); });
+  draw(); return b;
+}
+export function pickGrid(anchor, o, done) {
+  document.querySelectorAll(".ppk-pop").forEach(x => x.remove());
+  const q = h("input", { class: "ppk-q", placeholder: "Search…" }), grid = h("div", { class: "ppk-grid" });
+  const pop = h("div", { class: "ppk-pop", on: { mousedown: e => e.stopPropagation() } }, q, grid);
+  const close = () => { pop.remove(); for (const t of ["mousedown", "wheel"]) window.removeEventListener(t, off, true); window.removeEventListener("keydown", key, true); };
+  const off = e => { if (!pop.contains(e.target)) close(); };
+  const tile = (id, l, img) => h("button", { class: "ppk-t" + (String(id) === String(o.get() ?? "") ? " on" : ""), type: "button", title: l, on: { click: () => { close(); done(id); } } },
+    img || h("span", { class: "ppk-none" }, "—"), h("span", { class: "ppk-tl" }, l));
+  const fill = () => {
+    grid.innerHTML = ""; const w = q.value.trim().toLowerCase();
+    if (o.blank && !w) grid.append(tile("", o.blank, null));
+    for (const [id, l] of o.choices()) if (!w || `${id} ${l}`.toLowerCase().includes(w)) grid.append(tile(id, l, o.pic(id)));
+    if (o.create && !w) grid.append(h("button", { class: "ppk-t new", type: "button", on: { click: async () => { close(); const id = await o.create(); if (id) done(id); } } }, icon("plus", 18), h("span", { class: "ppk-tl" }, o.createLabel || "New…")));
+    if (!grid.children.length) grid.append(h("div", { class: "kv", style: "padding:10px" }, "Nothing called that."));
+  };
+  const key = e => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); const t = grid.querySelector(".ppk-t:not(.new)"); if (t) t.click(); }
+  };
+  q.addEventListener("input", fill);
+  document.body.append(pop); fill();
+  const r = anchor.getBoundingClientRect(), pr = pop.getBoundingClientRect();      // under the button, kept on screen
+  pop.style.left = Math.max(6, Math.min(r.left, innerWidth - pr.width - 6)) + "px";
+  pop.style.top = (r.bottom + pr.height + 6 < innerHeight ? r.bottom + 4 : Math.max(6, r.top - pr.height - 4)) + "px";
+  setTimeout(() => { for (const t of ["mousedown", "wheel"]) window.addEventListener(t, off, true); window.addEventListener("keydown", key, true); q.focus(); }, 0);
+  return pop;
 }
 export function form(fields, obj, ctx, redraw) {
   return h("div", { class: "frm" }, fields.map(f => h("label", { class: "frm-r" }, h("span", { class: "frm-l" }, f.label), fieldInput(f, obj, ctx, redraw))));
