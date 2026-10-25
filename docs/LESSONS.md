@@ -559,3 +559,10 @@ triangles; a simplified shape is wrong exactly where things touch.
   Kimodo walk (whose travel was added after the scaling) met blocking she slid 22 cm. Walk a whole scene frame by
   frame and print the biggest jump of any joint (and which): it found this and the blocking's stride switching off
   in one frame (a foot 41 cm), neither visible in a still.
+
+## `node --check` passes a broken ES module (2026-10-25)
+
+The desk's files are ES modules with a `.js` name. `node --check file.js` on one of them exits 0 even with a syntax
+error in it (a bracket too many in app.js passed it; the browser refused the page: "Unexpected token ')'", nothing
+drawn). Check them as modules: `node --experimental-default-type=module --check file.js` (or import the file), and
+load the page once after an edit.

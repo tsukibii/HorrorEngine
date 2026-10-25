@@ -112,13 +112,13 @@ export function placeOf(S, path) {
   const [t, a, ...rest] = path, nodeOf = (type, ref) => Object.keys(S.flow || {}).find(n => S.flow[n].type === type && S.flow[n].ref === ref) || null;
   if (t === "stitches") {
     const st = S.stitches[a] || {}, i = rest[0] === "beats" ? rest[1] : null, b = i !== null && st.beats ? st.beats[i] : null;
-    return { text: `task “${st.title || a}”${b ? " · beat " + b.id : rest[0] === "play" ? " · its play" : rest[0] === "timer" ? " · its timer" : ""}`, node: nodeOf("stitch", a) };
+    return { text: `task “${st.title || a}”${b ? " · beat " + b.id : rest[0] === "play" ? " · its play" : rest[0] === "timer" ? " · its timer" : ""}`, node: nodeOf("stitch", a), stitch: a, beat: b ? b.id : null };
   }
   if (t === "scenes") {
     const sc = S.scenes[a] || {}; let v = sc, k = null, r = rest;
     if (r[0] === "variants") { k = r[1]; v = (sc.variants || {})[k] || {}; r = r.slice(2); }
     const c = r[0] === "clips" && v.clips ? v.clips[r[1]] : null;
-    return { text: `scene “${sc.title || a}”${k ? " (" + k + ")" : ""}${c ? " · line " + c.id : r[0] === "cues" ? " · a cue" : r[0] === "stage" ? " · its stage" : r[0] === "look" ? " · its trackers" : r[0] === "sets" ? " · what it sets" : ""}`, node: nodeOf("scene", a) };
+    return { text: `scene “${sc.title || a}”${k ? " (" + k + ")" : ""}${c ? " · line " + c.id : r[0] === "cues" ? " · a cue" : r[0] === "stage" ? " · its stage" : r[0] === "look" ? " · its trackers" : r[0] === "sets" ? " · what it sets" : ""}`, node: nodeOf("scene", a), scene: a, variant: k, clip: c ? c.id : null };
   }
   if (t === "flow") return { text: `flow ${a}`, node: a };
   if (t === "levels") {

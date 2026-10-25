@@ -201,8 +201,8 @@ function nestEditor(list, ctx, redraw) {         // all / any: triggers, each wi
 }
 // a trigger as a pill: "When the player enters the hall"; click to change it. slot: {get, set}
 export function triggerPill(slot, ctx, { prefix = "When", after = null } = {}) {
-  const w = slot.get(), d = TRIGGER[verbOfTrigger(w)];
-  return h("button", { class: "pill", title: "click to change when it happens", on: { click: async () => { const v = await editTrigger(slot.get(), ctx); if (v) { slot.set(v); ctx.changed(); (after || ctx.rerender)(); } } } },
+  const w = slot.get(), d = TRIGGER[verbOfTrigger(w)], pm = w && ctx.marks ? ctx.marks(w) : null;
+  return h("button", { class: "pill" + (pm ? " bad" : ""), title: pm ? pm.map(p => p.text).join("\n") : "click to change when it happens", on: { click: async () => { const v = await editTrigger(slot.get(), ctx); if (v) { slot.set(v); ctx.changed(); (after || ctx.rerender)(); } } } },
     icon(d ? d.icon : "clock", 14), h("span", {}, (prefix ? prefix + " " : "") + (w ? triggerText(w, ctx.name) : "(choose when)")));
 }
 
@@ -246,7 +246,8 @@ export function actionList(arr, ctx, { empty = "Nothing yet.", depth = 0 } = {})
   arr.forEach((a, i) => {
     const verb = verbOfAction(a), d = ACTION[verb];
     const edit = async () => { const v = await editAction(a, ctx); if (v) { arr[i] = v; ctx.changed(); ctx.rerender(); } };
-    const row = h("div", { class: "arow", style: `--g:${groupColor(verb)}` });
+    const pm = ctx.marks ? ctx.marks(a) : null;      // the live checks' problems on this command
+    const row = h("div", { class: "arow" + (pm ? (pm.some(p => p.sev === "error") ? " bad" : " warnrow") : ""), style: `--g:${groupColor(verb)}`, title: pm ? pm.map(p => p.text).join("\n") : null });
     row.append(grip(row, arr, i, "action"), h("span", { class: "a-ic" }, icon(d ? d.icon : "box", 14)),
       h("span", { class: "a-t", title: "double-click to edit", on: { dblclick: edit } }, actionText(a, ctx.name)),
       h("span", { class: "a-tools" },
@@ -273,7 +274,8 @@ export function actionList(arr, ctx, { empty = "Nothing yet.", depth = 0 } = {})
 // ---- a beat as an event page: when, only if, its commands -------------------------------------------------------
 export function beatCard(b, i, beats, ctx, { secrets = [] } = {}) {
   b.do = b.do || [];
-  const card = h("div", { class: "beat" });
+  const card = h("div", { class: "beat", "data-beat": b.id });
+  const bad = ctx.marksIn ? ctx.marksIn(b.id) : [];
   const flags = b.if || [];
   const ifRow = h("div", { class: "beat-if" }, h("span", { class: "lab" }, "only if"),
     flags.map((f, j) => h("span", { class: "chip" + (f.startsWith("!") ? " neg" : ""), title: f.startsWith("!") ? "this flag must NOT be set" : "this flag must be set" },
@@ -284,6 +286,7 @@ export function beatCard(b, i, beats, ctx, { secrets = [] } = {}) {
     } } }, icon("plus", 12), flags.length ? "" : " a flag"));
   card.append(h("div", { class: "beat-h" }, grip(card, beats, i, "beat"),
     triggerPill({ get: () => b.when, set: v => { b.when = v; } }, ctx),
+    bad.length ? h("span", { class: "pmark " + (bad.some(p => p.sev === "error") ? "err" : "warn"), title: bad.map(p => p.text).join("\n") }, icon("alert", 12), " " + bad.length) : null,
     h("span", { class: "grow" }),
     h("button", { class: "ghost", title: "duplicate this beat", on: { click: () => { const c = clone(b); c.id = nextId(beats, b.id); beats.splice(i + 1, 0, c); ctx.changed(); ctx.rerender(); } } }, icon("copy", 14)),
     h("button", { class: "ghost", title: "delete this beat", on: { click: () => { if (confirm(`Delete beat ${b.id}?`)) { beats.splice(i, 1); ctx.changed(); ctx.rerender(); } } } }, icon("x", 14))));

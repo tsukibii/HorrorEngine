@@ -13,6 +13,8 @@ import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
+import { lint, byObject } from "./lint.js";
+import { placeOf } from "./refs.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -68,6 +70,7 @@ async function load() {
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
   await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
+  CHECK.list = []; CHECK.key = null; scheduleCheck(1500);
 }
 /* ---------- the takes (MiniMax videos) on the timeline ---------- */
 const takeId = (sid, k, cid) => `${GAME}_${sid}_${k || "main"}_${cid}`;
@@ -182,7 +185,7 @@ async function loadBodies() {
 }
 async function save(force) {
   if (!S) return;
-  try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; dirty(false); status("saved " + new Date().toLocaleTimeString()); }
+  try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; dirty(false); status("saved " + new Date().toLocaleTimeString()); scheduleCheck(300); }
   catch (e) {
     if (e.status !== 409) { alert("save failed: " + e.message); return false; }
     const kept = await carryLinks();
@@ -222,7 +225,7 @@ try {
 async function poll() { if (!GAME) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) $("#banner").style.display = "block"; } catch (e) { } }
 function dirty(d) { DIRTY = d; status(d ? "unsaved changes" : "saved"); $("#status").classList.toggle("dirty", d); }
 function status(t) { $("#status").textContent = (GAME ? GAME + " · " : "") + t; }
-function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); }
+function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); scheduleCheck(); problemsButton(); }
 let UNDO = [], REDO = [], LAST = null;
 function snapshot() { const now = JSON.stringify(S); if (LAST !== null && now !== LAST) { UNDO.push(LAST); if (UNDO.length > 150) UNDO.shift(); REDO = []; } LAST = now; undoState(); }
 function undoState() { $("#undo").disabled = !UNDO.length; $("#redo").disabled = !REDO.length; }
@@ -253,14 +256,20 @@ function nodeRef(n) { return n.type === "scene" ? S.scenes[n.ref] : n.type === "
 function notesHost(nid) { const n = S.flow[nid]; return nodeRef(n) || n; }
 function openNotes(obj) { return (obj && obj.notes || []).filter(x => !x.done).length; }
 function eventResults(ev) { if (!ev) return []; if (ev.type === "choose") return (ev.options || []).map(o => o.id); return ev.type === "struggle" ? ["escape", "caught"] : ["success", "fail"]; }
-function problems(nid) {
-  const n = S.flow[nid], p = [], max = S.game.clip_max || 10;
-  if (n.type === "scene") { const sc = S.scenes[n.ref]; if (!sc) return ["missing scene " + n.ref]; (version(sc).clips || []).forEach((c, i) => { if (clipSecs(c) > max) p.push(`${c.id} over ${max} s`); if (i && !c.seam) p.push(`${c.id} has no seam`); }); }
-  if (n.type === "stitch" && !S.stitches[n.ref]) p.push("missing stitch " + n.ref);
-  if (n.next && !S.flow[n.next]) p.push("next " + n.next + " missing");
-  for (const o of n.options || []) if (!S.flow[o.to]) p.push("option to " + o.to + " missing");
-  return p;
+/* ---------- problems: the live checks as you edit (lint.js), and the story check's after it runs ---------- */
+let LINT = [], LINT_KEY = null, LINT_PLAN = null, LINT_OBJ = new Map();
+const CHECK = { busy: false, again: false, at: 0, ok: null, summary: "", list: [], key: null };
+function lintNow() {
+  if (!S) return [];
+  if (LINT_KEY === LAST && LINT_PLAN === PLAN && LAST !== null) return LINT;
+  LINT = lint(S, { things: things(), poses: poseNames(), secs: c => clipSecs(c) }).map(p => Object.assign(p, { src: "desk" }));
+  LINT_KEY = LAST; LINT_PLAN = PLAN; LINT_OBJ = byObject(LINT);
+  problemsButton(); return LINT;
 }
+function allProblems() { return [...lintNow(), ...(CHECK.key === LAST ? CHECK.list : CHECK.list.map(p => Object.assign({}, p, { stale: true })))]; }
+function problems(nid) { return allProblems().filter(p => p.at && p.at.node === nid && !(p.src === "check" && p.sev === "warn")); }
+function marks(obj) { lintNow(); return LINT_OBJ.get(obj) || null; }
+function marksIn(beat) { const st = S.flow[SEL] && S.flow[SEL].type === "stitch" ? S.flow[SEL].ref : null; return allProblems().filter(p => p.at && p.at.beat === beat && p.at.stitch === st); }
 const TIME_MARK = { day: "☀", dusk: "◐", night: "☾" };   // a scene's time on the board and in the pickers
 function newId(prefix, table) { let i = 1; while (table[prefix + i]) i++; return prefix + i; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -325,6 +334,7 @@ const CTX = {
   },
   changed() { touch(); },
   rerender() { const sc = $("#inspector").scrollTop; renderInspector(); $("#inspector").scrollTop = sc; },
+  marks, marksIn,                                  // problems on a command, a trigger or a beat (ui.js marks them)
   creates: kind => ["line", "item", "note", "sound", "counter", "secret", "motion", "cast"].includes(kind),   // "+ New…" in their pickers
   create: kind => DB.quickNew(kind),
 };
@@ -360,12 +370,12 @@ function cardOf(id, n) {
   if (n.type === "scene" && ref) { const v = version(ref), ft = times[id]; meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : ""); }
   if (n.type === "stitch" && ref) meta = (ref.play ? `${ref.play.type} round` : `${(ref.beats || []).length} beats`) + ` · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
   if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
-  const probs = problems(id), nn = openNotes(notesHost(id));
-  return { title: probs.join("\n"), kids: [
+  const probs = problems(id), nn = openNotes(notesHost(id)), worst = probs.some(p => p.sev === "error") ? "var(--bad)" : "var(--warn)";
+  return { title: probs.map(p => (p.sev === "error" ? "✖ " : "⚠ ") + p.text).join("\n"), kids: [
     el("div", { class: "t" }, icon({ scene: "film", stitch: "task", choice: "choice", ending: "ending" }[n.type] || "box", 11), " ", n.type === "stitch" ? "task" : n.type, id === S.game.start ? " · start" : ""),
     el("div", { class: "n" }, nodeTitle(id, n)),
     el("div", { class: "m" }, id + (meta ? " · " + meta : "")),
-    probs.length ? el("span", { class: "badge", style: "background:var(--bad);color:#fff" }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
+    probs.length ? el("span", { class: "badge", style: `background:${worst};color:${worst === "var(--bad)" ? "#fff" : "#000"}` }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
 }
 function nodeTitle(id, n) { const ref = nodeRef(n); return (ref && ref.title) || n.title || n.prompt || (n.type === "choice" ? `choice by ${n.by}${n.of ? " of " + n.of : ""}` : id); }
 function selectNode(id) { SEL = id; renderBoard(); renderInspector(); showStage(); }
@@ -683,6 +693,8 @@ function clipRow(sc, ver, c, i, sid, open) {
     b.file || segs.length ? el("span", { class: "lchip " + ((b.file && FILES[b.file]) || (segs.length && made === segs.length) ? "ok" : "dim"), title: segs.length ? `${made} of ${segs.length} Kimodo segments made` : b.file }, icon("motion", 11), segs.length ? ` ${made}/${segs.length}` : " ✓") : null,
     c.event ? el("span", { class: "lchip ev", title: "an event: " + c.event.type }, icon("trick", 11), " " + c.event.type) : null,
     c.reply ? el("span", { class: "lchip rp", title: "a hanging line: the player replies" }, icon("ask", 11), " reply") : null];
+  const pm = marks(c);
+  if (pm) chips.unshift(el("span", { class: "lchip " + (pm.some(p => p.sev === "error") ? "bad" : "warn"), title: pm.map(p => p.text).join("\n") }, icon("alert", 11), " " + pm.length));
   const row = el("div", { class: "lrow", title: open ? "click to close" : "click to open its tabs; drop a take's video here",
     on: { click: e => { if (e.target.closest("button,select,input,.grip")) return; OPEN[sid] = open ? null : { id: c.id, tab: (OPEN[sid] || {}).tab || "line" }; CTX.rerender(); } } },
     el("span", { class: "lnum" }, i + 1),
@@ -741,7 +753,7 @@ async function cleanTake(c, t, keepTrim) {        // the take's length and the d
 function clipCard(sc, ver, c, i, lvl, sid) {
   const max = S.game.clip_max || 10, over = clipSecs(c) > max, open = !!(OPEN[sid] && OPEN[sid].id === c.id);
   if (i) c.seam = c.seam || { kind: "blink" };
-  const card = el("div", { class: "clip line" + (over ? " over" : "") + (open ? " open" : ""), style: `--who:${whoColor(c.who)}` });
+  const card = el("div", { class: "clip line" + (over ? " over" : "") + (open ? " open" : ""), "data-clip": c.id, style: `--who:${whoColor(c.who)}` });
   card.append(el("div", { class: "lhead" }, grip(card, ver.clips, i, "clip"), clipRow(sc, ver, c, i, sid, open)));
   card.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); card.classList.add("droptake"); } });
   card.addEventListener("dragleave", e => { if (!card.contains(e.relatedTarget)) card.classList.remove("droptake"); });
@@ -1541,6 +1553,84 @@ function renderNotes() {
   if (done.length) { v.append(el("h2", {}, `Done · ${done.length}`)); for (const [x, w] of done) v.append(noteEl(x, w)); }
 }
 
+/* ---------- the Problems panel: every problem, the story check's too; click one to go there ---------- */
+const liveCheck = () => { try { return localStorage.getItem("dd.checkLive") !== "0"; } catch (e) { return true; } };
+let checkTimer = null;
+function scheduleCheck(ms) {                       // the story check on the story as it is now, once editing pauses
+  if (!S || (ms === undefined && !liveCheck())) return;
+  clearTimeout(checkTimer); checkTimer = setTimeout(runCheck, ms === undefined ? 8000 : ms);
+}
+async function runCheck() {
+  if (!S || !GAME) return;
+  if (CHECK.busy) { CHECK.again = true; return; }
+  CHECK.busy = true; const key = LAST, game = GAME; problemsButton();
+  try {
+    const j = await api("/api/storycheck/" + encodeURIComponent(game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S) });
+    if (game === GAME) { CHECK.list = checkList(j.errors, j.warnings); CHECK.ok = j.ok; CHECK.summary = j.summary; CHECK.at = Date.now(); CHECK.key = key; }
+  } catch (e) { CHECK.summary = "the story check couldn't run: " + e.message; }
+  CHECK.busy = false; renderBoard(); problemsButton();
+  if (CHECK.again) { CHECK.again = false; runCheck(); }
+}
+const checkList = (errors, warnings) => [...(errors || []).map(t => ({ sev: "error", text: t, src: "check", at: checkPlace(t) })), ...(warnings || []).map(t => ({ sev: "warn", text: t, src: "check", at: checkPlace(t) }))];
+function checkPlace(msg) {                         // the story check names its place first: a beat, a scene and its clip, a node, an entry, a thing
+  const toks = msg.split(/[^A-Za-z0-9_]+/).filter(Boolean), th = things();
+  const beatAt = id => { for (const [tid, st] of Object.entries(S.stitches || {})) { const i = (st.beats || []).findIndex(b => b.id === id); if (i >= 0) return ["stitches", tid, "beats", i]; } return null; };
+  for (const t of toks) {
+    const b = beatAt(t); if (b) return placeOf(S, b);
+    if ((S.scenes || {})[t]) { const m = msg.match(/clip (\w+)/), cl = version(S.scenes[t]).clips || [], i = m ? cl.findIndex(c => c.id === m[1]) : -1; return placeOf(S, i >= 0 ? ["scenes", t, "clips", i] : ["scenes", t]); }
+    if ((S.stitches || {})[t]) return placeOf(S, ["stitches", t]);
+    if ((S.flow || {})[t]) return placeOf(S, ["flow", t]);
+    for (const tb of ["lines", "motions", "items", "notes", "sounds", "cast", "secrets"]) if ((S[tb] || {})[t]) return placeOf(S, [tb, t]);
+    const ii = (S.interrupts || []).findIndex(x => x.id === t); if (ii >= 0) return placeOf(S, ["interrupts", ii]);
+    if (th[t]) return { text: `level ${th[t].level} · ${t}`, level: th[t].level };
+  }
+  return { text: "the story" };
+}
+function problemsButton() {
+  const b = $("#probCount"); if (!b || !S) return;
+  const all = allProblems(), e = all.filter(p => p.sev === "error").length, w = all.length - e;
+  b.textContent = e ? e : w ? w : "✓"; b.className = "pcount " + (e ? "err" : w ? "warn" : "ok");
+  $("#problemsBtn").title = `${e} error${e === 1 ? "" : "s"}, ${w} warning${w === 1 ? "" : "s"}` + (CHECK.busy ? " · the story check is running" : CHECK.summary ? " · " + CHECK.summary : "");
+  if ($("#problems")) renderProblems();
+}
+function toggleProblems(force) {
+  const on = $("#problems"); if (on && force !== true) { on.remove(); return; }
+  if (!on) { document.body.append(el("div", { id: "problems", class: "ppanel" })); renderProblems(); }
+}
+function renderProblems() {
+  const box = $("#problems"); if (!box || !S) return; box.innerHTML = "";
+  const all = allProblems(), e = all.filter(p => p.sev === "error"), w = all.filter(p => p.sev !== "error");
+  const ago = CHECK.at ? Math.round((Date.now() - CHECK.at) / 1000) : null;
+  box.append(el("div", { class: "pp-h" }, icon("alert", 15), el("b", {}, "Problems"), el("span", { class: "muted" }, `${e.length} error${e.length === 1 ? "" : "s"} · ${w.length} warning${w.length === 1 ? "" : "s"}`), el("span", { class: "grow" }),
+    el("button", { class: "ghost", title: "close", on: { click: () => toggleProblems() } }, icon("x", 14))),
+    el("div", { class: "pp-sub" }, el("label", { class: "chk", title: "the full story check (every path played) a few seconds after you stop editing" },
+      el("input", { type: "checkbox", checked: liveCheck(), on: { change: ev => { try { localStorage.setItem("dd.checkLive", ev.target.checked ? "1" : "0"); } catch (x) { } if (ev.target.checked) scheduleCheck(); } } }), " the story check as I edit"),
+      el("button", { class: "small", disabled: CHECK.busy, on: { click: () => runCheck() } }, CHECK.busy ? "running…" : "Run it now"),
+      el("span", { class: "kv" }, CHECK.busy ? "the story check is running…" : CHECK.at ? `${CHECK.ok ? "✓ " : ""}${CHECK.summary.replace(/^STORY /, "")}${CHECK.key !== LAST ? " · before your last edit" : ""} · ${ago < 60 ? ago + " s" : Math.round(ago / 60) + " min"} ago` : CHECK.summary || "not run yet")));
+  const list = el("div", { class: "pp-list" });
+  const row = p => el("div", { class: "pp-row " + (p.sev === "error" ? "err" : "warn") + (p.stale ? " stale" : ""), title: p.src === "check" ? "from the story check" : "from the desk's own checks", on: { click: () => goToProblem(p) } },
+    el("span", { class: "pp-i" }, icon(p.sev === "error" ? "x" : "alert", 13)), el("span", { class: "pp-t" }, el("span", {}, p.text), el("span", { class: "pp-at" }, (p.at && p.at.text) || "", p.src === "check" ? " · the story check" : "")));
+  if (!all.length) list.append(el("div", { class: "pp-none" }, icon("check", 16), " Nothing wrong found."));
+  if (e.length) list.append(el("div", { class: "pp-g" }, "Errors"), ...e.map(row));
+  if (w.length) list.append(el("div", { class: "pp-g" }, "Warnings"), ...w.map(row));
+  box.append(list);
+}
+function goToProblem(p) {
+  const at = p.at || {};
+  if (at.node && S.flow[at.node]) {
+    if ($("#watchView").classList.contains("on") || !$("#flowView").classList.contains("on")) openView("flowView");
+    if (at.clip && at.scene) { const path = p.path || []; OPEN[at.scene] = { id: at.clip, tab: path.includes("event") ? "event" : path.includes("reply") ? "reply" : path.includes("body") ? "body" : /seam/.test(p.text) ? "camera" : /take|over the/.test(p.text) ? "take" : "line" }; if (at.variant) VTAB[at.scene] = at.variant; }
+    selectNode(at.node); if (BOARD) BOARD.center(at.node);
+    setTimeout(() => flashIn(at.clip ? `[data-clip="${at.clip}"]` : at.beat ? `[data-beat="${at.beat}"]` : null), 50);
+  } else if (at.level) openBuilder(at.level);
+  else if (at.db) openDb(at.db, at.id);
+  else openDb("game");
+}
+function flashIn(sel) {
+  if (!sel) return; const e = $("#inspector").querySelector(sel); if (!e) return;
+  e.scrollIntoView({ block: "center", behavior: "smooth" }); e.classList.add("flash"); setTimeout(() => e.classList.remove("flash"), 1800);
+}
+
 /* ---------- wiring ---------- */
 function renderAll() { renderBoard(); renderInspector(); if ($("#clipsView").classList.contains("on")) renderClips(); if ($("#notesView").classList.contains("on")) renderNotes(); if ($("#dbView").classList.contains("on")) DB.render(); notesBadge(); }
 function notesBadge() {                            // what's left on the desk for the other one to read
@@ -1596,11 +1686,15 @@ $("#keysHelp").onclick = () => {
 };
 $("#check").onclick = async () => {
   if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
-  const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Checks"), el("p", { class: "muted" }, "running…"));
-  const j = await api("/api/check/" + encodeURIComponent(GAME), { method: "POST" }); box.innerHTML = "";
-  const okk = /STORY ok/.test(j.output) && /LEVEL ok/.test(j.output);
-  box.append(el("h2", {}, "Checks"), el("p", { class: okk ? "ok" : "err" }, okk ? "All checks pass." : "Something to fix:"), el("pre", {}, j.output), el("button", { on: { click: renderInspector } }, "Back to the node"));
+  toggleProblems(true); CHECK.busy = true; problemsButton();
+  try {
+    const j = await api("/api/check/" + encodeURIComponent(GAME), { method: "POST" }), lines = j.output.split("\n");
+    CHECK.list = checkList(lines.filter(l => l.startsWith("ERROR: ")).map(l => l.slice(7)), lines.filter(l => l.startsWith("warning: ")).map(l => l.slice(9)));
+    CHECK.ok = /STORY ok/.test(j.output) && /LEVEL ok/.test(j.output); CHECK.summary = lines.filter(l => /^(STORY|LEVEL) /.test(l)).join(" · ") || "no answer"; CHECK.at = Date.now(); CHECK.key = LAST;
+  } catch (e) { CHECK.summary = "the checks couldn't run: " + e.message; }
+  CHECK.busy = false; renderBoard(); problemsButton();
 };
+$("#problemsBtn").onclick = () => toggleProblems();
 $("#generate").onclick = async () => {
   if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
@@ -1661,5 +1755,5 @@ const DB = new Database($("#dbView"), {
   goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },
   goLevel: lid => openBuilder(lid),
 });
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, DB, openDb, select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

@@ -373,6 +373,21 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
             return self.send(200, UL.generate(parts[3]))
+        if parts[:2] == ["api", "storycheck"] and len(parts) == 3 and self.game_path(parts[2]):
+            import tempfile  # noqa: PLC0415 - the desk's story as it is now, not saved yet: checked as this game's
+            fd, tmp = tempfile.mkstemp(suffix=".json", prefix="desk_story_")
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(self.body())
+                r = subprocess.run([sys.executable, str(ROOT / "tools" / "story_check.py"), "--game", parts[2], "--story", tmp],
+                                   capture_output=True, text=True, encoding="utf-8", timeout=300)
+            finally:
+                os.unlink(tmp)
+            lines = (r.stdout + r.stderr).splitlines()
+            last = next((x for x in reversed(lines) if x.startswith("STORY ")), "STORY FAILED (no answer)")
+            return self.send(200, {"ok": last.startswith("STORY ok"), "summary": last,
+                                   "errors": [x[7:] for x in lines if x.startswith("ERROR: ")],
+                                   "warnings": [x[9:] for x in lines if x.startswith("warning: ")]})
         if parts[:2] == ["api", "check"] and len(parts) == 3 and self.game_path(parts[2]):
             out = []
             for tool in ("story_check.py", "level_check.py"):

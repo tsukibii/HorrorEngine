@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The offline story check: no editor needed, runs in a second.
 
-    python tools/story_check.py [--game Pilot] [-v] [--route Saved/Story/<game>/route.json]
+    python tools/story_check.py [--game Pilot] [-v] [--route Saved/Story/<game>/route.json] [--story FILE]
 
 Checks every reference (world, scenes, stitches, flow), walls and doors, scenes' clips (each fits one take of
 game.clip_max seconds; every cut between takes has a seam to hide it), subtitles' reading speed, combination codes
@@ -1710,8 +1710,15 @@ def main():
         route_out = argv[i + 1]
         del argv[i:i + 2]
     verbose = "-v" in argv
+    story_file = None                     # --story FILE: a story not saved yet (the desk's), checked as this game's
+    if "--story" in argv:
+        i = argv.index("--story")
+        story_file = argv[i + 1]
+        del argv[i:i + 2]
     global GAME_DIR, POSES, FORMAT, STORY, BOARDS
     story, path = L.load(game)
+    if story_file:
+        story = json.loads(Path(story_file).read_text(encoding="utf-8"))
     BOARDS = L.board_games(game)
     FORMAT, STORY = story.get("format"), story
     GAME_DIR = path.parent
