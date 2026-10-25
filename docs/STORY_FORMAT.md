@@ -189,6 +189,34 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 
 Every room also gets an invisible volume, so `enter <room>` works.
 
+**Little things** (docs/IMMERSION.md): a kettle, a hob, a pot, a cup, a cigarette, a clock, a phone, a tap... have a
+**life**: states they move through by themselves, what they show and play in each, and what the player can do to them
+(E switches the kettle on). A kit thing has its kit's life (Content/Studio/Life/lives.json says which); any prop can be
+given one:
+
+```json
+{"id": "kitchen_kettle", "kit": "kettle_jug", "on": "kitchen_counter", "at": [1.4, 0.35], "rot": 180, "state": "off"},
+{"id": "kitchen_mug", "kit": "mug", "on": "kitchen_table", "at": [2.1, 1.9], "state": "empty", "liquid": "tea", "from": "kitchen_kettle"},
+{"id": "hall_ash", "kit": "ashtray_burning", "on": "hall_table", "at": [3.0, 5.2], "state": "lit"}
+```
+
+- `life`: the life it has (the kit's own when it's a kit thing; `false` for none). `state`: where it starts (the
+  life's first state otherwise). The lives: `kettle` (off, heating, boiling, boiled), `whistling_kettle` and
+  `tetsubin` (on a hob: off, heating, whistling or boiling, cooling), `hob` (off, on, hot), `gas_hob` (off, on), `pot`
+  (cold, heating, simmering, boiling, cooling), `cup` (empty, filling, full, cold, drunk), `coffee` (hot, cold),
+  `teapot` (empty, full, cold), `cigarette` (unlit, lit, out), `lighter` (off, lit), `candle` (lit, out), `coil` and
+  `incense` (lit, out), `clock` (running, stopped), `rice_cooker` (off, cooking, warm), `phone` (off, lit, ringing),
+  `tap` (off, dripping, running), `tv` (off, static, on), `fridge` (on, off).
+- A state that lasts (`secs` in lives.json) moves on by itself: the kettle boils 30 s after it's switched on, clicks
+  off, and cools. A thing that follows stands `on` what it follows: a pot or a stovetop kettle `on` a hob heats while
+  the hob is on.
+- Its settings: `secs` (how long its states last, `{"heating": 20}`, over the life's), `acts: false` (the player
+  can't touch it), and a life's own: `liquid` (a cup or a teapot: `tea green_tea coffee water milk barley_tea soup`),
+  `from` (the kettle or teapot it's filled from: Pour needs that one boiled or full), `rings` (a hob's rings that are
+  on), `level` (the number on its digits), `light` (a candle's light, `use: light`, lit while it burns).
+- The player's acts (E) are the state's: the kettle's *Switch on*, the cigarette's *Put it out*, the cup's *Pour*. A
+  use is heard as `{"use": id}`, and where it leaves the thing as `{"state": id, "is": s}`.
+
 ## 3. Scenes (the spine)
 
 A scene is a performed moment. Actors are staged on spots, and it plays as an ordered list of **clips**. **A clip
@@ -380,12 +408,15 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `{"carrying": id}`, `{"carrying": true}` | the player is carrying it (`use: carry`), or anything; holds while they do |
 | `{"played": table}`, `"result": "lose"` | a board game at that table (`use: game`) ended: any result, or that one (its game's `results`). A result is chance, so a beat that needs one is `optional` or `secret` (the check warns otherwise): set a flag, and let the flow branch on it |
 | `{"dropped": id}`, `"in": room_or_trigger` | it was put down and has settled (anywhere, or inside that room or trigger on its level): put the doll back in its bed, the box on the shelf |
+| `{"state": thing, "is": s}` | a little thing is in that state (by itself, the story or the player); holds while it is: `{"state": "kitchen_kettle", "is": "boiled"}` |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
 - `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`)
 - `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
 - `show`, `hide`, `move` (`to` a spot), `objective`
+- `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
+  cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
 - `flag`, `unflag`, `give`, `take`
 - `wait`, `fade` (`in`/`out`, `secs`), `lookat` (`secs`, `lock`)
 - `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)

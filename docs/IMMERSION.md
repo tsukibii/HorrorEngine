@@ -50,9 +50,11 @@ A prop gets a `life` (or its kit's own: a kit kettle is a kettle) and the `state
 ```
 
 - `life`: the life it has (the kit type's own when it has one). `state`: where it starts (the life's first state).
-- The life's own settings, where it has some: `liquid` (a cup: `tea`, `green_tea`, `coffee`, `water`, `milk`),
-  `from` (a cup: the kettle or teapot it's filled from), `rings` (a hob: which are on), `time` (a clock: `"02:47"`),
-  `secs` (any: how long its states last, `{"heating": 20}`), `acts: false` (the player can't touch it).
+- The life's own settings, where it has some: `liquid` (a cup: `tea`, `green_tea`, `coffee`, `water`, `milk`,
+  `barley_tea`, `soup`), `from` (a cup or a teapot: the kettle or teapot it's filled from), `rings` (a hob: which are
+  on), `level` (a hob: its digits), `light` (a candle: the light it lights), `secs` (any: how long its states last,
+  `{"heating": 20}`), `acts: false` (the player can't touch it). A clock shows its kit's `time`:
+  `"kit": {"preset": "wall_clock", "time": "02:47"}`.
 - **The action** `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a cue on a clip's edge, an act's
   choice. "The kettle: heating."
 - **The trigger** `{"state": "kitchen_kettle", "is": "boiled"}`: when it gets there (by itself, by the story, or the
@@ -80,11 +82,13 @@ counts from its cue.
 | File | What |
 |---|---|
 | `tools/director/kit.js` | the things' shapes: new types with **sockets** (named points: `spout`, `tip`, `rim`, `ring_1`, `led`, `lcd`...) |
-| `Content/Studio/Life/lives.json` | the lives as data: each one's states (`secs`, `next`, `follows`), effects, sounds, acts, settings, sockets for a prop that isn't a kit thing |
-| `tools/director/life.js` | the lives' logic, plain: a thing's state at a moment (the start, the story's changes, the timers, what it follows); no DOM, no three.js; DESK tests it |
+| `Content/Studio/Life/lives.json` | the lives as data: which kit things have which (`by_kit`, `by_preset`), each one's states in order (`secs`, `next`, `keep`, `ready`, `acts`, `fx`, `sound`, `enter`), what it `follows`, its settings, the liquids' colours |
+| `tools/director/life.js` | the lives' logic, plain: a prop's life, where it starts, and `States`, a run's little things on its clock (the story's changes, the timers, a follower moved by its leader, the time a burning thing has burnt kept across visits, the player's acts); no DOM, no three.js; DESK tests it |
+| `Content/Python/storykit/life.py` | the same for the check: a prop's life (node and python agree on every preset: DESK), its states, `reach` (how a state is got to: waiting, acts, the leader), for the walker |
 | `tools/director/lifefx.js` | the effects in three.js: steam, smoke, ember, LED, digits, glow, fill, pour, flame, drip, hands, rattle, screen, buzz; each a function of time, so a scrubbed scene shows the right frame |
 | `tools/director/lifesound.js` | the sounds, made with Web Audio |
-| `tools/story_check.py`, `storylib` | `life`, `state` and the settings checked; the action and the trigger; the walker reaches a state by acting or waiting |
+| `tools/story_check.py` | `life`, `state` and the settings checked; the action and the trigger; the walker reaches a state by acting (it goes there and uses it) or waiting, and counts the time |
+| `tools/director/play/` | Play: the `state` action and condition, the `life` interactable (E does the state's act, its label the prompt), the states ticking on the run's clock |
 
 ## 5. Into Unreal
 

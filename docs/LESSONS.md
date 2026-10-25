@@ -568,3 +568,20 @@ The desk's files are ES modules with a `.js` name. `node --check file.js` on one
 error in it (a bracket too many in app.js passed it; the browser refused the page: "Unexpected token ')'", nothing
 drawn). Check them as modules: `node --experimental-default-type=module --check file.js` (or import the file), and
 load the page once after an edit.
+
+## The desk's second tries (2026-10-25)
+
+- **Focus a box the moment it opens:** Ctrl+K's search took its focus 20 ms after opening, so the first keys typed
+  straight after the shortcut went to the page. A box that's typed into is focused synchronously, in the same call
+  that opens it.
+- **Never await the Watch from a probe's evaluate:** `window.__dd.watch()` runs until the playthrough ends, so a
+  probe that awaited it inside `page.evaluate` waited forever. Start it without awaiting, then poll for the state
+  wanted.
+- **Give a lazy picture its size:** the guide's links landed above their sections, because its lazy images had no
+  width and height until they loaded, so everything below moved after the jump. Every `<img>` carries its size
+  (GUIDE writes them).
+- **A simulator that only goes forward answers the present:** life.js `States` advances its timers to the time it's
+  asked about; asked about an earlier moment afterwards, it answers with the present (the kettle was already off
+  when the test asked what it was at 6 s). Ask in time order, or snapshot and restore.
+- **The Watch plays scenes with no run:** a scene previewed alone (TIMES does it) has `RUN` null, and reading
+  `RUN.secs` at the scene's start threw. Whatever a scene reads from the run at its start is guarded.

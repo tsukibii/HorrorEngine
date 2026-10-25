@@ -211,6 +211,7 @@ export function fieldInput(f, obj, ctx, redraw) {
     }
     case "answer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, (obj.options || []).map(o => [o.id, o.label || o.id]), cur, "—"); return s; }
     case "askanswer": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, ctx.refs("askanswer:" + (obj.answered || "")), cur, "(any answer)"); return s; }
+    case "lifestate": { const s = h("select", { on: { change: e => set(e.target.value) } }); options(s, ctx.refs("lifestate:" + (obj.state || "")), cur, "choose…"); return s; }   // the states of the thing chosen
     default: {                                   // what exists of the kind, and "+ New…" to make one there and then (ctx.create)
       if (ctx.pic && ctx.pic(f.kind)) return picPick({ get: () => obj[k], set: v => { set(v || undefined); if (redraw) redraw(); }, choices: () => ctx.refs(f.kind), pic: id => ctx.pic(f.kind, id),
         blank: f.opt ? "—" : null, create: ctx.creates && ctx.creates(f.kind) ? () => ctx.create(f.kind) : null, createLabel: `New ${NOUN[f.kind] || f.kind}…` });

@@ -19,16 +19,17 @@ const games = readdirSync(join(ROOT, "Content", "Games")).filter(g => existsSync
 const story = g => JSON.parse(readFileSync(join(ROOT, "Content", "Games", g, "story.json"), "utf8"));
 const poses = Object.keys(JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "poses.json"), "utf8")).poses);
 const thingsOf = S => JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
-from storykit import storylib as L
+from storykit import storylib as L, life as LF
 th, _ = L.index(json.load(sys.stdin))
-print(json.dumps({k: {"kind": t.kind, "use": t.use, "level": t.level, "shape": str(t.d.get("shape", ""))} for k, t in th.items()}))`], { input: JSON.stringify(S), encoding: "utf8" }));
+print(json.dumps({k: {"kind": t.kind, "use": t.use, "level": t.level, "shape": str(t.d.get("shape", "")), "life": LF.life_of(t.d) if t.kind == "prop" else None} for k, t in th.items()}))`], { input: JSON.stringify(S), encoding: "utf8" }));
 const storyCheck = (g, S) => {                     // the story check on a story not saved (story_check.py --story)
   const f = join(tmpdir(), `desk_${g}_${process.pid}.json`); writeFileSync(f, JSON.stringify(S));
   try { return execFileSync("python3", [join(ROOT, "tools", "story_check.py"), "--game", g, "--story", f], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }); }
   catch (e) { return (e.stdout || "") + (e.stderr || ""); } finally { rmSync(f, { force: true }); }
 };
 const secs = c => c.dur ? c.dur - ((c.trim || {}).in || 0) - ((c.trim || {}).out || 0) : 0;
-const run = (S, th) => lint(S, { things: th, poses, secs });
+const LIVES = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Life", "lives.json"), "utf8"));
+const run = (S, th) => lint(S, { things: th, poses, secs, lives: LIVES });
 
 // ---- the live checks
 console.log("the live checks (lint.js)");
@@ -246,6 +247,55 @@ a line with no speaker`, o);
   sc.clips = a.clips; for (const c of sc.clips) if (!c.body) c.body = { block: [{ at: 0, pose: "idle" }] };
   const out = storyCheck("Sample", S).trim().split("\n").pop();
   /STORY ok/.test(out) ? ok(`the scene typed again: the story check passes (${out})`) : fail("typed scene: " + out);
+}
+
+// ---- the little things' lives: which life a kit thing has (node and python agree), timers, a pot on its hob, a
+// cigarette relit, a cup that needs its kettle; the state command checked live and by the story check
+console.log("lives (life.js, lives.json)");
+{
+  const LF = await import("./life.js"), PR = JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "Kit", "presets.json"), "utf8")).presets;
+  const names = Object.keys(PR), js = names.map(n => LF.lifeOf({ kit: n }, LIVES, PR));
+  const py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import life as LF
+print(json.dumps([LF.life_of({"kit": n}) for n in json.load(sys.stdin)]))`], { input: JSON.stringify(names), encoding: "utf8" }));
+  const off = names.filter((n, i) => js[i] !== py[i]);
+  !off.length && js.filter(Boolean).length >= 30 ? ok(`every kit preset's life: node and python agree (${js.filter(Boolean).length} of ${names.length} have one)`) : fail("lifeOf differs: " + off.map(n => `${n} ${js[names.indexOf(n)]}/${py[names.indexOf(n)]}`).join(", "));
+  const want = { kettle_jug: "kettle", kettle_whistling: "whistling_kettle", tetsubin: "tetsubin", hob_gas_konro: "gas_hob", ashtray_burning: "cigarette", ashtray_glass: null, tv_55: "tv", mirror: null, cigarette_butt: null, lighter: null, lighter_standing: "lighter", takeaway_coffee: "coffee" };
+  const bad = Object.entries(want).filter(([n, l]) => LF.lifeOf({ kit: n }, LIVES, PR) !== l);
+  !bad.length && LF.lifeOf({ kit: "kettle_jug", life: false }, LIVES, PR) === null && LF.lifeOf({ shape: "box 1 1 1", life: "candle" }, LIVES, PR) === "candle"
+    ? ok("a kettle is a kettle, a burning ashtray a cigarette, a butt nothing; life: false switches it off, `life` gives a block one") : fail("lifeOf: " + bad.map(b => b[0]).join(", "));
+  // timers: the kettle switched on boils, clicks off and cools
+  const W = new LF.States(LIVES, { k: { life: "kettle", d: {} }, h: { life: "hob", d: {} }, p: { life: "pot", d: { on: "h" } },
+    c: { life: "cigarette", d: {} }, cup: { life: "cup", d: { from: "k" } }, cup2: { life: "cup", d: { from: "k", acts: false } }, q: { life: "kettle", d: { secs: { heating: 5 } } } }).start(0);
+  W.set("k", "heating", 0); W.set("q", "heating", 0);
+  const a0 = W.acts("cup", 1).length, q6 = W.at("q", 6).state;          // (time only goes forward: ask in order)
+  const seq = [29, 31, 39].map(t => W.at("k", t).state).join(" "), a1 = W.acts("cup", 39).map(a => a.label).join(), a2 = W.acts("cup2", 39).length, end = W.at("k", 200).state;
+  seq === "heating boiling boiled" && end === "off" && q6 === "boiling" ? ok(`the kettle by itself: ${seq}, ${end}; its own secs shorten it`) : fail("kettle timers: " + seq + " " + end + " " + q6);
+  // a pot on a hob follows it; already on its way it isn't sent back
+  const V = new LF.States(LIVES, { h: { life: "hob", d: {} }, p: { life: "pot", d: { on: "h" } } }).start(0);
+  V.set("h", "on", 10); const p1 = [11, 51, 81].map(t => V.at("p", t).state); V.set("h", "hot", 100); const p2 = [101, 161, 200].map(t => V.at("p", t).state);
+  p1.join() === "heating,simmering,boiling" && p2.join() === "cooling,cold,cold" && V.at("h", 200).state === "off" ? ok(`a pot on its hob: ${p1.join(", ")}; off: ${p2.join(", ")}`) : fail("follows: " + p1.join() + " / " + p2.join());
+  const U = new LF.States(LIVES, { h: { life: "hob", d: { state: "on" } }, p: { life: "pot", d: { on: "h" } } }).start(0);
+  U.at("p", 1).state === "heating" ? ok("a pot on a hob that starts on starts heating") : fail("follows at the start: " + U.at("p", 1).state);
+  // a cigarette put out and lit again burns on from where it was
+  const C = new LF.States(LIVES, { c: { life: "cigarette", d: { state: "lit" } } }).start(0);
+  C.set("c", "out", 100); C.set("c", "lit", 200); const c1 = C.at("c", 519).state, c2 = C.at("c", 521).state, sp = C.at("c", 521).spent.lit;
+  c1 === "lit" && c2 === "out" && Math.abs(sp - 420) < 0.01 ? ok("a cigarette relit burns on from where it was: out 420 s of burning later") : fail(`keep: ${c1} ${c2} ${sp}`);
+  // acts: a cup pours only from a ready kettle, and not at all with acts: false
+  a0 === 0 && a1 === "Pour" && a2 === 0 ? ok("a cup can be poured once its kettle has boiled (not before, not with acts: false)") : fail(`acts: ${a0} ${a1} ${a2}`);
+  // the state command: the live check and the story check
+  const S = story("Sample"), hall = S.levels.house.rooms.find(r => r.id === "hall");
+  hall.props.push({ id: "t_kettle", kit: "kettle_jug", on: "hall_table", at: [2.9, 5.1], rot: 270 }, { id: "t_hob", kit: "hob_ih_portable", at: [1.0, 5.2], rot: 270 },
+    { id: "t_pot", kit: "saucepan", on: "t_hob", at: [1.0, 5.2] }, { id: "t_cup", kit: "mug", on: "hall_table", at: [3.3, 5.0], liquid: "tea", from: "t_kettle" });
+  const st = S.stitches[S.flow.n_arrive.ref];
+  st.beats.unshift({ id: "b_t_hob", when: { start: true }, do: [{ state: "t_hob", to: "on" }] }, { id: "b_t_tea", when: { state: "t_cup", is: "full" }, do: [{ think: "Tea." }] },
+    { id: "b_t_pot", when: { state: "t_pot", is: "boiling" }, do: [{ think: "It boils." }] });
+  const th = thingsOf(S), ps = run(S, th).filter(p => p.sev === "error"), out = storyCheck("Sample", S).trim().split("\n").pop();
+  !ps.length && /STORY ok/.test(out) ? ok(`a kettle, a hob, a pot on it and a cup of tea in the Sample: no live problems, the walker plays them through (${out})`) : fail("lives story: " + ps.map(p => p.text).join("; ") + " / " + out);
+  st.beats[0].do[0].to = "boiling"; st.beats[1].when.is = "spilled";
+  const ps2 = run(S, th).filter(p => p.sev === "error").map(p => p.text), out2 = storyCheck("Sample", S);
+  ps2.some(t => /boiling isn't one of t_hob's states/.test(t)) && ps2.some(t => /spilled isn't one of t_cup's states/.test(t)) && /t_hob to 'boiling'/.test(out2) && /t_cup is 'spilled'/.test(out2)
+    ? ok("a state a thing hasn't got: found live and by the story check, at the beat") : fail("bad states: " + ps2.join("; "));
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");

@@ -4,9 +4,10 @@
 import { register, part } from "./parts.js";
 import { EYES } from "../stage.js";
 
-export function interactableOf(thing) {
-  const u = thing.userData;
-  return part("interactable", u.kind === "door" ? "door" : u.use) || null;
+export function interactableOf(thing, rt) {
+  const u = thing.userData, p = part("interactable", u.kind === "door" ? "door" : u.use);
+  if (p) return p;
+  return rt && rt.lifeActs && rt.lifeActs(u.id).length ? part("interactable", "life") : null;   // a little thing with something to do
 }
 
 const panelText = (title, text) => ({ title, text });
@@ -92,3 +93,8 @@ register("interactable", "hide", {                // a locker, a wardrobe: E get
   use: (t, rt, s) => (rt.player.hiding === t.userData.id ? rt.unhide(s) : rt.hide(t, s)),
 });
 register("interactable", "locker", Object.assign({}, part("interactable", "hide")));     // the format's word for it
+register("interactable", "life", {                // a little thing (docs/IMMERSION.md): E does what its state offers (switch the kettle on, put the cigarette out, pour)
+  settings: { cursor: "use" },
+  prompt: (t, rt, s) => { const a = rt.lifeActs(t.userData.id)[0]; return { cursor: s.cursor, label: a ? a.label : "" }; },
+  use: (t, rt) => { const a = rt.lifeActs(t.userData.id)[0]; if (a) rt.setState(t.userData.id, a.to, "player"); },
+});

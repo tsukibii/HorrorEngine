@@ -12,6 +12,7 @@ import math
 from . import storylib as L
 from . import kit as KIT
 from . import library as LIB
+from . import life as LIFE
 
 STEP = 0.18   # a stair's rise
 
@@ -30,6 +31,9 @@ def _tags(t, extra=()):
         tags.append(f"mat:{t.d['mat']}")
     if t.d.get("tag"):                       # what it is (a mirror, a poster): the desk colours by it
         tags.append(f"tag:{t.d['tag']}")
+    lf = LIFE.life_of(t.d) if t.kind == "prop" else None
+    if lf:                                   # a little thing's life and where it starts (docs/IMMERSION.md §5)
+        tags += [f"life:{lf}", f"state:{LIFE.start(t.d, lf)}"]
     return tags + list(extra)
 
 

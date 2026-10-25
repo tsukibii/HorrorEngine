@@ -2,7 +2,7 @@
 // ending with the keys and the cursor, as a player would: a wall stops you, the front door opens with E, the hall's
 // trigger ends the arrival, Mari walks her route in the hall, a question (ask) is answered beside her, a die is rolled and
 // its face heard, a plushie is picked up and put down by holding E (lagging, flopping and bobbing in the hands, squashing
-// as it lands, heard where it lies), a game of chō-han is played at the hall table, the letter reads, E hides in the locker and gets out, her eyes catch
+// as it lands, heard where it lies), a game of chō-han is played at the hall table, the letter reads, the kitchen's kettle is switched on and boils by itself, E hides in the locker and gets out, her eyes catch
 // you in the open but not hidden or in a safe zone, the kitchen's glimpse fires, the drawer's code is typed on the panel,
 // the key shows and is taken, the locked cellar door opens with it, the struggle is mashed free (E), and the timed run
 // out of the house ends on the porch. Ends "PLAY ok".
@@ -45,6 +45,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.stitches.t_search.beats.push({ id: "b_ask", when: { flag: "ask_now" }, optional: true, do: [{ ask: "q_stay", line: "mari_002", who: "mari",
       options: [{ id: "stay", label: "I'll stay" }, { id: "go", label: "I should go", do: [{ flag: "said_go" }] }] }] });
     S.stitches.t_search.beats.push({ id: "b_answered", when: { answered: "q_stay", option: "go" }, optional: true, do: [{ flag: "heard_go" }] });
+    S.levels.house.rooms.find(r => r.id === "kitchen").props.push({ id: "pilot_kettle", kit: "kettle_jug", on: "kitchen_table", at: [2.5, 1.75], rot: 270, secs: { heating: 1, boiling: 0.5 } });
+    S.stitches.t_search.beats.push({ id: "b_kettle", when: { state: "pilot_kettle", is: "boiled" }, optional: true, do: [{ flag: "tea_ready" }] });
     await window.__dd.replan();
   });
   await page.click('nav button[data-v="watchView"]');
@@ -296,6 +298,16 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await page.evaluate(() => { const h = window.__dd.play.hud, line = h.line.bind(h); window.__lines = []; h.line = (t, w, secs) => { window.__lines.push(t); return line(t, w, secs); }; });
     await walkIn(2, 5.4, 90, 1300); await gameWait(0.5);          // every line Play showed on the way in (a short one may be gone already)
     const lines = await page.evaluate(() => window.__lines); if (!lines.some(t => /Mari\?/.test(t))) throw new Error("lines " + JSON.stringify(lines));
+  });
+  await step("a little thing: the kettle says Switch on, E switches it on, it boils by itself and the story hears it (state)", async () => {
+    await goTo("pilot_kettle", 0.8);
+    const label = await page.evaluate(() => document.querySelector(".ph-label").textContent);
+    if (label !== "Switch on") throw new Error("the prompt says " + JSON.stringify(label));
+    await press("KeyE"); await gameWait(0.3);
+    const st = await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle"));
+    if (st !== "heating") throw new Error("after E it's " + st);
+    await gameWait(2);
+    if (!(await flag("tea_ready"))) throw new Error("boiled not heard: it's " + await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle")));
   });
   await step("the drawer's code on the keypad sets drawer_open and shows the key", async () => {
     await goTo("desk_lock", 0.8);

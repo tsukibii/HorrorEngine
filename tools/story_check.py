@@ -20,17 +20,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Content" / "Python
 from storykit import storylib as L  # noqa: E402
 from storykit import library as LIB  # noqa: E402
 from storykit import kit as KIT  # noqa: E402
+from storykit import life as LIFE  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result"}
+            "answered", "carrying", "dropped", "played", "state"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask"}
+           "karma", "count", "scene", "behave", "ask", "state"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -65,7 +66,7 @@ PERSON = re.compile(r"^(A|An) ([A-Za-z-]+ ){0,3}person\b")
 LOOK_WORDS = re.compile(r"\b(at|toward|towards) (the )?(player|viewer|camera|you)\b|\blooks? at (him|her|them)\b", re.I)
 TIER_SECS = {}              # tier -> seconds of motion (the animation budget report)
 SEG_NAMES = {}              # segment name -> where
-STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move"}
+STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state"}
 MAX_CPS = 17.0
 WALK = 1.4 / 1.6            # metres a second, with looking around (x 1.6)
 ROOM_FIRST = 30             # seconds: the first look round a room
@@ -324,6 +325,37 @@ def check_world(story, things, r):
         if "jiggle" in p and not (u == "carry" and p.get("physics") == "plushie" and isinstance(p["jiggle"], (int, float))
                                   and not isinstance(p["jiggle"], bool) and 0 <= p["jiggle"] <= 2):
             r.err(f"{t.id}: jiggle is a plushie's softness, 0..2 (0 still, 1 a plushie, 2 jelly; physics: plushie)")
+        check_life(t, things, r)
+
+
+def check_life(t, things, r):
+    """A little thing's life (docs/IMMERSION.md): its own `life` or its kit's, the `state` it starts in, its settings."""
+    p, lv = t.d, LIFE.lives()
+    lf = LIFE.life_of(p)
+    if p.get("life") and p["life"] not in lv:
+        r.err(f"{t.id}: life {p['life']!r} isn't a life ({', '.join(sorted(lv))})")
+    if "state" in p and (not lf or p["state"] not in LIFE.states(lf)):
+        r.err(f"{t.id}: state {p['state']!r}: " + (f"one of {lf}'s ({', '.join(LIFE.states(lf))})" if lf else
+                                                   "it has no life (a kit thing that has one, or `life`)"))
+    own = set((lv.get(lf) or {}).get("settings") or [])
+    for f in ("liquid", "from", "rings", "level") + (("light",) if lf else ()):
+        if f in p and f not in own:
+            r.err(f"{t.id}: {f} isn't a setting of its life ({lf or 'it has none'}; lives.json says which have it)")
+    if "secs" in p and lf and not (isinstance(p["secs"], dict) and all(k in LIFE.states(lf) and isinstance(v, (int, float)) and v > 0 for k, v in p["secs"].items())):
+        r.err(f"{t.id}: secs is how long its states last, {{state: seconds}} ({lf}: {', '.join(LIFE.states(lf))})")
+    if "acts" in p and not isinstance(p["acts"], bool):
+        r.err(f"{t.id}: acts is true or false (false: the player can't touch it)")
+    if "liquid" in p and p["liquid"] not in (LIFE.data().get("liquids") or {}):
+        r.err(f"{t.id}: liquid {p['liquid']!r} (one of {', '.join(LIFE.data().get('liquids') or {})})")
+    if "from" in p:
+        src = things.get(p["from"])
+        sl = LIFE.life_of(src.d) if src and src.kind == "prop" else None
+        if not sl or not any((LIFE.state_def(sl, x) or {}).get("ready") for x in LIFE.states(sl)):
+            r.err(f"{t.id}: from {p['from']!r} isn't a kettle or a teapot (a thing with a life that pours)")
+    if "rings" in p and not (isinstance(p["rings"], list) and p["rings"] and all(isinstance(x, int) and x >= 1 for x in p["rings"])):
+        r.err(f"{t.id}: rings are the hob's rings that are on, numbers from 1: [1, 3]")
+    if "light" in p and lf and (p["light"] not in things or things[p["light"]].use != "light"):
+        r.err(f"{t.id}: light {p['light']!r} isn't a light (use: light) for it to light")
 
 
 STORY = None
@@ -722,6 +754,8 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: `in` goes with a dropped trigger")
     if "result" in w and k != "played":
         r.err(f"{bid}: `result` goes with a played trigger")
+    if "is" in w and k != "state":
+        r.err(f"{bid}: `is` goes with a state trigger")
     if k not in TRIGGERS:
         r.err(f"{bid}: unknown trigger {k!r}")
     elif k in ("all", "any"):
@@ -762,6 +796,12 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: played {v!r} isn't a table with use: game")
         elif "result" in w and w["result"] not in BOARDS.get(things[v].d.get("game"), {}).get("results", [w["result"]]):
             r.err(f"{bid}: played result {w['result']!r}: {things[v].d.get('game')} ends {', '.join(BOARDS[things[v].d['game']]['results'])}")
+    elif k == "state":                                 # a little thing gets to a state (docs/IMMERSION.md)
+        lf = LIFE.life_of(things[v].d) if v in things and things[v].kind == "prop" else None
+        if not lf:
+            r.err(f"{bid}: state {v!r} isn't a placed thing with a life")
+        elif w.get("is") not in LIFE.states(lf):
+            r.err(f"{bid}: state {v} is {w.get('is')!r}: one of its states ({', '.join(LIFE.states(lf))})")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
         if v not in things or things[v].use != "roll":
             r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
@@ -864,6 +904,12 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: move to {a['to']!r} isn't a spot")
     elif k in ("give", "take") and v not in items:
         r.err(f"{bid}: {k} {v!r} isn't an item")
+    elif k == "state":                                  # a little thing to a state: {"state": "kettle", "to": "heating"}
+        lf = LIFE.life_of(things[v].d) if v in things and things[v].kind == "prop" else None
+        if not lf:
+            r.err(f"{bid}: state {v!r} isn't a placed thing with a life")
+        elif a.get("to") not in LIFE.states(lf):
+            r.err(f"{bid}: state {v} to {a.get('to')!r}: one of its states ({', '.join(LIFE.states(lf))})")
     elif k == "shot":
         if a.get("who") not in cast:
             r.err(f"{bid}: shot who {a.get('who')!r} isn't in cast")
@@ -1264,6 +1310,63 @@ class World:
         self.counters = {}         # game.counters -> value
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
         self.answers = []          # (scene node, clip, option) for the report
+        # the little things' lives (docs/IMMERSION.md): each one's state, a follower where its leader puts it
+        self.lives = {t.id: lf for t in things.values() if t.kind == "prop" for lf in [LIFE.life_of(t.d)] if lf}
+        self.states = {k: LIFE.start(things[k].d, lf) for k, lf in self.lives.items()}
+        for k, lf in self.lives.items():
+            lead = self.leader(k)
+            m = (LIFE.lives()[lf].get("follows") or {}).get(self.states.get(lead)) if lead else None
+            if m and "state" not in things[k].d:
+                self.states[k] = m
+
+    # the little things
+    def leader(self, tid):
+        on = self.things[tid].d.get("on")
+        return on if on in self.lives and (LIFE.lives()[self.lives[tid]].get("follows")) else None
+
+    def reach_state(self, tid, to, acts=True, depth=0):
+        """Seconds until it's in `to` (waiting, the player's acts beside it, its leader's), or None."""
+        lf = self.lives.get(tid)
+        if not lf or depth > 4:
+            return None
+        t, lead = self.things[tid], self.leader(tid)
+        d = t.d if acts and self.can_reach(tid) else dict(t.d, acts=False)
+
+        def ready(key):
+            src = t.d.get(key)
+            got = [self.reach_state(src, x, acts, depth + 1) for x in LIFE.states(self.lives[src]) if (LIFE.state_def(self.lives[src], x) or {}).get("ready")] if src in self.lives else []
+            got = [g for g in got if g is not None]
+            return min(got) if got else None
+        return LIFE.reach(lf, d, self.states[tid], to, (lambda x: self.reach_state(lead, x, acts, depth + 1)) if lead else None, ready)
+
+    def set_state(self, tid, to):
+        """It's in `to` now; what stands on it follows (unless already on its way: life.js States.enter)."""
+        if tid not in self.states or self.states[tid] == to:
+            return
+        self.states[tid] = to
+        for f, lf in self.lives.items():
+            m = (LIFE.lives()[lf].get("follows") or {}).get(to) if self.leader(f) == tid else None
+            if m and LIFE.reach(lf, dict(self.things[f].d, acts=False), m, self.states[f]) is None:
+                self.set_state(f, m)
+
+    def wait_state(self, nid, tid, to):
+        """Play until it's in `to`: the player does what it takes beside it (and its leader), then waits."""
+        secs = self.reach_state(tid, to)
+        if secs is None:
+            return
+        idle = self.reach_state(tid, to, acts=False)
+        if idle is None or idle > secs + 0.01:                 # it takes the player's hand: go to it and use it
+            self.go(tid)
+            self.route.append({"node": nid, "do": "use", "id": tid})
+        lead = self.leader(tid)
+        if lead:                                              # its leader goes to where it puts it there (the hob on)
+            lf = self.lives[tid]
+            for ls, fs in (LIFE.lives()[lf].get("follows") or {}).items():
+                if LIFE.reach(lf, dict(self.things[tid].d, acts=False), fs, to) is not None and self.reach_state(lead, ls) is not None:
+                    self.set_state(lead, ls)
+                    break
+        self.add("waiting", secs)
+        self.set_state(tid, to)
 
     def add_karma(self, delta):
         for k, v in L.karma_of(delta).items():
@@ -1378,6 +1481,8 @@ class World:
             return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
+        if k == "state":                                  # the walker does what it takes and waits (wait_state)
+            return self.reach_state(v, w.get("is")) is not None
         if k == "all":
             return all(self.can_fire(s) for s in v)
         if k == "any":
@@ -1412,6 +1517,8 @@ class World:
                 self.locked.add(v)
             elif a["set"] in ("unlock", "open"):
                 self.locked.discard(v)
+        elif k == "state":
+            self.set_state(v, a.get("to"))
 
     def run_actions(self, where, acts):
         """Returns True when a `done` ends the stitch."""
@@ -1548,6 +1655,8 @@ class World:
                                 self.go(to)
                                 self.things[at].room, self.things[at].pos = self.things[to].room, self.things[to].pos
                             self.route.append({"node": nid, "do": "drop", "id": at, **({"in": to} if to else {})})
+                    if "state" in b["when"]:
+                        self.wait_state(nid, b["when"]["state"], b["when"].get("is"))
                     self.route.append({"node": nid, "do": "expect", "beat": b["id"]})
                     self.fired.add(b["id"])
                     fired_one = True

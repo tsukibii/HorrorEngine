@@ -40,6 +40,8 @@ export class PlayRuntime {
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
     this.files = opts.files || {};
+    this.lives = (this.run && this.run.lives) || opts.lives || null;   // the little things' states (life.js States), kept with the run
+    this.livesSeen = this.lives ? this.lives.changes.length : 0; this.clock0 = 0;
     this.suspicion = 0; this.calm = 0; this.lastCaught = null;
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
     this.carried = null; this.holding = null;          // the thing in the hands ({m, id, level, yaw, r}); E being held ({t, secs, on | put})
@@ -320,7 +322,7 @@ export class PlayRuntime {
   // E: a use at once, or held for a thing whose interactable has `hold` (seconds: picking it up), the reticle's ring
   // filling. With a thing in the hands, held puts it down, and a tap uses what's under the reticle when it's let go
   pressE() {
-    const t = this.target, ip = t && interactableOf(t), s = ip && this.set(ip.name);
+    const t = this.target, ip = t && interactableOf(t, this), s = ip && this.set(ip.name);
     if (this.carried) this.holding = { t: 0, secs: this.set("carry").hold, put: true };
     else if (s && s.hold) this.holding = { t: 0, secs: s.hold, on: t };
     else this.use();
@@ -500,7 +502,7 @@ export class PlayRuntime {
     if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // E stands you up
     if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // E gets you out
     const t = this.target; if (!t) return;
-    const ip = interactableOf(t);
+    const ip = interactableOf(t, this);
     this.hud.press();
     if (ip) await ip.use(t, this, this.set(ip.name));     // the use is done (seated, the door open, the note read) before the story hears it
     this.emit({ type: "use", id: t.userData.id });
@@ -511,7 +513,7 @@ export class PlayRuntime {
     const hit = this.aim(), o = hit && hit.object, id = o && o.userData.id;
     if (id && id === this.look.id) this.look.t += dt; else this.look = { id, t: 0, dist: hit ? hit.distance : Infinity };
     if (hit) this.look.dist = hit.distance;
-    let ip = o && hit.distance <= USE_RANGE ? interactableOf(o) : null;
+    let ip = o && hit.distance <= USE_RANGE ? interactableOf(o, this) : null;
     if (ip && this.carried && this.set(ip.name).hold) ip = null;          // the hands are full: another thing to carry waits
     this.target = ip ? o : null;
     if (!ip && this.carried) { this.hud.setCursor("drop", this.set("carry").drop, null, this.titleOf(this.carried.m), true); return; }
@@ -557,6 +559,7 @@ export class PlayRuntime {
       this.next = n.next;
       this.end = r => { this.listener = null; this.end = null; this.timerLeft = null; this.hud.timer(null); resolve(r); };
       this.timerLeft = st.timer ? +st.timer.secs : null;
+      this.clock0 = this.clock;                     // the run's time (now()) carries on from where the run's clock is
       this.timerFail = st.timer ? st.timer.fail : null;
       this.listener = ev => {
         for (const it of interrupts) if (matches(it.when, ev, this)) return this.end({ to: it.to, interrupt: true });
@@ -575,7 +578,7 @@ export class PlayRuntime {
   runChoice(n) {
     return new Promise(resolve => {
       if (n.prompt) this.hud.log(n.prompt);
-      this.end = null;
+      this.end = null; this.clock0 = this.clock;
       this.listener = ev => { const o = (n.options || []).find(o => o.when && matches(o.when, ev, this)); if (o) { this.listener = null; resolve(o); } };
       this.go();
     });
@@ -599,8 +602,18 @@ export class PlayRuntime {
     const loop = now => { if (!this.active) return; if (!this.held) this.tick(Math.min(0.05, (now - this.last) / 1000)); this.last = now; requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }
+  // ---- the little things (docs/IMMERSION.md): their states on the run's clock; each change is heard ({type: "state"})
+  now() { return (this.run ? this.run.secs : 0) + (this.clock - this.clock0); }
+  stateOf(id) { const s = this.lives && this.lives.at(id, this.now()); return s ? s.state : null; }
+  lifeActs(id) { return this.lives && this.lives.things[id] ? this.lives.acts(id, this.now()) : []; }
+  setState(id, to, by = "story") { if (!this.lives) return; this.lives.set(id, to, this.now(), by); this.lifeEvents(); }
+  lifeEvents() {
+    const ch = this.lives.changes;
+    for (; this.livesSeen < ch.length; this.livesSeen++) { const c = ch[this.livesSeen]; this.emit({ type: "state", id: c.id, is: c.to, by: c.by }); }
+  }
   tick(dt) {
     this.clock += dt;
+    if (this.lives) { this.lives.advance(this.now()); this.lifeEvents(); }
     const p = this.player;
     if (this.physics) this.physics.step(dt);
     if (this.moving) {

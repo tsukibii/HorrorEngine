@@ -24,6 +24,7 @@ import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
+import { States } from "./life.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -44,6 +45,7 @@ let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN
 let BASE = null;                                  // the story as it was on disk when the desk last loaded or saved it: the merge's base
 let MADE_MT = {}, FILE_MT = {};   // when each made motion was written, and when the one in FILES was: a take imported again under its name replaces it
 let flowStage = null, watchStage = null, PLAY = null, BODIES = [], PICS = null;
+let LIVES = { lives: {} };                        // the little things' lives (Content/Studio/Life/lives.json, life.js)
 const today = () => new Date().toISOString().slice(0, 10);
 
 /* ---------- server ---------- */
@@ -52,6 +54,7 @@ async function boot() {
   try {
     LIB = M.loadLibrary(await api("/api/poses"));
     try { Stage.SOMA = await api("/api/soma"); } catch (e) { }
+    try { LIVES = Stage.LIVES = await api("/api/lives"); } catch (e) { }
     const g = await api("/api/games");
     fillGames(g.games);
     GAME = localStorage.getItem("dd.game"); if (!g.games.includes(GAME)) GAME = g.games[0];
@@ -425,7 +428,7 @@ const CHECK = { busy: false, again: false, at: 0, ok: null, summary: "", list: [
 function lintNow() {
   if (!S) return [];
   if (LINT_KEY === LAST && LINT_PLAN === PLAN && LAST !== null) return LINT;
-  LINT = lint(S, { things: things(), poses: poseNames(), secs: c => clipSecs(c) }).map(p => Object.assign(p, { src: "desk" }));
+  LINT = lint(S, { things: things(), poses: poseNames(), secs: c => clipSecs(c), lives: LIVES }).map(p => Object.assign(p, { src: "desk" }));
   LINT_KEY = LAST; LINT_PLAN = PLAN; LINT_OBJ = byObject(LINT);
   problemsButton(); return LINT;
 }
@@ -456,6 +459,7 @@ const CTX = {
     const lv = CTX_LEVEL, T = f => Object.entries(things()).filter(([, t]) => (!lv || t.level === lv) && f(t))
       .map(([id, t]) => [id, t.room && t.room !== id ? `${id} · ${t.room}` : id]).sort((a, b) => a[0].localeCompare(b[0]));
     if (kind.startsWith("askanswer:")) { const a = asksOf()[kind.slice(10)]; return a ? (a.options || []).map(o => [o.id, o.label || o.id]) : []; }
+    if (kind.startsWith("lifestate:")) { const t = things()[kind.slice(10)], L = t && t.life ? LIVES.lives[t.life] : null; return L ? L.states.map(s => [s.id, s.id]) : []; }
     switch (kind) {
       case "line": return Object.entries(S.lines || {}).map(([id, l]) => [id, `${id} · ${l.who ? ((S.cast || {})[l.who] || {}).name || l.who : ""}: ${(l.en || l.ja || "").slice(0, 60)}`]);
       case "sound": return Object.keys(S.sounds || {}).map(k => [k, k]);
@@ -475,6 +479,7 @@ const CTX = {
       case "carry": return T(t => t.use === "carry");
       case "die": return T(t => t.use === "roll");
       case "table": return T(t => t.use === "game");
+      case "life": return T(t => !!t.life).map(([id, l]) => [id, `${l} · ${things()[id].life}`]);
       case "route": return Object.entries(S.levels || {}).filter(([l]) => !lv || l === lv).flatMap(([, v]) => Object.keys(v.routes || {}).map(r => [r, r]));
       case "beat": return CTX_BEATS.map(b => [b.id, `${b.id}: ${triggerText(b.when, CTX.name)}`]);
       case "ask": return Object.entries(asksOf()).map(([k, a]) => [k, a.text ? `${k} · ${a.text}` : k]);
@@ -1687,7 +1692,23 @@ function wclear() { $("#watchBox").querySelectorAll(".wcard,.qte,.warnmark").for
 async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.opacity || 0, t0 = performance.now(), d = Math.max(0.05, secs) * 1000; while (RUN) { const u = Math.min(1, (performance.now() - t0) / d); b.style.opacity = from + (to - from) * u; if (u >= 1) break; await new Promise(r => requestAnimationFrame(r)); } }
 function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
-function karmaAct(acts) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); } wclock(); }
+function karmaAct(acts, t) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, t ?? RUN.secs); } wclock(); }
+// the little things with a life (docs/IMMERSION.md): {id: {life, d}}, their dicts from the story, their lives from the plan
+function lifeThings() {
+  const out = {}, th = things();
+  for (const lv of Object.values(S.levels || {})) for (const r of lv.rooms || []) for (const p of r.props || []) if (th[p.id] && th[p.id].life) out[p.id] = { life: th[p.id].life, d: p };
+  return out;
+}
+// a scene's cues that set a state, at their times on its timeline (a clip's start or end, plus its offset)
+function stateCues(tl, ver) {
+  const out = [];
+  for (const cu of ver.cues || []) {
+    if (!cu.do || !cu.do.state) continue;
+    const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), id: cu.do.state, to: cu.do.to });
+  }
+  return out.sort((x, y) => x.t - y.t);
+}
 // the Watch's footer: the Play HUD's footer in the game's theme (or the one picked), so scene subtitles, replies and
 // timed choices look as they will in the game: the speaker over the line, the options in their panel under it
 let WHUD = null;
@@ -1739,10 +1760,12 @@ async function watchScene(sc, nid, sid, k) {
   if (en.kind === "blend") await blendIn(tl, from, +(en.secs || 0.8));
   else { watchStage.render(); if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0; }
   let T = 0, last = performance.now(), spoken = null, warned = null;
+  const cues = stateCues(tl, sc), t0 = RUN ? RUN.secs : 0;   // the little things set by its cues, at their clip edges
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
     const now = performance.now(); T += (now - last) / 1000; last = now;
+    while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); RUN.lives.set(c.id, c.to, t0 + c.t); }
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
       if (ev.type === "choose") { const o = (ev.options || []).find(x => x.id === res); if (o && o.karma !== undefined) { addKarma(RUN.karma, o.karma); RUN.answers.push(`${o.label} (${JSON.stringify(o.karma)})`); } }
@@ -1867,7 +1890,7 @@ async function watchStitch(st, nid, n) {
   watchStage.frame({ view: S.levels[lvl].start, camera: { mode: "free" }, clips: [{ id: "x", who: "", en: "" }], stage: {} }, 0, FILES);
   await fade(0.25, 0.5);
   const mins = +(st.target_min || 3);
-  for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); }
+  for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, RUN.secs); }
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(n.ref));
   if (st.play) {                                   // a round of gameplay: did it go your way?
     const pl = st.play, results = PLAYS[pl.type] || ["success", "fail"], seek = roundSeeker(pl, lvl);
@@ -1974,6 +1997,7 @@ async function watch(fromNid, snap) {
   if (!S) return;
   stopWatch();
   RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, counters: {}, answers: [], items: new Set() };
+  RUN.lives = new States(LIVES, lifeThings()).start(0);   // the little things: their states through the whole run
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
   DBG.reset();
   wclock();

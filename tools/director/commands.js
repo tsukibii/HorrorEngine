@@ -102,6 +102,9 @@ export const ACTIONS = [
     fields: [{ key: "light", label: "Light", kind: "light", verb: true, opt: true }, { key: "room", label: "or the room", kind: "room", opt: true },
       { key: "set", label: "to", kind: "choice", opts: LIGHT_SET }],
     make: () => ({ light: null, room: "", set: "off" }), text: (a, n) => `${a.room ? "Lights in " + n("thing", a.room) : "Light " + n("thing", a.light)}: ${a.set || "on"}` },
+  { verb: "state", label: "Set a thing's state", icon: "life", group: "world", hint: "a little thing to one of its states: the kettle on, the cigarette lit, the clock stopped, the phone ringing (docs/IMMERSION.md)",
+    fields: [{ key: "state", label: "Thing", kind: "life", verb: true }, { key: "to", label: "to", kind: "lifestate" }],
+    make: () => ({ state: "", to: "" }), text: (a, n) => `${cap(n("thing", a.state))}: ${a.to || "…"}` },
   { verb: "show", label: "Show a thing", icon: "show", group: "world", fields: [{ key: "show", label: "Thing", kind: "thing", verb: true }],
     make: () => ({ show: "" }), text: (a, n) => `Show ${n("thing", a.show)}` },
   { verb: "hide", label: "Hide a thing", icon: "hide", group: "world", fields: [{ key: "hide", label: "Thing", kind: "thing", verb: true }],
@@ -201,6 +204,8 @@ export const TRIGGERS = [
   { verb: "rolled", label: "A die is rolled", icon: "dice", fields: [{ key: "rolled", label: "Die", kind: "die", verb: true },
     { key: "face", label: "showing", kind: "number", opt: true }, { key: "at_least", label: "or at least", kind: "number", opt: true }],
     make: () => ({ rolled: "" }), text: (w, n) => `${n("thing", w.rolled)} rolls${w.face ? " a " + w.face : w.at_least ? " " + w.at_least + " or more" : ""}` },
+  { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },
+    { key: "is", label: "is", kind: "lifestate" }], make: () => ({ state: "", is: "" }), text: (w, n) => `${n("thing", w.state)} is ${w.is || "…"}` },
   { verb: "all", label: "All of these", icon: "all", fields: [], make: () => ({ all: [{ start: true }] }), text: (w, n) => `all of: ${(w.all || []).map(x => triggerText(x, n)).join(" and ")}`, nest: true },
   { verb: "any", label: "Any of these", icon: "any", fields: [], make: () => ({ any: [{ start: true }] }), text: (w, n) => `any of: ${(w.any || []).map(x => triggerText(x, n)).join(" or ")}`, nest: true },
 ];

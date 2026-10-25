@@ -24,6 +24,7 @@ from storykit import plan as P  # noqa: E402
 from storykit import library as LIB  # noqa: E402
 from storykit import kit as KIT  # noqa: E402
 from storykit import pbr as PBR  # noqa: E402
+from storykit import life as LIFE  # noqa: E402
 sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
 STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain",
@@ -159,6 +160,8 @@ class Handler(BaseHTTPRequestHandler):
             if lf.is_file() and lf.suffix.lower() in BODY and LIB.LIB.resolve() in lf.resolve().parents:
                 return self.send(200, lf.read_bytes(), BODY[lf.suffix.lower()])
             return self.send(404, {"error": "not in the library"})
+        if parts[:2] == ["api", "lives"]:            # the little things' lives (Content/Studio/Life/lives.json, life.js)
+            return self.send(200, LIFE.data())
         if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions, and its twin of each previs joint
             soma = json.loads((L.STUDIO / "soma77.json").read_text(encoding="utf-8"))
             try:
@@ -332,6 +335,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, {"error": f"the world doesn't plan yet: {e}"})
             th = {k: {"kind": t.kind, "use": t.use, "level": t.level, "room": t.room, "pos": t.pos, "size": t.size,
                       "yaw": t.yaw} for k, t in things.items()}
+            for k, t in things.items():                    # a little thing's life and the state it starts in (lives.json)
+                lf = LIFE.life_of(t.d) if t.kind == "prop" else None
+                if lf:
+                    th[k].update(life=lf, state=LIFE.start(t.d, lf))
             return self.send(200, {"pieces": pieces, "things": th})
         if parts[:2] == ["api", "worldcheck"]:          # the scene builder: the world rules on an unsaved story
             story = json.loads(self.body().decode("utf-8"))

@@ -10,21 +10,21 @@ import { placeOf } from "./refs.js";
 const IS = {                                       // what a placed thing must be for a field of each kind
   thing: t => t.kind !== "room", spot: t => t.use === "spot", door: t => t.kind === "door", light: t => t.use === "light",
   room: t => t.kind === "room", zone: t => t.kind === "room" || t.use === "trigger", locker: t => t.use === "locker",
-  carry: t => t.use === "carry", die: t => t.use === "roll", table: t => t.use === "game",
+  carry: t => t.use === "carry", die: t => t.use === "roll", table: t => t.use === "game", life: t => !!t.life,
 };
 const NOUN = { thing: "placed thing", spot: "spot", door: "door", light: "light", room: "room", zone: "room or trigger", locker: "hiding place",
   carry: "thing you carry", die: "die", table: "game table", line: "line", sound: "sound", item: "item", note: "note", counter: "counter",
   axis: "karma axis", scene: "scene", cast: "cast member", motion: "motion", secret: "secret", route: "route", beat: "beat in this task",
-  ask: "question", pose: "pose" };
+  ask: "question", pose: "pose", life: "thing with a life" };
 const TABLE = { line: "lines", sound: "sounds", item: "items", note: "notes", scene: "scenes", cast: "cast", motion: "motions", secret: "secrets" };
 const BUILT_IN_POSES = new Set(["idle", "tpose"]);
-const MUST = new Set([...Object.keys(NOUN), "flag", "routes"]);      // a field of these kinds can't be left empty (unless it's optional)
+const MUST = new Set([...Object.keys(NOUN), "flag", "routes", "lifestate"]);      // a field of these kinds can't be left empty (unless it's optional)
 const SEAM_LOOKS = new Set(["glance", "cutaway"]);                   // seams that need something to look at
 const an = w => (/^[aeiou]/.test(w) ? "an " : "a ") + w;
 const isObj = x => x && typeof x === "object" && !Array.isArray(x);
 const empty = v => v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length);
 
-export function lint(S, { things = {}, poses = null, secs = null } = {}) {
+export function lint(S, { things = {}, poses = null, secs = null, lives = null } = {}) {
   const out = [], add = (sev, text, path, obj) => out.push({ sev, text, path, obj, at: placeOf(S, path) });
   const cast = S.cast || {}, flow = S.flow || {}, game = S.game || {};
   const routes = new Set(Object.values(S.levels || {}).flatMap(l => Object.keys(l.routes || {})));
@@ -54,6 +54,7 @@ export function lint(S, { things = {}, poses = null, secs = null } = {}) {
       else if (f.kind === "routes") { for (const r of v) if (!routes.has(r)) add("error", `${what}: route ${r} isn't a route on any level`, p, x); }
       else if (f.kind === "answer") { if (!(x.options || []).some(o => o.id === v)) add("error", `${what}: ${v} isn't one of its answers`, p, x); }
       else if (f.kind === "askanswer") { const a = asks[x.answered]; if (a && !(a.options || []).some(o => o.id === v)) add("error", `${what}: ${v} isn't one of ${x.answered}'s answers`, p, x); }
+      else if (f.kind === "lifestate") { const t = things[x.state], L = t && t.life && lives && lives.lives ? lives.lives[t.life] : null, ids = L ? (L.states || []).map(s => s.id) : null; if (ids && !ids.includes(v)) add("error", `${what}: ${v} isn't one of ${x.state}'s states (${ids.join(", ")})`, p, x); }
       else if (NOUN[f.kind] && typeof v === "string" && !has(f.kind, v, ctx)) add("error", `${what}: ${v} isn't ${an(NOUN[f.kind])}`, p, x);
     }
   };

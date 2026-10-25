@@ -30,5 +30,6 @@ register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v =
 register("condition", "dropped", {                        // put down and settled: anywhere, or `in` a room or a trigger
   test: (v, w, ev) => ev.type === "dropped" && ev.id === v && (w.in === undefined || ev.in.includes(w.in)) });
 register("condition", "played", { test: (v, w, ev) => ev.type === "played" && ev.id === v && (w.result === undefined || ev.result === w.result) });   // a board game ended: any result, or that one
+register("condition", "state", { test: (v, w, ev, rt) => rt.stateOf(v) === w.is });   // a little thing in that state: holds while it is (docs/IMMERSION.md)
 register("condition", "all", { test: (v, w, ev, rt) => v.every(c => matches(c, ev, rt)) });
 register("condition", "any", { test: (v, w, ev, rt) => v.some(c => matches(c, ev, rt)) });

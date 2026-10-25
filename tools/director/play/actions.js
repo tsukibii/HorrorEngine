@@ -33,6 +33,7 @@ register("action", "give", { run: (v, a, rt) => rt.give(v) });
 register("action", "take", { run: (v, a, rt) => rt.items.delete(v) });
 register("action", "karma", { run: (v, a, rt) => rt.run && addKarma(rt.run.karma, v) });
 register("action", "count", { run: (v, a, rt) => { if (!rt.run) return; const c = rt.run.counters; c[v] = a.set !== undefined ? +a.set : (c[v] || 0) + +(a.add ?? 1); } });
+register("action", "state", { run: (v, a, rt) => rt.setState(v, a.to) });      // a little thing to a state: {"state": "kettle", "to": "heating"}
 register("action", "show", { run: (v, a, rt) => rt.setVisible(v, true) });
 register("action", "hide", { run: (v, a, rt) => rt.setVisible(v, false) });
 register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });
