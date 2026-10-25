@@ -289,6 +289,11 @@ print(json.dumps([LF.life_of({"kit": n}) for n in json.load(sys.stdin)]))`], { i
   const unknown = [...named].filter(f => !FXM.FX.includes(f));
   !unknown.length && FXM.valueAt([0, 1], 15, 30) === 0.5 && FXM.valueAt([1, 0], 60, 30) === 0 && FXM.valueAt(0.4, 99, 30) === 0.4
     ? ok(`every effect the lives name is drawn on the desk (${named.size}: ${[...named].join(", ")})`) : fail("effects: unknown " + unknown.join(", "));
+  // every sound a life names is one the desk makes (lifesound.js)
+  const SM = await import("./lifesound.js"), heard = new Set();
+  for (const L of Object.values(LIVES.lives)) for (const st of L.states) for (const x of [...(st.sound || []), ...(st.enter || [])]) heard.add(x.sound);
+  const deaf = [...heard].filter(x => !SM.SOUNDS.includes(x));
+  !deaf.length ? ok(`every sound the lives name is made in the browser (${heard.size})`) : fail("sounds the desk can't make: " + deaf.join(", "));
   // the state command: the live check and the story check
   const S = story("Sample"), hall = S.levels.house.rooms.find(r => r.id === "hall");
   hall.props.push({ id: "t_kettle", kit: "kettle_jug", on: "hall_table", at: [2.9, 5.1], rot: 270 }, { id: "t_hob", kit: "hob_ih_portable", at: [1.0, 5.2], rot: 270 },

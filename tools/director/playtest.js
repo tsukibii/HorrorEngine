@@ -313,6 +313,19 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await gameWait(1.2);
     if (!(await flag("tea_ready"))) throw new Error("boiled not heard: it's " + await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle")));
   });
+  await step("the little things' sounds: each one made in the browser, rendered offline, is a sound and doesn't clip", async () => {
+    const bad = await page.evaluate(async () => {
+      const S = await import("./lifesound.js"), out = [];
+      for (const name of S.SOUNDS) {
+        const ctx = new OfflineAudioContext(1, 22050 * 2, 22050), g = ctx.createGain(); g.connect(ctx.destination);
+        if (S.LOOP[name]) { const v = S.LOOP[name](ctx, g); v.set(1, 3, 0.5, { every: 0.5 }); if (v.tick) for (let t = 0; t < 2; t += 0.1) v.tick(t, t + 1.06); } else S.ONCE[name](ctx, g, 0.05);
+        const d = (await ctx.startRendering()).getChannelData(0); let pk = 0; for (const x of d) pk = Math.max(pk, Math.abs(x));
+        if (!(pk > 0.02 && pk < 0.98)) out.push(`${name} ${pk.toFixed(3)}`);
+      }
+      return out;
+    });
+    if (bad.length) throw new Error("silent or clipping: " + bad.join(", "));
+  });
   await step("the drawer's code on the keypad sets drawer_open and shows the key", async () => {
     await goTo("desk_lock", 0.8);
     await press("KeyE"); await page.waitForSelector(".ph-pad");

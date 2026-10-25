@@ -1538,6 +1538,7 @@ function showStage() {
 }
 function scrubTo(T) {
   const sc = currentScene(); if (!sc) return;
+  flowStage.soundOn = !!PLAY && $("#wThings").checked;          // the things' sounds while the scene plays, not while it's scrubbed
   const st = flowStage.frame(sc, T, FILES);
   if (PLAY && st.clipSeg && st.seg && st.seg.type === "clip" && PLAY.clip !== st.clipSeg.clip) { PLAY.clip = st.clipSeg.clip; const n = S.flow[SEL]; playTake("#stageBox", n.ref, sc.variants ? sc.pick : null, PLAY.clip, $("#wVideo").checked); }
   if (PLAY && st.seg && st.seg.type !== "clip" && PLAY.clip) { PLAY.clip = null; stopTakes(); }
@@ -1562,7 +1563,7 @@ function playScene(sc, ver, fromClip) {
   const loop = now => { if (!PLAY || PLAY.stop) return; T += (now - last) / 1000; last = now; if (T > endT) { stopPlay(); return; } $("#scrub").value = T; scrubTo(T); requestAnimationFrame(loop); };
   requestAnimationFrame(loop);
 }
-function stopPlay() { if (PLAY) PLAY.stop = true; PLAY = null; stopTakes(); }
+function stopPlay() { if (PLAY) PLAY.stop = true; PLAY = null; stopTakes(); if (flowStage) { flowStage.soundOn = false; if (flowStage.life && flowStage.life.sound) flowStage.life.sound.stop(); } }
 function wireFreeCam() {
   const c = flowStage.renderer.domElement; let drag = null;
   c.addEventListener("mousedown", e => { if (flowStage.free) drag = [e.clientX, e.clientY]; });
@@ -2005,6 +2006,7 @@ async function watch(fromNid, snap) {
   stopWatch();
   RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, counters: {}, answers: [], items: new Set() };
   RUN.lives = new States(LIVES, lifeThings()).start(0);   // the little things: their states through the whole run
+  watchStage.soundOn = $("#wThings").checked;
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
   DBG.reset();
   wclock();
@@ -2065,7 +2067,7 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
+function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
   if (SYNC_AFTER_WATCH) { const w = SYNC_AFTER_WATCH; SYNC_AFTER_WATCH = null; syncFromDisk(w); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 

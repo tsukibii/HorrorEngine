@@ -8,6 +8,7 @@
 //   fx.update(T, id => ({st: States.at(id, T), hist: States.history(id)}))   every frame, after the stage's apply
 import * as THREE from "three";
 import { stateDef } from "./life.js";
+import { LifeSound } from "./lifesound.js";
 
 const t3 = a => new THREE.Vector3(a[0], a[2], -a[1]);           // item space (x, y, z up) -> the kit group's (three's)
 const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
@@ -168,6 +169,7 @@ class Item {
 export class LifeFX {
   constructor(stage, lives) { this.stage = stage; this.lives = lives || { lives: {} }; this.items = []; }
   attach() {
+    if (this.sound) this.sound.stop();                  // a new world: the old one's sounds end
     for (const it of this.items) it.dispose();
     this.items = [];
     this.stage.renderer.localClippingEnabled = true;      // a cigarette burns back by clipping its paper
@@ -197,6 +199,9 @@ export class LifeFX {
     for (const [it, L] of now) {
       try { this.item(it, L.st, L.hist || [], T, scale); } catch (e) { console.warn("lifefx " + it.id + ": " + e.message); }
     }
+    // their sounds (lifesound.js), while the stage wants them (the Watch, Play, the scene editor playing)
+    if (this.stage.soundOn) (this.sound = this.sound || new LifeSound()).update(T, now.map(([it, L]) => ({ id: it.id, pos: it.block.getWorldPosition(new THREE.Vector3()), st: L.st, hist: L.hist || [], def: it.def })), cam);
+    else if (this.sound) this.sound.stop();
   }
   item(it, st, hist, T, scale) {
     const fxNow = (st.def && st.def.fx) || [], has = (kind, at) => fxNow.find(f => f.fx === kind && (at === undefined || f.at === at)) || null;

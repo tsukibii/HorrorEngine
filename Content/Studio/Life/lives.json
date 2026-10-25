@@ -192,7 +192,7 @@
    "label": "a tap",
    "states": [
     {"id": "off", "acts": [{"label": "Turn it on", "to": "running"}]},
-    {"id": "dripping", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "drip", "at": "spout", "every": 2.6}]},
+    {"id": "dripping", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "drip", "at": "spout", "every": 2.6}], "sound": [{"sound": "drip", "every": 2.6}]},
     {"id": "running", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "stream", "at": "spout"}], "sound": [{"sound": "water"}]}
    ]
   },
