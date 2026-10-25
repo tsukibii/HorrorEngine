@@ -6,6 +6,7 @@
 // edit, rerender() to redraw.
 import { icon } from "./icons.js";
 import { ACTIONS, TRIGGERS, ACTION, TRIGGER, GROUPS, verbOfAction, verbOfTrigger, actionText, triggerText, fieldsOf } from "./commands.js";
+import { pack, pasteCommands, pasteBeats } from "./clipboard.js";
 
 export const h = (t, a = {}, ...k) => {
   const e = document.createElement(t);
@@ -40,6 +41,73 @@ export function modal({ title, body, ok = "OK", cancel = "Cancel", wide = false,
     if (ready) ready(close);
   });
 }
+
+// ---- what's picked to copy (commands, beats, lines: by their objects), the desk's clipboard, the right-click menu ---
+const PICK = { kind: null, objs: new Set() };
+let FOCUS = null;                                  // where the last click was: commands, beats, clips or cards (what Ctrl+C copies)
+export const focusOf = () => FOCUS, setFocus = k => { FOCUS = k; };
+export function pick(kind, obj, { add = false } = {}) {
+  if (PICK.kind !== kind || !add) { PICK.kind = kind; PICK.objs = new Set(); }
+  if (add && PICK.objs.has(obj)) PICK.objs.delete(obj); else PICK.objs.add(obj);
+  FOCUS = kind; markPicks();
+}
+export function pickAll(kind, objs) { PICK.kind = kind; PICK.objs = new Set(objs); FOCUS = kind; markPicks(); }
+export function picked(kind) {                     // in the order they're shown
+  if (PICK.kind !== kind) return [];
+  const shown = [...document.querySelectorAll(`[data-pick="${kind}"]`)].map(e => e._obj).filter(o => PICK.objs.has(o));
+  return shown.length ? shown : [...PICK.objs];
+}
+export function unpick() { PICK.kind = null; PICK.objs = new Set(); markPicks(); }
+function markPicks() { for (const e of document.querySelectorAll("[data-pick]")) e.classList.toggle("picked", PICK.objs.has(e._obj)); }
+export const CLIP = {                              // kept across the desk's pages and a reload; on the system clipboard as JSON too
+  v: null,
+  get() { if (this.v) return this.v; try { const t = localStorage.getItem("dd.clip"); return t ? JSON.parse(t) : null; } catch (e) { return null; } },
+  set(v, { system = true } = {}) {
+    this.v = v; try { localStorage.setItem("dd.clip", JSON.stringify(v)); } catch (e) { }
+    if (system) try { navigator.clipboard.writeText(JSON.stringify(v, null, 1)).catch(() => { }); } catch (e) { }
+  },
+  has(kind) { const c = this.get(); return !!c && c.kind === kind; },
+};
+const LIST_OF = new WeakMap(), BEATS_OF = new WeakMap();      // a command: its list and that list's ctx; a beat: its task's beats
+export function contextMenu(x, y, items, head = null) {
+  document.querySelectorAll(".bmenu").forEach(m => m.remove());
+  const m = h("div", { class: "bmenu cmenu", style: `left:${x}px;top:${y}px`, on: { contextmenu: e => e.preventDefault() } }, head ? h("div", { class: "bmenu-h" }, head) : null);
+  for (const it of items) {
+    if (!it) continue;
+    if (it === "-") { m.append(h("div", { class: "bmenu-sep" })); continue; }
+    m.append(h("button", { class: "bmenu-i" + (it.danger ? " danger" : ""), disabled: it.disabled || null, title: it.hint || null, on: { click: () => { m.remove(); it.on(); } } },
+      icon(it.icon || "box", 14), h("span", { class: "grow" }, it.label), it.kbd ? h("kbd", {}, it.kbd) : null));
+  }
+  document.body.append(m);
+  const r = m.getBoundingClientRect();              // kept on screen
+  if (r.right > innerWidth - 6) m.style.left = Math.max(6, innerWidth - r.width - 6) + "px";
+  if (r.bottom > innerHeight - 6) m.style.top = Math.max(6, innerHeight - r.height - 6) + "px";
+  const off = ev => { if (ev.type === "keydown" && ev.key !== "Escape") return; if (ev.type === "mousedown" && m.contains(ev.target)) return; m.remove(); for (const t of ["mousedown", "keydown", "wheel"]) window.removeEventListener(t, off, true); };
+  setTimeout(() => { for (const t of ["mousedown", "keydown", "wheel"]) window.addEventListener(t, off, true); }, 0);
+  return m;
+}
+// Ctrl+C on commands or beats: what's picked, packed for the clipboard; Ctrl+V: after the last one picked
+export function copyPicks() {
+  if (FOCUS === "commands") { const l = picked("commands"); return l.length ? pack("commands", l) : null; }
+  if (FOCUS === "beats") { const l = picked("beats"); return l.length ? pack("beats", l) : null; }
+  return null;
+}
+export function pasteAtPicks(clip, story) {
+  if (!clip) return false;
+  const lastCmd = picked("commands").slice(-1)[0], lastBeat = picked("beats").slice(-1)[0];
+  if (clip.kind === "commands" && lastCmd && LIST_OF.has(lastCmd)) { const { arr, ctx } = LIST_OF.get(lastCmd); return pasteInto(arr, arr.indexOf(lastCmd) + 1, pasteCommands(story, clip.items), ctx, "commands"); }
+  if (clip.kind === "commands" && lastBeat && BEATS_OF.has(lastBeat)) { const { ctx } = BEATS_OF.get(lastBeat); lastBeat.do = lastBeat.do || []; return pasteInto(lastBeat.do, lastBeat.do.length, pasteCommands(story, clip.items), ctx, "commands"); }
+  if (clip.kind === "beats" && lastBeat && BEATS_OF.has(lastBeat)) { const { beats, ctx } = BEATS_OF.get(lastBeat); return pasteInto(beats, beats.indexOf(lastBeat) + 1, pasteBeats(story, clip.items), ctx, "beats"); }
+  return false;
+}
+export function deletePicks() {                    // Del on picked commands
+  const l = picked("commands").filter(a => LIST_OF.has(a)); if (!l.length) return false;
+  const ctxs = new Set(); for (const a of l) { const { arr, ctx } = LIST_OF.get(a); const i = arr.indexOf(a); if (i >= 0) arr.splice(i, 1); ctxs.add(ctx); }
+  unpick(); const c = [...ctxs][0]; for (const x of ctxs) x.changed(); c.rerender(); return true;
+}
+function pasteInto(arr, at, items, ctx, kind) { arr.splice(at, 0, ...items); ctx.changed(); pickAll(kind, items); ctx.rerender(); markPicks(); return items.length; }
+const copied = (n, what) => toast(`Copied ${n} ${what}${n === 1 ? "" : "s"}: paste with Ctrl+V or a right-click`, { ms: 4000 });
+export function copyNow(clip, what) { if (!clip) return false; CLIP.set(clip); copied(clip.items.length, what); return true; }
 
 // ---- a toast: a line at the bottom that goes by itself, with one thing to do about it ---------------------------------
 export function toast(text, { action = null, ms = 9000 } = {}) {
@@ -257,12 +325,28 @@ export function actionList(arr, ctx, { empty = "Nothing yet.", depth = 0 } = {})
     const verb = verbOfAction(a), d = ACTION[verb];
     const edit = async () => { const v = await editAction(a, ctx); if (v) { arr[i] = v; ctx.changed(); ctx.rerender(); } };
     const pm = ctx.marks ? ctx.marks(a) : null;      // the live checks' problems on this command
-    const row = h("div", { class: "arow" + (pm ? (pm.some(p => p.sev === "error") ? " bad" : " warnrow") : ""), style: `--g:${groupColor(verb)}`, title: pm ? pm.map(p => p.text).join("\n") : null });
+    const row = h("div", { class: "arow" + (pm ? (pm.some(p => p.sev === "error") ? " bad" : " warnrow") : "") + (PICK.objs.has(a) ? " picked" : ""), "data-pick": "commands", style: `--g:${groupColor(verb)}`, title: pm ? pm.map(p => p.text).join("\n") : null });
+    row._obj = a; LIST_OF.set(a, { arr, ctx });
+    const dup = () => { arr.splice(i + 1, 0, ...pasteCommands(ctx.story ? ctx.story() : {}, [a])); ctx.changed(); ctx.rerender(); };
+    const del = () => { const ps = picked("commands").filter(x => arr.includes(x)), go = ps.includes(a) && ps.length > 1 ? ps : [a]; for (const x of go) arr.splice(arr.indexOf(x), 1); unpick(); ctx.changed(); ctx.rerender(); };
+    row.addEventListener("click", e => { if (e.target.closest("button,.grip")) return; e.stopPropagation(); pick("commands", a, { add: e.ctrlKey || e.metaKey || e.shiftKey }); });
+    row.addEventListener("contextmenu", e => {
+      e.preventDefault(); e.stopPropagation(); if (!PICK.objs.has(a)) pick("commands", a);
+      const n = picked("commands").length;
+      contextMenu(e.clientX, e.clientY, [
+        d && (d.fields.length || d.more) ? { label: "Edit", icon: "edit", kbd: "double-click", on: edit } : null,
+        { label: n > 1 ? `Copy ${n} commands` : "Copy", icon: "copy", kbd: "Ctrl+C", on: () => copyNow(copyPicks(), "command") },
+        { label: "Paste after", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("commands"), on: () => pasteAtPicks(CLIP.get(), ctx.story ? ctx.story() : {}) },
+        { label: "Insert a command above", icon: "plus", on: async () => { const vb = await pickVerb("action"); if (!vb) return; const dd = ACTION[vb], x = dd.make(); const v = dd.fields.length ? await editAction(x, ctx, { isNew: true }) : x; if (v) { arr.splice(arr.indexOf(a), 0, v); ctx.changed(); ctx.rerender(); } } },
+        { label: "Duplicate", icon: "copy", kbd: "Ctrl+D", on: dup },
+        "-",
+        { label: n > 1 ? `Delete ${n} commands` : "Delete", icon: "x", danger: true, kbd: "Del", on: del }]);
+    });
     row.append(grip(row, arr, i, "action"), h("span", { class: "a-ic" }, icon(d ? d.icon : "box", 14)),
       h("span", { class: "a-t", title: "double-click to edit", on: { dblclick: edit } }, actionText(a, ctx.name)),
       h("span", { class: "a-tools" },
         d && (d.fields.length || d.more) ? h("button", { class: "ghost", title: "edit", on: { click: edit } }, icon("edit", 14)) : null,
-        h("button", { class: "ghost", title: "duplicate", on: { click: () => { arr.splice(i + 1, 0, clone(a)); ctx.changed(); ctx.rerender(); } } }, icon("copy", 14)),
+        h("button", { class: "ghost", title: "duplicate", on: { click: dup } }, icon("copy", 14)),
         h("button", { class: "ghost", title: "delete", on: { click: () => { arr.splice(i, 1); ctx.changed(); ctx.rerender(); } } }, icon("x", 14))));
     box.append(row);
     if (d && d.branches) for (const o of a[d.branches] || []) {      // an ask's answers, each with its commands, as branches
@@ -284,8 +368,24 @@ export function actionList(arr, ctx, { empty = "Nothing yet.", depth = 0 } = {})
 // ---- a beat as an event page: when, only if, its commands -------------------------------------------------------
 export function beatCard(b, i, beats, ctx, { secrets = [] } = {}) {
   b.do = b.do || [];
-  const card = h("div", { class: "beat", "data-beat": b.id });
+  const card = h("div", { class: "beat" + (PICK.objs.has(b) ? " picked" : ""), "data-beat": b.id, "data-pick": "beats" });
+  card._obj = b; BEATS_OF.set(b, { beats, ctx });
   const bad = ctx.marksIn ? ctx.marksIn(b.id) : [];
+  const story = () => (ctx.story ? ctx.story() : {});
+  const dupBeat = () => { beats.splice(beats.indexOf(b) + 1, 0, ...pasteBeats(story(), [b])); ctx.changed(); ctx.rerender(); };
+  card.addEventListener("click", e => { if (e.target.closest("button,select,input,label,.arow,.pill,.chip,.a-add,.grip")) return; pick("beats", b, { add: e.ctrlKey || e.metaKey || e.shiftKey }); });
+  card.addEventListener("contextmenu", e => {
+    if (e.target.closest(".arow")) return;
+    e.preventDefault(); if (!PICK.objs.has(b)) pick("beats", b);
+    const n = picked("beats").length;
+    contextMenu(e.clientX, e.clientY, [
+      { label: n > 1 ? `Copy ${n} beats` : "Copy the beat", icon: "copy", kbd: "Ctrl+C", on: () => copyNow(copyPicks(), "beat") },
+      { label: "Paste beats after", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("beats"), on: () => pasteAtPicks(CLIP.get(), story()) },
+      { label: "Paste commands into it", icon: "plus", disabled: !CLIP.has("commands"), on: () => { unpick(); pick("beats", b); pasteAtPicks(CLIP.get(), story()); } },
+      { label: "Duplicate", icon: "copy", kbd: "Ctrl+D", on: dupBeat },
+      "-",
+      { label: n > 1 ? `Delete ${n} beats` : "Delete the beat", icon: "x", danger: true, on: () => { const go = n > 1 ? picked("beats") : [b]; if (confirm(`Delete ${go.map(x => x.id).join(", ")}?`)) { for (const x of go) beats.splice(beats.indexOf(x), 1); unpick(); ctx.changed(); ctx.rerender(); } } }]);
+  });
   const flags = b.if || [];
   const ifRow = h("div", { class: "beat-if" }, h("span", { class: "lab" }, "only if"),
     flags.map((f, j) => h("span", { class: "chip" + (f.startsWith("!") ? " neg" : ""), title: f.startsWith("!") ? "this flag must NOT be set" : "this flag must be set" },
@@ -298,7 +398,7 @@ export function beatCard(b, i, beats, ctx, { secrets = [] } = {}) {
     triggerPill({ get: () => b.when, set: v => { b.when = v; } }, ctx),
     bad.length ? h("span", { class: "pmark " + (bad.some(p => p.sev === "error") ? "err" : "warn"), title: bad.map(p => p.text).join("\n") }, icon("alert", 12), " " + bad.length) : null,
     h("span", { class: "grow" }),
-    h("button", { class: "ghost", title: "duplicate this beat", on: { click: () => { const c = clone(b); c.id = nextId(beats, b.id); beats.splice(i + 1, 0, c); ctx.changed(); ctx.rerender(); } } }, icon("copy", 14)),
+    h("button", { class: "ghost", title: "duplicate this beat", on: { click: dupBeat } }, icon("copy", 14)),
     h("button", { class: "ghost", title: "delete this beat", on: { click: () => { if (confirm(`Delete beat ${b.id}?`)) { beats.splice(i, 1); ctx.changed(); ctx.rerender(); } } } }, icon("x", 14))));
   ifRow.append(h("span", { class: "grow" }),
     h("label", { class: "chk small", title: "the task can end without it" }, h("input", { type: "checkbox", checked: !!b.optional, on: { change: e => { if (e.target.checked) b.optional = true; else delete b.optional; ctx.changed(); } } }), " optional"),

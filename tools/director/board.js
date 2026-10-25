@@ -10,8 +10,9 @@ const COL = 214, ROW = 84, BAND_GAP = 46, PAD = 24, SNAP = 8, READ_Z = 0.85;   /
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
 
 export class Board {
-  // cb: story(), selected(), select(id), card(id, n) -> {cls, kids, title}, outs(id) -> [{to, label, kind}],
-  //     moved({id: [x, y]}) (every node's place, once any is moved), connect(from, to), create(type, [x, y], from|null)
+  // cb: story(), selected(), select(id, {add}), multi() -> the ids picked together, card(id, n) -> {cls, kids, title},
+  //     outs(id) -> [{to, label, kind}], moved({id: [x, y]}) (every node's place, once any is moved), connect(from, to),
+  //     create(type, [x, y], from|null), remove(), context(id | null, clientX, clientY, [x, y]) (the right-click)
   constructor(host, cb) {
     this.host = host; this.cb = cb; this.view = { x: 0, y: 0, z: 1 }; this.pos = {};
     host.innerHTML = ""; host.tabIndex = 0;
@@ -64,8 +65,9 @@ export class Board {
     this.pos = this.layout();
     this.world.querySelectorAll(".card").forEach(c => c.remove());
     for (const [id, n] of Object.entries(S.flow)) {
-      const p = this.pos[id], c = this.cb.card(id, n), sel = this.cb.selected() === id;
-      const card = el("div", { class: `card ${n.type}${sel ? " sel" : ""}${c.cls ? " " + c.cls : ""}`, "data-id": id, title: c.title || "", style: `left:${p.x}px;top:${p.y}px` }, ...c.kids);
+      const p = this.pos[id], c = this.cb.card(id, n), sel = this.cb.selected() === id, multi = this.cb.multi ? this.cb.multi() : null;
+      const many = multi && multi.size > 1 && multi.has(id);
+      const card = el("div", { class: `card ${n.type}${sel ? " sel" : ""}${many ? " multi" : ""}${c.cls ? " " + c.cls : ""}`, "data-id": id, title: c.title || "", style: `left:${p.x}px;top:${p.y}px` }, ...c.kids);
       if (n.type !== "ending") card.append(el("span", { class: "port", title: "drag to another node to connect (or into empty space for a new one)" }));
       this.world.append(card);
     }
@@ -125,6 +127,12 @@ export class Board {
       if (port) return this.link(e, port.parentNode.dataset.id);
       if (card) return this.drag(e, card);
     });
+    host.addEventListener("mousemove", e => { this.mouse = this.toWorld(e.clientX, e.clientY); });
+    host.addEventListener("contextmenu", e => {
+      if (!this.cb.context || e.target.closest(".btools,.bmenu")) return;
+      e.preventDefault(); const card = e.target.closest(".card");
+      this.cb.context(card ? card.dataset.id : null, e.clientX, e.clientY, this.toWorld(e.clientX, e.clientY));
+    });
     host.addEventListener("dblclick", e => { if (!e.target.closest(".card,.btools")) { const [x, y] = this.toWorld(e.clientX, e.clientY); this.menu(e.clientX, e.clientY, type => this.cb.create(type, [x, y], null)); } });
     host.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("text/x-node")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
     host.addEventListener("drop", e => {
@@ -143,17 +151,21 @@ export class Board {
     const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); this.host.classList.remove("panning"); this.saveView(); };
     window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
   }
-  drag(e, card) {
-    const id = card.dataset.id, sx = e.clientX, sy = e.clientY, p0 = Object.assign({}, this.pos[id]); let moved = false;
+  drag(e, card) {                               // the picked cards move together when one of them is dragged
+    const id = card.dataset.id, sx = e.clientX, sy = e.clientY, add = e.ctrlKey || e.metaKey || e.shiftKey, multi = this.cb.multi ? this.cb.multi() : null;
+    const group = multi && multi.size > 1 && multi.has(id) ? [...multi].filter(k => this.pos[k]) : [id], p0 = Object.fromEntries(group.map(k => [k, Object.assign({}, this.pos[k])]));
+    const cards = Object.fromEntries(group.map(k => [k, this.world.querySelector(`.card[data-id="${CSS.escape(k)}"]`)])); let moved = false;
     const mv = ev => {
       const dx = (ev.clientX - sx) / this.view.z, dy = (ev.clientY - sy) / this.view.z;
       if (!moved && Math.hypot(dx, dy) * this.view.z < 4) return;
-      moved = true; card.classList.add("lifting");
-      this.pos[id] = { x: p0.x + dx, y: p0.y + dy }; card.style.left = this.pos[id].x + "px"; card.style.top = this.pos[id].y + "px"; this.edges();
+      if (add) return;                             // Ctrl or Shift: picking, not moving
+      moved = true;
+      for (const k of group) { const c = cards[k]; this.pos[k] = { x: p0[k].x + dx, y: p0[k].y + dy }; if (c) { c.classList.add("lifting"); c.style.left = this.pos[k].x + "px"; c.style.top = this.pos[k].y + "px"; } }
+      this.edges();
     };
     const up = () => {
-      window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); card.classList.remove("lifting");
-      if (!moved) { this.cb.select(id); this.host.focus({ preventScroll: true }); return; }
+      window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); for (const c of Object.values(cards)) if (c) c.classList.remove("lifting");
+      if (!moved) { this.cb.select(id, { add }); this.host.focus({ preventScroll: true }); return; }
       const all = {}; for (const [k, p] of Object.entries(this.pos)) all[k] = [Math.round(p.x / SNAP) * SNAP, Math.round(p.y / SNAP) * SNAP];
       this.cb.moved(all);
     };

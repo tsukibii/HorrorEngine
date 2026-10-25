@@ -8,7 +8,9 @@ import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks } from "./ui.js";
+import * as CLIPBOARD from "./clipboard.js";
+const { pack, unpack, pasteClips, copyNodes, pasteNodes } = CLIPBOARD;
 import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
@@ -273,7 +275,39 @@ function undoTo(from, to, what) {
   dirty(true); renderAll(); scheduleReplan(); undoState(); status(`${what}: ${from.length} more`);
 }
 window.addEventListener("beforeunload", e => { if (DIRTY) { e.preventDefault(); e.returnValue = ""; } });
+const typingNow = () => /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "") || !!window.getSelection().toString();
+function copySelection() {
+  const f = focusOf();
+  if (f === "commands" || f === "beats") { const c = copyPicks(); if (c) { copyNow(c, f === "beats" ? "beat" : "command"); return c; } }
+  if (f === "clips") { copyLines(); return CLIP.get(); }
+  if (f === "cards" && S && $("#flowView").classList.contains("on")) { copyCards(); return CLIP.get(); }
+  return null;
+}
+function pasteSelection(clip) {
+  if (!S || !clip) return false;
+  if (clip.kind === "nodes") return $("#flowView").classList.contains("on") ? pasteCards(clip) : false;
+  if (clip.kind === "clips") return pasteLines(clip, picked("clips").slice(-1)[0] || null);
+  if (pasteAtPicks(clip, S)) return true;
+  const n = S.flow[SEL];                           // nothing picked: beats at the end of the task shown
+  if (clip.kind === "beats" && n && n.type === "stitch") { const st = S.stitches[n.ref]; st.beats = st.beats || []; const { pasteBeats } = CLIPBOARD; st.beats.push(...pasteBeats(S, clip.items)); touch(); renderInspector(); return true; }
+  toast(clip.kind === "commands" ? "Click a command or a beat, then paste: the commands go after it" : "Open a task to paste beats into it", { ms: 4000 });
+  return false;
+}
+document.addEventListener("copy", e => { if (typingNow()) return; const c = copySelection(); if (c) { e.clipboardData.setData("text/plain", JSON.stringify(c, null, 1)); e.preventDefault(); } });
+document.addEventListener("paste", e => {
+  if (typingNow() || document.querySelector(".mdl")) return;
+  const t = e.clipboardData.getData("text/plain"), c = (t && unpack(t)) || CLIP.get();
+  if (c && pasteSelection(c)) { e.preventDefault(); if (t && unpack(t)) CLIP.set(c, { system: false }); }
+});
 document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D") && !typingNow() && !document.querySelector(".mdl")) {   // duplicate what's picked
+    e.preventDefault(); const f = focusOf();
+    if (f === "cards") { const ids = pickedCards(); if (ids.length) pasteCards(copyNodes(S, ids, BOARD.pos), [BOARD.pos[ids[0]].x + 40, BOARD.pos[ids[0]].y + 40]); }
+    else if (f === "clips") { const ls = picked("clips"); if (ls.length) pasteLines(pack("clips", ls, { scene: (CLIPS_OF.get(ls[0]) || {}).sid }), ls[ls.length - 1]); }
+    else { const c = copyPicks(); if (c) pasteAtPicks(c, S); }
+  }
+  if (e.key === "Escape" && !document.querySelector(".mdl,.bmenu") && !RUN) { unpick(); if (SELS.size > 1) { SELS = new Set([SEL]); renderBoard(); } }
+  if (e.key === "Delete" && !typingNow() && !document.querySelector(".mdl") && focusOf() === "commands") { e.preventDefault(); deletePicks(); }
   if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); }
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "");
   if ((e.ctrlKey || e.metaKey) && !typing && !RUN && (e.key === "z" || e.key === "Z" || e.key === "y")) {   // the text box keeps its own undo
@@ -372,6 +406,7 @@ const CTX = {
   changed() { touch(); },
   rerender() { const sc = $("#inspector").scrollTop; renderInspector(); $("#inspector").scrollTop = sc; },
   marks, marksIn,                                  // problems on a command, a trigger or a beat (ui.js marks them)
+  story: () => S,                                  // for the paste's new ids (clipboard.js)
   creates: kind => ["line", "item", "note", "sound", "counter", "secret", "motion", "cast"].includes(kind),   // "+ New…" in their pickers
   create: kind => DB.quickNew(kind),
 };
@@ -415,7 +450,47 @@ function cardOf(id, n) {
     probs.length ? el("span", { class: "badge", style: `background:${worst};color:${worst === "var(--bad)" ? "#fff" : "#000"}` }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
 }
 function nodeTitle(id, n) { const ref = nodeRef(n); return (ref && ref.title) || n.title || n.prompt || (n.type === "choice" ? `choice by ${n.by}${n.of ? " of " + n.of : ""}` : id); }
-function selectNode(id) { SEL = id; renderBoard(); renderInspector(); showStage(); }
+let SELS = new Set();                              // the cards picked together (Ctrl or Shift click, a box): copied, moved, deleted together
+function selectNode(id, { add = false } = {}) {
+  setFocus("cards");
+  if (add) { if (SELS.has(id) && SELS.size > 1) { SELS.delete(id); if (SEL === id) SEL = [...SELS].pop(); } else { SELS.add(id); if (SEL) SELS.add(SEL); SEL = id; } }
+  else { SELS = new Set([id]); SEL = id; }
+  renderBoard(); renderInspector(); showStage();
+}
+const pickedCards = () => (SELS.size > 1 ? [...SELS] : [SEL]).filter(id => id && S.flow[id]);
+function copyCards(ids = pickedCards()) { return ids.length ? copyNow(copyNodes(S, ids, BOARD ? BOARD.pos : {}), "card") : false; }
+function pasteCards(clip, at) {
+  if (!clip || clip.kind !== "nodes") return false;
+  freezeLayout();
+  const p = at || (BOARD && BOARD.mouse) || (BOARD ? BOARD.toWorld(BOARD.host.getBoundingClientRect().left + BOARD.host.clientWidth / 2, BOARD.host.getBoundingClientRect().top + BOARD.host.clientHeight / 2) : [0, 0]);
+  const made = pasteNodes(S, clip, p);
+  SELS = new Set(made); SEL = made[0]; touch(true); renderInspector(); showStage(); if (BOARD) BOARD.center(made[0]);
+  toast(`Pasted ${made.length} card${made.length === 1 ? "" : "s"}: connect ${made.length === 1 ? "it" : "them"} where ${made.length === 1 ? "it goes" : "they go"}`, { ms: 5000 });
+  return made.length;
+}
+function removeCards(ids) {
+  if (ids.length < 2) return removeNode(ids[0]);
+  if (!confirm(`Delete ${ids.length} nodes (${ids.join(", ")})? Their scenes and tasks stay in the file.`)) return;
+  for (const id of ids) delete S.flow[id]; SELS = new Set(); if (!S.flow[SEL]) SEL = S.game.start; touch(); renderInspector(); showStage();
+}
+function cardMenu(id, x, y, at) {
+  if (!id) return contextMenu(x, y, [                // the board itself
+    ...[["scene", "film", "Scene"], ["stitch", "task", "Task"], ["choice", "choice", "Choice"], ["ending", "ending", "Ending"]].map(([t, ic, l]) => ({ label: "Add a " + l.toLowerCase() + " here", icon: ic, on: () => createNode(t, at, null) })),
+    "-", { label: "Paste here", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("nodes"), on: () => pasteCards(CLIP.get(), at) },
+    { label: "Fit everything", icon: "fit", kbd: "F", on: () => BOARD.fit() }, { label: "Tidy the layout", icon: "tree", on: () => BOARD.tidy() }], "The board");
+  if (!SELS.has(id)) selectNode(id);
+  const n = S.flow[id], ids = pickedCards(), many = ids.length > 1;
+  contextMenu(x, y, [
+    n.type === "scene" || n.type === "stitch" ? { label: "Watch from here", icon: "play", on: () => { openView("watchView"); watch(id); } } : null,
+    { label: "Make it the start", icon: "flag", disabled: S.game.start === id, on: () => { S.game.start = id; touch(); renderInspector(); } },
+    "-",
+    { label: many ? `Copy ${ids.length} cards` : "Copy", icon: "copy", kbd: "Ctrl+C", on: () => copyCards(ids) },
+    { label: "Paste here", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("nodes"), on: () => pasteCards(CLIP.get(), at) },
+    { label: many ? `Duplicate ${ids.length} cards` : "Duplicate", icon: "copy", kbd: "Ctrl+D", on: () => pasteCards(copyNodes(S, ids, BOARD.pos), [BOARD.pos[ids[0]].x + 40, BOARD.pos[ids[0]].y + 40]) },
+    many ? null : { label: "Rename", icon: "edit", on: () => renameNode(id) },
+    "-",
+    { label: many ? `Delete ${ids.length} cards` : "Delete", icon: "x", danger: true, kbd: "Del", on: () => removeCards(ids) }], many ? `${ids.length} cards` : nodeTitle(id, n));
+}
 function freezeLayout() {                          // the first node moved: every node keeps where it is now
   if (!BOARD || Object.values(S.flow).every(n => Array.isArray(n.xy))) return;
   for (const [id, p] of Object.entries(BOARD.layout())) if (S.flow[id] && !Array.isArray(S.flow[id].xy)) S.flow[id].xy = [Math.round(p.x), Math.round(p.y)];
@@ -448,9 +523,9 @@ function removeNode(id) {
 }
 function renderBoard() {
   if (!S) return;
-  if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs,
+  if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs, multi: () => SELS,
     moved: all => { for (const [id, xy] of Object.entries(all)) if (S.flow[id]) S.flow[id].xy = xy; touch(); },
-    connect: connectNodes, create: createNode, remove: removeNode });
+    connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu });
   BOARD.render(); renderOutline();
 }
 // the side of the board: the palette (drag a node onto the board, or click to add one after the selected node) and
@@ -733,7 +808,8 @@ function clipRow(sc, ver, c, i, sid, open) {
   const pm = marks(c);
   if (pm) chips.unshift(el("span", { class: "lchip " + (pm.some(p => p.sev === "error") ? "bad" : "warn"), title: pm.map(p => p.text).join("\n") }, icon("alert", 11), " " + pm.length));
   const row = el("div", { class: "lrow", title: open ? "click to close" : "click to open its tabs; drop a take's video here",
-    on: { click: e => { if (e.target.closest("button,select,input,.grip")) return; OPEN[sid] = open ? null : { id: c.id, tab: (OPEN[sid] || {}).tab || "line" }; CTX.rerender(); } } },
+    on: { click: e => { if (e.target.closest("button,select,input,.grip")) return; if (e.ctrlKey || e.metaKey || e.shiftKey) { pick("clips", c, { add: true }); return; } pick("clips", c); OPEN[sid] = open ? null : { id: c.id, tab: (OPEN[sid] || {}).tab || "line" }; CTX.rerender(); },
+      contextmenu: e => { e.preventDefault(); lineMenu(e, sc, ver, c, i, sid, open); } } },
     el("span", { class: "lnum" }, i + 1),
     el("span", { class: "who " + (c.who === "player" ? "pl" : "") }, ((S.cast || {})[c.who] || {}).name || c.who || "?"),
     el("span", { class: "ltext" }, el("span", { class: "en" }, c.en || c.ja || "(no line yet)"), c.en && c.ja ? el("span", { class: "ja" }, c.ja) : null),
@@ -743,6 +819,33 @@ function clipRow(sc, ver, c, i, sid, open) {
     el("button", { class: "ghost", title: "duplicate this clip", on: { click: () => { const cp = JSON.parse(JSON.stringify(c)); cp.id = newClipId(ver); ver.clips.splice(i + 1, 0, cp); touch(); CTX.rerender(); } } }, icon("copy", 13)),
     el("button", { class: "ghost", title: "delete this clip", on: { click: () => { if (confirm("Delete clip " + c.id + "?")) { ver.clips.splice(i, 1); touch(); CTX.rerender(); } } } }, icon("x", 13)));
   return row;
+}
+const CLIPS_OF = new WeakMap();                   // a line: its scene, version and scene id (for the paste)
+function lineMenu(e, sc, ver, c, i, sid, open) {
+  if (!picked("clips").includes(c)) pick("clips", c);
+  const ls = picked("clips"), many = ls.length > 1;
+  contextMenu(e.clientX, e.clientY, [
+    { label: open ? "Close it" : "Open its tabs", icon: "edit", on: () => { OPEN[sid] = open ? null : { id: c.id, tab: "line" }; CTX.rerender(); } },
+    { label: "Play from here", icon: "play", on: () => playScene(sc, ver, c.id) },
+    "-",
+    { label: many ? `Copy ${ls.length} lines` : "Copy", icon: "copy", kbd: "Ctrl+C", on: () => copyLines() },
+    { label: "Paste after", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("clips"), on: () => pasteLines(CLIP.get(), c) },
+    { label: "Duplicate", icon: "copy", kbd: "Ctrl+D", on: () => pasteLines(pack("clips", many ? ls : [c], { scene: sid }), many ? ls[ls.length - 1] : c) },
+    { label: "Add a line after", icon: "plus", on: () => { const nc = { id: newClipId(ver), who: c.who, ja: "", en: "", seam: { kind: "blink" } }; ver.clips.splice(ver.clips.indexOf(c) + 1, 0, nc); OPEN[sid] = { id: nc.id, tab: "line" }; touch(); CTX.rerender(); } },
+    "-",
+    { label: many ? `Delete ${ls.length} lines` : "Delete", icon: "x", danger: true, on: () => { const go = many ? ls : [c]; if (!confirm(`Delete ${go.map(x => x.id).join(", ")}?`)) return; for (const x of go) ver.clips.splice(ver.clips.indexOf(x), 1); unpick(); touch(); CTX.rerender(); } }],
+    many ? `${ls.length} lines` : `line ${c.id}`);
+}
+function copyLines() { const ls = picked("clips"); if (!ls.length) return false; const at = CLIPS_OF.get(ls[0]); return copyNow(pack("clips", ls, { scene: at ? at.sid : null }), "line"); }
+function pasteLines(clip, after) {               // after a line (the last picked, or the open one), or at the end of the scene shown
+  if (!clip || clip.kind !== "clips") return false;
+  let at = after && CLIPS_OF.get(after);
+  if (!at) { const n = S.flow[SEL]; if (!n || n.type !== "scene") return false; const sc = S.scenes[n.ref], k = sc.variants ? (VTAB[n.ref] || sc.pick) : null; at = { sc, ver: k ? sc.variants[k] : sc, sid: n.ref }; }
+  const ver = at.ver; ver.clips = ver.clips || [];
+  const items = pasteClips(ver, clip.items, { scene: at.sid, fromScene: clip.scene || null }), i = after ? ver.clips.indexOf(after) + 1 : ver.clips.length;
+  if (i > 0) for (const x of items) if (!x.seam) x.seam = { kind: "blink" };
+  ver.clips.splice(i, 0, ...items); pickAll("clips", items); touch(); CTX.rerender();
+  return items.length;
 }
 function newClipId(ver) { let n = (ver.clips || []).length + 1; while ((ver.clips || []).some(x => x.id === "c" + n)) n++; return "c" + n; }
 async function dropTake(e, sc, c, sid) {          // a take's video (or audio) dropped on its clip: Footage/<game>/<take id>.<ext>
@@ -790,7 +893,8 @@ async function cleanTake(c, t, keepTrim) {        // the take's length and the d
 function clipCard(sc, ver, c, i, lvl, sid) {
   const max = S.game.clip_max || 10, over = clipSecs(c) > max, open = !!(OPEN[sid] && OPEN[sid].id === c.id);
   if (i) c.seam = c.seam || { kind: "blink" };
-  const card = el("div", { class: "clip line" + (over ? " over" : "") + (open ? " open" : ""), "data-clip": c.id, style: `--who:${whoColor(c.who)}` });
+  const card = el("div", { class: "clip line" + (over ? " over" : "") + (open ? " open" : "") + (picked("clips").includes(c) ? " picked" : ""), "data-clip": c.id, "data-pick": "clips", style: `--who:${whoColor(c.who)}` });
+  card._obj = c; CLIPS_OF.set(c, { sc, ver, sid });
   card.append(el("div", { class: "lhead" }, grip(card, ver.clips, i, "clip"), clipRow(sc, ver, c, i, sid, open)));
   card.addEventListener("dragover", e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); card.classList.add("droptake"); } });
   card.addEventListener("dragleave", e => { if (!card.contains(e.relatedTarget)) card.classList.remove("droptake"); });

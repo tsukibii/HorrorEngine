@@ -256,3 +256,14 @@ input.id{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 .conf-b{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .conf-b button{text-align:left;white-space:normal;font-size:12px;padding:6px 8px}
 .conf-b button.on{border-color:var(--accent);background:#33291a;color:#f0d9a6}
+
+/* ---- picked things (copy, paste) and the right-click menu ---- */
+.arow.picked{outline:2px solid #6fb3d9;outline-offset:-1px;background:#1d2a33}
+.beat.picked{outline:2px solid #6fb3d9;outline-offset:1px}
+.clip.line.picked{outline:2px solid #6fb3d9;outline-offset:-2px}
+#board .card.multi{outline:2px solid #6fb3d9;outline-offset:2px}
+.cmenu{min-width:220px}
+.cmenu .bmenu-i{gap:9px}.cmenu .bmenu-i:disabled{opacity:.4;cursor:default}.cmenu .bmenu-i:disabled:hover{background:none}
+.cmenu .bmenu-i.danger{color:#ff9a8f}
+.cmenu kbd{font-family:inherit;font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.bmenu-sep{height:1px;background:var(--line);margin:4px 6px}

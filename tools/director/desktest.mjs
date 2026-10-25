@@ -89,5 +89,36 @@ console.log("the merge (merge.js)");
   getAt(v, ["stitches", st, "beats", { id: S0.stitches[st].beats[0].id }]) ? ok("a path by id finds its beat") : fail("getAt by id");
 }
 
+// ---- copy and paste: new ids where they must be unique, the links inside what was copied kept
+console.log("copy and paste (clipboard.js)");
+{
+  const C = await import("./clipboard.js"), { allIds } = await import("./refs.js");
+  const S = story("Sample"), th = thingsOf(S), st = S.stitches.t_search;
+  const ids0 = allIds(S), bs = C.pasteBeats(S, st.beats.slice(0, 3));
+  bs.every(b => !ids0.has(b.id)) && new Set(bs.map(b => b.id)).size === 3 ? ok(`three beats pasted: new ids ${bs.map(b => b.id).join(", ")}`) : fail("pasted beats' ids");
+  const withAfter = C.pasteBeats(S, [{ id: "b_one", when: { start: true }, do: [] }, { id: "b_two", when: { after: "b_one", secs: 1 }, do: [] }]);
+  withAfter[1].when.after === withAfter[0].id ? ok("a beat's “after” follows the beat it waits for") : fail(`after ${withAfter[1].when.after}`);
+  const ask = { ask: "q_stay", text: "Stay?", options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] };
+  S.stitches.t_search.beats.push({ id: "b_ask_here", when: { start: true }, optional: true, do: [clone(ask)] });
+  const [pa] = C.pasteCommands(S, [ask]);
+  pa.ask !== "q_stay" ? ok(`a question pasted where its id is taken gets its own (${pa.ask})`) : fail("ask id kept");
+  const sc = Object.keys(S.scenes).find(k => (S.scenes[k].clips || []).length > 1), ver = S.scenes[sc], cl = C.pasteClips(ver, ver.clips.slice(0, 2), { scene: sc, fromScene: sc });
+  cl.every(c => !ver.clips.some(x => x.id === c.id) && !c.dur) ? ok(`two lines pasted into their scene: ${cl.map(c => c.id).join(", ")}, without the old take's length`) : fail("pasted clips");
+  // cards: a scene and the task after it, pasted as a pair
+  const S2 = story("Sample"), pick = Object.keys(S2.flow).filter(n => ["scene", "stitch"].includes(S2.flow[n].type)).slice(1, 3);
+  S2.flow[pick[0]].next = pick[1];
+  const made = C.pasteNodes(S2, C.copyNodes(S2, pick), [900, 900]);
+  const [a, b] = made.map(id => S2.flow[id]);
+  made.length === 2 && a.next === made[1] && a.ref !== S2.flow[pick[0]].ref && b.next === null && Array.isArray(a.xy)
+    ? ok(`two cards pasted (${made.join(", ")}): their own ${a.type} and ${b.type}, the link between them kept, the one out dropped`) : fail(`pasted cards: ${JSON.stringify(made)}`);
+  const ids = []; for (const t of ["cast", "items", "notes", "lines", "sounds", "scenes", "stitches", "flow", "secrets", "motions"]) ids.push(...Object.keys(S2[t] || {}));
+  for (const t of Object.values(S2.stitches)) for (const x of t.beats || []) ids.push(x.id);
+  ids.length === new Set(ids).size ? ok("every id in the story still unique") : fail("an id twice after the paste");
+  const errs = run(S2, th).filter(p => p.sev === "error" && !made.includes(p.at.node));
+  errs.length ? fail(`the paste broke something else: ${errs[0].text}`) : ok("nothing outside the pasted cards has a problem");
+  C.unpack(JSON.stringify([{ say: "mari_002" }, { flag: "x" }])).kind === "commands" && C.unpack(JSON.stringify(st.beats.slice(0, 2))).kind === "beats" && C.unpack(JSON.stringify(ver.clips.slice(0, 1))).kind === "clips" && C.unpack("hello") === null
+    ? ok("plain JSON of commands, beats or lines reads back as them") : fail("unpack");
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);
