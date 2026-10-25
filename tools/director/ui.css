@@ -301,3 +301,17 @@ details.quick{flex:none}details.quick summary{cursor:pointer;list-style:none}det
 #board .card.folded{border-left:5px solid var(--fc);background:color-mix(in srgb,var(--fc) 16%,var(--panel2));cursor:grab;box-shadow:4px 4px 0 -1px color-mix(in srgb,var(--fc) 30%,transparent),8px 8px 0 -2px color-mix(in srgb,var(--fc) 18%,transparent)}
 .bsel{position:absolute;border:1px dashed #6fb3d9;background:rgba(111,179,217,.12);pointer-events:none;z-index:7}
 .bmini{position:absolute;right:8px;bottom:8px;width:168px;height:104px;border:1px solid var(--line);border-radius:8px;background:rgba(18,18,20,.88);z-index:6;cursor:crosshair}
+
+/* ---- go to anything (goto.js) ---- */
+.goto{width:640px;max-width:94vw}
+.goto-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.goto-h kbd{font-family:inherit;font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.goto-in{flex:1;border:0;background:none;font-size:15px;padding:4px 0;outline:none}
+.goto-list{overflow:auto;max-height:60vh;padding:6px}
+.goto-i{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:7px;cursor:pointer}
+.goto-i.on{background:#33291a}
+.goto-ic{display:inline-flex;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;background:var(--panel2);color:var(--dim);flex:none}
+.goto-ic.k-scene{color:var(--scene)}.goto-ic.k-stitch,.goto-ic.k-beat{color:var(--stitch)}.goto-ic.k-choice{color:var(--choice)}.goto-ic.k-ending{color:var(--ending)}.goto-ic.k-action{color:var(--accent)}.goto-ic.k-line{color:#e07aa8}
+.goto-t{display:flex;flex-direction:column;min-width:0}.goto-t>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goto-s{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goto-none{color:var(--dim);padding:16px}

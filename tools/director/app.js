@@ -16,6 +16,7 @@ import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
 import { DebugPanel } from "./debug.js";
+import { openGoto } from "./goto.js";
 import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
@@ -1910,12 +1911,16 @@ for (const b of document.querySelectorAll("[data-ic]")) b.prepend(icon(b.dataset
 $("#keysHelp").onclick = () => {
   const sec = (t, rows) => el("div", { class: "helpsec" }, el("h4", {}, t), ...rows.map(([k, v]) => el("div", { class: "helprow" }, el("kbd", {}, k), el("span", {}, v))));
   modal({ title: "Keys and help", wide: true, ok: "Close", cancel: null, body: el("div", { class: "help" },
-    sec("The desk", [["Ctrl+S", "save"], ["Ctrl+Z", "undo (outside a text box; 150 edits back)"], ["Ctrl+Shift+Z · Ctrl+Y", "redo"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"]]),
-    sec("The flow board", [["drag a card", "move it (the layout is kept in the story)"], ["drag its ●", "onto another card to connect them, or onto empty space for a new one"], ["palette", "drag Scene, Task, Choice or Ending onto the board"], ["double-click", "empty space: add a card there"], ["wheel · drag the background", "zoom · pan"], ["F · Delete", "fit everything · remove the selected card"]]),
-    sec("A task's beats", [["When … pill", "click to choose when the beat happens"], ["+ Add a command", "the palette: type to search, Enter picks"], ["grip ⋮⋮", "drag a command or a beat to move it, into another beat too"], ["double-click", "a command: edit it"], ["+ New…", "in a picker: make the line, item or sound there and then"]]),
+    sec("The desk", [["Ctrl+K", "go to anything: a card, a line by its words, a beat, a flag, an item, or an action such as Playtest"], ["Ctrl+S", "save"], ["Ctrl+Z", "undo (outside a text box; 150 edits back)"], ["Ctrl+Shift+Z · Ctrl+Y", "redo"],
+      ["Problems", "what's wrong, found as you edit: click one to go there"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"]]),
+    sec("The flow board", [["drag a card", "move it (the layout is kept in the story)"], ["drag its ●", "onto another card to connect them, or onto empty space for a new one"], ["palette", "drag Scene, Task, Choice or Ending onto the board"], ["double-click", "empty space: add a card there"], ["wheel · drag the background", "zoom · pan"], ["F · M · Delete", "fit everything · the minimap · remove the selected card"],
+      ["Shift+drag · Ctrl+click", "pick several cards: a box, or one more"], ["right-click", "a card, an act or the board: copy, paste, duplicate, make an act, remove"],
+      ["Ctrl+C · Ctrl+V · Ctrl+D", "copy · paste · duplicate what's picked (cards, lines, beats, commands; between games too)"], ["an act", "drag its title to move it with its cards; fold it to one card; drop a card in to join"],
+      ["Quick tasks", "a locked door and its key, a note, a chase… dragged onto the board, a few blanks filled"]]),
+    sec("A task's beats", [["When … pill", "click to choose when the beat happens"], ["+ Add a command", "the palette: type to search, Enter picks"], ["grip ⋮⋮", "drag a command or a beat to move it, into another beat too"], ["double-click", "a command: edit it"], ["+ New…", "in a picker: make the line, item or sound there and then"], ["Quick beat", "a jump scare, a knock, the lights dying… from a few blanks"]]),
     sec("A scene", [["a row", "one line: click it for its tabs (Line, Take, Camera, Body, Event, Reply)"], ["grip ⋮⋮", "drag lines to reorder them"], ["drop a file", "a take's video or audio on its line: stored, measured, trimmed"]]),
     sec("The Database", [["tabs", "the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets, trigger cutscenes"], ["Used in …", "every place an entry is used: click one to go there"], ["Rename", "a new id, changed everywhere it's used"]]),
-    sec("The Watch", [["WASD · arrows", "move"], ["mouse", "look (click the view to lock it)"], ["E · hold E", "use · pick up or put down"], ["C", "crouch (toggle or hold: the Watch bar)"], ["Esc", "pause (dev: skips a scene, when ticked)"]]),
+    sec("The Watch", [["WASD · arrows", "move"], ["mouse", "look (click the view to lock it)"], ["E · hold E", "use · pick up or put down"], ["C", "crouch (toggle or hold: the Watch bar)"], ["Esc", "pause (dev: skips a scene, when ticked)"], ["F9 · Debug", "every flag, counter and item live, the beats as they fire; before it plays, the state to start from"]]),
     sec("The stage", [["Free cam", "drag to orbit, wheel to zoom"]])) });
 };
 $("#check").onclick = async () => {
@@ -1987,6 +1992,27 @@ const DBG = new DebugPanel($("#watchView"), {
   go: (st, beat) => { const tid = Object.keys(S.stitches).find(k => S.stitches[k] === st), node = Object.keys(S.flow).find(k => S.flow[k].ref === tid); if (node) goToProblem({ at: { node, stitch: tid, beat }, text: "" }); },
 });
 $("#wDebug").onclick = () => DBG.toggle();
+// go to anything (Ctrl+K): a card, a line, a beat, an entry, a flag, or one of the desk's actions
+function goto() {
+  if (!S) return;
+  openGoto({ story: () => S, name: CTX.name, title: id => nodeTitle(id, S.flow[id]), flags: () => storyFlags(),
+    goNode: id => { if (!id) return; openView("flowView"); selectNode(id); if (BOARD) BOARD.center(id); },
+    goClip: (node, sid, k, cid) => goToProblem({ at: { node, scene: sid, variant: k, clip: cid }, text: "", path: [] }),
+    goBeat: (node, tid, bid) => goToProblem({ at: { node, stitch: tid, beat: bid }, text: "", path: [] }),
+    goDb: (tab, id) => openDb(tab, id),
+    actions: () => [
+      { label: "Playtest from the start", hint: "the Watch", keys: "play run test", on: () => $("#playtest").click() },
+      { label: "Save", hint: "Ctrl+S", on: () => save() }, { label: "Check the story", hint: "the story and level checks", on: () => $("#check").click() },
+      { label: "Problems", hint: "what's wrong, found as you edit", on: () => toggleProblems(true) },
+      { label: "Database", hint: "the game's tables", on: () => openDb() }, { label: "Takes", hint: "every take to record", on: () => openView("clipsView") },
+      { label: "Storyboard", on: () => openView("boardView") }, { label: "Branches", on: () => openView("branchView") }, { label: "Notes", on: () => openView("notesView") },
+      { label: "Undo", hint: "Ctrl+Z", on: () => undoTo(UNDO, REDO, "undo") }, { label: "Redo", hint: "Ctrl+Shift+Z", on: () => undoTo(REDO, UNDO, "redo") },
+      { label: "Fit the board", hint: "F", on: () => { openView("flowView"); BOARD && BOARD.fit(); } },
+      { label: "Keys and help", on: () => $("#keysHelp").click() },
+      ...TOOLS.map(t => ({ label: t.label, hint: "opens " + t.page, on: () => window.open(`${t.page}?game=${encodeURIComponent(GAME || "")}`, t.win || "_blank") }))] });
+}
+$("#gotoBtn").onclick = goto;
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K") && !document.querySelector(".mdl-back")) { e.preventDefault(); goto(); } });
 document.addEventListener("keydown", e => { if (e.key === "F9" && $("#watchView").classList.contains("on")) { e.preventDefault(); DBG.toggle(); } });
 const DB = new Database($("#dbView"), {
   story: () => S, game: () => GAME, ctx: CTX, touch, status, whoColor, takes: () => TAKES, playLine, dropTake: dropLineTake, secs: c => clipSecs(c),
