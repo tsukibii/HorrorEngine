@@ -1,7 +1,7 @@
 # Continue: the next session
 
-Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening) on
-`claude/experiments-afk`. Read this
+Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, and on
+2026-10-25) on `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -51,6 +51,25 @@ has the rules, the parts and how to grow it):
 | `194a91f` | **A scene reads as a script**: a row a line (the speaker in their colour, the words, chips for what's set), dragged to reorder; a line's settings in tabs; the reply as a form; a take's file dropped on its line is stored, measured and trimmed. |
 | `ae51947` | **The Database** (`database.js`, `refs.js`): the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets and trigger cutscenes as tabs; each entry's uses, clicked to go there; a rename moves every use (REFS); `+ New…` in any picker. **The toolbar** in groups with icons (Save, Undo, Redo, Database, Playtest, Check, Unreal, Tools, Help); help as a dialog; a scene's look, trackers and see-through props as forms. |
 
+Then the user asked for every further enhancement proposed for the desk, and an HTML guide to using it (2026-10-25):
+
+| Commit | What |
+|---|---|
+| `cf7f719` | **Problems as you edit** (`lint.js`): each at its card, beat or line, in the Problems panel with the story check's own (run on the unsaved story). DESK. |
+| `dff5cc6` | **Claude's edits merged** with the desk's (`merge.js`): a three-way merge, a toast of what came in with Undo, a question only where both changed one thing. |
+| `a6ce6d2` | **Copy, paste and right-click menus** (`clipboard.js`): cards, lines, beats, commands; between games too. |
+| `697d3d0` | **The debug panel** (F9 in the Watch, `debug.js`): flags, counters, karma, items live; beats as they fire; a start from any node with a state. |
+| `3d70f39` | **Quick tasks and beats** (`templates.js`): a locked door and its key, a note, a chase... from a few blanks. |
+| `1c342ec` | **Acts on the board** (the story's `frames`), Shift-drag box picking, the minimap. |
+| `da6dfce` | **Ctrl+K goes to anything** (`goto.js`). |
+| `3e4de9e` | **Pictures instead of names** (`pictures.js`): what the player sees on each line, faces, poses, motions; picker grids. |
+| `0684564` | **A take's waveform** with its trims as handles; **cues dragged** along the timeline onto clip edges. |
+| `3c42cfd` | **Blocking by mouse** on the stage (`blocking.js`, `marks.js`): drag onto marks or new ones, the right-click menu, the player's marker. |
+| `219b28f` | **Reusable motions play**: behave's `motion` (format grown with the check), the seeker's loops by phase in the Watch's rounds, the motions table as pictures. |
+| `d6b2c5d` | **Screenplay typing** (`screenplay.js`): "Mari: …" under the script, Edit as text, a pasted draft; lines kept with their takes. |
+| `64e380b` | **A draft kept in the browser** and **the saves kept** (the toolbar's clock: what differs, bring one back). |
+| (this) | **The guide**: `tools/director/guide.html` (Help, Tools), its pictures made by `guide_shots.mjs`, which is also the GUIDE check. |
+
 ## 2. Where things are
 
 - Play: `tools/director/play/physics.js` (physics kinds as parts; carrying; the soft bend), `boardgames.js` (the table
@@ -68,6 +87,9 @@ has the rules, the parts and how to grow it):
 - Format: STORY_FORMAT §2 (`carry`, `game`) and §4 (`carrying`, `dropped`, `played`); story_check checks them and its
   walker carries things and plays games.
 
+- The desk: docs/DESK_DESIGN.md (the rules, the parts, how to grow it); the guide `tools/director/guide.html` at
+  http://127.0.0.1:8780/guide.html; the saves kept in `Saved/Story/<Game>/history/` (git-ignored).
+
 ## 3. Testing
 
 - `python tools/check_all.py`: CHECKS ok. `node tools/director/play/boardtest.mjs`: BOARD ok. `node
@@ -77,15 +99,18 @@ has the rules, the parts and how to grow it):
   `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
   whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
   bodies). TIMES ok, BLENDERLOOK ok.
+- `node tools/director/desktest.mjs`: DESK ok (the desk's logic without a browser; it maps `three` to the vendored
+  copy, so modules that draw are tested too). `node tools/director/guide_shots.mjs`: GUIDE ok (every part the guide
+  shows, driven in a browser and pictured; it makes and removes a scratch game `ZzGuide` and a take in
+  `Footage/Sample/`).
 - **Run the browser checks one at a time**: two at once on this machine's software GPU starve each other (LESSONS
   2026-10-24). Restart a desk or Studio server after changing its Python (find the PID, kill it in a second command).
 
 ## 4. What's next (ask which)
 
-00. **Try the new desk** and say what's still awkward: make a small task from the palette (a beat, a few commands, a
-   `+ New…` line), drag cards on the board, write a scene as lines and drop a take on one, rename something in the
-   Database. DESK_DESIGN §5 lists what is still JSON (only the boxes behind Advanced) and ideas not built (a minimap,
-   several cards moved at once, beats copied between tasks, task templates dropped whole).
+00. **Try the new desk with the guide open** (Help, Open the guide) and say what's still awkward: type a scene, drag
+   Mari onto a mark, trim a real take on its waveform, a quick task, an act, Ctrl+K, F9 in the Watch, bring back a
+   save. The pictures are made in software here: on the RTX 3090 they're instant.
 
 0. **Look at the jewellery, the nails and the underwear** in the Studio and say what to change: necklace lengths and
    weights, the hoops' size, the nails' length and shape (painted: a long acrylic would need a modelled nail), more

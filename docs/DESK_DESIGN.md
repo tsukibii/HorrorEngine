@@ -25,7 +25,16 @@ part follows, the parts to build with, and how to grow it.
    A form that doesn't cover something yet keeps the old JSON box behind **Advanced**; nothing else is JSON.
 7. **Show where things are used.** The Database lists every place an entry is used (click one to go there); a rename
    moves every use (`refs.js`; REFS proves it on every game).
-8. **Quiet, dark, colour-coded.** Node types have colours (scene violet, task teal, choice amber, ending red), command
+8. **Show, don't name.** Whatever has a look is a picture where it's chosen or listed: a line is what the player
+   sees on it, a cast member their face, a pose the body holding it, a motion its body at four moments
+   (`pictures.js`). A picker of such things is a grid of pictures (`picPick`).
+9. **Type it like a script; place it on the set.** Lines are typed as a screenplay ("Mari: …", "(a note)") and a
+   whole scene edited as text; actors and the player are dragged onto marks on the stage; cues along the timeline;
+   a take's trims on its waveform. What the hand does becomes the story's own words, never a time or a coordinate
+   the format doesn't have (a cue rides a clip edge, an actor stands on a mark).
+10. **Nothing gets lost.** Every edit undoes; unsaved edits are kept in the browser until saved; every save keeps the
+   version before it; Claude's edits merge with yours and say what they changed.
+11. **Quiet, dark, colour-coded.** Node types have colours (scene violet, task teal, choice amber, ending red), command
    groups too (story, flags and items, the house, people, camera and time, flow), and each speaker their own. The
    icons are line drawings made for the desk (`icons.js`, no icon set), in the text's colour.
 
@@ -60,6 +69,17 @@ part follows, the parts to build with, and how to grow it.
 | `Database` | database.js | the tabs; `open(tab, id)`, `quickNew(kind)` (what `+ New…` calls) |
 | `allRefs`, `usesOf`, `renameRef`, `placeOf`, `allIds` | refs.js | where the story names an entry (by the keys that hold it), a rename everywhere, a use's place for people, every id in the file |
 | `icon(name, size)` | icons.js | a 24 px line drawing; `ICONS` lists them |
+| `Pictures` (`PICS.img(kind, id)`) | pictures.js | an `<img>` of a cast member (`cast`), a pose, a made motion (`motion`), a motions table entry (`table`), what the player sees on a line (`line`: `[sid, variant, clip]`); made off screen a few a frame, kept until what it shows changes |
+| `picPick({get, set, choices, pic})`, `pickGrid` | ui.js | a picker with pictures: a button with the chosen one's, a searchable grid; `fieldInput` uses it for any kind `CTX.pic(kind)` has pictures of |
+| `contextMenu(x, y, items, head)`, `toast(text, {action})` | ui.js | a right-click menu (items: label, icon, kbd, on, danger, disabled); a passing message with one action (Undo) |
+| `pick`, `picked`, `copyNow`, `CLIP` | ui.js, clipboard.js | what's picked (cards, lines, beats, commands), the desk's clipboard (also the system's, as JSON) |
+| `lint(S, …)` | lint.js | the live checks as you edit: each problem with its place (`at`), for the Problems panel and the badges |
+| `merge3`, `changedPaths` | merge.js | the desk's edits and the disk's together; what differs between two versions (the saves kept use it) |
+| `openGoto(D)` | goto.js | Ctrl+K: one box over cards, lines, beats, entries, flags and the desk's actions |
+| `buildTask`, `buildBeat` | templates.js | the quick tasks and beats from their blanks |
+| `parse`, `toText`, `applyTo` | screenplay.js | a scene as script text and back; lines still there keep their clips |
+| `wireStageDrag(stage, D)` | blocking.js (+ marks.js) | blocking by mouse on the stage: drags onto marks, the right-click menu, the player's marker |
+| `DebugPanel` | debug.js | F9 in the Watch: the state live, the beats as they fire, a start from any node |
 | `CTX` | app.js | what the parts ask the desk: `refs(kind)`, `name(kind, v)`, `changed()`, `rerender()`, `creates(kind)`, `create(kind)` |
 
 ## 4. Growing it
@@ -79,10 +99,18 @@ part follows, the parts to build with, and how to grow it.
 - Behind **Advanced**: a scene's cues and sets, a task's play round and its beats, as JSON; the forms above them cover
   the same, the box is the way out for what they don't.
 - The level is edited in the scene builder (its own page, Tools).
-- Ideas, not built: a minimap on the board; several cards selected and moved at once; beats copied between tasks; a
-  task template dropped from the palette as a whole (hide and seek, a fetch).
+- Built since (2026-10-25): the minimap, several cards picked and moved at once, copy and paste of anything picked,
+  quick tasks and beats, acts, Ctrl+K, pictures, screenplay typing, blocking by mouse, the waveform, the saves kept.
 
 ## 6. Checks
 
-CMDS (`node tools/director/cmdtest.mjs`), REFS (`node tools/director/refstest.mjs`), and with the desk's server
-running, PLAY (`playtest.js`) and TIMES (`timetest.js`), one browser check at a time.
+DESK (`node tools/director/desktest.mjs`: the live checks, the merge, copy and paste, quick events, acts, marks,
+reusable motions, screenplay typing), CMDS (`node tools/director/cmdtest.mjs`), REFS (`node tools/director/refstest.mjs`),
+and with the desk's server running, one browser check at a time: PLAY (`playtest.js`) first, then TIMES (`timetest.js`)
+and GUIDE (`guide_shots.mjs`: every part the guide shows, driven and pictured).
+
+## 7. The guide
+
+`guide.html` (served by the desk, opened from Help and Tools) is the desk for the person using it, in the order they'd
+use it, with pictures `guide_shots.mjs` makes by driving the desk (`guide/*.jpg`; it also sizes the guide's `<img>`
+tags). A new part gets a paragraph there and, when it has a look, a picture in the script.

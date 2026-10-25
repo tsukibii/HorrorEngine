@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Director's Desk Guide</title>
+<!-- The guide to the director's desk: served by the desk (http://127.0.0.1:8780/guide.html), opened from Help. Nothing
+     here loads from outside: the pictures are in guide/ (node tools/director/guide_shots.mjs makes them again). -->
+<style>
+:root{--bg:#121214;--panel:#1b1b1f;--panel2:#232329;--line:#33333b;--text:#e6e3dc;--dim:#9a978f;--accent:#d9a441;
+  --scene:#8a63d2;--stitch:#2f9e8f;--choice:#c98a2b;--ending:#c0473f;--good:#5aa65a;--warn:#e0a030;--bad:#e05a4f;--cue:#6fb3d9}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto}
+nav.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 18px 28px 22px;border-right:1px solid var(--line);font-size:13.5px}
+nav.toc .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);font-size:12px;text-transform:uppercase;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+nav.toc li{counter-increment:s}
+nav.toc li a{display:flex;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text)}
+nav.toc li a::before{content:counter(s);color:var(--dim);min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+nav.toc li a:hover,nav.toc li a.on{background:var(--panel2);text-decoration:none}
+nav.toc li a.on{color:var(--accent)}
+main{padding:34px 44px 90px;min-width:0}
+header.hero{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:10px}
+header.hero h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+header.hero p{color:var(--dim);font-size:16.5px;margin:0;max-width:720px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:var(--panel)}
+section{padding-top:30px;max-width:900px}
+h2{font-size:24px;margin:16px 0 6px;display:flex;align-items:baseline;gap:12px}
+h2 .n{color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums;font-weight:600}
+h3{font-size:16.5px;margin:22px 0 4px}
+p{margin:8px 0}
+ul,ol.steps{padding-left:22px;margin:8px 0}
+li{margin:3px 0}
+kbd{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--text);white-space:nowrap}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ui{font-weight:600;color:#f2e6cc}
+figure{margin:16px 0 20px;max-width:100%}
+figure img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel)}
+figure.wide{max-width:1060px}
+figure.half{max-width:620px}
+figcaption{color:var(--dim);font-size:13px;margin-top:7px}
+.tip{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(217,164,65,.09),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.tip b{color:var(--accent)}
+.note{border-left:3px solid var(--cue);background:linear-gradient(90deg,rgba(111,179,217,.08),transparent);padding:9px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;color:var(--dim);font-size:13.5px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+table.keys{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+table.keys td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.keys td:first-child{white-space:nowrap;width:1%}
+table.keys tr.h td{color:var(--accent);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-top:16px;border-bottom:1px solid var(--accent)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}
+.flow span{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px}
+.flow i{color:var(--dim);font-style:normal}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:13px}
+@media (max-width:900px){
+  .wrap{display:block}
+  nav.toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 16px}
+  nav.toc ol{columns:2;column-gap:14px}
+  main{padding:22px 16px 60px}
+  header.hero h1{font-size:27px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <div class="brand">The director's desk</div>
+  <ol>
+    <li><a href="#start">Opening the desk</a></li>
+    <li><a href="#board">The flow board</a></li>
+    <li><a href="#quick">Quick tasks and acts</a></li>
+    <li><a href="#script">A scene as a script</a></li>
+    <li><a href="#typing">Typing a scene</a></li>
+    <li><a href="#takes">Takes and the waveform</a></li>
+    <li><a href="#timeline">The timeline and cues</a></li>
+    <li><a href="#stage">Blocking on the stage</a></li>
+    <li><a href="#bodies">Bodies, poses and motions</a></li>
+    <li><a href="#tasks">Tasks: beats and commands</a></li>
+    <li><a href="#database">The Database</a></li>
+    <li><a href="#playtest">Playtesting</a></li>
+    <li><a href="#problems">Problems and checks</a></li>
+    <li><a href="#goto">Go to anything</a></li>
+    <li><a href="#claude">Working beside Claude</a></li>
+    <li><a href="#safety">Nothing gets lost</a></li>
+    <li><a href="#unreal">Into Unreal</a></li>
+    <li><a href="#keys">Every key</a></li>
+  </ol>
+</nav>
+<main>
+<header class="hero">
+  <h1>The director's desk</h1>
+  <p>Where a game is plotted, blocked and played before Unreal builds it. Built to feel like RPG Maker: you drag
+    things where they go, pick from lists and pictures, and every command reads as a sentence. Nothing is typed as
+    JSON. This guide walks through it in the order you'd use it.</p>
+  <div class="chips"><span class="chip">no accounts</span><span class="chip">nothing leaves your machine</span><span class="chip">everything undoable</span><span class="chip">story.json is the truth</span></div>
+</header>
+
+<section id="start">
+<h2><span class="n">1</span>Opening the desk</h2>
+<p>Start the desk's server from the project folder, then open <a href="http://127.0.0.1:8780">http://127.0.0.1:8780</a>
+  in your browser. The launcher does it for you: <code>./studio</code> lists every tool, and the desk is one number.</p>
+<pre>./studio                              # the launcher: pick the desk
+python tools/director/serve.py        # or the desk on its own (DESK_PORT=8781 for a second one)</pre>
+<p>Pick the game in the top left (or <span class="ui">+ New</span> for a new one). The desk remembers the last game
+  you had open.</p>
+<figure class="wide"><img src="guide/toolbar.jpg" width="1500" height="72" alt="The toolbar" loading="lazy"><figcaption>The toolbar: the game ·
+  Save, reload, the saves kept · undo and redo · the Database · Playtest, Check, Problems, Unreal · Go to, Tools, Help.</figcaption></figure>
+<div class="cols">
+  <div class="card"><h4>Flow</h4><p>The board of the whole game, the inspector for what's picked, the stage under the board.</p></div>
+  <div class="card"><h4>Storyboard · Branches</h4><p>Every node in order as frames from the player's eye; the paths through the game.</p></div>
+  <div class="card"><h4>Watch</h4><p>The game played: scenes as an animatic, tasks walked in Play mode.</p></div>
+  <div class="card"><h4>Takes · Database · Notes</h4><p>Every take to record; the game's tables; the notes between you and Claude.</p></div>
+</div>
+</section>
+
+<section id="board">
+<h2><span class="n">2</span>The flow board</h2>
+<p>The game is a board of cards wired together: <span class="dot" style="background:var(--scene)"></span><b>scenes</b>
+  (the actors perform), <span class="dot" style="background:var(--stitch)"></span><b>tasks</b> (the player plays),
+  <span class="dot" style="background:var(--choice)"></span><b>choices</b> and <span class="dot" style="background:var(--ending)"></span><b>endings</b>.
+  A scene's card shows a frame of what the player sees and the faces of who's in it.</p>
+<figure class="wide"><img src="guide/board.jpg" width="820" height="530" alt="The flow board" loading="lazy"><figcaption>The board. On the left: what you can add, the quick tasks, and the outline to find a card.</figcaption></figure>
+<ul>
+  <li><b>Add a card:</b> drag <span class="ui">Scene</span>, <span class="ui">Task</span>, <span class="ui">Choice</span> or <span class="ui">Ending</span> from the left onto the board, or double-click empty space.</li>
+  <li><b>Connect two cards:</b> drag a card's dot (●) onto the next card. Let go on empty space and a new card is made there, already connected.</li>
+  <li><b>Move:</b> drag a card. Its place is kept in the story, so the board looks the same next time.</li>
+  <li><b>Pick several:</b> <kbd>Shift</kbd>+drag a box around them, or <kbd>Ctrl</kbd>+click one more. They move, copy and delete together.</li>
+  <li><b>Look around:</b> the wheel zooms, dragging the background pans, <kbd>F</kbd> fits everything, <kbd>M</kbd> shows the minimap (click it to jump).</li>
+  <li><b>Click a card</b> to edit it in the inspector on the right; the stage below shows it.</li>
+</ul>
+<h3>Right-click, copy and paste</h3>
+<p>Right-click a card (or the empty board) for what you can do there: watch from it, make it the start, copy, paste,
+  duplicate, rename, make an act, delete. <kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd> and
+  <kbd>Ctrl</kbd>+<kbd>D</kbd> work on whatever's picked: cards, a scene's lines, beats, commands. A copy keeps the
+  links inside it and gets new ids where they must be unique, and it pastes into another game too.</p>
+<figure class="half"><img src="guide/board-menu.jpg" width="306" height="372" alt="A card's right-click menu" loading="lazy"><figcaption>A card's menu.</figcaption></figure>
+</section>
+
+<section id="quick">
+<h2><span class="n">3</span>Quick tasks and acts</h2>
+<p>The common shapes of play are one drag: under <span class="ui">Quick tasks</span>, drag <i>A locked door and its
+  key</i>, <i>A note to read</i>, <i>Find it and bring it</i>, <i>Get out before time runs out</i>, <i>Hide and seek</i>
+  or <i>A chase</i> onto the board (or click one). Fill in a few blanks (the key, the door, the room behind it) and the
+  dialog shows what it'll make: a task with its beats, ready to change. A blank left empty shows up in Problems.</p>
+<figure class="half"><img src="guide/quick-task.jpg" width="796" height="530" alt="A quick task's dialog" loading="lazy"><figcaption>A locked door and its key: the blanks, and what it makes.</figcaption></figure>
+<p>Inside a task, <span class="ui">Quick beat</span> does the same for one moment: a jump scare on entering, a knock,
+  the lights dying, a door slamming behind, a whisper when looked at, a line on entering, a checkpoint.</p>
+<h3>Acts</h3>
+<p>Pick a few cards and right-click: <span class="ui">Make an act</span> draws a coloured frame behind them with a
+  title. Drag the title to move the act with its cards, drop a card in to add it, fold it to a single card to tidy the
+  board (double-click a folded act to open it).</p>
+<figure class="half"><img src="guide/board-acts.jpg" width="612" height="490" alt="An act on the board, the minimap" loading="lazy"><figcaption>An act around the first three cards, and the minimap (M).</figcaption></figure>
+</section>
+
+<section id="script">
+<h2><span class="n">4</span>A scene as a script</h2>
+<p>Click a scene's card and the inspector shows it as a script: a row a line, like RPG Maker's message list. Each
+  row has a picture of what the player sees on that line (click it to show it on the stage), who speaks with their
+  face, the words in English and Japanese, and chips for what's set: the shot, the seam into it, the take, the motion,
+  an event, a reply. The number on the right is its length; red means it's longer than a take can be.</p>
+<figure class="half"><img src="guide/script.jpg" width="680" height="878" alt="A scene as a script" loading="lazy"><figcaption>"Mari in the hall": the setting at the top, the timeline, then the lines.</figcaption></figure>
+<ul>
+  <li><b>Open a line:</b> click its row. Its settings are in tabs: <span class="ui">Line</span> (who, words, the acting note),
+    <span class="ui">Take</span>, <span class="ui">Camera</span> (what the head follows, the shot, the seam, a lean in),
+    <span class="ui">Body</span>, <span class="ui">Event</span> (a quick-time event) and <span class="ui">Reply</span> (a hanging line the player answers).</li>
+  <li><b>Reorder:</b> drag a row by its grip (⋮⋮).</li>
+  <li><b>Setting the scene</b> (folded at the top): its level, where the player stands, their stance, the mood, the time of day, the camera.</li>
+  <li><b>Versions:</b> <span class="ui">Try variants of this scene</span> keeps several takes on it side by side.</li>
+</ul>
+<div class="tip"><b>One clip is one take of 10 seconds or less.</b> A long speech is several lines joined by seams
+  (a blink, a glance away): the desk splits long lines for you when you type them.</div>
+</section>
+
+<section id="typing">
+<h2><span class="n">5</span>Typing a scene</h2>
+<p>Under the script there's a box: type a line the way a script is written and press <kbd>Enter</kbd>. The box keeps
+  the focus, so you can write a whole scene without touching the mouse.</p>
+<pre>Mari: Did you hear that? [CU]          a line, with a shot at the end
+(she glances at the cellar door)       an acting note for the line before it
+You: Hear what?                        You, Me or I is the player
+Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) and English</pre>
+<figure class="half"><img src="guide/typing.jpg" width="680" height="200" alt="Typing a line under the script" loading="lazy"><figcaption>The line just typed, its note, and the box ready for the next.</figcaption></figure>
+<p><span class="ui">Edit as text</span> opens the whole scene this way. Change it, add to it, paste a draft in: the
+  right side shows what you'll get, line by line, and what applying it does. Lines still there keep everything they
+  had (the take, the body, the camera); an edited line keeps its clip with the new words; a new line is a new clip.
+  Pasting several lines into the box opens this too.</p>
+<figure class="wide"><img src="guide/script-text.jpg" width="796" height="553" alt="The scene as text" loading="lazy"><figcaption>The scene as text, and the preview of what it makes.</figcaption></figure>
+</section>
+
+<section id="takes">
+<h2><span class="n">6</span>Takes and the waveform</h2>
+<p>Drop a take's video (or audio) on its line, or on the <span class="ui">Take</span> tab. It's stored as the take for
+  that line, measured, and the dead air at both ends is trimmed. The <span class="ui">Takes</span> view lists every
+  take still to record, with the MiniMax prompt for each; dropping a pile of files there matches each to its line by
+  name.</p>
+<figure class="half"><img src="guide/take-wave.jpg" width="642" height="191" alt="A take's waveform" loading="lazy"><figcaption>The Take tab: the take's waveform, the trims as handles, the body's span under it.</figcaption></figure>
+<ul>
+  <li><b>Trim:</b> drag the orange handles over the dead air. They snap to where the voice starts and stops (the dashed blue lines); hold <kbd>Shift</kbd> not to snap.</li>
+  <li><b>Line the action up with the voice:</b> drag the purple <i>body</i> bar to start the movement later, or its right end to make it shorter.</li>
+  <li><b>Listen:</b> double-click the waveform to play from there to the out point.</li>
+</ul>
+</section>
+
+<section id="timeline">
+<h2><span class="n">7</span>The timeline and cues</h2>
+<p>Above the script is the scene's timeline: the lines as blocks, the seams between them, events in red, replies,
+  and the cues above. Click or drag on it to scrub the stage.</p>
+<p><b>Cues</b> are things that happen at a moment of the scene: a sound, a light, a door. Drag one along the timeline
+  and it rides the edge of the line it's dropped nearest, snapped onto it when close (the label says where: "the start
+  of c3"). Double-click the timeline to add a cue there and pick what it does. Cues never sit at a time of their own,
+  so a longer take carries them with it.</p>
+<figure class="wide"><img src="guide/timeline.jpg" width="671" height="142" alt="Dragging a cue on the timeline" loading="lazy"><figcaption>A cue dragged onto the start of c3.</figcaption></figure>
+</section>
+
+<section id="stage">
+<h2><span class="n">8</span>Blocking on the stage</h2>
+<p>The stage under the board shows the scene from the player's eye. <span class="ui">▶ scene</span> plays it, the
+  slider scrubs it, <span class="ui">Free cam</span> lets you fly around the set (drag to orbit, wheel to zoom).</p>
+<ul>
+  <li><b>Drag someone across the floor</b> to put them somewhere. Rings show the level's marks; let go near one and
+    they stand on it, or anywhere else for a new mark there, turned to face the player.</li>
+  <li><b>Right-click the floor:</b> put someone here, the player stands here, or a new mark for later.</li>
+  <li><b>Right-click someone:</b> the camera follows them, or take them off the stage. Right-click a thing: the camera follows it, or put someone beside it.</li>
+  <li><b>From the free camera</b> the player is an orange marker: drag it to where the scene is seen from.</li>
+</ul>
+<div class="cols">
+  <figure><img src="guide/stage-drag.jpg" width="820" height="349" alt="Dragging Mari on the stage" loading="lazy"><figcaption>Mari dragged toward a mark.</figcaption></figure>
+  <figure><img src="guide/free-cam.jpg" width="820" height="349" alt="The free camera" loading="lazy"><figcaption>The free camera: the player in orange.</figcaption></figure>
+</div>
+<figure class="half"><img src="guide/stage-menu.jpg" width="820" height="380" alt="Right-clicking the floor" loading="lazy"><figcaption>Right-click the floor.</figcaption></figure>
+<p>Everything you do here is ordinary story: who stands on which mark, where the player is, what the camera follows.
+  <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes any of it back.</p>
+</section>
+
+<section id="bodies">
+<h2><span class="n">9</span>Bodies, poses and motions</h2>
+<p>A line's <span class="ui">Body</span> tab says what the actor does. Until the real motion is made, the desk plays
+  <b>blocking</b>: a pose at a few moments of the line, eased between. Click a pose to pick another from pictures.</p>
+<figure class="half"><img src="guide/pose-picker.jpg" width="556" height="488" alt="Picking a pose from pictures" loading="lazy"><figcaption>Every pose in the library, on the game's body; type to search.</figcaption></figure>
+<ul>
+  <li><b>Kimodo motions:</b> the <span class="ui">motion</span> picker shows the motions already made as pictures of the body at four moments. The <span class="ui">Kimodo shot list</span> (Tools) lists what's still to make.</li>
+  <li><b>Segments</b> chain several Kimodo motions in one line; <b>layers</b> lay a part of the body (the arms, the head) from another motion or pose over it.</li>
+  <li><b>Reusable motions</b> live in the Database: an idle, a search walk, a count with the eyes covered. Each shows as a picture of its take, or of its stand-in blocking until it's made.</li>
+</ul>
+<figure class="wide"><img src="guide/db-motions.jpg" width="1500" height="520" alt="Reusable motions in the Database" loading="lazy"><figcaption>The Database's motions, each a picture.</figcaption></figure>
+<div class="note">In play, a cast member's behaviour (stand, sit, walk a route, patrol) can play one of these motions,
+  and a round's seeker plays hers by its phase: counting, then searching, then the chase.</div>
+</section>
+
+<section id="tasks">
+<h2><span class="n">10</span>Tasks: beats and commands</h2>
+<p>A task is what the player does between scenes, written like RPG Maker's event pages. Each <b>beat</b> is "when
+  this happens, do these": its pill says when (the task starts, the player enters the kitchen, picks up the key...),
+  and under it, the commands in order, each reading as a sentence.</p>
+<figure class="half"><img src="guide/beats.jpg" width="680" height="878" alt="A task's beats" loading="lazy"><figcaption>"Arrival": two beats, each a list of commands.</figcaption></figure>
+<ul>
+  <li><b>Click a pill</b> to choose when the beat happens. <span class="ui">Only if</span> adds a flag it waits for.</li>
+  <li><b>+ Add a command</b> opens the palette: commands by group, type to search, <kbd>Enter</kbd> picks.</li>
+  <li><b>Double-click a command</b> to change it. Drag commands and beats by their grips, into another beat too.</li>
+  <li><b>Every blank is a list</b> of what exists: lines, items, doors, spots, flags. People are picked by their face.
+    If it isn't there yet, <span class="ui">+ New…</span> at the end makes it on the spot.</li>
+  <li><span class="ui">Make it a gameplay round</span> turns a task into hide and seek, a chase, a collect... with a timer and results that branch.</li>
+</ul>
+<div class="cols">
+  <figure><img src="guide/palette.jpg" width="796" height="776" alt="The command palette" loading="lazy"><figcaption>The command palette.</figcaption></figure>
+  <figure><img src="guide/command-form.jpg" width="733" height="452" alt="A command's form" loading="lazy"><figcaption>A command's form: who, picked by face.</figcaption></figure>
+</div>
+</section>
+
+<section id="database">
+<h2><span class="n">11</span>The Database</h2>
+<p>The game's own tables, as tabs: the game's settings, the cast, items, notes, sounds, lines, motions, flags and
+  counters, secrets and trigger cutscenes. Each is a list and a form.</p>
+<figure class="wide"><img src="guide/database.jpg" width="1500" height="560" alt="The Database" loading="lazy"><figcaption>The cast: a portrait from each one's desk body, their settings, and every place they're used.</figcaption></figure>
+<ul>
+  <li><b>Used in…</b> lists every place an entry is used; click one to go there.</li>
+  <li><b>Rename</b> gives it a new id and changes it everywhere it's used.</li>
+  <li>A cast member's portrait follows their body, height, skin tone and shape as you change them.</li>
+</ul>
+</section>
+
+<section id="playtest">
+<h2><span class="n">12</span>Playtesting</h2>
+<p><span class="ui">Playtest</span> plays the game from the start in the <span class="ui">Watch</span>;
+  <span class="ui">▶ Watch from here</span> (on a card, or its right-click menu) starts anywhere. Scenes play as an
+  animatic with their takes; with <span class="ui">walk the tasks</span> ticked, you play the tasks yourself:
+  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move, the mouse to look, <kbd>E</kbd> to use, <kbd>C</kbd> to crouch,
+  <kbd>Esc</kbd> to pause.</p>
+<figure class="wide"><img src="guide/watch.jpg" width="1500" height="914" alt="The Watch" loading="lazy"><figcaption>The Watch: a scene from the player's eye, with its subtitles.</figcaption></figure>
+<h3>The debug panel</h3>
+<p><kbd>F9</kbd> (or <span class="ui">Debug</span>) shows every flag, counter, karma and item, live while it plays,
+  and the beats as they fire (click one to open it). Before it plays, it's the state a playthrough starts from: tick
+  the flags, set the counters, pick a node, <span class="ui">Play from there</span>.</p>
+<div class="cols">
+  <figure><img src="guide/debug.jpg" width="346" height="454" alt="The debug panel" loading="lazy"><figcaption>The debug panel, before a start.</figcaption></figure>
+  <figure><img src="guide/round.jpg" width="1500" height="914" alt="A round in the Watch" loading="lazy"><figcaption>A round: the seeker counts behind its card.</figcaption></figure>
+</div>
+</section>
+
+<section id="problems">
+<h2><span class="n">13</span>Problems and checks</h2>
+<p>The desk checks the story as you edit. The <span class="ui">Problems</span> button counts what's wrong (a line by
+  someone not in the cast, a beat that waits for a flag nothing sets, a door locked by an item that doesn't exist);
+  click one to go straight there. Cards and lines with a problem show a badge.</p>
+<figure class="half"><img src="guide/problems.jpg" width="456" height="487" alt="The problems panel" loading="lazy"><figcaption>Problems, found as you edit.</figcaption></figure>
+<p><span class="ui">Check</span> runs the full story and level checks on the saved story (it saves first).</p>
+</section>
+
+<section id="goto">
+<h2><span class="n">14</span>Go to anything</h2>
+<p><kbd>Ctrl</kbd>+<kbd>K</kbd> (or <span class="ui">Go to</span>) is one search box over the whole game: cards, every
+  line by its words in English or Japanese, beats by when they fire and what they do, the Database's entries, flags,
+  and the desk's own actions (Playtest, Save, Check, the tools). Arrows and <kbd>Enter</kbd> go there.</p>
+<figure class="half"><img src="guide/goto.jpg" width="656" height="445" alt="Go to anything" loading="lazy"><figcaption>"knock": a scene, a choice, the lines, a beat, a sound.</figcaption></figure>
+</section>
+
+<section id="claude">
+<h2><span class="n">15</span>Working beside Claude</h2>
+<p>Claude edits the same <code>story.json</code> you do. When it (or another window, or the scene builder) saves, the
+  desk merges those changes with yours and tells you what changed, with an <span class="ui">Undo</span>. Only when you
+  both changed the same thing does it ask which to keep.</p>
+<p>Leave Claude a note on any card (the inspector's notes, or the <span class="ui">Notes</span> view); Claude answers
+  there and ticks what it's done.</p>
+</section>
+
+<section id="safety">
+<h2><span class="n">16</span>Nothing gets lost</h2>
+<ul>
+  <li><b>Undo everything:</b> <kbd>Ctrl</kbd>+<kbd>Z</kbd>, 150 edits back; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> redoes.</li>
+  <li><b>A draft in the browser:</b> every unsaved edit is kept a second after you make it. If the tab closes or the
+    computer crashes, opening the game again offers them back.</li>
+  <li><b>Saves kept:</b> each save keeps the version before it (the last 50). The clock in the toolbar lists them and
+    what differs from now; <span class="ui">Bring this version back</span> makes it your unsaved edits, to look over
+    and save, or undo.</li>
+</ul>
+<figure class="half"><img src="guide/history.jpg" width="796" height="476" alt="The saves kept" loading="lazy"><figcaption>The saves kept, and what's different now.</figcaption></figure>
+<p>Save is always on purpose: <kbd>Ctrl</kbd>+<kbd>S</kbd>. Check and Unreal never run on a version that isn't saved.</p>
+</section>
+
+<section id="unreal">
+<h2><span class="n">17</span>Into Unreal</h2>
+<p>When a stretch of the game plays right on the desk, <span class="ui">Unreal</span> saves, runs the checks, records
+  the Watch's blocking and builds the game in the editor: every level one to one, the scenes as you blocked them. The
+  desk's storyboard and blocking are the reference the Unreal build must match.</p>
+<div class="flow"><span>Plot on the board</span><i>→</i><span>Type the scenes</span><i>→</i><span>Block on the stage</span><i>→</i><span>Drop the takes</span><i>→</i><span>Playtest</span><i>→</i><span>Unreal</span></div>
+</section>
+
+<section id="keys">
+<h2><span class="n">18</span>Every key</h2>
+<p>The <span class="ui">?</span> button in the toolbar shows these in the desk too.</p>
+<table class="keys">
+  <tr class="h"><td colspan="2">The desk</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>go to anything</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>save</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>undo · redo (outside a text box)</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> · <kbd>V</kbd> · <kbd>D</kbd></td><td>copy · paste · duplicate what's picked: cards, lines, beats, commands</td></tr>
+  <tr><td><kbd>Delete</kbd> · <kbd>Esc</kbd></td><td>remove what's picked · let go of it</td></tr>
+  <tr><td>right-click</td><td>a card, the board, an act, a line, a command, the stage: what you can do there</td></tr>
+  <tr class="h"><td colspan="2">The flow board</td></tr>
+  <tr><td>drag a card · its ●</td><td>move it · connect it (onto empty space: a new card)</td></tr>
+  <tr><td><kbd>Shift</kbd>+drag · <kbd>Ctrl</kbd>+click</td><td>pick several: a box, or one more</td></tr>
+  <tr><td>double-click</td><td>empty space: a new card there; a folded act: open it</td></tr>
+  <tr><td><kbd>F</kbd> · <kbd>M</kbd></td><td>fit everything · the minimap</td></tr>
+  <tr><td>wheel · drag the background</td><td>zoom · pan</td></tr>
+  <tr class="h"><td colspan="2">A scene</td></tr>
+  <tr><td>click a row · drag its grip</td><td>open its tabs · reorder</td></tr>
+  <tr><td>type under the script</td><td>“Name: words” then <kbd>Enter</kbd> adds a line; “(a note)” notes the last one</td></tr>
+  <tr><td>drop a file on a row</td><td>its take</td></tr>
+  <tr><td>the waveform</td><td>drag the in and out (<kbd>Shift</kbd>: no snapping) · the body bar · double-click plays</td></tr>
+  <tr><td>the timeline</td><td>click or drag to scrub · drag a cue · double-click adds one</td></tr>
+  <tr class="h"><td colspan="2">The stage</td></tr>
+  <tr><td>drag someone</td><td>onto a mark, or a new mark there</td></tr>
+  <tr><td>right-click</td><td>the floor: put someone here, the player here, a new mark · someone: the camera follows them</td></tr>
+  <tr><td>Free cam</td><td>drag to orbit, wheel to zoom; drag the orange marker to move the player</td></tr>
+  <tr class="h"><td colspan="2">The Watch</td></tr>
+  <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · mouse</td><td>move · look (click the view to lock the mouse)</td></tr>
+  <tr><td><kbd>E</kbd> · hold <kbd>E</kbd></td><td>use · pick up or put down</td></tr>
+  <tr><td><kbd>C</kbd> · <kbd>Esc</kbd></td><td>crouch · pause</td></tr>
+  <tr><td><kbd>F9</kbd></td><td>the debug panel</td></tr>
+</table>
+<figure class="half"><img src="guide/help.jpg" width="796" height="776" alt="Keys and help in the desk" loading="lazy"><figcaption>The same, in the desk.</figcaption></figure>
+</section>
+
+<footer>The pictures are made by <code>node tools/director/guide_shots.mjs</code> (the desk running), which also checks
+  every step it shows. The desk's design: <code>docs/DESK_DESIGN.md</code>. The story's words: <code>docs/STORY_FORMAT.md</code>.</footer>
+</main>
+</div>
+<script>
+// the contents follow the reading: the section on screen is lit
+const links = [...document.querySelectorAll("nav.toc a")], secs = links.map(a => document.querySelector(a.getAttribute("href")));
+const lit = () => { let at = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 140) at = i; }); links.forEach((a, i) => a.classList.toggle("on", i === at)); };
+addEventListener("scroll", lit, { passive: true }); lit();
+</script>
+</body>
+</html>

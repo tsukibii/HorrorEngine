@@ -26,7 +26,8 @@ from storykit import kit as KIT  # noqa: E402
 from storykit import pbr as PBR  # noqa: E402
 sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
-STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain"}
+STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain",
+          ".jpg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml"}   # images: the guide's pictures (guide/)
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 BODIES = L.STUDIO / "Bodies"

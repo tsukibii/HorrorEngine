@@ -356,7 +356,8 @@ async function historyDialog() {
     const v = (await api(`/api/history/${encodeURIComponent(GAME)}/${it.name}`)).story, ps = [...new Set(changedPaths(v, S).map(p => where(v, p)))];
     chosen = v; right.innerHTML = "";
     right.append(el("h4", {}, `As it was until ${fmt(it.at)}`), el("p", { class: "kv" }, ps.length ? `${ps.length} place${ps.length === 1 ? "" : "s"} differ from the desk now:` : "the same as the desk now"),
-      el("ul", { class: "hist-ch" }, ...ps.slice(0, 80).map(w => el("li", {}, w))), ps.length > 80 ? el("p", { class: "kv" }, `and ${ps.length - 80} more`) : null);
+      el("ul", { class: "hist-ch" }, ...ps.slice(0, 80).map(w => el("li", {}, w))));
+    if (ps.length > 80) right.append(el("p", { class: "kv" }, `and ${ps.length - 80} more`));
   };
   for (const it of list) { const row = el("div", { class: "hist-i", on: { click: () => show(it, row) } }, icon("clock", 13), el("b", {}, fmt(it.at)), el("span", { class: "kv" }, `${Math.max(1, Math.round(it.size / 1024))} KB`)); left.append(row); }
   const ok = await modal({ title: "Saves kept", wide: true, ok: "Bring this version back", body: el("div", { class: "hist" },
@@ -2192,6 +2193,7 @@ const TOOLS = [                                    // the desk's other pages, ea
   { page: "poses.html", label: "Poses", icon: "motion", hint: "the pose library the blocking uses" },
   { page: "bodies.html", label: "Bodies", icon: "person", hint: "how a body file in Content/Studio/Bodies follows the blocking" },
   { page: "flesh.html", label: "Fat suit", icon: "wand", hint: "the soft-body experiment (docs/FLESH.md)" },
+  { page: "guide.html", label: "The guide", icon: "notes", win: "deskguide", hint: "how to use the desk, every part of it, with pictures" },
 ];
 $("#toolsMenu").onclick = e => {
   document.querySelectorAll(".bmenu").forEach(m => m.remove());
@@ -2207,6 +2209,7 @@ for (const b of document.querySelectorAll("[data-ic]")) b.prepend(icon(b.dataset
 $("#keysHelp").onclick = () => {
   const sec = (t, rows) => el("div", { class: "helpsec" }, el("h4", {}, t), ...rows.map(([k, v]) => el("div", { class: "helprow" }, el("kbd", {}, k), el("span", {}, v))));
   modal({ title: "Keys and help", wide: true, ok: "Close", cancel: null, body: el("div", { class: "help" },
+    el("p", { class: "helpguide" }, icon("notes", 15), el("a", { href: "guide.html", target: "deskguide" }, "Open the guide"), el("span", { class: "kv" }, " · every part of the desk, in the order you'd use it, with pictures")),
     sec("The desk", [["Ctrl+K", "go to anything: a card, a line by its words, a beat, a flag, an item, or an action such as Playtest"], ["Ctrl+S", "save"], ["Ctrl+Z", "undo (outside a text box; 150 edits back)"], ["Ctrl+Shift+Z · Ctrl+Y", "redo"],
       ["Problems", "what's wrong, found as you edit: click one to go there"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"]]),
     sec("The flow board", [["drag a card", "move it (the layout is kept in the story)"], ["drag its ●", "onto another card to connect them, or onto empty space for a new one"], ["palette", "drag Scene, Task, Choice or Ending onto the board"], ["double-click", "empty space: add a card there"], ["wheel · drag the background", "zoom · pan"], ["F · M · Delete", "fit everything · the minimap · remove the selected card"],
@@ -2322,5 +2325,5 @@ const DB = new Database($("#dbView"), {
   goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },
   goLevel: lid => openBuilder(lid),
 });
-window.__dd = { get S() { return S; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();
