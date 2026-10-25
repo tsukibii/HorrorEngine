@@ -15,6 +15,7 @@ import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
+import { DebugPanel } from "./debug.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
@@ -482,6 +483,7 @@ function cardMenu(id, x, y, at) {
   const n = S.flow[id], ids = pickedCards(), many = ids.length > 1;
   contextMenu(x, y, [
     n.type === "scene" || n.type === "stitch" ? { label: "Watch from here", icon: "play", on: () => { openView("watchView"); watch(id); } } : null,
+    n.type !== "ending" ? { label: "Watch from here with a state…", icon: "gear", hint: "the debug panel: the flags, counters, karma and items to start with", on: () => { openView("watchView"); DBG.node = id; DBG.toggle(true); } } : null,
     { label: "Make it the start", icon: "flag", disabled: S.game.start === id, on: () => { S.game.start = id; touch(); renderInspector(); } },
     "-",
     { label: many ? `Copy ${ids.length} cards` : "Copy", icon: "copy", kbd: "Ctrl+C", on: () => copyCards(ids) },
@@ -1531,7 +1533,11 @@ async function watchStitch(st, nid, n) {
 // Play mode (play/runtime.js): the tasks walked. One runtime for the whole run, so what you carry and the doors you
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
-  if (!RUN.play) RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } } });
+  if (!RUN.play) {
+    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } },
+      onBeat: (st, b, secs) => DBG.fired(st, b, secs) });
+    for (const i of RUN.items || []) RUN.play.items.add(i);   // what a start from the debug panel holds
+  }
   return RUN.play;
 }
 function playPlace(rt, lvl) {
@@ -1584,8 +1590,9 @@ function reach(nid) {                              // the first arrival's state 
 async function watch(fromNid, snap) {
   if (!S) return;
   stopWatch();
-  RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, counters: {}, answers: [] };
-  if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])] });
+  RUN = { secs: 0, flags: new Set(), results: {}, timers: [], trail: [], done: new Set(), karma: {}, counters: {}, answers: [], items: new Set() };
+  if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
+  DBG.reset();
   wclock();
   $("#watchOv .black").style.opacity = 1;
   let nid = fromNid || S.game.start, guard = 0;
@@ -1887,6 +1894,14 @@ $("#sExport").onclick = exportGLTF;
 $("#wStart").onclick = () => watch();
 $("#wStop").onclick = stopWatch;
 wireLook();
+const DBG = new DebugPanel($("#watchView"), {
+  run: () => RUN, story: () => S, flags: () => storyFlags(), name: CTX.name, title: id => nodeTitle(id, S.flow[id]),
+  nodes: () => Object.entries(S.flow).filter(([, n]) => n.type !== "ending").map(([id, n]) => [id, `${nodeTitle(id, n)} (${id})`]),
+  watch: (nid, snap) => { openView("watchView"); watch(nid, snap); },
+  go: (st, beat) => { const tid = Object.keys(S.stitches).find(k => S.stitches[k] === st), node = Object.keys(S.flow).find(k => S.flow[k].ref === tid); if (node) goToProblem({ at: { node, stitch: tid, beat }, text: "" }); },
+});
+$("#wDebug").onclick = () => DBG.toggle();
+document.addEventListener("keydown", e => { if (e.key === "F9" && $("#watchView").classList.contains("on")) { e.preventDefault(); DBG.toggle(); } });
 const DB = new Database($("#dbView"), {
   story: () => S, game: () => GAME, ctx: CTX, touch, status, whoColor, takes: () => TAKES, playLine, dropTake: dropLineTake, secs: c => clipSecs(c),
   prompt: ln => minimaxPrompt(ln, S.cast), copy: copyText, voices: VOICES, eases: M.EASE_NAMES, poses: () => poseNames(), times: TIMES, timeMark: TIME_MARK, timeDefault: TIME_DEFAULT,

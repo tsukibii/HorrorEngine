@@ -267,3 +267,17 @@ input.id{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 .cmenu .bmenu-i.danger{color:#ff9a8f}
 .cmenu kbd{font-family:inherit;font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 .bmenu-sep{height:1px;background:var(--line);margin:4px 6px}
+
+/* ---- the playtest's debug panel (debug.js) ---- */
+.dbg{position:absolute;right:10px;top:10px;width:330px;max-height:calc(100% - 64px);display:flex;flex-direction:column;background:rgba(27,27,31,.96);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.6);z-index:60;font-size:12px}
+.dbg-h{display:flex;align-items:center;gap:7px;padding:8px 8px 6px 12px;border-bottom:1px solid var(--line)}
+.dbg-h kbd{font-family:inherit;font-size:10px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.dbg-b{overflow:auto;padding:4px 12px 12px}
+.dbg-sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin:10px 0 4px}
+.dbg-now{margin-top:8px;padding:6px 8px;border-radius:7px;background:#1d2a33;color:#cfe6f5}
+.dbg-flags{display:flex;flex-wrap:wrap;gap:4px}
+.dbg-flag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px 2px 4px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-size:11.5px}
+.dbg-flag.on{border-color:var(--accent);color:#f0d9a6;background:#33291a}
+.dbg-num{display:flex;align-items:center;gap:6px;margin:3px 0}.dbg-num b{min-width:26px;text-align:center}
+.dbg-beat{display:grid;grid-template-columns:34px auto;column-gap:6px;padding:5px 6px;border-radius:6px;cursor:pointer}.dbg-beat:hover{background:var(--panel2)}
+.dbg-beat .dbg-bt{grid-column:2;color:var(--dim);font-size:11.5px}

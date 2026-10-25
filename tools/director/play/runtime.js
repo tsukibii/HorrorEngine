@@ -27,7 +27,8 @@ const UP = new THREE.Vector3(0, 1, 0);
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 export class PlayRuntime {
-  // opts: run (the Watch's run: flags, karma, counters), settings ({crouch: {mode: "hold"}}), theme, fade(to, secs)
+  // opts: run (the Watch's run: flags, karma, counters), settings ({crouch: {mode: "hold"}}), theme, fade(to, secs),
+  //       onBeat(stitch, beat, secs) (a beat fired: the desk's debug panel)
   constructor(stage, story, plan, box, opts = {}) {
     Object.assign(this, { stage, story, plan, box, opts });
     this.run = opts.run || null;
@@ -555,6 +556,7 @@ export class PlayRuntime {
         for (const x of beats) {
           if (x.fired || !flagsHold(x.b.if, this.flags) || !matches(x.b.when, ev, this)) continue;
           x.fired = true;
+          if (this.opts.onBeat) this.opts.onBeat(st, x.b, (this.run ? this.run.secs : 0) + this.clock);   // the desk's debug panel lists it
           runAll(x.b.do, this).then(() => { this.ended[x.b.id] = this.clock; });
         }
       };
