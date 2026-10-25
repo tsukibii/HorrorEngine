@@ -8,10 +8,10 @@ import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
 const { pack, unpack, pasteClips, copyNodes, pasteNodes } = CLIPBOARD;
-import { triggerText, actionText } from "./commands.js";
+import { triggerText, actionText, ACTION } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
@@ -124,14 +124,18 @@ function allClips() {                            // every take: the clips, and t
 }
 // the auto-clean: each take's length and dead air (Web Audio), into the clip's dur and trim (storykit/takes.py's numbers)
 const TK = { win: 0.02, floor: -38, padIn: 0.08, padOut: 0.15, min: 0.05 };
-async function measureTake(t) {
-  const buf = await (t.file ? t.file.arrayBuffer() : fetch(t.url).then(r => r.arrayBuffer()));
+const WAVES = {};                                 // a take's url -> its length, the dead air at either end, its loudness to draw
+async function takeWave(t) {
+  if (WAVES[t.url]) return WAVES[t.url];
+  const buf = await (t.file ? t.file.arrayBuffer() : fetch(t.url, { cache: "no-store" }).then(r => r.arrayBuffer()));
   const ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 16000, 16000);
   const ab = await ctx.decodeAudioData(buf), d = ab.getChannelData(0), w = Math.max(1, Math.round(ab.sampleRate * TK.win)), loud = [];
   for (let i = 0; i + w <= d.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += d[j] * d[j]; const rms = Math.sqrt(s / w); loud.push(rms > 0 && 20 * Math.log10(rms) > TK.floor); }
-  const first = loud.indexOf(true), last = loud.lastIndexOf(true);
-  return { dur: +ab.duration.toFixed(2), lead: first < 0 ? 0 : +(first * TK.win).toFixed(2), tail: first < 0 ? 0 : +Math.max(0, ab.duration - (last + 1) * TK.win).toFixed(2) };
+  const first = loud.indexOf(true), last = loud.lastIndexOf(true), N = 480, per = Math.max(1, Math.floor(d.length / N)), peaks = new Float32Array(N);
+  for (let i = 0; i < N; i++) { let m = 0; for (let j = i * per, e = Math.min(d.length, j + per); j < e; j++) { const a = d[j] < 0 ? -d[j] : d[j]; if (a > m) m = a; } peaks[i] = m; }
+  return (WAVES[t.url] = { dur: +ab.duration.toFixed(2), lead: first < 0 ? 0 : +(first * TK.win).toFixed(2), tail: first < 0 ? 0 : +Math.max(0, ab.duration - (last + 1) * TK.win).toFixed(2), peaks });
 }
+async function measureTake(t) { const w = await takeWave(t); return { dur: w.dur, lead: w.lead, tail: w.tail }; }
 async function autoClean(keepTrim) {
   const rows = [];
   for (const { c, id } of allClips()) {
@@ -785,9 +789,17 @@ function sceneEditor(box, sc, sid) {
     if (s.type === "event") bar.append(el("div", { class: "seg ev", style: `left:${s.start / total * 100}%;width:${(s.end - s.start) / total * 100}%`, title: "event " + s.event.type }, "⚡" + s.event.type));
   }
   const starts = {}, ends = {}; for (const s of tl.segs) if (s.type === "clip") { starts[s.clip.id] = s.start; ends[s.clip.id] = s.end; }
-  for (const cu of ver.cues || []) { const a = cu.at || {}, base = a.edge === "end" ? ends[a.clip] : starts[a.clip]; if (base === undefined) continue; bar.append(el("div", { class: "cue", style: `left:${Math.max(0, Math.min(100, (base + (+a.offset || 0)) / total * 100))}%` }, el("span", {}, Object.keys(cu.do || {})[0] || "cue"))); }
+  const rows = [-1e9, -1e9];                         // cue labels in two rows, so ones close together don't overlap
+  (ver.cues || []).map((cu, i) => { const a = cu.at || {}, base = a.edge === "end" ? ends[a.clip] : starts[a.clip]; return base === undefined ? null : { cu, i, a, pct: Math.max(0, Math.min(100, (base + (+a.offset || 0)) / total * 100)) }; })
+    .filter(Boolean).sort((x, y) => x.pct - y.pct).forEach(({ cu, i, a, pct }) => {
+      const word = Object.keys(cu.do || {})[0] || "cue", room = word.length * 1.1 + 1.5, row = pct - rows[0] >= room ? 0 : pct - rows[1] >= room ? 1 : -1;
+      if (row >= 0) rows[row] = pct;
+      bar.append(el("div", { class: "cue", "data-i": i, title: `${cu.do ? actionText(cu.do, CTX.name) : "a cue"}\nat the ${a.edge || "start"} of ${a.clip}${+a.offset ? ` ${a.offset > 0 ? "+" : ""}${a.offset} s` : ""} · drag it along the clips`, style: `left:${pct}%` },
+        row < 0 ? null : el("span", { style: row ? "top:-14px" : "" }, word)));
+    });
   bar.append(el("div", { class: "playhead", id: "playhead", style: "left:0%" }));
-  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "striped = estimated length · red = an event (QTE) · light wedge = a blend in from the actor's last clip · cues ride on clip edges, so a longer take carries them"));
+  wireTimeline(bar, tl, ver, total);
+  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip"));
   const script = el("div", { class: "script" });
   ver.clips.forEach((c, i) => script.append(clipCard(sc, ver, c, i, lvl, sid)));
   sortable(script, ver.clips, "clip", CTX, ".clip");
@@ -855,6 +867,42 @@ function throughEditor(sc, lvl) {
     el("option", { value: "" }, list.length ? "+ another" : "+ a prop the camera sees through"), placed(lvl).filter(x => !list.includes(x)).map(x => el("option", { value: x }, x))));
   return box;
 }
+// the scene's timeline by mouse: a click or a drag scrubs the stage; a cue dragged along it rides the clip edge it's
+// dropped nearest (snapped onto the edge when close, else an offset from it: never a time of its own); a double-click
+// adds a cue there (what it does from the palette)
+function wireTimeline(bar, tl, ver, total) {
+  const edges = []; for (const s of tl.segs) if (s.type === "clip" && !s.answer) edges.push({ t: s.start, clip: s.clip.id, edge: "start" }, { t: s.end, clip: s.clip.id, edge: "end" });
+  if (!edges.length) return;
+  const tAt = x => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(total, (x - r.left) / r.width * total)); };
+  const near = (T, free) => {                      // the nearest clip edge (a start before an end at the same moment)
+    let best = edges[0]; for (const e of edges) { const d = Math.abs(T - e.t) - Math.abs(T - best.t); if (d < -1e-6 || (Math.abs(d) <= 1e-6 && e.edge === "start" && best.edge === "end")) best = e; }
+    const tol = free ? 0 : 8 / bar.getBoundingClientRect().width * total, off = Math.abs(T - best.t) < tol ? 0 : +(T - best.t).toFixed(1);
+    return { clip: best.clip, edge: best.edge, offset: off, t: best.t + off };
+  };
+  const label = at => `the ${at.edge} of ${at.clip}${at.offset ? ` ${at.offset > 0 ? "+" : "−"} ${Math.abs(at.offset)} s` : ""}`;
+  bar.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    const cue = e.target.closest(".cue");
+    if (cue) {
+      e.preventDefault(); e.stopPropagation();
+      const cu = (ver.cues || [])[+cue.dataset.i]; if (!cu) return;
+      const tip = el("div", { class: "cuetip" }); let at = null;
+      const move = ev => { at = near(tAt(ev.clientX), ev.shiftKey); cue.style.left = tip.style.left = (at.t / total * 100) + "%"; tip.textContent = label(at); if (!tip.isConnected) bar.append(tip); };
+      const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); tip.remove();
+        if (at) { cu.at = { clip: at.clip, edge: at.edge }; if (at.offset) cu.at.offset = at.offset; touch(); CTX.rerender(); } else flashIn(`[data-cuerow="${cue.dataset.i}"]`); };
+      window.addEventListener("mousemove", move); window.addEventListener("mouseup", up); return;
+    }
+    const go = ev => { const T = tAt(ev.clientX); stopPlay(); $("#scrub").value = T; scrubTo(T); };
+    go(e); const up = () => { window.removeEventListener("mousemove", go); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", go); window.addEventListener("mouseup", up);
+  });
+  bar.addEventListener("dblclick", async e => {
+    if (e.target.closest(".cue")) return;
+    const at = near(tAt(e.clientX), e.shiftKey), verb = await pickVerb("action", `A cue at ${label(at)}: what happens?`); if (!verb) return;
+    const d = ACTION[verb], a = d.make(), v = d.fields.length ? await editAction(a, CTX, { isNew: true }) : a; if (!v) return;
+    (ver.cues = ver.cues || []).push({ at: Object.assign({ clip: at.clip, edge: at.edge }, at.offset ? { offset: at.offset } : {}), do: v }); touch(); CTX.rerender();
+  });
+}
 function cuesEditor(ver) {
   const box = el("div", {}), cues = ver.cues || [], ids = (ver.clips || []).map(c => [c.id, `${c.id}: ${(c.en || c.ja || "").slice(0, 28)}`]);
   cues.forEach((cu, i) => {
@@ -862,7 +910,7 @@ function cuesEditor(ver) {
     const list = [cu.do];                              // one command, edited as a list of one
     const one = actionList(list, Object.assign({}, CTX, { changed() { cu.do = list[0]; if (!cu.do) cues.splice(i, 1); if (!cues.length) delete ver.cues; touch(); } }), { empty: "no command" });
     one.querySelector(".a-add") && list.length && one.querySelector(".a-add").remove();
-    box.append(el("div", { class: "cuerow" }, "at the", sel(cu.at, "edge", [["start", "start"], ["end", "end"]], { blank: false }), "of", sel(cu.at, "clip", ids, { blank: false, after: () => CTX.rerender() }),
+    box.append(el("div", { class: "cuerow", "data-cuerow": i }, "at the", sel(cu.at, "edge", [["start", "start"], ["end", "end"]], { blank: false }), "of", sel(cu.at, "clip", ids, { blank: false, after: () => CTX.rerender() }),
       txt(cu.at, "offset", { num: true, step: "0.1", ph: "0", style: "width:58px", title: "seconds after (or before, negative)" }), "s:", el("div", { style: "flex:1;min-width:260px" }, one),
       el("button", { class: "ghost", title: "delete this cue", on: { click: () => { cues.splice(i, 1); if (!cues.length) delete ver.cues; touch(); CTX.rerender(); } } }, icon("x", 14))));
   });
@@ -899,12 +947,79 @@ function takeRow(sc, c, sid) {             // the take against the director's ac
   c.trim = c.trim || {}; c.body = c.body || {};
   const r = el("div", { class: "sec row" }, el("span", { class: "lab" }, "take"), el("span", { class: t ? "ok" : "muted", title: takeId(sid, k, c.id) }, t ? "✓ " + t.name : "none yet"),
     t ? el("button", { on: { click: () => { const v = takePip("#stageBox"); playTake("#stageBox", sid, k, c, true); const end = clipSecs(c); setTimeout(() => v.pause(), end * 1000); } } }, "▶ take") : null,
-    "trim in", txt(c.trim, "in", { num: true, step: "0.05", style: "width:56px", title: "seconds of dead air cut from the take's start", after: renderInspector }),
-    "out", txt(c.trim, "out", { num: true, step: "0.05", style: "width:56px", title: "seconds cut from the take's end", after: renderInspector }),
+    "trim in", txt(c.trim, "in", { num: true, step: "0.05", style: "width:64px", title: "seconds of dead air cut from the take's start", after: renderInspector }),
+    "out", txt(c.trim, "out", { num: true, step: "0.05", style: "width:64px", title: "seconds cut from the take's end", after: renderInspector }),
     el("span", { class: "lab" }, "action"), txt(c.body, "secs", { num: true, step: "0.1", ph: clipSecs(c).toFixed(1), style: "width:56px", title: "the body's length against the take (empty: the clip's length)" }),
     "delay", txt(c.body, "delay", { num: true, step: "0.1", ph: "0", style: "width:52px", title: "the body starts this long after the take" }));
   if (!Object.keys(c.trim).length) delete c.trim;
   return r;
+}
+// a take's waveform with its trims as handles, after an audio editor's: drag the in and the out over the dead air (they
+// snap to where the voice starts and stops, the dashed lines; Shift for none), the body's span under it (drag it to start
+// the action later, its right end to make it shorter); a double-click plays the take from there to the out
+function waveEditor(c, t) {
+  const H = 64, BODY = 12, cv = el("canvas", { class: "wave", title: "drag the in or the out (Shift: no snapping) · drag the body's bar, or its right end · double-click to play from there" });
+  const info = el("div", { class: "kv wave-i" }, "reading the take…"), box = el("div", { class: "wavebox" }, cv, info);
+  let w = null, cw = 600, playT = null;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), tr = () => c.trim || {};
+  const X = s => s / w.dur * cw, T = x => Math.max(0, Math.min(w.dur, x / cw * w.dur));
+  const span = () => { const a = +(tr().in || 0), b = w.dur - +(tr().out || 0), bd = c.body || {}, len = b - a, bs = a + Math.min(len, +(bd.delay || 0)); return { a, b, len, bs, be: bs + (+bd.secs || len) }; };
+  const draw = () => {
+    if (!w) return; cw = cv.clientWidth || 600; const ch = H + BODY + 8;
+    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.fillStyle = "#151518"; g.fillRect(0, 0, cw, ch);
+    const { a, b, bs, be } = span(), mid = H / 2;
+    for (let i = 0; i < cw; i++) { const t0 = i / cw * w.dur, p = w.peaks[Math.min(w.peaks.length - 1, Math.floor(i / cw * w.peaks.length))] || 0, hh = Math.max(0.5, p * (H / 2 - 3)); g.fillStyle = t0 >= a && t0 <= b ? "#d39a45" : "#5b4a33"; g.fillRect(i, mid - hh, 1, hh * 2); }
+    g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, 0, X(a), H); g.fillRect(X(b), 0, cw - X(b), H);
+    g.setLineDash([3, 3]); g.strokeStyle = "#6fb3d9"; g.beginPath();
+    for (const v of [w.lead, w.dur - w.tail]) { g.moveTo(Math.round(X(v)) + 0.5, 0); g.lineTo(Math.round(X(v)) + 0.5, H); }
+    g.stroke(); g.setLineDash([]);
+    for (const x of [X(a), X(b)]) { g.fillStyle = "#f0c27a"; g.fillRect(x - 1.5, 0, 3, H); g.beginPath(); g.moveTo(x - 6, 0); g.lineTo(x + 6, 0); g.lineTo(x, 8); g.fill(); }
+    const x0 = X(bs), x1 = Math.min(X(be), X(b)), over = be > b + 0.01;
+    g.fillStyle = "#3d2e5c"; g.fillRect(x0, H + 4, Math.max(2, x1 - x0), BODY); g.strokeStyle = "#8a6cc8"; g.strokeRect(x0 + 0.5, H + 4.5, Math.max(2, x1 - x0) - 1, BODY - 1);
+    g.fillStyle = "#cbb8f0"; g.font = "10px system-ui,sans-serif"; g.fillText(over ? "body (cut at the out)" : "body", x0 + 4, H + 13.5);
+    g.fillStyle = "#8a6cc8"; g.fillRect(x1 - 3, H + 4, 3, BODY);
+    if (playT !== null) { g.fillStyle = "#fff"; g.fillRect(X(playT), 0, 1.5, H); }
+    info.textContent = `the take ${w.dur.toFixed(2)} s · in ${a.toFixed(2)} · out ${(w.dur - b).toFixed(2)} · the clip ${clipSecs(c).toFixed(2)} s · the body ${(Math.min(be, b) - bs).toFixed(2)} s, from +${(bs - a).toFixed(2)}`;
+  };
+  const snap = (v, list, tol) => { for (const x of list) if (Math.abs(v - x) < tol) return x; return v; };
+  const apply = (kind, t2, dx, free) => {
+    const tol = free ? 0 : w.dur * 8 / cw;
+    if (kind === "in" || kind === "out") {
+      c.trim = c.trim || {};
+      if (kind === "in") { const v = +Math.max(0, snap(Math.min(t2, w.dur - +(c.trim.out || 0) - 0.1), [0, Math.max(0, w.lead - TK.padIn)], tol)).toFixed(2); if (v) c.trim.in = v; else delete c.trim.in; }
+      else { const v = snap(Math.max(t2, +(c.trim.in || 0) + 0.1), [w.dur, Math.min(w.dur, w.dur - w.tail + TK.padOut)], tol), o = +Math.max(0, w.dur - v).toFixed(2); if (o) c.trim.out = o; else delete c.trim.out; }
+      if (!Object.keys(c.trim).length) delete c.trim;
+    } else {
+      c.body = c.body || {}; const { a, b, len } = span();
+      if (kind === "body") { const secs = Math.min(len, +c.body.secs || len), st = +Math.max(0, Math.min(len - 0.1, t2 - dx - a)).toFixed(2); if (st) c.body.delay = st; else delete c.body.delay; if (+c.body.secs && st + secs > len) c.body.secs = +Math.max(0.2, len - st).toFixed(2); }
+      else { const st = a + +(c.body.delay || 0), v = +Math.max(0.2, snap(Math.min(b, t2), [b], tol) - st).toFixed(2); if (!c.body.delay && Math.abs(v - len) < 0.005) delete c.body.secs; else c.body.secs = v; }
+    }
+  };
+  cv.addEventListener("mousedown", e => {
+    if (!w || e.button !== 0) return;
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, { a, b, bs, be } = span();
+    let kind = null, dx = 0;
+    if (y > H + 2) { if (Math.abs(x - Math.min(X(be), X(b))) < 7) kind = "bend"; else if (x >= X(bs) && x <= Math.min(X(be), X(b))) { kind = "body"; dx = T(x) - bs; } }
+    else if (Math.abs(x - X(a)) < 8) kind = "in"; else if (Math.abs(x - X(b)) < 8) kind = "out";
+    if (!kind) return;
+    e.preventDefault();
+    const move = ev => { apply(kind, T(ev.clientX - r.left), dx, ev.shiftKey); draw(); };
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); touch(); renderInspector(); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  });
+  cv.addEventListener("mousemove", e => { if (!w) return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, { a, b, bs, be } = span();
+    cv.style.cursor = y > H + 2 ? (Math.abs(x - Math.min(X(be), X(b))) < 7 ? "ew-resize" : x >= X(bs) && x <= X(be) ? "grab" : "default") : (Math.abs(x - X(a)) < 8 || Math.abs(x - X(b)) < 8 ? "ew-resize" : "pointer"); });
+  cv.addEventListener("dblclick", e => {                // the take from here to the out, a line running over it
+    if (!w) return; const r = cv.getBoundingClientRect(), from = T(e.clientX - r.left), { b } = span(), v = takePip("#stageBox");
+    if (v.dataset.src !== t.url) { v.src = t.url; v.dataset.src = t.url; }
+    v.currentTime = from; v.play().catch(() => { });
+    const tick = () => { if (!cv.isConnected || v.paused) { playT = null; draw(); return; } if (v.currentTime >= b) { v.pause(); playT = null; draw(); return; } playT = v.currentTime; draw(); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+  takeWave(t).then(x => { w = x; requestAnimationFrame(draw); }, e => { info.textContent = "couldn't read the take: " + e.message; });
+  new ResizeObserver(() => draw()).observe(cv);
+  return box;
 }
 // a scene as a script (RPG Maker's message list): each clip one row (who, the line, its shot, take, motion, event),
 // dragged to reorder; the open one shows its tabs. A take's video dropped on its row is stored under its take id
@@ -971,7 +1086,7 @@ async function dropTake(e, sc, c, sid) {          // a take's video (or audio) d
   status(`saving ${f.name} as ${name}…`);
   try {
     await api(`/api/take/${encodeURIComponent(GAME)}/${encodeURIComponent(name)}`, { method: "POST", body: f });
-    await loadTakes(); const t = TAKES[id];
+    await loadTakes(); const t = TAKES[id]; if (t) delete WAVES[t.url];
     if (t) { try { await cleanTake(c, t); } catch (x) { } }
     touch(); CTX.rerender(); status(`take ${name} on ${c.id}: ${clipSecs(c).toFixed(1)} s`);
   } catch (x) { alert("couldn't save the take: " + x.message); }
@@ -981,7 +1096,7 @@ async function dropLineTake(f, lid) {
   if (!m || !ln) { status("drop a video or audio file (mp4, mov, webm, wav, mp3, m4a)"); return; }
   try {
     await api(`/api/take/${encodeURIComponent(GAME)}/${encodeURIComponent(lid + "." + m[1].toLowerCase())}`, { method: "POST", body: f });
-    await loadTakes(); if (TAKES[lid]) { try { await cleanTake(ln, TAKES[lid]); } catch (x) { } }
+    await loadTakes(); if (TAKES[lid]) delete WAVES[TAKES[lid].url]; if (TAKES[lid]) { try { await cleanTake(ln, TAKES[lid]); } catch (x) { } }
     touch(); status(`take for ${lid}: ${clipSecs(ln).toFixed(1)} s`);
   } catch (x) { alert("couldn't save the take: " + x.message); }
 }
@@ -997,6 +1112,7 @@ async function dropTakes(files) {                 // many takes at once (the Tak
     } catch (x) { rows.push(`${f.name}: ${x.message}`); }
   }
   await loadTakes();
+  for (const f of files) { const id = f.name.replace(/\.[^.]+$/, ""); if (TAKES[id]) delete WAVES[TAKES[id].url]; }
   for (const f of files) { const id = f.name.replace(/\.[^.]+$/, ""), hit = byId[id]; if (hit && TAKES[id]) try { await cleanTake(hit.c, TAKES[id]); } catch (x) { } }
   touch(); renderClips(); status(rows.filter(r => r.endsWith("stored")).length + " takes stored");
   if (rows.some(r => !r.endsWith("stored"))) alert(rows.join("\n"));
@@ -1030,7 +1146,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     if ((S.format || 2) >= 3) pane.append(takeSec(c));
   }
   if (tab === "take") {
-    pane.append(takeRow(sc, c, sid), el("div", { class: "dropzone", on: {
+    const tk = TAKES[takeId(sid, sc.variants ? (VTAB[sid] || sc.pick) : null, c.id)];
+    pane.append(takeRow(sc, c, sid), tk ? waveEditor(c, tk) : null, el("div", { class: "dropzone", on: {
       click: () => { const inp = el("input", { type: "file", accept: "video/*,audio/*", style: "display:none", on: { change: () => { if (inp.files[0]) dropTake({ dataTransfer: { files: inp.files } }, sc, c, sid); inp.remove(); } } }); document.body.append(inp); inp.click(); } } },
       icon("upload", 18), el("div", {}, el("b", {}, "Drop this clip's take here"), el("div", { class: "kv" }, `or click to choose it: its video or audio, saved as ${takeId(sid, sc.variants ? (VTAB[sid] || sc.pick) : null, c.id)} and measured (its length, the dead air at either end)`))));
   }
