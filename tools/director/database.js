@@ -75,7 +75,7 @@ export class Database {
       case "notes": return Object.entries(S.notes || {}).map(([id, v]) => ({ id, label: v.title || id, sub: id }));
       case "sounds": return Object.entries(S.sounds || {}).map(([id, v]) => ({ id, label: id, sub: v.file || "" }));
       case "lines": return Object.entries(S.lines || {}).map(([id, v]) => ({ id, label: v.en || v.ja || "(empty)", sub: `${id} · ${v.who === "player" ? "you" : cast(v.who)}`, dot: D.whoColor(v.who), take: !!D.takes()[id] }));
-      case "motions": return Object.entries(S.motions || {}).map(([id, v]) => ({ id, label: id, sub: `${v.who ? cast(v.who) : "anyone"} · ${v.secs || "?"} s${v.loop ? " · loop" : ""}` }));
+      case "motions": return Object.entries(S.motions || {}).map(([id, v]) => ({ id, label: id, sub: `${v.who ? cast(v.who) : "anyone"} · ${v.secs || "?"} s${v.loop ? " · loop" : ""}`, pic: D.pic ? () => D.pic("table", id, "mot") : null }));
       case "secrets": return Object.entries(S.secrets || {}).map(([id, v]) => ({ id, label: v.hint || id, sub: `${id} · flag ${v.flag || "…"}` }));
       case "interrupts": return (S.interrupts || []).map((it, i) => ({ id: it.id || String(i), label: it.label || it.id || "(no label)", sub: it.id || "" }));
       case "state": {
@@ -272,8 +272,9 @@ export class Database {
       keys.append(h("button", { class: "a-add", on: { click: () => { m.block = block; block.push({ at: block.length ? 1 : 0, pose: "idle", ease: block.length ? "inout" : undefined }); if (!block[block.length - 1].ease) delete block[block.length - 1].ease; this.changed(); drawKeys(); } } }, icon("plus", 13), " key"));
     };
     drawKeys();
-    const suggest = `${String(D.game()).toLowerCase()}_${m.who || "anyone"}_${id}`;
+    const suggest = `${String(D.game()).toLowerCase()}_${m.who || "anyone"}_${id}`, made = m.name && (D.made ? D.made() : []).includes(m.name);
     return h("div", { class: "frm" },
+      D.pic ? h("div", { class: "db-portrait" }, D.pic("table", id, "strip"), h("p", { class: "hint" }, made ? "its Kimodo take, at four moments" : (m.block || []).length ? "its stand-in (the blocking below), at four moments: the desk plays it until the Kimodo take is made" : "not made yet and no stand-in: give it blocking below to see it in the desk")) : null,
       this.row("Who", this.sel(m, "who", Object.entries(S.cast || {}).map(([k, c]) => [k, c.name || k]), { blank: "anyone", after: () => this.renderList() })),
       this.row("Prompt", this.f(m, "prompt", { long: true, rows: 2, ph: v3 ? "A person stands still, breathing slowly…" : "stands still, breathing slowly" })),
       v3 ? h("p", { class: "hint tight" }, "Kimodo's words: start “A person …”, one action, what the body does (docs/KIMODO.md)") : null,

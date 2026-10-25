@@ -5,13 +5,14 @@
 // changes; an <img> asked for meanwhile shows the last picture, dimmed, and is filled when the new one is made.
 //   new Pictures(D): D: stage (an off-screen Stage), story(), plan(), files(), rev() (changes on every edit),
 //                    timeOf(sid) (the scene's time of day), color(who), load(file) (a motion file into files())
-//   pics.img(kind, id, {cls, title}) -> <img>   kinds: cast (id), pose (name), motion (file), line ([sid, variant, clip])
+//   pics.img(kind, id, {cls, title}) -> <img>   kinds: cast (id), pose (name), motion (file), table (a motions table id:
+//   its take when made, else its stand-in blocking), line ([sid, variant, clip])
 import * as THREE from "three";
 import * as M from "./motion.js";
 import { Figure, version } from "./stage.js";
 
 const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-const SIZE = { cast: [64, 64], pose: [60, 80], motion: [120, 80], line: [160, 90] };
+const SIZE = { cast: [64, 64], pose: [60, 80], motion: [120, 80], table: [120, 80], line: [160, 90] };
 const Y = new THREE.Vector3(0, 1, 0);
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 // the camera along dir from the box's middle, as close as it can be with the whole box in view
@@ -62,6 +63,7 @@ export class Pictures {
     if (kind === "cast") { const c = (S.cast || {})[id]; return c ? hash(JSON.stringify([c, bodies])) : null; }
     if (kind === "pose") return this.lib.poses[id] ? id + "|" + hash(bodies) : null;
     if (kind === "motion") { const f = this.D.files()[id]; return id + "|" + (f ? f.pos.length : "-"); }
+    if (kind === "table") { const m = (S.motions || {})[id]; if (!m) return null; const f = m.name && this.D.files()[m.name + ".json"]; return hash(JSON.stringify([m, f ? f.pos.length : "-"])); }
     if (kind === "line") {
       const [sid, k, cid] = id, sc = (S.scenes || {})[sid]; if (!sc) return null;
       return `${this.sceneSig(sc, sid)}|${k || ""}|${cid}|${Object.keys(this.D.files()).length}|${this.D.plan() ? this.planId(this.D.plan()) : "-"}`;
@@ -98,7 +100,7 @@ export class Pictures {
     for (const e of this.queue) if (e[1].kind === "line") { const sc = (S.scenes || {})[e[1].id[0]]; if (sc && st.level === version(sc).level) return e; }
     return this.queue.entries().next().value;
   }
-  make(kind, id) { return kind === "cast" ? this.castPic(id) : kind === "pose" ? this.posePic(id) : kind === "motion" ? this.motionPic(id) : kind === "line" ? this.linePic(id) : null; }
+  make(kind, id) { return kind === "cast" ? this.castPic(id) : kind === "pose" ? this.posePic(id) : kind === "motion" ? this.motionPic(id) : kind === "table" ? this.tablePic(id) : kind === "line" ? this.linePic(id) : null; }
   shoot(objs, [w, h], bg, aim) {
     const R = this.D.stage.renderer;
     R.setSize(w, h, false); this.cam.aspect = w / h; this.cam.fov = 30;
@@ -135,10 +137,21 @@ export class Pictures {
   motionPic(file) {
     const f = this.D.files()[file];
     if (!f) { if (this.D.load) Promise.resolve(this.D.load(file)).then(() => { if (this.D.files()[file]) this.want("motion", file, "motion:" + file); }).catch(() => {}); return this.D.load ? undefined : null; }
-    const lib = this.lib, k = f.height ? 1.7 / f.height : 1;
+    const k = f.height ? 1.7 / f.height : 1;
+    return this.ghostPic(u => { const pos = M.sampleBaked(f, u).pos; for (const n in pos) pos[n].multiplyScalar(k); return pos; });
+  }
+  // a motion from the story's motions table: its take when made, else its stand-in blocking; null with neither
+  tablePic(id) {
+    const m = (this.D.story().motions || {})[id]; if (!m) return null;
+    const f = m.name && this.D.files()[m.name + ".json"], secs = f ? f.pos.length / (f.fps || 30) : Math.max(0.1, +m.secs || 2);
+    if (!f && !(m.block || []).length) return null;
+    return this.ghostPic(u => M.tableMotionPose(this.lib, Object.assign({}, m, { loop: false }), f, u * secs * 0.999, 1.7));
+  }
+  ghostPic(at) {
+    const lib = this.lib;
     if (!this.ghosts) this.ghosts = [0.2, 0.38, 0.62, 1].map(o => { const g = new Figure(lib, 1.7, 0xc8c2b6); if (o < 1) { g.mat.transparent = true; g.mat.opacity = o; g.mat.depthWrite = false; } return g; });
     const box = new THREE.Box3();
-    this.ghosts.forEach((g, i) => { const pos = M.sampleBaked(f, i / 3).pos; for (const n in pos) pos[n].multiplyScalar(k); g.update(pos); box.union(boxOf(pos)); });
+    this.ghosts.forEach((g, i) => { const pos = at(i / 3); g.update(pos); box.union(boxOf(pos)); });
     return this.shoot(this.ghosts.map(g => g.group), SIZE.motion, 0x1c1c21, cam => fit(cam, box, new THREE.Vector3(1, 0.35, 0.8), 1.05));
   }
   // what the player sees on a line: its scene's level and time on the off-screen stage, 45 % into the clip

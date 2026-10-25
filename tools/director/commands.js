@@ -44,12 +44,14 @@ export const TRICK_LABELS = { knock: "a knock", whisper: "a whisper", slam_behin
   glimpse: "a glimpse", jumpscare: "a jump scare", swap: "a swap while unseen", loop_hall: "the hall loops", cut_away: "a cut away" };
 // a cast member in play (`behave`): each way's own fields
 export const BEHAVE_FIELDS = {
-  idle: [{ key: "at", label: "at", kind: "spot" }, { key: "pose", label: "pose", kind: "pose", opt: true }, { key: "face", label: "facing", kind: "facing", opt: true }],
-  sit: [{ key: "at", label: "on", kind: "spot" }, { key: "pose", label: "pose", kind: "pose", opt: true }],
+  idle: [{ key: "at", label: "at", kind: "spot" }, { key: "pose", label: "pose", kind: "pose", opt: true }, { key: "face", label: "facing", kind: "facing", opt: true },
+    { key: "motion", label: "playing (a motion)", kind: "motion", opt: true }],
+  sit: [{ key: "at", label: "on", kind: "spot" }, { key: "pose", label: "pose", kind: "pose", opt: true }, { key: "motion", label: "playing (a motion)", kind: "motion", opt: true }],
   path: [{ key: "route", label: "route", kind: "route" }, { key: "mode", label: "mode", kind: "choice", opts: ["loop", "pingpong", "once"], opt: true },
-    { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }, { key: "from", label: "starting from", kind: "choice", opts: ["nearest", "first"], opt: true }],
+    { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }, { key: "from", label: "starting from", kind: "choice", opts: ["nearest", "first"], opt: true },
+    { key: "motion", label: "walking (a motion, in place)", kind: "motion", opt: true }],
   patrol: [{ key: "routes", label: "routes", kind: "routes" }, { key: "pick", label: "pick", kind: "choice", opts: ["order", "random"], opt: true },
-    { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }],
+    { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }, { key: "motion", label: "walking (a motion, in place)", kind: "motion", opt: true }],
   off: [],
 };
 
@@ -121,7 +123,7 @@ export const ACTIONS = [
     fields: [{ key: "behave", label: "Who", kind: "cast", verb: true }, { key: "as", label: "does", kind: "choice", opts: BEHAVE_AS },
       { key: "sees", label: "watches for the player", kind: "bool", opt: true }],
     more: a => BEHAVE_FIELDS[a.as || "idle"] || [], make: () => ({ behave: "", as: "idle", at: "" }),
-    text: (a, n) => `${n("cast", a.behave)}: ${behaveText(a, n)}${a.sees ? " · watches for you" : ""}` },
+    text: (a, n) => `${n("cast", a.behave)}: ${behaveText(a, n)}${a.motion ? " · playing " + n("motion", a.motion) : ""}${a.sees ? " · watches for you" : ""}` },
   { verb: "anim", label: "Animate a thing", icon: "motion", group: "people",
     fields: [{ key: "anim", label: "Thing", kind: "thing", verb: true }, { key: "clip", label: "motion", kind: "motion" }],
     make: () => ({ anim: "", clip: "" }), text: (a, n) => `Animate ${n("thing", a.anim)}: ${a.clip || "…"}` },

@@ -28,7 +28,7 @@ const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !fl
 
 export class PlayRuntime {
   // opts: run (the Watch's run: flags, karma, counters), settings ({crouch: {mode: "hold"}}), theme, fade(to, secs),
-  //       onBeat(stitch, beat, secs) (a beat fired: the desk's debug panel)
+  //       onBeat(stitch, beat, secs) (a beat fired: the desk's debug panel), files (the desk's loaded motions, by file)
   constructor(stage, story, plan, box, opts = {}) {
     Object.assign(this, { stage, story, plan, box, opts });
     this.run = opts.run || null;
@@ -39,6 +39,7 @@ export class PlayRuntime {
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
+    this.files = opts.files || {};
     this.suspicion = 0; this.calm = 0; this.lastCaught = null;
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
     this.carried = null; this.holding = null;          // the thing in the hands ({m, id, level, yaw, r}); E being held ({t, secs, on | put})
@@ -433,7 +434,7 @@ export class PlayRuntime {
     const as = spec.as || "idle", npc = this.npcs[cid];
     if (as === "off") { delete this.npcs[cid]; if (this.stage.cast[cid]) this.stage.cast[cid].group.visible = false; return; }
     const b = behaviourOf(as); if (!b) { this.hud.log(`behaviour not in Play yet: ${as}`); return; }
-    const n = this.npcs[cid] = { cid, as, s: settingsOf(b, spec), st: {}, pos: npc && npc.pos, yaw: npc ? npc.yaw : 0, level: npc && npc.level, pose: "idle", walking: false };
+    const n = this.npcs[cid] = { cid, as, s: settingsOf(b, spec), st: {}, pos: npc && npc.pos, yaw: npc ? npc.yaw : 0, level: npc && npc.level, pose: "idle", walking: false, t0: this.clock };
     b.start(n, this, n.s);
   }
   drawNpcs(dt) {
@@ -444,10 +445,16 @@ export class PlayRuntime {
       f.group.visible = !!n.pos && n.level === this.level;
       if (!f.group.visible) continue;
       f.group.position.copy(n.pos); f.group.rotation.y = (n.yaw + 90) * Math.PI / 180;
+      const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7;
+      // her motion (behave `motion`, the story's motions table): while she stands or sits, or while she walks a path or
+      // a patrol (in place: the route moves her; at a wait, the point's pose); not made and no stand-in: the pose
+      const m = n.s.motion && (this.story.motions || {})[n.s.motion], walks = n.as === "path" || n.as === "patrol";
+      const mp = m && (n.walking || !walks) ? M.tableMotionPose(lib, m, m.name && this.files[m.name + ".json"], this.clock - (n.t0 || 0), h, walks) : null;
+      if (mp) { f.update(mp); continue; }
       let p = M.clonePose(lib.poses[n.pose] || lib.poses.idle);
       if (n.walking) p = M.walkOverlay(lib, p, this.clock);
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(X, Math.sin(this.clock * 2.2) * 0.012));   // breathing
-      f.update(M.fk(lib, p, +((this.story.cast || {})[n.cid] || {}).height || 1.7).pos);
+      f.update(M.fk(lib, p, h).pos);
     }
   }
 

@@ -395,6 +395,9 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
   member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,
   `from`: `nearest` or `first` point), `patrol` (`routes`: walks each once, then the next; `pick`: `order` or
   `random`), `off` (gone). Not AI: the same steps every time, so a player can learn them.
+  `motion` (any of them but `off`): a `motions` id she plays, looped: while she stands (`idle`) or sits, or while she
+  walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). Until its
+  Kimodo take is made, the desk plays its `block` stand-in, else the pose; Unreal plays the take (its `name`).
   `sees`: she watches for the player (`true`, or some of `angle` 90 (the cone's full width), `range` 9 m,
   `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
   catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,

@@ -300,3 +300,23 @@ export const GROUPS = {
   arms: ["upperarm_l", "lowerarm_l", "upperarm_r", "lowerarm_r"], hands: ["hand_l", "hand_end_l", "hand_r", "hand_end_r"],
   legs: ["thigh_l", "calf_l", "thigh_r", "calf_r"], feet: ["foot_l", "ball_l", "foot_r", "ball_r"],
 };
+
+// ---- a reusable motion (the story's `motions` table) at t seconds: its Kimodo take when it's made (file), else the
+// desk's stand-in (its `block`: a pose at each moment of its `secs`); looping when it loops, held at its end when not;
+// in place takes the hips' travel away (the game moves her along her route). null when it has neither
+export function tableMotionPose(lib, m, file, t, h, inPlace = false) {
+  if (!m) return null;
+  if (file && file.pos && file.pos.length) {
+    const secs = file.pos.length / (file.fps || 30), u = m.loop ? (((t % secs) + secs) % secs) / secs : Math.min(1, Math.max(0, t / secs));
+    const pos = sampleBaked(file, u).pos, k = file.height ? h / file.height : 1;
+    for (const n in pos) pos[n].multiplyScalar(k);
+    const root = (inPlace || m.in_place) && (pos.pelvis || pos["soma:Hips"]);
+    if (root) { const dx = root.x, dz = root.z; for (const n in pos) { pos[n].x -= dx; pos[n].z -= dz; } }
+    return pos;
+  }
+  if (!(m.block || []).length) return null;
+  const secs = Math.max(0.1, +m.secs || 2), lt = m.loop ? ((t % secs) + secs) % secs : Math.min(secs, Math.max(0, t));
+  return fk(lib, evalBlock(lib, m.block, lt, secs, new THREE.Vector3()), h).pos;
+}
+// what a seeker does in a round's phase, when her loop isn't made and has no stand-in: a pose from the library
+export const ROLE_POSE = { wait: "idle", count: "hands_face", search: "look_left", patrol: "idle", chase: "lean_in", found: "lean_in", idle: "idle" };

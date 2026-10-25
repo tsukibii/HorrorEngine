@@ -8,6 +8,10 @@ import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+// "three" as the desk's page names it (its import map): the vendored copy, so modules that draw can be tested here too
+const { register } = await import("module");
+const THREE_URL = new URL("./vendor/three.module.min.js", import.meta.url).href;
+register("data:text/javascript," + encodeURIComponent(`export async function resolve(s, c, next) { return s === "three" ? { url: ${JSON.stringify(THREE_URL)}, shortCircuit: true } : next(s, c); }`));
 const { lint } = await import("./lint.js");
 const fails = [], ok = m => console.log("  ok  " + m), fail = m => { fails.push(m); console.log("  FAIL " + m); };
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -188,6 +192,27 @@ console.log("marks on the stage (marks.js)");
   const vid = newSpot(S, "house", roomAt(lv, 2.5, 1.5), 2.5, 1.5, 90, "hall_view_spot"); S.scenes.s_message.view = vid;
   const out = storyCheck("Sample", S).trim().split("\n").pop();
   /STORY ok/.test(out) ? ok(`Mari and the player on new marks: the story check passes (${out})`) : fail("new marks: " + out);
+}
+
+// ---- reusable motions: the motions table played (a stand-in looped, held, in place), and behave's motion checked
+console.log("reusable motions (motion.js, behave motion)");
+{
+  const M = await import("./motion.js"), lib = M.loadLibrary(JSON.parse(readFileSync(join(ROOT, "Content", "Studio", "poses.json"), "utf8")));
+  const S = story("Sample"), m = S.motions.mari_idle, head = (t, mm = m) => M.tableMotionPose(lib, mm, null, t, 1.62).head;
+  const a = head(0), b = head(m.secs / 2), c = head(m.secs), d = head(m.secs * 1.5);
+  a && b && a.distanceTo(b) > 1e-3 && a.distanceTo(c) < 1e-6 && b.distanceTo(d) < 1e-6 ? ok(`mari_idle's stand-in plays and loops (its head moves ${(a.distanceTo(b) * 100).toFixed(1)} cm, back at ${m.secs} s)`) : fail("the stand-in's loop");
+  const once = Object.assign({}, m, { loop: false }); head(m.secs * 2, once).distanceTo(head(m.secs, once)) < 1e-6 ? ok("… held at its end when it doesn't loop") : fail("a motion that doesn't loop");
+  M.tableMotionPose(lib, S.motions.mari_count_wall, null, 1, 1.62) === null ? ok("not made and no stand-in: nothing (the pose plays)") : fail("a motion with nothing to play");
+  const fps = 30, n = 61, file = { fps, height: 1.76, joints: ["pelvis", "head"], pos: Array.from({ length: n }, (_, i) => [[i * 0.02, 0.95, 0.4 + i * 0.01], [i * 0.02, 1.6, 0.4 + i * 0.01]]) };
+  const p = M.tableMotionPose(lib, { loop: true, in_place: true }, file, 1, 1.76);
+  Math.abs(p.pelvis.x) < 1e-6 && Math.abs(p.pelvis.z) < 1e-6 && Math.abs(p.head.y - 1.6) < 1e-6 ? ok("a made take in place: the hips' travel taken away, the height kept") : fail("in place: " + JSON.stringify(p.pelvis));
+  const T = clone(S), beat = { id: "b_desk_motion", when: { start: true }, do: [{ behave: "mari", as: "idle", at: "hall_mari_spot", motion: "mari_idle" }, { behave: "mari", as: "path", route: ["hall_mari_spot", "hall_mari_near_spot"], motion: "mari_search_walk" }] };
+  const tid = Object.keys(T.stitches).find(k => !T.stitches[k].play); T.stitches[tid].beats.push(beat);
+  const out = storyCheck("Sample", T), last = out.trim().split("\n").pop();
+  /STORY ok/.test(last) && !/b_desk_motion/.test(out.split("\n").filter(l => l.startsWith("ERROR")).join()) ? ok(`behave with a motion standing and walking: the story check passes (${last})`) : fail("behave motion: " + out.split("\n").filter(l => /ERROR|b_desk_motion/.test(l)).join(" · "));
+  beat.do[0].motion = "no_such_motion"; beat.do[1].motion = "mari_idle";
+  const o2 = storyCheck("Sample", T).split("\n");
+  o2.some(l => l.startsWith("ERROR") && /no_such_motion/.test(l)) && o2.some(l => /mari_idle walks a route: make it in_place/.test(l)) ? ok("… a motion not in the table is an error, one walked without in_place a warning") : fail("behave motion's errors: " + o2.filter(l => /b_desk_motion/.test(l)).join(" · "));
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");

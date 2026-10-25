@@ -890,6 +890,14 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(x, "spot")
         if a.get("pose") is not None and a["pose"] not in POSES:
             r.err(f"{bid}: behave pose {a['pose']!r} isn't in Content/Studio/poses.json")
+        if a.get("motion") is not None:                 # what she plays: standing, sitting, or walking (in place) a route
+            ms = story.get("motions", {})
+            if a["motion"] not in ms:
+                r.err(f"{bid}: behave motion {a['motion']!r} isn't in motions")
+            elif as_ in ("path", "patrol") and not ms[a["motion"]].get("in_place"):
+                r.warn(f"{bid}: behave motion {a['motion']} walks a route: make it in_place (the route moves her)")
+            elif FORMAT >= 3 and not ms[a["motion"]].get("name"):
+                r.warn(f"{bid}: motion {a['motion']} has no Kimodo `name`: it won't be on the shot list")
         sees = a.get("sees", False)
         if not (isinstance(sees, bool) or isinstance(sees, dict) and set(sees) <= SIGHT and all(isinstance(x, (int, float)) and x >= 0 for x in sees.values())):
             r.err(f"{bid}: behave sees {sees!r}: true, or some of {', '.join(sorted(SIGHT))} as numbers")

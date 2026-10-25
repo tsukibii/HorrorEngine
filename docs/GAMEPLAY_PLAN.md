@@ -39,7 +39,10 @@ set by style and role, falling back to the pose library): docs/PATTERNS_PLAN.md 
 They're set by a beat (`{"behave": "mari", "as": "patrol", "routes": ["r_library", "r_hall"]}`) or per flow node, and
 a scene takes the actor over and hands them back to their behaviour when it ends (blended, §1). **Routes** are named
 lists of spots with optional waits and poses, drawn in the scene builder on the floor plan. Interactive cinematics
-can run a route too (she walks between the shelves and back while she talks).
+can run a route too (she walks between the shelves and back while she talks). A behaviour's `motion` (the motions
+table, **built on the desk 2026-10-25**) is what she plays meanwhile: an idle loop where she stands, an in-place walk
+along her route; the desk plays the Kimodo take when it's made, its stand-in blocking until then. In a round, the
+seeker's `loops` play by its phase in the Watch (count, then search, then chase), behind the round's card.
 
 **Talking to someone in gameplay** (no dialogue trees): use them and they answer with one of a few lines for the
 state they're in: the first time, again, and a reminder of the current objective; in order, then random, then the

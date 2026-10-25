@@ -203,6 +203,7 @@ function motionPick(b, c, segDur) {
   return el("span", { class: "rowi" }, browse, inp, el("datalist", { id }, ...MADE.map(n => el("option", { value: n + ".json" }))), tag);
 }
 async function loadFiles() {
+  for (const m of Object.values(S.motions || {})) if (m.name && MADE.includes(m.name) && !FILES[m.name + ".json"]) await loadFile(m.name + ".json");   // the motions table's takes: Play and the rounds play them
   for (const sc of Object.values(S.scenes || {})) for (const ver of [sc, ...Object.values(sc.variants || {})]) for (const c of ver.clips || []) {
     for (const f of [c.body && c.body.file, ...((c.body && c.body.segments) || []).map(g => g.file)]) {
       if (!f || FILES[f]) continue;
@@ -1718,6 +1719,36 @@ function runEvent(ev) {
     requestAnimationFrame(tick);
   });
 }
+// a round's seeker in the Watch, behind its card: her `loops` by the round's phase (count, then search, then chase;
+// found when she finds you), each the motions table's take when made, its stand-in blocking until then, else a pose
+// for the role; seen from where the last scene on this level left the player, she where it left her (else in front
+// of the player, facing them)
+function roundSeeker(pl, lvl) {
+  const cid = pl.seeker, th = things(); if (!cid || !watchStage.cast[cid] || !RUN) return null;
+  let spot = null, view = null;                  // where the last scene on this level left her, and the player
+  for (const nid of [...RUN.trail].reverse()) {
+    const n = S.flow[nid], sc = n && n.type === "scene" && S.scenes[n.ref]; if (!sc) continue;
+    const v = version(sc), sp = (v.stage || {})[cid];
+    if (!view && v.view && th[v.view] && th[v.view].level === lvl) view = v.view;
+    if (sp && th[sp] && th[sp].level === lvl) { spot = sp; break; }
+  }
+  const start = view || S.levels[lvl].start, at = th[spot || start]; if (!at) return null;
+  watchStage.frame({ view: start, camera: { mode: "soft", look: spot ? cid : null }, clips: [{ id: "x", who: "", en: "" }], stage: spot ? { [cid]: spot } : {} }, 0, FILES);
+  const a = (at.yaw || 0) * Math.PI / 180, P = spot ? [at.pos[0], at.pos[2] || 0, -at.pos[1]]   // her spot, else 2.4 m in front of the player, turned to them
+    : [at.pos[0] + Math.cos(a) * 2.4, at.pos[2] || 0, -(at.pos[1] + Math.sin(a) * 2.4)], R = ((spot ? at.yaw || 0 : (at.yaw || 0) + 180) + 90) * Math.PI / 180;
+  const h = +((S.cast || {})[cid] || {}).height || 1.7, t0 = performance.now(), loops = pl.loops || {};
+  const seek = { phase: "count", stopped: false, stop() { this.stopped = true; } };
+  const tick = () => {
+    const f = watchStage.cast[cid]; if (seek.stopped || !RUN || !f) return;
+    const t = (performance.now() - t0) / 1000, ph = seek.phase, mid = loops[ph] || (ph === "chase" ? loops.search : null) || loops.idle, m = mid && (S.motions || {})[mid];
+    let pos = m ? M.tableMotionPose(LIB, m, m.name && FILES[m.name + ".json"], t, h, ph === "search" || ph === "chase") : null;
+    if (!pos) { let p = M.clonePose(LIB.poses[M.ROLE_POSE[ph]] || LIB.poses.idle); if (ph === "search" || ph === "chase") p = M.walkOverlay(LIB, p, t * (ph === "chase" ? 1.6 : 1)); pos = M.fk(LIB, p, h).pos; }
+    f.group.position.set(...P); f.group.rotation.y = R; f.group.visible = true; f.group.updateMatrixWorld(true);
+    f.update(pos); watchStage.render(); requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return seek;
+}
 async function watchStitch(st, nid, n) {
   paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 });
   const lvl = st.level || Object.keys(S.levels)[0];
@@ -1729,10 +1760,10 @@ async function watchStitch(st, nid, n) {
   for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); }
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(n.ref));
   if (st.play) {                                   // a round of gameplay: did it go your way?
-    const pl = st.play, results = PLAYS[pl.type] || ["success", "fail"];
+    const pl = st.play, results = PLAYS[pl.type] || ["success", "fail"], seek = roundSeeker(pl, lvl);
     const res = await new Promise(done => {
       const bar = el("div", { class: "rbar", style: "width:320px;margin:8px auto" }, el("div", {})), t0 = performance.now();
-      const card = el("div", { class: "wcard" }, el("div", { class: "muted" }, `GAMEPLAY · ${pl.type}${st.template ? " · " + st.template : ""}`), el("div", { class: "big" }, st.title || ""),
+      const card = el("div", { class: "wcard" + (seek ? " round" : "") }, el("div", { class: "muted" }, `GAMEPLAY · ${pl.type}${st.template ? " · " + st.template : ""}`), el("div", { class: "big" }, st.title || ""),
         el("div", {}, pl.rule || ""), pl.warn ? el("div", { class: "muted" }, "warning: " + pl.warn) : null, (pl.spots || []).length ? el("div", { class: "muted" }, "where: " + pl.spots.join(", ")) : null,
         bar, el("div", { class: "muted" }, `${pl.secs} s · how did it go?`),
         pl.seeker ? el("div", { class: "muted" }, `seeker: ${pl.seeker}${pl.loops ? " · loops: " + Object.entries(pl.loops).map(([r, m]) => `${r} ${m}`).join(", ") : ""}`) : null,
@@ -1740,10 +1771,13 @@ async function watchStitch(st, nid, n) {
       $("#watchBox").append(card);
       const bk = pl.barks || {}, said = new Set();       // her lines through the round: counting, searching, close
       const tk = () => { if (!RUN || !card.isConnected) return; const u = (performance.now() - t0) / 1000 / +pl.secs; bar.firstChild.style.width = Math.max(0, 100 - u * 100) + "%";
+        if (seek) seek.phase = u < 0.35 ? "count" : u < 0.7 ? "search" : "chase";
         for (const [at, m] of [[0, "start"], [0.02, "count"], [0.35, "search"], [0.7, "near"]]) if (u >= at && !said.has(m) && bk[m]) { said.add(m); playLine(pickOne(bk[m])); }
         if (u >= 1) return done(results[0]); requestAnimationFrame(tk); }; tk();
       if ($("#wFast").checked) sleep(2000).then(() => done(results[0]));
     });
+    if (seek && res !== results[0]) { seek.phase = "found"; await sleep($("#wFast").checked ? 300 : 1400); }   // she finds you
+    if (seek) seek.stop();
     wclear(); RUN.results[nid] = res; karmaAct((pl.on || {})[res]); RUN.answers.push(`${st.title || nid}: ${res}`);
     if (res === results[0] && (pl.barks || {}).lost) playLine(pickOne(pl.barks.lost));
     if (res !== results[0] && (pl.spots || []).length > 1) {          // where she caught you: a death can depend on it (pick_by found_at)
@@ -1773,7 +1807,7 @@ async function watchStitch(st, nid, n) {
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
   if (!RUN.play) {
-    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } },
+    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } }, files: FILES,
       onBeat: (st, b, secs) => DBG.fired(st, b, secs) });
     for (const i of RUN.items || []) RUN.play.items.add(i);   // what a start from the debug panel holds
   }
