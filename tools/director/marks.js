@@ -19,6 +19,16 @@ export function roomAt(level, x, y, z = null) {     // the room whose floor hold
   }
   return best ? best.r : null;
 }
+// a little thing (a kit preset, docs/IMMERSION.md) put down in a room: on the prop it stands on (`on`, in the same room)
+// or the floor, its front toward `face` (where the player looks from), its id unique in the file
+export function newThing(S, room, x, y, face, preset, on = null) {
+  const taken = allIds(S), stem = `${room.id}_${preset}`; let id = stem, n = 2; while (taken.has(id)) id = `${stem}_${n++}`;
+  const [x0, y0] = room.at || [0, 0], rot = face ? (facingRot([x, y], face) + 90) % 360 : 0;      // a kit's rot: 0 its front south
+  const p = { id, kit: preset, at: [r2(x - x0), r2(y - y0)], rot };
+  if (on) p.on = on;
+  (room.props = room.props || []).push(p);
+  return id;
+}
 export function newSpot(S, lvl, room, x, y, rot, stem) {    // a mark in the room, its id unique in the file
   const taken = allIds(S); let id = stem, n = 2; while (taken.has(id)) id = `${stem}_${n++}`;
   const [x0, y0] = room.at || [0, 0];

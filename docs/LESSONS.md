@@ -585,3 +585,9 @@ load the page once after an edit.
   when the test asked what it was at 6 s). Ask in time order, or snapshot and restore.
 - **The Watch plays scenes with no run:** a scene previewed alone (TIMES does it) has `RUN` null, and reading
   `RUN.secs` at the scene's start threw. Whatever a scene reads from the run at its start is guarded.
+- **Effects are never in a ray's way:** the stage's right-click on the kitchen table found nothing, because the
+  steam over the tea on it (a `Points` cloud, whose ray threshold is a whole metre) was hit first and read as a
+  wall. Everything lifefx.js makes gets a no-op `raycast`, so a pick, a drip's floor and Play's cursor go through it.
+- **Click the desk by selector, not by a handle held across a wait:** GUIDE's quick task failed one run in three
+  with "Element is not attached", because the live check redraws the side panel a few seconds after an edit (the
+  step before had edited), and the button held was the old one. `page.click(selector)` finds it again.

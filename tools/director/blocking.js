@@ -89,30 +89,37 @@ export function wireStageDrag(stage, D) {
     requestAnimationFrame(() => { hoverQ = false; if (!D.scene()) { cv.style.cursor = ""; return; } const h = stage.pickAt(e.clientX, e.clientY, { bodies: true }); cv.style.cursor = h && (h.kind === "cast" || h.kind === "player") ? "grab" : ""; });
   });
   cv.addEventListener("contextmenu", e => {
-    const sc = D.scene(); if (!sc || D.busy()) return;
+    const sc = D.scene(), lvl = sc ? sc.lvl : D.level ? D.level() : null; if (!lvl || D.busy()) return;
     e.preventDefault();
     const hit = stage.pickAt(e.clientX, e.clientY); if (!hit) return;
     const S = D.story(), cast = Object.keys(S.cast || {}), items = [], p = hit.point;
-    if (hit.kind === "floor") {
+    const face = sc && viewPos(sc) ? viewPos(sc) : [stage.camera.position.x, -stage.camera.position.z];
+    if (sc && hit.kind === "floor") {
       for (const cid of cast) items.push({ label: `Put ${D.name(cid)} here`, icon: "person", on: () => put(sc, cid, p) });
       items.push({ label: "The player stands here", icon: "eye", on: () => put(sc, "player", p) }, "-",
         { label: "A new mark here", icon: "plus", hint: "a spot to put someone on later", on: () => { const room = roomAt((S.levels || {})[sc.lvl], p[0], p[1], p[2]); if (!room) { D.status("that's outside the rooms"); return; } const id = newSpot(S, sc.lvl, room, p[0], p[1], facingRot([p[0], p[1]], viewPos(sc)), `${room.id}_mark`); D.placed(id, { kind: "prop", use: "spot", level: sc.lvl, room: room.id, pos: [r2(p[0]), r2(p[1]), (room.at || [0, 0, 0])[2] || 0], size: [0, 0, 0], yaw: facingRot([p[0], p[1]], viewPos(sc)) }); D.touch(true); D.status("a new mark: " + id); } });
     }
-    if (hit.kind === "cast") {
+    if (sc && hit.kind === "cast") {
       const nm = D.name(hit.id);
       items.push({ label: `The camera follows ${nm}`, icon: "eye", on: () => setLook(sc, hit.id) },
         { label: `Take ${nm} off the stage`, icon: "x", on: () => { if (sc.ver.stage) delete sc.ver.stage[hit.id]; D.touch(false); D.status(`${nm} is off the stage`); } });
     }
     if (hit.kind === "thing") {
-      const t = D.things()[hit.id], v = viewPos(sc);
-      items.push({ label: `The camera follows ${hit.id}`, icon: "eye", on: () => setLook(sc, hit.id) });
+      const t = D.things()[hit.id], v = sc ? viewPos(sc) : null;
+      if (sc) items.push({ label: `The camera follows ${hit.id}`, icon: "eye", on: () => setLook(sc, hit.id) });
       if (t && v) {                                   // beside it, on the player's side
         const dx = v[0] - t.pos[0], dy = v[1] - t.pos[1], l = Math.hypot(dx, dy) || 1, k = Math.max((t.size || [0, 0])[0], (t.size || [0, 0])[1]) / 2 + 0.45;
         const b = [t.pos[0] + dx / l * k, t.pos[1] + dy / l * k, v[2]];
         for (const cid of cast) items.push({ label: `Put ${D.name(cid)} beside it`, icon: "person", on: () => put(sc, cid, b) });
       }
+      const L = t && t.life && D.lives ? (D.lives().lives || {})[t.life] : null;     // a little thing: the state it starts in
+      if (L) { if (items.length) items.push("-"); for (const s of L.states) items.push({ label: `It starts ${s.id}${(t.state || L.states[0].id) === s.id ? "  ✓" : ""}`, icon: "life", on: () => D.setStart(hit.id, s.id) }); }
     }
-    if (hit.kind === "player") items.push({ label: "The camera follows no one", icon: "eye", on: () => setLook(sc, null) });
+    if ((hit.kind === "floor" || hit.kind === "thing") && D.addThing) {
+      if (items.length) items.push("-");
+      items.push({ label: "Add a little thing here…", icon: "life", hint: "a kettle, a cup of tea, an ashtray with a cigarette burning, a phone: alive (docs/IMMERSION.md)", on: () => D.addThing(lvl, p, hit, e, face) });
+    }
+    if (sc && hit.kind === "player") items.push({ label: "The camera follows no one", icon: "eye", on: () => setLook(sc, null) });
     if (items.length) D.menu(e.clientX, e.clientY, items, hit.kind === "floor" ? "the floor here" : hit.kind === "cast" ? D.name(hit.id) : hit.kind === "player" ? "the player" : hit.id);
   });
 }

@@ -6,13 +6,14 @@
 //   new Pictures(D): D: stage (an off-screen Stage), story(), plan(), files(), rev() (changes on every edit),
 //                    timeOf(sid) (the scene's time of day), color(who), load(file) (a motion file into files())
 //   pics.img(kind, id, {cls, title}) -> <img>   kinds: cast (id), pose (name), motion (file), table (a motions table id:
-//   its take when made, else its stand-in blocking), line ([sid, variant, clip])
+//   its take when made, else its stand-in blocking), line ([sid, variant, clip]), kit (a kit preset, D.kit() the presets)
 import * as THREE from "three";
 import * as M from "./motion.js";
 import { Figure, version } from "./stage.js";
+import * as K3 from "./kit3.js";
 
 const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-const SIZE = { cast: [64, 64], pose: [60, 80], motion: [120, 80], table: [120, 80], line: [160, 90] };
+const SIZE = { cast: [64, 64], pose: [60, 80], motion: [120, 80], table: [120, 80], line: [160, 90], kit: [96, 80] };
 const Y = new THREE.Vector3(0, 1, 0);
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 // the camera along dir from the box's middle, as close as it can be with the whole box in view
@@ -64,6 +65,7 @@ export class Pictures {
     if (kind === "pose") return this.lib.poses[id] ? id + "|" + hash(bodies) : null;
     if (kind === "motion") { const f = this.D.files()[id]; return id + "|" + (f ? f.pos.length : "-"); }
     if (kind === "table") { const m = (S.motions || {})[id]; if (!m) return null; const f = m.name && this.D.files()[m.name + ".json"]; return hash(JSON.stringify([m, f ? f.pos.length : "-"])); }
+    if (kind === "kit") { const q = ((this.D.kit && this.D.kit()) || {})[id]; return q ? hash(JSON.stringify(q)) : null; }
     if (kind === "line") {
       const [sid, k, cid] = id, sc = (S.scenes || {})[sid]; if (!sc) return null;
       return `${this.sceneSig(sc, sid)}|${k || ""}|${cid}|${Object.keys(this.D.files()).length}|${this.D.plan() ? this.planId(this.D.plan()) : "-"}`;
@@ -100,7 +102,14 @@ export class Pictures {
     for (const e of this.queue) if (e[1].kind === "line") { const sc = (S.scenes || {})[e[1].id[0]]; if (sc && st.level === version(sc).level) return e; }
     return this.queue.entries().next().value;
   }
-  make(kind, id) { return kind === "cast" ? this.castPic(id) : kind === "pose" ? this.posePic(id) : kind === "motion" ? this.motionPic(id) : kind === "table" ? this.tablePic(id) : kind === "line" ? this.linePic(id) : null; }
+  make(kind, id) { return kind === "cast" ? this.castPic(id) : kind === "pose" ? this.posePic(id) : kind === "motion" ? this.motionPic(id) : kind === "table" ? this.tablePic(id) : kind === "line" ? this.linePic(id) : kind === "kit" ? this.kitPic(id) : null; }
+  // a kit preset (a little thing, a cabinet): built from its numbers, three quarters from the front, a little above
+  kitPic(name) {
+    const presets = (this.D.kit && this.D.kit()) || {}; if (!presets[name]) return null;
+    const o = K3.object(name, presets), box = new THREE.Box3().setFromObject(o);
+    const url = this.shoot([o], SIZE.kit, 0x1c1c21, cam => fit(cam, box, new THREE.Vector3(-0.75, 0.6, 1), 1.12));
+    K3.dispose(o); return url;
+  }
   shoot(objs, [w, h], bg, aim) {
     const R = this.D.stage.renderer;
     R.setSize(w, h, false); this.cam.aspect = w / h; this.cam.fov = 30;

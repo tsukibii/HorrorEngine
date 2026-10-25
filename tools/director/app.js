@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -19,6 +19,8 @@ import { DebugPanel } from "./debug.js";
 import { openGoto } from "./goto.js";
 import { Pictures } from "./pictures.js";
 import { wireStageDrag } from "./blocking.js";
+import { newThing, roomAt } from "./marks.js";
+import { TYPES as KIT_TYPES } from "./kit.js";
 import * as SCRIPT from "./screenplay.js";
 import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
@@ -74,7 +76,8 @@ async function boot() {
       scene: () => { const n = S && S.flow[SEL]; if (!n || n.type !== "scene" || !S.scenes[n.ref]) return null; const sc = S.scenes[n.ref], k = sc.variants ? (VTAB[n.ref] || sc.pick) : null; return { sc, ver: k && sc.variants[k] ? sc.variants[k] : sc, sid: n.ref, lvl: sc.level || Object.keys(S.levels)[0] }; },
       story: () => S, things, name: cid => ((S.cast || {})[cid] || {}).name || cid, status, busy: () => !!PLAY,
       touch: w => { touch(w); if (w) showStage(); renderInspector(); }, menu: (x, y, items, head) => contextMenu(x, y, items, head),
-      placed: (id, t) => { if (PLAN && PLAN.things) PLAN.things[id] = t; } });
+      placed: (id, t) => { if (PLAN && PLAN.things) PLAN.things[id] = t; },
+      level: () => flowStage.level, lives: () => LIVES, addThing, setStart: (id, s) => { const p = propById(id); if (!p) return; p.state = s; touch(true); status(`${id} starts ${s}`); } });
     const q = new URLSearchParams(location.search);
     if (q.get("game") && g.games.includes(q.get("game"))) { GAME = q.get("game"); $("#game").value = GAME; }
     if (GAME) await load();
@@ -90,10 +93,25 @@ function pictures() {
   const ps = new Stage(document.createElement("div"), LIB);
   ps.thumbR = ps.renderer; ps.render = () => {};      // one GL context: its frames are made by thumb() alone
   Object.defineProperty(ps, "bodies", { get: () => flowStage.bodies }); Object.defineProperty(ps, "defaultBody", { get: () => flowStage.defaultBody });
-  return new Pictures({ stage: ps, story: () => S, plan: () => PLAN, files: () => FILES, rev: () => LAST, color: whoColor, load: f => loadFile(f),
+  return new Pictures({ stage: ps, story: () => S, plan: () => PLAN, files: () => FILES, rev: () => LAST, color: whoColor, load: f => loadFile(f), kit: () => LIBRARY.kit,
     timeOf: sid => { const nid = Object.keys(S.flow).find(k => S.flow[k].type === "scene" && S.flow[k].ref === sid); return (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; } });
 }
 const pic = (kind, id, o) => PICS ? PICS.img(kind, id, o) : null;
+function propById(id) { for (const lv of Object.values(S.levels || {})) for (const r of lv.rooms || []) for (const p of r.props || []) if (p.id === id) return p; return null; }
+// the stage's right-click: a little thing (a kit preset of the "small" kind), picked from pictures, put where it was
+// clicked: on the thing clicked (a table, a counter) or the floor, its front to the player, alive (docs/IMMERSION.md)
+function addThing(lvl, p, hit, e, face) {
+  const kits = LIBRARY.kit || {}, small = Object.entries(kits).filter(([, q]) => (q.cat || (KIT_TYPES[q.type] || {}).cat) === "small" && (q.mount || (KIT_TYPES[q.type] || {}).mount) !== "wall");
+  let anchor = document.querySelector("#thingAnchor"); if (!anchor) { anchor = el("div", { id: "thingAnchor", style: "position:fixed;width:1px;height:1px;pointer-events:none" }); document.body.append(anchor); }
+  anchor.style.left = e.clientX + "px"; anchor.style.top = e.clientY + "px";
+  pickGrid(anchor, { get: () => null, choices: () => small.map(([n, q]) => [n, q.label]), pic: n => pic("kit", n), title: "a little thing" }, preset => {
+    if (!preset) return;
+    const room = roomAt((S.levels || {})[lvl], p[0], p[1], p[2]); if (!room) { status("that's outside the rooms"); return; }
+    const on = hit.kind === "thing" && (room.props || []).some(q => q.id === hit.id) ? hit.id : null;
+    const id = newThing(S, room, p[0], p[1], face, preset, on);
+    touch(true); status(`${kits[preset].label}: ${id}${on ? " on " + on : ""} (right-click it for the state it starts in)`);
+  });
+}
 const face = (who, o = {}) => who && who !== "player" && (S.cast || {})[who] ? pic("cast", who, Object.assign({ cls: "face" }, o)) : null;
 // a pose picked from pictures (the blocking, the segments' keys, the layers, the Database's motions)
 function posePick(obj, key, after) {

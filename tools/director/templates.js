@@ -78,6 +78,23 @@ export const BEATS = [
   { id: "checkpoint", label: "A checkpoint", icon: "save", hint: "the game saves when the player gets here",
     blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }],
     build: (v, S, id) => ({ id: id("b_save"), when: { enter: v.zone || "" }, do: [{ checkpoint: true }] }) },
+  // the little things (docs/IMMERSION.md): their lives do the rest (the kettle boils by itself, the phone rings on)
+  { id: "kettle_on", label: "A kettle put on (it boils by itself)", icon: "life", hint: "as the player comes in, a kettle starts heating: it rumbles, steams and clicks off by itself",
+    blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "kettle", label: "The kettle", kind: "life" }],
+    build: (v, S, id) => ({ id: id("b_kettle"), when: { enter: v.zone || "" }, do: [{ state: v.kettle || "", to: "heating" }] }) },
+  { id: "still_burning", label: "A cigarette still burning", icon: "life", hint: "someone was just here: a cigarette burning in the ashtray as the player comes in",
+    blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "cigarette", label: "The cigarette (or its ashtray)", kind: "life" },
+      { key: "thought", label: "What it makes them think", kind: "text", ph: "Still burning. Someone was just here." }],
+    build: (v, S, id) => ({ id: id("b_burning"), when: { enter: v.zone || "" }, do: [{ state: v.cigarette || "", to: "lit" }, { wait: 1.5 }, { think: T(v.thought) || "Still burning. Someone was just here." }] }) },
+  { id: "phone_rings", label: "The phone rings", icon: "life", hint: "a phone rings as the player comes in; E answers it (a beat that hears the use plays the call)",
+    blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "phone", label: "The phone", kind: "life" }],
+    build: (v, S, id) => ({ id: id("b_ring"), when: { enter: v.zone || "" }, do: [{ state: v.phone || "", to: "ringing" }] }) },
+  { id: "tv_on", label: "The TV comes on by itself", icon: "life", hint: "static on the screen as the player comes in",
+    blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "tv", label: "The TV", kind: "life" }],
+    build: (v, S, id) => ({ id: id("b_tv"), when: { enter: v.zone || "" }, do: [{ state: v.tv || "", to: "static" }] }) },
+  { id: "clock_stops", label: "The clock stops", icon: "life", hint: "looked at for a moment, the clock stops (its tick too)",
+    blanks: [{ key: "clock", label: "The clock", kind: "life" }, { key: "thought", label: "What it makes them think", kind: "text", ph: "It's stopped." }],
+    build: (v, S, id) => ({ id: id("b_clock"), when: { look: v.clock || "", secs: 2 }, optional: true, do: [{ state: v.clock || "", to: "stopped" }, { think: T(v.thought) || "It's stopped." }] }) },
 ];
 export const TASK = Object.fromEntries(TASKS.map(t => [t.id, t])), BEAT = Object.fromEntries(BEATS.map(b => [b.id, b]));
 

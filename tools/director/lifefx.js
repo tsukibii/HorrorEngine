@@ -117,6 +117,14 @@ class Thread {
   dispose() { this.line.geometry.dispose(); this.line.material.dispose(); this.line.removeFromParent(); this.top.dispose(); }
 }
 
+// an effect is never in a ray's way (the stage's pick, a drip's floor, Play's cursor): steam over a cup is not the cup
+const NO_RAY = () => {};
+function noRay(p) {
+  if (p && p.isObject3D) p.traverse(o => { o.raycast = NO_RAY; });
+  for (const k of ["pts", "line", "top"]) if (p && p[k]) noRay(p[k]);
+  return p;
+}
+
 // ---- a little thing on the stage: its block, its kit (sockets, slot meshes) and the effects its life can show -------
 class Item {
   constructor(fx, id, th, block, kit) {
@@ -159,7 +167,7 @@ class Item {
   }
   // the materials of its slot meshes, its own (cloned once) so lighting or clipping one thing leaves the rest
   own(slot) { const m = this.slots[slot]; if (!m) return null; if (!m.userData.ownMat) { m.material = m.material.clone(); m.userData.ownMat = true; } return m; }
-  part(key, make) { return this.parts[key] || (this.parts[key] = make()); }
+  part(key, make) { return this.parts[key] || (this.parts[key] = noRay(make())); }
   dispose() {
     for (const p of Object.values(this.parts)) { if (p.dispose) p.dispose(); else { p.removeFromParent && p.removeFromParent(); p.traverse && p.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } }
     this.parts = {};

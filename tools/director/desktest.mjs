@@ -152,7 +152,9 @@ console.log("quick events (templates.js)");
     made.push(nid);
   }
   const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 },
-    slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] } };
+    slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] },
+    kettle_on: { zone: "kitchen", kettle: "kitchen_kettle" }, still_burning: { zone: "hall", cigarette: "hall_ash" }, phone_rings: { zone: "study", phone: "study_phone" },
+    tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." } };
   const bst = Q.buildTask(S, Q.TASK.read_note, values.read_note), beats = Q.BEATS.map(t => Object.assign(Q.buildBeat(S, t, bv[t.id] || {}), { optional: true }));
   bst.stitch.beats.push(...beats); S.flow.n_qe_beats = { type: "stitch", ref: bst.tid, next: back }; made.push("n_qe_beats");
   ok(`${Q.TASKS.length} tasks and ${Q.BEATS.length} beats built: ${Q.TASKS.map(t => t.id).join(", ")}; ${Q.BEATS.map(t => t.id).join(", ")}`);
@@ -182,7 +184,7 @@ console.log("acts on the board (frames)");
 // ---- blocking by mouse: the room under a point, a new mark there, which way it faces; the story check passes
 console.log("marks on the stage (marks.js)");
 {
-  const { facingRot, roomAt, newSpot } = await import("./marks.js");
+  const { facingRot, roomAt, newSpot, newThing } = await import("./marks.js");
   const f = [[[0, 0], [1, 0], 0], [[0, 0], [0, 1], 90], [[0, 0], [-1, 0], 180], [[0, 0], [0, -1], 270], [[2, 4.6], [2, 2.2], 270]];
   f.every(([a, b, w]) => facingRot(a, b) === w) ? ok("facing: east 0, north 90, west 180, south 270") : fail("facing: " + f.map(([a, b]) => facingRot(a, b)).join(","));
   const S = story("Sample"), lv = S.levels.house, room = (x, y) => (roomAt(lv, x, y) || {}).id || null;
@@ -191,8 +193,13 @@ console.log("marks on the stage (marks.js)");
   id === "hall_mari_spot_2" && sp && sp.at[0] === 1 && sp.at[1] === 4.6 && sp.use === "spot" ? ok(`a new mark: ${id} at ${sp.at} facing ${sp.rot} (its id unique, the room's coordinates)`) : fail("a new mark: " + JSON.stringify(sp));
   S.scenes.s_message.stage.mari = id;
   const vid = newSpot(S, "house", roomAt(lv, 2.5, 1.5), 2.5, 1.5, 90, "hall_view_spot"); S.scenes.s_message.view = vid;
+  // a little thing added from the stage: on the table clicked, its front to the player; one on the floor
+  const kitchen = roomAt(lv, 1, 7), tid = newThing(S, kitchen, 2.2, 7.9, [2, 6.5], "mug", "kitchen_table"), fid = newThing(S, kitchen, 3.2, 9.0, [2, 6.5], "kettle_whistling");
+  const tp = kitchen.props.find(x => x.id === tid), fp = kitchen.props.find(x => x.id === fid);
+  tid === "kitchen_mug" && tp.on === "kitchen_table" && tp.at[0] === 2.2 && tp.at[1] === 1.9 && tp.rot === (facingRot([2.2, 7.9], [2, 6.5]) + 90) % 360 && !fp.on
+    ? ok(`a little thing from the stage: ${tid} on the table at ${tp.at}, its front to the player (rot ${tp.rot}); ${fid} on the floor`) : fail("newThing: " + JSON.stringify([tp, fp]));
   const out = storyCheck("Sample", S).trim().split("\n").pop();
-  /STORY ok/.test(out) ? ok(`Mari and the player on new marks: the story check passes (${out})`) : fail("new marks: " + out);
+  /STORY ok/.test(out) ? ok(`Mari and the player on new marks, little things put down: the story check passes (${out})`) : fail("new marks: " + out);
 }
 
 // ---- reusable motions: the motions table played (a stand-in looped, held, in place), and behave's motion checked

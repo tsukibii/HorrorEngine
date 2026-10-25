@@ -77,8 +77,8 @@ try {
     await p.evaluate(() => { delete window.__dd.S.frames; window.__dd.touch(); });
   });
   await step("a quick task", async () => {
-    const q = await p.$(".quick .qchip, .quick button"); if (!q) throw new Error("no quick tasks");
-    await q.click(); await p.waitForSelector(".mdl"); await wait(300);
+    if (!(await p.$(".quick .qchip, .quick button"))) throw new Error("no quick tasks");
+    await p.click(".quick .qchip, .quick button >> nth=0"); await p.waitForSelector(".mdl"); await wait(300);    // by selector: the live check redraws the panel
     await shot("quick-task", pad(await box(".mdl")), "a quick task's blanks, and what it makes");
     await p.keyboard.press("Escape"); await wait(200);
   });
