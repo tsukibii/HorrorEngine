@@ -18,6 +18,7 @@ import { Database } from "./database.js";
 import { DebugPanel } from "./debug.js";
 import { openGoto } from "./goto.js";
 import { Pictures } from "./pictures.js";
+import { wireStageDrag } from "./blocking.js";
 import { TASKS as QUICK_TASKS, BEATS as QUICK_BEATS, TASK as QUICK_TASK, BEAT as QUICK_BEAT, buildTask, buildBeat } from "./templates.js";
 import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
@@ -60,6 +61,11 @@ async function boot() {
     $("#watchBox").prepend(watchStage.renderer.domElement);
     PICS = pictures();
     wireFreeCam();
+    wireStageDrag(flowStage, {                     // blocking by mouse on the scene's stage (blocking.js)
+      scene: () => { const n = S && S.flow[SEL]; if (!n || n.type !== "scene" || !S.scenes[n.ref]) return null; const sc = S.scenes[n.ref], k = sc.variants ? (VTAB[n.ref] || sc.pick) : null; return { sc, ver: k && sc.variants[k] ? sc.variants[k] : sc, sid: n.ref, lvl: sc.level || Object.keys(S.levels)[0] }; },
+      story: () => S, things, name: cid => ((S.cast || {})[cid] || {}).name || cid, status, busy: () => !!PLAY,
+      touch: w => { touch(w); if (w) showStage(); renderInspector(); }, menu: (x, y, items, head) => contextMenu(x, y, items, head),
+      placed: (id, t) => { if (PLAN && PLAN.things) PLAN.things[id] = t; } });
     const q = new URLSearchParams(location.search);
     if (q.get("game") && g.games.includes(q.get("game"))) { GAME = q.get("game"); $("#game").value = GAME; }
     if (GAME) await load();
@@ -2067,7 +2073,8 @@ $("#keysHelp").onclick = () => {
     sec("A scene", [["a row", "one line: click it for its tabs (Line, Take, Camera, Body, Event, Reply)"], ["grip ⋮⋮", "drag lines to reorder them"], ["drop a file", "a take's video or audio on its line: stored, measured, trimmed"]]),
     sec("The Database", [["tabs", "the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets, trigger cutscenes"], ["Used in …", "every place an entry is used: click one to go there"], ["Rename", "a new id, changed everywhere it's used"]]),
     sec("The Watch", [["WASD · arrows", "move"], ["mouse", "look (click the view to lock it)"], ["E · hold E", "use · pick up or put down"], ["C", "crouch (toggle or hold: the Watch bar)"], ["Esc", "pause (dev: skips a scene, when ticked)"], ["F9 · Debug", "every flag, counter and item live, the beats as they fire; before it plays, the state to start from"]]),
-    sec("The stage", [["Free cam", "drag to orbit, wheel to zoom"]])) });
+    sec("The stage", [["drag someone", "across the floor onto a spot (the rings; let go near one) or a new mark there, facing the player"], ["right-click", "the floor: put someone here, the player stands here, a new mark; someone: the camera follows them, off the stage"],
+      ["Free cam", "drag to orbit, wheel to zoom; the player is the orange marker: drag it to where the scene is seen from"]])) });
 };
 $("#check").onclick = async () => {
   if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk

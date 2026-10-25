@@ -174,5 +174,21 @@ console.log("acts on the board (frames)");
   ps.length >= 2 ? ok(`… and the live checks too: ${ps.map(p => p.text).join("; ")}`) : fail("the live checks on bad acts");
 }
 
+// ---- blocking by mouse: the room under a point, a new mark there, which way it faces; the story check passes
+console.log("marks on the stage (marks.js)");
+{
+  const { facingRot, roomAt, newSpot } = await import("./marks.js");
+  const f = [[[0, 0], [1, 0], 0], [[0, 0], [0, 1], 90], [[0, 0], [-1, 0], 180], [[0, 0], [0, -1], 270], [[2, 4.6], [2, 2.2], 270]];
+  f.every(([a, b, w]) => facingRot(a, b) === w) ? ok("facing: east 0, north 90, west 180, south 270") : fail("facing: " + f.map(([a, b]) => facingRot(a, b)).join(","));
+  const S = story("Sample"), lv = S.levels.house, room = (x, y) => (roomAt(lv, x, y) || {}).id || null;
+  room(2, 3) === "hall" && room(2, -1.5) === "porch" && room(50, 50) === null ? ok("the room under a point: hall, porch, none outside") : fail(`rooms: ${room(2, 3)} ${room(2, -1.5)} ${room(50, 50)}`);
+  const hall = roomAt(lv, 1, 4.6), id = newSpot(S, "house", hall, 1, 4.6, facingRot([1, 4.6], [2, 2.2]), "hall_mari_spot"), sp = hall.props.find(x => x.id === id);
+  id === "hall_mari_spot_2" && sp && sp.at[0] === 1 && sp.at[1] === 4.6 && sp.use === "spot" ? ok(`a new mark: ${id} at ${sp.at} facing ${sp.rot} (its id unique, the room's coordinates)`) : fail("a new mark: " + JSON.stringify(sp));
+  S.scenes.s_message.stage.mari = id;
+  const vid = newSpot(S, "house", roomAt(lv, 2.5, 1.5), 2.5, 1.5, 90, "hall_view_spot"); S.scenes.s_message.view = vid;
+  const out = storyCheck("Sample", S).trim().split("\n").pop();
+  /STORY ok/.test(out) ? ok(`Mari and the player on new marks: the story check passes (${out})`) : fail("new marks: " + out);
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

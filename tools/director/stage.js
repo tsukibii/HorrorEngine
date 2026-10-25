@@ -762,6 +762,8 @@ export class Stage {
     if (state.cam.lean) { const d = target.clone().sub(eye).setY(0); if (d.lengthSq() > 1e-6) eye.addScaledVector(d.normalize(), state.cam.lean); }
     if (state.glance && this.targetPos(state.glance.target)) target = target.clone().lerp(this.targetPos(state.glance.target), state.glance.w);
     const c = this.camera;
+    this._floorY = view ? view.pos[2] : 0;
+    this.playerMark(this.free && view ? { eye, target, floor: s2t(view.pos[0], view.pos[1], view.pos[2] + 0.012) } : null);
     if (this.free) { this.applyFree(); }
     else {
       c.position.copy(eye);
@@ -850,6 +852,60 @@ export class Stage {
   async assetsReady() { await Promise.all(this.pending || []); this.render(); }
 
   frame(sc, T, files) { const tl = this.timeline(sc); const st = this.stateAt(tl, T, files); this.apply(tl, st, T); this.render(); return st; }
+
+  // from the free camera, the player is a marker: a head looking where the scene's eye looks, a ring where they stand
+  playerMark(at) {
+    if (!at) { if (this._me) { this._me.visible = false; this._meRing.visible = false; } return; }
+    if (!this._me) {
+      const m = new THREE.MeshBasicMaterial({ color: 0xd39a45 });
+      this._me = new THREE.Group(); this._me.userData.player = true;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.24, 14), m); cone.rotation.x = -Math.PI / 2; cone.position.z = -0.16;
+      this._me.add(new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), m), cone);
+      this._meRing = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.26, 36), new THREE.MeshBasicMaterial({ color: 0xd39a45, side: THREE.DoubleSide, transparent: true, opacity: 0.8 }));
+      this._meRing.rotation.x = -Math.PI / 2; this.scene.add(this._me, this._meRing);
+    }
+    this._me.visible = this._meRing.visible = true;
+    this._me.position.copy(at.eye); this._me.lookAt(at.target); this._meRing.position.copy(at.floor);
+  }
+  // what's under a point of the canvas: a cast member (near their body's axis), the player's marker, a placed thing, or
+  // the floor; with the point in the story's coordinates (x east, y north, z up)
+  pickAt(cx, cy, o = {}) {                         // o.bodies: the cast and the player's marker only (a hover)
+    const r = this.renderer.domElement.getBoundingClientRect(), rc = new THREE.Raycaster();
+    rc.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), this.camera);
+    const toStory = v => [v.x, -v.z, v.y];
+    let best = null;
+    for (const [cid, f] of Object.entries(this.cast)) {          // a body: the ray within 0.3 m of the line from its feet to its head
+      if (!f.group.visible) continue;
+      const a = f.group.position.clone(), b = a.clone().add(new THREE.Vector3(0, f.height || 1.7, 0)), pr = new THREE.Vector3(), ps = new THREE.Vector3();
+      const d2 = rc.ray.distanceSqToSegment(a, b, pr, ps), t = pr.distanceTo(rc.ray.origin);
+      if (d2 < 0.3 * 0.3 && (!best || t < best.t)) best = { t, hit: { kind: "cast", id: cid, point: toStory(ps.setY(a.y)) } };
+    }
+    if (this._me && this._me.visible) {             // the player's marker: the ray near the line from its ring up to its head
+      const a = this._meRing.position.clone(), b = this._me.position.clone(), pr = new THREE.Vector3(), ps = new THREE.Vector3();
+      const d2 = rc.ray.distanceSqToSegment(a, b, pr, ps), t = pr.distanceTo(rc.ray.origin);
+      if (d2 < 0.3 * 0.3 && (!best || t < best.t)) best = { t, hit: { kind: "player", point: toStory(a) } };
+    }
+    if (o.bodies) return best ? best.hit : null;
+    const hits = rc.intersectObjects(this.world.children, true).filter(h => h.object.visible && !(h.object.material && h.object.material.opacity === 0));
+    for (const h of hits) {
+      if (best && h.distance > best.t) break;
+      let o = h.object; while (o && !(o.userData && o.userData.id) && o.parent) o = o.parent;
+      const u = (o && o.userData) || {};
+      if (u.kind === "floor") return { kind: "floor", point: toStory(h.point) };
+      if (u.kind === "ceiling") continue;
+      if (u.kind === "mesh" || u.kind === "door") return { kind: "thing", id: (u.piece && u.piece.d && u.piece.d.id) || u.id, point: toStory(h.point) };
+      break;                                       // a wall: the floor under the mouse, below
+    }
+    if (best) return best.hit;
+    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(this._floorY || 0)), p = new THREE.Vector3();
+    return rc.ray.intersectPlane(ground, p) ? { kind: "floor", point: toStory(p) } : null;
+  }
+  // the point on the floor at height z (the story's) under a point of the canvas
+  floorAt(cx, cy, z) {
+    const r = this.renderer.domElement.getBoundingClientRect(), rc = new THREE.Raycaster(), p = new THREE.Vector3();
+    rc.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), this.camera);
+    return rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -z), p) ? [p.x, -p.z, p.y] : null;
+  }
 
   // ---- the free camera (inspect the set from outside) --------------------------------------------------------
   setFree(on) {
