@@ -299,14 +299,18 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await walkIn(2, 5.4, 90, 1300); await gameWait(0.5);          // every line Play showed on the way in (a short one may be gone already)
     const lines = await page.evaluate(() => window.__lines); if (!lines.some(t => /Mari\?/.test(t))) throw new Error("lines " + JSON.stringify(lines));
   });
-  await step("a little thing: the kettle says Switch on, E switches it on, it boils by itself and the story hears it (state)", async () => {
+  await step("a little thing: the kettle says Switch on, E switches it on, it boils by itself (steam from its spout) and the story hears it (state)", async () => {
     await goTo("pilot_kettle", 0.8);
     const label = await page.evaluate(() => document.querySelector(".ph-label").textContent);
     if (label !== "Switch on") throw new Error("the prompt says " + JSON.stringify(label));
     await press("KeyE"); await gameWait(0.3);
     const st = await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle"));
     if (st !== "heating") throw new Error("after E it's " + st);
-    await gameWait(2);
+    await gameWait(0.9);
+    const steam = await page.evaluate(() => { const it = window.__dd.play.stage.life.items.find(i => i.id === "pilot_kettle"), p = it && it.parts["steam@spout0"];
+      return p ? [...p.pts.geometry.attributes.alpha.array].filter(a => a > 0.01).length : -1; });
+    if (!(steam > 3)) throw new Error("no steam from the spout while it boils: " + steam);
+    await gameWait(1.2);
     if (!(await flag("tea_ready"))) throw new Error("boiled not heard: it's " + await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle")));
   });
   await step("the drawer's code on the keypad sets drawer_open and shows the key", async () => {

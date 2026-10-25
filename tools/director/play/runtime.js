@@ -664,6 +664,7 @@ export class PlayRuntime {
     if (!this.busy && !this.playing) this.updateCursor(dt);
     this.emit({ type: "tick" });
     this.hud.tick();
+    if (this.stage.life && this.lives) { const T = this.now(); this.stage.life.update(T, id => ({ st: this.lives.at(id, T), hist: this.lives.history(id) })); }
     this.stage.render();
   }
 }

@@ -64,6 +64,11 @@ async function boot() {
     watchStage = new Stage($("#watchBox"), LIB);
     $("#watchBox").prepend(watchStage.renderer.domElement);
     PICS = pictures();
+    flowStage.lifeAt = (sc, tl, T) => {                 // a scene's little things: from where they start, its cues up to T
+      const W = new States(LIVES, lifeThings()).start(0);
+      for (const c of stateCues(tl, sc)) if (c.t <= T) W.set(c.id, c.to, c.t);
+      return id => ({ st: W.at(id, T), hist: W.history(id) });
+    };
     wireFreeCam();
     wireStageDrag(flowStage, {                     // blocking by mouse on the scene's stage (blocking.js)
       scene: () => { const n = S && S.flow[SEL]; if (!n || n.type !== "scene" || !S.scenes[n.ref]) return null; const sc = S.scenes[n.ref], k = sc.variants ? (VTAB[n.ref] || sc.pick) : null; return { sc, ver: k && sc.variants[k] ? sc.variants[k] : sc, sid: n.ref, lvl: sc.level || Object.keys(S.levels)[0] }; },
@@ -1699,6 +1704,8 @@ function lifeThings() {
   for (const lv of Object.values(S.levels || {})) for (const r of lv.rooms || []) for (const p of r.props || []) if (th[p.id] && th[p.id].life) out[p.id] = { life: th[p.id].life, d: p };
   return out;
 }
+// the run's little things drawn as they are at time T (the next render shows them)
+function lifeTick(stage, T) { if (stage.life && RUN && RUN.lives) stage.life.update(T, id => ({ st: RUN.lives.at(id, T), hist: RUN.lives.history(id) })); }
 // a scene's cues that set a state, at their times on its timeline (a clip's start or end, plus its offset)
 function stateCues(tl, ver) {
   const out = [];
@@ -1784,7 +1791,7 @@ async function watchScene(sc, nid, sid, k) {
     }
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
-    watchStage.apply(tl, st, T); watchStage.render();
+    watchStage.apply(tl, st, T); lifeTick(watchStage, t0 + T); watchStage.render();
     paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
     if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
     if (st.seg && st.seg.type !== "clip") stopTakes();

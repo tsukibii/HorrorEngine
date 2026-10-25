@@ -6,6 +6,7 @@ import * as M from "./motion.js";
 import * as K3 from "./kit3.js";
 import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
+import { LifeFX } from "./lifefx.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 const Y_UP = new THREE.Vector3(0, 1, 0);
 // which way a body faces (radians about up, 0 toward +z): square to the line from its right hip to its left (Kimodo's
@@ -234,6 +235,7 @@ export class Figure {
 // ---- the stage --------------------------------------------------------------------------------------------------
 export class Stage {
   static SOMA = null;            // Kimodo's skeleton (names, parents): the look layer turns SOMA joints too
+  static LIVES = null;           // the little things' lives (lives.json): a world with some gets their effects (lifefx.js)
   static showTrackers = true;
   constructor(container, lib) {
     this.lib = lib;
@@ -343,6 +345,7 @@ export class Stage {
       this.world.add(l, l.target); this.windows.push(l);
     }
     this.applyTime();
+    if (Stage.LIVES) { this.life = this.life || new LifeFX(this, Stage.LIVES); this.life.attach(); }   // steam, smoke, glows...
   }
   setTime(t) { this.time = TIME_LOOK[t] ? t : TIME_DEFAULT; this.applyTime(); }
   applyTime() {
@@ -851,7 +854,11 @@ export class Stage {
   }
   async assetsReady() { await Promise.all(this.pending || []); this.render(); }
 
-  frame(sc, T, files) { const tl = this.timeline(sc); const st = this.stateAt(tl, T, files); this.apply(tl, st, T); this.render(); return st; }
+  frame(sc, T, files) {
+    const tl = this.timeline(sc); const st = this.stateAt(tl, T, files); this.apply(tl, st, T);
+    if (this.life && this.lifeAt) this.life.update(T, this.lifeAt(sc, tl, T));     // the little things as they are at T
+    this.render(); return st;
+  }
 
   // from the free camera, the player is a marker: a head looking where the scene's eye looks, a ring where they stand
   playerMark(at) {

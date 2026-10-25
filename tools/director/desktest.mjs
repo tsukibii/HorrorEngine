@@ -283,6 +283,12 @@ print(json.dumps([LF.life_of({"kit": n}) for n in json.load(sys.stdin)]))`], { i
   c1 === "lit" && c2 === "out" && Math.abs(sp - 420) < 0.01 ? ok("a cigarette relit burns on from where it was: out 420 s of burning later") : fail(`keep: ${c1} ${c2} ${sp}`);
   // acts: a cup pours only from a ready kettle, and not at all with acts: false
   a0 === 0 && a1 === "Pour" && a2 === 0 ? ok("a cup can be poured once its kettle has boiled (not before, not with acts: false)") : fail(`acts: ${a0} ${a1} ${a2}`);
+  // every effect a life names is one the desk draws (lifefx.js), and an effect's value ramps over its state
+  const FXM = await import("./lifefx.js"), named = new Set();
+  for (const L of Object.values(LIVES.lives)) for (const st of L.states) for (const f of st.fx || []) named.add(f.fx);
+  const unknown = [...named].filter(f => !FXM.FX.includes(f));
+  !unknown.length && FXM.valueAt([0, 1], 15, 30) === 0.5 && FXM.valueAt([1, 0], 60, 30) === 0 && FXM.valueAt(0.4, 99, 30) === 0.4
+    ? ok(`every effect the lives name is drawn on the desk (${named.size}: ${[...named].join(", ")})`) : fail("effects: unknown " + unknown.join(", "));
   // the state command: the live check and the story check
   const S = story("Sample"), hall = S.levels.house.rooms.find(r => r.id === "hall");
   hall.props.push({ id: "t_kettle", kit: "kettle_jug", on: "hall_table", at: [2.9, 5.1], rot: 270 }, { id: "t_hob", kit: "hob_ih_portable", at: [1.0, 5.2], rot: 270 },

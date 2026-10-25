@@ -14,7 +14,7 @@ export function pickRule(rule, spec) {
   if (typeof rule === "string") return rule;
   for (const [k, m] of Object.entries(rule)) {
     if (k === "else" || !(k in spec) || !m || typeof m !== "object") continue;
-    const v = typeof spec[k] === "boolean" ? String(spec[k]) : String(spec[k]);
+    const v = String(spec[k]);
     if (v in m) return m[v];
   }
   return rule.else ?? null;
@@ -61,17 +61,24 @@ export class States {
   }
   def(id, s) { const t = this.things[id]; return t ? stateDef(this.data, t.life, s ?? (this.e[id] || {}).state) : null; }
   start(t0 = 0) {
-    this.now = t0; this.e = {}; this.changes = [];
+    this.now = t0; this.e = {}; this.changes = []; this.first = {};
     for (const [id, t] of Object.entries(this.things)) this.e[id] = { state: startOf(t.d, t.life, this.data), since: t0, spent: {} };
     for (const [id, t] of Object.entries(this.things)) {          // a follower starts where its leader puts it, unless told
       if (!t.lead || t.d.state !== undefined) continue;
       const m = this.data.lives[t.life].follows[this.e[t.lead].state];
       if (m) this.e[id].state = m;
     }
+    for (const [id, e] of Object.entries(this.e)) this.first[id] = { t: t0, state: e.state };
     return this;
   }
+  // its states over time, [{t, state}] from where it started: the effects read what was going on when a puff was born
+  history(id) {
+    const out = this.first && this.first[id] ? [this.first[id]] : [];
+    for (const c of this.changes) if (c.id === id) out.push({ t: c.t, state: c.to });
+    return out;
+  }
   snapshot() { return { now: this.now, e: JSON.parse(JSON.stringify(this.e)) }; }
-  restore(s) { this.now = s.now; this.e = JSON.parse(JSON.stringify(s.e)); this.changes = []; return this; }
+  restore(s) { this.now = s.now; this.e = JSON.parse(JSON.stringify(s.e)); this.changes = []; this.first = Object.fromEntries(Object.entries(this.e).map(([id, e]) => [id, { t: e.since, state: e.state }])); return this; }
   // when its state's time runs out (null: it doesn't)
   due(id) {
     const e = this.e[id], t = this.things[id], def = this.def(id);

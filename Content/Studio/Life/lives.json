@@ -159,8 +159,8 @@
   "incense": {
    "label": "incense",
    "states": [
-    {"id": "lit", "secs": 1500, "next": "out", "keep": true, "acts": [{"label": "Put it out", "to": "out"}], "fx": [{"fx": "burn", "at": "tip"}, {"fx": "ember", "at": "tip"}, {"fx": "smoke", "at": "tip", "rate": 0.5}]},
-    {"id": "out", "fx": [{"fx": "burn", "at": "tip"}]}
+    {"id": "lit", "secs": 1500, "next": "out", "keep": true, "acts": [{"label": "Put it out", "to": "out"}], "fx": [{"fx": "ember", "at": "tip"}, {"fx": "smoke", "at": "tip", "rate": 0.5}]},
+    {"id": "out"}
    ]
   },
   "clock": {
