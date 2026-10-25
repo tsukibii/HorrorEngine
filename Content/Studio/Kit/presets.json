@@ -865,77 +865,16 @@
   },
   "wall_clock": {
    "label": "Wall clock",
-   "cat": "wall",
    "mount": "wall",
    "z": 1.75,
-   "type": "parts",
+   "type": "clock",
    "size": [
     0.3,
-    0.05,
+    0.038,
     0.3
    ],
-   "parts": [
-    {
-     "s": "cyl",
-     "at": [
-      0,
-      0.025,
-      0.15
-     ],
-     "size": [
-      0.3,
-      0.3,
-      0.045
-     ],
-     "axis": "-y",
-     "m": "frame",
-     "ri": 0.14,
-     "m2": "frame"
-    },
-    {
-     "s": "cyl",
-     "at": [
-      0,
-      0.025,
-      0.15
-     ],
-     "size": [
-      0.284,
-      0.284,
-      0.035
-     ],
-     "axis": "-y",
-     "m": "white"
-    },
-    {
-     "s": "box",
-     "at": [
-      0,
-      -0.012,
-      0.15
-     ],
-     "size": [
-      0.006,
-      0.003,
-      0.09
-     ],
-     "m": "black"
-    },
-    {
-     "s": "box",
-     "at": [
-      0.03,
-      -0.014,
-      0.147
-     ],
-     "size": [
-      0.065,
-      0.003,
-      0.005
-     ],
-     "m": "black"
-    }
-   ]
+   "style": "round",
+   "slot": "white"
   },
   "switch_jp_1": {
    "label": "Switch, Japanese wide rocker",
@@ -2026,6 +1965,498 @@
    ],
    "lining": 0.012,
    "stop": false
+  },
+  "kettle_jug": {
+   "label": "Electric kettle (jug, on its base)",
+   "type": "kettle",
+   "size": [
+    0.162,
+    0.216,
+    0.204
+   ],
+   "style": "jug",
+   "slot": "plastic",
+   "trim_slot": "plastic_2"
+  },
+  "kettle_gooseneck": {
+   "label": "Pour-over kettle (gooseneck, black)",
+   "type": "kettle",
+   "size": [
+    0.156,
+    0.283,
+    0.169
+   ],
+   "style": "gooseneck",
+   "slot": "matte_black",
+   "trim_slot": "wood"
+  },
+  "kettle_whistling": {
+   "label": "Whistling kettle (red enamel, on the hob)",
+   "type": "kettle",
+   "size": [
+    0.2,
+    0.241,
+    0.194
+   ],
+   "style": "whistling",
+   "slot": "enamel_2",
+   "trim_slot": "black"
+  },
+  "tetsubin": {
+   "label": "Tetsubin (cast-iron kettle)",
+   "type": "kettle",
+   "size": [
+    0.187,
+    0.214,
+    0.211
+   ],
+   "style": "tetsubin",
+   "slot": "iron",
+   "trim_slot": "iron"
+  },
+  "hob_ceramic_4": {
+   "label": "Ceramic hob, four rings (they glow)",
+   "type": "hob",
+   "size": [
+    0.59,
+    0.52,
+    0.006
+   ],
+   "style": "ceramic",
+   "zones": 4
+  },
+  "hob_ceramic_2": {
+   "label": "Ceramic hob, two rings (domino)",
+   "type": "hob",
+   "size": [
+    0.29,
+    0.52,
+    0.006
+   ],
+   "style": "ceramic",
+   "zones": 2
+  },
+  "hob_ih_3": {
+   "label": "IH hob, three zones (a Japanese kitchen's)",
+   "type": "hob",
+   "size": [
+    0.6,
+    0.5,
+    0.006
+   ],
+   "style": "induction",
+   "zones": 3,
+   "trim": 0.006
+  },
+  "hob_ih_portable": {
+   "label": "Portable IH cooker (one zone)",
+   "type": "hob",
+   "size": [
+    0.3,
+    0.36,
+    0.065
+   ],
+   "style": "induction",
+   "zones": 1,
+   "body": true
+  },
+  "hob_gas_konro": {
+   "label": "Gas konro: two burners and the fish grill",
+   "type": "hob",
+   "size": [
+    0.59,
+    0.45,
+    0.2
+   ],
+   "style": "gas",
+   "zones": 2,
+   "body": true,
+   "slot": "steel",
+   "body_slot": "steel"
+  },
+  "hob_gas_3": {
+   "label": "Gas hob, three burners, built in",
+   "type": "hob",
+   "size": [
+    0.6,
+    0.5,
+    0.04
+   ],
+   "style": "gas",
+   "zones": 3
+  },
+  "saucepan": {
+   "label": "Saucepan (one long handle)",
+   "type": "pot",
+   "size": [
+    0.337,
+    0.163,
+    0.123
+   ],
+   "style": "saucepan"
+  },
+  "stockpot": {
+   "label": "Stockpot (two handles)",
+   "type": "pot",
+   "size": [
+    0.262,
+    0.203,
+    0.168
+   ],
+   "style": "stockpot"
+  },
+  "donabe": {
+   "label": "Donabe (clay pot for nabe)",
+   "type": "pot",
+   "size": [
+    0.277,
+    0.234,
+    0.15
+   ],
+   "style": "donabe",
+   "slot": "glaze_3",
+   "lid_slot": "glaze_2"
+  },
+  "mug": {
+   "label": "Mug",
+   "type": "cup",
+   "size": [
+    0.114,
+    0.082,
+    0.096
+   ],
+   "style": "mug",
+   "slot": "glaze"
+  },
+  "mug_white": {
+   "label": "Mug, white",
+   "type": "cup",
+   "size": [
+    0.114,
+    0.082,
+    0.096
+   ],
+   "style": "mug",
+   "slot": "ceramic"
+  },
+  "teacup": {
+   "label": "Teacup on its saucer",
+   "type": "cup",
+   "size": [
+    0.153,
+    0.153,
+    0.065
+   ],
+   "style": "teacup",
+   "slot": "ceramic"
+  },
+  "yunomi": {
+   "label": "Yunomi (Japanese teacup)",
+   "type": "cup",
+   "size": [
+    0.071,
+    0.071,
+    0.089
+   ],
+   "style": "yunomi",
+   "slot": "glaze_2"
+  },
+  "glass_tumbler": {
+   "label": "Glass tumbler",
+   "type": "cup",
+   "size": [
+    0.073,
+    0.073,
+    0.1
+   ],
+   "style": "glass",
+   "slot": "glass"
+  },
+  "takeaway_coffee": {
+   "label": "Takeaway coffee (a konbini's)",
+   "type": "cup",
+   "size": [
+    0.083,
+    0.083,
+    0.119
+   ],
+   "style": "takeaway",
+   "slot": "white"
+  },
+  "kyusu": {
+   "label": "Kyusu (side-handle teapot)",
+   "type": "teapot",
+   "size": [
+    0.172,
+    0.144,
+    0.084
+   ],
+   "style": "kyusu",
+   "slot": "clay",
+   "lid_slot": "clay"
+  },
+  "teapot_round": {
+   "label": "Round teapot",
+   "type": "teapot",
+   "size": [
+    0.154,
+    0.25,
+    0.137
+   ],
+   "style": "round",
+   "slot": "glaze_3",
+   "lid_slot": "glaze_3"
+  },
+  "ashtray_glass": {
+   "label": "Ashtray, glass",
+   "type": "ashtray",
+   "size": [
+    0.12,
+    0.12,
+    0.031
+   ],
+   "style": "glass"
+  },
+  "ashtray_used": {
+   "label": "Ashtray, glass, full of butts",
+   "type": "ashtray",
+   "size": [
+    0.12,
+    0.12,
+    0.031
+   ],
+   "style": "glass",
+   "butts": 5,
+   "seed": 3
+  },
+  "ashtray_burning": {
+   "label": "Ashtray with a cigarette resting in it",
+   "type": "ashtray",
+   "size": [
+    0.134,
+    0.12,
+    0.038
+   ],
+   "style": "glass",
+   "butts": 2,
+   "seed": 5,
+   "resting": true,
+   "left": 0.7
+  },
+  "ashtray_metal": {
+   "label": "Ashtray, steel (an izakaya's)",
+   "type": "ashtray",
+   "size": [
+    0.13,
+    0.13,
+    0.02
+   ],
+   "style": "metal",
+   "slot": "steel"
+  },
+  "cigarette": {
+   "label": "Cigarette",
+   "type": "cigarette",
+   "size": [
+    0.085,
+    0.008,
+    0.008
+   ],
+   "pose": "lying"
+  },
+  "cigarette_butt": {
+   "label": "Cigarette butt",
+   "type": "cigarette",
+   "size": [
+    0.037,
+    0.011,
+    0.008
+   ],
+   "pose": "butt"
+  },
+  "cig_pack": {
+   "label": "Cigarette pack, open",
+   "type": "cig_pack",
+   "size": [
+    0.056,
+    0.049,
+    0.084
+   ],
+   "open": true,
+   "count": 6
+  },
+  "lighter": {
+   "label": "Lighter (lying down)",
+   "type": "lighter",
+   "size": [
+    0.073,
+    0.025,
+    0.012
+   ],
+   "pose": "lying"
+  },
+  "lighter_standing": {
+   "label": "Lighter, standing (it can be lit)",
+   "type": "lighter",
+   "size": [
+    0.025,
+    0.012,
+    0.072
+   ],
+   "pose": "standing"
+  },
+  "school_clock": {
+   "label": "School / office clock",
+   "mount": "wall",
+   "z": 1.9,
+   "type": "clock",
+   "size": [
+    0.3,
+    0.05,
+    0.3
+   ],
+   "style": "school",
+   "slot": "black",
+   "marks": 60
+  },
+  "pendulum_clock": {
+   "label": "Pendulum clock (柱時計)",
+   "mount": "wall",
+   "z": 1.5,
+   "type": "clock",
+   "size": [
+    0.324,
+    0.109,
+    0.56
+   ],
+   "style": "pendulum",
+   "slot": "wood_4",
+   "seconds": false
+  },
+  "rice_cooker": {
+   "label": "Rice cooker (炊飯器)",
+   "type": "rice_cooker",
+   "size": [
+    0.25,
+    0.325,
+    0.228
+   ]
+  },
+  "mosquito_coil": {
+   "label": "Mosquito coil on its stand (蚊取り線香)",
+   "type": "coil",
+   "size": [
+    0.14,
+    0.14,
+    0.018
+   ],
+   "style": "stand"
+  },
+  "kayari_buta": {
+   "label": "Kayari buta (the pig a mosquito coil smokes from)",
+   "type": "coil",
+   "size": [
+    0.166,
+    0.19,
+    0.187
+   ],
+   "style": "pig",
+   "slot": "clay"
+  },
+  "incense_stick": {
+   "label": "Incense stick in its holder",
+   "type": "incense",
+   "size": [
+    0.054,
+    0.054,
+    0.116
+   ],
+   "style": "holder",
+   "slot": "ceramic"
+  },
+  "koro": {
+   "label": "Kōro: incense in ash (a butsudan's)",
+   "type": "incense",
+   "size": [
+    0.104,
+    0.104,
+    0.148
+   ],
+   "style": "koro",
+   "sticks": 3,
+   "slot": "brass"
+  },
+  "smartphone": {
+   "label": "Smartphone, face up",
+   "type": "phone",
+   "size": [
+    0.072,
+    0.15,
+    0.008
+   ],
+   "style": "smartphone",
+   "slot": "black"
+  },
+  "flip_phone": {
+   "label": "Flip phone (garakei), shut",
+   "type": "phone",
+   "size": [
+    0.05,
+    0.098,
+    0.022
+   ],
+   "style": "flip",
+   "slot": "lighter"
+  },
+  "kitchen_tap": {
+   "label": "Kitchen tap (swan-neck mixer)",
+   "type": "tap",
+   "size": [
+    0.056,
+    0.295,
+    0.311
+   ],
+   "style": "mixer"
+  },
+  "tap_cross": {
+   "label": "Old tap with a cross handle",
+   "type": "tap",
+   "size": [
+    0.07,
+    0.164,
+    0.104
+   ],
+   "style": "cross"
+  },
+  "candle_pillar": {
+   "label": "Candle (pillar)",
+   "type": "candle",
+   "size": [
+    0.07,
+    0.07,
+    0.103
+   ],
+   "style": "pillar"
+  },
+  "candle_taper": {
+   "label": "Candle in a candlestick",
+   "type": "candle",
+   "size": [
+    0.09,
+    0.09,
+    0.321
+   ],
+   "style": "taper"
+  },
+  "tealight": {
+   "label": "Tealight",
+   "type": "candle",
+   "size": [
+    0.04,
+    0.04,
+    0.022
+   ],
+   "style": "tealight"
   }
  }
 }

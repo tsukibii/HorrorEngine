@@ -77,6 +77,7 @@ Anything made of boxes and cylinders is made here, from presets you change.
 | `bulkhead` | a ceiling step round the room, and the curtain pocket at the window wall | step width per wall, pocket on, pocket width |
 | `block` | a single bevelled box: a genkan step (with a nosing), a zabuton, a plinth, a shelf | bevel, nosing |
 | `parts` | free parts: anything made of boxes and cylinders | the parts |
+| **Little things** | §9: kettles, hobs, pots, cups, teapots, ashtrays, cigarettes and a pack, lighters, clocks, a rice cooker, mosquito coils, incense, phones, taps, candles | their kind, their materials |
 
 The presets cover what's in the two reference photos. The TV wall unit has tall doors, a dark open shelf column and
 uppers over the TV, and the ceiling step has its curtain pocket. The large tiles are 600 × 1200 at a ⅓ offset. The
@@ -287,3 +288,37 @@ the door halves of its hinges, and slides the sliding ones: check the flaps fold
 
 The lathe and the sweep are kit parts like any other (`lathe`, `sweep`), so *Explode to parts* keeps them, and a free
 thing can use them.
+
+## 9. Little things
+
+The small things a lived-in room is full of, each with a life of its own on the desk (docs/IMMERSION.md: the kettle
+boils, the cigarette burns, the clock ticks). They're kit types in the category *Little things*:
+
+| Type | Kinds (`style`) | Its sockets |
+|---|---|---|
+| `kettle` | `jug` (electric, on its base, a blue light in front), `gooseneck` (pour-over, a readout on its base), `whistling` (enamel, for the hob), `tetsubin` (cast iron, arare) | `spout`, `lid`, `led` / `lcd`, `switch`, `base` |
+| `hob` | `ceramic` (rings that glow), `induction`, `gas` (burners, trivets); `zones` 1 to 4; `body` makes a table-top unit (a portable IH, a gas konro with its fish grill) | `ring_N` (`seat`: where a pot stands; `slot`: its glowing element), `digit_N`, `led`, `knob_N`, `grill` |
+| `pot` | `saucepan`, `stockpot`, `donabe` | `rim`, `inner`, `lid` (a lid in a slot of its own rattles), `steam`, `vent` |
+| `cup` | `mug`, `teacup` (on its saucer), `yunomi`, `glass`, `takeaway` | `rim`, `inner` (its wall's profile: where tea fills it), `handle`, `sip` |
+| `teapot` | `kyusu`, `round` | `spout`, `lid` |
+| `ashtray` | `glass`, `metal`, `ceramic`; rests, butts in it (seeded), a cigarette `resting` in it | `rest_N`, `bowl`, `tip` (the resting one's) |
+| `cigarette` | `lying`, `butt`; how much is `left`, the `ash` on its tip | `tip` (its axis, radius and the paper's length: it burns back from there) |
+| `cig_pack`, `lighter` | an open or shut pack; a lighter lying or standing | `flame` |
+| `clock` | `round`, `school`, `pendulum`; the `time` it shows | `hub` (the hands' angles and slots), `pendulum` |
+| `rice_cooker` | | `lcd`, `led_cook`, `led_warm`, `vent`, `button` |
+| `coil`, `incense` | on its stand or in a kayari buta (the pig); a stick in a holder or sticks in a kōro's ash | `tip` (`tip_N`), `smoke` |
+| `phone` | `smartphone`, `flip` (a garakei, shut) | `screen`, `led` |
+| `tap` | `mixer`, `cross` | `spout` (a drip falls from it), `handle` |
+| `candle` | `pillar`, `taper` (in a candlestick), `tealight` | `flame`, `wick` |
+
+- Each is **drawn at its real size**, then fitted into its box with one even scale, so a size never squashes it: it
+  keeps its shape, centred, its base on the floor of the box (a clock's back on the wall). `realSize(spec)` is the
+  box it fills at scale 1; the presets carry it.
+- **Sockets** are named points in item space (`build(spec).sockets`): `{at, n (the way it points), r, ...}`, moved
+  with the fit. They're where a life's effects come from: steam at the spout, smoke at the tip, a glow on a ring.
+- A part a life **moves or lights** has a slot of its own (`lid`, `hand_h`, `hand_m`, `hand_s`, `pendulum`,
+  `heat_N`, `led`), so on the desk it's its own mesh. In Unreal they're still one mesh until the life's Blueprint
+  (class_map's `life` table) brings them alive.
+- Two shape options came with them: a lathe can turn on any axis (`dir`), and a sweep can narrow along its length
+  (`taper`).
+
