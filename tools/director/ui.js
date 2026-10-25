@@ -41,6 +41,16 @@ export function modal({ title, body, ok = "OK", cancel = "Cancel", wide = false,
   });
 }
 
+// ---- a toast: a line at the bottom that goes by itself, with one thing to do about it ---------------------------------
+export function toast(text, { action = null, ms = 9000 } = {}) {
+  let box = document.querySelector(".toasts"); if (!box) { box = h("div", { class: "toasts" }); document.body.append(box); }
+  const t = h("div", { class: "toast" }, h("span", {}, text), action ? h("button", { class: "small", on: { click: () => { t.remove(); action.on(); } } }, action.label) : null,
+    h("button", { class: "ghost", title: "close", on: { click: () => t.remove() } }, icon("x", 12)));
+  box.append(t); setTimeout(() => t.remove(), ms);
+  while (box.children.length > 3) box.firstChild.remove();
+  return t;
+}
+
 // ---- the command palette: every command by group, a search box (type and Enter) -----------------------------------
 export function pickVerb(kind = "action", title) {
   const defs = kind === "action" ? ACTIONS.filter(d => !d.rare) : TRIGGERS;

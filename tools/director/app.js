@@ -8,12 +8,13 @@ import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
 import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast } from "./ui.js";
 import { triggerText } from "./commands.js";
 import { icon } from "./icons.js";
 import { Board, CARD_W, CARD_H } from "./board.js";
 import { Database } from "./database.js";
 import { lint, byObject } from "./lint.js";
+import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
 
 const $ = s => document.querySelector(s);
@@ -32,6 +33,7 @@ const MOODS = {
   aftermath: { text: "Wide, quiet, the room after: WS, slow drift, ringing ears, a dip to black when it's done.", cone: [40, 24], shot: "ws", push: 0 },
 };
 let S = null, GAME = null, MTIME = 0, DIRTY = false, SEL = null, VTAB = {}, PLAN = null, LIB = null, FILES = {}, FIX = {}, TAKES = {}, MADE = [];   // MADE: the game's generated motions (Motion/*.json), for the clips' picker
+let BASE = null;                                  // the story as it was on disk when the desk last loaded or saved it: the merge's base
 let MADE_MT = {}, FILE_MT = {};   // when each made motion was written, and when the one in FILES was: a take imported again under its name replaces it
 let flowStage = null, watchStage = null, PLAY = null, BODIES = [];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -65,7 +67,7 @@ async function boot() {
 function fillGames(list) { const sel = $("#game"); sel.innerHTML = ""; for (const n of list) sel.append(el("option", { value: n }, n)); }
 async function load() {
   const j = await api("/api/story/" + encodeURIComponent(GAME));
-  S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none"; UNDO = []; REDO = []; LAST = JSON.stringify(S); undoState();
+  S = j.story; MTIME = j.mtime; dirty(false); $("#banner").style.display = "none"; UNDO = []; REDO = []; LAST = JSON.stringify(S); BASE = LAST; undoState();
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
@@ -185,44 +187,79 @@ async function loadBodies() {
 }
 async function save(force) {
   if (!S) return;
-  try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; dirty(false); status("saved " + new Date().toLocaleTimeString()); scheduleCheck(300); }
+  const sent = JSON.stringify(S);
+  try { const j = await api("/api/story/" + encodeURIComponent(GAME), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story: S, mtime: MTIME, force: !!force }) }); MTIME = j.mtime; BASE = sent; dirty(DIRTY && JSON.stringify(S) !== sent); status("saved " + new Date().toLocaleTimeString()); scheduleCheck(300); }
   catch (e) {
     if (e.status !== 409) { alert("save failed: " + e.message); return false; }
-    const kept = await carryLinks();
-    if (confirm(e.message + (kept ? `\n\n${kept} motion${kept > 1 ? "s" : ""} imported meanwhile (Kimodo) will be kept in your version.` : "") + "\n\nOK = overwrite with your version, Cancel = keep editing (then Reload)")) return save(true);
+    if (await syncFromDisk("save")) return save();   // the disk had changes of its own: they're merged in, save the two together
+    if (confirm(e.message + "\n\nOK = overwrite with your version, Cancel = keep editing")) return save(true);
     return false;
   }
   return true;
 }
-// story.json changed on disk while there are edits here: the motions an import put on segments and clips (their `file`)
-// come into this version, so saving it over the disk's doesn't drop them
-async function carryLinks() {
-  let disk; try { disk = (await api("/api/story/" + encodeURIComponent(GAME))).story; } catch (e) { return 0; }
-  const segs = {}, clips = {}; let n = 0;
-  const each = (st, f) => { for (const [sid, sc] of Object.entries(st.scenes || {})) for (const [k, ver] of [["", sc], ...Object.entries(sc.variants || {})]) for (const c of ver.clips || []) f(`${sid}/${k}/${c.id}`, c); };
-  each(disk, (key, c) => { const b = c.body || {}; if (b.file) clips[key] = b.file; for (const g of b.segments || []) if (g.name && g.file) segs[g.name] = g.file; });
-  for (const [k, m] of Object.entries(disk.motions || {})) if (m.name && m.file) segs[m.name] = m.file;
-  each(S, (key, c) => { const b = c.body; if (!b) return; if (!b.file && clips[key]) { b.file = clips[key]; n++; } for (const g of b.segments || []) if (!g.file && segs[g.name]) { g.file = segs[g.name]; n++; } });
-  for (const m of Object.values(S.motions || {})) if (m.name && !m.file && segs[m.name]) { m.file = segs[m.name]; n++; }
-  if (n) { await loadMade(); await loadFiles(); }
-  return n;
+// story.json changed on disk (Claude, the scene builder, a Kimodo import): its changes come in. With no edits here it's
+// simply the new version; with edits, the two merge (merge.js) and only what both changed differently is asked about.
+// Not during a playthrough (right after it), nor while a field is being typed in (a moment later).
+let SYNCING = false, SYNC_AFTER_WATCH = null;
+async function syncFromDisk(why) {
+  if (!GAME || !S || SYNCING) return false;
+  if (RUN) { SYNC_AFTER_WATCH = why || "disk"; return false; }
+  const ae = document.activeElement;
+  if (why !== "save" && ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && !ae.closest(".mdl")) { setTimeout(() => syncFromDisk(why), 2500); return false; }
+  SYNCING = true;
+  try {
+    const d = await api("/api/story/" + encodeURIComponent(GAME));
+    if (Math.abs(d.mtime - MTIME) < 0.001) return false;
+    const who = why === "builder" ? "the scene builder" : why === "motions" ? "the Kimodo import" : "Claude (or another window)", base = BASE ? JSON.parse(BASE) : d.story;
+    const where = changedPaths(base, d.story).map(p => placeOf(d.story, indexPath(d.story, p)).text), uniq = [...new Set(where)];
+    const said = uniq.slice(0, 3).join("; ") + (uniq.length > 3 ? ` and ${uniq.length - 3} more` : "");
+    if (!DIRTY) {
+      S = d.story; BASE = JSON.stringify(S); MTIME = d.mtime; snapshot(); dirty(false);
+      if (!S.flow[SEL]) SEL = S.game.start;
+      renderAll(); scheduleReplan(); await loadMade(); await loadFiles();
+      toast(`${who} changed the story${said ? ": " + said : ""}`, { action: UNDO.length ? { label: "Undo", on: () => undoTo(UNDO, REDO, "undo") } : null });
+      return true;
+    }
+    const r = merge3(base, S, d.story); let value = r.value;
+    if (r.conflicts.length) value = await conflicts(r.conflicts, value, d.story, who);
+    S = value; BASE = JSON.stringify(d.story); MTIME = d.mtime; snapshot(); dirty(true);
+    if (!S.flow[SEL]) SEL = S.game.start;
+    renderAll(); scheduleReplan(); await loadMade(); await loadFiles();
+    toast(`Changes from ${who} are merged with yours${said ? ": " + said : ""}${r.conflicts.length ? ` (${r.conflicts.length} asked about)` : ""}. Save keeps both.`, { action: { label: "Undo", on: () => undoTo(UNDO, REDO, "undo") } });
+    return true;
+  } catch (e) { $("#banner").style.display = "block"; status("couldn't bring in the changes on disk: " + e.message); return false; }
+  finally { SYNCING = false; }
+}
+// where both sides changed the same thing differently: keep mine (the default) or take theirs, one by one
+async function conflicts(list, value, theirs, who) {
+  const short = v => v === undefined ? "(deleted)" : typeof v === "string" ? `“${v.length > 70 ? v.slice(0, 70) + "…" : v}”` : Array.isArray(v) ? `${v.length} item${v.length === 1 ? "" : "s"}` :
+    v && typeof v === "object" ? (v.en || v.title || v.label || v.text ? `“${String(v.en || v.title || v.label || v.text).slice(0, 60)}”` : JSON.stringify(v).slice(0, 70) + (JSON.stringify(v).length > 70 ? "…" : "")) : String(v);
+  const pick = list.map(() => "mine"), WORDS = { en: "the English", ja: "the Japanese", zh: "the Chinese", title: "the title", label: "the label", who: "who says it", text: "the text",
+    prompt: "the prompt", next: "where it goes next", to: "where it goes", xy: "its place on the board", do: "its commands", when: "when it happens", "(order)": "the order" };
+  const body = el("div", { class: "conf" }, el("p", { class: "hint" }, `You and ${who} both changed these. Yours stays unless you take theirs.`));
+  list.forEach((c, i) => {
+    const where = placeOf(value, indexPath(value, c.path)).text || c.path.filter(k => typeof k !== "object").join(" · "), key = c.path.filter(k => typeof k !== "object").slice(-1)[0];
+    const b1 = el("button", { class: "on", on: { click: () => { pick[i] = "mine"; b1.classList.add("on"); b2.classList.remove("on"); } } }, "Yours: ", short(c.mine));
+    const b2 = el("button", { on: { click: () => { pick[i] = "theirs"; b2.classList.add("on"); b1.classList.remove("on"); } } }, "Theirs: ", short(c.theirs));
+    body.append(el("div", { class: "conf-r" }, el("div", { class: "conf-w" }, where, key !== undefined ? el("span", { class: "kv" }, " · " + (WORDS[key] || key)) : null), el("div", { class: "conf-b" }, b1, b2)));
+  });
+  await modal({ title: `Both changed ${list.length} thing${list.length === 1 ? "" : "s"}`, body, ok: "Apply", cancel: null, wide: true });
+  list.forEach((c, i) => { if (pick[i] === "theirs") setAt(value, c.path, c.theirs === undefined ? undefined : JSON.parse(JSON.stringify(c.theirs))); });
+  return value;
 }
 // the scene builder (builder.html) says when it saved a level: reload it here unless there are edits to keep, and
 // not in the middle of a playthrough (then right after it)
-let RELOAD_AFTER_WATCH = false;
 function openBuilder(level, node) {
   window.open(`builder.html?game=${encodeURIComponent(GAME)}&level=${encodeURIComponent(level || "")}&node=${encodeURIComponent(node || "")}`, "scenebuilder");
 }
 try {
   new BroadcastChannel("horrorstudio-story").onmessage = async e => {
-    const m = e.data || {}, what = m.type === "motions" ? "the motions imported from Kimodo" : "the scene builder's " + m.level;
+    const m = e.data || {};
     if (!["saved", "motions"].includes(m.type) || m.game !== GAME) return;
-    if (DIRTY) { $("#banner").style.display = "block"; if (m.type === "motions") status("motions imported: Save keeps them with your edits"); return; }
-    if (RUN) { RELOAD_AFTER_WATCH = true; status(what + ": they load when this playthrough ends"); return; }
-    await load(); status(m.type === "motions" ? "the motions imported from Kimodo are on their clips" : `environment ${m.level} reloaded from the scene builder`);
+    syncFromDisk(m.type === "motions" ? "motions" : "builder");
   };
 } catch (e) { }
-async function poll() { if (!GAME) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) $("#banner").style.display = "block"; } catch (e) { } }
+async function poll() { if (!GAME || SYNCING) return; try { const j = await api("/api/mtime/" + encodeURIComponent(GAME)); if (j.mtime && Math.abs(j.mtime - MTIME) > 0.001) syncFromDisk(); } catch (e) { } }
 function dirty(d) { DIRTY = d; status(d ? "unsaved changes" : "saved"); $("#status").classList.toggle("dirty", d); }
 function status(t) { $("#status").textContent = (GAME ? GAME + " · " : "") + t; }
 function touch(world) { snapshot(); dirty(true); renderBoard(); if (world) scheduleReplan(); else showStage(); scheduleCheck(); problemsButton(); }
@@ -1504,7 +1541,7 @@ function renderBranches(hl) {
   window.__branchDone = true;
 }
 function stopWatch() { stopTakes(); if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
-  if (RELOAD_AFTER_WATCH && !DIRTY) { RELOAD_AFTER_WATCH = false; load().then(() => status("environment reloaded from the scene builder")); } }
+  if (SYNC_AFTER_WATCH) { const w = SYNC_AFTER_WATCH; SYNC_AFTER_WATCH = null; syncFromDisk(w); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 
 /* ---------- takes and notes ---------- */

@@ -1,5 +1,6 @@
 // DESK: the desk's own logic, without a browser. The live checks (lint.js) find nothing wrong in a game the story
-// check passes, and find each fault put in on purpose, at its place (the node, the beat, the line, the level).
+// check passes, and find each fault put in on purpose, at its place (the node, the beat, the line, the level). The
+// merge (merge.js) puts the desk's edits and Claude's together, asking only where both changed the same thing.
 //   node tools/director/desktest.mjs
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { execFileSync } from "child_process";
@@ -51,6 +52,41 @@ for (const g of games) {
     (p, c) => p.sev === "error" && p.at.clip === c.id && /no seam/.test(p.text));
   expect("a flag waited for that nothing sets", S => { S.stitches.t_search.beats.push({ id: "b_ghost", when: { flag: "ghost_flag" }, optional: true, do: [] }); },
     p => p.sev === "warn" && /ghost_flag/.test(p.text) && p.at.beat === "b_ghost");
+}
+
+// ---- the merge: the desk's edits and Claude's on disk, from the version both started from
+console.log("the merge (merge.js)");
+{
+  const { merge3, setAt, getAt, same } = await import("./merge.js");
+  const S0 = story("Sample"), sc = Object.keys(S0.scenes).find(k => (S0.scenes[k].clips || []).length > 1), st = "t_search";
+  const both = (what, fm, ft, test) => { const m = clone(S0), t = clone(S0); fm(m); ft(t); const r = merge3(S0, m, t); const why = test(r, m, t); why === true ? ok(what) : fail(`${what}: ${why}`); };
+  both("edits in different places both land, nothing asked", m => { m.scenes[sc].title = "Mine"; }, t => { t.stitches[st].beats[0].do.push({ think: "Theirs." }); },
+    r => r.conflicts.length ? `${r.conflicts.length} conflicts` : r.value.scenes[sc].title === "Mine" && r.value.stitches[st].beats[0].do.some(a => a.think === "Theirs.") || "an edit was lost");
+  both("the same edit on both sides is no conflict", m => { m.scenes[sc].clips[0].en = "Same."; }, t => { t.scenes[sc].clips[0].en = "Same."; }, r => !r.conflicts.length || "a conflict");
+  both("both change one line's words: a conflict, mine kept, theirs offered", m => { m.scenes[sc].clips[0].en = "Mine."; }, t => { t.scenes[sc].clips[0].en = "Theirs."; }, r => {
+    if (r.conflicts.length !== 1) return `${r.conflicts.length} conflicts`;
+    if (r.value.scenes[sc].clips[0].en !== "Mine.") return "mine wasn't kept";
+    const v = clone(r.value); setAt(v, r.conflicts[0].path, r.conflicts[0].theirs); return v.scenes[sc].clips[0].en === "Theirs." || "theirs didn't go in";
+  });
+  both("beats added on both sides: each kept where it was put", m => { m.stitches[st].beats.push({ id: "b_mine", when: { start: true }, do: [] }); },
+    t => { t.stitches[st].beats.splice(2, 0, { id: "b_theirs", when: { start: true }, do: [] }); }, r => {
+      const ids = r.value.stitches[st].beats.map(b => b.id), t0 = S0.stitches[st].beats.map(b => b.id);
+      return !r.conflicts.length && ids[2] === "b_theirs" && ids[ids.length - 1] === "b_mine" && ids.length === t0.length + 2 || `beats ${ids.join(",")}`;
+    });
+  both("beats reordered there, a beat edited here: their order, my edit", m => { m.stitches[st].beats[1].optional = true; }, t => { t.stitches[st].beats.reverse(); }, r => {
+    const ids = r.value.stitches[st].beats.map(b => b.id), want = [...S0.stitches[st].beats].reverse().map(b => b.id), b1 = S0.stitches[st].beats[1].id;
+    return !r.conflicts.length && same(ids, want) && r.value.stitches[st].beats.find(b => b.id === b1).optional === true || `order ${ids.join(",")}`;
+  });
+  both("a beat deleted here and left alone there stays deleted", m => { m.stitches[st].beats.splice(1, 1); }, () => {}, r => !r.conflicts.length && r.value.stitches[st].beats.length === S0.stitches[st].beats.length - 1 || "it came back");
+  both("a beat deleted here but edited there: a conflict", m => { m.stitches[st].beats.splice(1, 1); }, t => { t.stitches[st].beats[1].optional = true; }, r => r.conflicts.length === 1 || `${r.conflicts.length} conflicts`);
+  // a real afternoon: cards moved and a line written here, a scene and a motion's prompt from Claude there
+  const m = clone(S0), t = clone(S0);
+  Object.values(m.flow).forEach((n, i) => { n.xy = [i * 214, 24]; }); m.scenes[sc].clips[0].en = "Edited at the desk.";
+  t.scenes.s_new = clone(S0.scenes[sc]); t.scenes.s_new.title = "Claude's new scene"; const mid = Object.keys(t.motions)[0]; t.motions[mid].prompt = "A person stands still, breathing slowly, then looks up";
+  const r = merge3(S0, m, t), v = r.value;
+  !r.conflicts.length && v.scenes.s_new && v.motions[mid].prompt.endsWith("looks up") && v.scenes[sc].clips[0].en === "Edited at the desk." && Object.values(v.flow).every(n => Array.isArray(n.xy))
+    ? ok("an afternoon's edits on both sides merge into one story") : fail(`the afternoon: ${r.conflicts.length} conflicts`);
+  getAt(v, ["stitches", st, "beats", { id: S0.stitches[st].beats[0].id }]) ? ok("a path by id finds its beat") : fail("getAt by id");
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
