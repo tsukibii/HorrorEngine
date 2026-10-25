@@ -10,6 +10,8 @@ meshes, for round soft volumes (slower in the browser). `MHR_head.obj` is the he
 Character Studio and face_mesh.py
 (`tools/character/pack_mhr.py`, run in Blender's module; read with `tools/character/mhr.py`); `MHR_presets.json` holds the
 editor's bases (average, feminine, masculine: fitted to proportions by `python tools/character/mhr.py presets`).
+`MHR_lod1_rig.bin` is `MHR_lod1.fbx`'s skeleton (127 bones) and each of `MHR_lod1.bin`'s points' four bones and weights:
+the Character Studio shows its body in a T-pose with it (`node tools/character/rig_mhr.mjs` makes it; `pose.js` reads it).
 
 You can also drop other rigged human models here (`.glb`, `.gltf` with its files, or `.fbx`): the desk drives them with the blocking,
 from the player's eye, instead of the capsule figure. Bones are found by name: Unreal mannequin (`pelvis`,

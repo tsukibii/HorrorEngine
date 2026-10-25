@@ -1,5 +1,6 @@
 // The Character Studio (tools/character/index.html) in a headless browser: MHR loads with its 45 sliders; a scratch character;
-// the feminine base and a shape slider move the body, the height scales it; a front picture (the page's own head from
+// the feminine base and a shape slider move the body, the height scales it; the sculpt's controls (Belly -1 a flat
+// stomach); the view's T-pose (the arms level, the head untouched) over a body written in MHR's own pose; a front picture (the page's own head from
 // the front, so no one's photo is needed) bends the face and nothing under the neck; a side picture (the head at 3/4)
 // is taken for the depth; the expressions: a preset moves only the face, the ARKit map routes a blink onto
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
@@ -109,6 +110,8 @@ const png = rgb => {
       b.st.sculpt = { forehead_height: 1 }; b.compose(); const p1 = P();
       let hi = 1; for (let i = 1; i < p0.length; i += 3) if (p0[i] > p0[hi]) hi = i;
       let below = 0; for (let i = 0; i < p0.length; i += 3) if (p0[i + 1] < 0.75 * b.st.height && Math.hypot(p1[i] - p0[i], p1[i + 1] - p0[i + 1], p1[i + 2] - p0[i + 2]) > 1e-7) below++;
+      b.st.sculpt = { belly: -1 }; b.compose(); const p2 = P(), H = b.st.height;   // the belly taken back: the stomach's front, nothing over the chest or under the hips
+      let flat = 0, elsewhere = 0; for (let i = 0; i < p0.length; i += 3) { const d = p0[i + 2] - p2[i + 2]; flat = Math.max(flat, d); if ((p0[i + 1] > 0.75 * H || p0[i + 1] < 0.5 * H) && Math.hypot(p2[i] - p0[i], p2[i + 1] - p0[i + 1], d) > 1e-7) elsewhere++; }
       b.st.sculpt = {}; b.compose();
       const key = (x, y, z) => { const ax = Math.round(Math.abs(x) * 1e5); return `${ax},${Math.round(y * 1e5)},${Math.round(z * 1e5)},${ax ? Math.sign(x) : 0}`; };   // the points with an exact mirror image (the head's all; 96% of the body's)
       const B = b.BASEP, M = new Map();
@@ -120,9 +123,10 @@ const png = rgb => {
           const k = at.get(m), o = k === undefined ? [0, 0, 0] : [c.d[k * 3], c.d[k * 3 + 1], c.d[k * 3 + 2]];
           worst = Math.max(worst, Math.abs(c.d[q * 3] + o[0]), Math.abs(c.d[q * 3 + 1] - o[1]), Math.abs(c.d[q * 3 + 2] - o[2])); }
       }
-      return { controls: S.controls.length, handles: b.HANDLES.list.length, topUp: p1[hi] - p0[hi], below, worst, unmatched, moved: S.controls.reduce((a, c) => a + c.idx.length, 0) };
+      return { controls: S.controls.length, handles: b.HANDLES.list.length, topUp: p1[hi] - p0[hi], below, worst, unmatched, moved: S.controls.reduce((a, c) => a + c.idx.length, 0), flat, elsewhere, scale: b.scale };
     });
     if (!(r.controls >= 20) || !(r.handles >= 30) || !(r.topUp > 0.01) || r.below || r.worst > 1e-6 || r.unmatched > 0.05 * r.moved) throw new Error("the sculpt: " + JSON.stringify(r));
+    if (!(r.flat > 0.015 * r.scale) || r.elsewhere) throw new Error(`Belly -1: the stomach back ${(r.flat * 1000).toFixed(1)} mm, ${r.elsewhere} points moved over the chest or under the hips`);
     await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]'); await page.waitForTimeout(600);
     const h = await page.evaluate(() => { const H = window.__body.HANDLES.list.find(x => x.h.id === "forehead"), q = H.e.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2, getComputedStyle(H.e).display]; });
     await page.mouse.move(h[0], h[1]); await page.mouse.down(); await page.mouse.move(h[0], h[1] - 60, { steps: 4 });
@@ -133,7 +137,22 @@ const png = rgb => {
     const saved = await page.evaluate(async n => (await (await fetch(`api/people/${n}`)).json()).sculpt, NAME);
     await page.click("#resetSculpt"); await page.click('#views button[data-v="body"]');
     if (h[2] === "none" || held.join() !== "Forehead height" || !(after.v > 0.4 && after.v < 0.6) || after.active || !(saved && Math.abs(saved.forehead_height - after.v) < 1e-9)) throw new Error("the forehead's circle: " + JSON.stringify({ h, held, after, saved }));
+    console.log(`       Belly -1 takes the stomach back ${(r.flat * 1000).toFixed(0)} mm (a flat line from the pubic bone to the ribs)`);
     console.log(`       ${r.controls} controls, ${r.handles} circles; Forehead height 1 raises the head's top ${(r.topUp * 1000).toFixed(0)} mm and nothing under the chest; every control mirrored (within ${r.worst.toExponential(0)} m where the base is: all but ${r.unmatched} of ${r.moved} points); the forehead's circle dragged 60 px up: Forehead height ${after.v} (its row green while held), saved`);
+  });
+  await step("the view's pose: a T-pose to shape in (the arms level from the shoulders, the legs straight, the head untouched to the last bit); the A-pose is MHR's own, and what's written stays in it", async () => {
+    const r = await page.evaluate(async () => {
+      const b = window.__body, R = b.RIG, X = b.POSED, J = n => { const i = R.byName.get(n); return [X.J2[i * 3], X.J2[i * 3 + 1], X.J2[i * 3 + 2]]; };
+      let head = 0; for (let i = 0; i < b.N; i++) if (b.POS[i * 3 + 1] > 0.88 * b.st.height) for (let a = 0; a < 3; a++) head = Math.max(head, Math.abs(b.SHOW[i * 3 + a] - b.POS[i * 3 + a]));
+      const drawn = () => { const D = b.rig.children.find(o => o.isMesh && o.geometry.attributes.objPos).geometry.attributes.position.array; let d = 0;
+        for (let c = 0; c < b.TRIS.length; c += 7) for (let a = 0; a < 3; a++) d = Math.max(d, Math.abs(D[c * 3 + a] - b.POS[b.TRIS[c] * 3 + a])); return d; };
+      const out = { pose: b.pose, arms: Math.abs(J("l_wrist")[1] - J("l_uparm")[1]) + Math.abs(J("r_wrist")[1] - J("r_uparm")[1]), legs: Math.abs(J("l_foot")[0] - J("l_upleg")[0]) + Math.abs(J("r_foot")[0] - J("r_upleg")[0]), head, drawn: drawn() };
+      out.written = await b.inRest(() => drawn()); out.after = b.pose;   // an export's body: MHR's own pose
+      b.setPose("rest"); out.rest = drawn(); out.restPosed = !!b.POSED; b.setPose("t");
+      return out;
+    });
+    if (r.pose !== "t" || !(r.arms < 0.01) || !(r.legs < 0.01) || r.head !== 0 || !(r.drawn > 0.2) || r.written !== 0 || r.after !== "t" || r.rest !== 0 || r.restPosed) throw new Error("the pose: " + JSON.stringify(r));
+    console.log(`       the arms level (${(r.arms * 1000).toFixed(1)} mm off), the legs straight (${(r.legs * 1000).toFixed(1)} mm), the head exactly where it was; drawn up to ${(r.drawn * 100).toFixed(0)} cm from MHR's pose, written in it`);
   });
   await step("a front picture bends the face, not the body", async () => {
     front = await headShot("0"); side = await headShot("35");
@@ -614,7 +633,8 @@ const png = rgb => {
     await page.click('#nailRows button:has-text("Look at the nails")'); await page.waitForTimeout(500);
     const boxes = await page.evaluate(() => {                         // the left middle finger's nail and the skin behind it, on the screen
       const b = window.__body, f = b.nails.fingers.find(x => x.hand === "left" && x.finger === "middle"), V = b.THREE.Vector3, c = b.renderer.domElement.getBoundingClientRect();
-      const at = k => { const tip = new V(b.POS[f.vertex * 3], b.POS[f.vertex * 3 + 1], b.POS[f.vertex * 3 + 2]), q = tip.addScaledVector(new V(...f.axis), -k * f.length).addScaledVector(new V(...f.back), 0.004).applyMatrix4(b.rig.matrixWorld).project(b.camera);
+      const turn = d => new V(...b.PO.turn(b.RIG, b.POSED, f.vertex, d));   // where the hand is shown (the view's pose)
+      const at = k => { const tip = new V(b.SHOW[f.vertex * 3], b.SHOW[f.vertex * 3 + 1], b.SHOW[f.vertex * 3 + 2]), q = tip.addScaledVector(turn(f.axis), -k * f.length).addScaledVector(turn(f.back), 0.004).applyMatrix4(b.rig.matrixWorld).project(b.camera);
         return { x: Math.round((q.x + 1) / 2 * c.width - 4), y: Math.round((1 - q.y) / 2 * c.height - 4), w: 8, h: 8 }; };
       return { nail: at(0.55), skin: at(1.9), canvas: { x: c.x, y: c.y, width: c.width, height: c.height } };
     });
@@ -625,7 +645,8 @@ const png = rgb => {
         const g = c.getContext("2d"); g.drawImage(i, 0, 0); const mean = m => { const d = g.getImageData(m.x, m.y, m.w, m.h).data, o = [0, 0, 0]; for (let k = 0; k < d.length; k += 4) for (let j = 0; j < 3; j++) o[j] += d[k + j] / (d.length / 4); return o; };
         return { nail: mean(B.nail), skin: mean(B.skin) }; }, [png, boxes]);
     };
-    const set = o => page.evaluate(o => { const b = window.__body; Object.assign(b.st.nails, o); b.nailSet.all(); b.nailLook(); }, o);
+    // as the Nails checkbox does it (skinLook: the skin's coat too; nailLook alone left a coat on the whole skin from before, a highlight the view from above caught)
+    const set = o => page.evaluate(o => { const b = window.__body; Object.assign(b.st.nails, o); b.nailSet.all(); b.skinLook(); }, o);
     await set({ on: false }); const off = await colour();
     await set({ on: true, paint: false }); const bare = await colour();
     await page.selectOption("#nailRows select", "classic red"); const red = await colour();

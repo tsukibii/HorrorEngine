@@ -50,6 +50,20 @@ export function buildSculpt({ P, T, lm }) {
   const LEG = slices(1, 0.02, 0.92, 0.01, p => p[0] > 0.005, p => [p[0], p[2]]);                         // (x, z) by y
   const NECK = slices(1, 1.44, 1.60, 0.01, p => Math.abs(p[0]) < 0.07, p => [0, p[2]]);                  // (-, z) by y
   const head = p => p[1] > 1.5;
+  // the belly: MHR's average stomach stands 3 cm proud of a straight line from the pubic bone to the lower ribs (and
+  // 2 cm in front of the chest), more than its identity shapes can take back (the flattest takes 1 cm). Measured on
+  // the base, down the middle: how far the front stands out of that line (bowed out 4 mm in its middle: a flat stomach
+  // isn't a board) at each height. Taken back as a smooth field, whole across the middle 12 cm and easing out to the
+  // flanks (only what's in front of the line, cut off at its edge, left the flanks standing round a sunken middle)
+  const BY0 = 0.90, BY1 = 1.22, front = (y, x0, x1) => { let z = -Infinity; for (let i = 0; i < N; i++) { const ax = Math.abs(P[i * 3]); if (P[i * 3 + 2] > 0 && Math.abs(P[i * 3 + 1] - y) < 0.008 && ax >= x0 && ax <= x1) z = Math.max(z, P[i * 3 + 2]); } return z; };
+  const z0 = front(BY0, 0, 0.015), z1 = front(BY1, 0, 0.015), E = [], STEP = 0.04;
+  for (let y = BY0; y <= BY1 + 1e-9; y += STEP) { const t = (y - BY0) / (BY1 - BY0); E.push(t <= 0 || t >= 1 ? 0 : Math.max(0, front(y, 0, 0.015) - (z0 + (z1 - z0) * t + 0.004 * Math.sin(Math.PI * t)))); }
+  const excess = y => {                                                   // between the samples a Catmull-Rom curve: no kinks for the light to catch
+    const f = (y - BY0) / STEP, i = Math.floor(f), t = f - i, at = k => E[Math.max(0, Math.min(E.length - 1, k))];
+    if (f <= 0 || f >= E.length - 1) return 0;
+    const a = at(i - 1), b = at(i), c = at(i + 1), d = at(i + 2);
+    return Math.max(0, b + 0.5 * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a))));
+  };
 
   // each control: f(p, nrm) for a point on the left (x >= 0), its offset at 1; mirrored for the right
   const C = [
@@ -97,6 +111,10 @@ export function buildSculpt({ P, T, lm }) {
       p => { const w = bump(Math.abs(p[1] - 1.28), 0.09) * bump(p[0], 0.17) * sm(0.02, 0.09, p[2]) * (1 - armW(p[0], p[1])); return w ? [0, 0, 0.012 * w] : null; }],
     ["waist", "Waist", "Body", "A wider or a slimmer waist.",
       p => { const w = bump(Math.abs(p[1] - 1.12), 0.1) * (1 - sm(0.205, 0.235, p[0])); return w ? [0.12 * p[0] * w, 0, 0.08 * (p[2] - 0.03) * w] : null; }],
+    ["belly", "Belly", "Body", "A flat stomach (all the way: back to a straight line from the pubic bone to the ribs) or a rounder belly.",
+      (p, m) => { if (p[1] < BY0 || p[1] > BY1 || p[2] < 0) return null;
+        const w = excess(p[1]) * sm(0.155, 0.06, p[0]) * sm(-0.1, 0.4, m[2]);   // whole across the middle, easing out by the flanks, and where the skin faces forward
+        return w > 1e-6 ? [0, 0, w] : null; }],
     ["hips", "Hips", "Body", "Wider or narrower hips.",
       p => { const w = bump(Math.abs(p[1] - 0.95), 0.1) * sm(0.3, 0.25, p[0]); return w ? [0.12 * p[0] * w, 0, 0.06 * p[2] * w] : null; }],
     ["upper_arms", "Upper arms", "Body", "Thicker or thinner upper arms.",
@@ -144,6 +162,7 @@ export function buildSculpt({ P, T, lm }) {
     ["shoulder", "Shoulder", ["shoulders"], extreme(p => p[0] > 0.17 && p[0] < 0.22 && p[1] < 1.5, p => p[1]), true],
     ["chest", "Chest", ["chest"], extreme(p => Math.abs(p[0] - 0.08) < 0.01 && Math.abs(p[1] - 1.28) < 0.01, p => p[2]), true],
     ["waist", "Waist", ["waist"], extreme(p => Math.abs(p[1] - 1.12) < 0.006 && p[0] < 0.2, p => p[0]), true],
+    ["belly", "Belly", ["belly"], extreme(p => Math.abs(p[0]) < 0.008 && p[1] > 1.0 && p[1] < 1.12, p => p[2]), false],
     ["hips", "Hips", ["hips"], extreme(p => Math.abs(p[1] - 0.95) < 0.006 && p[0] < 0.25, p => p[0]), true],
     ["upper_arm", "Upper arm", ["upper_arms"], extreme(p => Math.abs(p[0] - 0.31) < 0.006 && p[1] > 1.0, p => p[1]), true],
     ["forearm", "Forearm", ["forearms"], extreme(p => Math.abs(p[0] - 0.47) < 0.006 && p[1] > 1.0, p => p[1]), true],

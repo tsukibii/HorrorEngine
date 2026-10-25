@@ -69,7 +69,7 @@
 <main>
   <div id="view">
     <div id="viewHelp">drag or middle-drag: turn · Shift+drag: pan · wheel: zoom · double-click: centre</div>
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -175,6 +175,8 @@ import * as LOOKS from "./looks.js";
 import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
+import * as WEIGHTS from "./tailor/weights.js";
+import * as PO from "./pose.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
 const $ = s => document.querySelector(s);
@@ -203,6 +205,10 @@ const SHAPES = f16(H.shapes_at, H.shapes * N * 3);
 const ENAMES = H.expr_names || [], EN = H.expr_points || 0;
 const EIDX = EN ? new Uint32Array(buf, H.expr_idx_at, EN) : new Uint32Array(0);
 const EXPR = EN ? f16(H.expr_at, ENAMES.length * EN * 3) : new Float32Array(0);
+// MHR's skeleton and skinning on these points (rig_mhr.mjs): the pose the body is shown in (pose.js). The character is
+// shaped, fitted, dressed, saved and exported in MHR's own pose; the T-pose is only how it's shown (and the default)
+const RIG = await fetch("bodies/MHR_lod1_rig.bin").then(r => r.ok ? r.arrayBuffer() : null).then(b => b && PO.readRig(b)).catch(() => null);
+let POSE = (() => { try { return localStorage.getItem("studio.pose") || "t"; } catch { return "t"; } })();
 const INFO = await api("api/face/mhr", {}).catch(e => { status(e.message, "bad"); return null; }) ||
   { groups: H.groups, labels: new Array(H.shapes).fill(""), presets: {} };
 const PRESETS = INFO.presets;
@@ -448,8 +454,31 @@ function dress() {                                     // the worker makes every
   FITTED = key;
   if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); return; }
   status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
-  const P = neutralBody();
+  const P = neutralBody(); CUT_ON.set(id, P.slice());
   TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS }, [P.buffer]);
+}
+// the clothes in the body's pose: each garment's own rest kept, its points skinned by the weights of the skin round
+// them on the body they were cut on (tailor/weights.js, the rig's bones), turned as the body is
+const CUT_ON = new Map();                              // a job's body, until its clothes come back
+let CUT_SKIN = null;                                   // the skin the worn clothes were cut on (tailor/weights.js skinOf)
+function poseGarments() {
+  const key = POSED ? Array.from(POSED.J2, v => v.toFixed(5)).join() : "rest";   // the bones as they are: an expression's change leaves the clothes be
+  if (GARMENTS.userData.posedFor === key) return;
+  GARMENTS.userData.posedFor = key;
+  for (const m of GARMENTS.children) {
+    const g = m.geometry, r = m.userData.rest || (m.userData.rest = { P: g.attributes.position.array.slice(), N: g.attributes.normal.array.slice() });
+    if (POSED && CUT_SKIN && !m.userData.skin) m.userData.skin = WEIGHTS.transfer(CUT_SKIN, r.P);
+    const k = POSED && m.userData.skin;
+    if (k) { PO.skinWith(POSED, k.index, k.weight, r.P, g.attributes.position.array); PO.turnWith(POSED, k.index, k.weight, r.N, g.attributes.normal.array); }
+    else { g.attributes.position.array.set(r.P); g.attributes.normal.array.set(r.N); }
+    g.attributes.position.needsUpdate = g.attributes.normal.needsUpdate = true; g.computeBoundingSphere();
+  }
+  for (const m of GH.children) {                        // the garments' handles, and the way each pulls
+    const h = m.userData.h, k = POSED && CUT_SKIN ? (m.userData.skin ||= WEIGHTS.transfer(CUT_SKIN, Float32Array.from(h.at))) : null;
+    if (!k) { m.position.set(...h.at); m.userData.axis = h.axis; continue; }
+    m.position.fromArray(PO.skinWith(POSED, k.index, k.weight, Float32Array.from(h.at)));
+    m.userData.axis = Array.from(PO.turnWith(POSED, k.index, k.weight, Float32Array.from(h.axis)));
+  }
 }
 TAILOR_W.onmessage = e => {
   const { id, garments, error } = e.data;
@@ -459,8 +488,10 @@ TAILOR_W.onmessage = e => {
   GARMENTS.clear();
   for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name, g.look));   // tailor/look.js: the fabric, the pattern, the print, the edges' shade
   if (!GARMENTS.parent) rig.add(GARMENTS);
+  const on = CUT_ON.get(id); for (const k of [...CUT_ON.keys()]) if (k <= id) CUT_ON.delete(k);
+  CUT_SKIN = on && RIG ? WEIGHTS.skinOf(on, RIG.BI, RIG.BW) : null; GARMENTS.userData.posedFor = null;   // new clothes: posed afresh
   SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
-  drawGarmentHandles();
+  drawGarmentHandles(); poseGarments();
   if (!$("#worn").contains(document.activeElement) || document.activeElement.type !== "range") drawWorn();   // the handles' sliders (not under a held slider)
   const ms = garments.reduce((a, g) => a + g.stats.ms, 0);
   status(garments.map(g => `${g.name} ${Math.round(g.stats.triangles / 1000)}k triangles`).join(", ") + ` (${(ms / 1000).toFixed(1)} s)`, "ok");
@@ -593,8 +624,9 @@ function dragGarment(e) {                              // along the handle's own
   pointerRay(e);
   const p = ray.ray.intersectPlane(GDRAG.plane, new THREE.Vector3()); if (!p) return;
   const inv = rig.matrixWorld.clone().invert(), q = p.applyMatrix4(inv), s0 = GDRAG.at.clone().applyMatrix4(inv), h = GDRAG.m.userData.h;
-  GDRAG.d = [0, 1, 2].reduce((t, k) => t + (q.getComponent(k) - s0.getComponent(k)) * h.axis[k], 0);
-  GDRAG.m.position.copy(GDRAG.local).addScaledVector(new THREE.Vector3(...h.axis), GDRAG.d);
+  const ax = GDRAG.m.userData.axis || h.axis;          // its way as it's shown (a sleeve's turns with the arm)
+  GDRAG.d = [0, 1, 2].reduce((t, k) => t + (q.getComponent(k) - s0.getComponent(k)) * ax[k], 0);
+  GDRAG.m.position.copy(GDRAG.local).addScaledVector(new THREE.Vector3(...ax), GDRAG.d);
   const v = h.value + GDRAG.d / h.rate;
   status(`${DESIGNS[GDRAG.m.userData.design]?.label || GDRAG.m.userData.design}: ${h.label.toLowerCase()} ${h.kind === "height" ? `${h.anchor}${v >= 0 ? "+" : "-"}${Math.abs(v).toFixed(3)}` : v.toFixed(3)}`);
 }
@@ -645,7 +677,7 @@ outfitBtn.onclick = () => {
 };
 clothesExp.onclick = async () => {
   if (!WHO || !GARMENTS.children.length) return status("make a character and dress it first", "bad");
-  const text = LOOK.objText(GARMENTS.children, `${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame`);
+  const text = await inRest(() => LOOK.objText(GARMENTS.children, `${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame, MHR's own pose`));
   const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_clothes.obj`)}`, text);
   status(`wrote ${r.path}`, "ok");
 };
@@ -694,9 +726,13 @@ const material = new THREE.MeshPhysicalMaterial({ color: 0xc9b3a2, roughness: 0.
 const geo = new THREE.BufferGeometry();                // shared points: the smooth normals
 const POS = new Float32Array(N * 3), RAW = new Float32Array(N * 3);
 geo.setAttribute("position", new THREE.BufferAttribute(POS, 3)); geo.setIndex(new THREE.BufferAttribute(TRIS, 1));
+const SHOW = new Float32Array(N * 3), sgeo = new THREE.BufferGeometry();   // the body as it's shown: POS in the view's pose (pose.js), its normals
+sgeo.setAttribute("position", new THREE.BufferAttribute(SHOW, 3)); sgeo.setIndex(geo.index);
+let POSED = null;                                      // the pose's turns (pose.js); null in MHR's own
 const C = TRIS.length, dgeo = new THREE.BufferGeometry();  // what's drawn: one point per corner, MHR's UVs split at seams
 dgeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
 dgeo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+dgeo.setAttribute("objPos", new THREE.BufferAttribute(new Float32Array(C * 3), 3));   // the skin's own place (unposed): the procedural skin sits on it whatever the pose
 if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
 if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
 const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
@@ -781,19 +817,41 @@ function compose() {                                   // POS: RAW + the face, s
     if (fitted && SHUT[e]) shutFitted(SHUT[e], W[e] * SCALE);
   }
   geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); openings();   // the openings from the lids as they are now: a blink closes them
-  const NP = geo.attributes.normal.array, DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array;
+  const NP = showPose(), DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, DO = dgeo.attributes.objPos.array;
   for (let c = 0; c < C; c++) {
     const i = TRIS[c] * 3, j = c * 3;
-    DP[j] = POS[i]; DP[j + 1] = POS[i + 1]; DP[j + 2] = POS[i + 2];
+    DP[j] = SHOW[i]; DP[j + 1] = SHOW[i + 1]; DP[j + 2] = SHOW[i + 2];
     DN[j] = NP[i]; DN[j + 1] = NP[i + 1]; DN[j + 2] = NP[i + 2];
+    DO[j] = POS[i]; DO[j + 1] = POS[i + 1]; DO[j + 2] = POS[i + 2];
   }
-  dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.computeBoundingSphere();
+  dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.attributes.objPos.needsUpdate = true; dgeo.computeBoundingSphere();
   mouthCut(); moveJaw(); lipstick();
   if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
   WEAR?.update();                                       // the accessories on the face as it is now
   if (typeof refit === "function") refit();           // the clothes cut again once the body holds still
+  poseGarments();                                       // and shown in the body's pose meanwhile
+}
+// SHOW: the body in the view's pose (pose.js: MHR's skinning, its joints refitted to the body as it is); only the arms
+// and the legs turn, so the head and everything on it are POS's own to the last bit. Returns the normals to draw with
+function showPose() {
+  const name = SHOWN_POSE = posing();
+  POSED = RIG && name !== "rest" ? PO.pose(RIG, PO.joints(RIG, POS, BASEP, SCALE), name) : null;
+  if (!POSED) { SHOW.set(POS); return geo.attributes.normal.array; }
+  PO.skin(RIG, POSED, POS, SHOW); sgeo.attributes.position.needsUpdate = true; sgeo.computeVertexNormals();
+  return sgeo.attributes.normal.array;
+}
+const shownNormals = () => (POSED ? sgeo : geo).attributes.normal.array;
+// the player's eye (POV) sees the body as it stands in a game, MHR's own (the arms down), whatever the view's pose
+let SHOWN_POSE = null;
+const posing = () => (orbit.focus === "pov" ? "rest" : POSE);
+function repose() { if (SHOWN_POSE !== null && posing() !== SHOWN_POSE) compose(); }
+// what's written (an export, the clothes' OBJ) is in MHR's own pose, whatever the view shows
+async function inRest(fn) {
+  const was = POSE; if (was === "rest") return fn();
+  POSE = "rest"; compose();
+  try { return await fn(); } finally { POSE = was; compose(); }
 }
 
 // ---- eyes: MHR's closed shell cut out (in the skin's shader) inside MediaPipe's lid outline, an eyeball behind each opening
@@ -1349,7 +1407,7 @@ let orbit = { yaw: 0.3, pitch: 0.08, focus: "body", zoom: 1, pan: new THREE.Vect
 const SPLIT = { on: false, at: 0.5, orbits: [orbit, null], active: 0 };
 const splitting = () => SPLIT.on && orbit.focus !== "pov";
 function panes(w, h) { const x = Math.round(w * SPLIT.at); return [{ x: 0, y: 0, w: x, h }, { x, y: 0, w: w - x, h }]; }
-function usePane(i) { SPLIT.active = i; orbit = SPLIT.orbits[i]; markPane(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus)); }
+function usePane(i) { SPLIT.active = i; orbit = SPLIT.orbits[i]; repose(); markPane(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus)); }
 function paneAt(e) {                                   // the pane under the pointer becomes the one everything moves
   if (!splitting()) return; const r = renderer.domElement.getBoundingClientRect(), i = e.clientX - r.left < r.width * SPLIT.at ? 0 : 1;
   if (i !== SPLIT.active) usePane(i); place(); const R = viewRect(r.width, r.height); camera.aspect = R.w / R.h; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
@@ -1410,7 +1468,7 @@ renderer.domElement.onpointermove = e => {
   if (LSTROKE) return LAY.move(e); if (STROKE) return touchAt(e); if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
 renderer.domElement.onpointerup = () => { drag = null; PAN = null; if (GDRAG) dropGarment(); if (LSTROKE) { LSTROKE = false; LAY.up(); } if (STROKE) { STROKE = false; TOUCH.end(); touchState(); } };
 for (const b of document.querySelectorAll("#views button")) b.onclick = () => {
-  if (b.dataset.v) { orbit.focus = b.dataset.v; orbit.zoom = 1; orbit.pan.set(0, 0, 0); } else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }   // Body, Head, POV: the zoom and pan reset
+  if (b.dataset.v) { orbit.focus = b.dataset.v; orbit.zoom = 1; orbit.pan.set(0, 0, 0); repose(); } else { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; }   // Body, Head, POV: the zoom and pan reset
   document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === orbit.focus));
 };
 $("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
@@ -1449,7 +1507,7 @@ $("#resetSculpt").onclick = () => { st.sculpt = {}; sculptAll(); compose(); };
 const HANDLES = { box: el("div", { id: "handles" }), list: [], drag: null };
 view.append(HANDLES.box);
 const screenOf = (p, r, V) => { const s = p.clone().project(camera); return [V.x + (s.x + 1) / 2 * V.w, r.height - V.y - (s.y + 1) / 2 * V.h, s.z]; };   // in the canvas, from its top left
-const worldAt = v => new THREE.Vector3(POS[v * 3], POS[v * 3 + 1], POS[v * 3 + 2]).applyMatrix4(rig.matrixWorld);
+const worldAt = v => new THREE.Vector3(SHOW[v * 3], SHOW[v * 3 + 1], SHOW[v * 3 + 2]).applyMatrix4(rig.matrixWorld);   // as it's shown
 if (SCULPT) for (const h of SCULPT.handles) for (const v of h.at) if (v >= 0) {
   const e = el("div", { className: "h", title: h.label }); HANDLES.box.append(e); HANDLES.list.push({ e, h, v, group: SCULPT.controls.find(c => c.id === h.controls[0]).group });
   e.onpointerdown = ev => grab(ev, h, v);
@@ -1459,7 +1517,7 @@ if (SCULPT) for (const h of SCULPT.handles) for (const v of h.at) if (v >= 0) {
 function placeHandles() {                              // where each circle is now; those turned away hidden
   const on = !!SCULPT && TAB === "body" && $("#handlesOn").checked && orbit.focus !== "pov" && !!geo.attributes.normal;   // (the normals come with the first compose)
   HANDLES.box.hidden = !on; if (!on) return;
-  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), NP = geo.attributes.normal.array, nm = new THREE.Matrix3().getNormalMatrix(rig.matrixWorld);
+  const r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height), NP = shownNormals(), nm = new THREE.Matrix3().getNormalMatrix(rig.matrixWorld);
   const face = orbit.focus === "head";                 // the Head view: the face's circles (and the neck's); Body: the body's
   for (const H of HANDLES.list) {
     const p = worldAt(H.v), n = new THREE.Vector3(NP[H.v * 3], NP[H.v * 3 + 1], NP[H.v * 3 + 2]).applyMatrix3(nm).normalize(), [x, y, z] = screenOf(p, r, V);
@@ -1474,7 +1532,7 @@ function grab(ev, h, v) {
   const p0 = worldAt(v), s0 = screenOf(p0, r, V), f = V.h / 2 / Math.tan(camera.fov * Math.PI / 360), depth = p0.distanceTo(camera.position);
   // each control's motion of this point on the screen, as a share of its full length (it can move towards you)
   const D = cs.map(c => { const g = SC.offsetAt(c, v).map(x => x * SCALE), L = Math.hypot(...g) * f / depth; if (!(L > 1e-6)) return null;
-    const s1 = screenOf(new THREE.Vector3(POS[v * 3] + g[0], POS[v * 3 + 1] + g[1], POS[v * 3 + 2] + g[2]).applyMatrix4(rig.matrixWorld), r, V), J = [(s1[0] - s0[0]) / L, (s1[1] - s0[1]) / L];
+    const s1 = screenOf(new THREE.Vector3(...PO.at(RIG, POSED, v, [POS[v * 3] + g[0], POS[v * 3 + 1] + g[1], POS[v * 3 + 2] + g[2]])).applyMatrix4(rig.matrixWorld), r, V), J = [(s1[0] - s0[0]) / L, (s1[1] - s0[1]) / L];   // the pull as it's shown
     return Math.hypot(...J) > 0.25 ? J : null; });
   if (D.every(x => !x)) D[0] = [0, -1];                // nothing it moves crosses the screen from here: up is more
   HANDLES.drag = { cs, D, x: ev.clientX, y: ev.clientY, start: cs.map(c => st.sculpt[c.id] || 0), h };
@@ -1539,6 +1597,7 @@ renderer.setAnimationLoop(() => {
     });
     renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y);
     orbit = SPLIT.orbits[keep]; place(); camera.aspect = R.w / R.h; camera.updateProjectionMatrix(); camera.updateMatrixWorld();   // back on the pane in use (for picking)
+    repose();                                          // a POV pane the split made a head view: the view's pose again
   } else if (orbit.focus === "pov") {                  // the game's 16:9 screen inside the canvas, black bars round it
     renderer.setScissorTest(false); renderer.setViewport(0, 0, sz.x, sz.y); renderer.setClearColor(0x000000, 1); renderer.clear();
     renderer.setScissorTest(true); renderer.setScissor(R.x, R.y, R.w, R.h); renderer.setViewport(R.x, R.y, R.w, R.h);
@@ -1635,7 +1694,7 @@ STUDIO.mountUI($("#studioRows"));                      // the studio view: a che
   $("#views").append(sb); sb.onclick = () => STUDIO.toggle(); STUDIO.onChange(v => sb.classList.toggle("on", v));
 }
 // ---- the paint layers: select vertices, fill into layers above the base (layers.js, layersui.js) --------------------------
-LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, dgeo, viewRect, POS, TRIS, geo, SKU, material, skinLook,
+LAY = mountLayers({ el, $, status, api, who: () => WHO, renderer, camera, mesh, dgeo, viewRect, POS, shown: () => SHOW, TRIS, geo, SKU, material, skinLook,
                     lmk: i => lmk(i), lmkOk: () => !!LMK });
 
 // ---- the teeth's controls -------------------------------------------------------------------------------------------
@@ -1685,7 +1744,7 @@ function useLook(name) {
 }
 // ---- accessories (accessories.js): glasses, piercings, stickers, an eyepatch, a choker: plain settings in the file ----
 st.accessories = [];
-WEAR = new ACCS.Accessories({ rig, POS, TRIS, BASEP, normals: () => geo.attributes.normal.array, lmk, LMK, scale: () => SCALE, eyes: EYES, shelf: () => SHELF,
+WEAR = new ACCS.Accessories({ rig, POS: SHOW, TRIS, BASEP, normals: shownNormals, lmk, LMK, scale: () => SCALE, eyes: EYES, shelf: () => SHELF,   // on the body as it's shown
   settled: a => { if (a.id === ACCSEL) accSet.length?.(a.length); } });
 let ACCSEL = null, ACCPLACE = null;
 const ACC_FIELDS = {
@@ -1816,9 +1875,9 @@ function lookAtNails() {                               // the camera over the ba
   const f = NAILAT?.fingers.find(x => x.hand === "left" && x.finger === "middle"); if (!f) return status("this body's hands have no nails found", "bad");
   if (orbit.focus !== "head") $('#views button[data-v="head"]').click();
   const hand = NAILAT.fingers.filter(x => x.hand === "left").map(x => x.vertex), p = new THREE.Vector3();
-  for (const v of hand) p.add(new THREE.Vector3(POS[v * 3], POS[v * 3 + 1], POS[v * 3 + 2]).applyMatrix4(rig.matrixWorld));
+  for (const v of hand) p.add(new THREE.Vector3(SHOW[v * 3], SHOW[v * 3 + 1], SHOW[v * 3 + 2]).applyMatrix4(rig.matrixWorld));   // where it's shown
   p.multiplyScalar(1 / hand.length);
-  const b = new THREE.Vector3(...f.back).normalize();
+  const b = new THREE.Vector3(...PO.turn(RIG, POSED, f.vertex, f.back)).normalize();
   orbit.yaw = Math.atan2(b.x, b.z); orbit.pitch = Math.asin(Math.max(-0.95, Math.min(0.95, b.y))); orbit.zoom = 0.3;
   orbit.pan.set(p.x, p.y - (TOP - 0.12 * TOP / 1.7), p.z); place();
 }
@@ -2155,15 +2214,15 @@ async function exportPackage() {
   status("exporting for the desk and Unreal…");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));
-  const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice();
-  st.expr.fill(0); compose();                          // neutral
+  const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
+  st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
   root.add(exportSkin());
   const skip = new Set([mesh, GH, BAG, HOLES, TEAR.L, TEAR.R, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);
   for (const o of rig.children) if (!skip.has(o) && o.visible) root.add(o.clone(true));
   let glb;
   try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
-  finally { st.expr.set(was); compose(); }
+  finally { st.expr.set(was); POSE = pose; compose(); }
   const at = `api/package/${encodeURIComponent(WHO)}/`;
   await api(at + encodeURIComponent(`${WHO}.glb`), new Blob([glb]));
   await api(at + encodeURIComponent(`${WHO}.studio.json`), rec);
@@ -2197,10 +2256,12 @@ $("#impPack").onclick = () => $("#impFile").click();
 $("#impFile").onchange = () => { const f = $("#impFile").files[0]; $("#impFile").value = ""; if (f) importPackage(f).catch(e => status(e.message, "bad")); };
 $("#raking").onchange = place;
 $("#lightSel").onchange = () => setLight($("#lightSel").value);
-$("#povShot").onchange = () => { orbit.focus = "pov"; document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
+$("#poseSel").value = POSE; if (!RIG) $("#poseSel").disabled = true;   // no rig file: MHR's own pose only
+$("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.setItem("studio.pose", POSE); } catch {} compose(); };
+$("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-25, evening (the Character Studio: a T-pose to shape in, a flat stomach)
+
+- **The Character Studio shows the body in a T-pose** (after the user's reference, a rigged woman standing with her
+  arms level and her legs straight): MHR's own A-pose (the arms 48° down, the elbows bent, the hands forward) made it
+  hard to judge a body while shaping it. The pose is only the view: the character stays in MHR's own pose in its
+  files, its exports, on the desk and in Unreal, and the A-pose is a switch in the view bar.
+- **A stomach can be truly flat:** MHR's average body has a belly its identity sliders can't take back (the flattest
+  takes 1 cm of 3), so the sculpt has a Belly control: all the way down, a flat stomach; up, a rounder belly.
+
 ## 2026-10-24, evening (NPC states parked; the desk made easy, like RPG Maker)
 
 - **No NPC states or behaviour patterns for the first few games:** what a cast member does in play is sequenced in the

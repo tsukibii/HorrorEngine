@@ -84,6 +84,13 @@ and built on the desk, in six steps:
 | `7d07175` | **On the desk:** right-click the stage, *Add a little thing here…* from pictures; *It starts …* on a thing; quick beats (a kettle put on, a cigarette still burning, the phone rings, the TV on by itself, the clock stops); the Sample dressed (a kettle and tea in the kitchen, a clock at 2:47, a cigarette burning in the hall, a phone and a TV in the study). |
 | (this) | **The guide's §11** (Little things, with pictures GUIDE makes), the state command's thing picked by its picture, a form's sentence following a picked state; CLAUDE.md, IMMERSION.md (§5: what goes to Unreal now and what's next). |
 
+Then (2026-10-25, evening) the user, shaping a character, asked for the Character Studio to start from a pose like
+their reference (a T-pose) and for a stomach that can be truly flat:
+
+| Commit | What |
+|---|---|
+| (this) | **The Studio's view in a T-pose** (`pose.js` on MHR's skinning, `Content/Studio/Bodies/MHR_lod1_rig.bin` from `rig_mhr.mjs`): the arms level, the legs straight, the head untouched; the A-pose a switch in the view bar; the clothes, the circles, the accessories and the nails' close-up follow it; everything still saved and exported in MHR's pose. **Belly** in the sculpt: -1 a flat stomach. POSE (`node tools/character/posetest.mjs`), STUDIO's pose step. |
+
 ## 2. Where things are
 
 - Play: `tools/director/play/physics.js` (physics kinds as parts; carrying; the soft bend), `boardgames.js` (the table
@@ -129,6 +136,9 @@ and built on the desk, in six steps:
 
 ## 4. What's next (ask which)
 
+0000. **Shape a character in the T-pose** and say what's still awkward: the pose (arms level; a little lower, like
+   many references, is one number in `pose.js`), the Belly control's flat (all the way down; a body with a bigger belly
+   may want more), whether the salon (the Hair tab, still in MHR's A-pose) should show the T-pose too.
 000. **Look at the little things and listen to them**: the Sample's kitchen (the kettle: switch it on in Play with E;
    the tea), the hall's cigarette, the study's phone and TV; the guide's §11. Say what to change: how much steam, the
    sounds (made in the browser, so any of them can be tuned or swapped for a recording), the sizes, and which

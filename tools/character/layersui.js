@@ -29,8 +29,8 @@ export function mountLayers(ctx) {
     ray.setFromCamera(new THREE.Vector2(x / V.w * 2 - 1, y / V.h * 2 - 1), camera);
     dgeo.computeBoundingSphere();
     const h = ray.intersectObject(mesh, false)[0]; if (!h) return -1;
-    const p = mesh.worldToLocal(h.point.clone()); let best = -1, bd = Infinity;
-    for (let k = 0; k < 3; k++) { const v = TRIS[h.faceIndex * 3 + k], d = (POS[v * 3] - p.x) ** 2 + (POS[v * 3 + 1] - p.y) ** 2 + (POS[v * 3 + 2] - p.z) ** 2; if (d < bd) { bd = d; best = v; } }
+    const p = mesh.worldToLocal(h.point.clone()), S = ctx.shown ? ctx.shown() : POS; let best = -1, bd = Infinity;   // the corner nearest where the body's shown (posed, index.html)
+    for (let k = 0; k < 3; k++) { const v = TRIS[h.faceIndex * 3 + k], d = (S[v * 3] - p.x) ** 2 + (S[v * 3 + 1] - p.y) ** 2 + (S[v * 3 + 2] - p.z) ** 2; if (d < bd) { bd = d; best = v; } }
     return best;
   };
   const apply = e => {

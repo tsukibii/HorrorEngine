@@ -323,8 +323,8 @@ export function procedural(material) {
   for (const k of Object.keys(LIDS)) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position; vSkinUv = skinUv; vSel = selW; vNail = nail;");
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; attribute vec3 objPos; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = objPos; vSkinUv = skinUv; vSel = selW; vNail = nail;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\n" + COMMON)
       .replace("#include <color_fragment>", `vec2 cutFw = fwidth(vObj.xy); float cutPx = max(max(cutFw.x, cutFw.y), 1e-7), cutA = 1.0;   // a pixel's size, taken before any branch
 if (uMouthOn > 0.5 && vObj.z > uMouthZ.x && vObj.z < mouthFront(vObj.x)) cutA = cutCover(uMouthP, uMouthBox, vObj.xy, cutPx);   // the mouth's opening: index.html draws the inside behind it

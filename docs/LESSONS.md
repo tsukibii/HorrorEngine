@@ -594,3 +594,24 @@ load the page once after an edit.
 - **The desk's stage draws when asked:** GUIDE's first pictures of the kettle and the tea came out as the free
   camera's wide default, because the camera was moved from a script and nothing drew it again. Moving the camera
   from a probe, call `camera.updateMatrixWorld()` (a pick reads it) and `render()`.
+
+## The Studio's body in a T-pose, and a flat belly (2026-10-25)
+
+- **A sculpt field is smooth, or it shows:** the first Belly pressed whatever stood in front of a flat line back onto
+  it, point by point: flat side-on, but from three quarters the middle sank between flanks left standing, ridged where
+  the press let go. Read every centimetre and joined by straight lines, every joint then caught the light as a band.
+  A field is smooth over the body (whole in the middle, easing out to the flanks) and between its samples (a
+  Catmull-Rom curve through samples 4 cm apart).
+- **Wait for the body before measuring it:** a probe that read the Studio's body two seconds after the page loaded
+  found it all zeros (its first compose hadn't run), and a working pose looked broken. Wait until POS holds a body.
+- **Plain skinning opens the armpit's fold, it doesn't tear it:** raising MHR's arms 48° stretches a few 5 mm edges in
+  the A-pose's crease five times and turns a handful of tiny triangles over on the fullest body, all out of sight;
+  giving the collarbone a share of the lift barely helped and shrugged the shoulders. Check for tearing (an edge
+  longer than any at rest, triangles turned over) and look, rather than guess a stretch limit.
+- **STUDIO's ONLY picks steps by any word in their names:** ONLY=pose also ran the teeth ("every speech pose") and
+  the eyes ("filled in every pose"), and the eyes failed for want of the face fit the skipped picture steps make. Pick
+  by words only the wanted steps have, with the steps they stand on, or run it all.
+- **Switch a feature in a check the way its control does:** STUDIO's nails turned them off with `nailLook()` alone;
+  the Nails checkbox calls `skinLook()`, which also takes the skin's coat off. Off the check's way, a coat of 1 was
+  left on the whole skin, a highlight the old view's sample missed and the T-pose's view from above caught, so the
+  polish seemed to change the skin. It took three probes: the camera, the coat, then the switch.
