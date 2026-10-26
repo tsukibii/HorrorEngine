@@ -86,6 +86,15 @@ closest), that point is moved by the lattice, and projected back with the frame'
 the space under a handle moves exactly with it, smoothly between (Blender's Bezier lattice moves it by a fraction; here
 a pulled face's middle drags the picture's middle the whole way). The cube is saved with the fit (`fit.cube`).
 
+## The view (2026-10-26)
+
+Buttons over the view, with Blender's keys: **Front** (1), **¾**, **Side L** (3: the character's left) and **Side R**
+(Shift+3), **Back** (Shift+1), **Top** (7; from below, Shift+7): the free orbit turned there, the distance, zoom and pan
+kept (with the reference locked, the nearest frame). The orbit's pitch reaches 89° either way (it stopped at 69°), so
+the crown is seen from straight above. **Ortho** (5) draws without perspective, so what's at different depths lines up
+(the head the size it has at its distance; picking and the pan the same as in perspective; the reference's frames are
+perspective and stay so).
+
 ## The locks
 
 | Tool | Key | How | The wheel while placing |

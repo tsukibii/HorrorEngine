@@ -725,6 +725,30 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(id => { const s = window.__salon; s.deleteLock(s.st.locks[s.st.locks.length - 1].id); s.deleteLock(id); s.setTool("select"); }, a0.id);
     console.log(`       placed ${(a0.len * 100).toFixed(1)} cm, the arrow dragged to ${(a1.len * 100).toFixed(1)} cm (the end ${(a1.off * 1000).toFixed(1)} mm off the cursor's point), then ${(-dz * 100).toFixed(1)} cm back from the side (${(dx * 1000).toFixed(1)} mm sideways); Length 50 cm -> ${(n.len * 100).toFixed(1)}, Sag 0.6 bows the middle out ${(n.out[3] * 100).toFixed(1)} cm (drape's profile within ${(sagOff * 1000).toFixed(1)} mm); a sheet bowed by the wheel: sag ${sh.sag.toFixed(2)}, its middle ${(sh.depths[3] * 100).toFixed(1)} cm off the head`);
   });
+  await step("the view's buttons and keys: Front, ¾, Side, Back and Top (the crown from straight above), and Ortho, whose picking and pan match the perspective's", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.reference.lock = false; Object.assign(s.orbit, { dist: 0.85, zoom: 1, pan: [0, 0] }); });
+    const at = () => ev(() => [window.__salon.orbit.yaw, window.__salon.orbit.pitch]);
+    await page.click("#views [data-v=left]"); let o = await at(); if (Math.abs(o[0] - Math.PI / 2) > 1e-9 || o[1] !== 0) throw new Error("Side L: " + o);
+    await page.keyboard.press("1"); o = await at(); if (o[0] !== 0 || o[1] !== 0) throw new Error("1: " + o);
+    await page.keyboard.press("Shift+1"); o = await at(); if (Math.abs(o[0] - Math.PI) > 1e-9) throw new Error("Shift+1: " + o);
+    await page.keyboard.press("Shift+3"); o = await at(); if (Math.abs(o[0] + Math.PI / 2) > 1e-9) throw new Error("Shift+3: " + o);
+    await page.click("#views [data-v=three]"); o = await at(); if (Math.abs(o[0] - 0.6) > 1e-9) throw new Error("¾: " + o);
+    await page.keyboard.press("7"); o = await at(); if (Math.abs(o[1] - 1.55) > 1e-9) throw new Error("7: " + o);
+    const top = await ev(() => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(), t = s.screenOf([0, 0.125, 0]), c = s.screenOf([0, s.COL.chin, 0.06]); return { crown: [t[0] / r.width, t[1] / r.height], chinBehind: c[2] > t[2] }; });
+    if (Math.abs(top.crown[0] - 0.5) > 0.05 || Math.abs(top.crown[1] - 0.5) > 0.05 || !top.chinBehind) throw new Error("the top view: " + JSON.stringify(top));
+    // the orbit drag reaches the top too (the pitch was stopped at 69 degrees)
+    await page.keyboard.press("1"); const c0 = await scr([0, 0.01, 0]); await page.mouse.move(...c0); await page.mouse.down(); await page.mouse.move(c0[0], c0[1] + 400, { steps: 10 }); await page.mouse.up();
+    o = await at(); if (!(o[1] > 1.5)) throw new Error("the drag stops at " + o[1]);
+    // Ortho: two points at one sideways place but different depths land on one column (perspective spreads them); a point picked lands on itself; the pan moves the picture by the same pixels
+    await page.keyboard.press("1"); await ev(() => { window.__salon.orbit.pan = [50, 30]; });
+    const persp = await ev(() => { const s = window.__salon; s.render(); return { c: s.screenOf([0, 0.01, 0]), a: s.screenOf([0.05, 0, 0.1]), b: s.screenOf([0.05, 0, -0.1]) }; });
+    await page.keyboard.press("5");
+    const orth = await ev(() => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(), p = s.COL.surface([0.04, 0.1, 0.05]), q = s.screenOf(p), hit = s.headAt(r.left + q[0], r.top + q[1]), back = hit ? s.screenOf(hit) : null;
+      return { on: s.ortho, c: s.screenOf([0, 0.01, 0]), a: s.screenOf([0.05, 0, 0.1]), b: s.screenOf([0.05, 0, -0.1]), pickPx: back ? Math.hypot(back[0] - q[0], back[1] - q[1]) : null, button: document.querySelector("#views [data-v=ortho]").classList.contains("on") }; });
+    if (!orth.on || !orth.button || Math.abs(orth.a[0] - orth.b[0]) > 0.5 || Math.abs(persp.a[0] - persp.b[0]) < 5 || Math.hypot(orth.c[0] - persp.c[0], orth.c[1] - persp.c[1]) > 1 || orth.pickPx == null || orth.pickPx > 1.5) throw new Error(`ortho: ${JSON.stringify({ persp, orth })}`);
+    await page.keyboard.press("5"); const off = await ev(() => { const s = window.__salon; s.orbit.pan = [0, 0]; s.st.reference.lock = true; s.render(); return s.ortho; }); if (off) throw new Error("5 again didn't switch ortho off");
+    console.log(`       the crown seen from above at ${top.crown.map(x => (x * 100).toFixed(0)).join(",")}% of the view; ortho: depths ${(persp.a[0] - persp.b[0]).toFixed(1)} px apart in perspective, ${Math.abs(orth.a[0] - orth.b[0]).toFixed(2)} px in ortho, a pick ${orth.pickPx.toFixed(2)} px off, the pan ${Math.hypot(orth.c[0] - persp.c[0], orth.c[1] - persp.c[1]).toFixed(2)} px off`);
+  });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {
       const cv = window.__salon.canvas, fire = (type, init) => { const e = new MouseEvent(type, { bubbles: true, cancelable: true, ...init }); cv.dispatchEvent(e); return e.defaultPrevented; };

@@ -81,15 +81,18 @@ function freeCamera() {
   const f = SL.norm(SL.sub(c, p)), r = SL.norm(SL.cross(f, [0, 1, 0])), dn = SL.cross(f, r);
   const R = [r, dn, f], t = SR.MV(R, p).map(x => -x);
   const fy = VH / 2 / Math.tan(15 * Math.PI / 180) * orbit.zoom;
-  return { R, t, fx: fy, fy, cx: VW / 2 + orbit.pan[0], cy: VH / 2 + orbit.pan[1] };
+  return { R, t, fx: fy, fy, cx: VW / 2 + orbit.pan[0], cy: VH / 2 + orbit.pan[1], ortho: ORTHO ? d * Math.tan(15 * Math.PI / 180) / orbit.zoom : 0 };   // ortho: the view's half-height in metres at the head
 }
-function setCamera(R, t, fx, fy, cx, cy) {
+function setCamera(R, t, fx, fy, cx, cy, ortho = 0) {
   const C = SR.centre(R, t);
   // OpenCV rows (right, down, forward) -> three's camera axes (x right, y up, looking down -z)
   camera.matrix.set(R[0][0], -R[1][0], -R[2][0], C[0], R[0][1], -R[1][1], -R[2][1], C[1], R[0][2], -R[1][2], -R[2][2], C[2], 0, 0, 0, 1);
   camera.matrixWorld.copy(camera.matrix); camera.matrixWorldInverse.copy(camera.matrix).invert();
-  const P = SR.projection(fx, fy, cx, cy, VW, VH);
-  camera.projectionMatrix.set(...P[0], ...P[1], ...P[2], ...P[3]); camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+  if (ortho) {                                                       // no perspective: the head the same size as at the target's distance, the pan as pixels
+    const h = ortho, w = h * VW / VH, sx = (cx - VW / 2) * 2 * w / VW, sy = (cy - VH / 2) * 2 * h / VH;
+    camera.projectionMatrix.makeOrthographic(-w - sx, w - sx, h + sy, -h + sy, 0.02, 30);
+  } else { const P = SR.projection(fx, fy, cx, cy, VW, VH); camera.projectionMatrix.set(...P[0], ...P[1], ...P[2], ...P[3]); }
+  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
   const h = headTarget(); key.target.position.set(...h); fillL.target.position.set(...h);   // the key above the camera's shoulder, a cool fill from the other side
   key.position.set(C[0] + R[0][0] * 0.5, C[1] + 0.9, C[2] + R[0][2] * 0.5); fillL.position.set(h[0] - R[0][0], h[1], h[2] - R[0][2]);
   lightHair(HAIRU, key.position.clone().sub(key.target.position), null, fillL.position.clone().sub(fillL.target.position), null);
@@ -936,7 +939,7 @@ function render() {
   if (SNAP) {
     const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
     setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
-  } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
+  } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy, f.ortho); }
   refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding(); previewStale();
   const ovl = placeOverlay();
   renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
@@ -947,9 +950,10 @@ function render() {
 
 // ---- picking ----------------------------------------------------------------------------------------------------------
 const ray = new THREE.Raycaster();
-function rayAt(x, y) {
-  const r = renderer.domElement.getBoundingClientRect();
-  ray.setFromCamera(new THREE.Vector2((x - r.left) / r.width * 2 - 1, -((y - r.top) / r.height) * 2 + 1), camera);
+function rayAt(x, y) {                                               // the cursor's ray, through whatever projection the camera has (perspective or ortho)
+  const r = renderer.domElement.getBoundingClientRect(), nx = (x - r.left) / r.width * 2 - 1, ny = -((y - r.top) / r.height) * 2 + 1;
+  const a = new THREE.Vector3(nx, ny, -1).unproject(camera), b = new THREE.Vector3(nx, ny, 1).unproject(camera);
+  ray.ray.origin.copy(a); ray.ray.direction.copy(b).sub(a).normalize();
   return ray;
 }
 function headAt(x, y) {                                              // the point on the body under the cursor, local
@@ -1054,6 +1058,20 @@ function resetPlace() { PLACE.stage = 0; PLACE.root = null; PLACE.line = []; PLA
   showPreview(null); showRootLine(null); hint(); }
 for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, onclick: () => setTool(t) }); b.dataset.t = t; $("#tools").append(b); }
 
+// the view's buttons, with Blender's keys: Front (1), ¾, the character's left side (3) and right (Shift+3), Back
+// (Shift+1), Top (7) and from below (Shift+7): the free orbit turned there (the distance, zoom and pan kept; with the
+// reference locked, the nearest frame). Ortho (5) draws without perspective, for lining up things at different depths.
+const VIEWS = [["front", "Front", "1"], ["three", "¾", ""], ["left", "Side L", "3"], ["right", "Side R", "Shift+3"], ["back", "Back", "Shift+1"], ["top", "Top", "7"]];
+let ORTHO = false;
+const VIEWBAR = el("div", { id: "views" }); view.append(VIEWBAR);
+function lookAt(name) {
+  const at = { front: [0, 0], three: [0.6, 0.12], left: [Math.PI / 2, 0], right: [-Math.PI / 2, 0], back: [Math.PI, 0], top: [orbit.yaw, 1.55], bottom: [orbit.yaw, -1.55] }[name]; if (!at) return;
+  orbit.yaw = at[0]; orbit.pitch = at[1]; draw();
+}
+function setOrtho(on) { ORTHO = !!on; VIEWBAR.querySelector("[data-v=ortho]")?.classList.toggle("on", ORTHO); draw(); }
+for (const [v, label, key] of VIEWS) { const b = el("button", { textContent: label, title: key ? `${label} (${key})` : label, onclick: () => lookAt(v) }); b.dataset.v = v; VIEWBAR.append(b); }
+{ const b = el("button", { textContent: "Ortho", title: "no perspective: what's at different depths lines up (5)", onclick: () => setOrtho(!ORTHO) }); b.dataset.v = "ortho"; VIEWBAR.append(b); }
+
 function previewFrom(e) {
   if (!PLACE.stage) return null;
   const anchor = TOOL === "sheet" || TOOL === "bline" ? SL.along(PLACE.line, 0.5) : PLACE.root;
@@ -1157,7 +1175,7 @@ cv.addEventListener("pointermove", e => {
     return;
   }
   if (DRAG.kind === "orbit") {
-    orbit.yaw -= (e.clientX - DRAG.x) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - DRAG.y) * 0.006));
+    orbit.yaw -= (e.clientX - DRAG.x) * 0.008; orbit.pitch = Math.max(-1.55, Math.min(1.55, orbit.pitch + (e.clientY - DRAG.y) * 0.006));   // to 89°: the crown from straight above
     DRAG.x = e.clientX; DRAG.y = e.clientY; draw();
   } else if (DRAG.kind === "rootline") {
     const p = scalpAt(e); if (p && SL.len(SL.sub(p, PLACE.line[PLACE.line.length - 1])) > 0.008) { PLACE.line.push(p); showRootLine(PLACE.line); draw(); }
@@ -1242,6 +1260,11 @@ addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "o" && !e.ctrlKey) { PULL.on = !PULL.on; pullPanel(); drawHandles(); draw(); return; }
   if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteLock(original(lockById(SELECTED)).id); return; }
   const t = TOOLS.find(x => x[2] === e.key.toLowerCase()); if (t && !e.ctrlKey) setTool(t[0]);
+  if (!e.ctrlKey && !e.metaKey && !e.altKey) {                        // the views (Blender's keys): 1 front, 3 the left side, 7 the top; Shift: the opposite; 5 ortho
+    const v = { Digit1: e.shiftKey ? "back" : "front", Digit3: e.shiftKey ? "right" : "left", Digit7: e.shiftKey ? "bottom" : "top" }[e.code];
+    if (v) { e.preventDefault(); lookAt(v); return; }
+    if (e.code === "Digit5") { e.preventDefault(); setOrtho(!ORTHO); return; }
+  }
   if (e.key === "ArrowRight" && SNAP) stepFrame(1); if (e.key === "ArrowLeft" && SNAP) stepFrame(-1);
 });
 
@@ -1652,7 +1675,7 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
-  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
+  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return ORTHO; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },

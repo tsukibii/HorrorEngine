@@ -113,6 +113,7 @@ panel's Front, when a reference is loaded, is the one button); the pitch is clam
 from straight above (a parting, the cover's Y's); a 30° perspective lens, so hair on the far side leans. *Proposed:*
 **Front, ¾, Side (left and right), Back, Top** on the toolbar with Blender's keys (1, 3, 7; Ctrl for the opposite),
 the pitch to ±90°, an **orthographic** toggle (5) for lining things up. **S.**
+**Built 2026-10-26**: the view bar (Front, ¾, Side L and R, Back, Top, Ortho) with the keys; the pitch to 89°; ortho picks and pans as perspective does (SALON: two depths 17 px apart in perspective on one column in ortho, a pick 0 px off).
 
 **9. The lock you're on doesn't stand out, and handles don't read in depth.** *Now:* handles are 4.5 mm gold spheres
 drawn over everything (no depth test), so a handle behind the head looks like one in front; the selected lock is only
