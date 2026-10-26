@@ -36,8 +36,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on("dialog", d => d.accept());                                 // the Character Studio's "start it again?"
   const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY, "i") : null;   // ONLY=scope: just the steps whose words match (after the load; a step that needs an earlier one's hair fails on its own)
-  const step = async (what, fn) => { if (ONLY && !ONLY.test(what) && !/^the salon loads/.test(what)) return; try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}`); } };
-  const ev = (fn, arg) => page.evaluate(fn, arg);
+  const step = async (what, fn) => { if (ONLY && !ONLY.test(what) && !/^the salon loads/.test(what)) return; try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}${errors.length ? "\n  page errors: " + errors.join(" | ") : ""}`); } };
+  const ev = async (fn, arg) => { try { return await page.evaluate(fn, arg); } catch (e) { e.message += "\n  in the page: " + fn.toString().replace(/\s+/g, " ").slice(0, 200); throw e; } };
   const view = async (yaw, pitch = 0.1, dist = 1.3) => { await ev(([y, p, d]) => { const s = window.__salon; Object.assign(s.orbit, { yaw: y, pitch: p, dist: d, zoom: 1, pan: [0, 0] }); s.draw(); }, [yaw, pitch, dist]); await page.waitForTimeout(250); };
   const scr = p => ev(p => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(); const q = s.screenOf(p); return [r.left + q[0], r.top + q[1]]; }, p);
   const surf = p => ev(p => window.__salon.COL.surface(p), p);
@@ -748,6 +748,33 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (!orth.on || !orth.button || Math.abs(orth.a[0] - orth.b[0]) > 0.5 || Math.abs(persp.a[0] - persp.b[0]) < 5 || Math.hypot(orth.c[0] - persp.c[0], orth.c[1] - persp.c[1]) > 1 || orth.pickPx == null || orth.pickPx > 1.5) throw new Error(`ortho: ${JSON.stringify({ persp, orth })}`);
     await page.keyboard.press("5"); const off = await ev(() => { const s = window.__salon; s.orbit.pan = [0, 0]; s.st.reference.lock = true; s.render(); return s.ortho; }); if (off) throw new Error("5 again didn't switch ortho off");
     console.log(`       the crown seen from above at ${top.crown.map(x => (x * 100).toFixed(0)).join(",")}% of the view; ortho: depths ${(persp.a[0] - persp.b[0]).toFixed(1)} px apart in perspective, ${Math.abs(orth.a[0] - orth.b[0]).toFixed(2)} px in ortho, a pick ${orth.pickPx.toFixed(2)} px off, the pan ${Math.hypot(orth.c[0] - persp.c[0], orth.c[1] - persp.c[1]).toFixed(2)} px off`);
+  });
+  await step("Split: a side pane beside the working view, each turned on its own; a lock placed in the left pane and its handle dragged in the right moves in depth as the left sees it; the divider dragged and evened; one view again", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.reference.lock = false; s.split.set(true); s.split.use(0); Object.assign(s.orbit, { yaw: 0, pitch: 0, dist: 0.85, zoom: 1, pan: [0, 0] }); s.split.use(1); Object.assign(s.orbit, { yaw: Math.PI / 2, pitch: 0, dist: 0.85, zoom: 1, pan: [0, 0] }); s.split.use(0); s.render(); });
+    const P = await ev(() => window.__salon.split.panes().map(p => [p.x, p.w]));
+    if (P.length !== 2 || P[0][1] < 300 || P[1][0] !== P[0][1]) throw new Error("panes: " + JSON.stringify(P));
+    const cL = await scr([0, 0.01, 0]); await ev(() => window.__salon.split.use(1)); const cR = await scr([0, 0.01, 0]); await ev(() => window.__salon.split.use(0));
+    const r = await ev(() => { const q = window.__salon.canvas.getBoundingClientRect(); return [q.left, q.width]; });
+    if (!(cL[0] - r[0] < r[1] * 0.5) || !(cR[0] - r[0] > r[1] * 0.5)) throw new Error(`the head at ${cL[0] - r[0]} (left pane) and ${cR[0] - r[0]} (right) of ${r[1]}`);
+    // a strand placed in the left pane (the pointer there makes it the active pane)
+    const n0 = await count(); await page.keyboard.press("s");
+    await page.mouse.click(...await scr(await surf([0.03, 0.1, 0.06]))); const e1 = await scr([0.1, -0.1, 0]); await page.mouse.move(...e1); await page.mouse.click(...e1); await page.waitForTimeout(150);   // a root on the front of the crown, where a level view sees the skin
+    if (await count() !== n0 + 1) throw new Error("no strand placed in the left pane");
+    const id = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.finishLock(); s.setTool("select"); s.select(l.id); return l.id; });
+    // its end handle (in the air beside the jaw) dragged 40 px to the right in the right pane: it moves towards the back (depth, as the left pane sees it), not sideways
+    await ev(() => window.__salon.split.use(1)); const h0 = await ev(id => window.__salon.st.locks.find(l => l.id === id).pts[5].slice(), id); const hs = await scr(h0);
+    await page.mouse.move(...hs); await page.mouse.down(); await page.mouse.move(hs[0] + 40, hs[1], { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const h1 = await ev(id => window.__salon.st.locks.find(l => l.id === id).pts[5].slice(), id), active = await ev(() => window.__salon.split.active);
+    if (active !== 1 || !(h0[2] - h1[2] > 0.015) || Math.abs(h1[0] - h0[0]) > 0.003) throw new Error(`the right pane's drag: active ${active}, depth ${((h0[2] - h1[2]) * 100).toFixed(1)} cm, sideways ${((h1[0] - h0[0]) * 1000).toFixed(1)} mm`);
+    // the divider dragged, then evened by a double-click
+    const bar = await page.$("#splitBar"), bb = await bar.boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + 200); await page.mouse.down(); await page.mouse.move(bb.x + bb.width / 2 + 80, bb.y + 200, { steps: 5 }); await page.mouse.up();
+    const at1 = await ev(() => window.__salon.split.at); if (!(at1 > 0.55)) throw new Error("the divider didn't move: " + at1);
+    await bar.dblclick(); const at2 = await ev(() => window.__salon.split.at); if (at2 !== 0.5) throw new Error("the double-click didn't even the panes: " + at2);
+    await page.click("#views [data-v=split]"); const one = await ev(() => { const s = window.__salon; s.render(); return [s.split.on, s.split.panes().length, s.split.active]; });
+    if (one[0] || one[1] !== 1 || one[2] !== 0) throw new Error("Split again didn't give one view: " + one);
+    await ev(id => { const s = window.__salon; s.deleteLock(id); s.st.reference.lock = true; }, id);
+    console.log(`       panes ${P[0][1]} and ${r[1] - P[0][1]} px wide; the handle dragged in the side pane moved ${((h0[2] - h1[2]) * 100).toFixed(1)} cm in depth, ${(Math.abs(h1[0] - h0[0]) * 1000).toFixed(1)} mm sideways; the divider to ${(at1 * 100).toFixed(0)}%, evened to ${at2 * 100}%`);
   });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {

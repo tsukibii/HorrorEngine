@@ -67,12 +67,21 @@ const BAKEG = new THREE.Group(); BAKEG.matrixAutoUpdate = false; scene.add(BAKEG
 const HANDLES = new THREE.Group(); HAIR.add(HANDLES);
 let HEAD = null, HF = null, COL = null, LOCAL_PTS = null;
 const HFMAT = new THREE.Matrix4(), RIG = new THREE.Matrix4();            // the head's frame; the head's motion (world)
-let VW = 1, VH = 1;
-function resize() { VW = view.clientWidth; VH = view.clientHeight; renderer.setSize(VW, VH, false); Object.assign(OVL_CAM, { left: 0, right: VW, top: VH, bottom: 0 }); OVL_CAM.updateProjectionMatrix(); draw(); }
+let VW = 1, VH = 1, VWALL = 1, VHALL = 1;                               // the active pane's size, and the whole view's
+function resize() { VWALL = view.clientWidth; VHALL = view.clientHeight; renderer.setSize(VWALL, VHALL, false); usePane(SPLIT.active); layoutSplit(); draw(); }
 new ResizeObserver(resize).observe(view);
 
-// the view: a free orbit round the head, or locked onto the reference frame nearest to it
-const orbit = { yaw: 0.35, pitch: 0.08, dist: 0.85, zoom: 1, pan: [0, 0] };
+// the view: a free orbit round the head, or locked onto the reference frame nearest to it. Split (the user's ask: a side
+// view beside the front): two panes side by side, an orbit each, every tool working in the pane under the pointer;
+// `orbit` is the active pane's (the one the pointer last touched), PANE its rectangle in view pixels.
+const SPLIT = { on: false, at: 0.5, orbits: [{ yaw: 0.35, pitch: 0.08, dist: 0.85, zoom: 1, pan: [0, 0], ortho: false }, { yaw: Math.PI / 2, pitch: 0, dist: 0.85, zoom: 1, pan: [0, 0], ortho: false }], active: 0 };
+let orbit = SPLIT.orbits[0], PANE = { x: 0, y: 0, w: 1, h: 1 };
+function panes() { if (!SPLIT.on) return [{ x: 0, y: 0, w: VWALL, h: VHALL }]; const x = Math.round(VWALL * SPLIT.at); return [{ x: 0, y: 0, w: x, h: VHALL }, { x, y: 0, w: VWALL - x, h: VHALL }]; }
+function usePane(i) {                                                // the pane everything draws, picks and turns in
+  const P = panes(); if (i >= P.length) i = 0;
+  SPLIT.active = i; PANE = P[i]; VW = Math.max(1, PANE.w); VH = Math.max(1, PANE.h); orbit = SPLIT.orbits[i];
+  Object.assign(OVL_CAM, { left: 0, right: VW, top: VH, bottom: 0 }); OVL_CAM.updateProjectionMatrix();
+}
 let SNAP = null;                       // the reference camera the view is on (null: free)
 function headTarget() { return HF ? SR.toWorld(HF, [0, 0.01, 0]) : [0, 1.6, 0]; }
 function freeCamera() {
@@ -81,7 +90,7 @@ function freeCamera() {
   const f = SL.norm(SL.sub(c, p)), r = SL.norm(SL.cross(f, [0, 1, 0])), dn = SL.cross(f, r);
   const R = [r, dn, f], t = SR.MV(R, p).map(x => -x);
   const fy = VH / 2 / Math.tan(15 * Math.PI / 180) * orbit.zoom;
-  return { R, t, fx: fy, fy, cx: VW / 2 + orbit.pan[0], cy: VH / 2 + orbit.pan[1], ortho: ORTHO ? d * Math.tan(15 * Math.PI / 180) / orbit.zoom : 0 };   // ortho: the view's half-height in metres at the head
+  return { R, t, fx: fy, fy, cx: VW / 2 + orbit.pan[0], cy: VH / 2 + orbit.pan[1], ortho: orbit.ortho ? d * Math.tan(15 * Math.PI / 180) / orbit.zoom : 0 };   // ortho: the view's half-height in metres at the head
 }
 function setCamera(R, t, fx, fy, cx, cy, ortho = 0) {
   const C = SR.centre(R, t);
@@ -159,8 +168,8 @@ function landing(cam, u, v, cube, rest) {
   }
   return [cx + (u - cam.K[2]) * k, cy + (v - cam.K[3]) * k];
 }
-function placeOverlay() {
-  if (!SNAP || !st.reference.on) { OVL_MESH.visible = false; $("#frameTag").textContent = REF && st.reference.on && !st.reference.lock ? "reference unlocked: turn freely" : ""; return false; }
+function placeOverlay(tag = true) {                                 // tag: this pane's frame named at the top right (the active pane's)
+  if (!SNAP || !st.reference.on) { OVL_MESH.visible = false; if (tag) $("#frameTag").textContent = REF && st.reference.on && !st.reference.lock ? "reference unlocked: turn freely" : ""; return false; }
   const tex = texture(SNAP), cube = st.reference.fit.cube, rest = !cube || FFD.isRest(cube);
   const P = OVL_MESH.geometry.attributes.position, UV = OVL_MESH.geometry.attributes.uv, [s, dx, dy] = SNAP.nudge;
   for (let r = 0; r <= GRID; r++) for (let c = 0; c <= GRID; c++) {
@@ -173,7 +182,7 @@ function placeOverlay() {
   P.needsUpdate = true; UV.needsUpdate = true;
   OVL_MESH.material.map = tex; OVL_MESH.material.opacity = st.reference.opacity; OVL_MESH.material.needsUpdate = OVL_MESH.userData.tex !== tex; OVL_MESH.userData.tex = tex;
   OVL_MESH.visible = !!tex.userData.loaded; OVL_MESH.userData.flipped = SNAP.mirrored;
-  $("#frameTag").textContent = `frame ${SNAP.name}${SNAP.mirrored ? " mirrored" : ""}  az ${SNAP.az.toFixed(0)}°  el ${SNAP.el.toFixed(0)}°`;
+  if (tag) $("#frameTag").textContent = `frame ${SNAP.name}${SNAP.mirrored ? " mirrored" : ""}  az ${SNAP.az.toFixed(0)}°  el ${SNAP.el.toFixed(0)}°`;
   return OVL_MESH.visible;
 }
 
@@ -477,7 +486,7 @@ function placeOk() {                                                 // the OK b
   const [sx, sy] = screenOf(arrowTip(l)); OKBTN.style.left = `${Math.round(sx) + 16}px`; OKBTN.style.top = `${Math.round(sy) - 12}px`;
 }
 function drawHandles() {
-  HANDLES.clear(); placeOk();
+  HANDLES.clear();
   const l = lockById(SELECTED); if (!l || TOOL === "fit" || BAKEVIEW) return;
   drawArrow(l);
   if (TOOL !== "select") return;
@@ -933,26 +942,33 @@ function bakePanel() {
 // ---- the frame ---------------------------------------------------------------------------------------------------------
 let PENDING = false;
 function draw() { if (PENDING) return; PENDING = true; requestAnimationFrame(() => { PENDING = false; render(); }); }
+function applyCamera() {                                             // the active pane's camera: the reference frame it's on, or its free orbit
+  snapView();
+  if (SNAP) { const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom; setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]); }
+  else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy, f.ortho); }
+}
 function render() {
   if (!HF) { renderer.autoClear = true; renderer.render(scene, camera); return; }
-  snapView();
-  if (SNAP) {
-    const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
-    setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
-  } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy, f.ortho); }
-  refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding(); previewStale();
-  const ovl = placeOverlay();
-  renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
-  if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
-  renderer.clearDepth(); renderer.render(scene, camera);
-  if (ovl && !st.reference.behind) renderer.render(OVL, OVL_CAM);
+  const active = SPLIT.active, P = panes();
+  P.forEach((R, i) => {                                               // each pane with its own camera; the hair itself refreshed once
+    usePane(i); applyCamera();
+    if (i === 0) { refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding(); previewStale(); } else drawHandles();   // the ring and the handles face this pane
+    const ovl = placeOverlay(i === active);
+    renderer.setViewport(R.x, VHALL - R.y - R.h, R.w, R.h); renderer.setScissor(R.x, VHALL - R.y - R.h, R.w, R.h); renderer.setScissorTest(P.length > 1);
+    renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
+    if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
+    renderer.clearDepth(); renderer.render(scene, camera);
+    if (ovl && !st.reference.behind) renderer.render(OVL, OVL_CAM);
+  });
+  renderer.setScissorTest(false);
+  usePane(active); applyCamera(); placeOk();                        // the active pane's camera again, for picking
 }
 
 // ---- picking ----------------------------------------------------------------------------------------------------------
 const ray = new THREE.Raycaster();
 function rayAt(x, y) {                                               // the cursor's ray, through whatever projection the camera has (perspective or ortho)
-  const r = renderer.domElement.getBoundingClientRect(), nx = (x - r.left) / r.width * 2 - 1, ny = -((y - r.top) / r.height) * 2 + 1;
-  const a = new THREE.Vector3(nx, ny, -1).unproject(camera), b = new THREE.Vector3(nx, ny, 1).unproject(camera);
+  const r = renderer.domElement.getBoundingClientRect(), nx = (x - r.left - PANE.x) / PANE.w * 2 - 1, ny = -((y - r.top - PANE.y) / PANE.h) * 2 + 1;
+  const a = new THREE.Vector3(nx, ny, -1).unproject(camera), b = new THREE.Vector3(nx, ny, 0.5).unproject(camera);   // the near plane and a finite depth (the far plane may be at infinity)
   ray.ray.origin.copy(a); ray.ray.direction.copy(b).sub(a).normalize();
   return ray;
 }
@@ -961,9 +977,15 @@ function headAt(x, y) {                                              // the poin
   const hit = rayAt(x, y).intersectObject(HEAD, false)[0];
   return hit ? SR.toLocal(HF, hit.point.toArray()) : null;
 }
-function screenOf(p) {                                               // a local point to view pixels
+function screenOf(p) {                                               // a local point to view pixels (in the active pane)
   const w = new THREE.Vector3(...SR.toWorld(HF, p)).project(camera);
-  return [(w.x + 1) / 2 * VW, (1 - w.y) / 2 * VH, w.z];
+  return [PANE.x + (w.x + 1) / 2 * VW, PANE.y + (1 - w.y) / 2 * VH, w.z];
+}
+function paneAt(e) {                                                 // the pane under the pointer becomes the active one (not mid-drag), its camera set for picking
+  if (!SPLIT.on || DRAG) return;
+  const r = renderer.domElement.getBoundingClientRect(), i = e.clientX - r.left < r.width * SPLIT.at ? 0 : 1;
+  if (i !== SPLIT.active) { usePane(i); markPane(); }
+  applyCamera();
 }
 function onPlane(x, y, through) {                                    // the cursor on the plane through a local point, facing the view
   const r = rayAt(x, y), p = new THREE.Vector3(...SR.toWorld(HF, through)), n = new THREE.Vector3(); camera.getWorldDirection(n);
@@ -1062,15 +1084,30 @@ for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, o
 // (Shift+1), Top (7) and from below (Shift+7): the free orbit turned there (the distance, zoom and pan kept; with the
 // reference locked, the nearest frame). Ortho (5) draws without perspective, for lining up things at different depths.
 const VIEWS = [["front", "Front", "1"], ["three", "¾", ""], ["left", "Side L", "3"], ["right", "Side R", "Shift+3"], ["back", "Back", "Shift+1"], ["top", "Top", "7"]];
-let ORTHO = false;
-const VIEWBAR = el("div", { id: "views" }); view.append(VIEWBAR);
+const VIEWBAR = el("div", { id: "views" }); document.querySelector("header").insertBefore(VIEWBAR, $("#status"));   // in the header: nothing over the view steals a click
 function lookAt(name) {
   const at = { front: [0, 0], three: [0.6, 0.12], left: [Math.PI / 2, 0], right: [-Math.PI / 2, 0], back: [Math.PI, 0], top: [orbit.yaw, 1.55], bottom: [orbit.yaw, -1.55] }[name]; if (!at) return;
   orbit.yaw = at[0]; orbit.pitch = at[1]; draw();
 }
-function setOrtho(on) { ORTHO = !!on; VIEWBAR.querySelector("[data-v=ortho]")?.classList.toggle("on", ORTHO); draw(); }
+function setOrtho(on) { orbit.ortho = !!on; VIEWBAR.querySelector("[data-v=ortho]")?.classList.toggle("on", orbit.ortho); draw(); }
 for (const [v, label, key] of VIEWS) { const b = el("button", { textContent: label, title: key ? `${label} (${key})` : label, onclick: () => lookAt(v) }); b.dataset.v = v; VIEWBAR.append(b); }
-{ const b = el("button", { textContent: "Ortho", title: "no perspective: what's at different depths lines up (5)", onclick: () => setOrtho(!ORTHO) }); b.dataset.v = "ortho"; VIEWBAR.append(b); }
+{ const b = el("button", { textContent: "Ortho", title: "no perspective: what's at different depths lines up (5)", onclick: () => setOrtho(!orbit.ortho) }); b.dataset.v = "ortho"; VIEWBAR.append(b); }
+// Split: two panes side by side, an orbit each (the right one a side view to start); the pane the pointer touches is the
+// one the buttons, keys and wheel move and every tool works in; the line between them dragged, a double-click evens them
+const SPLITBAR = el("div", { id: "splitBar", title: "drag: the panes' widths; double-click: even them" }), PANEMARK = el("div", { id: "paneMark" }); view.append(SPLITBAR, PANEMARK);
+function markPane() { PANEMARK.style.display = SPLIT.on ? "block" : "none"; PANEMARK.style.left = `${PANE.x}px`; PANEMARK.style.width = `${PANE.w}px`; VIEWBAR.querySelector("[data-v=ortho]")?.classList.toggle("on", !!orbit.ortho); }
+function layoutSplit() { SPLITBAR.style.display = SPLIT.on ? "block" : "none"; SPLITBAR.style.left = `${Math.round(VWALL * SPLIT.at)}px`; markPane(); }
+function setSplit(on) {
+  SPLIT.on = !!on; VIEWBAR.querySelector("[data-v=split]")?.classList.toggle("on", SPLIT.on);
+  if (SPLIT.on) { const [a, b] = SPLIT.orbits; b.dist = a.dist; b.zoom = a.zoom; }   // the side pane at the working view's distance
+  usePane(0); layoutSplit(); draw();
+}
+function setSplitAt(f) { SPLIT.at = Math.max(0.15, Math.min(0.85, f)); usePane(SPLIT.active); layoutSplit(); draw(); }
+SPLITBAR.addEventListener("pointerdown", e => { SPLITBAR.setPointerCapture(e.pointerId); SPLITBAR.classList.add("drag"); e.preventDefault(); });
+SPLITBAR.addEventListener("pointermove", e => { if (!SPLITBAR.classList.contains("drag")) return; const r = renderer.domElement.getBoundingClientRect(); setSplitAt((e.clientX - r.left) / r.width); });
+SPLITBAR.addEventListener("pointerup", () => SPLITBAR.classList.remove("drag"));
+SPLITBAR.addEventListener("dblclick", () => setSplitAt(0.5));
+{ const b = el("button", { textContent: "Split", title: "two panes side by side, each turned on its own (a side view beside the front): the pane you touch is the one the buttons, keys and wheel move and every tool works in; drag the line between them, double-click it to even them; Split again for one view", onclick: () => setSplit(!SPLIT.on) }); b.dataset.v = "split"; VIEWBAR.append(b); }
 
 function previewFrom(e) {
   if (!PLACE.stage) return null;
@@ -1138,7 +1175,7 @@ addEventListener("keydown", e => {
 for (const ev of ["input", "change"]) document.querySelector("aside")?.addEventListener(ev, e => { if (e.target.id !== "person") UNSAVED = true; });
 if (!Q.get("embed")) addEventListener("beforeunload", e => { if (UNSAVED) { e.preventDefault(); e.returnValue = ""; } });
 cv.addEventListener("pointerdown", e => {
-  cv.setPointerCapture(e.pointerId);
+  cv.setPointerCapture(e.pointerId); paneAt(e);
   const orbitOnly = e.button !== 0 || !!BAKEVIEW;                       // previewing the bake: the view only turns
   if (!orbitOnly && TOOL === "fit") {
     const h = cubeHandleAt(e);
@@ -1166,6 +1203,7 @@ cv.addEventListener("pointerdown", e => {
 });
 cv.addEventListener("pointermove", e => {
   if (!DRAG) {
+    paneAt(e);
     if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
     else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
     else if (SELECTED) {
@@ -1228,7 +1266,7 @@ cv.addEventListener("pointerup", e => {
   if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); hint(); draw(); }
 });
 cv.addEventListener("wheel", e => {
-  e.preventDefault();
+  e.preventDefault(); paneAt(e);
   const s = Math.sign(e.deltaY);
   if (DRAG && DRAG.kind === "handle") { if (PULL.on && s) reach(s > 0, e.shiftKey); return; }   // Blender's: down grows the reach, up shrinks it
   if (DRAG && DRAG.kind === "arrow" && s) {                            // the bow of the lock in hand, while its arrow is dragged
@@ -1263,7 +1301,7 @@ addEventListener("keydown", e => {
   if (!e.ctrlKey && !e.metaKey && !e.altKey) {                        // the views (Blender's keys): 1 front, 3 the left side, 7 the top; Shift: the opposite; 5 ortho
     const v = { Digit1: e.shiftKey ? "back" : "front", Digit3: e.shiftKey ? "right" : "left", Digit7: e.shiftKey ? "bottom" : "top" }[e.code];
     if (v) { e.preventDefault(); lookAt(v); return; }
-    if (e.code === "Digit5") { e.preventDefault(); setOrtho(!ORTHO); return; }
+    if (e.code === "Digit5") { e.preventDefault(); setOrtho(!orbit.ortho); return; }
   }
   if (e.key === "ArrowRight" && SNAP) stepFrame(1); if (e.key === "ArrowLeft" && SNAP) stepFrame(-1);
 });
@@ -1674,9 +1712,9 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 })();
 
 // for the tests and the renders
-window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
-  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return ORTHO; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
+window.__salon = { st, SL, SR, get orbit() { return orbit; }, split: { get on() { return SPLIT.on; }, set: setSplit, setAt: setSplitAt, use: i => { usePane(i); markPane(); applyCamera(); }, get active() { return SPLIT.active; }, get at() { return SPLIT.at; }, panes }, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
+  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
+  screenOf, headAt, rayAt, onPlane, previewFrom, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned

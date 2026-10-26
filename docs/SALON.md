@@ -95,6 +95,13 @@ the crown is seen from straight above. **Ortho** (5) draws without perspective, 
 (the head the size it has at its distance; picking and the pan the same as in perspective; the reference's frames are
 perspective and stay so).
 
+**Split** (the user's ask: a side view beside the front) puts two panes side by side, each turned on its own (the right
+one starts as the character's left side, at the working view's distance): the pane the pointer touches is the one the
+buttons, keys and wheel move and every tool works in (placing, the arrow, the handles and the pull's ring, the root
+line, picking), by that pane's own camera; a handle dragged in the side pane moves in depth as the front pane sees it.
+The gold line along a pane's top marks the active one; drag the line between the panes for their widths, double-click
+it to even them; Split again for one view. With the reference locked, each pane snaps to its own nearest frame.
+
 ## The locks
 
 | Tool | Key | How | The wheel while placing |

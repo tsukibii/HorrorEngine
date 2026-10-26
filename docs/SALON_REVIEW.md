@@ -107,6 +107,7 @@ Split again for one view. With 1: drag the arrow in the front pane for the lengt
 stands off the face. In the code: `render()` draws each pane with its camera (`setScissor`/`setViewport`); `rayAt`,
 `screenOf`, `onPlane`, `handleAt`, `lockAt` take the pane under the pointer; `orbit` becomes the active pane's; the
 overlay per pane. SALON gains a handle dragged in the right pane moving in depth as seen from the left. **M.**
+**Built 2026-10-26**: Split in the view bar (the header): two panes with their own orbits, scissor-rendered, every tool in the pane under the pointer; the divider dragged and evened; SALON places a strand in the left pane and drags its handle in the right (2.4 cm in depth, 0 mm sideways).
 
 **8. No view buttons, no top view, no orthographic view.** *Now:* the view is turned by hand only (the reference
 panel's Front, when a reference is loaded, is the one button); the pitch is clamped to ±69°, so the crown is never seen
