@@ -505,7 +505,7 @@ const png = rgb => {
     });
     // over the rim: MHR's upper rim is 2.4 mm deep in the middle, less towards the corners (the lashes lift from its front
     // edge, not from the line along its back); shut, they're rooted on the line again
-    if (!(r.cards.lashes > 100 && r.cards.brows > 200) || !(r.lift - r.liftShut > 20) || !(r.cards.rim > 1.2 && r.cards.rim < 3.2) || !(r.rimShut < 0.3) || !(r.raise > 1) || !r.shader) throw new Error("brows and lashes: " + JSON.stringify(r));
+    if (!(r.cards.lashes > 300 && r.cards.brows > 200) || !(r.lift - r.liftShut > 20) || !(r.cards.rim > 1.2 && r.cards.rim < 3.2) || !(r.rimShut < 0.3) || !(r.raise > 1) || !r.shader) throw new Error("brows and lashes: " + JSON.stringify(r));
     await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // and off again
     await page.waitForFunction(() => !window.__body.st.lash.on && !window.__body.st.brow.on, null, { timeout: 10000 });
     console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; the upper lashes lie ${r.cards.rim.toFixed(1)} mm over the lid's rim before they lift (${r.rimShut.toFixed(1)} shut); shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
@@ -517,16 +517,16 @@ const png = rgb => {
     if (!groups.some(g => /anime/i.test(g)) || !groups.some(g => /natural/i.test(g))) throw new Error("the style picker's groups: " + JSON.stringify(groups));
     const r = await page.evaluate(async () => {
       const b = window.__body, BL = await import("./browlash.js");
-      const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash; return { spike: c.spike, alt: c.alt, drop: c.drop, lift: c.lift, rim: c.rim, cards: c.lashes }; };
+      const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash; return { spike: c.spike, vary: c.vary, drop: c.drop, lift: c.lift, rim: c.rim, cards: c.lashes }; };
       const anime = at("anime"), drawn = at("drawn"), doll = at("animeDoll"), natural = at("natural"), N = BL.styleOf("natural");
       const reset = Object.keys(N).every(k => b.st.lash[k] === N[k]);   // the anime style's spikes gone with the natural one: a style sets every control
       b.st.lash.on = false; b.browLash();
       return { anime, drawn, doll, natural, reset };
     });
-    // the gap between clumps against the roots' spacing inside one: about 1 spread evenly, far more as spikes; the lower lashes' elevation from the lid (degrees)
-    for (const [k, x] of [["anime", r.anime], ["drawn", r.drawn], ["anime doll", r.doll]]) if (!(x.spike > 4 && x.drop > 45 && x.rim > 1.2 && x.rim < 3.2 && x.cards > 100)) throw new Error(`${k}: ${JSON.stringify(x)}`);
-    if (!(r.anime.alt < 0.85) || !(r.natural.spike < 2 && r.natural.alt > 0.85 && r.natural.alt < 1.15 && r.natural.drop < 35) || !r.reset) throw new Error("natural against anime: " + JSON.stringify(r));
-    console.log(`       anime: the gap between spikes ${r.anime.spike.toFixed(1)}× the roots' spacing inside one (natural ${r.natural.spike.toFixed(1)}×), every other spike ${((1 - r.anime.alt) * 100).toFixed(0)}% shorter, the lower lashes ${r.anime.drop.toFixed(0)}° down the skin (natural ${r.natural.drop.toFixed(0)}°)`);
+    // the gap between clusters against the roots' spacing inside one: about 1 spread evenly, far more as spikes; the clusters' lengths' spread over their mean; the lower lashes' elevation from the lid (degrees)
+    for (const [k, x] of [["anime", r.anime], ["drawn", r.drawn], ["anime doll", r.doll]]) if (!(x.spike > 4 && x.drop > 45 && x.rim > 1.2 && x.rim < 3.2 && x.cards > 300)) throw new Error(`${k}: ${JSON.stringify(x)}`);
+    if (!(r.anime.vary > 0.12) || !(r.natural.spike < 2 && r.natural.vary < 0.1 && r.natural.drop < 35) || !r.reset) throw new Error("natural against anime: " + JSON.stringify(r));
+    console.log(`       anime: ${r.anime.cards} hairs an eye, the gap between spikes ${r.anime.spike.toFixed(1)}× the roots' spacing inside one (natural ${r.natural.spike.toFixed(1)}×), the clusters' lengths spread ${(r.anime.vary * 100).toFixed(0)}% (natural ${(r.natural.vary * 100).toFixed(0)}%), the lower lashes ${r.anime.drop.toFixed(0)}° down the skin (natural ${r.natural.drop.toFixed(0)}°)`);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the anime pink makeup after the user's references: the preset paints the liner between the lashes' roots and a line a liner's width up the lid (both found on the skin), a wash under the eye, the inner corner and the waterline pink; under the eye the picture goes pinker; the anime pink look turns the anime lashes on with it", async () => {
@@ -556,7 +556,7 @@ const png = rgb => {
     if (!(u.ahead > 1 && u.ahead < 3.5) || !(u.band > 0.9 && u.band < 3) || !(u.up > 0.3)) throw new Error("the liner's band: " + JSON.stringify(u));
     if (!(pink > plain + 4)) throw new Error(`under the eye: red over green ${plain.toFixed(1)} plain, ${pink.toFixed(1)} with the preset`);
     const look = await page.evaluate(() => { const b = window.__body; b.useLook("anime pink"); return { on: b.st.lash.on, spikes: b.st.lash.spikes, under: b.st.skin.proc.under, cards: b.browlash && b.browlash.lashes }; });
-    if (!(look.on && look.spikes === 1 && look.under > 0.5 && look.cards > 100)) throw new Error("the anime pink look: " + JSON.stringify(look));
+    if (!(look.on && look.spikes > 0.5 && look.under > 0.5 && look.cards > 300)) throw new Error("the anime pink look: " + JSON.stringify(look));
     await page.evaluate(() => { const b = window.__body; b.useLook("MHR plain"); b.st.lash.on = false; b.browLash(); });   // back to the plain look the steps below were written for
     await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]');
     await page.click('#tabs button[data-tab="body"]');

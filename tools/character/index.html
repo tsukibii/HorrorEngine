@@ -2049,7 +2049,7 @@ const eyeSet = {};
 // lids and squashing as they shut, the brows flat on the skin between MediaPipe's brow rows; both off until asked for
 st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS };
 var BL_READY = false, BLNOW = null, BLLIDS = null;      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on)
-const BLU = { lash: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };
+const BLU = { lash: hairUniforms(atlasTexture(BL.LASH_ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };   // the lashes' atlas: one fine strand to a cell
 for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through

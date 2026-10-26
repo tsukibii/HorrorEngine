@@ -16,6 +16,14 @@ The user's answers, newest first. They override the plan, the research and the d
   makeup presets, and a whole look of the same name (Face, Look) that puts the anime lashes on with it. New makeup
   layers for it: an under-eye wash, the inner corner, the waterline, the eyeshadow's placement, the liner's thickness
   and its point past the inner corner.
+- **The lashes exactly like the anime lash set, as far as the renderer can** ("It doesn't look anywhere as good as
+  this, we want the eyelashes to be exactly like this style if possible, tell me if it isn't"): the first spiky lashes
+  were wedge cards and read as solid black triangles; every lash is now one fine hair (a thin card with one strand of
+  the lashes' own atlas), hundreds an eye, in clusters that draw to points, long, medium and short clusters in turn,
+  a short fringe under them, clusters crossing, the outer ones swept up and out, the lower lashes in small clusters
+  down the skin: judged on the Studio's eye close-up against the photo, open, three-quarters and shut. What the
+  renderer can't give: the photo's soft focus and the hairs' glint under a real light; what's left to the user's eye:
+  the hairs' thickness and count, how far the spikes rise, the lower lashes' length (all sliders).
 - Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
   under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
   the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style

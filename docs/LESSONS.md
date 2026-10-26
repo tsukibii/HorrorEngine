@@ -712,3 +712,10 @@ load the page once after an edit.
   with every makeup layer at full strength in a colour of its own finds that in one look.
 - **`out` is a GLSL keyword:** a float named `out` fails the whole skin shader (the Studio draws nothing but the eyes
   and the hair); the error names the line.
+- **Hair is hairs:** lashes built as a few dozen cards of clumped strands read as solid wedges however they were
+  clustered, and no amount of tuning the clusters fixed it; the user's reference is hundreds of fine hairs. One thin
+  card per hair with a single soft-cored strand on it (its own atlas) looked right at the first render. Count the
+  things in the reference before building them.
+- **A helper's name taken by a setting:** the lashes' Criss-cross slider was called `cross`, the module's vector
+  product too; renamed, the definition was missed and only the calls renamed (a regex on `cross(` doesn't match
+  `const cross =`). Rename the definition first and let the syntax check find the calls.
