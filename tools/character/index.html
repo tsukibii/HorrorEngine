@@ -895,13 +895,35 @@ function compose() {                                   // POS: RAW + the face, s
   poseGarments();                                       // and shown in the body's pose meanwhile
 }
 // SHOW: the body in the view's pose (pose.js: MHR's skinning, its joints refitted to the body as it is); only the arms
-// and the legs turn, so the head and everything on it are POS's own to the last bit. Returns the normals to draw with
+// and the legs turn, and the body under the head moves forward to stand the neck up, so the head and everything on it
+// are POS's own to the last bit. Returns the normals to draw with
 function showPose() {
   const name = SHOWN_POSE = posing();
   POSED = RIG && name !== "rest" ? PO.pose(RIG, PO.joints(RIG, POS, BASEP, SCALE), name) : null;
+  poseHair();
   if (!POSED) { SHOW.set(POS); return geo.attributes.normal.array; }
   PO.skin(RIG, POSED, POS, SHOW); sgeo.attributes.position.needsUpdate = true; sgeo.computeVertexNormals();
   return sgeo.attributes.normal.array;
+}
+// the baked hair in the view's pose: the T-pose stands the neck up, the body below the head moving forward under it
+// (pose.js); the hair hangs from the head, so whatever of it lies lower (down the back, over the shoulders) goes with
+// the body, by the same share at each height (pose.js shiftAt). Done again only when that shift or the hair changes
+let HAIRPOSE = "";
+function poseHair() {
+  const S = POSED?.shift, key = SALONH ? `${SALONH.uuid}|${S ? [S.dz, S.yH, S.yC].map(v => v.toFixed(5)).join() : "-"}` : "";
+  if (!SALONH || key === HAIRPOSE) return; HAIRPOSE = key;
+  rig.updateMatrixWorld(true);
+  const toRig = new THREE.Matrix4().copy(rig.matrixWorld).invert(), M = new THREE.Matrix4(), Mi = new THREE.Matrix4(), v = new THREE.Vector3();
+  SALONH.traverse(o => {
+    if (!o.isMesh) return;
+    const a = o.geometry.attributes.position, R0 = o.userData.rest || (o.userData.rest = Float32Array.from(a.array));
+    M.multiplyMatrices(toRig, o.matrixWorld); Mi.copy(M).invert();
+    for (let i = 0; i < a.count; i++) {
+      v.fromArray(R0, i * 3).applyMatrix4(M); const d = PO.shiftAt(POSED, v.y);
+      if (d) { v.z += d; v.applyMatrix4(Mi); v.toArray(a.array, i * 3); } else { a.array[i * 3] = R0[i * 3]; a.array[i * 3 + 1] = R0[i * 3 + 1]; a.array[i * 3 + 2] = R0[i * 3 + 2]; }
+    }
+    a.needsUpdate = true; o.geometry.computeBoundingSphere();
+  });
 }
 const shownNormals = () => (POSED ? sgeo : geo).attributes.normal.array;
 // the player's eye (POV) sees the body as it stands in a game, MHR's own (the arms down), whatever the view's pose
@@ -2122,7 +2144,7 @@ async function loadSalon() {
   const { C, B, S } = info.head, g = new THREE.Group(); g.name = "salon hair"; g.matrixAutoUpdate = false;
   g.matrix.set(B[0][0] * S, B[0][1] * S, B[0][2] * S, C[0], B[1][0] * S, B[1][1] * S, B[1][2] * S, C[1], B[2][0] * S, B[2][1] * S, B[2][2] * S, C[2], 0, 0, 0, 1);
   let meshes = 0, swinging = 0; gltf.scene.traverse(o => { if (o.isMesh) { meshes++; o.frustumCulled = false; soften(o.material); } if (o.isSkinnedMesh) swinging++; });
-  g.add(gltf.scene); rig.add(g); SALONH = g;
+  g.add(gltf.scene); rig.add(g); SALONH = g; poseHair();
   return { meshes, swinging, head: info.head };
 }
 // the Hair tab: the salon in a frame on this character, its body saved first so the salon draws on the head as it is

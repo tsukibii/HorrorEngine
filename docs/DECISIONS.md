@@ -2,8 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
-## 2026-10-26, evening (lashes over the lid's rim)
+## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 
+- **The T-pose's neck stands upright, like the user's reference** ("I like the new tpose ... but the neck is too curved
+  forward, to the point it looks uncanny ... it should be more aligned like image 2 (the real life neck reference if
+  possible)": a real woman's profile, her neck nearly upright). MHR's rest pose carries the head 6 to 7.5 cm ahead of
+  the shoulders; in the T-pose the body under the head moves forward, the head staying exactly where it is, until the
+  ear is over the shoulder's top. Only the view: the A-pose (MHR's own) and everything written stay as they were.
 - **No bare skin between the eye and the lashes** ("the eyelashes have a large curved gap where the skin shows ... fix
   it so the eyelashes curve along the skin in that area", a close-up with the band circled): the lashes lie over the
   lid's rounded rim from the eye to its front edge, along its skin, and lift from there, as real lashes grow from the

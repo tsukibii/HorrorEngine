@@ -685,3 +685,18 @@ load the page once after an edit.
 - **A band's texture runs the way its strands do:** the lash line drawn with the atlas running along the lid showed its
   strands as blocks; across it, they read as short roots.
 
+## The T-pose's neck (2026-10-26)
+
+- **Check the rule, not a stand-in for it:** "the head untouched" was checked as "nothing above 88% of the height
+  moves"; standing the neck up moves the skin under the jaw and at the nape (partly on the neck's bones), and POSE and
+  STUDIO failed with the head itself untouched. They check the points on the head's own bones now.
+- **Joints built down a chain differ from the ones they came from by a rounding:** a check that the head's joints
+  hadn't moved compared them exactly and found eleven "moved" by 1e-17. Points copied as they are compare exactly;
+  joints, within a tolerance.
+- **Match the reference, not only the textbook:** with the head's joint 3 cm ahead of the shoulders the ear was already
+  over the shoulder's top (the plumb line of good posture), yet the neck's front, under the jaw, still leaned 17° where
+  the user's reference leans about 8°, measured the same way on both pictures. 2.2 cm brought it to 14°, and the
+  squeeze it adds under the chin looked smooth from below before the check's limit moved.
+- **Give a long check its own time:** STUDIO takes about 50 minutes here; run under a 30-minute `timeout` it was killed
+  at its 22nd step with nothing wrong. Run it with an hour and more, or by ONLY for the steps a change touches.
+

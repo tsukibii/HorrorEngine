@@ -4,16 +4,23 @@
 // fitted, dressed and saved in MHR's rest pose (the desk, Unreal and every file the Studio writes stay in it); the pose
 // is laid over it by MHR's own skinning (Content/Studio/Bodies/MHR_lod1_rig.bin, rig_mhr.mjs), its joints refitted to
 // the body as it is (each moves with the skin round it, as the desk's bodies.js refits them). Only the arms and the legs
-// turn: everything weighted to the spine, the neck and the head alone (the face, the eyes, the teeth) stays exactly
-// where it was. Plain JS, no three.js (posetest.mjs checks it).
+// turn; and the neck stands up (MHR's rest pose carries its head well forward, the user found it uncanny: everything
+// below the head moves forward under it, level, the neck part of the way). The head and everything on it (the face, the
+// eyes, the teeth) stays exactly where it was. Plain JS, no three.js (posetest.mjs checks it).
 //
 //   const R = readRig(buffer)             {N, bones: [{name, parent, at}], BI, BW, rings}
 //   const J = joints(R, P, P0, scale)     each bone's place on body P (P0: the rest body the rig was made on, `scale` P's scale to it)
 //   const X = pose(R, J, "t" | "rest")    each bone's turn and pivots (null for "rest": nothing moves)
 //   skin(R, X, P, out)                    the posed points; at(R, X, i, p) where point i's skinning takes p; turn(R, X, i, d) a direction
 //   skinWith(X, BI, BW, Q, out)           any points with their own four bones (a garment's, tailor/weights.js)
+//   shiftAt(X, y)                         how far forward the neck's stand moves a thing at height y that isn't skinned (the hair)
 
 export const POSES = { t: "T-pose", rest: "MHR's A-pose" };
+// the head's joint ahead of the shoulders' in the T-pose, as a share of the neck's height (from the chest's joint to the
+// head's): 0.12 is about 2.2 cm on the bases (MHR's rest pose has 6.1 to 7.4), the ear over the shoulder's top within
+// a centimetre on most bodies; upright, as the user's reference (the neck's front, under the jaw, leans 14° from upright
+// in the side view: 29° in MHR's pose, 17° at 0.17, about 8° in the reference)
+export const NECK_AHEAD = 0.12;
 
 export function readRig(buf) {
   const dv = new DataView(buf), hl = dv.getUint32(0, true), H = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl))), N = H.points;
@@ -105,7 +112,27 @@ export function pose(R, J, name = "t") {
     const [to, want] = A, d0 = sub(at(to), at(b)), now = unit(qRot(qp, d0));
     q[b] = qMul(qFrom(now, want(unit(d0))), qp); moved[b] = 1;
   }
-  return { q, J, J2, moved };
+  // the neck stood up: everything but the head moves forward, level, so the head's joint ends NECK_AHEAD of the
+  // shoulders'; the neck's own joints part of the way, by their height between the chest's joint and the head's
+  const head = ix("c_head"), chest = ix("c_spine3"), neck = ix("c_neck"), shL = ix("l_uparm"), shR = ix("r_uparm");
+  let shift = null;
+  if ([head, chest, neck, shL, shR].every(b => b >= 0)) {
+    const yH = J[head * 3 + 1], yC = J[chest * 3 + 1], ahead = J[head * 3 + 2] - (J[shL * 3 + 2] + J[shR * 3 + 2]) / 2;
+    const dz = Math.max(0, ahead - NECK_AHEAD * (yH - yC)), inHead = new Uint8Array(nb), onNeck = new Uint8Array(nb);
+    for (const b of R.order) { const p = R.bones[b].parent; inHead[b] = b === head || (p >= 0 && inHead[p]) ? 1 : 0; onNeck[b] = !inHead[b] && (b === neck || p === neck) ? 1 : 0; }
+    if (dz > 0) for (let b = 0; b < nb; b++) {
+      const f = inHead[b] ? 0 : onNeck[b] ? Math.max(0, Math.min(1, (yH - J[b * 3 + 1]) / (yH - yC))) : 1;
+      if (f > 0) { J2[b * 3 + 2] += dz * f; moved[b] = 1; }
+    }
+    shift = { dz, yH, yC };
+  }
+  return { q, J, J2, moved, shift };
+}
+// how far forward the neck's stand moves a thing at height y that isn't skinned (the salon's hair, hung from the head):
+// all of it below the chest's joint, none above the head's, the neck's share between, as the neck's joints move
+export function shiftAt(X, y) {
+  const s = X?.shift; if (!s || !s.dz) return 0;
+  return s.dz * Math.max(0, Math.min(1, (s.yH - y) / (s.yH - s.yC)));
 }
 
 // a point's place under its four bones' turns (unweighted: the bones' own)

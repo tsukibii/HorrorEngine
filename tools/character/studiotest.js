@@ -142,19 +142,24 @@ const png = rgb => {
     console.log(`       Belly -1 takes the stomach back ${(r.flat * 1000).toFixed(0)} mm (a flat line from the pubic bone to the ribs)`);
     console.log(`       ${r.controls} controls, ${r.handles} circles; Forehead height 1 raises the head's top ${(r.topUp * 1000).toFixed(0)} mm and nothing under the chest; every control mirrored (within ${r.worst.toExponential(0)} m where the base is: all but ${r.unmatched} of ${r.moved} points); the forehead's circle dragged 60 px up: Forehead height ${after.v} (its row green while held), saved`);
   });
-  await step("the view's pose: a T-pose to shape in (the arms level from the shoulders, the legs straight, the head untouched to the last bit); the A-pose is MHR's own, and what's written stays in it", async () => {
+  await step("the view's pose: a T-pose to shape in (the arms level from the shoulders, the legs straight, the neck stood up under a head untouched to the last bit); the A-pose is MHR's own, and what's written stays in it", async () => {
     const r = await page.evaluate(async () => {
       const b = window.__body, R = b.RIG, X = b.POSED, J = n => { const i = R.byName.get(n); return [X.J2[i * 3], X.J2[i * 3 + 1], X.J2[i * 3 + 2]]; };
-      let head = 0; for (let i = 0; i < b.N; i++) if (b.POS[i * 3 + 1] > 0.88 * b.st.height) for (let a = 0; a < 3; a++) head = Math.max(head, Math.abs(b.SHOW[i * 3 + a] - b.POS[i * 3 + a]));
+      const H = R.byName.get("c_head"), inHead = new Uint8Array(R.bones.length); for (const k of R.order) { const p = R.bones[k].parent; inHead[k] = k === H || (p >= 0 && inHead[p]) ? 1 : 0; }
+      let head = 0, headPts = 0;                       // the head's own points (on its bones alone): not a bit moved
+      for (let i = 0; i < b.N; i++) { let on = true; for (let k = 0; k < 4; k++) if (R.BW[i * 4 + k] > 0 && !inHead[R.BI[i * 4 + k]]) on = false;
+        if (on) { headPts++; for (let a = 0; a < 3; a++) head = Math.max(head, Math.abs(b.SHOW[i * 3 + a] - b.POS[i * 3 + a])); } }
+      const ahead = A => A[H * 3 + 2] - (A[R.byName.get("l_uparm") * 3 + 2] + A[R.byName.get("r_uparm") * 3 + 2]) / 2, yC = X.J[R.byName.get("c_spine3") * 3 + 1];
+      const neck = { was: ahead(X.J), now: ahead(X.J2), want: b.PO.NECK_AHEAD * (X.J[H * 3 + 1] - yC) };
       const drawn = () => { const D = b.rig.children.find(o => o.isMesh && o.geometry.attributes.objPos).geometry.attributes.position.array; let d = 0;
         for (let c = 0; c < b.TRIS.length; c += 7) for (let a = 0; a < 3; a++) d = Math.max(d, Math.abs(D[c * 3 + a] - b.POS[b.TRIS[c] * 3 + a])); return d; };
-      const out = { pose: b.pose, arms: Math.abs(J("l_wrist")[1] - J("l_uparm")[1]) + Math.abs(J("r_wrist")[1] - J("r_uparm")[1]), legs: Math.abs(J("l_foot")[0] - J("l_upleg")[0]) + Math.abs(J("r_foot")[0] - J("r_upleg")[0]), head, drawn: drawn() };
+      const out = { pose: b.pose, arms: Math.abs(J("l_wrist")[1] - J("l_uparm")[1]) + Math.abs(J("r_wrist")[1] - J("r_uparm")[1]), legs: Math.abs(J("l_foot")[0] - J("l_upleg")[0]) + Math.abs(J("r_foot")[0] - J("r_upleg")[0]), head, headPts, neck, drawn: drawn() };
       out.written = await b.inRest(() => drawn()); out.after = b.pose;   // an export's body: MHR's own pose
       b.setPose("rest"); out.rest = drawn(); out.restPosed = !!b.POSED; b.setPose("t");
       return out;
     });
-    if (r.pose !== "t" || !(r.arms < 0.01) || !(r.legs < 0.01) || r.head !== 0 || !(r.drawn > 0.2) || r.written !== 0 || r.after !== "t" || r.rest !== 0 || r.restPosed) throw new Error("the pose: " + JSON.stringify(r));
-    console.log(`       the arms level (${(r.arms * 1000).toFixed(1)} mm off), the legs straight (${(r.legs * 1000).toFixed(1)} mm), the head exactly where it was; drawn up to ${(r.drawn * 100).toFixed(0)} cm from MHR's pose, written in it`);
+    if (r.pose !== "t" || !(r.arms < 0.01) || !(r.legs < 0.01) || r.head !== 0 || !(r.headPts > 3000) || !(Math.abs(r.neck.now - Math.min(r.neck.was, r.neck.want)) < 1e-4 && r.neck.was - r.neck.now > 0.02) || !(r.drawn > 0.2) || r.written !== 0 || r.after !== "t" || r.rest !== 0 || r.restPosed) throw new Error("the pose: " + JSON.stringify(r));
+    console.log(`       the arms level (${(r.arms * 1000).toFixed(1)} mm off), the legs straight (${(r.legs * 1000).toFixed(1)} mm), the neck stood up (the head's joint ${(r.neck.was * 100).toFixed(1)} -> ${(r.neck.now * 100).toFixed(1)} cm ahead of the shoulders'), the head's ${r.headPts} points exactly where they were; drawn up to ${(r.drawn * 100).toFixed(0)} cm from MHR's pose, written in it`);
   });
   await step("a front picture bends the face, not the body", async () => {
     front = await headShot("0"); side = await headShot("35");
