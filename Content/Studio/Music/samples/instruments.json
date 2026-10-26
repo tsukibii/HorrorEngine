@@ -5668,5 +5668,5816 @@
    }
   },
   "calib_db": 11.9
+ },
+ "cbass_sus": {
+  "name": "Double bass sustain, no vibrato (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Solo Contrabass/SusNV",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.8,
+  "gain_db": 0,
+  "calib_db": 9.5,
+  "sustain": true,
+  "range": [
+   28,
+   59
+  ],
+  "added": true,
+  "best": "The floor under everything, an octave below the cellos: dread, the basement, something big nearby. Sounds below C2 in the Full, Solo and Low sets; the Expanded cues use it alone.",
+  "zones": [
+   {
+    "note": 28,
+    "layer": 0,
+    "file": "cbass_sus/E1_v1.ogg",
+    "tune": 1.3,
+    "len": 7.0
+   },
+   {
+    "note": 28,
+    "layer": 1,
+    "file": "cbass_sus/E1_v2.ogg",
+    "tune": -0.1,
+    "len": 7.0
+   },
+   {
+    "note": 30,
+    "layer": 0,
+    "file": "cbass_sus/Fs1_v1.ogg",
+    "tune": 7.7,
+    "len": 7.0
+   },
+   {
+    "note": 30,
+    "layer": 1,
+    "file": "cbass_sus/Fs1_v2.ogg",
+    "tune": -0.6,
+    "len": 7.0
+   },
+   {
+    "note": 31,
+    "layer": 0,
+    "file": "cbass_sus/G1_v1.ogg",
+    "tune": -0.4,
+    "len": 7.0
+   },
+   {
+    "note": 31,
+    "layer": 1,
+    "file": "cbass_sus/G1_v2.ogg",
+    "tune": 0.5,
+    "len": 7.0
+   },
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "cbass_sus/As1_v1.ogg",
+    "tune": 1.1,
+    "len": 7.0
+   },
+   {
+    "note": 34,
+    "layer": 1,
+    "file": "cbass_sus/As1_v2.ogg",
+    "tune": -1.0,
+    "len": 7.0
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cbass_sus/C2_v1.ogg",
+    "tune": -2.1,
+    "len": 7.0
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cbass_sus/C2_v2.ogg",
+    "tune": -0.6,
+    "len": 7.0
+   },
+   {
+    "note": 38,
+    "layer": 0,
+    "file": "cbass_sus/D2_v1.ogg",
+    "tune": 2.1,
+    "len": 7.0
+   },
+   {
+    "note": 38,
+    "layer": 1,
+    "file": "cbass_sus/D2_v2.ogg",
+    "tune": 0.5,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cbass_sus/E2_v1.ogg",
+    "tune": -0.3,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cbass_sus/E2_v2.ogg",
+    "tune": 1.2,
+    "len": 7.0
+   },
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "cbass_sus/Fs2_v1.ogg",
+    "tune": -0.4,
+    "len": 7.0
+   },
+   {
+    "note": 42,
+    "layer": 1,
+    "file": "cbass_sus/Fs2_v2.ogg",
+    "tune": 0.2,
+    "len": 7.0
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "cbass_sus/Gs2_v1.ogg",
+    "tune": 1.6,
+    "len": 7.0
+   },
+   {
+    "note": 44,
+    "layer": 1,
+    "file": "cbass_sus/Gs2_v2.ogg",
+    "tune": 1.2,
+    "len": 7.0
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "cbass_sus/A2_v1.ogg",
+    "tune": -2.2,
+    "len": 6.79
+   },
+   {
+    "note": 45,
+    "layer": 1,
+    "file": "cbass_sus/A2_v2.ogg",
+    "tune": 0.9,
+    "len": 7.0
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "cbass_sus/Cs3_v1.ogg",
+    "tune": -0.5,
+    "len": 6.47
+   },
+   {
+    "note": 49,
+    "layer": 1,
+    "file": "cbass_sus/Cs3_v2.ogg",
+    "tune": -0.2,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "cbass_sus/E3_v1.ogg",
+    "tune": 0.7,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "cbass_sus/E3_v2.ogg",
+    "tune": -0.2,
+    "len": 7.0
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "cbass_sus/Gs3_v1.ogg",
+    "tune": -0.0,
+    "len": 7.0
+   },
+   {
+    "note": 56,
+    "layer": 1,
+    "file": "cbass_sus/Gs3_v2.ogg",
+    "tune": 1.8,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "cbass_sus/B3_v1.ogg",
+    "tune": 1.1,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "cbass_sus/B3_v2.ogg",
+    "tune": 7.5,
+    "len": 7.0
+   }
+  ]
+ },
+ "viola_sus": {
+  "name": "Viola section sustain (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Viola Section/susvib",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.8,
+  "gain_db": 0,
+  "calib_db": 7.4,
+  "sustain": true,
+  "range": [
+   48,
+   86
+  ],
+  "added": true,
+  "best": "The middle of the string section: thickens chords between the violins and the cellos. In the Full string set.",
+  "zones": [
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "viola_sus/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "viola_sus/C3_v2.ogg",
+    "tune": 0.6,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "viola_sus/D3_v1.ogg",
+    "tune": 2.4,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "viola_sus/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "viola_sus/E3_v1.ogg",
+    "tune": -1.8,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "viola_sus/E3_v2.ogg",
+    "tune": -2.0,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "viola_sus/G3_v1.ogg",
+    "tune": 0.1,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "viola_sus/G3_v2.ogg",
+    "tune": 3.4,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "viola_sus/B3_v1.ogg",
+    "tune": -1.6,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "viola_sus/B3_v2.ogg",
+    "tune": -0.4,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "viola_sus/D4_v1.ogg",
+    "tune": 0.4,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "viola_sus/D4_v2.ogg",
+    "tune": 3.3,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "viola_sus/F4_v1.ogg",
+    "tune": 1.2,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "viola_sus/F4_v2.ogg",
+    "tune": -3.3,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "viola_sus/A4_v1.ogg",
+    "tune": 0.7,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "viola_sus/A4_v2.ogg",
+    "tune": -4.8,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "viola_sus/C5_v1.ogg",
+    "tune": 1.2,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "viola_sus/C5_v2.ogg",
+    "tune": 1.8,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "viola_sus/E5_v1.ogg",
+    "tune": 2.8,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "viola_sus/E5_v2.ogg",
+    "tune": -1.1,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "viola_sus/G5_v1.ogg",
+    "tune": -0.7,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "viola_sus/G5_v2.ogg",
+    "tune": -1.2,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "viola_sus/B5_v1.ogg",
+    "tune": -2.4,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "viola_sus/B5_v2.ogg",
+    "tune": 1.7,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "viola_sus/D6_v1.ogg",
+    "tune": -5.1,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "viola_sus/D6_v2.ogg",
+    "tune": -0.0,
+    "len": 7.0
+   }
+  ]
+ },
+ "viola_trem": {
+  "name": "Viola section tremolo (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Viola Section/trem",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": 0,
+  "calib_db": 13.0,
+  "sustain": true,
+  "range": [
+   48,
+   86
+  ],
+  "added": true,
+  "best": "A darker, rougher tremolo than the violins: nerves in the middle register. In the Full string set.",
+  "zones": [
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "viola_trem/C3_v1.ogg",
+    "tune": 8.7,
+    "len": 7.0
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "viola_trem/C3_v2.ogg",
+    "tune": -2.6,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "viola_trem/E3_v1.ogg",
+    "tune": 0.7,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "viola_trem/E3_v2.ogg",
+    "tune": -2.5,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "viola_trem/G3_v1.ogg",
+    "tune": -11.4,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "viola_trem/G3_v2.ogg",
+    "tune": 0.9,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "viola_trem/B3_v1.ogg",
+    "tune": -0.5,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "viola_trem/B3_v2.ogg",
+    "tune": 0.4,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "viola_trem/D4_v1.ogg",
+    "tune": 15.9,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "viola_trem/D4_v2.ogg",
+    "tune": 2.8,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "viola_trem/F4_v1.ogg",
+    "tune": 2.4,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "viola_trem/F4_v2.ogg",
+    "tune": -2.4,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "viola_trem/A4_v1.ogg",
+    "tune": 4.2,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "viola_trem/A4_v2.ogg",
+    "tune": -2.2,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "viola_trem/C5_v1.ogg",
+    "tune": 3.3,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "viola_trem/C5_v2.ogg",
+    "tune": 0.1,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "viola_trem/E5_v1.ogg",
+    "tune": 2.3,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "viola_trem/E5_v2.ogg",
+    "tune": 0.9,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "viola_trem/G5_v1.ogg",
+    "tune": -2.2,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "viola_trem/G5_v2.ogg",
+    "tune": -2.4,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "viola_trem/B5_v1.ogg",
+    "tune": 3.4,
+    "len": 7.0
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "viola_trem/B5_v2.ogg",
+    "tune": -1.0,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "viola_trem/D6_v1.ogg",
+    "tune": 2.2,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "viola_trem/D6_v2.ogg",
+    "tune": -0.3,
+    "len": 7.0
+   }
+  ]
+ },
+ "viola_pizz": {
+  "name": "Viola section pizzicato (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Viola Section/pizz",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.25,
+  "gain_db": 0,
+  "calib_db": 13.7,
+  "sustain": false,
+  "range": [
+   48,
+   86
+  ],
+  "added": true,
+  "best": "A rounder pluck than the violins'. In the Full string set.",
+  "zones": [
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "viola_pizz/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 2.27
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "viola_pizz/C3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 2.15
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "viola_pizz/C3_v2.ogg",
+    "tune": 0.0,
+    "len": 2.29
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "viola_pizz/C3_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "viola_pizz/E3_v1.ogg",
+    "tune": -0.2,
+    "len": 0.46
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "viola_pizz/E3_v1_rr2.ogg",
+    "tune": 7.2,
+    "len": 0.8
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "viola_pizz/E3_v2.ogg",
+    "tune": 0.0,
+    "len": 0.99
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "viola_pizz/E3_v2_rr2.ogg",
+    "tune": -1.5,
+    "len": 1.39
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "viola_pizz/G3_v1.ogg",
+    "tune": 7.0,
+    "len": 0.91
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "viola_pizz/G3_v1_rr2.ogg",
+    "tune": 1.3,
+    "len": 0.88
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "viola_pizz/G3_v2.ogg",
+    "tune": 0.0,
+    "len": 1.96
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "viola_pizz/G3_v2_rr2.ogg",
+    "tune": -5.1,
+    "len": 2.65
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "viola_pizz/B3_v1.ogg",
+    "tune": 11.4,
+    "len": 1.84
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "viola_pizz/B3_v1_rr2.ogg",
+    "tune": 2.1,
+    "len": 1.24
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "viola_pizz/B3_v2.ogg",
+    "tune": 12.8,
+    "len": 1.73
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "viola_pizz/B3_v2_rr2.ogg",
+    "tune": 1.3,
+    "len": 1.37
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "viola_pizz/D4_v1.ogg",
+    "tune": 5.1,
+    "len": 1.76
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "viola_pizz/D4_v1_rr2.ogg",
+    "tune": 13.5,
+    "len": 0.74
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "viola_pizz/D4_v2.ogg",
+    "tune": 1.3,
+    "len": 2.2
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "viola_pizz/D4_v2_rr2.ogg",
+    "tune": 3.1,
+    "len": 2.31
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "viola_pizz/F4_v1.ogg",
+    "tune": -4.2,
+    "len": 1.13
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "viola_pizz/F4_v1_rr2.ogg",
+    "tune": 9.1,
+    "len": 0.55
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "viola_pizz/F4_v2.ogg",
+    "tune": 0.4,
+    "len": 0.83
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "viola_pizz/F4_v2_rr2.ogg",
+    "tune": 1.2,
+    "len": 0.97
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "viola_pizz/A4_v1.ogg",
+    "tune": -6.4,
+    "len": 0.68
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "viola_pizz/A4_v1_rr2.ogg",
+    "tune": -7.5,
+    "len": 0.64
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "viola_pizz/A4_v2.ogg",
+    "tune": -1.5,
+    "len": 0.73
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "viola_pizz/A4_v2_rr2.ogg",
+    "tune": 5.6,
+    "len": 0.71
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "viola_pizz/C5_v1.ogg",
+    "tune": -0.8,
+    "len": 0.87
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "viola_pizz/C5_v1_rr2.ogg",
+    "tune": 2.0,
+    "len": 0.86
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "viola_pizz/C5_v2.ogg",
+    "tune": 2.7,
+    "len": 0.81
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "viola_pizz/C5_v2_rr2.ogg",
+    "tune": -1.2,
+    "len": 0.8
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "viola_pizz/E5_v1.ogg",
+    "tune": -1.9,
+    "len": 0.65
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "viola_pizz/E5_v1_rr2.ogg",
+    "tune": 2.8,
+    "len": 0.62
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "viola_pizz/E5_v2.ogg",
+    "tune": -4.6,
+    "len": 1.15
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "viola_pizz/E5_v2_rr2.ogg",
+    "tune": -6.4,
+    "len": 1.77
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "viola_pizz/G5_v1.ogg",
+    "tune": -4.0,
+    "len": 0.47
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "viola_pizz/G5_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.49
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "viola_pizz/G5_v2.ogg",
+    "tune": -1.6,
+    "len": 0.81
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "viola_pizz/G5_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.44
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "viola_pizz/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.28
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "viola_pizz/B5_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.34
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "viola_pizz/B5_v2.ogg",
+    "tune": 0.0,
+    "len": 0.5
+   },
+   {
+    "note": 83,
+    "layer": 1,
+    "file": "viola_pizz/B5_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.38
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "viola_pizz/D6_v1.ogg",
+    "tune": 14.2,
+    "len": 0.39
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "viola_pizz/D6_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.39
+   }
+  ]
+ },
+ "cello_sus": {
+  "name": "Cello section sustain (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Cello Section/susvib",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.8,
+  "gain_db": 0,
+  "calib_db": 6.2,
+  "sustain": true,
+  "range": [
+   36,
+   77
+  ],
+  "added": true,
+  "best": "Warm and low with no violins over it: grief, the low bed of a romance, a slow dread. In the Low strings set.",
+  "zones": [
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cello_sus/C2_v1.ogg",
+    "tune": -0.5,
+    "len": 7.0
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cello_sus/C2_v2.ogg",
+    "tune": 1.1,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cello_sus/E2_v1.ogg",
+    "tune": 2.1,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cello_sus/E2_v2.ogg",
+    "tune": 4.0,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "cello_sus/G2_v1.ogg",
+    "tune": 4.1,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "cello_sus/G2_v2.ogg",
+    "tune": 2.0,
+    "len": 7.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "cello_sus/B2_v1.ogg",
+    "tune": -2.7,
+    "len": 7.0
+   },
+   {
+    "note": 47,
+    "layer": 1,
+    "file": "cello_sus/B2_v2.ogg",
+    "tune": 0.2,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "cello_sus/D3_v1.ogg",
+    "tune": -3.4,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "cello_sus/D3_v2.ogg",
+    "tune": 0.8,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "cello_sus/F3_v1.ogg",
+    "tune": -3.1,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "cello_sus/F3_v2.ogg",
+    "tune": -1.4,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "cello_sus/A3_v1.ogg",
+    "tune": 0.1,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "cello_sus/A3_v2.ogg",
+    "tune": 1.0,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "cello_sus/C4_v1.ogg",
+    "tune": -0.4,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "cello_sus/C4_v2.ogg",
+    "tune": 1.8,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "cello_sus/E4_v1.ogg",
+    "tune": 3.1,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "cello_sus/E4_v2.ogg",
+    "tune": -0.0,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "cello_sus/G4_v1.ogg",
+    "tune": -1.2,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "cello_sus/G4_v2.ogg",
+    "tune": 2.2,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "cello_sus/B4_v1.ogg",
+    "tune": -0.5,
+    "len": 6.07
+   },
+   {
+    "note": 71,
+    "layer": 1,
+    "file": "cello_sus/B4_v2.ogg",
+    "tune": -1.7,
+    "len": 7.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "cello_sus/D5_v1.ogg",
+    "tune": -0.4,
+    "len": 7.0
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "cello_sus/D5_v2.ogg",
+    "tune": -2.1,
+    "len": 7.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "cello_sus/F5_v1.ogg",
+    "tune": 2.0,
+    "len": 7.0
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "cello_sus/F5_v2.ogg",
+    "tune": -0.2,
+    "len": 7.0
+   }
+  ]
+ },
+ "cello_trem": {
+  "name": "Cello section tremolo (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Cello Section/trem",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": 0,
+  "calib_db": 14.4,
+  "sustain": true,
+  "range": [
+   36,
+   77
+  ],
+  "added": true,
+  "best": "A low tremolo rumble under a chase or a reveal. In the Low strings set.",
+  "zones": [
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cello_trem/C2_v2.ogg",
+    "tune": 5.9,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cello_trem/E2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cello_trem/E2_v2.ogg",
+    "tune": 1.0,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "cello_trem/G2_v1.ogg",
+    "tune": 8.5,
+    "len": 7.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "cello_trem/G2_v2.ogg",
+    "tune": 0.9,
+    "len": 7.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "cello_trem/B2_v1.ogg",
+    "tune": -3.1,
+    "len": 7.0
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "cello_trem/D3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.85
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "cello_trem/D3_v2.ogg",
+    "tune": -1.7,
+    "len": 6.76
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "cello_trem/F3_v1.ogg",
+    "tune": 1.6,
+    "len": 6.92
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "cello_trem/F3_v2.ogg",
+    "tune": 1.6,
+    "len": 6.82
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "cello_trem/A3_v1.ogg",
+    "tune": 1.0,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "cello_trem/A3_v2.ogg",
+    "tune": 1.4,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "cello_trem/B3_v2.ogg",
+    "tune": 0.0,
+    "len": 6.38
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "cello_trem/C4_v1.ogg",
+    "tune": 0.6,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "cello_trem/C4_v2.ogg",
+    "tune": 3.4,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "cello_trem/E4_v1.ogg",
+    "tune": -3.1,
+    "len": 6.76
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "cello_trem/E4_v2.ogg",
+    "tune": 3.8,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "cello_trem/G4_v1.ogg",
+    "tune": -2.7,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "cello_trem/G4_v2.ogg",
+    "tune": 6.0,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "cello_trem/B4_v1.ogg",
+    "tune": 1.0,
+    "len": 7.0
+   },
+   {
+    "note": 71,
+    "layer": 1,
+    "file": "cello_trem/B4_v2.ogg",
+    "tune": 2.8,
+    "len": 7.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "cello_trem/D5_v1.ogg",
+    "tune": 1.8,
+    "len": 6.61
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "cello_trem/D5_v2.ogg",
+    "tune": 5.2,
+    "len": 6.62
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "cello_trem/F5_v1.ogg",
+    "tune": 4.9,
+    "len": 7.0
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "cello_trem/F5_v2.ogg",
+    "tune": 6.7,
+    "len": 7.0
+   }
+  ]
+ },
+ "cello_pizz": {
+  "name": "Cello section pizzicato (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Cello Section/pizzT",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": 11.7,
+  "sustain": false,
+  "range": [
+   36,
+   77
+  ],
+  "added": true,
+  "best": "Low plucked steps: a creeping walk, a heartbeat in pizzicato. In the Low strings set.",
+  "zones": [
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cello_pizz/C2_v1.ogg",
+    "tune": -0.8,
+    "len": 2.54
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cello_pizz/C2_v1_rr2.ogg",
+    "tune": 1.6,
+    "len": 3.0
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cello_pizz/C2_v2.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cello_pizz/C2_v2_rr2.ogg",
+    "tune": 1.6,
+    "len": 3.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cello_pizz/E2_v1.ogg",
+    "tune": -23.0,
+    "len": 3.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cello_pizz/E2_v1_rr2.ogg",
+    "tune": -16.9,
+    "len": 1.94
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cello_pizz/E2_v2.ogg",
+    "tune": -3.2,
+    "len": 3.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cello_pizz/E2_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 3.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "cello_pizz/G2_v1.ogg",
+    "tune": 4.0,
+    "len": 3.0
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "cello_pizz/G2_v1_rr2.ogg",
+    "tune": 31.3,
+    "len": 2.71
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "cello_pizz/G2_v2.ogg",
+    "tune": 4.4,
+    "len": 2.91
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "cello_pizz/G2_v2_rr2.ogg",
+    "tune": 2.2,
+    "len": 3.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "cello_pizz/B2_v1.ogg",
+    "tune": 10.1,
+    "len": 3.0
+   },
+   {
+    "note": 47,
+    "layer": 0,
+    "file": "cello_pizz/B2_v1_rr2.ogg",
+    "tune": 2.8,
+    "len": 3.0
+   },
+   {
+    "note": 47,
+    "layer": 1,
+    "file": "cello_pizz/B2_v2.ogg",
+    "tune": -0.1,
+    "len": 2.54
+   },
+   {
+    "note": 47,
+    "layer": 1,
+    "file": "cello_pizz/B2_v2_rr2.ogg",
+    "tune": 6.7,
+    "len": 2.38
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "cello_pizz/D3_v1.ogg",
+    "tune": 1.7,
+    "len": 2.67
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "cello_pizz/D3_v1_rr2.ogg",
+    "tune": -0.2,
+    "len": 2.64
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "cello_pizz/D3_v2.ogg",
+    "tune": 3.4,
+    "len": 2.62
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "cello_pizz/D3_v2_rr2.ogg",
+    "tune": -4.0,
+    "len": 2.48
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "cello_pizz/F3_v1.ogg",
+    "tune": 0.0,
+    "len": 1.37
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "cello_pizz/F3_v1_rr2.ogg",
+    "tune": -12.8,
+    "len": 1.69
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "cello_pizz/F3_v2.ogg",
+    "tune": -2.8,
+    "len": 1.81
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "cello_pizz/F3_v2_rr2.ogg",
+    "tune": -14.0,
+    "len": 1.41
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "cello_pizz/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 2.29
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "cello_pizz/A3_v1_rr2.ogg",
+    "tune": 4.0,
+    "len": 2.33
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "cello_pizz/A3_v2.ogg",
+    "tune": 0.7,
+    "len": 2.4
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "cello_pizz/A3_v2_rr2.ogg",
+    "tune": 0.8,
+    "len": 2.68
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "cello_pizz/C4_v1.ogg",
+    "tune": -4.8,
+    "len": 1.63
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "cello_pizz/C4_v1_rr2.ogg",
+    "tune": -11.2,
+    "len": 1.76
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "cello_pizz/C4_v2.ogg",
+    "tune": -1.3,
+    "len": 1.76
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "cello_pizz/C4_v2_rr2.ogg",
+    "tune": -0.3,
+    "len": 1.86
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "cello_pizz/E4_v1.ogg",
+    "tune": 0.0,
+    "len": 1.61
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "cello_pizz/E4_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 1.3
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "cello_pizz/E4_v2.ogg",
+    "tune": -3.8,
+    "len": 1.33
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "cello_pizz/E4_v2_rr2.ogg",
+    "tune": -5.0,
+    "len": 1.32
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "cello_pizz/G4_v1.ogg",
+    "tune": 1.9,
+    "len": 1.42
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "cello_pizz/G4_v1_rr2.ogg",
+    "tune": 1.3,
+    "len": 2.49
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "cello_pizz/G4_v2.ogg",
+    "tune": -3.8,
+    "len": 1.5
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "cello_pizz/G4_v2_rr2.ogg",
+    "tune": -2.7,
+    "len": 2.88
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "cello_pizz/B4_v1.ogg",
+    "tune": 0.0,
+    "len": 1.92
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "cello_pizz/B4_v1_rr2.ogg",
+    "tune": -6.1,
+    "len": 0.82
+   },
+   {
+    "note": 71,
+    "layer": 1,
+    "file": "cello_pizz/B4_v2.ogg",
+    "tune": -1.6,
+    "len": 0.63
+   },
+   {
+    "note": 71,
+    "layer": 1,
+    "file": "cello_pizz/B4_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.83
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "cello_pizz/D5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.83
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "cello_pizz/D5_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.62
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "cello_pizz/D5_v2.ogg",
+    "tune": 0.0,
+    "len": 0.86
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "cello_pizz/D5_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 1.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "cello_pizz/F5_v1.ogg",
+    "tune": 0.0,
+    "len": 0.54
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "cello_pizz/F5_v1_rr2.ogg",
+    "tune": -28.2,
+    "len": 0.83
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "cello_pizz/F5_v2.ogg",
+    "tune": -12.6,
+    "len": 0.77
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "cello_pizz/F5_v2_rr2.ogg",
+    "tune": -27.8,
+    "len": 0.66
+   }
+  ]
+ },
+ "cbass_trem": {
+  "name": "Double bass tremolo (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Solo Contrabass/Trem",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": 0,
+  "calib_db": 13.1,
+  "sustain": true,
+  "range": [
+   28,
+   59
+  ],
+  "added": true,
+  "best": "A growl you feel: under a riser, before the scare.",
+  "zones": [
+   {
+    "note": 28,
+    "layer": 0,
+    "file": "cbass_trem/E1_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 28,
+    "layer": 1,
+    "file": "cbass_trem/E1_v2.ogg",
+    "tune": -10.8,
+    "len": 7.0
+   },
+   {
+    "note": 31,
+    "layer": 0,
+    "file": "cbass_trem/G1_v1.ogg",
+    "tune": -11.4,
+    "len": 6.06
+   },
+   {
+    "note": 31,
+    "layer": 1,
+    "file": "cbass_trem/G1_v2.ogg",
+    "tune": -22.9,
+    "len": 6.6
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cbass_trem/C2_v1.ogg",
+    "tune": 10.6,
+    "len": 7.0
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cbass_trem/C2_v2.ogg",
+    "tune": 17.9,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cbass_trem/E2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cbass_trem/E2_v2.ogg",
+    "tune": 8.9,
+    "len": 6.97
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "cbass_trem/Gs2_v1.ogg",
+    "tune": 15.6,
+    "len": 6.17
+   },
+   {
+    "note": 44,
+    "layer": 1,
+    "file": "cbass_trem/Gs2_v2.ogg",
+    "tune": 15.1,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "cbass_trem/E3_v1.ogg",
+    "tune": 2.4,
+    "len": 7.0
+   },
+   {
+    "note": 52,
+    "layer": 1,
+    "file": "cbass_trem/E3_v2.ogg",
+    "tune": 3.9,
+    "len": 6.92
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "cbass_trem/Gs3_v1.ogg",
+    "tune": 19.2,
+    "len": 5.96
+   },
+   {
+    "note": 56,
+    "layer": 1,
+    "file": "cbass_trem/Gs3_v2.ogg",
+    "tune": 18.1,
+    "len": 6.71
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "cbass_trem/B3_v1.ogg",
+    "tune": 2.7,
+    "len": 7.0
+   },
+   {
+    "note": 59,
+    "layer": 1,
+    "file": "cbass_trem/B3_v2.ogg",
+    "tune": 3.0,
+    "len": 6.92
+   }
+  ]
+ },
+ "cbass_pizz": {
+  "name": "Double bass pizzicato (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Solo Contrabass/Pizz",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.35,
+  "gain_db": 0,
+  "calib_db": 9.6,
+  "sustain": false,
+  "range": [
+   28,
+   59
+  ],
+  "added": true,
+  "best": "Deep plucks: the stalker's footsteps, a walking bass for the noir trumpet.",
+  "zones": [
+   {
+    "note": 28,
+    "layer": 0,
+    "file": "cbass_pizz/E1_v1.ogg",
+    "tune": 0.0,
+    "len": 2.4
+   },
+   {
+    "note": 28,
+    "layer": 0,
+    "file": "cbass_pizz/E1_v1_rr2.ogg",
+    "tune": 10.3,
+    "len": 2.34
+   },
+   {
+    "note": 28,
+    "layer": 1,
+    "file": "cbass_pizz/E1_v2.ogg",
+    "tune": 2.9,
+    "len": 3.0
+   },
+   {
+    "note": 28,
+    "layer": 1,
+    "file": "cbass_pizz/E1_v2_rr2.ogg",
+    "tune": 2.9,
+    "len": 3.0
+   },
+   {
+    "note": 30,
+    "layer": 0,
+    "file": "cbass_pizz/Fs1_v1.ogg",
+    "tune": 11.3,
+    "len": 1.44
+   },
+   {
+    "note": 30,
+    "layer": 0,
+    "file": "cbass_pizz/Fs1_v1_rr2.ogg",
+    "tune": 8.3,
+    "len": 1.67
+   },
+   {
+    "note": 30,
+    "layer": 1,
+    "file": "cbass_pizz/Fs1_v2.ogg",
+    "tune": 5.1,
+    "len": 3.0
+   },
+   {
+    "note": 30,
+    "layer": 1,
+    "file": "cbass_pizz/Fs1_v2_rr2.ogg",
+    "tune": 4.1,
+    "len": 3.0
+   },
+   {
+    "note": 31,
+    "layer": 0,
+    "file": "cbass_pizz/G1_v1.ogg",
+    "tune": 18.5,
+    "len": 0.96
+   },
+   {
+    "note": 31,
+    "layer": 0,
+    "file": "cbass_pizz/G1_v1_rr2.ogg",
+    "tune": 20.2,
+    "len": 1.34
+   },
+   {
+    "note": 31,
+    "layer": 1,
+    "file": "cbass_pizz/G1_v2.ogg",
+    "tune": 0.7,
+    "len": 3.0
+   },
+   {
+    "note": 31,
+    "layer": 1,
+    "file": "cbass_pizz/G1_v2_rr2.ogg",
+    "tune": 1.5,
+    "len": 3.0
+   },
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "cbass_pizz/As1_v1.ogg",
+    "tune": -5.0,
+    "len": 1.91
+   },
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "cbass_pizz/As1_v1_rr2.ogg",
+    "tune": -6.9,
+    "len": 1.75
+   },
+   {
+    "note": 34,
+    "layer": 1,
+    "file": "cbass_pizz/As1_v2.ogg",
+    "tune": -8.3,
+    "len": 2.23
+   },
+   {
+    "note": 34,
+    "layer": 1,
+    "file": "cbass_pizz/As1_v2_rr2.ogg",
+    "tune": -10.7,
+    "len": 2.49
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cbass_pizz/C2_v1.ogg",
+    "tune": -12.0,
+    "len": 1.44
+   },
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "cbass_pizz/C2_v1_rr2.ogg",
+    "tune": -5.2,
+    "len": 2.17
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cbass_pizz/C2_v2.ogg",
+    "tune": 1.6,
+    "len": 2.14
+   },
+   {
+    "note": 36,
+    "layer": 1,
+    "file": "cbass_pizz/C2_v2_rr2.ogg",
+    "tune": 0.9,
+    "len": 2.06
+   },
+   {
+    "note": 38,
+    "layer": 0,
+    "file": "cbass_pizz/D2_v1.ogg",
+    "tune": -6.8,
+    "len": 3.0
+   },
+   {
+    "note": 38,
+    "layer": 0,
+    "file": "cbass_pizz/D2_v1_rr2.ogg",
+    "tune": -0.1,
+    "len": 3.0
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cbass_pizz/E2_v1.ogg",
+    "tune": 26.9,
+    "len": 1.64
+   },
+   {
+    "note": 40,
+    "layer": 0,
+    "file": "cbass_pizz/E2_v1_rr2.ogg",
+    "tune": 4.6,
+    "len": 1.72
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cbass_pizz/E2_v2.ogg",
+    "tune": 2.7,
+    "len": 2.67
+   },
+   {
+    "note": 40,
+    "layer": 1,
+    "file": "cbass_pizz/E2_v2_rr2.ogg",
+    "tune": 1.2,
+    "len": 2.37
+   },
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "cbass_pizz/Fs2_v1.ogg",
+    "tune": -33.5,
+    "len": 3.0
+   },
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "cbass_pizz/Fs2_v1_rr2.ogg",
+    "tune": 10.0,
+    "len": 3.0
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "cbass_pizz/Gs2_v1.ogg",
+    "tune": -25.4,
+    "len": 3.0
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "cbass_pizz/Gs2_v1_rr2.ogg",
+    "tune": -10.7,
+    "len": 2.87
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "cbass_pizz/A2_v1.ogg",
+    "tune": -19.0,
+    "len": 3.0
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "cbass_pizz/A2_v1_rr2.ogg",
+    "tune": -20.6,
+    "len": 2.53
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "cbass_pizz/Cs3_v1.ogg",
+    "tune": 0.0,
+    "len": 2.77
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "cbass_pizz/Cs3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 2.57
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "cbass_pizz/E3_v1.ogg",
+    "tune": -1.2,
+    "len": 2.31
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "cbass_pizz/E3_v1_rr2.ogg",
+    "tune": 0.2,
+    "len": 3.0
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "cbass_pizz/Gs3_v1.ogg",
+    "tune": 13.3,
+    "len": 2.04
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "cbass_pizz/Gs3_v1_rr2.ogg",
+    "tune": 0.4,
+    "len": 1.49
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "cbass_pizz/B3_v1.ogg",
+    "tune": 11.3,
+    "len": 2.25
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "cbass_pizz/B3_v1_rr2.ogg",
+    "tune": -0.6,
+    "len": 1.81
+   }
+  ]
+ },
+ "vln_solo": {
+  "name": "Solo violin (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Solo Violin/Arco Vib",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": 0,
+  "calib_db": 8.0,
+  "sustain": true,
+  "range": [
+   55,
+   96
+  ],
+  "added": true,
+  "best": "One player, exposed and close: a lament, her theme when she's alone, the lullaby sung on a string. In the Solo set.",
+  "zones": [
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "vln_solo/G3_v1.ogg",
+    "tune": 3.3,
+    "len": 7.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "vln_solo/G3_v2.ogg",
+    "tune": 0.8,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "vln_solo/A3_v1.ogg",
+    "tune": -5.3,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "vln_solo/A3_v2.ogg",
+    "tune": -3.9,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "vln_solo/C4_v1.ogg",
+    "tune": -19.4,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "vln_solo/C4_v2.ogg",
+    "tune": 8.6,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "vln_solo/E4_v1.ogg",
+    "tune": -7.6,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "vln_solo/E4_v2.ogg",
+    "tune": -1.5,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "vln_solo/G4_v1.ogg",
+    "tune": 1.5,
+    "len": 7.0
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "vln_solo/G4_v2.ogg",
+    "tune": -1.0,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "vln_solo/A4_v1.ogg",
+    "tune": -2.3,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "vln_solo/A4_v2.ogg",
+    "tune": -15.1,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "vln_solo/C5_v1.ogg",
+    "tune": -0.8,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "vln_solo/C5_v2.ogg",
+    "tune": 2.2,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "vln_solo/E5_v1.ogg",
+    "tune": -9.0,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "vln_solo/E5_v2.ogg",
+    "tune": -19.4,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "vln_solo/G5_v1.ogg",
+    "tune": -4.7,
+    "len": 7.0
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "vln_solo/G5_v2.ogg",
+    "tune": -7.7,
+    "len": 7.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "vln_solo/A5_v1.ogg",
+    "tune": 1.9,
+    "len": 7.0
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "vln_solo/A5_v2.ogg",
+    "tune": -4.5,
+    "len": 7.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "vln_solo/C6_v1.ogg",
+    "tune": -0.5,
+    "len": 7.0
+   },
+   {
+    "note": 84,
+    "layer": 1,
+    "file": "vln_solo/C6_v2.ogg",
+    "tune": -1.1,
+    "len": 7.0
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "vln_solo/E6_v1.ogg",
+    "tune": -4.4,
+    "len": 7.0
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "vln_solo/E6_v2.ogg",
+    "tune": -17.3,
+    "len": 7.0
+   },
+   {
+    "note": 91,
+    "layer": 0,
+    "file": "vln_solo/G6_v1.ogg",
+    "tune": -3.8,
+    "len": 7.0
+   },
+   {
+    "note": 91,
+    "layer": 1,
+    "file": "vln_solo/G6_v2.ogg",
+    "tune": 7.6,
+    "len": 7.0
+   },
+   {
+    "note": 93,
+    "layer": 0,
+    "file": "vln_solo/A6_v1.ogg",
+    "tune": 3.4,
+    "len": 7.0
+   },
+   {
+    "note": 93,
+    "layer": 1,
+    "file": "vln_solo/A6_v2.ogg",
+    "tune": -5.8,
+    "len": 7.0
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "vln_solo/C7_v1.ogg",
+    "tune": -5.0,
+    "len": 7.0
+   },
+   {
+    "note": 96,
+    "layer": 1,
+    "file": "vln_solo/C7_v2.ogg",
+    "tune": 14.3,
+    "len": 7.0
+   }
+  ]
+ },
+ "vln_solo_trem": {
+  "name": "Solo violin tremolo (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Solo Violin/Trem",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.5,
+  "gain_db": 0,
+  "calib_db": 15.0,
+  "sustain": true,
+  "range": [
+   55,
+   96
+  ],
+  "added": true,
+  "best": "A thin, nervous shimmer: one string shaking in the dark. In the Solo set.",
+  "zones": [
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "vln_solo_trem/G3_v1.ogg",
+    "tune": 5.7,
+    "len": 6.46
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "vln_solo_trem/G3_v2.ogg",
+    "tune": 7.1,
+    "len": 5.07
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "vln_solo_trem/A3_v1.ogg",
+    "tune": -1.9,
+    "len": 6.54
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "vln_solo_trem/A3_v2.ogg",
+    "tune": 1.4,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "vln_solo_trem/C4_v1.ogg",
+    "tune": -1.0,
+    "len": 6.48
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "vln_solo_trem/C4_v2.ogg",
+    "tune": 6.1,
+    "len": 6.79
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "vln_solo_trem/E4_v1.ogg",
+    "tune": -0.4,
+    "len": 7.0
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "vln_solo_trem/E4_v2.ogg",
+    "tune": -1.9,
+    "len": 6.85
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "vln_solo_trem/G4_v1.ogg",
+    "tune": -1.5,
+    "len": 6.62
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "vln_solo_trem/G4_v2.ogg",
+    "tune": -2.6,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "vln_solo_trem/A4_v1.ogg",
+    "tune": -1.6,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "vln_solo_trem/A4_v2.ogg",
+    "tune": -3.5,
+    "len": 6.66
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "vln_solo_trem/C5_v1.ogg",
+    "tune": -1.1,
+    "len": 6.49
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "vln_solo_trem/C5_v2.ogg",
+    "tune": -3.7,
+    "len": 7.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "vln_solo_trem/E5_v1.ogg",
+    "tune": -5.3,
+    "len": 5.47
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "vln_solo_trem/E5_v2.ogg",
+    "tune": -4.9,
+    "len": 6.73
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "vln_solo_trem/G5_v1.ogg",
+    "tune": -1.3,
+    "len": 6.27
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "vln_solo_trem/G5_v2.ogg",
+    "tune": -1.7,
+    "len": 5.9
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "vln_solo_trem/A5_v1.ogg",
+    "tune": -3.7,
+    "len": 7.0
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "vln_solo_trem/A5_v2.ogg",
+    "tune": -4.7,
+    "len": 6.8
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "vln_solo_trem/C6_v1.ogg",
+    "tune": -0.8,
+    "len": 6.55
+   },
+   {
+    "note": 84,
+    "layer": 1,
+    "file": "vln_solo_trem/C6_v2.ogg",
+    "tune": -1.2,
+    "len": 5.91
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "vln_solo_trem/E6_v1.ogg",
+    "tune": -0.5,
+    "len": 6.24
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "vln_solo_trem/E6_v2.ogg",
+    "tune": -0.6,
+    "len": 6.45
+   },
+   {
+    "note": 91,
+    "layer": 0,
+    "file": "vln_solo_trem/G6_v1.ogg",
+    "tune": -0.2,
+    "len": 7.0
+   },
+   {
+    "note": 91,
+    "layer": 1,
+    "file": "vln_solo_trem/G6_v2.ogg",
+    "tune": -5.0,
+    "len": 5.85
+   },
+   {
+    "note": 96,
+    "layer": 1,
+    "file": "vln_solo_trem/C7_v2.ogg",
+    "tune": -2.4,
+    "len": 7.0
+   }
+  ]
+ },
+ "vln_solo_pizz": {
+  "name": "Solo violin pizzicato (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Strings/Solo Violin/Pizz",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.2,
+  "gain_db": 0,
+  "calib_db": 21.9,
+  "sustain": false,
+  "range": [
+   55,
+   96
+  ],
+  "added": true,
+  "best": "A small, dry pluck: a music box's cousin, tiptoes. In the Solo set.",
+  "zones": [
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "vln_solo_pizz/G3_v1.ogg",
+    "tune": 13.4,
+    "len": 2.5
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "vln_solo_pizz/G3_v2.ogg",
+    "tune": 12.3,
+    "len": 2.5
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "vln_solo_pizz/G3_v2_rr2.ogg",
+    "tune": 12.1,
+    "len": 2.5
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "vln_solo_pizz/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 1.43
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "vln_solo_pizz/A3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 1.34
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "vln_solo_pizz/A3_v2.ogg",
+    "tune": 3.5,
+    "len": 2.5
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "vln_solo_pizz/A3_v2_rr2.ogg",
+    "tune": 4.7,
+    "len": 1.83
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "vln_solo_pizz/C4_v1.ogg",
+    "tune": 13.7,
+    "len": 1.15
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "vln_solo_pizz/C4_v1_rr2.ogg",
+    "tune": 14.9,
+    "len": 1.02
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "vln_solo_pizz/C4_v2.ogg",
+    "tune": 21.2,
+    "len": 1.42
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "vln_solo_pizz/C4_v2_rr2.ogg",
+    "tune": 18.6,
+    "len": 1.35
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "vln_solo_pizz/E4_v1.ogg",
+    "tune": 12.9,
+    "len": 1.25
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "vln_solo_pizz/E4_v1_rr2.ogg",
+    "tune": 11.7,
+    "len": 1.39
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "vln_solo_pizz/E4_v2.ogg",
+    "tune": 16.0,
+    "len": 1.95
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "vln_solo_pizz/E4_v2_rr2.ogg",
+    "tune": 13.3,
+    "len": 1.75
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "vln_solo_pizz/G4_v1.ogg",
+    "tune": 14.3,
+    "len": 1.28
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "vln_solo_pizz/G4_v1_rr2.ogg",
+    "tune": 16.5,
+    "len": 1.16
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "vln_solo_pizz/G4_v2.ogg",
+    "tune": 10.8,
+    "len": 1.03
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "vln_solo_pizz/G4_v2_rr2.ogg",
+    "tune": 10.8,
+    "len": 1.12
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "vln_solo_pizz/A4_v1.ogg",
+    "tune": 3.3,
+    "len": 2.31
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "vln_solo_pizz/A4_v1_rr2.ogg",
+    "tune": 5.5,
+    "len": 2.23
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "vln_solo_pizz/A4_v2.ogg",
+    "tune": 3.1,
+    "len": 2.31
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "vln_solo_pizz/A4_v2_rr2.ogg",
+    "tune": 3.2,
+    "len": 2.23
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "vln_solo_pizz/C5_v1.ogg",
+    "tune": 17.9,
+    "len": 0.83
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "vln_solo_pizz/C5_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.75
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "vln_solo_pizz/C5_v2.ogg",
+    "tune": 0.7,
+    "len": 0.86
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "vln_solo_pizz/C5_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.78
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "vln_solo_pizz/E5_v1.ogg",
+    "tune": -3.6,
+    "len": 1.75
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "vln_solo_pizz/E5_v1_rr2.ogg",
+    "tune": -4.0,
+    "len": 2.12
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "vln_solo_pizz/E5_v2.ogg",
+    "tune": -5.5,
+    "len": 2.17
+   },
+   {
+    "note": 76,
+    "layer": 1,
+    "file": "vln_solo_pizz/E5_v2_rr2.ogg",
+    "tune": -5.8,
+    "len": 2.21
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "vln_solo_pizz/G5_v1.ogg",
+    "tune": -2.2,
+    "len": 0.91
+   },
+   {
+    "note": 79,
+    "layer": 0,
+    "file": "vln_solo_pizz/G5_v1_rr2.ogg",
+    "tune": -0.6,
+    "len": 0.93
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "vln_solo_pizz/G5_v2.ogg",
+    "tune": -9.6,
+    "len": 1.02
+   },
+   {
+    "note": 79,
+    "layer": 1,
+    "file": "vln_solo_pizz/G5_v2_rr2.ogg",
+    "tune": -10.0,
+    "len": 1.38
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "vln_solo_pizz/A5_v1.ogg",
+    "tune": -2.7,
+    "len": 1.31
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "vln_solo_pizz/A5_v1_rr2.ogg",
+    "tune": 1.8,
+    "len": 1.47
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "vln_solo_pizz/A5_v2.ogg",
+    "tune": 4.2,
+    "len": 0.95
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "vln_solo_pizz/A5_v2_rr2.ogg",
+    "tune": 7.2,
+    "len": 0.87
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "vln_solo_pizz/E6_v2.ogg",
+    "tune": 0.0,
+    "len": 1.26
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "vln_solo_pizz/E6_v2_rr2.ogg",
+    "tune": 0.0,
+    "len": 1.02
+   },
+   {
+    "note": 93,
+    "layer": 1,
+    "file": "vln_solo_pizz/A6_v2.ogg",
+    "tune": 0.0,
+    "len": 0.71
+   },
+   {
+    "note": 93,
+    "layer": 1,
+    "file": "vln_solo_pizz/A6_v2_rr2.ogg",
+    "tune": 15.8,
+    "len": 0.6
+   },
+   {
+    "note": 96,
+    "layer": 1,
+    "file": "vln_solo_pizz/C7_v2.ogg",
+    "tune": 0.0,
+    "len": 1.06
+   }
+  ]
+ },
+ "trombone": {
+  "name": "Trombone (VSCO-2, an old one)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Brass/OldTrombone/Sustain",
+  "layers": [
+   [
+    1,
+    42
+   ],
+   [
+    43,
+    85
+   ],
+   [
+    86,
+    127
+   ]
+  ],
+  "release": 0.4,
+  "gain_db": 0,
+  "calib_db": 7.1,
+  "sustain": true,
+  "range": [
+   41,
+   67
+  ],
+  "added": true,
+  "best": "Low brass chords: the funeral, the ritual, a dark chorale. Soft, it's a sigh; loud, a threat.",
+  "zones": [
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "trombone/F2_v1.ogg",
+    "tune": -0.8,
+    "len": 6.0
+   },
+   {
+    "note": 41,
+    "layer": 1,
+    "file": "trombone/F2_v2.ogg",
+    "tune": 0.3,
+    "len": 6.0
+   },
+   {
+    "note": 41,
+    "layer": 2,
+    "file": "trombone/F2_v3.ogg",
+    "tune": -0.2,
+    "len": 3.31
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "trombone/G2_v1.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "trombone/G2_v2.ogg",
+    "tune": 0.8,
+    "len": 6.0
+   },
+   {
+    "note": 43,
+    "layer": 2,
+    "file": "trombone/G2_v3.ogg",
+    "tune": -0.3,
+    "len": 2.69
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "trombone/A2_v1.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 45,
+    "layer": 1,
+    "file": "trombone/A2_v2.ogg",
+    "tune": -0.8,
+    "len": 6.0
+   },
+   {
+    "note": 45,
+    "layer": 2,
+    "file": "trombone/A2_v3.ogg",
+    "tune": -0.4,
+    "len": 3.1
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "trombone/As2_v1.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "trombone/As2_v2.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 2,
+    "file": "trombone/As2_v3.ogg",
+    "tune": 0.3,
+    "len": 4.18
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "trombone/C3_v1.ogg",
+    "tune": -0.5,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "trombone/C3_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 2,
+    "file": "trombone/C3_v3.ogg",
+    "tune": 0.2,
+    "len": 3.95
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "trombone/D3_v1.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "trombone/D3_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 2,
+    "file": "trombone/D3_v3.ogg",
+    "tune": -0.6,
+    "len": 3.64
+   },
+   {
+    "note": 51,
+    "layer": 0,
+    "file": "trombone/Ds3_v1.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 51,
+    "layer": 1,
+    "file": "trombone/Ds3_v2.ogg",
+    "tune": 0.3,
+    "len": 6.0
+   },
+   {
+    "note": 51,
+    "layer": 2,
+    "file": "trombone/Ds3_v3.ogg",
+    "tune": -0.5,
+    "len": 4.0
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "trombone/F3_v1.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "trombone/F3_v2.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 2,
+    "file": "trombone/F3_v3.ogg",
+    "tune": -0.1,
+    "len": 4.13
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "trombone/G3_v1.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "trombone/G3_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 55,
+    "layer": 2,
+    "file": "trombone/G3_v3.ogg",
+    "tune": 0.4,
+    "len": 4.32
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "trombone/A3_v1.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "trombone/A3_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 57,
+    "layer": 2,
+    "file": "trombone/A3_v3.ogg",
+    "tune": -0.3,
+    "len": 3.03
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "trombone/As3_v1.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "trombone/As3_v2.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 2,
+    "file": "trombone/As3_v3.ogg",
+    "tune": -0.3,
+    "len": 3.31
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "trombone/C4_v1.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "trombone/C4_v2.ogg",
+    "tune": 0.2,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 2,
+    "file": "trombone/C4_v3.ogg",
+    "tune": -0.4,
+    "len": 3.89
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "trombone/D4_v1.ogg",
+    "tune": -0.4,
+    "len": 6.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "trombone/D4_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 62,
+    "layer": 2,
+    "file": "trombone/D4_v3.ogg",
+    "tune": 0.1,
+    "len": 3.2
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "trombone/Ds4_v1.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 63,
+    "layer": 1,
+    "file": "trombone/Ds4_v2.ogg",
+    "tune": 0.4,
+    "len": 6.0
+   },
+   {
+    "note": 63,
+    "layer": 2,
+    "file": "trombone/Ds4_v3.ogg",
+    "tune": -0.2,
+    "len": 3.12
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "trombone/F4_v1.ogg",
+    "tune": -0.4,
+    "len": 6.0
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "trombone/F4_v2.ogg",
+    "tune": 0.0,
+    "len": 6.0
+   },
+   {
+    "note": 65,
+    "layer": 2,
+    "file": "trombone/F4_v3.ogg",
+    "tune": -0.0,
+    "len": 4.29
+   },
+   {
+    "note": 67,
+    "layer": 2,
+    "file": "trombone/G4_v3.ogg",
+    "tune": 0.2,
+    "len": 3.82
+   }
+  ]
+ },
+ "trombone_fall": {
+  "name": "Trombone falls (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Brass/OldTrombone/Fall",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": -1.5,
+  "sustain": false,
+  "range": [
+   43,
+   59
+  ],
+  "added": true,
+  "best": "A note that drops away: the floor going out from under you, a sad joke's punchline. Stabs in Brass falls.",
+  "zones": [
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "trombone_fall/G2_v1.ogg",
+    "tune": 6.7,
+    "len": 0.64
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "trombone_fall/Gs2_v1.ogg",
+    "tune": 12.9,
+    "len": 0.79
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "trombone_fall/A2_v1.ogg",
+    "tune": 0.0,
+    "len": 0.87
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "trombone_fall/As2_v1.ogg",
+    "tune": 22.9,
+    "len": 0.58
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "trombone_fall/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 0.65
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "trombone_fall/Cs3_v1.ogg",
+    "tune": 0.0,
+    "len": 0.64
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "trombone_fall/Cs3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.73
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "trombone_fall/D3_v1.ogg",
+    "tune": 9.5,
+    "len": 0.65
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "trombone_fall/D3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.55
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "trombone_fall/D3_v1_rr3.ogg",
+    "tune": 0.0,
+    "len": 0.8
+   },
+   {
+    "note": 51,
+    "layer": 0,
+    "file": "trombone_fall/Ds3_v1.ogg",
+    "tune": 10.9,
+    "len": 0.67
+   },
+   {
+    "note": 51,
+    "layer": 0,
+    "file": "trombone_fall/Ds3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.7
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "trombone_fall/E3_v1.ogg",
+    "tune": 1.4,
+    "len": 0.72
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "trombone_fall/E3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.64
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "trombone_fall/F3_v1.ogg",
+    "tune": 12.0,
+    "len": 0.61
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "trombone_fall/F3_v1_rr2.ogg",
+    "tune": 0.0,
+    "len": 0.68
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "trombone_fall/G3_v1.ogg",
+    "tune": 1.2,
+    "len": 0.68
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "trombone_fall/Gs3_v1.ogg",
+    "tune": 6.3,
+    "len": 0.69
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "trombone_fall/A3_v1.ogg",
+    "tune": 14.5,
+    "len": 0.7
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "trombone_fall/As3_v1.ogg",
+    "tune": 7.8,
+    "len": 0.66
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "trombone_fall/As3_v1_rr2.ogg",
+    "tune": 12.8,
+    "len": 0.67
+   },
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "trombone_fall/B3_v1.ogg",
+    "tune": 20.5,
+    "len": 0.67
+   }
+  ]
+ },
+ "trombone_buzz": {
+  "name": "Trombone buzz (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Brass/OldTrombone/Buzz",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": -1.6,
+  "sustain": true,
+  "range": [
+   41,
+   62
+  ],
+  "added": true,
+  "best": "A rasping, buzzing note: something growls. Use it low and short.",
+  "zones": [
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "trombone_buzz/F2_v1.ogg",
+    "tune": 0.0,
+    "len": 2.84
+   },
+   {
+    "note": 41,
+    "layer": 1,
+    "file": "trombone_buzz/F2_v2.ogg",
+    "tune": 0.0,
+    "len": 2.55
+   },
+   {
+    "note": 43,
+    "layer": 0,
+    "file": "trombone_buzz/G2_v1.ogg",
+    "tune": 0.0,
+    "len": 3.14
+   },
+   {
+    "note": 43,
+    "layer": 1,
+    "file": "trombone_buzz/G2_v2.ogg",
+    "tune": 0.0,
+    "len": 1.9
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "trombone_buzz/A2_v1.ogg",
+    "tune": 0.0,
+    "len": 3.03
+   },
+   {
+    "note": 45,
+    "layer": 1,
+    "file": "trombone_buzz/A2_v2.ogg",
+    "tune": 0.0,
+    "len": 1.77
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "trombone_buzz/As2_v1.ogg",
+    "tune": 0.0,
+    "len": 2.61
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "trombone_buzz/As2_v2.ogg",
+    "tune": 0.0,
+    "len": 2.45
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "trombone_buzz/C3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.46
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "trombone_buzz/C3_v2.ogg",
+    "tune": 0.0,
+    "len": 2.5
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "trombone_buzz/D3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.47
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "trombone_buzz/D3_v2.ogg",
+    "tune": 0.0,
+    "len": 2.1
+   },
+   {
+    "note": 51,
+    "layer": 0,
+    "file": "trombone_buzz/Ds3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.22
+   },
+   {
+    "note": 51,
+    "layer": 1,
+    "file": "trombone_buzz/Ds3_v2.ogg",
+    "tune": 0.0,
+    "len": 2.38
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "trombone_buzz/F3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.54
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "trombone_buzz/F3_v2.ogg",
+    "tune": 0.0,
+    "len": 1.84
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "trombone_buzz/G3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.27
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "trombone_buzz/G3_v2.ogg",
+    "tune": 0.0,
+    "len": 1.95
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "trombone_buzz/A3_v1.ogg",
+    "tune": 0.0,
+    "len": 3.38
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "trombone_buzz/A3_v2.ogg",
+    "tune": 0.0,
+    "len": 1.81
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "trombone_buzz/As3_v1.ogg",
+    "tune": -32.2,
+    "len": 3.02
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "trombone_buzz/As3_v2.ogg",
+    "tune": 0.0,
+    "len": 1.73
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "trombone_buzz/C4_v2.ogg",
+    "tune": 0.0,
+    "len": 1.81
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "trombone_buzz/D4_v2.ogg",
+    "tune": 0.0,
+    "len": 1.73
+   }
+  ]
+ },
+ "tuba": {
+  "name": "Tuba (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Brass/Tuba/sus",
+  "layers": [
+   [
+    1,
+    42
+   ],
+   [
+    43,
+    85
+   ],
+   [
+    86,
+    127
+   ]
+  ],
+  "release": 0.4,
+  "gain_db": 0,
+  "calib_db": 1.4,
+  "sustain": true,
+  "range": [
+   29,
+   62
+  ],
+  "added": true,
+  "best": "The lowest brass: a pedal under the trombones, heavy steps, a giant's tread.",
+  "zones": [
+   {
+    "note": 29,
+    "layer": 0,
+    "file": "tuba/F1_v1.ogg",
+    "tune": 32.0,
+    "len": 3.98
+   },
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "tuba/As1_v1.ogg",
+    "tune": 5.3,
+    "len": 6.0
+   },
+   {
+    "note": 34,
+    "layer": 1,
+    "file": "tuba/As1_v2.ogg",
+    "tune": -1.6,
+    "len": 6.0
+   },
+   {
+    "note": 34,
+    "layer": 2,
+    "file": "tuba/As1_v3.ogg",
+    "tune": -6.1,
+    "len": 4.04
+   },
+   {
+    "note": 39,
+    "layer": 0,
+    "file": "tuba/Ds2_v1.ogg",
+    "tune": -1.5,
+    "len": 6.0
+   },
+   {
+    "note": 39,
+    "layer": 1,
+    "file": "tuba/Ds2_v2.ogg",
+    "tune": -1.0,
+    "len": 6.0
+   },
+   {
+    "note": 39,
+    "layer": 2,
+    "file": "tuba/Ds2_v3.ogg",
+    "tune": -1.8,
+    "len": 3.45
+   },
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "tuba/F2_v1.ogg",
+    "tune": 9.6,
+    "len": 6.0
+   },
+   {
+    "note": 41,
+    "layer": 1,
+    "file": "tuba/F2_v2.ogg",
+    "tune": 2.5,
+    "len": 6.0
+   },
+   {
+    "note": 41,
+    "layer": 2,
+    "file": "tuba/F2_v3.ogg",
+    "tune": -4.2,
+    "len": 3.22
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "tuba/As2_v1.ogg",
+    "tune": 3.6,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "tuba/As2_v2.ogg",
+    "tune": -3.6,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 2,
+    "file": "tuba/As2_v3.ogg",
+    "tune": -1.1,
+    "len": 4.33
+   },
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "tuba/D3_v1.ogg",
+    "tune": 3.0,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "tuba/D3_v2.ogg",
+    "tune": 5.8,
+    "len": 6.0
+   },
+   {
+    "note": 50,
+    "layer": 2,
+    "file": "tuba/D3_v3.ogg",
+    "tune": 4.3,
+    "len": 4.55
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "tuba/F3_v1.ogg",
+    "tune": -0.7,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "tuba/F3_v2.ogg",
+    "tune": 5.0,
+    "len": 6.0
+   },
+   {
+    "note": 53,
+    "layer": 2,
+    "file": "tuba/F3_v3.ogg",
+    "tune": 3.3,
+    "len": 3.39
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "tuba/As3_v1.ogg",
+    "tune": 3.4,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "tuba/As3_v2.ogg",
+    "tune": -10.4,
+    "len": 6.0
+   },
+   {
+    "note": 58,
+    "layer": 2,
+    "file": "tuba/As3_v3.ogg",
+    "tune": -1.3,
+    "len": 5.52
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "tuba/D4_v1.ogg",
+    "tune": 2.5,
+    "len": 6.0
+   }
+  ]
+ },
+ "trumpet_mute": {
+  "name": "Trumpet, harmon mute (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Brass/Trumpet/harmonM-sus",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.35,
+  "gain_db": 0,
+  "calib_db": -4.1,
+  "sustain": true,
+  "range": [
+   58,
+   81
+  ],
+  "added": true,
+  "best": "A thin, nasal, far-away horn: noir, a lonely street at night, a memory of a jazz bar.",
+  "zones": [
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "trumpet_mute/As3_v1.ogg",
+    "tune": 1.1,
+    "len": 5.35
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "trumpet_mute/As3_v2.ogg",
+    "tune": 3.9,
+    "len": 5.75
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "trumpet_mute/C4_v1.ogg",
+    "tune": 4.1,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "trumpet_mute/C4_v2.ogg",
+    "tune": -8.4,
+    "len": 5.86
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "trumpet_mute/Ds4_v1.ogg",
+    "tune": 0.8,
+    "len": 5.41
+   },
+   {
+    "note": 63,
+    "layer": 1,
+    "file": "trumpet_mute/Ds4_v2.ogg",
+    "tune": -0.6,
+    "len": 5.22
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "trumpet_mute/Gs4_v1.ogg",
+    "tune": -1.0,
+    "len": 5.28
+   },
+   {
+    "note": 68,
+    "layer": 1,
+    "file": "trumpet_mute/Gs4_v2.ogg",
+    "tune": 0.2,
+    "len": 5.54
+   },
+   {
+    "note": 70,
+    "layer": 0,
+    "file": "trumpet_mute/As4_v1.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 70,
+    "layer": 1,
+    "file": "trumpet_mute/As4_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "trumpet_mute/D5_v1.ogg",
+    "tune": 3.5,
+    "len": 6.0
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "trumpet_mute/D5_v2.ogg",
+    "tune": -2.0,
+    "len": 6.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "trumpet_mute/F5_v1.ogg",
+    "tune": -4.7,
+    "len": 6.0
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "trumpet_mute/F5_v2.ogg",
+    "tune": -0.9,
+    "len": 6.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "trumpet_mute/A5_v1.ogg",
+    "tune": -6.2,
+    "len": 6.0
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "trumpet_mute/A5_v2.ogg",
+    "tune": -4.5,
+    "len": 4.6
+   }
+  ]
+ },
+ "bassoon": {
+  "name": "Bassoon (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Woodwinds/Bassoon/sus",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": -8.8,
+  "sustain": true,
+  "range": [
+   34,
+   75
+  ],
+  "added": true,
+  "best": "Low reed, a little comic and a little sinister: the creeping line under a sneak, a sour chord.",
+  "zones": [
+   {
+    "note": 34,
+    "layer": 0,
+    "file": "bassoon/As1_v1.ogg",
+    "tune": 0.3,
+    "len": 6.0
+   },
+   {
+    "note": 34,
+    "layer": 1,
+    "file": "bassoon/As1_v2.ogg",
+    "tune": 0.2,
+    "len": 6.0
+   },
+   {
+    "note": 37,
+    "layer": 0,
+    "file": "bassoon/Cs2_v1.ogg",
+    "tune": 0.6,
+    "len": 6.0
+   },
+   {
+    "note": 37,
+    "layer": 1,
+    "file": "bassoon/Cs2_v2.ogg",
+    "tune": 0.1,
+    "len": 5.77
+   },
+   {
+    "note": 41,
+    "layer": 0,
+    "file": "bassoon/F2_v1.ogg",
+    "tune": 0.3,
+    "len": 6.0
+   },
+   {
+    "note": 41,
+    "layer": 1,
+    "file": "bassoon/F2_v2.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "bassoon/A2_v1.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 45,
+    "layer": 1,
+    "file": "bassoon/A2_v2.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "bassoon/As2_v1.ogg",
+    "tune": 0.2,
+    "len": 6.0
+   },
+   {
+    "note": 46,
+    "layer": 1,
+    "file": "bassoon/As2_v2.ogg",
+    "tune": -0.4,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "bassoon/C3_v1.ogg",
+    "tune": 0.5,
+    "len": 6.0
+   },
+   {
+    "note": 48,
+    "layer": 1,
+    "file": "bassoon/C3_v2.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 55,
+    "layer": 0,
+    "file": "bassoon/G3_v1.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 55,
+    "layer": 1,
+    "file": "bassoon/G3_v2.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "bassoon/C4_v1.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "bassoon/C4_v2.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "bassoon/Ds4_v1.ogg",
+    "tune": -1.1,
+    "len": 6.0
+   },
+   {
+    "note": 63,
+    "layer": 1,
+    "file": "bassoon/Ds4_v2.ogg",
+    "tune": -0.7,
+    "len": 5.98
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "bassoon/Gs4_v1.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 68,
+    "layer": 1,
+    "file": "bassoon/Gs4_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "bassoon/A4_v1.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 69,
+    "layer": 1,
+    "file": "bassoon/A4_v2.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "bassoon/C5_v1.ogg",
+    "tune": -0.9,
+    "len": 6.0
+   },
+   {
+    "note": 72,
+    "layer": 1,
+    "file": "bassoon/C5_v2.ogg",
+    "tune": -0.8,
+    "len": 6.0
+   },
+   {
+    "note": 75,
+    "layer": 1,
+    "file": "bassoon/Ds5_v2.ogg",
+    "tune": -0.5,
+    "len": 6.0
+   }
+  ]
+ },
+ "clarinet": {
+  "name": "Clarinet (VSCO-2)",
+  "kind": "pitched",
+  "credit": "VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VSCO-2-CE@4403009 Woodwinds/Clarinet/susLong",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": -4.8,
+  "sustain": true,
+  "range": [
+   50,
+   90
+  ],
+  "added": true,
+  "best": "Its low register is hollow and cold: a lullaby on a dark landing, the ghost's breath.",
+  "zones": [
+   {
+    "note": 50,
+    "layer": 0,
+    "file": "clarinet/D3_v1.ogg",
+    "tune": -1.6,
+    "len": 4.57
+   },
+   {
+    "note": 50,
+    "layer": 1,
+    "file": "clarinet/D3_v2.ogg",
+    "tune": -5.0,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "clarinet/F3_v1.ogg",
+    "tune": -2.1,
+    "len": 7.0
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "clarinet/F3_v2.ogg",
+    "tune": -3.0,
+    "len": 7.0
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "clarinet/As3_v1.ogg",
+    "tune": -1.8,
+    "len": 7.0
+   },
+   {
+    "note": 58,
+    "layer": 1,
+    "file": "clarinet/As3_v2.ogg",
+    "tune": -1.2,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 0,
+    "file": "clarinet/D4_v1.ogg",
+    "tune": -3.2,
+    "len": 7.0
+   },
+   {
+    "note": 62,
+    "layer": 1,
+    "file": "clarinet/D4_v2.ogg",
+    "tune": -3.0,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 0,
+    "file": "clarinet/F4_v1.ogg",
+    "tune": -1.5,
+    "len": 7.0
+   },
+   {
+    "note": 65,
+    "layer": 1,
+    "file": "clarinet/F4_v2.ogg",
+    "tune": -1.9,
+    "len": 7.0
+   },
+   {
+    "note": 70,
+    "layer": 0,
+    "file": "clarinet/As4_v1.ogg",
+    "tune": -4.5,
+    "len": 7.0
+   },
+   {
+    "note": 70,
+    "layer": 1,
+    "file": "clarinet/As4_v2.ogg",
+    "tune": -3.0,
+    "len": 7.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "clarinet/D5_v1.ogg",
+    "tune": -3.1,
+    "len": 7.0
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "clarinet/D5_v2.ogg",
+    "tune": -2.8,
+    "len": 7.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "clarinet/F5_v1.ogg",
+    "tune": -1.8,
+    "len": 7.0
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "clarinet/F5_v2.ogg",
+    "tune": -3.1,
+    "len": 7.0
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "clarinet/As5_v1.ogg",
+    "tune": -4.6,
+    "len": 7.0
+   },
+   {
+    "note": 82,
+    "layer": 1,
+    "file": "clarinet/As5_v2.ogg",
+    "tune": -5.0,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "clarinet/D6_v1.ogg",
+    "tune": -3.6,
+    "len": 7.0
+   },
+   {
+    "note": 86,
+    "layer": 1,
+    "file": "clarinet/D6_v2.ogg",
+    "tune": -1.0,
+    "len": 7.0
+   },
+   {
+    "note": 90,
+    "layer": 0,
+    "file": "clarinet/Fs6_v1.ogg",
+    "tune": 0.0,
+    "len": 5.81
+   },
+   {
+    "note": 90,
+    "layer": 1,
+    "file": "clarinet/Fs6_v2.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   }
+  ]
+ },
+ "glass": {
+  "name": "Wine glasses, rubbed (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Idiophones/Friction Idiophones/Wine Glasses/Sustains/Slow",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 1.2,
+  "gain_db": 0,
+  "calib_db": 4.9,
+  "sustain": true,
+  "range": [
+   75,
+   86
+  ],
+  "added": true,
+  "best": "A glass-harmonica ghost tone, pure and unearthly: a presence in the room, a memory. Only four glasses (D#4 to D5): keep it high and slow.",
+  "zones": [
+   {
+    "note": 75,
+    "layer": 0,
+    "file": "glass/Ds5_v1.ogg",
+    "tune": -26.7,
+    "len": 10.0
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "glass/Fs5_v1.ogg",
+    "tune": 13.0,
+    "len": 10.0
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "glass/As5_v1.ogg",
+    "tune": -57.4,
+    "len": 10.0
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "glass/D6_v1.ogg",
+    "tune": -6.5,
+    "len": 10.0
+   }
+  ]
+ },
+ "psaltery": {
+  "name": "Bowed psaltery (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Chordophones/Zithers/Psaltery, Bowed and Plucked/LongBow",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.7,
+  "gain_db": 0,
+  "calib_db": 9.5,
+  "sustain": true,
+  "range": [
+   70,
+   90
+  ],
+  "added": true,
+  "best": "A thin, wavering bowed tone like a singing saw: the haunted lullaby, a ghost humming. In the Eerie set over A#3 to F#5.",
+  "zones": [
+   {
+    "note": 70,
+    "layer": 0,
+    "file": "psaltery/As4_v1.ogg",
+    "tune": 0.8,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "psaltery/C5_v1.ogg",
+    "tune": 3.0,
+    "len": 7.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "psaltery/D5_v1.ogg",
+    "tune": 6.4,
+    "len": 5.93
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "psaltery/E5_v1.ogg",
+    "tune": -0.2,
+    "len": 7.0
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "psaltery/Fs5_v1.ogg",
+    "tune": -0.8,
+    "len": 7.0
+   },
+   {
+    "note": 80,
+    "layer": 0,
+    "file": "psaltery/Gs5_v1.ogg",
+    "tune": -0.2,
+    "len": 6.65
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "psaltery/As5_v1.ogg",
+    "tune": -1.4,
+    "len": 5.82
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "psaltery/C6_v1.ogg",
+    "tune": -1.3,
+    "len": 6.09
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "psaltery/D6_v1.ogg",
+    "tune": 0.1,
+    "len": 5.66
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "psaltery/E6_v1.ogg",
+    "tune": -3.2,
+    "len": 5.37
+   },
+   {
+    "note": 90,
+    "layer": 0,
+    "file": "psaltery/Fs6_v1.ogg",
+    "tune": 0.5,
+    "len": 4.38
+   }
+  ]
+ },
+ "vibes_bowed": {
+  "name": "Vibraphone, bowed (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Vibraphone/Bowed",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 1.0,
+  "gain_db": 0,
+  "calib_db": 19.1,
+  "sustain": true,
+  "range": [
+   57,
+   88
+  ],
+  "added": true,
+  "best": "A metal bar bowed: a pure, eerie swell with no attack. Behind you, the glass ghost, the moment she appears.",
+  "zones": [
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "vibes_bowed/A3_v1.ogg",
+    "tune": 3.7,
+    "len": 8.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "vibes_bowed/E4_v1.ogg",
+    "tune": 0.5,
+    "len": 8.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "vibes_bowed/G4_v1.ogg",
+    "tune": 4.1,
+    "len": 8.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "vibes_bowed/D5_v1.ogg",
+    "tune": 0.7,
+    "len": 8.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "vibes_bowed/A5_v1.ogg",
+    "tune": 0.0,
+    "len": 8.0
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "vibes_bowed/E6_v1.ogg",
+    "tune": -0.1,
+    "len": 8.0
+   }
+  ]
+ },
+ "vibes": {
+  "name": "Vibraphone, soft mallets (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Vibraphone/Soft Mallets",
+  "layers": [
+   [
+    1,
+    63
+   ],
+   [
+    64,
+    127
+   ]
+  ],
+  "release": 0.8,
+  "gain_db": 0,
+  "calib_db": -15.3,
+  "sustain": false,
+  "range": [
+   53,
+   88
+  ],
+  "added": true,
+  "best": "Soft, round bell chords: a dreamy romance, a lounge gone quiet, a lullaby's chords.",
+  "zones": [
+   {
+    "note": 53,
+    "layer": 0,
+    "file": "vibes/F3_v1.ogg",
+    "tune": 0.0,
+    "len": 5.38
+   },
+   {
+    "note": 53,
+    "layer": 1,
+    "file": "vibes/F3_v2.ogg",
+    "tune": 0.0,
+    "len": 4.74
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "vibes/A3_v1.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 57,
+    "layer": 1,
+    "file": "vibes/A3_v2.ogg",
+    "tune": 27.6,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "vibes/C4_v1.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 60,
+    "layer": 1,
+    "file": "vibes/C4_v2.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "vibes/E4_v1.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 64,
+    "layer": 1,
+    "file": "vibes/E4_v2.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 67,
+    "layer": 0,
+    "file": "vibes/G4_v1.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 67,
+    "layer": 1,
+    "file": "vibes/G4_v2.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "vibes/B4_v1.ogg",
+    "tune": 0.1,
+    "len": 6.0
+   },
+   {
+    "note": 71,
+    "layer": 1,
+    "file": "vibes/B4_v2.ogg",
+    "tune": -0.0,
+    "len": 6.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "vibes/D5_v1.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 74,
+    "layer": 1,
+    "file": "vibes/D5_v2.ogg",
+    "tune": -0.1,
+    "len": 6.0
+   },
+   {
+    "note": 77,
+    "layer": 0,
+    "file": "vibes/F5_v1.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 77,
+    "layer": 1,
+    "file": "vibes/F5_v2.ogg",
+    "tune": -0.2,
+    "len": 6.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "vibes/A5_v1.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 81,
+    "layer": 1,
+    "file": "vibes/A5_v2.ogg",
+    "tune": -0.3,
+    "len": 6.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "vibes/C6_v1.ogg",
+    "tune": -0.5,
+    "len": 3.54
+   },
+   {
+    "note": 84,
+    "layer": 1,
+    "file": "vibes/C6_v2.ogg",
+    "tune": -0.5,
+    "len": 4.49
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "vibes/E6_v1.ogg",
+    "tune": -0.3,
+    "len": 5.62
+   },
+   {
+    "note": 88,
+    "layer": 1,
+    "file": "vibes/E6_v2.ogg",
+    "tune": -0.3,
+    "len": 5.11
+   }
+  ]
+ },
+ "kalimba": {
+  "name": "Kalimba (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Idiophones/Plucked Idiophones/Kalimba, Kenya",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.5,
+  "gain_db": 0,
+  "calib_db": -0.2,
+  "sustain": false,
+  "range": [
+   59,
+   83
+  ],
+  "added": true,
+  "best": "Plucked metal tongues, a little out of tune: a music box's older cousin, a child's toy, the lullaby.",
+  "zones": [
+   {
+    "note": 59,
+    "layer": 0,
+    "file": "kalimba/B3_v1.ogg",
+    "tune": -3.0,
+    "len": 2.98
+   },
+   {
+    "note": 61,
+    "layer": 0,
+    "file": "kalimba/Cs4_v1.ogg",
+    "tune": -29.1,
+    "len": 3.53
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "kalimba/Ds4_v1.ogg",
+    "tune": -2.0,
+    "len": 4.0
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "kalimba/Ds4_v1_rr2.ogg",
+    "tune": 6.8,
+    "len": 4.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "kalimba/Fs4_v1.ogg",
+    "tune": -30.3,
+    "len": 3.91
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "kalimba/Fs4_v1_rr2.ogg",
+    "tune": -39.3,
+    "len": 4.0
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "kalimba/Gs4_v1.ogg",
+    "tune": -42.6,
+    "len": 3.55
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "kalimba/Gs4_v1_rr2.ogg",
+    "tune": -41.9,
+    "len": 2.95
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "kalimba/B4_v1.ogg",
+    "tune": -12.6,
+    "len": 3.43
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "kalimba/B4_v1_rr2.ogg",
+    "tune": -20.8,
+    "len": 2.91
+   },
+   {
+    "note": 73,
+    "layer": 0,
+    "file": "kalimba/Cs5_v1.ogg",
+    "tune": 4.7,
+    "len": 3.17
+   },
+   {
+    "note": 75,
+    "layer": 0,
+    "file": "kalimba/Ds5_v1.ogg",
+    "tune": 0.0,
+    "len": 2.01
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "kalimba/Fs5_v1.ogg",
+    "tune": -36.9,
+    "len": 2.81
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "kalimba/A5_v1.ogg",
+    "tune": 0.0,
+    "len": 2.58
+   },
+   {
+    "note": 83,
+    "layer": 0,
+    "file": "kalimba/B5_v1.ogg",
+    "tune": 0.0,
+    "len": 2.06
+   }
+  ]
+ },
+ "harpsichord": {
+  "name": "Harpsichord, Flemish (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Chordophones/Zithers/Harpsichord, Flemish/Sustains/High",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": 1.0,
+  "sustain": false,
+  "range": [
+   42,
+   96
+  ],
+  "added": true,
+  "best": "The old house's instrument: a minuet in the empty ballroom, the mock-baroque strut gone sinister.",
+  "zones": [
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "harpsichord/Fs2_v1.ogg",
+    "tune": 2.5,
+    "len": 5.0
+   },
+   {
+    "note": 44,
+    "layer": 0,
+    "file": "harpsichord/Gs2_v1.ogg",
+    "tune": -2.5,
+    "len": 5.0
+   },
+   {
+    "note": 46,
+    "layer": 0,
+    "file": "harpsichord/As2_v1.ogg",
+    "tune": -7.2,
+    "len": 5.0
+   },
+   {
+    "note": 49,
+    "layer": 0,
+    "file": "harpsichord/Cs3_v1.ogg",
+    "tune": -6.3,
+    "len": 5.0
+   },
+   {
+    "note": 52,
+    "layer": 0,
+    "file": "harpsichord/E3_v1.ogg",
+    "tune": -4.6,
+    "len": 5.0
+   },
+   {
+    "note": 54,
+    "layer": 0,
+    "file": "harpsichord/Fs3_v1.ogg",
+    "tune": -0.8,
+    "len": 5.0
+   },
+   {
+    "note": 56,
+    "layer": 0,
+    "file": "harpsichord/Gs3_v1.ogg",
+    "tune": -9.1,
+    "len": 5.0
+   },
+   {
+    "note": 58,
+    "layer": 0,
+    "file": "harpsichord/As3_v1.ogg",
+    "tune": -7.4,
+    "len": 5.0
+   },
+   {
+    "note": 61,
+    "layer": 0,
+    "file": "harpsichord/Cs4_v1.ogg",
+    "tune": -6.0,
+    "len": 5.0
+   },
+   {
+    "note": 64,
+    "layer": 0,
+    "file": "harpsichord/E4_v1.ogg",
+    "tune": -8.8,
+    "len": 5.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "harpsichord/Fs4_v1.ogg",
+    "tune": -5.9,
+    "len": 5.0
+   },
+   {
+    "note": 68,
+    "layer": 0,
+    "file": "harpsichord/Gs4_v1.ogg",
+    "tune": -3.8,
+    "len": 5.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "harpsichord/A4_v1.ogg",
+    "tune": -2.3,
+    "len": 5.0
+   },
+   {
+    "note": 73,
+    "layer": 0,
+    "file": "harpsichord/Cs5_v1.ogg",
+    "tune": -2.8,
+    "len": 5.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "harpsichord/D5_v1.ogg",
+    "tune": -1.1,
+    "len": 4.97
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "harpsichord/E5_v1.ogg",
+    "tune": -2.2,
+    "len": 5.0
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "harpsichord/Fs5_v1.ogg",
+    "tune": -2.6,
+    "len": 4.83
+   },
+   {
+    "note": 80,
+    "layer": 0,
+    "file": "harpsichord/Gs5_v1.ogg",
+    "tune": -3.0,
+    "len": 4.8
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "harpsichord/As5_v1.ogg",
+    "tune": -2.9,
+    "len": 4.94
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "harpsichord/C6_v1.ogg",
+    "tune": -0.7,
+    "len": 3.93
+   },
+   {
+    "note": 86,
+    "layer": 0,
+    "file": "harpsichord/D6_v1.ogg",
+    "tune": -0.3,
+    "len": 4.66
+   },
+   {
+    "note": 88,
+    "layer": 0,
+    "file": "harpsichord/E6_v1.ogg",
+    "tune": -2.1,
+    "len": 3.58
+   },
+   {
+    "note": 90,
+    "layer": 0,
+    "file": "harpsichord/Fs6_v1.ogg",
+    "tune": -0.2,
+    "len": 3.33
+   },
+   {
+    "note": 92,
+    "layer": 0,
+    "file": "harpsichord/Gs6_v1.ogg",
+    "tune": 2.3,
+    "len": 3.46
+   },
+   {
+    "note": 94,
+    "layer": 0,
+    "file": "harpsichord/As6_v1.ogg",
+    "tune": -3.2,
+    "len": 3.57
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "harpsichord/C7_v1.ogg",
+    "tune": -1.8,
+    "len": 2.34
+   }
+  ]
+ },
+ "organ": {
+  "name": "Pipe organ, quiet (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Aerophones/Edge-blown Aerophones/Pipe Organ/Quiet",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.6,
+  "gain_db": 0,
+  "calib_db": 7.5,
+  "sustain": true,
+  "range": [
+   36,
+   96
+  ],
+  "added": true,
+  "best": "A quiet church organ: the funeral, the shrine, the wedding that shouldn't happen.",
+  "zones": [
+   {
+    "note": 36,
+    "layer": 0,
+    "file": "organ/C2_v1.ogg",
+    "tune": 3.7,
+    "len": 7.0
+   },
+   {
+    "note": 39,
+    "layer": 0,
+    "file": "organ/Ds2_v1.ogg",
+    "tune": 0.0,
+    "len": 7.0
+   },
+   {
+    "note": 42,
+    "layer": 0,
+    "file": "organ/Fs2_v1.ogg",
+    "tune": -12.3,
+    "len": 7.0
+   },
+   {
+    "note": 45,
+    "layer": 0,
+    "file": "organ/A2_v1.ogg",
+    "tune": 0.1,
+    "len": 7.0
+   },
+   {
+    "note": 48,
+    "layer": 0,
+    "file": "organ/C3_v1.ogg",
+    "tune": -1.3,
+    "len": 7.0
+   },
+   {
+    "note": 51,
+    "layer": 0,
+    "file": "organ/Ds3_v1.ogg",
+    "tune": -3.0,
+    "len": 7.0
+   },
+   {
+    "note": 54,
+    "layer": 0,
+    "file": "organ/Fs3_v1.ogg",
+    "tune": -4.8,
+    "len": 7.0
+   },
+   {
+    "note": 57,
+    "layer": 0,
+    "file": "organ/A3_v1.ogg",
+    "tune": -4.4,
+    "len": 7.0
+   },
+   {
+    "note": 60,
+    "layer": 0,
+    "file": "organ/C4_v1.ogg",
+    "tune": -1.7,
+    "len": 7.0
+   },
+   {
+    "note": 63,
+    "layer": 0,
+    "file": "organ/Ds4_v1.ogg",
+    "tune": -0.6,
+    "len": 7.0
+   },
+   {
+    "note": 66,
+    "layer": 0,
+    "file": "organ/Fs4_v1.ogg",
+    "tune": -0.7,
+    "len": 7.0
+   },
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "organ/A4_v1.ogg",
+    "tune": 2.5,
+    "len": 7.0
+   },
+   {
+    "note": 72,
+    "layer": 0,
+    "file": "organ/C5_v1.ogg",
+    "tune": 3.4,
+    "len": 7.0
+   },
+   {
+    "note": 75,
+    "layer": 0,
+    "file": "organ/Ds5_v1.ogg",
+    "tune": 2.6,
+    "len": 7.0
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "organ/Fs5_v1.ogg",
+    "tune": -0.1,
+    "len": 7.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "organ/A5_v1.ogg",
+    "tune": 0.2,
+    "len": 7.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "organ/C6_v1.ogg",
+    "tune": 2.8,
+    "len": 7.0
+   },
+   {
+    "note": 87,
+    "layer": 0,
+    "file": "organ/Ds6_v1.ogg",
+    "tune": 7.4,
+    "len": 7.0
+   },
+   {
+    "note": 90,
+    "layer": 0,
+    "file": "organ/Fs6_v1.ogg",
+    "tune": 3.0,
+    "len": 7.0
+   },
+   {
+    "note": 93,
+    "layer": 0,
+    "file": "organ/A6_v1.ogg",
+    "tune": 0.7,
+    "len": 7.0
+   },
+   {
+    "note": 96,
+    "layer": 0,
+    "file": "organ/C7_v1.ogg",
+    "tune": -1.0,
+    "len": 7.0
+   }
+  ]
+ },
+ "ocarina": {
+  "name": "Ocarina (VCSL)",
+  "kind": "pitched",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "sgossner/VCSL@c1ea7bc Aerophones/Edge-blown Aerophones/Ocarina, Typical/Sustains/Sus",
+  "layers": [
+   [
+    1,
+    127
+   ]
+  ],
+  "release": 0.3,
+  "gain_db": 0,
+  "calib_db": -11.0,
+  "sustain": true,
+  "range": [
+   69,
+   85
+  ],
+  "added": true,
+  "best": "A clay flute, breathy and childlike: the ghost child's tune, a game in the playground.",
+  "zones": [
+   {
+    "note": 69,
+    "layer": 0,
+    "file": "ocarina/A4_v1.ogg",
+    "tune": -2.1,
+    "len": 5.0
+   },
+   {
+    "note": 71,
+    "layer": 0,
+    "file": "ocarina/B4_v1.ogg",
+    "tune": 0.9,
+    "len": 5.0
+   },
+   {
+    "note": 73,
+    "layer": 0,
+    "file": "ocarina/Cs5_v1.ogg",
+    "tune": -1.3,
+    "len": 5.0
+   },
+   {
+    "note": 74,
+    "layer": 0,
+    "file": "ocarina/D5_v1.ogg",
+    "tune": -4.3,
+    "len": 5.0
+   },
+   {
+    "note": 76,
+    "layer": 0,
+    "file": "ocarina/E5_v1.ogg",
+    "tune": -0.6,
+    "len": 5.0
+   },
+   {
+    "note": 78,
+    "layer": 0,
+    "file": "ocarina/Fs5_v1.ogg",
+    "tune": -5.8,
+    "len": 5.0
+   },
+   {
+    "note": 80,
+    "layer": 0,
+    "file": "ocarina/Gs5_v1.ogg",
+    "tune": 1.1,
+    "len": 5.0
+   },
+   {
+    "note": 81,
+    "layer": 0,
+    "file": "ocarina/A5_v1.ogg",
+    "tune": -8.1,
+    "len": 5.0
+   },
+   {
+    "note": 82,
+    "layer": 0,
+    "file": "ocarina/As5_v1.ogg",
+    "tune": -8.5,
+    "len": 5.0
+   },
+   {
+    "note": 84,
+    "layer": 0,
+    "file": "ocarina/C6_v1.ogg",
+    "tune": 0.1,
+    "len": 5.0
+   },
+   {
+    "note": 85,
+    "layer": 0,
+    "file": "ocarina/Cs6_v1.ogg",
+    "tune": -8.8,
+    "len": 5.0
+   }
+  ]
+ },
+ "metals": {
+  "name": "Eerie metals and noises (VCSL, VSCO-2)",
+  "kind": "kit",
+  "credit": "Versilian Community Sample Library by Versilian Studios (github.com/sgossner/VCSL), CC0 1.0; VSCO-2 Community Edition by Versilian Studios (github.com/sgossner/VSCO-2-CE), CC0 1.0",
+  "license": "CC0-1.0",
+  "source": "VCSL@c1ea7bc, VSCO-2-CE@4403009",
+  "release": 0.4,
+  "gain_db": 0,
+  "calib_db": 14.6,
+  "added": true,
+  "best": "The J-horror screech and its family: a bowed brake drum, a bowed or scraped cymbal, a gong scrape, the flexatone's wobble, a ratchet's croak, a siren, chains. Stings and textures, never a tune.",
+  "pieces": {
+   "brake_hit": {
+    "layers": [
+     {
+      "file": "metals/brake_hit_v1.ogg",
+      "vel": [
+       1,
+       42
+      ],
+      "len": 1.22
+     },
+     {
+      "file": "metals/brake_hit_v2.ogg",
+      "vel": [
+       43,
+       85
+      ],
+      "len": 0.97
+     },
+     {
+      "file": "metals/brake_hit_v3.ogg",
+      "vel": [
+       86,
+       127
+      ],
+      "len": 0.88
+     }
+    ]
+   },
+   "brake_bow": {
+    "layers": [
+     {
+      "file": "metals/brake_bow_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 6.4
+     }
+    ]
+   },
+   "brake_bow2": {
+    "layers": [
+     {
+      "file": "metals/brake_bow2_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 5.32
+     }
+    ]
+   },
+   "gong_scrape": {
+    "layers": [
+     {
+      "file": "metals/gong_scrape_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 8.0
+     }
+    ]
+   },
+   "cym_bowed": {
+    "layers": [
+     {
+      "file": "metals/cym_bowed_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 8.0
+     }
+    ]
+   },
+   "cym_scrape": {
+    "layers": [
+     {
+      "file": "metals/cym_scrape_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 7.55
+     }
+    ]
+   },
+   "cym_cresc": {
+    "layers": [
+     {
+      "file": "metals/cym_cresc_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 8.0
+     }
+    ]
+   },
+   "flexatone": {
+    "layers": [
+     {
+      "file": "metals/flexatone_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 7.81
+     }
+    ]
+   },
+   "flex_fast": {
+    "layers": [
+     {
+      "file": "metals/flex_fast_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 4.32
+     }
+    ]
+   },
+   "flex_slap": {
+    "layers": [
+     {
+      "file": "metals/flex_slap_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.01
+     }
+    ]
+   },
+   "ratchet": {
+    "layers": [
+     {
+      "file": "metals/ratchet_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 7.89
+     }
+    ]
+   },
+   "ratchet_fast": {
+    "layers": [
+     {
+      "file": "metals/ratchet_fast_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 5.79
+     }
+    ]
+   },
+   "vibraslap": {
+    "layers": [
+     {
+      "file": "metals/vibraslap_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 2.86
+     }
+    ]
+   },
+   "siren": {
+    "layers": [
+     {
+      "file": "metals/siren_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 3.86
+     }
+    ]
+   },
+   "windchimes": {
+    "layers": [
+     {
+      "file": "metals/windchimes_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 8.0
+     }
+    ]
+   },
+   "ocean": {
+    "layers": [
+     {
+      "file": "metals/ocean_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 8.0
+     }
+    ]
+   },
+   "belltree": {
+    "layers": [
+     {
+      "file": "metals/belltree_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 3.97
+     }
+    ]
+   },
+   "chain_grind": {
+    "layers": [
+     {
+      "file": "metals/chain_grind_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 0.99
+     }
+    ]
+   },
+   "brick_scrape": {
+    "layers": [
+     {
+      "file": "metals/brick_scrape_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.14
+     }
+    ]
+   },
+   "metal_hit": {
+    "layers": [
+     {
+      "file": "metals/metal_hit_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 1.45
+     }
+    ]
+   },
+   "gong_weird": {
+    "layers": [
+     {
+      "file": "metals/gong_weird_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 4.39
+     }
+    ]
+   },
+   "gliss_up": {
+    "layers": [
+     {
+      "file": "metals/gliss_up_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 7.05
+     }
+    ]
+   },
+   "gliss_down": {
+    "layers": [
+     {
+      "file": "metals/gliss_down_v1.ogg",
+      "vel": [
+       1,
+       127
+      ],
+      "len": 7.02
+     }
+    ]
+   }
+  }
  }
 }
