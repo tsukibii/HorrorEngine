@@ -55,6 +55,13 @@ The user's answers, newest first. They override the plan, the research and the d
   own line, a far pick on the wrong skin dropped, a corner that finds nothing filled from its neighbour), the lashes
   root on it all round, the innermost 7% of the upper lid carries none, and the lower roots follow the margin's front
   edge as one smooth line, corner to corner, where the user drew theirs.
+- **Three eye shapes, as lashes only** ("could you now go and make presets for the following shapes": a drawing of
+  three pairs of eyes; Claude masked the left eyes in green and named them fox almond, half-lidded and round doll; the
+  user: "you don't need to worry about the openings since it won't work if I use image to face scan path, just focus on
+  the overall eyelash shape and direction"): three lash styles in a group of their own (the fox's fan swept out to a
+  wing, long at the outer corner and short at the inner; the half-lidded's dense lashes down over the eye in a band;
+  the doll's short spikes radiating all round) and three whole looks that add the liner each drawing carries (the
+  wing, the inner point, the pinks). The opening is never changed: a character's own, from the scan.
 - **For later: five more lash styles after a second reference** ("For later (save as a reference for now) I want us to
   make these eyelash shapes too as seen in this image (thin ones for men etc)": five rendered pairs of eyes: an old
   man's sparse thin lashes, a glam volume set with smoky plum makeup, a fluffy mink set, a doll volume set with a lower

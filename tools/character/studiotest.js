@@ -13,7 +13,8 @@
 // normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
 // the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab; the anime
 // lash styles gather the lashes into spikes and the natural one spreads them; the anime pink makeup paints the liner from
-// the lashes' roots and pink under the eye, and its look turns the lashes on;
+// the lashes' roots and pink under the eye, and its look turns the lashes on; the three drawn eye shapes are lash styles
+// (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each;
 // accessories are held to the skin; the head OBJ exports; the export for the desk and Unreal carries the character's
 // recipe and Import brings it back with every file and setting the same; the pictures clear and the face goes.
 // Ends "STUDIO ok".
@@ -528,6 +529,26 @@ const png = rgb => {
     if (!(r.anime.vary > 0.12) || !(r.natural.spike < 2 && r.natural.vary < 0.1 && r.natural.drop < 45 && r.anime.drop > r.natural.drop + 10) || !r.reset) throw new Error("natural against anime: " + JSON.stringify(r));
     console.log(`       anime: ${r.anime.cards} hairs an eye, the gap between spikes ${r.anime.spike.toFixed(1)}× the roots' spacing inside one (natural ${r.natural.spike.toFixed(1)}×), the clusters' lengths spread ${(r.anime.vary * 100).toFixed(0)}% (natural ${(r.natural.vary * 100).toFixed(0)}%), the lower lashes ${r.anime.drop.toFixed(0)}° down the skin (natural ${r.natural.drop.toFixed(0)}°)`);
     await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("the three eye shapes the user drew, as lashes and liner: the fox almond's lashes sweep to the outer corner, long there and short at the inner; the half-lidded eye's point down over the eye; the round doll's are short spikes all round; each look sets its style and its liner", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    const r = await page.evaluate(async () => {
+      const b = window.__body, BL = await import("./browlash.js");
+      const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash; return { sweep: c.sweep, lift: c.lift, spike: c.spike, drop: c.drop, cards: c.lashes, rim: c.rim }; };
+      const natural = at("natural"), fox = at("fox"), half = at("halfLidded"), doll = at("roundDoll");
+      const lens = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const P = b.BLM.lash.geometry.attributes.position.array; let n = 0; for (let i = 0; i < P.length; i += 3) n++; return n; };
+      const looks = {}; for (const [name, style, pre] of [["fox almond", "fox", "fox liner"], ["half-lidded", "halfLidded", "half-lidded liner"], ["round doll", "roundDoll", "doll pink"]]) {
+        b.useLook(name); looks[name] = { style: b.st.lash.sweep === BL.styleOf(style).sweep && b.st.lash.lift === BL.styleOf(style).lift && b.st.lash.on, liner: b.st.skin.proc.liner, inner: b.st.skin.proc.linerInner, width: b.st.skin.proc.linerWidth }; }
+      b.useLook("MHR plain"); b.st.lash.on = false; b.browLash();
+      return { natural, fox, half, doll, looks };
+    });
+    // sweep: how much the upper lashes' tips lean toward the outer corner (1 along the lid); lift: their mean elevation (degrees up from straight out)
+    if (!(r.fox.sweep > r.natural.sweep + 0.25 && r.fox.rim > 1.2 && r.fox.cards > 300)) throw new Error("fox: " + JSON.stringify({ fox: r.fox, natural: r.natural }));
+    if (!(r.half.lift < 15 && r.half.lift < r.natural.lift - 30 && r.half.cards > 300)) throw new Error("half-lidded: " + JSON.stringify({ half: r.half, natural: r.natural }));
+    if (!(r.doll.spike > 4 && r.doll.drop > 35 && r.doll.cards > 200)) throw new Error("round doll: " + JSON.stringify(r.doll));
+    for (const [k, v] of Object.entries(r.looks)) if (!(v.style && v.liner > 0.5 && v.inner > 0.4)) throw new Error(`the look ${k}: ${JSON.stringify(v)}`);
+    await page.click('#tabs button[data-tab="body"]');
+    console.log(`       fox: the lashes lean ${r.fox.sweep.toFixed(2)} toward the outer corner (natural ${r.natural.sweep.toFixed(2)}); half-lidded: ${r.half.lift.toFixed(0)}° from straight out (natural ${r.natural.lift.toFixed(0)}° up); round doll: spikes ${r.doll.spike.toFixed(1)}× the roots' spacing, the lower ones ${r.doll.drop.toFixed(0)}° down`);
   });
   await step("the anime pink makeup after the user's references: the preset paints the liner between the lashes' roots and a line a liner's width up the lid (both found on the skin), a wash under the eye, the inner corner and the waterline pink; under the eye the picture goes pinker; the anime pink look turns the anime lashes on with it", async () => {
     await page.click('#tabs button[data-tab="skin"]');

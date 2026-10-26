@@ -26,6 +26,27 @@ export const LOOKS = {
     skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.5 }, makeup: "anime pink" },   // (skinshader.js's MAKEUP_PRESETS)
     lash: { style: "anime", look: "lash_black" },          // browlash.js's LASH_STYLES, on
   },
+  // the three eye shapes the user drew (DECISIONS 2026-10-26, night), as lashes and liner only: the opening stays the
+  // scan's own. Each is its lash style (browlash.js) with the liner the drawing gives it (skinshader.js), on the soft
+  // cinematic eyes, lips and skin
+  "fox almond": {
+    about: "After the user's drawing: a fox almond's lashes, a fan swept out to a wing at the outer corner and short at the inner, sparse short lower lashes; a bold liner thickening to a long wing, the inner corner drawn out to a long point and tinted pink. The opening is the character's own.",
+    eyes: { irisSize: 33, pupil: 0.38 }, lips: { on: true, colour: "#d9606c", amount: 0.65, gradient: 0.6, soft: 0.5, gloss: 0.7, lines: 0.3 }, teeth: { shade: 0.2 },
+    skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.5 }, makeup: "fox liner" },
+    lash: { style: "fox", look: "lash_black" },
+  },
+  "half-lidded": {
+    about: "After the user's drawing: a half-lidded eye's lashes, dense and lying down over the top of the eye as a dark band, no lower lashes; a broad liner with a long inner point and a short outer flick, the under-eye bulge lit and pink. The opening is the character's own (its lids aren't lowered).",
+    eyes: { irisSize: 33, pupil: 0.4 }, lips: { on: true, colour: "#d9606c", amount: 0.65, gradient: 0.6, soft: 0.5, gloss: 0.7, lines: 0.3 }, teeth: { shade: 0.2 },
+    skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.5 }, makeup: "half-lidded liner" },
+    lash: { style: "halfLidded", look: "lash_black" },
+  },
+  "round doll": {
+    about: "After the user's drawing: a round doll's lashes, short spikes radiating all round the eye, up and out above, down and out below; a thin liner with small points at both corners and pink all round the eye; big irises. The opening is the character's own.",
+    eyes: { irisSize: 37, pupil: 0.42, cornerPink: 0.55 }, lips: { on: true, colour: "#e06a86", amount: 0.6, gradient: 0.7, soft: 0.55, gloss: 0.8, lines: 0.2 }, teeth: { shade: 0.2 },
+    skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.5 }, makeup: "doll pink" },
+    lash: { style: "roundDoll", look: "lash_black" },
+  },
   "MHR plain": {
     about: "MHR's own look: crisp eyes, no lipstick, the procedural skin off (the photo skin, if any, as it is).",
     eyes: { limbalSoft: 0, occlusion: 0, tearline: 0, lidShade: 0.6 },

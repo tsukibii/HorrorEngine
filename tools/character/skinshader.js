@@ -77,6 +77,17 @@ export const MAKEUP_PRESETS = {
   "anime pink": { foundation: 0.45, blush: 0.35, blushPlace: 0.8, blushColor: "#ee8ea0", lips: 0.5, lipGradient: 0.7, lipGloss: 0.6, lipColor: "#de6a84",
                   liner: 0.9, wing: 0.45, linerWidth: 1.5, linerInner: 0.7, linerColor: "#151013", shadow: 0.8, shadowPlace: 0.55, shadowColor: "#c8708c",
                   under: 0.75, underColor: "#e8899c", corner: 0.65, cornerColor: "#f4b0bc", waterline: 0.75, waterColor: "#dd7d8f", aegyo: 0.45 },
+  // the liner each of the user's three drawn eye shapes carries (DECISIONS 2026-10-26, night; the lashes are browlash.js's
+  // fox, halfLidded and roundDoll styles): a fox almond's bold liner thickening to a long wing, with the inner corner
+  // drawn out to a long point and a pink inner corner; a half-lidded eye's broad band with a long inner point and a short
+  // flick, the pink under-eye bulge lit (aegyo-sal); a round doll's thin liner with small points both ends and pink all
+  // round the eye
+  "fox liner": { foundation: 0.3, blush: 0.2, blushPlace: 0.5, blushColor: "#e98a98", lips: 0, liner: 0.95, wing: 0.7, linerWidth: 1.6, linerInner: 1, linerColor: "#120f10",
+                 shadow: 0.2, shadowPlace: 0.7, shadowColor: "#c99aa6", under: 0.2, underColor: "#e8a5ae", corner: 0.55, cornerColor: "#f4b0bc", waterline: 0.2, waterColor: "#dd8a96", aegyo: 0.2 },
+  "half-lidded liner": { foundation: 0.3, blush: 0.25, blushPlace: 0.9, blushColor: "#ec8e9c", lips: 0, liner: 1, wing: 0.25, linerWidth: 2.2, linerInner: 1, linerColor: "#120f10",
+                         shadow: 0.3, shadowPlace: 0.3, shadowColor: "#b98c9a", under: 0.5, underColor: "#e9a0ad", corner: 0.25, cornerColor: "#f0b4bc", waterline: 0.3, waterColor: "#d98c98", aegyo: 0.65 },
+  "doll pink": { foundation: 0.35, blush: 0.5, blushPlace: 1, blushColor: "#ee8e9e", lips: 0, liner: 0.6, wing: 0.2, linerWidth: 0.8, linerInner: 0.5, linerColor: "#1a1416",
+                 shadow: 0.5, shadowPlace: 0, shadowColor: "#e0a2b0", under: 0.7, underColor: "#ec9aa8", corner: 0.5, cornerColor: "#f6b8c2", waterline: 0.4, waterColor: "#e08a98", aegyo: 0.4 },
 };
 
 const LIDS = {   // MediaPipe's eyelid rings, outer corner to inner (the character's left eye is +x)
