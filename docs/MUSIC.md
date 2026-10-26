@@ -245,3 +245,36 @@ more, with sources. Titles are given only where we're sure of them.
 | The K-drama ballad underscore | *Crash Landing on You*: "The Song for My Brother" (a piano theme that becomes the orchestra). *Goblin*: "Stay With Me" (the couple song in every big beat). *Descendants of the Sun*: "Always" |
 | K-drama comedy | *Strong Woman Do Bong-soon* and *Business Proposal* scenes. Watch how the pizzicato sneak, the slide and thud and the freeze land on the frame (research §1.3 notes this vocabulary is pieced together, not from a Korean source) |
 | Quiet intimacy | *Your Name* (RADWIMPS): the piano pieces. *To the Moon* (Kan Gao): "For River" |
+
+## 7. The added instruments
+
+Woohill's orchestra is still what every cue above was written and mixed with. Beside it are 28 more instruments from
+the same CC0 libraries, VSCO-2 Community Edition and the Versilian Community Sample Library (VCSL), both by Versilian
+Studios. `python tools/score/fetch_samples.py` fetches them (`--list` shows what's there, `--only KEY`, `--force`). It
+checks out only the folders it needs into `Saved/Score/sources/`. It measures each sample's pitch, decides the
+octave by a vote over the whole set (the libraries name octaves two ways), trims the sample, makes it mono Ogg and
+matches each instrument's loudness to one of Woohill's (`calib_db`). Woohill's instruments are never touched. Every
+added instrument carries a `best` in `instruments.json`: when it works best.
+
+### 7.1 The string sets: which strings play
+
+Every cue writes its strings as three parts: `strings` (sustain), `trem` (tremolo) and `pizz` (pizzicato). The
+header's **strings** picker chooses which samples play them. The notes stay the same and only the players change, so
+a favourite keeps its fingerprint. A favourite remembers the set it was kept with and has its own picker. Open and
+Vary bring that set back to the header. Changing the set while a cue plays restarts it from where it was, so you hear
+the swap at once.
+
+| Set | What plays | Works best for |
+| --- | --- | --- |
+| Section (the original) | Woohill's VSCO-2 violin and cello sections | anywhere; everything was mixed with it |
+| Full section | the section, violas in the middle (C3 to G5), a double bass under C3 | dread beds, the chase, death, the ritual, the big romance swell (muddy in a small room) |
+| Low strings | cellos, violas over A5, the double bass under C3; no violins | hiding, grief, the house at night, a sad flashback |
+| Solo | one violin from G3 up, one double bass below | a lament, the lullaby, her theme alone, the close moment |
+| Eerie | a bowed psaltery from A#4 up, one shaking violin for the tremolo; the rest the section | ghost cues: the lullaby, behind you, the music box |
+| Glass | a bowed vibraphone from A3 up, wine glasses from D#5; the rest the section | a long held chord under a ghost, the moment before she appears |
+
+The cue panel shows the set's note. When the cue suits another set, it says which and why ("Suits this cue: Low
+strings (muffled, as if heard through the wardrobe door)"), and **Use it** switches to it. That's `STRING_ADVICE` in
+`js/32-strings.js`. A set's members each play the notes inside their own range. Where they overlap they stack (the
+full section's violins, violas and basses together), about 2 dB a member quieter so the mix stays put. Notes
+outside every member's range go to the set's fallback, or else the nearest member.

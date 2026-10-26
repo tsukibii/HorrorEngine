@@ -42,7 +42,7 @@ const emptyPalette = scope => ({ format: "horrorstudio-score-palette", version: 
 function drawRoll(cv, take, pos = -1) {
   const g = cv.getContext("2d"), W = cv.width, H = cv.height;
   g.clearRect(0, 0, W, H);
-  const notes = take.ev.filter(e => e.inst !== "drums" && e.inst !== "fx"), drums = take.ev.filter(e => e.inst === "drums");
+  const notes = take.ev.filter(e => e.piece == null && e.inst !== "fx"), drums = take.ev.filter(e => e.piece != null);
   let lo = 127, hi = 0;
   for (const e of notes) { lo = Math.min(lo, e.midi); hi = Math.max(hi, e.midi); }
   if (lo > hi) { lo = 48; hi = 72; }
@@ -160,8 +160,28 @@ function selectCue(id, params, seed) {
   $("cuehead").innerHTML = "";
   $("cuehead").append(h("h3", { class: "fam-" + c.family }, c.label), h("div", { class: "desc" }, c.desc),
     h("div", { class: "uses" }, "for: ", c.uses.map(u => h("span", { class: "tag" }, u))), h("div", { class: "refs" }, "after: " + c.refs));
-  renderParams(); renderCards(); renderLib();
+  renderParams(); renderCards(); renderLib(); renderStrNote();
 }
+// the string set's note, and which set suits this cue (STRING_ADVICE), with a button to use it
+function renderStrNote() {
+  const box = $("strnote"), set = STRING_SETS[Engine.strings], adv = UI.cue && STRING_ADVICE[UI.cue.id];
+  box.innerHTML = "";
+  if (!UI.cue || !takeUsesStrings(writeCue(UI.cue.id, UI.params, UI.seed))) { box.append(h("span", { class: "dim" }, "no strings in this cue: the string set doesn't change it")); return; }
+  box.append(h("b", {}, "Strings: " + set.label), " · " + set.note);
+  const want = adv ? adv[0] : "section";
+  if (want !== Engine.strings) box.append(h("div", { class: "advice" }, "Suits this cue: ", h("b", {}, STRING_SETS[want].label), adv ? " (" + adv[1] + ") " : " ", h("button", { onclick: () => setStrings(want) }, "Use it")));
+  else if (adv) box.append(h("div", { class: "advice ok" }, "The set this cue suits (" + adv[1] + ")"));
+}
+function setStrings(id) {
+  if (!STRING_SETS[id]) id = "section";
+  const was = UI.playing;
+  Engine.strings = id; LS.set("strings", id); $("strset").value = id; $("strset").title = STRING_SETS[id].note;
+  renderStrNote();
+  if (was && was.take && !was.take.strings) playTake(was.take, was.canvas, was.el, Math.max(0, Engine.position()));   // hear the swap at once
+}
+// a favourite's take, playing with the strings it was kept with
+function favTake(f) { const t = writeCue(f.cue, f.params, f.seed); if (f.strings) t.strings = f.strings; return t; }
+const takeUsesStrings = take => take.ev.some(e => STRING_ROLES.includes(e.inst));
 
 function renderParams() {
   const c = UI.cue, box = $("params");
@@ -257,7 +277,7 @@ function keep(cueId, params, seed, extra = {}) {
   const same = UI.palette.favourites.filter(f => f.cue === cueId).length;
   const fav = Object.assign({ id: newId("f"), name: c.label + " " + (same + 1), cue: cueId, family: c.family, params: JSON.parse(JSON.stringify(params)), seed,
     secs: Math.round(take.secs * 100) / 100, hits: take.hits.map(x => ({ t: Math.round(x.t * 1000) / 1000, label: x.label })), print: takePrint(take),
-    space: $("space").value, uses: c.uses.slice(0, 2), stars: 0, note: "", made: today() }, extra);
+    space: $("space").value, strings: Engine.strings, uses: c.uses.slice(0, 2), stars: 0, note: "", made: today() }, extra);
   UI.palette.favourites.unshift(fav);
   changed();
   status("kept " + fav.name);
@@ -303,18 +323,20 @@ function renderPalette() {
 function favCard(f) {
   const c = CUES[f.cue];
   if (!c) return h("div", { class: "fav" }, "unknown cue " + f.cue + " (", f.name, ")");
-  const take = writeCue(f.cue, f.params, f.seed), drift = f.print && f.print !== takePrint(take);
+  const take = favTake(f), drift = f.print && f.print !== takePrint(take);
   let cv = null;
   const el = h("div", { class: "fav" },
     h("div", { class: "top" }, h("input", { class: "name", value: f.name, onchange: e => { f.name = e.target.value; changed(); } }), stars(f)),
     h("div", { class: "meta" }, h("span", { class: "fam-" + c.family }, c.label), " · " + take.secs.toFixed(1) + " s · seed " + f.seed + (take.key ? " · " + keyName(take.key) : ""),
       drift ? h("b", { style: "color:var(--warn)", title: "the cue's generator changed since this was kept: its notes are different now" }, " · changed") : null),
     h("input", { class: "uses", placeholder: "for (comma separated): her room, the turn...", value: (f.uses || []).join(", "), onchange: e => { f.uses = e.target.value.split(",").map(s => s.trim()).filter(Boolean); changed(); } }),
+    takeUsesStrings(take) ? h("div", { class: "meta" }, "strings ", h("select", { title: "which samples play its strings (the notes stay the same)", onchange: e => { f.strings = e.target.value; take.strings = f.strings; changed(); } },
+      Object.entries(STRING_SETS).map(([id, s]) => h("option", { value: id, selected: id === (f.strings || "section"), title: s.note }, s.label)))) : null,
     h("textarea", { placeholder: "note (where it goes, what to change)", value: f.note || "", onchange: e => { f.note = e.target.value; changed(); } }),
     h("div", { class: "row" },
       h("button", { onclick: () => { if (!cv) { cv = rollCanvas(take, 600, 120); el.insertBefore(cv, el.lastChild); } playTake(take, cv, el); } }, "▶"),
-      h("button", { title: "open its settings", onclick: () => { selectCue(f.cue, f.params, f.seed); } }, "Open"),
-      h("button", { title: "open it and make variations of it", onclick: () => { selectCue(f.cue, f.params, f.seed); makeVariations(); } }, "Vary"),
+      h("button", { title: "open its settings", onclick: () => { setStrings(f.strings || "section"); selectCue(f.cue, f.params, f.seed); } }, "Open"),
+      h("button", { title: "open it and make variations of it", onclick: () => { setStrings(f.strings || "section"); selectCue(f.cue, f.params, f.seed); makeVariations(); } }, "Vary"),
       h("button", { title: "add to the sequence", onclick: () => { UI.seq.push({ fav: f.id, gap: 0 }); renderSeq(); } }, "+ Seq"),
       h("button", { title: "MIDI", onclick: () => downloadBytes(Engine.midi(take, f.name), fileBase(f.cue, f.seed, f.name) + ".mid") }, "MIDI"),
       h("button", { title: "WAV in the room it was kept in", onclick: e => renderWavTo(take, fileBase(f.cue, f.seed, f.name) + ".wav", e.target) }, "WAV"),
@@ -325,7 +347,7 @@ function favCard(f) {
 
 // ---- the sequence strip ----
 function seqTake(items) {
-  const parts = items.map(it => { const f = UI.palette.favourites.find(x => x.id === it.fav); return f && CUES[f.cue] ? { take: writeCue(f.cue, f.params, f.seed), gap: +it.gap || 0 } : null; }).filter(Boolean);
+  const parts = items.map(it => { const f = UI.palette.favourites.find(x => x.id === it.fav); return f && CUES[f.cue] ? { take: favTake(f), gap: +it.gap || 0 } : null; }).filter(Boolean);
   return parts.length ? chainTakes(parts) : null;
 }
 function renderSeq() {
@@ -374,6 +396,9 @@ async function boot() {
   $("space").value = LS.get("space", "room");
   $("space").onchange = () => { LS.set("space", $("space").value); Engine.setSpace($("space").value); };
   Engine.space = $("space").value;
+  for (const [id, s] of Object.entries(STRING_SETS)) $("strset").append(h("option", { value: id, title: s.note }, s.label));
+  $("strset").onchange = () => setStrings($("strset").value);
+  setStrings(LS.get("strings", "section"));
   $("scope").append(h("option", { value: "studio" }, "Studio (every game)"));
   try { const r = await fetch("/api/games"); if (r.ok) for (const g of (await r.json()).games) $("scope").append(h("option", { value: g }, g)); } catch (e) { /* no server */ }
   const scope = LS.get("scope", "studio");

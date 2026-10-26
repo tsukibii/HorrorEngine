@@ -183,9 +183,9 @@ function reversed(buf) {
 }
 
 class Kit {
-  constructor(def, buffers, mixer) {
-    this.key = "drums"; this.def = def; this.buffers = buffers; this.mixer = mixer; this.ctx = mixer.ctx;
-    const ch = mixer.channel("drums", { db: (def.gain_db || 0) + (def.calib_db || 0), send: 0.25 });
+  constructor(def, buffers, mixer, key = "drums") {
+    this.key = key; this.def = def; this.buffers = buffers; this.mixer = mixer; this.ctx = mixer.ctx;
+    const ch = mixer.channel(key, { db: (def.gain_db || 0) + (def.calib_db || 0), send: key === "drums" ? 0.25 : 0.6 });
     this.out = ch.input; this.wetOut = ch.wetIn;
   }
   has(piece) { return !!this.def.pieces[piece]; }
@@ -208,7 +208,7 @@ class Kit {
     const wetDest = opts.out ? opts.wetOut : this.wetOut;
     if (wetDest) { const wg = this.ctx.createGain(); wg.gain.value = DRY_DRUMS.has(piece) ? 0.15 : 1; g.connect(wg).connect(wetDest); }
     src.start(Math.max(when, this.ctx.currentTime));
-    if (opts.record !== false) Recorder.note("drums", p.gm, vel, when, Math.min(1, buf.duration));
+    if (opts.record !== false) Recorder.note(this.key, p.gm || 38, vel, when, Math.min(1, buf.duration));
     return src;
   }
 }

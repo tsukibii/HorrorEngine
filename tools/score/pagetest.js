@@ -65,6 +65,27 @@ const URL = process.env.SCORE_URL || "http://127.0.0.1:8791/";
   if (wav.mthd !== "MThd" || wav.midLen < 200) fail("midi " + JSON.stringify(wav));
   console.log("wav", wav.len, "bytes, peak", wav.peak, "| midi", wav.midLen, "bytes");
 
+  // the string sets: the same notes on every set, each renders with sound in it and loads its own instruments; the
+  // header's choice is what a kept favourite remembers
+  const sets = await page.evaluate(async () => {
+    const out = {};
+    for (const id of Object.keys(STRING_SETS)) {
+      const take = writeCue("dread_drone", { len: 6 }, 2); take.strings = id;
+      const bytes = await Engine.renderWav(take, "room");
+      const dv = new DataView(bytes.buffer); let peak = 0;
+      for (let o = 44; o < bytes.length; o += 2) peak = Math.max(peak, Math.abs(dv.getInt16(o, true)));
+      out[id] = { peak, insts: (await Engine.load(take)).join(",") };
+    }
+    setStrings("low"); selectCue("music_box"); UI.palette.favourites = []; keep("music_box", UI.params, 5);
+    const kept = UI.palette.favourites[0].strings, note = document.getElementById("strnote").textContent;
+    setStrings("section");
+    return { out, kept, note };
+  });
+  for (const [id, r] of Object.entries(sets.out)) if (r.peak < 300) fail("strings " + id + " silent " + JSON.stringify(r));
+  if (!/viola_sus/.test(sets.out.full.insts) || !/vln_solo/.test(sets.out.solo.insts)) fail("strings sets load " + JSON.stringify(sets.out));
+  if (sets.kept !== "low" || !/Suits this cue/.test(sets.note)) fail("strings kept " + sets.kept + " note " + sets.note);
+  console.log("string sets", Object.entries(sets.out).map(([k, r]) => k + " " + r.peak).join(", "));
+
   // live playback starts and reports a position
   const pos = await page.evaluate(async () => { await playTake(writeCue("sting", {}, 1), null, null); await new Promise(r => setTimeout(r, 400)); const p = Engine.position(); stopAll(); return p; });
   if (!(pos > 0)) fail("playback position " + pos);
