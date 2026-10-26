@@ -1,0 +1,293 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Face Mesh</title><link rel="icon" href="data:,">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<style>
+  :root { --bg: #111214; --panel: #1a1b1e; --line: #2c2d31; --ink: #ddd; --dim: #8b8d93; --gold: #d9a441; --bad: #e05a4f; --ok: #5aa65a; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 12px system-ui, sans-serif; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  header b { color: var(--gold); letter-spacing: .05em; }
+  select, input, button { background: #222327; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 7px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--gold); } button:disabled { opacity: .5; cursor: default; }
+  main { display: grid; grid-template-columns: 1fr 380px; min-height: 0; }
+  #view { position: relative; min-height: 0; } #view canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+  #view.drop::after { content: "Drop pictures or a video of one face"; position: absolute; inset: 12px; border: 2px dashed var(--gold);
+    border-radius: 8px; display: grid; place-items: center; color: var(--gold); font-size: 16px; background: #0008; }
+  #hud { position: absolute; left: 10px; bottom: 10px; color: var(--dim); line-height: 1.6; background: #0009; padding: 6px 9px; border-radius: 4px; max-width: 60%; }
+  #hud .warn { color: var(--gold); }
+  #views { position: absolute; right: 10px; top: 10px; display: flex; gap: 4px; }
+  aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 8px 12px 30px; }
+  h3 { margin: 14px 0 6px; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .row { display: grid; grid-template-columns: 92px 1fr 42px; gap: 6px; align-items: center; margin: 4px 0; }
+  .row span:first-child { color: var(--dim); } .row small { grid-column: 1 / 4; color: var(--dim); margin-top: -2px; line-height: 1.35; }
+  .row input[type=range] { width: 100%; padding: 0; accent-color: var(--gold); }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .tog { display: flex; gap: 6px; align-items: flex-start; margin: 6px 0; color: var(--ink); } .tog small { display: block; color: var(--dim); line-height: 1.35; }
+  .tog input { accent-color: var(--gold); margin-top: 2px; }
+  #pics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pic { position: relative; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #000; }
+  .pic img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
+  .pic.off img { opacity: .35; } .pic .why { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px; font-size: 10px; background: #000b; color: var(--dim); line-height: 1.3; }
+  .pic.off .why { color: var(--bad); } .pic input { position: absolute; left: 4px; top: 4px; accent-color: var(--gold); }
+  .pic button { position: absolute; right: 3px; top: 3px; padding: 0 5px; line-height: 16px; font-size: 11px; background: #000a; }
+  .note { color: var(--dim); line-height: 1.45; margin: 4px 0; }
+  #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 50vh auto; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style></head>
+<body>
+<header>
+  <b>FACE MESH</b>
+  <select id="name" title="Each name keeps its pictures in Content/Studio/Heads/&lt;name&gt;/pictures (git-ignored)"></select>
+  <input id="newName" placeholder="new name" style="width:110px"> <button id="make">New</button>
+  <button id="add" title="Photos or a video of one face (or drop them on the view)">Add pictures</button>
+  <input id="files" type="file" multiple accept="image/*,video/*" hidden>
+  <label title="The head bent to the face. MHR's ships with the kit; your MetaHuman's base head saved as OBJ comes out already lined up for Mesh to MetaHuman">head
+    <select id="head"><option value="mhr">MHR's head</option><option value="none">the face only</option><option value="path">an OBJ of yours…</option></select></label>
+  <input id="headPath" placeholder="/full/path/to/head.obj" style="width:220px" hidden>
+  <button id="save" title="Content/Studio/Heads/&lt;name&gt;.obj, .json (what was used, the settings) and _sheet.png">Save OBJ</button>
+  <span id="status"></span>
+</header>
+<main>
+  <div id="view">
+    <div id="views"><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button></div>
+    <div id="hud"></div>
+  </div>
+  <aside>
+    <h3>Pictures</h3>
+    <div id="pics"></div>
+    <p class="note" id="picNote">Add one frontal, evenly lit, neutral photo, or several (a video works: a few seconds turning a little). Untick one to leave it out.</p>
+
+    <h3>Which pictures count</h3>
+    <div id="keep"></div>
+    <label class="tog"><input type="checkbox" id="relative" checked><span>Expressions against this face<small>A picture is only dropped for an expression stronger than this person's most neutral one, so full lips (which MediaPipe reads as a pout) aren't. Untick to judge against an average face.</small></span></label>
+
+    <h3>Shape</h3>
+    <div id="shape"></div>
+
+    <h3>View</h3>
+    <div id="viewCtl"></div>
+    <label class="tog"><input type="checkbox" id="wire"><span>Wireframe</span></label>
+    <label class="tog"><input type="checkbox" id="raking"><span>Raking light<small>A low light from the side: bumps and the profile read better.</small></span></label>
+  </aside>
+</main>
+<script type="module">
+// Photos or a video of one face -> a whole head bent to it (tools/face_mesh.py, MediaPipe's Face Landmarker), for
+// Blender and Mesh to MetaHuman (docs/METAHUMAN_LOOKS.md §1.3). The fit runs in Python (serve.py keeps
+// face_mesh.py's worker running); this page holds the settings and shows the result.
+import * as THREE from "three";
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+const api = async (u, body) => {
+  const r = await fetch(u, body === undefined ? {} : { method: "POST", body: typeof body === "string" || body instanceof Blob ? body : JSON.stringify(body) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j;
+};
+const status = (t, cls = "") => { const s = $("#status"); s.textContent = t; s.className = cls; };
+const store = { get(k) { try { return JSON.parse(localStorage.getItem("face:" + k)); } catch (e) { return null; } },
+                set(k, v) { try { localStorage.setItem("face:" + k, JSON.stringify(v)); } catch (e) { } } };
+
+// ---- the settings: every slider is one of face_mesh.py's (DEFAULTS there) ----------------------------------------
+const SLIDERS = {
+  keep: [
+    ["max_turn", "Max turn", 5, 60, 1, 30, "°", "How far from facing the camera a picture may be turned."],
+    ["max_expression", "Max expression", 0.1, 1, 0.05, 0.4, "", "The strongest smile, blink or frown kept (an open mouth is always dropped)."],
+  ],
+  shape: [
+    ["depth", "Depth", 0, 1, 0.05, 0.4, "", "How much of MediaPipe's depth the face takes. It's a learned guess, the weakest part: lower keeps the template's profile."],
+    ["follow", "Head follows", 0, 1, 0.05, 0.5, "", "How much the whole head (skull, ears, neck) takes the face's proportions. All of it over-reaches from a face alone (a tall crown)."],
+    ["detail", "Detail", 0, 1.5, 0.05, 1, "", "The fine pass: eyelids, lips, nostrils. Lower softens them."],
+    ["smooth", "Smooth", 0.001, 0.1, 0.001, 0.01, "", "Damps the fit: more is softer, with fewer bumps from noisy points."],
+    ["symmetry", "Symmetry", 0, 1, 0.05, 0.5, "", "Blends the face toward its mirror image. A photo's asymmetry is mostly its pose."],
+  ],
+  view: [["blend", "Before ↔ after", 0, 1, 0.01, 1, "", "The template as it was, to the head bent to the face."]],
+};
+const S = {}, outs = {};
+for (const [box, list] of Object.entries(SLIDERS)) for (const [k, label, lo, hi, step, def, unit, help] of list) {
+  S[k] = def;
+  const inp = el("input", { type: "range", min: lo, max: hi, step, value: def });
+  const out = el("output", { textContent: def + unit }); outs[k] = [inp, out, unit];
+  inp.oninput = () => { S[k] = +inp.value; out.textContent = (+inp.value).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0) + unit;
+    if (k === "blend") return showBlend(); refit(); };
+  $("#" + (box === "view" ? "viewCtl" : box)).append(el("div", { className: "row" }, el("span", { textContent: label }), inp, out, el("small", { textContent: help })));
+}
+const setSlider = (k, v) => { if (!(k in outs) || v == null) return; const [inp, out, unit] = outs[k]; inp.value = v; S[k] = +v; out.textContent = (+v).toFixed(inp.step < 0.01 ? 3 : inp.step < 1 ? 2 : 0) + unit; };
+$("#relative").onchange = () => refit();
+
+// ---- the view -------------------------------------------------------------------------------------------------------
+const view = $("#view");
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(devicePixelRatio);
+view.prepend(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x26272b);
+const camera = new THREE.PerspectiveCamera(22, 1, 0.01, 100);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3530, 1.1), key = new THREE.DirectionalLight(0xffffff, 1.6);
+scene.add(hemi, key, camera); camera.add(key);
+const material = new THREE.MeshStandardMaterial({ color: 0xc8b2a3, roughness: 0.65, metalness: 0 });
+const mesh = new THREE.Mesh(new THREE.BufferGeometry(), material); scene.add(mesh);
+const orbit = { yaw: 0, pitch: 0.05, dist: 3, size: 1 };
+function place() {
+  const d = orbit.dist * orbit.size;
+  camera.position.set(d * Math.sin(orbit.yaw) * Math.cos(orbit.pitch), d * Math.sin(orbit.pitch), d * Math.cos(orbit.yaw) * Math.cos(orbit.pitch));
+  camera.lookAt(0, 0, 0);
+  key.position.set(...($("#raking").checked ? [3, 0.3, 0.6] : [1, 1.4, 2]));
+  hemi.intensity = $("#raking").checked ? 0.25 : 1.1;
+}
+function resize() { const r = view.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+addEventListener("resize", resize);
+let drag = null;
+renderer.domElement.onpointerdown = e => { drag = [e.clientX, e.clientY]; renderer.domElement.setPointerCapture(e.pointerId); };
+renderer.domElement.onpointermove = e => { if (!drag) return; orbit.yaw -= (e.clientX - drag[0]) * 0.008; orbit.pitch = Math.max(-1.3, Math.min(1.3, orbit.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; };
+renderer.domElement.onpointerup = () => { drag = null; };
+renderer.domElement.onwheel = e => { e.preventDefault(); orbit.dist = Math.max(1.2, Math.min(8, orbit.dist * (1 + Math.sign(e.deltaY) * 0.1))); };
+for (const b of document.querySelectorAll("#views button")) b.onclick = () => { orbit.yaw = +b.dataset.yaw * Math.PI / 180; orbit.pitch = 0.05; };
+$("#wire").onchange = () => { material.wireframe = $("#wire").checked; };
+renderer.setAnimationLoop(() => { place(); renderer.render(scene, camera); });
+resize();
+
+// the template's points in the view (rotated to face the camera, centred); the fit's land in the same frame
+let T = null;                                     // {rot, center, base (Float32Array), fit (Float32Array)}
+function toView(flat, rot, center) {
+  const out = new Float32Array(flat.length);
+  for (let i = 0; i < flat.length; i += 3) {
+    const x = flat[i], y = flat[i + 1], z = flat[i + 2];
+    out[i] = rot[0] * x + rot[1] * y + rot[2] * z - center[0];
+    out[i + 1] = rot[3] * x + rot[4] * y + rot[5] * z - center[1];
+    out[i + 2] = rot[6] * x + rot[7] * y + rot[8] * z - center[2];
+  }
+  return out;
+}
+async function loadHead() {
+  const head = headValue(); if (head === null) return;
+  status("loading the head…");
+  const t = await api("/api/face/template", { head });
+  const raw = toView(t.verts, t.rot, [0, 0, 0]);
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < raw.length; i++) { lo[i % 3] = Math.min(lo[i % 3], raw[i]); hi[i % 3] = Math.max(hi[i % 3], raw[i]); }
+  const center = lo.map((v, i) => (v + hi[i]) / 2);
+  T = { rot: t.rot, center, base: toView(t.verts, t.rot, center), fit: null };
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(T.base.slice(), 3));
+  g.setIndex(t.tris); g.computeVertexNormals();
+  mesh.geometry.dispose(); mesh.geometry = g;
+  orbit.size = Math.max(...hi.map((v, i) => v - lo[i]));
+  status("");
+}
+function showBlend() {
+  if (!T) return;
+  const pos = mesh.geometry.attributes.position, a = T.base, b = T.fit || T.base, k = S.blend;
+  for (let i = 0; i < a.length; i++) pos.array[i] = a[i] + (b[i] - a[i]) * k;
+  pos.needsUpdate = true; mesh.geometry.computeVertexNormals();
+}
+
+// ---- pictures, detection, the fit --------------------------------------------------------------------------------
+let NAME = null, PICS = [], REPORT = null, detected = false;
+const skip = new Set();
+const headValue = () => $("#head").value === "path" ? ($("#headPath").value.trim() || null) : $("#head").value;
+const settings = () => ({ ...Object.fromEntries(Object.keys(S).filter(k => k !== "blend").map(k => [k, S[k]])), relative: $("#relative").checked, head: headValue() });
+function remember() { if (NAME) store.set(NAME, { settings: settings(), skip: [...skip], headSel: $("#head").value }); }
+
+async function sessions(pick) {
+  const list = (await api("/api/face/sessions")).sessions;
+  $("#name").replaceChildren(...list.map(s => el("option", { value: s.name, textContent: `${s.name} (${s.pictures.length})` })));
+  if (!list.length) $("#name").append(el("option", { value: "", textContent: "no faces yet: type a name, New" }));
+  if (pick) $("#name").value = pick;
+  return list;
+}
+async function open(name) {
+  NAME = name || null; detected = false; PICS = []; REPORT = null; skip.clear(); drawPics(); $("#hud").textContent = "";
+  if (!NAME) return;
+  const saved = store.get(NAME);
+  if (saved) {
+    for (const [k, v] of Object.entries(saved.settings || {})) setSlider(k, v);
+    if (saved.settings) { $("#relative").checked = saved.settings.relative !== false; }
+    if (saved.headSel) { $("#head").value = saved.headSel; $("#headPath").hidden = saved.headSel !== "path"; if (saved.headSel === "path") $("#headPath").value = saved.settings.head || ""; }
+    for (const s of saved.skip || []) skip.add(s);
+  }
+  await loadHead();
+  await detect();
+}
+async function detect() {
+  if (!NAME) return;
+  status("finding the face in each picture…");
+  try {
+    const r = await api("/api/face/detect", { name: NAME });
+    PICS = r.pictures; detected = true;
+    if (r.missed.length) status(`no face in ${r.missed.join(", ")}`, "bad"); else status("");
+    drawPics(); refit(true);
+  } catch (e) { status(e.message, "bad"); }
+}
+function drawPics() {
+  const each = Object.fromEntries((REPORT?.each || []).map(x => [x.name, x]));
+  $("#pics").replaceChildren(...PICS.map(p => {
+    const x = each[p.name] || {}, off = !!x.dropped;
+    const box = el("input", { type: "checkbox", checked: !skip.has(p.name), title: "use this picture" });
+    box.onchange = () => { box.checked ? skip.delete(p.name) : skip.add(p.name); refit(); };
+    const file = p.name.split("#")[0];
+    const rm = el("button", { textContent: "×", title: `remove ${file} from this face's pictures` });
+    rm.onclick = async () => { if (!confirm(`Remove ${file}?`)) return; await api(`/api/face/remove/${encodeURIComponent(NAME)}/${encodeURIComponent(file)}`, ""); await sessions(NAME); detect(); };
+    const why = x.dropped ? `${x.dropped}${x.dropped === "turned" ? ` ${x.turn}°` : x.dropped === "expression" ? ` (${x.expression[0]} ${x.expression[1]})` : ""}`
+                          : x.turn !== undefined ? `${x.turn}°${x.expression?.[1] > 0.05 ? ` · ${x.expression[0]} ${x.expression[1]}` : ""}` : "";
+    return el("div", { className: "pic" + (off ? " off" : ""), title: p.name }, el("img", { src: "data:image/jpeg;base64," + p.thumb }), box, rm, el("div", { className: "why", textContent: why || p.name }));
+  }));
+  $("#picNote").hidden = PICS.length > 0;
+}
+let seq = 0, timer = null;
+function refit(now) {
+  remember();
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    if (!NAME || !detected || !T) return;
+    const mine = ++seq;
+    status("fitting…");
+    try {
+      const r = await api("/api/face/fit", { name: NAME, settings: settings(), skip: [...skip] });
+      if (mine !== seq) return;
+      T.fit = toView(r.verts, T.rot, T.center); REPORT = r.report;
+      showBlend(); drawPics(); hud(); status("");
+    } catch (e) { if (mine === seq) status(e.message, "bad"); }
+  }, now ? 0 : 140);
+}
+function hud() {
+  const r = REPORT; if (!r) return;
+  $("#hud").replaceChildren(el("div", { textContent: `${r.used} of ${r.faces} pictures used${r.faces < r.pictures ? ` (no face in ${r.pictures - r.faces})` : ""}` }),
+    ...r.warnings.map(w => el("div", { className: "warn", textContent: w })));
+}
+
+// ---- the header ---------------------------------------------------------------------------------------------------
+$("#name").onchange = () => open($("#name").value);
+$("#make").onclick = async () => {
+  const n = $("#newName").value.trim();
+  if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(n)) return status("a name is letters, digits, _ - .", "bad");
+  NAME = n; $("#newName").value = ""; $("#name").append(el("option", { value: n, textContent: n + " (0)" })); $("#name").value = n;
+  PICS = []; REPORT = null; detected = false; skip.clear(); drawPics(); status("now add pictures");
+};
+$("#add").onclick = () => NAME ? $("#files").click() : status("type a name and press New first", "bad");
+$("#files").onchange = () => upload([...$("#files").files]);
+async function upload(files) {
+  if (!NAME) return status("type a name and press New first", "bad");
+  for (const [i, f] of files.entries()) {
+    status(`adding ${i + 1} of ${files.length}…`);
+    const safe = f.name.replace(/[^A-Za-z0-9_.-]/g, "_").replace(/^\.+/, "");
+    try { await api(`/api/face/picture/${encodeURIComponent(NAME)}/${encodeURIComponent(safe)}`, f); } catch (e) { status(`${f.name}: ${e.message}`, "bad"); return; }
+  }
+  await sessions(NAME); detect();
+}
+view.ondragover = e => { e.preventDefault(); view.classList.add("drop"); };
+view.ondragleave = () => view.classList.remove("drop");
+view.ondrop = e => { e.preventDefault(); view.classList.remove("drop"); upload([...e.dataTransfer.files]); };
+$("#head").onchange = async () => {
+  $("#headPath").hidden = $("#head").value !== "path";
+  if ($("#head").value === "path" && !$("#headPath").value.trim()) return status("type the OBJ's full path, then Enter");
+  try { await loadHead(); refit(true); } catch (e) { status(e.message, "bad"); }
+};
+$("#headPath").onchange = $("#head").onchange;
+$("#raking").onchange = place;
+$("#save").onclick = async () => {
+  if (!NAME || !detected) return status("add pictures first", "bad");
+  status("saving…");
+  try { const r = await api("/api/face/save", { name: NAME, settings: settings(), skip: [...skip] }); status(`saved ${r.path} (+ .json, _sheet.png)`, "ok"); }
+  catch (e) { status(e.message, "bad"); }
+};
+
+window.__face = { get name() { return NAME; }, get report() { return REPORT; }, get head() { return T; }, get pics() { return PICS; }, settings };   // facetest.js
+const list = await sessions();
+if (list.length) open(list[0].name); else { await loadHead(); }
+</script>
+</body></html>

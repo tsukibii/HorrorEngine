@@ -103,8 +103,12 @@ TOOLS = [
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
+    ("Pages", "Face mesh: photos to a head", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/face.html"}),
+    ("Pages", "Character Studio (body, face, skin, hair in the salon, clothes)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793"}),
+    ("Pages", "Salon (hair as locks: strands, sheets, bundles, against a locked reference video)", "tools/character/serve.py", {"url": "http://127.0.0.1:8793/salon.html"}),
     ("Pages", "Kit maker (room things from numbers)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/kit.html"}),
-    ("Pages", "PBR shelf (your texture sets)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
+    ("Pages", "PBR shelf (your texture sets in assets/pbr, on a sphere; the Character Studio has it as its PBR button)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pbr.html"}),
+    ("Pages", "Pigment test (projected art as pigment)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/pigment.html"}),
     ("Pages", "Kimodo demo", "tools/kimodo.py demo", {"url": "http://127.0.0.1:7860"}),
 
     ("Checks", "Every offline check, every game", "tools/check_all.py", {}),
@@ -116,7 +120,11 @@ TOOLS = [
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
+    ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
+    ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),
+    ("Checks", "Time of day on the desk (the desk running)", "node tools/director/timetest.js", {}),
+    ("Checks", "Blender look check (Light Kit's times, UltraVHS's camcorder; needs the Blender module)", "tools/blender_look_check.py", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
     ("Story", "Notes from the desk", "tools/story.py --game {game} notes", {}),
@@ -127,7 +135,7 @@ TOOLS = [
     ("Story", "Cast", "tools/story.py --game {game} cast", {}),
     ("Story", "Props still blocks (art to place)", "tools/story.py --game {game} art", {}),
     ("Story", "Plan view picture (needs Pillow)", "tools/plan_view.py --game {game}", {}),
-    ("Story", "New game", "tools/story.py --game {game} new {ask:New game's name}", {}),
+    ("Story", "New game", "tools/story.py new {ask:New game's name}", {}),
 
     ("Script", "Script generator: outline to story (Ollama)", "tools/scriptgen.py --game {game} new {ask:Outline file}", {}),
     ("Script", "Script generator: review pack", "tools/scriptgen.py --game {game} review", {}),
@@ -151,7 +159,10 @@ TOOLS = [
 
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
-    ("Look", "Garment pattern", "tools/garment.py --game {game} pattern {ask:Cast id} {ask:Design (e.g. t-shirt)}", {}),
+    ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
+    ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
+    ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
+    ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
     ("Library", "Fetch what the story needs", "tools/cc0.py fetch --game {game}", {}),
@@ -167,8 +178,12 @@ TOOLS = [
     ("Setup", "Install or update Kimodo", "setup/setup.py kimodo", {}),
     ("Setup", "Kimodo demo additions: check", "setup/setup.py kimodo-patch check", {}),
     ("Setup", "Kimodo demo additions: apply", "setup/setup.py kimodo-patch apply", {}),
-    ("Setup", "GarmentCode setup", "tools/garment.py setup", {}),
+    ("Setup", "Face mesh setup (MediaPipe)", "tools/face_mesh.py setup", {}),
+    ("Setup", "Salon reference setup (torch, OpenCV, MediaPipe, the models)", "tools/gshair.py setup", {}),
     ("Setup", "Blender module setup (retarget)", "tools/retarget.py setup", {}),
+    ("Setup", "Unreal plugins (UltraVHS, Light Kit): which are on", "tools/unreal_plugins.py", {}),
+    ("Setup", "Unreal plugins: turn on in this project and build", "tools/unreal_plugins.py on {ask:Plugins (UltraVHS LightKit)} --build", {}),
+    ("Setup", "Unreal plugins: into another project (a copy in its Plugins/)", "tools/unreal_plugins.py on {ask:Plugins (UltraVHS LightKit)} --project {ask:The other project's .uproject} --build", {}),
 ]
 
 
@@ -310,8 +325,9 @@ def run(label, args, opts, dry=False, state=None):
     if opts.get("url") and state is not None and not dry:
         key = shown(args)
         r = running(state).get(key)
-        if r and label in r["labels"]:
-            stop(state, key)                                     # the same number again: stop it
+        if r and label in r["labels"]:                           # the same number again: the page again (x<number> stops it)
+            webbrowser.open(opts["url"])
+            say("%s: %s %s" % (label, paint(opts["url"], 4, *BONE), paint("(already running: x%s stops it)" % (TOOLS.index(next(t for t in TOOLS if t[1] == label)) + 1), *ASH)), "ok")
             return 0
         if r:                                                    # its server is up for another page: just open this one
             r["labels"].append(label)
@@ -378,8 +394,8 @@ def show_menu(idx, state):
         print("\n" + rule("Recent", width))
         for n, r in enumerate(recent[:5], 1):
             print("  " + paint("r%d" % n, 1, *RED) + "   " + r["label"] + (paint("  " + r["shown"], *ASH) if width >= 100 else ""))
-    keys = [("number", "run" + (", or stop a ●" if up else "")), ("words", "filter"), ("r1-r5", "recent"), ("g", "game")] \
-        + ([("close", "stop the pages")] if up else []) + [("q", "quit")]
+    keys = [("number", "run" + (" (a ● again: open it)" if up else "")), ("words", "filter"), ("r1-r5", "recent"), ("g", "game")] \
+        + ([("x<number>", "stop a ●"), ("close", "stop the pages")] if up else []) + [("q", "quit")]
     print("\n " + paint("  ·  ", *DARK).join(paint(k, 1, *RED) + " " + paint(t, *ASH) for k, t in keys))
 
 
@@ -423,6 +439,14 @@ def main(argv):
             return 0
         if v.lower() in ("close", "c", "stop"):
             close_all(state)
+            continue
+        if v.lower()[0] == "x" and v[1:].isdigit():             # stop one page's server
+            n = int(v[1:]) - 1
+            hit = [k for k, r in running(state).items() if 0 <= n < len(TOOLS) and TOOLS[n][1] in r["labels"]]
+            if not hit:
+                say("%s isn't running." % (TOOLS[n][1] if 0 <= n < len(TOOLS) else "No tool " + v[1:]), "warn")
+            for k in hit:
+                stop(state, k)
             continue
         if not v:
             idx = list(range(len(TOOLS)))

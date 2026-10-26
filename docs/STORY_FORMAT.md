@@ -34,7 +34,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | Key | Holds |
 |---|---|
 | `format` | `2` |
-| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body) |
+| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1) |
 | `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body) |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect}}`, `{id: {title, text}}`, `{id: {file}}` |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
@@ -46,6 +46,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | `secrets` | `{id: {flag, hint}}`: easter eggs; a beat that finds one says `"secret": id` |
 | `interrupts` | trigger cutscenes (§5.1): something the player does during a stitch jumps the flow to a scene, usually a death |
 | `board` | notes for the whole game (§7) |
+| `frames` | the desk's board: acts, coloured frames behind groups of cards (§5) |
 
 ## 2. The world
 
@@ -179,12 +180,42 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `locker` | (hide inside: E gets in, E gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): E throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
 | `sit` | (a chair, a sofa, a bed's edge: E sits the player down, the eye at sitting height, E stands them up; a beat's `{"use": id}` hears it) |
+| `carry` | a thing the player carries: **hold E** to pick it up, **hold E** again to put it down (a tap while carrying still opens a door). Its `shape` (`box`, `cyl`, `sphere`, or `asset` for a library mesh at its size; under 1 m) is its body; `art` dresses it (any library mesh: your own goes in with `python tools/cc0.py add <file> local/<name>`), and in Play a bare plushie's block is drawn rounded, like a cushion. `physics`: how it moves, `rigid` (default: follows the hands stiffly) or `plushie` (light and soft: it lags and swings in the hands, squashes and stretches, bobs with the steps, its top flops behind a turn; dropped, it barely bounces and squashes as it lands); `jiggle` 0..2 a plushie's softness (0 still, 1 a plushie, 2 jelly). Put down, it falls and settles where it lands and stays there; `{"carrying": id}` holds while it's in the hands, `{"dropped": id, "in": room}` when it has settled |
+| `game` | a table with a board game: E sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time). Needs a `shape` or a `kit`: the table |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
 | `trigger` | `size [w, d, h]`; `safe: true` makes it a safe zone (no one sees the player in it) |
 | `spot` | `rot` (start points, stage marks, look targets, routes) |
 
 Every room also gets an invisible volume, so `enter <room>` works.
+
+**Little things** (docs/IMMERSION.md): a kettle, a hob, a pot, a cup, a cigarette, a clock, a phone, a tap... have a
+**life**: states they move through by themselves, what they show and play in each, and what the player can do to them
+(E switches the kettle on). A kit thing has its kit's life (Content/Studio/Life/lives.json says which); any prop can be
+given one:
+
+```json
+{"id": "kitchen_kettle", "kit": "kettle_jug", "on": "kitchen_counter", "at": [1.4, 0.35], "rot": 180, "state": "off"},
+{"id": "kitchen_mug", "kit": "mug", "on": "kitchen_table", "at": [2.1, 1.9], "state": "empty", "liquid": "tea", "from": "kitchen_kettle"},
+{"id": "hall_ash", "kit": "ashtray_burning", "on": "hall_table", "at": [3.0, 5.2], "state": "lit"}
+```
+
+- `life`: the life it has (the kit's own when it's a kit thing; `false` for none). `state`: where it starts (the
+  life's first state otherwise). The lives: `kettle` (off, heating, boiling, boiled), `whistling_kettle` and
+  `tetsubin` (on a hob: off, heating, whistling or boiling, cooling), `hob` (off, on, hot), `gas_hob` (off, on), `pot`
+  (cold, heating, simmering, boiling, cooling), `cup` (empty, filling, full, cold, drunk), `coffee` (hot, cold),
+  `teapot` (empty, full, cold), `cigarette` (unlit, lit, out), `lighter` (off, lit), `candle` (lit, out), `coil` and
+  `incense` (lit, out), `clock` (running, stopped), `rice_cooker` (off, cooking, warm), `phone` (off, lit, ringing),
+  `tap` (off, dripping, running), `tv` (off, static, on), `fridge` (on, off).
+- A state that lasts (`secs` in lives.json) moves on by itself: the kettle boils 30 s after it's switched on, clicks
+  off, and cools. A thing that follows stands `on` what it follows: a pot or a stovetop kettle `on` a hob heats while
+  the hob is on.
+- Its settings: `secs` (how long its states last, `{"heating": 20}`, over the life's), `acts: false` (the player
+  can't touch it), and a life's own: `liquid` (a cup or a teapot: `tea green_tea coffee water milk barley_tea soup`),
+  `from` (the kettle or teapot it's filled from: Pour needs that one boiled or full), `rings` (a hob's rings that are
+  on), `level` (the number on its digits), `light` (a candle's light, `use: light`, lit while it burns).
+- The player's acts (E) are the state's: the kettle's *Switch on*, the cigarette's *Put it out*, the cup's *Pour*. A
+  use is heard as `{"use": id}`, and where it leaves the thing as `{"state": id, "is": s}`.
 
 ## 3. Scenes (the spine)
 
@@ -217,6 +248,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `view` | the spot where we expect the player: **the camera, since the camera is the player's eye**. It must be a place the player can stand (in its room, not inside a prop, unless that prop is in `camera.through`). It's for the desk, the shot review, the motion jobs (the `player_collar` target) and the playtime estimate; the runner never moves the player there |
 | `stance` | the player's eye height in this scene: `stand` (1.65 m, the default) `crouch` (1.05) `kneel` (1.2) `sit` (1.15) `lie` (0.3) `hide` (1.6, in a locker or wardrobe): first person's low and high angles |
 | `mood` | `intimate dread panic reveal calm grief chase aftermath`: the recipe (DIRECTING.md §2); the desk can apply its camera and shot defaults |
+| `time` | the time of day from this scene on: `day`, `dusk` or `night`. **Left out, the scene keeps the time it was**: the time of the scene it branched from (the nearest scene before it in the flow that set one), back to `game.time` at the start. Stitches play at the time of the scene before them. The desk shows each scene's time on the board (☀ ◐ ☾) and in its picker ("as before: night (from …)"), and lights the stage, the Watch and Play by it (the sky through the windows, the ambient, a light in every window). In Unreal, Light Kit's sky follows it, with UltraVHS's night mode (UNREAL_FLOW §1c). A scene reached at different times by different paths, with no time of its own, is a STORY warning |
 | `enter`, `exit` | `{"kind": "blend"|"fade"|"cut"|"blink"|"dip", "secs": 0.8}`: how the scene comes in from the game and goes back to it. The default is `blend` (0.8 s): the view eases from wherever the player's eye is into the scene's framing, and at the end the player carries on from the scene's last view, with no black between (GAMEPLAY_PLAN §1). `fade` goes through black; `cut` is for a scare |
 | `camera.mode` | `free` (the player walks and looks), `soft` (movement stops; the look stays inside a cone round `look`, with a spring back), `hard` (a cinematic camera), `held` (an actor has hold of the player: struggles) |
 | `camera.through` | props the camera sees through (a locker's slats): the shot review and the visibility test ignore them |
@@ -310,9 +342,10 @@ motions and estimates follow.
 | `mods` | time modifiers, applied in order: `ease {in, out}`, `speed {x}`, `ramp {from, to}`, `hold {at, secs}`, `snap {at, secs}`, `twitch {amount}`, `trim {in, out}`, `loop {from, to, times}`, `mirror` |
 | `secs`, `delay` | the action's own length against the take (default: the clip's length) and how long after the take starts it begins: set by hand in the desk when the director's action and the take don't line up |
 | `fit` | when a generated motion's length differs from the take: `stretch` (×0.8 to ×1.25), `hold`, `loop`, `pad`, `trim` |
-| `blend` | seconds of crossfade from this actor's previous clip (default 0.25) |
+| `blend` | seconds of crossfade from this actor's previous clip (default 0.25), from the pose that clip had reached when it was cut (not its unplayed end). Wherever a generated motion (a walk, a turn) left the actor, the next clip starts there and faces that way; blocking ends where its keys put them. The desk draws each blend as a light wedge over the clip's start |
 | `bridge` | an in-between from the previous clip's last pose to this one's first: the desk blends it, `motion.py` makes a Kimodo job for it |
-| `file` | the generated motion (`Content/Games/<Game>/Motion/<file>`, made by `motion.py preview`): it plays instead of the blocking |
+| `layers` | parts of the body played from another motion or a pose, over this one, in order (ANIMATION.md §0c): `[{"mask": "upper", "pose": "arms_crossed", "from": 0.2, "to": 0.7}, {"mask": "right_arm", "file": "x.json", "fit": "hold"}]`. `mask`: `upper` (from the waist up), `arms`, `left_arm`, `right_arm`, `head`; `file` (a made motion) or `pose` (from the library); `from`, `to` the window (0..1 of the clip; 0 and 1); `fade` seconds in and out (0.3; none at the clip's own edges); `weight` 0..1 (1); `fit` how a motion meets its window (`loop`, or any of fit's). The part leans and turns with the body under it and keeps that body's proportions; the bake for Unreal carries it like the rest |
+| `file` | the generated motion (`Content/Games/<Game>/Motion/<file>`, made by `motion.py preview` or `import`; picked in the desk's **motion** box from the ones made, which says its length or that it isn't made yet): it plays instead of the blocking |
 
 `tools/motion.py jobs` turns these into Kimodo jobs: the prompt, the constraints, and the blocking as full-body pose
 keyframes, so the generated motion follows the staging approved in the desk. ANIMATION.md has the rest.
@@ -371,12 +404,19 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 | `{"all": [...]}`, `{"any": [...]}` | a combination |
 | `{"caught": true}`, `{"caught": "mari"}` | the player is caught (by anyone, or by that cast member): a cast member who `sees` (`behave`) filled the suspicion meter, or found them in a hiding place her route `check`s |
 | `{"hidden": true}`, `{"hidden": locker}` | the player is in any hiding place, or in that one (`use: locker`); holds while they stay |
+| `{"answered": ask}`, `"option": answer` | an `ask` was answered (any answer, or that one) |
+| `{"carrying": id}`, `{"carrying": true}` | the player is carrying it (`use: carry`), or anything; holds while they do |
+| `{"played": table}`, `"result": "lose"` | a board game at that table (`use: game`) ended: any result, or that one (its game's `results`). A result is chance, so a beat that needs one is `optional` or `secret` (the check warns otherwise): set a flag, and let the flow branch on it |
+| `{"dropped": id}`, `"in": room_or_trigger` | it was put down and has settled (anywhere, or inside that room or trigger on its level): put the doll back in its bed, the box on the shelf |
+| `{"state": thing, "is": s}` | a little thing is in that state (by itself, the story or the player); holds while it is: `{"state": "kitchen_kettle", "is": "boiled"}` |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
 - `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`)
 - `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
 - `show`, `hide`, `move` (`to` a spot), `objective`
+- `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
+  cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
 - `flag`, `unflag`, `give`, `take`
 - `wait`, `fade` (`in`/`out`, `secs`), `lookat` (`secs`, `lock`)
 - `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)
@@ -386,6 +426,9 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
   member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,
   `from`: `nearest` or `first` point), `patrol` (`routes`: walks each once, then the next; `pick`: `order` or
   `random`), `off` (gone). Not AI: the same steps every time, so a player can learn them.
+  `motion` (any of them but `off`): a `motions` id she plays, looped: while she stands (`idle`) or sits, or while she
+  walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). Until its
+  Kimodo take is made, the desk plays its `block` stand-in, else the pose; Unreal plays the take (its `name`).
   `sees`: she watches for the player (`true`, or some of `angle` 90 (the cone's full width), `range` 9 m,
   `crouched` 0.55 (the reach for a crouched player), `meter` 1.2 s (to fill), `drain` 1.5 s, `calm` 3 s (after a
   catch)). In her cone, in reach and in her line of sight, the suspicion meter fills; out of it, it drains; full,
@@ -396,6 +439,17 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
   (walking into a place, sitting down, using a thing), blended in from where they are and back out to play, and the
   stitch goes on. `{"when": {"use": "sofa"}, "do": [{"scene": "s_talk"}]}`. Its `sets` and events count as usual. A
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
+- `ask`: a **question with answers**, asked in play. The answers float in the world, in one panel, the dashes
+  between them: beside `who` (a cast member: at their shoulder, on the side of the frame with more room, the
+  camera's focus on their face), or at `on` (a placed thing it's about), or under the reticle with neither. The
+  question is the footer's line, like every line: `line` (a line id: spoken, its Japanese over it, the speaker's name
+  above) or `text` (a thought). 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
+  (actions run when it's picked). `secs` times it, with `default` (an answer's id) taken when time runs out. Picking
+  one is heard as `{"answered": ask, "option": id}`, so a later beat in the stitch can follow it; to branch the
+  story, the answer's `do` sets a flag and a flag choice (§5) follows it.
+  `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}], "secs": 8, "default": "go"}`.
+  The walker (STORY, the playthrough's timing) answers with the `default`, else the first.
+  A reply inside a scene (§9.9) is the scene's own; `ask` is for the player's tasks.
 - `done`, which ends the stitch
 
 ## 5. The flow
@@ -425,6 +479,12 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
   every result needs an option.
 
 **Branching and rejoining:** branches may rejoin (`n_hide` → `n_cellar`). Loops need a flag choice to leave.
+
+**On the desk's board:** a node's `xy` is where it sits on the director's desk's flow board (`[x, y]`, pixels at 100%).
+The desk writes every node's once you move one (until then they're laid out in reading order); nothing else reads it.
+The story's `frames` are the board's acts: `[{"id": "f_act1", "title": "Act 1: the house", "color": "#8a63d2", "nodes":
+["n_arrive", "n_message"]}]`, a coloured frame behind each group of cards, moved and folded together on the desk; a node
+is in one act at most. Only the desk reads them.
 
 **Endings:** `kind` is `good neutral bad secret other`. `short_ok` exempts an early death ending from `target_min` and
 `fast_min`.
@@ -477,6 +537,8 @@ If the stitch isn't `done` in time, the flow jumps to `fail`. The checks:
 - **playtime per ending, typical and fast:** the shortest path to every ending not marked `short_ok` must reach
   `target_min` (typical) and `fast_min` (fast)
 - shot sizes, cameras, events, blocking (poses exist, eases, modifiers, fits), moods, transitions, timers, interrupts
+- times of day: `game.time` and each scene's `time` are `day`, `dusk` or `night`; a scene without one that different
+  paths bring at different times is a warning
 - `--route` writes the main path's steps for the playthrough bot
 
 `level_check.py`: overlaps, props in walls, blocked doorways, standing room at interactables.
@@ -614,7 +676,8 @@ prints each take's prompt: `she makes a <expr> while she <voice> <d>[Japanese] <
 | segment `path` | stage marks the root travels through (a 2D root path constraint) |
 | segment `keys` | `[{"at": 0..1, "pose": ...}]`: full-body keyframes from the pose library for poses Kimodo doesn't know |
 | segment `loop` | the demo's Loop checkbox (idles, walk cycles) |
-| segment `file` | the made motion (`motion.py import` writes it) |
+| segment `blend` | seconds it blends in from the segment before (0.25; 0 cuts): inertial, so this one plays at full speed while the join fades |
+| segment `file` | the made motion (`motion.py import` writes it, or the demo's Send to Studio named after the segment). A clip plays as soon as any of its segments is made: one not made yet holds where the last one ended for its `secs` |
 
 ### 9.6 The look and the trackers (where a head points)
 
@@ -717,7 +780,7 @@ waiting.
 the first time she finds you, a tease the second, the third is a death.
 
 **The HUD's theme** (Play mode, docs/GAMEPLAY_PLAN.md §10): `game.ui_theme` names a file in
-`tools/director/play/ui/themes/` (`neumorph`, the light neumorphic kit, when a game names none; `plain`). A theme sets
+`tools/director/play/ui/themes/` (`glass`, barely-there frosted glass, when a game names none; `glass-rose`, the same in warm romance colours; `neumorph`, the older light kit; `plain`). A theme sets
 only colours, radii, shadows and the font; the layout is the same for every game.
 
 **Hiding places' default:** `game.see_through` (0..1), how much of a locker's slats are gaps when the locker doesn't say.

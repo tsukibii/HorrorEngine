@@ -464,6 +464,17 @@
        ],
        "rot": 270,
        "note": "face to face: her head about 0.4 m from the player's eye (CU)"
+      },
+      {
+       "id": "hall_ash",
+       "kit": "ashtray_burning",
+       "on": "hall_table",
+       "at": [
+        2.75,
+        5.15
+       ],
+       "rot": 0,
+       "state": "lit"
       }
      ],
      "acoustics": "hallway"
@@ -604,6 +615,42 @@
         2.6
        ],
        "rot": 270
+      },
+      {
+       "id": "kitchen_kettle",
+       "kit": "kettle_jug",
+       "on": "stove",
+       "at": [
+        0.4,
+        3.75
+       ],
+       "rot": 90
+      },
+      {
+       "id": "kitchen_tea",
+       "kit": "yunomi",
+       "on": "kitchen_table",
+       "at": [
+        2.45,
+        1.85
+       ],
+       "rot": 180,
+       "state": "full",
+       "liquid": "green_tea",
+       "from": "kitchen_kettle"
+      },
+      {
+       "id": "kitchen_clock",
+       "kit": {
+        "preset": "wall_clock",
+        "time": "02:47:10"
+       },
+       "at": [
+        2.0,
+        3.93
+       ],
+       "z": 1.75,
+       "rot": 0
       }
      ]
     },
@@ -716,6 +763,26 @@
         1.5
        ],
        "rot": 270
+      },
+      {
+       "id": "study_phone",
+       "kit": "flip_phone",
+       "on": "desk",
+       "at": [
+        1.75,
+        3.2
+       ],
+       "rot": 200
+      },
+      {
+       "id": "study_tv",
+       "kit": "tv_55",
+       "at": [
+        2.7,
+        0.08
+       ],
+       "z": 0.95,
+       "rot": 180
       }
      ],
      "acoustics": "small_room"

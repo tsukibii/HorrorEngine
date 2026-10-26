@@ -20,6 +20,16 @@ export const SLOTS = {
   plastic: [0xf4f2ed, 0.4], metal: [0xa3a8ae, 0.35, 0.8], black: [0x1f1f21, 0.5], frame: [0x3b3c3f, 0.45, 0.3],
   glass: [0xbcd3dc, 0.05, 0, 0.25], mirror: [0xc4cfd6, 0.03, 0.95], screen: [0x0d0e11, 0.15],
   paper: [0xd8c9b0, 0.9], white: [0xefefeb, 0.5], hole: [0x0e0e10, 1], emit: [0xfff1dc, 0.5, 0, 1, true],
+  // the little things (docs/IMMERSION.md): kitchenware, smoking, clocks. A part its life moves or lights (a lid, a
+  // clock's hands, a pendulum, a hob's rings, an LED) is a slot of its own, so the desk can move or light it alone.
+  steel: [0xc4c8cc, 0.3, 0.55], chrome: [0xdfe3e6, 0.15, 0.6], lid: [0xc4c8cc, 0.3, 0.55], brass: [0xb8955a, 0.3, 0.6], pendulum: [0xb8955a, 0.3, 0.6],
+  iron: [0x2b2826, 0.75, 0.4], matte_black: [0x1c1c1e, 0.6, 0.2], plastic_2: [0x2a2b2e, 0.45], rubber: [0x1a1a1a, 0.9], lighter: [0xc23b2e, 0.3],
+  ceramic: [0xf1eee6, 0.2], glaze: [0x9fb3ab, 0.22], glaze_2: [0x8a5a33, 0.25], glaze_3: [0x2e2420, 0.25], glaze_4: [0x2f3d5c, 0.22],
+  clay: [0x9a4a2c, 0.7], enamel: [0xe3dccb, 0.22], enamel_2: [0xa8322c, 0.22], glass_2: [0xc9d8dc, 0.05, 0, 0.5],
+  glass_hob: [0x09090b, 0.06], print: [0x7c7f84, 0.5], heat: [0x120d0c, 0.5], led: [0x2c3036, 0.3], lcd: [0x8f9a8c, 0.3],
+  dial: [0xf3f1ea, 0.7], hand_h: [0x1b1b1d, 0.5], hand_m: [0x1b1b1d, 0.5], hand_s: [0xb02a22, 0.5],
+  cig: [0xf4f2ec, 0.85], filter: [0xd29a5c, 0.75], tobacco: [0x7a4f27, 1], ash: [0x9a9792, 1], ash_2: [0x3a3735, 1],
+  coil: [0x4c6838, 0.95], incense: [0x5f4630, 0.9], wax: [0xf0e9d6, 0.5], wick: [0x1e1b18, 1], kraft: [0xa88159, 0.9],
 };
 export const slotOf = m => SLOTS[m] ? m : (SLOTS[m.replace(/_\d+$/, "")] ? m.replace(/_\d+$/, "") : "body");
 const tone = (base, n, R) => { const i = n > 1 ? Math.floor(R() * n) : 0; return i && !/_\d+$/.test(base) ? `${base}_${i + 1}` : base; };
@@ -129,9 +139,45 @@ export const TYPES = {
   block: { label: "Block: a step, a plinth, a board", cat: "furniture", mount: "floor", size: [1.2, 0.3, 0.18], params: [["bevel", "edge bevel", 0.003, "mm"],
     ["nosing", "nosing (front lip)", 0, "m"], ["slot", "material", "wood", "slot"]], gen: blockGen },
   parts: { label: "Free parts (any furniture)", cat: "furniture", mount: "floor", size: [0.6, 0.6, 0.6], params: [["parts", "parts", [{ s: "box", at: [0, 0, 0], size: [0.6, 0.6, 0.6], m: "body", b: 0.003 }], "parts"]], gen: partsGen },
+  // the little things (docs/IMMERSION.md): drawn at their own size and fitted into the box, so a size scales them evenly
+  kettle: { label: "Kettle", cat: "small", mount: "on", size: [0.162, 0.216, 0.204], params: [["style", "kind", "jug", "pick", ["jug", "gooseneck", "whistling", "tetsubin"]],
+    ["slot", "material", "plastic", "slot"], ["trim_slot", "handle, base and knob material", "plastic_2", "slot"]], gen: kettleGen },
+  hob: { label: "Hob: ceramic, induction, gas", cat: "small", mount: "on", size: [0.59, 0.52, 0.006], params: [["style", "kind", "ceramic", "pick", ["ceramic", "induction", "gas"]],
+    ["zones", "rings", 4, "int"], ["controls", "touch controls", "front", "pick", ["front", "none"]], ["body", "a body under it (a table-top unit)", false, "bool"],
+    ["trim", "steel trim round it", 0, "mm"], ["slot", "top material", "glass_hob", "slot"], ["trim_slot", "trim material", "steel", "slot"], ["body_slot", "body material", "black", "slot"]], gen: hobGen },
+  pot: { label: "Pot, pan", cat: "small", mount: "on", size: [0.337, 0.163, 0.123], params: [["style", "kind", "saucepan", "pick", ["saucepan", "stockpot", "donabe"]],
+    ["slot", "material", "steel", "slot"], ["lid_slot", "lid material (a slot of its own rattles)", "lid", "slot"], ["trim_slot", "handle and knob material", "plastic_2", "slot"]], gen: potGen },
+  cup: { label: "Cup, mug, glass", cat: "small", mount: "on", size: [0.114, 0.082, 0.096], params: [["style", "kind", "mug", "pick", ["mug", "teacup", "yunomi", "glass", "takeaway"]],
+    ["slot", "material", "ceramic", "slot"]], gen: cupGen },
+  teapot: { label: "Teapot", cat: "small", mount: "on", size: [0.172, 0.144, 0.084], params: [["style", "kind", "kyusu", "pick", ["kyusu", "round"]],
+    ["slot", "material", "clay", "slot"], ["lid_slot", "lid material", "clay", "slot"]], gen: teapotGen },
+  ashtray: { label: "Ashtray", cat: "small", mount: "on", size: [0.12, 0.12, 0.031], params: [["style", "kind", "glass", "pick", ["glass", "metal", "ceramic"]],
+    ["rests", "rests (notches)", 3, "int"], ["butts", "butts in it", 0, "int"], ["seed", "seed", 1, "int"], ["resting", "a cigarette resting in it", false, "bool"],
+    ["left", "how much of it is left (0.15 to 1)", 0.7, "num"], ["ash", "ash on its tip", 0.004, "mm"], ["slot", "material", "glass_2", "slot"]], gen: ashtrayGen },
+  cigarette: { label: "Cigarette", cat: "small", mount: "on", size: [0.085, 0.008, 0.008], params: [["pose", "lies", "lying", "pick", ["lying", "butt"]],
+    ["filter", "filter", true, "bool"], ["left", "how much is left (0.1 to 1)", 1, "num"], ["ash", "ash on its tip", 0, "mm"]], gen: cigaretteGen },
+  cig_pack: { label: "Cigarette pack", cat: "small", mount: "on", size: [0.056, 0.049, 0.084], params: [["open", "open", true, "bool"], ["count", "cigarettes showing", 6, "int"],
+    ["slot", "material", "white", "slot"], ["band_slot", "band colour", "lighter", "slot"]], gen: packGen },
+  lighter: { label: "Lighter", cat: "small", mount: "on", size: [0.073, 0.025, 0.012], params: [["pose", "stands", "lying", "pick", ["lying", "standing"]],
+    ["slot", "material", "lighter", "slot"]], gen: lighterGen },
+  clock: { label: "Clock", cat: "small", mount: "wall", size: [0.3, 0.038, 0.3], params: [["style", "kind", "round", "pick", ["round", "school", "pendulum"]],
+    ["time", "time it shows (hh:mm or hh:mm:ss)", "10:10:30", "text"], ["seconds", "second hand", true, "bool"], ["marks", "marks", 12, "pick", [12, 60]],
+    ["slot", "case material", "white", "slot"]], gen: clockGen },
+  rice_cooker: { label: "Rice cooker", cat: "small", mount: "on", size: [0.25, 0.325, 0.228], params: [["slot", "material", "white", "slot"], ["lid_slot", "lid material", "plastic", "slot"],
+    ["panel_slot", "panel material", "black", "slot"]], gen: riceGen },
+  coil: { label: "Mosquito coil", cat: "small", mount: "on", size: [0.14, 0.14, 0.018], params: [["style", "on", "stand", "pick", ["stand", "pig"]],
+    ["left", "how much is left (0.1 to 1)", 1, "num"], ["slot", "the pig's material", "clay", "slot"]], gen: coilGen },
+  incense: { label: "Incense", cat: "small", mount: "on", size: [0.054, 0.054, 0.116], params: [["style", "in", "holder", "pick", ["holder", "koro"]],
+    ["sticks", "sticks (in a kōro)", 3, "int"], ["left", "how much is left (0.1 to 1)", 0.8, "num"], ["slot", "material", "ceramic", "slot"]], gen: incenseGen },
+  phone: { label: "Phone", cat: "small", mount: "on", size: [0.072, 0.15, 0.008], params: [["style", "kind", "smartphone", "pick", ["smartphone", "flip"]],
+    ["slot", "material", "black", "slot"]], gen: phoneGen },
+  tap: { label: "Kitchen tap", cat: "small", mount: "on", size: [0.056, 0.295, 0.311], params: [["style", "kind", "mixer", "pick", ["mixer", "cross"]],
+    ["slot", "material", "chrome", "slot"]], gen: tapGen },
+  candle: { label: "Candle", cat: "small", mount: "on", size: [0.07, 0.07, 0.103], params: [["style", "kind", "pillar", "pick", ["pillar", "taper", "tealight"]],
+    ["left", "how much is left (0.15 to 1)", 1, "num"], ["slot", "wax", "wax", "slot"], ["holder_slot", "candlestick material", "brass", "slot"]], gen: candleGen },
 };
 export const CATS = { floor: "Floors", cabinet: "Cabinets and built-ins", furniture: "Furniture", soft: "Cushions, pillows, mattresses", door: "Doors and handles", wall: "On and in the walls", fitting: "Wall fittings",
-  ceiling: "Ceilings", opening: "Windows", curtain: "Curtains" };
+  ceiling: "Ceilings", opening: "Windows", curtain: "Curtains", small: "Little things (they come alive)" };
 
 // ---- specs: presets merged under a spec, defaults filled ---------------------------------------------------------
 const META = new Set(["label", "cat", "mount", "z", "note", "user"]);
@@ -166,13 +212,14 @@ export function canon(v) {
 }
 
 // ---- building: a spec -> parts -> one mesh per material slot -------------------------------------------------------
+// sockets: the named points a little thing's life comes from (its spout, its tip, a ring), in item space
 export function build(spec, presets) {
   const s = withDefaults(resolve(spec, presets));
-  const P = [], warn = [];
+  const P = [], warn = [], S = {};
   const R = rng(s.seed ?? 1);
   s.size = s.size.map(v => Math.max(0.001, +v || 0.001));
-  TYPES[s.type].gen(s, P, R, warn);
-  return { spec: s, parts: P, warn };
+  TYPES[s.type].gen(s, P, R, warn, S);
+  return { spec: s, parts: P, warn, sockets: S };
 }
 
 // the parts as triangles: {slot: {pos, nrm, uv, idx}} in metres, local space (front -y, z up)
@@ -359,14 +406,22 @@ function pipeFaces(p, buf) {
 // lathe: a profile [[r, t], ...] (radius, distance along the axis from the base) turned round its axis, smooth; a point
 // given twice is a hard edge. sweep: a rounded section ({a, b, r}: half-height along `up`, half-width across, corner
 // radius) carried along a path, with rounded ends. The way door hardware is modelled, at a density that holds up
-// next to the soft things.
+// next to the soft things. A lathe's axis is one of x, y, z (and their negatives) or any direction (`dir`); a sweep can
+// narrow along its length (`taper`: its section's scale at the end).
 function lathe(P, x, y, z, prof, m, o = {}) {
   const R = Math.max(...prof.map(q => q[0])), L = Math.max(...prof.map(q => q[1]));
   const p = Object.assign({ s: "lathe", at: [x, y, z], prof, size: [2 * R, 2 * R, L], m, n: 40 }, o); P.push(p); return p;
 }
+const v3 = { add: (a, b) => a.map((x, k) => x + b[k]), sub: (a, b) => a.map((x, k) => x - b[k]), mul: (a, f) => a.map(x => x * f),
+  nrm: a => { const L = Math.hypot(...a) || 1; return a.map(x => x / L); }, cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]] };
+function frameOf(dir) {                                  // two directions square to `dir`, and it: [u, v, w]
+  const w = v3.nrm(dir), u = v3.nrm(v3.cross(Math.abs(w[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], w));
+  return [u, v3.cross(w, u), w];
+}
 function latheFaces(p, buf) {
-  const B = buf(p.m), n = Math.max(8, p.n || 40), prof = p.prof || [], ax = p.axis || "z";
-  const map = ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "y" ? [u, t, v] : ax === "-z" ? [u, v, -t] : ax === "x" ? [t, u, v] : ax === "-x" ? [-t, u, v] : [u, v, t];
+  const B = buf(p.m), n = Math.max(8, p.n || 40), prof = p.prof || [], ax = p.axis || "z", F = p.dir ? frameOf(p.dir) : null;
+  const map = F ? ([u, v, t]) => [0, 1, 2].map(k => F[0][k] * u + F[1][k] * v + F[2][k] * t)
+    : ([u, v, t]) => ax === "-y" ? [u, -t, v] : ax === "y" ? [u, t, v] : ax === "-z" ? [u, v, -t] : ax === "x" ? [t, u, v] : ax === "-x" ? [-t, u, v] : [u, v, t];
   const xf0 = xform(p), xf = q => xf0(map(q)), a = (p.rz || 0) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
   const segN = i => { const [r0, t0] = prof[i], [r1, t1] = prof[i + 1], L = Math.hypot(r1 - r0, t1 - t0) || 1; return [(t1 - t0) / L, -(r1 - r0) / L]; };
   const same = (i, j) => prof[i] && prof[j] && prof[i][0] === prof[j][0] && prof[i][1] === prof[j][1];
@@ -427,10 +482,12 @@ function sweepFaces(p, buf) {
     nv = nrmz(nv); const bv = cross(T[i], nv); frames.push([nv, bv]); up = nv;
   }
   const rings = [];                                     // [centre, up, across, scale, along-normal]
-  const capR = Math.min(A, Bh) * 0.9, kc = p.caps === false ? 0 : 4;
+  const capR = Math.min(A, Bh) * 0.9, kc = p.caps === false ? 0 : 4, tp = p.taper ?? 1, run0 = [0];
+  for (let i = 1; i < N; i++) run0.push(run0[i - 1] + Math.hypot(...sub(pts[i], pts[i - 1])));
+  const sk = i => tp === 1 ? 1 : 1 + (tp - 1) * run0[i] / (run0[N - 1] || 1), tilt = tp === 1 ? 0 : -(tp - 1) * (A + Bh) / 2 / (run0[N - 1] || 1);
   for (let c = kc; c >= 1; c--) { const th = c / kc * Math.PI / 2; rings.push([pts[0].map((x, d) => x - T[0][d] * Math.sin(th) * capR), frames[0][0], frames[0][1], Math.cos(th), T[0].map(x => -x * Math.sin(th)), Math.cos(th)]); }
-  for (let i = 0; i < N; i++) rings.push([pts[i], frames[i][0], frames[i][1], 1, [0, 0, 0], 1]);
-  for (let c = 1; c <= kc; c++) { const th = c / kc * Math.PI / 2; rings.push([pts[N - 1].map((x, d) => x + T[N - 1][d] * Math.sin(th) * capR), frames[N - 1][0], frames[N - 1][1], Math.cos(th), T[N - 1].map(x => x * Math.sin(th)), Math.cos(th)]); }
+  for (let i = 0; i < N; i++) rings.push([pts[i], frames[i][0], frames[i][1], sk(i), tilt ? T[i].map(x => x * tilt) : [0, 0, 0], 1]);
+  for (let c = 1; c <= kc; c++) { const th = c / kc * Math.PI / 2; rings.push([pts[N - 1].map((x, d) => x + T[N - 1][d] * Math.sin(th) * capR * tp), frames[N - 1][0], frames[N - 1][1], Math.cos(th) * tp, T[N - 1].map(x => x * Math.sin(th)), Math.cos(th)]); }
   const base = B.pos.length / 3; let run = 0;
   rings.forEach(([c, nv, bv, scl, tn, w], ri) => {
     if (ri) run += Math.hypot(...sub(c, rings[ri - 1][0]));
@@ -1089,6 +1146,613 @@ function partsGen(s, P) {
              b: +q.b || 0, rz: +q.rz || 0, axis: q.axis, ri: +q.ri || 0 });
   }
 }
+// ---- little things (docs/IMMERSION.md) -----------------------------------------------------------------------------
+// Kettles, hobs, pots, cups, teapots, ashtrays, cigarettes and their packs, lighters, clocks, rice cookers, mosquito
+// coils, incense, phones, taps and candles: each drawn at its real size from its kind (style), then fitted into its box
+// with one even scale (fit: its shape kept, centred, its base on the box's floor; a wall thing's back on the wall). Each
+// names its sockets, the points its life's effects come from (a spout's steam, a tip's smoke, a ring's glow, a dial's
+// hands): {at, n (the way it points), r, ...} in item space, moved with the parts.
+let REAL = false;                                       // realSize: fit only centres, it doesn't scale
+function fit(s, P, S, o = {}) {
+  if (!P.length) return 1;
+  const { lo, hi } = bounds(P), [W, D, H] = s.size, e = [0, 1, 2].map(k => Math.max(1e-6, hi[k] - lo[k]));
+  const f = REAL ? 1 : Math.min(W / e[0], D / e[1], H / e[2]);
+  const c = [(lo[0] + hi[0]) / 2, o.back ? hi[1] - D / 2 / f : (lo[1] + hi[1]) / 2, lo[2]], mv = v => v.map((x, k) => (x - c[k]) * f);
+  for (let i = 0; i < P.length; i++) {
+    const q = P[i], q2 = scalePart(q, [f, f, f]);
+    q2.at = mv(q.at); if (q.pts) q2.pts = q.pts.map(mv);
+    for (const k of ["b", "r", "pipe"]) if (q[k]) q2[k] = q[k] * f;
+    P[i] = q2;
+  }
+  for (const q of Object.values(S)) {
+    if (!q || !q.at) continue;
+    q.at = mv(q.at); if (q.back) q.back = mv(q.back);
+    for (const k of ["r", "w", "h", "len"]) if (typeof q[k] === "number") q[k] *= f;
+    if (q.prof) q.prof = q.prof.map(([r, z]) => [r * f, (z - c[2]) * f]);
+  }
+  return f;
+}
+// a little thing's own size (the box it fills at scale 1), for its preset's size and the kit maker's "Real size"
+export function realSize(spec, presets) {
+  REAL = true;
+  try { const b = build(spec, presets), { lo, hi } = bounds(b.parts); return hi.map((v, k) => Math.round((v - lo[k]) * 1e4) / 1e4); }
+  finally { REAL = false; }
+}
+const deg = a => a * 180 / Math.PI;
+// a profile's radius and outward normal at a height (a lathe's [[r, t], ...], t rising): where a bump or a spout sits
+function profAt(prof, t) {
+  for (let i = 0; i + 1 < prof.length; i++) {
+    const [r0, t0] = prof[i], [r1, t1] = prof[i + 1];
+    if ((t - t0) * (t - t1) > 0 || t1 === t0) continue;
+    const k = (t - t0) / (t1 - t0), L = Math.hypot(r1 - r0, t1 - t0) || 1;
+    return { r: r0 + (r1 - r0) * k, n: [(t1 - t0) / L, -(r1 - r0) / L] };
+  }
+  return { r: prof[prof.length - 1][0], n: [1, 0] };
+}
+
+function kettleGen(s, P, R, warn, S) {
+  const m = s.slot, tr = s.trim_slot, st = s.style;
+  if (st === "gooseneck") {
+    // a pour-over kettle: a slim body on a round base with its readout, the long thin spout, a wooden handle
+    lathe(P, 0, 0, 0, [[0, 0], [0.076, 0], [0.078, 0.002], [0.078, 0.015], [0.075, 0.019], [0, 0.019]], "plastic_2", { n: 56 });
+    bx(P, -0.013, -0.0786, 0.005, 0.013, -0.074, 0.0155, "lcd", { b: 0.001 });
+    S.lcd = { at: [0, -0.0789, 0.0103], n: [0, -1, 0], w: 0.022, h: 0.008, up: [0, 0, 1] };
+    const zb = 0.019, zl = zb + 0.111;
+    lathe(P, 0, 0, zb, [[0, 0], [0.055, 0], [0.059, 0.004], [0.06, 0.012], [0.06, 0.104], [0.0585, 0.11], [0.0565, 0.112], [0, 0.112]], m, { n: 56 });
+    lathe(P, 0, 0, zl, [[0, 0], [0.053, 0], [0.053, 0.002], [0.05, 0.005], [0.014, 0.008], [0, 0.008]], m, { n: 56 });
+    lathe(P, 0, 0, zl + 0.007, [[0, 0], [0.01, 0], [0.012, 0.007], [0.0115, 0.014], [0.008, 0.018], [0, 0.019]], tr, { n: 28 });
+    const sp = smoothPath([[0, -0.04, zb + 0.022], [0, -0.068, zb + 0.026], [0, -0.092, zb + 0.05], [0, -0.104, zb + 0.095], [0, -0.115, zb + 0.13], [0, -0.14, zb + 0.145], [0, -0.165, zb + 0.14]], 6);
+    sweep(P, sp, { a: 0.0052, b: 0.0052, r: 0.0052 }, m, { up: [1, 0, 0], taper: 0.7 });
+    const e = sp[sp.length - 1], d = v3.nrm(v3.sub(e, sp[sp.length - 2]));
+    S.spout = { at: v3.add(e, v3.mul(d, 0.004)), n: d, r: 0.0035 };
+    sweep(P, smoothPath([[0, 0.048, zb + 0.1], [0, 0.082, zb + 0.104], [0, 0.103, zb + 0.088], [0, 0.106, zb + 0.055], [0, 0.094, zb + 0.032], [0, 0.056, zb + 0.026]], 6), { a: 0.009, b: 0.0075, r: 0.006 }, tr, { up: [1, 0, 0] });
+    S.lid = { at: [0, 0, zl + 0.026], n: [0, 0, 1], r: 0.045 }; S.switch = { at: [0, -0.077, 0.01] };
+  } else if (st === "whistling") {
+    // a stovetop kettle, enamelled: wide and low, the spout out of its lower front with the whistle on, a handle over the top
+    lathe(P, 0, 0, 0, [[0, 0], [0.084, 0], [0.09, 0.003], [0.097, 0.012], [0.1, 0.028], [0.098, 0.046], [0.09, 0.066], [0.077, 0.084], [0.064, 0.097], [0.056, 0.102], [0.052, 0.104], [0, 0.104]], m, { n: 64 });
+    const zl = 0.1035;
+    lathe(P, 0, 0, zl, [[0, 0], [0.05, 0], [0.0505, 0.003], [0.046, 0.009], [0.028, 0.015], [0, 0.0165]], m, { n: 48 });
+    lathe(P, 0, 0, zl + 0.015, [[0, 0], [0.009, 0], [0.007, 0.006], [0.0115, 0.013], [0.0105, 0.018], [0.006, 0.0205], [0, 0.021]], tr, { n: 28 });
+    const s0 = [0, -0.072, 0.03], s1 = [0, -0.124, 0.094], d = v3.nrm(v3.sub(s1, s0));
+    sweep(P, [s0, v3.add(s0, v3.mul(d, 0.03)), s1], { a: 0.016, b: 0.016, r: 0.016 }, m, { up: [1, 0, 0], taper: 0.55, caps: false });
+    const w0 = v3.sub(s1, v3.mul(d, 0.004));
+    lathe(P, w0[0], w0[1], w0[2], [[0, 0], [0.0102, 0], [0.0102, 0.015], [0.009, 0.0185], [0.0042, 0.019], [0.0042, 0.019], [0.0036, 0.0172], [0, 0.0172]], tr, { dir: d, n: 28 });
+    S.spout = { at: v3.add(w0, v3.mul(d, 0.021)), n: d, r: 0.004 };
+    sweep(P, smoothPath([[0, -0.056, 0.098], [0, -0.06, 0.135], [0, -0.04, 0.175], [0, 0, 0.185], [0, 0.04, 0.175], [0, 0.06, 0.135], [0, 0.056, 0.098]], 6), { a: 0.0045, b: 0.003, r: 0.003 }, "steel", { up: [1, 0, 0] });
+    sweep(P, smoothPath([[0, -0.042, 0.172], [0, -0.02, 0.183], [0, 0.02, 0.183], [0, 0.042, 0.172]], 6), { a: 0.011, b: 0.0095, r: 0.008 }, tr, { up: [1, 0, 0] });
+    S.lid = { at: [0, 0, zl + 0.036], n: [0, 0, 1], r: 0.045 }; S.base = { at: [0, 0, 0], r: 0.085 };
+  } else if (st === "tetsubin") {
+    // cast iron: a squat round body pebbled with arare, a short spout, the lid and its knob, the arched handle (tsuru)
+    const prof = [[0, 0], [0.058, 0], [0.066, 0.003], [0.08, 0.014], [0.09, 0.032], [0.093, 0.05], [0.089, 0.067], [0.078, 0.082], [0.06, 0.094], [0.044, 0.1], [0.04, 0.101], [0, 0.101]];
+    lathe(P, 0, 0, 0, prof, m, { n: 64 });
+    [0.056, 0.067, 0.077, 0.086].forEach((z, row) => {
+      const { r, n: [nr, nt] } = profAt(prof, z), cnt = Math.round(2 * Math.PI * r / 0.0088);
+      for (let i = 0; i < cnt; i++) {
+        const a = (i + (row % 2) * 0.5) / cnt * 2 * Math.PI, c = Math.cos(a), sn = Math.sin(a);
+        lathe(P, c * (r - 0.0004), sn * (r - 0.0004), z, [[0, 0], [0.0027, 0], [0.0024, 0.0011], [0.0014, 0.0021], [0, 0.0024]], m, { dir: [c * nr, sn * nr, nt], n: 8 });
+      }
+    });
+    lathe(P, 0, 0, 0.1, [[0, 0], [0.043, 0], [0.043, 0.002], [0.04, 0.007], [0.022, 0.011], [0, 0.012]], m, { n: 48 });
+    lathe(P, 0, 0, 0.111, [[0, 0], [0.0075, 0], [0.0055, 0.004], [0.009, 0.0095], [0.007, 0.0125], [0, 0.0135]], tr, { n: 24 });
+    const s0 = [0, -0.07, 0.034], s1 = [0, -0.112, 0.082], d = v3.nrm(v3.sub(s1, s0));
+    sweep(P, [s0, v3.add(s0, v3.mul(d, 0.03)), s1], { a: 0.0125, b: 0.0125, r: 0.0125 }, m, { up: [1, 0, 0], taper: 0.62 });
+    const tip = v3.add(s1, v3.mul(d, 0.0068));
+    lathe(P, tip[0], tip[1], tip[2], [[0, 0], [0.0042, 0], [0, 0.0004]], "hole", { dir: d, n: 16 });
+    S.spout = { at: v3.add(tip, v3.mul(d, 0.002)), n: d, r: 0.004 };
+    for (const sx of [-1, 1]) bx(P, sx < 0 ? -0.079 : 0.067, -0.006, 0.083, sx < 0 ? -0.067 : 0.079, 0.006, 0.097, m, { b: 0.002 });
+    sweep(P, smoothPath([[-0.074, 0, 0.09], [-0.083, 0, 0.13], [-0.072, 0, 0.17], [-0.042, 0, 0.197], [0, 0, 0.205], [0.042, 0, 0.197], [0.072, 0, 0.17], [0.083, 0, 0.13], [0.074, 0, 0.09]], 6), { a: 0.0055, b: 0.0055, r: 0.0055 }, m, { up: [0, 1, 0] });
+    S.lid = { at: [0, 0, 0.1245], n: [0, 0, 1], r: 0.04 }; S.base = { at: [0, 0, 0], r: 0.058 };
+  } else {
+    // an electric jug (most Japanese kitchens'): on its power base with a blue light in front, a pouring lip, a D handle
+    lathe(P, 0, 0, 0, [[0, 0], [0.079, 0], [0.081, 0.003], [0.081, 0.013], [0.078, 0.018], [0.074, 0.019], [0, 0.019]], tr, { n: 56 });
+    lathe(P, 0, -0.0806, 0.0095, [[0, 0], [0.0032, 0], [0.0032, 0.001], [0.0026, 0.0016], [0, 0.0017]], "led", { axis: "-y", n: 16 });
+    S.led = { at: [0, -0.0824, 0.0095], n: [0, -1, 0], r: 0.0032 };
+    const zb = 0.019, zl = zb + 0.1705;
+    lathe(P, 0, 0, zb, [[0, 0], [0.068, 0], [0.072, 0.003], [0.0738, 0.012], [0.073, 0.06], [0.0705, 0.12], [0.067, 0.155], [0.065, 0.166], [0.064, 0.17], [0.06, 0.171], [0, 0.171]], m, { n: 56 });
+    lathe(P, 0, 0, zl, [[0, 0], [0.0595, 0], [0.06, 0.003], [0.056, 0.008], [0.036, 0.0125], [0, 0.0135]], m, { n: 56 });
+    sweep(P, [[0, -0.05, zl - 0.004], [0, -0.07, zl + 0.0005], [0, -0.086, zl + 0.006]], { a: 0.0045, b: 0.016, r: 0.004 }, m, { up: [0, 0, 1], taper: 0.45 });
+    S.spout = { at: [0, -0.0885, zl + 0.007], n: v3.nrm([0, -1, 0.3]), r: 0.006 };
+    sweep(P, smoothPath([[0, 0.05, zl - 0.006], [0, 0.088, zl - 0.002], [0, 0.112, zl - 0.02], [0, 0.117, zl - 0.07], [0, 0.106, zl - 0.12], [0, 0.072, zl - 0.148]], 6), { a: 0.0135, b: 0.0105, r: 0.0075 }, m, { up: [1, 0, 0] });
+    bx(P, -0.007, 0.07, 0.026, 0.007, 0.094, 0.041, tr, { b: 0.003 });                         // the switch, under the handle
+    bx(P, -0.0075, 0.03, zl + 0.006, 0.0075, 0.048, zl + 0.0145, tr, { b: 0.003 });             // the lid's button
+    S.lid = { at: [0, 0, zl + 0.0135], n: [0, 0, 1], r: 0.05 }; S.switch = { at: [0, 0.09, 0.034] };
+  }
+  fit(s, P, S);
+}
+
+// a hob's zones in its cooking area: [x, y, r] (one; two side by side; two in front and a small one behind, as a
+// Japanese IH; four, two big and two small)
+function hobZones(n, x0, y0, x1, y1) {
+  const aw = x1 - x0, ad = y1 - y0, cx = (x0 + x1) / 2, cz = (y0 + y1) / 2;
+  if (n <= 1) return [[cx, cz, Math.min(0.11, Math.min(aw, ad) / 2 * 0.8)]];
+  if (n === 2) { const r = Math.min(0.105, aw / 4 * 0.86, ad / 2 * 0.86); return [[cx - aw / 4, cz, r], [cx + aw / 4, cz, r * 0.82]]; }
+  if (n === 3) { const r = Math.min(0.1, aw / 4 * 0.88, ad / 3.2); return [[cx - aw / 4, y0 + r + 0.01, r], [cx + aw / 4, y0 + r + 0.01, r], [cx, y1 - r * 0.72 - 0.01, r * 0.72]]; }
+  const r = Math.min(0.1, aw / 4 * 0.9, ad / 4 * 0.9);
+  return [[cx - aw / 4, y0 + ad / 4, r], [cx + aw / 4, y0 + ad / 4, r * 0.78], [cx - aw / 4, y0 + ad * 0.75, r * 0.78], [cx + aw / 4, y0 + ad * 0.75, r]];
+}
+// a hob, from its box: a ceramic one (black glass, printed rings over the elements that glow), induction (no glow, the
+// same red digits), or gas (burners, the trivets over them). Built into a worktop it's only its top; with a body it's a
+// table-top unit on feet (a portable IH, a gas konro with its fish grill). Sockets: ring_N (a zone's middle on the top,
+// its radius, `seat` the height a pot stands at, `slot` the glowing element's), digit_N, led, knob_N.
+function hobGen(s, P, R, warn, S) {
+  const [W, D, H] = s.size, gas = s.style === "gas", t = clamp(s.trim || 0, 0, 0.03), nz = clamp(s.zones | 0, 1, gas ? 3 : 4);
+  const zt = gas ? Math.max(0.004, H - 0.03) : H, pt = gas ? Math.min(0.003, zt) : Math.min(0.005, H), body = s.body && zt - pt > 0.02;
+  const bf = gas ? 0.024 : 0.004;                       // a konro's knobs stand out of its front
+  if (body) {
+    bx(P, -W / 2 + 0.004, -D / 2 + bf, 0.008, W / 2 - 0.004, D / 2 - 0.004, zt - pt + 0.001, s.body_slot, { b: 0.004 });
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) cy(P, sx * (W / 2 - 0.04), sy * (D / 2 - 0.04), 0, 0.012, 0.008, "rubber", { n: 16 });
+  }
+  if (t > 0) bx(P, -W / 2, -D / 2, zt - pt - 0.001, W / 2, D / 2, zt - 0.0012, s.trim_slot, { b: 0.0006 });
+  bx(P, -W / 2 + t, -D / 2 + t, zt - pt, W / 2 - t, D / 2 - t, zt, s.slot, { b: Math.min(0.0015, pt * 0.3) });
+  const cs = !gas && s.controls === "front" ? Math.min(0.07, D * 0.18) : gas && !body ? Math.min(0.06, D * 0.15) : 0;
+  const Z = hobZones(nz, -W / 2 + t + 0.03, -D / 2 + t + cs + 0.015, W / 2 - t - 0.03, D / 2 - t - 0.025);
+  Z.forEach(([x, y, r], k) => {
+    const id = k + 1;
+    if (gas) {                                            // the zone holds the burner, its spill bowl and the trivet
+      const rb = clamp(r * 0.45, 0.025, 0.048), rt = Math.min(rb + 0.047, r);
+      lathe(P, x, y, zt, [[0, 0], [rb + 0.024, 0], [rb + 0.027, 0.004], [rb + 0.0245, 0.005], [rb * 0.7, 0.0018], [0, 0.0018]], "black", { n: 48 });   // the spill bowl
+      lathe(P, x, y, zt, [[0, 0], [rb * 0.72, 0], [rb * 0.72, 0.006], [rb, 0.008], [rb, 0.0135], [rb * 0.96, 0.0152], [0, 0.0158]], "iron", { n: 48 });  // the burner
+      lathe(P, x, y, zt + 0.015, [[0, 0], [rb * 0.9, 0], [rb * 0.92, 0.0018], [rb * 0.6, 0.0036], [0, 0.0042]], "brass", { n: 40 });                    // its cap
+      cy(P, x, y, zt, rt, 0.004, "iron", { ri: rt - 0.006, n: 48 });                                                                                  // the trivet's ring
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5 + 0.1) * 2 * Math.PI, rm = (rb + 0.008 + rt - 0.003) / 2, len = rt - 0.003 - rb - 0.008;
+        P.push({ s: "box", at: [x + Math.cos(a) * rm, y + Math.sin(a) * rm, zt], size: [len, 0.005, H - zt], m: "iron", rz: deg(a), b: 0.001 });
+      }
+      if (body) {                                         // a konro's knob for it, on the front
+        const kz = (0.008 + zt - pt) / 2, yk = -D / 2 + bf;
+        lathe(P, x, yk, kz, [[0, 0], [0.019, 0], [0.02, 0.003], [0.0185, 0.016], [0.0165, 0.02], [0, 0.021]], "black", { axis: "-y", n: 32 });
+        bx(P, x - 0.0016, yk - 0.0214, kz + 0.005, x + 0.0016, yk - 0.0206, kz + 0.015, "white");
+        S[`knob_${id}`] = { at: [x, yk - 0.021, kz], n: [0, -1, 0] };
+      }
+      S[`ring_${id}`] = { at: [x, y, zt + 0.016], n: [0, 0, 1], r: rb, seat: H, kind: "gas" };
+    } else {
+      cy(P, x, y, zt, r + 0.006, 0.0002, "print", { ri: r + 0.0042, n: 72 });
+      if (s.style === "induction") for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2, c = Math.cos(a), sn = Math.sin(a), r0 = r - 0.014, r1 = r - 0.004;
+        sweep(P, [[x + c * r0, y + sn * r0, zt + 0.0001], [x + c * r1, y + sn * r1, zt + 0.0001]], { a: 0.0001, b: 0.001, r: 0.0001 }, "print", { up: [0, 0, 1], caps: false });
+      } else {
+        const nr = Math.max(3, Math.round(r / 0.0115));
+        for (let j = 0; j < nr; j++) { const rad = r * (0.2 + 0.75 * j / (nr - 1)); cy(P, x, y, zt, rad + 0.0017, 0.00015, `heat_${id}`, { ri: rad - 0.0017, n: 48 }); }
+        cy(P, x, y, zt, r * 0.12, 0.00015, `heat_${id}`, { n: 24 });
+      }
+      S[`ring_${id}`] = { at: [x, y, zt], n: [0, 0, 1], r, seat: zt, kind: s.style, slot: s.style === "ceramic" ? `heat_${id}` : undefined };
+    }
+  });
+  if (gas && body && W > 0.45 && zt - pt > 0.12) {          // a konro's fish grill between its knobs: the door, its window, a handle
+    const yk = -D / 2 + bf, gw = Math.min(0.2, W * 0.36), z0 = 0.03, z1 = zt - pt - 0.02;
+    bx(P, -gw / 2, yk - 0.006, z0, gw / 2, yk + 0.001, z1, "black", { b: 0.003 });
+    bx(P, -gw / 2 + 0.022, yk - 0.0068, z0 + 0.028, gw / 2 - 0.022, yk - 0.0055, z1 - 0.026, "screen", { b: 0.001 });
+    bx(P, -gw / 2 + 0.03, yk - 0.016, z1 - 0.016, gw / 2 - 0.03, yk - 0.006, z1 - 0.006, "steel", { b: 0.003 });
+    S.grill = { at: [0, yk - 0.007, (z0 + z1) / 2], n: [0, -1, 0] };
+  }
+  if (!cs) return;
+  // the controls: on the glass a touch strip (each zone's symbol, minus, its digit, plus; the power and its LED),
+  // on a built-in gas hob the knobs on its front strip
+  const yc = -D / 2 + t + cs / 2;
+  if (gas) {
+    Z.forEach(([x], k) => {
+      lathe(P, x, yc, zt, [[0, 0], [0.019, 0], [0.02, 0.003], [0.0185, 0.014], [0.0165, 0.018], [0, 0.019]], "black", { n: 32 });
+      bx(P, x - 0.0018, yc - 0.016, zt + 0.019, x + 0.0018, yc - 0.004, zt + 0.0195, "white");
+      S[`knob_${k + 1}`] = { at: [x, yc, zt + 0.019], n: [0, 0, 1] };
+    });
+    return;
+  }
+  const span = W - 2 * t - 0.12;
+  Z.forEach((z, k) => {
+    const gx = -W / 2 + t + 0.04 + (k + 0.5) * span / nz;
+    cy(P, gx - 0.026, yc, zt, 0.0055, 0.0002, "print", { ri: 0.0043, n: 24 });
+    bx(P, gx - 0.016, yc - 0.0006, zt, gx - 0.009, yc + 0.0006, zt + 0.0002, "print");
+    bx(P, gx + 0.011, yc - 0.0006, zt, gx + 0.018, yc + 0.0006, zt + 0.0002, "print");
+    bx(P, gx + 0.0139, yc - 0.0035, zt, gx + 0.0151, yc + 0.0035, zt + 0.0002, "print");
+    S[`digit_${k + 1}`] = { at: [gx, yc, zt + 0.0003], n: [0, 0, 1], up: [0, 1, 0], w: 0.009, h: 0.014 };
+  });
+  const px = W / 2 - t - 0.035;
+  cy(P, px, yc, zt, 0.0068, 0.0002, "print", { ri: 0.0055, n: 28 });
+  bx(P, px - 0.0006, yc, zt, px + 0.0006, yc + 0.0085, zt + 0.0002, "print");
+  lathe(P, px + 0.015, yc + 0.007, zt, [[0, 0], [0.0016, 0], [0.0016, 0.0002], [0, 0.0003]], "led", { n: 12 });
+  S.led = { at: [px + 0.015, yc + 0.007, zt + 0.0004], n: [0, 0, 1], r: 0.0016 }; S.panel = { at: [0, yc, zt] };
+}
+
+function potGen(s, P, R, warn, S) {
+  const m = s.slot, lid = s.lid_slot, tr = s.trim_slot;
+  if (s.style === "donabe") {
+    // a clay pot for nabe: thick-walled on its foot, two ears, a high lid with a knob and a steam hole
+    lathe(P, 0, 0, 0, [[0, 0], [0.06, 0], [0.062, 0.004], [0.06, 0.008], [0.075, 0.01], [0.098, 0.02], [0.11, 0.035], [0.115, 0.05], [0.116, 0.062], [0.117, 0.068], [0.114, 0.071], [0.103, 0.071], [0.101, 0.066], [0.1, 0.05], [0.09, 0.028], [0.07, 0.016], [0, 0.014]], m, { n: 64 });
+    for (const sx of [-1, 1]) sweep(P, smoothPath([[sx * 0.105, -0.025, 0.05], [sx * 0.124, -0.02, 0.056], [sx * 0.13, 0, 0.058], [sx * 0.124, 0.02, 0.056], [sx * 0.105, 0.025, 0.05]], 6), { a: 0.007, b: 0.008, r: 0.006 }, m, { up: [0, 0, 1] });
+    lathe(P, 0, 0, 0.069, [[0, 0], [0.105, 0], [0.106, 0.003], [0.1, 0.012], [0.085, 0.03], [0.06, 0.048], [0.03, 0.058], [0, 0.06]], lid, { n: 64 });
+    lathe(P, 0, 0, 0.1285, [[0, 0], [0.014, 0], [0.011, 0.008], [0.016, 0.016], [0.015, 0.02], [0, 0.021]], lid, { n: 32 });
+    const vn = v3.nrm([0.42, 0, 1]);
+    lathe(P, 0.06, 0, 0.1168, [[0, 0], [0.003, 0], [0, 0.0006]], "hole", { dir: vn, n: 12 });
+    S.vent = { at: [0.0603, 0, 0.1176], n: vn, r: 0.003 };
+    S.rim = { at: [0, 0, 0.071], r: 0.101 }; S.inner = { at: [0, 0, 0.014], prof: [[0.07, 0.016], [0.09, 0.028], [0.1, 0.05], [0.101, 0.066]] };
+    S.lid = { at: [0, 0, 0.1495], n: [0, 0, 1], r: 0.105, slot: lid !== m ? lid : undefined, rest: [0, 0, 0.069] }; S.steam = { at: [0, 0, 0.074], n: [0, 0, 1], r: 0.106 };
+  } else {
+    // a saucepan (one long handle) or a stockpot (two loops): steel with a rolled rim, a domed lid and its knob
+    const big = s.style === "stockpot", Rr = big ? 0.1 : 0.08, Hh = big ? 0.13 : 0.085, w = 0.0016;
+    lathe(P, 0, 0, 0, [[0, 0], [Rr - 0.007, 0], [Rr - 0.002, 0.002], [Rr, 0.008], [Rr, Hh - 0.003], [Rr + 0.0015, Hh], [Rr + 0.0012, Hh + 0.0006], [Rr - w, Hh], [Rr - w, 0.009], [Rr - w - 0.0025, 0.0035], [Rr - 0.009, w], [0, w]], m, { n: 64 });
+    lathe(P, 0, 0, Hh - 0.002, [[0, 0], [Rr - 0.0005, 0], [Rr, 0.0015], [Rr - 0.004, 0.005], [Rr * 0.65, 0.014], [Rr * 0.3, 0.018], [0, 0.019]], lid, { n: 64 });
+    lathe(P, 0, 0, Hh + 0.0165, [[0, 0], [0.009, 0], [0.0075, 0.006], [0.013, 0.013], [0.0125, 0.0185], [0.008, 0.021], [0, 0.0215]], tr, { n: 28 });
+    if (big) for (const sx of [-1, 1]) sweep(P, smoothPath([[sx * (Rr - 0.003), -0.03, Hh - 0.02], [sx * (Rr + 0.018), -0.026, Hh - 0.014], [sx * (Rr + 0.024), 0, Hh - 0.012], [sx * (Rr + 0.018), 0.026, Hh - 0.014], [sx * (Rr - 0.003), 0.03, Hh - 0.02]], 6), { a: 0.004, b: 0.007, r: 0.004 }, m, { up: [0, 0, 1] });
+    else sweep(P, smoothPath([[Rr - 0.004, 0, Hh - 0.016], [Rr + 0.02, 0, Hh - 0.013], [Rr + 0.08, 0, Hh - 0.004], [Rr + 0.17, 0, Hh + 0.008]], 6), { a: 0.0065, b: 0.011, r: 0.0055 }, tr, { up: [0, 0, 1], taper: 0.92 });
+    S.rim = { at: [0, 0, Hh], r: Rr - w }; S.inner = { at: [0, 0, w], prof: [[Rr - 0.009, w], [Rr - w - 0.0025, 0.0035], [Rr - w, 0.009], [Rr - w, Hh]] };
+    S.lid = { at: [0, 0, Hh + 0.0375], n: [0, 0, 1], r: Rr, slot: lid !== m ? lid : undefined, rest: [0, 0, Hh - 0.002] }; S.steam = { at: [0, 0, Hh + 0.003], n: [0, 0, 1], r: Rr };
+    S.handle = { at: big ? [Rr + 0.024, 0, Hh - 0.012] : [Rr + 0.15, 0, Hh + 0.006] };
+  }
+  fit(s, P, S);
+}
+
+// cups: their inner wall (`inner`: the floor and the wall's profile, [[r, z], ...]) is where a life's tea fills them
+function cupGen(s, P, R, warn, S) {
+  const m = s.slot, st = s.style;
+  if (st === "teacup") {
+    lathe(P, 0, 0, 0, [[0, 0], [0.034, 0], [0.036, 0.0018], [0.064, 0.0088], [0.0745, 0.0138], [0.0762, 0.0156], [0.0748, 0.0164], [0.063, 0.0118], [0.031, 0.0064], [0, 0.0062]], m, { n: 64 });
+    const z0 = 0.0062;
+    lathe(P, 0, 0, z0, [[0, 0], [0.0205, 0], [0.0215, 0.0015], [0.0215, 0.004], [0.024, 0.006], [0.034, 0.014], [0.0418, 0.03], [0.0453, 0.048], [0.0464, 0.0552], [0.0461, 0.0575], [0.0447, 0.0579], [0.0436, 0.0556], [0.0427, 0.0482], [0.0394, 0.0312], [0.0315, 0.0158], [0.022, 0.0093], [0, 0.0088]], m, { n: 56 });
+    sweep(P, smoothPath([[0.0425, 0, z0 + 0.05], [0.0565, 0, z0 + 0.0535], [0.0655, 0, z0 + 0.0445], [0.0625, 0, z0 + 0.0305], [0.0505, 0, z0 + 0.0255], [0.0395, 0, z0 + 0.028]], 6), { a: 0.0042, b: 0.003, r: 0.0028 }, m, { up: [0, 1, 0] });
+    S.rim = { at: [0, 0, z0 + 0.0579], n: [0, 0, 1], r: 0.0436 };
+    S.inner = { at: [0, 0, z0 + 0.0088], prof: [[0.022, z0 + 0.0093], [0.0315, z0 + 0.0158], [0.0394, z0 + 0.0312], [0.0427, z0 + 0.0482], [0.0436, z0 + 0.0556]] };
+    S.handle = { at: [0.064, 0, z0 + 0.04] };
+  } else if (st === "yunomi") {
+    lathe(P, 0, 0, 0, [[0, 0], [0.0255, 0], [0.0265, 0.001], [0.0265, 0.0055], [0.0282, 0.0068], [0.0302, 0.012], [0.0332, 0.05], [0.0352, 0.0835], [0.0354, 0.0868], [0.0341, 0.0882], [0.0318, 0.0864], [0.0298, 0.05], [0.0268, 0.0165], [0.0225, 0.0122], [0, 0.0118]], m, { n: 56 });
+    S.rim = { at: [0, 0, 0.0882], n: [0, 0, 1], r: 0.0318 }; S.inner = { at: [0, 0, 0.0118], prof: [[0.0225, 0.0122], [0.0268, 0.0165], [0.0298, 0.05], [0.0318, 0.0864]] };
+  } else if (st === "glass") {
+    lathe(P, 0, 0, 0, [[0, 0], [0.0305, 0], [0.0318, 0.0015], [0.036, 0.0985], [0.0361, 0.1], [0.0345, 0.1], [0.0343, 0.0985], [0.0302, 0.0145], [0.0275, 0.0122], [0, 0.012]], m, { n: 56 });
+    S.rim = { at: [0, 0, 0.1], n: [0, 0, 1], r: 0.0343 }; S.inner = { at: [0, 0, 0.012], prof: [[0.0275, 0.0122], [0.0302, 0.0145], [0.0343, 0.0985]] };
+  } else if (st === "takeaway") {
+    // a convenience store's coffee: a paper cup in its sleeve, the lid with its sip hole (the steam comes out of that)
+    lathe(P, 0, 0, 0, [[0, 0], [0.0272, 0], [0.0282, 0.0025], [0.0392, 0.104], [0.0398, 0.105], [0, 0.105]], m, { n: 48 });
+    lathe(P, 0, 0, 0.03, [[0.0308, 0], [0.0321, 0], [0.0375, 0.05], [0.0362, 0.05]], "kraft", { n: 48 });
+    lathe(P, 0, 0, 0.103, [[0, 0], [0.0412, 0], [0.0415, 0.003], [0.041, 0.007], [0.037, 0.009], [0.036, 0.013], [0.032, 0.016], [0, 0.016]], "plastic", { n: 48 });
+    bx(P, -0.006, -0.0362, 0.1158, 0.006, -0.0318, 0.1166, "hole", { b: 0.0002 });
+    S.sip = { at: [0, -0.034, 0.1175], n: [0, 0, 1], r: 0.004 }; S.rim = { at: [0, 0, 0.119], n: [0, 0, 1], r: 0.03 };
+  } else {
+    lathe(P, 0, 0, 0, [[0, 0], [0.036, 0], [0.039, 0.002], [0.0405, 0.006], [0.041, 0.09], [0.0407, 0.0937], [0.0393, 0.0952], [0.0378, 0.0948], [0.0371, 0.0925], [0.0371, 0.012], [0.035, 0.0086], [0.03, 0.008], [0, 0.008]], m, { n: 56 });
+    sweep(P, smoothPath([[0.037, 0, 0.078], [0.054, 0, 0.081], [0.066, 0, 0.07], [0.068, 0, 0.047], [0.061, 0, 0.027], [0.038, 0, 0.022]], 6), { a: 0.0068, b: 0.0046, r: 0.0042 }, m, { up: [0, 1, 0] });
+    S.rim = { at: [0, 0, 0.0952], n: [0, 0, 1], r: 0.0371 }; S.inner = { at: [0, 0, 0.008], prof: [[0.03, 0.008], [0.035, 0.0086], [0.0371, 0.012], [0.0371, 0.0925]] };
+    S.handle = { at: [0.067, 0, 0.05] };
+  }
+  fit(s, P, S);
+}
+
+function teapotGen(s, P, R, warn, S) {
+  const m = s.slot, lid = s.lid_slot;
+  if (s.style === "round") {
+    // a round western teapot (a Brown Betty): the S spout in front, the loop handle behind
+    lathe(P, 0, 0, 0, [[0, 0], [0.045, 0], [0.05, 0.003], [0.068, 0.02], [0.077, 0.045], [0.077, 0.065], [0.07, 0.085], [0.055, 0.1], [0.042, 0.106], [0.04, 0.107], [0, 0.107]], m, { n: 64 });
+    lathe(P, 0, 0, 0.105, [[0, 0], [0.041, 0], [0.041, 0.002], [0.038, 0.008], [0.02, 0.014], [0, 0.015]], lid, { n: 48 });
+    lathe(P, 0, 0, 0.119, [[0, 0], [0.006, 0], [0.005, 0.004], [0.009, 0.009], [0.008, 0.014], [0.004, 0.017], [0, 0.0175]], lid, { n: 24 });
+    const sp = smoothPath([[0, -0.058, 0.025], [0, -0.085, 0.035], [0, -0.1, 0.06], [0, -0.112, 0.085], [0, -0.125, 0.098]], 6);
+    sweep(P, sp, { a: 0.013, b: 0.013, r: 0.013 }, m, { up: [1, 0, 0], taper: 0.45 });
+    const d = v3.nrm(v3.sub(sp[sp.length - 1], sp[sp.length - 2]));
+    S.spout = { at: v3.add(sp[sp.length - 1], v3.mul(d, 0.006)), n: d, r: 0.005 };
+    sweep(P, smoothPath([[0, 0.064, 0.09], [0, 0.095, 0.095], [0, 0.112, 0.075], [0, 0.11, 0.045], [0, 0.09, 0.025], [0, 0.07, 0.025]], 6), { a: 0.008, b: 0.006, r: 0.005 }, m, { up: [1, 0, 0] });
+    S.lid = { at: [0, 0, 0.1365], n: [0, 0, 1], r: 0.038 };
+  } else {
+    // a kyusu: a squat clay pot, the short spout in front, the hollow handle out to the side
+    lathe(P, 0, 0, 0, [[0, 0], [0.032, 0], [0.034, 0.002], [0.046, 0.01], [0.056, 0.025], [0.058, 0.035], [0.056, 0.046], [0.048, 0.056], [0.036, 0.062], [0.032, 0.063], [0, 0.063]], m, { n: 56 });
+    lathe(P, 0, 0, 0.061, [[0, 0], [0.031, 0], [0.031, 0.002], [0.029, 0.006], [0.02, 0.01], [0, 0.011]], lid, { n: 40 });
+    lathe(P, 0, 0, 0.071, [[0, 0], [0.007, 0], [0.006, 0.004], [0.008, 0.009], [0.005, 0.012], [0, 0.0125]], lid, { n: 20 });
+    const sp = smoothPath([[0, -0.046, 0.022], [0, -0.062, 0.034], [0, -0.074, 0.05], [0, -0.08, 0.062]], 6);
+    sweep(P, sp, { a: 0.0095, b: 0.0095, r: 0.0095 }, m, { up: [1, 0, 0], taper: 0.55 });
+    const d = v3.nrm(v3.sub(sp[sp.length - 1], sp[sp.length - 2]));
+    S.spout = { at: v3.add(sp[sp.length - 1], v3.mul(d, 0.005)), n: d, r: 0.004 };
+    lathe(P, 0.05, 0, 0.03, [[0, 0], [0.0105, 0], [0.011, 0.02], [0.0122, 0.058], [0.0108, 0.0625], [0, 0.0635]], m, { dir: v3.nrm([1, 0, 0.22]), n: 28 });
+    S.lid = { at: [0, 0, 0.0835], n: [0, 0, 1], r: 0.028 }; S.handle = { at: [0.1, 0, 0.042] };
+  }
+  fit(s, P, S);
+}
+
+// a cigarette from its filter's end along `dir`: the filter, the paper (lp of it left), the end (tobacco, or ash and
+// its charred edge)
+function cigParts(P, back, dir, cr, lf, lp, ash) {
+  if (lf > 0) lathe(P, back[0], back[1], back[2], [[0, 0], [cr * 0.95, 0], [cr, 0.0006], [cr, lf], [0, lf]], "filter", { dir, n: 18 });
+  const p0 = v3.add(back, v3.mul(dir, lf)), e = v3.add(p0, v3.mul(dir, lp));
+  lathe(P, p0[0], p0[1], p0[2], [[0, 0], [cr, 0], [cr, lp], [cr * 0.92, lp]], "cig", { dir, n: 18 });
+  if (ash > 0) {
+    lathe(P, e[0], e[1], e[2], [[0, 0], [cr * 0.96, 0], [cr * 0.93, 0.0012], [cr * 0.95, 0.0006]], "ash_2", { dir, n: 18 });
+    lathe(P, e[0], e[1], e[2], [[0, 0], [cr * 0.94, 0.0008], [cr * 0.98, ash * 0.4], [cr * 0.9, ash * 0.85], [cr * 0.6, ash], [0, ash]], "ash", { dir, n: 14 });
+  } else lathe(P, e[0], e[1], e[2], [[0, -0.0004], [cr * 0.93, -0.0004], [cr * 0.93, 0], [0, 0.0001]], "tobacco", { dir, n: 18 });
+  return v3.add(e, v3.mul(dir, ash));
+}
+const CIG = { r: 0.0039, L: 0.084, lf: 0.027 };
+// an ashtray, round: its rim broken by rests (the notches a cigarette lies in), butts in it if it's been used, and a
+// cigarette resting in the first rest (its tip over the bowl: the tip socket; its life a cigarette's)
+function ashtrayGen(s, P, R, warn, S) {
+  const m = s.slot, metal = s.style === "metal", n = clamp(s.rests | 0, 0, 6);
+  const Ro = metal ? 0.065 : 0.06, Rin = metal ? 0.05 : 0.042, zr = metal ? 0.016 : 0.024, zf = metal ? 0.004 : 0.012, lip = metal ? 0.0025 : 0.004;
+  lathe(P, 0, 0, 0, metal
+    ? [[0, 0], [0.042, 0], [0.046, 0.002], [0.05, 0.006], [0.058, 0.012], [0.064, zr - 0.002], [Ro, zr], [Rin, zr], [0.049, zr - 0.002], [0.044, 0.0075], [0.04, zf], [0, zf]]
+    : [[0, 0], [0.054, 0], [0.057, 0.0018], [0.0598, 0.008], [Ro, zr], [Rin, zr], [0.04, 0.0205], [0.036, 0.0138], [0.03, zf], [0, zf]], m, { n: 64 });
+  const rm = (Ro + Rin) / 2, hb = (Ro - Rin) / 2, ga = 0.018 / rm, a0 = -Math.PI / 2 + (n ? Math.PI / n : 0), zc = zr + lip - 0.001;
+  if (!n) lathe(P, 0, 0, zr - 0.001, [[Ro, 0], [Ro, lip], [Ro - lip * 0.5, 2 * lip], [Rin + lip * 0.5, 2 * lip], [Rin, lip], [Rin, 0]], m, { n: 64 });
+  for (let k = 0; k < n; k++) {
+    const t0 = a0 + k * 2 * Math.PI / n + ga / 2, t1 = a0 + (k + 1) * 2 * Math.PI / n - ga / 2, steps = Math.max(2, Math.ceil((t1 - t0) / 0.1)), pts = [];
+    for (let i = 0; i <= steps; i++) { const a = t0 + (t1 - t0) * i / steps; pts.push([Math.cos(a) * rm, Math.sin(a) * rm, zc]); }
+    sweep(P, pts, { a: lip, b: hb, r: Math.min(lip, hb) * 0.85 }, m, { up: [0, 0, 1] });
+    const a = a0 + k * 2 * Math.PI / n;
+    S[`rest_${k + 1}`] = { at: [Math.cos(a) * rm, Math.sin(a) * rm, zr], n: [-Math.cos(a), -Math.sin(a), 0] };
+  }
+  const nb = clamp(s.butts | 0, 0, 8);
+  for (let i = 0; i < nb; i++) {                               // the butts: stubbed out, crushed, lying every which way
+    const a = R() * 2 * Math.PI, rr = Math.sqrt(R()) * Math.max(0.004, Rin - 0.03), d = R() * 2 * Math.PI, cr = CIG.r * 0.97, lf = 0.021 + R() * 0.004, lp = 0.004 + R() * 0.012;
+    const u = [Math.cos(d), Math.sin(d), 0], c = [Math.cos(a) * rr, Math.sin(a) * rr, zf + cr + i * 0.0007], back = v3.sub(c, v3.mul(u, (lf + lp) / 2));
+    lathe(P, back[0], back[1], back[2], [[0, 0], [cr * 0.95, 0], [cr, 0.0006], [cr, lf], [0, lf]], "filter", { dir: u, n: 14 });
+    const b2 = (R() - 0.5) * 0.9, u2 = v3.nrm([Math.cos(d + b2), Math.sin(d + b2), R() * 0.25]), p0 = v3.add(back, v3.mul(u, lf - 0.001));
+    lathe(P, p0[0], p0[1], p0[2], [[0, 0], [cr * 0.98, 0], [cr * 0.9, lp * 0.7], [cr * 0.72, lp], [0, lp]], "cig", { dir: u2, n: 14 });
+    const e = v3.add(p0, v3.mul(u2, lp));
+    lathe(P, e[0], e[1], e[2], [[0, 0], [cr * 0.72, 0], [cr * 0.4, 0.0015], [0, 0.0018]], "ash_2", { dir: u2, n: 12 });
+  }
+  if (nb) cy(P, 0, 0, zf, Rin * 0.74, 0.0008, "ash", { n: 32 });
+  if (s.resting && n) {
+    // in the first rest: lying on the bowl's inner lip, the filter out past the rim, tipped 8° down toward the middle
+    const out = [Math.cos(a0), Math.sin(a0), 0], tl = 8 * Math.PI / 180, cr = CIG.r, lp = (CIG.L - CIG.lf) * clamp(s.left, 0.15, 1);
+    const dir = v3.nrm([-out[0] * Math.cos(tl), -out[1] * Math.cos(tl), -Math.sin(tl)]), pivot = [out[0] * (Rin + 0.001), out[1] * (Rin + 0.001), zr + cr];
+    const back = v3.sub(pivot, v3.mul(dir, CIG.lf + 0.004 + (rm - Rin))), tip = cigParts(P, back, dir, cr, CIG.lf, lp, s.ash);
+    S.tip = { at: tip, n: dir, r: cr, len: lp, back: v3.add(back, v3.mul(dir, CIG.lf)) };
+  }
+  S.bowl = { at: [0, 0, zf], n: [0, 0, 1], r: Rin * 0.85 };
+  fit(s, P, S);
+}
+function cigaretteGen(s, P, R, warn, S) {
+  const cr = CIG.r, lf = s.filter ? CIG.lf : 0;
+  if (s.pose === "butt") {                                     // stubbed out: the filter, a crushed bent end
+    const lp = 0.012, u = [1, 0, 0], back = [-0.017, 0, cr * 0.97];
+    if (lf) lathe(P, back[0], back[1], back[2], [[0, 0], [cr * 0.95, 0], [cr, 0.0006], [cr, 0.024], [0, 0.024]], "filter", { dir: u, n: 18 });
+    const p0 = v3.add(back, v3.mul(u, lf ? 0.023 : 0)), u2 = v3.nrm([1, 0.35, 0.05]);
+    lathe(P, p0[0], p0[1], p0[2], [[0, 0], [cr * 0.98, 0], [cr * 0.92, lp * 0.6], [cr * 0.7, lp], [0, lp]], "cig", { dir: u2, n: 18 });
+    const e = v3.add(p0, v3.mul(u2, lp));
+    lathe(P, e[0], e[1], e[2], [[0, 0], [cr * 0.7, 0], [cr * 0.4, 0.0015], [0, 0.0018]], "ash_2", { dir: u2, n: 12 });
+  } else {                                                     // lying on a table: the filter at -x, the tip at +x
+    const lp = (CIG.L - (lf || 0)) * clamp(s.left, 0.1, 1), u = [1, 0, 0], back = [-(lf + lp + s.ash) / 2, 0, cr];
+    const tip = cigParts(P, back, u, cr, lf, lp, s.ash);
+    S.tip = { at: tip, n: u, r: cr, len: lp, back: v3.add(back, v3.mul(u, lf)) };
+  }
+  fit(s, P, S);
+}
+// a pack, standing: open, its lid flipped back and a row of filters showing; or shut
+function packGen(s, P, R, warn, S) {
+  const w = 0.055, d = 0.022, h = 0.088, lid = 0.026, m = s.slot, zl = h - lid;
+  bx(P, -w / 2, -d / 2, 0, w / 2, d / 2, zl, m, { b: 0.0012 });
+  bx(P, -w / 2 - 0.0002, -d / 2 - 0.0002, zl - 0.03, w / 2 + 0.0002, d / 2 + 0.0002, zl - 0.012, s.band_slot, { b: 0.0006 });   // the brand's band
+  if (!s.open) { bx(P, -w / 2, -d / 2, zl + 0.0004, w / 2, d / 2, h, m, { b: 0.0012 }); bx(P, -w / 2 + 0.001, -d / 2 + 0.001, zl - 0.0004, w / 2 - 0.001, d / 2 - 0.001, zl + 0.0006, "gap"); }
+  else {
+    bx(P, -w / 2, d / 2, zl - 0.0005, w / 2, d / 2 + lid, zl + d, m, { b: 0.0012 });                  // the lid, flipped back on its hinge
+    bx(P, -w / 2 + 0.0015, -d / 2 + 0.0015, zl - 0.004, w / 2 - 0.0015, d / 2 - 0.0015, zl + 0.007, "white", { b: 0.0005 });  // the foil
+    const k = clamp(s.count | 0, 0, 20), per = Math.ceil(k / 2);
+    for (let i = 0; i < k; i++) {
+      const row = i < per ? 0 : 1, j = row ? i - per : i, nrow = row ? k - per : per;
+      const x = (j - (nrow - 1) / 2) * (CIG.r * 2.02), y = (row - 0.5) * CIG.r * 2.02 * (k > per ? 1 : 0);
+      lathe(P, x, y, zl - 0.002, [[0, 0], [CIG.r * 0.98, 0], [CIG.r * 0.98, 0.0125 + (i % 3) * 0.0012], [CIG.r * 0.9, 0.0128 + (i % 3) * 0.0012], [0, 0.0129 + (i % 3) * 0.0012]], "filter", { n: 14 });
+    }
+  }
+  fit(s, P, S);
+}
+// a disposable lighter: the body, the steel hood, the spark wheel; standing (it can be lit) or lying on its side
+function lighterGen(s, P, R, warn, S) {
+  const m = s.slot, bw = 0.0245, bd = 0.0115, bh = 0.058, hw = 0.0205, hd = 0.0095, hh = 0.0125;
+  if (s.pose === "standing") {
+    sf(P, -bw / 2, -bd / 2, 0, bw / 2, bd / 2, bh, m, { seam: "none", puff: 0, b: 0.004, n: 10 });
+    bx(P, -hw / 2, -hd / 2, bh - 0.001, hw / 2, hd / 2, bh + hh, "steel", { b: 0.0008 });
+    lathe(P, 0.0035, -0.0042, bh + hh - 0.003, [[0, 0], [0.0046, 0], [0.0046, 0.0084], [0, 0.0084]], "steel", { axis: "y", n: 16 });
+    bx(P, 0.006, -0.004, bh + 0.002, 0.0115, 0.004, bh + 0.008, "black", { b: 0.0005 });
+    lathe(P, -0.004, 0, bh + hh - 0.001, [[0, 0], [0.0016, 0], [0.0016, 0.002], [0, 0.002]], "steel", { n: 12 });
+    S.flame = { at: [-0.004, 0, bh + hh + 0.0012], n: [0, 0, 1] };
+  } else {
+    const x0 = -(bh + hh) / 2;
+    sf(P, x0, -bw / 2, 0, x0 + bh, bw / 2, bd, m, { seam: "none", puff: 0, b: 0.004, n: 10 });
+    bx(P, x0 + bh - 0.001, -hw / 2, (bd - hd) / 2, x0 + bh + hh, hw / 2, (bd + hd) / 2, "steel", { b: 0.0008 });
+    lathe(P, x0 + bh + hh - 0.003, 0.0035, (bd - 0.0084) / 2, [[0, 0], [0.0046, 0], [0.0046, 0.0084], [0, 0.0084]], "steel", { n: 16 });
+    bx(P, x0 + bh + 0.002, 0.006, (bd - 0.008) / 2, x0 + bh + 0.008, 0.0115, (bd + 0.008) / 2, "black", { b: 0.0005 });
+    S.flame = { at: [x0 + bh + hh + 0.0012, -0.004, bd / 2], n: [1, 0, 0] };
+  }
+  fit(s, P, S);
+}
+
+// a clock's time as the hands' angles (degrees clockwise from twelve, seen from the front)
+export function clockAngles(t) {
+  const m = String(t || "").match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/), h = m ? +m[1] % 12 : 10, mi = m ? +m[2] % 60 : 10, se = m && m[3] ? +m[3] % 60 : 30;
+  return { h: (h + mi / 60 + se / 3600) * 30, m: (mi + se / 60) * 6, s: se * 6 };
+}
+function clockHand(P, cx, cz, y, a, tail, len, w, m, taper) {   // a hand on the dial at angle a, in front of it at y
+  const r = a * Math.PI / 180, d = [Math.sin(r), 0, Math.cos(r)];
+  sweep(P, [[cx - d[0] * tail, y, cz - d[2] * tail], [cx + d[0] * len, y, cz + d[2] * len]], { a: 0.0006, b: w, r: 0.0005 }, m, { up: [0, -1, 0], taper });
+}
+function clockMarks(P, cx, cz, y, r1, n, long, bw, m) {         // marks round a dial: every fifth long when there are 60
+  for (let i = 0; i < n; i++) {
+    const a = i / n * 2 * Math.PI, big = n === 12 || i % 5 === 0, r0 = r1 - (big ? long : long * 0.35), sx = Math.sin(a), cz2 = Math.cos(a);
+    sweep(P, [[cx + sx * r0, y, cz + cz2 * r0], [cx + sx * r1, y, cz + cz2 * r1]], { a: 0.0003, b: big ? bw : bw * 0.3, r: 0.0002 }, m, { up: [0, -1, 0], caps: false });
+  }
+}
+// a wall clock, its front to -y: a slim round one, a school or office one (deep black case, bold marks, red second
+// hand), or a pendulum clock in its wooden case (柱時計). The hands are drawn at `time` and are slots of their own
+// (hand_h, hand_m, hand_s), as is the pendulum: the hub and pendulum sockets say where they turn.
+function clockGen(s, P, R, warn, S) {
+  const T = clockAngles(s.time), m = s.slot;
+  if (s.style === "pendulum") {
+    const W = 0.3, Dp = 0.11, Hp = 0.56, t = 0.012, fy = -Dp / 2 + 0.012, zd = 0.4, Rd = 0.105;
+    bx(P, -W / 2 + t, Dp / 2 - 0.008, 0.03, W / 2 - t, Dp / 2, Hp - 0.03, "inner");
+    for (const sx of [-1, 1]) bx(P, sx < 0 ? -W / 2 : W / 2 - t, -Dp / 2 + 0.012, 0.03, sx < 0 ? -W / 2 + t : W / 2, Dp / 2, Hp - 0.03, m, { b: 0.002 });
+    bx(P, -W / 2 - 0.012, -Dp / 2 + 0.002, Hp - 0.03, W / 2 + 0.012, Dp / 2, Hp - 0.012, m, { b: 0.003 });          // the crown
+    bx(P, -W / 2 - 0.006, -Dp / 2 + 0.008, Hp - 0.012, W / 2 + 0.006, Dp / 2, Hp, m, { b: 0.004 });
+    bx(P, -W / 2 - 0.01, -Dp / 2 + 0.002, 0.012, W / 2 + 0.01, Dp / 2, 0.03, m, { b: 0.003 });                       // the foot
+    bx(P, -W / 2 + 0.01, -Dp / 2 + 0.01, 0, W / 2 - 0.01, Dp / 2, 0.012, m, { b: 0.003 });
+    bx(P, -W / 2 + t, fy, 0.29, W / 2 - t, fy + 0.014, Hp - 0.03, m, { b: 0.0015 });                                // the board round the dial
+    lathe(P, 0, fy, zd, [[0, 0], [Rd, 0], [Rd, 0.002], [0, 0.002]], "dial", { axis: "-y", n: 64 });
+    lathe(P, 0, fy, zd, [[Rd - 0.002, 0], [Rd + 0.012, 0], [Rd + 0.012, 0.004], [Rd + 0.008, 0.009], [Rd + 0.001, 0.0102], [Rd - 0.002, 0.008]], "brass", { axis: "-y", n: 64 });
+    const yd = fy - 0.0024;
+    clockMarks(P, 0, zd, yd, Rd - 0.008, 12, 0.017, 0.0024, "black");
+    for (const r of [Rd - 0.0055, Rd - 0.0095]) lathe(P, 0, fy - 0.002, zd, [[r - 0.0004, 0], [r + 0.0004, 0], [r + 0.0004, 0.0003], [r - 0.0004, 0.0003]], "black", { axis: "-y", n: 64 });
+    for (const sx of [-1, 1]) lathe(P, sx * 0.034, fy - 0.002, zd - 0.032, [[0, 0], [0.0042, 0], [0.0042, 0.0003], [0, 0.0003]], "hole", { axis: "-y", n: 16 });   // the winding holes
+    clockHand(P, 0, zd, yd - 0.003, T.h, 0.014, 0.058, 0.0042, "hand_h", 0.45);
+    clockHand(P, 0, zd, yd - 0.005, T.m, 0.016, 0.086, 0.003, "hand_m", 0.45);
+    lathe(P, 0, yd - 0.0058, zd, [[0, 0], [0.0045, 0], [0.004, 0.0015], [0, 0.0022]], "brass", { axis: "-y", n: 20 });
+    lathe(P, 0, fy - 0.009, zd, [[0, 0], [Rd + 0.003, 0], [0, 0.0016]], "glass", { axis: "-y", n: 64 });
+    for (const [x0, z0, x1, z1] of [[-0.135, 0.04, -0.105, 0.29], [0.105, 0.04, 0.135, 0.29], [-0.105, 0.04, 0.105, 0.065], [-0.105, 0.265, 0.105, 0.29]])
+      bx(P, x0, fy, z0, x1, fy + 0.014, z1, m, { b: 0.0015 });                                                        // the door's frame
+    bx(P, -0.105, fy + 0.006, 0.065, 0.105, fy + 0.008, 0.265, "glass");
+    sweep(P, [[0, 0.03, 0.36], [0, 0.03, 0.14]], { a: 0.0008, b: 0.0028, r: 0.0006 }, "pendulum", { up: [0, 1, 0] });
+    lathe(P, 0, 0.034, 0.128, [[0, 0], [0.04, 0], [0.04, 0.002], [0.033, 0.0055], [0, 0.0075]], "pendulum", { axis: "-y", n: 48 });
+    S.hub = { at: [0, yd - 0.006, zd], n: [0, -1, 0], hands: { h: T.h, m: T.m }, slots: { h: "hand_h", m: "hand_m" } };
+    S.pendulum = { at: [0, 0.03, 0.36], n: [0, 1, 0], slot: "pendulum", len: 0.232 };
+    S.chime = { at: [0, 0, 0.2] };
+  } else {
+    const school = s.style === "school", Rr = 0.15, dep = school ? 0.05 : 0.038, rim = school ? 0.013 : 0.007, cz = Rr, ya = dep / 2;
+    lathe(P, 0, ya, cz, [[0, 0], [Rr - 0.004, 0], [Rr, 0.004], [Rr, dep - 0.006], [Rr - 0.003, dep], [Rr - rim + 0.002, dep], [Rr - rim, dep - 0.003], [Rr - rim, 0.012], [0, 0.012]], m, { axis: "-y", n: 72 });
+    const Rf = Rr - rim, yd = ya - 0.0128;
+    lathe(P, 0, ya - 0.012, cz, [[0, 0], [Rf, 0], [Rf, 0.0008], [0, 0.0008]], "dial", { axis: "-y", n: 72 });
+    clockMarks(P, 0, cz, yd - 0.0004, Rf - 0.007, school || +s.marks === 60 ? 60 : 12, school ? 0.018 : 0.013, school ? 0.0032 : 0.0019, "black");
+    clockHand(P, 0, cz, yd - 0.003, T.h, 0.015, Rf * 0.52, school ? 0.0048 : 0.004, "hand_h", 0.55);
+    clockHand(P, 0, cz, yd - 0.005, T.m, 0.018, Rf * 0.8, school ? 0.0034 : 0.003, "hand_m", 0.5);
+    if (s.seconds) clockHand(P, 0, cz, yd - 0.007, T.s, 0.03, Rf * 0.88, 0.0008, "hand_s", 1);
+    lathe(P, 0, yd - 0.0072, cz, [[0, 0], [0.0045, 0], [0.0045, 0.0012], [0.003, 0.0024], [0, 0.0027]], s.seconds ? "hand_s" : "black", { axis: "-y", n: 20 });
+    lathe(P, 0, ya - dep + 0.0045, cz, [[0, 0], [Rf + 0.001, 0], [Rf - 0.01, 0.0015], [0, 0.0025]], "glass", { axis: "-y", n: 72 });
+    S.hub = { at: [0, yd - 0.008, cz], n: [0, -1, 0], hands: s.seconds ? { h: T.h, m: T.m, s: T.s } : { h: T.h, m: T.m }, slots: s.seconds ? { h: "hand_h", m: "hand_m", s: "hand_s" } : { h: "hand_h", m: "hand_m" } };
+  }
+  fit(s, P, S, { back: true });
+}
+
+// a Japanese rice cooker: a soft body, the domed lid, its steam vent; on the front the panel with the LCD, the buttons
+// and the cook and warm lights, the lid's release
+function riceGen(s, P, R, warn, S) {
+  const m = s.slot, W = 0.25, D = 0.32, Hb = 0.19, yf = -D / 2;
+  sf(P, -W / 2, -D / 2, 0.004, W / 2, D / 2, Hb, m, { seam: "none", puff: 0, b: 0.04, n: 14 });
+  sf(P, -W / 2 + 0.004, -D / 2 + 0.018, Hb - 0.02, W / 2 - 0.004, D / 2 - 0.004, Hb + 0.032, s.lid_slot, { seam: "none", puff: 0.12, b: 0.03, n: 14 });
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) cy(P, sx * 0.085, sy * 0.115, 0, 0.012, 0.005, "rubber", { n: 16 });
+  bx(P, -0.085, yf - 0.002, 0.07, 0.085, yf + 0.012, 0.15, s.panel_slot, { b: 0.006 });
+  bx(P, -0.032, yf - 0.0028, 0.114, 0.032, yf + 0.002, 0.14, "lcd", { b: 0.0008 });
+  S.lcd = { at: [0, yf - 0.003, 0.127], n: [0, -1, 0], w: 0.062, h: 0.024, up: [0, 0, 1] };
+  [-0.054, -0.018, 0.018, 0.054].forEach((x, i) => lathe(P, x, yf - 0.0018, 0.092, [[0, 0], [i === 3 ? 0.0095 : 0.0072, 0], [i === 3 ? 0.0095 : 0.0072, 0.0014], [i === 3 ? 0.0078 : 0.0058, 0.0027], [0, 0.003]], i === 3 ? "white" : "plastic", { axis: "-y", n: 24 }));
+  for (const [k, x] of [["led_warm", -0.054], ["led_cook", 0.054]]) {
+    lathe(P, x, yf - 0.0018, 0.106, [[0, 0], [0.0019, 0], [0.0019, 0.0006], [0, 0.0009]], "led", { axis: "-y", n: 12 });
+    S[k] = { at: [x, yf - 0.0029, 0.106], n: [0, -1, 0], r: 0.0019 };
+  }
+  bx(P, -0.03, yf + 0.004, Hb - 0.015, 0.03, yf + 0.022, Hb + 0.006, "plastic_2", { b: 0.005 });
+  lathe(P, 0, 0.075, Hb + 0.024, [[0, 0], [0.026, 0], [0.027, 0.004], [0.025, 0.011], [0.02, 0.013], [0, 0.0135]], "plastic", { n: 40 });
+  for (const j of [-1, 0, 1]) bx(P, -0.012, 0.075 + j * 0.007 - 0.001, Hb + 0.0373, 0.012, 0.075 + j * 0.007 + 0.001, Hb + 0.0377, "hole");
+  S.vent = { at: [0, 0.075, Hb + 0.038], n: [0, 0, 1], r: 0.012 }; S.button = { at: [0.054, yf - 0.003, 0.092] };
+  fit(s, P, S);
+}
+
+// a mosquito coil (katori senkō): the green spiral, burning from its outer end. On its tin tray and pin, or hung
+// inside a kayari buta, the clay pig it smokes out of
+function coilGen(s, P, R, warn, S) {
+  const turns = 4.25 * clamp(s.left ?? 1, 0.1, 1), r0 = 0.011, r1 = 0.011 + 0.051 * turns / 4.25, half = 0.0028, th = 0.0018;
+  const spiral = plane => { const N = Math.max(8, Math.ceil(turns * 2 * Math.PI / 0.12)), pts = []; for (let i = 0; i <= N; i++) { const a = i / N * turns * 2 * Math.PI, r = r0 + (r1 - r0) * i / N; pts.push(plane(r * Math.cos(a), r * Math.sin(a))); } return pts; };
+  if (s.style === "pig") {
+    const L = 0.17, zc = 0.095, yb = L / 2;
+    const out = [[0, 0], [0.03, 0.002], [0.055, 0.012], [0.072, 0.03], [0.081, 0.06], [0.083, 0.09], [0.079, 0.12], [0.07, 0.145], [0.06, 0.162], [0.057, 0.168], [0.053, 0.17]];
+    lathe(P, 0, yb, zc, out, s.slot, { axis: "-y", n: 64 });
+    lathe(P, 0, yb, zc, [[0.053, 0.17], [0.052, 0.166], [0.064, 0.14], [0.073, 0.11], [0.075, 0.08], [0.072, 0.05], [0.06, 0.025], [0.035, 0.011], [0, 0.008]], "inner", { axis: "-y", n: 64 });
+    for (const sx of [-1, 1]) {
+      lathe(P, sx * 0.034, -0.03, zc + 0.07, [[0, 0], [0.015, 0], [0.002, 0.022], [0, 0.022]], s.slot, { dir: v3.nrm([sx * 0.35, -0.25, 0.9]), n: 16 });   // the ears
+      for (const y of [-0.045, 0.045]) lathe(P, sx * 0.04, y, 0.026, [[0, 0], [0.013, 0], [0.011, 0.026], [0, 0.027]], s.slot, { axis: "-z", n: 16 });     // the legs
+      const { n: [nr, nt] } = profAt(out, 0.145), ph = 40 * Math.PI / 180, n = v3.nrm([sx * Math.sin(ph) * nr, -nt, Math.cos(ph) * nr]);
+      lathe(P, sx * 0.07 * Math.sin(ph), yb - 0.145, zc + 0.07 * Math.cos(ph), [[0, 0], [0.0045, 0], [0.0035, 0.0012], [0, 0.0016]], "black", { dir: n, n: 12 });    // the eyes
+    }
+    sweep(P, smoothPath([[0, yb - 0.004, zc + 0.02], [0, yb + 0.012, zc + 0.024], [0.006, yb + 0.017, zc + 0.032], [0.002, yb + 0.014, zc + 0.039], [-0.003, yb + 0.011, zc + 0.033]], 5), { a: 0.003, b: 0.003, r: 0.003 }, s.slot, { up: [1, 0, 0] });
+    const pts = spiral((x, y) => [x, -0.01, zc + y]);
+    sweep(P, pts, { a: th, b: half, r: 0.0012 }, "coil", { up: [0, 1, 0] });
+    const e = pts[pts.length - 1];
+    S.tip = { at: [e[0], e[1] - th, e[2]], n: [0, 0, 1] }; S.smoke = { at: [0, -L / 2 + 0.006, zc + 0.035], n: v3.nrm([0, -0.3, 1]), r: 0.03 };
+  } else {
+    lathe(P, 0, 0, 0, [[0, 0], [0.068, 0], [0.07, 0.006], [0.0695, 0.0068], [0.067, 0.0012], [0, 0.0012]], "steel", { n: 56 });
+    lathe(P, 0, 0, 0.0012, [[0, 0], [0.006, 0], [0.0012, 0.003], [0.0012, 0.016], [0, 0.0165]], "steel", { n: 12 });
+    const z = 0.012, pts = spiral((x, y) => [x, y, z]);
+    sweep(P, pts, { a: th, b: half, r: 0.0012 }, "coil", { up: [0, 0, 1] });
+    const e = pts[pts.length - 1];
+    S.tip = { at: [e[0], e[1], z + th], n: [0, 0, 1] }; S.smoke = S.tip;
+  }
+  fit(s, P, S);
+}
+
+// incense: one stick in a small holder, or sticks standing in the ash of a kōro (the bowl on a butsudan)
+function incenseGen(s, P, R, warn, S) {
+  const koro = s.style === "koro", sr = 0.0011, len = 0.14 * clamp(s.left ?? 0.8, 0.1, 1);
+  let z0, at;
+  if (koro) {
+    lathe(P, 0, 0, 0, [[0, 0], [0.032, 0], [0.033, 0.002], [0.03, 0.004], [0.042, 0.008], [0.05, 0.02], [0.052, 0.035], [0.0505, 0.045], [0.052, 0.048], [0.05, 0.05], [0.046, 0.0485], [0.046, 0.04], [0, 0.04]], s.slot, { n: 56 });
+    cy(P, 0, 0, 0.04, 0.046, 0.002, "ash", { n: 40 });
+    const n = clamp(s.sticks | 0, 1, 5); z0 = 0.036;
+    at = Array.from({ length: n }, (_, i) => [(i - (n - 1) / 2) * 0.014, (i % 2) * 0.004]);
+  } else {
+    lathe(P, 0, 0, 0, [[0, 0], [0.026, 0], [0.027, 0.002], [0.026, 0.006], [0.022, 0.007], [0.012, 0.006], [0.006, 0.008], [0.003, 0.01], [0.0013, 0.01], [0.0013, 0.004], [0, 0.004]], s.slot, { n: 40 });
+    z0 = 0.004; at = [[0, 0]];
+  }
+  at.forEach(([x, y], i) => {
+    const l = len * (1 - i * 0.06), b = l - 0.003;
+    lathe(P, x, y, z0, [[0, 0], [sr, 0], [sr, b], [0, b]], "incense", { n: 8 });
+    lathe(P, x, y, z0 + b, [[0, 0], [sr * 1.03, 0], [sr * 1.02, 0.0024], [sr * 0.5, 0.003], [0, 0.003]], "ash", { n: 8 });
+    S[`tip_${i + 1}`] = { at: [x, y, z0 + l], n: [0, 0, 1], r: sr, len: l - 0.012, back: [x, y, z0 + 0.012] };
+  });
+  S.tip = S.tip_1;
+  fit(s, P, S);
+}
+
+// a phone lying face up, its top to the back (+y): a smartphone, or a shut flip phone (the 2000s' garakei) with its
+// outer screen and notification light
+function phoneGen(s, P, R, warn, S) {
+  if (s.style === "flip") {
+    const w = 0.05, l = 0.1, h = 0.021;
+    sf(P, -w / 2, -l / 2, 0, w / 2, l / 2 - 0.006, h / 2, s.slot, { seam: "none", puff: 0, b: 0.006, n: 10 });
+    sf(P, -w / 2, -l / 2, h / 2 - 0.0004, w / 2, l / 2 - 0.006, h, s.slot, { seam: "none", puff: 0.08, b: 0.007, n: 10 });
+    lathe(P, -w / 2 + 0.002, l / 2 - 0.011, h / 2, [[0, 0], [0.0085, 0], [0.0085, w - 0.004], [0, w - 0.004]], s.slot, { axis: "x", n: 20 });
+    bx(P, -0.014, 0.008, h - 0.0012, 0.014, 0.034, h + 0.0004, "screen", { b: 0.0008 });
+    lathe(P, 0, -0.012, h - 0.0008, [[0, 0], [0.002, 0], [0.002, 0.0011], [0, 0.0013]], "led", { n: 12 });
+    S.screen = { at: [0, 0.021, h + 0.0006], n: [0, 0, 1], w: 0.028, h: 0.026, up: [0, 1, 0] }; S.led = { at: [0, -0.012, h + 0.0006], n: [0, 0, 1], r: 0.002 };
+  } else {
+    const w = 0.072, l = 0.15, h = 0.0078;
+    sf(P, -w / 2, -l / 2, 0, w / 2, l / 2, h, s.slot, { seam: "none", puff: 0, b: 0.0035, n: 16 });
+    bx(P, -w / 2 + 0.0028, -l / 2 + 0.0028, h - 0.0006, w / 2 - 0.0028, l / 2 - 0.0028, h + 0.0002, "screen", { b: 0.0006 });
+    S.screen = { at: [0, 0, h + 0.0003], n: [0, 0, 1], w: w - 0.006, h: l - 0.006, up: [0, 1, 0] };
+  }
+  fit(s, P, S);
+}
+
+// a kitchen tap: a swan-neck mixer with its lever, or an old pillar tap with a cross handle. The spout socket is where a
+// drip falls from (straight down, into whatever's under it)
+function tapGen(s, P, R, warn, S) {
+  const m = s.slot;
+  if (s.style === "cross") {
+    lathe(P, 0, 0, 0, [[0, 0], [0.026, 0], [0.026, 0.004], [0.02, 0.008], [0.014, 0.014], [0.0135, 0.07], [0.016, 0.075], [0.016, 0.085], [0.012, 0.088], [0, 0.088]], m, { n: 40 });
+    sweep(P, smoothPath([[0, -0.004, 0.06], [0, -0.04, 0.062], [0, -0.09, 0.062], [0, -0.115, 0.05], [0, -0.12, 0.038]], 6), { a: 0.0085, b: 0.0085, r: 0.0085 }, m, { up: [1, 0, 0], caps: false, taper: 0.9 });
+    lathe(P, 0, -0.12, 0.04, [[0, 0], [0.0088, 0], [0.0088, 0.009], [0.0062, 0.0098], [0.0062, 0.009], [0, 0.009]], m, { axis: "-z", n: 24 });
+    for (const [a, b] of [[[-0.03, 0, 0.096], [0.03, 0, 0.096]], [[0, -0.03, 0.096], [0, 0.03, 0.096]]]) sweep(P, [a, b], { a: 0.0055, b: 0.0055, r: 0.0055 }, m, { up: [0, 0, 1] });
+    lathe(P, 0, 0, 0.086, [[0, 0], [0.011, 0], [0.011, 0.012], [0.008, 0.017], [0, 0.018]], m, { n: 24 });
+    S.spout = { at: [0, -0.12, 0.0295], n: [0, 0, -1], r: 0.006 }; S.handle = { at: [0, 0, 0.1] };
+  } else {
+    lathe(P, 0, 0, 0, [[0, 0], [0.028, 0], [0.028, 0.006], [0.025, 0.01], [0.022, 0.012], [0.022, 0.12], [0.0205, 0.125], [0, 0.125]], m, { n: 48 });
+    lathe(P, 0, 0, 0.125, [[0, 0], [0.0205, 0], [0.0205, 0.012], [0.017, 0.018], [0, 0.019]], m, { n: 40 });
+    sweep(P, [[0, 0.002, 0.138], [0, 0.03, 0.152], [0, 0.075, 0.162]], { a: 0.009, b: 0.004, r: 0.0035 }, m, { up: [1, 0, 0] });
+    sweep(P, smoothPath([[0, 0, 0.1], [0, 0, 0.2], [0, -0.03, 0.272], [0, -0.1, 0.3], [0, -0.17, 0.272], [0, -0.2, 0.22], [0, -0.205, 0.188]], 6), { a: 0.0115, b: 0.0115, r: 0.0115 }, m, { up: [1, 0, 0], taper: 0.85, caps: false });
+    lathe(P, 0, -0.205, 0.19, [[0, 0], [0.0105, 0], [0.0105, 0.008], [0.009, 0.0095], [0.006, 0.0095], [0.006, 0.009], [0, 0.009]], m, { axis: "-z", n: 28 });
+    S.spout = { at: [0, -0.205, 0.18], n: [0, 0, -1], r: 0.006 }; S.handle = { at: [0, 0.06, 0.158] };
+  }
+  fit(s, P, S);
+}
+
+// a candle: a pillar with its melted dip, a taper in a brass candlestick, or a tealight; the wick a little bent
+function candleGen(s, P, R, warn, S) {
+  const m = s.slot, left = clamp(s.left ?? 1, 0.15, 1);
+  let top;
+  if (s.style === "taper") {
+    lathe(P, 0, 0, 0, [[0, 0], [0.044, 0], [0.045, 0.003], [0.042, 0.007], [0.016, 0.014], [0.0095, 0.024], [0.008, 0.05], [0.0105, 0.058], [0.028, 0.062], [0.031, 0.066], [0.029, 0.0685], [0.0145, 0.069], [0.0145, 0.082], [0.0128, 0.0825], [0.0128, 0.072], [0, 0.072]], s.holder_slot, { n: 48 });
+    const L = 0.24 * left;
+    lathe(P, 0, 0, 0.072, [[0, 0], [0.0112, 0], [0.0112, L - 0.004], [0.0098, L - 0.0008], [0.004, L], [0, L - 0.0005]], m, { n: 28 });
+    top = 0.072 + L - 0.0005;
+  } else if (s.style === "tealight") {
+    lathe(P, 0, 0, 0, [[0, 0], [0.0188, 0], [0.0192, 0.0006], [0.0195, 0.0155], [0.0197, 0.016], [0.0187, 0.016], [0.0186, 0.0012], [0, 0.0012]], "steel", { n: 40 });
+    lathe(P, 0, 0, 0.0012, [[0, 0], [0.0186, 0], [0.0186, 0.0118], [0.012, 0.0112], [0, 0.011]], m, { n: 40 });
+    top = 0.0122;
+  } else {
+    const H = 0.02 + 0.08 * left;
+    lathe(P, 0, 0, 0, [[0, 0], [0.033, 0], [0.035, 0.002], [0.035, H - 0.004], [0.0345, H - 0.0012], [0.0325, H], [0.028, H - 0.0018], [0.012, H - 0.0058], [0, H - 0.0065]], m, { n: 48 });
+    top = H - 0.0065;
+  }
+  lathe(P, 0, 0, top - 0.002, [[0, 0], [0.0008, 0], [0.0008, 0.009], [0.0006, 0.011], [0, 0.0115]], "wick", { dir: v3.nrm([0.12, 0, 1]), n: 8 });
+  S.flame = { at: [0.0013, 0, top + 0.0105], n: [0, 0, 1] }; S.wick = { at: [0, 0, top] };
+  fit(s, P, S);
+}
+
 // a built thing's parts, as a free list (the kit maker's "Explode": start from a preset, then move single boxes)
 export function explode(built) {
   return built.parts.map(p => { const o = JSON.parse(JSON.stringify(p)); o.at = p.at.map(v => +v.toFixed(5)); o.size = p.size.map(v => +v.toFixed(5));
@@ -1128,6 +1792,13 @@ export const VARY = {
          ["rail", "look", "r", 0.07, 0.13], ["handle", "look", "p", ["lever_round", "lever_square", "bar_pull", "knob_round", "lever_plate_lock"]], ["hinges", "look", "i", 2, 3]],
   handle: [["rose", "look", "p"], ["points", "layout", "p"], ["lock", "look", "f", 0.3]],
   door_frame: [["lining", "look", "r", 0.015, 0.03], ["stop_t", "look", "r", 0.008, 0.016]],
+  ashtray: [["rests", "layout", "p", [3, 3, 4]], ["butts", "layout", "i", 0, 6], ["seed", "look", "seed"]],
+  clock: [["time", "look", "p", ["10:10:30", "02:47:00", "04:44:44", "07:15:10", "11:58:20", "03:33:33"]]],
+  cigarette: [["left", "look", "r", 0.3, 1]],
+  candle: [["left", "look", "r", 0.4, 1]],
+  incense: [["left", "look", "r", 0.3, 1]],
+  coil: [["left", "look", "r", 0.35, 1]],
+  hob: [["zones", "layout", "i", 1, 4]],
 };
 const COL_PICK = ["door", "doors", "doors", "drawers", "open", "glass"];
 // a variation of a full spec (withDefaults) from a seed: only the groups asked for change; the result is a full spec
@@ -1186,8 +1857,9 @@ export function scalePart(q, f) {
   const o = Object.assign({}, q, { at: q.at.map((v, k) => v * f[k]) });
   if (q.s === "pipe" || q.s === "sweep") { o.pts = (q.pts || []).map(p => p.map((v, k) => v * f[k])); if (q.sec) { const r = Math.min(...f); o.sec = { a: q.sec.a * r, b: q.sec.b * r, r: (q.sec.r ?? 0) * r }; } return o; }
   if (q.s === "lathe") {
-    const along = q.axis === "-y" || q.axis === "y" ? 1 : 2, r = Math.min(...[0, 1, 2].filter(k => k !== along).map(k => f[k]));
-    o.prof = (q.prof || []).map(([pr, t]) => [pr * r, t * f[along]]); o.size = [q.size[0] * r, q.size[1] * r, q.size[2] * f[along]]; return o;
+    const along = q.axis === "-y" || q.axis === "y" ? 1 : q.axis === "x" || q.axis === "-x" ? 0 : 2, r = Math.min(...[0, 1, 2].filter(k => k !== along).map(k => f[k]));
+    const fa = q.dir ? Math.min(...f) : f[along], fr = q.dir ? fa : r;         // a lathe on a slant keeps its shape
+    o.prof = (q.prof || []).map(([pr, t]) => [pr * fr, t * fa]); o.size = [q.size[0] * fr, q.size[1] * fr, q.size[2] * fa]; return o;
   }
   if (q.s !== "cyl") { o.size = q.size.map((v, k) => v * f[k]); return o; }
   const along = q.axis === "-y" ? 1 : 2, across = [0, 1, 2].filter(k => k !== along), r = Math.min(...across.map(k => f[k]));

@@ -2,7 +2,8 @@
 // (whether she sees the player is the runtime's, for any behaviour: the `sees` setting, runtime.sees)
 // each is a small routine with settings. `start(npc, rt, s)` sets it up, `update(npc, rt, dt, s)` moves it on; both
 // write the npc's state, which the runtime draws: `level`, `pos` (feet, three's space), `yaw` (story degrees),
-// `pose` (a pose library name) and `walking`. A route is a level's named list of spots (STORY_FORMAT §2,
+// `pose` (a pose library name) and `walking`; a `motion` setting (the story's motions table) plays instead of the pose
+// while she stands or sits, or while she walks a path or a patrol (the runtime's drawNpcs). A route is a level's named list of spots (STORY_FORMAT §2,
 // `levels.<id>.routes`), or a list of spots given in place; rt.route() resolves either.
 import * as THREE from "three";
 import { register, part } from "./parts.js";
@@ -30,12 +31,12 @@ function faceThing(npc, rt, s, dt) {
   if (p) turnTo(npc, Math.atan2(-(p.z - npc.pos.z), p.x - npc.pos.x) * 180 / Math.PI, dt);
 }
 register("behaviour", "idle", {
-  settings: { at: null, pose: "idle", face: null },
+  settings: { at: null, pose: "idle", face: null, motion: null },
   start: (npc, rt, s) => { if (at(npc, rt, s)) npc.pose = s.pose; },
   update: (npc, rt, dt, s) => faceThing(npc, rt, s, dt),
 });
 register("behaviour", "sit", {
-  settings: { at: null, pose: "sit" },
+  settings: { at: null, pose: "sit", motion: null },
   start: (npc, rt, s) => { if (at(npc, rt, s)) npc.pose = s.pose; },
   update: () => {},
 });
@@ -63,7 +64,7 @@ function walkRoute(npc, rt, dt, s, r, onEnd) {
   npc.pos.addScaledVector(d.normalize(), step);
 }
 register("behaviour", "path", {
-  settings: { route: null, mode: null, speed: 1.1, pose: "idle", from: "nearest" },   // m/s; from: nearest or first
+  settings: { route: null, mode: null, speed: 1.1, pose: "idle", from: "nearest", motion: null },   // m/s; from: nearest or first; motion: while she walks
   start: (npc, rt, s) => {
     const r = npc.st.r = rt.route(s.route); if (!r) return;
     npc.st.dir = 1; npc.st.wait = 0;
@@ -74,7 +75,7 @@ register("behaviour", "path", {
 });
 // patrol: walk each route once, then the next (in order, or `pick: "random"`); the story swaps the set with another behave
 register("behaviour", "patrol", {
-  settings: { routes: [], pick: "order", speed: 1.1, pose: "idle" },
+  settings: { routes: [], pick: "order", speed: 1.1, pose: "idle", motion: null },
   start: (npc, rt, s) => { npc.st.k = -1; next(npc, rt, s); },
   update: (npc, rt, dt, s) => { if (npc.st.r) walkRoute(npc, rt, dt, Object.assign({}, s, { mode: "once" }), npc.st.r, () => next(npc, rt, s)); },
 });

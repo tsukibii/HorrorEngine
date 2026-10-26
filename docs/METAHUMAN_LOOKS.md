@@ -65,6 +65,24 @@ a tiny nose) so a manga-leaning face is a sculpt elsewhere brought in through Me
 - **Reallusion Character Creator 4 + Headshot 2:** a photo to a CC head; CC heads aren't MetaHuman topology, so it's
   the same Mesh to MetaHuman path (Reallusion's own notes say the 5.6 steps changed; their "Apply CC Texture" route
   is for textures, not shape).
+- **`tools/face_mesh.py` (ours, free, no account):** a head shaped from one photo or several, or a video (the
+  close-up takes work), with MediaPipe's Face Landmarker (Apache-2.0). Each picture's 468 points are taken out of
+  their head pose, the turned, smiling, blinking and talking ones dropped, the rest averaged into one neutral face;
+  then a whole head is bent to it (MHR's by default; **better, your MetaHuman's base head saved as OBJ from Blender**:
+  the result keeps its topology and place, so it's already lined up for Mesh to MetaHuman's trace and auto-match).
+  A face alone isn't enough for the tracker: with no skull or ears it struggles to place things, and MediaPipe's own
+  eye openings are too soft (docs/LESSONS.md); the template's eyelids, shaped by the photo's, fix both. Settings:
+  depth (MediaPipe's depth is a learned guess, so the profile is the weakest part: check it against a side photo),
+  follow, detail, smooth, symmetry, all sliders on the desk's face page (`face.html`: drop pictures, see why each was
+  used or dropped, turn the head, Save). Expressions are read against the person's own most neutral picture, so full
+  lips (MediaPipe's "pout") don't drop every picture; an open mouth is measured from the lips. Faces made from real people's pictures stay in `Content/Studio/Heads/`
+  (git-ignored). Not MICA or FLAME: both need an account and are non-commercial.
+- **The body editor (`tools/character/`, ours):** the same fit on MHR's whole body. Pick a base (feminine, average,
+  masculine, or anywhere between), move any of MHR's 45 identity sliders (each labelled by what it measurably
+  changes), set the height, and drop a front picture and, if you have one, a side or three-quarter one (its depth
+  replaces MediaPipe's guess on the half it sees; MediaPipe has to find the face, so about 70 degrees at most). With
+  no pictures it's a plain body editor. Export the body, or the head alone for Mesh to MetaHuman. Characters stay in
+  `Content/Studio/People/` (git-ignored).
 - **A generated reference:** the user already makes close-up face videos; a neutral frontal frame from those is a
   FaceBuilder input, and the mocap takes are the same face, so likeness and animation agree.
 

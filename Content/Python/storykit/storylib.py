@@ -14,7 +14,26 @@ STUDIO = ROOT / "Content" / "Studio"                # shared by every game: clas
 WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
-USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll"}
+USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
+        "carry", "game"}
+PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
+BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/
+
+
+def board_games(game=None):
+    """{id: meta} for every board game a game can put on a table (use: game): the studio's, then the game's own (which
+    win). The meta is the rules file's one line of JSON, `export const meta = {...};`: title, players, results, settings."""
+    import re
+    out = {}
+    for d in (BOARD_GAMES, GAMES / game / "BoardGames" if game else None):
+        for f in sorted(d.glob("*.js")) if d and d.is_dir() else []:
+            m = None if f.name.startswith("_") else re.search(r"^export const meta = (\{.*\});$", f.read_text(encoding="utf-8"), re.M)
+            try:
+                if m:
+                    out[f.stem] = dict(json.loads(m.group(1)), file=f.relative_to(ROOT).as_posix())
+            except ValueError:
+                pass
+    return out
 WALLS = ("n", "e", "s", "w")
 # what a room is (the scene builder's labels, its colour and its built-ins; optional): Japanese homes first
 ROOM_KINDS = ("genkan", "corridor", "ldk", "living", "dining", "kitchen", "washitsu", "bedroom", "service", "kids",
@@ -239,6 +258,55 @@ def level_of(story, node):
     return levels[0] if levels else None
 
 
+TIMES = ("day", "dusk", "night")       # a scene's time of day (STORY_FORMAT §3.1): Light Kit's Day, Dusk and Night in Unreal
+TIME_DEFAULT = "night"                  # game.time when unset: the studio's dark interiors (the importer's held exposure)
+
+
+def flow_outs(story, nid):
+    """Where the flow can go from a node: its next, its options, a timed stitch's fail and the interrupts during it."""
+    flow = story.get("flow", {})
+    n = flow.get(nid) or {}
+    out = [n["next"]] if n.get("next") else []
+    out += [o["to"] for o in n.get("options", []) if o.get("to")]
+    if n.get("type") == "stitch":
+        st = story.get("stitches", {}).get(n.get("ref")) or {}
+        if (st.get("timer") or {}).get("fail"):
+            out.append(st["timer"]["fail"])
+        for it in story.get("interrupts", []):
+            during = it.get("during", "all")
+            if it.get("to") and (during == "all" or n.get("ref") in (during or [])):
+                out.append(it["to"])
+    return out
+
+
+def flow_times(story):
+    """Each flow node's time of day: a scene's own `time`, else the time it was when the flow got there (the scene it
+    branched from, back to game.time). {nid: {"time", "from" (the scene node that set it, or "game"), "own" (the
+    scene sets it), "paths" (every time the paths into it bring, sorted)}}, the shortest path's time first; a node no
+    path reaches isn't in it."""
+    flow, scenes = story.get("flow", {}), story.get("scenes", {})
+    game = story.get("game", {})
+    came = {}                                           # nid -> {time: from}, in the order the paths found them
+    todo, i = [(game.get("start"), game.get("time") or TIME_DEFAULT, "game")], 0
+    while i < len(todo):                                # breadth first: the nearest scene before a node wins
+        nid, t, src = todo[i]
+        i += 1
+        if nid not in flow or t in came.setdefault(nid, {}):
+            continue
+        came[nid][t] = src
+        n = flow[nid]
+        own = (scenes.get(n.get("ref")) or {}).get("time") if n.get("type") == "scene" else None
+        for to in flow_outs(story, nid):
+            todo.append((to, own or t, nid if own else src))
+    out = {}
+    for nid, seen in came.items():
+        n = flow[nid]
+        own = (scenes.get(n.get("ref")) or {}).get("time") if n.get("type") == "scene" else None
+        t, src = next(iter(seen.items()))
+        out[nid] = {"time": own or t, "from": nid if own else src, "own": bool(own), "paths": sorted(seen)}
+    return out
+
+
 def scene_version(scene):
     """A scene's playing version: its picked variant merged over the scene (clips, stage, cues), or the scene."""
     pick = scene.get("pick")
@@ -339,6 +407,7 @@ EASES = ("linear", "in", "out", "inout", "snap", "hold", "overshoot")
 MODS = {"ease": ("in", "out"), "speed": ("x",), "ramp": ("from", "to"), "hold": ("at", "secs"), "snap": ("at", "secs"),
         "twitch": ("amount",), "trim": ("in", "out"), "loop": ("from", "to", "times"), "mirror": ()}
 FITS = ("stretch", "hold", "loop", "pad", "trim")
+MASKS = ("upper", "arms", "left_arm", "right_arm", "head")   # what a body layer drives (the desk's MASKS, motion.js)
 MOODS = ("intimate", "dread", "panic", "reveal", "calm", "grief", "chase", "aftermath")
 VOICES = ("says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly",
           "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums")   # docs/VOICES.md

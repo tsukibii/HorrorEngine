@@ -13,6 +13,14 @@ const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const URL = process.env.DESK_URL || "http://127.0.0.1:8780/";
 const ROOT = path.resolve(__dirname, "../..");
 const SCRATCH = "Zz_builder_test";
+const png = rgb => {                    // a 4x4 PNG of one colour (a scratch map for the shelf)
+  const W = 4, raw = Buffer.alloc((W * 3 + 1) * W);
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) rgb.forEach((v, k) => { raw[y * (W * 3 + 1) + 1 + x * 3 + k] = v; });
+  const crc = b => { let c = ~0; for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = c >>> 1 ^ (0xedb88320 & -(c & 1)); } return ~c >>> 0; };
+  const chunk = (t, d) => { const td = Buffer.concat([Buffer.from(t), d]), l = Buffer.alloc(4), c = Buffer.alloc(4); l.writeUInt32BE(d.length); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(W, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", require("zlib").deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+};
 
 (async () => {
   const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
@@ -28,6 +36,7 @@ const SCRATCH = "Zz_builder_test";
   // a scratch game to save into
   const made = await (await fetch(URL + "api/new/" + SCRATCH, { method: "POST" })).json();
   if (!(made.games || []).includes(SCRATCH)) throw new Error("couldn't make the scratch game: " + JSON.stringify(made));
+  let setDir = null;
   try {
     await page.goto(URL + "builder.html");
     await page.waitForFunction(() => window.__builderReady, null, { timeout: 60000 });
@@ -315,7 +324,37 @@ const SCRATCH = "Zz_builder_test";
       if (shots) await pp.screenshot({ path: path.join(shots, "pbr_shelf.png") });
       await pp.close();
     }
+
+    // the scene builder's PBR button opens the same shelf, its way back to the builder; a set put on the shelf while
+    // it's open is in the builder's Look pickers when it comes back, and on a room's floor in the walk view (its packed
+    // map as roughness and metal); the kit maker's button too, its way back to the kit maker
+    const SET = "zz_buildertest_tiles", setRef = "pbr/" + SET;
+    await page.evaluate(() => { const B = window.B; B.sel = { room: B.model.rooms.find(r => r.kind !== "stairs").id }; window.builder.changed(false); });
+    setDir = path.join(shelf.root, SET); fs.mkdirSync(setDir, { recursive: true });
+    for (const [k, rgb] of [["albedo", [190, 120, 70]], ["normal-dx", [128, 128, 255]], ["arm", [255, 150, 0]]]) fs.writeFileSync(path.join(setDir, `${SET}_${k}.png`), png(rgb));
+    const [pop] = await Promise.all([ctx.waitForEvent("page"), page.click("#pbrShelf", { noWaitAfter: true })]);
+    pop.on("pageerror", e => errors.push("pbr from the builder: " + e.message));
+    await pop.waitForFunction(r => window.__pbr && window.__pbr.S.sets[r], setRef, { timeout: 30000 });
+    const back = await pop.evaluate(() => [location.search, document.querySelector("header a").getAttribute("href")]);
+    await pop.close();
+    await page.bringToFront();
+    await page.evaluate(() => window.builder.refreshLibrary());
+    await page.waitForFunction(r => [...document.querySelectorAll("#props select option")].some(o => o.value === r), setRef, { timeout: 30000 });
+    await page.evaluate(r => { const B = window.B, room = B.model.rooms.find(o => o.id === B.sel.room); room.extra.look = { floor: r }; window.builder.changed(false); }, setRef);
+    const worn = await page.waitForFunction(r => { let hit = null; window.__builderStage.scene.traverse(o => {
+      const m = o.isMesh && o.material; if (m && m.map && (m.map.image || {}).src && m.map.image.src.includes(r)) hit = { metal: !!m.metalnessMap, rough: !!m.roughnessMap, dx: m.normalScale.y < 0 }; });
+      return hit; }, SET, { timeout: 30000 }).then(h => h.jsonValue());
+    const km2 = await ctx.newPage();
+    await km2.goto(URL + "kit.html"); await km2.waitForFunction(() => window.__kitReady, null, { timeout: 60000 });
+    const [kpop] = await Promise.all([ctx.waitForEvent("page"), km2.click("#pbrShelf", { noWaitAfter: true })]);
+    await kpop.waitForFunction(() => window.__pbr && Object.keys(window.__pbr.S.sets).length, null, { timeout: 30000 });
+    const kback = await kpop.evaluate(() => [document.querySelector("header a").getAttribute("href"), document.querySelector("header a").textContent]);
+    await kpop.close(); await km2.close();
+    console.log("pbr buttons", JSON.stringify({ back, worn, kback }));
+    if (back[0] !== "?from=builder" || back[1] !== "builder.html" || !worn.metal || !worn.rough || !worn.dx || kback[0] !== "kit.html" || kback[1] !== "kit maker")
+      fail("the PBR buttons: " + JSON.stringify({ back, worn, kback }));
   } finally {
+    if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
     for (const f of fs.existsSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) ? fs.readdirSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) : [])
       if (f.startsWith("hinge_test_hinge_")) fs.rmSync(path.join(ROOT, "Content/Studio/Library/meshes/local", f));
     const li = path.join(ROOT, "Content/Studio/Library/index/local.json");

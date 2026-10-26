@@ -56,7 +56,10 @@ def checks(game):
     for tool in ("story_check.py", "level_check.py"):
         r = subprocess.run([sys.executable, str(ROOT / "tools" / tool), "--game", game],
                            capture_output=True, text=True, encoding="utf-8")
-        out.append((r.stdout + r.stderr).strip().splitlines()[-1] if (r.stdout + r.stderr).strip() else tool)
+        lines = (r.stdout + r.stderr).strip().splitlines()
+        if r.returncode:                                    # what to fix, not only the verdict
+            out += [ln for ln in lines if ln.startswith("ERROR")][:25]
+        out.append(lines[-1] if lines else tool)
         ok = ok and r.returncode == 0
     return ok, out
 

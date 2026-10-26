@@ -93,11 +93,12 @@ Format 3, with `story_check` and STORY_FORMAT.md in the same commit:
 
 ## W5. The Kimodo helper (here)
 
-- [ ] `tools/director/kimodo.html`: every motion the game needs, scene by scene and clip by clip: the scene's rules,
+- [x] `tools/director/kimodo.html`: every motion the game needs, scene by scene and clip by clip: the scene's rules,
   each segment's prompt, length (s and frames), save-as name (copy buttons), constraints (a top-down sketch of the
   root path through the stage marks, the key poses), tier, and whether the file has been made.
-- [ ] `motion.py import`: finds the saved motions by name and puts them on their clips (`file` per segment); the desk
-  chains them with bridges.
+- [x] `motion.py import`: finds the saved motions by name and puts them on their clips (`file` per segment); the desk
+  chains them with inertial blends (2026-10-24: Send to Studio by a segment's name links it too, and the desk's clip
+  card edits the segments; docs/DESK_REVIEW.md).
 
 ## W6. A blocking overlay in Kimodo's demo (local)
 

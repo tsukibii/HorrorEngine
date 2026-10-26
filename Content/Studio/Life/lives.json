@@ -1,0 +1,215 @@
+{
+ "_note": "The lives of the little things (docs/IMMERSION.md): each one's states in order (the first is where it starts), how long a state lasts (secs) and what comes after it (next), what the player can do in it (acts), what follows another thing's state (follows: the thing it stands on), and what the desk shows and plays in it (fx, sound; enter: once, as it starts). keep: the time spent in that state adds up across visits (a cigarette relit burns on from where it was). ready: a pour can be taken from it. tools/director/life.js and Content/Python/storykit/life.py read it; DESK checks every fx and sound is one the desk has.",
+ "version": 1,
+ "by_kit": {
+  "kettle": {"style": {"jug": "kettle", "gooseneck": "kettle", "whistling": "whistling_kettle", "tetsubin": "tetsubin"}},
+  "hob": {"style": {"ceramic": "hob", "induction": "hob", "gas": "gas_hob"}},
+  "pot": "pot",
+  "cup": {"style": {"takeaway": "coffee"}, "else": "cup"},
+  "teapot": "teapot",
+  "ashtray": {"resting": {"true": "cigarette"}},
+  "cigarette": {"pose": {"lying": "cigarette"}},
+  "lighter": {"pose": {"standing": "lighter"}},
+  "clock": "clock",
+  "rice_cooker": "rice_cooker",
+  "coil": "coil",
+  "incense": "incense",
+  "phone": "phone",
+  "tap": "tap",
+  "candle": "candle",
+  "panel": {"face": {"screen": "tv"}}
+ },
+ "by_preset": {"fridge": "fridge"},
+ "settings": {
+  "secs": "how long its states last, {state: seconds}, over the life's own",
+  "acts": "false: the player can't touch it",
+  "liquid": "what a cup or a teapot holds",
+  "from": "the kettle or teapot a cup or a teapot is filled from",
+  "rings": "a hob's rings that are on, [1, 3]",
+  "level": "the number a hob's digits show",
+  "light": "a light (use: light) it lights while it burns"
+ },
+ "liquids": {"tea": "#9a5a22", "green_tea": "#a3a24a", "coffee": "#2e1a10", "water": "#c9dde3", "milk": "#f1ece0", "barley_tea": "#7a4a1c", "soup": "#c08a3a"},
+ "lives": {
+  "kettle": {
+   "label": "an electric kettle",
+   "states": [
+    {"id": "off", "acts": [{"label": "Switch on", "to": "heating"}]},
+    {"id": "heating", "secs": 30, "next": "boiling", "acts": [{"label": "Switch off", "to": "off"}], "enter": [{"sound": "switch"}],
+     "fx": [{"fx": "led", "at": "led", "color": "#3c8cff"}, {"fx": "digits", "at": "lcd", "value": [21, 96], "unit": "°"}, {"fx": "steam", "at": "spout", "rate": [0, 0.35], "ease": 3}],
+     "sound": [{"sound": "kettle", "level": [0.15, 0.8]}]},
+    {"id": "boiling", "secs": 8, "next": "boiled", "ready": true, "acts": [{"label": "Switch off", "to": "off"}],
+     "fx": [{"fx": "led", "at": "led", "color": "#3c8cff"}, {"fx": "digits", "at": "lcd", "value": [98, 100], "unit": "°"}, {"fx": "steam", "at": "spout", "rate": 1}, {"fx": "steam", "at": "lid", "rate": 0.35}],
+     "sound": [{"sound": "kettle_boil"}]},
+    {"id": "boiled", "secs": 150, "next": "off", "ready": true, "acts": [{"label": "Switch on", "to": "heating"}], "enter": [{"sound": "click"}],
+     "fx": [{"fx": "digits", "at": "lcd", "value": [100, 82], "unit": "°"}, {"fx": "steam", "at": "spout", "rate": [0.7, 0], "ease": 0.5}]}
+   ]
+  },
+  "whistling_kettle": {
+   "label": "a kettle on the hob",
+   "follows": {"on": "heating", "hot": "cooling", "off": "cooling"},
+   "states": [
+    {"id": "off"},
+    {"id": "heating", "secs": 45, "next": "whistling", "fx": [{"fx": "steam", "at": "spout", "rate": [0, 0.4], "ease": 3}], "sound": [{"sound": "kettle", "level": [0.05, 0.5]}]},
+    {"id": "whistling", "ready": true, "fx": [{"fx": "steam", "at": "spout", "rate": 1}], "sound": [{"sound": "whistle"}]},
+    {"id": "cooling", "secs": 40, "next": "off", "ready": true, "fx": [{"fx": "steam", "at": "spout", "rate": [0.6, 0]}]}
+   ]
+  },
+  "tetsubin": {
+   "label": "a tetsubin on the hob",
+   "follows": {"on": "heating", "hot": "cooling", "off": "cooling"},
+   "states": [
+    {"id": "off"},
+    {"id": "heating", "secs": 60, "next": "boiling", "fx": [{"fx": "steam", "at": "spout", "rate": [0, 0.3], "ease": 3}], "sound": [{"sound": "kettle", "level": [0.05, 0.35]}]},
+    {"id": "boiling", "ready": true, "fx": [{"fx": "steam", "at": "spout", "rate": 0.8}, {"fx": "steam", "at": "lid", "rate": 0.25}], "sound": [{"sound": "sing"}]},
+    {"id": "cooling", "secs": 60, "next": "off", "ready": true, "fx": [{"fx": "steam", "at": "spout", "rate": [0.5, 0]}]}
+   ]
+  },
+  "hob": {
+   "label": "a hob",
+   "settings": ["rings", "level"],
+   "states": [
+    {"id": "off", "acts": [{"label": "Turn on", "to": "on"}]},
+    {"id": "on", "acts": [{"label": "Turn off", "to": "hot"}], "enter": [{"sound": "beep"}],
+     "fx": [{"fx": "glow", "at": "ring", "level": [0, 1], "secs": 6}, {"fx": "digits", "at": "digit", "text": "level"}, {"fx": "led", "at": "led", "color": "#ff2a1a"}],
+     "sound": [{"sound": "hum", "level": 0.25}]},
+    {"id": "hot", "secs": 90, "next": "off", "acts": [{"label": "Turn on", "to": "on"}], "enter": [{"sound": "beep"}],
+     "fx": [{"fx": "glow", "at": "ring", "level": [1, 0], "secs": 25}, {"fx": "digits", "at": "digit", "text": "H"}]}
+   ]
+  },
+  "gas_hob": {
+   "label": "a gas hob",
+   "settings": ["rings"],
+   "states": [
+    {"id": "off", "acts": [{"label": "Turn on", "to": "on"}]},
+    {"id": "on", "acts": [{"label": "Turn off", "to": "off"}], "enter": [{"sound": "igniter"}],
+     "fx": [{"fx": "flame", "at": "ring", "kind": "gas"}], "sound": [{"sound": "gas"}]}
+   ]
+  },
+  "pot": {
+   "label": "a pot",
+   "follows": {"on": "heating", "hot": "cooling", "off": "cooling"},
+   "states": [
+    {"id": "cold"},
+    {"id": "heating", "secs": 40, "next": "simmering", "fx": [{"fx": "steam", "at": "steam", "rate": [0, 0.3], "ease": 2}], "sound": [{"sound": "bubble", "level": [0, 0.2]}]},
+    {"id": "simmering", "secs": 30, "next": "boiling", "fx": [{"fx": "steam", "at": "steam", "rate": 0.5}, {"fx": "steam", "at": "vent", "rate": 0.5}], "sound": [{"sound": "bubble", "level": 0.4}]},
+    {"id": "boiling", "fx": [{"fx": "steam", "at": "steam", "rate": 1}, {"fx": "steam", "at": "vent", "rate": 1}, {"fx": "rattle", "at": "lid"}], "sound": [{"sound": "boil"}]},
+    {"id": "cooling", "secs": 60, "next": "cold", "fx": [{"fx": "steam", "at": "steam", "rate": [0.4, 0]}]}
+   ]
+  },
+  "cup": {
+   "label": "a cup",
+   "settings": ["liquid", "from"],
+   "states": [
+    {"id": "empty", "acts": [{"label": "Pour", "to": "filling", "needs": "from"}]},
+    {"id": "filling", "secs": 4, "next": "full", "fx": [{"fx": "fill", "level": [0, 0.82]}, {"fx": "pour"}], "sound": [{"sound": "pour"}]},
+    {"id": "full", "secs": 300, "next": "cold", "acts": [{"label": "Drink", "to": "drunk"}],
+     "fx": [{"fx": "fill", "level": 0.82}, {"fx": "steam", "at": "rim", "rate": [0.3, 0.06], "fine": true}]},
+    {"id": "cold", "acts": [{"label": "Drink", "to": "drunk"}], "fx": [{"fx": "fill", "level": 0.82}]},
+    {"id": "drunk", "fx": [{"fx": "fill", "level": 0.06}]}
+   ]
+  },
+  "coffee": {
+   "label": "a takeaway coffee",
+   "states": [
+    {"id": "hot", "secs": 600, "next": "cold", "fx": [{"fx": "steam", "at": "sip", "rate": [0.35, 0.05], "fine": true}]},
+    {"id": "cold"}
+   ]
+  },
+  "teapot": {
+   "label": "a teapot",
+   "settings": ["liquid", "from"],
+   "states": [
+    {"id": "empty", "acts": [{"label": "Fill it", "to": "full", "needs": "from"}]},
+    {"id": "full", "secs": 420, "next": "cold", "ready": true, "enter": [{"sound": "pour"}], "fx": [{"fx": "steam", "at": "spout", "rate": [0.3, 0.05], "fine": true}, {"fx": "steam", "at": "lid", "rate": [0.15, 0], "fine": true}]},
+    {"id": "cold", "ready": true}
+   ]
+  },
+  "cigarette": {
+   "label": "a cigarette",
+   "states": [
+    {"id": "unlit"},
+    {"id": "lit", "secs": 420, "next": "out", "keep": true, "acts": [{"label": "Put it out", "to": "out"}],
+     "fx": [{"fx": "burn", "at": "tip"}, {"fx": "ember", "at": "tip"}, {"fx": "smoke", "at": "tip", "rate": 1}], "sound": [{"sound": "crackle", "level": 0.08}]},
+    {"id": "out", "fx": [{"fx": "burn", "at": "tip"}, {"fx": "smoke", "at": "tip", "rate": [0.6, 0], "secs": 20}]}
+   ]
+  },
+  "lighter": {
+   "label": "a lighter",
+   "states": [
+    {"id": "off", "acts": [{"label": "Flick it", "to": "lit"}]},
+    {"id": "lit", "secs": 6, "next": "off", "enter": [{"sound": "flick"}], "fx": [{"fx": "flame", "at": "flame", "kind": "lighter"}]}
+   ]
+  },
+  "candle": {
+   "label": "a candle",
+   "settings": ["light"],
+   "states": [
+    {"id": "lit", "secs": 3600, "next": "out", "keep": true, "acts": [{"label": "Blow it out", "to": "out"}], "fx": [{"fx": "flame", "at": "flame", "kind": "candle"}, {"fx": "light"}]},
+    {"id": "out", "enter": [{"sound": "blow"}], "fx": [{"fx": "smoke", "at": "flame", "rate": [0.7, 0], "secs": 6}]}
+   ]
+  },
+  "coil": {
+   "label": "a mosquito coil",
+   "states": [
+    {"id": "lit", "secs": 7200, "next": "out", "keep": true, "acts": [{"label": "Put it out", "to": "out"}], "fx": [{"fx": "ember", "at": "tip"}, {"fx": "smoke", "at": "smoke", "rate": 0.6}]},
+    {"id": "out"}
+   ]
+  },
+  "incense": {
+   "label": "incense",
+   "states": [
+    {"id": "lit", "secs": 1500, "next": "out", "keep": true, "acts": [{"label": "Put it out", "to": "out"}], "fx": [{"fx": "ember", "at": "tip"}, {"fx": "smoke", "at": "tip", "rate": 0.5}]},
+    {"id": "out"}
+   ]
+  },
+  "clock": {
+   "label": "a clock",
+   "states": [
+    {"id": "running", "keep": true, "fx": [{"fx": "hands"}, {"fx": "pendulum"}], "sound": [{"sound": "tick"}]},
+    {"id": "stopped", "fx": [{"fx": "hands"}]}
+   ]
+  },
+  "rice_cooker": {
+   "label": "a rice cooker",
+   "states": [
+    {"id": "off", "acts": [{"label": "Start it", "to": "cooking"}]},
+    {"id": "cooking", "secs": 90, "next": "warm", "acts": [{"label": "Cancel", "to": "off"}], "enter": [{"sound": "beep"}],
+     "fx": [{"fx": "led", "at": "led_cook", "color": "#ff8a1a"}, {"fx": "digits", "at": "lcd", "count": "down"}, {"fx": "steam", "at": "vent", "rate": [0.15, 0.8], "ease": 2}], "sound": [{"sound": "bubble", "level": [0.05, 0.25]}]},
+    {"id": "warm", "acts": [{"label": "Switch off", "to": "off"}], "enter": [{"sound": "tune"}],
+     "fx": [{"fx": "led", "at": "led_warm", "color": "#ff8a1a"}, {"fx": "digits", "at": "lcd", "text": "保温"}, {"fx": "steam", "at": "vent", "rate": [0.4, 0.05], "fine": true}]}
+   ]
+  },
+  "phone": {
+   "label": "a phone",
+   "states": [
+    {"id": "off", "acts": [{"label": "Look", "to": "lit"}]},
+    {"id": "lit", "secs": 12, "next": "off", "fx": [{"fx": "screen", "at": "screen", "mode": "lit"}]},
+    {"id": "ringing", "acts": [{"label": "Answer", "to": "lit"}], "fx": [{"fx": "screen", "at": "screen", "mode": "call"}, {"fx": "led", "at": "led", "color": "#4ade80", "blink": 1}, {"fx": "buzz"}], "sound": [{"sound": "ring"}]}
+   ]
+  },
+  "tap": {
+   "label": "a tap",
+   "states": [
+    {"id": "off", "acts": [{"label": "Turn it on", "to": "running"}]},
+    {"id": "dripping", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "drip", "at": "spout", "every": 2.6}], "sound": [{"sound": "drip", "every": 2.6}]},
+    {"id": "running", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "stream", "at": "spout"}], "sound": [{"sound": "water"}]}
+   ]
+  },
+  "tv": {
+   "label": "a TV",
+   "states": [
+    {"id": "off", "acts": [{"label": "Turn it on", "to": "on"}]},
+    {"id": "static", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "screen", "mode": "static"}], "sound": [{"sound": "static"}]},
+    {"id": "on", "acts": [{"label": "Turn it off", "to": "off"}], "fx": [{"fx": "screen", "mode": "on"}], "sound": [{"sound": "murmur", "level": 0.3}]}
+   ]
+  },
+  "fridge": {
+   "label": "a fridge",
+   "states": [
+    {"id": "on", "sound": [{"sound": "hum", "level": 0.35}]},
+    {"id": "off"}
+   ]
+  }
+ }
+}

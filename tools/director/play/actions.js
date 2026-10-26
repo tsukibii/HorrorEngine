@@ -13,13 +13,27 @@ export async function runAll(acts, rt) { for (const a of acts || []) { if (!rt.a
 const lineSecs = t => Math.min(6, 1.2 + String(t || "").length / 14);
 register("action", "objective", { run: (v, a, rt) => rt.hud.objective(v) });
 register("action", "think", { run: (v, a, rt) => rt.hud.line(v, "", lineSecs(v)) });
-register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who || "", lineSecs(a.line || v)) });
+register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? ((rt.story.cast || {})[a.who] || {}).name || a.who : "", lineSecs(a.line || v)) });
+// ask: a question with 2 to 4 answers, floating beside `who` (or at `on`, a thing; else under the reticle) while the
+// question (`line`, spoken, or `text`, a thought) is the footer's line. Each answer's `do` runs, and `answered` is heard
+// ({"answered": ask id, "option": its id}). `secs` times it; `default` is taken when time runs out
+register("action", "ask", {
+  run: async (v, a, rt) => {
+    const opts = a.options || [], l = a.line && (rt.story.lines || {})[a.line];
+    const i = await rt.choose({ prompt: l ? l.en || l.ja : a.text, ja: l && l.en ? l.ja : null, who: a.who || (l && l.who), on: a.on,
+      options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), secs: a.secs, def: Math.max(0, opts.findIndex(o => o.id === a.default)) });
+    const o = opts[i]; if (!o) return;
+    rt.emit({ type: "answered", ask: v, option: o.id });
+    await runAll(o.do, rt);
+  },
+});
 register("action", "flag", { run: (v, a, rt) => rt.setFlag(v) });
 register("action", "unflag", { run: (v, a, rt) => rt.flags.delete(v) });
 register("action", "give", { run: (v, a, rt) => rt.give(v) });
 register("action", "take", { run: (v, a, rt) => rt.items.delete(v) });
 register("action", "karma", { run: (v, a, rt) => rt.run && addKarma(rt.run.karma, v) });
 register("action", "count", { run: (v, a, rt) => { if (!rt.run) return; const c = rt.run.counters; c[v] = a.set !== undefined ? +a.set : (c[v] || 0) + +(a.add ?? 1); } });
+register("action", "state", { run: (v, a, rt) => rt.setState(v, a.to) });      // a little thing to a state: {"state": "kettle", "to": "heating"}
 register("action", "show", { run: (v, a, rt) => rt.setVisible(v, true) });
 register("action", "hide", { run: (v, a, rt) => rt.setVisible(v, false) });
 register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });

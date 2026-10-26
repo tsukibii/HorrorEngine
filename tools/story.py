@@ -75,9 +75,12 @@ def write_rows(rows, out):
         print(f"wrote {out} ({len(rows) - 1} rows)")
 
 
+TIME_MARK = {"day": "☀ day", "dusk": "◐ dusk", "night": "☾ night"}
+
+
 def flow_view(story):
     flow, start = story["flow"], story["game"]["start"]
-    seen = set()
+    seen, times = set(), L.flow_times(story)
 
     def node(nid, depth):
         pad = "  " * depth
@@ -95,6 +98,9 @@ def flow_view(story):
                 secs = sum(L.clip_secs(c) for c in ver.get("clips", []))
                 vs = ref.get("variants")
                 extra = f"  {len(ver.get('clips', []))} clips, {secs:.0f} s" + (f", variants {list(vs)} pick {ref.get('pick')}" if vs else "")
+                ft = times.get(nid)                     # its time of day: set here, or kept from the scene before
+                if ft:
+                    extra += "  " + (TIME_MARK[ft["time"]] if ft["own"] else " or ".join(ft["paths"]) + " (kept)")
             print(f"{pad}{nid}  [{t}] {ref.get('title', n['ref'])}{extra}")
             if t == "stitch":
                 tm = ref.get("timer")

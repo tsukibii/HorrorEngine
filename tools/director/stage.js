@@ -6,7 +6,15 @@ import * as M from "./motion.js";
 import * as K3 from "./kit3.js";
 import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
+import { LifeFX } from "./lifefx.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
+const Y_UP = new THREE.Vector3(0, 1, 0);
+// which way a body faces (radians about up, 0 toward +z): square to the line from its right hip to its left (Kimodo's
+// SOMA legs, or the previs thighs)
+function facing(p) {
+  const l = p["soma:LeftLeg"] || p.thigh_l, r = p["soma:RightLeg"] || p.thigh_r; if (!l || !r) return 0;
+  const lv = new THREE.Vector3().subVectors(l, r); lv.y = 0; const f = new THREE.Vector3().crossVectors(lv, Y_UP); return Math.atan2(f.x, f.z);
+}
 
 // The studio's CC0 library (Content/Studio/Library, docs/ASSETS.md): what's been fetched, from /api/library. A prop
 // tagged art:<ref> shows that mesh in its block (the block stays, invisible, for the visibility test); mat:<ref> puts
@@ -28,8 +36,9 @@ function libMesh(ref) {
 }
 export const encPath = p => p.split("/").map(encodeURIComponent).join("/");
 function libMaterial(ref) {
-  if (matCache[ref]) return matCache[ref];
-  const meta = LIBRARY.textures[ref], tl = new THREE.TextureLoader(), maps = meta.maps || {};
+  const meta = LIBRARY.textures[ref], key = `${ref}|${meta.stamp || ""}|${meta.orm || ""}|${meta.normal || ""}|${meta.tile_m || 1}`;   // a set changed on the shelf: a new material
+  if (matCache[key]) return matCache[key];
+  const tl = new THREE.TextureLoader(), maps = meta.maps || {};
   const tex = (k, srgb) => {
     if (!maps[k]) return null;
     const t = tl.load(meta.base ? `${encPath(meta.base)}/${encodeURIComponent(maps[k])}?s=${meta.stamp || ""}` : `/library/textures/${ref}/${maps[k]}`);   // base: a PBR shelf set
@@ -38,10 +47,16 @@ function libMaterial(ref) {
     return t;
   };
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
-  m.map = tex("albedo", true); m.normalMap = tex("normal"); m.roughnessMap = tex("rough"); m.aoMap = tex("ao");
+  m.map = tex("albedo", true); m.normalMap = tex("normal"); m.roughnessMap = tex("rough"); m.metalnessMap = tex("metal"); m.aoMap = tex("ao");
+  if (meta.orm && meta.base) {         // a packed map (Unreal's ORM, Poly Haven's ARM): AO red, roughness green, metal blue
+    const t = !(m.roughnessMap && m.metalnessMap && m.aoMap) && tl.load(`${encPath(meta.base)}/${encodeURIComponent(meta.orm)}?s=${meta.stamp || ""}`);
+    if (t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; m.roughnessMap ||= t; m.metalnessMap ||= t; m.aoMap ||= t; }
+  }
+  if (m.metalnessMap) m.metalness = 1;
+  m.alphaMap = tex("opacity"); if (m.alphaMap) m.alphaTest = 0.5;       // a net, a grille: cut out where it's dark
   if (meta.normal === "dx" && m.normalMap) m.normalScale.set(1, -1);     // DirectX normals: green flipped
   m.userData.tile = meta.tile_m || 1;
-  return (matCache[ref] = m);
+  return (matCache[key] = m);
 }
 function tileUVs(geo, w, h, d, tile) {     // a box's UVs in metres / tile, so a texture keeps its real size on any block
   const uv = geo.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];  // px nx py ny pz nz
@@ -86,6 +101,45 @@ export function shotFor(d) { return ["ecu", "cu", "mcu", "ms", "fs", "ws"].find(
 export const SEAM_SECS = { none: 0, blink: 0.2, glance: 1, flicker: 0.4, occlude: 0.8, cutaway: 1.5, turn: 0, stumble: 1, dip: 2, jcut: 0, heartbeat: 0.6 };
 
 export const s2t = (x, y, z) => new THREE.Vector3(x, z, -y);       // story (x east, y north, z up) -> three (y up)
+
+// the time of day (STORY_FORMAT §3.1; storylib's TIMES, flow_outs, flow_times): a scene's own `time`, else the time it
+// was when the flow got there, from the scene it branched from back to game.time
+export const TIMES = ["day", "dusk", "night"], TIME_DEFAULT = "night";
+export function flowOuts(story, nid) {
+  const n = (story.flow || {})[nid] || {}, out = n.next ? [n.next] : [];
+  for (const o of n.options || []) if (o.to) out.push(o.to);
+  if (n.type === "stitch") {
+    const st = (story.stitches || {})[n.ref] || {};
+    if (st.timer && st.timer.fail) out.push(st.timer.fail);
+    for (const it of story.interrupts || []) { const during = it.during || "all"; if (it.to && (during === "all" || during.includes(n.ref))) out.push(it.to); }
+  }
+  return out;
+}
+export function flowTimes(story) {        // {nid: {time, from (the scene node that set it, or "game"), own, paths}}
+  const flow = story.flow || {}, scenes = story.scenes || {}, game = story.game || {}, came = {};
+  const ownOf = n => n.type === "scene" ? ((scenes[n.ref] || {}).time || null) : null;
+  const todo = [[game.start, game.time || TIME_DEFAULT, "game"]];
+  for (let i = 0; i < todo.length; i++) {   // breadth first: the nearest scene before a node wins
+    const [nid, t, src] = todo[i]; if (!flow[nid]) continue;
+    const seen = came[nid] || (came[nid] = new Map()); if (seen.has(t)) continue; seen.set(t, src);
+    const own = ownOf(flow[nid]);
+    for (const to of flowOuts(story, nid)) todo.push([to, own || t, own ? nid : src]);
+  }
+  const out = {};
+  for (const [nid, seen] of Object.entries(came)) {
+    const own = ownOf(flow[nid]), [t, src] = seen.entries().next().value;
+    out[nid] = { time: own || t, from: own ? nid : src, own: !!own, paths: [...seen.keys()].sort() };
+  }
+  return out;
+}
+// how each time looks on the desk, as Light Kit does in Unreal: the sky (seen through the windows, and the fog), the
+// ambient and the sky's fill, and a soft light in each window of the level (its colour, candela a square metre of
+// glass, its reach). Night is a deep blue, never black (DECISIONS 2026-10-23)
+export const TIME_LOOK = {
+  day:   { sky: 0xb7c6d6, amb: [0xd6dae2, 0.65], hemi: [0xdce7f5, 0x5a4a3a, 0.8], win: [0xeef3ff, 20, 8] },
+  dusk:  { sky: 0x2e2030, amb: [0xa08c88, 0.32], hemi: [0xd8a07e, 0x1a1410, 0.38], win: [0xffb27a, 6, 6] },
+  night: { sky: 0x070a16, amb: [0x7a86aa, 0.22], hemi: [0x6474ac, 0x0c0a12, 0.24], win: [0x8fa8ff, 1.2, 5] },
+};
 const yawToThree = rot => (rot + 90) * Math.PI / 180;               // character +Z faces the spot's rot
 
 // how long a Japanese line takes (storylib.ja_secs): kana a mora, kanji about 1.7, pauses for punctuation, at 6.5 morae a second
@@ -181,6 +235,7 @@ export class Figure {
 // ---- the stage --------------------------------------------------------------------------------------------------
 export class Stage {
   static SOMA = null;            // Kimodo's skeleton (names, parents): the look layer turns SOMA joints too
+  static LIVES = null;           // the little things' lives (lives.json): a world with some gets their effects (lifefx.js)
   static showTrackers = true;
   constructor(container, lib) {
     this.lib = lib;
@@ -192,8 +247,8 @@ export class Stage {
     this.scene.background = new THREE.Color(0x050506);
     this.scene.fog = new THREE.Fog(0x050506, 4, 16);
     this.camera = new THREE.PerspectiveCamera(PLAYER_FOV, 16 / 9, 0.05, 60);
-    this.scene.add(new THREE.AmbientLight(0x8a8f9a, 0.22));
-    this.scene.add(new THREE.HemisphereLight(0x9aa0b0, 0x1a1410, 0.25));
+    this.amb = new THREE.AmbientLight(0x8a8f9a, 0.22); this.hemi = new THREE.HemisphereLight(0x9aa0b0, 0x1a1410, 0.25);   // set by the time (setTime)
+    this.scene.add(this.amb, this.hemi); this.time = TIME_DEFAULT; this.windows = [];
     this.world = new THREE.Group(); this.scene.add(this.world);
     this.lights = []; this.solid = []; this.cast = {}; this.things = {}; this.level = null;
     this.bodies = {}; this.defaultBody = null;      // loaded body templates by file name (app.js fills them)
@@ -248,7 +303,8 @@ export class Stage {
         if (p.kind === "door" && p.d && p.d.kit) {          // where a kit door turns: its hinge axis, in the block's space
           try {
             const f = KIT.withDefaults(KIT.resolve(p.d.kit, LIBRARY.kit)), pv = KIT.pivotOf(f);
-            m.userData.swing = { pivot: new THREE.Vector3(pv[0], 0, -pv[1]), hinge: f.hinge, slide: f.style === "slide" || f.style === "shoji" || (p.d.swing === "slide"), w: f.size[0] };
+            m.userData.swing = { pivot: new THREE.Vector3(pv[0], 0, -pv[1]), hinge: f.hinge, slide: f.style === "slide" || f.style === "shoji" || (p.d.swing === "slide"), w: f.size[0],
+                                 handleZ: f.handle_z, handleIn: f.handle_in };
           } catch (e) { }
         }
         this.world.add(m); if (!p.tags.includes("hollow") && !hidden) this.solid.push(m);     // a door frame: you see and walk through it
@@ -276,6 +332,28 @@ export class Stage {
       f.group.visible = false;
       this.world.add(f.group); this.cast[cid] = f;
     }
+    this.windows = [];                     // a soft light just inside every window, into the room (Light Kit Window's sky fill)
+    for (const room of ((story.levels || {})[level] || {}).rooms || []) for (const op of room.openings || []) {
+      if (!op.window && !((op.sill || 0) > 0.05)) continue;
+      const [x0, y0, z0] = room.at, [w, d] = room.size;
+      const line = { n: ["y", y0 + d, x0, -1], s: ["y", y0, x0, 1], e: ["x", x0 + w, y0, -1], w: ["x", x0, y0, 1] }[op.wall];
+      if (!line) continue;
+      const [axis, v, lo, inward] = line, along = lo + op.at, z = z0 + (op.sill || 0) + op.h / 2;
+      const at = k => axis === "y" ? [along, v + inward * k, z - (k > 1 ? 0.8 : 0)] : [v + inward * k, along, z - (k > 1 ? 0.8 : 0)];
+      const l = new THREE.SpotLight(0xffffff, 1, 6, 1.1, 1, 1.5);
+      l.position.copy(s2t(...at(0.05))); l.target.position.copy(s2t(...at(2))); l.userData = { window: room.id, area: op.w * op.h };
+      this.world.add(l, l.target); this.windows.push(l);
+    }
+    this.applyTime();
+    if (Stage.LIVES) { this.life = this.life || new LifeFX(this, Stage.LIVES); this.life.attach(); }   // steam, smoke, glows...
+  }
+  setTime(t) { this.time = TIME_LOOK[t] ? t : TIME_DEFAULT; this.applyTime(); }
+  applyTime() {
+    const L = TIME_LOOK[this.time] || TIME_LOOK[TIME_DEFAULT];
+    this.scene.background.set(L.sky); this.scene.fog.color.set(L.sky);
+    this.amb.color.set(L.amb[0]); this.amb.intensity = L.amb[1];
+    this.hemi.color.set(L.hemi[0]); this.hemi.groundColor.set(L.hemi[1]); this.hemi.intensity = L.hemi[2];
+    for (const l of this.windows) { l.color.set(L.win[0]); l.intensity = L.win[1] * l.userData.area; l.distance = L.win[2]; }
   }
 
   bodyFor(c) {
@@ -339,66 +417,143 @@ export class Stage {
     }
   }
 
-  // the body of clip c at local time t (seconds), in its actor's frame
-  clipPose(c, t, dur, files) {
+  // the body of clip c at local time t (seconds), in its actor's frame, starting where `start` puts it ({move, yaw}:
+  // where their last clip left them, startOf; by default only blocking's own carry)
+  clipPose(c, t, dur, files, start = null) {
     const lib = this.lib, body = c.body || {}, h = +((this.story.cast || {})[c.who] || {}).height || 1.7;
-    const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
-    let pos;
-    const file = body.file && files && files[body.file];
-    const segs = (body.segments || []).length && body.segments.every(g => g.file && files && files[g.file]) ? body.segments : null;
-    if (segs) {                                                    // the Kimodo motions made from the shot list, chained
-      pos = this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);
-      if (c._startMove) for (const n in pos) pos[n].add(c._startMove);
-    } else if (file) {
-      const src = M.fitTime(body.fit, M.remap(body.mods, u, dur), dur, file.pos.length / (file.fps || 30));
-      pos = M.sampleBaked(file, src).pos;
-      const k = file.height ? h / file.height : 1;                 // Kimodo's body is 1.76 m: scale to the cast member
-      for (const n in pos) pos[n].multiplyScalar(k);
-      if (c._startMove) for (const n in pos) pos[n].add(c._startMove);   // where the last clip left them (its walk is in the file)
+    const st = start || { move: c._startMove || new THREE.Vector3(), yaw: 0 };
+    let pos = this.ownPose(c, t, dur, files);
+    if (pos) {                                                     // a generated motion: turned and moved to where the actor is
+      if (st.yaw) for (const n in pos) pos[n].applyAxisAngle(Y_UP, st.yaw);
+      for (const n in pos) pos[n].add(st.move);
     } else {
+      const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
       const keys = body.block && body.block.length ? body.block : [{ at: 0, pose: "idle" }];
-      const p = M.evalBlock(lib, keys, M.remap(body.mods, u, dur) * dur, dur, c._startMove);
+      const p = M.evalBlock(lib, keys, M.remap(body.mods, u, dur) * dur, dur, st.move);
+      p.yaw += st.yaw || 0;                                        // facing where a generated turn left them
       const br = Math.sin(t * 2.2) * 0.012;                        // breathing, so nothing is ever a statue
       p.q.spine_02.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), br));
       pos = M.fk(lib, p, h).pos;
     }
+    if ((body.layers || []).length) pos = this.layered(c, pos, t, dur, files, h);
     if ((body.mods || []).some(m => m.type === "mirror")) pos = M.mirrorPositions(pos);
     return pos;
   }
+  // a clip's layers over its body, in order: each a part of the body (its mask) from a made motion or a pose, over its
+  // window of the clip (from..to), faded in and out (a layer at the clip's edge doesn't fade there: the blend does it)
+  layered(c, pos, t, dur, files, h) {
+    const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
+    for (const ly of c.body.layers) {
+      const a = +(ly.from ?? 0), b = +(ly.to ?? 1); if (!(b > a) || u < a || u > b) continue;
+      const ws = (b - a) * dur, lt = (u - a) * dur, fade = +(ly.fade ?? 0.3);
+      let w = +(ly.weight ?? 1);
+      if (a > 0 && fade > 0) w *= M.EASES.inout(Math.min(1, lt / fade));
+      if (b < 1 && fade > 0) w *= M.EASES.inout(Math.min(1, (ws - lt) / fade));
+      if (!(w > 0)) continue;
+      let src = null;
+      if (ly.file && files && files[ly.file]) {
+        const f = files[ly.file], k = f.height ? h / f.height : 1;
+        src = M.sampleBaked(f, M.fitTime(ly.fit || "loop", lt / Math.max(0.001, ws), ws, f.pos.length / (f.fps || 30))).pos;
+        for (const n in src) src[n].multiplyScalar(k);
+      } else if (ly.pose && this.lib.poses[ly.pose]) src = M.fk(this.lib, M.clonePose(this.lib.poses[ly.pose]), h).pos;
+      if (src) pos = M.layerPositions(this.lib, pos, src, ly.mask, w, h, Stage.SOMA);
+    }
+    return pos;
+  }
+  // a generated motion's own frame at local time t (its file, or the shot list's segments chained), scaled to the cast
+  // member, in the clip's own frame (where it starts is clipPose's); null for a blocked clip
+  ownPose(c, t, dur, files) {
+    const body = c.body || {}, h = +((this.story.cast || {})[c.who] || {}).height || 1.7;
+    const u = Math.min(1, Math.max(0, t / Math.max(0.001, dur)));
+    const file = body.file && files && files[body.file];
+    const segs = (body.segments || []).length && body.segments.some(g => g.file && files && files[g.file]) ? body.segments : null;
+    if (segs) return this.chainPose(segs, M.remap(body.mods, u, dur), dur, files, body.fit, h);   // the Kimodo motions made from the shot list, chained (any not made yet held)
+    if (!file) return null;
+    const src = M.fitTime(body.fit, M.remap(body.mods, u, dur), dur, file.pos.length / (file.fps || 30));
+    const pos = M.sampleBaked(file, src).pos, k = file.height ? h / file.height : 1;   // Kimodo's body is 1.76 m: scale to the cast member
+    for (const n in pos) pos[n].multiplyScalar(k);
+    return pos;
+  }
+  // how far a generated motion has carried its actor by local time t: the hips' travel over the floor and the turn of
+  // the body (the legs' line), from its first frame; null for a blocked clip (blocking moves to marks: evalBlock)
+  travel(c, t, dur, files) {
+    const a = this.ownPose(c, 0, dur, files); if (!a) return null;
+    const b = this.ownPose(c, t, dur, files), hips = p => p["soma:Hips"] || p.pelvis;
+    const move = hips(b).clone().sub(hips(a)); move.y = 0;
+    return { move, yaw: facing(b) - facing(a) };
+  }
+  // where an actor stands and faces as a clip begins: where their last clip left them when it was cut ({move: metres
+  // in the actor's frame, yaw}): a generated walk carries them on, turning with it; blocking ends where its keys put
+  // them. Cached on the timeline
+  startOf(tl, seg, files) {
+    const cache = tl._starts || (Object.defineProperty(tl, "_starts", { value: new Map(), enumerable: false }), tl._starts);
+    if (cache.has(seg)) return cache.get(seg);
+    const mine = tl.segs.filter(s => s.type === "clip" && s.clip.who === seg.clip.who), prev = mine[mine.indexOf(seg) - 1];
+    let st = { move: (seg.clip._startMove || new THREE.Vector3()).clone(), yaw: 0 };
+    if (prev) {
+      const pb = prev.clip.body || {}, ps = +pb.secs || prev.dur, cut = this.cutAt(prev, seg), s0 = this.startOf(tl, prev, files);
+      const tr = this.travel(prev.clip, cut, ps, files);
+      if (tr) st = { move: s0.move.clone().add(tr.move.applyAxisAngle(Y_UP, s0.yaw)), yaw: s0.yaw + tr.yaw };
+      else {                                                       // blocked: its keys' travel at the cut, carried from its start
+        const keys = pb.block && pb.block.length ? pb.block : [{ at: 0, pose: "idle" }];
+        st = { move: M.evalBlock(this.lib, keys, M.remap(pb.mods, cut / Math.max(0.001, ps), ps) * ps, ps, s0.move).move.clone(), yaw: s0.yaw };
+      }
+    }
+    cache.set(seg, st); return st;
+  }
+  cutAt(prev, seg) {               // how far into its own action (body.secs, after its delay) a clip had got when the next began
+    const pb = prev.clip.body || {}, ps = +pb.secs || prev.dur;
+    return Math.min(ps, Math.max(0, seg.start - prev.start - (+pb.delay || 0)));
+  }
+  // an actor's hand-off between two of their clips: their pose as the last one is cut, and as this one begins
+  handOff(tl, prev, seg, files) {
+    const pb = prev.clip.body || {}, b = seg.clip.body || {};
+    return [this.clipPose(prev.clip, this.cutAt(prev, seg), +pb.secs || prev.dur, files, this.startOf(tl, prev, files)),
+            this.clipPose(seg.clip, 0, +b.secs || seg.dur, files, this.startOf(tl, seg, files))];
+  }
 
   // a clip's segments played one after another: each starts where the last ended (its root moved there and turned
-  // to the last one's facing), blending in over its first 0.25 s; `fit` stretches the chain over the clip
+  // to the last one's facing), blending in inertially over its first 0.25 s; one not made yet holds where the last one
+  // ended (or the next one's start) for its seconds, so a clip plays as soon as any of its motions is made; `fit`
+  // stretches the chain over the clip
   chainPose(segs, u, dur, files, fit, h) {
-    const BL = 0.25, Y = new THREE.Vector3(0, 1, 0);
-    const key = segs.map(g => g.file).join("|");
+    const BL = 0.25;
+    const key = segs.map(g => [g.file || "-", g.blend ?? "", g.file ? "" : g.secs].join(":")).join("|") + "@" + h;
     let ch = this._chains && this._chains[key];
+    if (ch && segs.some((g, i) => ch.parts[i].f !== (files[g.file] || null))) ch = null;   // a take imported (again) under its name
     if (!ch) {
-      const facing = p => { const l = p["soma:LeftLeg"], r = p["soma:RightLeg"]; const lv = new THREE.Vector3().subVectors(l, r); lv.y = 0; const f = new THREE.Vector3().crossVectors(lv, Y); return Math.atan2(f.x, f.z); };
-      const parts = []; let t = 0, off = new THREE.Vector3(), yaw = 0;
+      const parts = []; let t = 0, off = new THREE.Vector3(), yaw = 0, made = 0;
+      const scaled = (part, u) => { const p = M.sampleBaked(part.f, u).pos; for (const n in p) p[n].multiplyScalar(part.k); return p; };
       for (const g of segs) {
-        const f = files[g.file], len = f.pos.length / (f.fps || 30), k = f.height ? h / f.height : 1;
-        const first = M.sampleBaked(f, 0).pos, last = M.sampleBaked(f, 1).pos;
-        for (const n in first) { first[n].multiplyScalar(k); last[n].multiplyScalar(k); }
-        const part = { f, k, start: t, len, yaw: 0, origin: new THREE.Vector3(), off: new THREE.Vector3() };
-        if (parts.length) {                                    // line this one's first frame up with the last one's end
+        const f = files[g.file] || null;
+        if (!f) { parts.push({ f: null, start: t, len: Math.max(0.1, +g.secs || 2), bl: +(g.blend ?? BL) }); t += parts[parts.length - 1].len; continue; }
+        const len = f.pos.length / (f.fps || 30), k = f.height ? h / f.height : 1;
+        const part = { f, k, start: t, len, bl: +(g.blend ?? BL), yaw: 0, origin: new THREE.Vector3(), off: new THREE.Vector3() };
+        const first = scaled(part, 0), last = scaled(part, 1);
+        if (made) {                                            // line this one's first frame up with the last one's end
           const r0 = first["soma:Hips"].clone(); r0.y = 0;
           part.yaw = yaw - facing(first); part.origin = r0; part.off = off.clone();
-        } else { part.origin = new THREE.Vector3(); part.off = new THREE.Vector3(); }
-        const end = this._place(part, last);                    // where this one ends, placed
-        const re = end["soma:Hips"].clone(); re.y = 0; off = re; yaw = facing(end);
-        parts.push(part); t += len;
+        }
+        part.head = this._place(part, first); part.tail = this._place(part, last);   // where it starts and ends, placed
+        const re = part.tail["soma:Hips"].clone(); re.y = 0; off = re; yaw = facing(part.tail);
+        parts.push(part); t += len; made++;
+      }
+      for (let i = 0; i < parts.length; i++) if (!parts[i].f) {     // a hold: the last made one's end, or the next one's start
+        const prev = parts.slice(0, i).reverse().find(p => p.f), next = parts.slice(i).find(p => p.f);
+        parts[i].hold = prev ? prev.tail : next.head;
       }
       ch = { parts, total: t }; (this._chains = this._chains || {})[key] = ch;
     }
     const src = M.fitTime(fit, u, dur, ch.total) * ch.total;
     const i = Math.max(0, ch.parts.findIndex((p, j) => src < p.start + p.len || j === ch.parts.length - 1));
     const p = ch.parts[i], lu = Math.min(1, Math.max(0, (src - p.start) / p.len));
+    const clone = q => { const o = {}; for (const n in q) o[n] = q[n].clone(); return o; };
+    if (!p.f) return clone(p.hold);
     const raw = M.sampleBaked(p.f, lu).pos; for (const n in raw) raw[n].multiplyScalar(p.k);
     let pos = this._place(p, raw);
-    if (i > 0 && src - p.start < BL) {                         // blend in from the last one's final pose
-      const q = ch.parts[i - 1], last = M.sampleBaked(q.f, 1).pos; for (const n in last) last[n].multiplyScalar(q.k);
-      const a = this._place(q, last), w = M.EASES.inout((src - p.start) / BL);
-      for (const n in pos) if (a[n]) pos[n] = a[n].clone().lerp(pos[n], w);     // every joint, SOMA's too
+    if (i > 0 && p.bl > 0 && src - p.start < p.bl) {           // the join with the last one fades out under this one (its `blend`)
+      const q = ch.parts[i - 1], from = q.f ? q.tail : q.hold;
+      pos = M.inertialBlend(this.lib, from, p.head, pos, M.EASES.inout((src - p.start) / p.bl), h);
     }
     return pos;
   }
@@ -425,13 +580,12 @@ export class Stage {
       if (!cur) pos = this.clipPose({ who, body: { block: [{ at: 0, pose: "idle" }] } }, T, 1, files);
       else {
         const bd = cur.clip.body || {}, bs = +bd.secs || cur.dur, lt = Math.min(bs, Math.max(0, T - cur.start - (+bd.delay || 0)));
-        pos = this.clipPose(cur.clip, lt, bs, files);     // the action plays over its own length (body.secs), after its delay
+        pos = this.clipPose(cur.clip, lt, bs, files, this.startOf(tl, cur, files));   // the action over its own length (body.secs), after its delay, from where the last one left them
         const prev = mine[mine.indexOf(cur) - 1];
         const b = cur.clip.body || {}, win = b.bridge ? +(b.bridge.secs || 0.6) : (b.blend ?? 0.25);
-        if (prev && T - cur.start < win && win > 0) {
-          const ps = +(prev.clip.body || {}).secs || prev.dur, from = this.clipPose(prev.clip, ps, ps, files);
-          const w = M.EASES.inout(Math.max(0, (T - cur.start)) / win);
-          pos = M.blendPositions(this.lib, from, pos, w, +(this.story.cast[who] || {}).height || 1.7);
+        if (prev && T - cur.start < win && win > 0) {   // from the pose the last clip was cut at, not its unplayed end
+          const [from, start] = this.handOff(tl, prev, cur, files), w = M.EASES.inout(Math.max(0, (T - cur.start)) / win);
+          pos = M.inertialBlend(this.lib, from, start, pos, w, +(this.story.cast[who] || {}).height || 1.7);   // this clip's motion at full speed, the join fading out
         }
       }
       const moving = cur && T < cur.start + cur.dur && ((cur.clip.body || {}).segments || (cur.clip.body || {}).file || ((cur.clip.body || {}).block || []).length > 1);
@@ -611,6 +765,8 @@ export class Stage {
     if (state.cam.lean) { const d = target.clone().sub(eye).setY(0); if (d.lengthSq() > 1e-6) eye.addScaledVector(d.normalize(), state.cam.lean); }
     if (state.glance && this.targetPos(state.glance.target)) target = target.clone().lerp(this.targetPos(state.glance.target), state.glance.w);
     const c = this.camera;
+    this._floorY = view ? view.pos[2] : 0;
+    this.playerMark(this.free && view ? { eye, target, floor: s2t(view.pos[0], view.pos[1], view.pos[2] + 0.012) } : null);
     if (this.free) { this.applyFree(); }
     else {
       c.position.copy(eye);
@@ -698,7 +854,65 @@ export class Stage {
   }
   async assetsReady() { await Promise.all(this.pending || []); this.render(); }
 
-  frame(sc, T, files) { const tl = this.timeline(sc); const st = this.stateAt(tl, T, files); this.apply(tl, st, T); this.render(); return st; }
+  frame(sc, T, files) {
+    const tl = this.timeline(sc); const st = this.stateAt(tl, T, files); this.apply(tl, st, T);
+    if (this.life && this.lifeAt) this.life.update(T, this.lifeAt(sc, tl, T));     // the little things as they are at T
+    this.render(); return st;
+  }
+
+  // from the free camera, the player is a marker: a head looking where the scene's eye looks, a ring where they stand
+  playerMark(at) {
+    if (!at) { if (this._me) { this._me.visible = false; this._meRing.visible = false; } return; }
+    if (!this._me) {
+      const m = new THREE.MeshBasicMaterial({ color: 0xd39a45 });
+      this._me = new THREE.Group(); this._me.userData.player = true;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.24, 14), m); cone.rotation.x = -Math.PI / 2; cone.position.z = -0.16;
+      this._me.add(new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), m), cone);
+      this._meRing = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.26, 36), new THREE.MeshBasicMaterial({ color: 0xd39a45, side: THREE.DoubleSide, transparent: true, opacity: 0.8 }));
+      this._meRing.rotation.x = -Math.PI / 2; this.scene.add(this._me, this._meRing);
+    }
+    this._me.visible = this._meRing.visible = true;
+    this._me.position.copy(at.eye); this._me.lookAt(at.target); this._meRing.position.copy(at.floor);
+  }
+  // what's under a point of the canvas: a cast member (near their body's axis), the player's marker, a placed thing, or
+  // the floor; with the point in the story's coordinates (x east, y north, z up)
+  pickAt(cx, cy, o = {}) {                         // o.bodies: the cast and the player's marker only (a hover)
+    const r = this.renderer.domElement.getBoundingClientRect(), rc = new THREE.Raycaster();
+    rc.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), this.camera);
+    const toStory = v => [v.x, -v.z, v.y];
+    let best = null;
+    for (const [cid, f] of Object.entries(this.cast)) {          // a body: the ray within 0.3 m of the line from its feet to its head
+      if (!f.group.visible) continue;
+      const a = f.group.position.clone(), b = a.clone().add(new THREE.Vector3(0, f.height || 1.7, 0)), pr = new THREE.Vector3(), ps = new THREE.Vector3();
+      const d2 = rc.ray.distanceSqToSegment(a, b, pr, ps), t = pr.distanceTo(rc.ray.origin);
+      if (d2 < 0.3 * 0.3 && (!best || t < best.t)) best = { t, hit: { kind: "cast", id: cid, point: toStory(ps.setY(a.y)) } };
+    }
+    if (this._me && this._me.visible) {             // the player's marker: the ray near the line from its ring up to its head
+      const a = this._meRing.position.clone(), b = this._me.position.clone(), pr = new THREE.Vector3(), ps = new THREE.Vector3();
+      const d2 = rc.ray.distanceSqToSegment(a, b, pr, ps), t = pr.distanceTo(rc.ray.origin);
+      if (d2 < 0.3 * 0.3 && (!best || t < best.t)) best = { t, hit: { kind: "player", point: toStory(a) } };
+    }
+    if (o.bodies) return best ? best.hit : null;
+    const hits = rc.intersectObjects(this.world.children, true).filter(h => h.object.visible && !(h.object.material && h.object.material.opacity === 0));
+    for (const h of hits) {
+      if (best && h.distance > best.t) break;
+      let o = h.object; while (o && !(o.userData && o.userData.id) && o.parent) o = o.parent;
+      const u = (o && o.userData) || {};
+      if (u.kind === "floor") return { kind: "floor", point: toStory(h.point) };
+      if (u.kind === "ceiling") continue;
+      if (u.kind === "mesh" || u.kind === "door") return { kind: "thing", id: (u.piece && u.piece.d && u.piece.d.id) || u.id, point: toStory(h.point) };
+      break;                                       // a wall: the floor under the mouse, below
+    }
+    if (best) return best.hit;
+    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(this._floorY || 0)), p = new THREE.Vector3();
+    return rc.ray.intersectPlane(ground, p) ? { kind: "floor", point: toStory(p) } : null;
+  }
+  // the point on the floor at height z (the story's) under a point of the canvas
+  floorAt(cx, cy, z) {
+    const r = this.renderer.domElement.getBoundingClientRect(), rc = new THREE.Raycaster(), p = new THREE.Vector3();
+    rc.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), this.camera);
+    return rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -z), p) ? [p.x, -p.z, p.y] : null;
+  }
 
   // ---- the free camera (inspect the set from outside) --------------------------------------------------------
   setFree(on) {
@@ -838,7 +1052,7 @@ export class Stage {
     root.updateMatrixWorld(true);
     mesh.bind(new THREE.Skeleton(list));
     for (const c of v.clips || []) {
-      if (c.body && c.body.file) continue;                              // generated motions already live in Unreal
+      if (c.body && (c.body.file || ((c.body.segments || []).length && c.body.segments.every(g => g.file)))) continue;   // generated motions already live in Unreal
       const dur = clipSecs(c), n = Math.max(2, Math.round(dur * fps) + 1), times = [];
       const qv = {}, pv = [];
       for (const j of lib.joints) qv[j.name] = [];

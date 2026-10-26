@@ -8,7 +8,7 @@
 // pose, and every frame records each bone's skinning matrix (bind mesh space -> world, `skin`), so Unreal deforms
 // the same mesh the same way. Unreal measures its own import axes from the bones' bind positions (`bind`).
 import * as THREE from "three";
-import { version, eventSecs, PLAYS, RADIUS } from "./stage.js";
+import { version, eventSecs, PLAYS, RADIUS, flowTimes, TIME_DEFAULT } from "./stage.js";
 
 const skinnedOf = fig => { let m = null; if (fig && fig.model) fig.model.traverse(o => { if (!m && o.isSkinnedMesh) m = o; }); return m; };
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -131,7 +131,8 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
   const mode = (v.camera || {}).mode || "free";                 // how far the player may look round the recorded view (stage.apply)
   const look = mode === "hard" ? [0, 0] : mode === "free" ? [180, 80] : (v.camera || {}).cone || [30, 18];
   return { level, title: v.title || "", total: +tl.total.toFixed(3), fps, cast, frames, subs, events, lights, look,
-           enter: v.enter || { kind: "blend", secs: 0.8 }, exit: v.exit || { kind: "blend", secs: 0.8 }, pick: sc.pick || null };   // Unreal's preview fades a blend: it has no walking to blend from yet
+           enter: v.enter || { kind: "blend", secs: 0.8 }, exit: v.exit || { kind: "blend", secs: 0.8 }, pick: sc.pick || null,   // Unreal's preview fades a blend: it has no walking to blend from yet
+           time: sc.time || null };                       // its own time of day (null: it keeps the time it was)
 }
 
 function stitchOf(st, n, story) {
@@ -149,7 +150,9 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
   const lib = stage.lib, bones = [];
   for (const j of lib.joints) if (j.parent && j.name !== "head_end") bones.push([j.parent, j.name, RADIUS[j.parent] || 0.04]);
   const out = { format: 1, game: story.game.id, start: story.game.start, fps, joints: lib.joints.map(j => j.name), bones,
-                cast: {}, flow: story.flow, scenes: {}, stitches: {}, made: new Date().toISOString() };
+                cast: {}, flow: story.flow, scenes: {}, stitches: {}, made: new Date().toISOString(),
+                time: story.game.time || TIME_DEFAULT,      // the time of day at the start, and at every node (playing from one)
+                times: Object.fromEntries(Object.entries(flowTimes(story)).map(([nid, t]) => [nid, t.time])) };
   for (const [id, c] of Object.entries(story.cast || {})) out.cast[id] = { name: c.name || id, height: +(c.height || 1.7) };
   const ids = Object.keys(story.scenes || {});
   for (let i = 0; i < ids.length; i++) {

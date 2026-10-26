@@ -1,0 +1,4 @@
+{
+  "type": "module",
+  "description": "Board games' rules (README.md): ES modules, so node's BOARD test reads them as the desk does"
+}

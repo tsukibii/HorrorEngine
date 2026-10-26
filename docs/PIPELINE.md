@@ -110,7 +110,9 @@ The second pass makes the script sound right in Japanese, as it would be said in
 
 `python tools/motion.py --game G import` finds the saved motions by name and puts each on its clip. The desk plays
 them chained (bridges between them), with the look-at and the procedural idle on top: the characters act out the
-whole game. **Done:** `MOTION ok`, and you've watched it through, every choice and ending.
+whole game. `motion.py check` (MOTION) fails on a motion made but not on its segment, or a segment pointing at a
+file that's gone, and counts what's left to make. **Done:** `MOTION ok (... made, all of them)`, and you've watched
+it through, every choice and ending.
 
 ## 9. Into Unreal (Claude, then you): docs/UNREAL_FLOW.md has the steps
 

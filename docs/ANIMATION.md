@@ -19,8 +19,8 @@ The whole game is blocked and reviewed there before anything is generated or bui
   - `twitch`: uncanny stutter
   - `ease`: soft start and end
   - `speed`, `ramp`, `trim`, `loop`, `mirror`
-- **Joins:** `blend` (a crossfade from the actor's previous clip) or `bridge` (an in-between). A blend under a seam
-  is invisible.
+- **Joins:** `blend` (an inertial blend from the actor's previous clip, §0c) or `bridge` (an in-between). A blend
+  under a seam is invisible. `layers` play a part of the body from another motion or a pose (§0c).
 - **The body check** (desk, "Check bodies"), all judged from the player's eye:
   - which body parts the player sees, and what hides the rest (only visible parts need fixing)
   - shot sizes that read wider than their label (with a one-click lens fix)
@@ -63,6 +63,34 @@ check, fix, repeat.
 In Unreal the same jobs are done by: the IK Retargeter (1), MetaHuman's twist and corrective joints, driven by pose
 solvers in its post-process Anim Blueprint (2 and 5: the elbow, shoulder and knee squash comes with every MetaHuman
 body), Control Rig with full-body IK (3), and Control Rig collision or a physics asset with sphere/capsule bodies (4).
+
+## 0c. Joining and blending motions in the desk
+
+Everything below happens in the desk's Watch and is baked into the preview Unreal plays (`bake.js`), so what you see
+is what goes across.
+
+- **Clip to clip** (`blend`, the light wedge on the timeline): an actor's next clip starts **where their last one
+  left them when it was cut** (a Kimodo walk or turn carries them on, facing the new way; blocking ends where its
+  keys put them), and the join fades out over `blend` seconds (0.25) from the pose they were in at the cut. The
+  blend is **inertial** (as Unreal's Inertialization): the new clip's motion plays at full speed from its first
+  frame and only the difference at the join fades, so a walk into a walk never slows. Under a seam (a blink, a
+  glance) a blend can't be seen; `bridge` is an in-between for joins too far apart to blend. The body check
+  measures every join from the player's eye and offers a blend or a bridge.
+- **Segment to segment** (format 3): a clip's Kimodo segments are chained, each starting where the last ended, its
+  root moved there and turned to the last one's facing, blending in inertially over its own `blend` (0.25). A
+  segment not made yet holds the pose where the last one ended for its seconds, so a clip plays as soon as any of its
+  motions is made. The desk's clip card lists the segments (made or to make, the length made), with their prompts,
+  paths, keys and save names (↻ names one from its prompt), and links the shot list.
+- **Layers** (`layers`): a part of the body (`upper`, `arms`, `left_arm`, `right_arm`, `head`) played from a made
+  motion or a library pose over the clip's own: arms held over a walk, a gesture over an idle, a head over a turn.
+  Each bone there points the layer's way, turned with the body under it (the hips for the upper body, the chest
+  for arms and head) and as long as that body's own, so it leans and turns with it and keeps its proportions; the
+  rest of the body is untouched. It comes in at `from`, goes at `to`, fading over `fade` seconds; `weight` mixes it.
+  Over a Kimodo motion, a pose layer carries Kimodo's fingers with the hands.
+- **Blocking's own joins:** keys ease into each other (`ease`); a walking key's stride eases in as the walk sets off
+  and out as it arrives; travel to a mark is in metres whatever the cast member's height.
+- **Over everything:** the procedural idle (breathing, weight shifts, never a statue: full while still, 40% under a
+  moving body), the look (the head turned toward its target, shared down the spine), and the hands' IK (`reach`).
 
 ## 1. Bodies: NVIDIA Kimodo
 
@@ -202,8 +230,11 @@ is in `kimodo/demo/studio.py` and `kimodo/demo/studio_web/` (the pose window), s
   asked (draw a Path at Sneak pace).
 - **A Kimodo fix:** Make Smooth Path with no 2D Root waypoints no longer crashes generation.
 - **Send to Studio** (Exports): Game, Name and Clip, then Send: the motion as exported (In place, Drop last frame)
-  goes through `motion.py import` into `Content/Games/<Game>/Motion/<Name>.json`, and the clip (every version of
-  it) plays it, so the desk shows it on the real body in the blocking at once.
+  goes through `motion.py import` into `Content/Games/<Game>/Motion/<Name>.json`. A Name from the shot list (any
+  case) puts it on that **segment** and keeps its NPZ with the game's others (`Saved/Story/<Game>/kimodo/`); any
+  other name plays on the Clip picked (every version of it). The desk shows it on the real body in the blocking at
+  once: Import on the Kimodo page tells an open desk, which loads the motions again (a take made again under the
+  same name replaces the old one; edits not saved yet are kept, and Save carries the new motions into them).
 - Or by hand: Download as NPZ, then `python tools/motion.py --game G import <file.npz> <name> [--clip
   <scene>:<clip>]` writes the director file (`Motion/<name>.json`) and points the clip's `body.file` at it, so the
   desk plays it on the real body in the blocking.

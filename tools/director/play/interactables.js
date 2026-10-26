@@ -4,9 +4,10 @@
 import { register, part } from "./parts.js";
 import { EYES } from "../stage.js";
 
-export function interactableOf(thing) {
-  const u = thing.userData;
-  return part("interactable", u.kind === "door" ? "door" : u.use) || null;
+export function interactableOf(thing, rt) {
+  const u = thing.userData, p = part("interactable", u.kind === "door" ? "door" : u.use);
+  if (p) return p;
+  return rt && rt.lifeActs && rt.lifeActs(u.id).length ? part("interactable", "life") : null;   // a little thing with something to do
 }
 
 const panelText = (title, text) => ({ title, text });
@@ -76,9 +77,24 @@ register("interactable", "roll", {                // a die: E throws it from you
   prompt: (t, rt, s) => (rt.physics && rt.physics.rolling(t) ? { cursor: "none", label: "" } : { cursor: "roll", label: s.label }),
   use: (t, rt, s) => { if (!(rt.physics && rt.physics.rolling(t))) rt.roll(t, s); },
 });
+register("interactable", "carry", {               // a plushie, a box: hold E to pick it up (runtime.pickUp), hold E again to put it down
+  settings: { cursor: "take", label: "Pick up", drop: "Put down", hold: 0.45 },   // hold: the seconds E is held, both ways
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label, hold: true }),
+  use: () => {},                                   // a tap does nothing: it takes a hold
+});
+register("interactable", "game", {                // a table with a board game: E sits you down to play it (runtime.boardGame; the rules in Content/Studio/BoardGames/)
+  settings: { cursor: "use", label: "Play", eye: EYES.sit, secs: 0.7, back: 0.22, house: "The dealer" },   // back: the eye from the table's edge, leaning in
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
+  use: (t, rt, s) => rt.boardGame(t, s),
+});
 register("interactable", "hide", {                // a locker, a wardrobe: E gets in (runtime.hide), E gets out
   settings: { cursor: "hide", label: "Hide", leave: "Get out", eye: EYES.hide, secs: 0.7, look: [70, 35] },   // look: yaw, pitch cone (deg)
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.hiding === t.userData.id ? s.leave : s.label }),
   use: (t, rt, s) => (rt.player.hiding === t.userData.id ? rt.unhide(s) : rt.hide(t, s)),
 });
 register("interactable", "locker", Object.assign({}, part("interactable", "hide")));     // the format's word for it
+register("interactable", "life", {                // a little thing (docs/IMMERSION.md): E does what its state offers (switch the kettle on, put the cigarette out, pour)
+  settings: { cursor: "use" },
+  prompt: (t, rt, s) => { const a = rt.lifeActs(t.userData.id)[0]; return { cursor: s.cursor, label: a ? a.label : "" }; },
+  use: (t, rt) => { const a = rt.lifeActs(t.userData.id)[0]; if (a) rt.setState(t.userData.id, a.to, "player"); },
+});

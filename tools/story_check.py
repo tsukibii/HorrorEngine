@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The offline story check: no editor needed, runs in a second.
 
-    python tools/story_check.py [--game Pilot] [-v] [--route Saved/Story/<game>/route.json]
+    python tools/story_check.py [--game Pilot] [-v] [--route Saved/Story/<game>/route.json] [--story FILE]
 
 Checks every reference (world, scenes, stitches, flow), walls and doors, scenes' clips (each fits one take of
 game.clip_max seconds; every cut between takes has a seam to hide it), subtitles' reading speed, combination codes
@@ -20,15 +20,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Content" / "Python
 from storykit import storylib as L  # noqa: E402
 from storykit import library as LIB  # noqa: E402
 from storykit import kit as KIT  # noqa: E402
+from storykit import life as LIFE  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
-TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least"}
+TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
+            "answered", "carrying", "dropped", "played", "state"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is"}
+BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave"}
+           "karma", "count", "scene", "behave", "ask", "state"}
+ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
@@ -62,7 +66,7 @@ PERSON = re.compile(r"^(A|An) ([A-Za-z-]+ ){0,3}person\b")
 LOOK_WORDS = re.compile(r"\b(at|toward|towards) (the )?(player|viewer|camera|you)\b|\blooks? at (him|her|them)\b", re.I)
 TIER_SECS = {}              # tier -> seconds of motion (the animation budget report)
 SEG_NAMES = {}              # segment name -> where
-STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move"}
+STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state"}
 MAX_CPS = 17.0
 WALK = 1.4 / 1.6            # metres a second, with looking around (x 1.6)
 ROOM_FIRST = 30             # seconds: the first look round a room
@@ -75,6 +79,23 @@ MINOR = {"glimpse", "slam_behind", "knock", "whisper", "lights_die", "swap"}
 SCARE_GAP, MINOR_GAP = 240, 60
 MAX_HOLD = 2.5
 MAX_PATHS = 4096            # format 3 sweeps three answer styles and both secret modes
+
+
+def asks_of(story):
+    """Every ask in the stitches (nested in answers too): its id -> its answers' ids, for `answered` triggers."""
+    out = {}
+
+    def walk(acts):
+        for a in acts or []:
+            if isinstance(a.get("ask"), str):
+                out.setdefault(a["ask"], set()).update(o.get("id") for o in a.get("options") or [] if isinstance(o, dict))
+                for o in a.get("options") or []:
+                    walk(o.get("do") if isinstance(o, dict) else None)
+            walk(a.get("then"))
+    for st in story.get("stitches", {}).values():
+        for b in st.get("beats", []):
+            walk(b.get("do"))
+    return out
 
 
 def verbs(a):
@@ -279,6 +300,62 @@ def check_world(story, things, r):
             r.err(f"{t.id}: safe is for a trigger: true when the player can't be seen in it")
         if "see_through" in p and not (u == "locker" and isinstance(p["see_through"], (int, float)) and 0 <= p["see_through"] <= 1):
             r.err(f"{t.id}: see_through is for a locker, a number 0..1 (how much of its slats are gaps)")
+        if u == "carry":                                # held E picks it up, held E puts it down; its shape is its body
+            if str(p.get("shape", "")).split()[:1] not in (["box"], ["cyl"], ["sphere"], ["asset"]):
+                r.err(f"{t.id}: carry needs a shape (box, cyl, sphere or asset): its size is the body that falls and rolls")
+            elif max(t.size) > 1.0:
+                r.warn(f"{t.id}: {max(t.size):.2f} m: too big to carry in the hands (keep a thing to carry under 1 m)")
+            if p.get("physics", "rigid") not in L.PHYSICS:
+                r.err(f"{t.id}: physics {p.get('physics')!r} ({', '.join(L.PHYSICS)})")
+        if "physics" in p and u != "carry":
+            r.err(f"{t.id}: physics is for a thing you carry (use: carry)")
+        if u == "game":                                 # a table with a board game: its rules in Content/Studio/BoardGames/ (or the game's own)
+            g, gs = p.get("game"), p.get("settings") or {}
+            if g not in BOARDS:
+                r.err(f"{t.id}: game {g!r} isn't a board game ({', '.join(sorted(BOARDS)) or 'none in Content/Studio/BoardGames'})")
+            elif not isinstance(gs, dict) or any(k != "seed" and k not in BOARDS[g].get("settings", {}) for k in gs):
+                r.err(f"{t.id}: {g}'s settings are {', '.join(BOARDS[g].get('settings', {})) or 'none'} (and seed), not {gs!r}")
+            if p.get("vs") is not None and p["vs"] not in cast:
+                r.err(f"{t.id}: vs {p['vs']!r} isn't in cast")
+            if "shape" not in p and "kit" not in p:
+                r.err(f"{t.id}: a board game needs its table (a shape or a kit)")
+        for f in ("game", "vs", "settings"):
+            if f in p and u != "game":
+                r.err(f"{t.id}: {f} is for a board game's table (use: game)")
+        if "jiggle" in p and not (u == "carry" and p.get("physics") == "plushie" and isinstance(p["jiggle"], (int, float))
+                                  and not isinstance(p["jiggle"], bool) and 0 <= p["jiggle"] <= 2):
+            r.err(f"{t.id}: jiggle is a plushie's softness, 0..2 (0 still, 1 a plushie, 2 jelly; physics: plushie)")
+        check_life(t, things, r)
+
+
+def check_life(t, things, r):
+    """A little thing's life (docs/IMMERSION.md): its own `life` or its kit's, the `state` it starts in, its settings."""
+    p, lv = t.d, LIFE.lives()
+    lf = LIFE.life_of(p)
+    if p.get("life") and p["life"] not in lv:
+        r.err(f"{t.id}: life {p['life']!r} isn't a life ({', '.join(sorted(lv))})")
+    if "state" in p and (not lf or p["state"] not in LIFE.states(lf)):
+        r.err(f"{t.id}: state {p['state']!r}: " + (f"one of {lf}'s ({', '.join(LIFE.states(lf))})" if lf else
+                                                   "it has no life (a kit thing that has one, or `life`)"))
+    own = set((lv.get(lf) or {}).get("settings") or [])
+    for f in ("liquid", "from", "rings", "level") + (("light",) if lf else ()):
+        if f in p and f not in own:
+            r.err(f"{t.id}: {f} isn't a setting of its life ({lf or 'it has none'}; lives.json says which have it)")
+    if "secs" in p and lf and not (isinstance(p["secs"], dict) and all(k in LIFE.states(lf) and isinstance(v, (int, float)) and v > 0 for k, v in p["secs"].items())):
+        r.err(f"{t.id}: secs is how long its states last, {{state: seconds}} ({lf}: {', '.join(LIFE.states(lf))})")
+    if "acts" in p and not isinstance(p["acts"], bool):
+        r.err(f"{t.id}: acts is true or false (false: the player can't touch it)")
+    if "liquid" in p and p["liquid"] not in (LIFE.data().get("liquids") or {}):
+        r.err(f"{t.id}: liquid {p['liquid']!r} (one of {', '.join(LIFE.data().get('liquids') or {})})")
+    if "from" in p:
+        src = things.get(p["from"])
+        sl = LIFE.life_of(src.d) if src and src.kind == "prop" else None
+        if not sl or not any((LIFE.state_def(sl, x) or {}).get("ready") for x in LIFE.states(sl)):
+            r.err(f"{t.id}: from {p['from']!r} isn't a kettle or a teapot (a thing with a life that pours)")
+    if "rings" in p and not (isinstance(p["rings"], list) and p["rings"] and all(isinstance(x, int) and x >= 1 for x in p["rings"])):
+        r.err(f"{t.id}: rings are the hob's rings that are on, numbers from 1: [1, 3]")
+    if "light" in p and lf and (p["light"] not in things or things[p["light"]].use != "light"):
+        r.err(f"{t.id}: light {p['light']!r} isn't a light (use: light) for it to light")
 
 
 STORY = None
@@ -429,8 +506,32 @@ def check_body_v3(cw, sid, c, body, story, things, lvl, r):
         for k in g.get("keys", []):
             if k.get("pose") not in POSES:
                 r.err(f"{gw}: key pose {k.get('pose')!r} isn't in Content/Studio/poses.json")
+        if "blend" in g and not (isinstance(g["blend"], (int, float)) and 0 <= g["blend"] <= 2):
+            r.err(f"{gw}: blend {g['blend']!r}: seconds it blends in from the segment before (0 to 2; 0.25 when not given)")
     if segs and not c.get("dur") and abs(secs - L.clip_secs(c)) > max(2.0, 0.35 * L.clip_secs(c)):
         r.warn(f"{cw}: its segments run {secs:.1f} s against the clip's {L.clip_secs(c):.1f} s (fit will stretch, hold or trim)")
+
+
+def check_layer(lw, ly, r):
+    """A body layer (STORY_FORMAT §3.5): a part of the body (`mask`) played from another motion or a pose, over a window."""
+    if ly.get("mask") not in L.MASKS:
+        r.err(f"{lw}: mask {ly.get('mask')!r} (one of {', '.join(L.MASKS)})")
+    if bool(ly.get("file")) == bool(ly.get("pose")):
+        r.err(f"{lw}: a layer plays a `file` (a made motion) or a `pose` (from the library): one of them")
+    if ly.get("pose") and ly["pose"] not in POSES:
+        r.err(f"{lw}: pose {ly['pose']!r} isn't in Content/Studio/poses.json")
+    if ly.get("file") and GAME_DIR and not (GAME_DIR / "Motion" / ly["file"]).exists():
+        r.warn(f"{lw}: file Motion/{ly['file']} isn't there yet (the layer waits for it)")
+    a, b = ly.get("from", 0), ly.get("to", 1)
+    if not all(isinstance(v, (int, float)) for v in (a, b)) or not 0 <= a < b <= 1:
+        r.err(f"{lw}: from {a!r} to {b!r}: fractions of the clip, from before to")
+    for k, lo, hi in (("fade", 0, 5), ("weight", 0, 1)):
+        if k in ly and not (isinstance(ly[k], (int, float)) and lo <= ly[k] <= hi):
+            r.err(f"{lw}: {k} {ly[k]!r} ({lo} to {hi})")
+    if ly.get("fit", "loop") not in L.FITS:
+        r.err(f"{lw}: fit {ly.get('fit')!r} (one of {', '.join(L.FITS)})")
+    if set(ly) - {"mask", "file", "pose", "from", "to", "fade", "weight", "fit"}:
+        r.err(f"{lw}: unknown fields {', '.join(sorted(set(ly) - {'mask', 'file', 'pose', 'from', 'to', 'fade', 'weight', 'fit'}))}")
 
 
 def check_scene(sid, sc, story, things, r):
@@ -451,6 +552,8 @@ def check_scene(sid, sc, story, things, r):
                     r.warn(f"scene {sid}: variant {k!r} isn't a hiding spot of any play (pick_by found_at): it only plays as the pick")
     if sc.get("mood") and sc["mood"] not in L.MOODS:
         r.err(f"scene {sid}: mood {sc['mood']!r} (one of {', '.join(L.MOODS)})")
+    if "time" in sc and sc["time"] not in L.TIMES:
+        r.err(f"scene {sid}: time {sc['time']!r} (one of {', '.join(L.TIMES)}; leave it out to keep the time it was)")
     for edge in ("enter", "exit"):
         if sc.get(edge) and sc[edge].get("kind") not in TRANSITIONS:
             r.err(f"scene {sid}: {edge} kind {sc[edge].get('kind')!r} (one of {', '.join(sorted(TRANSITIONS))})")
@@ -605,10 +708,12 @@ def check_scene(sid, sc, story, things, r):
                 for spot in body.get("path", []):
                     if spot not in things or things[spot].use != "spot" or things[spot].level != lvl:
                         r.err(f"{cw}: body path spot {spot!r} isn't a spot in level {lvl}")
+                for li, ly in enumerate(body.get("layers") or []):
+                    check_layer(f"{cw} layer {li + 1}", ly, r)
                 rc = body.get("reach")
                 if rc:
-                    if rc.get("hand", "right") not in ("right", "left"):
-                        r.err(f"{cw}: reach hand {rc.get('hand')!r} (right or left)")
+                    if rc.get("hand", "right") not in ("right", "left", "both"):
+                        r.err(f"{cw}: reach hand {rc.get('hand')!r} (right, left or both)")
                     if rc.get("to") not in ("player_collar", "player_face") and rc.get("to") not in things:
                         r.err(f"{cw}: reach to {rc.get('to')!r} (player_collar, player_face or a placed thing)")
                     if rc.get("to", "").startswith("player") and not sc.get("view"):
@@ -643,6 +748,14 @@ def check_trigger(bid, w, story, things, beats, r):
         return
     k = keys.pop()
     v = w[k]
+    if "option" in w and k != "answered":
+        r.err(f"{bid}: `option` goes with an answered trigger")
+    if "in" in w and k != "dropped":
+        r.err(f"{bid}: `in` goes with a dropped trigger")
+    if "result" in w and k != "played":
+        r.err(f"{bid}: `result` goes with a played trigger")
+    if "is" in w and k != "state":
+        r.err(f"{bid}: `is` goes with a state trigger")
     if k not in TRIGGERS:
         r.err(f"{bid}: unknown trigger {k!r}")
     elif k in ("all", "any"):
@@ -663,6 +776,32 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: caught {v!r}: true (by anyone) or a cast member")
     elif k == "hidden" and v is not True and (v not in things or things[v].use != "locker"):
         r.err(f"{bid}: hidden {v!r}: true (in any hiding place) or a locker's id")
+    elif k == "answered":                              # an ask answered: any answer, or `option`
+        asks = asks_of(story)
+        if v not in asks:
+            r.err(f"{bid}: answered {v!r} isn't an ask in any stitch")
+        elif "option" in w and w["option"] not in asks[v]:
+            r.err(f"{bid}: answered {v!r} option {w['option']!r} isn't one of its answers ({', '.join(sorted(map(str, asks[v])))})")
+    elif k == "carrying" and v is not True and (v not in things or things[v].use != "carry"):
+        r.err(f"{bid}: carrying {v!r}: true (anything) or a thing with use: carry")
+    elif k == "dropped":                               # put down and settled: anywhere, or in a room or a trigger
+        if v not in things or things[v].use != "carry":
+            r.err(f"{bid}: dropped {v!r} isn't a placed thing with use: carry")
+        elif "in" in w:
+            z = things.get(w["in"])
+            if not z or (z.kind != "room" and z.use != "trigger") or z.level != things[v].level:
+                r.err(f"{bid}: dropped in {w['in']!r}: a room or a trigger on {v}'s level")
+    elif k == "played":                                # a board game ended (use: game): any result, or one of its game's
+        if v not in things or things[v].use != "game":
+            r.err(f"{bid}: played {v!r} isn't a table with use: game")
+        elif "result" in w and w["result"] not in BOARDS.get(things[v].d.get("game"), {}).get("results", [w["result"]]):
+            r.err(f"{bid}: played result {w['result']!r}: {things[v].d.get('game')} ends {', '.join(BOARDS[things[v].d['game']]['results'])}")
+    elif k == "state":                                 # a little thing gets to a state (docs/IMMERSION.md)
+        lf = LIFE.life_of(things[v].d) if v in things and things[v].kind == "prop" else None
+        if not lf:
+            r.err(f"{bid}: state {v!r} isn't a placed thing with a life")
+        elif w.get("is") not in LIFE.states(lf):
+            r.err(f"{bid}: state {v} is {w.get('is')!r}: one of its states ({', '.join(LIFE.states(lf))})")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
         if v not in things or things[v].use != "roll":
             r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
@@ -704,6 +843,38 @@ def check_action(bid, a, story, things, r, stage=None):
         elif any(n.get("type") == "scene" and n.get("ref") == v for n in story.get("flow", {}).values()):
             r.warn(f"{bid}: scene {v!r} is also a flow node: it will play twice")
         return
+    if k == "ask":                                     # a question with answers floating beside who / at on (STORY_FORMAT §4)
+        if not isinstance(v, str) or not v:
+            r.err(f"{bid}: ask needs an id (a word, for `answered`)")
+        if ("line" in a) == ("text" in a):
+            r.err(f"{bid}: ask {v!r}: the question is a `line` (spoken) or a `text` (a thought), one of them")
+        elif "line" in a and a["line"] not in lines:
+            r.err(f"{bid}: ask {v!r}: line {a['line']!r} isn't a line")
+        if "who" in a and a["who"] not in cast:
+            r.err(f"{bid}: ask {v!r}: who {a['who']!r} isn't in cast")
+        if "on" in a:
+            placed(a["on"])
+        if "who" in a and "on" in a:
+            r.err(f"{bid}: ask {v!r}: beside `who` or at `on`, not both")
+        opts = a.get("options")
+        if not isinstance(opts, list) or not 2 <= len(opts) <= 4 or not all(isinstance(o, dict) for o in opts):
+            r.err(f"{bid}: ask {v!r}: options are 2 to 4 answers, each {{id, label, ja?, do?}}")
+            return
+        ids = [o.get("id") for o in opts]
+        if len(set(ids)) != len(ids) or not all(isinstance(i, str) and i for i in ids):
+            r.err(f"{bid}: ask {v!r}: each answer needs its own id")
+        for o in opts:
+            if not o.get("label"):
+                r.err(f"{bid}: ask {v!r} answer {o.get('id')!r} needs a label")
+            for sub in o.get("do") or []:
+                check_action(f"{bid} ask {v} {o.get('id')}", sub, story, things, r, stage)
+        if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
+            r.err(f"{bid}: ask {v!r}: secs is a number of seconds")
+        if "secs" in a and a.get("default") not in ids:
+            r.err(f"{bid}: ask {v!r} is timed: `default` (the answer when time runs out) is one of {', '.join(map(str, ids))}")
+        elif "default" in a and a["default"] not in ids:
+            r.err(f"{bid}: ask {v!r}: default {a['default']!r} isn't one of its answers")
+        return
     if k == "say" and v not in lines:
         r.err(f"{bid}: say {v!r} isn't a line")
     elif k == "sound":
@@ -733,6 +904,12 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: move to {a['to']!r} isn't a spot")
     elif k in ("give", "take") and v not in items:
         r.err(f"{bid}: {k} {v!r} isn't an item")
+    elif k == "state":                                  # a little thing to a state: {"state": "kettle", "to": "heating"}
+        lf = LIFE.life_of(things[v].d) if v in things and things[v].kind == "prop" else None
+        if not lf:
+            r.err(f"{bid}: state {v!r} isn't a placed thing with a life")
+        elif a.get("to") not in LIFE.states(lf):
+            r.err(f"{bid}: state {v} to {a.get('to')!r}: one of its states ({', '.join(LIFE.states(lf))})")
     elif k == "shot":
         if a.get("who") not in cast:
             r.err(f"{bid}: shot who {a.get('who')!r} isn't in cast")
@@ -759,6 +936,14 @@ def check_action(bid, a, story, things, r, stage=None):
             placed(x, "spot")
         if a.get("pose") is not None and a["pose"] not in POSES:
             r.err(f"{bid}: behave pose {a['pose']!r} isn't in Content/Studio/poses.json")
+        if a.get("motion") is not None:                 # what she plays: standing, sitting, or walking (in place) a route
+            ms = story.get("motions", {})
+            if a["motion"] not in ms:
+                r.err(f"{bid}: behave motion {a['motion']!r} isn't in motions")
+            elif as_ in ("path", "patrol") and not ms[a["motion"]].get("in_place"):
+                r.warn(f"{bid}: behave motion {a['motion']} walks a route: make it in_place (the route moves her)")
+            elif FORMAT >= 3 and not ms[a["motion"]].get("name"):
+                r.warn(f"{bid}: motion {a['motion']} has no Kimodo `name`: it won't be on the shot list")
         sees = a.get("sees", False)
         if not (isinstance(sees, bool) or isinstance(sees, dict) and set(sees) <= SIGHT and all(isinstance(x, (int, float)) and x >= 0 for x in sees.values())):
             r.err(f"{bid}: behave sees {sees!r}: true, or some of {', '.join(sorted(SIGHT))} as numbers")
@@ -799,6 +984,8 @@ def check_stitch(tid, st, story, things, r):
         w = b.get("when", {})
         if "rolled" in w and ("face" in w or "at_least" in w) and not (b.get("optional") or b.get("secret")):
             r.warn(f"{b['id']}: a roll is chance: a beat that needs a face should be optional or secret, or the player may never get it")
+        if "played" in w and "result" in w and not (b.get("optional") or b.get("secret")):
+            r.warn(f"{b['id']}: a game's result is chance: a beat that needs one result should be optional or secret (a flag the flow branches on), or the player may never get it")
         if b.get("secret") and b["secret"] not in story.get("secrets", {}):
             r.err(f"{b['id']}: secret {b['secret']!r} isn't in secrets")
         cued = "look" in b.get("when", {})
@@ -894,8 +1081,34 @@ def check_flow(story, things, r):
         r.err(f"game.ui_theme {th!r}: no tools/director/play/ui/themes/{th}.css")
     if story["game"].get("start") not in flow:
         r.err(f"game.start {story['game'].get('start')!r} isn't a flow node")
+    if "time" in story["game"] and story["game"]["time"] not in L.TIMES:
+        r.err(f"game.time {story['game']['time']!r}: the time the game starts at, one of {', '.join(L.TIMES)} ({L.TIME_DEFAULT} when unset)")
+    for nid, ft in L.flow_times(story).items():          # a scene staged for one time that a path brings at another
+        if flow[nid].get("type") == "scene" and not ft["own"] and len(ft["paths"]) > 1:
+            r.warn(f"flow {nid}: its scene plays at {' or '.join(ft['paths'])} depending on the path; give it a `time` if it's staged for one")
+    frames, in_act = story.get("frames", []), {}        # the board's acts: coloured frames behind groups of cards
+    if not isinstance(frames, list):
+        r.err("frames: a list of the board's acts, each {id, title, color, nodes}")
+        frames = []
+    for f in frames:
+        fid = f.get("id") if isinstance(f, dict) else None
+        if not isinstance(fid, str) or not fid:
+            r.err(f"frames: {f!r}: an act needs an id, a title, a color and its nodes")
+            continue
+        if any(x is not f and isinstance(x, dict) and x.get("id") == fid for x in frames):
+            r.err(f"frame {fid}: two acts with this id")
+        if "color" in f and not re.fullmatch(r"#[0-9a-fA-F]{6}", str(f["color"])):
+            r.err(f"frame {fid}: color {f['color']!r}: #rrggbb")
+        for nid in f.get("nodes", []):
+            if nid not in flow:
+                r.err(f"frame {fid}: {nid!r} isn't a flow node")
+            elif nid in in_act and in_act[nid] != fid:
+                r.err(f"flow {nid}: in two acts ({in_act[nid]} and {fid})")
+            in_act[nid] = fid
     for nid, n in flow.items():
         t = n.get("type")
+        if "xy" in n and not (isinstance(n["xy"], list) and len(n["xy"]) == 2 and all(isinstance(v, (int, float)) for v in n["xy"])):
+            r.err(f"flow {nid}: xy {n['xy']!r}: where it sits on the desk's board, [x, y]")
         if t in ("scene", "stitch"):
             table = scenes if t == "scene" else stitches
             if n.get("ref") not in table:
@@ -1097,6 +1310,63 @@ class World:
         self.counters = {}         # game.counters -> value
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
         self.answers = []          # (scene node, clip, option) for the report
+        # the little things' lives (docs/IMMERSION.md): each one's state, a follower where its leader puts it
+        self.lives = {t.id: lf for t in things.values() if t.kind == "prop" for lf in [LIFE.life_of(t.d)] if lf}
+        self.states = {k: LIFE.start(things[k].d, lf) for k, lf in self.lives.items()}
+        for k, lf in self.lives.items():
+            lead = self.leader(k)
+            m = (LIFE.lives()[lf].get("follows") or {}).get(self.states.get(lead)) if lead else None
+            if m and "state" not in things[k].d:
+                self.states[k] = m
+
+    # the little things
+    def leader(self, tid):
+        on = self.things[tid].d.get("on")
+        return on if on in self.lives and (LIFE.lives()[self.lives[tid]].get("follows")) else None
+
+    def reach_state(self, tid, to, acts=True, depth=0):
+        """Seconds until it's in `to` (waiting, the player's acts beside it, its leader's), or None."""
+        lf = self.lives.get(tid)
+        if not lf or depth > 4:
+            return None
+        t, lead = self.things[tid], self.leader(tid)
+        d = t.d if acts and self.can_reach(tid) else dict(t.d, acts=False)
+
+        def ready(key):
+            src = t.d.get(key)
+            got = [self.reach_state(src, x, acts, depth + 1) for x in LIFE.states(self.lives[src]) if (LIFE.state_def(self.lives[src], x) or {}).get("ready")] if src in self.lives else []
+            got = [g for g in got if g is not None]
+            return min(got) if got else None
+        return LIFE.reach(lf, d, self.states[tid], to, (lambda x: self.reach_state(lead, x, acts, depth + 1)) if lead else None, ready)
+
+    def set_state(self, tid, to):
+        """It's in `to` now; what stands on it follows (unless already on its way: life.js States.enter)."""
+        if tid not in self.states or self.states[tid] == to:
+            return
+        self.states[tid] = to
+        for f, lf in self.lives.items():
+            m = (LIFE.lives()[lf].get("follows") or {}).get(to) if self.leader(f) == tid else None
+            if m and LIFE.reach(lf, dict(self.things[f].d, acts=False), m, self.states[f]) is None:
+                self.set_state(f, m)
+
+    def wait_state(self, nid, tid, to):
+        """Play until it's in `to`: the player does what it takes beside it (and its leader), then waits."""
+        secs = self.reach_state(tid, to)
+        if secs is None:
+            return
+        idle = self.reach_state(tid, to, acts=False)
+        if idle is None or idle > secs + 0.01:                 # it takes the player's hand: go to it and use it
+            self.go(tid)
+            self.route.append({"node": nid, "do": "use", "id": tid})
+        lead = self.leader(tid)
+        if lead:                                              # its leader goes to where it puts it there (the hob on)
+            lf = self.lives[tid]
+            for ls, fs in (LIFE.lives()[lf].get("follows") or {}).items():
+                if LIFE.reach(lf, dict(self.things[tid].d, acts=False), fs, to) is not None and self.reach_state(lead, ls) is not None:
+                    self.set_state(lead, ls)
+                    break
+        self.add("waiting", secs)
+        self.set_state(tid, to)
 
     def add_karma(self, delta):
         for k, v in L.karma_of(delta).items():
@@ -1186,10 +1456,14 @@ class World:
         v = w[k]
         if k == "start":
             return ("start", self.cur) in self.done_events
-        if k in ("enter", "exit", "look", "rolled"):      # rolled: the walker rolls until the face comes up
+        if k in ("enter", "exit", "look", "rolled", "played"):   # rolled, played: the walker plays until the face, the result, comes up
             return self.can_reach(v)
         if k == "hidden":                                 # the walker gets into that locker, or the nearest one it can reach
             return any(self.can_reach(t.id) for t in self.things.values() if t.use == "locker" and (v is True or t.id == v))
+        if k == "carrying":                               # the walker picks it up (that thing, or any it can reach)
+            return any(self.can_reach(t.id) for t in self.things.values() if t.use == "carry" and (v is True or t.id == v))
+        if k == "dropped":                                # ... and carries it there to put it down
+            return self.can_reach(v) and (w.get("in") is None or self.can_reach(w["in"]))
         if k == "use":
             t = self.things[v]
             if t.use == "pickup":
@@ -1203,8 +1477,12 @@ class World:
             return (k, v) in self.done_events
         if k == "after":
             return v in self.fired
+        if k == "answered":                               # the walker gave the ask's default (else its first) answer
+            return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
+        if k == "state":                                  # the walker does what it takes and waits (wait_state)
+            return self.reach_state(v, w.get("is")) is not None
         if k == "all":
             return all(self.can_fire(s) for s in v)
         if k == "any":
@@ -1214,7 +1492,7 @@ class World:
     def where(self, w):
         k = next(iter(set(w) - TRIGGER_EXTRA))
         v = w[k]
-        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden") and v in self.things else None
+        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden", "carrying", "dropped", "played") and v in self.things else None
 
     def apply_state(self, a):
         k = verbs(a)[0]
@@ -1239,6 +1517,8 @@ class World:
                 self.locked.add(v)
             elif a["set"] in ("unlock", "open"):
                 self.locked.discard(v)
+        elif k == "state":
+            self.set_state(v, a.get("to"))
 
     def run_actions(self, where, acts):
         """Returns True when a `done` ends the stitch."""
@@ -1280,6 +1560,15 @@ class World:
                 self.add_karma(v)
             elif k == "count":
                 self.counters[v] = float(a["set"]) if "set" in a else self.counters.get(v, 0.0) + float(a.get("add", 1))
+            elif k == "ask":                              # the walker answers with the default (else the first)
+                q = lines.get(a.get("line")) if a.get("line") else None
+                self.add("dialogue", (L.line_secs(q) if q else max(1.5, len(a.get("text", "")) / 15)) + min(ASK_SECS, float(a.get("secs", ASK_SECS))))
+                opts = [o for o in a.get("options") or [] if isinstance(o, dict)]   # a broken ask is the check's to report
+                o = next((o for o in opts if o.get("id") == a.get("default")), opts[0] if opts else None)
+                if o:
+                    self.done_events.add(("answered", v, o.get("id")))
+                    if self.run_actions(where, o.get("do") or []):
+                        return True
             elif k == "done":
                 return True
         return False
@@ -1358,6 +1647,16 @@ class World:
                         k = next(iter(set(b["when"]) - TRIGGER_EXTRA))
                         if k in ("use", "look"):
                             self.route.append({"node": nid, "do": k, "id": at, "secs": b["when"].get("secs", 1.0)})
+                        if k in ("carrying", "dropped"):           # picked up; put down where it's asked for, and it lies there
+                            self.route.append({"node": nid, "do": "carry", "id": at})
+                        if k == "dropped":
+                            to = b["when"].get("in")
+                            if to in self.things:
+                                self.go(to)
+                                self.things[at].room, self.things[at].pos = self.things[to].room, self.things[to].pos
+                            self.route.append({"node": nid, "do": "drop", "id": at, **({"in": to} if to else {})})
+                    if "state" in b["when"]:
+                        self.wait_state(nid, b["when"]["state"], b["when"].get("is"))
                     self.route.append({"node": nid, "do": "expect", "beat": b["id"]})
                     self.fired.add(b["id"])
                     fired_one = True
@@ -1547,8 +1846,16 @@ def main():
         route_out = argv[i + 1]
         del argv[i:i + 2]
     verbose = "-v" in argv
-    global GAME_DIR, POSES, FORMAT, STORY
+    story_file = None                     # --story FILE: a story not saved yet (the desk's), checked as this game's
+    if "--story" in argv:
+        i = argv.index("--story")
+        story_file = argv[i + 1]
+        del argv[i:i + 2]
+    global GAME_DIR, POSES, FORMAT, STORY, BOARDS
     story, path = L.load(game)
+    if story_file:
+        story = json.loads(Path(story_file).read_text(encoding="utf-8"))
+    BOARDS = L.board_games(game)
     FORMAT, STORY = story.get("format"), story
     GAME_DIR = path.parent
     POSES = set(L.poses()["poses"])

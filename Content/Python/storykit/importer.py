@@ -277,9 +277,55 @@ def room_fills(story, lid):
         finish(a, {"id": f"{rm['id']}__fill", "tags": ["story", "story:fill"]}, f"{rm['id']}/lights")
 
 
-def environment(lid):
-    """A dark interior's basics, rebuilt with the level: exposure held still (auto exposure undoes darkness), a
-    faint sky light (room_fills does the real ambient indoors)."""
+def lightkit():
+    """Light Kit's sky and window classes when the plugin is on in the project (UnrealPlugins/LightKit; the look comes
+    last, per game: tools/unreal_plugins.py turns it on), else None."""
+    return (unreal.LightKitSky, unreal.LightKitWindow) if hasattr(unreal, "LightKitSky") and hasattr(unreal, "LightKitWindow") else None
+
+
+def level_time(story, lid):
+    """The time of day a level is first seen at in the flow (STORY_FORMAT §3.1): its sky starts there, and the story
+    preview sets each scene's own time as it plays."""
+    for nid, ft in L.flow_times(story).items():          # breadth first from the start
+        n = story["flow"][nid]
+        ref = (story.get("scenes") if n.get("type") == "scene" else story.get("stitches") if n.get("type") == "stitch" else None) or {}
+        if n.get("ref") in ref and L.level_of(story, ref[n["ref"]]) == lid:
+            return ft["time"]
+    return story["game"].get("time") or L.TIME_DEFAULT
+
+
+INWARD = {"n": -90.0, "s": 90.0, "e": 180.0, "w": 0.0}     # a wall's way into its room, as a story yaw (0 east, 90 north)
+
+
+def light_kit(story, lid, kit):
+    """Light Kit in the level: its sky (Dynamic, so the preview can change the time per scene; a baked game makes a
+    Lighting Scenario per time: LightKit/CLAUDE.md §3) and a window light in every window, its arrow into the room."""
+    sky_cls, win_cls = kit
+    sky = actors.spawn_actor_from_class(sky_cls, unreal.Vector(0, 0, 1000), rot(0))
+    t = level_time(story, lid)
+    sky.set_time(getattr(unreal.LightKitTime, t.upper()), 0.0)
+    finish(sky, {"id": f"{lid}__sky", "tags": ["story", "story:sky", f"time:{t}"]}, "env")
+    for room in story["levels"][lid]["rooms"]:
+        for i, op in enumerate(room.get("openings", [])):
+            if not (op.get("window") or op.get("sill", 0.0) > 0.05):
+                continue
+            axis, v, lo, _ = L.wall_line(room, op["wall"])
+            z = room["at"][2] + op.get("sill", 0.0) + op["h"] / 2
+            at = (lo + op["at"], v, z) if axis == "y" else (v, lo + op["at"], z)
+            w = actors.spawn_actor_from_class(win_cls, to_ue(at), rot(INWARD[op["wall"]]))
+            w.set_editor_property("width", float(op["w"]) * 100.0)
+            w.set_editor_property("height", float(op["h"]) * 100.0)
+            finish(w, {"id": f"{room['id']}__window_{i}", "tags": ["story", f"story:{room['id']}", "story:window"]}, f"{room['id']}/lights")
+
+
+def environment(story, lid):
+    """The level's sky and exposure, rebuilt with it. With Light Kit on: its sky at the level's time of day and its
+    window lights (light_kit). Without: a dark interior's basics: exposure held still (auto exposure undoes
+    darkness), a faint sky light (room_fills does the real ambient indoors)."""
+    kit = lightkit()
+    if kit:
+        light_kit(story, lid, kit)
+        return
     ppv = actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0), rot(0))
     ppv.set_editor_property("unbound", True)
     try:
@@ -400,7 +446,7 @@ def build(game=None, level=None, bodies=None):
                 made[piece["id"]] = spawn(piece, cmap)
             attach_parts(made)
         cast_standins(story, lid, cmap)
-        environment(lid)
+        environment(story, lid)
         room_fills(story, lid)
         preview(game, lid, bodies)
         if story.get("format", 2) >= 3:

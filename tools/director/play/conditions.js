@@ -17,6 +17,7 @@ register("condition", "pickup", on("pickup", "item"));
 register("condition", "read", on("read", "note"));
 register("condition", "caught", { test: (v, w, ev) => ev.type === "caught" && (v === true || v === ev.by) });   // by anyone, or by that cast member
 register("condition", "hidden", { test: (v, w, ev, rt) => !!rt.player.hiding && (v === true || v === rt.player.hiding) });   // in any or that hiding place
+register("condition", "answered", { test: (v, w, ev) => ev.type === "answered" && ev.ask === v && (w.option === undefined || ev.option === w.option) });   // an ask, any or that answer
 register("condition", "flag", { test: (v, w, ev, rt) => rt.flags.has(v) });
 register("condition", "after", {                            // another beat ended, plus `secs`
   test: (v, w, ev, rt) => ev.type === "tick" && rt.ended[v] !== undefined && rt.clock - rt.ended[v] >= +(w.secs || 0) });
@@ -25,5 +26,10 @@ register("condition", "look", {                             // looked at for `se
   test: (v, w, ev, rt) => ev.type === "tick" && rt.lookedAt(v, +(w.within ?? 8)) >= +(w.secs ?? 1) });
 register("condition", "rolled", {                         // a die settled: any face, `face`, or `at_least`
   test: (v, w, ev) => ev.type === "rolled" && ev.id === v && (w.face === undefined || ev.face === w.face) && (w.at_least === undefined || ev.face >= w.at_least) });
+register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v === true || v === rt.carried.id) });   // in the hands: anything, or that; holds while carried
+register("condition", "dropped", {                        // put down and settled: anywhere, or `in` a room or a trigger
+  test: (v, w, ev) => ev.type === "dropped" && ev.id === v && (w.in === undefined || ev.in.includes(w.in)) });
+register("condition", "played", { test: (v, w, ev) => ev.type === "played" && ev.id === v && (w.result === undefined || ev.result === w.result) });   // a board game ended: any result, or that one
+register("condition", "state", { test: (v, w, ev, rt) => rt.stateOf(v) === w.is });   // a little thing in that state: holds while it is (docs/IMMERSION.md)
 register("condition", "all", { test: (v, w, ev, rt) => v.every(c => matches(c, ev, rt)) });
 register("condition", "any", { test: (v, w, ev, rt) => v.some(c => matches(c, ev, rt)) });

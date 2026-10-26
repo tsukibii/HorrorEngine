@@ -754,6 +754,8 @@ async function boot() {
   $("#swing").oninput = () => { if (+$("#swing").value && $("#doorsOpen").checked) { $("#doorsOpen").checked = false; doors(); } stage.swing(+$("#swing").value); render3d(); };
   renderTools();
   $("#planImage").onclick = savePlanImage;
+  window.addEventListener("focus", refreshLibrary);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshLibrary(); });
   $("#refFile").onchange = e => { for (const f of e.target.files) loadRef(f); e.target.value = ""; };
   try { B.refs = JSON.parse(localStorage.getItem("builder.refs") || "[]"); } catch (e) { B.refs = []; }
   renderRefs();
@@ -766,7 +768,7 @@ async function boot() {
   window.__builderReady = true;
 }
 window.B = B; window.BM = BM; Object.defineProperty(window, "__builderStage", { get: () => stage });
-window.builder = { openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
+window.builder = { refreshLibrary, openPreset, changed, save, runChecks, addRoom, addItem, loadRef, placeRefs, setTool: t => { B.tool = t; renderTools(); }, addOpening: (x, y, t) => { B.tool = t; addOpening(x, y); B.tool = "select"; }, render3d, undo, openOther, nodesHere, focusIds, addKit, snapKit, addCurtains, varyKit, splitHinge, applyHingeAt,
   swing: deg => { $("#swing").value = deg; $("#swing").oninput(); },
   resizeKitBy: (id, su, sv, x, y) => { const k = B.model.kits.find(q => q.id === id); pushUndo(); resizeKit({ k, su, sv, x0: k.x, y0: k.y, size: k.size.slice(), spec: JSON.parse(JSON.stringify(k.spec)) }, x, y); changed(); return k; }, setKitPreset: (t, v) => { if (t === "fit") B.fitPreset = v; else B.kitPreset = v; renderTools(); } };
 boot().catch(e => { console.error(e); status(e.message, "bad"); });
@@ -1021,9 +1023,24 @@ function lookEditor(r) {
   }
   const same = document.createElement("button"); same.textContent = `Same look for every ${(KINDS[r.kind] || KINDS.other).en.toLowerCase()}`;
   same.onclick = () => { pushUndo(); for (const o of B.model.rooms) if (o.kind === r.kind && o !== r) { if (r.extra.look) o.extra.look = JSON.parse(JSON.stringify(r.extra.look)); else delete o.extra.look; } changed(); };
-  const h = document.createElement("div"); h.className = "hint"; h.innerHTML = 'Look (texture sets: your <a href="pbr.html" target="_blank" style="color:inherit">PBR shelf</a>, and the library: <code>cc0.py textures &lt;word&gt;</code>)';
+  const h = document.createElement("div"); h.className = "hint"; h.innerHTML = 'Look (texture sets: your <a href="pbr.html?from=builder" target="pbrshelf" style="color:inherit">PBR shelf</a>, and the library: <code>cc0.py textures &lt;word&gt;</code>)';
   wrapEl.append(h, g, same);
   return wrapEl;
+}
+
+// back from the PBR shelf (or the kit maker) in its own tab: the sets added or changed there, and new kit presets, show
+// here without a reload (the Look pickers, the walk view)
+let refreshing = false;
+async function refreshLibrary() {
+  if (refreshing || !B.model) return;
+  refreshing = true;
+  try {
+    const before = JSON.stringify([LIBRARY.textures, LIBRARY.kit]);
+    await loadAssetLibrary(); BM.KITS.presets = LIBRARY.kit;
+    if (JSON.stringify([LIBRARY.textures, LIBRARY.kit]) === before) return;
+    renderProps(); replan();
+    if (!B.dirty) status(`the PBR shelf and the kit presets as they are now (${Object.keys(LIBRARY.textures).filter(k => k.startsWith("pbr/")).length} shelf sets)`);
+  } finally { refreshing = false; }
 }
 
 // ---- the kit (docs/KIT.md): furniture and built-ins placed in rooms, fittings on walls, floors, ceiling steps, window frames ----

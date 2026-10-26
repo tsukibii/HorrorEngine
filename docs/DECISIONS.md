@@ -2,6 +2,319 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
+
+- **The T-pose's neck stands upright, like the user's reference** ("I like the new tpose ... but the neck is too curved
+  forward, to the point it looks uncanny ... it should be more aligned like image 2 (the real life neck reference if
+  possible)": a real woman's profile, her neck nearly upright). MHR's rest pose carries the head 6 to 7.5 cm ahead of
+  the shoulders; in the T-pose the body under the head moves forward, the head staying exactly where it is, until the
+  ear is over the shoulder's top. Only the view: the A-pose (MHR's own) and everything written stay as they were.
+- **No bare skin between the eye and the lashes** ("the eyelashes have a large curved gap where the skin shows ... fix
+  it so the eyelashes curve along the skin in that area", a close-up with the band circled): the lashes lie over the
+  lid's rounded rim from the eye to its front edge, along its skin, and lift from there, as real lashes grow from the
+  lid's front edge; the lash line lies on the same strip.
+
+## 2026-10-26, later (slim default bodies; clothes tailored after the user's references)
+
+- **The default bodies are slim and young, after the user's references** ("why do we default to a chubby model ... can
+  you make the default physique for genders more like these examples": five pictures, slim young women in a school
+  uniform, an office blouse and pencil skirt, a skirt suit and a loose shirt with shorts, and a slim, athletic young
+  man in a t-shirt and trousers). The Feminine and Masculine bases are refitted (`mhr.py presets`): the woman slim
+  with a flat stomach and a gentle hourglass (about 83/57/93 cm at 1.62 m), the man slim and athletic with a V (a
+  78 cm waist at 1.76 m). New characters start halfway between the two, no longer at MHR's own average (a heavy body:
+  a 91 cm waist at 1.70 m). The heads are kept exactly as they were, so faces, photo fits and hair made on a base stay;
+  characters made before take the new bodies.
+- **The clothes look professional, like the references** ("Clothing should look more aesthetic like these examples
+  including how they wrap around the body"): cut close and following the waist, a blouse tucked smooth into a high
+  waist, a pencil skirt over the hips, a fitted blazer, crisp pleats; the drape's fullness only enough for soft folds.
+- Claude's calls inside that: what MHR's shapes can't do (its average belly) a base carries as a sculpt; the bases'
+  measures are written down in `mhr.py`; the sleeves end at the wrist by MHR's own joints (they were 6 cm off either
+  way on the new bodies).
+
+## 2026-10-26 (clothes hang: a cloth simulation, baked; a fit down to skin tight)
+
+- **The clothes looked dead** ("Can you enhance the clothing it looks death"): smooth shells round the body, the bust
+  and the belly showing through as if painted on, nothing hanging. They are now **simulated: hung by gravity and
+  baked** ("add clothing sim +gravity + bake to get a more realistic shape"). This replaces 2026-10-23's "the cloth
+  doesn't need to be properly simulated". The Character Studio hangs every garment that hangs over the body and the
+  clothes under it, in MHR's own pose, and keeps what it falls to with the character, so the desk and Unreal get the
+  hung clothes (docs/TAILOR.md §1c).
+- **A garment can be made skin tight** ("add more of a skin tight slider"): each garment has a **Fit**, 0 skin tight
+  to 1 as designed to 2 loose.
+- Claude's calls inside that: the fabrics' weights and stiffnesses are real ones (a t-shirt's jersey 0.18 kg/m², denim
+  stiffer), tops are held round the neckline and bottoms by the waistband, a top worn under trousers or a skirt is
+  tucked into them, a buttoned front stays closed, ribbed cuffs and hems hold, and a fit under a quarter doesn't hang.
+
+## 2026-10-25, evening (the Character Studio: a T-pose to shape in, a flat stomach)
+
+- **The Character Studio shows the body in a T-pose** (after the user's reference, a rigged woman standing with her
+  arms level and her legs straight): MHR's own A-pose (the arms 48° down, the elbows bent, the hands forward) made it
+  hard to judge a body while shaping it. The pose is only the view: the character stays in MHR's own pose in its
+  files, its exports, on the desk and in Unreal, and the A-pose is a switch in the view bar.
+- **A stomach can be truly flat:** MHR's average body has a belly its identity sliders can't take back (the flattest
+  takes 1 cm of 3), so the sculpt has a Belly control: all the way down, a flat stomach; up, a rounder belly.
+
+## 2026-10-24, evening (NPC states parked; the desk made easy, like RPG Maker)
+
+- **No NPC states or behaviour patterns for the first few games:** what a cast member does in play is sequenced in the
+  story (beats with `behave`, the play rounds' own phases), which is enough; docs/PATTERNS_PLAN.md stays as a plan for
+  a later game that needs an NPC reacting on her own (a free-roaming stalker).
+- **The director's desk should be much easier to use:** an intuitive, drag-and-drop tool in the spirit of RPG Maker MV
+  (Claude as lead designer and UI artist): no JSON to type, things picked from lists of what exists, commands that
+  read like sentences, drag to place, connect and reorder.
+
+## 2026-10-24, small hours (day and night; the look's plugins; accessories; plushies and board games)
+
+- **Each scene is day or night, chosen on the desk:** a scene starts at whatever time the scene it branched from was,
+  and can be changed by hand (STORY_FORMAT §3.1 `time`; dusk too, Light Kit has it). A game starts at `game.time`;
+  unset, that's **night** (Claude's call: the studio's games so far are dark interiors; change it on the desk's Game
+  page). In Unreal, Light Kit's sky follows the scene's time.
+- **The VHS filter has a night mode:** at night black records as a cool blue, (0.02, 0.03, 0.05), instead of the
+  camcorder's warm lift, which fought the deep-blue night. Light Kit's sky turns it on at Night.
+- **Baked day and night are two bakes** (a Lighting Scenario each); only the Dynamic sky changes time in play.
+- **The plugins should be easy to bring into Unreal** (UltraVHS and Light Kit), and there should be a **guide to set
+  scenes up in Blender** with the same effects.
+- **The Character Studio gets a tab for facial accessories** (piercings, glasses, stickers and whatever else can be
+  made), and **a saved character keeps enough to come back into the Studio and be changed** after it has gone to the
+  desk and to Unreal, never starting from scratch.
+- **The desk's game gets physics anyone can script:** plushies the player carries (hold E to pick up, hold E to drop)
+  that jiggle like a plushie, on simple imported objects with plushie physics applied, extensible to other physics
+  later; and **board games in the world** with predefined rules that are easy to add (Claude writes each game's rules,
+  kept in storage: simple card games, dice, spin the cup, Russian roulette).
+
+## 2026-10-24, late night (the look: after the user's reference)
+
+- **The Character Studio's default look follows the user's reference** (three frames from a Unity viewport: eyes,
+  face, lips and teeth; docs/research/look_reference.md): the iris melting into the white, wet eyes, gradient lipstick
+  with a guide and an on/off switch, wet teeth translucent at their edges, hair with soft edges. New characters start
+  from it ("soft cinematic", `tools/character/looks.js`); Face, Look applies it (or "MHR plain") to any character.
+- **The lips' and mouth's lines stay MHR's own when an expression tucks the lower lip** (a pucker's creases are fine);
+  at rest the lower lip curls into the mouth (Lower lip curl) instead of ending in a hard line.
+
+## 2026-10-24, night (the desk plays the undressed game; Unreal dresses it)
+
+- **The undressed, unprocessed game is playable in the director's desk; Unreal is for cleaning up, decals, advanced
+  lighting, effects and UI.** Characters, their motions and faces, and how each scene plays are set up in the desk.
+- **Face mocap is set up in the desk:** after the scene, set the characters, load the Kimodo motions, say whether it
+  plays as a cinematic, gameplay or a hybrid, then the takes (video with voice) under the timeline and one click puts
+  their faces on whoever speaks. Conversations by interaction, triggered sequences and the rest get the same ease
+  (docs/PERFORMANCE_PLAN.md, a plan: not built yet).
+- **Work while the user is away goes on `claude/experiments-afk`.**
+
+## 2026-10-24, evening (character creator v3: the branches together)
+
+- **The work moves to `claude/character-creator-v3`**, forked from v2, with the tailor (`port-woodhill-clothing`) and
+  `claude/practical-tesla-zncon6` merged in; `glassmorphism-theme` went in later the same day, as asked (90 minutes on).
+- **The tailor replaces the GarmentCode garment tool for good:** the old tool isn't kept alongside it. The sculpt's
+  body (and a photo's face) is what the tailor cuts the clothes from, and they refit when the sculpt changes.
+
+## 2026-10-24, later (circles on the body, a smoother bake, the view's buttons)
+
+- **Shape by hand, with circles on the body** (after the user's references: a game's face editor and body editor):
+  each circle a named control MHR's shapes don't give (the forehead's height first: the user's forehead was too big),
+  both sides at once; dragging one moves its sliders, which turn **green while it's held**. Face circles in the Head
+  view, the body's in the Body view.
+- **A face fitted to a photo must keep the eye fix** (the user's bug report: the eye distorted with a face scan).
+- **The bake can be smoothed:** sharp edges and spikes taken out in the bake only (Smooth curves, Tame flyaways); and a
+  **retro look** that hides imperfections: unlit, flat colour, colour steps, the PSX's dither.
+- **The view turns with the middle mouse everywhere** (as in Blender; Shift pans), and nothing on the page goes back by
+  a slip (the mouse's back button, right-click, Backspace); leaving with unsaved work asks first.
+
+## 2026-10-24 (the eyes on the model's own lids)
+
+- **The eye's cut starts on MHR's sculpted lids, not MediaPipe's points:** the landmarks mapped onto MHR sit inside its
+  lids (the opening came out about half the size of the model's). The opening is found in the mesh (the strip its
+  blink squeezes shut), and the eyelid line's sliders adjust that. Lines saved against MediaPipe's points start
+  again from zero.
+
+## 2026-10-23 (a word for questions in play)
+
+- **`ask` joins the format:** a stitch's beat asks the player something in play, the answers floating beside who
+  asks or at the thing; an answer runs its own actions and is heard as `answered`. STORY_FORMAT §4.
+
+## 2026-10-23 (choices float in the world)
+
+- **Every interaction is in the world, the talking isn't:** a choice's panel floats beside whoever asks (at their
+  shoulder, on the side of the frame with more room, so their face stays clear; the focus on them), at the thing it's
+  about, or under the reticle when it's about neither. The question, like every line, stays in the footer.
+- The pause menu's Quit keeps its choice in the menu (the game asking, not the world).
+
+## 2026-10-23 (the camera person; the UI is what the lens is on)
+
+- **A direction to lean on (not every game yet): the player is the one holding the camera** (a friend filming,
+  someone on a shoot), the footage on tape. Not as harsh as the research's noisiest frame: a blend. docs/VHS.md is
+  how to set it up.
+- **The UI is clean because the camera is focused on it:** a held look pulls focus onto the thing (the world softens
+  round it), the floating prompt sharpens as the reticle nears its point, answering someone keeps the subject sharp and
+  softens the edges, a card softens everything. Built on the desk (`.ph-focus`); Unreal does it with the camera's focus.
+
+## 2026-10-23 (the pause menu)
+
+- **Esc in Play pauses:** the world holds (clock, timers, NPCs) and the lights go out (the frame flickers down to nearly
+  black, like a dying bulb); the menu is drawn over the dark: Resume, Save game (an autosave row and three slots,
+  overwrite asks), Settings (Display, Graphics, Audio), Quit (a footer choice: Stay, Quit to title, Quit to desktop).
+- **Settings step, never slide:** ‹ value › with A/D or a click; levels are ten dashes. Each setting names what it is
+  in Unreal (a console variable, a scalability group, a sound class): play/menu.js `SETTINGS` is the reference for
+  Unreal's menu. The desk applies brightness and the subtitle settings; the rest wait for Unreal.
+
+## 2026-10-23 (the HUD's four places; prompts float on the thing)
+
+- **Anything done in the world floats on the thing:** the prompt sits where your hand goes (a door's handle, on your
+  side of the leaf, though the whole door takes E; a pickup's or a note's middle), with the key, the verb and the
+  thing's name (an item, a note's title). Kept above the footer; the reticle is a dot that opens into a ring.
+- **Conversations and choices are an overlaid footer:** the speaker's name above the line, the Japanese small over the
+  words, the options in their panel under the question, on one soft scrim that's there only while someone talks. The
+  Watch's scene subtitles are the same footer.
+- **The rest:** the corners are the game talking (objective, timer, log, stance); a note or a code lock is a card in
+  the middle. One type scale, two voices (a serif for what people say and write, a sans for the game), one key chip,
+  one thin-line meter. play/ui/hud.css says the four places at its top.
+- **Romance-only games use the same layout:** themes change colours only; `glass-rose` is the warm one.
+
+## 2026-10-23 (the Play UI is glass, not neumorphic)
+
+- **The default Play HUD theme is `glass`:** frosted glass slabs with a little 3D (tilt, a thick lower edge), simple
+  click-me buttons, no sliders. It sits under a VHS lost-footage grade in Unreal later.
+- **Only the choices (and the reading and code cards) get a glass panel;** all other text is boxless with a soft, edge-fading blur behind it. The glass is nearly invisible on purpose (faint tint, soft blur, hairline edge); the weight and a liquid, chromatic
+  shader come in Unreal. Every chip sits on one frame (`--ph-margin`, `--ph-pad`, `--ph-gap`): objective top-left,
+  timer and log top-right, stance bottom-left, subtitles and choices bottom-centre.
+- **A multiple choice is two panels:** the question in its own panel above, then ONE panel with the options side by side with centred dashes between them; the one under the
+  pointer (or A/D, arrows, 1-9) brightens and the rest dim (`hud.choose`, `rt.choose`). The desk's Watch uses it too (replies, timed `choose` events), so a choice looks the same everywhere; the `chooser` in play/hud.js builds it. No new story word.
+
+## 2026-10-23 (light: real day, a blue night, cheap tricks)
+
+- **Realistic day and night by simple, cheap tricks**, as drag-and-drop pieces for any project (UnrealPlugins/LightKit),
+  working with PBR textures and some baked lighting. Day like the VHS test's smooth, soft shadows.
+- **Games start with day and night only. Night is a deep, pretty blue that feels real, never pitch black** (pitch
+  black is a windowless building, not night).
+- **Not as blurry as Chilla's Art:** the camcorder look (UltraVHS's Camcorder) is the aim; borrow their reflections
+  (metal, wet ground, moving reflections) and visible light (the moonlit strip on the ground).
+
+## 2026-10-23 (plugins for any project; the VHS look)
+
+- **`UnrealPlugins/` holds plugins that work in any Unreal project**, not only HorrorStudio; each comes with
+  instructions for Claude to add it to a project.
+- **The first is UltraVHS**, a rebuild of the user's lost "ultra realistic VHS" preset from a capture of it: a natural
+  camcorder look with a handheld camera (head bob). C++ is fine.
+
+## 2026-10-23, night (the eyelid line by hand)
+
+- **The eye's cut is set by hand, not guessed:** every one of the lid's 16 points has a slider (mm), both eyes mirrored
+  unless unlinked, the line drawn on the face while it's set. **Save as default** keeps it for every character without
+  its own line (`Content/Studio/People/defaults.json`, local). The built-in start: MediaPipe's points, the lower lid
+  1 mm down (MHR's lower lid has a ledge MediaPipe's line sits on top of).
+
+## 2026-10-23, evening (character creator v2: eyes that fill, brows and lashes on the hair shader)
+
+- **The work moves to `claude/character-creator-v2`**, forked from the character creator branch.
+- **Eyes always fill their opening, in any face pose;** they move with the gaze, a blink shuts them. The eye plane and
+  vertex-based cuts are dropped (DECISIONS above, docs/LESSONS.md).
+- **Brows and lashes are a new tool on the salon's hair shader** (not the old hair.js cards, removed): lashes rooted on
+  the lid's edge, following the lid's rotation with a simple squash, no physics; brows flatter and simpler, on the
+  skin. The look aimed at: the user's reference pictures (natural fine lashes, defined clumped lashes, soft straight
+  brows). **New characters start with no brows and no lashes.**
+
+## 2026-10-23 (the Hair tab is the salon; the Studio's own hair is scrapped)
+
+- **The Studio's Hair tab opens the salon** on the character in hand: the salon's UI and steps inside the Studio,
+  the character fixed by the Studio, its bake worn when you leave the tab. Only the salon makes hair now.
+- **Scrapped:** the Studio's hair styles and wig (`wig.js`), the Perm library (`tools/perm.py`, `perm_run.py`, PERM),
+  the photo match, fit and batching (`hair_match.py`, `hair_fit.py`, `hair_batch.py`), the GPU strands
+  (`strands.js`) and the model wig (`wigify.js`). Brows and lashes stay, switched in the Face tab.
+- **The salon has a bald start and a Bald preset** (no locks, no scalp shade).
+- **Eyes: cut out, an eyeball behind.** Not the eye plane (tried and dropped the same day). The head's closed shell is
+  cut out inside the lid outline; the eyeball behind each opening gets a size that grows from its pupil back into the
+  head (it fills the opening, never clips out), and a pupil size.
+
+## 2026-10-23, evening (PBR sets: one folder at the root, a viewer in the Studio)
+
+- **PBR sets live in `assets/pbr/` at the project's root**, a folder each, and nothing inside it is tracked by git.
+  The shelf's first place, `Content/Studio/PBR`, is still read so nothing there goes missing; new sets go to
+  `assets/pbr`.
+- **Maps are found by the naming the user's sets use** (`denim1_albedo.png`, `_ao`, `_height`, `_metallic`,
+  `_normal-dx`, `_roughness`: the last word of the name) **and can be chosen by hand** when the names say wrong.
+- **A PBR viewer in the Character Studio** (its top bar's **PBR** button: each set on a sphere, cube, room corner and
+  close-up), so the sets don't have to be opened by hand to see them.
+- **A colour mask over a set isn't wanted for now**: the tint (the garment's colour over the set) is enough.
+
+## 2026-10-23, later (our own clothes: the tailor, after Woohill; GarmentCode removed)
+
+- **The GarmentCode garment maker is taken out** (its drapes were bad, and it's bloat we don't need): gone are
+  `tools/garment.py`, the Studio's `clothes.py`, `drape.py` and `make_designs.py`, the GarmentCode designs and
+  outfits, Mari's patterns in the Pilot, the server's routes, the launcher lines and the setup step.
+- **Clothes are our own generator, inspired by Woohill's character creator**, with far more polygons for our
+  realistic bodies. The cloth doesn't need to be properly simulated: the aim is **a bit better than PSX-style
+  clothing**. Success is a typical work uniform, a t-shirt, pants, shorts and a skirt.
+
+## 2026-10-23 (the Gaussian splat is removed)
+
+- **The hair splat is taken out of the repo**, not kept as a reference layer: the salon doesn't use it. Gone: the
+  splat and clay pages (`gshair.html`, `hairbuilder.html` and their scripts and tests), the splat, the clay, the wig
+  shell and the hair builder's presets in `tools/character/gshair/`, the server's routes for them, their launcher
+  lines and docs/GSHAIR.md. **Kept, because the salon's reference needs it:** the video to frames, the key, the
+  cameras and the reference in the head's space (`tools/gshair.py`, the name is historical), and its check.
+
+## 2026-10-22, evening (characters stay editable at every stage; one app with a top bar)
+
+- **A character stays editable at every stage, baked or not.** While a character lives in the Character Studio (and
+  after it goes to Unreal), every stage keeps what it was made from and the settings that made it: the pictures, the
+  body's weights, the face's settings, the skin's layers, the hair's source and its fit, each garment's design and how
+  it was draped. A bake (a texture, a draped garment, batched strands, an export) is only ever made from those, never
+  over them, and says what it was made from, so it can be made again after an edit and a stale one shows.
+  docs/CHARACTER_STUDIO.md §2 and §3.
+- **The Character Studio becomes one app**: no typing page addresses. A bar across the top swaps between the steps
+  and the editing stages (body, face, skin, paint, hair, clothes, motion, look, export), and the pages that live on the
+  desk today (face mesh, body shape, flesh, poses, pigment) move in as stages. docs/CHARACTER_STUDIO.md §4.
+- **Hair:** the salon is the route (below: hair drawn by hand on the character, baked onto it). The Gaussian splat
+  with its clay clumps was tried on the salon's branch and set aside (docs/GSHAIR.md, docs/research/hair_splats.md);
+  in the one app the salon is the Hair stage.
+
+## 2026-10-22, final (hair goes onto characters; only finished characters go to Unreal)
+
+- **Hair is added to the characters built in the Character Studio**, not made for Unreal on its own: the salon draws on
+  a character's own body and face, keeps the hair with it and bakes it onto it; the Character Studio wears it.
+- **The order:** the character in the Character Studio, its hair in the salon, then the character used in the director's
+  desk; **only the final characters, rigged and with their animations, are exported to Unreal.**
+
+## 2026-10-22, last (the salon's cover)
+
+- **Gaps are covered by a Y parting, not a plane:** along the head's middle, each root a Y (one root, strands going
+  left and right) lying over all the other hair, as long as the hair rooted highest (the user's characters have no
+  spiky anime hair, so that's enough), and it falls with gravity. A placed plane was tried and dropped. No combing yet.
+
+## 2026-10-22, latest (the salon's scalp, layers and gravity)
+
+- **The fill is dropped** (the trace, the orange glow, the mass of hair): under the hair shader it doesn't look good.
+  In its place **the scalp is darkened**: a flat colour under the hair (no shine, no shader), with a thickness (its
+  opacity) from sparse to full, so the hair looks fuller and deeper.
+- Hair **lies on the scalp** (it floated above it), and the scalp takes roots on the **sideburns**.
+- **Layer by height** is a toggle: hair that grows higher always lies over the hair below it, like real hair.
+- **A gravity switch** drops all the hair: it falls naturally, the user picks the moment, switches it off and refines
+  by hand what should stick up.
+- **The handle pull is Blender's proportional editing**: the wheel grows and shrinks the area a pull moves, the
+  effect fading with distance.
+
+## 2026-10-22, later still (the salon, not the splat)
+
+- **The Gaussian splat route was worth testing and isn't good enough** (docs/GSHAIR.md: the splat, the clay, the hand
+  builder). It stays in the repo as a reference layer only. **Hair is drawn by hand in a virtual salon** on the head
+  or the clothed body: vector locks (a strand, a sheet from a root line with the ends' spread on the wheel, a bundle),
+  shaped by their handles and a few sliders, in groups to hide and show; stylised by default, realism as an option;
+  physics only on the locks the user marks; never clipping the body or clothes; fake volume from a scalp cap with a
+  thickness; brows and lashes as variations; easier than Blender. The plan: docs/SALON_PLAN.md (Blender's hair read
+  first, as research, never copied). The animation refiner comes later (per clip physics, keyed poses).
+- The footage is about 0.4 MP and soft; stylised realism (Arcane-like) is the look; the humans no longer go to Unreal.
+- **Physics is game-grade:** a few locks jiggle with the head, wind is a rustle with no direction, nothing clips; no
+  more than that. **The salon must be layman-easy and fun, like a character creator:** never a blank head (a wall of
+  cuts first), the reference in the room, tracing the outline over it as the main act, galleries with pictures for
+  the fringe, sidelocks, tails, length, colour; handles and word sliders, no numbers; East Asian styles first.
+- **The video stays the reference, as a locked overlay:** a camera per frame in the head's space; turning the view
+  snaps to the nearest frame, laid half-transparent over the head, so the reference is right from every angle; a
+  video that only reaches the side is mirrored onto the other side. The reference's scale, position and the orbit's
+  lock to the view (front frame, direction, sweep, height) are always adjustable by hand; a green screen is optional,
+  the overlay is transparent anyway. **Mirror is a toggle with a seam:** the middle
+  by default, or the user's own (moved sideways, or drawn on the scalp); hair placed on one side is twinned on the
+  other until the link is broken.
+
 ## 2026-10-21 (buttons, not dragging; the struggle is mashed; hiding works)
 
 - **Interactables are buttons** (E, or a click): no Amnesia-style dragging of doors and drawers, no sliders. A hiding
@@ -11,6 +324,41 @@ The user's answers, newest first. They override the plan, the research and the d
 - **Hiding must work in Play** (the Pilot's locker didn't): E gets in, you watch the room through the slats, E gets
   out.
 - The Play UI doesn't look its best yet: touch-ups come much later, with the other polish.
+
+## 2026-10-22, later (Perm, not DiffLocks; lock points; the look we want)
+
+- **DiffLocks is dropped:** its checkpoints need an account, and the user won't register. Removed from the repo
+  (delete `vendor/difflocks/` if it was set up). **Perm** replaces it (Yale and Adobe, ICLR 2025: MIT code, checkpoints
+  and 343 fitted artist hairstyles on the authors' public links, no account): a hairstyle library to browse and blend,
+  matched to a photo by its hair's outline. Non-commercial on its data's side, which fits the free games. Run sealed off
+  the network like DiffLocks was.
+- **The look:** hybrid realism, a bit low-poly but aesthetic, beyond PSX, the way MHR looks; characters that light well
+  in medium shots from the player's eye. Hair: East Asian hairstyles first. Skin: glass and youthful skin as well as
+  old, oily skin, makeup presets. A touch-up painting tool over the projected face. Clothes: lock points on the body
+  (no more pants at the ankles) and presets: shirt and trousers, school uniforms.
+
+## 2026-10-22 (hair from a photo with DiffLocks; batched like an anime game; DiffLocks since dropped, above)
+
+- **The games are free, never sold** (itch.io at most, no payments, tips or donations): an experiment. On that basis
+  **DiffLocks** (a picture to about 100k strands; Meshcapade and MPI, non-commercial licence: "non-commercial artistic
+  projects" allowed) is used for hair from a photo. Its code, checkpoints and output stay local (`vendor/difflocks/`,
+  `Content/Studio/People/`, both git-ignored); the user registers for the checkpoints themselves. Hair it made is marked
+  in the character's files, so it can be found and replaced if a game ever earns anything. No sexual content with it.
+- **It runs with no network at all** (a sealed network namespace), so nothing it or MediaPipe does can leave the
+  machine; `tools/difflocks.py audit` lists every place in its code that could reach out.
+- **Hair is batched like an anime game's:** the strands grouped into clumps, each clump one guide with a short bone
+  chain, and only the chains get physics; every strand follows its clump. docs/research/hair.md.
+
+## 2026-10-21 (our own characters: MHR first, one app for everything character)
+
+- **Characters are built on MHR, not MetaHuman** (docs/MHR_PIPELINE_RESEARCH.md): MetaHuman Creator proved restricting
+  and slow. This replaces the 2026-10-20 routes that made every final character a MetaHuman (Kimodo onto the
+  MetaHumans, clothing through MetaHuman's Outfit Asset): Kimodo's motions go onto our MHR characters, garments onto
+  MHR bodies. MetaHuman stays only as an optional branch for a hero face if the close-up A/B (T7) says so.
+- **One app for everything character** (`tools/character/`, the Character Studio): body, face from photos, the
+  expressions, hair and clothing as they come, Kimodo's motions played on the character, and the export to Unreal.
+  It grows out of the body editor. Avoid ComfyUI and other outside apps where we can.
+- The work goes on its own branch, `claude/character-studio`, off the face branch.
 
 ## 2026-10-21 (scenes blend; triggered scenes)
 

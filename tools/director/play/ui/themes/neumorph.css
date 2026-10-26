@@ -4,7 +4,7 @@
 .play-hud[data-theme="neumorph"]{
   --ph-font:"Nunito","Varela Round",system-ui,sans-serif; --ph-text:#4f5a6b; --ph-muted:#8c96a6; --ph-hidden:rgba(20,26,38,.7); --ph-accent:#4f9bf0; --ph-bad:#e0645a;
   --ph-surface:#e6e9ef; --ph-veil:rgba(20,22,28,.45);
-  --ph-dot:8px; --ph-ring:42px; --ph-cursor:#e6e9ef; --ph-cursor-shadow:0 0 0 1px rgba(0,0,0,.25),0 1px 4px rgba(0,0,0,.6);
+  --ph-dot:8px; --ph-ring:26px; --ph-cursor:#e6e9ef; --ph-cursor-shadow:0 0 0 1px rgba(0,0,0,.25),0 1px 4px rgba(0,0,0,.6);
   --ph-radius-s:9px; --ph-radius:16px; --ph-radius-l:26px;
   --ph-pop:-4px -4px 9px rgba(255,255,255,.75),5px 5px 11px rgba(120,132,152,.55);
   --ph-pop-l:-9px -9px 22px rgba(255,255,255,.7),12px 12px 26px rgba(110,122,142,.55);
@@ -12,6 +12,8 @@
   --ph-text-shadow:none;
   --ph-line-bg:#e6e9ef; --ph-line-pad:10px 22px; --ph-line-shadow:-4px -4px 9px rgba(255,255,255,.55),5px 5px 12px rgba(0,0,0,.45);
   --ph-chip-bg:#e6e9ef; --ph-chip-pad:6px 14px 6px 6px;
+  --ph-corner-bg:#e6e9ef; --ph-corner-pad:8px 14px; --ph-corner-shadow:-4px -4px 9px rgba(255,255,255,.55),5px 5px 12px rgba(0,0,0,.45);
+  --ph-scrim:none; --ph-ring-fill:#e6e9ef;
 }
 .play-hud[data-theme="neumorph"] .ph-key{background:linear-gradient(145deg,#f1f4f9,#d9dde4)}
 .play-hud[data-theme="neumorph"] .ph-btn{background:linear-gradient(145deg,#eef1f6,#dde1e8)}

@@ -13,7 +13,7 @@ encoder, about 20 GB; torch; temp files). Nothing goes to the user's profile on 
     python tools/kimodo.py demo                   NVIDIA's timeline demo on http://127.0.0.1:7860
     python tools/kimodo.py stage --game G --at <spot> [--who <cast>] [--rooms a,b | --level] [--scale s] [--out f]
                                                   a story's rooms for the demo's Stage panel (see-through boxes)
-    python tools/kimodo.py py <script> [args]     any Python inside the environment (motion.py preview uses it)
+    python tools/kimodo.py py <script> [args]     any Python inside the environment (motion.py constrain uses it)
     python tools/kimodo.py env                    print the environment variables it sets (for a shell of your own)
 
 TEXT_ENCODER_DEVICE=cpu (set in setup/env.json by `setup.py kimodo --text-cpu`) keeps the GPU under 3 GB.
@@ -64,6 +64,10 @@ def environ(home, k=None):
     out["KIMODO_STAGE"] = str(STAGE_FILE)      # the demo's Stage panel starts with the last one written
     out["KIMODO_THREE_DIR"] = str(ROOT / "tools" / "director" / "vendor")   # three.js for the demo's pose window
     out["KIMODO_STUDIO_ROOT"] = str(ROOT)      # the demo's pose library and Send to Studio
+    out["SERVER_NAME"] = "127.0.0.1"           # the demo listens on every network otherwise (its default is 0.0.0.0)
+    out["HF_HUB_DISABLE_TELEMETRY"] = "1"      # no usage stats on Hugging Face's requests
+    out["GRADIO_ANALYTICS_ENABLED"] = "False"  # nor from gradio (its text-encoder client and server)
+    out["DO_NOT_TRACK"] = "1"
     if (k or {}).get("text_encoders_dir"):
         out["TEXT_ENCODERS_DIR"] = k["text_encoders_dir"]
         out["TEXT_ENCODER_MODE"] = "local"    # no text-encoder server to try first
@@ -79,11 +83,11 @@ def full_env(home, k=None):
     return e
 
 
-def run_in(home, k, argv):
+def run_in(home, k, argv, cwd=None):
     p = paths(home)
     if not p["python"].exists():
         sys.exit(f"no Kimodo environment at {home}: run `python setup/setup.py kimodo` first")
-    return subprocess.call(argv, env=full_env(home, k))
+    return subprocess.call(argv, env=full_env(home, k), cwd=cwd)
 
 
 CHECK = r'''
@@ -267,7 +271,7 @@ def main(argv):
     if cmd == "gen":
         return run_in(home, k, [exe("kimodo_gen"), *rest])
     if cmd == "demo":
-        return run_in(home, k, [exe("kimodo_demo"), *rest])
+        return run_in(home, k, [exe("kimodo_demo"), *rest], cwd=ROOT)   # the shot list's save paths are the project's
     if cmd == "stage":
         return stage(rest)
     if cmd == "py":

@@ -8,6 +8,7 @@ Claude edits, so both see each other's changes; every save keeps the previous fi
 Plain Python, no installs. Listens on 127.0.0.1 only.
 """
 import json
+import re
 import os
 import subprocess
 import sys
@@ -23,15 +24,20 @@ from storykit import plan as P  # noqa: E402
 from storykit import library as LIB  # noqa: E402
 from storykit import kit as KIT  # noqa: E402
 from storykit import pbr as PBR  # noqa: E402
+from storykit import life as LIFE  # noqa: E402
 sys.path.insert(0, str(HERE.parent))                 # tools/: the checks (story_check, level_check)
 
-STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain"}
+STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".txt": "text/plain",
+          ".jpg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml"}   # images: the guide's pictures (guide/)
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 BODIES = L.STUDIO / "Bodies"
 FOOTAGE = L.ROOT / "Footage"          # the takes, as intake.py copies them (Footage/<Game>/<take id>.mp4)
 MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4"}
 
+HEADS = L.STUDIO / "Heads"           # the face page's pictures and heads (git-ignored: real people's faces)
+FACE_FILES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
+FACE = {"proc": None}
 PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
 
@@ -40,6 +46,22 @@ def history_dir(game):
     d = ROOT / "Saved" / "Story" / game / "history"
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def face_call(req):
+    """one request to tools/face_mesh.py's worker (its Worker: MediaPipe's environment, started on first use and kept,
+    holding the pictures' points and the head templates, so a slider's fit takes a fraction of a second)"""
+    if FACE["proc"] is None:
+        import face_mesh  # noqa: PLC0415 - tools/, on the path above
+        FACE["proc"] = face_mesh.Worker(ROOT / "Saved" / "face_mesh_worker.log")
+    return FACE["proc"].call(req)
+
+
+def face_name(n):
+    """a face session's or a picture's name: letters, digits, _ - . and no leading dot"""
+    import urllib.parse
+    n = urllib.parse.unquote(n)
+    return n if n and not n.startswith(".") and all(ch.isalnum() or ch in "_-." for ch in n) else None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -88,6 +110,17 @@ class Handler(BaseHTTPRequestHandler):
         f = HERE.joinpath(*parts) if parts and ".." not in parts else None
         if f and f.suffix in STATIC and f.is_file() and HERE in f.resolve().parents:
             return self.send(200, f.read_bytes(), STATIC[f.suffix])
+        if parts[0] in ("shared", "env") and len(parts) == 2 and ".." not in parts:      # tools/shared (components any page can import) and Content/Studio/Env (HDRs)
+            f = (ROOT / "tools" / "shared" if parts[0] == "shared" else ROOT / "Content" / "Studio" / "Env") / parts[1]
+            if f.is_file():
+                return self.send(200, f.read_bytes(), "text/javascript" if f.suffix == ".js" else "application/octet-stream")
+        if parts[0] == "boardgames" and len(parts) == 3 and parts[2].endswith(".js") and self.game_path(parts[1]):   # a board game's rules: the game's own, else the studio's
+            for d in (L.GAMES / parts[1] / "BoardGames", L.BOARD_GAMES):
+                if (d / parts[2]).is_file() and d.resolve() in (d / parts[2]).resolve().parents:
+                    return self.send(200, (d / parts[2]).read_bytes(), "text/javascript")
+            return self.send(404, {"error": f"no board game {parts[2]}"})
+        if parts[:2] == ["api", "boardgames"] and len(parts) == 3 and self.game_path(parts[2]):   # the games a table can have
+            return self.send(200, {"games": [dict(m, id=k) for k, m in L.board_games(parts[2]).items()]})
         if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/
             return self.send(200, UL.status(parts[3]))
@@ -118,8 +151,8 @@ class Handler(BaseHTTPRequestHandler):
         if parts[0] == "pbr" and len(parts) >= 3:
             import urllib.parse
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
-            pf = PBR.ROOT.joinpath(*rel) if ".." not in rel else None
-            if pf and pf.is_file() and pf.suffix.lower() in BODY and PBR.ROOT.resolve() in pf.resolve().parents:
+            pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
+            if pf and pf.is_file() and pf.suffix.lower() in BODY:
                 return self.send(200, pf.read_bytes(), BODY[pf.suffix.lower()], cache=True)
             return self.send(404, {"error": "not on the PBR shelf"})
         if parts[0] == "library" and len(parts) >= 3 and ".." not in parts:
@@ -127,8 +160,15 @@ class Handler(BaseHTTPRequestHandler):
             if lf.is_file() and lf.suffix.lower() in BODY and LIB.LIB.resolve() in lf.resolve().parents:
                 return self.send(200, lf.read_bytes(), BODY[lf.suffix.lower()])
             return self.send(404, {"error": "not in the library"})
-        if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions
-            return self.send(200, (L.STUDIO / "soma77.json").read_bytes())
+        if parts[:2] == ["api", "lives"]:            # the little things' lives (Content/Studio/Life/lives.json, life.js)
+            return self.send(200, LIFE.data())
+        if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions, and its twin of each previs joint
+            soma = json.loads((L.STUDIO / "soma77.json").read_text(encoding="utf-8"))
+            try:
+                soma["map"] = json.loads((L.ROOT / "setup" / "kimodo.json").read_text(encoding="utf-8"))["npz"]["joint_map"]
+            except (OSError, KeyError, ValueError):
+                pass
+            return self.send(200, soma)
         if parts[:2] == ["api", "poses"]:
             return self.send(200, (L.STUDIO / "poses.json").read_bytes())
         if parts[:2] == ["api", "motion"] and len(parts) >= 4:
@@ -152,7 +192,14 @@ class Handler(BaseHTTPRequestHandler):
             mdir = L.GAMES / parts[2] / "Motion"
             return self.send(200, {"inbox": str(inbox.relative_to(L.ROOT)).replace("\\", "/"),
                                    "saved": sorted(f.stem for f in inbox.glob("*.npz")) + sorted(f.stem for f in L.ROOT.glob("*.npz")),
-                                   "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else []})
+                                   "made": sorted(f.stem for f in mdir.glob("*.json")) if mdir.is_dir() else [],
+                                   "mtimes": {f.stem: f.stat().st_mtime for f in mdir.glob("*.json")} if mdir.is_dir() else {}})
+        if parts[:3] == ["api", "face", "sessions"]:  # the face page: each name with its pictures
+            out = []
+            for d in sorted(HEADS.glob("*/pictures")):
+                out.append({"name": d.parent.name, "pictures": sorted(f.name for f in d.iterdir()
+                                                                       if f.suffix.lower() in FACE_FILES)})
+            return self.send(200, {"sessions": out})
         if parts[:2] == ["api", "kit"]:               # the kit's presets (Content/Studio/Kit/presets.json)
             return self.send(200, KIT.presets_file())
         if parts[:2] == ["api", "games"]:
@@ -162,6 +209,15 @@ class Handler(BaseHTTPRequestHandler):
             if not p or not p.exists():
                 return self.send(404, {"error": "no such game"})
             return self.send(200, {"story": json.loads(p.read_text(encoding="utf-8")), "mtime": p.stat().st_mtime})
+        if parts[:2] == ["api", "history"] and len(parts) in (3, 4) and self.game_path(parts[2]):   # the saves kept, newest first; one of them
+            hist = ROOT / "Saved" / "Story" / parts[2] / "history"
+            if len(parts) == 3:
+                files = sorted(hist.glob("*.json"), reverse=True) if hist.is_dir() else []
+                return self.send(200, {"saves": [{"name": f.stem, "at": f.stat().st_mtime, "size": f.stat().st_size} for f in files]})
+            f = hist / (parts[3] + ".json")
+            if not re.fullmatch(r"\d{8}-\d{6}", parts[3]) or not f.is_file():
+                return self.send(404, {"error": "no such save"})
+            return self.send(200, {"name": parts[3], "story": json.loads(f.read_text(encoding="utf-8"))})
         if parts[:2] == ["api", "mtime"] and len(parts) == 3:
             p = self.game_path(parts[2])
             return self.send(200, {"mtime": p.stat().st_mtime if p and p.exists() else 0})
@@ -208,6 +264,44 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parts = self.path.strip("/").split("/")
+        if parts[:2] == ["api", "take"] and len(parts) == 4 and self.game_path(parts[2]):   # a take dropped on its clip in the desk
+            name = parts[3]
+            if not re.fullmatch(r"[A-Za-z0-9_]+\.[A-Za-z0-9]+", name) or Path(name).suffix.lower() not in MEDIA:
+                return self.send(400, {"error": "a take is <take id>.mp4 (or .mov .webm .wav .mp3 .m4a)"})
+            f = FOOTAGE / parts[2] / name
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(self.body())
+            return self.send(200, {"ok": True, "file": name, "kb": round(f.stat().st_size / 1024)})
+        if parts[:3] in (["api", "face", "picture"], ["api", "face", "remove"]) and len(parts) == 5:
+            name, fname = face_name(parts[3]), face_name(parts[4])
+            if not name or not fname or Path(fname).suffix.lower() not in FACE_FILES:
+                return self.send(400, {"error": "a name of letters, digits, _ - . and a picture or video"})
+            f = HEADS / name / "pictures" / fname
+            if parts[2] == "remove":
+                f.unlink(missing_ok=True)
+                return self.send(200, {"ok": True})
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(self.body())
+            return self.send(200, {"ok": True, "kb": round(f.stat().st_size / 1024)})
+        if parts[:2] == ["api", "face"] and len(parts) == 3 and parts[2] in ("detect", "template", "fit", "save"):
+            req = json.loads(self.body().decode("utf-8") or "{}")
+            req["op"] = parts[2]
+            if parts[2] != "template":
+                name = face_name(req.get("name", ""))
+                if not name:
+                    return self.send(400, {"error": "a name of letters, digits, _ - ."})
+                req["name"] = name
+            if parts[2] == "detect":
+                d = HEADS / req["name"] / "pictures"
+                req["files"] = [str(f) for f in sorted(d.iterdir()) if f.suffix.lower() in FACE_FILES] if d.exists() else []
+                if not req["files"]:
+                    return self.send(400, {"error": "add pictures first"})
+            if parts[2] == "save":
+                req["out"] = str(HEADS)
+            code, res = face_call(req)
+            if parts[2] == "save" and "path" in res:
+                res["path"] = str(Path(res["path"]).relative_to(ROOT))
+            return self.send(code, res)
         if parts[:2] == ["api", "pbr"] and len(parts) >= 3:     # /api/pbr/<category>/<name>: its tile, source, url, note
             import urllib.parse
             ref = "pbr/" + "/".join(urllib.parse.unquote(p) for p in parts[2:])
@@ -241,6 +335,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, {"error": f"the world doesn't plan yet: {e}"})
             th = {k: {"kind": t.kind, "use": t.use, "level": t.level, "room": t.room, "pos": t.pos, "size": t.size,
                       "yaw": t.yaw} for k, t in things.items()}
+            for k, t in things.items():                    # a little thing's life and the state it starts in (lives.json)
+                lf = LIFE.life_of(t.d) if t.kind == "prop" else None
+                if lf:
+                    th[k].update(life=lf, state=LIFE.start(t.d, lf))
             return self.send(200, {"pieces": pieces, "things": th})
         if parts[:2] == ["api", "worldcheck"]:          # the scene builder: the world rules on an unsaved story
             story = json.loads(self.body().decode("utf-8"))
@@ -292,6 +390,21 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:3] == ["api", "unreal", "generate"] and len(parts) == 4 and self.game_path(parts[3]):
             import unreal_link as UL  # noqa: PLC0415 - tools/: the checks, then the build in Unreal
             return self.send(200, UL.generate(parts[3]))
+        if parts[:2] == ["api", "storycheck"] and len(parts) == 3 and self.game_path(parts[2]):
+            import tempfile  # noqa: PLC0415 - the desk's story as it is now, not saved yet: checked as this game's
+            fd, tmp = tempfile.mkstemp(suffix=".json", prefix="desk_story_")
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(self.body())
+                r = subprocess.run([sys.executable, str(ROOT / "tools" / "story_check.py"), "--game", parts[2], "--story", tmp],
+                                   capture_output=True, text=True, encoding="utf-8", timeout=300)
+            finally:
+                os.unlink(tmp)
+            lines = (r.stdout + r.stderr).splitlines()
+            last = next((x for x in reversed(lines) if x.startswith("STORY ")), "STORY FAILED (no answer)")
+            return self.send(200, {"ok": last.startswith("STORY ok"), "summary": last,
+                                   "errors": [x[7:] for x in lines if x.startswith("ERROR: ")],
+                                   "warnings": [x[9:] for x in lines if x.startswith("warning: ")]})
         if parts[:2] == ["api", "check"] and len(parts) == 3 and self.game_path(parts[2]):
             out = []
             for tool in ("story_check.py", "level_check.py"):
