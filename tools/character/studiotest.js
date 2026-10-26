@@ -543,9 +543,9 @@ const png = rgb => {
   });
   await step("the eyes softened: the iris melts into the white (Iris edge softness), the eye occlusion shades the white at the lids and corners, a tear line along each lower lid (only when set)", async () => {
     const r = await page.evaluate(() => {
-      const b = window.__body, column = () => {                     // the eye's texture down a few meridians, from the front pole: brightness per row
-        const cv = b.eyeMats.L.map.image, H = cv.height, d = cv.getContext("2d").getImageData(0, 0, cv.width, H).data;
-        return [0, cv.width / 4, cv.width / 2].map(x => Array.from({ length: H }, (_, y) => { const i = (y * cv.width + x) * 4; return (d[i] + d[i + 1] + d[i + 2]) / 3; }));
+      const b = window.__body, column = () => {                     // the eye's paint (baked flat, the shader's own) along a few radii from the middle: brightness per step
+        const S = 512, cv = b.EYEPAINT.bakeEye(b.renderer, b.st.eyes, b.eyeShapeOf("L"), "L", S), d = cv.getContext("2d").getImageData(0, 0, S, S).data;
+        return [0, 1, 2].map(k => { const a = k * Math.PI / 3; return Array.from({ length: S / 2 }, (_, r) => { const x = Math.round(S / 2 + Math.cos(a) * r), y = Math.round(S / 2 - Math.sin(a) * r), i = (Math.min(S - 1, y) * S + Math.min(S - 1, x)) * 4; return (d[i] + d[i + 1] + d[i + 2]) / 3; }); });
       };
       const was = { ...b.st.eyes }; b.st.expr.fill(0);
       b.st.eyes.limbalSoft = 0; b.paintEyes(); const H0 = column();
@@ -587,6 +587,78 @@ const png = rgb => {
     if (!(t.peak > 10 && t.peak < 115)) throw new Error(`the tear line adds up to ${t.peak.toFixed(0)} of 255 (a glint is 10 to 115)`);
     if (!t.a2c) throw new Error("the skin's openings are cut with a hard edge (no alpha to coverage)");
     console.log(`       the tear line close up: at most ${t.peak.toFixed(0)} of 255 added, faded at its edges`);
+  });
+  await step("the eye refracts (tools/shared/eye.js, MetaHuman's way): seen from the side the pupil sits behind the cornea where a ray traced through the dome by Snell's law puts it, not painted on its front; the cornea reflects the lights inside the iris; off, the iris is painted on the eyeball as before", async () => {
+    await page.click('#views button[data-v="head"]');
+    const was = await page.evaluate(() => JSON.stringify(window.__body.st.eyes));
+    const shot = async (yaw, eyes, plain) => {
+      await page.evaluate(([yaw, eyes, plain]) => {
+        const b = window.__body, o = b.orbit, h = b.st.height, e = b.EYES.L.position;
+        b.st.expr.fill(0); Object.assign(b.st.eyes, eyes); b.paintEyes();
+        o.yaw = yaw; o.pitch = 0.02; o.zoom = 0.12; o.pan.set(e.x, e.y - (h - 0.12 * h / 1.7), e.z); b.compose();
+        if (plain) for (const m of Object.values(b.eyeMats)) { m.clearcoat = 0; m.roughness = 1; m.envMapIntensity = 0; }   // no reflections: the pupil a clean dark blob
+      }, [yaw, eyes, plain]);
+      await page.waitForTimeout(600);
+      const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      return (await page.screenshot({ clip, timeout: 120000 })).toString("base64");
+    };
+    const flat = { pupil: 0.45, limbal: 0, limbalSoft: 0, fibres: 0, veins: 0, iris: "#8a6a4a", iris2: "#8a6a4a", sclera: "#f0f0f0", corner: "#f0f0f0", cornerPink: 0, scleraShade: 0,
+                   catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
+    const on = await shot(0.6, { ...flat, real: true }, true), off = await shot(0.6, { ...flat, real: false }, true);
+    const r = await page.evaluate(async ([on, off, pupil]) => {
+      const b = window.__body, THREE = b.THREE, cam = b.camera, L = b.EYES.L, s = b.eyeShapeOf("L");
+      const px = async b64 => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height;
+        const g = c.getContext("2d"); g.drawImage(i, 0, 0); return { d: g.getImageData(0, 0, i.width, i.height).data, w: i.width, h: i.height }; };
+      const A = await px(on), B = await px(off), at = p => { const v = L.localToWorld(p.clone()).project(cam); return [(v.x + 1) / 2 * A.w, (1 - v.y) / 2 * A.h]; };
+      // the pupil as a ray traced through each pixel sees it, apart from the shader: the eyeball (the white's sphere, the
+      // cornea's dome over the limbus) hit first; then the paint read where it lies (off), or where the ray, bent at the dome
+      // by Snell's law, lands on the iris's plane (on); the pupil is where that reading falls within its radius
+      const C = L.worldToLocal(cam.getWorldPosition(new THREE.Vector3())), apex = at(new THREE.Vector3(0, 0, s.zc + s.rc));
+      const reach = Math.hypot(...[0, 1].map(k => at(new THREE.Vector3(s.rho, 0, s.zl))[k] - at(new THREE.Vector3(0, 0, s.zl))[k]));   // the iris's radius on screen
+      const read = (i, j, ior) => {
+        const D = L.worldToLocal(new THREE.Vector3((i + 0.5) / A.w * 2 - 1, 1 - (j + 0.5) / A.h * 2, 0.5).unproject(cam)).sub(C).normalize();
+        const oc = new THREE.Vector3(C.x, C.y, C.z - s.zc), bq = oc.dot(D), dq = bq * bq - oc.lengthSq() + s.rc * s.rc;
+        let P = dq >= 0 ? C.clone().addScaledVector(D, -bq - Math.sqrt(dq)) : null;
+        if (!P || P.z < s.zl) { const b2 = C.dot(D), d2 = b2 * b2 - C.lengthSq() + 1; if (d2 < 0) return null; P = C.clone().addScaledVector(D, -b2 - Math.sqrt(d2)); return [P.x, P.y]; }
+        if (!ior) return [P.x, P.y];
+        const n = new THREE.Vector3(P.x, P.y, P.z - s.zc).normalize(), eta = 1 / ior, nd = n.dot(D), k = 1 - eta * eta * (1 - nd * nd);
+        const t = D.clone().multiplyScalar(eta).sub(n.multiplyScalar(eta * nd + Math.sqrt(k))), h = Math.max(P.z - s.zi, 0) / Math.max(-t.z, 0.08);
+        return [P.x + t.x * h, P.y + t.y * h];
+      };
+      const box = f => { let n = 0, x = 0, y = 0;                   // the centroid of what f says is pupil, round the eye's axis
+        for (let j = Math.floor(apex[1] - 1.4 * reach); j < apex[1] + 1.4 * reach; j++) for (let i = Math.floor(apex[0] - 1.4 * reach); i < apex[0] + 1.4 * reach; i++)
+          if (i >= 0 && j >= 0 && i < A.w && j < A.h && Math.hypot(i - apex[0], j - apex[1]) <= 1.4 * reach && f(i, j)) { n++; x += i; y += j; }
+        return n ? [x / n, y / n, n] : null; };
+      const dark = I => (i, j) => { const o = (j * I.w + i) * 4; return I.d[o] + I.d[o + 1] + I.d[o + 2] < 3 * 14; };   // the pupil only (the iris's far side, lit as a bowl, goes dark too)
+      const traced = ior => (i, j) => { const q = read(i, j, ior); return !!q && Math.hypot(q[0], q[1]) < pupil * s.rho; };
+      return { cOn: box(dark(A)), cOff: box(dark(B)), tOn: box(traced(1.336)), tOff: box(traced(0)), tUnbent: box(traced(1)), reach };
+    }, [on, off, flat.pupil]);
+    if (!r.cOn || !r.cOff || !r.tOn || !r.tOff) throw new Error(`no pupil found: ${JSON.stringify(r)}`);
+    const len = v => Math.hypot(v[0], v[1]), d = (a, b) => [a[0] - b[0], a[1] - b[1]];
+    const missOn = len(d(r.cOn, r.tOn)), missOff = len(d(r.cOff, r.tOff)), got = d(r.cOn, r.cOff), want = d(r.tOn, r.tOff), unbent = d(r.tUnbent, r.tOff);
+    if (!(len(want) > 5) || !(missOn < 4) || !(missOff < 4))
+      throw new Error(`the pupil drawn at ${r.cOn.slice(0, 2).map(v => v.toFixed(1))} (traced ${r.tOn.slice(0, 2).map(v => v.toFixed(1))}), painted at ${r.cOff.slice(0, 2).map(v => v.toFixed(1))} (traced ${r.tOff.slice(0, 2).map(v => v.toFixed(1))})`);
+    // the cornea reflects the lights (whatever lights the view has): a highlight inside the dark iris that goes when its clear
+    // coat goes; and off, the painted catchlights are back
+    const inside = async (real, plain) => {
+      const img = await shot(0.15, { ...JSON.parse(was), real }, plain);
+      return page.evaluate(async b64 => {
+        const b = window.__body, THREE = b.THREE, L = b.EYES.L, s = b.eyeShapeOf("L"), i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode();
+        const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); const d = g.getImageData(0, 0, i.width, i.height).data;
+        const at = p => { const v = L.localToWorld(p.clone()).project(b.camera); return [(v.x + 1) / 2 * i.width, (1 - v.y) / 2 * i.height]; };
+        const m = at(new THREE.Vector3(0, 0, s.zl)), e = at(new THREE.Vector3(s.rho, 0, s.zl)), R = 0.8 * Math.hypot(e[0] - m[0], e[1] - m[1]);
+        let n = 0, peak = 0;
+        for (let y = Math.max(0, Math.floor(m[1] - R)); y < Math.min(i.height, m[1] + R); y++) for (let x = Math.max(0, Math.floor(m[0] - R)); x < Math.min(i.width, m[0] + R); x++)
+          if (Math.hypot(x - m[0], y - m[1]) < R) { const o = (y * i.width + x) * 4, l = (d[o] + d[o + 1] + d[o + 2]) / 3; peak = Math.max(peak, l); if (l > 165) n++; }
+        return { n, peak };
+      }, img);
+    };
+    const coat = await inside(true, false), bare = await inside(true, true), painted = await inside(false, false);
+    await page.evaluate(was => { const b = window.__body; Object.assign(b.st.eyes, JSON.parse(was)); b.paintEyes(); b.compose(); }, was);
+    if (!(coat.peak > 180 && bare.peak < 140 && coat.n > bare.n)) throw new Error(`the cornea doesn't reflect the lights inside the iris: its brightest ${coat.peak.toFixed(0)} with the coat, ${bare.peak.toFixed(0)} without`);
+    if (!(painted.n > 20)) throw new Error(`the painted eye lost its catchlights (${painted.n} bright pixels)`);
+    console.log(`       34° off the eye's axis the pupil sits ${len(got).toFixed(1)} px from where it's painted on the cornea's front; traced through the dome by Snell's law, ${len(want).toFixed(1)} (unbent ${len(unbent).toFixed(1)}): drawn within ${missOn.toFixed(1)} px of the trace, painted within ${missOff.toFixed(1)}`);
+    console.log(`       the cornea reflects the lights inside the iris (its brightest ${coat.peak.toFixed(0)} of 255, ${coat.n} bright pixels; ${bare.peak.toFixed(0)} without its coat); painted on the eyeball instead, its catchlights (${painted.n})`);
   });
   await step("accessories: glasses round the eyes, a sticker and a piercing held to the skin (a smile carries the sticker), a choker round the neck, one put where you click; saved with the character and back on reopening", async () => {
     await page.click('#tabs button[data-tab="acc"]');
@@ -757,14 +829,20 @@ const png = rgb => {
       const b = window.__body, buf = await (await fetch(`api/package/${n}/${n}.glb`)).arrayBuffer(), dv = new DataView(buf);
       const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, dv.getUint32(12, true))));
       const node = json.nodes.find(x => x.name === `${n}_skin`), prim = node && json.meshes[node.mesh].primitives[0], acc = prim && json.accessors[prim.attributes.POSITION];
+      const eyes = ["L", "R"].map(sd => {                           // each eyeball: its paint baked flat, the eye's shape and paint for a reader that refracts it, its points in eye units
+        const en = json.nodes.find(x => x.name === `${n}_eye_${sd}`), ep = en && json.meshes[en.mesh].primitives[0], em = ep && json.materials[ep.material];
+        return !!(ep && em && em.pbrMetallicRoughness?.baseColorTexture && em.extras?.studioEye?.side === sd && em.extras.studioEye.shape?.rc > 0 && em.extras.studioEye.paint?.iris
+                  && ["_EYELOCAL", "TEXCOORD_0", "TANGENT", "NORMAL"].every(k => k in ep.attributes));
+      });
       const before = JSON.stringify(b.character()), rec = await b.recipeOf(new File([buf], `${n}.glb`)), made = await (await fetch(`api/package/${n}/export.made.json`)).json();
       const back = await b.importPackage(new File([buf], `${n}.glb`), n + "_back");
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
       return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
-               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576 };
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes };
     }, NAME);
     if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
+    if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
     if (!(r.skin < r.corners && r.skin > 0.97 * r.corners)) throw new Error(`the skin: ${r.skin} of ${r.corners} corners (only the eyes' openings come out)`);
     if (Math.abs(r.h - r.height) > 0.03 * r.height || Math.abs(r.foot) > 0.005) throw new Error(`not the character's size: ${r.h.toFixed(3)} m tall, feet at ${r.foot.toFixed(3)} (height ${r.height})`);
     if (!["character.json", "layers.json", "body.bin"].every(f => r.files.includes(f)) || (pics && !r.files.some(f => f.startsWith("pictures/"))) || !r.receipt)

@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, night (eyes like MetaHuman's: the Studio, the desk, Unreal)
+
+- **The eye is made MetaHuman's way, in the Studio and wherever the character goes** ("experiment with applying this eye
+  to our eye in studio so we can use it in director ... we should be able to export the character with this eye into
+  unreal", after the research in docs/research/eyes.md): the iris on a plane behind a refracting cornea, the cornea
+  reflecting the lights, the iris lit as a bowl; our own code after RoboPoets' Godot eye and O3DE's (MIT, Apache or MIT),
+  shared by the Studio and the desk (`tools/shared/eye.js`). On for every character; Refracting cornea off brings back
+  the painted eye.
+- **The desk gets a simple view for when it lags**: textures off, a plain gray viewport like Blender's solid view.
+- **The export carries the eye into Unreal.**
+- Claude's calls inside that: with the refracting cornea the catchlights are the lights' own reflections (the painted
+  ones only with it off); the pupil's default a little smaller (the cornea magnifies it about a tenth, as a real one
+  does); the paint drawn by the shader in Epic's flat layout and baked into a texture for files.
+
 ## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 
 - **The T-pose's neck stands upright, like the user's reference** ("I like the new tpose ... but the neck is too curved

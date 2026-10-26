@@ -166,7 +166,7 @@ import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
-import * as EYEPAINT from "./eyes.js";
+import * as EYEPAINT from "/shared/eye.js";
 import * as SC from "./sculpt.js";
 import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
@@ -1050,18 +1050,23 @@ const CURL = (() => {
   return { idx: Int32Array.from(idx), d: Float32Array.from(d) };
 })();
 
-const eyeMats = { L: new THREE.MeshPhysicalMaterial({ ior: 1.4 }), R: new THREE.MeshPhysicalMaterial({ ior: 1.4 }) };   // one each: the corner tint is the inner one
-function paintEyes() {                                  // eyes.js: the textures and the wet look from st.eyes
+// the eyes' material: the shared eye (tools/shared/eye.js: the iris behind a refracting cornea, the paint drawn by the
+// shader), one each (the corner tint is the inner one), with the Studio's lids' shadow and painted catchlights on top
+const EYEXT = {};                                       // filled below, with the lids' shadow
+const eyeMats = { L: EYEPAINT.eyeMaterial("L", sh => EYEXT.L?.(sh), "-studio"), R: EYEPAINT.eyeMaterial("R", sh => EYEXT.R?.(sh), "-studio") };
+function paintEyes() {                                  // the paint, the shape and the wet look from st.eyes
   for (const side of ["L", "R"]) paintEye(side);
   if (EYES_IN) openings();                             // the catchlights and the lid shadow are the shader's
 }
 const EYE_FIT = 1.3, EYE_K = {};                        // the fit's margin past the opening's corner; each eyeball's radius over 12 mm
-function paintEye(side) {                              // a bigger eyeball keeps the iris's own size: more white
-  const iris = Math.asin(Math.min(1, Math.sin(st.eyes.irisSize * Math.PI / 180) / (EYE_K[side] || 1))) * 180 / Math.PI;
-  eyeMats[side].map?.dispose(); eyeMats[side].map = EYEPAINT.eyeTexture({ ...st.eyes, irisSize: iris, catch1: 0, catch2: 0 }, side);   // the catchlights are the shader's (below) EYEPAINT.eyeFinish(eyeMats[side], st.eyes);
+function eyeShapeOf(side) { return EYEPAINT.eyeShape(st.eyes, EYE_K[side] || 1); }   // a bigger eyeball keeps the iris's own size: more white
+function paintEye(side) {
+  const s = eyeShapeOf(side), m = EYES[side], key = [s.rho, s.zc, s.rc].map(v => v.toFixed(5)).join();
+  EYEPAINT.setEye(eyeMats[side], st.eyes, s);
+  if (m.userData.shape !== key) { m.geometry.dispose(); m.geometry = EYEPAINT.eyeGeometry(s); m.userData.shape = key; }   // the cornea's dome over this iris
 }
-const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
-const EYES = { L: new THREE.Mesh(eyeGeo, eyeMats.L), R: new THREE.Mesh(eyeGeo, eyeMats.R) };
+// each eyeball: the white's sphere with the cornea's dome over the limbus, its pole looking forward (+Z)
+const EYES = { L: new THREE.Mesh(EYEPAINT.eyeGeometry(EYEPAINT.eyeShape(EYEPAINT.EYE_DEFAULTS)), eyeMats.L), R: new THREE.Mesh(EYEPAINT.eyeGeometry(EYEPAINT.eyeShape(EYEPAINT.EYE_DEFAULTS)), eyeMats.R) };
 // the openings: each lid outline smoothed (Catmull-Rom through MediaPipe's 16 points, 32 round), cut out of the skin in
 // its shader (MHR's coarse triangles would leave teeth), and filled by a fan in the eye corner's pink that marks the
 // stencil; the eyeballs are drawn only there and over whatever is inside: an opening is always full, in any pose, and a
@@ -1079,7 +1084,7 @@ for (const side of ["L", "R"]) {
   const u = EYESH[side] = { uUp: { value: Array.from({ length: 17 }, () => new THREE.Vector2()) }, uLo: { value: Array.from({ length: 17 }, () => new THREE.Vector2()) },
                             uToRig: { value: new THREE.Matrix4() }, uLidShade: { value: 0.6 }, uOcc: { value: 0.5 },
                             uCatch: { value: new THREE.Vector4() }, uCatchA: { value: new THREE.Vector2() }, uCatchR: { value: 0.001 } };   // two catchlights' places (x, y each), strengths, the first's radius
-  eyeMats[side].onBeforeCompile = sh => {
+  EYEXT[side] = sh => {                                // on top of the shared eye's shader
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform mat4 uToRig; varying vec3 vRig;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvRig = (uToRig * vec4(position, 1.0)).xyz;");
@@ -1102,7 +1107,6 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   float sh = (0.6 + 0.3 * uOcc) * (1.0 - smoothstep(0.0, wUp, up)) + (0.25 + 0.5 * uOcc) * (1.0 - smoothstep(0.0, wLo, lo)) + 0.7 * uOcc * cn * cn;
   diffuseColor.rgb *= 1.0 - min(0.95, uLidShade * sh); }`);
   };
-  eyeMats[side].customProgramCacheKey = () => "studio-eye-2";
 }
 // the tear line: a thin wet strip along each lower lid's edge (MetaHuman's lacrimal fluid), black and added on, so only
 // what it reflects shows: the lid's wet rim catching the light. Built each frame on the opening's lower lid line, in
@@ -1280,7 +1284,8 @@ function openings() {
     tearLine(side, pts, c);
     const ec = EYES[side].position, ir = 0.0118 * SCALE * Math.sin(st.eyes.irisSize * Math.PI / 180);   // the iris's radius on the head: the catchlights' scale
     E.uCatch.value.set(ec.x + st.eyes.catchX * ir, ec.y + st.eyes.catchY * ir, ec.x - st.eyes.catchX * ir * 0.7, ec.y - st.eyes.catchY * ir * 0.8);
-    E.uCatchA.value.set(st.eyes.catch1, st.eyes.catch2); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
+    const painted = st.eyes.real === false ? 1 : 0;   // a refracting cornea reflects the lights themselves: no painted catchlights
+    E.uCatchA.value.set(st.eyes.catch1 * painted, st.eyes.catch2 * painted); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
     for (let i = 0; i < pts.length; i++) P.push(...mid, ...pts[i], ...pts[(i + 1) % pts.length]);
   });
   holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P), 3)); holeGeo.computeBoundingSphere();
@@ -1969,6 +1974,9 @@ const eyeSet = {};
 {
   const box = $("#eyeRows"), on = el("input", { type: "checkbox", checked: true });
   box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Cuts MHR's closed shell out inside MediaPipe's lid outline and puts a 12 mm eyeball behind each opening; the gaze shapes turn them, a blink closes the lids over them. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
+  const real = el("input", { type: "checkbox", checked: true });   // the shared eye's refracting cornea (tools/shared/eye.js)
+  real.onchange = () => { st.eyes.real = real.checked; paintEyes(); changed("expr"); };
+  box.append(el("label", { className: "tog" }, real, el("span", {}, "Refracting cornea (MetaHuman's way)", el("small", { textContent: "The iris lies behind a clear dome and is seen through it, bent as a real cornea bends the view: it slides against the white as the eye turns. The cornea reflects the lights (no painted catchlights), the iris is lit as a shallow bowl (bright on the side away from the light). Off: the iris painted on the eyeball, as before." }))));
   const fit = [["size", "Eyeball size", 1, 2.2, 0.01, 1, "The eyeball is always at least big enough to fill the opening; bigger, it grows back into the head from its pupil (the front stays put) and never shows outside the opening. The iris keeps its size and its travel."],
                ["depth", "Eyeball depth (mm)", -1, 4, 0.1, 0, "How far behind the lids the eyeball's front sits."],
                ["opening", "Opening", 0.85, 1.2, 0.01, 1, "How much of the shell is cut away round the lid outline."],
@@ -2024,7 +2032,7 @@ const eyeSet = {};
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
+  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
@@ -2361,6 +2369,16 @@ function exportSkin() {
   const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: st.skin.rough ?? 0.62 }));
   m.name = `${WHO}_skin`; return m;
 }
+// an eyeball for a file: its paint baked flat in the eye's own layout (the export's texture: what a plain viewer shows),
+// its shape and paint in the material's extras (studioEye), its points in eye units (_EYELOCAL): the desk (wearEye) and
+// Unreal's eye material refract it again
+function exportEye(side) {
+  const o = EYES[side].clone(false), s = eyeShapeOf(side), m0 = eyeMats[side];
+  const tex = new THREE.CanvasTexture(EYEPAINT.bakeEye(renderer, st.eyes, s, side, 1024)); tex.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.MeshPhysicalMaterial({ map: tex, roughness: m0.roughness, clearcoat: 1, clearcoatRoughness: m0.clearcoatRoughness, ior: 1.376 });
+  m.name = o.name = `${WHO}_eye_${side}`; m.userData.studioEye = EYEPAINT.eyeRecord(st.eyes, s, side);
+  o.material = m; return o;
+}
 async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
   if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }   // exported as they hang
@@ -2372,7 +2390,7 @@ async function exportPackage() {
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
   root.add(exportSkin());
   const skip = new Set([mesh, GH, BAG, HOLES, TEAR.L, TEAR.R, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);
-  for (const o of rig.children) if (!skip.has(o) && o.visible) root.add(o.clone(true));
+  for (const o of rig.children) if (!skip.has(o) && o.visible) root.add(o === EYES.L ? exportEye("L") : o === EYES.R ? exportEye("R") : o.clone(true));
   let glb;
   try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
   finally { st.expr.set(was); POSE = pose; compose(); }
@@ -2414,7 +2432,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { EYEPAINT, eyeShapeOf, exportEye, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

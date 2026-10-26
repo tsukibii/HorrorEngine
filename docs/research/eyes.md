@@ -190,7 +190,12 @@ both built.
 | Iris radius in the engines' own units | O3DE 0.19 (of a 0.5 radius), Unity 0.22, RoboPoets 0.15 of the UV | |
 | Limbus | O3DE 0.03; RoboPoets width 0.035, darkness 2.1, power 8; Unity a blend 0.02 either side of the iris's radius | |
 
-## 4. For the Studio: a plan (not built; the user's call)
+## 4. For the Studio: a plan
+
+**Built 2026-10-26** (DECISIONS): steps 1 to 4 in `tools/shared/eye.js`, worn by the Studio's eyes; the export's
+eyeballs carry the paint baked flat with the eye's shape and paint, for a reader that refracts them again (step 7's
+start). Steps 5 and 6 are still open.
+
 
 In order of what each gives for what it costs, each one measured (STUDIO) before the next:
 
