@@ -834,7 +834,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     console.log(`       the root slid ${(dr * 100).toFixed(1)} cm (${(a1.off * 1000).toFixed(1)} mm off the skin), the end with it ${(de * 100).toFixed(1)} cm; the root line slid ${(Math.min(...dm) * 100).toFixed(1)} to ${(Math.max(...dm) * 100).toFixed(1)} cm, its end stretched ${(d0 * 100).toFixed(1)} cm alone; the hidden strand not picked, two in front picked in turn; the dot and the hint "${hintMid.slice(0, 22)}"`);
   });
   await step("Let it fall, the Locks list, new locks like the last one, the draft: one lock falls onto the rest, which stays; a lock moved to another group, the group renamed, soloed, folded and deleted, lengths on the rows; a new strand takes the last one's width and taper, or not; a draft kept in the browser and offered back", async () => {
-    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; s.presets.apply("bald"); });
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false;
+      window.__keepHair = JSON.stringify({ locks: s.st.locks, groups: s.st.groups, layering: s.st.layering }); s.presets.apply("bald"); });   // the earlier steps' hair, put back after the last of these steps
     const ids = await ev(() => { const s = window.__salon, C = s.COL, a = s.addLock(s.SL.makeStrand(C.surface([0.02, 0.1, 0.07]), [0.03, 0.1, 0.25], C)), b = s.addLock(s.SL.makeStrand(C.surface([-0.02, 0.1, 0.07]), [-0.03, 0.1, 0.25], C)); s.finishLock(); return [a.id, b.id]; });
     const fall = await ev(async ids => { const s = window.__salon, snap = id => JSON.stringify(s.st.locks.find(l => l.id === id).pts), a0 = snap(ids[0]), b0 = snap(ids[1]);
       s.letFall([ids[0]]); const st0 = s.drop.state, open = document.querySelector('details.step[data-step="gravity"]').open;
@@ -933,7 +934,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.keyboard.press("Home"); const z1 = await ev(() => window.__salon.orbit.dist); await page.keyboard.press("Home"); const z2 = await ev(() => window.__salon.orbit.dist);
     await page.click("#views [data-v=zoom]"); const z3 = await ev(() => [window.__salon.orbit.dist, document.querySelector("#views [data-v=zoom]").textContent]);
     if (z1 !== 1.4 || z2 !== 2.4 || z3[0] !== 0.85 || !/head/.test(z3[1])) throw new Error(`the zoom stops: ${z1}, ${z2}, ${z3}`);
-    await ev(id => { const s = window.__salon; s.deleteLock(id); s.st.reference.lock = true; }, a.id);
+    await ev(id => { const s = window.__salon; s.deleteLock(id); s.st.reference.lock = true;
+      if (window.__keepHair) { const k = JSON.parse(window.__keepHair); s.st.locks = k.locks; s.st.groups = k.groups; s.st.layering = k.layering; s.dirtyAll(); s.select(null); s.locksPanel(); s.render(); } }, a.id);   // the earlier hair back for the steps after
     console.log(`       swung: the end ${(endMoved * 100).toFixed(1)} cm over, ${(a.len * 100).toFixed(1)} -> ${(a1.len * 100).toFixed(1)} cm; slid ${(slid * 100).toFixed(1)} cm; R moved the end ${(Math.hypot(...m1.end.map((x, i) => x - a2.end[i])) * 100).toFixed(1)} cm, G the root ${(Math.hypot(...m3.root.map((x, i) => x - m2.root[i])) * 100).toFixed(1)} cm and Esc put it back; Ctrl-click and a box picked, Delete took both; the edge pan ${pan[0]} px; the zoom stops ${z1}, ${z2}, ${z3[0]} m`);
   });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
