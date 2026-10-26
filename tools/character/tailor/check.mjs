@@ -6,12 +6,14 @@
 // gravity (tops, trousers, skirts, pleats, a tucked shirt, buttoned fronts, a coverall) on the feminine body, one on
 // the masculine and the full one: every garment settles, stretches little, stays out of the body, its hem no more
 // than a hand under where it was cut; a bake of it comes back the same without falling again; a skin-tight fit clings.
+// The frame's wrist and elbow (where sleeves end) within 3.5 cm of MHR's own joints (its rig) on every body.
 // Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
 import { readFileSync } from "fs";
 import { join } from "path";
-import { loadMhr, namedBody, ROOT } from "./node.mjs";
+import { loadMhr, namedBody, bodyWeights, ROOT } from "./node.mjs";
+import * as PO from "../pose.js";
 import * as TAILOR from "../tailor.js";
 import { height } from "./frame.js";
 import { bust, sleeveEnd } from "./pieces.js";
@@ -71,8 +73,20 @@ const look = (label, B, g, hung = false) => {
 
 const m = loadMhr(), t0 = Date.now(), counts = {};
 const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76], ["full_feminine", 1.64], ["full_masculine", 1.78]];
+const rig = readFileSync(join(ROOT, "Content", "Studio", "Bodies", "MHR_lod1_rig.bin")), R = PO.readRig(rig.buffer.slice(rig.byteOffset, rig.byteOffset + rig.byteLength));
+const joints = (P, w, h) => {                                      // MHR's joints fitted to this body (pose.js), as the Studio's T-pose fits them
+  const Q = new Float32Array(m.P); let lo = 1e9, hi = -1e9;
+  for (let k = 0; k < w.length; k++) if (w[k]) for (let i = 0; i < Q.length; i++) Q[i] += w[k] * m.shapes[k * m.n * 3 + i];
+  for (let i = 1; i < Q.length; i += 3) { lo = Math.min(lo, Q[i]); hi = Math.max(hi, Q[i]); }
+  const J = PO.joints(R, P, m.P, h / (hi - lo));
+  return name => { const k = R.byName.get(name); return [J[k * 3], J[k * 3 + 1], J[k * 3 + 2]]; };
+};
 for (const [bname, h] of BODIES) {
-  const b = namedBody(m, bname, h), B = TAILOR.body(b.P, b.T);
+  const b = namedBody(m, bname, h), B = TAILOR.body(b.P, b.T), J = joints(b.P, bodyWeights(bname), h);
+  for (const side of ["L", "R"]) {                                  // where the sleeves end: the wrist and the elbow on the arm's line
+    const A = B.F.arms[side], c = side.toLowerCase(), off = { wrist: A.wrist - A.line.project(...J(`${c}_wrist`))[0], elbow: A.elbow - A.line.project(...J(`${c}_lowarm`))[0] };
+    for (const [k, d] of Object.entries(off)) if (!(Math.abs(d) < 0.035)) errs.push(`${bname}: its ${side} ${k} ${(d * 100).toFixed(1)} cm from MHR's own`);
+  }
   for (const [name, d] of Object.entries(designs)) {
     let g;
     try { g = TAILOR.make(B, name, d); } catch (e) { errs.push(`${name} on ${bname}: ${e.message}`); continue; }

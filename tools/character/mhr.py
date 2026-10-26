@@ -151,26 +151,38 @@ def labels(mhr=None):
     return out
 
 
-# the bases: changes from MHR's average (cm), the body's and the head's fitted apart (a head pushed hard breaks first)
-PRESETS = {
-    "feminine": (dict(height=-10, shoulders=-5, chest=-1.5, bust=1.5, waist=-4, belly=-1, hips=2, seat=-1.5, thighs=0.5,
-                      neck=-2),
-                 dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2)),
-    "masculine": (dict(height=3, shoulders=2.5, chest=1.5, bust=0, waist=1, hips=-1.5, seat=0.5, neck=1.5),
-                  dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)),
+# the bases (DECISIONS 2026-10-26, after the user's references: slim and young, a flat stomach, the man slim and
+# athletic). The body's measures in cm on MHR's own scale (the Studio scales a body to its height), fitted from MHR's
+# average with the head's measures held; the head's weights are kept as they were, so faces, photo fits and hair made
+# on a base stay. What MHR's shapes can't do is the base's sculpt (sculpt.js): its average belly, which they can't take
+# back (feminine: the stomach 0.9 cm out of the ribs' line, from 2.1; -1 would hollow it under the ribs).
+BODIES = {
+    "feminine": dict(shoulders=46.3, chest=21.6, bust=14.6, waist=31.3, belly=12.6, hips=37.2, seat=-12.0, thighs=14.1, neck=12.2),
+    "masculine": dict(shoulders=53.2, chest=25.8, bust=14.6, waist=30.8, belly=12.2, hips=34.4, seat=-11.0, thighs=14.9, neck=15.6),
 }
+SCULPT = {"feminine": {"belly": -0.7}}
+# a base's head (changes from MHR's average, cm), fitted only for a base the file doesn't have yet
+HEADS = {"feminine": dict(head_w=-0.6, skull=-0.4, jaw=-1.2, brow=-0.3, nose=-0.2, chin=-0.2),
+         "masculine": dict(head_w=0.4, jaw=0.8, brow=0.3, chin=0.2)}
 PRESETS_FILE = ROOT / "Content" / "Studio" / "Bodies" / "MHR_presets.json"
 
 
 def make_presets(path=PRESETS_FILE):
-    mhr = load(); base = measures(mhr["points"])
-    out = {"average": [0.0] * len(mhr["shapes"])}
-    for name, (bdy, hd) in PRESETS.items():
-        w = fit_measures({k: base[k] + v for k, v in bdy.items()}, groups=("body",), mhr=mhr)
-        w = fit_measures({k: base[k] + v for k, v in hd.items()}, start=w, keep=0.3, groups=("head",), mhr=mhr)
+    mhr = load(); base = measures(mhr["points"]); k = len(mhr["shapes"]); a, b = mhr["header"]["groups"]["body"]
+    old = json.loads(path.read_text(encoding="utf-8"))["presets"] if path.exists() else {}
+    out = {"average": [0.0] * k}
+    for name, bdy in BODIES.items():
+        w = np.zeros(k)
+        if name in old: w[b:] = np.array(old[name], float)[b:]                       # the head and hands as they were
+        else: w = fit_measures({n: base[n] + v for n, v in HEADS[name].items()}, keep=0.3, groups=("head",), mhr=mhr)
+        was = np.array(old[name], float) if name in old else w
+        hold = {n: v for n, v in measures(body(was, mhr), mhr).items() if n in GROUP_MEASURES["head"]}
+        f = fit_measures({**bdy, **hold}, start=w, keep=0.01, groups=("body",), steps=60, mhr=mhr)
+        w[a:b] = f[a:b]
         out[name] = [round(float(x), 4) for x in w]
-    path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets)",
-                                "presets": out}, indent=1), encoding="utf-8")
+    path.write_text(json.dumps({"about": "MHR identity weights for the Character Studio's bases (tools/character/mhr.py presets), "
+                                         "and the sculpt each base carries (sculpt.js's controls)",
+                                "presets": out, "sculpt": SCULPT}, indent=1), encoding="utf-8")
     return out
 
 

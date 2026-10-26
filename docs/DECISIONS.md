@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, later (slim default bodies; clothes tailored after the user's references)
+
+- **The default bodies are slim and young, after the user's references** ("why do we default to a chubby model ... can
+  you make the default physique for genders more like these examples": five pictures, slim young women in a school
+  uniform, an office blouse and pencil skirt, a skirt suit and a loose shirt with shorts, and a slim, athletic young
+  man in a t-shirt and trousers). The Feminine and Masculine bases are refitted (`mhr.py presets`): the woman slim
+  with a flat stomach and a gentle hourglass (about 83/57/93 cm at 1.62 m), the man slim and athletic with a V (a
+  78 cm waist at 1.76 m). New characters start halfway between the two, no longer at MHR's own average (a heavy body:
+  a 91 cm waist at 1.70 m). The heads are kept exactly as they were, so faces, photo fits and hair made on a base stay;
+  characters made before take the new bodies.
+- **The clothes look professional, like the references** ("Clothing should look more aesthetic like these examples
+  including how they wrap around the body"): cut close and following the waist, a blouse tucked smooth into a high
+  waist, a pencil skirt over the hips, a fitted blazer, crisp pleats; the drape's fullness only enough for soft folds.
+- Claude's calls inside that: what MHR's shapes can't do (its average belly) a base carries as a sculpt; the bases'
+  measures are written down in `mhr.py`; the sleeves end at the wrist by MHR's own joints (they were 6 cm off either
+  way on the new bodies).
+
 ## 2026-10-26 (clothes hang: a cloth simulation, baked; a fit down to skin tight)
 
 - **The clothes looked dead** ("Can you enhance the clothing it looks death"): smooth shells round the body, the bust

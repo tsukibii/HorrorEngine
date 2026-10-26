@@ -29,13 +29,13 @@ export function mhrBody(m, weights = [], height = 1.7, sculpt = null) {
     const w = weights[k]; if (!w) continue;
     const o = k * m.n * 3; for (let i = 0; i < P.length; i++) P[i] += w * m.shapes[o + i];
   }
-  if (sculpt) for (const c of bodyControls(m)) {
-    const v = sculpt[c.id]; if (!v) continue;
-    for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; P[i] += v * c.d[q * 3]; P[i + 1] += v * c.d[q * 3 + 1]; P[i + 2] += v * c.d[q * 3 + 2]; }
-  }
   let lo = 1e9, hi = -1e9; for (let i = 1; i < P.length; i += 3) { lo = Math.min(lo, P[i]); hi = Math.max(hi, P[i]); }
   const k = height / (hi - lo);
   for (let i = 0; i < P.length; i += 3) { P[i] *= k; P[i + 1] = (P[i + 1] - lo) * k; P[i + 2] *= k; }
+  if (sculpt) for (const c of bodyControls(m)) {                     // after the scale, scaled with it: as the Studio adds it
+    const v = sculpt[c.id] * k; if (!v) continue;
+    for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; P[i] += v * c.d[q * 3]; P[i + 1] += v * c.d[q * 3 + 1]; P[i + 2] += v * c.d[q * 3 + 2]; }
+  }
   return { P, T: m.T };
 }
 

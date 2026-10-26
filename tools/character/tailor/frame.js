@@ -99,21 +99,34 @@ export function frame(P, T) {
     // the arm's own points: everything past the seam plane near the line. The fingertip is the farthest of them
     const seam = L.t[6];                                           // the plane through the armpit's loop, square to the arm
     let tip = L.len, rs = [];
+    const ring = new Map();                                        // each slice round its own middle: [n, sum of offsets (xyz), sum of their squares]
     for (let i = 0; i < P.length; i += 3) {
       if (P[i] * sg < 0.12 * s || P[i + 1] < S.crotchY) continue;
       const [t, dd] = L.project(P[i], P[i + 1], P[i + 2]);
       if (t < seam || dd > 0.11 * s) continue;
       tip = Math.max(tip, t); rs.push([t, dd]);
+      const q = L.at(t), k = Math.round(t / (0.01 * s)), v = [P[i] - q[0], P[i + 1] - q[1], P[i + 2] - q[2]];
+      if (!ring.has(k)) ring.set(k, [0, 0, 0, 0, 0]);
+      const r = ring.get(k); r[0]++; r[1] += v[0]; r[2] += v[1]; r[3] += v[2]; r[4] += v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
     }
-    // the wrist: the thinnest place in the arm's last third before the hand
     const bins = new Map();
     for (const [t, dd] of rs) { const k = Math.round(t / (0.01 * s)); if (!bins.has(k)) bins.set(k, []); bins.get(k).push(dd); }
     const prof = [...bins.entries()].map(([k, ds]) => [k * 0.01 * s, ds.sort((x, y) => x - y)[Math.floor(ds.length * 0.5)]]).sort((x, y) => x[0] - y[0]);
-    const cand = prof.filter(([t]) => t > 0.5 * tip && t < 0.9 * tip), rmin = Math.min(...cand.map(p => p[1]));
-    const thin = cand.filter(p => p[1] <= 1.12 * rmin);                // the forearm's thin end: the last of it before the hand widens
-    const wrist = thin.length ? thin[thin.length - 1][0] : 0.75 * tip;
-    const elbow = prof.filter(([t]) => t > 0.35 * tip && t < 0.6 * tip);
-    arms[side] = { line: L, J, seam, tip, wrist, elbow: elbow.length ? elbow.reduce((m, p) => (p[1] < m[1] ? p : m))[0] : 0.45 * tip, sg, profile: prof };
+    // the wrist: where the forearm's thin end gives way to the hand (MHR's wrist joint sits at about 77% of the way to
+    // the fingertip on every body, the knuckles at 90%). Each slice's radius is taken round its own middle, pooled with
+    // its neighbours (a centimetre's slice holds part of a ring of the mesh): measured from the arm's straight line, a
+    // forearm bent off it seemed to thicken towards the hand and the wrist came out 6 cm either way of the rig's (LESSONS)
+    const ks = [...ring.keys()].sort((a, b) => a - b), rad = ks.map(k => {
+      let n = 0, x = 0, y = 0, z = 0, q = 0;
+      for (let j = k - 1; j <= k + 1; j++) { const r = ring.get(j); if (r) { n += r[0]; x += r[1]; y += r[2]; z += r[3]; q += r[4]; } }
+      return [k * 0.01 * s, n >= 12 ? Math.sqrt(Math.max(0, q / n - (x * x + y * y + z * z) / (n * n))) : Infinity];
+    });
+    const cand = rad.filter(([t]) => t > 0.55 * tip && t < 0.86 * tip), low = cand.length ? cand.reduce((m, p) => (p[1] < m[1] ? p : m)) : null;
+    const wide = low && cand.find(([t, r]) => t > low[0] && r > 1.15 * low[1] && r < Infinity);
+    const wrist = wide ? wide[0] - 0.01 * s : 0.77 * tip;
+    // the elbow: a forearm's length (MHR's, elbow joint to wrist joint, is 15.5% of the height on every body) up from
+    // the wrist; its thinnest place, as before, was halfway down the forearm
+    arms[side] = { line: L, J, seam, tip, wrist, elbow: Math.max(seam + 0.1 * s, wrist - 0.155 * H), sg, profile: prof };
   }
 
   // the legs: their loops' centres from the crotch to the floor

@@ -41,14 +41,14 @@ export const waistline = (F, at, o = {}) => {
   const y0 = height(F, at), dr = (o.drop ?? 0.01) * F.s, ri = (o.rise ?? 0.02) * F.s;
   return (x, y, z) => { const c = Math.cos(F.theta(x, y, z)); return y0 - dr * Math.max(0, c) + ri * Math.max(0, -c) - y; };
 };
-/** the length along the arm a sleeve reaches: a number (metres from the shoulder joint), or "wrist", "elbow", "short" */
+/** the length along the arm a sleeve reaches: a number (metres from the shoulder joint), or "wrist", "elbow", "short",
+    "cap", each with an offset in metres down the arm ("elbow+0.05": rolled to below the elbow) */
 export const sleeveEnd = (F, side, L) => {
-  const A = F.arms[side], s = F.s;
-  if (L === "wrist" || L === "long") return A.wrist - 0.012 * s;
-  if (L === "elbow") return A.elbow + 0.02 * s;
-  if (L === "short") return A.seam + 0.13 * s;
-  if (L === "cap") return A.seam + 0.05 * s;
-  return Math.max(A.seam + 0.03 * s, L * s);
+  const A = F.arms[side], s = F.s, m = typeof L === "string" && /^(wrist|long|elbow|short|cap)\s*([+-]\s*[\d.]+)?$/.exec(L.trim());
+  if (!m) return Math.max(A.seam + 0.03 * s, L * s);
+  const off = m[2] ? parseFloat(m[2].replace(/\s/g, "")) * s : 0;
+  const at = { wrist: A.wrist - 0.012 * s, long: A.wrist - 0.012 * s, elbow: A.elbow + 0.02 * s, short: A.seam + 0.13 * s, cap: A.seam + 0.05 * s }[m[1]];
+  return Math.max(A.seam + 0.03 * s, at + off);
 };
 
 /** a front opening: half its width at height y (a gap down the middle, widening into a V from `from` up to the neck, `top`

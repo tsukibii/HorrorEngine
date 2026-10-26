@@ -656,3 +656,10 @@ load the page once after an edit.
 - **Compare a garment against itself only on the same cut:** a drape run longer for a whole outfit re-cut the
   garments over it (the layers under them hung differently), so their points no longer matched by index and the
   comparison showed 35 cm moves and a NaN that weren't there. Hang the layers under it once and vary only it.
+- **Measure a limb's thickness round its own middle, and check the result against the rig:** the tailor found the
+  wrist as the thinnest place by distance from the arm's straight line; a forearm bent off the line seemed to thicken
+  towards the hand, and on the new bases the wrist came out 6 cm either way of MHR's own wrist joint (long sleeves to
+  mid-forearm on the woman, over the hand on the man), the elbow 14 cm down the forearm. Nothing checked where a
+  sleeve ends. Each slice's radius round its own middle, pooled over its neighbours (a centimetre's slice of the mesh
+  holds part of a ring and reads thin), and the wrist where the forearm's thin end gives way to the hand: within
+  2.7 cm on every body. TAILOR now holds both to the rig.

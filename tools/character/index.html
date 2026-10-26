@@ -212,7 +212,10 @@ const RIG = await fetch("bodies/MHR_lod1_rig.bin").then(r => r.ok ? r.arrayBuffe
 let POSE = (() => { try { return localStorage.getItem("studio.pose") || "t"; } catch { return "t"; } })();
 const INFO = await api("api/face/mhr", {}).catch(e => { status(e.message, "bad"); return null; }) ||
   { groups: H.groups, labels: new Array(H.shapes).fill(""), presets: {} };
-const PRESETS = INFO.presets;
+// the bases (mhr.py presets: after the user's references, DECISIONS 2026-10-26): their weights, and the sculpt each carries
+// (sculpt.js: MHR's belly, which its shapes can't take back)
+const BASES = await fetch("bodies/MHR_presets.json").then(r => r.ok ? r.json() : {}).catch(() => ({}));
+const PRESETS = Object.keys(INFO.presets || {}).length ? INFO.presets : BASES.presets || {}, BASE_SCULPT = BASES.sculpt || {};
 
 // ---- the state ------------------------------------------------------------------------------------------------------
 const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the fit shows
@@ -239,7 +242,7 @@ function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
   return v => { inp.value = v; out.textContent = fmt(v, step); };
 }
 const set = {};
-set.base = slider($("#baseRows"), "base", "Feminine ↔ masc.", -1, 1, 0.05, 0, "−1 feminine, 0 MHR's average, +1 masculine: the shape sliders add to it.", v => { st.base = v; changed("body"); });
+set.base = slider($("#baseRows"), "base", "Feminine ↔ masc.", -1, 1, 0.05, 0, "−1 feminine, +1 masculine (slim, after the references), 0 halfway between them: the shape sliders and the sculpt add to it.", v => { st.base = v; changed("body"); });
 set.height = slider($("#baseRows"), "height", "Height (m)", 1.4, 2.1, 0.01, 1.7, "The whole body scaled to this height.", v => { st.height = v; changed("scale"); });
 for (const [k, label, lo, hi, step, def, help] of FACE)
   set[k] = slider($("#faceRows"), k, label, lo, hi, step, def, help, v => { st.face[k] = v; changed(k === "strength" ? "strength" : "face"); });
@@ -255,9 +258,13 @@ for (const b of document.querySelectorAll(".bases button")) b.onclick = () => { 
 $("#resetShape").onclick = () => { st.shape.fill(0); shapeSet.forEach(f => f(0)); document.querySelectorAll(".row.moved").forEach(r => r.classList.remove("moved")); changed("body"); };
 
 function weights() {                                   // the base blended in, the sliders on top
-  const t = st.base, p = t < 0 ? PRESETS.feminine : PRESETS.masculine, k = Math.abs(t);
-  return st.shape.map((v, i) => v + (p ? k * (p[i] || 0) : 0));
+  // the body between the two bases (0 halfway between them, not MHR's heavy average); the head and the hands toward the
+  // one picked, MHR's own at 0, as they always were (faces, photo fits and hair made on them stay)
+  const t = st.base, f = PRESETS.feminine || [], m = PRESETS.masculine || [], [a, b] = (INFO.groups || H.groups || {}).body || [0, 0];
+  return st.shape.map((v, i) => v + (i >= a && i < b ? (f[i] || 0) * (1 - t) / 2 + (m[i] || 0) * (1 + t) / 2 : Math.abs(t) * ((t < 0 ? f : m)[i] || 0)));
 }
+// the sculpt a base carries, blended as its body is; the character's own sculpt (the sliders, the circles) goes on top
+const baseSculpt = id => (BASE_SCULPT.feminine?.[id] || 0) * (1 - st.base) / 2 + (BASE_SCULPT.masculine?.[id] || 0) * (1 + st.base) / 2;
 
 // ---- tabs ---------------------------------------------------------------------------------------------------------
 let TAB = "body";
@@ -818,7 +825,7 @@ function fitOffsets() {                                // true if anything is ad
   FIT.fill(0); let on = false;
   if (DELTA) { const k = st.face.strength; for (let j = 0; j < DELTA.idx.length; j++) { const i = DELTA.idx[j] * 3; FIT[i] += k * DELTA.d[j * 3]; FIT[i + 1] += k * DELTA.d[j * 3 + 1]; FIT[i + 2] += k * DELTA.d[j * 3 + 2]; } on = true; }
   if (SCULPT) for (const c of SCULPT.controls) {
-    const v = st.sculpt[c.id]; if (!v) continue; on = true;
+    const v = (st.sculpt[c.id] || 0) + baseSculpt(c.id); if (!v) continue; on = true;
     for (let q = 0; q < c.idx.length; q++) { const i = c.idx[q] * 3; FIT[i] += v * c.d[q * 3]; FIT[i + 1] += v * c.d[q * 3 + 1]; FIT[i + 2] += v * c.d[q * 3 + 2]; }
   }
   const k = CURL ? st.teeth?.curl ?? 0 : 0;             // the lower lip's curl (below, with the mouth)

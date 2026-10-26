@@ -128,7 +128,7 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 |---|---|
 | `kind` | `shell` (cut from the skin) or `skirt` (rings) |
 | `neck` | `false`, or `{shape: round \| v \| square, depth, back, width, tilt}` |
-| `sleeve` | `short`, `cap`, `elbow`, `wrist`, or metres from the shoulder joint |
+| `sleeve` | `short`, `cap`, `elbow`, `wrist` (each with an offset down the arm: `elbow+0.06`, rolled to below the elbow), or metres from the shoulder joint; the wrist and the elbow are found on the body and checked against MHR's own joints |
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
 | `legs` | `{to}`: where the trouser legs end |
