@@ -200,7 +200,17 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
   diameter); a lock pulled out from the head (poking), a sheet's edge lifted off the cheek or hair hanging below the
   head doesn't count, so hair rooted higher passes under a poke instead of being lifted along it (it was lifted 11 cm).
   Any change re-lays them all. The bake takes the layered hair.
-- **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
+- **Groups** (2026-10-26): new locks go into the group in gold; the eyes show and hide a group or a lock (Alt-click a
+  group's eye: only that group, again: all); a group row folds (▸), is renamed by a double-click on its name, counts
+  its locks, has the padlock, and is deleted (✕: its locks go to the group above); a lock's row says its kind and
+  length; Selected has a **Group** picker (the twin goes with it); the selected row is kept in view.
+- **Let it fall** (Selected; 2026-10-26): this lock and its twin, or its whole group, falls under gravity onto the
+  rest of the hair, which stays (the Gravity step opens to keep the moment); the big switch drops everything unlocked.
+- **New locks like the last one** (Locks; 2026-10-26): a new lock takes the last lock's width, taper, drawn as,
+  strands, thickness, physics and colour (the last placed, or the last changed in Selected); off, the defaults.
+- **A draft kept in the browser** (2026-10-26): a second after each edit the whole hair goes to localStorage under the
+  character's (or the hairstyle's) name; Save forgets it; opening the same hair with a draft whose locks differ offers
+  it back on the status line ("bring it back", Undo takes it away again; "forget it").
 
 ## The cover: the finishing helper (2026-10-22)
 

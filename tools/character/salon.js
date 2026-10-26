@@ -700,6 +700,10 @@ function keepDrop() {                                                  // the fr
   DROP = null; dropPanel(); draw();
 }
 function revertDrop() { DROP = null; for (const l of st.locks) DIRTY.add(l.id); dropPanel(); draw(); }
+function letFall(ids) {                                                // some locks fall onto the rest (Selected: Let it fall); the Gravity step opens to keep the moment
+  startDrop(ids, "some"); if (!DROP) return;
+  const d = document.querySelector('details.step[data-step="gravity"]'); if (d) { d.open = true; d.scrollIntoView({ block: "nearest" }); }
+}
 function dropPanel() {
   const box = $("#dropbox"); if (!box) return; box.innerHTML = "";
   box.append(el("p", { className: "note", textContent: DROP && DROP.only ? `${DROP.what === "cover" ? "The cover is falling onto the hair" : DROP.what === "locked" ? "The unlocked hair is falling onto the locked hair, which stays" : "The hair let fall is falling onto the rest, which stays"}. Slide back to any moment; switch off (or Keep this frame) and that's its shape.` : "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
@@ -1032,11 +1036,42 @@ function showDot(p, ok) {
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
 const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp, roots: st.roots, volume: st.volume });
-function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; UNSAVED = true; }
+function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; UNSAVED = true; keepDraft(); }
 function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.roots) { st.roots = o.roots; SL.setRoots(st.roots); rootsPanel(); } if (o.volume) { st.volume = o.volume; SL.setThicken(st.volume.thicken); volumePanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
+
+// ---- the draft: every unsaved edit kept in this browser, offered back when the same hair opens ------------------------
+// a second after each edit the whole state goes to localStorage under the hair's name (the character's, or the
+// hairstyle's); Save forgets it; opening the same hair with a draft whose locks differ offers it back (Undo takes it
+// away again).
+const draftKey = () => { try { return "salon:draft:" + (st.head.person ? "person:" + st.head.person : "style:" + styleName()); } catch (e) { return null; } };
+let DRAFT_TIMER = null;
+function keepDraft() { clearTimeout(DRAFT_TIMER); DRAFT_TIMER = setTimeout(() => { const k = draftKey(); if (!k) return; try { localStorage.setItem(k, JSON.stringify({ when: Date.now(), st })); } catch (e) { } }, 1000); }
+function dropDraft() { clearTimeout(DRAFT_TIMER); const k = draftKey(); if (!k) return; try { localStorage.removeItem(k); } catch (e) { } }
+function offerDraft() {
+  const k = draftKey(); if (!k) return false; let d = null; try { d = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { }
+  if (!d || !d.st || !d.st.locks || JSON.stringify(d.st.locks) === JSON.stringify(st.locks)) return false;
+  const ago = Math.max(0, Math.round((Date.now() - d.when) / 60000));
+  status(`a draft with unsaved edits from ${new Date(d.when).toLocaleTimeString()} (${ago} min ago): `, "");
+  $("#status").append(el("button", { textContent: "bring it back", onclick: async () => { const disk = snapshot(); await applyHair(d.st, st.head.person); UNDO.length = 0; UNDO.push(disk); UNSAVED = true; status("the draft is back (Undo: the hair as saved)", "ok"); } }), " ",
+                      el("button", { textContent: "forget it", onclick: () => { dropDraft(); status("the draft is forgotten", ""); } }));
+  return true;
+}
+// ---- new locks like the last one ------------------------------------------------------------------------------------------
+// a new lock takes the last lock's settings (placed, or changed in Selected): its width (a strand), taper, drawn as,
+// strands, thickness, physics, colour, a bundle's tip radius and height; a tick in Locks, kept in this browser
+const LIKE_KEY = "salon:likeLast", LAST_FIELDS = ["width", "taper", "render", "density", "thickness", "thicknessTaper", "color", "r1", "height"];
+let LIKE_LAST = true, LAST = null; try { LIKE_LAST = localStorage.getItem(LIKE_KEY) !== "0"; } catch (e) { }
+function rememberLast(l) { LAST = Object.fromEntries(LAST_FIELDS.filter(k => l[k] !== undefined).map(k => [k, l[k]])); if (l.physics) LAST.physics = Object.assign({}, l.physics); }
+function likeLast(l) {
+  if (!LIKE_LAST || !LAST || !l) return l;
+  for (const k of LAST_FIELDS) { if (LAST[k] === undefined || (k === "width" && l.type !== "strand") || ((k === "r1" || k === "height") && l.type !== "bundle")) continue; l[k] = LAST[k]; }
+  if (LAST.physics) l.physics = Object.assign({}, LAST.physics);
+  return l;
+}
+function setLikeLast(v) { LIKE_LAST = !!v; try { localStorage.setItem(LIKE_KEY, v ? "1" : "0"); } catch (e) { } }
 
 // ---- the locks --------------------------------------------------------------------------------------------------------
 const lockById = id => st.locks.find(l => l.id === id) || null;
@@ -1054,7 +1089,7 @@ function changedMany(ids) {                                          // several 
 function addLock(l) {
   remember();
   if (SELECTED) DIRTY.add(SELECTED);
-  l.group = ACTIVE_GROUP; st.locks.push(l);
+  l.group = ACTIVE_GROUP; st.locks.push(l); rememberLast(l);
   if (st.mirror.on) { const m = SL.mirrored(l, st.mirror.seam, COL); m.group = ACTIVE_GROUP; st.locks.push(m); }
   SELECTED = l.id; INHAND = l.id; locksPanel(); selPanel(); hint(); draw();
   return l;
@@ -1145,7 +1180,7 @@ function previewFrom(e) {
     : TOOL === "bundle" ? SL.makeBundle(PLACE.root, end, COL, { sag: PLACE.sag, r0: PLACE.r0 })
     : TOOL === "sheet" ? SL.makeSheet(PLACE.line, end, PLACE.spread, COL, { sag: PLACE.sag * 0.7 })
     : TOOL === "bline" ? SL.makeBundleLine(PLACE.line, end, COL, { sag: PLACE.sag, height: PLACE.height }) : null;
-  if (l) l.sag = TOOL === "sheet" ? PLACE.sag * 0.7 : PLACE.sag;     // the bow it was placed with (the Sag slider counts from it)
+  if (l) { l.sag = TOOL === "sheet" ? PLACE.sag * 0.7 : PLACE.sag; likeLast(l); }   // the bow it was placed with (the Sag slider counts from it); the last lock's settings
   return l;
 }
 function scalpAt(e) { const p = headAt(e.clientX, e.clientY); return p && (e.shiftKey || SL.onScalp(p, COL.C)) ? COL.surface(p) : null; }
@@ -1545,34 +1580,50 @@ function pullPanel() {
   box.append(el("div", { className: "row" }, el("span", { textContent: "Scope", title: "what a pull may move, however wide the reach: the ring lights only these" }), sc, el("span")));
   box.append(el("p", { className: "note", textContent: "The reach never takes more than the scope: the lock you pull, it and its mirror twin, its group, or all the hair shown. Locked locks and groups (the padlock in Locks, Lock in Selected) never move under a pull, Gravity or the cover." }));
 }
+// the groups and their locks: a row a group (fold, show or hide (Alt-click: only this group), in the base, the name
+// (click: new locks go here; double-click: rename), how many, the padlock, delete), a row a lock (show, name, its kind
+// and length, the padlock); the selected lock's row kept in view
 function locksPanel() {
   if (COVER.length == null) coverPanel();                             // the cover's Length follows the top hair until it's set
   const box = $("#locks"); box.innerHTML = "";
+  const soloed = st.groups.length > 1 && st.groups.filter(g => g.visible).length === 1;
   for (const g of st.groups) {
-    const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group", onclick: () => { g.visible = !g.visible; locksPanel(); draw(); } });
+    const fold = el("span", { className: "eye", textContent: g.folded ? "▸" : "▾", title: "fold or unfold the group's locks", onclick: () => { g.folded = !g.folded; locksPanel(); } });
+    const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group (Alt-click: only this group, again: all)", onclick: ev => { if (ev.altKey) { const only = !(soloed && g.visible); for (const x of st.groups) x.visible = only ? x === g : true; } else g.visible = !g.visible; locksPanel(); draw(); } });
     const base = el("span", { className: "eye", textContent: g.base ? "▣" : "□", title: "in the base (the mass the padding fills out, baked first)", onclick: () => { remember(); g.base = !g.base; PAD_DIRTY = true; BASE_DIRTY = true; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); volumePanel(); draw(); } });
+    const name = el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here (double-click: rename)", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } });
+    name.ondblclick = () => { const inp = el("input", { type: "text", value: g.name, size: 10 }); name.replaceWith(inp); inp.focus(); inp.select();
+      inp.onblur = () => { const v = inp.value.trim(); if (v && v !== g.name) { remember(); g.name = v; } locksPanel(); selPanel(); volumePanel(); };
+      inp.onkeydown = ev => { if (ev.key === "Enter") inp.blur(); if (ev.key === "Escape") { inp.value = g.name; inp.blur(); } ev.stopPropagation(); }; };
+    const n = st.locks.filter(l => l.group === g.id).length, count = el("span", { className: "note", textContent: `${n}` });
     const padlock = el("span", { className: "eye pad" + (g.locked ? " on" : ""), textContent: g.locked ? "🔒" : "🔓", title: g.locked ? "locked: nothing in it moves under a pull, Gravity or the cover (click to unlock)" : "click to lock the group: nothing in it moves under a pull, Gravity or the cover", onclick: () => { remember(); g.locked = !g.locked; locksPanel(); drawHandles(); draw(); } });
-    const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, eye, base, el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } }), padlock);
-    box.append(row);
+    const del = st.groups.length > 1 ? el("span", { className: "eye", textContent: "✕", title: "delete the group: its locks go to the group above (or below)", onclick: () => { remember(); const to = st.groups.find(x => x.id !== g.id); for (const l of st.locks) if (l.group === g.id) l.group = to.id; st.groups = st.groups.filter(x => x !== g); if (ACTIVE_GROUP === g.id) ACTIVE_GROUP = to.id; for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; BASE_DIRTY = true; locksPanel(); selPanel(); volumePanel(); draw(); } }) : el("span");
+    const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, fold, eye, base, name, count, padlock, del); row.dataset.group = g.id; box.append(row);
+    if (g.folded) continue;
     st.locks.filter(l => l.group === g.id).forEach(l => {
       const e2 = el("span", { className: "eye", textContent: l.visible ? "◉" : "○", onclick: ev => { ev.stopPropagation(); l.visible = !l.visible; locksPanel(); draw(); } });
       const own = !!original(l).locked, pad = el("span", { className: "eye pad" + (own ? " on" : g.locked ? " by" : ""), textContent: own || g.locked ? "🔒" : "🔓", title: g.locked && !own ? "locked with its group" : own ? "locked: it never moves under a pull, Gravity or the cover (click to unlock)" : "click to lock it: it never moves under a pull, Gravity or the cover",
         onclick: ev => { ev.stopPropagation(); const o = original(l); remember(); o.locked = !o.locked; changed(o); locksPanel(); selPanel(); drawHandles(); draw(); } });
       box.append(el("div", { className: "lock" + (l.id === SELECTED ? " sel" : "") + (isLocked(l) ? " locked" : ""), onclick: () => select(l.id) }, e2,
-        el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: l.type + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") }), pad));
+        el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: `${l.type} ${Math.round(SL.lockLength(l) * 100)} cm` + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") }), pad));
     });
   }
   const lt = el("div"); tick(lt, "Layer by height", !!st.layering, v => { remember(); st.layering = v; for (const l of st.locks) DIRTY.add(l.id); draw(); }, "hair rooted higher always lies over hair rooted lower, like real hair"); box.append(lt);
+  const ll = el("div"); tick(ll, "New locks like the last one", LIKE_LAST, setLikeLast, "a new lock takes the last lock's width, taper, drawn as, thickness, physics and colour"); box.append(ll);
   box.append(el("button", { textContent: "New group", onclick: () => { const id = "g" + (st.groups.length + 1) + Date.now().toString(36).slice(-3); st.groups.push({ id, name: `Group ${st.groups.length + 1}`, visible: true }); ACTIVE_GROUP = id; locksPanel(); } }));
+  const sel = box.querySelector(".lock.sel"); if (sel) sel.scrollIntoView({ block: "nearest" });
 }
 function select(id) { SELECTED = id; if (INHAND !== id) INHAND = null; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
 function selPanel() {
   const box = $("#selbox"); box.innerHTML = "";
   const l = lockById(SELECTED); stepHint("selected", l ? l.name || l.type : "the lock you picked");
   if (!l) { box.append(el("p", { className: "note", textContent: "Nothing selected." })); return; }
-  const o = original(l), edit = fn => v => { remember(); fn(v); changed(o); draw(); };
+  const o = original(l), edit = fn => v => { remember(); fn(v); changed(o); rememberLast(o); draw(); };
   const name = el("input", { type: "text", value: l.name || "", onchange: () => { l.name = name.value; locksPanel(); } });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Name" }), name, el("span")));
+  const gs = el("select"); for (const g of st.groups) gs.append(el("option", { value: g.id, textContent: g.name })); gs.value = l.group;
+  gs.onchange = () => { remember(); o.group = gs.value; for (const t of st.locks) if (t.mirror_of === o.id) t.group = gs.value; for (const t of st.locks) DIRTY.add(t.id); PAD_DIRTY = true; BASE_DIRTY = true; locksPanel(); draw(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Group", title: "the group it's in (its twin goes with it)" }), gs, el("span")));
   if (l.mirror_of) box.append(el("p", { className: "note", textContent: "A mirror twin: it follows its original. Edits here change both." }));
   if (isLocked(l)) box.append(el("p", { className: "note", textContent: o.locked ? "Locked: it never moves under a pull, Gravity or the cover. Unlock it to shape it." : "Locked with its group (the padlock in Locks)." }));
   const rs = el("select"); for (const v of ["cards", "strands"]) rs.append(el("option", { value: v, textContent: v === "cards" ? "cards (stylised)" : "strands (realism)" }));
@@ -1592,7 +1643,7 @@ function selPanel() {
     slider(box, "Thickness taper", 0, 1, 0.05, o.thicknessTaper ?? 1, edit(v => { o.thicknessTaper = v; }), "how much the thickness thins towards the tip (1: to nothing)");
   }
   const ph = o.physics || (o.physics = Object.assign({}, SP.DEFAULTS));
-  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
+  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); rememberLast(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
   if (ph.on) {
     slider(box, "Floppy-stiff", 0, 1, 0.05, ph.stiffness, v => { ph.stiffness = v; changed(o); SIM_DIRTY = true; }, "how hard it's held to its style");
     slider(box, "Gravity", 0, 2, 0.1, ph.gravity, v => { ph.gravity = v; changed(o); SIM_DIRTY = true; }, "how far it hangs down when the head tilts");
@@ -1603,6 +1654,8 @@ function selPanel() {
   box.append(el("div", { className: "row" }, el("span", { textContent: "Own colour" }), c, o.color ? el("button", { textContent: "x", title: "back to the hair's look", onclick: () => { edit(() => { o.color = null; })(); selPanel(); } }) : el("span")));
   box.append(el("button", { textContent: "Onto the scalp", title: "its points near the head laid down on it (hair made before lies above the scalp)", onclick: () => { remember(); SL.hug(o, COL); changed(o); draw(); } }),
              el("button", { textContent: "All onto the scalp", title: "every lock's points near the head laid down on it (locked ones left alone)", onclick: () => { remember(); for (const l of st.locks) if (!l.mirror_of && !isLocked(l)) { SL.hug(l, COL); changed(l); } draw(); } }));
+  box.append(el("button", { textContent: "Let it fall", title: "this lock (and its twin) falls under gravity onto the rest of the hair, which stays; keep the moment you like in Gravity and motion", onclick: () => letFall(st.locks.filter(t => t.id === o.id || t.mirror_of === o.id).map(t => t.id)) }),
+             el("button", { textContent: "Let the group fall", title: "every lock of its group falls onto the rest, which stays", onclick: () => letFall(st.locks.filter(t => t.group === o.group).map(t => t.id)) }));
   box.append(el("button", { textContent: o.locked ? "Unlock" : "Lock", className: o.locked ? "on" : "", title: "a locked lock never moves under a pull, Gravity or the cover; it's still drawn and laid over", onclick: () => { remember(); o.locked = !o.locked; changed(o); locksPanel(); selPanel(); drawHandles(); draw(); } }),
              el("button", { textContent: "Duplicate", onclick: () => { const d = structuredClone(o); d.id = SL.newId(); d.mirror_of = null; d.name = (o.name || o.type) + " copy"; SL.moveLock(d, [0.01, 0, 0]); addLock(d); } }),
              el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { const m = SL.mirrored(o, st.mirror.seam, COL); m.mirror_of = null; m.name = (o.name || o.type) + " mirrored"; remember(); m.group = o.group; st.locks.push(m); locksPanel(); draw(); } }),
@@ -1678,7 +1731,7 @@ async function listPeople() {
 }
 async function save() {
   const at = where();
-  await api(at.url("salon.json"), JSON.stringify(st, null, 1)); UNSAVED = false;
+  await api(at.url("salon.json"), JSON.stringify(st, null, 1)); UNSAVED = false; dropDraft();
   status(at.on ? `saved ${at.on}'s hair (${at.path("salon.json")}); Bake puts it on ${at.on}` : `saved the hairstyle ${at.path("salon.json")}`, "ok");
   if (at.on) listPeople(); else listHair();
 }
@@ -1705,6 +1758,7 @@ async function load(name) {                                           // a hairs
   const o = await api(`api/hair/${enc(name)}/salon.json`);
   await applyHair(o, st.head.person); $("#hairName").value = name;
   status(st.head.person ? `the hairstyle ${name} on ${st.head.person}: Save keeps it on ${st.head.person}` : `loaded the hairstyle ${name}`, "ok");
+  offerDraft();
 }
 async function refreshBody(name, tone) {                                    // the Character Studio changed the body (its Hair tab, again): the head again, the hair kept and laid on it
   if (tone) TONE = tone;
@@ -1721,6 +1775,7 @@ async function openPerson(name) {                                     // a chara
   else { st.head.person = name; await buildHead(); applyPreset("bald"); characterPanel(); bakePanel(); }   // no hair of its own yet: it starts bald
   $("#person").value = name; UNSAVED = false;           // as it was saved
   status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet: it starts bald (Start from: a preset or a hairstyle)"}`, PERSON.face ? "ok" : "bad");
+  offerDraft();
 }
 function allPanels() { characterPanel(); refPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); lookPanel(); bakePanel(); }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
@@ -1736,14 +1791,14 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
     if (Q.get("person")) await openPerson(Q.get("person"));
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
-    resize(); status("ready", "ok");
+    resize(); status("ready", "ok"); if (!Q.get("person") && !Q.get("hair")) offerDraft();
     window.__salon.ready = true;
   } catch (e) { status(e.message, "bad"); console.error(e); }
 })();
 
 // for the tests and the renders
 window.__salon = { st, SL, SR, get orbit() { return orbit; }, split: { get on() { return SPLIT.on; }, set: setSplit, setAt: setSplitAt, use: i => { usePane(i); markPane(); applyCamera(); }, get active() { return SPLIT.active; }, get at() { return SPLIT.at; }, panes }, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
-  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
+  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, letFall, offerDraft, dropDraft, keepDraft, draftKey, get likeLast() { return LIKE_LAST; }, setLikeLast, get last() { return LAST; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, rayAt, onPlane, previewFrom, dot: () => DOT && DOT.visible ? { colour: DOT.material.color.getHex() === 0x5aa65a ? "green" : "red", at: DOT.position.toArray() } : null, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },

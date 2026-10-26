@@ -831,6 +831,55 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.setTool("select"); s.st.reference.lock = true; }, [c.back, c.f1, c.f2]);
     console.log(`       the root slid ${(dr * 100).toFixed(1)} cm (${(a1.off * 1000).toFixed(1)} mm off the skin), the end with it ${(de * 100).toFixed(1)} cm; the root line slid ${(Math.min(...dm) * 100).toFixed(1)} to ${(Math.max(...dm) * 100).toFixed(1)} cm, its end stretched ${(d0 * 100).toFixed(1)} cm alone; the hidden strand not picked, two in front picked in turn; the dot and the hint "${hintMid.slice(0, 22)}"`);
   });
+  await step("Let it fall, the Locks list, new locks like the last one, the draft: one lock falls onto the rest, which stays; a lock moved to another group, the group renamed, soloed, folded and deleted, lengths on the rows; a new strand takes the last one's width and taper, or not; a draft kept in the browser and offered back", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; s.presets.apply("bald"); });
+    const ids = await ev(() => { const s = window.__salon, C = s.COL, a = s.addLock(s.SL.makeStrand(C.surface([0.02, 0.1, 0.07]), [0.03, 0.1, 0.25], C)), b = s.addLock(s.SL.makeStrand(C.surface([-0.02, 0.1, 0.07]), [-0.03, 0.1, 0.25], C)); s.finishLock(); return [a.id, b.id]; });
+    const fall = await ev(async ids => { const s = window.__salon, snap = id => JSON.stringify(s.st.locks.find(l => l.id === id).pts), a0 = snap(ids[0]), b0 = snap(ids[1]);
+      s.letFall([ids[0]]); const st0 = s.drop.state, open = document.querySelector('details.step[data-step="gravity"]').open;
+      await new Promise(ok => setTimeout(ok, 1200)); s.drop.keep();
+      return { only: st0 && st0.only, what: st0 && st0.what, open, aMoved: snap(ids[0]) !== a0, bMoved: snap(ids[1]) !== b0 }; }, ids);
+    if (!fall.only || fall.only.length !== 1 || fall.what !== "some" || !fall.open || !fall.aMoved || fall.bMoved) throw new Error("Let it fall: " + JSON.stringify(fall));
+    // the Locks list: the second strand moved to a new group by Selected's Group picker; the group renamed, soloed, folded, deleted
+    await openSteps();
+    const grp = await ev(ids => { const s = window.__salon; s.st.groups.push({ id: "g_test", name: "Test", visible: true }); s.locksPanel(); s.select(ids[1]); s.selPanel();
+      const sel = [...document.querySelectorAll("#selbox .row")].find(r => r.querySelector("span").textContent === "Group").querySelector("select"); sel.value = "g_test"; sel.dispatchEvent(new Event("change"));
+      const nodes = [...document.querySelector("#locks").children], i = nodes.findIndex(n => n.dataset && n.dataset.group === "g_test"), under = nodes[i + 1] && nodes[i + 1].classList.contains("lock") ? nodes[i + 1].textContent : null;
+      return { group: s.st.locks.find(l => l.id === ids[1]).group, under }; }, ids);
+    if (grp.group !== "g_test" || !grp.under || !/\d+ cm/.test(grp.under)) throw new Error("the Group picker and the rows: " + JSON.stringify(grp));
+    const ren = await ev(() => { const s = window.__salon, b = [...document.querySelectorAll("#locks .grp b")].find(b => b.textContent === "Test"); b.dispatchEvent(new MouseEvent("dblclick")); const inp = document.querySelector("#locks .grp input"); if (!inp) return { noInput: true }; inp.value = "Fringe"; inp.blur();
+      return { name: s.st.groups.find(g => g.id === "g_test").name, rowNames: [...document.querySelectorAll("#locks .grp b")].map(b => b.textContent) }; });
+    if (ren.name !== "Fringe" || !ren.rowNames.includes("Fringe")) throw new Error("rename: " + JSON.stringify(ren));
+    const solo = await ev(() => { const s = window.__salon, row = () => document.querySelector('#locks .grp[data-group="g_test"]'), eyes = () => row().querySelectorAll(".eye");
+      eyes()[1].dispatchEvent(new MouseEvent("click", { altKey: true })); const v1 = s.st.groups.map(g => g.visible);
+      eyes()[1].dispatchEvent(new MouseEvent("click", { altKey: true })); const v2 = s.st.groups.map(g => g.visible);
+      eyes()[0].dispatchEvent(new MouseEvent("click")); const folded = s.st.groups.find(g => g.id === "g_test").folded, rowsFolded = document.querySelectorAll("#locks .lock").length;
+      [...eyes()].find(x => x.textContent === "✕").dispatchEvent(new MouseEvent("click"));
+      return { v1, v2, folded, rowsFolded, groups: s.st.groups.length, group: s.st.locks.map(l => l.group) }; });
+    if (JSON.stringify(solo.v1) !== "[false,true]" || JSON.stringify(solo.v2) !== "[true,true]" || !solo.folded || solo.rowsFolded !== 1 || solo.groups !== 1 || solo.group.some(g => g !== "g1")) throw new Error("solo, fold, delete: " + JSON.stringify(solo));
+    // new locks like the last one: the first strand's width and taper changed in Selected, a strand placed takes them; the tick off, the next takes the defaults
+    const like = await ev(ids => { const s = window.__salon; s.select(ids[0]); s.selPanel(); const set = (label, v) => { const row = [...document.querySelectorAll("#selbox .row")].find(r => r.querySelector("span").textContent === label), i = row.querySelector("input"); i.value = v; i.dispatchEvent(new Event("input")); };
+      set("Width", 0.012); set("Taper", 0.3); s.setLikeLast(true); return s.last; }, ids);
+    if (Math.abs(like.width - 0.012) > 1e-9 || Math.abs(like.taper - 0.3) > 1e-9) throw new Error("the last lock's settings: " + JSON.stringify(like));
+    await view(0, 0, 0.85); await page.keyboard.press("s");
+    await page.mouse.click(...await scr(await surf([0.05, 0.1, 0.06]))); let e = await scr([0.12, -0.08, 0]); await page.mouse.move(...e); await page.mouse.click(...e); await page.waitForTimeout(100);
+    const n1 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.setLikeLast(false); return { width: l.width, taper: l.taper }; });
+    await page.keyboard.press("Enter");
+    await page.mouse.click(...await scr(await surf([-0.05, 0.1, 0.06]))); e = await scr([-0.12, -0.08, 0]); await page.mouse.move(...e); await page.mouse.click(...e); await page.waitForTimeout(100);
+    const n2 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.setLikeLast(true); s.finishLock(); s.setTool("select"); return { width: l.width, taper: l.taper }; });
+    if (Math.abs(n1.width - 0.012) > 1e-9 || Math.abs(n1.taper - 0.3) > 1e-9 || n2.width !== 0.006 || n2.taper !== 0.6) throw new Error(`like the last: ${JSON.stringify([n1, n2])}`);
+    // the draft: an edit is kept in the browser a second later; with the hair gone (as if the disk had none), it's offered back; Undo takes it away
+    const dr = await ev(async () => { const s = window.__salon; document.querySelector("#hairName").value = "_draft_test"; const key = s.draftKey(); s.dropDraft();
+      const C = s.COL; s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.0, -0.1, 0.2], C)); s.finishLock();
+      await new Promise(ok => setTimeout(ok, 1300)); const kept = JSON.parse(localStorage.getItem(key) || "null"), n = s.st.locks.length;
+      s.st.locks = []; s.dirtyAll(); s.select(null); s.locksPanel();
+      const offered = s.offerDraft(), btn = [...document.querySelectorAll("#status button")].find(b => b.textContent === "bring it back");
+      if (btn) { btn.click(); for (let i = 0; i < 60 && !document.querySelector("#status").textContent.startsWith("the draft is back"); i++) await new Promise(ok => setTimeout(ok, 100)); }
+      const back = s.st.locks.length; s.undo(); const undone = s.st.locks.length; s.dropDraft(); document.querySelector("#hairName").value = "my_hair";
+      return { kept: kept && kept.st.locks.length, n, offered, back, undone }; });
+    if (!dr.kept || dr.kept !== dr.n || !dr.offered || dr.back !== dr.n || dr.undone !== 0) throw new Error("the draft: " + JSON.stringify(dr));
+    await ev(() => { const s = window.__salon; s.redo(); s.st.reference.lock = true; });   // the hair back
+    console.log(`       one of two strands fell (${fall.only.length} let fall); the Group picker, rename, solo, fold and delete; a strand like the last (${n1.width * 1000} mm, taper ${n1.taper}) and one not (${n2.width * 1000} mm); the draft kept ${dr.kept} locks and brought them back`);
+  });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {
       const cv = window.__salon.canvas, fire = (type, init) => { const e = new MouseEvent(type, { bubbles: true, cancelable: true, ...init }); cv.dispatchEvent(e); return e.defaultPrevented; };

@@ -169,6 +169,7 @@ that was active when it was placed, with no way to move it; nothing says a lock'
 picker in Selected (and Move to group on the right-click), rename and delete on a group's row, groups folded, **Solo**
 on a group's eye (Alt-click: only it shown), each row with its length and type, the selected row scrolled into view.
 **S.**
+**Built 2026-10-26**: the Group picker, rename (double-click), delete (✕), Solo (Alt-click), fold, counts, lengths on the rows, the selected row in view.
 
 **15. One lock at a time.** *Now:* one selected lock; Delete, Mirror once, Onto the scalp, Physics and the own colour
 work on it alone. *Proposed:* **several picked** (Ctrl-click, Shift-drag a box, a group's row to pick all of it):
@@ -180,6 +181,7 @@ the Selected step's buttons act on all, the pull's scope *Selected locks* (11.3)
 making drops some locks onto the rest (`startDrop(only)`); to let one new lock fall onto finished hair there is no
 way (hidden hair isn't landed on). *Proposed:* **Let it fall** in Selected (this lock, or the group: the rest stays
 as the layer it lands on, as the cover does), and the locked ones of 11 left out of the big switch. **S.**
+**Built 2026-10-26**: Let it fall and Let the group fall in Selected (the Gravity step opens); SALON drops one of two strands.
 
 ## F. The small things
 
@@ -188,15 +190,18 @@ as the layer it lands on, as the cover does), and the locked ones of 11 left out
 twins (right with Mirror, surprising without it). *Proposed:* the hint per stage ("root placed: drag the arrow, wheel:
 sag, Enter: OK"), the wheel's current value in it from the start, Enter and Esc everywhere a stage has an end, the
 view keys of 8. **S.**
+**Built 2026-10-26**: the hint per stage (with 1), Enter and Esc, the wheel's value from the start, the view keys (with 8).
 
 **18. A new lock starts from the defaults, not from the last one.** *Now:* every strand is 6 mm wide, taper 0.6,
 cards; the wheel's spread, width and height carry over between locks but the sag and the Selected settings don't.
 *Proposed:* a new lock takes the last lock's width, taper, drawn as, thickness, physics and colour (**Like the last
 lock**, on by default). **S.**
+**Built 2026-10-26**: the tick in Locks; SALON places a strand with the last one's width and taper, and one with the defaults.
 
 **19. No draft kept.** *Now:* leaving with unsaved hair asks; nothing is kept in the browser (only which steps are
 open); the desk keeps every unsaved edit in localStorage and offers it back. *Proposed:* the same here (a draft a
 second after each edit, offered on opening the character, merged with what the disk has). **S.**
+**Built 2026-10-26**: the draft under the hair's name a second after each edit, offered back on the status line, Undo takes it away (no merge: the draft replaces, as the salon has no second editor).
 
 ## A suggested order
 
