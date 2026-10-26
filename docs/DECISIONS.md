@@ -2,6 +2,27 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, night (anime lashes and the pink eye makeup after the user's references)
+
+- **Lashes like the user's references** ("create eyelashes that look like ref images": a drawing of three pairs of eyes
+  with long spiky lashes, a bold liner and pink round the eyes, and a photo of an anime lash set on an eye: separate
+  spikes with gaps between them, long ones alternating with short, the outer ones longest and swept out, the lower
+  lashes in thin spikes pointing down the skin), **as presets in the style dropdown** ("have them as female or add a
+  dropdown for presets or something"): three anime styles (an anime lash set, drawn manhwa wisps, an anime doll ringed in
+  short spikes) beside the natural ones, grouped; three new sliders behind them (Spiky clumps, Long and short, Lower
+  lashes down) so any style can be pushed either way.
+- **A makeup preset for the pinkish hues round the eye** ("observe the little colors around the eye lash that emphasize
+  the eye's shape ... add a make up preset that emulates this exact look for eyes"): **anime pink**, in the Skin tab's
+  makeup presets, and a whole look of the same name (Face, Look) that puts the anime lashes on with it. New makeup
+  layers for it: an under-eye wash, the inner corner, the waterline, the eyeshadow's placement, the liner's thickness
+  and its point past the inner corner.
+- Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
+  under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
+  the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style
+  now sets every lash slider, so switching styles never leaves another's spikes behind. The new lashes and the makeup
+  were judged on renders of the Studio's eye close-up against the references (an anime lash set reads as spikes at
+  16× the roots' spacing between them; the lower lashes 62° down the skin).
+
 ## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 
 - **The T-pose's neck stands upright, like the user's reference** ("I like the new tpose ... but the neck is too curved

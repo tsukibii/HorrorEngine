@@ -17,15 +17,18 @@ import * as THREE from "three";
 import { makeAtlas } from "./hairtex.js";
 import { rng } from "./salonlib.js";
 
-export const LASH_DEFAULTS = { on: false, count: 80, length: 8.5, curl: 0.55, lift: 0.45, clump: 0.45, width: 0.5, flare: 0.5,
-  lower: true, lowerCount: 36, lowerLength: 4, line: 0.4, look: "lash_black" };
+export const LASH_DEFAULTS = { on: false, count: 80, length: 8.5, curl: 0.55, lift: 0.45, clump: 0.45, spikes: 0, vary: 0, width: 0.5, flare: 0.5,
+  lower: true, lowerCount: 36, lowerLength: 4, lowerDrop: 0, line: 0.4, look: "lash_black" };
 export const BROW_DEFAULTS = { on: false, shape: "natural", count: 1100, length: 6.5, width: 1, arch: 0, tail: 1, soft: 0.5, powder: 0.45, look: "brow_dark_brown" };
 export const LASH_CONTROLS = [   // [key, label, lo, hi, step, help]
   ["count", "Upper lashes", 30, 140, 1, "Upper lashes on each eye."], ["length", "Length (mm)", 4, 14, 0.1, "The longest upper lash."],
   ["curl", "Curl", 0, 1, 0.01, "How far each lash curls up towards its tip."], ["lift", "Lift", 0, 1, 0.01, "How high they leave the lid: 0 straight out, 1 swept up."],
   ["clump", "Clumping", 0, 1, 0.01, "Lashes drawn together into points: 0 every lash apart (natural), 1 spiky (mascara, anime)."],
+  ["spikes", "Spiky clumps", 0, 1, 0.01, "Each clump's roots gathered, with a gap to the next: separate spikes along the lid (anime lash sets). 0 the roots spread evenly."],
+  ["vary", "Long and short", 0, 1, 0.01, "Every other spike shorter, the way anime lash sets alternate long spikes with short ones."],
   ["width", "Thickness", 0.2, 1.2, 0.01, "Each lash's thickness."], ["flare", "Outer flare", 0, 1, 0.01, "Longer and swept out at the outer corner (a cat eye)."],
   ["lowerCount", "Lower lashes", 0, 80, 1, "On each lower lid."], ["lowerLength", "Lower length (mm)", 1.5, 7, 0.1, "The longest lower lash."],
+  ["lowerDrop", "Lower lashes down", 0, 1, 0.01, "Where the lower lashes point: 0 out from the lid, 1 down along the skin under the eye (wisps that show from the front)."],
   ["line", "Lash line", 0, 1, 0.01, "A dark line along the upper lid's edge where the lashes grow (a tight liner)."]];
 export const BROW_CONTROLS = [
   ["count", "Hairs", 200, 2400, 1, "Hairs on each brow."], ["length", "Length (mm)", 3, 11, 0.1, "Each hair's length."],
@@ -33,12 +36,26 @@ export const BROW_CONTROLS = [
   ["tail", "Tail", 0.6, 1.25, 0.01, "Where the brow ends: shorter or longer than the face's own."],
   ["soft", "Soft front", 0, 1, 0.01, "Fewer, finer hairs at the front, the brow fading in (a feathered start)."],
   ["powder", "Fill", 0, 1, 0.01, "A soft tint under the hairs, as a real brow's skin shows (or a brow powder): fuller from a distance."]];
-export const LASH_STYLES = {   // presets for the lashes' own settings, after the user's references
-  natural: { label: "Natural", count: 90, length: 8, curl: 0.5, lift: 0.4, clump: 0.2, width: 0.4, flare: 0.3, lowerCount: 30, lowerLength: 3.5, line: 0.25 },
-  defined: { label: "Defined (mascara)", count: 80, length: 9.5, curl: 0.6, lift: 0.5, clump: 0.7, width: 0.6, flare: 0.55, lowerCount: 34, lowerLength: 4.5, line: 0.6 },
-  doll: { label: "Doll (anime)", count: 75, length: 11, curl: 0.75, lift: 0.6, clump: 0.9, width: 0.55, flare: 0.8, lowerCount: 40, lowerLength: 5.5, line: 0.9 },
-  short: { label: "Short, straight", count: 100, length: 6, curl: 0.2, lift: 0.25, clump: 0.15, width: 0.35, flare: 0.15, lowerCount: 24, lowerLength: 2.5, line: 0.15 },
+export const LASH_STYLES = {   // presets for the lashes' own settings, after the user's references (a style sets every control: styleOf)
+  natural: { label: "Natural", group: "Natural", count: 90, length: 8, curl: 0.5, lift: 0.4, clump: 0.2, width: 0.4, flare: 0.3, lowerCount: 30, lowerLength: 3.5, line: 0.25 },
+  defined: { label: "Defined (mascara)", group: "Natural", count: 80, length: 9.5, curl: 0.6, lift: 0.5, clump: 0.7, width: 0.6, flare: 0.55, lowerCount: 34, lowerLength: 4.5, line: 0.6 },
+  short: { label: "Short, straight", group: "Natural", count: 100, length: 6, curl: 0.2, lift: 0.25, clump: 0.15, width: 0.35, flare: 0.15, lowerCount: 24, lowerLength: 2.5, line: 0.15 },
+  doll: { label: "Doll (full, dense)", group: "Dramatic", count: 75, length: 11, curl: 0.75, lift: 0.6, clump: 0.9, width: 0.55, flare: 0.8, lowerCount: 40, lowerLength: 5.5, line: 0.9 },
+  // after the user's references (DECISIONS 2026-10-26, night): an anime lash set (a photo: spikes with gaps between them,
+  // long ones alternating with short, the outer ones longest and swept out, the lower lashes in separate spikes pointing
+  // down the skin), drawn eyes (long wisps, a bold lash line) and a doll's eye ringed in short spikes
+  anime: { label: "Anime lash set (spikes)", group: "Anime, after the references", count: 84, length: 12, curl: 0.6, lift: 0.65, clump: 0.95, spikes: 1, vary: 0.8, width: 0.6, flare: 0.75,
+           lowerCount: 36, lowerLength: 5.5, lowerDrop: 0.75, line: 0.7 },
+  drawn: { label: "Drawn (manhwa, long wisps)", group: "Anime, after the references", count: 60, length: 13, curl: 0.7, lift: 0.7, clump: 1, spikes: 1, vary: 0.5, width: 0.7, flare: 0.9,
+           lowerCount: 26, lowerLength: 6, lowerDrop: 0.8, line: 1 },
+  animeDoll: { label: "Anime doll (short spikes all round)", group: "Anime, after the references", count: 66, length: 7.5, curl: 0.45, lift: 0.5, clump: 0.9, spikes: 1, vary: 0.25, width: 0.55, flare: 0.3,
+               lowerCount: 40, lowerLength: 4.5, lowerDrop: 0.85, line: 0.5 },
 };
+// a style's settings over every control's default (a style that doesn't name a control takes it back to its default)
+export function styleOf(key) {
+  const x = { ...Object.fromEntries(LASH_CONTROLS.map(c => [c[0], LASH_DEFAULTS[c[0]]])), ...(LASH_STYLES[key] || {}) };
+  delete x.label; delete x.group; return x;
+}
 export const BROW_SHAPES = {   // presets for the brow's own settings
   natural: { label: "Natural", width: 1, arch: 0, tail: 1, soft: 0.5, count: 1100 },
   straight: { label: "Straight (Korean)", width: 1.05, arch: -0.85, tail: 1.05, soft: 0.65, count: 1200 },
@@ -79,7 +96,7 @@ function along(P, O = null) {
 }
 
 // the cards: each a strip along its points, as wide as w0 at the root and w1 at the tip, across `across`, facing `n`
-function Cards() { return { pos: [], nrm: [], uv: [], tan: [], tint: [], depth: [], idx: [], n: 0, lift: [], rim: [] }; }
+function Cards() { return { pos: [], nrm: [], uv: [], tan: [], tint: [], depth: [], idx: [], n: 0, lift: [], rim: [], drop: [], inside: [], gaps: [], longest: [] }; }
 function card(G, pts, across, n, w0, w1, u0, u1, tint = [0, 0, 0, 0], depth = 0.03) {
   const base = G.pos.length / 3, m = pts.length;
   for (let k = 0; k < m; k++) {
@@ -110,17 +127,24 @@ function eyeLashes(G, lid, o, F, U, S, side, seed) {
     const upper = which === "upper", P = lid[which]; if (!P || P.length < 2) continue;
     const n = upper ? o.count : o.lowerCount; if (!n) continue;
     const curve = along(P, lid[which + "Rim"]), lens = [], raw = [];
+    // the clumps: a few neighbours each (more with Clumping); the lower lid's thinner. Their roots spread evenly along
+    // the lid, or (Spiky clumps) gathered in the middle of each clump's share with a gap to the next, so the clumps read
+    // as separate spikes; every other clump shorter (Long and short), as anime lash sets alternate
+    const sp = o.spikes ?? 0, vary = o.vary ?? 0, gl = [];
+    const size = 2 + Math.round(o.clump * 4), gsz = upper ? size : Math.max(2, Math.round(size * (1 - 0.5 * sp))), groups = Math.ceil(n / gsz);
+    for (let g = 0; g < groups; g++) gl.push((1 - vary * 0.42 * (g % 2)) * (1 - vary * 0.12 * r()));
     for (let j = 0; j < n; j++) {
-      let t = (j + 0.15 + 0.7 * r()) / n; t = 0.03 + 0.94 * t;
+      const g = Math.floor(j / gsz), jg = j - g * gsz, gn = Math.min(gsz, n - g * gsz);
+      let t = (g + 0.5) / groups + (1 - 0.72 * sp) / groups * ((jg + 0.15 + 0.7 * r()) / gn - 0.5); t = 0.03 + 0.94 * t;
       const outer = upper ? t : 1 - t;                                      // 0 at the inner corner, 1 at the outer
       const { p: root, t: tg, o: rp } = curve(t);
       const c = lid.centre, radial = norm(sub(sub(root, c), mul(F, dot(sub(root, c), F))));   // away from the eye's middle, in the face's plane
       const axis = norm(cross(F, radial));                                  // along the lid at this root: the lid turns about it
       // the lid's turn: a shutting upper lid swings its lashes down and forward; squash: shorter, curling more
       const turn = upper ? -shut * 1.1 : shut * 0.4;                      // (the axis runs inner to outer on the upper lid, the other way on the lower)
-      const base = (upper ? 0.25 + 0.75 * o.lift : 0.15 + 0.25 * o.lift) * 0.9;   // radians up from straight out
+      const base = (upper ? 0.25 + 0.75 * o.lift : 0.15 + 0.25 * o.lift) * 0.9 + (upper ? 0 : (o.lowerDrop ?? 0) * 0.85);   // radians up from straight out (the lower lashes down the skin with Lower lashes down)
       const len = (upper ? o.length : o.lowerLength) / 1000 * S * (0.5 + 0.5 * smooth(0, 0.55, outer)) * (1 + (upper ? o.flare * 0.35 : 0) * smooth(0.55, 1, outer))
-                  * (0.82 + 0.3 * r()) * (1 - 0.3 * shut);
+                  * (1 + (0.3 * r() - 0.18) * (1 - 0.7 * sp)) * gl[g] * (1 - 0.3 * shut);   // (a spike's lashes nearly one length, to one point)
       const curl = (upper ? 0.35 + 1.25 * o.curl : 0.1 + 0.3 * o.curl) * (1 + 0.6 * shut), flare = (upper ? o.flare * 0.45 : 0.15) * smooth(0.4, 1, outer) * outward;
       // over the rim first, from the line to its front edge, just off its rounded skin (three points); the lash itself
       // from there. Every lash the same number of points, for the clumps: where there's no rim to speak of, small steps forward
@@ -136,18 +160,22 @@ function eyeLashes(G, lid, o, F, U, S, side, seed) {
         d = rot(d, axis, turn);                                         // the lid's turn about its own line
         q = add(q, mul(d, len / (m - 1))); pts.push(q);
       }
-      raw.push({ pts, tg, radial, outer }); lens.push(len);
-      if (upper) {                                                          // its elevation, the rim's edge to the tip, and how far over the rim it lies (mm), for the check
-        const d = norm(sub(pts[pts.length - 1], pts[a0 - 1])); G.lift.push(Math.atan2(dot(d, radial), dot(d, F)) * 180 / Math.PI); G.rim.push(Math.hypot(...sub(pts[a0 - 1], root)) / (0.001 * S));
-      }
+      raw.push({ pts, tg, radial, outer, t, len }); lens.push(len);
+      const d = norm(sub(pts[pts.length - 1], pts[a0 - 1])), elev = Math.atan2(dot(d, radial), dot(d, F)) * 180 / Math.PI;   // its elevation, the rim's edge to the tip (degrees)
+      if (upper) { G.lift.push(elev); G.rim.push(Math.hypot(...sub(pts[a0 - 1], root)) / (0.001 * S)); }   // and how far over the rim it lies (mm), for the check
+      else G.drop.push(elev);
     }
-    // clumps: a few neighbours draw together towards their tips
-    const size = 2 + Math.round(o.clump * 4);
-    for (let j0 = 0; j0 < raw.length; j0 += size) {
-      const grp = raw.slice(j0, j0 + size), avg = grp[0].pts.map((_, k) => mul(grp.reduce((s, g) => add(s, g.pts[k]), [0, 0, 0]), 1 / grp.length));
+    // clumps: a few neighbours draw together towards their tips (into one point with Spiky clumps)
+    const draw = Math.min(0.95, o.clump * 0.8 + 0.2 * sp);
+    for (let j0 = 0; j0 < raw.length; j0 += gsz) {
+      const grp = raw.slice(j0, j0 + gsz), avg = grp[0].pts.map((_, k) => mul(grp.reduce((s, g) => add(s, g.pts[k]), [0, 0, 0]), 1 / grp.length));
+      if (upper && grp.length > 1) {                                        // for the check: the gap to the next clump against the roots' spacing inside one, and its longest lash
+        const ts = grp.map(g => g.t), next = raw[j0 + gsz]; G.inside.push((Math.max(...ts) - Math.min(...ts)) / (grp.length - 1));
+        if (next) G.gaps.push(next.t - Math.max(...ts)); G.longest.push(Math.max(...grp.map(g => g.len)));
+      }
       for (const g of grp) {
-        const pts = g.pts.map((p, k) => mix(p, avg[k], o.clump * 0.8 * Math.pow(k / (g.pts.length - 1), 1.6)));   // the root stays, the tip goes most of the way
-        const w0 = (upper ? 0.32 : 0.22) * o.width / 1000 * S * (2.2 + 1.5 * o.clump), w1 = w0 * 0.15, [u0, u1] = clumpU(r);
+        const pts = g.pts.map((p, k) => mix(p, avg[k], draw * Math.pow(k / (g.pts.length - 1), 1.6)));   // the root stays, the tip goes most of the way
+        const w0 = (upper ? 0.32 : 0.22) * o.width / 1000 * S * (2.2 + 1.5 * o.clump) * (1 - 0.4 * sp), w1 = w0 * 0.15, [u0, u1] = clumpU(r);   // (a spike's lashes narrower: its strands show, not a wedge)
         const facing = norm(cross(g.tg, sub(pts[pts.length - 1], pts[0])));
         card(G, pts, g.tg, facing, w0, w1, u0, u1);                          // across the lid: seen from the front
         card(G, pts, norm(cross(facing, g.tg)), g.tg, w0 * 0.8, w1, u0, u1); // and crossed: seen from the side
@@ -231,6 +259,8 @@ export function build(ctx, lash, brw) {
   const fill = new THREE.BufferGeometry();
   fill.setAttribute("position", new THREE.Float32BufferAttribute(P.pos, 3)); fill.setAttribute("normal", new THREE.Float32BufferAttribute(P.nrm, 3));
   fill.setAttribute("color", new THREE.Float32BufferAttribute(P.alpha.flatMap(a => [1, 1, 1, a]), 4)); fill.setIndex(P.idx);
-  const mean = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0), lift = mean(G.lift), rim = mean(G.rim);   // the upper lashes' mean elevation (degrees), and their way over the rim (mm)
-  return { lashes: geometryOf(G), brows: geometryOf(H), fill, cards: { lashes: G.n, brows: H.n, lift, rim } };
+  const mean = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0), lift = mean(G.lift), rim = mean(G.rim), drop = mean(G.drop);   // the upper lashes' mean elevation (degrees), their way over the rim (mm), the lower lashes' elevation
+  const spike = mean(G.gaps) / (mean(G.inside) || 1);                       // the gap between clumps against the roots' spacing inside one: about 1 spread evenly, far more as spikes
+  const odd = G.longest.filter((_, i) => i % 2), even = G.longest.filter((_, i) => !(i % 2)), alt = mean(odd) / (mean(even) || 1);   // every other clump's length against its neighbours'
+  return { lashes: geometryOf(G), brows: geometryOf(H), fill, cards: { lashes: G.n, brows: H.n, lift, rim, drop, spike, alt } };
 }

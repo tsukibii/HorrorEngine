@@ -700,3 +700,15 @@ load the page once after an edit.
 - **Give a long check its own time:** STUDIO takes about 50 minutes here; run under a 30-minute `timeout` it was killed
   at its 22nd step with nothing wrong. Run it with an hour and more, or by ONLY for the steps a change touches.
 
+## Anime lashes and the painted liner (2026-10-26, night)
+
+- **A band "up from a line" breaks when the surface turns:** the liner was first painted as the skin within a liner's
+  width up (the face's up) from the lashes' roots; on a shut lid, whose skin runs forward, that took a slab of the lid
+  and showed its nine segments as flat plates. Bound a band by two lines found on the skin instead (the roots, and the
+  skin a width out from them by rays): between two lines the distances to them add up to their separation, outside they
+  add up to more, whatever the pose.
+- **Check that the layer you're tuning shows at all before tuning it:** the liner at 1.0 with loud test colours showed
+  only two specks at the corners, because the lid line it followed lies under the lashes and the eye's cut. A picture
+  with every makeup layer at full strength in a colour of its own finds that in one look.
+- **`out` is a GLSL keyword:** a float named `out` fails the whole skin shader (the Studio draws nothing but the eyes
+  and the hair); the error names the line.

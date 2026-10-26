@@ -11,7 +11,9 @@
 // settings; at a Fit of 0 the t-shirt clings to the body and doesn't hang; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
 // goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
 // normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
-// the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab;
+// the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab; the anime
+// lash styles gather the lashes into spikes and the natural one spreads them; the anime pink makeup paints the liner from
+// the lashes' roots and pink under the eye, and its look turns the lashes on;
 // accessories are held to the skin; the head OBJ exports; the export for the desk and Unreal carries the character's
 // recipe and Import brings it back with every file and setting the same; the pictures clear and the face goes.
 // Ends "STUDIO ok".
@@ -508,6 +510,57 @@ const png = rgb => {
     await page.waitForFunction(() => !window.__body.st.lash.on && !window.__body.st.brow.on, null, { timeout: 10000 });
     console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; the upper lashes lie ${r.cards.rim.toFixed(1)} mm over the lid's rim before they lift (${r.rimShut.toFixed(1)} shut); shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
     await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("anime lashes after the user's references: the anime styles gather the lashes into separate spikes with gaps between them, every other spike shorter, the lower lashes pointing down the skin; the natural style spreads them evenly and level; a style sets every slider; the styles are grouped in the picker", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => g.label));
+    if (!groups.some(g => /anime/i.test(g)) || !groups.some(g => /natural/i.test(g))) throw new Error("the style picker's groups: " + JSON.stringify(groups));
+    const r = await page.evaluate(async () => {
+      const b = window.__body, BL = await import("./browlash.js");
+      const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash; return { spike: c.spike, alt: c.alt, drop: c.drop, lift: c.lift, rim: c.rim, cards: c.lashes }; };
+      const anime = at("anime"), drawn = at("drawn"), doll = at("animeDoll"), natural = at("natural"), N = BL.styleOf("natural");
+      const reset = Object.keys(N).every(k => b.st.lash[k] === N[k]);   // the anime style's spikes gone with the natural one: a style sets every control
+      b.st.lash.on = false; b.browLash();
+      return { anime, drawn, doll, natural, reset };
+    });
+    // the gap between clumps against the roots' spacing inside one: about 1 spread evenly, far more as spikes; the lower lashes' elevation from the lid (degrees)
+    for (const [k, x] of [["anime", r.anime], ["drawn", r.drawn], ["anime doll", r.doll]]) if (!(x.spike > 4 && x.drop > 45 && x.rim > 1.2 && x.rim < 3.2 && x.cards > 100)) throw new Error(`${k}: ${JSON.stringify(x)}`);
+    if (!(r.anime.alt < 0.85) || !(r.natural.spike < 2 && r.natural.alt > 0.85 && r.natural.alt < 1.15 && r.natural.drop < 35) || !r.reset) throw new Error("natural against anime: " + JSON.stringify(r));
+    console.log(`       anime: the gap between spikes ${r.anime.spike.toFixed(1)}× the roots' spacing inside one (natural ${r.natural.spike.toFixed(1)}×), every other spike ${((1 - r.anime.alt) * 100).toFixed(0)}% shorter, the lower lashes ${r.anime.drop.toFixed(0)}° down the skin (natural ${r.natural.drop.toFixed(0)}°)`);
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("the anime pink makeup after the user's references: the preset paints the liner between the lashes' roots and a line a liner's width up the lid (both found on the skin), a wash under the eye, the inner corner and the waterline pink; under the eye the picture goes pinker; the anime pink look turns the anime lashes on with it", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    const eyeShot = async () => {                                         // the head view zoomed onto the left eye: the canvas's picture
+      await page.evaluate(() => { const b = window.__body; document.querySelector('#views button[data-v="head"]').click(); const O = b.orbit; O.yaw = 0; O.pitch = 0.02;
+        const e = b.EYES.L.position, ty = b.st.height - 0.12 * b.st.height / 1.7; O.pan.set(e.x, e.y - ty, e.z); O.zoom = 0.14; });
+      await page.waitForTimeout(700);
+      const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      return page.screenshot({ clip, timeout: 120000 });
+    };
+    const pinkUnder = png => page.evaluate(async ([b64]) => {              // red over green in a patch under the left eye's lower lid
+      const b = window.__body, img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+      const r = document.querySelector("#view canvas").getBoundingClientRect(), p = b.onScreen(374), c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(Math.round(p[0] - r.left) - 30, Math.round(p[1] - r.top) + 6, 60, 22).data; let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += d[i] - d[i + 1];
+      return s / (d.length / 4);
+    }, [png.toString("base64")]);
+    const pick = async name => { await page.selectOption("#procRows select >> nth=1", name); await page.waitForTimeout(300); };   // the makeup presets' menu (skin, then makeup)
+    await pick("none"); const plain = await pinkUnder(await eyeShot());
+    await pick("anime pink"); const pink = await pinkUnder(await eyeShot());
+    const u = await page.evaluate(() => { const b = window.__body, U = b.SKU, lid = U.uLidUL.value[4], front = U.uLidFL.value[4], top = U.uLidTL.value[4];
+      return { under: U.uf_under.value, water: U.uf_waterline.value, corner: U.uf_corner.value, liner: U.uf_liner.value, width: U.uf_linerWidth.value, inner: U.uf_linerInner.value,
+               ahead: (front.z - lid.z) * 1000, band: top.w * 1000, up: (top.y - front.y) * 1000, on: b.st.skin.proc.on }; });
+    if (!(u.on && u.under > 0.5 && u.water > 0.5 && u.corner > 0.5 && u.liner > 0.5 && u.width > 1 && u.inner > 0)) throw new Error("the preset: " + JSON.stringify(u));
+    // the liner's band in the lid's middle: from the lashes' roots (the lid's front edge, ahead of its line) a liner's width up the skin
+    if (!(u.ahead > 1 && u.ahead < 3.5) || !(u.band > 0.9 && u.band < 3) || !(u.up > 0.3)) throw new Error("the liner's band: " + JSON.stringify(u));
+    if (!(pink > plain + 4)) throw new Error(`under the eye: red over green ${plain.toFixed(1)} plain, ${pink.toFixed(1)} with the preset`);
+    const look = await page.evaluate(() => { const b = window.__body; b.useLook("anime pink"); return { on: b.st.lash.on, spikes: b.st.lash.spikes, under: b.st.skin.proc.under, cards: b.browlash && b.browlash.lashes }; });
+    if (!(look.on && look.spikes === 1 && look.under > 0.5 && look.cards > 100)) throw new Error("the anime pink look: " + JSON.stringify(look));
+    await page.evaluate(() => { const b = window.__body; b.useLook("MHR plain"); b.st.lash.on = false; b.browLash(); });   // back to the plain look the steps below were written for
+    await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]');
+    await page.click('#tabs button[data-tab="body"]');
+    console.log(`       under the eye, red over green ${plain.toFixed(1)} plain and ${pink.toFixed(1)} with the preset; the liner's band ${u.band.toFixed(2)} mm wide in the lid's middle, from the lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line`);
   });
   await step("the eyes: cut out of the skin along the model's own lid line (the strip its blink squeezes, found on MHR's own face; moved by hand), on a face fitted to pictures too (its blink still meets), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
     const r = await page.evaluate(() => {

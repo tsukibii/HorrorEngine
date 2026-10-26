@@ -342,8 +342,21 @@ function skinLook() {
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
   material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on || (NAILAT && st.nails?.on) ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
-  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
   nailLook();
+}
+// the upper lid's front edge, where the lashes grow, as nine points in the order of skinshader.js's ring (outer corner
+// to inner): rimOf's way over the rim from the eye's own lid line (the outline the lashes stand on: MediaPipe's ring
+// sits up the lid, nearly at the front edge already), its last point at every other point of the outline's seventeen;
+// and the liner's top edge, on the skin `ws` mm (one per ring point) out from it (the painted liner is the band
+// between the two lines)
+function lidFront(side, pts, ws) {
+  const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));
+  U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
+  const { pts: o, c } = outline(side, 1), upper = o.slice(16).concat([o[0]]);   // inner corner to outer, as browLash takes it
+  const rows = rimOf(upper, c, F, 2.2, side, upper.map((_, i) => ws[Math.min(8, Math.round((16 - i) / 2))]));
+  const at = (i, a) => [upper[i][0] + rows[i][a], upper[i][1] + rows[i][a + 1], upper[i][2] + rows[i][a + 2]];
+  return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 6)), top: [...Array(9)].map((_, j) => at(16 - 2 * j, 9)) };
 }
 function nailLook() {                                  // the fingernails into the skin's shader (nails.js; skinshader.js paints them)
   const n = st.nails || NAILS.NAIL_DEFAULTS, on = !!NAILAT && !!n.on;
@@ -394,8 +407,8 @@ let skinPreset = null;                                 // a preset into the skin
     st.skin.proc.on = true; procSet.all(); skinLook();
   };
   skinPreset = usePreset;
-  skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], ["freckleColor", "flushColor"]); skinPre.value = ""; };
-  makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]); makePre.value = ""; };
+  skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], SKINSH.SKIN_COLOURS); skinPre.value = ""; };
+  makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], SKINSH.MAKEUP_COLOURS); makePre.value = ""; };
   let group = null;
   for (const [k, label, lo, hi, step, val, help, g] of SKINSH.FEATURES) {
     if (g !== group) { box.append(el("h4", { textContent: g })); group = g; }
@@ -887,7 +900,7 @@ function compose() {                                   // POS: RAW + the face, s
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.attributes.objPos.needsUpdate = true; dgeo.computeBoundingSphere();
   mouthCut(); moveJaw(); lipstick();
-  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
   WEAR?.update();                                       // the accessories on the face as it is now
@@ -1812,10 +1825,13 @@ function useLook(name) {
   if (L.teeth) { Object.assign(st.teeth, L.teeth); teethSet.all(); }
   if (L.skin?.off) { st.skin.proc.on = false; procSet.all(); }
   else if (L.skin) {
-    if (L.skin.preset) skinPreset(SKINSH.SKIN_PRESETS[L.skin.preset], ["Skin", "Age"], ["freckleColor", "flushColor"]);
-    if (L.skin.makeup) skinPreset(L.skin.makeup, ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]);
+    if (L.skin.preset) skinPreset(SKINSH.SKIN_PRESETS[L.skin.preset], ["Skin", "Age"], SKINSH.SKIN_COLOURS);
+    if (L.skin.makeup) skinPreset(typeof L.skin.makeup === "string" ? SKINSH.MAKEUP_PRESETS[L.skin.makeup] : L.skin.makeup, ["Makeup"], SKINSH.MAKEUP_COLOURS);   // a makeup preset by name, or its own
     if (L.skin.tweak) { Object.assign(st.skin.proc, L.skin.tweak); procSet.all(); }
   }
+  if (L.lash) { Object.assign(st.lash, L.lash.style ? BL.styleOf(L.lash.style) : {}, L.lash.set || {}, { on: L.lash.on !== false, look: L.lash.look || st.lash.look }); }   // the lashes: a style, a look, on
+  if (L.brow) { Object.assign(st.brow, L.brow.shape ? { ...BL.BROW_SHAPES[L.brow.shape], shape: L.brow.shape } : {}, L.brow.set || {}, { on: L.brow.on !== false, look: L.brow.look || st.brow.look }); delete st.brow.label; }
+  if ((L.lash || L.brow) && BL_READY) { blSet.all(); browLash(); }
   skinLook(); changed("expr"); UNSAVED = true;
 }
 {
@@ -2073,13 +2089,14 @@ function rimNear(side, c) {
   for (let t = 0; t < TRIS.length; t += 3) if (inBox[TRIS[t]] || inBox[TRIS[t + 1]] || inBox[TRIS[t + 2]]) tris.push(t);
   return RIMNEAR[side] = { verts, tris };
 }
-function rimOf(line, c, F, reach, side) {
+function rimOf(line, c, F, reach, side, up = null) {   // up: mm per point (or one for all): a fourth point each, on the skin that far out from the front edge (the painted liner's top)
   const mm = 0.001 * SCALE, f = [F.x, F.y, F.z], n = line.length, out = [], lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+  const upAt = k => up == null ? 0 : Array.isArray(up) ? up[k] : up, pad = up == null ? 0 : (Math.max(...line.map((_, k) => upAt(k))) + 1) * mm;
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
   const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const unit = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
-  for (const p of line) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - 5 * mm); hi[a] = Math.max(hi[a], p[a] + 5 * mm); }
+  for (const p of line) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - 5 * mm - pad); hi[a] = Math.max(hi[a], p[a] + 5 * mm + pad); }
   const near = [], tris = [], box = i => POS[i * 3] > lo[0] && POS[i * 3] < hi[0] && POS[i * 3 + 1] > lo[1] && POS[i * 3 + 1] < hi[1] && POS[i * 3 + 2] > lo[2] && POS[i * 3 + 2] < hi[2];
   const R = rimNear(side, c);                           // the skin round the line: its points, and its triangles (corners and middles, flat)
   for (const i of R.verts) if (box(i)) near.push(i);
@@ -2116,9 +2133,15 @@ function rimOf(line, c, F, reach, side) {
     const path = [1 / 3, 2 / 3].map(g => { const h = Math.hypot(v[0], v[1], v[2]) > 0.2 * mm ? above(add(p, mul(v, g)), off, 3 * mm) : 0;
       return add(mul(v, g), mul(off, Math.max(0, Number.isFinite(h) ? h : 0) + 0.15 * mm)); });
     path.push(add(v, mul(off, 0.1 * mm)));
-    out.push([...path[0], ...path[1], ...path[2]]);
+    const row = [...path[0], ...path[1], ...path[2]];
+    if (up != null) {                                    // the skin `up` mm out from the front edge, along the face's plane: a ray forward through it (the lid slopes back above its edge; shut, it bulges forward)
+      const q = add(v, mul(radial, upAt(k) * mm)), h = above(add(p, q), f, 3 * mm);
+      row.push(...add(q, mul(f, (Number.isFinite(h) ? h : 0) + 0.15 * mm)));
+    }
+    out.push(row);
   }
-  for (let it = 0; it < 2; it++) { const q = out.map(v => v.slice()); for (let k = 1; k < n - 1; k++) for (let a = 0; a < 9; a++) out[k][a] = (q[k - 1][a] + 2 * q[k][a] + q[k + 1][a]) / 4; }
+  const w = out[0].length;
+  for (let it = 0; it < 2; it++) { const q = out.map(v => v.slice()); for (let k = 1; k < n - 1; k++) for (let a = 0; a < w; a++) out[k][a] = (q[k - 1][a] + 2 * q[k][a] + q[k + 1][a]) / 4; }
   return out;
 }
 const _k = new THREE.Vector3(), _t = new THREE.Vector3(), _kc = new THREE.Color();
@@ -2176,9 +2199,11 @@ const blSet = {};
   };
   box.append(el("h4", { textContent: "Lashes" }));
   part(st.lash, "Lashes", BL.LASH_CONTROLS, "lash", "Rooted on the lids' edges: they turn with the lid and squash as it shuts. The salon's hair shader.");
-  const style = el("select", {}, el("option", { value: "", textContent: "a style…" }), ...Object.entries(BL.LASH_STYLES).map(([k, x]) => el("option", { value: k, textContent: x.label })));
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")));
-  style.onchange = () => { if (!style.value) return; const x = { ...BL.LASH_STYLES[style.value] }; delete x.label; Object.assign(st.lash, x); style.value = ""; blSet.all(); browLash(); };
+  const style = el("select", {}, el("option", { value: "", textContent: "a style…" }));   // the styles in their groups (the anime ones after the user's references)
+  for (const g of [...new Set(Object.values(BL.LASH_STYLES).map(x => x.group || "Styles"))])
+    style.append(el("optgroup", { label: g }, ...Object.entries(BL.LASH_STYLES).filter(([, x]) => (x.group || "Styles") === g).map(([k, x]) => el("option", { value: k, textContent: x.label }))));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")), el("small", { className: "note", textContent: "A style sets every slider above (the ones it doesn't name go back to their defaults); the sliders stay yours to move. The anime styles are after the user's references: spikes with gaps between them, long alternating with short, the lower lashes in wisps down the skin." }));
+  style.onchange = () => { if (!style.value) return; Object.assign(st.lash, BL.styleOf(style.value), { on: true }); style.value = ""; blSet.all(); browLash(); };
   box.append(el("h4", { textContent: "Brows" }));
   const shape = el("select", {}, ...Object.entries(BL.BROW_SHAPES).map(([k, s]) => el("option", { value: k, textContent: s.label })));
   part(st.brow, "Brows", BL.BROW_CONTROLS, "brow", "Hairs lying flat on the skin between the brow's two rows: the front up, the rest swept out; they ride the brows' expressions.");
