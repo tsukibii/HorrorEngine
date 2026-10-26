@@ -74,8 +74,9 @@ export function underHeights(B, under) {
 
 /** how firmly each point is held where it is (over a half: it stays as cut): a bottom by its waistband, a skirt by
     its waist, a top round its neckline (the band there keeps it round, or it would sag into a V) and where it's tucked
-    into what goes over it (`tuck`: how far under that waist a point is); `bands`: held under its bands (tailor.js) */
-export function holds(F, G, p, tuck = null, bands = null) {
+    into what goes over it (`tuck`: how far under that waist a point is), its sleeves inside the sleeves over it (`cover`:
+    how far down each arm they reach, {L, R}); `bands`: held under its bands (tailor.js) */
+export function holds(F, G, p, tuck = null, bands = null, cover = null) {
   const s = F.s, P = G.outer.P, n = P.length / 3, H = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
@@ -83,6 +84,8 @@ export function holds(F, G, p, tuck = null, bands = null) {
     else if (G.waist && p.neck === false) H[i] = 1 - smooth(0.012 * s, 0.045 * s, G.waist(x, y, z));
     else if (G.neck) H[i] = 1 - smooth(0.006 * s, 0.024 * s, G.neck(x, y, z));
     if (tuck && !G.rings && !F.arm(x, y, z)) H[i] = Math.max(H[i], smooth(-0.03 * s, -0.005 * s, tuck(x, y, z)));
+    const a = cover && !G.rings ? F.arm(x, y, z) : null;
+    if (a) H[i] = Math.max(H[i], smooth(-0.03 * s, -0.005 * s, cover[a.side] - a.t));
     if (bands) H[i] = Math.max(H[i], bands[i]);
   }
   return H;
@@ -274,7 +277,7 @@ export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
   // masses from the area round each point; held points don't move
   const M = new Float64Array(n);
   for (let t = 0; t < T.length; t += 3) { const a = area(P0, T[t], T[t + 1], T[t + 2]) * o.density / 3; M[T[t]] += a; M[T[t + 1]] += a; M[T[t + 2]] += a; }
-  const hold = holds(F, G, p, o.tuck, o.hold), W = new Float64Array(n);
+  const hold = holds(F, G, p, o.tuck, o.hold, o.cover), W = new Float64Array(n);
   for (const piece of loose(n, T, hold)) for (const i of piece) hold[i] = 1;   // a sliver the cut left alone: as cut (it would fall for ever)
   for (let i = 0; i < n; i++) W[i] = hold[i] > 0.5 || !(M[i] > 0) ? 0 : 1 / M[i];
 
@@ -310,7 +313,7 @@ export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
     const K = [c03 + c04, c01 + c02, -c01 - c03, -c02 - c04], A = area(P0, i0, i1, i2) + area(P0, i0, i1, i3);
     if (!(A > 1e-12) || K.some(k => !Number.isFinite(k) || Math.abs(k) > 50)) continue;   // a sliver: no bend worth keeping
     const w = [i0, i1, i2, i3].reduce((sum, v, k) => sum + W[v] * K[k] * K[k], 0); if (!(w > 0)) continue;
-    const alpha = Math.max(A / (3 * o.bend) / h2, w);                // its compliance this step, held to the points' own weight
+    const alpha = Math.max(A / (3 * o.bend) / h2 * o.iters, w);      // its compliance in each pass (the step's the material's), held to the points' own weight
     BI.push(i0, i1, i2, i3); BK.push(...K); BD.push(1 / (w + alpha));
     let cx = 0, cy = 0, cz = 0; [i0, i1, i2, i3].forEach((v, k) => { cx += K[k] * P0[v * 3]; cy += K[k] * P0[v * 3 + 1]; cz += K[k] * P0[v * 3 + 2]; });
     BC.push(cx * o.memory, cy * o.memory, cz * o.memory);
@@ -340,8 +343,9 @@ export function* draping(B, G, p, cfg = {}, under = [], th = 0.002) {
     const late = step / steps, damp = Math.exp(-(o.damp + 30 * smooth(0.6, 1, late)) * h);   // settled harder at the end
     predict(X, Xp, W, n, g, damp, h, speed);
     if (late > 0.4 && speed[1] < 0.002 && speed[0] < 0.05) { X.set(Xp); break; }   // settled: on the whole under 2 mm a second
-    for (let it = 0; it < iters; it++) { lengths(X, W, E.A, E.B, L0, ne, cs); seams(X, W, SE.A, SE.B, SE.L, SE.L.length); }
-    bends(X, W, bI, bK, bD, bC, nb);
+    // the bending in each pass with the lengths: once a step after them, the two undid each other into the speed and a
+    // soft knit's sleeve never settled (LESSONS)
+    for (let it = 0; it < iters; it++) { lengths(X, W, E.A, E.B, L0, ne, cs); seams(X, W, SE.A, SE.B, SE.L, SE.L.length); bends(X, W, bI, bK, bD, bC, nb); }
     tether(X, W, TT.A, TT.D, n);
     asked += collide(c, o.friction);
     if (step % 30 === 29) yield step / steps;

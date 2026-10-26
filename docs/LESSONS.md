@@ -640,3 +640,19 @@ load the page once after an edit.
 - **More cloth between two held edges only creeps:** sleeves cut fuller between the shoulder and a held cuff buckled
   so slowly that their end state depended on when the drape stopped (19 mm). Compare two runs of different lengths to
   tell creeping from settled.
+- **A bake's key is everything the result depends on, what comes after it too:** a top's drape is held where trousers
+  put on over it later close round it, but its key named only it and what was under it, so a t-shirt baked alone came
+  back untucked under trousers (10.6 cm off) and the trousers were cut over it. Test a cache by changing each input on
+  its own and asking whether the key moves.
+- **Layers sag on each other:** a jacket cut over a shirt's hung sleeve, which already hung 2 cm below the arm, and then
+  hanging itself, ballooned from the elbow down (7.9 cm off the skin against 3.6 cut). What a later garment closes
+  over is held there, as a tuck is. Measure each layer's stand-off from the skin, cut and hung, before tuning the outer.
+- **Two projections that can't both be met, each run once a step, pump each other:** the drape bent toward flat once
+  after the lengths; on a sleeve (a tube can't be flat) each undid the other and the difference became speed, so a
+  cardigan rocked 6 mm at the elbows at 18 mm/s through the strongest damping, at some stiffnesses and weights and
+  not others. Damping only moved the band. In each pass together they settle everywhere. Find it by switching one
+  thing off at a time (friction, compression, tethers, bending) and by mapping the stiffness and the weight, not by
+  tuning the one garment that showed it.
+- **Compare a garment against itself only on the same cut:** a drape run longer for a whole outfit re-cut the
+  garments over it (the layers under them hung differently), so their points no longer matched by index and the
+  comparison showed 35 cm moves and a NaN that weren't there. Hang the layers under it once and vary only it.

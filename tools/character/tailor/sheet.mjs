@@ -6,6 +6,7 @@
 //        [--pbr pants=pbr/Fabric/denim1[:0.3][,design=ref...]]   a PBR set off the shelf on a garment (its repeat in metres; + tints it)
 //        [--drape [JSON]]   hung by gravity (tailor/drape.js); JSON: {design: {drape settings}} over the designs' own
 //        [--edit JSON]      a garment's own edits, as the Studio keeps them: {"t-shirt": {"fit": 0}} (skin tight)
+//        [--sculpt JSON]    the body's sculpt over its base's (sculpt.js's body controls): {"belly": -0.5}
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 import { createServer } from "http";
@@ -13,7 +14,7 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import { spawnSync } from "child_process";
 import { join } from "path";
 import { createRequire } from "module";
-import { loadMhr, mhrBody, bodyWeights, ROOT } from "./node.mjs";
+import { loadMhr, mhrBody, bodyWeights, bodySculpt, ROOT } from "./node.mjs";
 import * as TAILOR from "../tailor.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i < 0 ? d : process.argv[i + 1] ?? true; };
@@ -40,7 +41,7 @@ const list = list0 && list0.map(([d, c, l]) => [d, c, extra || pbrs[d] ? { ...(l
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 
-const b = mhrBody(loadMhr(), bodyWeights(bodyName), H);
+const b = mhrBody(loadMhr(), bodyWeights(bodyName), H, arg("sculpt") ? { ...bodySculpt(bodyName), ...JSON.parse(arg("sculpt")) } : bodySculpt(bodyName));
 const dset = typeof arg("drape") === "string" && arg("drape").startsWith("{") ? JSON.parse(arg("drape")) : {};
 for (const [d, o] of Object.entries(dset)) designs[d].piece.drape = { ...(designs[d].piece.drape || {}), ...o };
 const t0 = Date.now(), B = TAILOR.body(b.P, b.T), worn = TAILOR.dress(B, list, designs, { drape: has("drape") });

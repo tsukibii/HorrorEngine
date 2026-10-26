@@ -49,7 +49,9 @@ steps (XPBD, Macklin et al. 2019), 600 steps a second, in real units (metres, ki
   (with almost nothing against shrinking, an A-line skirt's hem drew in ten centimetres instead of folding).
 - **Bending**: every two triangles resist bending away from flat (quadratic bending, Bergou et al. 2006: fabric is flat
   before it's sewn), the design's `bend` in N m, but never stiffer in a step than the points it moves are heavy (a
-  stiffer one fights the lengths and buzzes for ever: LESSONS).
+  stiffer one fights the lengths and buzzes for ever: LESSONS); in each pass with the lengths, its stiffness shared
+  between the passes (once a step after them, the two undid each other into the cloth's speed: a soft knit's sleeve
+  rocked for as long as the drape ran).
 - **Long range attachments** (Kim et al. 2012): no point ends further from where the garment hangs from than the cloth
   between them reaches, so it hangs without stretching: about 3% stretched at most for one edge in ten.
 - **What it lies on**: each point's plane at its closest skin (walked from the last, searched where another limb is
@@ -58,8 +60,10 @@ steps (XPBD, Macklin et al. 2019), 600 steps a second, in real units (metres, ki
   legs asks seldom). **Friction** there (0.5).
 - **Held** where a garment holds: a bottom by its waistband, a skirt by its waist, a top round its neckline (or it sags
   into a V), the cloth under a **neckband**, a sleeve's **cuff** (buttoned or ribbed round the wrist: the sleeve blouses
-  above it and never slides over the hand) and a ribbed hem (rib pulls in round the hips), and a top **tucked** into
-  trousers or a skirt worn over it later (held under that waist, blousing above it). A **buttoned front** (`open` with
+  above it and never slides over the hand) and a ribbed hem (rib pulls in round the hips), a top **tucked** into
+  trousers or a skirt worn over it later (held under that waist, blousing above it), and a **sleeve inside** a sleeve
+  worn over it later (a shirt's in a blazer's, a top's in a cardigan's): held as cut, pressed to the arm, so the jacket's
+  isn't cut over a sagging shirt sleeve and then sags again (a balloon from the elbow down). A **buttoned front** (`open` with
   `buttons`) is kept closed between the buttons; below them it may part. A sliver of cloth the cut leaves on its own
   (where an opening meets a hem) stays as cut.
 - **Fullness** (`slack`): cloth round the body beyond the cut's, under a top's bust and down a bottom's legs (never
@@ -76,9 +80,12 @@ does anything at a fit under a quarter. A garment of 11k points (a t-shirt) take
 5 s (`node tools/character/tailor/sheet.mjs --drape`).
 
 **The bake**: what a garment fell to is kept by a key (`tailor.js` `drapeKey`: the drape's version and settings, the
-body, and the cut of it and of everything worn under it) and taken as it is next time instead of falling again. The
-Studio saves the bakes as `People/<name>/drape.bin` (a header, then each garment's points) and carries it in the
-export's recipe; a changed body, garment or layer under it misses its key and falls again.
+body, the cut of it and of everything worn under it, and for each of those what holds it from over it, the waists it's
+tucked into and the sleeves round its own) and taken as it is next time instead of falling again. The Studio saves the
+bakes as `People/<name>/drape.bin` (a header, then each garment's points) and carries it in the export's recipe; a
+changed body, garment, layer under it or what closes over it (trousers put on over a shirt that hung alone) misses its
+key and falls again. Shoes change nothing; socks and tights do (they have a waist, and what's worn under them in the
+list is tucked into it).
 
 ## 1b. Fabrics, patterns, prints
 

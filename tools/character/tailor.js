@@ -7,14 +7,14 @@
 // The designs are data: Content/Studio/Clothes/designs.json; outfits in outfits.json.
 // Plain ES module: the Studio page (tools/character/index.html) and node (tools/character/tailor/cli.mjs) run it.
 import { frame } from "./tailor/frame.js";
-import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline } from "./tailor/pieces.js";
+import { prepare, shell, skirt, shoeShell, detail, buttons, thicken, lifted, cut, handles, soles, waistline, sleeveEnd } from "./tailor/pieces.js";
 import { unwrap } from "./tailor/uv.js";
 import { height } from "./tailor/frame.js";
 import { draping, run, DRAPE } from "./tailor/drape.js";
 import { normals, smooth } from "./tailor/mesh.js";
 
 export const VERSION = 1;
-export const DRAPE_VERSION = 2;                                     // a bake of an older drape is draped again: raise it when the drape changes
+export const DRAPE_VERSION = 3;                                     // a bake of an older drape is draped again: raise it when the drape changes
 
 /** the body, read once per shape: P, T in metres, Y up, facing +Z. One that doesn't stand on y = 0 (the desk's figure
     stands its foot bones there, its soles a little under) is measured standing on it, and its clothes come back in its
@@ -63,11 +63,12 @@ export function* making(B, name, design, opts = {}) {
   const G = p.kind === "skirt" ? skirt(B, p, under.map(g => ({ outer: g.outer[0] }))) : p.kind === "shoe" ? shoeShell(B, p) : shell(B, p, under);
   const th = (design.thickness ?? 0.002) * s, parts = [];
   // the drape: the cut cloth hung on the body; everything on it is cut where the cloth was cut and sewn where it hangs.
-  // Tucked into what closes round the waist over it later (opts.tuck); its front closed where it's buttoned
+  // Tucked into what closes round the waist over it later (opts.tuck), its sleeves held inside the sleeves over it
+  // (opts.cover); its front closed where it's buttoned
   let hung = null;
   if (opts.drape && p.drape && p.drape.on !== false) {
     const bt = (design.details || []).find(d => d.kind === "buttons"), closed = p.open ? (bt ? [height(F, bt.to) - 0.01 * s, height(F, bt.from) + 0.01 * s] : [-1, height(F, p.open.from ?? "bust-0.06")]) : null;
-    const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null }, under, th);
+    const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, cover: opts.cover || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null }, under, th);
     let r; while (!(r = it.next()).done) yield { name, frac: r.value };
     hung = r.value;
   }
@@ -136,8 +137,8 @@ export function* dressing(B, list, designs, opts = {}) {
   const worn = [], ds = list.map(([name, , , edit]) => { const d = designs[name]; if (!d) throw new Error(`no design called ${name}`); return edited(d, edit); });
   for (let k = 0; k < list.length; k++) {
     const [name, color, look] = list[k], key = drapeKey(opts.body, list, ds, k);
-    const tuck = opts.drape && ds[k].piece.neck !== false ? tucks(B.F, ds.slice(k + 1)) : null;
-    const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, baked: opts.bakes ? opts.bakes[key] : null });
+    const ov = opts.drape ? over(ds, k) : [], tuck = tucks(B.F, ov), cover = covers(B.F, ov);
+    const it = making(B, name, ds[k], { color, look, under: worn.slice(), drape: opts.drape, tuck, cover, baked: opts.bakes ? opts.bakes[key] : null });
     let r; while (!(r = it.next()).done) yield { k, of: list.length, ...r.value };
     worn.push({ ...r.value, key });
   }
@@ -150,9 +151,11 @@ export function plan(body, list, designs) {
   return ds.map((d, k) => { const p = fitted(d.piece); return { key: drapeKey(body, list, ds, k), drapes: !!(p.drape && p.drape.on !== false) }; });
 }
 /** what a garment's drape depends on, as a short key: the drape's own version, the body, and the cut of it and of
-    everything worn under it (their pieces and details; not their colours or looks) */
+    everything worn under it (their pieces and details; not their colours or looks), each with what holds it from over
+    it (a top's tuck is in the trousers that come after it) */
 export function drapeKey(body, list, ds, k) {
-  return hash(JSON.stringify([DRAPE_VERSION, DRAPE, body ?? null, list.slice(0, k + 1).map(([name], j) => [name, ds[j].piece, ds[j].details || []])]));
+  const held = j => over(ds, j).map(q => [q.kind ?? null, q.waist ?? null, q.neck === false, q.sleeve ?? null]);
+  return hash(JSON.stringify([DRAPE_VERSION, DRAPE, body ?? null, list.slice(0, k + 1).map(([name], j) => [name, ds[j].piece, ds[j].details || [], held(j)])]));
 }
 function hash(str) {                                                // cyrb53: 53 bits as hex
   let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
@@ -161,10 +164,22 @@ function hash(str) {                                                // cyrb53: 5
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0");
 }
+/** what goes over garment k later and holds it there: the waists a top is tucked into (bottoms with a waistband,
+    skirts) and the sleeves round its own */
+function over(ds, k) {
+  const p = ds[k].piece, top = p.neck !== false, sleeved = p.sleeve !== undefined && p.sleeve !== false;
+  return ds.slice(k + 1).map(d => d.piece).filter(q => (top && (q.kind === "skirt" || (q.waist && q.neck === false))) || (sleeved && q.sleeve !== undefined && q.sleeve !== false));
+}
+/** how far down each arm the sleeves of what goes over a garment later reach ({L, R}, from the shoulder joint as
+    F.arm's t), or null for none: the sleeve inside them is held as it was cut, pressed to the arm, not sagging */
+function covers(F, later) {
+  const q = later.filter(p => p.sleeve !== undefined && p.sleeve !== false);
+  return q.length ? { L: Math.max(...q.map(p => sleeveEnd(F, "L", p.sleeve))), R: Math.max(...q.map(p => sleeveEnd(F, "R", p.sleeve))) } : null;
+}
 /** where the waists of what goes over a top later close round it (bottoms with a waistband, skirts): tuck(x, y, z) is
     how far under the highest of them a point is (> 0 tucked in), or null for none */
 function tucks(F, later) {
-  const lines = later.map(d => d.piece).filter(p => p.kind === "skirt" || (p.waist && p.neck === false))
+  const lines = later.filter(p => p.kind === "skirt" || (p.waist && p.neck === false))
     .map(p => p.kind === "skirt" ? (y0 => (x, y) => y0 - y)(height(F, p.waist?.at ?? "waist-0.04")) : waistline(F, p.waist.at, p.waist));
   return lines.length ? (x, y, z) => Math.max(...lines.map(f => f(x, y, z))) : null;
 }

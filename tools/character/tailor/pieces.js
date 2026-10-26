@@ -42,7 +42,7 @@ export const waistline = (F, at, o = {}) => {
   return (x, y, z) => { const c = Math.cos(F.theta(x, y, z)); return y0 - dr * Math.max(0, c) + ri * Math.max(0, -c) - y; };
 };
 /** the length along the arm a sleeve reaches: a number (metres from the shoulder joint), or "wrist", "elbow", "short" */
-const sleeveEnd = (F, side, L) => {
+export const sleeveEnd = (F, side, L) => {
   const A = F.arms[side], s = F.s;
   if (L === "wrist" || L === "long") return A.wrist - 0.012 * s;
   if (L === "elbow") return A.elbow + 0.02 * s;

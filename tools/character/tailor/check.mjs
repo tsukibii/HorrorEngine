@@ -11,10 +11,10 @@
 //   node tools/character/tailor/check.mjs
 import { readFileSync } from "fs";
 import { join } from "path";
-import { loadMhr, mhrBody, bodyWeights, ROOT } from "./node.mjs";
+import { loadMhr, namedBody, ROOT } from "./node.mjs";
 import * as TAILOR from "../tailor.js";
 import { height } from "./frame.js";
-import { bust } from "./pieces.js";
+import { bust, sleeveEnd } from "./pieces.js";
 
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const { designs } = JSON.parse(readFileSync(join(CLOTHES, "designs.json")));
@@ -72,7 +72,7 @@ const look = (label, B, g, hung = false) => {
 const m = loadMhr(), t0 = Date.now(), counts = {};
 const BODIES = [["average", 1.7], ["feminine", 1.62], ["masculine", 1.78], ["slim_feminine", 1.6], ["slim_masculine", 1.76], ["full_feminine", 1.64], ["full_masculine", 1.78]];
 for (const [bname, h] of BODIES) {
-  const b = mhrBody(m, bodyWeights(bname), h), B = TAILOR.body(b.P, b.T);
+  const b = namedBody(m, bname, h), B = TAILOR.body(b.P, b.T);
   for (const [name, d] of Object.entries(designs)) {
     let g;
     try { g = TAILOR.make(B, name, d); } catch (e) { errs.push(`${name} on ${bname}: ${e.message}`); continue; }
@@ -89,7 +89,7 @@ for (const [k, v] of Object.entries(counts)) console.log(`  ${k.padEnd(16)} ${v.
 // the drape: each outfit hung, then from its bakes
 const HUNG = [["feminine", 1.62, ["work uniform", "t-shirt and skirt", "school uniform (blazer)", "cardigan and skirt", "coverall"]], ["masculine", 1.78, ["office (blazer)"]], ["full_feminine", 1.64, ["t-shirt and pants"]]];
 for (const [bname, h, names] of HUNG) {
-  const b = mhrBody(m, bodyWeights(bname), h), B = TAILOR.body(b.P, b.T);
+  const b = namedBody(m, bname, h), B = TAILOR.body(b.P, b.T);
   for (const oname of names) {
     const list = outfits[oname], label = `${oname} on ${bname}, hung`; let worn;
     try { worn = TAILOR.dress(B, list, designs, { drape: true, body: bname }); } catch (e) { errs.push(`${label}: ${e.message}`); continue; }
@@ -102,12 +102,32 @@ for (const [bname, h, names] of HUNG) {
       if (!(d.stretch.p99 < 1.25)) errs.push(`${label}: ${g.name} stretched ${((d.stretch.p99 - 1) * 100).toFixed(0)}% (one edge in a hundred)`);
       console.log(`  ${label}: ${g.name.padEnd(16)} ${d.steps} steps, ${(d.ms / 1000).toFixed(1)} s, stretch ${d.stretch.p50}/${d.stretch.p90}/${d.stretch.p99}, fell ${(d.fell * 100).toFixed(1)} cm${d.buttoned ? `, ${d.buttoned} buttoned` : ""}`);
     }
+    worn.forEach((g, k) => {                     // a sleeve inside a later one is held as it was cut: round the arm, not sagging into it
+      const ends = list.slice(k + 1).map(([n]) => designs[n].piece.sleeve).filter(v => v !== undefined && v !== false);
+      if (!g.drape || !ends.length || g.design.piece.sleeve === undefined || g.design.piece.sleeve === false) return;
+      const F = B.F, y0 = B.floor || 0, o = g.outer[0], hit = {}, d = [];
+      for (let i = 0; i < o.P.length; i += 9) {
+        const x = o.P[i], y = o.P[i + 1] - y0, z = o.P[i + 2], a = F.arm(x, y, z);
+        if (!a || a.t > Math.max(...ends.map(e => sleeveEnd(F, a.side, e))) - 0.03 * F.s) continue;
+        const r = B.surf.closest(x, y, z, 0.2, hit); if (r) d.push(r.d);
+      }
+      if (!d.length) return;
+      d.sort((a, b) => a - b); const sag = d[Math.floor(0.9 * (d.length - 1))] - d[d.length >> 1];
+      if (!(sag < 0.003)) errs.push(`${label}: ${g.name}'s sleeves sag ${(sag * 1000).toFixed(0)} mm inside the sleeves over them`);
+    });
     const again = TAILOR.dress(B, list, designs, { drape: true, body: bname, bakes });   // from its bakes: the same, and nothing falls
     again.forEach((g, i) => { if (worn[i].drape && (!g.drape?.baked || sum(g) !== sum(worn[i]))) errs.push(`${label}: ${g.name} isn't the same from its bake`); });
   }
 }
+{                                       // a bake comes back only if nothing it hangs from changed, what closes over it later too
+  const key = (l, k = 0) => TAILOR.plan("k", l.map(n => [n]), designs)[k].key;
+  if (key(["t-shirt"]) === key(["t-shirt", "pants"])) errs.push("a t-shirt's bake alone would come back tucked into pants");
+  if (key(["work-shirt-long"]) === key(["work-shirt-long", "blazer"])) errs.push("a shirt's bake alone would come back inside a blazer");
+  if (key(["long-sleeve", "skirt"], 1) === key(["long-sleeve", "skirt", "cardigan"], 1)) errs.push("a skirt's bake would come back over a top a cardigan now holds");
+  if (key(["t-shirt"]) !== key(["t-shirt", "flats"])) errs.push("shoes would hang a t-shirt again");
+}
 {                                                                                  // skin tight: a t-shirt at fit 0 lies on the skin
-  const b = mhrBody(m, bodyWeights("feminine"), 1.62), B = TAILOR.body(b.P, b.T), g = TAILOR.make(B, "t-shirt", TAILOR.edited(designs["t-shirt"], { fit: 0 }), { drape: true }), hit = {};
+  const b = namedBody(m, "feminine", 1.62), B = TAILOR.body(b.P, b.T), g = TAILOR.make(B, "t-shirt", TAILOR.edited(designs["t-shirt"], { fit: 0 }), { drape: true }), hit = {};
   let far = 0, n = 0; const o = g.outer[0];
   for (let i = 0; i < o.P.length; i += 30) { const r = B.surf.closest(o.P[i], o.P[i + 1], o.P[i + 2], 0.1, hit); n++; if (!r || r.d > 0.008) far++; }
   look("t-shirt at fit 0", B, g);
