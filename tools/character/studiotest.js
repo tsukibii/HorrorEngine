@@ -543,9 +543,9 @@ const png = rgb => {
   });
   await step("the eyes softened: the iris melts into the white (Iris edge softness), the eye occlusion shades the white at the lids and corners, a tear line along each lower lid (only when set)", async () => {
     const r = await page.evaluate(() => {
-      const b = window.__body, column = () => {                     // the eye's texture down a few meridians, from the front pole: brightness per row
-        const cv = b.eyeMats.L.map.image, H = cv.height, d = cv.getContext("2d").getImageData(0, 0, cv.width, H).data;
-        return [0, cv.width / 4, cv.width / 2].map(x => Array.from({ length: H }, (_, y) => { const i = (y * cv.width + x) * 4; return (d[i] + d[i + 1] + d[i + 2]) / 3; }));
+      const b = window.__body, column = () => {                     // the eye's paint (baked flat, the shader's own) along a few radii from the middle: brightness per step
+        const S = 512, cv = b.EYEPAINT.bakeEye(b.renderer, b.st.eyes, b.eyeShapeOf("L"), "L", S), d = cv.getContext("2d").getImageData(0, 0, S, S).data;
+        return [0, 1, 2].map(k => { const a = k * Math.PI / 3; return Array.from({ length: S / 2 }, (_, r) => { const x = Math.round(S / 2 + Math.cos(a) * r), y = Math.round(S / 2 - Math.sin(a) * r), i = (Math.min(S - 1, y) * S + Math.min(S - 1, x)) * 4; return (d[i] + d[i + 1] + d[i + 2]) / 3; }); });
       };
       const was = { ...b.st.eyes }; b.st.expr.fill(0);
       b.st.eyes.limbalSoft = 0; b.paintEyes(); const H0 = column();
@@ -587,6 +587,144 @@ const png = rgb => {
     if (!(t.peak > 10 && t.peak < 115)) throw new Error(`the tear line adds up to ${t.peak.toFixed(0)} of 255 (a glint is 10 to 115)`);
     if (!t.a2c) throw new Error("the skin's openings are cut with a hard edge (no alpha to coverage)");
     console.log(`       the tear line close up: at most ${t.peak.toFixed(0)} of 255 added, faded at its edges`);
+  });
+  await step("the eye refracts (tools/shared/eye.js, MetaHuman's way): seen from the side the pupil sits behind the cornea where a ray traced through the dome by Snell's law puts it, not painted on its front; the cornea reflects the lights inside the iris; off, the iris is painted on the eyeball as before", async () => {
+    await page.click('#views button[data-v="head"]');
+    const was = await page.evaluate(() => JSON.stringify(window.__body.st.eyes));
+    const shot = async (yaw, eyes, plain) => {
+      await page.evaluate(([yaw, eyes, plain]) => {
+        const b = window.__body, o = b.orbit, h = b.st.height, e = b.EYES.L.position;
+        b.st.expr.fill(0); Object.assign(b.st.eyes, eyes); b.paintEyes();
+        o.yaw = yaw; o.pitch = 0.02; o.zoom = 0.12; o.pan.set(e.x, e.y - (h - 0.12 * h / 1.7), e.z); b.compose();
+        if (plain) for (const m of Object.values(b.eyeMats)) { m.clearcoat = 0; m.roughness = 1; m.envMapIntensity = 0; }   // no reflections: the pupil a clean dark blob
+      }, [yaw, eyes, plain]);
+      await page.waitForTimeout(600);
+      const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      return (await page.screenshot({ clip, timeout: 120000 })).toString("base64");
+    };
+    const flat = { pupil: 0.45, limbal: 0, limbalSoft: 0, fibres: 0, veins: 0, iris: "#8a6a4a", iris2: "#8a6a4a", sclera: "#f0f0f0", corner: "#f0f0f0", cornerPink: 0, scleraShade: 0,
+                   catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
+    const on = await shot(0.6, { ...flat, real: true }, true), off = await shot(0.6, { ...flat, real: false }, true);
+    const r = await page.evaluate(async ([on, off, pupil]) => {
+      const b = window.__body, THREE = b.THREE, cam = b.camera, L = b.EYES.L, s = b.eyeShapeOf("L");
+      const px = async b64 => { const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height;
+        const g = c.getContext("2d"); g.drawImage(i, 0, 0); return { d: g.getImageData(0, 0, i.width, i.height).data, w: i.width, h: i.height }; };
+      const A = await px(on), B = await px(off), at = p => { const v = L.localToWorld(p.clone()).project(cam); return [(v.x + 1) / 2 * A.w, (1 - v.y) / 2 * A.h]; };
+      // the pupil as a ray traced through each pixel sees it, apart from the shader: the eyeball (the white's sphere, the
+      // cornea's dome over the limbus) hit first; then the paint read where it lies (off), or where the ray, bent at the dome
+      // by Snell's law, lands on the iris's plane (on); the pupil is where that reading falls within its radius
+      const C = L.worldToLocal(cam.getWorldPosition(new THREE.Vector3())), apex = at(new THREE.Vector3(0, 0, s.zc + s.rc));
+      const reach = Math.hypot(...[0, 1].map(k => at(new THREE.Vector3(s.rho, 0, s.zl))[k] - at(new THREE.Vector3(0, 0, s.zl))[k]));   // the iris's radius on screen
+      const read = (i, j, ior) => {
+        const D = L.worldToLocal(new THREE.Vector3((i + 0.5) / A.w * 2 - 1, 1 - (j + 0.5) / A.h * 2, 0.5).unproject(cam)).sub(C).normalize();
+        const oc = new THREE.Vector3(C.x, C.y, C.z - s.zc), bq = oc.dot(D), dq = bq * bq - oc.lengthSq() + s.rc * s.rc;
+        let P = dq >= 0 ? C.clone().addScaledVector(D, -bq - Math.sqrt(dq)) : null;
+        if (!P || P.z < s.zl) { const b2 = C.dot(D), d2 = b2 * b2 - C.lengthSq() + 1; if (d2 < 0) return null; P = C.clone().addScaledVector(D, -b2 - Math.sqrt(d2)); return [P.x, P.y]; }
+        if (!ior) return [P.x, P.y];
+        const n = new THREE.Vector3(P.x, P.y, P.z - s.zc).normalize(), eta = 1 / ior, nd = n.dot(D), k = 1 - eta * eta * (1 - nd * nd);
+        const t = D.clone().multiplyScalar(eta).sub(n.multiplyScalar(eta * nd + Math.sqrt(k))), h = Math.max(P.z - s.zi, 0) / Math.max(-t.z, 0.08);
+        return [P.x + t.x * h, P.y + t.y * h];
+      };
+      const box = f => { let n = 0, x = 0, y = 0;                   // the centroid of what f says is pupil, round the eye's axis
+        for (let j = Math.floor(apex[1] - 1.4 * reach); j < apex[1] + 1.4 * reach; j++) for (let i = Math.floor(apex[0] - 1.4 * reach); i < apex[0] + 1.4 * reach; i++)
+          if (i >= 0 && j >= 0 && i < A.w && j < A.h && Math.hypot(i - apex[0], j - apex[1]) <= 1.4 * reach && f(i, j)) { n++; x += i; y += j; }
+        return n ? [x / n, y / n, n] : null; };
+      const dark = I => (i, j) => { const o = (j * I.w + i) * 4; return I.d[o] + I.d[o + 1] + I.d[o + 2] < 3 * 14; };   // the pupil only (the iris's far side, lit as a bowl, goes dark too)
+      const traced = ior => (i, j) => { const q = read(i, j, ior); return !!q && Math.hypot(q[0], q[1]) < pupil * s.rho; };
+      return { cOn: box(dark(A)), cOff: box(dark(B)), tOn: box(traced(1.336)), tOff: box(traced(0)), tUnbent: box(traced(1)), reach };
+    }, [on, off, flat.pupil]);
+    if (!r.cOn || !r.cOff || !r.tOn || !r.tOff) throw new Error(`no pupil found: ${JSON.stringify(r)}`);
+    const len = v => Math.hypot(v[0], v[1]), d = (a, b) => [a[0] - b[0], a[1] - b[1]];
+    const missOn = len(d(r.cOn, r.tOn)), missOff = len(d(r.cOff, r.tOff)), got = d(r.cOn, r.cOff), want = d(r.tOn, r.tOff), unbent = d(r.tUnbent, r.tOff);
+    if (!(len(want) > 5) || !(missOn < 4) || !(missOff < 4))
+      throw new Error(`the pupil drawn at ${r.cOn.slice(0, 2).map(v => v.toFixed(1))} (traced ${r.tOn.slice(0, 2).map(v => v.toFixed(1))}), painted at ${r.cOff.slice(0, 2).map(v => v.toFixed(1))} (traced ${r.tOff.slice(0, 2).map(v => v.toFixed(1))})`);
+    // the cornea reflects the lights (whatever lights the view has): a highlight inside the dark iris that goes when its clear
+    // coat goes; and off, the painted catchlights are back
+    const inside = async (real, plain) => {
+      const img = await shot(0.15, { ...JSON.parse(was), real }, plain);
+      return page.evaluate(async b64 => {
+        const b = window.__body, THREE = b.THREE, L = b.EYES.L, s = b.eyeShapeOf("L"), i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode();
+        const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); const d = g.getImageData(0, 0, i.width, i.height).data;
+        const at = p => { const v = L.localToWorld(p.clone()).project(b.camera); return [(v.x + 1) / 2 * i.width, (1 - v.y) / 2 * i.height]; };
+        const m = at(new THREE.Vector3(0, 0, s.zl)), e = at(new THREE.Vector3(s.rho, 0, s.zl)), R = 0.8 * Math.hypot(e[0] - m[0], e[1] - m[1]);
+        let n = 0, peak = 0;
+        for (let y = Math.max(0, Math.floor(m[1] - R)); y < Math.min(i.height, m[1] + R); y++) for (let x = Math.max(0, Math.floor(m[0] - R)); x < Math.min(i.width, m[0] + R); x++)
+          if (Math.hypot(x - m[0], y - m[1]) < R) { const o = (y * i.width + x) * 4, l = (d[o] + d[o + 1] + d[o + 2]) / 3; peak = Math.max(peak, l); if (l > 165) n++; }
+        return { n, peak };
+      }, img);
+    };
+    const coat = await inside(true, false), bare = await inside(true, true), painted = await inside(false, false);
+    await page.evaluate(was => { const b = window.__body; Object.assign(b.st.eyes, JSON.parse(was)); b.paintEyes(); b.compose(); }, was);
+    if (!(coat.peak > 180 && bare.peak < 140 && coat.n > bare.n)) throw new Error(`the cornea doesn't reflect the lights inside the iris: its brightest ${coat.peak.toFixed(0)} with the coat, ${bare.peak.toFixed(0)} without`);
+    if (!(painted.n > 20)) throw new Error(`the painted eye lost its catchlights (${painted.n} bright pixels)`);
+    console.log(`       34° off the eye's axis the pupil sits ${len(got).toFixed(1)} px from where it's painted on the cornea's front; traced through the dome by Snell's law, ${len(want).toFixed(1)} (unbent ${len(unbent).toFixed(1)}): drawn within ${missOn.toFixed(1)} px of the trace, painted within ${missOff.toFixed(1)}`);
+    console.log(`       the cornea reflects the lights inside the iris (its brightest ${coat.peak.toFixed(0)} of 255, ${coat.n} bright pixels; ${bare.peak.toFixed(0)} without its coat); painted on the eyeball instead, its catchlights (${painted.n})`);
+  });
+  await step("iris patterns and pupil shapes (tools/shared/eye.js): a heart for a pupil (two lobes up, a dip between them, a tip down), a slit, a goat's bar, a star and a flower of five, a diamond, a cross, a crescent, a ring, two pupils apart, none; each pattern lays its accent over the iris and keeps the pupil dark; a style from the panel sets colours, pattern and pupil, and what an export carries keeps them", async () => {
+    const r = await page.evaluate(() => {
+      const B = window.__body, E = B.EYEPAINT, s = E.eyeShape(E.EYE_DEFAULTS), W = 512, R = s.rho * W / 2, P = 0.36;
+      const bake = p => E.bakeEye(B.renderer, { ...E.EYE_DEFAULTS, iris: "#7a8fb0", iris2: "#c8d4e6", pupil: P, ...p }, s, "L", W).getContext("2d").getImageData(0, 0, W, W).data;
+      const each = (d, f) => { for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) f((x + 0.5 - W / 2) / R, (W / 2 - y - 0.5) / R, (y * W + x) * 4); };   // the iris's plane: the limbus at 1, up +
+      const shapes = {};
+      for (const [v] of E.EYE_CHOICES[1][2]) {                         // the pupil's dark pixels, in its own radius
+        const d = bake({ pupilShape: v }), m = [];
+        each(d, (u, w, i) => { if (u * u + w * w < 0.8 && d[i] + d[i + 1] + d[i + 2] < 90) m.push([u / P, w / P]); });
+        const xs = m.map(p => p[0]), ys = m.map(p => p[1]), at = (q, e = 0.06) => m.some(p => Math.abs(p[0] - q[0]) < e && Math.abs(p[1] - q[1]) < e);
+        const top = x => Math.max(-9, ...m.filter(p => Math.abs(p[0] - x) < 0.04).map(p => p[1]));
+        const width = y => { const row = m.filter(p => Math.abs(p[1] - y) < 0.04).map(p => p[0]); return row.length ? Math.max(...row) - Math.min(...row) : 0; };
+        const bins = Array(72).fill(0); for (const [x, y] of m) { const k = Math.floor((Math.atan2(y, x) + Math.PI) / (2 * Math.PI) * 72) % 72; bins[k] = Math.max(bins[k], Math.hypot(x, y)); }
+        const mean = bins.reduce((a, b) => a + b, 0) / 72; let peaks = 0;
+        for (let k = 0; k < 72; k++) { const a = bins[(k + 71) % 72], b = bins[k], c = bins[(k + 1) % 72]; if (b > a && b >= c && b > mean * 1.08) peaks++; }
+        const span = a => a.length ? Math.max(...a) - Math.min(...a) : 0;
+        shapes[v] = { area: m.length / (R * R * P * P), w: span(xs), h: span(ys), top: m.length ? Math.max(...ys) : 0, bottom: m.length ? Math.min(...ys) : 0,
+                      dip: top(0.23) - top(0), upper: width(0.45), lower: width(-0.45), peaks, centre: at([0, 0], 0.08), cx: m.length ? xs.reduce((a, b) => a + b, 0) / m.length : 0,
+                      arms: [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]].every(q => at(q)), diag: at([0.62, 0.62], 0.05), ring: [[0.8, 0], [-0.8, 0], [0, 0.8]].every(q => at(q)),
+                      gap: m.filter(p => Math.abs(p[0]) < 0.06).length, n: m.length };
+      }
+      const base = { iris: "#4a1694", iris2: "#7b3fd0", accent: "#ffa21f" }, ref = bake({ ...base }), pats = {};
+      for (const [v] of E.EYE_CHOICES[0][2]) {                         // each pattern on violet with an orange accent, against the natural one
+        const d = bake({ ...base, pattern: v }); let diff = 0, acc = 0, n = 0, pupil = 0;
+        each(d, (u, w, i) => { const rr = Math.hypot(u, w);
+          if (rr < P * 0.8) { pupil = Math.max(pupil, d[i] + d[i + 1] + d[i + 2]); return; }
+          if (rr < P + 0.05 || rr > 0.9) return;
+          n++; diff += (Math.abs(d[i] - ref[i]) + Math.abs(d[i + 1] - ref[i + 1]) + Math.abs(d[i + 2] - ref[i + 2])) / 3;
+          if (d[i] > 150 && d[i] > d[i + 2] + 60 && d[i + 1] > d[i + 2]) acc++; });
+        pats[v] = { diff: diff / n, accent: acc / n, pupil };
+      }
+      const kept = E.EYE_STYLES.filter(([, , , st]) => { const p = E.eyeRecord({ ...E.EYE_DEFAULTS, ...st }, s, "L").paint; return p.pattern === st.pattern && p.pupilShape === st.pupilShape && p.accent === st.accent; }).length;
+      return { shapes, pats, styles: E.EYE_STYLES.length, kept };
+    });
+    const S = r.shapes, bad = [];
+    const want = (ok, what) => { if (!ok) bad.push(what); };
+    want(Math.abs(S.round.area - Math.PI) < 0.15 * Math.PI && !S.round.peaks, `round: area ${S.round.area.toFixed(2)} (π), ${S.round.peaks} points`);
+    want(S.heart.dip > 0.08 && S.heart.upper > 1.6 * S.heart.lower && S.heart.top > 0.7 && S.heart.bottom < -0.6, `heart: dip ${S.heart.dip.toFixed(2)}, widths ${S.heart.upper.toFixed(2)} up / ${S.heart.lower.toFixed(2)} down, ${S.heart.top.toFixed(2)} to ${S.heart.bottom.toFixed(2)}`);
+    want(S.slit.h > 3 * S.slit.w, `slit: ${S.slit.w.toFixed(2)} by ${S.slit.h.toFixed(2)}`);
+    want(S.goat.w > 2.2 * S.goat.h, `goat: ${S.goat.w.toFixed(2)} by ${S.goat.h.toFixed(2)}`);
+    want(S.star.peaks === 5 && S.flower.peaks === 5, `points: the star ${S.star.peaks}, the flower ${S.flower.peaks}`);
+    want(S.diamond.h > 1.3 * S.diamond.w && S.diamond.h < 2 * S.diamond.w, `diamond: ${S.diamond.w.toFixed(2)} by ${S.diamond.h.toFixed(2)}`);
+    want(S.cross.arms && !S.cross.diag, `cross: arms ${S.cross.arms}, a diagonal ${S.cross.diag}`);
+    want(!S.crescent.centre && S.crescent.cx > 0.15, `crescent: its middle ${S.crescent.centre ? "dark" : "clear"}, its weight at ${S.crescent.cx.toFixed(2)}`);
+    want(!S.ring.centre && S.ring.ring, `ring: its middle ${S.ring.centre ? "dark" : "clear"}, the ring ${S.ring.ring}`);
+    want(S.two.gap === 0 && S.two.w > 1.6, `two: ${S.two.gap} dark pixels between them, ${S.two.w.toFixed(2)} across`);
+    want(S.none.n === 0, `none: ${S.none.n} dark pixels`);
+    for (const [v, p] of Object.entries(r.pats)) {
+      if (p.pupil > 120) bad.push(`${v}: the pupil not dark (${p.pupil})`);
+      if (v === "natural") continue;
+      if (!(p.diff > ({ crypts: 3, halo: 4 }[v] ?? 8))) bad.push(`${v}: hardly differs from the natural iris (${p.diff.toFixed(1)}, over the whole iris: the halo is a narrow band)`);
+      if (v !== "crypts" && !(p.accent > 0.02)) bad.push(`${v}: its accent barely shows (${(p.accent * 100).toFixed(1)}%)`);
+    }
+    if (r.kept !== r.styles) bad.push(`an export keeps the pattern and pupil of ${r.kept} of ${r.styles} styles`);
+    // a style from the panel: the heart
+    const was = await page.evaluate(() => JSON.stringify(window.__body.st.eyes));
+    const ui = await page.evaluate(() => {
+      const b = window.__body, sel = document.querySelector("#eyeStyle"); sel.value = "heart"; sel.dispatchEvent(new Event("change"));
+      return { shape: b.st.eyes.pupilShape, pattern: b.st.eyes.pattern, iris: b.st.eyes.iris, picker: document.querySelector("#eye_pupilShape").value, options: sel.options.length - 1 };
+    });
+    await page.evaluate(was => { const b = window.__body; Object.assign(b.st.eyes, JSON.parse(was)); b.paintEyes(); b.compose(); }, was);
+    if (ui.shape !== "heart" || ui.picker !== "heart" || ui.options !== r.styles) bad.push(`the panel's style: ${JSON.stringify(ui)}`);
+    if (bad.length) throw new Error(bad.join("; "));
+    console.log(`       the heart: two lobes ${S.heart.upper.toFixed(2)} wide over a tip ${S.heart.lower.toFixed(2)} wide, a dip of ${S.heart.dip.toFixed(2)} between the lobes (the pupil's radius 1); the slit ${(S.slit.h / S.slit.w).toFixed(1)} times as tall as wide, the bar ${(S.goat.w / S.goat.h).toFixed(1)} times as wide; five points on the star and the flower; two pupils apart; the ring hollow; none none`);
+    console.log(`       patterns over a violet iris: ${Object.entries(r.pats).filter(([v]) => v !== "natural").map(([v, p]) => `${v} ${p.diff.toFixed(0)} off natural (${(p.accent * 100).toFixed(0)}% accent)`).join(", ")}; ${r.styles} styles, each kept in an export`);
   });
   await step("accessories: glasses round the eyes, a sticker and a piercing held to the skin (a smile carries the sticker), a choker round the neck, one put where you click; saved with the character and back on reopening", async () => {
     await page.click('#tabs button[data-tab="acc"]');
@@ -748,7 +886,7 @@ const png = rgb => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
   });
-  await step("the export for the desk and Unreal: one GLB, neutral, in metres, the eyes' openings cut out of its skin, carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
+  await step("the export for the desk and Unreal: one GLB, neutral, in metres, rigged on MHR's skeleton (the eyes on their bones), the eyes' openings cut out of its skin and the lids resting on the eyes (an eyeball shows only through its opening, without the Studio's stencil), carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
     const pics = await page.evaluate(() => window.__body.pics.length);
     await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
     await page.click("#expPack");
@@ -757,15 +895,71 @@ const png = rgb => {
       const b = window.__body, buf = await (await fetch(`api/package/${n}/${n}.glb`)).arrayBuffer(), dv = new DataView(buf);
       const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, dv.getUint32(12, true))));
       const node = json.nodes.find(x => x.name === `${n}_skin`), prim = node && json.meshes[node.mesh].primitives[0], acc = prim && json.accessors[prim.attributes.POSITION];
+      const eyes = ["L", "R"].map(sd => {                           // each eyeball: its paint baked flat, the eye's shape and paint for a reader that refracts it, its points in eye units
+        const en = json.nodes.find(x => x.name === `${n}_eye_${sd}`), ep = en && json.meshes[en.mesh].primitives[0], em = ep && json.materials[ep.material];
+        return !!(ep && em && em.pbrMetallicRoughness?.baseColorTexture && em.extras?.studioEye?.side === sd && em.extras.studioEye.shape?.rc > 0 && em.extras.studioEye.paint?.iris
+                  && ["_EYELOCAL", "TEXCOORD_0", "TANGENT", "NORMAL"].every(k => k in ep.attributes));
+      });
+      // the rig: one skeleton, MHR's 127 bones from body_world, every part skinned on it; posed, the head carries the face
+      // and the eyes (each on its eye's bone) and leaves the feet
+      const skins = json.skins || [], rig = { skins: skins.length, joints: skins[0]?.joints.length, root: skins[0] && json.nodes[skins[0].skeleton]?.name,
+                                              all: json.nodes.filter(x => "mesh" in x).every(x => "skin" in x) };
+      const { GLTFLoader } = await import("./vendor/GLTFLoader.js"), g = await new GLTFLoader().parseAsync(buf, "");
+      const T = b.THREE, by = {}; g.scene.traverse(o => { if (o.isSkinnedMesh) by[o.name] = o; });
+      // a file has only depth (the Studio's stencil keeps each eyeball inside its opening): the lids rest on the eyes, so
+      // an eyeball shows only through its opening. The skin and the eyes drawn flat from the front, above, below and 20°
+      // to either side of each eye; the eyeball's pixels outside both openings' outlines as the skin carries them
+      // (its extras), seen from there (behind an opening, the eyeball rightly covers what's inside the head)
+      const through = (() => {
+        const scene = new T.Scene(), ms = [], skinM = by[`${n}_skin`], E = [by[`${n}_eye_L`], by[`${n}_eye_R`]], O = skinM.userData.openings, out = [];
+        if (!O || !O.L || !O.R) return null;
+        scene.add(g.scene); g.scene.updateMatrixWorld(true); g.scene.traverse(o => { if (o.isMesh) ms.push([o, o.visible, o.material, o.frustumCulled]); });
+        const green = new T.MeshBasicMaterial({ color: 0x00ff00 }), red = new T.MeshBasicMaterial({ color: 0xff0000 });
+        for (const [o] of ms) { o.visible = o === skinM || E.includes(o); o.frustumCulled = false; o.material = o === skinM ? green : red; }
+        const W = 320, H = 240, rt = new T.WebGLRenderTarget(W, H), cam = new T.PerspectiveCamera(10, W / H, 0.01, 10), R0 = b.renderer, cc = R0.getClearColor(new T.Color()), ca = R0.getClearAlpha();
+        const inPoly = (P, x, y) => { let c = false, d = Infinity; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j];
+          if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+          const vx = xj - xi, vy = yj - yi, t = Math.max(0, Math.min(1, ((x - xi) * vx + (y - yi) * vy) / (vx * vx + vy * vy || 1))); d = Math.min(d, Math.hypot(x - xi - t * vx, y - yi - t * vy)); }
+          return c || d < 1.5; };                                   // inside, or within a pixel and a half of its line
+        for (const [side, bone] of [["L", "l_eye"], ["R", "r_eye"]]) {
+          const c = g.scene.getObjectByName(bone).getWorldPosition(new T.Vector3());
+          for (const [yaw, pitch] of [[0, 0], [0, 0.3], [0, -0.3], [0.35, 0], [-0.35, 0]]) {
+            cam.position.set(c.x + 0.3 * Math.sin(yaw) * Math.cos(pitch), c.y + 0.3 * Math.sin(pitch), c.z + 0.3 * Math.cos(yaw) * Math.cos(pitch)); cam.lookAt(c); cam.updateMatrixWorld();
+            R0.setRenderTarget(rt); R0.setClearColor(0, 1); R0.clear(); R0.render(scene, cam); const A = new Uint8Array(W * H * 4); R0.readRenderTargetPixels(rt, 0, 0, W, H, A);
+            const P = ["L", "R"].map(sd => O[sd].map(q => { const v = new T.Vector3(...q).project(cam); return [(v.x + 1) / 2 * W, (v.y + 1) / 2 * H]; }));
+            let eye = 0, outside = 0;
+            for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4; if (!(A[i] > 128 && A[i + 1] < 100)) continue; eye++; if (!P.some(Q => inPoly(Q, x + 0.5, y + 0.5))) outside++; }
+            out.push({ side, yaw, pitch, px: eye, over: outside / Math.max(1, eye) });
+          }
+        }
+        R0.setRenderTarget(null); R0.setClearColor(cc, ca); rt.dispose(); green.dispose(); red.dispose();
+        for (const [o, v, m, f] of ms) { o.visible = v; o.material = m; o.frustumCulled = f; }
+        scene.remove(g.scene); return out;
+      })();
+      const eyeBone = sd => { const m = by[`${n}_eye_${sd}`]; return m ? m.skeleton.bones[m.geometry.attributes.skinIndex.getX(0)].name : null; };
+      const head = g.scene.getObjectByName("c_head"), centre = m => { m.geometry.computeBoundingBox(); const v = new T.Vector3(), c = new T.Vector3(); let k = 0; for (let i = 0; i < m.geometry.attributes.position.count; i += 97) { m.getVertexPosition(i, v); c.add(v); k++; } return c.divideScalar(k); };
+      const skinM = by[`${n}_skin`], lowest = () => { let y = 1e9; const v = new T.Vector3(); for (let i = 0; i < skinM.geometry.attributes.position.count; i += 13) { skinM.getVertexPosition(i, v); y = Math.min(y, v.y); } return y; };
+      g.scene.updateMatrixWorld(true); const e0 = centre(by[`${n}_eye_L`]), f0 = lowest();
+      head.rotation.y = 0.6; g.scene.updateMatrixWorld(true); const e1 = centre(by[`${n}_eye_L`]), f1 = lowest(), p = head.getWorldPosition(new T.Vector3());
+      const turned = Math.atan2(e1.x - p.x, e1.z - p.z) - Math.atan2(e0.x - p.x, e0.z - p.z);
+      Object.assign(rig, { eyes: [eyeBone("L"), eyeBone("R")], turned, feet: Math.abs(f1 - f0) });
       const before = JSON.stringify(b.character()), rec = await b.recipeOf(new File([buf], `${n}.glb`)), made = await (await fetch(`api/package/${n}/export.made.json`)).json();
       const back = await b.importPackage(new File([buf], `${n}.glb`), n + "_back");
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
       return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
-               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576 };
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST } };
     }, NAME);
     if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
-    if (!(r.skin < r.corners && r.skin > 0.97 * r.corners)) throw new Error(`the skin: ${r.skin} of ${r.corners} corners (only the eyes' openings come out)`);
+    if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
+    if (!(r.rig.joints === 127 && r.rig.root === "body_world" && r.rig.all && r.rig.eyes[0] === "l_eye" && r.rig.eyes[1] === "r_eye" && Math.abs(r.rig.turned - 0.6) < 0.05 && r.rig.feet < 1e-4))
+      throw new Error(`the export's rig: ${JSON.stringify(r.rig)}`);
+    if (!(r.skin > 0.97 * r.corners && r.skin < 1.5 * r.corners)) throw new Error(`the skin: ${r.skin} corners against MHR's ${r.corners} (only the eyes' openings come out, cut along their outlines)`);
+    if (!(r.lids.L > 0 && r.lids.R > 0 && r.lids.most < 0.005)) throw new Error(`the lids don't rest on the eyes: ${JSON.stringify(r.lids)}`);
+    if (!r.through) throw new Error("the skin doesn't carry its openings' outlines (extras.openings)");
+    const worst = Math.max(...r.through.map(v => v.over));
+    if (r.through.some(v => v.px < 500) || worst > 0.002)
+      throw new Error(`an eyeball shows outside its opening in the file (its share of the eyeball's pixels): ${JSON.stringify(r.through.map(v => [v.side, v.yaw, v.pitch, v.px, +v.over.toFixed(4)]))}`);
     if (Math.abs(r.h - r.height) > 0.03 * r.height || Math.abs(r.foot) > 0.005) throw new Error(`not the character's size: ${r.h.toFixed(3)} m tall, feet at ${r.foot.toFixed(3)} (height ${r.height})`);
     if (!["character.json", "layers.json", "body.bin"].every(f => r.files.includes(f)) || (pics && !r.files.some(f => f.startsWith("pictures/"))) || !r.receipt)
       throw new Error(`the recipe carries ${r.files.join(", ")}; the receipt ${r.receipt}`);
@@ -773,6 +967,8 @@ const png = rgb => {
     await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);   // back to this test's character
     await page.waitForFunction(([n, k]) => window.__body.who === n && window.__body.pics.length === k, [NAME, pics], { timeout: 120000 });
     console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
+    console.log(`       the eyes in a file (depth only): the lids rest on them (${r.lids.L} and ${r.lids.R} of MHR's points forward, at most ${(r.lids.most * 1000).toFixed(1)} mm); from the front, above, below and 20° to either side, at most ${(100 * worst).toFixed(2)}% of an eyeball outside its opening`);
+    console.log(`       rigged: MHR's ${r.rig.joints} bones from ${r.rig.root}, every part skinned on them; the head turned 0.60 rad takes the eyes ${r.rig.turned.toFixed(2)} round it (each on ${r.rig.eyes.join(" and ")}), the feet stay (${(r.rig.feet * 1000).toFixed(2)} mm)`);
   });
   if (shot) await page.screenshot({ path: shot });
   await step("cleared pictures take the face away", async () => {

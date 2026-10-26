@@ -6,7 +6,7 @@
 export const LOOKS = {
   "soft cinematic": {
     about: "After the user's reference: dark irises melting into the white, wet eyes (occlusion, a tear line), coral gradient lips with gloss, bright wet teeth, dewy porcelain skin with a blush under the eyes.",
-    eyes: { iris: "#2a1810", iris2: "#5a3820", sclera: "#ece8e5", corner: "#e6a0a0", irisSize: 32, pupil: 0.36, fibres: 0.3, limbal: 0.6, limbalWidth: 0.2,
+    eyes: { iris: "#2a1810", iris2: "#5a3820", sclera: "#ece8e5", corner: "#e6a0a0", irisSize: 32, pupil: 0.33, fibres: 0.3, limbal: 0.6, limbalWidth: 0.2,
             limbalSoft: 0.6, catch1: 1, catchSize: 0.2, catch2: 0.6, scleraShade: 0.45, cornerPink: 0.45, gloss: 1, lidShade: 0.65, occlusion: 0.5, tearline: 0.5 },
     lips: { on: true, colour: "#d9606c", amount: 0.7, gradient: 0.6, soft: 0.5, gloss: 0.7, lines: 0.3 },
     teeth: { shade: 0.2 },

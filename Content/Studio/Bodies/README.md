@@ -30,6 +30,14 @@ and git LFS keeps the rest private in your repo):
 - **Each cast member's MetaHuman body**, once they exist: export the body skeletal mesh to FBX, and set the cast
   member's `previs_body` to it. Their real proportions in the storyboard.
 
+**A Character Studio character** is a body too, once it's exported (the Studio's Export for desk / Unreal writes
+`Content/Studio/People/<name>/export/<name>.glb`, rigged on MHR's skeleton with its eyes on their bones):
+`previs_body: "people/<name>"`, listed in the Database as "<name> (Character Studio)". The desk keeps its own look
+(skin, clothes, hair) and wears its eyes with the Studio's eye (`tools/shared/eye.js`: the iris behind a refracting
+cornea); its shape is its own (a cast member's `shape` doesn't apply) and it's scaled to the cast member's height.
+`People/` isn't tracked: a character stays on the machine that made it. When the desk lags, the toolbar's **Simple**
+draws everything in plain colours, without textures (`peopletest.js` checks both: PEOPLE).
+
 Which body plays: the cast member's `previs_body`, else the game's `previs_body`, else a file here named
 `default.*`, else the first file here (MHR.fbx), else the capsule figure. The desk's Game panel sets them. A
 cast member's `shape` only applies to MHR bodies.

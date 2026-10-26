@@ -102,5 +102,7 @@ Content/Games/*/Previs/Body_*.glb
 Content/Games/*/Imported/
 Content/Studio/Greybox/
 Content/Studio/Imported/
+# made from text in the editor when it's needed (storykit.people.eye_material: the Studio's eye)
+Content/Studio/Materials/M_StudioEye.uasset
 # the first imports went to /Game/Studio/Library/Meshes (Unreal's copies, beside the CC0 sources in meshes/)
 Content/Studio/Library/Meshes/

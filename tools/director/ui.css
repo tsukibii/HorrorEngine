@@ -156,6 +156,7 @@ header.tb h1{white-space:nowrap}
 .tbb:disabled{opacity:.3;cursor:default}
 .tbb.primary{background:#5b4318;border-color:var(--accent)}.tbb.primary:hover:not(:disabled){background:#6b5020;border-color:var(--accent)}
 .tbb.play .ic{color:var(--good)}
+.tbb.on{background:var(--panel2);border-color:var(--accent)}
 .tbb span{font-size:12.5px}
 #game{height:30px;max-width:170px}
 @media (max-width:1280px){.tbb span{display:none}.tbb{padding:0 7px}}

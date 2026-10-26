@@ -47,9 +47,12 @@ set picked from the shelf is not embedded: re-pick it after loading.
 The Pigment and Swatch brushes paint a transmittance layer composited by multiply (blue over green goes dark teal). The
 Swatch brush is a circle picked on a reference image; Blend evens it out. See `docs/assets/pigment/`.
 
-## Eye paint (`eyes.js`, the Skin tab's Eyes)
-The eyeball texture is drawn round the front pole: iris colour (rim) and a second colour round the pupil, iris size, pupil,
-fibres and a pale ring, a limbal ring (strength, width), two catchlights (size and place), sclera colour and shading toward
-the rim, corner pink (the inner corner, a little of the outer, the waterline), and a wet gloss (roughness and the clear
-coat). Each eye has its own texture so the pink is the inner corner. Saved in the character's `eyes`.
+## Eye paint (`tools/shared/eye.js`, the Skin tab's Eyes)
+The eyeball's paint is drawn by its shader in the eye's flat layout (the front projected flat, the iris in the middle):
+iris colour (rim) and a second colour round the pupil, iris size, pupil, fibres and a pale ring, a limbal ring (strength,
+width), sclera colour and shading toward the rim, corner pink (the inner corner, a little of the outer, the waterline),
+veins, and a wet gloss (roughness and the clear coat). With the refracting cornea (2026-10-26, docs/research/eyes.md) the
+iris is read through the cornea's dome and the cornea reflects the lights; off, the iris is painted on the eyeball and
+two painted catchlights (size and place) stand in for them. Each eye has its own paint so the pink is the inner corner.
+Saved in the character's `eyes`.
 Left: the old look. Right: iris 38, blue-grey two-tone, limbal 0.85, corner pink 0.7 (`docs/assets/layers/eyes_default_vs_painted.png`).

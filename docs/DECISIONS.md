@@ -2,6 +2,47 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, late night (iris patterns and pupil shapes)
+
+- **Patterns inside the iris and pupils of other shapes, after the user's references, a heart among them** ("could you
+  design some other types of pupil shapes inspired by these references (I'm talking about the interior pattern inside
+  the iris), including a love heart shaped pupil one as seen in image 3": violet irises with an orange-gold sunburst
+  round the pupil, with electric pink streaks, with a fiery ring like a corona, a grey iris with a jagged violet ring;
+  gold, green, magenta, red and dark brown irises; a pink iris with a black heart for a pupil; a real grey-blue iris
+  close up). The eye now has an **iris pattern** (natural, sunburst, lightning, nebula, crypts, halo) in an accent
+  colour, and a **pupil shape** (round, heart, slit, bar, star, diamond, cross, crescent, flower, ring, two, none) in a
+  colour of its own; and **styles** after the references that set the colours, the pattern and the pupil together.
+- Claude's calls inside that: the shapes drawn as distance fields, so they stay sharp at any size and grow and shrink
+  with Pupil size; the pale ring round the pupil follows its shape; a few shapes for horror the references didn't
+  show (a hollow ring, two pupils, none) and styles for them (Hypnotised, Two pupils, Possessed); a character made
+  before keeps its eyes exactly as they were (natural, round). Everything is in the shared eye, so the desk shows it
+  and an export carries it to Unreal in its baked paint.
+
+## 2026-10-26, night (eyes like MetaHuman's: the Studio, the desk, Unreal)
+
+- **The eye is made MetaHuman's way, in the Studio and wherever the character goes** ("experiment with applying this eye
+  to our eye in studio so we can use it in director ... we should be able to export the character with this eye into
+  unreal", after the research in docs/research/eyes.md): the iris on a plane behind a refracting cornea, the cornea
+  reflecting the lights, the iris lit as a bowl; our own code after RoboPoets' Godot eye and O3DE's (MIT, Apache or MIT),
+  shared by the Studio and the desk (`tools/shared/eye.js`). On for every character; Refracting cornea off brings back
+  the painted eye.
+- **The desk gets a simple view for when it lags**: textures off, a plain gray viewport like Blender's solid view.
+- **The export carries the eye into Unreal.**
+- Claude's calls inside that: with the refracting cornea the catchlights are the lights' own reflections (the painted
+  ones only with it off); the pupil's default a little smaller (the cornea magnifies it about a tenth, as a real one
+  does); the paint drawn by the shader in Epic's flat layout and baked into a texture for files. The desk wears a
+  Studio character as a cast member's body (`previs_body: "people/<name>"`, its export): its own look and shape, the
+  cast member's height, its eyes refracting as in the Studio. The simple view is the toolbar's Simple: plain colours,
+  no textures but cut-outs, the eyes their flat paint, one pixel per pixel, remembered by the browser. In a file the
+  lids rest on the eyes (the skin round each opening brought forward up to 3 to 4 mm onto the eyeball, as real lids
+  lie, rather than the eyeball pushed back and dented): from the front it's the Studio's face; from the side the lower
+  lid sits a little further forward than the Studio draws it. And the Studio's left inner corner, which showed a
+  diamond of eyeball on every character (the smoothed lid line crossed itself), is a clean corner now. In Unreal the
+  eye is our own material (M_StudioEye, made from text: Epic's eye material and textures are Epic content), on the
+  Clear Coat model with the refraction in Custom nodes; a cast member who is a Studio character goes across as that
+  character in Generate's preview and in the level. Written without the editor here: its first run is checked by eye
+  (UNREAL_FLOW §1d).
+
 ## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 
 - **The T-pose's neck stands upright, like the user's reference** ("I like the new tpose ... but the neck is too curved

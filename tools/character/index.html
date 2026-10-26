@@ -166,7 +166,7 @@ import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
 import { mountLayers } from "./layersui.js";
-import * as EYEPAINT from "./eyes.js";
+import * as EYEPAINT from "/shared/eye.js";
 import * as SC from "./sculpt.js";
 import * as TEETH from "./teeth.js";
 import * as LIPS from "./lips.js";
@@ -1050,18 +1050,23 @@ const CURL = (() => {
   return { idx: Int32Array.from(idx), d: Float32Array.from(d) };
 })();
 
-const eyeMats = { L: new THREE.MeshPhysicalMaterial({ ior: 1.4 }), R: new THREE.MeshPhysicalMaterial({ ior: 1.4 }) };   // one each: the corner tint is the inner one
-function paintEyes() {                                  // eyes.js: the textures and the wet look from st.eyes
+// the eyes' material: the shared eye (tools/shared/eye.js: the iris behind a refracting cornea, the paint drawn by the
+// shader), one each (the corner tint is the inner one), with the Studio's lids' shadow and painted catchlights on top
+const EYEXT = {};                                       // filled below, with the lids' shadow
+const eyeMats = { L: EYEPAINT.eyeMaterial("L", sh => EYEXT.L?.(sh), "-studio"), R: EYEPAINT.eyeMaterial("R", sh => EYEXT.R?.(sh), "-studio") };
+function paintEyes() {                                  // the paint, the shape and the wet look from st.eyes
   for (const side of ["L", "R"]) paintEye(side);
   if (EYES_IN) openings();                             // the catchlights and the lid shadow are the shader's
 }
 const EYE_FIT = 1.3, EYE_K = {};                        // the fit's margin past the opening's corner; each eyeball's radius over 12 mm
-function paintEye(side) {                              // a bigger eyeball keeps the iris's own size: more white
-  const iris = Math.asin(Math.min(1, Math.sin(st.eyes.irisSize * Math.PI / 180) / (EYE_K[side] || 1))) * 180 / Math.PI;
-  eyeMats[side].map?.dispose(); eyeMats[side].map = EYEPAINT.eyeTexture({ ...st.eyes, irisSize: iris, catch1: 0, catch2: 0 }, side);   // the catchlights are the shader's (below) EYEPAINT.eyeFinish(eyeMats[side], st.eyes);
+function eyeShapeOf(side) { return EYEPAINT.eyeShape(st.eyes, EYE_K[side] || 1); }   // a bigger eyeball keeps the iris's own size: more white
+function paintEye(side) {
+  const s = eyeShapeOf(side), m = EYES[side], key = [s.rho, s.zc, s.rc].map(v => v.toFixed(5)).join();
+  EYEPAINT.setEye(eyeMats[side], st.eyes, s);
+  if (m.userData.shape !== key) { m.geometry.dispose(); m.geometry = EYEPAINT.eyeGeometry(s); m.userData.shape = key; }   // the cornea's dome over this iris
 }
-const eyeGeo = new THREE.SphereGeometry(1, 48, 24).rotateX(Math.PI / 2);   // the pole looks forward (+Z)
-const EYES = { L: new THREE.Mesh(eyeGeo, eyeMats.L), R: new THREE.Mesh(eyeGeo, eyeMats.R) };
+// each eyeball: the white's sphere with the cornea's dome over the limbus, its pole looking forward (+Z)
+const EYES = { L: new THREE.Mesh(EYEPAINT.eyeGeometry(EYEPAINT.eyeShape(EYEPAINT.EYE_DEFAULTS)), eyeMats.L), R: new THREE.Mesh(EYEPAINT.eyeGeometry(EYEPAINT.eyeShape(EYEPAINT.EYE_DEFAULTS)), eyeMats.R) };
 // the openings: each lid outline smoothed (Catmull-Rom through MediaPipe's 16 points, 32 round), cut out of the skin in
 // its shader (MHR's coarse triangles would leave teeth), and filled by a fan in the eye corner's pink that marks the
 // stencil; the eyeballs are drawn only there and over whatever is inside: an opening is always full, in any pose, and a
@@ -1079,7 +1084,7 @@ for (const side of ["L", "R"]) {
   const u = EYESH[side] = { uUp: { value: Array.from({ length: 17 }, () => new THREE.Vector2()) }, uLo: { value: Array.from({ length: 17 }, () => new THREE.Vector2()) },
                             uToRig: { value: new THREE.Matrix4() }, uLidShade: { value: 0.6 }, uOcc: { value: 0.5 },
                             uCatch: { value: new THREE.Vector4() }, uCatchA: { value: new THREE.Vector2() }, uCatchR: { value: 0.001 } };   // two catchlights' places (x, y each), strengths, the first's radius
-  eyeMats[side].onBeforeCompile = sh => {
+  EYEXT[side] = sh => {                                // on top of the shared eye's shader
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform mat4 uToRig; varying vec3 vRig;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvRig = (uToRig * vec4(position, 1.0)).xyz;");
@@ -1102,7 +1107,6 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   float sh = (0.6 + 0.3 * uOcc) * (1.0 - smoothstep(0.0, wUp, up)) + (0.25 + 0.5 * uOcc) * (1.0 - smoothstep(0.0, wLo, lo)) + 0.7 * uOcc * cn * cn;
   diffuseColor.rgb *= 1.0 - min(0.95, uLidShade * sh); }`);
   };
-  eyeMats[side].customProgramCacheKey = () => "studio-eye-2";
 }
 // the tear line: a thin wet strip along each lower lid's edge (MetaHuman's lacrimal fluid), black and added on, so only
 // what it reflects shows: the lid's wet rim catching the light. Built each frame on the opening's lower lid line, in
@@ -1152,7 +1156,21 @@ function outline(side, k = st.eyes.opening || 1, moved = true) {   // the lid ou
       out.push([c[0] + (q[0] - c[0]) * k, c[1] + (q[1] - c[1]) * k, q[2]]);
     }
   }
-  return { pts: out, c };
+  return { pts: untangle(out), c };
+}
+// a sharp corner can overshoot into a little loop as it's smoothed (MHR's own left inner corner does: the lower lid's
+// last point lies above the upper lid's line), which the cut counts as part of the opening: a loop of a few points is
+// pulled to where the line crosses itself. A shut eye's lids cross along their length in big loops, left as they are
+function untangle(P, most = 4) {
+  const n = P.length, o = (p, q, r) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+  for (let i = 0; i < n; i++) for (let s = 2; s <= most; s++) {
+    const a = P[i], b = P[(i + 1) % n], c = P[(i + s) % n], d = P[(i + s + 1) % n], d3 = o(c, d, a), d4 = o(c, d, b);
+    if (o(a, b, c) * o(a, b, d) < 0 && d3 * d4 < 0) {
+      const t = d3 / (d3 - d4), x = [0, 1, 2].map(k => a[k] + t * (b[k] - a[k]));   // where a→b crosses c→d
+      for (let k = 1; k <= s; k++) P[(i + k) % n] = [...x];
+    }
+  }
+  return P;
 }
 // the model's own lid line: MHR's opening is a strip of triangles its blink squeezes shut; its outer edge, split at the
 // corners into the upper and lower lid, resampled into MediaPipe's layout (0 the outer corner, 1..7 the lower lid outer
@@ -1280,7 +1298,8 @@ function openings() {
     tearLine(side, pts, c);
     const ec = EYES[side].position, ir = 0.0118 * SCALE * Math.sin(st.eyes.irisSize * Math.PI / 180);   // the iris's radius on the head: the catchlights' scale
     E.uCatch.value.set(ec.x + st.eyes.catchX * ir, ec.y + st.eyes.catchY * ir, ec.x - st.eyes.catchX * ir * 0.7, ec.y - st.eyes.catchY * ir * 0.8);
-    E.uCatchA.value.set(st.eyes.catch1, st.eyes.catch2); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
+    const painted = st.eyes.real === false ? 1 : 0;   // a refracting cornea reflects the lights themselves: no painted catchlights
+    E.uCatchA.value.set(st.eyes.catch1 * painted, st.eyes.catch2 * painted); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
     for (let i = 0; i < pts.length; i++) P.push(...mid, ...pts[i], ...pts[(i + 1) % pts.length]);
   });
   holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P), 3)); holeGeo.computeBoundingSphere();
@@ -1969,6 +1988,9 @@ const eyeSet = {};
 {
   const box = $("#eyeRows"), on = el("input", { type: "checkbox", checked: true });
   box.append(el("label", { className: "tog" }, on, el("span", {}, "Eyeballs", el("small", { textContent: "Cuts MHR's closed shell out inside MediaPipe's lid outline and puts a 12 mm eyeball behind each opening; the gaze shapes turn them, a blink closes the lids over them. The paint below is drawn round the front pole: iris, limbal ring, catchlights, corners, how wet." }))));
+  const real = el("input", { type: "checkbox", checked: true });   // the shared eye's refracting cornea (tools/shared/eye.js)
+  real.onchange = () => { st.eyes.real = real.checked; paintEyes(); changed("expr"); };
+  box.append(el("label", { className: "tog" }, real, el("span", {}, "Refracting cornea (MetaHuman's way)", el("small", { textContent: "The iris lies behind a clear dome and is seen through it, bent as a real cornea bends the view: it slides against the white as the eye turns. The cornea reflects the lights (no painted catchlights), the iris is lit as a shallow bowl (bright on the side away from the light). Off: the iris painted on the eyeball, as before." }))));
   const fit = [["size", "Eyeball size", 1, 2.2, 0.01, 1, "The eyeball is always at least big enough to fill the opening; bigger, it grows back into the head from its pupil (the front stays put) and never shows outside the opening. The iris keeps its size and its travel."],
                ["depth", "Eyeball depth (mm)", -1, 4, 0.1, 0, "How far behind the lids the eyeball's front sits."],
                ["opening", "Opening", 0.85, 1.2, 0.01, 1, "How much of the shell is cut away round the lid outline."],
@@ -2018,13 +2040,31 @@ const eyeSet = {};
   eyeSet.lid = lidUI;
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
   let later = 0; const repaint = () => { clearTimeout(later); later = setTimeout(paintEyes, 60); };
+  // the iris's pattern and the pupil's shape (tools/shared/eye.js EYE_CHOICES), and styles setting them with the
+  // colours (EYE_STYLES, after the user's references)
+  box.append(el("h4", { textContent: "Iris and pupil" }));
+  const style = el("select", { id: "eyeStyle" }, el("option", { value: "", textContent: "Choose a style…" }), ...EYEPAINT.EYE_STYLES.map(([id, name, about]) => el("option", { value: id, textContent: name, title: about })));
+  style.onchange = () => {
+    const s = EYEPAINT.EYE_STYLES.find(x => x[0] === style.value); style.value = ""; if (!s) return;
+    Object.assign(st.eyes, s[3]); eyeSet.all(); paintEyes(); status(`eyes: ${s[1]}, ${s[2]}`, "ok");
+  };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output"),
+                el("small", { textContent: "Sets the colours, the iris's pattern and the pupil together (violet with an orange sunburst, electric streaks, a nebula, a black heart, a serpent's slit...); then change any of them below." })));
+  const picks = {};
+  for (const [k, label, opts, def] of EYEPAINT.EYE_CHOICES) {
+    const sel = el("select", { id: "eye_" + k }, ...opts.map(([v, name, help]) => el("option", { value: v, textContent: name, title: help }))), help = el("small");
+    const sync = () => { sel.value = st.eyes[k] ?? def; help.textContent = (opts.find(o => o[0] === sel.value) || [])[2] || ""; };
+    sel.onchange = () => { st.eyes[k] = sel.value; sync(); repaint(); };
+    box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"), help));
+    picks[k] = sync; sync();
+  }
   const cols = {};
   for (const [k, label] of EYEPAINT.EYE_COLOURS) {
     const c = cols[k] = el("input", { type: "color", value: st.eyes[k] }); c.oninput = () => { st.eyes[k] = c.value; repaint(); };
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
+  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The
@@ -2348,18 +2388,159 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 // scene's extras hold the recipe (server: api/recipe): character.json, the layers, the touch-up, the pictures, the
 // salon's hair, each file's sha1. <name>.studio.json beside it carries the same; export.made.json is the receipt.
 function exportSkin() {
-  const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [];
+  const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [], srcI = [], srcW = [];
   const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
-  const inBox = (b, x, y) => x >= b.x && y >= b.y && x <= b.z && y <= b.w;
+  const overlaps = (b, t) => Math.max(DP[t], DP[t + 3], DP[t + 6]) >= b.x && Math.min(DP[t], DP[t + 3], DP[t + 6]) <= b.z && Math.max(DP[t + 1], DP[t + 4], DP[t + 7]) >= b.y && Math.min(DP[t + 1], DP[t + 4], DP[t + 7]) <= b.w;
+  const LIFT = on ? lidsRest(DP, { L, R }) : null;    // the lids brought forward onto the eyeballs (below)
+  const put = (t, W) => {                               // a corner at barycentric W in triangle t (its corners' places, normals, uvs and points blended)
+    const p = [0, 0, 0], n = [0, 0, 0], q = [0, 0];
+    for (let k = 0; k < 3; k++) { const i = t + k * 3, u = (t / 3 + k) * 2; for (let a = 0; a < 3; a++) { p[a] += W[k] * DP[i + a]; n[a] += W[k] * DN[i + a]; } if (LIFT) p[2] += W[k] * LIFT[TRIS[t / 3 + k]]; q[0] += W[k] * UV[u]; q[1] += W[k] * UV[u + 1]; srcI.push(TRIS[t / 3 + k]); srcW.push(W[k]); }
+    const l = Math.hypot(...n) || 1; pos.push(...p); nrm.push(n[0] / l, n[1] / l, n[2] / l); uv.push(...q);
+  };
+  const xy = (t, W) => [W[0] * DP[t] + W[1] * DP[t + 3] + W[2] * DP[t + 6], W[0] * DP[t + 1] + W[1] * DP[t + 4] + W[2] * DP[t + 7]];
+  const within = (A, B, C, p) => { const d = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(d) < 1e-16) return false;
+    const u = ((B[1] - C[1]) * (p[0] - C[0]) + (C[0] - B[0]) * (p[1] - C[1])) / d, v = ((C[1] - A[1]) * (p[0] - C[0]) + (A[0] - C[0]) * (p[1] - C[1])) / d; return u >= 0 && v >= 0 && u + v <= 1; };
+  const cut = (p, q, r, t) => { const d = (q[0] - p[0]) * (t[1] - r[1]) - (q[1] - p[1]) * (t[0] - r[0]); if (Math.abs(d) < 1e-18) return false;
+    const a = ((r[0] - p[0]) * (t[1] - r[1]) - (r[1] - p[1]) * (t[0] - r[0])) / d, b = ((r[0] - p[0]) * (q[1] - p[1]) - (r[1] - p[1]) * (q[0] - p[0])) / d; return a >= 0 && a <= 1 && b >= 0 && b <= 1; };
+  const crosses = (O, pa, pb, pc) => O.some((p, i) => { const q = O[(i + 1) % O.length]; return cut(pa, pb, p, q) || cut(pb, pc, p, q) || cut(pc, pa, p, q); });
+  // a triangle crossing an opening's outline is split, a quarter at a time, down to a 32nd of its size, and each of
+  // those pieces cut along the outline's edge nearest it, what lies outside kept: the cut is the line the shader cuts along
+  const clip = (t, O, W) => {                           // the piece W (three barycentric corners) less the inside of O's nearest edge
+    const X = W.map(w => xy(t, w)), m = [(X[0][0] + X[1][0] + X[2][0]) / 3, (X[0][1] + X[1][1] + X[2][1]) / 3];
+    let e = 0, at = 0, best = Infinity;
+    for (let i = 0; i < O.length; i++) {
+      const [ax, ay] = O[i], [bx, by] = O[(i + 1) % O.length], vx = bx - ax, vy = by - ay, f = Math.max(0, Math.min(1, ((m[0] - ax) * vx + (m[1] - ay) * vy) / (vx * vx + vy * vy || 1)));
+      const dd = Math.hypot(m[0] - ax - f * vx, m[1] - ay - f * vy); if (dd < best) { best = dd; e = i; at = f; }
+    }
+    const p = O[e], q = O[(e + 1) % O.length], ex = q[0] - p[0], ey = q[1] - p[1];   // which side is inside, there (as the shader counts it: a lid line crossing itself at a corner leaves a little loop of skin)
+    const s = inside(O, p[0] + at * ex - ey * 1e-3, p[1] + at * ey + ex * 1e-3) ? -1 : 1, sd = X.map(v => s * (ex * (v[1] - p[1]) - ey * (v[0] - p[0])));   // > 0 outside
+    const out = [];
+    for (let i = 0; i < 3; i++) { const j = (i + 1) % 3; if (sd[i] >= 0) out.push(W[i]); if ((sd[i] >= 0) !== (sd[j] >= 0)) { const f = sd[i] / (sd[i] - sd[j]); out.push(W[i].map((v, k) => v + f * (W[j][k] - v))); } }
+    for (let i = 1; i + 1 < out.length; i++) { put(t, out[0]); put(t, out[i]); put(t, out[i + 1]); }
+  };
+  const split = (t, O, A, B, C, d) => {
+    const pa = xy(t, A), pb = xy(t, B), pc = xy(t, C), n = [pa, pb, pc].filter(p => inside(O, p[0], p[1])).length;
+    if (n === 3) return;                                // inside the opening: cut away
+    if (n === 0 && !O.some(p => within(pa, pb, pc, p)) && !crosses(O, pa, pb, pc)) { put(t, A); put(t, B); put(t, C); return; }   // clear of it (a sliver of the shut eye's strip spans it with every corner outside)
+    if (d === 5) return clip(t, O, [A, B, C]);
+    const mid = (X, Y) => X.map((v, k) => (v + Y[k]) / 2), ab = mid(A, B), bc = mid(B, C), ca = mid(C, A);
+    split(t, O, A, ab, ca, d + 1); split(t, O, ab, B, bc, d + 1); split(t, O, ca, bc, C, d + 1); split(t, O, ab, bc, ca, d + 1);
+  };
   for (let t = 0; t < DP.length; t += 9) {
-    const x = (DP[t] + DP[t + 3] + DP[t + 6]) / 3, y = (DP[t + 1] + DP[t + 4] + DP[t + 7]) / 3, zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
-    if (on && ((zz > z.x && inBox(SKU.uCutBoxL.value, x, y) && inside(L, x, y)) || (zz > z.y && inBox(SKU.uCutBoxR.value, x, y) && inside(R, x, y)))) continue;   // an eye's opening
-    for (let k = 0; k < 3; k++) { const i = t + k * 3, u = (t / 3 + k) * 2; pos.push(DP[i], DP[i + 1], DP[i + 2]); nrm.push(DN[i], DN[i + 1], DN[i + 2]); uv.push(UV[u], UV[u + 1]); }
+    const zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
+    const O = !on ? null : zz > z.x && overlaps(SKU.uCutBoxL.value, t) ? L : zz > z.y && overlaps(SKU.uCutBoxR.value, t) ? R : null;   // an eye's opening over it (only the front: not the back of the head behind)
+    if (O) split(t, O, [1, 0, 0], [0, 1, 0], [0, 0, 1], 0); else { put(t, [1, 0, 0]); put(t, [0, 1, 0]); put(t, [0, 0, 1]); }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: st.skin.rough ?? 0.62 }));
-  m.name = `${WHO}_skin`; return m;
+  m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
+  if (on) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line)
+    const f = eyeFront(side); return [side, outline(side).pts.map(p => { const e = f && f(p[0], p[1]); return [p[0], p[1], e === null || !f ? p[2] : Math.max(p[2], e + LIDGAP)].map(v => +v.toFixed(5)); })];
+  }));
+  return m;
+}
+// the lids rest on the eyeball. The Studio draws an eyeball only through its opening (a stencil), so it can sit proud
+// of the lids; a file has only depth, and there the eyeball would show through the lids round the opening (MHR's lie up
+// to 3 mm behind it). So the skin round each opening where the eyeball's surface comes through it (within `reach`) is
+// brought forward onto that surface (`gap` over it, a triangle's flat middle too), as real lids lie on the eye, its
+// shading as it was. Lifted at MHR's own points and blended like everything else at a cut's new corners, so the cut's
+// edges stay closed; the eyeball stays a whole sphere (moving it back instead dents it in steps along the lid) and looks
+// through the opening as the Studio shows it. The export is neutral: the eyes look along +Z
+const LIDREST = { L: 0, R: 0, most: 0 }, LIDGAP = 0.0003;   // the last export's: how many of MHR's points came forward, the most (m); how far over the eyeball they rest
+function eyeFront(side) {                              // the eyeball's surface along +Z over (x, y) (the cornea's dome over the iris), null off it
+  const e = EYES[side]; if (!e.visible) return null;
+  const c = e.position, r = e.scale.x, { rho, zc, rc } = eyeShapeOf(side);
+  return (x, y) => { const u = (x - c.x) / r, v = (y - c.y) / r, d = u * u + v * v;
+    return d >= 1 ? null : c.z + r * (d < rho * rho ? zc + Math.sqrt(rc * rc - d) : Math.sqrt(1 - d)); };
+}
+function lidsRest(P, O, gap = LIDGAP, reach = 0.004) {   // P: the drawn skin, a point per corner (TRIS: whose); O: the openings; the lift per MHR point
+  const lift = new Float32Array(N), seen = new Uint8Array(N); LIDREST.L = LIDREST.R = LIDREST.most = 0;
+  for (const side of ["L", "R"]) {
+    const front = eyeFront(side); if (!front) continue;
+    const r = EYES[side].scale.x, c = EYES[side].position;
+    for (let k = 0; k < TRIS.length; k++) {             // each of MHR's points onto the surface
+      const v = TRIS[k], f = front(P[k * 3], P[k * 3 + 1]), z = P[k * 3 + 2]; if (f === null || seen[v]) continue; seen[v] = 1;
+      if (z < f + gap && z > f - reach) { lift[v] = f + gap - z; LIDREST[side]++; }
+    }
+    for (let t = 0; t < TRIS.length; t += 3) {          // then each triangle over the eyeball, flat between its points, raised where its middle still dips under the round surface (outside the opening: what's cut away doesn't count)
+      const V = [TRIS[t], TRIS[t + 1], TRIS[t + 2]], X = [0, 1, 2].map(k => [P[(t + k) * 3], P[(t + k) * 3 + 1], P[(t + k) * 3 + 2] + lift[V[k]]]);
+      if (X.every(p => Math.hypot(p[0] - c.x, p[1] - c.y) >= r)) continue;
+      let dip = 0; const G = 6;
+      for (let a = 0; a <= G; a++) for (let b = 0; a + b <= G; b++) {
+        const w = [a / G, b / G, (G - a - b) / G], x = w[0] * X[0][0] + w[1] * X[1][0] + w[2] * X[2][0], y = w[0] * X[0][1] + w[1] * X[1][1] + w[2] * X[2][1], z = w[0] * X[0][2] + w[1] * X[1][2] + w[2] * X[2][2];
+        const f = front(x, y); if (f !== null && z < f + gap && z > f - reach && !inside(O[side], x, y)) dip = Math.max(dip, f + gap - z);
+      }
+      if (dip > 0) for (const v of V) lift[v] += dip;
+    }
+  }
+  for (let v = 0; v < N; v++) LIDREST.most = Math.max(LIDREST.most, lift[v]);
+  return lift;
+}
+// the export's rig: MHR's own skeleton (MHR_lod1_rig.bin's 127 bones by MHR's names, as the desk's bodies.js and the
+// T-pose drive them), each joint where it sits in this body (refitted, pose.js), the eyes' joints at the eyeballs'
+// middles (their _null a gaze ahead); the bones unturned, the bind pose MHR's own rest pose (the export's). The skin
+// takes MHR's own weights, the eyeballs their eye's bone, the upper teeth the head, the lower teeth and the tongue the
+// jaw, and the rest (hair, brows and lashes, clothes, accessories) the weights of the skin under them (tailor/weights.js,
+// as the clothes take them in the T-pose); every part a skinned mesh on the one skeleton, its points where they're drawn
+function exportRig(root, parts) {
+  const R = RIG, J = PO.joints(R, POS, BASEP, SCALE), at = i => new THREE.Vector3(J[i * 3], J[i * 3 + 1], J[i * 3 + 2]);
+  for (const [side, nm] of [["L", "l_eye"], ["R", "r_eye"]]) {
+    const i = R.byName.get(nm), k = R.byName.get(nm + "_null"), e = EYES[side];
+    if (i === undefined || !e.visible) continue;
+    J.set([e.position.x, e.position.y, e.position.z], i * 3);
+    if (k !== undefined) J.set([e.position.x, e.position.y, e.position.z + e.scale.x], k * 3);
+  }
+  const bones = R.bones.map(b => { const o = new THREE.Bone(); o.name = b.name; return o; });
+  R.bones.forEach((b, i) => { const p = at(i); if (b.parent >= 0) { p.sub(at(b.parent)); bones[b.parent].add(bones[i]); } else root.add(bones[i]); bones[i].position.copy(p); });
+  root.updateMatrixWorld(true);
+  const remap = new Uint16Array(R.bones.length); R.order.forEach((b, i) => { remap[b] = i; });   // the skeleton parents first: its root (body_world) the skin's first joint
+  const skel = new THREE.Skeleton(R.order.map(b => bones[b])), K = WEIGHTS.skinOf(POS, R.BI, R.BW), I = new THREE.Matrix4();
+  const rigid = (n, b) => { const idx = new Uint16Array(n * 4), w = new Float32Array(n * 4); for (let i = 0; i < n; i++) { idx[i * 4] = b; w[i * 4] = 1; } return { index: idx, weight: w }; };
+  const wear = (g, mat, name, sk) => {
+    const idx = Uint16Array.from(sk.index, b => remap[b]);    // MHR's bone numbers to the skeleton's
+    g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(idx, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sk.weight, 4));
+    const m = new THREE.SkinnedMesh(g, mat); m.name = name; m.frustumCulled = false; root.add(m); m.bind(skel, I); return m;
+  };
+  rig.updateMatrixWorld(true);
+  const toRig = rig.matrixWorld.clone().invert(), M = new THREE.Matrix4(), v = new THREE.Vector3();
+  for (const [o, how] of parts) {
+    if (how === "skin") {                               // MHR's own weights, by each corner's points (blended where a triangle was split along an opening)
+      const I = o.userData.srcI, F = o.userData.srcW, n = I.length / 3, idx = new Uint16Array(n * 4), w = new Float32Array(n * 4), acc = new Map();
+      for (let c = 0; c < n; c++) {
+        acc.clear();
+        for (let k = 0; k < 3; k++) { const p = I[c * 3 + k], f = F[c * 3 + k]; if (!f) continue; for (let j = 0; j < 4; j++) { const b = R.BI[p * 4 + j], bw = R.BW[p * 4 + j] * f; if (bw > 0) acc.set(b, (acc.get(b) || 0) + bw); } }
+        const top = [...acc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4), sum = top.reduce((a, e) => a + e[1], 0) || 1;
+        top.forEach(([b, x], k) => { idx[c * 4 + k] = b; w[c * 4 + k] = x / sum; });
+      }
+      wear(o.geometry, o.material, o.name, { index: idx, weight: w }).userData = o.userData.openings ? { openings: o.userData.openings } : {}; continue;
+    }
+    const own = o.parent === rig;                       // the Studio's own (drawn in the world: back to the rig's space), or made for the file (in it already)
+    if (!own) o.updateMatrixWorld(true);
+    const meshes = []; o.traverseVisible(x => { if (x.isMesh) meshes.push(x); });
+    for (const x of meshes) {
+      const g = x.geometry.clone(), P = g.attributes.position;
+      M.copy(x.matrixWorld); if (own) M.premultiply(toRig);
+      if (x.isSkinnedMesh) {                            // the salon's swinging locks: where their own bones put them, on the body's skeleton from here
+        for (let i = 0; i < P.count; i++) { x.getVertexPosition(i, v); v.applyMatrix4(M); P.setXYZ(i, v.x, v.y, v.z); }
+        g.computeVertexNormals();
+      } else g.applyMatrix4(M);
+      for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
+      const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;
+      wear(g, x.material, x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
+    }
+  }
+  return skel;
+}
+// an eyeball for a file: its paint baked flat in the eye's own layout (the export's texture: what a plain viewer shows),
+// its shape and paint in the material's extras (studioEye), its points in eye units (_EYELOCAL): the desk (wearEye) and
+// Unreal's eye material refract it again
+function exportEye(side) {
+  const o = EYES[side].clone(false), s = eyeShapeOf(side), m0 = eyeMats[side];
+  const tex = new THREE.CanvasTexture(EYEPAINT.bakeEye(renderer, st.eyes, s, side, 1024)); tex.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.MeshPhysicalMaterial({ map: tex, roughness: m0.roughness, clearcoat: 1, clearcoatRoughness: m0.clearcoatRoughness, ior: 1.376 });
+  m.name = o.name = `${WHO}_eye_${side}`; m.userData.studioEye = EYEPAINT.eyeRecord(st.eyes, s, side);
+  o.material = m; return o;
 }
 async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
@@ -2370,9 +2551,12 @@ async function exportPackage() {
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
-  root.add(exportSkin());
   const skip = new Set([mesh, GH, BAG, HOLES, TEAR.L, TEAR.R, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);
-  for (const o of rig.children) if (!skip.has(o) && o.visible) root.add(o.clone(true));
+  const parts = [[exportSkin(), "skin"]];              // the skin first: the desk measures the body from the first skinned mesh
+  for (const o of rig.children) if (!skip.has(o) && o.visible)
+    parts.push([o === EYES.L ? exportEye("L") : o === EYES.R ? exportEye("R") : RIG ? o : o.clone(true),
+                o === EYES.L ? { bone: "l_eye" } : o === EYES.R ? { bone: "r_eye" } : o === MOUTH.upper ? { bone: "c_head" } : o === MOUTH.jaw ? { bone: "c_jaw" } : {}]);
+  if (RIG) exportRig(root, parts); else for (const [o] of parts) { delete o.userData.srcI; delete o.userData.srcW; root.add(o); }   // without MHR's rig (its file missing), as it's drawn
   let glb;
   try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
   finally { st.expr.set(was); POSE = pose; compose(); }
@@ -2414,7 +2598,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

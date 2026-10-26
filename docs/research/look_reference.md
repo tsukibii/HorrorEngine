@@ -11,10 +11,10 @@ together is the look "soft cinematic"** (`tools/character/looks.js`, Face, Look)
 
 | What you see | How it's made | Studio | Unreal |
 |---|---|---|---|
-| The iris melts into the white, no line | The limbus is a translucent band seen through the cornea: a dark rim that fades over a wide band into a grey shadow on the white. Unity HDRP's eye shader and MetaHuman's eye material both expose the limbal ring's size, fade and strength | **Iris edge softness** (`eyes.js`): a wider fade, a cool shadow on the white round the iris | the eye material's limbus settings |
+| The iris melts into the white, no line | The limbus is a translucent band seen through the cornea: a dark rim that fades over a wide band into a grey shadow on the white. Unity HDRP's eye shader and MetaHuman's eye material both expose the limbal ring's size, fade and strength | **Iris edge softness** (`tools/shared/eye.js`): a wider fade, a cool shadow on the white round the iris | the eye material's limbus settings |
 | The lids sit softly on the eye | A soft shadow all round where the lids meet the eyeball: MetaHuman faces carry an eye occlusion shell for it | **Eye occlusion**: the lid shadow on the eyeball widened all round | the eye occlusion mesh (or a decal) |
 | A wet bright line along the lower lid | The tear film: MetaHuman's lacrimal fluid strip, a thin wet mesh on the lower lid's edge | **Tear line**: a strip along the lower lid that only reflects | the tear line strip, translucent and refractive |
-| Two catchlights, a glassy front | The cornea's reflection of the lights; a refractive cornea over the iris | painted catchlights fixed to the light, a clear coat | a refractive cornea; the catchlights from real lights |
+| Two catchlights, a glassy front | The cornea's reflection of the lights; a refractive cornea over the iris | **the refracting cornea** (2026-10-26, `tools/shared/eye.js`): the iris read through the cornea's dome, the cornea's clear coat reflecting the lights and the room; painted catchlights fixed to the light when it's off | a refractive cornea; the catchlights from real lights |
 | Pink wet inner corner, waterline | The caruncle and the lid margin, wet | Corner tint, Wet gloss | the same in the eye and skin materials |
 | Tears and sparkle on the cheek | A wet layer: a streak, a high-frequency sparkle in the normal and very low roughness | (not yet: a touch-up layer could carry it) | a decal or a runtime wetness mask |
 
