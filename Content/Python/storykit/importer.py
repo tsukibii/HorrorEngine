@@ -8,7 +8,9 @@ lost by design: change story.json instead. Anything you place by hand without th
 In the editor's Output Log (Python):  import storykit.importer as i; i.build("Pilot")            (every level)
                                       import storykit.importer as i; i.build("Pilot", "house")
 Each level also gets one hidden stand-in per cast member (tag cast:<id>): the runner moves it to a scene's stage
-spot when the scene starts, and the MetaHuman replaces it later (class_map stand_in, or the cast's metahuman).
+spot when the scene starts, and the MetaHuman replaces it later (class_map stand_in, or the cast's metahuman). A cast
+member who is a Character Studio character (previs_body people/<name>) is that character, in the level as in the
+stand-in (storykit.people).
 V0: written before it ever ran in an editor. SETUP.md phase S9 makes it work; fix it here, keep plan.py the maths.
 """
 import json
@@ -16,6 +18,7 @@ import math
 
 import unreal
 
+from . import people
 from . import plan as P
 from . import storylib as L
 from . import surfaces
@@ -225,12 +228,13 @@ def spawn(piece, cmap):
         c.set_visibility(bool(d.get("lit", True)))
         return finish(a, piece, f"{piece['room']}/lights")
     if k == "person":
+        studio = STUDIO_CAST.get(next((t[5:] for t in piece["tags"] if t.startswith("cast:")), None))   # a Character Studio character
         mesh_path = cmap.get("stand_in_mesh")
-        mesh = unreal.load_asset(mesh_path) if mesh_path else None
-        if mesh:
+        mesh = studio[0] if studio else unreal.load_asset(mesh_path) if mesh_path else None
+        if mesh:   # (the Studio's export faces glTF's +Z, which lands on Unreal's +Y, as the mannequin faces)
             a = actors.spawn_actor_from_class(unreal.SkeletalMeshActor, to_ue(piece["pos"]), rot(piece["yaw"] - 90))
             a.skeletal_mesh_component.set_skeletal_mesh_asset(mesh)
-            s = piece["size"][2] / float(cmap.get("stand_in_height", 1.8))
+            s = piece["size"][2] / (studio[1] if studio else float(cmap.get("stand_in_height", 1.8)))
             a.set_actor_scale3d(unreal.Vector(s, s, s))
         else:   # no mannequin: a capsule-ish block
             piece = dict(piece, shape="cyl", pos=(piece["pos"][0], piece["pos"][1], piece["pos"][2] + piece["size"][2] / 2),
@@ -427,11 +431,16 @@ def build_kit(game):
     (unreal.log if r.returncode == 0 else unreal.log_warning)("storykit: " + (out[-1] if out else "kit build"))
 
 
+STUDIO_CAST = {}   # cast id -> (skeletal mesh, height in metres): the cast members who are Character Studio characters
+
+
 def build(game=None, level=None, bodies=None):
     story, spath = L.load(game)
     game = spath.parent.name
     cmap = class_map()
     build_kit(game)
+    STUDIO_CAST.clear()
+    STUDIO_CAST.update(people.cast_meshes(story))    # their exports imported once (storykit.people), the eyes wearing M_StudioEye
     made_levels = {}
     for lid in story["levels"]:
         if level and lid != level:

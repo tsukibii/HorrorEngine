@@ -18,8 +18,8 @@ from . import storylib as L
 
 def fresh():
     """The editor imports storykit once; a Generate after a pull or an edit must run the files as they are now."""
-    from . import importer, kit, library, pbr, plan, surfaces
-    for m in (L, plan, library, kit, pbr, surfaces, importer):
+    from . import importer, kit, library, pbr, people, plan, surfaces
+    for m in (L, plan, library, kit, pbr, surfaces, people, importer):
         importlib.reload(m)
     return importer
 
@@ -37,11 +37,21 @@ def write(game, result):
 def import_bodies(game):
     """Each cast member's body as the desk shows it (Previs/Body_<who>.glb, written by the desk's bake) as a skeletal
     mesh in /Game/Games/<Game>/Imported/Bodies/<who>/<hash>: a folder per version of the file, so an unchanged body
-    isn't imported again and a changed one never replaces an asset a map still uses."""
+    isn't imported again and a changed one never replaces an asset a map still uses. A cast member who is a Character
+    Studio character (previs_body people/<name>) goes across as the Studio's own export instead (storykit.people:
+    every part on the same skeleton, the eyes wearing M_StudioEye), posed by the same bake."""
     import hashlib
+    from . import people
+    studio = people.cast_people(L.load(game)[0])
     found = {}
     for f in sorted((L.GAMES / game / "Previs").glob("Body_*.glb")):
         who = f.stem[5:]
+        if who in studio:
+            mesh = people.safe_import(studio[who])
+            if mesh is not None:
+                found[who] = mesh
+                continue
+            unreal.log_warning(f"storykit: {who}'s Studio character ({studio[who]}) didn't import: the desk's body stands in")
         dest = f"/Game/Games/{game}/Imported/Bodies/{who}/v{hashlib.sha1(f.read_bytes()).hexdigest()[:10]}"
 
         def mesh_in(d):
