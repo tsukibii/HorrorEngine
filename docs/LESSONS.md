@@ -735,3 +735,13 @@ load the page once after an edit.
 - **Everything painted on a moving lid should take the same frame:** the painted liner found its lines by rays on the
   lid as it is now, which on a shut lid's bulge put a dark patch up the lid while the lashes (from the open lid, swung)
   sat at its edge. One frame for all of it: the open lid, swung with the margin.
+- **A soft strand goes grey when it's small on screen:** the lash atlas's Gaussian core, mipped down to the few pixels
+  a lower lash covers, spread its alpha over the whole card: a wide grey ribbon, not a hair. A strand that must read at
+  a few pixels wants a solid core (alpha 1) with a texel of soft edge, and a tip that thins but stays black (the card's
+  own taper makes the point); let the geometry taper, not the alpha.
+- **The lower lid's margin faces up, the upper's faces down:** laying the lower lashes over their margin from the eye's
+  edge (as the upper ones are, which hides the upper waterline the way a real face does) ran each lash toward the
+  viewer and then down: an L from the front. The lower waterline shows in a real eye; root the lower lashes at the
+  margin's front edge.
+- **Hairs side by side are a comb, not a thicker hair:** a lower lash made of three nearly parallel hairs read as three
+  thin lines with gaps, whatever their spacing. One hair, wide enough to cover a pixel and a half, reads as one lash.

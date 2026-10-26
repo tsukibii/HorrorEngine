@@ -38,6 +38,15 @@ The user's answers, newest first. They override the plan, the research and the d
   the upper lid's own edge) and the droop is on the hairs' direction only. The patch was the painted liner, found by
   rays on the shut lid's bulge, and a wing twice too fat: the liner's lines now come from the open lid swung with the
   margin like the lashes, a thin line along their roots in any pose, and the wing is a flick.
+- **The lower lashes neither angular nor fading** ("could you fix the bottom eyelashes though, they seem to look too
+  angular and partially blend/fade away in the skin"; Claude circled the inner, middle and outer thirds and the user
+  confirmed: "matches what I see, for solution do whatever is most aesthetic and technically correct"): each lower
+  lash is one hair rooted at the margin's front edge (the waterline shows between the eye and the lashes, as in a real
+  eye and the reference; the stretch across the margin ran toward the viewer and kinked down into an L), leaving along
+  the skin over the edge and easing into its own direction (no corner), at most 57° down (clear of the skin under the
+  eye); the lash atlas's strand is a solid core thinning to the tip and black to the end (a soft core mipped down to a
+  few pixels went grey over the whole card; a fading tip dissolved into the skin), which made the upper lashes crisper
+  and blacker too.
 - Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
   under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
   the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style
