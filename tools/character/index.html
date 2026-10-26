@@ -2048,16 +2048,16 @@ const eyeSet = {};
 // ---- brows and lashes (browlash.js): cards for the salon's hair shader; the lashes on the lids' edges, turning with the
 // lids and squashing as they shut, the brows flat on the skin between MediaPipe's brow rows; both off until asked for
 st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS };
-var BL_READY = false, BLNOW = null, BLLIDS = null;      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on)
-const BLU = { lash: hairUniforms(atlasTexture(BL.LASH_ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };   // the lashes' atlas: one fine strand to a cell
+var BL_READY = false, BLNOW = null, BLLIDS = null, OPENLID = {};      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on; OPENLID: the lids as they are open, the lashes' frame)
+const BLU = { lash: hairUniforms(atlasTexture(BL.LASH_ATLAS), BL.LOOKS[st.lash.look]), line: hairUniforms(atlasTexture(BL.LINE_ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };   // the lashes' atlas: one fine strand to a cell; the lash line's: a dense fringe
 for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
-const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
+const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
 const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
 const BROWROWS = { R: { upper: [107, 66, 105, 63, 70], lower: [55, 65, 52, 53, 46] }, L: { upper: [336, 296, 334, 293, 300], lower: [285, 295, 282, 283, 276] } };
 function browLash() {
-  BLM.lash.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
+  BLM.lash.visible = BLM.line.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
   if (!LMK || (!st.lash.on && !st.brow.on)) { BLNOW = null; return; }
   const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));
   U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
@@ -2065,12 +2065,14 @@ function browLash() {
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
-    lids[side] = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, open };
+    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, 0.7), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, eye: EYES[side].position.toArray() };   // (the upper rim's fourth point: the skin 0.7 mm up the lid, the lash line's top; the eyeball's middle: what the lids swing round)
+    if (open >= 0.97 || !OPENLID[side]) OPENLID[side] = now;              // the lids as they are open: the lashes' frame, turned with the lid as it shuts (browlash.js)
+    lids[side] = { ...now, open, open0: OPENLID[side] };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
   const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow); BLLIDS = lids;
-  for (const [k, g] of [["lash", r.lashes], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
+  for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   BLNOW = r.cards;
 }
 // a lid's rim: MHR's lid line runs along its back edge, where the lid meets the eye, and the lashes grow from its front
@@ -2193,9 +2195,10 @@ const blSet = {};
   const part = (o, label, controls, looks, help) => {
     const on = el("input", { type: "checkbox" }), look = el("select", {}, ...Object.entries(BL.LOOKS).filter(([k]) => k.startsWith(looks)).map(([k, l]) => el("option", { value: k, textContent: l.label })));
     box.append(el("label", { className: "tog" }, on, el("span", {}, label, el("small", { textContent: help }))), el("div", { className: "row" }, el("span", { textContent: "Look" }), look, el("output")));
-    on.onchange = () => { o.on = on.checked; browLash(); }; look.onchange = () => { o.look = look.value; applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); fillColour(); };
+    const relook = () => { applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); if (looks === "lash") applyLook(BLU.line, BL.LOOKS[o.look]); };   // (the lash line wears the lashes' look)
+    on.onchange = () => { o.on = on.checked; browLash(); }; look.onchange = () => { o.look = look.value; relook(); fillColour(); };
     const sl = {}; for (const [k, lab, lo, hi, step, h] of controls) sl[k] = slider(box, `${looks}_${k}`, lab, lo, hi, step, o[k], h, val => { o[k] = val; browLash(); });
-    sets.push(() => { on.checked = o.on; look.value = o.look; applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); for (const [k] of controls) sl[k](o[k]); });
+    sets.push(() => { on.checked = o.on; look.value = o.look; relook(); for (const [k] of controls) sl[k](o[k]); });
   };
   box.append(el("h4", { textContent: "Lashes" }));
   part(st.lash, "Lashes", BL.LASH_CONTROLS, "lash", "Rooted on the lids' edges: they turn with the lid and squash as it shuts. The salon's hair shader.");

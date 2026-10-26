@@ -719,3 +719,13 @@ load the page once after an edit.
 - **A helper's name taken by a setting:** the lashes' Criss-cross slider was called `cross`, the module's vector
   product too; renamed, the definition was missed and only the calls renamed (a regex on `cross(` doesn't match
   `const cross =`). Rename the definition first and let the syntax check find the calls.
+- **Swing round the right centre:** the lashes' turn with a blink was first measured round the eye opening's middle (the
+  outline's centroid, in the lids' plane): a lid that drops 5 mm past it swings 100° and the lashes folded into the
+  cheek. The lids turn round the eyeball's middle, a centimetre behind: 31°. Anything that rotates with a lid pivots
+  there.
+- **A band of sparse strands shows what's under it:** the lash line drawn with the lashes' strand atlas (one soft hair
+  to a cell) was mostly see-through, and skin showed between the roots. A root line wants its own texture: opaque along
+  the edge, ragged only where it ends.
+- **Check that a crossed card actually crosses:** the second lash card's width ran along the lash itself (the cross
+  product of the first card's normal and the lid's tangent is the lash's own direction), a sliver that showed nothing
+  from the side. The second card's width is the first card's normal.

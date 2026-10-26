@@ -24,6 +24,13 @@ The user's answers, newest first. They override the plan, the research and the d
   down the skin: judged on the Studio's eye close-up against the photo, open, three-quarters and shut. What the
   renderer can't give: the photo's soft focus and the hairs' glint under a real light; what's left to the user's eye:
   the hairs' thickness and count, how far the spikes rise, the lower lashes' length (all sliders).
+- **No skin between the lashes' roots, and lashes that turn with a blink** ("fix the little gaps that show skin where
+  eyelash should be. Also consider how the eye should be when the eyes blink, it shouldn't disappear but should now
+  angle towards the viewer. Feel free to create more vertex points or create a bendy bone system for each eyelash so
+  it bends along the eyelid's movement"): the lash line is a dense fringe over the whole rim and a little up the lid
+  (its own mesh and atlas), and each lash's frame is set on the open lid and turned with the lid about the eyeball's
+  middle as it shuts, with the margin's droop, so a shut eye's lashes point at the viewer and a little down, still on
+  their rim (a bendy bone a lash, in effect: one turn about the lid's line per root).
 - Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
   under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
   the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style
