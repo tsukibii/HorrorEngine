@@ -8,7 +8,24 @@ import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { LifeFX } from "./lifefx.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
+import { wearEye } from "../shared/eye.js";      // tools/shared (served at /shared: the page sits at the root)
 const Y_UP = new THREE.Vector3(0, 1, 0);
+// the simple view (the toolbar's Simple, for when the desk lags): every lit surface a plain Lambert of its own colour, no
+// textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
+// picture at one pixel per pixel; Blender's solid view. The materials come back as they were when it's turned off
+const SIMPLE = new WeakMap(), PLAIN_TINT = new THREE.Color(0xb8b8b8);
+function simpleOf(m) {
+  if (Array.isArray(m)) { const a = m.map(simpleOf); return a.some(Boolean) ? a.map((x, i) => x || m[i]) : null; }
+  if (!m || m.userData.simple || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshPhongMaterial || m.isMeshLambertMaterial && m.map)) return null;
+  let s = SIMPLE.get(m);
+  if (!s) {
+    const eye = m.userData.plain && m.userData.plain.map, cut = m.map && (m.alphaTest > 0 || m.transparent);   // the eye keeps its flat paint (no refraction): the gaze still reads
+    s = new THREE.MeshLambertMaterial({ color: eye ? 0xffffff : m.map ? PLAIN_TINT.clone().multiply(m.color) : m.color.clone(), map: eye || (cut ? m.map : null), alphaTest: m.alphaTest,
+      transparent: m.transparent, opacity: m.opacity, side: m.side, vertexColors: m.vertexColors, depthWrite: m.depthWrite, visible: m.visible });
+    s.userData.simple = true; SIMPLE.set(m, s);
+  }
+  return s;
+}
 // which way a body faces (radians about up, 0 toward +z): square to the line from its right hip to its left (Kimodo's
 // SOMA legs, or the previs thighs)
 function facing(p) {
@@ -237,6 +254,7 @@ export class Stage {
   static SOMA = null;            // Kimodo's skeleton (names, parents): the look layer turns SOMA joints too
   static LIVES = null;           // the little things' lives (lives.json): a world with some gets their effects (lifefx.js)
   static showTrackers = true;
+  static simple = false;         // the simple view: plain colours, no textures (simpleOf); every stage, the Watch's and Play's too
   constructor(container, lib) {
     this.lib = lib;
     this.container = container;
@@ -363,7 +381,9 @@ export class Stage {
   makeFigure(c, color) {
     const h = +(c.height || 1.7), tpl = this.bodyFor(c);
     if (tpl) {
-      const f = new BodyFigure(this.lib, h, tpl, { color, shape: c.shape });
+      const studio = !!(tpl.userData && tpl.userData.studio);   // a Character Studio character: its own look and its eyes (tools/shared/eye.js), its own shape
+      const f = new BodyFigure(this.lib, h, tpl, { color, shape: studio ? null : c.shape, keepMaterials: studio });
+      if (f.ok && studio) f.model.traverse(o => { if (o.isMesh) wearEye(o); });
       if (f.ok) return f;
       console.warn("body file: bones not found:", f.missing.join(", "));
     }
@@ -789,7 +809,19 @@ export class Stage {
       l.intensity = l.userData.base * k;
     }
   }
-  render() { this.renderer.render(this.scene, this.camera); }
+  render() { this.simplify(); this.renderer.render(this.scene, this.camera); }
+  simplify() {                   // the simple view on (or off again) for whatever the scene holds now
+    const on = Stage.simple;
+    if (!on && !this._simple) return;
+    const pr = on ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    if (this.renderer.getPixelRatio() !== pr) { this.renderer.setPixelRatio(pr); this.resize(); }
+    this._simple = on;
+    this.scene.traverse(o => {
+      if (!o.isMesh) return;
+      if (on) { if (!o.userData.fullMat) { const s = simpleOf(o.material); if (s) { o.userData.fullMat = o.material; o.material = s; } } }
+      else if (o.userData.fullMat) { o.material = o.userData.fullMat; delete o.userData.fullMat; }
+    });
+  }
   // a thing the eye is inside (a locker, a wardrobe): its walls drawn from inside too, see-through by `amount` (0..1;
   // 0 puts it back). The amount: the thing's `see_through`, else the game's, else SEE_THROUGH
   seeThroughOf(id) { const p = (this.plan.pieces.find(x => x.id === id) || {}).d || {}; return +(p.see_through ?? (this.story.game || {}).see_through ?? SEE_THROUGH); }

@@ -68,7 +68,7 @@ export is a bake like any other (§3, Export).
 | Body for the salon | the body's weights, the face and the sculpt (above) | `body.bin` (written by Save) | none: remade on every Save |
 | Clothes | each garment's design, colour and edits (fit, shape, hang), in the order worn, in `character.json`; the designs in `Content/Studio/Clothes/` | `drape.bin`: the clothes as they hang, by a key of what they were draped on (made live in a worker; a key that no longer fits hangs them again) | the export has no skin weights yet (docs/TAILOR.md §4) |
 | Accessories | `st.accessories` in `character.json`: each one's kind, style, colours and sliders, its spot or the place clicked (a triangle and where in it) | none (made live) | none |
-| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and **rigged on MHR's skeleton** (2026-10-26: every part skinned on it, the salon's swinging locks folded onto the body's bones); the procedural skin comes out as a plain material; the eyes carry their paint baked flat and the eye's shape and paint, for the desk and Unreal to refract them again |
+| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and **rigged on MHR's skeleton** (2026-10-26: every part skinned on it, the salon's swinging locks folded onto the body's bones); the procedural skin comes out as a plain material; the eyes carry their paint baked flat and the eye's shape and paint, for the desk and Unreal to refract them again, the lids resting on them (a file has no stencil); the desk wears it as a cast member's body (`previs_body: "people/<name>"`) |
 | Exports (OBJ) | none | `<name>_body.obj`, `<name>_head.obj`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with the rest |
 
 The fixes are small and belong in the revamp's first steps (§5): a `made.json` receipt on each bake, the body's
@@ -88,6 +88,16 @@ teeth and the tongue the jaw, everything else (hair, brows and lashes, clothes, 
 under it (`tailor/weights.js`). **The eyes** carry their paint baked flat in Epic's layout (the texture a plain viewer
 shows), the eye's shape and paint in their material's extras (`studioEye`), each point in eye units (`_EYELOCAL`),
 tangents and the flat uv: what the desk's `wearEye` and Unreal's eye material refract again (`tools/shared/eye.js`).
+**The lids rest on the eyes** (2026-10-26): the Studio draws an eyeball only through its opening (a stencil), so it can
+stand proud of MHR's lids (up to 3 to 4 mm at the lower lid); a file has only depth, so the export brings the skin round
+each opening forward onto the eyeball's surface (0.3 mm over it, the cornea's dome too, a triangle's flat middle too;
+lifted at MHR's own points and blended into the cut's new corners, so its edges stay closed; the shading as it was)
+and keeps the eyeball a whole sphere. The cut follows the outline's own edges (the last pieces of a split triangle cut
+along it), and the skin's node carries **each opening's outline** as cut, on the lids as they rest
+(`extras.openings.L`/`R`, 32 points in the file's space), for a reader that follows the lid line. The outline itself
+is untangled in the Studio too: smoothed, MHR's own left inner corner crossed itself and the little loop showed a
+diamond of eyeball at every character's corner (`untangle`, pulled to the crossing). STUDIO draws the file's skin and
+eyes flat from the front, above, below and 20° to either side: none of an eyeball outside its opening.
 The GLB's scene carries **the recipe** in its extras (`extras.studio`, the server's `api/recipe/<name>`): every file
 the character is made from (`character.json`, `layers.json`, the skin's pictures and paint, `body.bin`, the front and
 side pictures, the salon's `salon/*.json` and bakes), base64, each with its sha1. `<name>.studio.json` beside it is the

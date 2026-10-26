@@ -32,6 +32,14 @@ STATIC = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".
 BODY = {".glb": "model/gltf-binary", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".fbx": "application/octet-stream",
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 BODIES = L.STUDIO / "Bodies"
+PEOPLE = L.STUDIO / "People"                       # the Character Studio's characters: each one's export/<name>.glb is a body for the desk
+
+
+def people_bodies():
+    """the Character Studio's characters exported for the desk (People/<name>/export/<name>.glb), as previs_body values"""
+    if not PEOPLE.is_dir():
+        return []
+    return sorted(f"people/{d.name}" for d in PEOPLE.iterdir() if d.is_dir() and not d.name.startswith(".") and (d / "export" / f"{d.name}.glb").is_file())
 FOOTAGE = L.ROOT / "Footage"          # the takes, as intake.py copies them (Footage/<Game>/<take id>.mp4)
 MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4"}
 
@@ -126,7 +134,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, UL.status(parts[3]))
         if parts[:2] == ["api", "bodies"]:
             files = sorted(f.name for f in BODIES.glob("*") if f.suffix.lower() in (".glb", ".gltf", ".fbx")) if BODIES.exists() else []
-            return self.send(200, {"bodies": files})
+            return self.send(200, {"bodies": files + people_bodies()})
+        if parts[:2] == ["bodies", "people"] and len(parts) == 3:    # a Character Studio character, as exported for the desk (rigged, its eyes)
+            import urllib.parse
+            name = urllib.parse.unquote(parts[2])
+            gf = PEOPLE / name / "export" / f"{name}.glb" if name and "/" not in name and "\\" not in name and not name.startswith(".") else None
+            if gf and gf.is_file():
+                return self.send(200, gf.read_bytes(), BODY[".glb"])
+            return self.send(404, {"error": f"no export of {name} from the Character Studio"})
         if parts[0] == "bodies" and len(parts) >= 2 and ".." not in parts:
             bf = BODIES.joinpath(*parts[1:])
             if bf.is_file() and bf.suffix.lower() in BODY:

@@ -194,7 +194,7 @@ export class Database {
       v3 ? this.row("Subtitles", subs) : null,
       this.sec("Bodies in the desk"),
       this.row("Default body", this.sel(g, "previs_body", D.bodies(), { blank: D.bodies().length > 1 ? "first file in Bodies" : "capsule figure", after: () => D.afterBody() })),
-      h("p", { class: "hint tight" }, D.bodies().length > 1 ? "Content/Studio/Bodies holds: " + D.bodies().slice(1).map(b => Array.isArray(b) ? b[1] : b).join(", ") : "Drop a rigged human (.fbx or .glb) into Content/Studio/Bodies and reload."));
+      h("p", { class: "hint tight" }, D.bodies().length > 1 ? "Content/Studio/Bodies holds: " + D.bodies().slice(1).map(b => Array.isArray(b) ? b[1] : b).join(", ") + ". A Character Studio character's Export for desk / Unreal shows here too, for a cast member." : "Drop a rigged human (.fbx or .glb) into Content/Studio/Bodies, or export a character from the Character Studio, and reload."));
   }
 
   /* ---- each table's form ---- */

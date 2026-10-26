@@ -700,3 +700,25 @@ load the page once after an edit.
 - **Give a long check its own time:** STUDIO takes about 50 minutes here; run under a 30-minute `timeout` it was killed
   at its 22nd step with nothing wrong. Run it with an hour and more, or by ONLY for the steps a change touches.
 
+
+## The eye in a file (2026-10-26)
+
+- **A stencil hides what depth shows:** the Studio draws an eyeball only through its opening, so it could stand up to
+  3 mm proud of MHR's lower lid and nobody saw; exported, with only depth, it showed through the lids all round. Before
+  carrying geometry from one renderer to another, find what a trick in the first one was hiding.
+- **Move the soft thing, not the round one:** pushing the eyeball's points back behind the lids dented it in steps
+  along the lid (each triangle across the lid line half pushed, half not). Real lids lie on the eye: bring the skin
+  forward onto the eyeball and keep the eyeball whole.
+- **Displace where a mesh's pieces meet, then blend:** lifting each corner of the cut skin on its own took the cut's new
+  corners off their neighbours' straight edges, and a flat triangle between points lifted onto a sphere still dips under
+  it in the middle (patches of eyeball under the eye). Lift MHR's own points, sample each triangle and raise it by the
+  most it dips, and blend the lift into new corners like their positions.
+- **A cut by a 32nd of a triangle still steps on a long sliver:** the shut eye's strip has triangles 20 mm long, and
+  their pieces kept or dropped whole zigzagged the lid by half a millimetre. Cut the last pieces along the outline's
+  own edge.
+- **Smoothing a sharp corner can tie it in a knot:** MHR's own left inner corner, smoothed by Catmull-Rom, crosses
+  itself; the even-odd cut counts the little loop as opening, and every character had a diamond of eyeball at that
+  corner, in the Studio too. Check an outline for crossings; pull a small loop to where it crosses.
+- **A body that misses its marks may miss them by definition:** the desk's check had a Studio body 6 to 7 cm off the
+  blocking's head and hands, and the desk's own MHR body is off by as much (the previs skeleton's joints aren't MHR's).
+  Measure the reference before setting a limit; compare against it.

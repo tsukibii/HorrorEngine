@@ -820,7 +820,7 @@ const png = rgb => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
   });
-  await step("the export for the desk and Unreal: one GLB, neutral, in metres, rigged on MHR's skeleton (the eyes on their bones), the eyes' openings cut out of its skin, carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
+  await step("the export for the desk and Unreal: one GLB, neutral, in metres, rigged on MHR's skeleton (the eyes on their bones), the eyes' openings cut out of its skin and the lids resting on the eyes (an eyeball shows only through its opening, without the Studio's stencil), carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
     const pics = await page.evaluate(() => window.__body.pics.length);
     await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
     await page.click("#expPack");
@@ -840,6 +840,36 @@ const png = rgb => {
                                               all: json.nodes.filter(x => "mesh" in x).every(x => "skin" in x) };
       const { GLTFLoader } = await import("./vendor/GLTFLoader.js"), g = await new GLTFLoader().parseAsync(buf, "");
       const T = b.THREE, by = {}; g.scene.traverse(o => { if (o.isSkinnedMesh) by[o.name] = o; });
+      // a file has only depth (the Studio's stencil keeps each eyeball inside its opening): the lids rest on the eyes, so
+      // an eyeball shows only through its opening. The skin and the eyes drawn flat from the front, above, below and 20°
+      // to either side of each eye; the eyeball's pixels outside both openings' outlines as the skin carries them
+      // (its extras), seen from there (behind an opening, the eyeball rightly covers what's inside the head)
+      const through = (() => {
+        const scene = new T.Scene(), ms = [], skinM = by[`${n}_skin`], E = [by[`${n}_eye_L`], by[`${n}_eye_R`]], O = skinM.userData.openings, out = [];
+        if (!O || !O.L || !O.R) return null;
+        scene.add(g.scene); g.scene.updateMatrixWorld(true); g.scene.traverse(o => { if (o.isMesh) ms.push([o, o.visible, o.material, o.frustumCulled]); });
+        const green = new T.MeshBasicMaterial({ color: 0x00ff00 }), red = new T.MeshBasicMaterial({ color: 0xff0000 });
+        for (const [o] of ms) { o.visible = o === skinM || E.includes(o); o.frustumCulled = false; o.material = o === skinM ? green : red; }
+        const W = 320, H = 240, rt = new T.WebGLRenderTarget(W, H), cam = new T.PerspectiveCamera(10, W / H, 0.01, 10), R0 = b.renderer, cc = R0.getClearColor(new T.Color()), ca = R0.getClearAlpha();
+        const inPoly = (P, x, y) => { let c = false, d = Infinity; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j];
+          if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+          const vx = xj - xi, vy = yj - yi, t = Math.max(0, Math.min(1, ((x - xi) * vx + (y - yi) * vy) / (vx * vx + vy * vy || 1))); d = Math.min(d, Math.hypot(x - xi - t * vx, y - yi - t * vy)); }
+          return c || d < 1.5; };                                   // inside, or within a pixel and a half of its line
+        for (const [side, bone] of [["L", "l_eye"], ["R", "r_eye"]]) {
+          const c = g.scene.getObjectByName(bone).getWorldPosition(new T.Vector3());
+          for (const [yaw, pitch] of [[0, 0], [0, 0.3], [0, -0.3], [0.35, 0], [-0.35, 0]]) {
+            cam.position.set(c.x + 0.3 * Math.sin(yaw) * Math.cos(pitch), c.y + 0.3 * Math.sin(pitch), c.z + 0.3 * Math.cos(yaw) * Math.cos(pitch)); cam.lookAt(c); cam.updateMatrixWorld();
+            R0.setRenderTarget(rt); R0.setClearColor(0, 1); R0.clear(); R0.render(scene, cam); const A = new Uint8Array(W * H * 4); R0.readRenderTargetPixels(rt, 0, 0, W, H, A);
+            const P = ["L", "R"].map(sd => O[sd].map(q => { const v = new T.Vector3(...q).project(cam); return [(v.x + 1) / 2 * W, (v.y + 1) / 2 * H]; }));
+            let eye = 0, outside = 0;
+            for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = (y * W + x) * 4; if (!(A[i] > 128 && A[i + 1] < 100)) continue; eye++; if (!P.some(Q => inPoly(Q, x + 0.5, y + 0.5))) outside++; }
+            out.push({ side, yaw, pitch, px: eye, over: outside / Math.max(1, eye) });
+          }
+        }
+        R0.setRenderTarget(null); R0.setClearColor(cc, ca); rt.dispose(); green.dispose(); red.dispose();
+        for (const [o, v, m, f] of ms) { o.visible = v; o.material = m; o.frustumCulled = f; }
+        scene.remove(g.scene); return out;
+      })();
       const eyeBone = sd => { const m = by[`${n}_eye_${sd}`]; return m ? m.skeleton.bones[m.geometry.attributes.skinIndex.getX(0)].name : null; };
       const head = g.scene.getObjectByName("c_head"), centre = m => { m.geometry.computeBoundingBox(); const v = new T.Vector3(), c = new T.Vector3(); let k = 0; for (let i = 0; i < m.geometry.attributes.position.count; i += 97) { m.getVertexPosition(i, v); c.add(v); k++; } return c.divideScalar(k); };
       const skinM = by[`${n}_skin`], lowest = () => { let y = 1e9; const v = new T.Vector3(); for (let i = 0; i < skinM.geometry.attributes.position.count; i += 13) { skinM.getVertexPosition(i, v); y = Math.min(y, v.y); } return y; };
@@ -852,13 +882,18 @@ const png = rgb => {
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
       return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
-               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig };
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST } };
     }, NAME);
     if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
     if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
     if (!(r.rig.joints === 127 && r.rig.root === "body_world" && r.rig.all && r.rig.eyes[0] === "l_eye" && r.rig.eyes[1] === "r_eye" && Math.abs(r.rig.turned - 0.6) < 0.05 && r.rig.feet < 1e-4))
       throw new Error(`the export's rig: ${JSON.stringify(r.rig)}`);
-    if (!(r.skin < r.corners && r.skin > 0.97 * r.corners)) throw new Error(`the skin: ${r.skin} of ${r.corners} corners (only the eyes' openings come out)`);
+    if (!(r.skin > 0.97 * r.corners && r.skin < 1.5 * r.corners)) throw new Error(`the skin: ${r.skin} corners against MHR's ${r.corners} (only the eyes' openings come out, cut along their outlines)`);
+    if (!(r.lids.L > 0 && r.lids.R > 0 && r.lids.most < 0.005)) throw new Error(`the lids don't rest on the eyes: ${JSON.stringify(r.lids)}`);
+    if (!r.through) throw new Error("the skin doesn't carry its openings' outlines (extras.openings)");
+    const worst = Math.max(...r.through.map(v => v.over));
+    if (r.through.some(v => v.px < 500) || worst > 0.002)
+      throw new Error(`an eyeball shows outside its opening in the file (its share of the eyeball's pixels): ${JSON.stringify(r.through.map(v => [v.side, v.yaw, v.pitch, v.px, +v.over.toFixed(4)]))}`);
     if (Math.abs(r.h - r.height) > 0.03 * r.height || Math.abs(r.foot) > 0.005) throw new Error(`not the character's size: ${r.h.toFixed(3)} m tall, feet at ${r.foot.toFixed(3)} (height ${r.height})`);
     if (!["character.json", "layers.json", "body.bin"].every(f => r.files.includes(f)) || (pics && !r.files.some(f => f.startsWith("pictures/"))) || !r.receipt)
       throw new Error(`the recipe carries ${r.files.join(", ")}; the receipt ${r.receipt}`);
@@ -866,6 +901,7 @@ const png = rgb => {
     await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);   // back to this test's character
     await page.waitForFunction(([n, k]) => window.__body.who === n && window.__body.pics.length === k, [NAME, pics], { timeout: 120000 });
     console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
+    console.log(`       the eyes in a file (depth only): the lids rest on them (${r.lids.L} and ${r.lids.R} of MHR's points forward, at most ${(r.lids.most * 1000).toFixed(1)} mm); from the front, above, below and 20° to either side, at most ${(100 * worst).toFixed(2)}% of an eyeball outside its opening`);
     console.log(`       rigged: MHR's ${r.rig.joints} bones from ${r.rig.root}, every part skinned on them; the head turned 0.60 rad takes the eyes ${r.rig.turned.toFixed(2)} round it (each on ${r.rig.eyes.join(" and ")}), the feet stay (${(r.rig.feet * 1000).toFixed(2)} mm)`);
   });
   if (shot) await page.screenshot({ path: shot });

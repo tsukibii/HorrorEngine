@@ -136,7 +136,11 @@ def check_library(story, r):
                f"`python tools/cc0.py fetch`")
     bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
     for who, f in bodies:
-        if f and not (L.STUDIO / "Bodies" / f).exists():
+        if f and f.startswith("people/"):                # a Character Studio character, as exported for the desk
+            name = f[len("people/"):]
+            if not name or "/" in name or not (L.STUDIO / "People" / name / "export" / f"{name}.glb").exists():
+                r.warn(f"{who}: previs_body {f}: no Export for desk / Unreal of {name or '?'} from the Character Studio on this machine (the director falls back)")
+        elif f and not (L.STUDIO / "Bodies" / f).exists():
             r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
 
 

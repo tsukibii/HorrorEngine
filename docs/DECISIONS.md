@@ -14,7 +14,14 @@ The user's answers, newest first. They override the plan, the research and the d
 - **The export carries the eye into Unreal.**
 - Claude's calls inside that: with the refracting cornea the catchlights are the lights' own reflections (the painted
   ones only with it off); the pupil's default a little smaller (the cornea magnifies it about a tenth, as a real one
-  does); the paint drawn by the shader in Epic's flat layout and baked into a texture for files.
+  does); the paint drawn by the shader in Epic's flat layout and baked into a texture for files. The desk wears a
+  Studio character as a cast member's body (`previs_body: "people/<name>"`, its export): its own look and shape, the
+  cast member's height, its eyes refracting as in the Studio. The simple view is the toolbar's Simple: plain colours,
+  no textures but cut-outs, the eyes their flat paint, one pixel per pixel, remembered by the browser. In a file the
+  lids rest on the eyes (the skin round each opening brought forward up to 3 to 4 mm onto the eyeball, as real lids
+  lie, rather than the eyeball pushed back and dented): from the front it's the Studio's face; from the side the lower
+  lid sits a little further forward than the Studio draws it. And the Studio's left inner corner, which showed a
+  diamond of eyeball on every character (the smoothed lid line crossed itself), is a clean corner now.
 
 ## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 

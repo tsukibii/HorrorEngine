@@ -65,6 +65,7 @@ async function boot() {
     $("#stageBox").prepend(flowStage.renderer.domElement);
     watchStage = new Stage($("#watchBox"), LIB);
     $("#watchBox").prepend(watchStage.renderer.domElement);
+    try { setSimple(localStorage.getItem("dd.simple") === "1"); } catch (e) { }
     PICS = pictures();
     flowStage.lifeAt = (sc, tl, T) => {                 // a scene's little things: from where they start, its cues up to T
       const W = new States(LIVES, lifeThings()).start(0);
@@ -245,11 +246,15 @@ async function loadBodies() {
   try { BODIES = (await api("/api/bodies")).bodies; } catch (e) { BODIES = []; }
   if (!BodyFigure.soma) try { BodyFigure.soma = await api("/api/soma"); } catch (e) { }
   const want = new Set([S.game.previs_body, ...Object.values(S.cast || {}).map(c => c.previs_body)].filter(f => f && f !== "capsules"));
-  const def = BODIES.find(f => /^default\./i.test(f)) || BODIES.find(f => !/_hi\./i.test(f)) || null;   // MHR_hi is for exports
+  const def = BODIES.find(f => /^default\./i.test(f)) || BODIES.find(f => !/_hi\./i.test(f) && !f.startsWith("people/")) || null;   // MHR_hi is for exports; a Studio character only when chosen
   if (def) want.add(def);
   for (const f of want) {
     if (!BODIES.includes(f) || flowStage.bodies[f]) continue;
-    try { const tpl = await loadBody("/bodies/" + encodeURIComponent(f)); flowStage.bodies[f] = tpl; watchStage.bodies[f] = tpl; }
+    try {
+      const tpl = await loadBody("/bodies/" + f.split("/").map(encodeURIComponent).join("/"));
+      if (f.startsWith("people/")) tpl.userData = { studio: f.slice(7) };   // a Character Studio character (its recipe stays in the file: the desk only wears it)
+      flowStage.bodies[f] = tpl; watchStage.bodies[f] = tpl;
+    }
     catch (e) { console.warn("couldn't load body", f, e); status("couldn't load body " + f); }
   }
   flowStage.defaultBody = watchStage.defaultBody = def;
@@ -2264,7 +2269,8 @@ $("#keysHelp").onclick = () => {
   modal({ title: "Keys and help", wide: true, ok: "Close", cancel: null, body: el("div", { class: "help" },
     el("p", { class: "helpguide" }, icon("notes", 15), el("a", { href: "guide.html", target: "deskguide" }, "Open the guide"), el("span", { class: "kv" }, " · every part of the desk, in the order you'd use it, with pictures")),
     sec("The desk", [["Ctrl+K", "go to anything: a card, a line by its words, a beat, a flag, an item, or an action such as Playtest"], ["Ctrl+S", "save"], ["Ctrl+Z", "undo (outside a text box; 150 edits back)"], ["Ctrl+Shift+Z · Ctrl+Y", "redo"],
-      ["Problems", "what's wrong, found as you edit: click one to go there"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"]]),
+      ["Problems", "what's wrong, found as you edit: click one to go there"], ["Playtest", "the game from the start, as the player plays it"], ["Check · Unreal", "the story and level checks; the game built in Unreal"],
+      ["Simple", "the simple view, when the desk lags: plain colours, no textures (kept in this browser)"]]),
     sec("The flow board", [["drag a card", "move it (the layout is kept in the story)"], ["drag its ●", "onto another card to connect them, or onto empty space for a new one"], ["palette", "drag Scene, Task, Choice or Ending onto the board"], ["double-click", "empty space: add a card there"], ["wheel · drag the background", "zoom · pan"], ["F · M · Delete", "fit everything · the minimap · remove the selected card"],
       ["Shift+drag · Ctrl+click", "pick several cards: a box, or one more"], ["right-click", "a card, an act or the board: copy, paste, duplicate, make an act, remove"],
       ["Ctrl+C · Ctrl+V · Ctrl+D", "copy · paste · duplicate what's picked (cards, lines, beats, commands; between games too)"], ["an act", "drag its title to move it with its cards; fold it to one card; drop a card in to join"],
@@ -2287,6 +2293,14 @@ $("#check").onclick = async () => {
   CHECK.busy = false; renderBoard(); problemsButton();
 };
 $("#problemsBtn").onclick = () => toggleProblems();
+// the simple view (the toolbar's Simple): plain colours, no textures, the eyes plain, on every stage (stage.js simpleOf);
+// kept in this browser
+function setSimple(on) {
+  Stage.simple = !!on; $("#simpleView").classList.toggle("on", Stage.simple);
+  try { localStorage.setItem("dd.simple", Stage.simple ? "1" : ""); } catch (e) { }
+  for (const st of [flowStage, watchStage]) if (st) st.render();
+}
+$("#simpleView").onclick = () => { setSimple(!Stage.simple); status(Stage.simple ? "simple view: plain colours, no textures" : "full view"); };
 $("#generate").onclick = async () => {
   if (DIRTY && !(await save())) { status("not saved: nothing run"); return; }   // never check or bake a version that isn't on disk
   const box = $("#inspector"); box.innerHTML = ""; box.append(el("h2", {}, "Generate in Unreal"), el("p", { class: "muted", id: "genState" }, "baking the scenes…"));
@@ -2371,12 +2385,12 @@ document.addEventListener("keydown", e => { if (e.key === "F9" && $("#watchView"
 const DB = new Database($("#dbView"), {
   story: () => S, game: () => GAME, ctx: CTX, touch, status, whoColor, takes: () => TAKES, playLine, dropTake: dropLineTake, secs: c => clipSecs(c),
   prompt: ln => minimaxPrompt(ln, S.cast), copy: copyText, voices: VOICES, eases: M.EASE_NAMES, poses: () => poseNames(), times: TIMES, timeMark: TIME_MARK, timeDefault: TIME_DEFAULT,
-  bodies: () => [["capsules", "capsule figure"], ...BODIES], afterBody: async () => { await loadBodies(); showStage(); },
+  bodies: () => [["capsules", "capsule figure"], ...BODIES.map(f => f.startsWith("people/") ? [f, `${f.slice(7)} (Character Studio)`] : f)], afterBody: async () => { await loadBodies(); showStage(); },
   pic: (kind, id, cls) => pic(kind, id, { cls }), posePick, made: () => MADE,
   nodes: () => Object.entries(S.flow).map(([id, n]) => [id, `${nodeTitle(id, n)} (${id})`]), redraw: () => { renderBoard(); showStage(); },
   page: name => `${name}?game=${encodeURIComponent(GAME || "")}`,
   goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },
   goLevel: lid => openBuilder(lid),
 });
-window.__dd = { get S() { return S; }, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();
