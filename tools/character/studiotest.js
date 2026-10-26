@@ -820,7 +820,7 @@ const png = rgb => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
   });
-  await step("the export for the desk and Unreal: one GLB, neutral, in metres, the eyes' openings cut out of its skin, carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
+  await step("the export for the desk and Unreal: one GLB, neutral, in metres, rigged on MHR's skeleton (the eyes on their bones), the eyes' openings cut out of its skin, carrying what the character is made from; Import brings it back as another character, every file and setting the same", async () => {
     const pics = await page.evaluate(() => window.__body.pics.length);
     await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
     await page.click("#expPack");
@@ -834,15 +834,30 @@ const png = rgb => {
         return !!(ep && em && em.pbrMetallicRoughness?.baseColorTexture && em.extras?.studioEye?.side === sd && em.extras.studioEye.shape?.rc > 0 && em.extras.studioEye.paint?.iris
                   && ["_EYELOCAL", "TEXCOORD_0", "TANGENT", "NORMAL"].every(k => k in ep.attributes));
       });
+      // the rig: one skeleton, MHR's 127 bones from body_world, every part skinned on it; posed, the head carries the face
+      // and the eyes (each on its eye's bone) and leaves the feet
+      const skins = json.skins || [], rig = { skins: skins.length, joints: skins[0]?.joints.length, root: skins[0] && json.nodes[skins[0].skeleton]?.name,
+                                              all: json.nodes.filter(x => "mesh" in x).every(x => "skin" in x) };
+      const { GLTFLoader } = await import("./vendor/GLTFLoader.js"), g = await new GLTFLoader().parseAsync(buf, "");
+      const T = b.THREE, by = {}; g.scene.traverse(o => { if (o.isSkinnedMesh) by[o.name] = o; });
+      const eyeBone = sd => { const m = by[`${n}_eye_${sd}`]; return m ? m.skeleton.bones[m.geometry.attributes.skinIndex.getX(0)].name : null; };
+      const head = g.scene.getObjectByName("c_head"), centre = m => { m.geometry.computeBoundingBox(); const v = new T.Vector3(), c = new T.Vector3(); let k = 0; for (let i = 0; i < m.geometry.attributes.position.count; i += 97) { m.getVertexPosition(i, v); c.add(v); k++; } return c.divideScalar(k); };
+      const skinM = by[`${n}_skin`], lowest = () => { let y = 1e9; const v = new T.Vector3(); for (let i = 0; i < skinM.geometry.attributes.position.count; i += 13) { skinM.getVertexPosition(i, v); y = Math.min(y, v.y); } return y; };
+      g.scene.updateMatrixWorld(true); const e0 = centre(by[`${n}_eye_L`]), f0 = lowest();
+      head.rotation.y = 0.6; g.scene.updateMatrixWorld(true); const e1 = centre(by[`${n}_eye_L`]), f1 = lowest(), p = head.getWorldPosition(new T.Vector3());
+      const turned = Math.atan2(e1.x - p.x, e1.z - p.z) - Math.atan2(e0.x - p.x, e0.z - p.z);
+      Object.assign(rig, { eyes: [eyeBone("L"), eyeBone("R")], turned, feet: Math.abs(f1 - f0) });
       const before = JSON.stringify(b.character()), rec = await b.recipeOf(new File([buf], `${n}.glb`)), made = await (await fetch(`api/package/${n}/export.made.json`)).json();
       const back = await b.importPackage(new File([buf], `${n}.glb`), n + "_back");
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
       return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
-               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes };
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig };
     }, NAME);
     if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
     if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
+    if (!(r.rig.joints === 127 && r.rig.root === "body_world" && r.rig.all && r.rig.eyes[0] === "l_eye" && r.rig.eyes[1] === "r_eye" && Math.abs(r.rig.turned - 0.6) < 0.05 && r.rig.feet < 1e-4))
+      throw new Error(`the export's rig: ${JSON.stringify(r.rig)}`);
     if (!(r.skin < r.corners && r.skin > 0.97 * r.corners)) throw new Error(`the skin: ${r.skin} of ${r.corners} corners (only the eyes' openings come out)`);
     if (Math.abs(r.h - r.height) > 0.03 * r.height || Math.abs(r.foot) > 0.005) throw new Error(`not the character's size: ${r.h.toFixed(3)} m tall, feet at ${r.foot.toFixed(3)} (height ${r.height})`);
     if (!["character.json", "layers.json", "body.bin"].every(f => r.files.includes(f)) || (pics && !r.files.some(f => f.startsWith("pictures/"))) || !r.receipt)
@@ -851,6 +866,7 @@ const png = rgb => {
     await page.evaluate(n => { const s = document.querySelector("#who"); s.value = n; s.dispatchEvent(new Event("change")); }, NAME);   // back to this test's character
     await page.waitForFunction(([n, k]) => window.__body.who === n && window.__body.pics.length === k, [NAME, pics], { timeout: 120000 });
     console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
+    console.log(`       rigged: MHR's ${r.rig.joints} bones from ${r.rig.root}, every part skinned on them; the head turned 0.60 rad takes the eyes ${r.rig.turned.toFixed(2)} round it (each on ${r.rig.eyes.join(" and ")}), the feet stay (${(r.rig.feet * 1000).toFixed(2)} mm)`);
   });
   if (shot) await page.screenshot({ path: shot });
   await step("cleared pictures take the face away", async () => {

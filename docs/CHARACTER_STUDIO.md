@@ -68,7 +68,7 @@ export is a bake like any other (§3, Export).
 | Body for the salon | the body's weights, the face and the sculpt (above) | `body.bin` (written by Save) | none: remade on every Save |
 | Clothes | each garment's design, colour and edits (fit, shape, hang), in the order worn, in `character.json`; the designs in `Content/Studio/Clothes/` | `drape.bin`: the clothes as they hang, by a key of what they were draped on (made live in a worker; a key that no longer fits hangs them again) | the export has no skin weights yet (docs/TAILOR.md §4) |
 | Accessories | `st.accessories` in `character.json`: each one's kind, style, colours and sliders, its spot or the place clicked (a triangle and where in it) | none (made live) | none |
-| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and unrigged, the procedural skin and the eyes' shaders come out as plain materials; the clothes have no skin weights yet (docs/TAILOR.md §4) |
+| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and **rigged on MHR's skeleton** (2026-10-26: every part skinned on it, the salon's swinging locks folded onto the body's bones); the procedural skin comes out as a plain material; the eyes carry their paint baked flat and the eye's shape and paint, for the desk and Unreal to refract them again |
 | Exports (OBJ) | none | `<name>_body.obj`, `<name>_head.obj`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with the rest |
 
 The fixes are small and belong in the revamp's first steps (§5): a `made.json` receipt on each bake, the body's
@@ -80,6 +80,14 @@ fingerprint in it, the clothes' lock and order saved, exports in their own folde
 character as it looks, neutral, in metres, Y up, feet on the floor, facing +Z. MHR's skin with the eyes' openings cut
 out as the shader cuts them (its texture the photo skin; the procedural skin is the Studio's shader, Unreal has its
 own), the eyeballs, the teeth and the tongue, brows and lashes, the salon's baked hair, the clothes and the accessories.
+**Rigged** (2026-10-26, so the desk can drive it and Unreal imports a skeletal mesh): MHR's own skeleton
+(`MHR_lod1_rig.bin`'s 127 bones by MHR's names, root `body_world`), each joint where it sits in this body (refitted, as
+the T-pose refits them), the eyes' joints at the eyeballs' middles; the bones unturned, the bind pose MHR's rest pose.
+The skin takes MHR's own weights, the eyeballs their eye's bone (`l_eye`, `r_eye`), the upper teeth the head, the lower
+teeth and the tongue the jaw, everything else (hair, brows and lashes, clothes, accessories) the weights of the skin
+under it (`tailor/weights.js`). **The eyes** carry their paint baked flat in Epic's layout (the texture a plain viewer
+shows), the eye's shape and paint in their material's extras (`studioEye`), each point in eye units (`_EYELOCAL`),
+tangents and the flat uv: what the desk's `wearEye` and Unreal's eye material refract again (`tools/shared/eye.js`).
 The GLB's scene carries **the recipe** in its extras (`extras.studio`, the server's `api/recipe/<name>`): every file
 the character is made from (`character.json`, `layers.json`, the skin's pictures and paint, `body.bin`, the front and
 side pictures, the salon's `salon/*.json` and bakes), base64, each with its sha1. `<name>.studio.json` beside it is the

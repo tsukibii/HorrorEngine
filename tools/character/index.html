@@ -2356,18 +2356,68 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 // scene's extras hold the recipe (server: api/recipe): character.json, the layers, the touch-up, the pictures, the
 // salon's hair, each file's sha1. <name>.studio.json beside it carries the same; export.made.json is the receipt.
 function exportSkin() {
-  const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [];
+  const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [], src = [];
   const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
   const inBox = (b, x, y) => x >= b.x && y >= b.y && x <= b.z && y <= b.w;
   for (let t = 0; t < DP.length; t += 9) {
     const x = (DP[t] + DP[t + 3] + DP[t + 6]) / 3, y = (DP[t + 1] + DP[t + 4] + DP[t + 7]) / 3, zz = (DP[t + 2] + DP[t + 5] + DP[t + 8]) / 3;
     if (on && ((zz > z.x && inBox(SKU.uCutBoxL.value, x, y) && inside(L, x, y)) || (zz > z.y && inBox(SKU.uCutBoxR.value, x, y) && inside(R, x, y)))) continue;   // an eye's opening
-    for (let k = 0; k < 3; k++) { const i = t + k * 3, u = (t / 3 + k) * 2; pos.push(DP[i], DP[i + 1], DP[i + 2]); nrm.push(DN[i], DN[i + 1], DN[i + 2]); uv.push(UV[u], UV[u + 1]); }
+    for (let k = 0; k < 3; k++) { const i = t + k * 3, u = (t / 3 + k) * 2; pos.push(DP[i], DP[i + 1], DP[i + 2]); nrm.push(DN[i], DN[i + 1], DN[i + 2]); uv.push(UV[u], UV[u + 1]); src.push(TRIS[t / 3 + k]); }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: st.skin.rough ?? 0.62 }));
-  m.name = `${WHO}_skin`; return m;
+  m.name = `${WHO}_skin`; m.userData.src = src; return m;   // src: each corner's MHR point (its weights)
+}
+// the export's rig: MHR's own skeleton (MHR_lod1_rig.bin's 127 bones by MHR's names, as the desk's bodies.js and the
+// T-pose drive them), each joint where it sits in this body (refitted, pose.js), the eyes' joints at the eyeballs'
+// middles (their _null a gaze ahead); the bones unturned, the bind pose MHR's own rest pose (the export's). The skin
+// takes MHR's own weights, the eyeballs their eye's bone, the upper teeth the head, the lower teeth and the tongue the
+// jaw, and the rest (hair, brows and lashes, clothes, accessories) the weights of the skin under them (tailor/weights.js,
+// as the clothes take them in the T-pose); every part a skinned mesh on the one skeleton, its points where they're drawn
+function exportRig(root, parts) {
+  const R = RIG, J = PO.joints(R, POS, BASEP, SCALE), at = i => new THREE.Vector3(J[i * 3], J[i * 3 + 1], J[i * 3 + 2]);
+  for (const [side, nm] of [["L", "l_eye"], ["R", "r_eye"]]) {
+    const i = R.byName.get(nm), k = R.byName.get(nm + "_null"), e = EYES[side];
+    if (i === undefined || !e.visible) continue;
+    J.set([e.position.x, e.position.y, e.position.z], i * 3);
+    if (k !== undefined) J.set([e.position.x, e.position.y, e.position.z + e.scale.x], k * 3);
+  }
+  const bones = R.bones.map(b => { const o = new THREE.Bone(); o.name = b.name; return o; });
+  R.bones.forEach((b, i) => { const p = at(i); if (b.parent >= 0) { p.sub(at(b.parent)); bones[b.parent].add(bones[i]); } else root.add(bones[i]); bones[i].position.copy(p); });
+  root.updateMatrixWorld(true);
+  const remap = new Uint16Array(R.bones.length); R.order.forEach((b, i) => { remap[b] = i; });   // the skeleton parents first: its root (body_world) the skin's first joint
+  const skel = new THREE.Skeleton(R.order.map(b => bones[b])), K = WEIGHTS.skinOf(POS, R.BI, R.BW), I = new THREE.Matrix4();
+  const rigid = (n, b) => { const idx = new Uint16Array(n * 4), w = new Float32Array(n * 4); for (let i = 0; i < n; i++) { idx[i * 4] = b; w[i * 4] = 1; } return { index: idx, weight: w }; };
+  const wear = (g, mat, name, sk) => {
+    const idx = Uint16Array.from(sk.index, b => remap[b]);    // MHR's bone numbers to the skeleton's
+    g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(idx, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sk.weight, 4));
+    const m = new THREE.SkinnedMesh(g, mat); m.name = name; m.frustumCulled = false; root.add(m); m.bind(skel, I); return m;
+  };
+  rig.updateMatrixWorld(true);
+  const toRig = rig.matrixWorld.clone().invert(), M = new THREE.Matrix4(), v = new THREE.Vector3();
+  for (const [o, how] of parts) {
+    if (how === "skin") {                               // MHR's own weights, by each corner's point
+      const n = o.userData.src.length, idx = new Uint16Array(n * 4), w = new Float32Array(n * 4);
+      o.userData.src.forEach((p, c) => { for (let k = 0; k < 4; k++) { idx[c * 4 + k] = R.BI[p * 4 + k]; w[c * 4 + k] = R.BW[p * 4 + k]; } });
+      wear(o.geometry, o.material, o.name, { index: idx, weight: w }); continue;
+    }
+    const own = o.parent === rig;                       // the Studio's own (drawn in the world: back to the rig's space), or made for the file (in it already)
+    if (!own) o.updateMatrixWorld(true);
+    const meshes = []; o.traverseVisible(x => { if (x.isMesh) meshes.push(x); });
+    for (const x of meshes) {
+      const g = x.geometry.clone(), P = g.attributes.position;
+      M.copy(x.matrixWorld); if (own) M.premultiply(toRig);
+      if (x.isSkinnedMesh) {                            // the salon's swinging locks: where their own bones put them, on the body's skeleton from here
+        for (let i = 0; i < P.count; i++) { x.getVertexPosition(i, v); v.applyMatrix4(M); P.setXYZ(i, v.x, v.y, v.z); }
+        g.computeVertexNormals();
+      } else g.applyMatrix4(M);
+      for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
+      const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;
+      wear(g, x.material, x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
+    }
+  }
+  return skel;
 }
 // an eyeball for a file: its paint baked flat in the eye's own layout (the export's texture: what a plain viewer shows),
 // its shape and paint in the material's extras (studioEye), its points in eye units (_EYELOCAL): the desk (wearEye) and
@@ -2388,9 +2438,12 @@ async function exportPackage() {
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
-  root.add(exportSkin());
   const skip = new Set([mesh, GH, BAG, HOLES, TEAR.L, TEAR.R, LIPGUIDE.line, LIPGUIDE.dots, ...Object.values(LIDVIEW.line), ...Object.values(LIDVIEW.dots)]);
-  for (const o of rig.children) if (!skip.has(o) && o.visible) root.add(o === EYES.L ? exportEye("L") : o === EYES.R ? exportEye("R") : o.clone(true));
+  const parts = [[exportSkin(), "skin"]];              // the skin first: the desk measures the body from the first skinned mesh
+  for (const o of rig.children) if (!skip.has(o) && o.visible)
+    parts.push([o === EYES.L ? exportEye("L") : o === EYES.R ? exportEye("R") : RIG ? o : o.clone(true),
+                o === EYES.L ? { bone: "l_eye" } : o === EYES.R ? { bone: "r_eye" } : o === MOUTH.upper ? { bone: "c_head" } : o === MOUTH.jaw ? { bone: "c_jaw" } : {}]);
+  if (RIG) exportRig(root, parts); else for (const [o] of parts) root.add(o);   // without MHR's rig (its file missing), as it's drawn
   let glb;
   try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
   finally { st.expr.set(was); POSE = pose; compose(); }
