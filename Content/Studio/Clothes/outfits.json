@@ -1,5 +1,5 @@
 {
-  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour]): a bottom first and the top hangs over it; a top first and it's tucked in",
+  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour, look, edit]: the edit a garment's own, as the Studio keeps it, a fit): a bottom first and the top hangs over it; a top first and it's tucked in",
   "outfits": {
     "work uniform": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"]],
     "work uniform (long sleeves)": [["crew-socks", "#2a2c30"], ["work-boots", "#3a2c20"], ["work-shirt-long", "#8a9a86"], ["work-trousers", "#3a3a32"]],
@@ -13,9 +13,14 @@
     "leggings and long sleeves": [["leggings", "#202024"], ["sneakers", "#2a2a2e"], ["long-sleeve", "#5b6b7a", {"pattern": {"kind": "stripes", "colors": ["#e8e4dc", "#2a3040"], "size": 0.035}}]],
     "school uniform (plaid skirt)": [["stockings", "#1d1a1c"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}]],
     "office (blazer)": [["crew-socks", "#1c1e26"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pants", "#2a2e36"], ["blazer", "#2a2e36"]],
-    "school uniform (blazer)": [["stockings", "#1d1a1c"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}], ["blazer", "#1d2840"]],
+    "school uniform (blazer)": [["stockings", "#1d1a1c"], ["loafers", "#1c1816"], ["work-shirt-long", "#f2f2ee"], ["pleated-skirt", "#2a3a5a", {"pattern": {"kind": "plaid", "colors": ["#2a3a5a", "#1a2238", "#b0383a"], "size": 0.12}}], ["fitted-blazer", "#1d2840"]],
     "work jacket": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"], ["work-jacket", "#5a4a32"]],
     "cardigan and skirt": [["tights", "#1d1a1c"], ["flats", "#3a2a24"], ["long-sleeve", "#e8e4dc"], ["skirt", "#5a3a3a"], ["cardigan", "#8a7a68"]],
+    "school uniform (summer)": [["knee-socks", "#1c1a1e"], ["loafers", "#4a2a20"], ["blouse", "#f3f1ec"], ["pleated-skirt", "#2a3242", {"pattern": {"kind": "plaid", "colors": ["#2a3242", "#1c222e", "#5a6272"], "size": 0.1}}]],
+    "office (pencil skirt)": [["flats", "#1c1a1e"], ["blouse-long", "#f4f4f6"], ["pencil-skirt", "#2a2a2e"]],
+    "skirt suit": [["tights", "#3a3236"], ["flats", "#1c1a1e"], ["blouse-long", "#f4f4f6"], ["pencil-skirt", "#8e86a8"], ["fitted-blazer", "#8e86a8"]],
+    "shirt and shorts": [["ankle-socks", "#f2f2f2"], ["sneakers", "#f2f2f2"], ["shorts", "#e9e4da"], ["work-shirt-long", "#9fb3cf", null, {"fit": 1.5}]],
+    "t-shirt tucked in": [["crew-socks", "#1c1c1e"], ["loafers", "#1c1816"], ["t-shirt", "#1d1d20"], ["pants", "#1d1d20"]],
     "lingerie: black lace": [["thong", "#141416"], ["triangle-bralette", "#141416"]],
     "lingerie: satin nude": [["tanga", "#e7c9c0"], ["balconette-bra", "#e7c9c0"]],
     "lingerie: red": [["high-leg-thong", "#a8122f"], ["plunge-bra", "#a8122f"]],

@@ -731,7 +731,7 @@ addBtn.onclick = () => {
   drawWorn(); dress();
 };
 outfitBtn.onclick = () => {
-  st.clothes = (OUTFITS[outfitSel.value] || []).map(([design, color, look]) => ({ design, color: color || DESIGNS[design]?.color || "#888888", ...(look || {}) }));
+  st.clothes = (OUTFITS[outfitSel.value] || []).map(([design, color, look, edit]) => ({ design, color: color || DESIGNS[design]?.color || "#888888", ...(look || {}), ...(edit ? { edit: { ...edit } } : {}) }));   // an outfit's own edit (a fit)
   for (const c of st.clothes) if (c.print && c.print.across === undefined) { c.print.across = c.print.part === "back" ? (c.print.u ?? 2) - 2 : c.print.u ?? 0; c.print.at = Math.abs(c.print.v ?? 1.2); }
   drawWorn(); dress();
 };

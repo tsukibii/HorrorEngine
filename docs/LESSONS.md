@@ -663,3 +663,7 @@ load the page once after an edit.
   sleeve ends. Each slice's radius round its own middle, pooled over its neighbours (a centimetre's slice of the mesh
   holds part of a ring and reads thin), and the wrist where the forearm's thin end gives way to the hand: within
   2.7 cm on every body. TAILOR now holds both to the rig.
+- **A check's margin taken from one design is about that design:** STUDIO wanted a t-shirt at Fit 0 a centimetre
+  nearer the body than as designed; tailored close on purpose, the designed one was already within 2.5 mm, and the
+  step failed with nothing broken. When a design changes on purpose, ask what the step means (here: tighter, and
+  nothing left to hang) before moving its number.

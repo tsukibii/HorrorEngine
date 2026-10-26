@@ -101,7 +101,7 @@ for (const [bname, h] of BODIES) {
 for (const [k, v] of Object.entries(counts)) console.log(`  ${k.padEnd(16)} ${v.map(t => `${Math.round(t / 1000)}k`).join(" / ")} triangles`);
 
 // the drape: each outfit hung, then from its bakes
-const HUNG = [["feminine", 1.62, ["work uniform", "t-shirt and skirt", "school uniform (blazer)", "cardigan and skirt", "coverall"]], ["masculine", 1.78, ["office (blazer)"]], ["full_feminine", 1.64, ["t-shirt and pants"]]];
+const HUNG = [["feminine", 1.62, ["work uniform", "t-shirt and skirt", "school uniform (blazer)", "cardigan and skirt", "coverall", "school uniform (summer)", "skirt suit", "shirt and shorts"]], ["masculine", 1.78, ["office (blazer)", "t-shirt tucked in"]], ["full_feminine", 1.64, ["t-shirt and pants"]]];
 for (const [bname, h, names] of HUNG) {
   const b = namedBody(m, bname, h), B = TAILOR.body(b.P, b.T);
   for (const oname of names) {

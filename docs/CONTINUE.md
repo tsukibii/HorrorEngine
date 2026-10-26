@@ -98,7 +98,8 @@ and a bake (DECISIONS 2026-10-26):
 |---|---|
 | `3eb3989` | **The drape** (`tailor/drape.js`, docs/TAILOR.md §1c): every garment that hangs falls by gravity onto the body and the clothes under it (XPBD in small steps: lengths, flat-rest bending held to the points' weight, tethers to where it hangs from, the skin's plane per point, friction), held round the neckline, by the waistband, under neckbands and ribbed cuffs and hems, tucked into what closes over it, buttoned fronts closed; fullness falls into folds. The details, buttons and handles sewn on the hanging cloth, the fabric's coordinates the cut's. **Fit** (0 skin tight, 1 as designed, 2 loose) per garment. The Studio: Hang by gravity, each garment's Hang (fullness, stiffness, weight), the cut at once and the hung clothes after (a newer edit stops the drape), baked as `drape.bin` and carried by the export. TAILOR drapes seven outfits on three bodies; STUDIO's drape step. |
 | `d8f45ad` | **Sleeves inside sleeves** held as cut (a shirt's in a blazer's: the jacket was cut over the shirt's sagging sleeve and sagged again, ballooning from the elbow down; now 6.2 cm off the skin at most, from 7.9), and **the bake's key** covers what closes over each layer (a t-shirt baked alone came back untucked under trousers, 10.6 cm off); the **bending in each pass** with the lengths (a cardigan's sleeve rocked for ever at some stiffnesses and weights; now every combination settles). TAILOR checks the first two. |
-| (this) | **Slim default bodies** after the user's references (DECISIONS 2026-10-26, later): the Feminine and Masculine bases refitted in `mhr.py` (body only, the heads kept), a base's sculpt (the feminine flat stomach) in the presets, the slider's middle halfway between them; the Studio, the check and the sheet build them alike. **Sleeves end at the wrist:** the frame's wrist round each slice's middle, the elbow a forearm up from it, both within 2.7 cm of MHR's joints, TAILOR holds them there. |
+| `d14f46b` | **Slim default bodies** after the user's references (DECISIONS 2026-10-26, later): the Feminine and Masculine bases refitted in `mhr.py` (body only, the heads kept), a base's sculpt (the feminine flat stomach) in the presets, the slider's middle halfway between them; the Studio, the check and the sheet build them alike. **Sleeves end at the wrist:** the frame's wrist round each slice's middle, the elbow a forearm up from it, both within 2.7 cm of MHR's joints, TAILOR holds them there. |
+| (this) | **Clothes tailored after the references:** tops cut close and following the waist (tension about halved, a third less ease, the drape's fullness only for soft folds), a **blouse** and one with its sleeves rolled, the pleated skirt high, mid-thigh and full, the pencil skirt high and close, a **fitted blazer** for women, the men's suit closer; outfits `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts` (a fit of 1.5 carried by the outfit), `t-shirt tucked in`; TAILOR hangs them. |
 
 ## 2. Where things are
 
@@ -145,8 +146,9 @@ and a bake (DECISIONS 2026-10-26):
 
 ## 4. What's next (ask which)
 
-00000. **Look at the clothes hanging** in the Studio (an outfit, then Save: they're baked with the character) and say
-   what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own
+00000. **Look at the new bodies and the tailored clothes** (Feminine or Masculine, then the outfits named after the
+   references: `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts`, `t-shirt tucked
+   in`); characters made before have the new bodies too. Say what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own
    `drape` in designs.json), the folds' size, the tuck, the cardigan's bulk. A drape takes a few seconds a garment here
    in software (an outfit over ten); the RTX 3090's CPU is faster. Next for the drape if wanted: watching the cloth
    fall, keeping a fold off its neighbour (self-collision), hanging in a desk pose, and the clothes into Unreal as

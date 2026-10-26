@@ -19,7 +19,7 @@ import * as TAILOR from "../tailor.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i < 0 ? d : process.argv[i + 1] ?? true; };
 const has = k => process.argv.includes("--" + k);
-const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
+const CLOTHES = process.env.TAILOR_CLOTHES || join(ROOT, "Content", "Studio", "Clothes");   // TAILOR_CLOTHES: a folder of designs and outfits being tried
 const designs = JSON.parse(readFileSync(join(CLOTHES, "designs.json"))).designs;
 const outfits = JSON.parse(readFileSync(join(CLOTHES, "outfits.json"))).outfits;
 const bodyName = arg("body", "feminine"), H = parseFloat(arg("height", /masculine/.test(bodyName) ? 1.76 : /feminine/.test(bodyName) ? 1.62 : 1.7));
@@ -37,7 +37,7 @@ const pbrSet = spec => {
 };
 const pbrs = Object.fromEntries((arg("pbr") ? String(arg("pbr")).split(",") : []).map(s => { const [d, r] = s.split("="); return [d, pbrSet(r)]; }));
 const edits = arg("edit") ? JSON.parse(arg("edit")) : {};
-const list = list0 && list0.map(([d, c, l]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l, edits[d]]);
+const list = list0 && list0.map(([d, c, l, e]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l, edits[d] || e]);   // an outfit's own edit (a fit) unless --edit gives one
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 

@@ -142,7 +142,14 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `brief` | `{side, gusset, curve, deep, back: {gusset, curve, drop, band}}`: the leg openings under the `waist` |
 | skirt | `waist.at`, `length`, `ease`, `flare` (m per m), `taper`, `pleats: {n, depth, stitched, box}`, `waves: {n, depth}` |
 
-`Content/Studio/Clothes/outfits.json`: an outfit is `[[design, colour], ...]` in the order worn. Built now: the
+`Content/Studio/Clothes/outfits.json`: an outfit is `[[design, colour, look, edit], ...]` in the order worn (the
+edit a garment's own, as the Studio keeps it: `{"fit": 1.5}` for a shirt worn oversized). **Tailored after the user's
+references** (2026-10-26, DECISIONS): cut close and following the waist (the tops' tension about halved, their ease a
+third less), the drape's fullness only enough for soft folds; a **blouse** (light cotton, a collar, a placket, six
+buttons, short sleeves) and one with its **sleeves rolled** to below the elbow; the pleated skirt high on the waist,
+mid-thigh and full; the pencil skirt high, close over the hips and tapered; a **fitted blazer** (to the hip, a deep V,
+one button at the waist) beside the men's. Outfits after the pictures: `school uniform (summer)`, `office (pencil
+skirt)`, `skirt suit`, `shirt and shorts` (the long work shirt at fit 1.5), `t-shirt tucked in` (the man's). Built now: the
 **work uniform** (a work shirt with a collar, a placket and buttons, flapped chest pockets and cuffed short sleeves,
 tucked into work trousers with a waistband, a belt and buckle, a fly, cargo and back pockets), the same with long
 sleeves, a **coverall**, a **t-shirt** with pants, shorts or an A-line skirt, and a long-sleeved top with a pleated
