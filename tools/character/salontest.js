@@ -35,7 +35,8 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on("dialog", d => d.accept());                                 // the Character Studio's "start it again?"
-  const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}`); } };
+  const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY, "i") : null;   // ONLY=scope: just the steps whose words match (after the load; a step that needs an earlier one's hair fails on its own)
+  const step = async (what, fn) => { if (ONLY && !ONLY.test(what) && !/^the salon loads/.test(what)) return; try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}`); } };
   const ev = (fn, arg) => page.evaluate(fn, arg);
   const view = async (yaw, pitch = 0.1, dist = 1.3) => { await ev(([y, p, d]) => { const s = window.__salon; Object.assign(s.orbit, { yaw: y, pitch: p, dist: d, zoom: 1, pan: [0, 0] }); s.draw(); }, [yaw, pitch, dist]); await page.waitForTimeout(250); };
   const scr = p => ev(p => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(); const q = s.screenOf(p); return [r.left + q[0], r.top + q[1]]; }, p);
@@ -249,7 +250,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     // two strands hanging behind the head, 2.5 cm apart; the first's fifth handle pulled sideways
     const ids = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
       const a = s.addLock(SL.makeStrand(C.surface([0, 0.05, -0.1]), [0, -0.2, -0.24], C)), b = s.addLock(SL.makeStrand(C.surface([0.025, 0.05, -0.1]), [0.025, -0.2, -0.24], C));
-      s.st.mirror.on = m; s.select(a.id); Object.assign(s.PULL, { on: true, falloff: "smooth", size: 0.08, only: false }); s.pullPanel(); return [a.id, b.id]; });
+      s.st.mirror.on = m; s.select(a.id); Object.assign(s.PULL, { on: true, falloff: "smooth", size: 0.08, scope: "all" }); s.pullPanel(); return [a.id, b.id]; });
     await view(Math.PI, 0.05, 1.1); await page.keyboard.press("v");
     const pts = () => ev(ids => { const s = window.__salon; return ids.map(id => s.SL.handles(s.st.locks.find(l => l.id === id)).map(h => h.p)); }, ids);
     const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -647,6 +648,39 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(() => { const s = window.__salon; delete s.st.look.custom.soft; s.restyle(); });
     if (u !== 1 || !(changed > 0.003)) throw new Error(`soft edges: uSoft ${u}, ${(changed * 100).toFixed(2)}% of the picture changed`);
     console.log(`       Soft edges 0 -> 1: ${(changed * 100).toFixed(1)}% of the picture changes, along the strands' edges`);
+  });
+  await step("the pull's scope: a 50 cm reach moves one lock, it and its twin, its group, or all; a locked group never moves under a pull or Gravity", async () => {
+    const before = await count();
+    const r = await ev(() => {
+      const s = window.__salon, P = s.presets.list.find(p => p.who === "women"); s.presets.apply(P.id);
+      const L = s.st.locks, orig = L.find(l => !l.mirror_of && l.group === "sides"), twin = L.find(l => l.mirror_of === orig.id);
+      const H = s.SL.handles(orig).filter(h => !h.root), g = H[Math.min(2, H.length - 1)], to = s.SL.add(g.p, [0.03, -0.02, 0.03]), start = s.SL.pullStart(L);
+      const trial = scope => { s.PULL.scope = scope; const ids = s.pullIds(orig.id), moved = s.SL.pull(L, start, { id: orig.id, path: g.path }, to, Object.assign(s.pullOpts(orig.id), { size: 0.5 }));
+        for (const l of L) if (!l.mirror_of) for (const h of start[l.id]) if (!h.root) s.SL.setHandle(l, h.path, h.p.slice());   // back where they were
+        return { ids: ids.length, moved: moved.length, groups: [...new Set(moved.map(id => L.find(l => l.id === id).group))] }; };
+      const out = { n: L.length, twin: !!twin, inGroup: L.filter(l => l.group === orig.group).length, one: trial("lock"), two: trial("twin"), group: trial("group"), all: trial("all") };
+      s.st.groups.find(g => g.id === "back").locked = true; s.locksPanel();
+      out.lockedIds = s.pullIds(orig.id).filter(id => L.find(l => l.id === id).group === "back").length; out.locked = trial("all");
+      s.PULL.scope = "twin"; s.pullPanel();
+      return out;
+    });
+    if (!r.twin || r.one.ids !== 1 || r.one.moved !== 1) throw new Error("this lock: " + JSON.stringify(r.one));
+    if (r.two.ids !== 2 || r.two.moved !== 1) throw new Error("this lock and its twin: " + JSON.stringify(r.two));
+    if (r.group.ids !== r.inGroup || r.group.groups.join() !== "sides" || !(r.group.moved > 1)) throw new Error("this group: " + JSON.stringify(r.group));
+    if (r.all.ids !== r.n || !(r.all.moved > r.group.moved)) throw new Error("all: " + JSON.stringify(r.all));
+    if (r.lockedIds !== 0 || r.locked.groups.includes("back") || !(r.locked.moved < r.all.moved)) throw new Error("a locked group under a pull: " + JSON.stringify(r.locked));
+    await openSteps(); if (!(await page.isVisible("#locks .pad.on"))) throw new Error("no padlock shown on the locked group");
+    const d = await ev(async () => {
+      const s = window.__salon, L = s.st.locks, snap = l => JSON.stringify(l.edges);
+      const back = L.filter(l => l.group === "back" && !l.mirror_of), rest = L.filter(l => l.group === "sides" && !l.mirror_of), b0 = back.map(snap), r0 = rest.map(snap);
+      s.drop.start(); const st0 = s.drop.state, only = st0 && st0.only ? st0.only.length : null, what = st0 && st0.what;
+      await new Promise(ok => setTimeout(ok, 1500)); s.drop.keep();
+      return { only, what, unlocked: L.filter(l => !s.isLocked(l)).length, backMoved: back.filter((l, i) => snap(l) !== b0[i]).length, restMoved: rest.filter((l, i) => snap(l) !== r0[i]).length, back: back.length, rest: rest.length };
+    });
+    if (d.only !== d.unlocked || d.what !== "locked" || d.backMoved !== 0 || !(d.restMoved > d.rest / 2)) throw new Error("Gravity with a locked group: " + JSON.stringify(d));
+    await ev(() => { const s = window.__salon; s.undo(); s.undo(); });   // the kept fall, then the preset
+    if (await count() !== before) throw new Error(`${await count()} locks after undo, ${before} before`);
+    console.log(`       ${r.n} locks: a 50 cm pull moves ${r.one.moved} (this lock), ${r.two.moved} of ${r.two.ids} (it and its twin), ${r.group.moved} of ${r.group.ids} (its group), ${r.all.moved} (all); Back locked: ${r.locked.moved}, and ${d.backMoved} of its ${d.back} locks moved in a fall that moved ${d.restMoved} of ${d.rest} Sides locks`);
   });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {

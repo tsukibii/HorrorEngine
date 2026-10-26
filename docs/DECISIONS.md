@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, later still (easier hair editing in the salon)
+
+- **Every pain point of docs/SALON_REVIEW.md is built, and the flow made easy** ("off of main create a new branch
+  called easier-hair-editing, first make a list of hard points/difficulties for users to make hair given the current
+  system and then list them for me to enhance", then, on the list: "Add all the above and make the flow easy to use"):
+  the nineteen items, on `easier-hair-editing`, in the review's order. The user's own three: **the end of a lock as a
+  vector** ("I select the first line, and then we drag a single vector point to determine the length and orientation
+  and click okay when happy with the look"), **a side view** ("have a side view available, so we can view the points
+  from diff angles and modify") and **the pull kept to a lock, its twin or its group** ("when working on 1 strand, I
+  would like to be able to modify/lock the strand or mirror group so when I use select drag and select a large effect
+  radius, I only effect the hair in that group/mirror rather than every strand we've created").
+- Claude's calls inside that: the pull's **scope** defaults to the lock and its mirror twin (the ring lights only what
+  the scope takes, so a reach never surprises); a **locked** lock or group is left alone by pulls, Gravity and the
+  cover but still drawn, picked and laid over; a lock is committed by its end click as before and stays **in hand**
+  with its arrow until OK or Enter (the fast path keeps its two clicks), Delete removes it; the arrow's drag turns and
+  scales the lock about its root, keeping the shaping done by hand (points that lay on the body lie on it again, the
+  rest keep their distance), instead of redrawing it.
+
 ## 2026-10-26, late night (iris patterns and pupil shapes)
 
 - **Patterns inside the iris and pupils of other shapes, after the user's references, a heart among them** ("could you

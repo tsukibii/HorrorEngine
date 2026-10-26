@@ -110,9 +110,14 @@ where the handle was, and the handles it takes are lit, brighter the more they m
 before you pull). The wheel **while dragging** grows (down) or shrinks (up) the reach by a tenth a notch, a hundredth
 with Shift, as Blender's does, and the pull is weighed again from where the handles started; Page Up and Page Down too.
 **O** turns it off (then only the handle moves). **Falloff**: Smooth (the default), Sphere, Root, Inverse square,
-Sharp, Linear, Constant: Blender's curves of d = (reach - distance) / reach, from `calculatePropRatio`. **This lock
-only** keeps it to the lock you pull. A twin's handles pull their original's (mirrored), so both sides move; roots
-never move. The reach starts at 8 cm (a long strand's handles are about 6 cm apart).
+Sharp, Linear, Constant: Blender's curves of d = (reach - distance) / reach, from `calculatePropRatio`. **Scope**
+(2026-10-26) is what a pull may move however wide the reach: *This lock*, *This lock and its twin* (the default), *This
+group* or *All the hair shown*; the ring lights only what the scope takes, so you see it before pulling. **Locked**
+locks and groups (the padlock on each row in Locks, Lock in Selected; a twin follows its original) never move under a
+pull, Gravity (they stay as the layer the rest falls onto) or the cover, and All onto the scalp leaves them; they're
+still drawn, picked and laid over; `locked` is saved with the lock and the group. A twin's handles pull their
+original's (mirrored), so both sides move; roots never move. The reach starts at 8 cm (a long strand's handles are
+about 6 cm apart).
 
 **Roots** (2026-10-22): hair comes out of the head. Every guide leaves the scalp **Lift** degrees off it (40 to start;
 0 lies flat from the root), the way the hair goes, and bends over into the rest of the lock within **Bend** (2 cm), a

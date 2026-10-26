@@ -20,8 +20,9 @@
   input[type=text], select { background: #0e0f11; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
   #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
   .note { color: var(--dim); margin: 4px 0 8px; } label.tick { display: inline-flex; gap: 4px; align-items: center; margin: 2px 8px 2px 0; }
-  .lock { display: grid; grid-template-columns: 18px 1fr auto; gap: 4px; align-items: center; padding: 2px 4px; border-radius: 3px; cursor: pointer; }
-  .lock.sel { background: #2a2b30; outline: 1px solid var(--gold); } .lock .twin { color: var(--blue); } .grp { margin: 6px 0 2px; color: var(--dim); display: flex; gap: 6px; align-items: center; }
+  .lock { display: grid; grid-template-columns: 18px 1fr auto 16px; gap: 4px; align-items: center; padding: 2px 4px; border-radius: 3px; cursor: pointer; }
+  .lock.sel { background: #2a2b30; outline: 1px solid var(--gold); } .lock .twin { color: var(--blue); } .lock.locked > span:nth-child(2) { color: var(--dim); }
+  .pad { opacity: 0.3; font-size: 11px; } .pad.on { opacity: 1; } .pad.by { opacity: 0.6; } .grp { margin: 6px 0 2px; color: var(--dim); display: flex; gap: 6px; align-items: center; }
   .grp.active b { color: var(--gold); } .eye { cursor: pointer; user-select: none; }
   details { margin: 6px 0; } summary { cursor: pointer; color: var(--gold); }
   details.step { margin: 0; border-top: 1px solid var(--line); } details.step:last-child { border-bottom: 1px solid var(--line); }

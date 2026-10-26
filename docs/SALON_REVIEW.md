@@ -143,6 +143,7 @@ pulls. Measured on the long preset: from a crown handle, 8 cm takes 69 handles o
 In the code: `PULL.scope`; `pullIds()` in place of `shownIds()` in `pullOpts` and `drawReach`; `lock.locked`,
 `group.locked`; `startDrop()` passes the unlocked ids as `only` when any is locked. SALON gains a 50 cm reach on the
 long preset moving one lock and its twin, and a locked group unmoved by a pull and by a drop. **S** (the scope and the locks).
+**Built 2026-10-26**: Scope in Pull (the default *This lock and its twin*), the padlocks in Locks and Lock in Selected; SALON measures a 50 cm pull on the long preset moving 1 lock, 1 with its twin, 3 of 6 in its group, 31 of 54 in all, and a locked group unmoved by a pull and by Gravity.
 
 **12. Moving or swinging a whole lock is handle by handle.** *Now:* a sheet has 15 handles; moving it sideways, or
 swinging it about its root, means dragging each; `moveLock` exists but only Duplicate uses it. *Proposed:* with Select
