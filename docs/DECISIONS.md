@@ -2,6 +2,13 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, evening (lashes over the lid's rim)
+
+- **No bare skin between the eye and the lashes** ("the eyelashes have a large curved gap where the skin shows ... fix
+  it so the eyelashes curve along the skin in that area", a close-up with the band circled): the lashes lie over the
+  lid's rounded rim from the eye to its front edge, along its skin, and lift from there, as real lashes grow from the
+  lid's front edge; the lash line lies on the same strip.
+
 ## 2026-10-26, later (slim default bodies; clothes tailored after the user's references)
 
 - **The default bodies are slim and young, after the user's references** ("why do we default to a chubby model ... can

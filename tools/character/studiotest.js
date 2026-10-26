@@ -483,7 +483,7 @@ const png = rgb => {
     console.log(`       the salon on ${s.person} (${s.bald} locks: ${s.bald ? "its own hair" : "bald"}); after a body change, a second visit shows the new body (within ${(off * 1e6).toFixed(1)} µm)`);
     await page.click('#tabs button[data-tab="body"]');
   });
-  await step("brows and lashes (the hair shader): off at first; the lashes on the lids' edges swing down as the eyes shut, the brows ride a brow raise", async () => {
+  await step("brows and lashes (the hair shader): off at first; the lashes on the lids' edges lie over the lid's rim to its front edge (no bare skin between the eye and the lashes) and swing down as the eyes shut, the brows ride a brow raise", async () => {
     await page.click('#tabs button[data-tab="face"]');
     if (await page.evaluate(() => window.__body.st.lash.on || window.__body.st.brow.on)) throw new Error("brows and lashes should start off");
     await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // lashes and brows on
@@ -491,15 +491,17 @@ const png = rgb => {
     const r = await page.evaluate(() => {
       const b = window.__body, i = n => b.ENAMES.indexOf(n), meanY = g => { const P = g.attributes.position.array; let y = 0; for (let k = 1; k < P.length; k += 3) y += P[k]; return y / (P.length / 3); };
       b.st.expr.fill(0); b.compose(); const cards = b.browlash, lift = cards.lift, brow = meanY(b.BLM.brow.geometry), lid = b.lmk(386)[1];
-      b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const liftShut = b.browlash.lift, lidShut = b.lmk(386)[1];
+      b.st.expr[i("eyesClosed_L")] = 1; b.st.expr[i("eyesClosed_R")] = 1; b.compose(); const liftShut = b.browlash.lift, rimShut = b.browlash.rim, lidShut = b.lmk(386)[1];
       b.st.expr.fill(0); for (const n of ["innerBrowRaiser_L", "innerBrowRaiser_R", "outerBrowRaiser_L", "outerBrowRaiser_R"]) b.st.expr[i(n)] = 1; b.compose(); const browUp = meanY(b.BLM.brow.geometry);
       b.st.expr.fill(0); b.compose();
-      return { cards, lift, liftShut, lidDrop: (lid - lidShut) * 1000, raise: (browUp - brow) * 1000, shader: !!b.BLM.lash.material.uniforms && !!b.BLM.lash.material.uniforms.atlas };
+      return { cards, lift, liftShut, rimShut, lidDrop: (lid - lidShut) * 1000, raise: (browUp - brow) * 1000, shader: !!b.BLM.lash.material.uniforms && !!b.BLM.lash.material.uniforms.atlas };
     });
-    if (!(r.cards.lashes > 100 && r.cards.brows > 200) || !(r.lift - r.liftShut > 20) || !(r.raise > 1) || !r.shader) throw new Error("brows and lashes: " + JSON.stringify(r));
+    // over the rim: MHR's upper rim is 2.4 mm deep in the middle, less towards the corners (the lashes lift from its front
+    // edge, not from the line along its back); shut, they're rooted on the line again
+    if (!(r.cards.lashes > 100 && r.cards.brows > 200) || !(r.lift - r.liftShut > 20) || !(r.cards.rim > 1.2 && r.cards.rim < 3.2) || !(r.rimShut < 0.3) || !(r.raise > 1) || !r.shader) throw new Error("brows and lashes: " + JSON.stringify(r));
     await page.click("#browRows label.tog >> nth=0"); await page.click("#browRows label.tog >> nth=1");   // and off again
     await page.waitForFunction(() => !window.__body.st.lash.on && !window.__body.st.brow.on, null, { timeout: 10000 });
-    console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
+    console.log(`       ${r.cards.lashes} lash cards, ${r.cards.brows} brow cards; the upper lashes lie ${r.cards.rim.toFixed(1)} mm over the lid's rim before they lift (${r.rimShut.toFixed(1)} shut); shut, the lid drops ${r.lidDrop.toFixed(1)} mm and the upper lashes turn from ${r.lift.toFixed(0)}° to ${r.liftShut.toFixed(0)}°; a brow raise lifts the brows ${r.raise.toFixed(1)} mm`);
     await page.click('#tabs button[data-tab="body"]');
   });
   await step("the eyes: cut out of the skin along the model's own lid line (the strip its blink squeezes, found on MHR's own face; moved by hand), on a face fitted to pictures too (its blink still meets), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {

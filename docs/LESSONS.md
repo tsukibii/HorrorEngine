@@ -667,3 +667,21 @@ load the page once after an edit.
   nearer the body than as designed; tailored close on purpose, the designed one was already within 2.5 mm, and the
   step failed with nothing broken. When a design changes on purpose, ask what the step means (here: tighter, and
   nothing left to hang) before moving its number.
+
+## Lashes over the lid's rim (2026-10-26)
+
+- **A landmark line is where it was found, not where a thing grows:** the lashes were rooted on MHR's lid line, which
+  runs along the rim's back edge (where the lid meets the eye: the strip the blink squeezes shut), and sent straight
+  out. The rim is rounded and 2.4 mm deep, so every lash's first 3 mm ran under the skin and a band of bare skin showed
+  between the eye and the lashes. Slice through the lid and look where the line sits before rooting anything on it.
+- **A straight way across a rounded rim goes under it:** the first fix sent the lashes along the chord from the line to
+  the rim's front edge; the rim bulges over the chord, so they were still hidden in its middle. Cast rays out through
+  the skin a third and two thirds of the way, and keep each point a little off it.
+- **A window along a sparse mesh is ragged:** the front edge found within 1 mm along the lid jumped between MHR's
+  points, a few millimetres apart there, and the lash line zigzagged. Look 2.5 mm either way, take the part along the
+  lid off, and smooth along it.
+- **What sits right on an open lid needn't on a shut one:** the way over the rim kept as the eye shut smudged a dark
+  band down the closed lid (the rim turns down and away); fade it with the opening.
+- **A band's texture runs the way its strands do:** the lash line drawn with the atlas running along the lid showed its
+  strands as blocks; across it, they read as short roots.
+

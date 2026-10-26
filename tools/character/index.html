@@ -2010,7 +2010,7 @@ const eyeSet = {};
 // ---- brows and lashes (browlash.js): cards for the salon's hair shader; the lashes on the lids' edges, turning with the
 // lids and squashing as they shut, the brows flat on the skin between MediaPipe's brow rows; both off until asked for
 st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS };
-var BL_READY = false, BLNOW = null;                    // var: compose and the render loop run before this block
+var BL_READY = false, BLNOW = null, BLLIDS = null;      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on)
 const BLU = { lash: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };
 for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
@@ -2026,13 +2026,78 @@ function browLash() {
   const lids = {}, brows = {};
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
-    lids[side] = { upper: pts.slice(16).concat([pts[0]]), lower: pts.slice(0, 17), centre: c, open };
+    const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
+    lids[side] = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, open };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
-  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow);
+  const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow); BLLIDS = lids;
   for (const [k, g] of [["lash", r.lashes], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   BLNOW = r.cards;
+}
+// a lid's rim: MHR's lid line runs along its back edge, where the lid meets the eye, and the lashes grow from its front
+// edge (in the upper lid's middle 2.4 mm forward and 1.5 mm out from the line, in the lower's about 0.9 and 1); the rim
+// between is rounded, bulging out over the straight way across it. From each point of the line: the way to the skin's
+// most forward point a little out from it (away from the eye's middle, up to `reach` mm: below the lower rim the lid
+// goes on bulging forward; within 2.5 mm along the lid, MHR's points being a few mm apart there, the way across the lid
+// kept), at most 3 mm, fading to nothing at the corners where the rim narrows away; then the rim's skin over it a third
+// and two thirds of the way (a ray out through the triangles there), each point a little off it. Three points per point
+// of the line, nine numbers, smoothed along the lid: the lashes lie along them before they lift (browlash.js)
+const RIMNEAR = {};                                   // per eye: MHR's points and triangles round it, found once (its layout doesn't change)
+function rimNear(side, c) {
+  if (RIMNEAR[side]) return RIMNEAR[side];
+  const R = 0.022 * SCALE, inBox = new Uint8Array(N), verts = [], tris = [];
+  for (let i = 0; i < N; i++) if (Math.abs(POS[i * 3] - c[0]) < R && Math.abs(POS[i * 3 + 1] - c[1]) < R && Math.abs(POS[i * 3 + 2] - c[2]) < R) { verts.push(i); inBox[i] = 1; }
+  for (let t = 0; t < TRIS.length; t += 3) if (inBox[TRIS[t]] || inBox[TRIS[t + 1]] || inBox[TRIS[t + 2]]) tris.push(t);
+  return RIMNEAR[side] = { verts, tris };
+}
+function rimOf(line, c, F, reach, side) {
+  const mm = 0.001 * SCALE, f = [F.x, F.y, F.z], n = line.length, out = [], lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  for (const p of line) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - 5 * mm); hi[a] = Math.max(hi[a], p[a] + 5 * mm); }
+  const near = [], tris = [], box = i => POS[i * 3] > lo[0] && POS[i * 3] < hi[0] && POS[i * 3 + 1] > lo[1] && POS[i * 3 + 1] < hi[1] && POS[i * 3 + 2] > lo[2] && POS[i * 3 + 2] < hi[2];
+  const R = rimNear(side, c);                           // the skin round the line: its points, and its triangles (corners and middles, flat)
+  for (const i of R.verts) if (box(i)) near.push(i);
+  for (const t of R.tris) if (box(TRIS[t]) || box(TRIS[t + 1]) || box(TRIS[t + 2])) {
+    const a = TRIS[t] * 3, b = TRIS[t + 1] * 3, d = TRIS[t + 2] * 3;
+    tris.push(POS[a], POS[a + 1], POS[a + 2], POS[b], POS[b + 1], POS[b + 2], POS[d], POS[d + 1], POS[d + 2], (POS[a] + POS[b] + POS[d]) / 3, (POS[a + 1] + POS[b + 1] + POS[d + 1]) / 3, (POS[a + 2] + POS[b + 2] + POS[d + 2]) / 3);
+  }
+  const above = (q, d, R) => {                           // the outermost skin along d through q, within R either way: how far out of q
+    const ox = q[0] - d[0] * R, oy = q[1] - d[1] * R, oz = q[2] - d[2] * R, R2 = (R + 4 * mm) ** 2; let best = -Infinity;
+    for (let t = 0; t < tris.length; t += 12) {
+      if ((tris[t + 9] - q[0]) ** 2 + (tris[t + 10] - q[1]) ** 2 + (tris[t + 11] - q[2]) ** 2 > R2) continue;   // only the triangles near the ray
+      const ax = tris[t], ay = tris[t + 1], az = tris[t + 2], e1x = tris[t + 3] - ax, e1y = tris[t + 4] - ay, e1z = tris[t + 5] - az, e2x = tris[t + 6] - ax, e2y = tris[t + 7] - ay, e2z = tris[t + 8] - az;
+      const hx = d[1] * e2z - d[2] * e2y, hy = d[2] * e2x - d[0] * e2z, hz = d[0] * e2y - d[1] * e2x, det = e1x * hx + e1y * hy + e1z * hz;
+      if (Math.abs(det) < 1e-14) continue;
+      const sx = ox - ax, sy = oy - ay, sz = oz - az, u = (sx * hx + sy * hy + sz * hz) / det; if (u < 0 || u > 1) continue;
+      const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x, v = (d[0] * qx + d[1] * qy + d[2] * qz) / det; if (v < 0 || u + v > 1) continue;
+      const at = (e2x * qx + e2y * qy + e2z * qz) / det; if (at >= 0 && at <= 2 * R) best = Math.max(best, at - R);
+    }
+    return best;
+  };
+  for (let k = 0; k < n; k++) {
+    const p = line[k], tg = unit(sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), d0 = sub(p, c), radial = unit(sub(d0, f.map(v => v * dot(d0, f))));
+    let best = null, bf = 0;
+    for (const i of near) {                              // (MHR's points are a few mm apart along the rim)
+      const dx = POS[i * 3] - p[0], dy = POS[i * 3 + 1] - p[1], dz = POS[i * 3 + 2] - p[2], fw = dx * f[0] + dy * f[1] + dz * f[2];
+      if (fw <= bf) continue;
+      const o = dx * radial[0] + dy * radial[1] + dz * radial[2]; if (o < 0.2 * mm || o > reach * mm || Math.abs(dx * tg[0] + dy * tg[1] + dz * tg[2]) > 2.5 * mm) continue;
+      bf = fw; best = [dx, dy, dz];
+    }
+    let v = best ? sub(best, tg.map(x => x * dot(best, tg))) : [0, 0, 0];
+    const l = Math.hypot(v[0], v[1], v[2]), u = k / (n - 1), fade = Math.min(1, u / 0.2, (1 - u) / 0.2), cap = l > 3 * mm ? 3 * mm / l : 1;
+    v = mul(v, cap * fade * fade * (3 - 2 * fade));
+    const off = unit(add(mul(f, dot(v, radial)), mul(radial, -dot(v, f))));   // the side the rim faces: the eye's, and forward
+    const path = [1 / 3, 2 / 3].map(g => { const h = Math.hypot(v[0], v[1], v[2]) > 0.2 * mm ? above(add(p, mul(v, g)), off, 3 * mm) : 0;
+      return add(mul(v, g), mul(off, Math.max(0, Number.isFinite(h) ? h : 0) + 0.15 * mm)); });
+    path.push(add(v, mul(off, 0.1 * mm)));
+    out.push([...path[0], ...path[1], ...path[2]]);
+  }
+  for (let it = 0; it < 2; it++) { const q = out.map(v => v.slice()); for (let k = 1; k < n - 1; k++) for (let a = 0; a < 9; a++) out[k][a] = (q[k - 1][a] + 2 * q[k][a] + q[k + 1][a]) / 4; }
+  return out;
 }
 const _k = new THREE.Vector3(), _t = new THREE.Vector3(), _kc = new THREE.Color();
 function lightBrowLash() {                             // the hair shader's lights: the scene's key (it rides the camera) and a fill from above
@@ -2327,7 +2392,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

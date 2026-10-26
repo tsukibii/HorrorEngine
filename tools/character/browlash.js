@@ -1,11 +1,16 @@
 // Brows and lashes (Character Studio, the Face tab): cards for the salon's hair shader (hairshader.js) and a strand atlas
 // of its own (hairtex.js's makeAtlas: clumps that draw together into points, the way lashes and brow hairs end). Our own
-// code. No physics: the lashes are rooted on the lid's edge (the eye's smoothed opening, index.html's outline()), turn
-// with the lid as it rotates about the eye and squash as it shuts; the brows lie flat on the skin between MediaPipe's
-// two brow rows, so they ride every brow expression. Plain arrays in, a BufferGeometry out.
+// code. No physics: the lashes are rooted on the lid's edge (the eye's smoothed opening, index.html's outline()), lie
+// along the lid's rim to its front edge (the line runs along the rim's back, where it meets the eye; lashes grow from
+// its front: rooted on the line and sent straight out, they ran under the rim's skin for 3 mm and a band of bare skin
+// showed between the eye and the lashes), turn with the lid as it rotates about the eye and squash as it shuts; the
+// brows lie flat on the skin between MediaPipe's two brow rows, so they ride every brow expression. Plain arrays in, a
+// BufferGeometry out.
 //
 //   build({ lids, brows, F, U, C, scale }, st) -> { geometry, cards }
-//     lids: { L: { upper: [[x,y,z]...] inner -> outer, lower: [...] outer -> inner, centre, open }, R: {...} }   open: 1 as made, 0 shut
+//     lids: { L: { upper: [[x,y,z]...] inner -> outer, lower: [...] outer -> inner, upperRim, lowerRim, centre, open }, R: {...} }
+//       open: 1 as made, 0 shut; upperRim, lowerRim: from each point of the line, three points over the rim to its front
+//       edge, just off its skin (nine numbers, offsets from the line's point: index.html's rimOf)
 //     brows: { L: { upper: [[x,y,z]...] medial -> lateral, lower: [...] }, R: {...} }
 //     F, U: the face's forward and up; C: the head's middle (the skin's normals point away from it); scale: the body's
 import * as THREE from "three";
@@ -62,19 +67,19 @@ const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const rot = (v, k, a) => add(add(mul(v, Math.cos(a)), mul(cross(k, v), Math.sin(a))), mul(k, dot(k, v) * (1 - Math.cos(a))));   // v turned about the unit axis k
 
-// a polyline by arc length: its point and tangent at t in [0, 1]
-function along(P) {
+// a polyline by arc length: its point and tangent at t in [0, 1], and O's numbers there (one list for each point of P)
+function along(P, O = null) {
   const L = [0]; for (let i = 1; i < P.length; i++) L.push(L[i - 1] + Math.hypot(...sub(P[i], P[i - 1])));
   const T = L[L.length - 1] || 1;
   return t => {
     const d = Math.max(0, Math.min(1, t)) * T; let i = 1; while (i < P.length - 1 && L[i] < d) i++;
     const f = (d - L[i - 1]) / ((L[i] - L[i - 1]) || 1);
-    return { p: mix(P[i - 1], P[i], f), t: norm(sub(P[i], P[i - 1])) };
+    return { p: mix(P[i - 1], P[i], f), t: norm(sub(P[i], P[i - 1])), o: O && O.length === P.length ? O[i - 1].map((x, k) => x + (O[i][k] - x) * f) : null };
   };
 }
 
 // the cards: each a strip along its points, as wide as w0 at the root and w1 at the tip, across `across`, facing `n`
-function Cards() { return { pos: [], nrm: [], uv: [], tan: [], tint: [], depth: [], idx: [], n: 0, lift: [] }; }
+function Cards() { return { pos: [], nrm: [], uv: [], tan: [], tint: [], depth: [], idx: [], n: 0, lift: [], rim: [] }; }
 function card(G, pts, across, n, w0, w1, u0, u1, tint = [0, 0, 0, 0], depth = 0.03) {
   const base = G.pos.length / 3, m = pts.length;
   for (let k = 0; k < m; k++) {
@@ -104,11 +109,11 @@ function eyeLashes(G, lid, o, F, U, S, side, seed) {
   for (const which of ["upper", "lower"]) {
     const upper = which === "upper", P = lid[which]; if (!P || P.length < 2) continue;
     const n = upper ? o.count : o.lowerCount; if (!n) continue;
-    const curve = along(P), lens = [], raw = [];
+    const curve = along(P, lid[which + "Rim"]), lens = [], raw = [];
     for (let j = 0; j < n; j++) {
       let t = (j + 0.15 + 0.7 * r()) / n; t = 0.03 + 0.94 * t;
       const outer = upper ? t : 1 - t;                                      // 0 at the inner corner, 1 at the outer
-      const { p: root, t: tg } = curve(t);
+      const { p: root, t: tg, o: rp } = curve(t);
       const c = lid.centre, radial = norm(sub(sub(root, c), mul(F, dot(sub(root, c), F))));   // away from the eye's middle, in the face's plane
       const axis = norm(cross(F, radial));                                  // along the lid at this root: the lid turns about it
       // the lid's turn: a shutting upper lid swings its lashes down and forward; squash: shorter, curling more
@@ -117,7 +122,13 @@ function eyeLashes(G, lid, o, F, U, S, side, seed) {
       const len = (upper ? o.length : o.lowerLength) / 1000 * S * (0.5 + 0.5 * smooth(0, 0.55, outer)) * (1 + (upper ? o.flare * 0.35 : 0) * smooth(0.55, 1, outer))
                   * (0.82 + 0.3 * r()) * (1 - 0.3 * shut);
       const curl = (upper ? 0.35 + 1.25 * o.curl : 0.1 + 0.3 * o.curl) * (1 + 0.6 * shut), flare = (upper ? o.flare * 0.45 : 0.15) * smooth(0.4, 1, outer) * outward;
-      const m = 5, pts = [root]; let q = root;
+      // over the rim first, from the line to its front edge, just off its rounded skin (three points); the lash itself
+      // from there. Every lash the same number of points, for the clumps: where there's no rim to speak of, small steps forward
+      // (as the lid shuts its rim turns down and away, and the skin out from the line is the shut lid's front: the way
+      // over the rim fades with the opening, the lashes rooted on the line again by the time it's shut, as they were)
+      const rk = smooth(0.3, 0.9, lid.open ?? 1), deep = rp ? rk * Math.hypot(rp[6], rp[7], rp[8]) : 0;
+      const pts = [root, ...[0, 1, 2].map(j => deep > 0.0002 * S ? add(root, mul([rp[j * 3], rp[j * 3 + 1], rp[j * 3 + 2]], rk)) : add(root, mul(F, 0.00007 * S * (j + 1))))];
+      const m = 5, a0 = pts.length; let q = pts[a0 - 1];
       for (let k = 1; k < m; k++) {
         const a = base + curl * Math.pow(k / (m - 1), 1.4);
         let d = norm(add(mul(F, Math.cos(a)), mul(radial, Math.sin(a))));
@@ -126,7 +137,9 @@ function eyeLashes(G, lid, o, F, U, S, side, seed) {
         q = add(q, mul(d, len / (m - 1))); pts.push(q);
       }
       raw.push({ pts, tg, radial, outer }); lens.push(len);
-      if (upper) { const d = norm(sub(pts[m - 1], root)); G.lift.push(Math.atan2(dot(d, radial), dot(d, F)) * 180 / Math.PI); }   // its elevation, root to tip (for the check)
+      if (upper) {                                                          // its elevation, the rim's edge to the tip, and how far over the rim it lies (mm), for the check
+        const d = norm(sub(pts[pts.length - 1], pts[a0 - 1])); G.lift.push(Math.atan2(dot(d, radial), dot(d, F)) * 180 / Math.PI); G.rim.push(Math.hypot(...sub(pts[a0 - 1], root)) / (0.001 * S));
+      }
     }
     // clumps: a few neighbours draw together towards their tips
     const size = 2 + Math.round(o.clump * 4);
@@ -140,15 +153,27 @@ function eyeLashes(G, lid, o, F, U, S, side, seed) {
         card(G, pts, norm(cross(facing, g.tg)), g.tg, w0 * 0.8, w1, u0, u1); // and crossed: seen from the side
       }
     }
-    if (upper && o.line > 0) {                                              // the lash line: a dark band along the edge
-      const m = 24, pts = [], acr = [], nn = [];
-      for (let k = 0; k <= m; k++) { const { p, t: tg } = curve(0.02 + 0.96 * k / m); const rad = norm(sub(sub(p, lid.centre), mul(F, dot(sub(p, lid.centre), F))));
-        pts.push(add(p, mul(F, 0.0003 * S))); acr.push(norm(add(mul(rad, 0.7), mul(F, 0.7)))); nn.push(norm(cross(tg, acr[k]))); }
-      const w = (0.25 + 0.8 * o.line) / 1000 * S;
-      // the band as a card lying along the lid: its v runs along it (the atlas's roots: dark), u across
+    if (upper && o.line > 0) {                                              // the lash line: a dark band where the lashes grow
+      // across the rim from the line, along its rounded skin, as far as the line's setting takes it (or, with no rim,
+      // a narrow band up and forward from the line as before); its rows across, along the lid
+      const m = 24, rows = [], nn = [];
+      for (let k = 0; k <= m; k++) {
+        const { p, t: tg, o: rp } = curve(0.02 + 0.96 * k / m), rad = norm(sub(sub(p, lid.centre), mul(F, dot(sub(p, lid.centre), F))));
+        const rk = smooth(0.3, 0.9, lid.open ?? 1), deep = rp ? rk * Math.hypot(rp[6], rp[7], rp[8]) : 0, w = (0.25 + 0.8 * o.line) / 1000 * S;
+        let row;
+        if (deep > 0.0003 * S) {
+          const path = [add(p, mul(F, 0.0001 * S)), ...[0, 1, 2].map(j => add(p, mul([rp[j * 3], rp[j * 3 + 1], rp[j * 3 + 2]], rk)))], L = [0];
+          for (let j = 1; j < 4; j++) L.push(L[j - 1] + Math.hypot(...sub(path[j], path[j - 1])));
+          const reach = Math.min(L[3], Math.max(w, L[3] * (0.35 + 0.65 * o.line)));
+          row = [path[0]]; for (let j = 1; j < 4; j++) { if (L[j] <= reach) row.push(path[j]); else { row.push(mix(path[j - 1], path[j], (reach - L[j - 1]) / ((L[j] - L[j - 1]) || 1))); break; } }
+          while (row.length < 4) row.push(row[row.length - 1]);
+        } else { const acr = norm(add(mul(rad, 0.7), mul(F, 0.7))), q = add(p, mul(F, 0.0003 * S)); row = [-0.3, 0.13, 0.57, 1].map(s => add(q, mul(acr, s * w))); }
+        rows.push(row); nn.push(norm(cross(tg, sub(row[3], row[0]))));
+      }
       const base = G.pos.length / 3;
-      for (let k = 0; k <= m; k++) for (const s of [-0.3, 1]) { G.pos.push(...add(pts[k], mul(acr[k], s * w))); G.nrm.push(...nn[k]); G.uv.push(0.02 + 0.5 * k / m, 0.03); G.tan.push(...acr[k]); G.tint.push(0, 0, 0, 0); G.depth.push(0.01); }
-      for (let k = 0; k < m; k++) { const a = base + k * 2; G.idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      // (the atlas's strands run across it, roots at the line: short lash roots over the rim, not stripes as wide as it)
+      for (let k = 0; k <= m; k++) for (let j = 0; j < 4; j++) { G.pos.push(...rows[k][j]); G.nrm.push(...nn[k]); G.uv.push(0.02 + 0.5 * k / m, 0.03 + 0.25 * j / 3); G.tan.push(...norm(sub(rows[k][3], rows[k][0]))); G.tint.push(0, 0, 0, 0); G.depth.push(0.01); }
+      for (let k = 0; k < m; k++) for (let j = 0; j < 3; j++) { const a = base + k * 4 + j, b = a + 4; G.idx.push(a, a + 1, b, a + 1, b + 1, b); }
       G.n++;
     }
   }
@@ -206,6 +231,6 @@ export function build(ctx, lash, brw) {
   const fill = new THREE.BufferGeometry();
   fill.setAttribute("position", new THREE.Float32BufferAttribute(P.pos, 3)); fill.setAttribute("normal", new THREE.Float32BufferAttribute(P.nrm, 3));
   fill.setAttribute("color", new THREE.Float32BufferAttribute(P.alpha.flatMap(a => [1, 1, 1, a]), 4)); fill.setIndex(P.idx);
-  const lift = G.lift.length ? G.lift.reduce((a, x) => a + x, 0) / G.lift.length : 0;   // the upper lashes' mean elevation (degrees)
-  return { lashes: geometryOf(G), brows: geometryOf(H), fill, cards: { lashes: G.n, brows: H.n, lift } };
+  const mean = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0), lift = mean(G.lift), rim = mean(G.rim);   // the upper lashes' mean elevation (degrees), and their way over the rim (mm)
+  return { lashes: geometryOf(G), brows: geometryOf(H), fill, cards: { lashes: G.n, brows: H.n, lift, rim } };
 }
