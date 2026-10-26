@@ -799,6 +799,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     // picking: a strand behind the head isn't picked through it from the front; two strands over each other in front are picked in turn (ortho, so they share a pixel)
     await ev(ids => ids.forEach(id => window.__salon.deleteLock(id)), [a.id, b.id]);
     await view(0, 0, 0.85);
+    const hidden = await ev(() => { const s = window.__salon, out = []; for (const l of s.st.locks) if (l.visible) { l.visible = false; out.push(l.id); } return out; });   // the earlier steps' hair out of the way
     const c = await ev(() => { const s = window.__salon, C = s.COL; s.select(null);
       const back = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.08, -0.1]), [0.02, -0.15, -0.12], C)); s.finishLock();
       const f1 = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.04, -0.2, 0.2], C)), f2 = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.04, -0.2, 0.12], C)); s.finishLock(); s.setTool("select"); s.render();
@@ -809,13 +810,14 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.mouse.click(...c.spot); await page.waitForTimeout(80); const picked = await ev(() => window.__salon.selected);
     if (picked === c.back) throw new Error("a strand hidden by the head was picked through it");
     await page.keyboard.press("5");
-    const sp = await ev(c => { const s = window.__salon; s.select(null); s.render(); const r = s.canvas.getBoundingClientRect(), A = s.EVAL[c.f1][0].pts, B = s.EVAL[c.f2][0].pts, H = [...s.SL.handles(s.st.locks.find(l => l.id === c.f1)), ...s.SL.handles(s.st.locks.find(l => l.id === c.f2))].map(h => s.screenOf(h.p));
+    const sp = await ev(c => { const s = window.__salon; s.select(null); s.render(); const r = s.canvas.getBoundingClientRect(), A = s.EVAL[c.f1][0].pts, B = s.EVAL[c.f2][0].pts, H = s.st.locks.filter(l => l.visible).flatMap(l => s.SL.handles(l)).map(h => s.screenOf(h.p));   // clear of every handle: a handle under the cursor wins
       for (let k = 4; k < 22; k++) { const q = s.screenOf(B[k]); const near = Math.min(...A.map(p => { const a = s.screenOf(p); return Math.hypot(a[0] - q[0], a[1] - q[1]); })), handle = Math.min(...H.map(h => Math.hypot(h[0] - q[0], h[1] - q[1])));
         if (near < 6 && handle > 16) return [r.left + q[0], r.top + q[1]]; } return null; }, c);
     if (!sp) throw new Error("no spot where the two front strands overlap away from their handles");
     const picks = []; for (let i = 0; i < 3; i++) { await page.mouse.click(...sp); await page.waitForTimeout(60); picks.push(await ev(() => window.__salon.selected)); }
     await page.keyboard.press("5");
-    if (picks[0] !== c.f1 || picks[1] !== c.f2 || picks[2] !== c.f1) throw new Error(`clicks in turn picked ${picks.map(id => id === c.f1 ? "the front one" : id === c.f2 ? "the one behind" : id).join(", ")}`);
+    const both = [c.f1, c.f2];                                       // the nearer of the two first (whichever is nearer where they cross), then the other, then round again
+    if (!both.includes(picks[0]) || !both.includes(picks[1]) || picks[0] === picks[1] || picks[2] !== picks[0]) throw new Error(`clicks in turn picked ${picks.map(id => id === c.f1 ? "the front one" : id === c.f2 ? "the one behind" : id).join(", ")}`);
     // the dot: green on the scalp, red on the cheek, none in the air; the root line's length in the hint while it's drawn
     await ev(() => { const s = window.__salon; s.select(null); s.setTool("strand"); });
     const onScalp = await scr(await surf([0.0, 0.1, 0.07])); await page.mouse.move(...onScalp); await page.waitForTimeout(80);
@@ -828,7 +830,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await page.keyboard.press("l"); const p1 = await scr(await surf([-0.03, 0.1, 0.07])), p2 = await scr(await surf([0.03, 0.1, 0.07]));
     await page.mouse.move(...p1); await page.mouse.down(); await page.mouse.move(p2[0], p2[1], { steps: 6 }); const hintMid = await ev(() => document.querySelector("#hint").textContent); await page.mouse.up(); await page.keyboard.press("Escape");
     if (!/root line [\d.]+ cm/.test(hintMid)) throw new Error("the root line's length isn't in the hint: " + hintMid);
-    await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.setTool("select"); s.st.reference.lock = true; }, [c.back, c.f1, c.f2]);
+    await ev(([ids, hidden]) => { const s = window.__salon; for (const id of ids) s.deleteLock(id); for (const id of hidden) { const l = s.st.locks.find(l => l.id === id); if (l) l.visible = true; } s.locksPanel(); s.setTool("select"); s.st.reference.lock = true; }, [[c.back, c.f1, c.f2], hidden]);
     console.log(`       the root slid ${(dr * 100).toFixed(1)} cm (${(a1.off * 1000).toFixed(1)} mm off the skin), the end with it ${(de * 100).toFixed(1)} cm; the root line slid ${(Math.min(...dm) * 100).toFixed(1)} to ${(Math.max(...dm) * 100).toFixed(1)} cm, its end stretched ${(d0 * 100).toFixed(1)} cm alone; the hidden strand not picked, two in front picked in turn; the dot and the hint "${hintMid.slice(0, 22)}"`);
   });
   await step("Let it fall, the Locks list, new locks like the last one, the draft: one lock falls onto the rest, which stays; a lock moved to another group, the group renamed, soloed, folded and deleted, lengths on the rows; a new strand takes the last one's width and taper, or not; a draft kept in the browser and offered back", async () => {
