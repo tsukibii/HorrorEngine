@@ -29,15 +29,19 @@ const Engine = {
   ctx: null, mixer: null, lib: null, index: null, players: {}, playing: null, space: "room", onProgress: null,
   strings: "section",                                   // the string set a take plays with unless it names its own (32-strings.js)
 
-  async init(base = "samples/") {
-    if (this.ctx) return this;
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
-    this.index = await (await fetch(base + "instruments.json")).json();
-    const root = base.replace(/samples\/$/, "");
-    this.lib = new Library(this.index, async path => { const r = await fetch(root + path); if (!r.ok) throw new Error(path + " " + r.status); return r.arrayBuffer(); });
-    this.mixer = new Mixer(this.ctx);
-    this.mixer.setSpace(this.space, 0, 0);
-    return this;
+  // once: the context, the instruments' index, the mixer (callers at the same time share the one promise)
+  init(base = "samples/") {
+    if (this._init) return this._init;
+    this._init = (async () => {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+      this.index = await (await fetch(base + "instruments.json")).json();
+      const root = base.replace(/samples\/$/, "");
+      this.lib = new Library(this.index, async path => { const r = await fetch(root + path); if (!r.ok) throw new Error(path + " " + r.status); return r.arrayBuffer(); });
+      this.mixer = new Mixer(this.ctx);
+      this.mixer.setSpace(this.space, 0, 0);
+      return this;
+    })();
+    return this._init;
   },
 
   // the string set an event plays with: its own (a part of a sequence), its take's (a favourite's), or the page's

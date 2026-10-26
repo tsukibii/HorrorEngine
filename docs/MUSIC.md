@@ -105,10 +105,10 @@ reverb the Woohill engine traces from the room's walls and their materials, and 
 - **Hit points.** Each cue marks where the picture's action lands (the fall's thud, the sting, the turn, her
   answer). The desk will line them up with clip edges (§5).
 
-## 4. The cues (42)
+## 4. The cues (54)
 
 The full list, with settings, is in docs/MUSIC_CUES.md. Research §4 designed 32 cues; this is what was built and how
-it differs.
+it differs. The twelve Expanded orchestra cues, written for the added instruments, are in §7.2.
 
 **Horror (16):**
 - Dread drone (H1)
@@ -278,3 +278,40 @@ strings (muffled, as if heard through the wardrobe door)"), and **Use it** switc
 `js/32-strings.js`. A set's members each play the notes inside their own range. Where they overlap they stack (the
 full section's violins, violas and basses together), about 2 dB a member quieter so the mix stays put. Notes
 outside every member's range go to the set's fallback, or else the nearest member.
+
+### 7.2 The Expanded orchestra: cues for the new instruments
+
+The original 42 cues keep their instruments: Woohill's orchestra, with the string sets to change who plays the
+strings. The new instruments have twelve cues of their own, the **Expanded orchestra** family (`js/66-expanded.js`).
+Each has the shared settings: level, corruption, she's watching, and the game's theme where it quotes it.
+
+- **Glass ghost**: rubbed wine glasses high up, a bowed vibraphone chord shifting under them, a faint double bass.
+  The glasses gather into a cluster where she's closest (hit: she's here).
+- **Psaltery haunting** (theme): a slow, wavering tune on the bowed psaltery, its long notes sagging at their ends,
+  over bowed vibraphone chords and a double bass drone. A ghost humming.
+- **Double-bass dread**: a double bass pedal with tremolo swells, the tuba under it, a bassoon and a low clarinet
+  creeping by semitones, a bowed brake drum now and then. Something big below you.
+- **Brass falls**: a low trombone chorale swells, then falls away (one big fall, three, or a cascade) over a tuba
+  pedal, a buzzing growl under the biggest one (hit: the drop).
+- **Metal screech (J-horror)**: a bowed cymbal, a bowed brake drum and a gong scrape rising into a struck hit with
+  a low bass pluck (hit: the screech). The tail is silence, the flexatone's wobble, a ratchet's croak or a siren.
+  It's Ringu's sound, for the frame she appears.
+- **Rattles and wobbles**: an uneven pulse of a ratchet, a vibraslap, a flexatone and a bell tree, an ocean drum's
+  rush, a stray kalimba note. It gets closer (hit: right behind you). Ju-On's croak.
+- **Funeral organ** (theme): a quiet pipe organ chorale in four parts with a soft trombone on the bass. On the last
+  phrase one chord comes out wrong.
+- **Haunted harpsichord** (theme): a minuet in minor in the empty ballroom, with a bassoon on the bass, a wrong note
+  at the cadences, slowing at the end.
+- **Kalimba lullaby** (theme): a slightly out-of-tune kalimba over soft vibraphone chords, an ocarina answering, wine
+  glasses at the end.
+- **Muted trumpet noir**: a harmon-muted trumpet over a walking double bass and vibraphone, a slow minor blues.
+- **Solo violin lament** (theme): one violin sighing over held cello chords and a double bass root.
+- **Siren and chimes**: a toy siren far off, wind chimes, glockenspiel glissandi, a cymbal swell into nothing.
+
+### 7.3 The Instruments list
+
+Under the cues, **Instruments** lists every instrument, Woohill's and the added ones, each with its `best`: what
+it's for. ▶ plays it alone: a climb through its range and a chord, or every piece of a kit in turn. The filter
+searches it too, so "funeral" or "ghost" finds the instruments as well as the cues. A new instrument goes into
+`fetch_samples.py` with a `best`. SCORE fails on an added instrument without one, and SCOREPAGE renders every
+instrument and every Expanded cue, checking that each has sound and doesn't clip.

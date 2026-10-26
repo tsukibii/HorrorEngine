@@ -42,7 +42,8 @@ NOTE = r"([A-G]#?-?\d)"
 # Pitched instruments. dir: the folder in the repo; re: the file name with the note as group 1 and, when there is
 # one, the velocity layer as group 2 (named by `layers`, quietest first); oct: the octave the library's names are
 # off by (VSCO's sections name middle C "C3": +12), a hint the measured pitch can overrule; max: seconds kept.
-# best: when it works best (shown in the score room's Instruments list and its string sets).
+# best: when it works best (shown in the score room's Instruments list and its string sets); adjust: dB on top of the
+# loudness match, set by ear and by the page test's peaks.
 PITCHED = {
     # --- the other string sections, for the string sets (docs/MUSIC.md §7.1) ---
     "viola_sus": dict(src="vsco", dir="Strings/Viola Section/susvib", re=NOTE + r"_(v\d)_1\.wav$", layers=["v1", "v2"], oct=12, max=7,
@@ -79,7 +80,7 @@ PITCHED = {
                           name="Solo violin tremolo (VSCO-2)", match="trem", sustain=True, release=0.5,
                           best="A thin, nervous shimmer: one string shaking in the dark. In the Solo set."),
     "vln_solo_pizz": dict(src="vsco", dir="Strings/Solo Violin/Pizz", re=NOTE + r"_([pf])(?:_RR\d)?\.wav$", layers=["p", "f"], oct=0, max=2.5,
-                          name="Solo violin pizzicato (VSCO-2)", match="pizz", release=0.2,
+                          name="Solo violin pizzicato (VSCO-2)", match="pizz", adjust=-4, release=0.2,
                           best="A small, dry pluck: a music box's cousin, tiptoes. In the Solo set."),
     # --- brass and winds ---
     "trombone": dict(src="vsco", dir="Brass/OldTrombone/Sustain", re=NOTE + r"_(v[135])_1\.wav$", layers=["v1", "v3", "v5"], oct=12, max=6,
@@ -159,7 +160,7 @@ METALS = {
     "gliss_up": [("vsco", "Miscellania Raw/Misc 2/glock_glisses/glock_fx_up_chromatic_slow_01.wav")],
     "gliss_down": [("vsco", "Miscellania Raw/Misc 2/glock_glisses/glock_fx_down_chromatic_slow_01.wav")],
 }
-METALS_DEF = dict(name="Eerie metals and noises (VCSL, VSCO-2)", match="drums", max=8,
+METALS_DEF = dict(name="Eerie metals and noises (VCSL, VSCO-2)", match="drums", adjust=-2, max=8,
                   best="The J-horror screech and its family: a bowed brake drum, a bowed or scraped cymbal, a gong scrape, the flexatone's wobble, a ratchet's croak, a siren, chains. Stings and textures, never a tune.")
 DRY_METALS = []
 
@@ -358,7 +359,7 @@ def prepare_pitched(key, spec, repo, index, report):
     notes = [z["note"] for z in zones]
     return dict(name=spec["name"], kind="pitched", credit=REPOS[spec["src"]][1], license="CC0-1.0",
                 source="%s@%s %s" % (REPOS[spec["src"]][0].split("github.com/")[1], commit_of(spec["src"]), spec["dir"]),
-                layers=layer_ranges(nl), release=spec.get("release", 0.3), gain_db=0, calib_db=round(ref - loud, 1) if ref is not None else 0,
+                layers=layer_ranges(nl), release=spec.get("release", 0.3), gain_db=0, calib_db=round(ref - loud + spec.get("adjust", 0), 1) if ref is not None else 0,
                 sustain=bool(spec.get("sustain")), range=[min(notes), max(notes)], added=True, best=spec["best"], zones=zones)
 
 
@@ -384,7 +385,7 @@ def prepare_metals(index, report):
     loud = sum(louds) / len(louds)
     return dict(name=METALS_DEF["name"], kind="kit", credit=REPOS["vcsl"][1] + "; " + REPOS["vsco"][1], license="CC0-1.0",
                 source="VCSL@%s, VSCO-2-CE@%s" % (commit_of("vcsl"), commit_of("vsco")),
-                release=0.4, gain_db=0, calib_db=round(ref - loud, 1) if ref is not None else 0, added=True, best=METALS_DEF["best"], pieces=pieces)
+                release=0.4, gain_db=0, calib_db=round(ref - loud + METALS_DEF["adjust"], 1) if ref is not None else 0, added=True, best=METALS_DEF["best"], pieces=pieces)
 
 
 def write_licenses(index):

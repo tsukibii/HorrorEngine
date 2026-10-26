@@ -20,7 +20,10 @@ function h(tag, attrs = {}, ...kids) {
 }
 
 const INST_COLOR = { piano: "#e6e3dc", strings: "#d9a441", trem: "#e07a3f", pizz: "#9fd36b", harp: "#6fb3d9", glock: "#b7a6ff", xylo: "#ff9fd0",
-  marimba: "#e0b080", bells: "#9ee6e0", flute: "#7fe0a0", flute_stac: "#5cc080", horn: "#d0704f", timpani: "#a07850", guitar: "#c9a06b", steel: "#a9c0d0", drums: "#8a8a92" };
+  marimba: "#e0b080", bells: "#9ee6e0", flute: "#7fe0a0", flute_stac: "#5cc080", horn: "#d0704f", timpani: "#a07850", guitar: "#c9a06b", steel: "#a9c0d0", drums: "#8a8a92",
+  cbass_sus: "#8a5a2a", cbass_trem: "#a0582a", cbass_pizz: "#7a9a4a", cello_sus: "#b98a3a", vln_solo: "#f0c060", trombone: "#c05a3a", trombone_fall: "#e0603a",
+  trombone_buzz: "#a03a2a", tuba: "#80402a", trumpet_mute: "#e09060", bassoon: "#6aa070", clarinet: "#5ad0c0", glass: "#d0f0ff", psaltery: "#f0e0a0",
+  vibes_bowed: "#a0c0ff", vibes: "#8090e0", kalimba: "#e0c0f0", harpsichord: "#d8c8a0", organ: "#c0a0d0", ocarina: "#a0e0a0", metals: "#b0b0c0" };
 const SPACE_IDS = ["room", "corridor", "basement", "closet", "hut", "hall", "cave", "forest", "meadow", "dungeon"];
 const TONICS = range(0, 12).map(pcName);
 const LS = { get(k, d) { try { const v = localStorage.getItem("score." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -146,6 +149,34 @@ function renderLib() {
     box.append(h("h2", { class: "fam-" + fam }, name));
     for (const c of cues) box.append(h("div", { class: "cue" + (UI.cue === c ? " on" : ""), onclick: () => selectCue(c.id), title: c.desc },
       counts[c.id] ? h("span", { class: "n" }, "★" + counts[c.id]) : null, c.label, h("small", {}, c.uses.join(", "))));
+  }
+}
+
+// ---- the instruments: what each is best for, and a short phrase to hear it alone ----
+function instrumentTake(key) {
+  const def = Engine.index[key], ev = [];
+  let t = 0.1;
+  if (def.kind === "kit") for (const piece of Object.keys(def.pieces)) { ev.push({ inst: key, piece, t, vel: 96, dur: 0.5 }); t += Math.min(2.2, Math.max(0.8, def.pieces[piece].layers.slice(-1)[0].len * 0.6)); }
+  else {
+    const [lo, hi] = REG[key] || def.range, step = def.sustain ? 1.1 : 0.45, notes = [];
+    for (let m = lo; m <= hi && notes.length < 14; m += Math.max(3, Math.round((hi - lo) / 10))) notes.push(m);
+    notes.forEach(m => { ev.push({ inst: key, midi: m, t, dur: def.sustain ? 1.3 : null, vel: 80, attack: def.sustain ? 0.15 : undefined }); t += step; });
+    ev.push(...[0, 3, 7].map(iv => ({ inst: key, midi: clamp(Math.round((lo + hi) / 2) + iv, lo, hi), t: t + 0.3, dur: def.sustain ? 3 : null, vel: 72 })));
+    t += 3.5;
+  }
+  return { cue: "instrument: " + key, gain: -4, ev, marks: [], hits: [], secs: t + 1, tempo: 60, meter: [4, 4] };
+}
+function renderInstruments() {
+  const box = $("instlist"), q = $("filter").value.trim().toLowerCase();
+  box.innerHTML = "";
+  if (!Engine.index) return;
+  const added = Object.entries(Engine.index).filter(([k, d]) => !q || (k + " " + d.name + " " + (d.best || "")).toLowerCase().includes(q));
+  for (const [k, d] of added) {
+    const row = h("div", { class: "inst", title: d.credit || "" },
+      h("button", { title: "hear it alone", onclick: () => playTake(instrumentTake(k), null, row) }, "▶"),
+      h("i", { style: "background:" + (INST_COLOR[k] || "#ccc") }), h("b", {}, d.name), d.added ? h("span", { class: "new" }, " added") : null,
+      h("small", {}, d.best || ""));
+    box.append(row);
   }
 }
 
@@ -413,7 +444,8 @@ async function boot() {
   $("motif").onchange = () => setMotif($("motif").value);
   $("motifdice").onclick = () => setMotif(1 + Math.floor(Math.random() * 9998));
   $("motifplay").onclick = () => playTake(writeCue("theme", { motif: UI.palette.motif || 1, key: (UI.params.key && UI.cue.motif) ? UI.params.key : undefined }, 1), null, null);
-  $("filter").oninput = renderLib;
+  $("filter").oninput = () => { renderLib(); renderInstruments(); };
+  Engine.init().then(renderInstruments).catch(e => console.warn("instruments", e));
   $("favfilter").oninput = renderPalette; $("favsort").onchange = renderPalette;
   $("spread").oninput = () => { $("spreadv").textContent = (+$("spread").value).toFixed(2); };
   $("spread").oninput();

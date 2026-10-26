@@ -5,7 +5,11 @@
 
 // GM programs for the MIDI export (channel 10 for the kit)
 const GM_PROGRAM = { piano: 0, guitar: 24, harp: 46, glock: 9, marimba: 12, xylo: 13, bells: 14, pizz: 45, strings: 48,
-  trem: 44, flute: 73, flute_stac: 73, horn: 60, timpani: 47, celesta: 8, pad: 89 };
+  trem: 44, flute: 73, flute_stac: 73, horn: 60, timpani: 47, celesta: 8, pad: 89,
+  // the added instruments (fetch_samples.py): the nearest General MIDI sound each
+  viola_sus: 41, viola_trem: 44, viola_pizz: 45, cello_sus: 42, cello_trem: 44, cello_pizz: 45, cbass_sus: 43, cbass_trem: 44, cbass_pizz: 45,
+  vln_solo: 40, vln_solo_trem: 44, vln_solo_pizz: 45, trombone: 57, trombone_fall: 57, trombone_buzz: 57, tuba: 58, trumpet_mute: 59,
+  bassoon: 70, clarinet: 71, glass: 92, psaltery: 110, vibes_bowed: 92, vibes: 11, kalimba: 108, harpsichord: 6, organ: 19, ocarina: 79 };
 
 // How much of a note reaches the reverb, by its pitch: nothing at E2 and below, all of it from E4 (the user,
 // 2026-10-18: low notes in reverb are mud).

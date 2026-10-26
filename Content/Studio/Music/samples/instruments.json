@@ -2501,7 +2501,8 @@
    -1.3,
    -1.3,
    -1.3
-  ]
+  ],
+  "best": "Every cue's backbone: the stalker's figure, the drips in the dark, her theme. Low single notes for dread, high soft ones for tenderness."
  },
  "guitar": {
   "name": "Meta Nylon Guitar",
@@ -2851,7 +2852,8 @@
    0.0,
    0.0,
    0.0
-  ]
+  ],
+  "best": "Nylon arpeggios: the ghost lover's lullaby, a warm memory, a quiet K-drama moment."
  },
  "steel": {
   "name": "Meta Steel Guitar",
@@ -3369,7 +3371,8 @@
    0.0,
    0.0,
    0.0
-  ]
+  ],
+  "best": "Bright steel strings: a sunny K-drama day before it turns."
  },
  "harp": {
   "name": "Harp (VSCO-2)",
@@ -3552,7 +3555,8 @@
     "len": 0.57
    }
   ],
-  "calib_db": -1.4
+  "calib_db": -1.4,
+  "best": "Runs and glissandi: the slapstick fall's sweep, fairy-tale sweetness, a waltz's lilt."
  },
  "glock": {
   "name": "Glockenspiel (VSCO-2)",
@@ -3616,7 +3620,8 @@
     "len": 1.69
    }
   ],
-  "calib_db": -2.0
+  "calib_db": -2.0,
+  "best": "The music box and the twinkle; a far ping when she's watching."
  },
  "marimba": {
   "name": "Marimba (VSCO-2)",
@@ -3708,7 +3713,8 @@
     "len": 1.18
    }
   ],
-  "calib_db": -3.9
+  "calib_db": -3.9,
+  "best": "Woody, warm and cute: K-drama comedy, a light sneak."
  },
  "xylo": {
   "name": "Xylophone (VSCO-2)",
@@ -3786,7 +3792,8 @@
     "len": 0.45
    }
   ],
-  "calib_db": -2.7
+  "calib_db": -2.7,
+  "best": "Dry and comic: the bonk, the scurry, the cartoon fall."
  },
  "bells": {
   "name": "Tubular bells (VSCO-2)",
@@ -3836,7 +3843,8 @@
     "len": 7.0
    }
   ],
-  "calib_db": -1.0
+  "calib_db": -1.0,
+  "best": "Tubular bells: the funeral toll, the shrine, a bell too low and too long in the lullaby."
  },
  "pizz": {
   "name": "String section pizzicato (VSCO-2 cellos and violins)",
@@ -4104,7 +4112,8 @@
   "layer_db": [
    0.0,
    -5.3
-  ]
+  ],
+  "best": "Plucked section strings: the sneak, tiptoes, the comic chase, a heartbeat. The string sets swap who plays it."
  },
  "strings": {
   "name": "String section sustain (VSCO-2 cellos and violins)",
@@ -4372,7 +4381,8 @@
   "layer_db": [
    0.0,
    -1.5
-  ]
+  ],
+  "best": "The section's sustain: dread pedals, the romance swell, the rub that won't resolve. The string sets swap who plays it."
  },
  "trem": {
   "name": "String section tremolo (VSCO-2 cellos and violins)",
@@ -4619,7 +4629,8 @@
   "layer_db": [
    0.0,
    -15.3
-  ]
+  ],
+  "best": "Bowed tremolo: nerves, the hidden “she's watching” layer, the ponticello shimmer, the riser. The string sets swap who plays it."
  },
  "flute": {
   "name": "Flute (VSCO-2)",
@@ -4711,7 +4722,8 @@
     "len": 4.3
    }
   ],
-  "calib_db": 4.0
+  "calib_db": 4.0,
+  "best": "A clear line on top: the lullaby, the playground tune, a sweet theme."
  },
  "flute_stac": {
   "name": "Flute staccato (VSCO-2)",
@@ -4846,7 +4858,8 @@
   "layer_db": [
    0.0,
    -4.1
-  ]
+  ],
+  "best": "Short flute notes: tiptoes and giggles, the cute walk."
  },
  "horn": {
   "name": "French horn (VSCO-2)",
@@ -5070,7 +5083,8 @@
    0.0,
    0.0,
    0.0
-  ]
+  ],
+  "best": "One French horn: nobility turned ominous, the triumph, the sad sag of a falling note."
  },
  "timpani": {
   "name": "Timpani (VSCO-2)",
@@ -5203,7 +5217,8 @@
    0.0,
    -9.1,
    -12.1
-  ]
+  ],
+  "best": "Rolls and strikes: the riser, the shock's dun dun dun, the ritual."
  },
  "drums": {
   "name": "Drums and percussion (VSCO-2)",
@@ -5667,7 +5682,8 @@
     ]
    }
   },
-  "calib_db": 11.9
+  "calib_db": 11.9,
+  "best": "The percussion kit: taiko and bass drum for impacts, snare and claves for the playground clap, rolls, the gong, the anvil."
  },
  "cbass_sus": {
   "name": "Double bass sustain, no vibrato (VSCO-2)",
@@ -8386,7 +8402,7 @@
   ],
   "release": 0.2,
   "gain_db": 0,
-  "calib_db": 21.9,
+  "calib_db": 17.9,
   "sustain": false,
   "range": [
    55,
@@ -11182,7 +11198,7 @@
   "source": "VCSL@c1ea7bc, VSCO-2-CE@4403009",
   "release": 0.4,
   "gain_db": 0,
-  "calib_db": 14.6,
+  "calib_db": 12.6,
   "added": true,
   "best": "The J-horror screech and its family: a bowed brake drum, a bowed or scraped cymbal, a gong scrape, the flexatone's wobble, a ratchet's croak, a siren, chains. Stings and textures, never a tune.",
   "pieces": {
