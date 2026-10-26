@@ -479,16 +479,95 @@ function startArrowDrag(e) {
   INHAND = l.id; drawHandles(); hint(); draw();
 }
 const OKBTN = el("button", { id: "okBtn", textContent: "OK ✓", title: "done with this lock (Enter); Delete removes it", onclick: () => finishLock() }); view.append(OKBTN);
-function finishLock() { INHAND = null; SELECTED = null; resetPlace(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
+function finishLock() { INHAND = null; SELECTED = null; PICKED.clear(); resetPlace(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
 function placeOk() {                                                 // the OK button beside the arrowhead of the lock in hand
   const l = lockById(SELECTED), on = l && INHAND === l.id && !PLACE.stage && TOOL !== "fit" && !BAKEVIEW && !isLocked(l);
   OKBTN.style.display = on ? "block" : "none"; if (!on) return;
   const [sx, sy] = screenOf(arrowTip(l)); OKBTN.style.left = `${Math.round(sx) + 16}px`; OKBTN.style.top = `${Math.round(sy) - 12}px`;
 }
+// ---- several locks picked (Ctrl-click, or Shift-drag a box on empty space): the pull moves only them, and Selected's
+// Delete, Lock, Let it fall, Onto the scalp, Group, Physics and Mirror once act on all of them ------------------------------
+const PICKED = new Set();                                            // ids picked besides the selected one
+function pickedOriginals() { const out = []; for (const id of [SELECTED, ...PICKED]) { const l = lockById(id); if (l && !out.includes(original(l))) out.push(original(l)); } return out; }
+function togglePicked(id) {
+  if (!SELECTED) { select(id); return; }
+  if (id === SELECTED) { if (!PICKED.size) return; SELECTED = PICKED.values().next().value; PICKED.delete(SELECTED); }
+  else if (PICKED.has(id)) PICKED.delete(id); else PICKED.add(id);
+  INHAND = null; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw();
+}
+function deleteMany(ids) {
+  if (!ids.length) return; remember(); const set = new Set(ids);
+  st.locks = st.locks.filter(l => !set.has(l.id) && !set.has(l.mirror_of));
+  for (const l of st.locks) if (l.mirror_of && !lockById(l.mirror_of)) l.mirror_of = null;
+  if (!lockById(SELECTED)) SELECTED = null; PICKED.clear(); INHAND = null; locksPanel(); selPanel(); hint(); draw();
+}
+function drawPicked() {                                              // the picked locks' guides in blue, over everything
+  for (const id of PICKED) { const G = EVAL[id]; if (!G || !lockById(id)) continue;
+    for (const g of G) { const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(g.pts.map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color: 0x5a8ad9, depthTest: false })); line.renderOrder = 10; HANDLES.add(line); } }
+}
+const BOX = el("div", { id: "boxSel" }); view.append(BOX);
+function sizeBox(e) { const r = renderer.domElement.getBoundingClientRect(); BOX.style.display = "block"; Object.assign(BOX.style, { left: `${Math.min(DRAG.x, e.clientX) - r.left}px`, top: `${Math.min(DRAG.y, e.clientY) - r.top}px`, width: `${Math.abs(e.clientX - DRAG.x)}px`, height: `${Math.abs(e.clientY - DRAG.y)}px` }); }
+function boxPick(e) {                                                // every lock shown with a point in the box
+  const r = renderer.domElement.getBoundingClientRect(), x0 = Math.min(DRAG.x, e.clientX) - r.left, x1 = Math.max(DRAG.x, e.clientX) - r.left, y0 = Math.min(DRAG.y, e.clientY) - r.top, y1 = Math.max(DRAG.y, e.clientY) - r.top;
+  if (x1 - x0 < 3 && y1 - y0 < 3) return;
+  const shown = isShown(), got = [];
+  for (const l of st.locks) { if (!shown(l) || !EVAL[l.id]) continue; if (EVAL[l.id].some(G => G.pts.some((p, k) => { if (k % 2) return false; const [sx, sy, z] = screenOf(p); return z <= 1 && sx >= x0 && sx <= x1 && sy >= y0 && sy <= y1; }))) got.push(l.id); }
+  PICKED.clear(); if (!got.length) return;
+  SELECTED = got[0]; INHAND = null; for (const id of got.slice(1)) PICKED.add(id);
+  for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw();
+}
+// the lock under the cursor, if it's this one: the nearest of its points within 9 px, not hidden by the head
+function lockUnder(e, l) {
+  if (!EVAL[l.id] || !isShown()(l)) return null;
+  const [mx, my] = rel(e), hit = headAt(e.clientX, e.clientY), cam = new THREE.Vector3(), fwd = new THREE.Vector3(); camera.getWorldPosition(cam); camera.getWorldDirection(fwd);
+  const depth = p => new THREE.Vector3(...SR.toWorld(HF, p)).sub(cam).dot(fwd), dHead = hit ? depth(hit) : Infinity;
+  let best = null, bd = 9;
+  for (const G of EVAL[l.id]) for (let k = 0; k < G.pts.length; k += 2) { const [sx, sy, z] = screenOf(G.pts[k]); if (z > 1) continue; const d = Math.hypot(sx - mx, sy - my); if (d < bd && depth(G.pts[k]) <= dHead + 0.01) { bd = d; best = G.pts[k].slice(); } }
+  return best;
+}
+// G and R (Blender's): the selected lock slides along the scalp, or swings about its root, with the mouse alone until a
+// click or Enter keeps it; Esc puts it back
+let MODAL = null;
+function startModal(kind) {
+  const l = lockById(SELECTED); if (!l || isLocked(l) || !LASTPTR) return;
+  const o = original(l); remember();
+  const ref = kind === "swing" ? SL.vectorOf(l)[1].slice() : SL.rootOf(l).slice();
+  MODAL = { kind, lock: l.id, from: SL.vectorStart(o, COL), ref, start: onPlane(LASTPTR[0], LASTPTR[1], ref) };
+  hint(kind === "swing" ? "Swing (R): move the mouse; a click or Enter keeps it, Esc puts it back" : "Slide (G): move the mouse to slide the lock along the scalp; a click or Enter keeps it, Esc puts it back");
+}
+function modalMove(e) {
+  const l = lockById(MODAL.lock); if (!l) { MODAL = null; return; }
+  const o = original(l), now = onPlane(e.clientX, e.clientY, MODAL.ref); if (!now || !MODAL.start) return;
+  const to = SL.add(MODAL.ref, SL.sub(now, MODAL.start)), R = p => l.mirror_of ? SL.reflectPoint(p, st.mirror.seam) : p;
+  if (MODAL.kind === "swing") SL.swingLock(o, R(MODAL.ref), R(to), COL, MODAL.from);
+  else SL.slideRoot(o, SL.rootPathOf(o), COL.surface(R(to)), COL, MODAL.from);
+  changed(o); draw();
+}
+function endModal(keep) {
+  if (!MODAL) return; const l = lockById(MODAL.lock);
+  if (l && !keep) { const o = original(l); SL.restoreFrom(o, MODAL.from); changed(o); UNDO.pop(); }
+  MODAL = null; if (l) selPanel(); hint(); draw();
+}
+// a drag that reaches the pane's edge pans the view that way, the drag carried on where the cursor is
+let EDGE = null;
+function edgePan(e) {
+  if (!DRAG || !["handle", "arrow", "root", "swing"].includes(DRAG.kind)) { stopEdge(); return; }
+  const r = renderer.domElement.getBoundingClientRect(), x = e.clientX - r.left - PANE.x, y = e.clientY - r.top - PANE.y, m = 24;
+  const dx = x < m ? 1 : x > PANE.w - m ? -1 : 0, dy = y < m ? 1 : y > PANE.h - m ? -1 : 0;
+  if (!dx && !dy) { stopEdge(); return; }
+  const raf = EDGE ? EDGE.raf : 0; EDGE = { dx, dy, e: { clientX: e.clientX, clientY: e.clientY, altKey: e.altKey, shiftKey: e.shiftKey }, raf };
+  if (!EDGE.raf) EDGE.raf = requestAnimationFrame(edgeStep);
+}
+function edgeStep() {
+  if (!EDGE || !DRAG) { EDGE = null; return; }
+  orbit.pan[0] += EDGE.dx * 6; orbit.pan[1] += EDGE.dy * 6; applyCamera(); dragMove(EDGE.e); render();
+  EDGE.raf = requestAnimationFrame(edgeStep);
+}
+function stopEdge() { if (EDGE && EDGE.raf) cancelAnimationFrame(EDGE.raf); EDGE = null; }
 function drawHandles() {
   HANDLES.clear();
   const l = lockById(SELECTED); if (!l || TOOL === "fit" || BAKEVIEW) return;
-  drawArrow(l);
+  drawArrow(l); drawPicked();
   if (TOOL !== "select") return;
   const geo = new THREE.SphereGeometry(0.0045, 10, 8);
   for (const h of SL.handles(l)) {
@@ -1105,7 +1184,7 @@ function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 // ---- the tools --------------------------------------------------------------------------------------------------------
 const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
-  select: "Click a lock to select it (again on the same spot: the next one under it); drag a handle to shape it (Alt-drag: towards you or away), its green root to slide it along the scalp, or its arrowhead for its length and direction. The ring: what the pull takes (Pull: its scope; the wheel while dragging: the reach; O: off). Drag the empty view to turn the head; the wheel zooms.",
+  select: "Click a lock to select it (again on the same spot: the next one under it; Ctrl-click or Shift-drag a box: several); drag a handle to shape it (Alt-drag: towards you or away), its green root to slide it, its arrowhead for its length and direction, or its body to swing it about its root (Shift: slide; or R and G with the mouse alone). The ring: what the pull takes (Pull: its scope; the wheel while dragging: the reach; O: off). Drag the empty view to turn the head; the wheel zooms, Home steps the zoom.",
   strand: "Click a root on the blue scalp, then click where the strand ends.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends.",
   bundle: "Click a root on the blue scalp, then click the tip.",
@@ -1163,6 +1242,15 @@ SPLITBAR.addEventListener("pointermove", e => { if (!SPLITBAR.classList.contains
 SPLITBAR.addEventListener("pointerup", () => SPLITBAR.classList.remove("drag"));
 SPLITBAR.addEventListener("dblclick", () => setSplitAt(0.5));
 { const b = el("button", { textContent: "Split", title: "two panes side by side, each turned on its own (a side view beside the front): the pane you touch is the one the buttons, keys and wheel move and every tool works in; drag the line between them, double-click it to even them; Split again for one view", onclick: () => setSplit(!SPLIT.on) }); b.dataset.v = "split"; VIEWBAR.append(b); }
+// three zoom stops (Home, or the Zoom button): the head, the bust, the whole body, for hair of any length
+const STOPS = [["head", 0.85], ["bust", 1.4], ["body", 2.4]];
+let STOP = 0;
+function zoomStop(i = null) {
+  STOP = i == null ? (STOP + 1) % STOPS.length : i; const d = STOPS[STOP][1];
+  orbit.dist = d; orbit.zoom = REF && st.reference.on && st.reference.lock ? 0.85 / d : 1; orbit.pan = [0, 0];
+  const b = VIEWBAR.querySelector("[data-v=zoom]"); if (b) b.textContent = `Zoom: ${STOPS[STOP][0]}`; draw();
+}
+{ const b = el("button", { textContent: "Zoom: head", title: "the head, the bust or the whole body in view (Home cycles them)", onclick: () => zoomStop() }); b.dataset.v = "zoom"; VIEWBAR.append(b); }
 
 function previewFrom(e) {
   if (!PLACE.stage) return null;
@@ -1196,7 +1284,8 @@ const isLocked = l => !!(l.locked || groupOf(l.group)?.locked);        // a lock
 function pullIds(grab) {
   const g = lockById(grab), shown = isShown(), o = g && g.mirror_of ? g.mirror_of : grab;
   const twin = l => l.id === grab || l.id === o || l.mirror_of === o;
-  const inScope = l => PULL.scope === "all" || (PULL.scope === "group" ? !!g && l.group === g.group : PULL.scope === "twin" ? twin(l) : l.id === grab);
+  const picked = new Set(); if (PICKED.size) for (const id of [SELECTED, ...PICKED]) { const p = lockById(id); if (p) picked.add(original(p).id); }   // several picked: just them (and their twins)
+  const inScope = l => picked.size ? picked.has(l.id) || picked.has(l.mirror_of) || twin(l) : PULL.scope === "all" || (PULL.scope === "group" ? !!g && l.group === g.group : PULL.scope === "twin" ? twin(l) : l.id === grab);
   return st.locks.filter(l => shown(l) && !isLocked(l) && inScope(l)).map(l => l.id);
 }
 const pullOpts = grab => ({ size: PULL.on ? PULL.size : 0, falloff: PULL.falloff, ids: pullIds(grab), seam: st.mirror.seam, col: COL });
@@ -1231,6 +1320,7 @@ for (const ev of ["input", "change"]) document.querySelector("aside")?.addEventL
 if (!Q.get("embed")) addEventListener("beforeunload", e => { if (UNSAVED) { e.preventDefault(); e.returnValue = ""; } });
 cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId); paneAt(e);
+  if (MODAL) { endModal(true); return; }                               // G or R: a click keeps it
   const orbitOnly = e.button !== 0 || !!BAKEVIEW;                       // previewing the bake: the view only turns
   if (!orbitOnly && TOOL === "fit") {
     const h = cubeHandleAt(e);
@@ -1243,8 +1333,12 @@ cv.addEventListener("pointerdown", e => {
     if (h && h.root) { const l = lockById(SELECTED); remember(); DRAG = { kind: "root", lock: l.id, path: h.path, from: SL.vectorStart(original(l), COL) }; drawHandles(); draw(); return; }   // the root slides along the scalp
     if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey, start: SL.pullStart(st.locks), moved: [], to: null }; drawHandles(); draw(); return; }
     if (arrowAt(e)) { startArrowDrag(e); return; }
+    const l0 = lockById(SELECTED), grab = l0 && !isLocked(l0) && !e.ctrlKey && !e.metaKey ? lockUnder(e, l0) : null;
+    if (grab) { remember(); DRAG = { kind: "swing", lock: l0.id, from: SL.vectorStart(original(l0), COL), grab, to: null, x: e.clientX, y: e.clientY, moved: false, slide: e.shiftKey }; return; }   // the lock's body: swing it about its root (Shift: slide it along the scalp); a click, no drag: pick again
     const l = lockAt(e);
+    if (l && (e.ctrlKey || e.metaKey)) { togglePicked(l.id); return; }
     if (l) { select(l.id); return; }
+    if (e.shiftKey) { DRAG = { kind: "box", x: e.clientX, y: e.clientY }; sizeBox(e); return; }   // a box on empty space picks several
   }
   if (!orbitOnly && TOOL !== "fit" && TOOL !== "select" && arrowAt(e)) { startArrowDrag(e); return; }   // the lock in hand re-aimed from a placing tool too
   if (!orbitOnly && (TOOL === "strand" || TOOL === "bundle")) {
@@ -1257,7 +1351,10 @@ cv.addEventListener("pointerdown", e => {
   }
   DRAG = { kind: "orbit", x: e.clientX, y: e.clientY };
 });
+let LASTPTR = null;                                                  // the pointer's last place over the view (G and R start from it)
 cv.addEventListener("pointermove", e => {
+  LASTPTR = [e.clientX, e.clientY];
+  if (MODAL) { modalMove(e); return; }
   if (!DRAG) {
     paneAt(e);
     if (PLACE.stage) { showPreview(previewFrom(e)); draw(); return; }
@@ -1272,6 +1369,9 @@ cv.addEventListener("pointermove", e => {
     }
     return;
   }
+  dragMove(e); edgePan(e);
+});
+function dragMove(e) {                                               // a drag in progress, at e (the edge pan feeds it the cursor's last place again)
   if (DRAG.kind === "orbit") {
     orbit.yaw -= (e.clientX - DRAG.x) * 0.008; orbit.pitch = Math.max(-1.55, Math.min(1.55, orbit.pitch + (e.clientY - DRAG.y) * 0.006));   // to 89°: the crown from straight above
     DRAG.x = e.clientX; DRAG.y = e.clientY; draw();
@@ -1300,6 +1400,15 @@ cv.addEventListener("pointermove", e => {
     DRAG.y = e.clientY;
     SL.setVector(o, l.mirror_of ? SL.reflectPoint(DRAG.to, st.mirror.seam) : DRAG.to, COL, DRAG.from); changed(o);
     hint(`${(SL.lockLength(o) * 100).toFixed(1)} cm`); draw();
+  } else if (DRAG.kind === "swing") {                                  // the lock's body dragged: swung about its root, or slid along the scalp (Shift)
+    if (!DRAG.moved && Math.hypot(e.clientX - DRAG.x, e.clientY - DRAG.y) < 3) return;
+    DRAG.moved = true; const l = lockById(DRAG.lock); if (!l) return;
+    const o = original(l), q = onPlane(e.clientX, e.clientY, DRAG.to || DRAG.grab); if (!q) return; DRAG.to = q;
+    const R = p => l.mirror_of ? SL.reflectPoint(p, st.mirror.seam) : p;
+    if (DRAG.slide) { const fr = o.type === "sheet" ? DRAG.from.root[DRAG.from.root.length >> 1] : DRAG.from.curves[0][0]; SL.slideRoot(o, SL.rootPathOf(o), COL.surface(SL.add(fr, SL.sub(R(q), R(DRAG.grab)))), COL, DRAG.from); }
+    else SL.swingLock(o, R(DRAG.grab), R(q), COL, DRAG.from);
+    changed(o); hint(DRAG.slide ? "sliding it along the scalp" : "swinging it about its root (Shift: slide it)"); draw();
+  } else if (DRAG.kind === "box") { sizeBox(e);
   } else if (DRAG.kind === "cube") {
     const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
     const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
@@ -1315,8 +1424,11 @@ cv.addEventListener("pointermove", e => {
     orbit.pan[0] += dx; orbit.pan[1] += dy;                          // the picture follows the cursor, the head stays
     recam(); fitPanelSync(); draw();
   }
-});
+}
 cv.addEventListener("pointerup", e => {
+  stopEdge();
+  if (DRAG && DRAG.kind === "swing" && !DRAG.moved) { UNDO.pop(); const l = lockAt(e); DRAG = null; if (l) select(l.id); return; }   // a click on the lock, no drag: the next one under the cursor
+  if (DRAG && DRAG.kind === "box") { boxPick(e); BOX.style.display = "none"; DRAG = null; return; }
   if (DRAG && DRAG.kind === "rootline") {
     if (PLACE.line.length === 1) {                                   // a click, no drag: a short line across the view
       const p = PLACE.line[0], n = new THREE.Vector3(); camera.getWorldDirection(n);
@@ -1325,7 +1437,7 @@ cv.addEventListener("pointerup", e => {
     }
     PLACE.stage = 1; showRootLine(PLACE.line); showPreview(previewFrom(e)); draw();
   }
-  const wasHandle = DRAG && (DRAG.kind === "handle" || DRAG.kind === "arrow" || DRAG.kind === "root");
+  const wasHandle = DRAG && ["handle", "arrow", "root", "swing"].includes(DRAG.kind);
   if (DRAG && DRAG.kind === "fit") saveFitHint();
   DRAG = null;
   if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); hint(); draw(); }
@@ -1357,11 +1469,14 @@ cv.addEventListener("wheel", e => {
 addEventListener("keydown", e => {
   if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName) && !((e.ctrlKey || e.metaKey) && e.target.type !== "text")) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (MODAL) { if (e.key === "Enter") { e.preventDefault(); endModal(true); } else if (e.key === "Escape") endModal(false); return; }
   if (e.key === "Enter" && !PLACE.stage && SELECTED && INHAND === SELECTED) { e.preventDefault(); finishLock(); return; }   // OK: done with the lock in hand
-  if (e.key === "Escape") { if (PLACE.stage) resetPlace(); else if (INHAND) finishLock(); draw(); return; }
+  if (e.key === "Escape") { if (PLACE.stage) resetPlace(); else if (PICKED.size) { PICKED.clear(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); } else if (INHAND) finishLock(); draw(); return; }
+  if (e.key === "Home") { e.preventDefault(); zoomStop(); return; }
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && TOOL === "select" && SELECTED && (e.key === "g" || e.key === "r")) { startModal(e.key === "g" ? "slide" : "swing"); return; }
   if (e.key === "PageUp" || e.key === "PageDown") { e.preventDefault(); if (PULL.on) reach(e.key === "PageUp", e.shiftKey); return; }
   if (e.key.toLowerCase() === "o" && !e.ctrlKey) { PULL.on = !PULL.on; pullPanel(); drawHandles(); draw(); return; }
-  if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteLock(original(lockById(SELECTED)).id); return; }
+  if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteMany(pickedOriginals().map(o => o.id)); return; }
   const t = TOOLS.find(x => x[2] === e.key.toLowerCase()); if (t && !e.ctrlKey) setTool(t[0]);
   if (!e.ctrlKey && !e.metaKey && !e.altKey) {                        // the views (Blender's keys): 1 front, 3 the left side, 7 the top; Shift: the opposite; 5 ortho
     const v = { Digit1: e.shiftKey ? "back" : "front", Digit3: e.shiftKey ? "right" : "left", Digit7: e.shiftKey ? "bottom" : "top" }[e.code];
@@ -1604,7 +1719,7 @@ function locksPanel() {
       const e2 = el("span", { className: "eye", textContent: l.visible ? "◉" : "○", onclick: ev => { ev.stopPropagation(); l.visible = !l.visible; locksPanel(); draw(); } });
       const own = !!original(l).locked, pad = el("span", { className: "eye pad" + (own ? " on" : g.locked ? " by" : ""), textContent: own || g.locked ? "🔒" : "🔓", title: g.locked && !own ? "locked with its group" : own ? "locked: it never moves under a pull, Gravity or the cover (click to unlock)" : "click to lock it: it never moves under a pull, Gravity or the cover",
         onclick: ev => { ev.stopPropagation(); const o = original(l); remember(); o.locked = !o.locked; changed(o); locksPanel(); selPanel(); drawHandles(); draw(); } });
-      box.append(el("div", { className: "lock" + (l.id === SELECTED ? " sel" : "") + (isLocked(l) ? " locked" : ""), onclick: () => select(l.id) }, e2,
+      box.append(el("div", { className: "lock" + (l.id === SELECTED ? " sel" : "") + (PICKED.has(l.id) ? " picked" : "") + (isLocked(l) ? " locked" : ""), title: "click: select (Ctrl-click: pick several)", onclick: ev => ev.ctrlKey || ev.metaKey ? togglePicked(l.id) : select(l.id) }, e2,
         el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: `${l.type} ${Math.round(SL.lockLength(l) * 100)} cm` + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") }), pad));
     });
   }
@@ -1613,16 +1728,18 @@ function locksPanel() {
   box.append(el("button", { textContent: "New group", onclick: () => { const id = "g" + (st.groups.length + 1) + Date.now().toString(36).slice(-3); st.groups.push({ id, name: `Group ${st.groups.length + 1}`, visible: true }); ACTIVE_GROUP = id; locksPanel(); } }));
   const sel = box.querySelector(".lock.sel"); if (sel) sel.scrollIntoView({ block: "nearest" });
 }
-function select(id) { SELECTED = id; if (INHAND !== id) INHAND = null; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
+function select(id) { SELECTED = id; if (INHAND !== id) INHAND = null; PICKED.clear(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
 function selPanel() {
   const box = $("#selbox"); box.innerHTML = "";
   const l = lockById(SELECTED); stepHint("selected", l ? l.name || l.type : "the lock you picked");
   if (!l) { box.append(el("p", { className: "note", textContent: "Nothing selected." })); return; }
   const o = original(l), edit = fn => v => { remember(); fn(v); changed(o); rememberLast(o); draw(); };
+  const all = pickedOriginals(), many = all.length > 1;              // several picked: the buttons below act on all of them
+  if (many) box.append(el("p", { className: "note", textContent: `${all.length} locks picked: Delete, Lock, Let it fall, Onto the scalp, Group, Physics and Mirror once act on all of them; the sliders on this one. Esc picks none.` }));
   const name = el("input", { type: "text", value: l.name || "", onchange: () => { l.name = name.value; locksPanel(); } });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Name" }), name, el("span")));
   const gs = el("select"); for (const g of st.groups) gs.append(el("option", { value: g.id, textContent: g.name })); gs.value = l.group;
-  gs.onchange = () => { remember(); o.group = gs.value; for (const t of st.locks) if (t.mirror_of === o.id) t.group = gs.value; for (const t of st.locks) DIRTY.add(t.id); PAD_DIRTY = true; BASE_DIRTY = true; locksPanel(); draw(); };
+  gs.onchange = () => { remember(); for (const t of all) { t.group = gs.value; for (const w of st.locks) if (w.mirror_of === t.id) w.group = gs.value; } for (const t of st.locks) DIRTY.add(t.id); PAD_DIRTY = true; BASE_DIRTY = true; locksPanel(); draw(); };
   box.append(el("div", { className: "row" }, el("span", { textContent: "Group", title: "the group it's in (its twin goes with it)" }), gs, el("span")));
   if (l.mirror_of) box.append(el("p", { className: "note", textContent: "A mirror twin: it follows its original. Edits here change both." }));
   if (isLocked(l)) box.append(el("p", { className: "note", textContent: o.locked ? "Locked: it never moves under a pull, Gravity or the cover. Unlock it to shape it." : "Locked with its group (the padlock in Locks)." }));
@@ -1643,7 +1760,7 @@ function selPanel() {
     slider(box, "Thickness taper", 0, 1, 0.05, o.thicknessTaper ?? 1, edit(v => { o.thicknessTaper = v; }), "how much the thickness thins towards the tip (1: to nothing)");
   }
   const ph = o.physics || (o.physics = Object.assign({}, SP.DEFAULTS));
-  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); rememberLast(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
+  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); for (const t of all) { (t.physics || (t.physics = Object.assign({}, SP.DEFAULTS))).on = v; changed(t); } rememberLast(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
   if (ph.on) {
     slider(box, "Floppy-stiff", 0, 1, 0.05, ph.stiffness, v => { ph.stiffness = v; changed(o); SIM_DIRTY = true; }, "how hard it's held to its style");
     slider(box, "Gravity", 0, 2, 0.1, ph.gravity, v => { ph.gravity = v; changed(o); SIM_DIRTY = true; }, "how far it hangs down when the head tilts");
@@ -1652,15 +1769,15 @@ function selPanel() {
   if (o.render === "strands") slider(box, "Strands", 1, 400, 1, o.density, edit(v => { o.density = v; }));
   const c = el("input", { type: "color", value: o.color || look().tip, title: "this lock's own colour (instead of the hair's look)", onchange: () => edit(v => { o.color = v; })(c.value) });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Own colour" }), c, o.color ? el("button", { textContent: "x", title: "back to the hair's look", onclick: () => { edit(() => { o.color = null; })(); selPanel(); } }) : el("span")));
-  box.append(el("button", { textContent: "Onto the scalp", title: "its points near the head laid down on it (hair made before lies above the scalp)", onclick: () => { remember(); SL.hug(o, COL); changed(o); draw(); } }),
+  box.append(el("button", { textContent: "Onto the scalp", title: "its points near the head laid down on it (hair made before lies above the scalp)", onclick: () => { remember(); for (const t of all) { SL.hug(t, COL); changed(t); } draw(); } }),
              el("button", { textContent: "All onto the scalp", title: "every lock's points near the head laid down on it (locked ones left alone)", onclick: () => { remember(); for (const l of st.locks) if (!l.mirror_of && !isLocked(l)) { SL.hug(l, COL); changed(l); } draw(); } }));
-  box.append(el("button", { textContent: "Let it fall", title: "this lock (and its twin) falls under gravity onto the rest of the hair, which stays; keep the moment you like in Gravity and motion", onclick: () => letFall(st.locks.filter(t => t.id === o.id || t.mirror_of === o.id).map(t => t.id)) }),
+  box.append(el("button", { textContent: many ? "Let them fall" : "Let it fall", title: "this lock (and its twin) falls under gravity onto the rest of the hair, which stays; keep the moment you like in Gravity and motion", onclick: () => letFall(st.locks.filter(t => all.some(a => t.id === a.id || t.mirror_of === a.id)).map(t => t.id)) }),
              el("button", { textContent: "Let the group fall", title: "every lock of its group falls onto the rest, which stays", onclick: () => letFall(st.locks.filter(t => t.group === o.group).map(t => t.id)) }));
-  box.append(el("button", { textContent: o.locked ? "Unlock" : "Lock", className: o.locked ? "on" : "", title: "a locked lock never moves under a pull, Gravity or the cover; it's still drawn and laid over", onclick: () => { remember(); o.locked = !o.locked; changed(o); locksPanel(); selPanel(); drawHandles(); draw(); } }),
+  box.append(el("button", { textContent: o.locked ? "Unlock" : "Lock", className: o.locked ? "on" : "", title: "a locked lock never moves under a pull, Gravity or the cover; it's still drawn and laid over", onclick: () => { remember(); const v = !o.locked; for (const t of all) { t.locked = v; changed(t); } locksPanel(); selPanel(); drawHandles(); draw(); } }),
              el("button", { textContent: "Duplicate", onclick: () => { const d = structuredClone(o); d.id = SL.newId(); d.mirror_of = null; d.name = (o.name || o.type) + " copy"; SL.moveLock(d, [0.01, 0, 0]); addLock(d); } }),
-             el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { const m = SL.mirrored(o, st.mirror.seam, COL); m.mirror_of = null; m.name = (o.name || o.type) + " mirrored"; remember(); m.group = o.group; st.locks.push(m); locksPanel(); draw(); } }),
+             el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { remember(); for (const t of all) { const m = SL.mirrored(t, st.mirror.seam, COL); m.mirror_of = null; m.name = (t.name || t.type) + " mirrored"; m.group = t.group; st.locks.push(m); } locksPanel(); draw(); } }),
              l.mirror_of ? el("button", { textContent: "Break the mirror", onclick: () => { remember(); l.mirror_of = null; l.name = l.name.replace(" (mirror)", ""); locksPanel(); selPanel(); } }) : "",
-             el("button", { textContent: "Delete", onclick: () => deleteLock(o.id) }));
+             el("button", { textContent: many ? `Delete ${all.length}` : "Delete", onclick: () => deleteMany(all.map(t => t.id)) }));
 }
 function restyle() { applyLook(HAIRU, look()); SCALP_DIRTY = true; HAIRV++; for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
 function characterPanel() {                                           // the body the hair is drawn on
@@ -1798,7 +1915,7 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 
 // for the tests and the renders
 window.__salon = { st, SL, SR, get orbit() { return orbit; }, split: { get on() { return SPLIT.on; }, set: setSplit, setAt: setSplitAt, use: i => { usePane(i); markPane(); applyCamera(); }, get active() { return SPLIT.active; }, get at() { return SPLIT.at; }, panes }, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
-  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, letFall, offerDraft, dropDraft, keepDraft, draftKey, get likeLast() { return LIKE_LAST; }, setLikeLast, get last() { return LAST; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
+  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, letFall, offerDraft, dropDraft, keepDraft, draftKey, get likeLast() { return LIKE_LAST; }, setLikeLast, get last() { return LAST; }, get picked() { return [...PICKED]; }, togglePicked, deleteMany, startModal, endModal, get modal() { return MODAL && MODAL.kind; }, zoomStop, get edge() { return !!EDGE; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, rayAt, onPlane, previewFrom, dot: () => DOT && DOT.visible ? { colour: DOT.material.color.getHex() === 0x5aa65a ? "green" : "red", at: DOT.position.toArray() } : null, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },

@@ -125,6 +125,15 @@ view says what to do at each stage (the root placed: click the end, the wheel's 
 the arrow, OK). The wheel bows every type while placing (a sheet got no bow before), Shift+wheel sets the type's own
 number (a strand's width, a sheet's spread, a bundle's root width, a bundle line's height).
 
+**A whole lock moved** (2026-10-26): with Select, drag the selected lock's body (not a handle) to **swing** it about its
+root, its length kept; Shift-drag slides it along the scalp with its root; **R** and **G** do the same with the mouse
+alone (Blender's keys: move the mouse, a click or Enter keeps it, Esc puts it back). **Several picked**: Ctrl-click
+locks (in the view or in Locks), or Shift-drag a box on empty space; the pull then moves only the picked (and their
+twins), and Selected's Delete, Lock, Let them fall, Onto the scalp, Group, Physics and Mirror once act on all of them
+(the sliders on the one selected); Esc picks none. **The view pans** while a handle, arrow, root or body drag reaches
+the pane's edge, so a long lock is shaped without zooming out; **Home** (or Zoom in the view bar) steps three zoom
+stops: the head, the bust, the whole body.
+
 **Roots slide** (2026-10-26): a lock's green root handle dragged slides the whole lock along the scalp (a sheet's root
 line has three: its middle slides the line whole, an end stretches it, the far end staying), the shaping kept as the
 arrow keeps it (`slideRoot`); Shift lets a root off the scalp. **Picking** takes the lock nearest in depth under the

@@ -70,6 +70,7 @@ placed, its arrow dragged from the front and the side, Enter, Esc, Length on a s
 (115 px, 5 px, 2 mm a pixel). *Proposed:* 1's Length slider and starting length do most of it; also **the view pans
 while a drag passes its edge** (dragging an end or a handle past the bottom scrolls the view down, as a desktop drag
 does), and **three zoom stops** on the toolbar (the head, the bust, the whole torso: Home cycles them). **S.**
+**Built 2026-10-26**: the view pans while a drag reaches the pane's edge; Zoom in the view bar and Home step the head, the bust, the body.
 
 **3. A sheet or a bundle can't be bowed while placing.** *Now:* the wheel changes the sag for a strand only; for a
 sheet it's the spread, for a bundle the root's width, for a bundle line the height, and the sag stays 0 (`makeSheet`
@@ -157,9 +158,11 @@ swinging it about its root, means dragging each; `moveLock` exists but only Dupl
 on, **drag the lock's body** (not a handle) to swing it about its root (the root stays, every point turns with the
 drag; Shift to slide it along the scalp with its root: 5); **G** and **R** as Blender's. **M.** The brushes (comb,
 grow, puff, smooth: SALON_PLAN Phase 2) are the next step after it.
+**Built 2026-10-26**: drag the lock's body to swing it about its root (Shift: slide), R and G with the mouse alone (click or Enter keeps, Esc puts back); SALON swings a strand 6 cm with its length kept, slides it, R, G and Esc.
 
 **13. Shaping is in the view plane; depth takes Alt.** Answered by 7 (drag in the other pane) and 9 (hollow handles
 behind). No work of its own.
+**Done with 7** (the side pane): a handle dragged there moves in depth as the front pane sees it.
 
 ## D. Keeping track
 
@@ -174,6 +177,7 @@ on a group's eye (Alt-click: only it shown), each row with its length and type, 
 **15. One lock at a time.** *Now:* one selected lock; Delete, Mirror once, Onto the scalp, Physics and the own colour
 work on it alone. *Proposed:* **several picked** (Ctrl-click, Shift-drag a box, a group's row to pick all of it):
 the Selected step's buttons act on all, the pull's scope *Selected locks* (11.3), Delete on all. **M.**
+**Built 2026-10-26**: Ctrl-click and a box pick several; the pull moves only them; Delete, Lock, Let them fall, Onto the scalp, Group, Physics and Mirror once act on all; SALON picks by Ctrl-click and a box and deletes both.
 
 ## E. Falling
 

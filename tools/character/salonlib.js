@@ -653,21 +653,42 @@ export function slideRoot(lock, path, p, col, from) {
   lock.edges[0][0] = lock.root[0]; lock.edges[1][0] = along(lock.root, 0.5); lock.edges[2][0] = lock.root[n - 1];
   lock.edges.forEach((E, j) => relay(E, j));
 }
-export function setVector(lock, end, col, from) {
-  const a = from.curves[lock.type === "sheet" ? 1 : 0][0], u = sub(from.end, a), v = sub(end, a), lu = len(u), lv = len(v);
-  if (lu < 1e-6 || lv < 1e-6) return;
-  const k = lv / lu, ax0 = cross(u, v), s = len(ax0) / (lu * lv), c = clamp(dot(u, v) / (lu * lv), -1, 1), ang = Math.atan2(s, c), ax = s > 1e-6 ? mul(ax0, 1 / len(ax0)) : null;
-  const rot = p => { if (!ax) return p; const cs = Math.cos(ang), sn = Math.sin(ang); return add(add(mul(p, cs), mul(cross(ax, p), sn)), mul(ax, dot(ax, p) * (1 - cs))); };   // Rodrigues' turn
-  const C = curvesOf(lock);
-  C.forEach((P, j) => {
-    const pivot = from.curves[j][0];                                   // each curve about its own root (one root for a strand or a bundle)
+// the turn taking direction u to v (Rodrigues), as a function of a vector
+export function turnTaking(u, v) {
+  const lu = len(u), lv = len(v); if (lu < 1e-9 || lv < 1e-9) return p => p;
+  const ax0 = cross(u, v), s = len(ax0) / (lu * lv), c = clamp(dot(u, v) / (lu * lv), -1, 1), ang = Math.atan2(s, c);
+  if (s < 1e-6) return p => p;
+  const ax = mul(ax0, 1 / len(ax0)), cs = Math.cos(ang), sn = Math.sin(ang);
+  return p => add(add(mul(p, cs), mul(cross(ax, p), sn)), mul(ax, dot(ax, p) * (1 - cs)));
+}
+// every curve turned (and scaled by k) about its own root from `from`, points that lay on the body laid on it again
+// (the end itself only kept off it), the rest kept off
+function turnFrom(lock, rot, k, col, from) {
+  curvesOf(lock).forEach((P, j) => {
+    const pivot = from.curves[j][0];
     for (let i = 1; i < P.length; i++) {
-      let q = add(pivot, mul(rot(sub(from.curves[j][i], pivot)), k));
-      const last = i === P.length - 1;
+      const q = add(pivot, mul(rot(sub(from.curves[j][i], pivot)), k)), last = i === P.length - 1;
       P[i] = col ? (!last && from.hug[j][i] ? onto(q, col) : col.push(q, GAP)[0]) : q;
     }
   });
 }
+export function setVector(lock, end, col, from) {
+  const a = from.curves[lock.type === "sheet" ? 1 : 0][0], u = sub(from.end, a), v = sub(end, a), lu = len(u), lv = len(v);
+  if (lu < 1e-6 || lv < 1e-6) return;
+  turnFrom(lock, turnTaking(u, v), lv / lu, col, from);
+}
+// the lock turned about its root so that the point grabbed on it follows the cursor, its length kept: a drag on the
+// lock's body (Select), or R
+export function swingLock(lock, grab, to, col, from) {
+  const a = from.curves[lock.type === "sheet" ? 1 : 0][0];
+  turnFrom(lock, turnTaking(sub(grab, a), sub(to, a)), 1, col, from);
+}
+export function restoreFrom(lock, from) {                            // back to where a drag began (Esc)
+  curvesOf(lock).forEach((P, j) => { for (let i = 0; i < P.length; i++) P[i] = from.curves[j][i].slice(); });
+  if (lock.root && from.root) lock.root = from.root.map(p => p.slice());
+}
+export const rootPathOf = lock => lock.type === "strand" ? ["pts", 0] : lock.type === "bundle" ? ["spine", 0] : ["root", lock.root.length >> 1];
+export const rootOf = lock => lock.type === "sheet" ? lock.root[lock.root.length >> 1] : curvesOf(lock)[0][0];
 export function setLength(lock, L, col) {
   const from = vectorStart(lock, col), a = from.curves[lock.type === "sheet" ? 1 : 0][0], d = sub(from.end, a), cur = lockLength(lock);
   if (!(cur > 1e-4) || !(L > 0)) return;
