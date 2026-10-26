@@ -525,7 +525,7 @@ const png = rgb => {
     });
     // the gap between clusters against the roots' spacing inside one: about 1 spread evenly, far more as spikes; the clusters' lengths' spread over their mean; the lower lashes' angle down from straight out (degrees)
     for (const [k, x] of [["anime", r.anime], ["drawn", r.drawn], ["anime doll", r.doll]]) if (!(x.spike > 4 && x.drop > 35 && x.rim > 1.2 && x.rim < 3.2 && x.cards > 300)) throw new Error(`${k}: ${JSON.stringify(x)}`);
-    if (!(r.anime.vary > 0.12) || !(r.natural.spike < 2 && r.natural.vary < 0.1 && r.natural.drop < 30) || !r.reset) throw new Error("natural against anime: " + JSON.stringify(r));
+    if (!(r.anime.vary > 0.12) || !(r.natural.spike < 2 && r.natural.vary < 0.1 && r.natural.drop < 45 && r.anime.drop > r.natural.drop + 10) || !r.reset) throw new Error("natural against anime: " + JSON.stringify(r));
     console.log(`       anime: ${r.anime.cards} hairs an eye, the gap between spikes ${r.anime.spike.toFixed(1)}× the roots' spacing inside one (natural ${r.natural.spike.toFixed(1)}×), the clusters' lengths spread ${(r.anime.vary * 100).toFixed(0)}% (natural ${(r.natural.vary * 100).toFixed(0)}%), the lower lashes ${r.anime.drop.toFixed(0)}° down the skin (natural ${r.natural.drop.toFixed(0)}°)`);
     await page.click('#tabs button[data-tab="body"]');
   });

@@ -745,3 +745,10 @@ load the page once after an edit.
   margin's front edge.
 - **Hairs side by side are a comb, not a thicker hair:** a lower lash made of three nearly parallel hairs read as three
   thin lines with gaps, whatever their spacing. One hair, wide enough to cover a pixel and a half, reads as one lash.
+- **Fading a measurement to nothing where it's unreliable puts the thing at zero, which is also wrong:** the rim the
+  lashes lie over was faded to nothing at the corners because the search there picked the wrong skin; at zero the
+  corner lashes rooted under the skin and the lower roots jumped to the eye's edge. Fix the search (square to the lid's
+  own line, far picks dropped) and fill a gap from its neighbours; never fade to a value you know is false.
+- **"Away from the centre" is not "out of the opening" at the ends of a slit:** from the eye's middle, outward points
+  along the eye at the corners, where the margin still runs across the lid and a lash still grows across it. Square to
+  the line, oriented away from the middle, is the direction that means out of the opening everywhere.

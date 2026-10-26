@@ -47,6 +47,14 @@ The user's answers, newest first. They override the plan, the research and the d
   eye); the lash atlas's strand is a solid core thinning to the tip and black to the end (a soft core mipped down to a
   few pixels went grey over the whole card; a fading tip dissolved into the skin), which made the upper lashes crisper
   and blacker too.
+- **No skin at the corners of the upper lid, and the lower roots on one line** ("we improved the bottom but made the
+  upper worse again, see in green circles gaps of skin where it makes it look eyelashes is clipping through when it
+  should sit/bend/curve above it. See the red line, that should be the guide line for the roots of the lower
+  eyelashes": the corners of the upper lid circled, a line drawn along the lower lid's margin): both came from the rim
+  the lashes lie over being faded to nothing at the corners; it now runs to the corners (searched square to the lid's
+  own line, a far pick on the wrong skin dropped, a corner that finds nothing filled from its neighbour), the lashes
+  root on it all round, the innermost 7% of the upper lid carries none, and the lower roots follow the margin's front
+  edge as one smooth line, corner to corner, where the user drew theirs.
 - Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
   under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
   the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style

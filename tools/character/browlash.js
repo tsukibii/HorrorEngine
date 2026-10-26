@@ -227,9 +227,13 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
     }
     const raw = [], m = upper ? 6 : 8;                                     // each hair: the root, three points over the rim (the upper lid), then m points of the hair itself
     for (const h of hairs) {
-      const t = 0.03 + 0.94 * Math.max(0, Math.min(1, h.t)), outer = upper ? t : 1 - t;   // 0 at the inner corner, 1 at the outer
+      // along the lid, 0 at the inner corner, 1 at the outer: no lashes on the innermost 7% (a real lid has none beside
+      // the tear duct, and lashes rooted in the corner's fold came out of its skin) and the last 3% at the outer
+      const tt = Math.max(0, Math.min(1, h.t)), t = upper ? 0.07 + 0.9 * tt : 0.03 + 0.9 * tt, outer = upper ? t : 1 - t;
       const { root, tg, ang0, droop, rim, rim0, vo } = frame(t);
-      const radial0 = norm(sub(vo, mul(F, dot(vo, F))));                   // away from the eye's middle, in the face's plane, with the eye open
+      // out from the lid: square to the lid's own line in the face's plane, away from the eye's middle (with the eye open;
+      // the way from the eye's middle points along the eye at the corners, where a lash still grows across the margin)
+      let radial0 = norm(cross3(F, tg)); if (dot(radial0, vo) < 0) radial0 = mul(radial0, -1);
       const radial = upper ? norm(add(radial0, mul(U, 0.7 * smooth(0.5, 1, outer)))) : radial0;   // (the upper lid's outer lashes leave it upward, not sideways)
       // radians up from straight out (a lower lash at most 57° down: further, it runs into the skin under the eye)
       const base = upper ? (0.25 + 0.75 * o.lift) * 0.9 : Math.min(1.0, (0.15 + 0.25 * o.lift) * 0.9 + (o.lowerDrop ?? 0) * 0.85);

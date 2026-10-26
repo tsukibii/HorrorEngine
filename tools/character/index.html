@@ -2128,18 +2128,38 @@ function rimOf(line, c, F, reach, side, up = null) {   // up: mm per point (or o
     }
     return best;
   };
+  // outward from the line: square to the lid's own line in the face's plane, away from the eye's middle (the way from the
+  // eye's middle points along the eye at the corners, where the margin still runs across the lid: searched that way, the
+  // corners found nothing or the wrong skin, and the rim was faded to nothing there, which rooted the corner lashes
+  // under the skin and jumped the lower roots up to the eye's edge: the user's find, 2026-10-26, night)
+  const outOf = k => { const p = line[k], tg = unit(sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), d0 = sub(p, c), radial = unit(sub(d0, f.map(v => v * dot(d0, f))));
+    let nrm = unit(cross(f, tg)); if (dot(nrm, radial) < 0) nrm = mul(nrm, -1); return { tg, nrm }; };
+  const found = [];
   for (let k = 0; k < n; k++) {
-    const p = line[k], tg = unit(sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), d0 = sub(p, c), radial = unit(sub(d0, f.map(v => v * dot(d0, f))));
+    const p = line[k], { tg, nrm } = outOf(k);
     let best = null, bf = 0;
     for (const i of near) {                              // (MHR's points are a few mm apart along the rim)
       const dx = POS[i * 3] - p[0], dy = POS[i * 3 + 1] - p[1], dz = POS[i * 3 + 2] - p[2], fw = dx * f[0] + dy * f[1] + dz * f[2];
       if (fw <= bf) continue;
-      const o = dx * radial[0] + dy * radial[1] + dz * radial[2]; if (o < 0.2 * mm || o > reach * mm || Math.abs(dx * tg[0] + dy * tg[1] + dz * tg[2]) > 2.5 * mm) continue;
+      const o = dx * nrm[0] + dy * nrm[1] + dz * nrm[2]; if (o < 0.2 * mm || o > reach * mm || Math.abs(dx * tg[0] + dy * tg[1] + dz * tg[2]) > 2.5 * mm) continue;
       bf = fw; best = [dx, dy, dz];
     }
-    let v = best ? sub(best, tg.map(x => x * dot(best, tg))) : [0, 0, 0];
-    const l = Math.hypot(v[0], v[1], v[2]), u = k / (n - 1), fade = Math.min(1, u / 0.2, (1 - u) / 0.2), cap = l > 3 * mm ? 3 * mm / l : 1;
-    v = mul(v, cap * fade * fade * (3 - 2 * fade));
+    let v = best ? sub(best, tg.map(x => x * dot(best, tg))) : null;
+    if (v) { const l = Math.hypot(v[0], v[1], v[2]); if (l > 3 * mm) v = mul(v, 3 * mm / l); if (l < 0.2 * mm) v = null; }
+    found.push(v);
+  }
+  // a pick far deeper than the lid's own rim is the wrong skin (at the inner corner the lower lid's search reaches the
+  // nose's flank, 3 mm forward): dropped, and filled in like the corners below
+  const depths = found.filter(Boolean).map(v => Math.hypot(v[0], v[1], v[2])).sort((a, b) => a - b), median = depths.length ? depths[depths.length >> 1] : 0;
+  for (let k = 0; k < n; k++) if (found[k] && Math.hypot(found[k][0], found[k][1], found[k][2]) > 1.6 * median + 0.2 * mm) found[k] = null;
+  // where nothing was found (the last point or two at a corner), the nearest found way, scaled down a little: the margin
+  // runs to the corner, shallower; never nothing
+  for (let k = 0; k < n; k++) if (!found[k]) {
+    let j = -1; for (let d = 1; d < n && j < 0; d++) { if (found[k - d]) j = k - d; else if (found[k + d]) j = k + d; }
+    found[k] = j < 0 ? [0, 0, 0] : mul(found[j], Math.pow(0.8, Math.abs(k - j)));
+  }
+  for (let k = 0; k < n; k++) {
+    const p = line[k], { tg, nrm: radial } = outOf(k), v = found[k];
     const off = unit(add(mul(f, dot(v, radial)), mul(radial, -dot(v, f))));   // the side the rim faces: the eye's, and forward
     const path = [1 / 3, 2 / 3].map(g => { const h = Math.hypot(v[0], v[1], v[2]) > 0.2 * mm ? above(add(p, mul(v, g)), off, 3 * mm) : 0;
       return add(mul(v, g), mul(off, Math.max(0, Number.isFinite(h) ? h : 0) + 0.15 * mm)); });
