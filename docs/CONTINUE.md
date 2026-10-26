@@ -1,7 +1,7 @@
 # Continue: the next session
 
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
-2026-10-25, and on 2026-10-26) on `claude/experiments-afk`. Read this
+2026-10-25, and on 2026-10-26, last at night on `better-eyelashes`) on `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -102,6 +102,7 @@ and a bake (DECISIONS 2026-10-26):
 | `6aea007` | **Clothes tailored after the references:** tops cut close and following the waist (tension about halved, a third less ease, the drape's fullness only for soft folds), a **blouse** and one with its sleeves rolled, the pleated skirt high, mid-thigh and full, the pencil skirt high and close, a **fitted blazer** for women, the men's suit closer; outfits `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts` (a fit of 1.5 carried by the outfit), `t-shirt tucked in`; TAILOR hangs them. |
 | `6c65afd` | **Lashes over the lid's rim** (DECISIONS 2026-10-26, evening): MHR's lid line is the rim's back edge, so lashes rooted there and sent straight out ran under the rim's skin for 3 mm and a band of bare skin showed between the eye and the lashes. `rimOf` (`index.html`) finds the rim's front edge from each point of the line (the skin's most forward point a little out from it, at most 3 mm, fading at the corners) and the way over the rim's rounded skin by rays; the lashes lie along it and lift from the front edge, the lash line is a strip along it, and the way fades as the eye shuts (shut, they're rooted on the line as before). STUDIO measures the way over the rim: 2.0 mm on average open, 0.2 shut |
 | (this) | **The T-pose's neck upright** (DECISIONS 2026-10-26, evening): MHR's rest pose carries the head 6 to 7.5 cm ahead of the shoulders, the neck leaning far forward; `pose.js` moves everything under the head forward, level (the neck's joints part of the way by their height), until the head's joint is `NECK_AHEAD` (0.12 of the neck's height, about 2.2 cm) ahead of the shoulders': the ear over the shoulder's top, the neck's front under the jaw leaning about 14° in the side view (29° in MHR's pose, about 8° in the user's reference). The head stays put to the last bit; the salon's baked hair below it goes with the body (`shiftAt`, `poseHair`). POSE and STUDIO judge the head by its own bones now (by height, the skin under the jaw counted as head) and check the stand |
+| `better-eyelashes` | **Anime lashes and the pink eye makeup after the user's references** (DECISIONS 2026-10-26, night): three lash sliders (Spiky clumps: each clump's roots gathered with a gap to the next; Long and short: every other spike shorter; Lower lashes down: the lower lashes down the skin) and three anime styles (an anime lash set, drawn wisps, an anime doll) in a grouped Style picker, a style setting every slider (`styleOf`); the makeup's eye layers (the liner's thickness and its point past the inner corner, the eyeshadow's placement, an under-eye wash, the inner corner, the waterline), the **anime pink** makeup preset and the **anime pink** look (the preset with the anime lashes on; a look can name lashes and brows). The painted liner now runs between the lashes' roots and a line a liner's width up the lid, both found on the skin (`rimOf`'s fourth point), so it shows over the lashes in any pose (before, it ran along the lid line under the lashes and the cut: invisible). STUDIO's two new steps. Then, the user finding the spikes nowhere near the photo: **every lash one fine hair** (`lashAtlas`, one strand to a cell; thin crossed cards, hundreds an eye) in clusters drawn to points, long, medium and short in turn, a short fringe under them (Under-lashes), clusters crossing (Criss-cross), the outer ones swept up and out; every style retuned on it. Then the user's two asks: **no skin between the roots** (the lash line its own mesh with a dense fringe atlas, `lineAtlas`, over the whole rim and up the lid) and **lashes that turn with a blink** (each hair's frame set on the open lid and turned with the lid about the eyeball's middle, with the margin's droop: shut, they point at the viewer, 15° down, still on their rim, on the upper lid's own edge; the painted liner's lines from the same swung lid, so no patch on a shut lid). Then the lower lashes (the user: too angular, fading into the skin): one hair each rooted at the margin's front edge (the waterline showing), leaving along the skin and easing into their direction (no L), at most 57° down; the lash atlas a solid core, black to the tip (crisper upper lashes too). Then the corners (the user: skin showing at the corners of the upper lid, the lower roots off their line): the rim runs to the corners instead of fading to nothing (`rimOf` searches square to the lid's line, drops far picks, fills a corner from its neighbour), no lashes on the innermost 7%, the lower roots one smooth line along the margin. Then **the three eye shapes the user drew, as lashes only** (the opening stays the scan's): styles fox almond, half-lidded and round doll with Sweep, Inner length and Lift below zero added, and a whole look each with its drawn liner (`fox liner`, `half-lidded liner`, `doll pink`). |
 
 ## 2. Where things are
 
@@ -152,7 +153,7 @@ and a bake (DECISIONS 2026-10-26):
 
 ## 4. What's next (ask which)
 
-000000. **Eyes like MetaHuman's** (DECISIONS 2026-10-26, night; docs/research/eyes.md §4): built on
+0000000e. **Eyes like MetaHuman's** (DECISIONS 2026-10-26, night; docs/research/eyes.md §4): built on
    `claude/bold-ride-mcg3gt`. The Studio's eyes are `tools/shared/eye.js` (the iris behind a refracting cornea, the
    cornea reflecting the lights, the iris lit as a bowl; STUDIO traces the refraction by Snell's law). The export is
    rigged on MHR's skeleton, the eyes on `l_eye`/`r_eye` carrying their paint baked flat and the eye's shape and paint
@@ -165,6 +166,19 @@ and a bake (DECISIONS 2026-10-26):
    (the room in the cornea, photo irises, the eyes' life), the caustic and an eye occlusion in Unreal. Then (DECISIONS
    2026-10-26, late night) iris patterns and pupil shapes after the user's references, a heart among them, and
    sixteen styles (Skin, Eyes, Iris and pupil): say which look right and what to change in the others.
+0000000b. **Look at the three eye shapes** (Face, Look: fox almond, half-lidded, round doll; or Face, Lashes, Style, the
+   "Eye shapes" group) against the drawing and say what to change: the fox's sweep and wing (Sweep, Outer flare, Inner
+   length), how far down the half-lidded lashes lie (Lift) and how dense (Upper lashes, Under-lashes), the doll's spike
+   count and length; the liners' wings and points (Skin, Makeup: Liner wing, Liner thickness, Inner corner liner).
+000000. **Look at the anime lashes and the pink eye makeup** (Face, Look: anime pink; or Face, Lashes, Style; Skin,
+   makeup preset anime pink) against the references and say what to change: the hairs' count, length and thickness
+   (Upper lashes, Length, Thickness), the clusters (Clumping, Spiky clumps, Long and short, Under-lashes,
+   Criss-cross), the lower lashes' angle and length (Lower lashes down, Lower length),
+   the pinks' strength and hues (Eyeshadow, Under-eye shadow, Inner corner, Waterline and their colours), the liner's
+   thickness and wing, and whether the look should set the brows too (a look can: `brow` in `looks.js`).
+0000000. **Five more lash styles, for later** (the user's second reference, docs/research/lash_reference.md): thin sparse
+   lashes for men and older faces, glam volume, fluffy mink, doll volume, natural medium; with a lower-lid liner and
+   grey and brown lash looks. Not made yet; the user said "for later".
 00000. **Look at the new bodies and the tailored clothes** (Feminine or Masculine, then the outfits named after the
    references: `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts`, `t-shirt tucked
    in`); characters made before have the new bodies too. Say what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own

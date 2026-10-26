@@ -132,6 +132,12 @@ convention (white = rough) when baking.
   contour, no highlight**, minimal eyes, juicy or blurred soft-edged lips (sheer tint, "bitten" lip).
 - **Soft glam** **[guess, general convention]**: more coverage, warm-brown eyeshadow and a longer liner wing,
   blush and bronzer lower on the cheekbones, a defined highlight on cheekbone tops and nose bridge, satin lips.
+- **Anime / douyin pink** (the user's references, 2026-10-26: an anime lash set photographed on an eye, and drawn eyes):
+  the eye's shape drawn by **pinkish hues round it**: a mauve-pink shadow on the outer half of the upper lid, a pink wash
+  under the lower lashes fuller toward the outer corner, a pink **inner corner** (a dab, a little shimmer) and a pink
+  **waterline** (the lower rim, wet); a bold black liner thickening to the outer corner with a wing, carried past the
+  inner corner to a sharp point; aegyo-sal; the lashes an anime set: separate spikes with gaps between them, long
+  alternating with short, longest and swept out at the outer corner, the lower lashes in spikes pointing down the skin.
 
 **How game creators layer it**: stacked masked colour layers with their own colour, intensity and gloss
 (Reallusion's blush = contour + blush + highlight layers; DAZ makeup editors apply layers through the shader so they
@@ -212,6 +218,10 @@ alias at medium range, and our `fwidth` fade already handles that):
 - *Soft glam*: foundation 0.7, roughness 0.40 (satin, coat down to 0.05 except highlight); contour cool taupe 0.3
   under cheekbones; blush warm 0.3 on the cheekbone, swept back; highlight 0.45 on cheekbone tops and nose bridge
   (roughness 0.18, coat 0.4); eyeshadow warm brown 0.5, longer liner wing; lips satin rose 0.8, roughness 0.35.
+- *Anime pink* (`skinshader.js`'s `anime pink`, after the references above): foundation 0.45; blush pink 0.35 placed high
+  (0.8); liner 0.9 near black, thickness 1.5, wing 0.45, inner corner point 0.7; eyeshadow mauve-pink 0.8 gathered at the
+  outer corner (placement 0.55); under-eye wash pink 0.75; inner corner pink 0.65; waterline pink 0.75; aegyo-sal 0.45;
+  lips pink gradient 0.5, gloss 0.6. The whole look (`looks.js` "anime pink") adds the anime lash style.
 
 **Checks to make it measurable** (fits "judge the frame"): render a contact sheet of each preset under the game's
 three lights (soft key with rim, flashlight, the dark) at medium POV distance and at close-up; measure highlight

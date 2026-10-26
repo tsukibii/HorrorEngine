@@ -43,6 +43,78 @@ The user's answers, newest first. They override the plan, the research and the d
   character in Generate's preview and in the level. Written without the editor here: its first run is checked by eye
   (UNREAL_FLOW §1d).
 
+## 2026-10-26, night (anime lashes and the pink eye makeup after the user's references)
+
+- **Lashes like the user's references** ("create eyelashes that look like ref images": a drawing of three pairs of eyes
+  with long spiky lashes, a bold liner and pink round the eyes, and a photo of an anime lash set on an eye: separate
+  spikes with gaps between them, long ones alternating with short, the outer ones longest and swept out, the lower
+  lashes in thin spikes pointing down the skin), **as presets in the style dropdown** ("have them as female or add a
+  dropdown for presets or something"): three anime styles (an anime lash set, drawn manhwa wisps, an anime doll ringed in
+  short spikes) beside the natural ones, grouped; three new sliders behind them (Spiky clumps, Long and short, Lower
+  lashes down) so any style can be pushed either way.
+- **A makeup preset for the pinkish hues round the eye** ("observe the little colors around the eye lash that emphasize
+  the eye's shape ... add a make up preset that emulates this exact look for eyes"): **anime pink**, in the Skin tab's
+  makeup presets, and a whole look of the same name (Face, Look) that puts the anime lashes on with it. New makeup
+  layers for it: an under-eye wash, the inner corner, the waterline, the eyeshadow's placement, the liner's thickness
+  and its point past the inner corner.
+- **The lashes exactly like the anime lash set, as far as the renderer can** ("It doesn't look anywhere as good as
+  this, we want the eyelashes to be exactly like this style if possible, tell me if it isn't"): the first spiky lashes
+  were wedge cards and read as solid black triangles; every lash is now one fine hair (a thin card with one strand of
+  the lashes' own atlas), hundreds an eye, in clusters that draw to points, long, medium and short clusters in turn,
+  a short fringe under them, clusters crossing, the outer ones swept up and out, the lower lashes in small clusters
+  down the skin: judged on the Studio's eye close-up against the photo, open, three-quarters and shut. What the
+  renderer can't give: the photo's soft focus and the hairs' glint under a real light; what's left to the user's eye:
+  the hairs' thickness and count, how far the spikes rise, the lower lashes' length (all sliders).
+- **No skin between the lashes' roots, and lashes that turn with a blink** ("fix the little gaps that show skin where
+  eyelash should be. Also consider how the eye should be when the eyes blink, it shouldn't disappear but should now
+  angle towards the viewer. Feel free to create more vertex points or create a bendy bone system for each eyelash so
+  it bends along the eyelid's movement"): the lash line is a dense fringe over the whole rim and a little up the lid
+  (its own mesh and atlas), and each lash's frame is set on the open lid and turned with the lid about the eyeball's
+  middle as it shuts, with the margin's droop, so a shut eye's lashes point at the viewer and a little down, still on
+  their rim (a bendy bone a lash, in effect: one turn about the lid's line per root).
+- **Shut, the lashes stay on the upper lid, and no dark patch on the lid** ("The eyelash has moved to the bottom eye lid
+  in this photo when it should be aligned with the upper one, what is that dark patch above the eyelash on the eyelid?
+  It doesn't look good"): the margin's droop had been applied to the rim the lashes grow from too, which put their
+  roots below the seam; the rim now swings with the margin alone (the roots level with the seam and forward of it,
+  the upper lid's own edge) and the droop is on the hairs' direction only. The patch was the painted liner, found by
+  rays on the shut lid's bulge, and a wing twice too fat: the liner's lines now come from the open lid swung with the
+  margin like the lashes, a thin line along their roots in any pose, and the wing is a flick.
+- **The lower lashes neither angular nor fading** ("could you fix the bottom eyelashes though, they seem to look too
+  angular and partially blend/fade away in the skin"; Claude circled the inner, middle and outer thirds and the user
+  confirmed: "matches what I see, for solution do whatever is most aesthetic and technically correct"): each lower
+  lash is one hair rooted at the margin's front edge (the waterline shows between the eye and the lashes, as in a real
+  eye and the reference; the stretch across the margin ran toward the viewer and kinked down into an L), leaving along
+  the skin over the edge and easing into its own direction (no corner), at most 57° down (clear of the skin under the
+  eye); the lash atlas's strand is a solid core thinning to the tip and black to the end (a soft core mipped down to a
+  few pixels went grey over the whole card; a fading tip dissolved into the skin), which made the upper lashes crisper
+  and blacker too.
+- **No skin at the corners of the upper lid, and the lower roots on one line** ("we improved the bottom but made the
+  upper worse again, see in green circles gaps of skin where it makes it look eyelashes is clipping through when it
+  should sit/bend/curve above it. See the red line, that should be the guide line for the roots of the lower
+  eyelashes": the corners of the upper lid circled, a line drawn along the lower lid's margin): both came from the rim
+  the lashes lie over being faded to nothing at the corners; it now runs to the corners (searched square to the lid's
+  own line, a far pick on the wrong skin dropped, a corner that finds nothing filled from its neighbour), the lashes
+  root on it all round, the innermost 7% of the upper lid carries none, and the lower roots follow the margin's front
+  edge as one smooth line, corner to corner, where the user drew theirs.
+- **Three eye shapes, as lashes only** ("could you now go and make presets for the following shapes": a drawing of
+  three pairs of eyes; Claude masked the left eyes in green and named them fox almond, half-lidded and round doll; the
+  user: "you don't need to worry about the openings since it won't work if I use image to face scan path, just focus on
+  the overall eyelash shape and direction"): three lash styles in a group of their own (the fox's fan swept out to a
+  wing, long at the outer corner and short at the inner; the half-lidded's dense lashes down over the eye in a band;
+  the doll's short spikes radiating all round) and three whole looks that add the liner each drawing carries (the
+  wing, the inner point, the pinks). The opening is never changed: a character's own, from the scan.
+- **For later: five more lash styles after a second reference** ("For later (save as a reference for now) I want us to
+  make these eyelash shapes too as seen in this image (thin ones for men etc)": five rendered pairs of eyes: an old
+  man's sparse thin lashes, a glam volume set with smoky plum makeup, a fluffy mink set, a doll volume set with a lower
+  liner, a natural medium set with a tinted waterline). Written up in docs/research/lash_reference.md with a style
+  sketched for each; not made yet.
+- Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
+  under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
+  the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style
+  now sets every lash slider, so switching styles never leaves another's spikes behind. The new lashes and the makeup
+  were judged on renders of the Studio's eye close-up against the references (an anime lash set reads as spikes at
+  16× the roots' spacing between them; the lower lashes 62° down the skin).
+
 ## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 
 - **The T-pose's neck stands upright, like the user's reference** ("I like the new tpose ... but the neck is too curved

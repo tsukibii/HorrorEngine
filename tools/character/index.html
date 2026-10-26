@@ -342,8 +342,30 @@ function skinLook() {
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
   material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on || (NAILAT && st.nails?.on) ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
-  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+  if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
   nailLook();
+}
+// the upper lid's front edge, where the lashes grow, as nine points in the order of skinshader.js's ring (outer corner
+// to inner): rimOf's way over the rim from the eye's own lid line (the outline the lashes stand on: MediaPipe's ring
+// sits up the lid, nearly at the front edge already), its last point at every other point of the outline's seventeen;
+// and the liner's top edge, on the skin `ws` mm (one per ring point) out from it (the painted liner is the band
+// between the two lines)
+// A blink: the lines come from the lid as it is open (OPENLID, browLash's cache), swung with the margin round the
+// eyeball's middle the way the lashes are (browlash.js's lidFrame), so the liner stays along the lashes' roots on a shut
+// lid instead of being found by rays on its bulge; the top a share of the open rim's fourth point (RIM_UP mm up the lid)
+function lidFront(side, pts, ws) {
+  const { pts: o, c } = outline(side, 1), upper = o.slice(16).concat([o[0]]);   // inner corner to outer, as browLash takes it
+  const O = OPENLID[side], wAt = i => ws[Math.min(8, Math.round((16 - i) / 2))];
+  if (O && O.upper.length === upper.length && O.upperRim) {
+    const fr = BL.lidFrame(upper, O.upper, O.upperRim, O.eye), at = (i, j) => { const r = fr[i].rim[j] || [0, 0, 0]; return [upper[i][0] + r[0], upper[i][1] + r[1], upper[i][2] + r[2]]; };
+    const top = i => { const f = at(i, 2), t = at(i, 3), k = wAt(i) / BL.RIM_UP; return [f[0] + (t[0] - f[0]) * k, f[1] + (t[1] - f[1]) * k, f[2] + (t[2] - f[2]) * k]; };
+    return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 2)), top: [...Array(9)].map((_, j) => top(16 - 2 * j)) };
+  }
+  const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));   // (before the lashes have seen the eye open: the lid as it is now)
+  U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
+  const rows = rimOf(upper, c, F, 2.2, side, upper.map((_, i) => wAt(i)));
+  const at = (i, a) => [upper[i][0] + rows[i][a], upper[i][1] + rows[i][a + 1], upper[i][2] + rows[i][a + 2]];
+  return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 6)), top: [...Array(9)].map((_, j) => at(16 - 2 * j, 9)) };
 }
 function nailLook() {                                  // the fingernails into the skin's shader (nails.js; skinshader.js paints them)
   const n = st.nails || NAILS.NAIL_DEFAULTS, on = !!NAILAT && !!n.on;
@@ -394,8 +416,8 @@ let skinPreset = null;                                 // a preset into the skin
     st.skin.proc.on = true; procSet.all(); skinLook();
   };
   skinPreset = usePreset;
-  skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], ["freckleColor", "flushColor"]); skinPre.value = ""; };
-  makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]); makePre.value = ""; };
+  skinPre.onchange = () => { if (skinPre.value) usePreset(SKINSH.SKIN_PRESETS[skinPre.value], ["Skin", "Age"], SKINSH.SKIN_COLOURS); skinPre.value = ""; };
+  makePre.onchange = () => { if (makePre.value) usePreset(SKINSH.MAKEUP_PRESETS[makePre.value], ["Makeup"], SKINSH.MAKEUP_COLOURS); makePre.value = ""; };
   let group = null;
   for (const [k, label, lo, hi, step, val, help, g] of SKINSH.FEATURES) {
     if (g !== group) { box.append(el("h4", { textContent: g })); group = g; }
@@ -887,7 +909,7 @@ function compose() {                                   // POS: RAW + the face, s
   }
   dgeo.attributes.position.needsUpdate = true; dgeo.attributes.normal.needsUpdate = true; dgeo.attributes.objPos.needsUpdate = true; dgeo.computeBoundingSphere();
   mouthCut(); moveJaw(); lipstick();
-  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE);
+  if (typeof skinLook === "function" && st.skin?.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
   if (BL_READY) browLash();                            // the brows and lashes on the face as it is now
   LAY?.shapeChanged();
   WEAR?.update();                                       // the accessories on the face as it is now
@@ -1831,10 +1853,13 @@ function useLook(name) {
   if (L.teeth) { Object.assign(st.teeth, L.teeth); teethSet.all(); }
   if (L.skin?.off) { st.skin.proc.on = false; procSet.all(); }
   else if (L.skin) {
-    if (L.skin.preset) skinPreset(SKINSH.SKIN_PRESETS[L.skin.preset], ["Skin", "Age"], ["freckleColor", "flushColor"]);
-    if (L.skin.makeup) skinPreset(L.skin.makeup, ["Makeup"], ["blushColor", "lipColor", "linerColor", "shadowColor"]);
+    if (L.skin.preset) skinPreset(SKINSH.SKIN_PRESETS[L.skin.preset], ["Skin", "Age"], SKINSH.SKIN_COLOURS);
+    if (L.skin.makeup) skinPreset(typeof L.skin.makeup === "string" ? SKINSH.MAKEUP_PRESETS[L.skin.makeup] : L.skin.makeup, ["Makeup"], SKINSH.MAKEUP_COLOURS);   // a makeup preset by name, or its own
     if (L.skin.tweak) { Object.assign(st.skin.proc, L.skin.tweak); procSet.all(); }
   }
+  if (L.lash) { Object.assign(st.lash, L.lash.style ? BL.styleOf(L.lash.style) : {}, L.lash.set || {}, { on: L.lash.on !== false, look: L.lash.look || st.lash.look }); }   // the lashes: a style, a look, on
+  if (L.brow) { Object.assign(st.brow, L.brow.shape ? { ...BL.BROW_SHAPES[L.brow.shape], shape: L.brow.shape } : {}, L.brow.set || {}, { on: L.brow.on !== false, look: L.brow.look || st.brow.look }); delete st.brow.label; }
+  if ((L.lash || L.brow) && BL_READY) { blSet.all(); browLash(); }
   skinLook(); changed("expr"); UNSAVED = true;
 }
 {
@@ -2072,16 +2097,16 @@ const eyeSet = {};
 // ---- brows and lashes (browlash.js): cards for the salon's hair shader; the lashes on the lids' edges, turning with the
 // lids and squashing as they shut, the brows flat on the skin between MediaPipe's brow rows; both off until asked for
 st.lash = { ...BL.LASH_DEFAULTS }; st.brow = { ...BL.BROW_DEFAULTS };
-var BL_READY = false, BLNOW = null, BLLIDS = null;      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on)
-const BLU = { lash: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };
+var BL_READY = false, BLNOW = null, BLLIDS = null, OPENLID = {};      // var: compose and the render loop run before this block (BLLIDS: the lids the lashes stand on; OPENLID: the lids as they are open, the lashes' frame)
+const BLU = { lash: hairUniforms(atlasTexture(BL.LASH_ATLAS), BL.LOOKS[st.lash.look]), line: hairUniforms(atlasTexture(BL.LINE_ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };   // the lashes' atlas: one fine strand to a cell; the lash line's: a dense fringe
 for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
-const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
+const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
 const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
 const BROWROWS = { R: { upper: [107, 66, 105, 63, 70], lower: [55, 65, 52, 53, 46] }, L: { upper: [336, 296, 334, 293, 300], lower: [285, 295, 282, 283, 276] } };
 function browLash() {
-  BLM.lash.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
+  BLM.lash.visible = BLM.line.visible = !!LMK && st.lash.on; BLM.brow.visible = BLM.fill.visible = !!LMK && st.brow.on;
   if (!LMK || (!st.lash.on && !st.brow.on)) { BLNOW = null; return; }
   const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));
   U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
@@ -2089,12 +2114,14 @@ function browLash() {
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
-    lids[side] = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, open };
+    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, eye: EYES[side].position.toArray() };   // (the upper rim's fourth point: the skin RIM_UP mm up the lid, for the lash line's and the liner's tops; the eyeball's middle: what the lids swing round)
+    if (open >= 0.97 || !OPENLID[side]) OPENLID[side] = now;              // the lids as they are open: the lashes' frame, turned with the lid as it shuts (browlash.js)
+    lids[side] = { ...now, open, open0: OPENLID[side] };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
   }
   const C = v(234).add(v(454)).multiplyScalar(0.5);
   const r = BL.build({ lids, brows, F: F.toArray(), U: U.toArray(), C: C.toArray(), scale: SCALE }, st.lash, st.brow); BLLIDS = lids;
-  for (const [k, g] of [["lash", r.lashes], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
+  for (const [k, g] of [["lash", r.lashes], ["line", r.line], ["brow", r.brows], ["fill", r.fill]]) { BLM[k].geometry.dispose(); BLM[k].geometry = g; }
   BLNOW = r.cards;
 }
 // a lid's rim: MHR's lid line runs along its back edge, where the lid meets the eye, and the lashes grow from its front
@@ -2113,13 +2140,14 @@ function rimNear(side, c) {
   for (let t = 0; t < TRIS.length; t += 3) if (inBox[TRIS[t]] || inBox[TRIS[t + 1]] || inBox[TRIS[t + 2]]) tris.push(t);
   return RIMNEAR[side] = { verts, tris };
 }
-function rimOf(line, c, F, reach, side) {
+function rimOf(line, c, F, reach, side, up = null) {   // up: mm per point (or one for all): a fourth point each, on the skin that far out from the front edge (the painted liner's top)
   const mm = 0.001 * SCALE, f = [F.x, F.y, F.z], n = line.length, out = [], lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+  const upAt = k => up == null ? 0 : Array.isArray(up) ? up[k] : up, pad = up == null ? 0 : (Math.max(...line.map((_, k) => upAt(k))) + 1) * mm;
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
   const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const unit = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
-  for (const p of line) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - 5 * mm); hi[a] = Math.max(hi[a], p[a] + 5 * mm); }
+  for (const p of line) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - 5 * mm - pad); hi[a] = Math.max(hi[a], p[a] + 5 * mm + pad); }
   const near = [], tris = [], box = i => POS[i * 3] > lo[0] && POS[i * 3] < hi[0] && POS[i * 3 + 1] > lo[1] && POS[i * 3 + 1] < hi[1] && POS[i * 3 + 2] > lo[2] && POS[i * 3 + 2] < hi[2];
   const R = rimNear(side, c);                           // the skin round the line: its points, and its triangles (corners and middles, flat)
   for (const i of R.verts) if (box(i)) near.push(i);
@@ -2140,25 +2168,51 @@ function rimOf(line, c, F, reach, side) {
     }
     return best;
   };
+  // outward from the line: square to the lid's own line in the face's plane, away from the eye's middle (the way from the
+  // eye's middle points along the eye at the corners, where the margin still runs across the lid: searched that way, the
+  // corners found nothing or the wrong skin, and the rim was faded to nothing there, which rooted the corner lashes
+  // under the skin and jumped the lower roots up to the eye's edge: the user's find, 2026-10-26, night)
+  const outOf = k => { const p = line[k], tg = unit(sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), d0 = sub(p, c), radial = unit(sub(d0, f.map(v => v * dot(d0, f))));
+    let nrm = unit(cross(f, tg)); if (dot(nrm, radial) < 0) nrm = mul(nrm, -1); return { tg, nrm }; };
+  const found = [];
   for (let k = 0; k < n; k++) {
-    const p = line[k], tg = unit(sub(line[Math.min(n - 1, k + 1)], line[Math.max(0, k - 1)])), d0 = sub(p, c), radial = unit(sub(d0, f.map(v => v * dot(d0, f))));
+    const p = line[k], { tg, nrm } = outOf(k);
     let best = null, bf = 0;
     for (const i of near) {                              // (MHR's points are a few mm apart along the rim)
       const dx = POS[i * 3] - p[0], dy = POS[i * 3 + 1] - p[1], dz = POS[i * 3 + 2] - p[2], fw = dx * f[0] + dy * f[1] + dz * f[2];
       if (fw <= bf) continue;
-      const o = dx * radial[0] + dy * radial[1] + dz * radial[2]; if (o < 0.2 * mm || o > reach * mm || Math.abs(dx * tg[0] + dy * tg[1] + dz * tg[2]) > 2.5 * mm) continue;
+      const o = dx * nrm[0] + dy * nrm[1] + dz * nrm[2]; if (o < 0.2 * mm || o > reach * mm || Math.abs(dx * tg[0] + dy * tg[1] + dz * tg[2]) > 2.5 * mm) continue;
       bf = fw; best = [dx, dy, dz];
     }
-    let v = best ? sub(best, tg.map(x => x * dot(best, tg))) : [0, 0, 0];
-    const l = Math.hypot(v[0], v[1], v[2]), u = k / (n - 1), fade = Math.min(1, u / 0.2, (1 - u) / 0.2), cap = l > 3 * mm ? 3 * mm / l : 1;
-    v = mul(v, cap * fade * fade * (3 - 2 * fade));
+    let v = best ? sub(best, tg.map(x => x * dot(best, tg))) : null;
+    if (v) { const l = Math.hypot(v[0], v[1], v[2]); if (l > 3 * mm) v = mul(v, 3 * mm / l); if (l < 0.2 * mm) v = null; }
+    found.push(v);
+  }
+  // a pick far deeper than the lid's own rim is the wrong skin (at the inner corner the lower lid's search reaches the
+  // nose's flank, 3 mm forward): dropped, and filled in like the corners below
+  const depths = found.filter(Boolean).map(v => Math.hypot(v[0], v[1], v[2])).sort((a, b) => a - b), median = depths.length ? depths[depths.length >> 1] : 0;
+  for (let k = 0; k < n; k++) if (found[k] && Math.hypot(found[k][0], found[k][1], found[k][2]) > 1.6 * median + 0.2 * mm) found[k] = null;
+  // where nothing was found (the last point or two at a corner), the nearest found way, scaled down a little: the margin
+  // runs to the corner, shallower; never nothing
+  for (let k = 0; k < n; k++) if (!found[k]) {
+    let j = -1; for (let d = 1; d < n && j < 0; d++) { if (found[k - d]) j = k - d; else if (found[k + d]) j = k + d; }
+    found[k] = j < 0 ? [0, 0, 0] : mul(found[j], Math.pow(0.8, Math.abs(k - j)));
+  }
+  for (let k = 0; k < n; k++) {
+    const p = line[k], { tg, nrm: radial } = outOf(k), v = found[k];
     const off = unit(add(mul(f, dot(v, radial)), mul(radial, -dot(v, f))));   // the side the rim faces: the eye's, and forward
     const path = [1 / 3, 2 / 3].map(g => { const h = Math.hypot(v[0], v[1], v[2]) > 0.2 * mm ? above(add(p, mul(v, g)), off, 3 * mm) : 0;
       return add(mul(v, g), mul(off, Math.max(0, Number.isFinite(h) ? h : 0) + 0.15 * mm)); });
     path.push(add(v, mul(off, 0.1 * mm)));
-    out.push([...path[0], ...path[1], ...path[2]]);
+    const row = [...path[0], ...path[1], ...path[2]];
+    if (up != null) {                                    // the skin `up` mm out from the front edge, along the face's plane: a ray forward through it (the lid slopes back above its edge; shut, it bulges forward)
+      const q = add(v, mul(radial, upAt(k) * mm)), h = above(add(p, q), f, 3 * mm);
+      row.push(...add(q, mul(f, (Number.isFinite(h) ? h : 0) + 0.15 * mm)));
+    }
+    out.push(row);
   }
-  for (let it = 0; it < 2; it++) { const q = out.map(v => v.slice()); for (let k = 1; k < n - 1; k++) for (let a = 0; a < 9; a++) out[k][a] = (q[k - 1][a] + 2 * q[k][a] + q[k + 1][a]) / 4; }
+  const w = out[0].length;
+  for (let it = 0; it < 2; it++) { const q = out.map(v => v.slice()); for (let k = 1; k < n - 1; k++) for (let a = 0; a < w; a++) out[k][a] = (q[k - 1][a] + 2 * q[k][a] + q[k + 1][a]) / 4; }
   return out;
 }
 const _k = new THREE.Vector3(), _t = new THREE.Vector3(), _kc = new THREE.Color();
@@ -2210,15 +2264,18 @@ const blSet = {};
   const part = (o, label, controls, looks, help) => {
     const on = el("input", { type: "checkbox" }), look = el("select", {}, ...Object.entries(BL.LOOKS).filter(([k]) => k.startsWith(looks)).map(([k, l]) => el("option", { value: k, textContent: l.label })));
     box.append(el("label", { className: "tog" }, on, el("span", {}, label, el("small", { textContent: help }))), el("div", { className: "row" }, el("span", { textContent: "Look" }), look, el("output")));
-    on.onchange = () => { o.on = on.checked; browLash(); }; look.onchange = () => { o.look = look.value; applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); fillColour(); };
+    const relook = () => { applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); if (looks === "lash") applyLook(BLU.line, BL.LOOKS[o.look]); };   // (the lash line wears the lashes' look)
+    on.onchange = () => { o.on = on.checked; browLash(); }; look.onchange = () => { o.look = look.value; relook(); fillColour(); };
     const sl = {}; for (const [k, lab, lo, hi, step, h] of controls) sl[k] = slider(box, `${looks}_${k}`, lab, lo, hi, step, o[k], h, val => { o[k] = val; browLash(); });
-    sets.push(() => { on.checked = o.on; look.value = o.look; applyLook(BLU[looks === "lash" ? "lash" : "brow"], BL.LOOKS[o.look]); for (const [k] of controls) sl[k](o[k]); });
+    sets.push(() => { on.checked = o.on; look.value = o.look; relook(); for (const [k] of controls) sl[k](o[k]); });
   };
   box.append(el("h4", { textContent: "Lashes" }));
   part(st.lash, "Lashes", BL.LASH_CONTROLS, "lash", "Rooted on the lids' edges: they turn with the lid and squash as it shuts. The salon's hair shader.");
-  const style = el("select", {}, el("option", { value: "", textContent: "a style…" }), ...Object.entries(BL.LASH_STYLES).map(([k, x]) => el("option", { value: k, textContent: x.label })));
-  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")));
-  style.onchange = () => { if (!style.value) return; const x = { ...BL.LASH_STYLES[style.value] }; delete x.label; Object.assign(st.lash, x); style.value = ""; blSet.all(); browLash(); };
+  const style = el("select", {}, el("option", { value: "", textContent: "a style…" }));   // the styles in their groups (the anime ones after the user's references)
+  for (const g of [...new Set(Object.values(BL.LASH_STYLES).map(x => x.group || "Styles"))])
+    style.append(el("optgroup", { label: g }, ...Object.entries(BL.LASH_STYLES).filter(([, x]) => (x.group || "Styles") === g).map(([k, x]) => el("option", { value: k, textContent: x.label }))));
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output")), el("small", { className: "note", textContent: "A style sets every slider above (the ones it doesn't name go back to their defaults); the sliders stay yours to move. The anime styles are after the user's references: spikes with gaps between them, long alternating with short, the lower lashes in wisps down the skin." }));
+  style.onchange = () => { if (!style.value) return; Object.assign(st.lash, BL.styleOf(style.value), { on: true }); style.value = ""; blSet.all(); browLash(); };
   box.append(el("h4", { textContent: "Brows" }));
   const shape = el("select", {}, ...Object.entries(BL.BROW_SHAPES).map(([k, s]) => el("option", { value: k, textContent: s.label })));
   part(st.brow, "Brows", BL.BROW_CONTROLS, "brow", "Hairs lying flat on the skin between the brow's two rows: the front up, the rest swept out; they ride the brows' expressions.");

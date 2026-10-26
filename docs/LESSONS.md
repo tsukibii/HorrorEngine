@@ -732,3 +732,56 @@ load the page once after an edit.
   the fine strands between them and a pale collarette.
 - **A restarted machine keeps its files, not its servers:** after a reboot the test characters and MediaPipe's setup
   were still there but neither server was running. Check the ports before blaming a test.
+
+## Anime lashes and the painted liner (2026-10-26, night)
+
+- **A band "up from a line" breaks when the surface turns:** the liner was first painted as the skin within a liner's
+  width up (the face's up) from the lashes' roots; on a shut lid, whose skin runs forward, that took a slab of the lid
+  and showed its nine segments as flat plates. Bound a band by two lines found on the skin instead (the roots, and the
+  skin a width out from them by rays): between two lines the distances to them add up to their separation, outside they
+  add up to more, whatever the pose.
+- **Check that the layer you're tuning shows at all before tuning it:** the liner at 1.0 with loud test colours showed
+  only two specks at the corners, because the lid line it followed lies under the lashes and the eye's cut. A picture
+  with every makeup layer at full strength in a colour of its own finds that in one look.
+- **`out` is a GLSL keyword:** a float named `out` fails the whole skin shader (the Studio draws nothing but the eyes
+  and the hair); the error names the line.
+- **Hair is hairs:** lashes built as a few dozen cards of clumped strands read as solid wedges however they were
+  clustered, and no amount of tuning the clusters fixed it; the user's reference is hundreds of fine hairs. One thin
+  card per hair with a single soft-cored strand on it (its own atlas) looked right at the first render. Count the
+  things in the reference before building them.
+- **A helper's name taken by a setting:** the lashes' Criss-cross slider was called `cross`, the module's vector
+  product too; renamed, the definition was missed and only the calls renamed (a regex on `cross(` doesn't match
+  `const cross =`). Rename the definition first and let the syntax check find the calls.
+- **Swing round the right centre:** the lashes' turn with a blink was first measured round the eye opening's middle (the
+  outline's centroid, in the lids' plane): a lid that drops 5 mm past it swings 100° and the lashes folded into the
+  cheek. The lids turn round the eyeball's middle, a centimetre behind: 31°. Anything that rotates with a lid pivots
+  there.
+- **A band of sparse strands shows what's under it:** the lash line drawn with the lashes' strand atlas (one soft hair
+  to a cell) was mostly see-through, and skin showed between the roots. A root line wants its own texture: opaque along
+  the edge, ragged only where it ends.
+- **Check that a crossed card actually crosses:** the second lash card's width ran along the lash itself (the cross
+  product of the first card's normal and the lid's tangent is the lash's own direction), a sliver that showed nothing
+  from the side. The second card's width is the first card's normal.
+- **Turn the root with the margin, the hair with the droop:** the extra droop a shut lid's lashes want was applied to
+  the whole frame, rim included, and the roots swung below the seam onto the lower lid. What grows from the margin
+  turns with the margin; only the hairs' own direction takes the droop.
+- **Everything painted on a moving lid should take the same frame:** the painted liner found its lines by rays on the
+  lid as it is now, which on a shut lid's bulge put a dark patch up the lid while the lashes (from the open lid, swung)
+  sat at its edge. One frame for all of it: the open lid, swung with the margin.
+- **A soft strand goes grey when it's small on screen:** the lash atlas's Gaussian core, mipped down to the few pixels
+  a lower lash covers, spread its alpha over the whole card: a wide grey ribbon, not a hair. A strand that must read at
+  a few pixels wants a solid core (alpha 1) with a texel of soft edge, and a tip that thins but stays black (the card's
+  own taper makes the point); let the geometry taper, not the alpha.
+- **The lower lid's margin faces up, the upper's faces down:** laying the lower lashes over their margin from the eye's
+  edge (as the upper ones are, which hides the upper waterline the way a real face does) ran each lash toward the
+  viewer and then down: an L from the front. The lower waterline shows in a real eye; root the lower lashes at the
+  margin's front edge.
+- **Hairs side by side are a comb, not a thicker hair:** a lower lash made of three nearly parallel hairs read as three
+  thin lines with gaps, whatever their spacing. One hair, wide enough to cover a pixel and a half, reads as one lash.
+- **Fading a measurement to nothing where it's unreliable puts the thing at zero, which is also wrong:** the rim the
+  lashes lie over was faded to nothing at the corners because the search there picked the wrong skin; at zero the
+  corner lashes rooted under the skin and the lower roots jumped to the eye's edge. Fix the search (square to the lid's
+  own line, far picks dropped) and fill a gap from its neighbours; never fade to a value you know is false.
+- **"Away from the centre" is not "out of the opening" at the ends of a slit:** from the eye's middle, outward points
+  along the eye at the corners, where the margin still runs across the lid and a lash still grows across it. Square to
+  the line, oriented away from the middle, is the direction that means out of the opening everywhere.
