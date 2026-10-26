@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, late night (iris patterns and pupil shapes)
+
+- **Patterns inside the iris and pupils of other shapes, after the user's references, a heart among them** ("could you
+  design some other types of pupil shapes inspired by these references (I'm talking about the interior pattern inside
+  the iris), including a love heart shaped pupil one as seen in image 3": violet irises with an orange-gold sunburst
+  round the pupil, with electric pink streaks, with a fiery ring like a corona, a grey iris with a jagged violet ring;
+  gold, green, magenta, red and dark brown irises; a pink iris with a black heart for a pupil; a real grey-blue iris
+  close up). The eye now has an **iris pattern** (natural, sunburst, lightning, nebula, crypts, halo) in an accent
+  colour, and a **pupil shape** (round, heart, slit, bar, star, diamond, cross, crescent, flower, ring, two, none) in a
+  colour of its own; and **styles** after the references that set the colours, the pattern and the pupil together.
+- Claude's calls inside that: the shapes drawn as distance fields, so they stay sharp at any size and grow and shrink
+  with Pupil size; the pale ring round the pupil follows its shape; a few shapes for horror the references didn't
+  show (a hollow ring, two pupils, none) and styles for them (Hypnotised, Two pupils, Possessed); a character made
+  before keeps its eyes exactly as they were (natural, round). Everything is in the shared eye, so the desk shows it
+  and an export carries it to Unreal in its baked paint.
+
 ## 2026-10-26, night (eyes like MetaHuman's: the Studio, the desk, Unreal)
 
 - **The eye is made MetaHuman's way, in the Studio and wherever the character goes** ("experiment with applying this eye

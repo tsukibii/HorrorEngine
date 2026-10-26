@@ -162,8 +162,9 @@ and a bake (DECISIONS 2026-10-26):
    (PEOPLE). In Unreal (written blind: run it once with the editor, UNREAL_FLOW §1d): `storykit.people` imports the
    export as one skeletal mesh, its eyes wearing M_StudioEye (made from text; UEEYE runs its HLSL as GLSL against a
    traced ray), and Generate uses it for a cast member who is the character. Next, if wanted: §4's steps 5 and 6
-   (the room in the cornea, photo irises, the eyes' life), the caustic and an eye occlusion in Unreal. Look at a
-   character's eyes in the Studio and on the desk and say what to change.
+   (the room in the cornea, photo irises, the eyes' life), the caustic and an eye occlusion in Unreal. Then (DECISIONS
+   2026-10-26, late night) iris patterns and pupil shapes after the user's references, a heart among them, and
+   sixteen styles (Skin, Eyes, Iris and pupil): say which look right and what to change in the others.
 00000. **Look at the new bodies and the tailored clothes** (Feminine or Masculine, then the outfits named after the
    references: `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts`, `t-shirt tucked
    in`); characters made before have the new bodies too. Say what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own

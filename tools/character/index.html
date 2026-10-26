@@ -2040,13 +2040,31 @@ const eyeSet = {};
   eyeSet.lid = lidUI;
   on.onchange = () => { st.eyes.on = on.checked; changed("expr"); };
   let later = 0; const repaint = () => { clearTimeout(later); later = setTimeout(paintEyes, 60); };
+  // the iris's pattern and the pupil's shape (tools/shared/eye.js EYE_CHOICES), and styles setting them with the
+  // colours (EYE_STYLES, after the user's references)
+  box.append(el("h4", { textContent: "Iris and pupil" }));
+  const style = el("select", { id: "eyeStyle" }, el("option", { value: "", textContent: "Choose a style…" }), ...EYEPAINT.EYE_STYLES.map(([id, name, about]) => el("option", { value: id, textContent: name, title: about })));
+  style.onchange = () => {
+    const s = EYEPAINT.EYE_STYLES.find(x => x[0] === style.value); style.value = ""; if (!s) return;
+    Object.assign(st.eyes, s[3]); eyeSet.all(); paintEyes(); status(`eyes: ${s[1]}, ${s[2]}`, "ok");
+  };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Style" }), style, el("output"),
+                el("small", { textContent: "Sets the colours, the iris's pattern and the pupil together (violet with an orange sunburst, electric streaks, a nebula, a black heart, a serpent's slit...); then change any of them below." })));
+  const picks = {};
+  for (const [k, label, opts, def] of EYEPAINT.EYE_CHOICES) {
+    const sel = el("select", { id: "eye_" + k }, ...opts.map(([v, name, help]) => el("option", { value: v, textContent: name, title: help }))), help = el("small");
+    const sync = () => { sel.value = st.eyes[k] ?? def; help.textContent = (opts.find(o => o[0] === sel.value) || [])[2] || ""; };
+    sel.onchange = () => { st.eyes[k] = sel.value; sync(); repaint(); };
+    box.append(el("div", { className: "row" }, el("span", { textContent: label }), sel, el("output"), help));
+    picks[k] = sync; sync();
+  }
   const cols = {};
   for (const [k, label] of EYEPAINT.EYE_COLOURS) {
     const c = cols[k] = el("input", { type: "color", value: st.eyes[k] }); c.oninput = () => { st.eyes[k] = c.value; repaint(); };
     box.append(el("div", { className: "row" }, el("span", { textContent: label }), c, el("output")));
   }
   for (const [k, label, lo, hi, step, def, help] of EYEPAINT.EYE_CONTROLS) eyeSet[k] = slider(box, "eye_" + k, label, lo, hi, step, def, help, v => { st.eyes[k] = v; repaint(); });
-  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); };
+  eyeSet.all = () => { on.checked = st.eyes.on; real.checked = st.eyes.real !== false; eyeSet.lid(); for (const k of ["size", "depth", "opening", "lidShade", "occlusion", "tearline"]) eyeSet[k](st.eyes[k]); for (const [k] of EYEPAINT.EYE_COLOURS) cols[k].value = st.eyes[k]; for (const c of EYEPAINT.EYE_CONTROLS) eyeSet[c[0]](st.eyes[c[0]]); for (const f of Object.values(picks)) f(); };
 }
 
 // ---- hair: the salon's (salon.html, docs/SALON.md), drawn on this character there, baked onto it and worn here. The

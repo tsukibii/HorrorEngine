@@ -722,3 +722,13 @@ load the page once after an edit.
 - **A body that misses its marks may miss them by definition:** the desk's check had a Studio body 6 to 7 cm off the
   blocking's head and hands, and the desk's own MHR body is off by as much (the previs skeleton's joints aren't MHR's).
   Measure the reference before setting a limit; compare against it.
+
+## Iris patterns (2026-10-26)
+
+- **Put a pattern beside its reference before measuring it:** the first sunburst was a solid blob with a jagged edge,
+  the first lightning wandering cracks, the first crypts a ring of dashes. Each passed what a check would ask (the
+  accent shows, it differs from the plain iris) and none read like the user's pictures. Rays need gaps, a taper and a
+  colour running from root to tip; streaks run out from the pupil, nearly straight; crypts read as an iris only with
+  the fine strands between them and a pale collarette.
+- **A restarted machine keeps its files, not its servers:** after a reboot the test characters and MediaPipe's setup
+  were still there but neither server was running. Check the ports before blaming a test.

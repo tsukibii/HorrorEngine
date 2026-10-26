@@ -660,6 +660,72 @@ const png = rgb => {
     console.log(`       34° off the eye's axis the pupil sits ${len(got).toFixed(1)} px from where it's painted on the cornea's front; traced through the dome by Snell's law, ${len(want).toFixed(1)} (unbent ${len(unbent).toFixed(1)}): drawn within ${missOn.toFixed(1)} px of the trace, painted within ${missOff.toFixed(1)}`);
     console.log(`       the cornea reflects the lights inside the iris (its brightest ${coat.peak.toFixed(0)} of 255, ${coat.n} bright pixels; ${bare.peak.toFixed(0)} without its coat); painted on the eyeball instead, its catchlights (${painted.n})`);
   });
+  await step("iris patterns and pupil shapes (tools/shared/eye.js): a heart for a pupil (two lobes up, a dip between them, a tip down), a slit, a goat's bar, a star and a flower of five, a diamond, a cross, a crescent, a ring, two pupils apart, none; each pattern lays its accent over the iris and keeps the pupil dark; a style from the panel sets colours, pattern and pupil, and what an export carries keeps them", async () => {
+    const r = await page.evaluate(() => {
+      const B = window.__body, E = B.EYEPAINT, s = E.eyeShape(E.EYE_DEFAULTS), W = 512, R = s.rho * W / 2, P = 0.36;
+      const bake = p => E.bakeEye(B.renderer, { ...E.EYE_DEFAULTS, iris: "#7a8fb0", iris2: "#c8d4e6", pupil: P, ...p }, s, "L", W).getContext("2d").getImageData(0, 0, W, W).data;
+      const each = (d, f) => { for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) f((x + 0.5 - W / 2) / R, (W / 2 - y - 0.5) / R, (y * W + x) * 4); };   // the iris's plane: the limbus at 1, up +
+      const shapes = {};
+      for (const [v] of E.EYE_CHOICES[1][2]) {                         // the pupil's dark pixels, in its own radius
+        const d = bake({ pupilShape: v }), m = [];
+        each(d, (u, w, i) => { if (u * u + w * w < 0.8 && d[i] + d[i + 1] + d[i + 2] < 90) m.push([u / P, w / P]); });
+        const xs = m.map(p => p[0]), ys = m.map(p => p[1]), at = (q, e = 0.06) => m.some(p => Math.abs(p[0] - q[0]) < e && Math.abs(p[1] - q[1]) < e);
+        const top = x => Math.max(-9, ...m.filter(p => Math.abs(p[0] - x) < 0.04).map(p => p[1]));
+        const width = y => { const row = m.filter(p => Math.abs(p[1] - y) < 0.04).map(p => p[0]); return row.length ? Math.max(...row) - Math.min(...row) : 0; };
+        const bins = Array(72).fill(0); for (const [x, y] of m) { const k = Math.floor((Math.atan2(y, x) + Math.PI) / (2 * Math.PI) * 72) % 72; bins[k] = Math.max(bins[k], Math.hypot(x, y)); }
+        const mean = bins.reduce((a, b) => a + b, 0) / 72; let peaks = 0;
+        for (let k = 0; k < 72; k++) { const a = bins[(k + 71) % 72], b = bins[k], c = bins[(k + 1) % 72]; if (b > a && b >= c && b > mean * 1.08) peaks++; }
+        const span = a => a.length ? Math.max(...a) - Math.min(...a) : 0;
+        shapes[v] = { area: m.length / (R * R * P * P), w: span(xs), h: span(ys), top: m.length ? Math.max(...ys) : 0, bottom: m.length ? Math.min(...ys) : 0,
+                      dip: top(0.23) - top(0), upper: width(0.45), lower: width(-0.45), peaks, centre: at([0, 0], 0.08), cx: m.length ? xs.reduce((a, b) => a + b, 0) / m.length : 0,
+                      arms: [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]].every(q => at(q)), diag: at([0.62, 0.62], 0.05), ring: [[0.8, 0], [-0.8, 0], [0, 0.8]].every(q => at(q)),
+                      gap: m.filter(p => Math.abs(p[0]) < 0.06).length, n: m.length };
+      }
+      const base = { iris: "#4a1694", iris2: "#7b3fd0", accent: "#ffa21f" }, ref = bake({ ...base }), pats = {};
+      for (const [v] of E.EYE_CHOICES[0][2]) {                         // each pattern on violet with an orange accent, against the natural one
+        const d = bake({ ...base, pattern: v }); let diff = 0, acc = 0, n = 0, pupil = 0;
+        each(d, (u, w, i) => { const rr = Math.hypot(u, w);
+          if (rr < P * 0.8) { pupil = Math.max(pupil, d[i] + d[i + 1] + d[i + 2]); return; }
+          if (rr < P + 0.05 || rr > 0.9) return;
+          n++; diff += (Math.abs(d[i] - ref[i]) + Math.abs(d[i + 1] - ref[i + 1]) + Math.abs(d[i + 2] - ref[i + 2])) / 3;
+          if (d[i] > 150 && d[i] > d[i + 2] + 60 && d[i + 1] > d[i + 2]) acc++; });
+        pats[v] = { diff: diff / n, accent: acc / n, pupil };
+      }
+      const kept = E.EYE_STYLES.filter(([, , , st]) => { const p = E.eyeRecord({ ...E.EYE_DEFAULTS, ...st }, s, "L").paint; return p.pattern === st.pattern && p.pupilShape === st.pupilShape && p.accent === st.accent; }).length;
+      return { shapes, pats, styles: E.EYE_STYLES.length, kept };
+    });
+    const S = r.shapes, bad = [];
+    const want = (ok, what) => { if (!ok) bad.push(what); };
+    want(Math.abs(S.round.area - Math.PI) < 0.15 * Math.PI && !S.round.peaks, `round: area ${S.round.area.toFixed(2)} (π), ${S.round.peaks} points`);
+    want(S.heart.dip > 0.08 && S.heart.upper > 1.6 * S.heart.lower && S.heart.top > 0.7 && S.heart.bottom < -0.6, `heart: dip ${S.heart.dip.toFixed(2)}, widths ${S.heart.upper.toFixed(2)} up / ${S.heart.lower.toFixed(2)} down, ${S.heart.top.toFixed(2)} to ${S.heart.bottom.toFixed(2)}`);
+    want(S.slit.h > 3 * S.slit.w, `slit: ${S.slit.w.toFixed(2)} by ${S.slit.h.toFixed(2)}`);
+    want(S.goat.w > 2.2 * S.goat.h, `goat: ${S.goat.w.toFixed(2)} by ${S.goat.h.toFixed(2)}`);
+    want(S.star.peaks === 5 && S.flower.peaks === 5, `points: the star ${S.star.peaks}, the flower ${S.flower.peaks}`);
+    want(S.diamond.h > 1.3 * S.diamond.w && S.diamond.h < 2 * S.diamond.w, `diamond: ${S.diamond.w.toFixed(2)} by ${S.diamond.h.toFixed(2)}`);
+    want(S.cross.arms && !S.cross.diag, `cross: arms ${S.cross.arms}, a diagonal ${S.cross.diag}`);
+    want(!S.crescent.centre && S.crescent.cx > 0.15, `crescent: its middle ${S.crescent.centre ? "dark" : "clear"}, its weight at ${S.crescent.cx.toFixed(2)}`);
+    want(!S.ring.centre && S.ring.ring, `ring: its middle ${S.ring.centre ? "dark" : "clear"}, the ring ${S.ring.ring}`);
+    want(S.two.gap === 0 && S.two.w > 1.6, `two: ${S.two.gap} dark pixels between them, ${S.two.w.toFixed(2)} across`);
+    want(S.none.n === 0, `none: ${S.none.n} dark pixels`);
+    for (const [v, p] of Object.entries(r.pats)) {
+      if (p.pupil > 120) bad.push(`${v}: the pupil not dark (${p.pupil})`);
+      if (v === "natural") continue;
+      if (!(p.diff > ({ crypts: 3, halo: 4 }[v] ?? 8))) bad.push(`${v}: hardly differs from the natural iris (${p.diff.toFixed(1)}, over the whole iris: the halo is a narrow band)`);
+      if (v !== "crypts" && !(p.accent > 0.02)) bad.push(`${v}: its accent barely shows (${(p.accent * 100).toFixed(1)}%)`);
+    }
+    if (r.kept !== r.styles) bad.push(`an export keeps the pattern and pupil of ${r.kept} of ${r.styles} styles`);
+    // a style from the panel: the heart
+    const was = await page.evaluate(() => JSON.stringify(window.__body.st.eyes));
+    const ui = await page.evaluate(() => {
+      const b = window.__body, sel = document.querySelector("#eyeStyle"); sel.value = "heart"; sel.dispatchEvent(new Event("change"));
+      return { shape: b.st.eyes.pupilShape, pattern: b.st.eyes.pattern, iris: b.st.eyes.iris, picker: document.querySelector("#eye_pupilShape").value, options: sel.options.length - 1 };
+    });
+    await page.evaluate(was => { const b = window.__body; Object.assign(b.st.eyes, JSON.parse(was)); b.paintEyes(); b.compose(); }, was);
+    if (ui.shape !== "heart" || ui.picker !== "heart" || ui.options !== r.styles) bad.push(`the panel's style: ${JSON.stringify(ui)}`);
+    if (bad.length) throw new Error(bad.join("; "));
+    console.log(`       the heart: two lobes ${S.heart.upper.toFixed(2)} wide over a tip ${S.heart.lower.toFixed(2)} wide, a dip of ${S.heart.dip.toFixed(2)} between the lobes (the pupil's radius 1); the slit ${(S.slit.h / S.slit.w).toFixed(1)} times as tall as wide, the bar ${(S.goat.w / S.goat.h).toFixed(1)} times as wide; five points on the star and the flower; two pupils apart; the ring hollow; none none`);
+    console.log(`       patterns over a violet iris: ${Object.entries(r.pats).filter(([v]) => v !== "natural").map(([v, p]) => `${v} ${p.diff.toFixed(0)} off natural (${(p.accent * 100).toFixed(0)}% accent)`).join(", ")}; ${r.styles} styles, each kept in an export`);
+  });
   await step("accessories: glasses round the eyes, a sticker and a piercing held to the skin (a smile carries the sticker), a choker round the neck, one put where you click; saved with the character and back on reopening", async () => {
     await page.click('#tabs button[data-tab="acc"]');
     for (const v of ["glasses:round", "sticker:heart", "piercing:ring", "neck:choker"]) { await page.selectOption("#accAdd select", v); await page.click("#accAdd button"); }
