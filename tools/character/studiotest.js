@@ -665,16 +665,22 @@ const png = rgb => {
   await step("the eye refracts (tools/shared/eye.js, MetaHuman's way): seen from the side the pupil sits behind the cornea where a ray traced through the dome by Snell's law puts it, not painted on its front; the cornea reflects the lights inside the iris; off, the iris is painted on the eyeball as before", async () => {
     await page.click('#views button[data-v="head"]');
     const was = await page.evaluate(() => JSON.stringify(window.__body.st.eyes));
-    const shot = async (yaw, eyes, plain) => {
-      await page.evaluate(([yaw, eyes, plain]) => {
+    const shot = async (yaw, eyes, plain, alone) => {                // alone: only the eyeballs (the reflections are theirs; skin, clothes or hair can't count)
+      await page.evaluate(([yaw, eyes, plain, alone]) => {
         const b = window.__body, o = b.orbit, h = b.st.height, e = b.EYES.L.position;
         b.st.expr.fill(0); Object.assign(b.st.eyes, eyes); b.paintEyes();
         o.yaw = yaw; o.pitch = 0.02; o.zoom = 0.12; o.pan.set(e.x, e.y - (h - 0.12 * h / 1.7), e.z); b.compose();
         if (plain) for (const m of Object.values(b.eyeMats)) { m.clearcoat = 0; m.roughness = 1; m.envMapIntensity = 0; }   // no reflections: the pupil a clean dark blob
-      }, [yaw, eyes, plain]);
+        if (alone) for (const k of b.rig.children) if (k !== b.EYES.L && k !== b.EYES.R && k !== b.HOLES) { k.userData.shotHid = k.visible; k.visible = false; }
+      }, [yaw, eyes, plain, alone]);
+      // wait for frames drawn as set, not for the clock: a material that loses its coat recompiles, which with a full
+      // scene (clothes, hair) on the software GPU outlasts a fixed wait (LESSONS: the game's clock, not the wall's)
+      await page.evaluate(() => new Promise(r => { let n = 0; const f = () => (++n >= 4 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
       await page.waitForTimeout(600);
       const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
-      return (await page.screenshot({ clip, timeout: 120000 })).toString("base64");
+      const img = (await page.screenshot({ clip, timeout: 120000 })).toString("base64");
+      if (alone) await page.evaluate(() => { for (const k of window.__body.rig.children) if (k.userData.shotHid !== undefined) { k.visible = k.userData.shotHid; delete k.userData.shotHid; } });
+      return img;
     };
     const flat = { pupil: 0.45, limbal: 0, limbalSoft: 0, fibres: 0, veins: 0, iris: "#8a6a4a", iris2: "#8a6a4a", sclera: "#f0f0f0", corner: "#f0f0f0", cornerPink: 0, scleraShade: 0,
                    catch1: 0, catch2: 0, occlusion: 0, lidShade: 0, tearline: 0, irisDepth: 0.2, bulge: 1, ior: 1.336, irisBright: 1 };
@@ -715,7 +721,7 @@ const png = rgb => {
     // the cornea reflects the lights (whatever lights the view has): a highlight inside the dark iris that goes when its clear
     // coat goes; and off, the painted catchlights are back
     const inside = async (real, plain) => {
-      const img = await shot(0.15, { ...JSON.parse(was), real }, plain);
+      const img = await shot(0.15, { ...JSON.parse(was), real }, plain, true);
       return page.evaluate(async b64 => {
         const b = window.__body, THREE = b.THREE, L = b.EYES.L, s = b.eyeShapeOf("L"), i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode();
         const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); const d = g.getImageData(0, 0, i.width, i.height).data;

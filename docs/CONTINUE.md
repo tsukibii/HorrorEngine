@@ -154,7 +154,7 @@ and a bake (DECISIONS 2026-10-26):
 ## 4. What's next (ask which)
 
 0000000e. **Eyes like MetaHuman's** (DECISIONS 2026-10-26, night; docs/research/eyes.md §4): built on
-   `claude/bold-ride-mcg3gt`. The Studio's eyes are `tools/shared/eye.js` (the iris behind a refracting cornea, the
+   `claude/bold-ride-mcg3gt`, merged with the lash work (`better-eyelashes`) into `better-eyes-and-eyelashes`. The Studio's eyes are `tools/shared/eye.js` (the iris behind a refracting cornea, the
    cornea reflecting the lights, the iris lit as a bowl; STUDIO traces the refraction by Snell's law). The export is
    rigged on MHR's skeleton, the eyes on `l_eye`/`r_eye` carrying their paint baked flat and the eye's shape and paint
    (`extras.studioEye`), the lids resting on the eyes (a file has no stencil) and each opening's outline in the skin's

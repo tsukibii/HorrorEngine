@@ -785,3 +785,11 @@ load the page once after an edit.
 - **"Away from the centre" is not "out of the opening" at the ends of a slit:** from the eye's middle, outward points
   along the eye at the corners, where the margin still runs across the lid and a lash still grows across it. Square to
   the line, oriented away from the middle, is the direction that means out of the opening everywhere.
+
+## Merging the eyes and the lashes (2026-10-26)
+
+- **A check proved on a subset of steps isn't proved on the run:** the refraction step passed in every run of the eye
+  steps alone and failed in the full run, after twenty steps had dressed the character (draped clothes, hair): with the
+  cornea's coat off it still read a bright pixel in the iris, the frame most likely drawn before the shader that lost
+  its coat had recompiled. It now waits for rendered frames and measures the eyeballs alone. Run the whole check once
+  before calling a new step done.
