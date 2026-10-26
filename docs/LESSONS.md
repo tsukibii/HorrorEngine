@@ -793,3 +793,17 @@ load the page once after an edit.
   cornea's coat off it still read a bright pixel in the iris, the frame most likely drawn before the shader that lost
   its coat had recompiled. It now waits for rendered frames and measures the eyeballs alone. Run the whole check once
   before calling a new step done.
+
+## A test's root above the crown's top misses from a level view (2026-10-26)
+
+The salon's radial field overestimates the head's radius at its pole (the top bins are filled from their neighbours),
+so `COL.surface([0.03, 0.14, 0])` sits a centimetre above the skin. A camera from below (the reference's frames) looks
+up through it into the head and the click lands; a level front view's ray passes over the crown and nothing is hit.
+Three steps "failed" on it. Put a test's root where the view sees skin (the front of the crown from the front), and
+when a click lands nowhere, check the ray against the mesh before the tool.
+
+## Buttons over the view steal clicks (2026-10-26)
+
+The salon's view buttons sat over the top of the view; a test's end click on the forehead, seen from below, landed on
+"Side L" and turned the head instead of placing the sheet. Anything that floats over a canvas takes the clicks under
+it: keep bars in the header or the panel, and keep only what must be in the view (the tools' column, OK by the arrow).

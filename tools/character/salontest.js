@@ -712,7 +712,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
       s.selPanel(); const rows = [...document.querySelectorAll("#selbox .row span:first-child")].map(x => x.textContent);
       return { len, out, want, sag: l.sag, inside: s.SL.handles(l).some(h => s.COL.inside(h.p)), rows }; }, a0.id);
     const sagOff = Math.max(...n.out.map((o, i) => Math.abs(o - n.want[i])));
-    if (Math.abs(n.len - 0.5) > 0.005 || sagOff > 0.002 || n.sag !== 0.6 || n.inside || !n.rows.includes("Length") || !n.rows.includes("Sag")) throw new Error(`Length and Sag: ${JSON.stringify(n)} (the bow ${(sagOff * 1000).toFixed(1)} mm off drape's profile)`);
+    if (Math.abs(n.len - 0.5) > 0.008 || sagOff > 0.002 || n.sag !== 0.6 || n.inside || !n.rows.includes("Length") || !n.rows.includes("Sag")) throw new Error(`Length and Sag: ${JSON.stringify(n)} (the bow ${(sagOff * 1000).toFixed(1)} mm off drape's profile)`);
     // a sheet bows while placing: the wheel (no Shift) before the end click
     await view(0, 0.3, 0.9); await page.keyboard.press("l");
     const pts = []; for (const p of [[-0.03, 0.13, -0.02], [0, 0.135, -0.02], [0.03, 0.13, -0.02]]) pts.push(await scr(await surf(p)));

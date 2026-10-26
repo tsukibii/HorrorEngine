@@ -18,7 +18,11 @@ The user's answers, newest first. They override the plan, the research and the d
   cover but still drawn, picked and laid over; a lock is committed by its end click as before and stays **in hand**
   with its arrow until OK or Enter (the fast path keeps its two clicks), Delete removes it; the arrow's drag turns and
   scales the lock about its root, keeping the shaping done by hand (points that lay on the body lie on it again, the
-  rest keep their distance), instead of redrawing it.
+  rest keep their distance), instead of redrawing it; the view buttons live in the header (nothing over the view steals a
+  click); Split's right pane starts as the character's left side; picking takes the lock nearest in depth and never one
+  the head hides, a click again cycles; a sheet's root line slides by its middle and stretches by an end; the draft
+  replaces rather than merges (the salon has no second editor); dragging a lock's body swings it about its root (Shift
+  slides), with Blender's R and G as the keyboard way; several picked (Ctrl-click, a box) narrows the pull to them.
 
 ## 2026-10-26, late night (iris patterns and pupil shapes)
 

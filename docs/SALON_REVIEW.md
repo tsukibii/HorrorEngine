@@ -3,8 +3,10 @@
 A review of the salon's editing (`tools/character/salon.js`, `salonlib.js`), asked for on the branch
 `easier-hair-editing`: every place where making hair by hand is slower or less sure than it should be, measured
 where it could be, with an enhancement proposed for each and a size (**S** a commit, an hour or two; **M** a few
-commits, a session; **L** more). The user's three asks are **1**, **7** and **11**, worked out in full. Nothing here
-is built yet: say which numbers to build (a suggested order is at the end).
+commits, a session; **L** more). The user's three asks are **1**, **7** and **11**, worked out in full. **All of it is
+built** (the user's call, DECISIONS 2026-10-26, "Add all the above and make the flow easy to use"): each item ends with
+what was built and what SALON measures; docs/SALON.md says how it's used. The order it was built in is the suggested
+order at the end, seven commits on `easier-hair-editing`.
 
 Not reviewed: the look, the bake, the reference's fit and the presets (not the ask). SALON_PLAN.md's unbuilt phases
 (tracing the outline, the galleries, the brushes) are named where they'd answer a point.

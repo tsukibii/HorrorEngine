@@ -692,8 +692,8 @@ export const rootOf = lock => lock.type === "sheet" ? lock.root[lock.root.length
 export function setLength(lock, L, col) {
   const from = vectorStart(lock, col), a = from.curves[lock.type === "sheet" ? 1 : 0][0], d = sub(from.end, a), cur = lockLength(lock);
   if (!(cur > 1e-4) || !(L > 0)) return;
-  let k = L / cur;
-  for (let it = 0; it < 4; it++) { setVector(lock, add(a, mul(d, k)), col, from); const got = lockLength(lock); if (Math.abs(got - L) < 0.002) break; k *= L / got; }
+  let k = L / cur;                                                     // the laying on the body changes the length a little: iterate to a millimetre
+  for (let it = 0; it < 10; it++) { setVector(lock, add(a, mul(d, k)), col, from); const got = lockLength(lock); if (Math.abs(got - L) < 0.001) break; k *= L / got; }
 }
 export function setSag(lock, s, col) {                               // the bow away from the head, as drape's: most in the middle, the end where it is
   const d = s - (lock.sag || 0); if (!d) return;
