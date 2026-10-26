@@ -31,6 +31,8 @@ export const SURFACES = {
   sheer: ["Sheer (pantyhose)", 0.03, 0.4, 0, true],
   fishnet: ["Fishnet", 0.028, 0.2, 0.4, true],
   lace: ["Lace", 0.07, 0.1, 0.3, true],
+  laced: ["Lace, lined", 0.07, 0.15, 0.35, false],
+  sequin: ["Sequins", 0.03, 0.9, 0.4, false],
 };
 
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -112,6 +114,14 @@ export function surfaceTile(kind) {
   } else if (kind === "velvet") {
     wrap(() => { for (let i = 0; i < 18; i++) dot(rnd() * n, rnd() * n, 10 + rnd() * 16, rnd() < 0.5 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)"); });
     for (let i = 0; i < 1800; i++) { x.strokeStyle = rnd() < 0.5 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"; x.lineWidth = 0.8; const px = rnd() * n, py = rnd() * n; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 0.3, py + 2.2); x.stroke(); }
+  } else if (kind === "sequin") {                                    // discs in staggered rows, each catching the light its own way
+    const P = 7, rows = Math.ceil(n / (P * 0.87)) + 2, cols = Math.ceil(n / P) + 2;
+    wrap(() => { for (let row = -1; row < rows; row++) for (let col = -1; col < cols; col++) {
+      const cx = col * P + (row % 2 ? P / 2 : 0), cy = row * P * 0.87, b = rnd();
+      dot(cx, cy, P * 0.6, b < 0.35 ? `rgba(0,0,0,${0.25 + rnd() * 0.3})` : b < 0.7 ? `rgba(255,255,255,${0.08 + rnd() * 0.15})` : `rgba(255,255,255,${0.35 + rnd() * 0.4})`);
+      x.strokeStyle = "rgba(0,0,0,0.35)"; x.lineWidth = 0.6; x.beginPath(); x.arc(cx, cy, P * 0.6, 0, TAU); x.stroke();
+      dot(cx - 1.2, cy - 1.2, 1.1, "rgba(255,255,255,0.55)");
+    } });
   } else if (kind === "quilted") {
     const P = n / 2;
     for (let row = -1; row <= 2; row++) for (let col = -1; col <= 2; col++) { const cx = col * P + (row % 2 ? P / 2 : 0) + P / 2, cy = row * P / 2; const gr = x.createRadialGradient(cx, cy, 2, cx, cy, P * 0.55); gr.addColorStop(0, "rgba(255,255,255,0.14)"); gr.addColorStop(1, "rgba(0,0,0,0.12)"); x.fillStyle = gr; x.fillRect(cx - P / 2, cy - P / 2, P, P); }
@@ -132,8 +142,9 @@ export function surfaceTile(kind) {
     const P = n / 2;
     wrap(() => { for (let k = -2; k <= 4; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); } });
     for (let k = 0; k < 4; k++) for (let j = 0; j < 4; j++) dot(k * P + (j % 2 ? P / 2 : 0), j * P / 2, 2.2, "#9a9a9a");
-  } else if (kind === "lace") {
-    const P = n / 4; x.strokeStyle = "#8a8a8a"; x.lineCap = "round";
+  } else if (kind === "lace" || kind === "laced") {              // lined: the same net and flowers raised on an opaque ground
+    const P = n / 4; x.strokeStyle = kind === "laced" ? "rgba(255,255,255,0.42)" : "#8a8a8a"; x.lineCap = "round";
+    if (kind === "laced") { x.fillStyle = "rgba(0,0,0,0.06)"; x.fillRect(0, 0, n, n); }
     wrap(() => {
       x.lineWidth = 0.9; x.globalAlpha = 0.6;
       for (let k = -1; k <= 5; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); }

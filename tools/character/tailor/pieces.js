@@ -11,17 +11,19 @@ const front = (z, cz, w = 0.03) => smooth(cz - w, cz + w, z);      // 0 at the b
 // ---- the cut lines ------------------------------------------------------------------------------------------------
 
 /** the neckline: a cone round the neck's base (it rises away from the neck, so the shoulders are never cut), dipped
-    at the front (and the back) into a scoop, a V or a square */
+    at the front (and the back) into a scoop, a V or a square; `rise` (metres) takes the whole line up the neck instead,
+    for a turtleneck or a mock neck (the cloth climbs the neck and the neckband is its roll) */
 export function neckline(F, o = {}) {
-  const s = F.s, N = F.neck, depth = (o.depth ?? 0.012) * s, back = (o.back ?? 0.0) * s, w = (o.width ?? 0.085) * s;
+  const s = F.s, N = F.neck, depth = (o.depth ?? 0.012) * s, back = (o.back ?? 0.0) * s, w = (o.width ?? 0.085) * s, rise = (o.rise ?? 0) * s;
   const tilt = (o.tilt ?? 0.022) * s, k = 1.6, r0 = N.r + ((o.open ?? 0.004) + (o.ease ?? 0)) * s, shape = o.shape || "round";   // the cone starts where the cloth is
   const g = u => { u = Math.min(1, Math.abs(u)); return shape === "v" ? 1 - u : shape === "square" ? (u < 0.85 ? 1 : 1 - smooth(0.85, 1, u)) : Math.sqrt(1 - u * u); };
   const cutY = (x, y, z) => {
     const dx = x - N.cx, dz = z - N.cz, rho = Math.hypot(dx, dz), c = rho > 1e-6 ? dz / rho : 0;
-    const base = N.y - tilt * c;                                    // lower at the front, higher at the back: the neck's base slopes
+    const base = N.y - tilt * c + rise;                             // lower at the front, higher at the back: the neck's base slopes; `rise` takes the line up the neck (a turtleneck)
     const cone = k * Math.max(0, rho - r0);
     const fr = front(z, N.cz, 0.025 * s), G = g(dx / w) * fr, B = g(dx / w) * (1 - fr);
-    return base + (1 - Math.max(G, B * (back > 0))) * cone - depth * G - back * B;
+    const yc = base + (1 - Math.max(G, B * (back > 0))) * cone - depth * G - back * B;
+    return rise > 0 ? Math.min(yc, base + 0.012 * s) : yc;           // risen, the line is level all round: the neck widens toward the jaw, and the cone would climb it
   };
   const v = (x, y, z) => cutY(x, y, z) - y;
   v.cutY = cutY;
@@ -29,7 +31,7 @@ export function neckline(F, o = {}) {
 }
 
 /** a hem round the torso at height `at`, longer at the front or back by `front`/`back` (metres) */
-const torsoHem = (F, at, o = {}) => {
+export const torsoHem = (F, at, o = {}) => {
   const y0 = height(F, at), fr = (o.front ?? 0) * F.s, bk = (o.back ?? 0) * F.s, sd = (o.side ?? 0) * F.s;
   return (x, y, z) => {
     const th = F.theta(x, y, z), c = Math.cos(th), si = Math.abs(Math.sin(th));
@@ -52,12 +54,15 @@ export const sleeveEnd = (F, side, L) => {
 };
 
 /** a front opening: half its width at height y (a gap down the middle, widening into a V from `from` up to the neck, `top`
-    wide each side there); value(x, y, z) is how far a point is from its edge (>= 0 on the cloth), the back untouched */
+    wide each side there); value(x, y, z) is how far a point is from its edge (>= 0 on the cloth), the back untouched.
+    `shift` (metres, + to the body's left) slides the opening's middle sideways from nothing at the neck to `shift` at
+    `from` and straight on below it: a wrap front (a jeogori's, a wrap dress's), its edge a diagonal across the chest */
 export function opening(F, o) {
-  const s = F.s, y0 = height(F, o.from ?? "bust-0.06"), y1 = F.neckBaseY, g = (o.gap ?? 0.006) * s / 2, top = (o.top ?? 0.07) * s;
+  const s = F.s, y0 = height(F, o.from ?? "bust-0.06"), y1 = F.neckBaseY, g = (o.gap ?? 0.006) * s / 2, top = (o.top ?? 0.07) * s, sh = (o.shift ?? 0) * s;
   const half = y => (y <= y0 ? g : g + (top - g) * Math.min(1, ((y - y0) / Math.max(0.01, y1 - y0)) ** (o.curve ?? 1)));
-  const value = (x, y, z) => { const [cx, cz] = F.torsoAxis(y); return z < cz ? 1 : Math.abs(x - cx) - half(y); };
-  return { half, value, y0, y1, top };
+  const mid = y => sh * clamp((y1 - y) / Math.max(0.01, y1 - y0), 0, 1);
+  const value = (x, y, z) => { const [cx, cz] = F.torsoAxis(y); return z < cz ? 1 : Math.abs(x - cx - mid(y)) - half(y); };
+  return { half, mid, value, y0, y1, top };
 }
 
 /** a shoe's opening: how high the upper comes at a point of the foot, from `heel` at the back to `vamp` over the
@@ -178,27 +183,36 @@ export function brief(F, o, waist = null) {
   };
 }
 
-/** a garment's value at a point (>= 0 on the cloth) and, for the fit, its ease and clearance */
-function cutter(F, p) {
-  const s = F.s;
+/** a garment's value at a point (>= 0 on the cloth): the least of its lines there. `V.which(x, y, z)` gives [value, which
+    line is nearest: "neck", "open", "sleeve", "hem", "waist", "legs", "shoe", "under" (underwear's own shape)] for the
+    guides (tailor/guides.js); `V.parts` the lines themselves */
+export function cutter(F, p) {
   const neck = p.neck === false ? null : neckline(F, { ease: p.ease?.body, ...(p.neck || {}) });
   const ends = p.sleeve === undefined || p.sleeve === false ? null : { L: sleeveEnd(F, "L", p.sleeve), R: sleeveEnd(F, "R", p.sleeve) };
   const hem = p.hem ? torsoHem(F, p.hem.at, p.hem) : null;
   const waist = p.waist ? waistline(F, p.waist.at, p.waist) : null;
   const legY = p.legs ? height(F, p.legs.to) : null, open = p.open ? opening(F, p.open) : null, shoe = p.shoe ? shoeLine(F, p.shoe) : null;
   const under = p.bra ? bra(F, p.bra) : p.brief ? brief(F, p.brief, waist) : null;   // underwear: its own shape, within the rest
-  return (x, y, z) => {
+  const at = (x, y, z, w) => {
     const a = F.arm(x, y, z);
-    let v = under ? Math.min(1, under(x, y, z)) : 1;
-    if (neck) v = Math.min(v, neck(x, y, z));
-    if (open && !a) v = Math.min(v, open.value(x, y, z));
-    if (a) return Math.min(v, ends ? ends[a.side] - a.t : -1);
-    if (hem) v = Math.min(v, hem(x, y, z));
-    if (waist) v = Math.min(v, waist(x, y, z));
-    if (legY !== null) v = Math.min(v, y - legY);
-    if (shoe) v = Math.min(v, shoe(x, y, z));
+    let v = under ? Math.min(1, under(x, y, z)) : 1, k = under ? "under" : "";
+    const take = (u, kind) => { if (u < v) { v = u; k = kind; } };
+    if (neck) take(neck(x, y, z), "neck");
+    if (open && !a) take(open.value(x, y, z), "open");
+    if (a) take(ends ? ends[a.side] - a.t : -1, "sleeve");
+    else {
+      if (hem) take(hem(x, y, z), "hem");
+      if (waist) take(waist(x, y, z), "waist");
+      if (legY !== null) take(y - legY, "legs");
+      if (shoe) take(shoe(x, y, z), "shoe");
+    }
+    if (w) w.kind = k;
     return v;
   };
+  const V = (x, y, z) => at(x, y, z, null);
+  V.which = (x, y, z) => { const w = {}; const v = at(x, y, z, w); return [v, w.kind]; };
+  V.parts = { neck, ends, hem, waist, legY, open, shoe, under };
+  return V;
 }
 
 // ---- the body, ready to be cut ------------------------------------------------------------------------------------
@@ -296,18 +310,20 @@ export function shell(B, p, under) {
            legY: p.legs ? height(F, p.legs.to) : null, waist: p.waist ? waistline(F, p.waist.at, p.waist) : null };
 }
 
-/** a skirt as rings hung from the waist: at every height the body's outline (both legs inside it) plus the ease, never
-    narrowing below the hips (a flare widens it, a pencil skirt `taper`s it to the knee), pleats stitched down to the hip */
-export function skirt(B, p, colliders) {
-  const F = B.F, s = F.s, NA = p.columns || 256, dy = 0.005 * s;
+/** a skirt's outline: from its waist (`waist.at`) down to its hem (`length`), every `dy`, a radius per angle (NA of
+    them, from -pi: the back) round the torso's axis at the waist: the body's convex hull at that height (the torso's
+    loop, never an arm beside it: a dress hung from the bust; both legs; what's worn under it, `colliders`) plus the
+    ease, never narrowing below the hips (from its top with `straight`: a chima gathered under the bust), widened by
+    `flare` (m per m) or narrowed by `taper` (a pencil skirt). The tailor's rings and the guides' */
+export function skirtOutline(F, p, colliders = [], dy = 0.005 * F.s, NA = p.columns || 256) {
+  const s = F.s;
   const y0 = height(F, p.waist?.at ?? "waist-0.04"), y1 = height(F, p.length ?? "knee+0.06"), hipY = F.hipY;
-  const [cx, cz] = F.torsoAxis(y0), rows = Math.ceil((y0 - y1) / dy) + 1;
-  const ease = (p.ease ?? 0.006) * s, flare = p.flare ?? 0.12, taper = p.taper ?? 0, pleats = p.pleats || null;
-  const tri = B.T, P = B.P;
-  // the body's outline at a height: its loops (not the arms') as a convex hull, as a radius per angle from (cx, cz)
+  const [cx, cz] = F.torsoAxis(y0), rows = Math.ceil((y0 - y1) / dy - 1e-6) + 1;
+  dy = (y0 - y1) / Math.max(1, rows - 1);                           // the last ring on the hem itself
+  const ease = (p.ease ?? 0.006) * s, flare = p.flare ?? 0.12, taper = p.taper ?? 0;
   const hull = y => {
-    const pts = [];
-    for (const l of (F.scan.at(y)?.loops || [])) if (Math.abs(l.cx) < 0.3 * s) for (const q of l.pts) pts.push([q[0] - cx, q[1] - cz]);
+    const pts = [], row = F.scan.at(y), c = row && y > F.crotchY ? F.scan.central(row) : null;   // above the crotch the torso is one loop, the rest arms
+    for (const l of (row?.loops || [])) if (c ? l === c : Math.abs(l.cx) < 0.3 * s) for (const q of l.pts) pts.push([q[0] - cx, q[1] - cz]);
     for (const c of colliders) {                                     // and what's worn under it
       const Q = c.outer.P; for (let i = 1; i < Q.length; i += 3) if (Math.abs(Q[i] - y) < dy * 0.6 && Math.abs(Q[i - 1]) < 0.3 * s) pts.push([Q[i - 1] - cx, Q[i + 1] - cz]);
     }
@@ -318,7 +334,7 @@ export function skirt(B, p, colliders) {
     const y = y0 - r * dy, h = hull(y), row = new Float32Array(NA);
     for (let k = 0; k < NA; k++) {
       let v = h[k] + ease;
-      if (r > 0 && y < hipY) {
+      if (r > 0 && (y < hipY || p.straight)) {
         const prev = R[r - 1][k];
         v = Math.max(v, prev + (taper > 0 ? -taper : flare) * dy);
       }
@@ -328,6 +344,14 @@ export function skirt(B, p, colliders) {
   }
   // soften round and down (the hull's corners)
   for (let pass = 0; pass < 2; pass++) for (const row of R) { const c = Float32Array.from(row); for (let k = 0; k < NA; k++) row[k] = Math.max(c[k], (c[(k + NA - 1) % NA] + 2 * c[k] + c[(k + 1) % NA]) / 4); }
+  return { y0, y1, cx, cz, dy, rows, NA, R, hipY };
+}
+
+/** a skirt as rings hung from the waist (skirtOutline), knife or box pleats stitched down to the hip, a circle skirt's
+    waves; `open: {gap}` leaves it open down the front, `gap` metres wide (a coat's skirts over a jacket) */
+export function skirt(B, p, colliders) {
+  const F = B.F, s = F.s, pleats = p.pleats || null, gap = (p.open?.gap ?? 0) * s;
+  const { y0, y1, cx, cz, rows, NA, R, hipY, dy } = skirtOutline(F, p, colliders, 0.005 * s);   // (dy as the outline spaced it: the last ring on the hem)
   const out = new Float32Array(rows * NA * 3), T = [];
   const stitch = hipY - (pleats?.stitched ?? 0.06) * s;
   for (let r = 0; r < rows; r++) {
@@ -338,14 +362,16 @@ export function skirt(B, p, colliders) {
         const ph = (k / NA) * pleats.n, f = ph - Math.floor(ph), d = (pleats.depth ?? 0.012) * s * smooth(stitch + 0.02 * s, stitch - 0.04 * s, y);
         rad += d * (pleats.box ? 1 - Math.abs(2 * f - 1) * 2 : f) - d * 0.5;
       }
-      if (p.waves) {                                                 // a circle skirt's soft folds, deepening to the hem
+      if (p.waves) {                                                 // a circle skirt's soft folds, deepening to the hem, outward only (inward they'd cut into a calf the rings just clear)
         const d = p.waves.depth * s * smooth(hipY, y1, y);
-        rad += d * Math.sin(a * p.waves.n + 0.7);
+        rad += d * (0.5 + 0.5 * Math.sin(a * p.waves.n + 0.7));
       }
       out.set([cx + Math.sin(a) * rad, y, cz + Math.cos(a) * rad], (r * NA + k) * 3);
     }
   }
+  const inGap = (r, k) => gap > 0 && Math.abs((k / NA - 0.5) * TAU) * R[r][k] < gap / 2;   // a column within the opening at the front
   for (let r = 0; r + 1 < rows; r++) for (let k = 0; k < NA; k++) {
+    if (inGap(r, k) && inGap(r, (k + 1) % NA)) continue;
     const a = r * NA + k, b = r * NA + (k + 1) % NA, c = (r + 1) * NA + k, d = (r + 1) * NA + (k + 1) % NA;
     T.push(a, b, c, b, d, c);
   }
@@ -379,19 +405,24 @@ export function shoeShell(B, p) {
       }
       if (pts.length < 6) continue;
       const cx = pts.reduce((a, q) => a + q[0], 0) / pts.length, cy = pts.reduce((a, q) => a + q[1], 0) / pts.length;
-      sections.push({ t: t0, cx, cy, R: radii(pts.map(q => [q[0] - cx, q[1] - cy]), NA) });
+      sections.push({ t: t0, cx, cy, pts, R: radii(pts.map(q => [q[0] - cx, q[1] - cy]), NA) });
     }
+    // a section's outline carried onto another (shrunk by k, round the other's blended middle): the union of the two,
+    // measured round that middle (radii carried as they were, round a middle that moved, sank a tall boot's back under
+    // the floor)
+    const carry = (q, r, k, u) => {
+      const cx = q.cx * u + r.cx * (1 - u), cy = q.cy * u + r.cy * (1 - u), pts = q.pts.map(p => [p[0] - cx, p[1] - cy]);
+      for (let a = 0; a < NA; a++) { const ang = (a / NA - 0.5) * TAU, rr = r.R[a] * k; pts.push([r.cx + Math.sin(ang) * rr - cx, r.cy + Math.cos(ang) * rr - cy]); }
+      q.cx = cx; q.cy = cy; q.R = radii(pts, NA);
+    };
     // the heel cup: the outline from a few cm forward carried back to the heel, so its back is a wall, not the heel bone's knob
     const k0 = sections.findIndex(q => q.t >= 0.035 * s);
-    if (k0 > 0) for (let i = 0; i < k0; i++) {
-      const q = sections[i], r = sections[k0], u = Math.max(0, q.t / r.t), k = 0.86 + 0.14 * u;
-      q.R = Array.from(q.R, (v, a) => Math.max(v, r.R[a] * k)); q.cx = q.cx * u + r.cx * (1 - u); q.cy = q.cy * u + r.cy * (1 - u);
-    }
+    if (k0 > 0) for (let i = 0; i < k0; i++) { const q = sections[i], u = Math.max(0, q.t / sections[k0].t); carry(q, sections[k0], 0.86 + 0.14 * u, u); }
     // the toe box: rounded, not the big toe's point (the outline from 3 cm back, narrowing to 70% at the tip)
     const kt = sections.findLastIndex(q => q.t <= f.len - 0.03 * s);
     if (kt > 0) for (let i = kt + 1; i < sections.length; i++) {
-      const q = sections[i], r = sections[kt], u = Math.min(1, (q.t - r.t) / Math.max(1e-3, sections[sections.length - 1].t - r.t)), k = 1 - 0.3 * u * u;
-      q.R = Array.from(q.R, (v, a) => Math.max(v, r.R[a] * k)); q.cy = q.cy * u + r.cy * (1 - u);
+      const q = sections[i], r = sections[kt], u = Math.min(1, (q.t - r.t) / Math.max(1e-3, sections[sections.length - 1].t - r.t));
+      carry(q, r, 1 - 0.3 * u * u, u);
     }
     // smooth along the foot (the sections' centres and radii), then the rounded ends: a quarter circle the ease's size and more
     for (let pass = 0; pass < 3; pass++) for (let i = 1; i + 1 < sections.length; i++) {
@@ -649,7 +680,7 @@ export function handles(F, G, p, at = null) {
   }
   if (p.open && G.open) {
     const [a, v] = parseHeight(p.open.from ?? "bust-0.06"), y = G.open.y0;
-    add({ key: "open", label: "Opening's V", path: ["open", "from"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s }, frontAt(y, F.torsoAxis(y)[0] + G.open.half(y) + 0.004 * s));
+    add({ key: "open", label: "Opening's V", path: ["open", "from"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s }, frontAt(y, F.torsoAxis(y)[0] + (G.open.mid ? G.open.mid(y) : 0) + G.open.half(y) + 0.004 * s));
   }
   if (p.hem) {
     const [a, v] = parseHeight(p.hem.at), y = height(F, p.hem.at);
@@ -664,10 +695,10 @@ export function handles(F, G, p, at = null) {
     const [a, v] = parseHeight(p.waist.at), y = height(F, p.waist.at);
     add({ key: "waist", label: "Waist", path: ["waist", "at"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s }, frontAt(y - (p.waist.drop ?? 0.01) * s, F.torsoAxis(y)[0]));
   }
-  if (p.legs) {
-    const [a, v] = parseHeight(p.legs.to), y = height(F, p.legs.to);
+  if (p.legs && p.kind !== "shoe") {                                 // (a shoe's legs run to the floor: nothing to pull)
+    const [a, v] = parseHeight(p.legs.to), y = height(F, p.legs.to), leg = F.legLines.L;
     add({ key: "legs", label: "Leg length", path: ["legs", "to"], kind: "height", anchor: a, value: v, axis: [0, 1, 0], rate: s },
-      best((x, yy) => Math.abs(yy - y) < 0.012 * s && x > cx0 + 0.02 * s, (x, yy, z) => z - Math.abs(yy - y) * 4));
+      best((x, yy, z) => Math.abs(yy - y) < 0.012 * s && x > cx0 + 0.02 * s && leg.project(x, yy, z)[1] < 0.1 * s, (x, yy, z) => z - Math.abs(yy - y) * 4));   // round the leg itself, not out on the foot
   }
   return out;
 }

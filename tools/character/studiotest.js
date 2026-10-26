@@ -356,10 +356,10 @@ const png = rgb => {
   const HANG = "label:has-text('Hang by gravity (cloth simulation)') input";
   await step("clothes: the work uniform cut from this body and worn, in denim with a print, its hem dragged up; a taller or a sculpted body refits it", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 2);
+    await page.waitForFunction(() => document.querySelectorAll("#designSel option").length > 2 && document.querySelectorAll("#outfitGrid .card").length > 2);
     if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone here: the drape has its own step
-    await page.selectOption("#clothesRows select >> nth=0", "work uniform");
-    await page.click("#clothesRows >> text=Wear the outfit");
+    await page.click("#outfitTabs button[data-group='studio']");             // the outfits are cards with pictures, in groups (the designer ones first)
+    await page.click("#outfitGrid .card[data-outfit='work uniform']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
     // its look: denim and a print on the shirt, the materials only (nothing refits). The outfit is socks and boots
     // first: the shirt's row is found by its name
@@ -400,8 +400,8 @@ const png = rgb => {
   });
   await step("clothes hang by gravity: a t-shirt and a skirt fall from the cut, are baked with the character and taken back as baked; a fit of 0 clings", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.selectOption("#clothesRows select >> nth=0", "t-shirt and skirt");
-    await page.click("#clothesRows >> text=Wear the outfit");
+    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
     await page.waitForFunction(() => window.__body.drapeState.stage === "done" && window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
     // where a garment's cloth is in MHR's own pose (the view turns it to the T-pose): its lowest point, how far out from the body's middle
     const shape = n => page.evaluate(n => { const m = window.__body.GARMENTS.children.find(g => g.name === n); if (!m) return null;
@@ -435,9 +435,49 @@ const png = rgb => {
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');
   });
+  await step("the edit mode: the clothes as films with their cut lines on the body, a slider and a handle move a line at once with nothing cut, Bake cuts them to it; the outfits as pictures in groups, the designer ones first", async () => {
+    await page.click('#tabs button[data-tab="clothes"]');
+    if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone: the drape is the step before
+    const groups = {};
+    for (const g of ["designer", "studio", "underwear"]) { await page.click(`#outfitTabs button[data-group='${g}']`); groups[g] = await page.$$eval("#outfitGrid .card", cs => cs.map(c => c.dataset.outfit)); }
+    if (!groups.designer.includes("street: cargo pants and crop tee") || !groups.studio.includes("work uniform") || !groups.underwear.includes("lingerie: red")) throw new Error(`the outfits aren't on their tabs: ${JSON.stringify(groups)}`);
+    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "skirt") && window.__body.drapeState.stage === "done", null, { timeout: 120000 });
+    if (await page.$eval("#outfitGrid .card.on", c => c.dataset.outfit) !== "t-shirt and skirt") throw new Error("the worn outfit's card isn't marked");
+    await page.click("label:has-text('Edit the cut') input");                 // on: the garments hidden, a film a shell garment, rings for the skirt, the handles from the guides
+    await page.waitForFunction(() => window.__body.editing && window.__body.cutEditor?.group.children.length === 3, null, { timeout: 20000 });
+    const info = await page.evaluate(() => { const B = window.__body, E = B.cutEditor; return { visible: B.GARMENTS.visible, guides: E.group.children.map(o => o.name + ":" + o.children.map(c => c.type).join("/")), handles: B.GH.children.length }; });
+    if (info.visible) throw new Error("the garments still show in the edit mode");
+    if (!info.guides.some(g => /t-shirt:Mesh/.test(g)) || !info.guides.some(g => /skirt:LineSegments/.test(g))) throw new Error("no film for the t-shirt or no rings for the skirt: " + info.guides.join(" "));
+    if (info.handles < 5) throw new Error(`the guides' handles aren't drawn (${info.handles})`);
+    // the t-shirt's hem slider: its film's lower edge rises at once, no tailor job runs
+    const TEE = "#worn > div:has(.row span:text-is('T-shirt'))", HEM = `${TEE} details:has(summary:text-is('Shape')) .row:has(span:text-is('Hem (m)')) input`;
+    await page.$eval(`${TEE} details:has(summary:text-is('Shape'))`, d => { d.open = true; });
+    const filmLow = () => page.evaluate(() => { const m = [...window.__body.cutEditor.made.values()].find(m => m.design === "t-shirt"); let lo = 1e9; const V = m.G.V, P = window.__body.neutralBody(); for (let i = 0; i < V.length; i++) if (V[i] >= 0) lo = Math.min(lo, P[i * 3 + 1]); return lo; });
+    const low0 = await filmLow(), job0 = await page.evaluate(() => window.__body.drapeState.id), v0 = +(await page.$eval(HEM, i => i.value));
+    await page.$eval(HEM, (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); }, v0 + 0.1);
+    await page.waitForFunction(async lo => { const m = [...window.__body.cutEditor.made.values()].find(m => m.design === "t-shirt"); if (!m) return false; let l = 1e9; const V = m.G.V, P = window.__body.neutralBody(); for (let i = 0; i < V.length; i++) if (V[i] >= 0) l = Math.min(l, P[i * 3 + 1]); return l > lo + 0.07; }, low0, { timeout: 5000 });
+    if (await page.evaluate(() => window.__body.drapeState.id) !== job0) throw new Error("a tailor job ran in the edit mode");
+    if (!/^crotch\+/.test(await page.evaluate(() => window.__body.st.clothes.find(c => c.design === "t-shirt").edit?.hem?.at || ""))) throw new Error("the hem isn't kept as the garment's own edit");
+    // the skirt's length handle dragged up: its rings shorten
+    await page.click('#views button[data-v="body"]'); await page.click('#views button[data-yaw="0"]'); await page.waitForTimeout(400);
+    const rows = () => page.evaluate(() => [...window.__body.cutEditor.made.values()].find(m => m.design === "skirt").G.rings.rows), rows0 = await rows();
+    const [hx, hy] = await page.evaluate(() => window.__body.garmentHandleOnScreen("skirt:length"));
+    await page.mouse.move(hx, hy); await page.mouse.down(); await page.mouse.move(hx, hy - 20, { steps: 4 }); await page.mouse.move(hx, hy - 40, { steps: 4 }); await page.mouse.up();
+    await page.waitForFunction(r => [...window.__body.cutEditor.made.values()].find(m => m.design === "skirt").G.rings.rows < r, rows0, { timeout: 5000 });
+    // Bake: the clothes cut again to the lines, the edit mode off
+    await page.click("button:text-is('Bake')");
+    await page.waitForFunction(() => !window.__body.editing && window.__body.GARMENTS.visible && window.__body.drapeState.stage === "done", null, { timeout: 120000 });
+    const low1 = await page.evaluate(() => { const m = window.__body.GARMENTS.children.find(g => g.name === "t-shirt"); let lo = 1e9; const P = m.userData.rest ? m.userData.rest.P : m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) lo = Math.min(lo, P[i]); return lo; });
+    if (!(low1 > low0 + 0.07)) throw new Error(`the bake didn't cut the t-shirt to the edited hem (${low0.toFixed(3)} -> ${low1.toFixed(3)})`);
+    while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
+    await page.click('#tabs button[data-tab="body"]');
+  });
   await step("a PBR set from files on a garment: Unreal's names (albedo, normal-dx, roughness) onto the shelf, the pants wearing it", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.selectOption("#clothesRows select >> nth=1", "pants");
+    await page.selectOption("#designSel", "pants");
     await page.click("#clothesRows button:text-is('Wear it')");
     await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "pants"), null, { timeout: 120000 });
     const PANTS = "#worn > div:has(.row span:text-is('Pants'))", LOOKS = `${PANTS} details:has(summary:text-is('Fabric, pattern, print'))`;
@@ -808,7 +848,14 @@ const png = rgb => {
   });
   await step("accessories: glasses round the eyes, a sticker and a piercing held to the skin (a smile carries the sticker), a choker round the neck, one put where you click; saved with the character and back on reopening", async () => {
     await page.click('#tabs button[data-tab="acc"]');
-    for (const v of ["glasses:round", "sticker:heart", "piercing:ring", "neck:choker"]) { await page.selectOption("#accAdd select", v); await page.click("#accAdd button"); }
+    for (const v of ["glasses:round", "sticker:heart", "piercing:ring", "neck:choker", "hat:beret"]) { await page.selectOption("#accAdd select", v); await page.click("#accAdd button"); }
+    {                                                                       // the beret: made on the head's outline, its top above the crown, its band round the forehead
+      const h = await page.evaluate(() => { const b = window.__body, a = b.st.accessories.find(x => x.kind === "hat"), o = b.WEAR.made.get(a.id).obj; let top = -1e9, lo = 1e9, tris = 0;
+        o.traverse(x => { if (!x.isMesh) return; tris += x.geometry.index.count / 3; const g = x.geometry.attributes.position; for (let i = 0; i < g.count; i++) { top = Math.max(top, g.getY(i)); lo = Math.min(lo, g.getY(i)); } });
+        let crown = -1e9; for (let i = 1; i < b.POS.length; i += 3) crown = Math.max(crown, b.POS[i]); return { tris, over: top - crown, under: crown - lo }; });
+      if (!(h.tris > 500) || !(h.over > 0.005) || !(h.under > 0.04) || !(h.under < 0.2)) throw new Error(`the beret: ${JSON.stringify(h)}`);   // its top a little over the crown, its band a few centimetres under it
+      await page.evaluate(() => { const b = window.__body; b.st.accessories = b.st.accessories.filter(x => x.kind !== "hat"); b.WEAR.set(b.st.accessories); b.drawAcc(); });
+    }
     const r = await page.evaluate(() => {
       const b = window.__body, W = b.WEAR, A = b.st.accessories, mm = 0.001 * b.scale, made = A.map(a => W.made.get(a.id).obj.children.length);
       const lensAt = side => { const g = W.made.get(A[0].id).obj.children.filter(o => o.renderOrder === 6)[side === "L" ? 0 : 1].geometry.attributes.position; return new b.THREE.Vector3(g.getX(0), g.getY(0), g.getZ(0)); };

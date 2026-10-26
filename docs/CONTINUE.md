@@ -1,11 +1,20 @@
 # Continue: the next session
 
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
-2026-10-25, and on 2026-10-26, last at night on `better-eyelashes`) on `claude/experiments-afk`. Read this
+2026-10-25, on 2026-10-26 at night on `better-eyelashes`, and last on 2026-10-27 on `clothing-expanded`) on `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
 ## 1. Where we are
+
+**Last (2026-10-27, branch `clothing-expanded` off main; DECISIONS of that day): the clothes.** The Clothes tab's
+**edit mode** (`cutedit.js`, `tailor/guides.js`: every worn garment as a film on the body with its cut lines, a skirt
+as its rings, the handles and the sliders moving them at once, Bake cutting and hanging: a change took minutes before),
+the **designer collection** (twelve outfits after the user's five reference images: a lace jeogori and a pleated mini,
+four Korean street looks, a long coat over a turtleneck and wide jeans, two modern hanbok dresses, four menswear looks;
+25 new designs, `open.shift`, `neck.rise`, a skirt's `straight` and `open.gap`, lined lace and sequin fabrics), the
+outfits as **pictures** on cards in groups (`tailor/thumbs.mjs`, `Content/Studio/Clothes/thumbs/`), **hats** as
+accessories. TAILOR checks the guides against the cuts; STUDIO has an edit-mode step and a beret.
 
 The user left a list before going AFK (DECISIONS 2026-10-24, small hours); all of it is built, checked and pushed:
 
@@ -137,7 +146,7 @@ and a bake (DECISIONS 2026-10-26):
 - `node tools/director/playtest.js`: PLAY ok (it adds, in memory only, a plushie in the hall and chō-han on the hall
   table). `node tools/character/studiotest.js`: STUDIO ok (it exports `_studiotest` and imports it back as
   `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
-  whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
+  whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (68 designs on seven
   bodies, seven outfits hung by gravity on three bodies; about 7 minutes here). TIMES ok, BLENDERLOOK ok.
   `node tools/character/ueeye.mjs`: UEEYE ok (DXC isn't here: its HLSL ran as GLSL only).
   `node tools/director/peopletest.js`: PEOPLE ok (a Character Studio export as Mari's body, the simple view; it needs

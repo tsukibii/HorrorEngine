@@ -1,5 +1,5 @@
 {
-  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour, look, edit]: the edit a garment's own, as the Studio keeps it, a fit): a bottom first and the top hangs over it; a top first and it's tucked in",
+  "about": "outfits for the tailor: garments made in order, each over the ones before ([design, colour, look, edit]: the edit a garment's own, as the Studio keeps it, a fit): a bottom first and the top hangs over it; a top first and it's tucked in; `meta` by outfit: its group (designer: after the user's references; the rest the studio's own), what it's after, and the accessories put on with it (a hat, sunglasses: accessories.js kinds)",
   "outfits": {
     "work uniform": [["crew-socks", "#2a2c30"], ["work-boots", "#5a3e26"], ["work-shirt", "#7f97ad"], ["work-trousers", "#2c3440"]],
     "work uniform (long sleeves)": [["crew-socks", "#2a2c30"], ["work-boots", "#3a2c20"], ["work-shirt-long", "#8a9a86"], ["work-trousers", "#3a3a32"]],
@@ -26,6 +26,32 @@
     "lingerie: red": [["high-leg-thong", "#a8122f"], ["plunge-bra", "#a8122f"]],
     "underwear: sporty": [["boy-shorts", "#2a2d34"], ["sports-bra", "#2a2d34"]],
     "underwear: boxer briefs": [["boxer-briefs", "#22252b"]],
-    "underwear: trunks": [["trunks", "#1d3a5f"]]
+    "underwear: trunks": [["trunks", "#1d3a5f"]],
+    "hanbok: lace jeogori and pleated skirt": [["over-knee-socks", "#141416"], ["flats", "#1c1a1e"], ["pleated-skirt", "#141416", null, {"length": "knee+0.215", "pleats": {"n": 28, "depth": 0.018, "stitched": 0.05}}], ["jeogori-lace", "#f4f1ea"]],
+    "street: pink blazer and plaid mini": [["knee-boots", "#141210"], ["cami-top", "#141416"], ["mini-skirt", "#d9c4b4", {"pattern": {"kind": "plaid", "colors": ["#d9c4b4", "#b89a86", "#7a5a4c"], "size": 0.1}}], ["oversized-blazer", "#e8c4cf", null, {"fit": 1.15}]],
+    "street: cargo pants and crop tee": [["combat-boots", "#161412"], ["cargo-pants", "#1a1b1e"], ["crop-tee", "#141416"]],
+    "street: leather pleats and graphic tee": [["crew-socks", "#f2f2f2"], ["combat-boots", "#161412"], ["pleated-skirt", "#141416", {"surface": "leather"}, {"length": "knee+0.225", "pleats": {"n": 20, "depth": 0.02, "stitched": 0.06}, "drape": {"density": 0.5, "bend": 8e-05}}], ["t-shirt", "#141416", {"print": {"text": "STATIC", "ink": "#e8e4dc", "part": "front", "u": 0, "v": 1.17, "w": 0.2}}, {"fit": 1.4}]],
+    "street: sequins and a blazer": [["ankle-boots", "#141210"], ["sequin-dress", "#141416"], ["blazer", "#141416", null, {"fit": 1.25}]],
+    "rainy day: long coat and wide jeans": [["ankle-boots", "#2a1c14"], ["wide-jeans", "#9db3cf"], ["turtleneck", "#ece4d4"], ["coat-skirts", "#c8a596"], ["long-coat", "#c8a596", null, {"fit": 1.2}]],
+    "modern hanbok: cream lace": [["flats", "#e8ded0"], ["chima", "#efe6d6"], ["jeogori-sheer", "#efe6d6"]],
+    "modern hanbok: navy and plum": [["flats", "#1c1a1e"], ["chima", "#6e5a74", {"surface": "cotton"}], ["jeogori", "#1c2744"]],
+    "menswear: blazer and knit": [["crew-socks", "#1c1c1e"], ["loafers", "#1c1816"], ["knit-top", "#5a5a5e"], ["belted-trousers", "#1c1c1f"], ["blazer", "#141416", null, {"fit": 1.15}]],
+    "menswear: double denim": [["cowboy-boots", "#8a5a34"], ["denim-shirt", "#3b5a8c"], ["jeans", "#26324f"]],
+    "menswear: denim jacket": [["crew-socks", "#1c1c1e"], ["loafers", "#1c1816"], ["t-shirt", "#f2f2f0"], ["belted-trousers", "#1d2438", null, {"ease": {"leg": 0.022}}], ["denim-jacket", "#2b3a5e"]],
+    "menswear: hoodie and jeans": [["sneakers", "#1a1a1c"], ["jeans", "#141416"], ["hoodie", "#151517"]]
+  },
+  "meta": {
+    "hanbok: lace jeogori and pleated skirt": {"group": "designer", "after": "image 1: a white lace jeogori with its ribbon over a black pleated mini skirt, over-the-knee socks, a black beret", "accessories": [{"kind": "hat", "style": "beret", "colour": "#141416", "tilt": 18}]},
+    "street: pink blazer and plaid mini": {"group": "designer", "after": "image 2 (left): an oversized pink blazer over a black top and a plaid mini skirt, knee-high boots, a black cap", "accessories": [{"kind": "hat", "style": "cap", "colour": "#141416"}]},
+    "street: cargo pants and crop tee": {"group": "designer", "after": "image 2 (second): a black crop tee, black cargo pants with a belt, combat boots, a black cap", "accessories": [{"kind": "hat", "style": "cap", "colour": "#141416"}]},
+    "street: leather pleats and graphic tee": {"group": "designer", "after": "image 2 (third): an oversized black graphic tee over a black leather pleated mini skirt, white socks, combat boots"},
+    "street: sequins and a blazer": {"group": "designer", "after": "image 2 (right): a black sequin mini dress under a black blazer, heeled ankle boots, sunglasses", "accessories": [{"kind": "glasses", "style": "sunglasses"}]},
+    "rainy day: long coat and wide jeans": {"group": "designer", "after": "image 3: an oversized dusty-pink wool coat over a cream turtleneck and light wide-leg jeans with a brown belt"},
+    "modern hanbok: cream lace": {"group": "designer", "after": "image 4 (left): a cream sheer embroidered hanbok dress, three-quarter sleeves, a full skirt from under the bust"},
+    "modern hanbok: navy and plum": {"group": "designer", "after": "image 4 (right): a navy jeogori over a long plum chima"},
+    "menswear: blazer and knit": {"group": "designer", "after": "image 5 (left): a black blazer over a grey knit top, black trousers with a belt"},
+    "menswear: double denim": {"group": "designer", "after": "image 5 (middle, left): a denim western shirt tucked into dark jeans with a belt, cowboy boots"},
+    "menswear: denim jacket": {"group": "designer", "after": "image 5 (middle, right): a dark denim jacket open over a white tee, navy pleated trousers with a belt, loafers"},
+    "menswear: hoodie and jeans": {"group": "designer", "after": "image 5 (right): a black hoodie over black jeans"}
   }
 }

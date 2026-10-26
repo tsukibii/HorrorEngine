@@ -196,6 +196,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
         if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
             return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
+        if parts[:3] == ["api", "clothes", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith((".jpg", ".png")):   # an outfit's or a design's picture (tailor/thumbs.mjs)
+            f = CLOTHES / "thumbs" / clean(parts[3])
+            return self.send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/png") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/tailor/thumbs.mjs"})
         if parts[:2] == ["api", "pbr"]:                    # the shelf (assets/pbr), scanned: {root, sets: {ref: {maps: {albedo: file...},
             sets = PBR.scan()                                 # tile_m, normal, orm, files, by_hand...}}} for PBR fills, clothes, pbr.html
             for ref, m in sets.items():
