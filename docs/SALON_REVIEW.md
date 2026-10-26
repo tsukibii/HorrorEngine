@@ -82,12 +82,14 @@ only while the cursor is over the scalp (every 8 mm); dragged over the ear or pa
 had (measured: the crown to the cheek gave 8 cm, stopping at the sideburn); a click without a drag makes a 3 cm line
 across the view. *Proposed:* a dot under the cursor, green on the scalp and red off it; the hint reads the line's
 length while it's drawn; the root line editable after placing (5). **S.**
+**Built 2026-10-26**: the dot (green on the scalp, red off it), the root line's length in the hint, the line's handles (5).
 
 **5. Roots can't be moved: a misplaced root is delete and redo.** *Now:* `handles()` marks the first point a root,
 the pull leaves roots where they are, and a sheet's root line has no handles at all; Duplicate offsets a copy by 1 cm
 and that's the only move there is. *Proposed:* the root handle (green) dragged **slides the root along the scalp**
 (`COL.surface`), the whole lock going with it and laid onto the head again; a sheet's root line dragged by its middle
 slides it, by an end stretches it. **S** (a strand or a bundle), **M** (a sheet's line).
+**Built 2026-10-26**: the root handle dragged slides the lock (`slideRoot`); a sheet's root line by its middle or an end; SALON slides a strand 2.1 cm and a root line, stretches its end alone.
 
 **6. Every lock leaves the head the same way.** *Now:* Roots (lift, bend, vary) is one setting for all the hair.
 *Proposed:* a per-lock **Lift** in Selected overriding it (a fringe lifted, the back flat). **S.** The way a lock is
@@ -126,6 +128,7 @@ selected lock, its twin and its group drawn solid, the rest ghosted); handles be
 its depth (measured: a lock 18 cm behind the head picked from the front). *Proposed:* skip points the head hides
 (the head hit's depth against the point's), prefer the nearest in depth among those in reach, and **click again to
 cycle** through the locks under the cursor. **S.**
+**Built 2026-10-26**: `lockAt` takes the nearest in depth, skips what the head hides, and cycles on a click again (SALON: a strand behind the head not picked from the front; two in front picked in turn).
 
 ## C. Shaping
 

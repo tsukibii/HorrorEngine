@@ -999,14 +999,34 @@ function handleAt(e) {
   for (const h of SL.handles(l)) { const [sx, sy] = screenOf(h.p), d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = h; } }
   return best;
 }
+// the lock under the cursor: the nearest in depth of those within 9 px, never one the head hides (a point behind the
+// body hit under the cursor); a click again on the same spot picks the next one under it
+let LASTPICK = null;
 function lockAt(e) {
-  const [mx, my] = rel(e); let best = null, bd = 9;
-  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible]));
+  const [mx, my] = rel(e), shown = isShown(), hit = headAt(e.clientX, e.clientY);
+  const cam = new THREE.Vector3(), fwd = new THREE.Vector3(); camera.getWorldPosition(cam); camera.getWorldDirection(fwd);
+  const depth = p => new THREE.Vector3(...SR.toWorld(HF, p)).sub(cam).dot(fwd), dHead = hit ? depth(hit) : Infinity;
+  const near = new Map();                                            // lock -> its nearest depth under the cursor
   for (const l of st.locks) {
-    if (!l.visible || vis[l.group] === false || !EVAL[l.id]) continue;
-    for (const G of EVAL[l.id]) for (let k = 0; k < G.pts.length; k += 2) { const [sx, sy, z] = screenOf(G.pts[k]); if (z > 1) continue; const d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = l; } }
+    if (!shown(l) || !EVAL[l.id]) continue;
+    for (const G of EVAL[l.id]) for (let k = 0; k < G.pts.length; k += 2) {
+      const [sx, sy, z] = screenOf(G.pts[k]); if (z > 1 || Math.hypot(sx - mx, sy - my) > 9) continue;
+      const d = depth(G.pts[k]); if (d > dHead + 0.01) continue;      // behind the head
+      if (!near.has(l.id) || d < near.get(l.id)) near.set(l.id, d);
+    }
   }
-  return best;
+  const ids = [...near.entries()].sort((a, b) => a[1] - b[1]).map(x => x[0]); if (!ids.length) { LASTPICK = null; return null; }
+  let i = 0;
+  if (LASTPICK && Math.hypot(LASTPICK.x - mx, LASTPICK.y - my) < 4 && LASTPICK.ids.join() === ids.join()) i = (LASTPICK.i + 1) % ids.length;
+  LASTPICK = { x: mx, y: my, ids, i };
+  return lockById(ids[i]);
+}
+// where a root would go under the cursor, while a placing tool is armed: a green dot on the scalp, red off it
+let DOT = null;
+function showDot(p, ok) {
+  if (!DOT) { DOT = new THREE.Mesh(new THREE.SphereGeometry(0.003, 10, 8), new THREE.MeshBasicMaterial({ color: 0x5aa65a, depthTest: false })); DOT.renderOrder = 13; HAIR.add(DOT); }
+  DOT.visible = !!p; if (!p) return;
+  DOT.position.set(...p); DOT.material.color.set(ok ? 0x5aa65a : 0xe05a4f);
 }
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
@@ -1050,7 +1070,7 @@ function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 // ---- the tools --------------------------------------------------------------------------------------------------------
 const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
-  select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away), or drag its arrowhead to set its length and direction. The ring: what the pull takes (Pull: its scope; the wheel while dragging: the reach; O: off). Drag the empty view to turn the head; the wheel zooms.",
+  select: "Click a lock to select it (again on the same spot: the next one under it); drag a handle to shape it (Alt-drag: towards you or away), its green root to slide it along the scalp, or its arrowhead for its length and direction. The ring: what the pull takes (Pull: its scope; the wheel while dragging: the reach; O: off). Drag the empty view to turn the head; the wheel zooms.",
   strand: "Click a root on the blue scalp, then click where the strand ends.",
   sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends.",
   bundle: "Click a root on the blue scalp, then click the tip.",
@@ -1077,7 +1097,7 @@ function setTool(t) {
   hint(); tintScalp(); draw();
 }
 function resetPlace() { PLACE.stage = 0; PLACE.root = null; PLACE.line = []; PLACE.last = null; PLACE.sag = 0;   // every new lock starts flat on the head (the wheel bows it while placing)
-  showPreview(null); showRootLine(null); hint(); }
+  showPreview(null); showRootLine(null); showDot(null); hint(); }
 for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, onclick: () => setTool(t) }); b.dataset.t = t; $("#tools").append(b); }
 
 // the view's buttons, with Blender's keys: Front (1), ¾, the character's left side (3) and right (Shift+3), Back
@@ -1185,6 +1205,7 @@ cv.addEventListener("pointerdown", e => {
   if (!orbitOnly && TOOL === "select") {
     const h = handleAt(e);
     if (h && isLocked(lockById(SELECTED))) { status("locked: unlock it (Selected, or the padlock in Locks) to shape it", "bad"); return; }
+    if (h && h.root) { const l = lockById(SELECTED); remember(); DRAG = { kind: "root", lock: l.id, path: h.path, from: SL.vectorStart(original(l), COL) }; drawHandles(); draw(); return; }   // the root slides along the scalp
     if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey, start: SL.pullStart(st.locks), moved: [], to: null }; drawHandles(); draw(); return; }
     if (arrowAt(e)) { startArrowDrag(e); return; }
     const l = lockAt(e);
@@ -1204,9 +1225,13 @@ cv.addEventListener("pointerdown", e => {
 cv.addEventListener("pointermove", e => {
   if (!DRAG) {
     paneAt(e);
-    if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
-    else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
-    else if (SELECTED) {
+    if (PLACE.stage) { showPreview(previewFrom(e)); draw(); return; }
+    if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } return; }
+    if (TOOL !== "select" && !arrowAt(e)) {                            // a placing tool: the dot where the root would go
+      const p = headAt(e.clientX, e.clientY), ok = !!p && (e.shiftKey || SL.onScalp(p, COL.C));
+      showDot(p ? (ok ? COL.surface(p) : p) : null, ok); draw();
+    } else showDot(null);
+    if (SELECTED) {
       const h = TOOL === "select" ? handleAt(e) : null, p = h ? h.path : null, ar = !h && arrowAt(e);
       if ((p && p.join()) !== (HOVER && HOVER.join()) || ar !== HOVER_ARROW) { HOVER = p; HOVER_ARROW = ar; drawHandles(); draw(); }
     }
@@ -1216,7 +1241,12 @@ cv.addEventListener("pointermove", e => {
     orbit.yaw -= (e.clientX - DRAG.x) * 0.008; orbit.pitch = Math.max(-1.55, Math.min(1.55, orbit.pitch + (e.clientY - DRAG.y) * 0.006));   // to 89°: the crown from straight above
     DRAG.x = e.clientX; DRAG.y = e.clientY; draw();
   } else if (DRAG.kind === "rootline") {
-    const p = scalpAt(e); if (p && SL.len(SL.sub(p, PLACE.line[PLACE.line.length - 1])) > 0.008) { PLACE.line.push(p); showRootLine(PLACE.line); draw(); }
+    const p = scalpAt(e); if (p && SL.len(SL.sub(p, PLACE.line[PLACE.line.length - 1])) > 0.008) { PLACE.line.push(p); showRootLine(PLACE.line); hint(`root line ${(SL.length(PLACE.line) * 100).toFixed(1)} cm (let go, then click where it ends)`); draw(); }
+    const q = headAt(e.clientX, e.clientY); showDot(q ? (p ? p : q) : null, !!p);   // the dot says where the line would go on, or that it's off the scalp
+  } else if (DRAG.kind === "root") {                                   // the root slides along the scalp, the lock with it
+    const l = lockById(DRAG.lock); if (!l) return;
+    const p = scalpAt(e); if (!p) return;
+    const o = original(l); SL.slideRoot(o, DRAG.path, l.mirror_of ? COL.surface(SL.reflectPoint(p, st.mirror.seam)) : p, COL, DRAG.from); changed(o); draw();
   } else if (DRAG.kind === "handle") {
     const l = lockById(DRAG.lock); if (!l) return;
     const h = SL.handles(l).find(x => x.path.join() === DRAG.path.join()); if (!h) return;
@@ -1260,7 +1290,7 @@ cv.addEventListener("pointerup", e => {
     }
     PLACE.stage = 1; showRootLine(PLACE.line); showPreview(previewFrom(e)); draw();
   }
-  const wasHandle = DRAG && (DRAG.kind === "handle" || DRAG.kind === "arrow");
+  const wasHandle = DRAG && (DRAG.kind === "handle" || DRAG.kind === "arrow" || DRAG.kind === "root");
   if (DRAG && DRAG.kind === "fit") saveFitHint();
   DRAG = null;
   if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); hint(); draw(); }
@@ -1714,7 +1744,7 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 // for the tests and the renders
 window.__salon = { st, SL, SR, get orbit() { return orbit; }, split: { get on() { return SPLIT.on; }, set: setSplit, setAt: setSplitAt, use: i => { usePane(i); markPane(); applyCamera(); }, get active() { return SPLIT.active; }, get at() { return SPLIT.at; }, panes }, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
   get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, rayAt, onPlane, previewFrom, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
+  screenOf, headAt, rayAt, onPlane, previewFrom, dot: () => DOT && DOT.visible ? { colour: DOT.material.color.getHex() === 0x5aa65a ? "green" : "red", at: DOT.position.toArray() } : null, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned

@@ -683,9 +683,9 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     console.log(`       ${r.n} locks: a 50 cm pull moves ${r.one.moved} (this lock), ${r.two.moved} of ${r.two.ids} (it and its twin), ${r.group.moved} of ${r.group.ids} (its group), ${r.all.moved} (all); Back locked: ${r.locked.moved}, and ${d.backMoved} of its ${d.back} locks moved in a fall that moved ${d.restMoved} of ${d.rest} Sides locks`);
   });
   await step("the placing arrow: a placed lock stays in hand with an arrow to its end and OK; the arrowhead dragged sets its length and direction from the front and from the side, the root fixed; Enter lets go; Length and Sag; a sheet bows while placing", async () => {
-    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; });
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; });   // the free camera: level, so the planes below are exact
     await view(0, 0, 0.85); await page.keyboard.press("s");
-    const root = await surf([0.03, 0.14, 0.0]);
+    const root = await surf([0.03, 0.1, 0.06]);                       // on the front of the crown, where a level view sees the skin
     await page.mouse.click(...await scr(root)); const e1 = await scr([0.1, -0.1, 0]); await page.mouse.move(...e1); await page.mouse.click(...e1); await page.waitForTimeout(150);
     const a0 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.render(); return { id: l.id, inHand: s.inHand === l.id && s.selected === l.id, ok: s.okButton.style.display, len: s.SL.lockLength(l), root: s.SL.vectorOf(l)[0], end: s.SL.vectorOf(l)[1], tip: s.arrowTip(l), hint: document.querySelector("#hint").textContent }; });
     if (!a0.inHand || a0.ok !== "block" || !/arrowhead/.test(a0.hint)) throw new Error("not in hand with OK and the hint: " + JSON.stringify(a0));
@@ -722,7 +722,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
       return { type: l.type, sag: l.sag, L, depths: E.map(p => +s.COL.depth(p).toFixed(4)), bow: l.sag * L * Math.sin(Math.PI * 2 / (E.length - 1)) * 0.5, end: E[E.length - 1], stage: s.place.stage, n: s.st.locks.length }; });
     // the two middle points stand off the head by at least half the bow drape gives them (the rest lies on it, GAP off)
     if (sh.type !== "sheet" || Math.abs(sh.sag - 0.2 * 0.7) > 1e-9 || !(sh.depths[2] + sh.depths[3] > 2 * (0.0025 + sh.bow / 2))) throw new Error("the sheet's bow: " + JSON.stringify(sh));
-    await ev(id => { const s = window.__salon; s.deleteLock(s.st.locks[s.st.locks.length - 1].id); s.deleteLock(id); s.setTool("select"); }, a0.id);
+    await ev(id => { const s = window.__salon; s.deleteLock(s.st.locks[s.st.locks.length - 1].id); s.deleteLock(id); s.setTool("select"); s.st.reference.lock = true; }, a0.id);
     console.log(`       placed ${(a0.len * 100).toFixed(1)} cm, the arrow dragged to ${(a1.len * 100).toFixed(1)} cm (the end ${(a1.off * 1000).toFixed(1)} mm off the cursor's point), then ${(-dz * 100).toFixed(1)} cm back from the side (${(dx * 1000).toFixed(1)} mm sideways); Length 50 cm -> ${(n.len * 100).toFixed(1)}, Sag 0.6 bows the middle out ${(n.out[3] * 100).toFixed(1)} cm (drape's profile within ${(sagOff * 1000).toFixed(1)} mm); a sheet bowed by the wheel: sag ${sh.sag.toFixed(2)}, its middle ${(sh.depths[3] * 100).toFixed(1)} cm off the head`);
   });
   await step("the view's buttons and keys: Front, ¾, Side, Back and Top (the crown from straight above), and Ortho, whose picking and pan match the perspective's", async () => {
@@ -775,6 +775,61 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     if (one[0] || one[1] !== 1 || one[2] !== 0) throw new Error("Split again didn't give one view: " + one);
     await ev(id => { const s = window.__salon; s.deleteLock(id); s.st.reference.lock = true; }, id);
     console.log(`       panes ${P[0][1]} and ${r[1] - P[0][1]} px wide; the handle dragged in the side pane moved ${((h0[2] - h1[2]) * 100).toFixed(1)} cm in depth, ${(Math.abs(h1[0] - h0[0]) * 1000).toFixed(1)} mm sideways; the divider to ${(at1 * 100).toFixed(0)}%, evened to ${at2 * 100}%`);
+  });
+  await step("roots slide and picking respects the head: a strand's root dragged along the scalp takes the lock; a sheet's root line slides by its middle, stretches by an end; a click never picks a lock the head hides, and again picks the next under the cursor; the dot green on the scalp, red off it; the root line's length in the hint", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; });
+    await view(0.5, 0.2, 0.85);
+    // a strand, its root dragged 30 px to the right
+    const a = await ev(() => { const s = window.__salon, C = s.COL, l = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.06, -0.12, 0.08], C)); s.finishLock(); s.setTool("select"); s.select(l.id); return { id: l.id, pts: l.pts.map(p => p.slice()) }; });
+    const r0 = await scr(a.pts[0]); await page.mouse.move(...r0); await page.mouse.down(); await page.mouse.move(r0[0] + 30, r0[1] + 10, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a1 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id), r = l.pts[0], d = s.SL.sub(r, s.COL.C); return { pts: l.pts, onScalp: s.SL.onScalp(r, s.COL.C), off: s.SL.len(d) - s.COL.radius(d), inside: l.pts.some(p => s.COL.inside(p)) }; }, a.id);
+    const dr = Math.hypot(...a1.pts[0].map((x, i) => x - a.pts[0][i])), de = Math.hypot(...a1.pts[5].map((x, i) => x - a.pts[5][i]));
+    if (!(dr > 0.012) || !a1.onScalp || Math.abs(a1.off - 0.0015) > 0.001 || !(de > dr * 0.5) || a1.inside) throw new Error(`the root drag: the root moved ${(dr * 100).toFixed(1)} cm (on the scalp ${a1.onScalp}, ${(a1.off * 1000).toFixed(1)} mm off), the end ${(de * 100).toFixed(1)} cm, inside ${a1.inside}`);
+    // a sheet: its root line slid by its middle, then stretched by an end
+    const b = await ev(() => { const s = window.__salon, C = s.COL, l = s.addLock(s.SL.makeSheet([C.surface([-0.03, 0.1, 0.07]), C.surface([0, 0.105, 0.075]), C.surface([0.03, 0.1, 0.07])], [0, -0.1, 0.1], 0.06, C)); s.finishLock(); s.setTool("select"); s.select(l.id); return { id: l.id, root: l.root.map(p => p.slice()), handles: s.SL.handles(l).filter(h => h.root).map(h => h.path) }; });
+    if (b.handles.length !== 3) throw new Error("a sheet's root handles: " + JSON.stringify(b.handles));
+    const m0 = await scr(b.root[1]); await page.mouse.move(...m0); await page.mouse.down(); await page.mouse.move(m0[0] - 25, m0[1] + 12, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const b1 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { root: l.root.map(p => p.slice()), e0: l.edges[0][0], onScalp: l.root.every(p => s.SL.onScalp(p, s.COL.C)) }; }, b.id);
+    const dm = b1.root.map((p, i) => Math.hypot(...p.map((x, k) => x - b.root[i][k])));
+    if (!(Math.min(...dm) > 0.01) || Math.max(...dm) - Math.min(...dm) > 0.008 || !b1.onScalp || Math.hypot(...b1.e0.map((x, k) => x - b1.root[0][k])) > 1e-9) throw new Error(`the root line slid: ${dm.map(x => (x * 100).toFixed(1))} cm, on the scalp ${b1.onScalp}`);
+    const end0 = await scr(b1.root[0]); await page.mouse.move(...end0); await page.mouse.down(); await page.mouse.move(end0[0] - 20, end0[1], { steps: 5 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const b2 = await ev(id => window.__salon.st.locks.find(l => l.id === id).root.map(p => p.slice()), b.id);
+    const d0 = Math.hypot(...b2[0].map((x, k) => x - b1.root[0][k])), d2 = Math.hypot(...b2[2].map((x, k) => x - b1.root[2][k]));
+    if (!(d0 > 0.008) || d2 > 1e-9) throw new Error(`the root line's end: moved ${(d0 * 100).toFixed(1)} cm, the far end ${(d2 * 100).toFixed(1)} cm`);
+    // picking: a strand behind the head isn't picked through it from the front; two strands over each other in front are picked in turn (ortho, so they share a pixel)
+    await ev(ids => ids.forEach(id => window.__salon.deleteLock(id)), [a.id, b.id]);
+    await view(0, 0, 0.85);
+    const c = await ev(() => { const s = window.__salon, C = s.COL; s.select(null);
+      const back = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.08, -0.1]), [0.02, -0.15, -0.12], C)); s.finishLock();
+      const f1 = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.04, -0.2, 0.2], C)), f2 = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.04, -0.2, 0.12], C)); s.finishLock(); s.setTool("select"); s.render();
+      const r = s.canvas.getBoundingClientRect(); let spot = null;
+      for (const G of s.EVAL[back.id]) for (let k = 2; k < 12 && !spot; k++) { const q = s.screenOf(G.pts[k]); if (s.headAt(r.left + q[0], r.top + q[1])) spot = [r.left + q[0], r.top + q[1]]; }
+      return { back: back.id, f1: f1.id, f2: f2.id, spot }; });
+    if (!c.spot) throw new Error("no point of the back strand hidden by the head in view");
+    await page.mouse.click(...c.spot); await page.waitForTimeout(80); const picked = await ev(() => window.__salon.selected);
+    if (picked === c.back) throw new Error("a strand hidden by the head was picked through it");
+    await page.keyboard.press("5");
+    const sp = await ev(c => { const s = window.__salon; s.select(null); s.render(); const r = s.canvas.getBoundingClientRect(), A = s.EVAL[c.f1][0].pts, B = s.EVAL[c.f2][0].pts, H = [...s.SL.handles(s.st.locks.find(l => l.id === c.f1)), ...s.SL.handles(s.st.locks.find(l => l.id === c.f2))].map(h => s.screenOf(h.p));
+      for (let k = 4; k < 22; k++) { const q = s.screenOf(B[k]); const near = Math.min(...A.map(p => { const a = s.screenOf(p); return Math.hypot(a[0] - q[0], a[1] - q[1]); })), handle = Math.min(...H.map(h => Math.hypot(h[0] - q[0], h[1] - q[1])));
+        if (near < 6 && handle > 16) return [r.left + q[0], r.top + q[1]]; } return null; }, c);
+    if (!sp) throw new Error("no spot where the two front strands overlap away from their handles");
+    const picks = []; for (let i = 0; i < 3; i++) { await page.mouse.click(...sp); await page.waitForTimeout(60); picks.push(await ev(() => window.__salon.selected)); }
+    await page.keyboard.press("5");
+    if (picks[0] !== c.f1 || picks[1] !== c.f2 || picks[2] !== c.f1) throw new Error(`clicks in turn picked ${picks.map(id => id === c.f1 ? "the front one" : id === c.f2 ? "the one behind" : id).join(", ")}`);
+    // the dot: green on the scalp, red on the cheek, none in the air; the root line's length in the hint while it's drawn
+    await ev(() => { const s = window.__salon; s.select(null); s.setTool("strand"); });
+    const onScalp = await scr(await surf([0.0, 0.1, 0.07])); await page.mouse.move(...onScalp); await page.waitForTimeout(80);
+    const dotA = await ev(() => { const s = window.__salon; s.render(); return s.dot(); });
+    const onCheek = await scr(await surf([0.05, -0.02, 0.09])); await page.mouse.move(...onCheek); await page.waitForTimeout(80);
+    const dotB = await ev(() => { const s = window.__salon; s.render(); return s.dot(); });
+    await page.mouse.move(onScalp[0] + 300, onScalp[1] - 150); await page.waitForTimeout(80);
+    const dotC = await ev(() => { const s = window.__salon; s.render(); return s.dot(); });
+    if (!dotA || dotA.colour !== "green" || !dotB || dotB.colour !== "red" || dotC) throw new Error(`the dot: ${JSON.stringify([dotA, dotB, dotC])}`);
+    await page.keyboard.press("l"); const p1 = await scr(await surf([-0.03, 0.1, 0.07])), p2 = await scr(await surf([0.03, 0.1, 0.07]));
+    await page.mouse.move(...p1); await page.mouse.down(); await page.mouse.move(p2[0], p2[1], { steps: 6 }); const hintMid = await ev(() => document.querySelector("#hint").textContent); await page.mouse.up(); await page.keyboard.press("Escape");
+    if (!/root line [\d.]+ cm/.test(hintMid)) throw new Error("the root line's length isn't in the hint: " + hintMid);
+    await ev(ids => { const s = window.__salon; for (const id of ids) s.deleteLock(id); s.setTool("select"); s.st.reference.lock = true; }, [c.back, c.f1, c.f2]);
+    console.log(`       the root slid ${(dr * 100).toFixed(1)} cm (${(a1.off * 1000).toFixed(1)} mm off the skin), the end with it ${(de * 100).toFixed(1)} cm; the root line slid ${(Math.min(...dm) * 100).toFixed(1)} to ${(Math.max(...dm) * 100).toFixed(1)} cm, its end stretched ${(d0 * 100).toFixed(1)} cm alone; the hidden strand not picked, two in front picked in turn; the dot and the hint "${hintMid.slice(0, 22)}"`);
   });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {

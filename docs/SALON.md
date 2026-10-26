@@ -125,6 +125,14 @@ view says what to do at each stage (the root placed: click the end, the wheel's 
 the arrow, OK). The wheel bows every type while placing (a sheet got no bow before), Shift+wheel sets the type's own
 number (a strand's width, a sheet's spread, a bundle's root width, a bundle line's height).
 
+**Roots slide** (2026-10-26): a lock's green root handle dragged slides the whole lock along the scalp (a sheet's root
+line has three: its middle slides the line whole, an end stretches it, the far end staying), the shaping kept as the
+arrow keeps it (`slideRoot`); Shift lets a root off the scalp. **Picking** takes the lock nearest in depth under the
+cursor and never one the head hides (a lock on the back of the head isn't picked through the face); a click again on
+the same spot picks the next lock under it. While a placing tool is armed, a **dot** under the cursor shows where a root
+would go: green on the scalp, red off it (the ear, the face); the hint reads a root line's length as it's drawn, and
+the dot says when the line has run off the scalp.
+
 **Hair lies on the scalp** (2026-10-22): a new lock is combed onto the head: every point within 3 cm of it is laid on
 the skin, 2.5 mm off it (the head's surface is measured from its triangles, 2.5 degrees a bin, 0.3 mm off the real
 skin), and only the wheel's bow lifts it (the bow starts flat for every new lock). **Onto the scalp** and **All onto the

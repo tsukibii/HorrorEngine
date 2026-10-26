@@ -285,7 +285,8 @@ export function partingCover(col, o = {}) {
 export function handles(lock) {
   if (lock.type === "strand") return lock.pts.map((p, i) => ({ p, root: i === 0, path: ["pts", i] }));
   if (lock.type === "bundle") return lock.spine.map((p, i) => ({ p, root: i === 0, path: ["spine", i] }));
-  const out = [];
+  const out = [], n = lock.root.length;
+  for (const i of new Set([0, n >> 1, n - 1])) out.push({ p: lock.root[i], root: true, path: ["root", i] });   // the root line's ends and middle: dragged, the lock slides (slideRoot)
   lock.edges.forEach((E, j) => E.forEach((p, i) => { if (i > 0) out.push({ p, root: false, path: ["edges", j, i] }); }));
   return out;
 }
@@ -631,7 +632,26 @@ export function vectorOf(lock) {
 export function lockLength(lock) { return length(curvesOf(lock)[lock.type === "sheet" ? 1 : 0]); }
 export function vectorStart(lock, col) {
   const C = curvesOf(lock);
-  return { curves: C.map(P => P.map(p => p.slice())), hug: C.map(P => P.map(p => col ? col.depth(p) < HUG_ON : false)), end: vectorOf(lock)[1].slice() };
+  return { curves: C.map(P => P.map(p => p.slice())), hug: C.map(P => P.map(p => col ? col.depth(p) < HUG_ON : false)), end: vectorOf(lock)[1].slice(), root: lock.root ? lock.root.map(p => p.slice()) : null };
+}
+// a root dragged to p (on the scalp): the lock slides along the scalp with it, from where it was when the drag began
+// (`from`): a strand's or a bundle's root takes every point with it; a sheet's root line slides whole by its middle, or
+// stretches by an end (the far end stays, the points between move their share, each edge going with its root). The
+// shaping is kept as setVector keeps it: points that lay on the body lie on it again, the rest keep their distance.
+export function slideRoot(lock, path, p, col, from) {
+  const relay = (P, j) => { for (let i = 1; i < P.length; i++) P[i] = col ? (from.hug[j][i] ? onto(P[i], col) : col.push(P[i], GAP)[0]) : P[i]; };
+  const C = curvesOf(lock);
+  if (lock.type !== "sheet") {
+    const d = sub(p, from.curves[0][0]);
+    for (let i = 0; i < C[0].length; i++) C[0][i] = add(from.curves[0][i], d);
+    C[0][0] = col ? col.surface(p) : p; relay(C[0], 0); return;
+  }
+  const R = from.root, n = R.length, i0 = path[1], w = i => i0 === 0 ? 1 - i / (n - 1) : i0 === n - 1 ? i / (n - 1) : 1, d = sub(p, R[i0]);
+  lock.root = R.map((q, i) => { const m = add(q, mul(d, w(i))); return col ? col.surface(m) : m; });
+  const ew = [w(0), (w(0) + w(n - 1)) / 2, w(n - 1)];
+  lock.edges.forEach((E, j) => { for (let i = 0; i < E.length; i++) E[i] = add(from.curves[j][i], mul(d, ew[j])); });
+  lock.edges[0][0] = lock.root[0]; lock.edges[1][0] = along(lock.root, 0.5); lock.edges[2][0] = lock.root[n - 1];
+  lock.edges.forEach((E, j) => relay(E, j));
 }
 export function setVector(lock, end, col, from) {
   const a = from.curves[lock.type === "sheet" ? 1 : 0][0], u = sub(from.end, a), v = sub(end, a), lu = len(u), lv = len(v);
