@@ -90,12 +90,24 @@ a pulled face's middle drags the picture's middle the whole way). The cube is sa
 
 | Tool | Key | How | The wheel while placing |
 |---|---|---|---|
-| Strand | S | click a root on the scalp (tinted blue while a tool is armed), click the end | the sag (how far it bows out) |
-| Sheet | L | drag a root line along the scalp, let go, click where it ends | the spread of the end |
-| Bundle | B | click a root, click the tip | the root's width |
-| Bundle line | D | drag a line along the scalp (its width), let go, click the tip | its height (an oval) |
-| Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it | the pull's reach (down grows it) |
+| Strand | S | click a root on the scalp (tinted blue while a tool is armed), click the end | the sag (how far it bows out); Shift: its width |
+| Sheet | L | drag a root line along the scalp, let go, click where it ends | the sag; Shift: the spread of the end |
+| Bundle | B | click a root, click the tip | the sag; Shift: the root's width |
+| Bundle line | D | drag a line along the scalp (its width), let go, click the tip | the sag; Shift: its height (an oval) |
+| Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it; drag its arrowhead | the pull's reach (down grows it); the sag while the arrow is dragged |
 | Fit ref | F | drag the reference picture; the wheel scales it | |
+
+**The lock's vector** (2026-10-26, the user's ask): a placed lock stays **in hand**: an arrow from its root's middle to
+its end, an **OK** button at the arrowhead. Drag the arrowhead to set the lock's length and direction from whatever view
+(turn the view and drag again: the end is a point in space, kept); Alt-drag takes it towards or away from you; the
+wheel while dragging bows it. The lock turns and scales about its root (`salonlib.js`'s `setVector`), keeping the
+shaping done by hand: points that lay on the body lie on it again, the rest keep their distance, the end goes where the
+cursor is; a twin's arrow moves its original. **OK** or Enter lets go (the lock stays), Delete removes it, and the next
+root click starts the next lock. The arrow shows on the selected lock in any tool but Fit; Selected has **Length** (cm
+along the lock, the root fixed, grown along its last direction) and **Sag** (the bow) as sliders. The hint under the
+view says what to do at each stage (the root placed: click the end, the wheel's sag and Shift+wheel's number; in hand:
+the arrow, OK). The wheel bows every type while placing (a sheet got no bow before), Shift+wheel sets the type's own
+number (a strand's width, a sheet's spread, a bundle's root width, a bundle line's height).
 
 **Hair lies on the scalp** (2026-10-22): a new lock is combed onto the head: every point within 3 cm of it is laid on
 the skin, 2.5 mm off it (the head's surface is measured from its triangles, 2.5 degrees a bin, 0.3 mm off the real

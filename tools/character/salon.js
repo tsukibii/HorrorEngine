@@ -51,7 +51,7 @@ const st = {
   bake: { along: 8, full: false, smooth: 0, tame: 0 },   // the bake's points along each card (a swinging lock's at least 12), or every point; its smoothing
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
-let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select", UNSAVED = false;   // UNSAVED: edits since the last Save (leaving asks)
+let ACTIVE_GROUP = "g1", SELECTED = null, INHAND = null, TOOL = "select", UNSAVED = false;   // INHAND: the lock just placed or re-aimed, with its arrow and OK; UNSAVED: edits since the last Save (leaving asks)
 
 // ---- the scene --------------------------------------------------------------------------------------------------------
 const view = $("#view");
@@ -442,10 +442,42 @@ function refreshLocks() {
   DIRTY.clear();
   drawHandles();
 }
-let HOVER = null;
+let HOVER = null, HOVER_ARROW = false;
+// the lock's vector (the user's ask): an arrow from its root's middle to its end, for the selected lock in any tool but
+// Fit. Drag the arrowhead to set the lock's length and direction from whatever view (salonlib.js's setVector: turned
+// and scaled about the root, the hand shaping kept; Alt: towards or away from you; the wheel while dragging: sag). The
+// arrowhead sits a little past the end, clear of the end's own handle. OK (or Enter) lets go of the lock in hand.
+const ARROW_PAST = 0.012;
+function arrowTip(l) { const [a, b] = SL.vectorOf(l); return SL.add(b, SL.mul(SL.norm(SL.sub(b, a)), ARROW_PAST)); }
+function drawArrow(l) {
+  if (isLocked(l)) return;
+  const [a, b] = SL.vectorOf(l), d = SL.norm(SL.sub(b, a)), hot = (DRAG && DRAG.kind === "arrow") || HOVER_ARROW, colour = hot ? 0xffffff : 0xffb347;
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b].map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color: colour, depthTest: false, transparent: true, opacity: 0.9 }));
+  line.renderOrder = 11; HANDLES.add(line);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.018, 12), new THREE.MeshBasicMaterial({ color: colour, depthTest: false }));
+  cone.position.set(...arrowTip(l)); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...d)); cone.renderOrder = 12; HANDLES.add(cone);
+}
+function arrowAt(e) {                                                // the arrowhead under the cursor?
+  const l = lockById(SELECTED); if (!l || isLocked(l) || TOOL === "fit" || PLACE.stage || BAKEVIEW) return false;
+  const [mx, my] = rel(e), [sx, sy] = screenOf(arrowTip(l)); return Math.hypot(sx - mx, sy - my) < 14;
+}
+function startArrowDrag(e) {
+  const l = lockById(SELECTED), o = original(l);
+  remember(); DRAG = { kind: "arrow", lock: l.id, from: SL.vectorStart(o, COL), tip: SL.vectorOf(l)[1].slice(), to: null, y: e.clientY };
+  INHAND = l.id; drawHandles(); hint(); draw();
+}
+const OKBTN = el("button", { id: "okBtn", textContent: "OK ✓", title: "done with this lock (Enter); Delete removes it", onclick: () => finishLock() }); view.append(OKBTN);
+function finishLock() { INHAND = null; SELECTED = null; resetPlace(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
+function placeOk() {                                                 // the OK button beside the arrowhead of the lock in hand
+  const l = lockById(SELECTED), on = l && INHAND === l.id && !PLACE.stage && TOOL !== "fit" && !BAKEVIEW && !isLocked(l);
+  OKBTN.style.display = on ? "block" : "none"; if (!on) return;
+  const [sx, sy] = screenOf(arrowTip(l)); OKBTN.style.left = `${Math.round(sx) + 16}px`; OKBTN.style.top = `${Math.round(sy) - 12}px`;
+}
 function drawHandles() {
-  HANDLES.clear();
-  const l = lockById(SELECTED); if (!l || TOOL !== "select") return;
+  HANDLES.clear(); placeOk();
+  const l = lockById(SELECTED); if (!l || TOOL === "fit" || BAKEVIEW) return;
+  drawArrow(l);
+  if (TOOL !== "select") return;
   const geo = new THREE.SphereGeometry(0.0045, 10, 8);
   for (const h of SL.handles(l)) {
     const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: h.root ? 0x5aa65a : HOVER && HOVER.join() === h.path.join() ? 0xffffff : 0xd9a441, depthTest: false }));
@@ -978,37 +1010,48 @@ function addLock(l) {
   if (SELECTED) DIRTY.add(SELECTED);
   l.group = ACTIVE_GROUP; st.locks.push(l);
   if (st.mirror.on) { const m = SL.mirrored(l, st.mirror.seam, COL); m.group = ACTIVE_GROUP; st.locks.push(m); }
-  SELECTED = l.id; locksPanel(); selPanel(); draw();
+  SELECTED = l.id; INHAND = l.id; locksPanel(); selPanel(); hint(); draw();
   return l;
 }
 function deleteLock(id) {
   remember();
   st.locks = st.locks.filter(l => l.id !== id && l.mirror_of !== id);
   for (const l of st.locks) if (l.mirror_of && !lockById(l.mirror_of)) l.mirror_of = null;
-  if (SELECTED === id) SELECTED = null; locksPanel(); selPanel(); draw();
+  if (SELECTED === id) SELECTED = null; if (INHAND === id) INHAND = null; locksPanel(); selPanel(); hint(); draw();
 }
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
 const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
-  select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). The handles in the ring move with it, less the farther they are: the wheel while dragging grows (down) or shrinks (up) the ring, O turns it off. Drag the empty view to turn the head; the wheel zooms.",
-  strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
-  sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
-  bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
-  bline: "Drag a line along the blue scalp: it's the bundle's width (its diameter). Let go, then click the tip. The wheel makes it an oval (its height) while you place it.",
+  select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away), or drag its arrowhead to set its length and direction. The ring: what the pull takes (Pull: its scope; the wheel while dragging: the reach; O: off). Drag the empty view to turn the head; the wheel zooms.",
+  strand: "Click a root on the blue scalp, then click where the strand ends.",
+  sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends.",
+  bundle: "Click a root on the blue scalp, then click the tip.",
+  bline: "Drag a line along the blue scalp (the bundle's width), let go, then click the tip.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
-const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, height: 1, last: null };
+const PLACE = { stage: 0, root: null, line: [], sag: 0, width: 0.006, spread: 0.05, r0: 0.015, height: 1, last: null };
+// the wheel while placing: the sag for every type; with Shift, the type's own number
+const placeWord = () => TOOL === "strand" ? "width" : TOOL === "sheet" ? "spread" : TOOL === "bline" ? "height" : "root width";
+const placeNumber = () => TOOL === "strand" ? `width ${(PLACE.width * 1000).toFixed(1)} mm` : TOOL === "sheet" ? `spread ${(PLACE.spread * 100).toFixed(1)} cm` : TOOL === "bline" ? `height ${Math.round(PLACE.height * 100)}% of the width` : `root width ${(PLACE.r0 * 200).toFixed(1)} cm`;
+// the hint under the view: what to do now, by the tool, the stage of placing and the lock in hand
+function hintText() {
+  if (TOOL === "fit") return HINTS.fit;
+  if (PLACE.stage) return `${TOOL === "sheet" || TOOL === "bline" ? "Root line drawn" : "Root placed"}: click where it ends (on the body, it rests there). Wheel: sag ${PLACE.sag.toFixed(2)}; Shift+wheel: ${placeNumber()}. Esc cancels.`;
+  const l = lockById(SELECTED);
+  if (l && INHAND === l.id && !isLocked(l) && !BAKEVIEW) return "Placed. Drag the arrowhead to set its length and direction (Alt: towards or away from you; the wheel while dragging: sag). Enter or OK when happy, Delete removes it; or start the next lock.";
+  return HINTS[TOOL] + (TOOL !== "select" ? ` The wheel bows it (sag) while placing, Shift+wheel its ${placeWord()}.` : "") + (st.mirror.on && TOOL !== "select" ? "  Mirror is on: the other side follows." : "");
+}
+function hint(text = null) { $("#hint").textContent = text || hintText(); }
 function setTool(t) {
   if (BAKEVIEW && t !== "select") previewBake(false);
   TOOL = t; resetPlace();
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
-  $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
-  tintScalp(); draw();
+  hint(); tintScalp(); draw();
 }
 function resetPlace() { PLACE.stage = 0; PLACE.root = null; PLACE.line = []; PLACE.last = null; PLACE.sag = 0;   // every new lock starts flat on the head (the wheel bows it while placing)
-  showPreview(null); showRootLine(null); }
+  showPreview(null); showRootLine(null); hint(); }
 for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, onclick: () => setTool(t) }); b.dataset.t = t; $("#tools").append(b); }
 
 function previewFrom(e) {
@@ -1023,11 +1066,12 @@ function previewFrom(e) {
   if (onBody && Math.abs(SL.dot(SL.sub(onBody, anchor), fwd)) > 0.1) onBody = null;
   const end = onBody ? COL.push(onBody, 0.008)[0] : onPlane(e.clientX, e.clientY, anchor); if (!end) return null;
   PLACE.last = [e.clientX, e.clientY];
-  if (TOOL === "strand") return SL.makeStrand(PLACE.root, end, COL, { sag: PLACE.sag });
-  if (TOOL === "bundle") return SL.makeBundle(PLACE.root, end, COL, { sag: PLACE.sag, r0: PLACE.r0 });
-  if (TOOL === "sheet") return SL.makeSheet(PLACE.line, end, PLACE.spread, COL, { sag: PLACE.sag * 0.7 });
-  if (TOOL === "bline") return SL.makeBundleLine(PLACE.line, end, COL, { sag: PLACE.sag, height: PLACE.height });
-  return null;
+  const l = TOOL === "strand" ? SL.makeStrand(PLACE.root, end, COL, { sag: PLACE.sag, width: PLACE.width })
+    : TOOL === "bundle" ? SL.makeBundle(PLACE.root, end, COL, { sag: PLACE.sag, r0: PLACE.r0 })
+    : TOOL === "sheet" ? SL.makeSheet(PLACE.line, end, PLACE.spread, COL, { sag: PLACE.sag * 0.7 })
+    : TOOL === "bline" ? SL.makeBundleLine(PLACE.line, end, COL, { sag: PLACE.sag, height: PLACE.height }) : null;
+  if (l) l.sag = TOOL === "sheet" ? PLACE.sag * 0.7 : PLACE.sag;     // the bow it was placed with (the Sag slider counts from it)
+  return l;
 }
 function scalpAt(e) { const p = headAt(e.clientX, e.clientY); return p && (e.shiftKey || SL.onScalp(p, COL.C)) ? COL.surface(p) : null; }
 
@@ -1087,9 +1131,11 @@ cv.addEventListener("pointerdown", e => {
     const h = handleAt(e);
     if (h && isLocked(lockById(SELECTED))) { status("locked: unlock it (Selected, or the padlock in Locks) to shape it", "bad"); return; }
     if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey, start: SL.pullStart(st.locks), moved: [], to: null }; drawHandles(); draw(); return; }
+    if (arrowAt(e)) { startArrowDrag(e); return; }
     const l = lockAt(e);
     if (l) { select(l.id); return; }
   }
+  if (!orbitOnly && TOOL !== "fit" && TOOL !== "select" && arrowAt(e)) { startArrowDrag(e); return; }   // the lock in hand re-aimed from a placing tool too
   if (!orbitOnly && (TOOL === "strand" || TOOL === "bundle")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.root = p; PLACE.stage = 1; showPreview(previewFrom(e)); draw(); return; } }
     else { const l = previewFrom(e); if (l) { resetPlace(); addLock(l); } return; }
@@ -1104,7 +1150,10 @@ cv.addEventListener("pointermove", e => {
   if (!DRAG) {
     if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
     else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
-    else if (TOOL === "select" && SELECTED) { const h = handleAt(e); const p = h ? h.path : null; if ((p && p.join()) !== (HOVER && HOVER.join())) { HOVER = p; drawHandles(); draw(); } }
+    else if (SELECTED) {
+      const h = TOOL === "select" ? handleAt(e) : null, p = h ? h.path : null, ar = !h && arrowAt(e);
+      if ((p && p.join()) !== (HOVER && HOVER.join()) || ar !== HOVER_ARROW) { HOVER = p; HOVER_ARROW = ar; drawHandles(); draw(); }
+    }
     return;
   }
   if (DRAG.kind === "orbit") {
@@ -1122,6 +1171,14 @@ cv.addEventListener("pointermove", e => {
     } else to = onPlane(e.clientX, e.clientY, h.p);
     if (!to) return;
     DRAG.to = to; pullNow(); draw();                                   // the handle and those in reach (a twin's: its original's)
+  } else if (DRAG.kind === "arrow") {                                  // the lock's end to the cursor: turned and scaled about its root
+    const l = lockById(DRAG.lock); if (!l) return;
+    const o = original(l), cur = DRAG.to || DRAG.tip;
+    if (e.altKey) { const n = new THREE.Vector3(); camera.getWorldDirection(n); const nl = SL.norm(SR.MV(SR.T(HF.B), n.toArray())); DRAG.to = SL.add(cur, SL.mul(nl, (e.clientY - DRAG.y) * 0.0015)); }
+    else { const q = onPlane(e.clientX, e.clientY, cur); if (!q) return; DRAG.to = q; }
+    DRAG.y = e.clientY;
+    SL.setVector(o, l.mirror_of ? SL.reflectPoint(DRAG.to, st.mirror.seam) : DRAG.to, COL, DRAG.from); changed(o);
+    hint(`${(SL.lockLength(o) * 100).toFixed(1)} cm`); draw();
   } else if (DRAG.kind === "cube") {
     const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
     const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
@@ -1147,21 +1204,26 @@ cv.addEventListener("pointerup", e => {
     }
     PLACE.stage = 1; showRootLine(PLACE.line); showPreview(previewFrom(e)); draw();
   }
-  const wasHandle = DRAG && DRAG.kind === "handle";
+  const wasHandle = DRAG && (DRAG.kind === "handle" || DRAG.kind === "arrow");
   if (DRAG && DRAG.kind === "fit") saveFitHint();
   DRAG = null;
-  if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); draw(); }
+  if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); hint(); draw(); }
 });
 cv.addEventListener("wheel", e => {
   e.preventDefault();
   const s = Math.sign(e.deltaY);
   if (DRAG && DRAG.kind === "handle") { if (PULL.on && s) reach(s > 0, e.shiftKey); return; }   // Blender's: down grows the reach, up shrinks it
+  if (DRAG && DRAG.kind === "arrow" && s) {                            // the bow of the lock in hand, while its arrow is dragged
+    const l = lockById(DRAG.lock), o = original(l), sag = Math.max(-0.6, Math.min(1.2, (o.sag || 0) - s * 0.05));
+    SL.setSag(o, sag, COL); DRAG.from = SL.vectorStart(o, COL); changed(o); hint(`sag ${sag.toFixed(2)}, ${(SL.lockLength(o) * 100).toFixed(1)} cm`); draw(); return;
+  }
   if (PLACE.stage) {
-    if (TOOL === "strand") PLACE.sag = Math.max(-0.6, Math.min(1.2, PLACE.sag - s * 0.05));
-    if (TOOL === "sheet") PLACE.spread = Math.max(0.005, Math.min(0.3, PLACE.spread * (s < 0 ? 1.12 : 1 / 1.12)));
-    if (TOOL === "bundle") PLACE.r0 = Math.max(0.003, Math.min(0.06, PLACE.r0 * (s < 0 ? 1.12 : 1 / 1.12)));
-    if (TOOL === "bline") PLACE.height = Math.max(0.1, Math.min(2, PLACE.height * (s < 0 ? 1.1 : 1 / 1.1)));
-    $("#hint").textContent = TOOL === "strand" ? `sag ${PLACE.sag.toFixed(2)}` : TOOL === "sheet" ? `spread ${(PLACE.spread * 100).toFixed(1)} cm` : TOOL === "bline" ? `height ${Math.round(PLACE.height * 100)}% of the width` : `root width ${(PLACE.r0 * 200).toFixed(1)} cm`;
+    if (!e.shiftKey) PLACE.sag = Math.max(-0.6, Math.min(1.2, PLACE.sag - s * 0.05));   // every type bows
+    else if (TOOL === "strand") PLACE.width = Math.max(0.001, Math.min(0.03, PLACE.width * (s < 0 ? 1.12 : 1 / 1.12)));
+    else if (TOOL === "sheet") PLACE.spread = Math.max(0.005, Math.min(0.3, PLACE.spread * (s < 0 ? 1.12 : 1 / 1.12)));
+    else if (TOOL === "bundle") PLACE.r0 = Math.max(0.003, Math.min(0.06, PLACE.r0 * (s < 0 ? 1.12 : 1 / 1.12)));
+    else if (TOOL === "bline") PLACE.height = Math.max(0.1, Math.min(2, PLACE.height * (s < 0 ? 1.1 : 1 / 1.1)));
+    hint();
     if (PLACE.last) showPreview(previewFrom({ clientX: PLACE.last[0], clientY: PLACE.last[1] }));
     draw(); return;
   }
@@ -1174,7 +1236,8 @@ cv.addEventListener("wheel", e => {
 addEventListener("keydown", e => {
   if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName) && !((e.ctrlKey || e.metaKey) && e.target.type !== "text")) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
-  if (e.key === "Escape") { resetPlace(); draw(); return; }
+  if (e.key === "Enter" && !PLACE.stage && SELECTED && INHAND === SELECTED) { e.preventDefault(); finishLock(); return; }   // OK: done with the lock in hand
+  if (e.key === "Escape") { if (PLACE.stage) resetPlace(); else if (INHAND) finishLock(); draw(); return; }
   if (e.key === "PageUp" || e.key === "PageDown") { e.preventDefault(); if (PULL.on) reach(e.key === "PageUp", e.shiftKey); return; }
   if (e.key.toLowerCase() === "o" && !e.ctrlKey) { PULL.on = !PULL.on; pullPanel(); drawHandles(); draw(); return; }
   if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteLock(original(lockById(SELECTED)).id); return; }
@@ -1411,7 +1474,7 @@ function locksPanel() {
   const lt = el("div"); tick(lt, "Layer by height", !!st.layering, v => { remember(); st.layering = v; for (const l of st.locks) DIRTY.add(l.id); draw(); }, "hair rooted higher always lies over hair rooted lower, like real hair"); box.append(lt);
   box.append(el("button", { textContent: "New group", onclick: () => { const id = "g" + (st.groups.length + 1) + Date.now().toString(36).slice(-3); st.groups.push({ id, name: `Group ${st.groups.length + 1}`, visible: true }); ACTIVE_GROUP = id; locksPanel(); } }));
 }
-function select(id) { SELECTED = id; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); draw(); }
+function select(id) { SELECTED = id; if (INHAND !== id) INHAND = null; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
 function selPanel() {
   const box = $("#selbox"); box.innerHTML = "";
   const l = lockById(SELECTED); stepHint("selected", l ? l.name || l.type : "the lock you picked");
@@ -1429,6 +1492,10 @@ function selPanel() {
   if (o.type === "bundle") { slider(box, "Root radius", 0.002, 0.06, 0.001, o.r0, edit(v => { o.r0 = v; })); slider(box, "Tip radius", 0, 0.06, 0.001, o.r1, edit(v => { o.r1 = v; }));
     slider(box, "Height", 0.1, 2, 0.05, o.height ?? 1, edit(v => { o.height = v; }), "its other axis, as a share of its width: 1 round, less a flatter oval, more a taller one"); }
   slider(box, "Taper", 0, 1, 0.05, o.taper, edit(v => { o.taper = v; }), "how much thinner the tip is");
+  if (!o.cover) {                                                      // the lock's vector as numbers (the arrow in the view does the same by hand)
+    slider(box, "Length", 2, 100, 0.5, +(SL.lockLength(o) * 100).toFixed(1), edit(v => { SL.setLength(o, v / 100, COL); }), "cm along the lock: the root stays, it grows along its last direction (or drag its arrowhead in the view)");
+    slider(box, "Sag", -0.6, 1.2, 0.05, +(o.sag || 0).toFixed(2), edit(v => { SL.setSag(o, v, COL); }), "the bow away from the head (the wheel while placing, or while its arrow is dragged)");
+  }
   if (o.type !== "bundle") {                                          // a bundle's volume for strands and sheets
     slider(box, "Thickness", 0, 1, 0.05, o.thickness ?? 0, edit(v => { o.thickness = v; }), "flat (0) to round (1): a dome over the lock as high as half its width, like a bundle");
     slider(box, "Thickness taper", 0, 1, 0.05, o.thicknessTaper ?? 1, edit(v => { o.thicknessTaper = v; }), "how much the thickness thins towards the tip (1: to nothing)");
@@ -1585,7 +1652,7 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
 
 // for the tests and the renders
 window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
-  get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
+  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
   screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
   PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
   bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },

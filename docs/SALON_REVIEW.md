@@ -63,6 +63,7 @@ In the code: `PLACE.end` set on the first end click, moved by an `end` drag (as 
 `previewFrom` builds from it, not the cursor; `commitPlace()` on OK, Enter or the next root; the arrow a
 `THREE.ArrowHelper` in HANDLES; `sag` honoured by every maker; `setLength(lock, L)` in salonlib. SALON gains a lock
 placed, its arrow dragged from the front and the side, Enter, Esc, Length on a sheet. **M.**
+**Built 2026-10-26**: the lock stays in hand after its end click (the fast path keeps its two clicks) with the arrow and OK; the arrowhead's drag turns and scales the lock about its root keeping the hand shaping (`setVector`); Enter or OK lets go; Length and Sag sliders; SALON drags the arrow from the front (the end under the cursor within 1 mm) and from the side (3.7 cm in depth, 2 mm sideways).
 
 **2. Long hair means zooming out until the head is tiny.** *Now:* the end has to be on screen; the default view reaches
 13.5 cm below the chin (a 37 cm lock); chest length wants 1.6 m (the head 181 px, a handle 7 px), the waist 2.5 m
@@ -74,6 +75,7 @@ does), and **three zoom stops** on the toolbar (the head, the bust, the whole to
 sheet it's the spread, for a bundle the root's width, for a bundle line the height, and the sag stays 0 (`makeSheet`
 gets `sag * 0.7` of a number that's never set). *Proposed:* the wheel bows every type, Shift+wheel the type's own
 number (as in 1). **S.**
+**Built 2026-10-26**: the wheel bows every type, Shift+wheel the type's number; SALON places a sheet bowed by the wheel.
 
 **4. The root line stops at the scalp's edge without saying, and a click gives a 3 cm line.** *Now:* points are added
 only while the cursor is over the scalp (every 8 mm); dragged over the ear or past the hairline, the line keeps what it

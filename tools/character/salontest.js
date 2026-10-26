@@ -297,7 +297,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const sa = await scr(await surf([-0.025, 0.14, -0.07])), sb = await scr(await surf([0.025, 0.14, -0.07]));
     const [A, B] = await ev(q => q.map(([x, y]) => window.__salon.COL.surface(window.__salon.headAt(x, y))), [sa, sb]);   // where the clicks land
     await page.mouse.move(...sa); await page.mouse.down(); await page.mouse.move((sa[0] + sb[0]) / 2, (sa[1] + sb[1]) / 2); await page.mouse.move(...sb); await page.mouse.up();
-    for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 100);      // down: flatter, a tenth a notch
+    await page.keyboard.down("Shift"); for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 100); await page.keyboard.up("Shift");   // Shift+wheel down: flatter, a tenth a notch (the plain wheel bows it)
     const tip = await scr([0.0, -0.06, -0.2]); await page.mouse.move(...tip); await page.mouse.click(...tip);
     const ring = () => ev(() => { const s = window.__salon, SL = s.SL, l = s.st.locks.find(x => x.id === s.selected); s.render(); const G = s.EVAL[l.id], c = l.spine[0];
       const e = j => SL.len(SL.sub(G[j].pts[0], c)), twin = s.st.locks.find(x => x.mirror_of === l.id);
@@ -681,6 +681,49 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(() => { const s = window.__salon; s.undo(); s.undo(); });   // the kept fall, then the preset
     if (await count() !== before) throw new Error(`${await count()} locks after undo, ${before} before`);
     console.log(`       ${r.n} locks: a 50 cm pull moves ${r.one.moved} (this lock), ${r.two.moved} of ${r.two.ids} (it and its twin), ${r.group.moved} of ${r.group.ids} (its group), ${r.all.moved} (all); Back locked: ${r.locked.moved}, and ${d.backMoved} of its ${d.back} locks moved in a fall that moved ${d.restMoved} of ${d.rest} Sides locks`);
+  });
+  await step("the placing arrow: a placed lock stays in hand with an arrow to its end and OK; the arrowhead dragged sets its length and direction from the front and from the side, the root fixed; Enter lets go; Length and Sag; a sheet bows while placing", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; });
+    await view(0, 0, 0.85); await page.keyboard.press("s");
+    const root = await surf([0.03, 0.14, 0.0]);
+    await page.mouse.click(...await scr(root)); const e1 = await scr([0.1, -0.1, 0]); await page.mouse.move(...e1); await page.mouse.click(...e1); await page.waitForTimeout(150);
+    const a0 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.render(); return { id: l.id, inHand: s.inHand === l.id && s.selected === l.id, ok: s.okButton.style.display, len: s.SL.lockLength(l), root: s.SL.vectorOf(l)[0], end: s.SL.vectorOf(l)[1], tip: s.arrowTip(l), hint: document.querySelector("#hint").textContent }; });
+    if (!a0.inHand || a0.ok !== "block" || !/arrowhead/.test(a0.hint)) throw new Error("not in hand with OK and the hint: " + JSON.stringify(a0));
+    // from the front: the arrowhead dragged down and out; the end lands under the cursor (kept off the body), the lock longer, the root where it was
+    const want = [0.14, -0.16, a0.end[2]], f = await scr(a0.tip), t = await scr(want);
+    await page.mouse.move(...f); await page.mouse.down(); await page.mouse.move(t[0], t[1], { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a1 = await ev(([id, want]) => { const s = window.__salon, l = s.st.locks.find(l => l.id === id), q = s.COL.push(want, s.SL.GAP)[0], v = s.SL.vectorOf(l); return { len: s.SL.lockLength(l), end: v[1], root: v[0], off: Math.hypot(...v[1].map((x, i) => x - q[i])), inside: s.SL.handles(l).some(h => s.COL.inside(h.p)), inHand: s.inHand === id }; }, [a0.id, want]);
+    if (a1.off > 0.006 || !(a1.len > a0.len * 1.3) || a1.inside || !a1.inHand || Math.hypot(...a1.root.map((x, i) => x - a0.root[i])) > 1e-9) throw new Error(`after the drag from the front: the end ${(a1.off * 1000).toFixed(1)} mm off the cursor's point, ${(a1.len * 100).toFixed(1)} cm long (was ${(a0.len * 100).toFixed(1)}), inside ${a1.inside}, in hand ${a1.inHand}, root moved ${Math.hypot(...a1.root.map((x, i) => x - a0.root[i]))}`);
+    // from the side: dragged 60 px towards the back; the end moves in depth, its sideways place kept
+    await view(Math.PI / 2, 0, 0.85);
+    const tip2 = await ev(id => window.__salon.arrowTip(window.__salon.st.locks.find(l => l.id === id)), a0.id), f2 = await scr(tip2);
+    await page.mouse.move(...f2); await page.mouse.down(); await page.mouse.move(f2[0] + 60, f2[1], { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a2 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { end: s.SL.vectorOf(l)[1] }; }, a0.id);
+    const dz = a2.end[2] - a1.end[2], dx = Math.abs(a2.end[0] - a1.end[0]);
+    if (!(dz < -0.025) || dx > 0.003) throw new Error(`from the side: the end moved ${(dz * 100).toFixed(1)} cm in depth and ${(dx * 1000).toFixed(1)} mm sideways`);
+    await page.keyboard.press("Enter"); await page.waitForTimeout(80);
+    const a3 = await ev(() => { const s = window.__salon; s.render(); return { inHand: s.inHand, selected: s.selected, ok: s.okButton.style.display }; });
+    if (a3.inHand || a3.selected || a3.ok !== "none") throw new Error("Enter didn't let go: " + JSON.stringify(a3));
+    // Length and Sag as numbers (the sliders in Selected)
+    const n = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); s.select(id);
+      s.SL.setLength(l, 0.5, s.COL); const len = s.SL.lockLength(l);
+      const L = s.SL.len(s.SL.sub(l.pts[5], l.pts[0])), p0 = l.pts.map(p => p.slice()); s.SL.setSag(l, 0.6, s.COL);   // the bow: the middle points out along the head's normal by 0.6 x the chord x sin, the end still
+      const out = l.pts.map((p, i) => s.SL.dot(s.SL.sub(p, p0[i]), s.COL.normal(p0[i]))), want = l.pts.map((_, i) => 0.6 * L * Math.sin(Math.PI * i / 5) * 0.5);
+      s.selPanel(); const rows = [...document.querySelectorAll("#selbox .row span:first-child")].map(x => x.textContent);
+      return { len, out, want, sag: l.sag, inside: s.SL.handles(l).some(h => s.COL.inside(h.p)), rows }; }, a0.id);
+    const sagOff = Math.max(...n.out.map((o, i) => Math.abs(o - n.want[i])));
+    if (Math.abs(n.len - 0.5) > 0.005 || sagOff > 0.002 || n.sag !== 0.6 || n.inside || !n.rows.includes("Length") || !n.rows.includes("Sag")) throw new Error(`Length and Sag: ${JSON.stringify(n)} (the bow ${(sagOff * 1000).toFixed(1)} mm off drape's profile)`);
+    // a sheet bows while placing: the wheel (no Shift) before the end click
+    await view(0, 0.3, 0.9); await page.keyboard.press("l");
+    const pts = []; for (const p of [[-0.03, 0.13, -0.02], [0, 0.135, -0.02], [0.03, 0.13, -0.02]]) pts.push(await scr(await surf(p)));
+    await drag(pts); for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
+    const e2 = await scr([0, 0.06, 0.16]); await page.mouse.move(...e2); await page.mouse.click(...e2); await page.waitForTimeout(100);
+    const sh = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1], E = l.edges[1], L = s.SL.len(s.SL.sub(E[E.length - 1], E[0]));
+      return { type: l.type, sag: l.sag, L, depths: E.map(p => +s.COL.depth(p).toFixed(4)), bow: l.sag * L * Math.sin(Math.PI * 2 / (E.length - 1)) * 0.5, end: E[E.length - 1], stage: s.place.stage, n: s.st.locks.length }; });
+    // the two middle points stand off the head by at least half the bow drape gives them (the rest lies on it, GAP off)
+    if (sh.type !== "sheet" || Math.abs(sh.sag - 0.2 * 0.7) > 1e-9 || !(sh.depths[2] + sh.depths[3] > 2 * (0.0025 + sh.bow / 2))) throw new Error("the sheet's bow: " + JSON.stringify(sh));
+    await ev(id => { const s = window.__salon; s.deleteLock(s.st.locks[s.st.locks.length - 1].id); s.deleteLock(id); s.setTool("select"); }, a0.id);
+    console.log(`       placed ${(a0.len * 100).toFixed(1)} cm, the arrow dragged to ${(a1.len * 100).toFixed(1)} cm (the end ${(a1.off * 1000).toFixed(1)} mm off the cursor's point), then ${(-dz * 100).toFixed(1)} cm back from the side (${(dx * 1000).toFixed(1)} mm sideways); Length 50 cm -> ${(n.len * 100).toFixed(1)}, Sag 0.6 bows the middle out ${(n.out[3] * 100).toFixed(1)} cm (drape's profile within ${(sagOff * 1000).toFixed(1)} mm); a sheet bowed by the wheel: sag ${sh.sag.toFixed(2)}, its middle ${(sh.depths[3] * 100).toFixed(1)} cm off the head`);
   });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {

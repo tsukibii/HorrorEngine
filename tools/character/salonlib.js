@@ -611,3 +611,54 @@ export function moveLock(lock, d) {
   else if (lock.type === "bundle") lock.spine = lock.spine.map(T);
   else { lock.root = lock.root.map(T); lock.edges = lock.edges.map(E => E.map(T)); }
 }
+
+// ---- the lock's vector: its length and direction as one arrow ------------------------------------------------------------
+// A lock is placed from its root to its end; after that its end is an arrow the user drags (the salon's arrowhead) or a
+// Length slider. setVector turns and scales every control curve about the root so the end lands where asked, from where
+// the lock was when the drag began (`from`, vectorStart: a drag never piles up), keeping the shaping done by hand: a point
+// that lay on the body (within HUG_ON of the skin) lies on it again, the rest keep their distance and are only kept off
+// the body; the end itself goes where the cursor is. A sheet's edges turn about their own roots, so the root line stays.
+//   vectorOf(lock) -> [the root's middle, the end]      lockLength(lock) -> m along the middle curve's control points
+//   vectorStart(lock, col) -> {curves, hug, end}          setVector(lock, end, col, from)
+//   setLength(lock, L, col)                               setSag(lock, s, col): the bow the lock was placed with, changed
+const HUG_ON = 0.01;
+const curvesOf = lock => lock.type === "strand" ? [lock.pts] : lock.type === "bundle" ? [lock.spine] : lock.edges;
+export function vectorOf(lock) {
+  if (lock.type === "strand") return [lock.pts[0], lock.pts[lock.pts.length - 1]];
+  if (lock.type === "bundle") return [lock.spine[0], lock.spine[lock.spine.length - 1]];
+  return [lock.edges[1][0], lock.edges[1][lock.edges[1].length - 1]];
+}
+export function lockLength(lock) { return length(curvesOf(lock)[lock.type === "sheet" ? 1 : 0]); }
+export function vectorStart(lock, col) {
+  const C = curvesOf(lock);
+  return { curves: C.map(P => P.map(p => p.slice())), hug: C.map(P => P.map(p => col ? col.depth(p) < HUG_ON : false)), end: vectorOf(lock)[1].slice() };
+}
+export function setVector(lock, end, col, from) {
+  const a = from.curves[lock.type === "sheet" ? 1 : 0][0], u = sub(from.end, a), v = sub(end, a), lu = len(u), lv = len(v);
+  if (lu < 1e-6 || lv < 1e-6) return;
+  const k = lv / lu, ax0 = cross(u, v), s = len(ax0) / (lu * lv), c = clamp(dot(u, v) / (lu * lv), -1, 1), ang = Math.atan2(s, c), ax = s > 1e-6 ? mul(ax0, 1 / len(ax0)) : null;
+  const rot = p => { if (!ax) return p; const cs = Math.cos(ang), sn = Math.sin(ang); return add(add(mul(p, cs), mul(cross(ax, p), sn)), mul(ax, dot(ax, p) * (1 - cs))); };   // Rodrigues' turn
+  const C = curvesOf(lock);
+  C.forEach((P, j) => {
+    const pivot = from.curves[j][0];                                   // each curve about its own root (one root for a strand or a bundle)
+    for (let i = 1; i < P.length; i++) {
+      let q = add(pivot, mul(rot(sub(from.curves[j][i], pivot)), k));
+      const last = i === P.length - 1;
+      P[i] = col ? (!last && from.hug[j][i] ? onto(q, col) : col.push(q, GAP)[0]) : q;
+    }
+  });
+}
+export function setLength(lock, L, col) {
+  const from = vectorStart(lock, col), a = from.curves[lock.type === "sheet" ? 1 : 0][0], d = sub(from.end, a), cur = lockLength(lock);
+  if (!(cur > 1e-4) || !(L > 0)) return;
+  let k = L / cur;
+  for (let it = 0; it < 4; it++) { setVector(lock, add(a, mul(d, k)), col, from); const got = lockLength(lock); if (Math.abs(got - L) < 0.002) break; k *= L / got; }
+}
+export function setSag(lock, s, col) {                               // the bow away from the head, as drape's: most in the middle, the end where it is
+  const d = s - (lock.sag || 0); if (!d) return;
+  for (const P of curvesOf(lock)) {
+    const n = P.length, L = len(sub(P[n - 1], P[0]));
+    for (let i = 1; i < n - 1; i++) { const q = add(P[i], mul(col ? col.normal(P[i]) : [0, 0, 1], d * L * Math.sin(Math.PI * i / (n - 1)) * 0.5)); P[i] = col ? col.push(q, GAP)[0] : q; }
+  }
+  lock.sag = s;
+}
