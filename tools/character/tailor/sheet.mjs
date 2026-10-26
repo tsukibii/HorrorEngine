@@ -4,6 +4,8 @@
 //   node tools/character/tailor/sheet.mjs --outfit "work uniform" [--body average|feminine|masculine|slim_ or full_feminine|slim_ or full_masculine] [--height 1.62]
 //        [--designs t-shirt,pants] [--out sheet.png] [--size 360] [--close | --chest | --legs | --feet] [--uv | --debug] [--look JSON]
 //        [--pbr pants=pbr/Fabric/denim1[:0.3][,design=ref...]]   a PBR set off the shelf on a garment (its repeat in metres; + tints it)
+//        [--drape [JSON]]   hung by gravity (tailor/drape.js); JSON: {design: {drape settings}} over the designs' own
+//        [--edit JSON]      a garment's own edits, as the Studio keeps them: {"t-shirt": {"fit": 0}} (skin tight)
 //
 // Needs Playwright (npm i playwright, or PLAYWRIGHT=<path to its package>).
 import { createServer } from "http";
@@ -33,13 +35,16 @@ const pbrSet = spec => {
            tile_m: parseFloat(opt) || (m.tile_m && m.tile_m !== 2 ? m.tile_m : 0.3), tint: opt.endsWith("+") };
 };
 const pbrs = Object.fromEntries((arg("pbr") ? String(arg("pbr")).split(",") : []).map(s => { const [d, r] = s.split("="); return [d, pbrSet(r)]; }));
-const list = list0 && list0.map(([d, c, l]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l]);
+const edits = arg("edit") ? JSON.parse(arg("edit")) : {};
+const list = list0 && list0.map(([d, c, l]) => [d, c, extra || pbrs[d] ? { ...(l || {}), ...(extra || {}), ...(pbrs[d] ? { pbr: pbrs[d] } : {}) } : l, edits[d]]);
 if (!list) { console.error("no such outfit"); process.exit(1); }
 const out = arg("out", "tailor_sheet.png"), size = parseInt(arg("size", 360));
 
 const b = mhrBody(loadMhr(), bodyWeights(bodyName), H);
-const t0 = Date.now(), B = TAILOR.body(b.P, b.T), worn = TAILOR.dress(B, list, designs);
-const stats = worn.map(g => `${g.name} ${g.stats.triangles} tris ${g.stats.ms} ms`);
+const dset = typeof arg("drape") === "string" && arg("drape").startsWith("{") ? JSON.parse(arg("drape")) : {};
+for (const [d, o] of Object.entries(dset)) designs[d].piece.drape = { ...(designs[d].piece.drape || {}), ...o };
+const t0 = Date.now(), B = TAILOR.body(b.P, b.T), worn = TAILOR.dress(B, list, designs, { drape: has("drape") });
+const stats = worn.map(g => `${g.name} ${g.stats.triangles} tris ${g.stats.ms} ms` + (g.drape ? ` (drape ${g.drape.ms} ms, ${g.drape.steps} steps, fell ${(g.drape.fell * 100).toFixed(1)} cm)` : ""));
 console.log(`made in ${Date.now() - t0} ms: ${stats.join(", ")}`);
 
 // everything as one binary: [body, part, part...], each {color, P (f32), T (u32)}

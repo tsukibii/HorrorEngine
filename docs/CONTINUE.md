@@ -1,7 +1,7 @@
 # Continue: the next session
 
-Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, and twice on
-2026-10-25) on `claude/experiments-afk`. Read this
+Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
+2026-10-25, and on 2026-10-26) on `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
@@ -82,14 +82,21 @@ and built on the desk, in six steps:
 | `1e99bed` | **Effects** on the stage (`lifefx.js`), each a function of time: steam, a cigarette's smoke thread and its burn back, embers, LEDs, digits, glowing rings, gas flames, the fill and the pour, drips, screens (static, a call), a clock's hands. |
 | `f3d6260` | **Sounds** (`lifesound.js`) made by Web Audio, no files, placed in the room: the kettle's rumble, its boil and click, a whistle, a hob's beep, the gas and its igniter, a pot's bubbling, the pour, a cigarette's crackle, a clock's tick, a phone ringing, static, a tap's drip and run, a fridge's hum, the rice cooker's tune. PLAY checks each renders and doesn't clip. |
 | `7d07175` | **On the desk:** right-click the stage, *Add a little thing here…* from pictures; *It starts …* on a thing; quick beats (a kettle put on, a cigarette still burning, the phone rings, the TV on by itself, the clock stops); the Sample dressed (a kettle and tea in the kitchen, a clock at 2:47, a cigarette burning in the hall, a phone and a TV in the study). |
-| (this) | **The guide's §11** (Little things, with pictures GUIDE makes), the state command's thing picked by its picture, a form's sentence following a picked state; CLAUDE.md, IMMERSION.md (§5: what goes to Unreal now and what's next). |
+| `269780d` | **The guide's §11** (Little things, with pictures GUIDE makes), the state command's thing picked by its picture, a form's sentence following a picked state; CLAUDE.md, IMMERSION.md (§5: what goes to Unreal now and what's next). |
 
 Then (2026-10-25, evening) the user, shaping a character, asked for the Character Studio to start from a pose like
 their reference (a T-pose) and for a stomach that can be truly flat:
 
 | Commit | What |
 |---|---|
-| (this) | **The Studio's view in a T-pose** (`pose.js` on MHR's skinning, `Content/Studio/Bodies/MHR_lod1_rig.bin` from `rig_mhr.mjs`): the arms level, the legs straight, the head untouched; the A-pose a switch in the view bar; the clothes, the circles, the accessories and the nails' close-up follow it; everything still saved and exported in MHR's pose. **Belly** in the sculpt: -1 a flat stomach. POSE (`node tools/character/posetest.mjs`), STUDIO's pose step. |
+| `46f30f0` | **The Studio's view in a T-pose** (`pose.js` on MHR's skinning, `Content/Studio/Bodies/MHR_lod1_rig.bin` from `rig_mhr.mjs`): the arms level, the legs straight, the head untouched; the A-pose a switch in the view bar; the clothes, the circles, the accessories and the nails' close-up follow it; everything still saved and exported in MHR's pose. **Belly** in the sculpt: -1 a flat stomach. POSE (`node tools/character/posetest.mjs`), STUDIO's pose step. |
+
+Then (2026-10-26) the user found the clothes lifeless and asked for a skin-tight slider, a cloth simulation with gravity
+and a bake (DECISIONS 2026-10-26):
+
+| Commit | What |
+|---|---|
+| (this) | **The drape** (`tailor/drape.js`, docs/TAILOR.md §1c): every garment that hangs falls by gravity onto the body and the clothes under it (XPBD in small steps: lengths, flat-rest bending held to the points' weight, tethers to where it hangs from, the skin's plane per point, friction), held round the neckline, by the waistband, under neckbands and ribbed cuffs and hems, tucked into what closes over it, buttoned fronts closed; fullness falls into folds. The details, buttons and handles sewn on the hanging cloth, the fabric's coordinates the cut's. **Fit** (0 skin tight, 1 as designed, 2 loose) per garment. The Studio: Hang by gravity, each garment's Hang (fullness, stiffness, weight), the cut at once and the hung clothes after (a newer edit stops the drape), baked as `drape.bin` and carried by the export. TAILOR drapes seven outfits on three bodies; STUDIO's drape step. |
 
 ## 2. Where things are
 
@@ -125,7 +132,7 @@ their reference (a T-pose) and for a stomach that can be truly flat:
   table). `node tools/character/studiotest.js`: STUDIO ok (it exports `_studiotest` and imports it back as
   `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
   whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
-  bodies). TIMES ok, BLENDERLOOK ok.
+  bodies, seven outfits hung by gravity on three bodies; about 7 minutes here). TIMES ok, BLENDERLOOK ok.
 - `node tools/director/desktest.mjs`: DESK ok (the desk's logic without a browser; it maps `three` to the vendored
   copy, so modules that draw are tested too; the lives: node and Python agree on every preset, the timers, a pot
   following its hob, the burnt time kept, the acts; every effect and sound known). `node tools/director/guide_shots.mjs`: GUIDE ok (every part the guide
@@ -136,6 +143,12 @@ their reference (a T-pose) and for a stomach that can be truly flat:
 
 ## 4. What's next (ask which)
 
+00000. **Look at the clothes hanging** in the Studio (an outfit, then Save: they're baked with the character) and say
+   what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own
+   `drape` in designs.json), the folds' size, the tuck, the cardigan's bulk. A drape takes a few seconds a garment here
+   in software (an outfit over ten); the RTX 3090's CPU is faster. Next for the drape if wanted: watching the cloth
+   fall, keeping a fold off its neighbour (self-collision), hanging in a desk pose, and the clothes into Unreal as
+   skeletal meshes with Chaos Cloth on a skirt's hem (TAILOR §4).
 0000. **Shape a character in the T-pose** and say what's still awkward: the pose (arms level; a little lower, like
    many references, is one number in `pose.js`), the Belly control's flat (all the way down; a body with a bigger belly
    may want more), whether the salon (the Hair tab, still in MHR's A-pose) should show the T-pose too.

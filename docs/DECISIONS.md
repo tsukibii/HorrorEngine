@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26 (clothes hang: a cloth simulation, baked; a fit down to skin tight)
+
+- **The clothes looked dead** ("Can you enhance the clothing it looks death"): smooth shells round the body, the bust
+  and the belly showing through as if painted on, nothing hanging. They are now **simulated: hung by gravity and
+  baked** ("add clothing sim +gravity + bake to get a more realistic shape"). This replaces 2026-10-23's "the cloth
+  doesn't need to be properly simulated". The Character Studio hangs every garment that hangs over the body and the
+  clothes under it, in MHR's own pose, and keeps what it falls to with the character, so the desk and Unreal get the
+  hung clothes (docs/TAILOR.md §1c).
+- **A garment can be made skin tight** ("add more of a skin tight slider"): each garment has a **Fit**, 0 skin tight
+  to 1 as designed to 2 loose.
+- Claude's calls inside that: the fabrics' weights and stiffnesses are real ones (a t-shirt's jersey 0.18 kg/m², denim
+  stiffer), tops are held round the neckline and bottoms by the waistband, a top worn under trousers or a skirt is
+  tucked into them, a buttoned front stays closed, ribbed cuffs and hems hold, and a fit under a quarter doesn't hang.
+
 ## 2026-10-25, evening (the Character Studio: a T-pose to shape in, a flat stomach)
 
 - **The Character Studio shows the body in a T-pose** (after the user's reference, a rigged woman standing with her

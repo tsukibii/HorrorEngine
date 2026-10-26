@@ -6,7 +6,9 @@
 // eyesClosed (not a look), the eyeballs sit either side; the skin is made from the front picture and worn; the procedural
 // skin takes over the body with the photo on the face through its mask, and its features change the picture; the work uniform
 // is cut from the body and worn, takes denim and a print without refitting, its hem is dragged up by its handle,
-// and it refits when the body grows; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
+// and it refits when the body grows; a t-shirt and a skirt hang by gravity (the drape), lower than they were cut, are
+// baked with the character (drape.bin, read back the same) and taken as baked when nothing changed, each with its Hang
+// settings; at a Fit of 0 the t-shirt clings to the body and doesn't hang; a PBR set chosen from files named as Unreal's are (albedo, normal-dx, roughness)
 // goes onto the shelf as assets/pbr/studiotest_denim (the files' leading _ taken off) and onto the pants, its DirectX
 // normal turned for three.js; the PBR shelf page shows it, a map chosen by hand there is kept, and the set goes;
 // the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab;
@@ -343,9 +345,11 @@ const png = rgb => {
     await page.click("#touchRows label.tog input");                        // painting off for the rest
     await page.click('#tabs button[data-tab="body"]');
   });
+  const HANG = "label:has-text('Hang by gravity (cloth simulation)') input";
   await step("clothes: the work uniform cut from this body and worn, in denim with a print, its hem dragged up; a taller or a sculpted body refits it", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
     await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 2);
+    if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone here: the drape has its own step
     await page.selectOption("#clothesRows select >> nth=0", "work uniform");
     await page.click("#clothesRows >> text=Wear the outfit");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
@@ -382,6 +386,43 @@ const png = rgb => {
     await page.click(`${SHIRT} button[title='take it off']`);               // the shirt off, the rest stays
     await page.waitForFunction(() => { const B = window.__body; return !B.st.clothes.some(c => c.design === "work-shirt") && B.st.clothes.length === 3 &&
       !B.GARMENTS.children.some(m => m.name.startsWith("work-shirt")) && B.GARMENTS.children.some(m => m.name.startsWith("work-trousers")); }, null, { timeout: 120000 });
+    while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
+    await page.click('#tabs button[data-tab="body"]');
+  });
+  await step("clothes hang by gravity: a t-shirt and a skirt fall from the cut, are baked with the character and taken back as baked; a fit of 0 clings", async () => {
+    await page.click('#tabs button[data-tab="clothes"]');
+    await page.selectOption("#clothesRows select >> nth=0", "t-shirt and skirt");
+    await page.click("#clothesRows >> text=Wear the outfit");
+    await page.waitForFunction(() => window.__body.drapeState.stage === "done" && window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
+    // where a garment's cloth is in MHR's own pose (the view turns it to the T-pose): its lowest point, how far out from the body's middle
+    const shape = n => page.evaluate(n => { const m = window.__body.GARMENTS.children.find(g => g.name === n); if (!m) return null;
+      const P = m.userData.rest ? m.userData.rest.P : m.geometry.attributes.position.array; let lo = 1e9, r = 0;
+      for (let i = 0; i < P.length; i += 3) { lo = Math.min(lo, P[i + 1]); r += Math.hypot(P[i], P[i + 2]); } return { lo, r: r / (P.length / 3) }; }, n);
+    const cut = await shape("t-shirt"), skirtCut = await shape("skirt");
+    await page.click(HANG);                                                  // hung: the cut first, then the clothes as they fall
+    await page.waitForFunction(() => window.__body.drapeState.stage === "hung", null, { timeout: 600000 });
+    const hung = await shape("t-shirt"), skirtHung = await shape("skirt");
+    if (!(hung.lo < cut.lo - 0.01)) throw new Error(`the t-shirt didn't fall: its hem ${cut.lo.toFixed(3)} -> ${hung.lo.toFixed(3)}`);
+    if (Math.abs(skirtHung.lo - skirtCut.lo) > 0.06 || Math.abs(skirtHung.r - skirtCut.r) < 0.001) throw new Error(`the skirt: ${JSON.stringify([skirtCut, skirtHung])}`);
+    const keys = await page.evaluate(() => Object.keys(window.__body.bakes).sort());
+    if (keys.length !== 2) throw new Error(`${keys.length} bakes, not the t-shirt's and the skirt's`);
+    if ((await page.$$("#worn details > summary:text-is('Hang')")).length !== 2) throw new Error("no Hang settings under the skirt and the t-shirt");
+    await saveNow();
+    await page.waitForFunction(async k => { const b = window.__body, got = await b.loadDrape(b.who), ks = Object.keys(got).sort();
+      return ks.join() === k.join() && ks.every(x => got[x].length === b.bakes[x].length && got[x].every((v, i) => v === b.bakes[x][i])); }, keys, { timeout: 30000 });
+    await page.evaluate(() => window.__body.dress());                       // nothing changed: taken as baked, nothing falls
+    await page.waitForFunction(() => window.__body.drapeState.stage === "hung" && /as baked/.test(document.querySelector("#status").textContent), null, { timeout: 120000 });
+    const again = await shape("t-shirt");
+    if (Math.abs(again.lo - hung.lo) > 1e-6 || Math.abs(again.r - hung.r) > 1e-6) throw new Error("the bake didn't come back as it hung");
+    // a fit of 0: skin tight, nothing to hang; its cloth nearer the body all round
+    const TEE = "#worn > div:has(.row span:text-is('T-shirt'))";
+    await page.$eval(`${TEE} details:has(summary:text-is('Shape'))`, d => { d.open = true; });
+    await page.$eval(`${TEE} details:has(summary:text-is('Shape')) .row:has(span:text-is('Fit')) input`, i => { i.value = 0; i.dispatchEvent(new Event("input")); });
+    await page.waitForFunction(() => window.__body.st.clothes.find(c => c.design === "t-shirt")?.edit?.fit === 0, null, { timeout: 10000 });
+    await page.waitForFunction(() => window.__body.drapeState.stage === "hung" && /hung by gravity: skirt[^,]*$/.test(document.querySelector("#status").textContent), null, { timeout: 600000 });
+    const tight = await shape("t-shirt");
+    if (!(tight.r < hung.r - 0.008)) throw new Error(`at a fit of 0 the t-shirt is ${((hung.r - tight.r) * 1000).toFixed(1)} mm nearer the body`);
     while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');

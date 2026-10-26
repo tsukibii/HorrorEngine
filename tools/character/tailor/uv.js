@@ -68,15 +68,17 @@ function seams(F, o) {
 /**
  * A garment part's mesh with fabric coordinates: {P, T, N, UV, PART, S}. Split along its seams first; then each
  * triangle takes the part its middle is on, its corners are unwrapped round that part from the first one, and a point
- * is shared only by corners that agree.
+ * is shared only by corners that agree. `o.at`: where each point hangs after the drape (tailor/drape.js): the seams
+ * and the fabric's coordinates are the cut's, so a stripe follows the cloth into its folds; the points are put there.
  */
 export function unwrap(F, P, T, S, o = {}) {
+  let at = o.at || null;
   for (const f of seams(F, o)) {
     const n = P.length / 3, v = new Float32Array(n);
     for (let i = 0; i < n; i++) v[i] = f(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-    const r = split(P, T, v, S); P = r.P; T = r.T; S = r.S;
+    const r = split(P, T, v, S, at); P = r.P; T = r.T; S = r.S; at = r.at;
   }
-  const N0 = normals(P, T), rings = o.rings || null, keys = new Map();
+  const Q = at || P, N0 = normals(Q, T), rings = o.rings || null, keys = new Map();
   // each sleeve's and leg's own radius along it (1 cm rings, from this garment's points): u is true metres round every ring
   const bins = new Map(), BIN = 0.01;
   for (let i = 0; i < P.length / 3; i++) {
@@ -105,7 +107,7 @@ export function unwrap(F, P, T, S, o = {}) {
       let id = keys.get(key);
       if (id === undefined) {
         id = oS.length; keys.set(key, id);
-        oP.push(P[v * 3], P[v * 3 + 1], P[v * 3 + 2]); oN.push(N0[v * 3], N0[v * 3 + 1], N0[v * 3 + 2]);
+        oP.push(Q[v * 3], Q[v * 3 + 1], Q[v * 3 + 2]); oN.push(N0[v * 3], N0[v * 3 + 1], N0[v * 3 + 2]);
         oUV.push(u, w); oPart.push(part); oS.push(S ? S[v] : 1);
       }
       tri[t + k] = id;

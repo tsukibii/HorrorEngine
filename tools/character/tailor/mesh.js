@@ -159,7 +159,8 @@ export class Surface {
     }
     return v;
   }
-  /** {d, x, y, z, nx, ny, nz, v} or null when nothing is within `reach`; from a `hint` vertex it walks instead of searching */
+  /** {d, x, y, z, nx, ny, nz, v, t, u, w} or null when nothing is within `reach` (t the closest triangle's first index
+      into T, u and w its second and third corners' shares); from a `hint` vertex it walks instead of searching */
   closest(x, y, z, reach = 0.08, out = {}, hint = -1) {
     const v = hint >= 0 ? this.walk(x, y, z, hint) : this.grid.nearest(x, y, z, reach); if (v < 0) return null;
     const P = this.P, T = this.T, N = this.N, p = [x, y, z], a = this._a, b = this._b, c = this._c, o = this._o;
@@ -177,6 +178,7 @@ export class Surface {
     const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
     const dist = Math.sqrt(bd), side = (x - bo[0]) * nx + (y - bo[1]) * ny + (z - bo[2]) * nz;
     out.d = side >= 0 ? dist : -dist; out.x = bo[0]; out.y = bo[1]; out.z = bo[2]; out.nx = nx; out.ny = ny; out.nz = nz; out.v = v;
+    out.t = bt; out.u = u; out.w = w;
     return out;
   }
 }
@@ -217,9 +219,10 @@ export function cut(P, T, v) {
 }
 
 /** Split a mesh along v = 0, keeping both sides: the triangles it crosses are cut in three, the new points shared
-    along the line, so a seam can follow it exactly. `S` (a value per vertex) is carried. Returns {P, T, S} */
-export function split(P, T, v, S = null) {
-  const n = P.length / 3, out = Array.from(P), sh = S ? Array.from(S) : null, mids = new Map(), tri = [];
+    along the line, so a seam can follow it exactly. `S` (a value per vertex) and `at` (another place for every point:
+    where a drape hung it) are carried. Returns {P, T, S, at} */
+export function split(P, T, v, S = null, at = null) {
+  const n = P.length / 3, out = Array.from(P), sh = S ? Array.from(S) : null, ah = at ? Array.from(at) : null, mids = new Map(), tri = [];
   const mid = (a, b) => {
     const k = a < b ? a * n + b : b * n + a; let m = mids.get(k);
     if (m === undefined) {
@@ -229,6 +232,7 @@ export function split(P, T, v, S = null) {
         m = out.length / 3;
         out.push(P[a * 3] + (P[b * 3] - P[a * 3]) * t, P[a * 3 + 1] + (P[b * 3 + 1] - P[a * 3 + 1]) * t, P[a * 3 + 2] + (P[b * 3 + 2] - P[a * 3 + 2]) * t);
         if (sh) sh.push(S[a] + (S[b] - S[a]) * t);
+        if (ah) ah.push(at[a * 3] + (at[b * 3] - at[a * 3]) * t, at[a * 3 + 1] + (at[b * 3 + 1] - at[a * 3 + 1]) * t, at[a * 3 + 2] + (at[b * 3 + 2] - at[a * 3 + 2]) * t);
       }
       mids.set(k, m);
     }
@@ -244,7 +248,7 @@ export function split(P, T, v, S = null) {
     const p = mid(A, B), q = mid(A, C);
     push(A, p, q); push(p, B, C); push(p, C, q);
   }
-  return { P: new Float32Array(out), T: new Uint32Array(tri), S: sh ? new Float32Array(sh) : null };
+  return { P: new Float32Array(out), T: new Uint32Array(tri), S: sh ? new Float32Array(sh) : null, at: ah ? new Float32Array(ah) : null };
 }
 
 /** edges used by one triangle, chained into loops of vertex indices */

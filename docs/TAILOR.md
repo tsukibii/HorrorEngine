@@ -2,10 +2,12 @@
 
 Clothes for the Character Studio's characters (DECISIONS 2026-10-23): our own generator after Woohill's character
 creator (`tsukibii/woohill`, `creator/src/js/20-clothes.js` and `21-outfits.js`: its second skins and its hulled
-fields), with far more polygons, because our bodies are realistic. The aim is **a bit better than PSX-style
-clothing**: clean garments that fit, with the details that read at a game's distance (collars, plackets, buttons,
-pockets, waistbands, belts, cuffs, pleats) and a real thickness. There are no sewing patterns, and the cloth is not
-simulated. It replaces the GarmentCode route, which was removed.
+fields), with far more polygons, because our bodies are realistic: clean garments that fit, with the details that read
+at a game's distance (collars, plackets, buttons, pockets, waistbands, belts, cuffs, pleats) and a real thickness. There
+are no sewing patterns. Since 2026-10-26 the cut cloth is **hung on the body by gravity**, a cloth simulation (§1c), and
+baked as it hangs: it falls from the shoulders and the bust, folds where it's fuller than the body, tucks into what
+closes over it, and a **Fit** takes any garment from skin tight to loose (DECISIONS 2026-10-26: the user found the
+clothes lifeless). It replaces the GarmentCode route, which was removed.
 
 ## 1. How a garment is made
 
@@ -23,6 +25,9 @@ simulated. It replaces the GarmentCode route, which was removed.
 | Thickness | an inner surface and a crisp rim round every open edge; the rim and the outside's last row of points are shaded darker (`S`), so hems, pockets and collars read as stitched edges with a shadow | `fit.js` `thicken` |
 | Fabric coordinates | every point gets (u, v) in metres, laid the way a sewn garment's panels lie: the torso a front and a back panel (u the arc length across each row's own outline from the middle, over the shoulders a yoke by x; side seams), a sleeve round the arm's line (the seam underneath), a trouser leg round its own line from the waist down (the seam at the back, a stocking's), a skirt a front and a back panel spreading to the hem; every ring's own radius, so a tile is its real size all round. The mesh is split exactly along each seam first, so seams are clean lines; normals come from the joined mesh, so the light doesn't break there. `sheet.mjs --uv` shows them as a 5 cm checker | `tailor/uv.js`, `frame.js` `torsoArcs` |
 
+| Fit | a piece's `fit` (1 as designed) scales its ease and how freely it hangs before it's cut: 0 is **skin tight** (1.5 mm of ease, 6 rounds of relaxing: into every hollow, nothing to hang, a skirt straight down), 2 is loose (2.5 times the ease, more rounds, a fifth more cloth round the body, twice the flare) | `tailor.js` `fitted` |
+| Drape | the cut cloth hung by gravity (§1c); every detail, button and handle is cut where the cloth was cut and sewn where it hangs, the fabric's coordinates the cut's (a stripe follows the cloth into its folds) | `tailor/drape.js`, `fit.js` `lifted`, `uv.js` `unwrap` (`at`) |
+
 Layering is by order: each garment goes over the ones before it. What's under it is measured as a thickness over the
 body (how far out the earlier garments reach at each point of the skin), and the new garment's ease starts there.
 Nothing is pushed off another garment's open mesh: that tore at hems and pockets. **Bottoms first** and the top hangs
@@ -32,6 +37,48 @@ A garment is 25k to 165k triangles (the check prints them all). Cutting one on a
 Studio does it in a worker. Keeping the cloth off the skin walks the skin's mesh from the point each bit of cloth
 came from (a few steps, not a search), except where another part of the body is near (between the thighs, at the
 armpits), where it searches properly every round.
+
+## 1c. The drape: hung by gravity
+
+`tailor/drape.js` takes a garment's cut outside and lets it fall onto the body and onto the clothes already worn
+(each of those hung first), in MHR's own pose, for a second or so, until nothing moves. Position-based cloth in small
+steps (XPBD, Macklin et al. 2019), 600 steps a second, in real units (metres, kilograms, seconds):
+
+- **Lengths**: every edge keeps its length, two plain Gauss-Seidel passes a step, from the top down (the weight is
+  carried up to what holds it). Pushed shorter it gives half as much as pulled longer: cloth folds rather than shrinks
+  (with almost nothing against shrinking, an A-line skirt's hem drew in ten centimetres instead of folding).
+- **Bending**: every two triangles resist bending away from flat (quadratic bending, Bergou et al. 2006: fabric is flat
+  before it's sewn), the design's `bend` in N m, but never stiffer in a step than the points it moves are heavy (a
+  stiffer one fights the lengths and buzzes for ever: LESSONS).
+- **Long range attachments** (Kim et al. 2012): no point ends further from where the garment hangs from than the cloth
+  between them reaches, so it hangs without stretching: about 3% stretched at most for one edge in ten.
+- **What it lies on**: each point's plane at its closest skin (walked from the last, searched where another limb is
+  near), raised by how far the clothes under it stand off the skin there, the cloth's thickness and half a millimetre
+  more; asked again only as often as the point could reach it (half its way to the plane: a skirt's hem a hand off the
+  legs asks seldom). **Friction** there (0.5).
+- **Held** where a garment holds: a bottom by its waistband, a skirt by its waist, a top round its neckline (or it sags
+  into a V), the cloth under a **neckband**, a sleeve's **cuff** (buttoned or ribbed round the wrist: the sleeve blouses
+  above it and never slides over the hand) and a ribbed hem (rib pulls in round the hips), and a top **tucked** into
+  trousers or a skirt worn over it later (held under that waist, blousing above it). A **buttoned front** (`open` with
+  `buttons`) is kept closed between the buttons; below them it may part. A sliver of cloth the cut leaves on its own
+  (where an opening meets a hem) stays as cut.
+- **Fullness** (`slack`): cloth round the body beyond the cut's, under a top's bust and down a bottom's legs (never
+  over the shoulders, round the seat or down a sleeve, whose ease makes it loose: between its shoulder and a cuff that
+  holds, more cloth only buckles, creeping on for as long as the drape runs): it falls into folds. `drop`: more along
+  the body, for legs that bunch.
+- It **settles**: damped (4 a second, much more at the end) and stopped when the cloth moves under 2 mm a second.
+
+The cut's points hang; the garment's parts are made from them: the thickness, the details lifted off the hanging cloth
+(cut where they were on the cut, so a pocket stays where it was sewn), buttons on the same points, the handles where
+the cloth now is, the fabric's coordinates from the cut. A design hangs if its piece has `drape` (§2): the tops,
+trousers, shorts, skirts, the coverall and the jackets; underwear, legwear and shoes don't (skin tight, or rigid), nor
+does anything at a fit under a quarter. A garment of 11k points (a t-shirt) takes 2 to 3 s here, a skirt's 24k about
+5 s (`node tools/character/tailor/sheet.mjs --drape`).
+
+**The bake**: what a garment fell to is kept by a key (`tailor.js` `drapeKey`: the drape's version and settings, the
+body, and the cut of it and of everything worn under it) and taken as it is next time instead of falling again. The
+Studio saves the bakes as `People/<name>/drape.bin` (a header, then each garment's points) and carries it in the
+export's recipe; a changed body, garment or layer under it misses its key and falls again.
 
 ## 1b. Fabrics, patterns, prints
 
@@ -82,6 +129,8 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `ease` | `{body, sleeve, leg, flare, crotch}` in metres off the skin |
 | `tension` | rounds of relaxing: 18 clings, 48 hangs like a work shirt |
 | `fine` | 2: the cloth split once more (about 2.5 mm triangles), for narrow parts: straps, strings |
+| `fit` | 1 as designed, 0 skin tight, 2 loose (§1, `fitted`): the Studio's Fit slider |
+| `drape` | how it hangs (§1c): `{density (kg/m²), bend (N m), slack, drop, memory (1: keeps the bend it was cut with: pressed pleats), friction, on}`, over `drape.js` `DRAPE`; no `drape`: it doesn't hang |
 | `bra` | `{style: triangle \| balconette \| plunge \| sports \| bandeau, band, top, outer, gore, strap, rise, drop, racer}` (sports: `scoop`, `panel`, `strapX`, `bottom`): metres on the average body |
 | `brief` | `{side, gusset, curve, deep, back: {gusset, curve, drop, band}}`: the leg openings under the `waist` |
 | skirt | `waist.at`, `length`, `ease`, `flare` (m per m), `taper`, `pleats: {n, depth, stitched, box}`, `waves: {n, depth}` |
@@ -114,14 +163,21 @@ lifted by them yet).
   colours and repeat; a print's text and ink or a picture, its panel, across, height, width and turn), and its **shape**: the garment's lines as **handles in
   the view** (the hem, the neckline's depth, the sleeve's end, the waist, the legs' end, a skirt's length and flare:
   drag one along its line and the garment is cut again on release) and the same as sliders, with the ease and the
-  hang; **As designed** takes them back. They're the garment's own edits (`edit` in `character.json`: a sparse piece
+  hang; at the top its **Fit** (skin tight to loose); **As designed** takes them back. Under it, a design that hangs
+  has **Hang**: on or off for this garment, its **Fullness**, **Stiffness** (silk to canvas, a log of N m) and
+  **Weight** (kg/m²). **Hang by gravity (cloth simulation)** turns the drape for the whole outfit: the worker gives the
+  cut clothes back at once, then hangs them a few dozen steps at a time (the status line says which and how far; a
+  newer edit stops it), and the hung ones replace them; **Save** keeps them baked (`drape.bin`), opening the character
+  takes the bake, and Export waits for the clothes to hang. They're the garment's own edits (`edit` in `character.json`: a sparse piece
   laid over the design's, `tailor.edited`), so the design stays as it is; **Export clothes OBJ** writes
   `People/<name>/<name>_clothes.obj` (one object per part, metres, Y up, facing +Z, the body's frame). The tailor runs
   in `tailor/worker.js` and refits on its own when the body's shape or height changes. What's worn is saved in
   `character.json` (`clothes`); the meshes are made live, like the hair styles, so there's nothing to go stale.
 - **Node:** `tools/character/tailor.js` is a plain module. `node tools/character/tailor/sheet.mjs --outfit "work
   uniform" [--body feminine|masculine|average|slim_feminine|full_masculine...] [--height 1.62] [--close | --chest]
-  [--uv | --debug] [--out x.png]` renders a contact sheet (Playwright); `node tools/character/tailor/check.mjs` is
+  [--uv | --debug] [--drape ['{"t-shirt": {"slack": 0.3}}']] [--edit '{"t-shirt": {"fit": 0}}'] [--out x.png]` renders a
+  contact sheet (Playwright), hung by gravity with `--drape` (and a design's drape settings over its own), with a
+  garment's own edits as the Studio keeps them; `node tools/character/tailor/check.mjs` is
   TAILOR, on seven bodies: MHR's average, its feminine and masculine presets, and the slim and full ones in
   `tailor/bodies.json` (fitted with `mhr.py`'s `fit_measures`: a waist and hips 15 to 20% in, or a waist 15% out with
   a rounder belly, wider hips and thicker thighs). Where a gap in the body is narrower than the cloth's clearance
@@ -130,7 +186,9 @@ lifted by them yet).
 
 ## 3b. In motion
 
-The clothes move with the body by its own skinning, no simulation (the PSX-and-better target):
+The drape is baked in MHR's own pose, the pose everything is saved and exported in; the Studio's T-pose view turns the
+hung clothes with the arms (a sleeve's fold under the arm turns with it). In motion the clothes move with the body by
+its own skinning:
 `tailor/weights.js` gives every point of a garment four bones and their weights from the skin round it, a Gaussian
 over the skin's points near it, the same width for every layer close to the body (so a shirt and the trousers over it
 keep their few millimetres apart) and wider for cloth that stands off (a skirt's hem between the knees takes both
@@ -168,5 +226,7 @@ previs, not the clothes.
   the shelf already imports a set into Unreal as `MI_<name>`); the made-up tiles, patterns and prints still have to go
   across (a material instance per garment with the tile, its size, the colour or pattern and the print), and Unreal's
   import of a set doesn't use a packed ORM yet (the separate maps).
-- **Seams and creases** are only where details are lifted; stitch lines and folds would be a normal map.
+- **Seams and creases**: folds now come from the drape; stitch lines would be a normal map.
+- **The drape** doesn't keep the cloth off itself (a deep fold can pass through its neighbour), hangs only in MHR's own
+  pose (not a pose of the desk's), and isn't seen falling (the hung clothes replace the cut ones when they've settled).
 - Hair doesn't collide with the clothes yet.

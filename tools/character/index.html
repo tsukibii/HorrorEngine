@@ -176,6 +176,7 @@ import * as ACCS from "./accessories.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
 import * as WEIGHTS from "./tailor/weights.js";
+import { DRAPE } from "./tailor/drape.js";
 import * as PO from "./pose.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
@@ -423,7 +424,12 @@ photoBtn.onclick = async () => {
 };
 
 // ---- clothes: the tailor (tools/character/tailor.js) cuts them from this body, in a worker -------------------------
-st.clothes = [];                                       // [{design, color, surface?, pattern?, print?, denier?}], the first innermost
+// then hangs them by gravity (the drape, tailor/drape.js: DECISIONS 2026-10-26), each over the ones under it; what they
+// fall to is baked with the character (People/<name>/drape.bin) and taken as it is next time, until the body or what's
+// worn changes (its key says what it was draped on)
+st.clothes = [];                                       // [{design, color, surface?, pattern?, print?, denier?, edit?}], the first innermost
+st.drape = true;                                       // hang them by gravity
+let BAKES = {}, DRAPING = { stage: "none" };           // the drape's points by key, for drape.bin; how the last job is going
 const GARMENTS = new THREE.Group(); GARMENTS.name = "clothes";
 let DESIGNS = {}, OUTFITS = {}, SHELF = {}, TAILOR_JOB = 0, FITTED = "", fitTimer = 0;   // SHELF: the PBR shelf's sets (Content/Studio/PBR)
 const TAILOR_W = new Worker("./tailor/worker.js", { type: "module" });
@@ -436,6 +442,9 @@ $("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { class
 $("#worn").after(clothesExp);
 { const t = el("input", { type: "checkbox", checked: true }); t.onchange = () => { GH.userData.on = t.checked; showGarmentHandles(); };
   clothesExp.before(el("label", { className: "tog", title: "Drag a garment by its hem, neckline, sleeve, waist, legs or a skirt's length and flare" }, t, el("span", { textContent: "Handles in the view" }))); }
+const drapeTog = el("input", { type: "checkbox", checked: true });
+drapeTog.onchange = () => { st.drape = drapeTog.checked; dress(); };
+clothesExp.before(el("label", { className: "tog", title: "Each garment falls by gravity onto the body and the clothes under it (a cloth simulation) and is baked as it hangs: kept with the character, taken as it is next time. Off: the clothes as cut, floating round the body" }, drapeTog, el("span", { textContent: "Hang by gravity (cloth simulation)" })));
 Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), api("api/pbr").catch(() => ({}))]).then(([d, o, p]) => {
   DESIGNS = d.designs || {}; OUTFITS = o.outfits || {}; SHELF = p.sets || {};
   const SLOTS = [["under", "Underwear"], ["top", "Tops"], ["bottom", "Bottoms"], ["full", "One piece"], ["legs", "Legwear"], ["feet", "Footwear and socks"], ["jacket", "Jackets"]];   // the designs by what they are
@@ -452,11 +461,31 @@ function dress() {                                     // the worker makes every
   if (!Object.keys(DESIGNS).length) return;
   const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => [c.design, c.color, lookOf(c), c.edit]), id = ++TAILOR_JOB, key = bodyKey();
   FITTED = key;
-  if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); return; }
+  if (!list.length) { for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); } GARMENTS.clear(); DRAPING = { id, stage: "none" }; return; }
   status(`the tailor: ${list.map(c => c[0]).join(", ")}…`);
   const P = neutralBody(); CUT_ON.set(id, P.slice());
-  TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS }, [P.buffer]);
+  DRAPING = { id, stage: "cutting" };
+  TAILOR_W.postMessage({ id, key, P, T: TRIS, list, designs: DESIGNS, drape: st.drape }, [P.buffer]);
 }
+// the clothes' drape, baked: People/<name>/drape.bin (a uint32 header length, the header: each garment's key, its points
+// and where they start; then float32 xyz, the cut's points as they hang), read back into the worker when a character opens
+async function saveDrape() {
+  if (!WHO) return;
+  const list = Object.entries(BAKES), head = { about: "the Character Studio's clothes as they hang (tools/character/tailor/drape.js), by drape key: tailor.js drapeKey", version: 1, garments: [] };
+  let at = 0;
+  for (const [key, P] of list) { head.garments.push({ key, points: P.length / 3, at }); at += P.byteLength; }
+  const hb = new TextEncoder().encode(JSON.stringify(head)), pad = (4 - hb.length % 4) % 4, buf = new Uint8Array(4 + hb.length + pad + at);
+  new DataView(buf.buffer).setUint32(0, hb.length + pad, true); buf.set(hb, 4); buf.fill(32, 4 + hb.length, 4 + hb.length + pad);
+  let o = 4 + hb.length + pad; for (const [, P] of list) { buf.set(new Uint8Array(P.buffer, P.byteOffset, P.byteLength), o); o += P.byteLength; }
+  await api(`api/people/${encodeURIComponent(WHO)}/drape.bin`, new Blob([buf]));
+}
+async function loadDrape(who) {
+  const r = await fetch(`api/people/${encodeURIComponent(who)}/drape.bin`).catch(() => null); if (!r || !r.ok) return {};
+  const b = await r.arrayBuffer(), n = new DataView(b).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(b, 4, n))), out = {};
+  for (const g of head.garments || []) out[g.key] = new Float32Array(b.slice(4 + n + g.at, 4 + n + g.at + g.points * 12));
+  return out;
+}
+const hung = () => new Promise(done => { const t0 = Date.now(), wait = () => (!/^(cutting|cut|hanging)$/.test(DRAPING.stage) || Date.now() - t0 > 180000 ? done(DRAPING.stage) : setTimeout(wait, 150)); wait(); });
 // the clothes in the body's pose: each garment's own rest kept, its points skinned by the weights of the skin round
 // them on the body they were cut on (tailor/weights.js, the rig's bones), turned as the body is
 const CUT_ON = new Map();                              // a job's body, until its clothes come back
@@ -481,20 +510,32 @@ function poseGarments() {
   }
 }
 TAILOR_W.onmessage = e => {
-  const { id, garments, error } = e.data;
+  const { id, garments, error, progress, stage, bakes } = e.data;
   if (id !== TAILOR_JOB) return;                       // a newer fit is on its way
-  if (error) return status("the tailor failed: " + error.split("\n")[0], "bad");
+  if (error) { DRAPING = { id, stage: "failed" }; return status("the tailor failed: " + error.split("\n")[0], "bad"); }
+  if (progress) {                                      // a garment falling: how far through
+    DRAPING = { id, stage: "hanging", ...progress };
+    return status(`hanging the clothes by gravity: ${DESIGNS[progress.name]?.label || progress.name} (${progress.k + 1} of ${progress.of}) ${Math.round(progress.frac * 100)}%`);
+  }
   for (const m of GARMENTS.children) { m.geometry.dispose(); m.material.dispose(); }
   GARMENTS.clear();
   for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name, g.look));   // tailor/look.js: the fabric, the pattern, the print, the edges' shade
   if (!GARMENTS.parent) rig.add(GARMENTS);
-  const on = CUT_ON.get(id); for (const k of [...CUT_ON.keys()]) if (k <= id) CUT_ON.delete(k);
+  const on = CUT_ON.get(id); for (const k of [...CUT_ON.keys()]) if (k < id || (k === id && stage !== "cut")) CUT_ON.delete(k);   // (the cut's body stays for its hung clothes)
   CUT_SKIN = on && RIG ? WEIGHTS.skinOf(on, RIG.BI, RIG.BW) : null; GARMENTS.userData.posedFor = null;   // new clothes: posed afresh
   SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
   drawGarmentHandles(); poseGarments();
   if (!$("#worn").contains(document.activeElement) || document.activeElement.type !== "range") drawWorn();   // the handles' sliders (not under a held slider)
-  const ms = garments.reduce((a, g) => a + g.stats.ms, 0);
-  status(garments.map(g => `${g.name} ${Math.round(g.stats.triangles / 1000)}k triangles`).join(", ") + ` (${(ms / 1000).toFixed(1)} s)`, "ok");
+  const ms = garments.reduce((a, g) => a + g.stats.ms, 0), was = DRAPING.stage;
+  DRAPING = { id, stage };                             // "cut" (the drape follows), "hung", or "done" (no drape)
+  if (stage === "hung") {                              // as they hang: baked, saved with the character
+    BAKES = bakes || {};
+    const fell = garments.filter(g => g.drape), baked = fell.filter(g => g.drape.baked);
+    status(fell.length ? `hung by gravity: ${fell.map(g => g.name).join(", ")}${baked.length === fell.length ? " (as baked)" : ` (${(ms / 1000).toFixed(1)} s)`}; Save keeps the bake` : "nothing worn hangs (skin tight or not a hanging design)", "ok");
+    if (was === "cut" || baked.length < fell.length) UNSAVED = true;
+    return;
+  }
+  status(garments.map(g => `${g.name} ${Math.round(g.stats.triangles / 1000)}k triangles`).join(", ") + ` (${(ms / 1000).toFixed(1)} s)` + (stage === "cut" ? "; hanging them by gravity…" : ""), "ok");
 };
 function refit() {                                     // after the body changes, once it holds still for a moment
   if (!st.clothes.length || !FITTED || bodyKey() === FITTED) return;
@@ -640,6 +681,7 @@ function dropGarment() {                               // let go: the new value,
 function shapeRows(c) {                                // the same lines as sliders, and how loose it sits
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Shape" })), c.design + ":shape"), p = pieceOf(c);
   const later = () => { clearTimeout(shapeTimer); shapeTimer = setTimeout(dress, 450); };
+  if (p.kind !== "shoe") slider(box, "fit", "Fit", 0, 2, 0.05, p.fit ?? 1, "0 skin tight (on the skin, into every hollow), 1 as designed, 2 loose (more ease, more cloth to hang).", v => { c.edit = { ...(c.edit || {}), fit: v }; later(); });
   for (const h of SHAPE.get(c.design) || []) {
     const [lo, hi, step] = h.kind === "height" ? [+(h.value - 0.4).toFixed(2), +(h.value + 0.4).toFixed(2), 0.005] : h.key === "neck" ? [0, 0.2, 0.002] : h.key === "sleeve" ? [0.06, 0.7, 0.005] : [0, 0.8, 0.01];
     slider(box, "shape_" + h.key, h.label + (h.kind === "height" ? " (m)" : ""), lo, hi, step, h.value,
@@ -657,12 +699,23 @@ function shapeRows(c) {                                // the same lines as slid
   box.append(reset);
   return box;
 }
+function hangRows(c) {                                 // how it hangs (tailor/drape.js): on or off, its fullness, stiffness, weight
+  const box = keepOpen(el("details", {}, el("summary", { textContent: "Hang" })), c.design + ":hang"), d = { ...DRAPE, ...(pieceOf(c).drape || {}) };
+  const put = (k, v) => { c.edit = c.edit || {}; c.edit.drape = { ...(c.edit.drape || {}), [k]: v }; clearTimeout(shapeTimer); shapeTimer = setTimeout(dress, 450); };
+  const t = el("input", { type: "checkbox", checked: d.on !== false }); t.onchange = () => put("on", t.checked);
+  box.append(el("label", { className: "tog", title: "Off: this garment stays as cut (the others still hang). Hang by gravity above turns all of them" }, t, el("span", { textContent: "Hang it by gravity" })));
+  slider(box, "slack", "Fullness", 0, 0.5, 0.01, d.slack, "Cloth round the body beyond its cut (0.2: a fifth more): it falls into folds.", v => put("slack", v));
+  slider(box, "stiff", "Stiffness", -6.5, -4, 0.05, Math.log10(d.bend), "Silk (−6.5) to jersey (−5.3), shirting (−5), denim and canvas (−4.5): the bigger, rounder its folds.", v => put("bend", +(10 ** v).toPrecision(3)));
+  slider(box, "weight", "Weight (kg/m²)", 0.05, 0.6, 0.01, d.density, "A t-shirt's jersey 0.18, shirting 0.13, denim 0.4: heavier hangs straighter.", v => put("density", v));
+  return box;
+}
 function drawWorn() {
   $("#worn").replaceChildren(...st.clothes.map((c, i) => {
     const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
     col.oninput = () => { c.color = col.value; restyle(c); };
     x.onclick = () => { st.clothes.splice(i, 1); drawWorn(); dress(); };
-    return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), shapeRows(c), lookRows(c));
+    return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), shapeRows(c),
+              ...(DESIGNS[c.design]?.piece?.drape ? [hangRows(c)] : []), lookRows(c));
   }));
 }
 addBtn.onclick = () => {
@@ -677,6 +730,7 @@ outfitBtn.onclick = () => {
 };
 clothesExp.onclick = async () => {
   if (!WHO || !GARMENTS.children.length) return status("make a character and dress it first", "bad");
+  if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }
   const text = await inRest(() => LOOK.objText(GARMENTS.children, `${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame, MHR's own pose`));
   const r = await api(`api/export/${encodeURIComponent(WHO)}/${encodeURIComponent(`${WHO}_clothes.obj`)}`, text);
   status(`wrote ${r.path}`, "ok");
@@ -2135,6 +2189,9 @@ async function open(name) {
   SKIN = null; await loadSkin(); await LAY.load();
   if (me !== OPENING) return;
   st.clothes = (c.clothes || []).map(x => ({ ...x })); drawWorn();
+  st.drape = c.drape !== false; drapeTog.checked = st.drape;
+  BAKES = WHO ? await loadDrape(WHO) : {}; TAILOR_W.postMessage({ bakes: BAKES });   // the clothes as they hung when saved
+  if (me !== OPENING) return;
   Object.assign(st.eyes, EYEPAINT.EYE_DEFAULTS, EYEFIT, { lidLine: lidDefault() }, c.eyes || {}); st.eyes.showLid = false;
   if (st.eyes.lidLine?.base !== "mesh") st.eyes.lidLine = lidDefault();   // an older line was offsets from MediaPipe's ring: start again on the model's delete st.eyes.plane; delete st.eyes.lowerLid; eyeSet.all(); paintEyes();
   Object.assign(st.teeth, TEETH.TEETH_DEFAULTS, c.teeth || {}); teethSet.all();
@@ -2150,7 +2207,7 @@ async function open(name) {
   if (!SALONF.hidden) await enterSalon();              // the Hair tab open: the salon on this character
   if (me === OPENING && WHO) detect();
 }
-const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, accessories: st.accessories,
+const character = () => ({ base: st.base, height: st.height, shape: st.shape, sculpt: Object.fromEntries(Object.entries(st.sculpt).filter(([, v]) => v)), face: st.face, relative: $("#relative").checked, skin: st.skin, clothes: st.clothes, drape: st.drape, eyes: st.eyes, teeth: st.teeth, lips: { ...st.lips, guide: undefined }, nails: st.nails, lash: st.lash, brow: st.brow, accessories: st.accessories,
                            weights: weights(), about: "the Character Studio (tools/character/): MHR identity weights = the base blended in + shape" });
 $("#who").onchange = () => open($("#who").value);
 $("#make").onclick = async () => {
@@ -2167,7 +2224,8 @@ $("#save").onclick = async () => {
   if (!WHO) return status("make a character first", "bad");
   const r = await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
   await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));   // the salon's head (its face too)
-  status(`saved ${r.path} (and its body, for the salon)`, "ok"); UNSAVED = false;
+  await saveDrape();                                   // the clothes as they hang
+  status(`saved ${r.path} (its body, for the salon, and its clothes as they hang)`, "ok"); UNSAVED = false;
 };
 function objText(head) {                               // metres, Y up, facing +Z; the head cut 0.245 m under its top (as MHR_head.obj)
   const cut = TOP - 0.245 * SCALE, keep = new Int32Array(N).fill(-1), v = [], f = [];
@@ -2211,9 +2269,10 @@ function exportSkin() {
 }
 async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
+  if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }   // exported as they hang
   status("exporting for the desk and Unreal…");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
-  await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()]));
+  await api(`api/people/${encodeURIComponent(WHO)}/body.bin`, new Blob([neutralBody()])); await saveDrape();
   const rec = await api(`api/recipe/${encodeURIComponent(WHO)}`), was = st.expr.slice(), pose = POSE;
   st.expr.fill(0); POSE = "rest"; compose();           // neutral, in MHR's own pose (the T-pose is only the view's)
   const root = new THREE.Scene(); root.name = WHO; root.userData = { studio: rec };
@@ -2261,7 +2320,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

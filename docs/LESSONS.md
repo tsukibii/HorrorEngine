@@ -615,3 +615,28 @@ load the page once after an edit.
   the Nails checkbox calls `skinLook()`, which also takes the skin's coat off. Off the check's way, a coat of 1 was
   left on the whole skin, a highlight the old view's sample missed and the T-pose's view from above caught, so the
   polish seemed to change the skin. It took three probes: the camera, the coat, then the switch.
+
+- **Over-relax only one side of a one-sided constraint and the round-off grows:** the drape over-corrected pulled
+  edges (SOR 1.5) and gave pushed ones half; from rest a 1e-12 m error grew past a metre in 240 steps. Plain
+  Gauss-Seidel stays at 1e-18. Find such things by starting from rest with nothing to do and watching the biggest
+  move a step: it should stay at round-off.
+- **A bending stiffer in a step than the points it moves are heavy, after the lengths and carried on as speed, buzzes
+  for ever:** the skirt's 5 mm wool flipped 1.6 mm back and forth every step at rms 15 cm/s through the strongest
+  damping. It's an instability, not a slow settle: each point's step-to-step moves alternated in sign. Capping the
+  bend's compliance at the points' own inverse weight (`alpha >= sum w k^2`) stops it; more steps only slow it.
+- **Cloth that gives way when pushed shrinks instead of folding:** with compression at 4% of stretch an A-line
+  skirt's hem drew in ten centimetres; at half it folds, as cloth does.
+- **A worker's two answers to one job need the job's inputs until the last:** the Studio dropped the body the clothes
+  were cut on when the cut came back, so the hung clothes that followed were shown unposed (the A-pose's sleeves on
+  T-posed arms, looking like funnels); keep it until the job's final message.
+- **A field read at the nearest vertex is a staircase, and a point on a step flips:** the drape took the layers'
+  height under a point from its nearest skin vertex; two neighbours 6.5 mm apart (a tucked shirt's edge) made a point
+  beside a held waistband jump between two floors every step, 5 mm each way. Read it across the closest triangle.
+- **Measure the layers under a garment the same way where it's cut and where it hangs:** the drape spread the clothes
+  under it wider than the cut had, so a blazer cut to fit started 5 cm under its own floor and was shoved out, its
+  edges stretched to double. Count the points that start under the floor before blaming the solver.
+- **A loose sliver falls for ever:** the cut can leave a few points on their own where an opening meets a hem; nothing
+  holds them, so they fell 2.7 m and kept the drape from settling. Hold what nothing holds.
+- **More cloth between two held edges only creeps:** sleeves cut fuller between the shoulder and a held cuff buckled
+  so slowly that their end state depended on when the drape stopped (19 mm). Compare two runs of different lengths to
+  tell creeping from settled.

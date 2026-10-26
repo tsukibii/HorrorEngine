@@ -100,19 +100,24 @@ export function thicken(P, T, t, rim = 1, edge = 1) {
 }
 
 /** a piece of cloth lifted off another (a pocket on a shirt, a waistband on trousers): the part of `base` where
-    value(x, y, z, nx, ny, nz) >= 0, raised `lift` (a number or lift(value)) along its normals */
-export function lifted(cut, base, value, lift) {
+    value(x, y, z, nx, ny, nz) >= 0, raised `lift` (a number or lift(value)) along its normals. `at`: where base's
+    points hang after a drape: the piece is cut where the cloth was cut and comes back with `at` too, sewn on the same
+    points of the hanging cloth */
+export function lifted(cut, base, value, lift, at = null) {
   const N = normals(base.P, base.T), n = base.P.length / 3, v = new Float32Array(n);
   for (let i = 0; i < n; i++) v[i] = value(base.P[i * 3], base.P[i * 3 + 1], base.P[i * 3 + 2], N[i * 3], N[i * 3 + 1], N[i * 3 + 2]);
   const c = cut(base.P, base.T, v);
   if (!c.T.length) return null;
-  const Nn = new Float32Array(c.P.length);
-  c.from.forEach(([a, b, u], i) => { for (let k = 0; k < 3; k++) Nn[i * 3 + k] = N[a * 3 + k] * (1 - u) + N[b * 3 + k] * u; });
-  for (let i = 0; i < c.P.length / 3; i++) {
-    const [a, b, u] = c.from[i], val = v[a] * (1 - u) + v[b] * u, l = typeof lift === "function" ? lift(val) : lift;
-    const nl = Math.hypot(Nn[i * 3], Nn[i * 3 + 1], Nn[i * 3 + 2]) || 1;
-    for (let k = 0; k < 3; k++) c.P[i * 3 + k] += Nn[i * 3 + k] / nl * l;
-  }
-  return { P: c.P, T: c.T };
+  const place = (P, Nb) => {
+    const out = new Float32Array(c.P.length);
+    c.from.forEach(([a, b, u], i) => {
+      const val = v[a] * (1 - u) + v[b] * u, l = typeof lift === "function" ? lift(val) : lift;
+      let nx = Nb[a * 3] * (1 - u) + Nb[b * 3] * u, ny = Nb[a * 3 + 1] * (1 - u) + Nb[b * 3 + 1] * u, nz = Nb[a * 3 + 2] * (1 - u) + Nb[b * 3 + 2] * u;
+      const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+      for (let k = 0; k < 3; k++) out[i * 3 + k] = P[a * 3 + k] * (1 - u) + P[b * 3 + k] * u + [nx, ny, nz][k] * l;
+    });
+    return out;
+  };
+  return at ? { P: place(base.P, N), T: c.T, at: place(at, normals(at, base.T)) } : { P: place(base.P, N), T: c.T };
 }
 

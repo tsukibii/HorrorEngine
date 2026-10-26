@@ -65,7 +65,7 @@ def ref_status(name):
 
 # what a character is made from (and its live bakes): it travels inside an export (the GLB's extras, and a .studio.json
 # beside it) so the character comes back into the Studio as it was, every setting editable (docs/CHARACTER_STUDIO.md §2)
-RECIPE_FILES = ("character.json", "layers.json", "skin.png", "skin_mask.png", "skin_paint.png", "skin_touch.png", "skin_pigment.png", "body.bin")
+RECIPE_FILES = ("character.json", "layers.json", "skin.png", "skin_mask.png", "skin_paint.png", "skin_touch.png", "skin_pigment.png", "body.bin", "drape.bin")
 RECIPE_DIRS = {"pictures": PICTURES, "salon": {".json", ".glb"}}
 
 
@@ -98,6 +98,17 @@ def body_bytes():
     with open(BODIES / "MHR_lod1.bin", "rb") as f:
         n = int.from_bytes(f.read(4), "little")
         return json.loads(f.read(n))["points"] * 12
+
+
+def drape_ok(data):
+    """drape.bin, the clothes' bake (tools/character/index.html saveDrape): a uint32 header length, the header (JSON:
+    each garment's key, points and where they start), float32 xyz"""
+    if len(data) < 8: return False
+    n = int.from_bytes(data[:4], "little")
+    if n > len(data) - 4 or n > 1 << 20: return False
+    try: h = json.loads(data[4:4 + n])
+    except ValueError: return False
+    return all(4 + n + g["at"] + g["points"] * 12 <= len(data) for g in h.get("garments", []))
 
 
 def pictures(name):
@@ -139,6 +150,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "a binary glTF"})
         elif fname == "body.bin" and len(data) != body_bytes():
             return self.send(400, {"error": f"a body is {body_bytes()} bytes"})
+        elif fname == "drape.bin" and not drape_ok(data):
+            return self.send(400, {"error": "a drape: a header's length, the header (JSON), the points"})
         d.mkdir(parents=True, exist_ok=True)
         (d / fname).write_bytes(data)
         return self.send(200, {"ok": True, "path": str((d / fname).relative_to(ROOT))})
@@ -175,8 +188,8 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 3 and clean(parts[2]):
             f = PEOPLE / clean(parts[2]) / "character.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {})
-        if parts[:2] == ["api", "people"] and len(parts) == 4 and clean(parts[2]) and parts[3] == "body.bin":   # the body as the studio shows it
-            f = PEOPLE / clean(parts[2]) / "body.bin"
+        if parts[:2] == ["api", "people"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("body.bin", "drape.bin"):   # the body as the studio shows it; its clothes' drape
+            f = PEOPLE / clean(parts[2]) / parts[3]
             return self.send(200, f.read_bytes(), TYPES[".bin"]) if f.exists() else self.send(404, {"error": "not saved from the Character Studio yet"})
         if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
             f = PEOPLE / clean(parts[2]) / "salon" / parts[4]                    # the character's hair from the salon
@@ -329,8 +342,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*WORKER.call(req))
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in HAIR_FILES:   # a hairstyle saved by the salon
             return self.keep(HAIR / name, parts[3])
-        if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] == "body.bin":   # the body, with its face, no expression
-            return self.keep(PEOPLE / name, "body.bin")
+        if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] in ("body.bin", "drape.bin"):   # the body, with its face, no expression; the clothes' drape
+            return self.keep(PEOPLE / name, parts[3])
         if parts[:2] == ["api", "people"] and len(parts) == 5 and name and parts[3] == "salon" and parts[4] in SALON_FILES:
             if not (PEOPLE / name).is_dir(): return self.send(404, {"error": f"no character {name}"})
             return self.keep(PEOPLE / name / "salon", parts[4])                  # the character's hair from the salon

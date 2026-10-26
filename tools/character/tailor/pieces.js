@@ -37,7 +37,7 @@ const torsoHem = (F, at, o = {}) => {
   };
 };
 /** a waistline at `at`, dropped at the front by `drop` (a low rise) and raised at the back by `rise` */
-const waistline = (F, at, o = {}) => {
+export const waistline = (F, at, o = {}) => {
   const y0 = height(F, at), dr = (o.drop ?? 0.01) * F.s, ri = (o.rise ?? 0.02) * F.s;
   return (x, y, z) => { const c = Math.cos(F.theta(x, y, z)); return y0 - dr * Math.max(0, c) + ri * Math.max(0, -c) - y; };
 };
@@ -281,18 +281,18 @@ export function shell(B, p, under) {
   const fine = subdivide(Q, C.T), m = fine.P.length / 3, n = Q.length / 3;
   const ease2 = new Float32Array(m), W2 = new Float32Array(m), hint2 = new Int32Array(m), near2 = new Uint8Array(m); ease2.set(ease); W2.set(W); hint2.set(H.hints); near2.set(near);
   for (let k = 0; k < m - n; k++) { const a = fine.parents[2 * k], b = fine.parents[2 * k + 1]; ease2[n + k] = (ease[a] + ease[b]) / 2; W2[n + k] = (W[a] + W[b]) / 2; hint2[n + k] = H.hints[a]; near2[n + k] = near[a] | near[b]; }
-  let Qf = relax(fine.P, fine.T, new Float32Array(fine.P.length), ease2, { iters: 4, weight: W2, clear: ease2, colliders: [{ surf: B.surf }], hints: hint2, contested: near2 }), Tf = fine.T, mf = m;
+  let Qf = relax(fine.P, fine.T, new Float32Array(fine.P.length), ease2, { iters: 4, weight: W2, clear: ease2, colliders: [{ surf: B.surf }], hints: hint2, contested: near2 }), Tf = fine.T, mf = m, hf = hint2;
   if (p.fine > 1) {                                                  // narrow parts (straps, strings): split in four again, about 2.5 mm, settled twice
     const f2 = subdivide(Qf, fine.T), m2 = f2.P.length / 3, e3 = new Float32Array(m2), W3 = new Float32Array(m2), h3 = new Int32Array(m2), n3 = new Uint8Array(m2);
     e3.set(ease2); W3.set(W2); h3.set(hint2); n3.set(near2);
     for (let k = 0; k < m2 - m; k++) { const a = f2.parents[2 * k], b = f2.parents[2 * k + 1]; e3[m + k] = (ease2[a] + ease2[b]) / 2; W3[m + k] = (W2[a] + W2[b]) / 2; h3[m + k] = hint2[a]; n3[m + k] = near2[a] | near2[b]; }
-    Qf = relax(f2.P, f2.T, new Float32Array(f2.P.length), e3, { iters: 2, weight: W3, clear: e3, colliders: [{ surf: B.surf }], hints: h3, contested: n3 }); Tf = f2.T; mf = m2;
+    Qf = relax(f2.P, f2.T, new Float32Array(f2.P.length), e3, { iters: 2, weight: W3, clear: e3, colliders: [{ surf: B.surf }], hints: h3, contested: n3 }); Tf = f2.T; mf = m2; hf = h3;
   }
   const v = new Float32Array(mf);
   for (let j = 0; j < mf; j++) v[j] = V(Qf[j * 3], Qf[j * 3 + 1], Qf[j * 3 + 2]);
   const c = cut(Qf, Tf, v);
   const ends = p.sleeve === undefined || p.sleeve === false ? null : { L: sleeveEnd(F, "L", p.sleeve), R: sleeveEnd(F, "R", p.sleeve) };
-  return { outer: { P: c.P, T: c.T }, V, neck: p.neck === false ? null : neckline(F, { ease: p.ease?.body, ...(p.neck || {}) }), ends, open: p.open ? opening(F, p.open) : null,
+  return { outer: { P: c.P, T: c.T }, hints: Int32Array.from(c.from, ([a]) => hf[a]), V, neck: p.neck === false ? null : neckline(F, { ease: p.ease?.body, ...(p.neck || {}) }), ends, open: p.open ? opening(F, p.open) : null,
            legY: p.legs ? height(F, p.legs.to) : null, waist: p.waist ? waistline(F, p.waist.at, p.waist) : null };
 }
 
@@ -582,10 +582,11 @@ export function detail(F, G, d) {
   }
 }
 
-/** buttons: little discs down a line on the garment's outside, [{P, T}] */
-export function buttons(F, outer, d) {
+/** buttons: little discs down a line on the garment's outside, [{P, T}]; found on the cut cloth and sewn where its
+    point hangs (`at`, after a drape) */
+export function buttons(F, outer, d, at = null) {
   const s = F.s, top = height(F, d.from), bot = height(F, d.to), n = d.count ?? 6, r = (d.r ?? 0.0065) * s, h = (d.h ?? 0.003) * s;
-  const N = normals(outer.P, outer.T), P = outer.P, out = { P: [], T: [] };
+  const P = outer.P, A = at || P, N = normals(A, outer.T), out = { P: [], T: [] };
   for (let i = 0; i < n; i++) {
     const y = top + (bot - top) * (n === 1 ? 0.5 : i / (n - 1)), [cx, cz] = F.torsoAxis(y), x = cx + (d.x ?? 0) * s;
     let best = -1, bd = 1e9;
@@ -595,7 +596,7 @@ export function buttons(F, outer, d) {
       if (dd < bd) { bd = dd; best = j; }
     }
     if (best < 0 || bd > (0.01 * s) ** 2) continue;
-    disc(out, [P[best], P[best + 1], P[best + 2]], [N[best], N[best + 1], N[best + 2]], r, h, (d.lift ?? 0.0015) * s);
+    disc(out, [A[best], A[best + 1], A[best + 2]], [N[best], N[best + 1], N[best + 2]], r, h, (d.lift ?? 0.0015) * s);
   }
   return { P: new Float32Array(out.P), T: new Uint32Array(out.T), S: new Float32Array(out.P.length / 3).fill(1) };
 }
@@ -628,9 +629,9 @@ export const parseHeight = h => {
  * Where a garment can be pulled: [{key, label, path (into its piece), kind ("height": anchor + value scaled with the
  * body, or "number"), anchor, value, at (a point on its outside), axis (the way the value grows), rate (metres a unit)}]
  */
-export function handles(F, G, p) {
-  const s = F.s, O = G.outer.P, out = [];
-  const best = (ok, score) => { let b = -1, bs = -1e9; for (let i = 0; i < O.length; i += 3) { if (!ok(O[i], O[i + 1], O[i + 2])) continue; const v = score(O[i], O[i + 1], O[i + 2]); if (v > bs) { bs = v; b = i; } } return b < 0 ? null : [O[b], O[b + 1], O[b + 2]]; };
+export function handles(F, G, p, at = null) {
+  const s = F.s, O = G.outer.P, A = at || O, out = [];   // found on the cut cloth, shown where it hangs
+  const best = (ok, score) => { let b = -1, bs = -1e9; for (let i = 0; i < O.length; i += 3) { if (!ok(O[i], O[i + 1], O[i + 2])) continue; const v = score(O[i], O[i + 1], O[i + 2]); if (v > bs) { bs = v; b = i; } } return b < 0 ? null : [A[b], A[b + 1], A[b + 2]]; };
   const frontAt = (y, x0) => best((x, yy) => Math.abs(yy - y) < 0.01 * s && Math.abs(x - x0) < 0.02 * s, (x, yy, z) => z);
   const add = (h, at) => { if (at) out.push({ ...h, at }); };
   if (p.kind === "skirt") {
