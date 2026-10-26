@@ -155,6 +155,9 @@ and a bake (DECISIONS 2026-10-26):
    Criss-cross), the lower lashes' angle and length (Lower lashes down, Lower length),
    the pinks' strength and hues (Eyeshadow, Under-eye shadow, Inner corner, Waterline and their colours), the liner's
    thickness and wing, and whether the look should set the brows too (a look can: `brow` in `looks.js`).
+0000000. **Five more lash styles, for later** (the user's second reference, docs/research/lash_reference.md): thin sparse
+   lashes for men and older faces, glam volume, fluffy mink, doll volume, natural medium; with a lower-lid liner and
+   grey and brown lash looks. Not made yet; the user said "for later".
 00000. **Look at the new bodies and the tailored clothes** (Feminine or Masculine, then the outfits named after the
    references: `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts`, `t-shirt tucked
    in`); characters made before have the new bodies too. Say what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own

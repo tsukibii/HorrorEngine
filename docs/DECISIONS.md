@@ -55,6 +55,11 @@ The user's answers, newest first. They override the plan, the research and the d
   own line, a far pick on the wrong skin dropped, a corner that finds nothing filled from its neighbour), the lashes
   root on it all round, the innermost 7% of the upper lid carries none, and the lower roots follow the margin's front
   edge as one smooth line, corner to corner, where the user drew theirs.
+- **For later: five more lash styles after a second reference** ("For later (save as a reference for now) I want us to
+  make these eyelash shapes too as seen in this image (thin ones for men etc)": five rendered pairs of eyes: an old
+  man's sparse thin lashes, a glam volume set with smoky plum makeup, a fluffy mink set, a doll volume set with a lower
+  liner, a natural medium set with a tinted waterline). Written up in docs/research/lash_reference.md with a style
+  sketched for each; not made yet.
 - Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
   under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
   the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style
