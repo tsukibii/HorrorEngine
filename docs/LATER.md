@@ -35,6 +35,10 @@ records what's chosen.
   in one tool.
 - **LODs for faraway characters**: MHR's LOD 2 to 4 for figures more than a few metres away (the clothes and hair
   simplified with them); the games are first person, so most of the cast is far most of the time.
+- **Five more lash styles after the user's second reference** (docs/research/lash_reference.md, 2026-10-26, night):
+  sparse thin lashes for men and older faces (with a greying look), a glam volume set with a smoky plum makeup, a fluffy
+  mink set, a doll volume set with a lower liner, a natural medium set with a tinted waterline. Needs a painted liner on
+  the lower lid and brown and grey lash looks. Saves making them by hand per character.
 
 ## Unreal
 
@@ -44,11 +48,3 @@ records what's chosen.
   per scene and checked by Generate, so a horror game's dark corners don't hide a slow frame.
 - **The look last, per game**: UltraVHS and LightKit are ready to enable; a per-game `look` block (VHS preset, day or
   night, grade) that Generate applies keeps it text, like everything else.
-
-## The Character Studio
-
-- **Five more lash styles after the user's second reference** (docs/research/lash_reference.md, 2026-10-26, night):
-  sparse thin lashes for men and older faces (with a greying look), a glam volume set with a smoky plum makeup, a fluffy
-  mink set, a doll volume set with a lower liner, a natural medium set with a tinted waterline. Needs a painted liner on
-  the lower lid and brown and grey lash looks. Saves making them by hand per character.
-
