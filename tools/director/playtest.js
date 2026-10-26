@@ -326,6 +326,23 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     });
     if (bad.length) throw new Error("silent or clipping: " + bad.join(", "));
   });
+  await step("the sound shelf: every story sound off the shelf is served and decodes, and the sound command plays it where it's placed", async () => {
+    const r = await page.evaluate(async () => {
+      const X = await import("./sfx.js"), all = await X.shelf(), S = window.__dd.S, out = { n: Object.keys(all).length, bad: [] };
+      for (const [id, s] of Object.entries(S.sounds || {})) {
+        const n = X.shelfName(s.file); if (!n) continue;
+        if (!all[n]) { out.bad.push(id + ": not on the shelf"); continue; }
+        const bytes = await (await fetch("/sfx/" + all[n].file)).arrayBuffer(), buf = await new OfflineAudioContext(1, 8, 44100).decodeAudioData(bytes);
+        let pk = 0; for (const x of buf.getChannelData(0)) pk = Math.max(pk, Math.abs(x));
+        if (!(buf.duration > 0.05 && pk > 0.05)) out.bad.push(`${id}: ${n} ${buf.duration.toFixed(2)} s peak ${pk.toFixed(3)}`);
+      }
+      const rt = window.__dd.play, sid = Object.keys(S.sounds || {})[0], at = Object.keys(rt.byId)[0];
+      const p = await X.playShelf(X.shelfName(S.sounds[sid].file), { pos: rt.byId[at].getWorldPosition(rt.byId[at].position.clone()), camera: rt.stage.camera });
+      out.played = p && p.secs; if (p) p.stop();
+      return out;
+    });
+    if (r.n < 100 || r.bad.length || !(r.played > 0)) throw new Error(JSON.stringify(r));
+  });
   await step("the drawer's code on the keypad sets drawer_open and shows the key", async () => {
     await goTo("desk_lock", 0.8);
     await press("KeyE"); await page.waitForSelector(".ph-pad");

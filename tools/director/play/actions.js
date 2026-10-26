@@ -41,7 +41,7 @@ register("action", "light", { run: (v, a, rt) => rt.light(v, a.room, a.set || "o
 register("action", "wait", { run: (v, a, rt) => rt.wait(+v || 0) });
 register("action", "fade", { run: (v, a, rt) => rt.fade(v === "out" ? 1 : 0, +(a.secs ?? 1)) });
 register("action", "lookat", { run: (v, a, rt) => rt.lookAt(v, +(a.secs ?? 1)) });
-register("action", "sound", { run: (v, a, rt) => rt.hud.log(`♪ ${v}${a.at ? " at " + a.at : ""}`) });
+register("action", "sound", { run: (v, a, rt) => rt.sound(v, a.at) });      // off the Studio's sound shelf when its file is sfx/<name> (sfx.js)
 register("action", "music", { run: (v, a, rt) => rt.hud.log(`music: ${v}`) });
 register("action", "checkpoint", { run: (v, a, rt) => rt.hud.log("checkpoint") });
 register("action", "done", { run: (v, a, rt) => rt.finish() });
@@ -51,7 +51,7 @@ register("action", "behave", { run: (v, a, rt) => rt.behave(v, a) });      // a 
 // tricks (docs/TRICKS.md §2): the ones Play can show now; the rest are logged
 const TRICKS = {
   slam_behind: (a, rt) => { rt.door(a.door, "slam"); },
-  knock: (a, rt) => rt.hud.log(`♪ knock ×${a.count || 3}${a.at ? " at " + a.at : ""}`),
+  knock: async (a, rt) => { for (let i = 0; i < (+a.count || 3); i++) { rt.shelfSound("knock_wood_0" + (1 + i % 4), a.at); await rt.wait(0.42); } rt.hud.log(`♪ knock ×${a.count || 3}${a.at ? " at " + a.at : ""}`); },
   whisper: (a, rt) => rt.hud.line(rt.lineText(a.line) || "(a whisper)", "", 2.5),
   glimpse: async (a, rt) => { rt.setVisible(a.figure, true); await rt.wait(+(a.secs ?? 0.6)); rt.setVisible(a.figure, false); },
   lights_die: async (a, rt) => { rt.light(null, a.room, "off"); await rt.wait(+(a.secs ?? 1)); rt.light(null, a.room, "on"); },

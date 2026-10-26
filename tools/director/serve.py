@@ -175,6 +175,14 @@ class Handler(BaseHTTPRequestHandler):
             if lf.is_file() and lf.suffix.lower() in BODY and LIB.LIB.resolve() in lf.resolve().parents:
                 return self.send(200, lf.read_bytes(), BODY[lf.suffix.lower()])
             return self.send(404, {"error": "not in the library"})
+        if parts[:2] == ["api", "sfx"]:              # the sound-effect shelf (Content/Studio/SFX, tools/sfx.py)
+            f = L.STUDIO / "SFX" / "index.json"
+            return self.send(200, f.read_bytes() if f.is_file() else {"format": "horrorstudio-sfx", "sounds": {}}, "application/json")
+        if parts[0] == "sfx" and len(parts) == 3 and ".." not in parts and parts[2].endswith(".ogg"):
+            sf = L.STUDIO / "SFX" / parts[1] / parts[2]
+            if sf.is_file():
+                return self.send(200, sf.read_bytes(), "audio/ogg", cache=True)
+            return self.send(404, {"error": "not on the sound shelf"})
         if parts[:2] == ["api", "lives"]:            # the little things' lives (Content/Studio/Life/lives.json, life.js)
             return self.send(200, LIFE.data())
         if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions, and its twin of each previs joint

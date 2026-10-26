@@ -119,6 +119,7 @@ TOOLS = [
     ("Checks", "Shots review (after the editor took them)", "tools/shots_sheet.py --game {game}", {}),
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
+    ("Checks", "Sound shelf check", "tools/sfx.py check", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
@@ -170,6 +171,9 @@ TOOLS = [
     ("Library", "Credits list (ledger)", "tools/cc0.py ledger", {}),
     ("Library", "PBR shelf: scan and list (unpacks new ZIPs)", "tools/pbr.py", {}),
     ("Library", "PBR shelf: five made-up sets to try", "tools/pbr.py demo", {}),
+    ("Library", "Sound shelf: list (filter by a word)", "tools/sfx.py list {ask:Word}", {}),
+    ("Library", "Sound shelf: fetch the CC0 sound effects", "tools/sfx.py fetch", {}),
+    ("Library", "Score room: fetch the added instruments", "tools/score/fetch_samples.py", {}),
 
     ("Ship", "Package a game (dry run)", "tools/package_game.py --game {game} --dry", {}),
     ("Ship", "Package a game", "tools/package_game.py --game {game}", {}),

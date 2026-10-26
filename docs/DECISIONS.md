@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-26, past midnight (more instruments, swappable strings, sound effects in the flow)
+
+- **Add every CC0 instrument we can find for horror** ("add everything you can"), after the search for open
+  libraries of horror strings and sound effects: 28 more instruments from VSCO-2 CE and VCSL, the same CC0 libraries
+  as Woohill's, fetched by `tools/score/fetch_samples.py` (docs/MUSIC.md §7). No open library records horror string
+  effects (clusters, scrapes, col legno) under CC0, so those stay as the score room's filters (`tone`) and the bowed
+  and scraped metals.
+- **Notes on which sound works best, and the strings easy to swap so the user decides by ear.** The string sets
+  (section, full, low, solo, eerie, glass) each come with a note. The cue says which set it suits, and every
+  instrument has a note on what it's for in the Instruments list.
+- **New instruments only in the expanded scorer.** The original 42 cues keep Woohill's instruments (only the string
+  set changes who plays their strings). The new instruments have their own twelve cues, the Expanded orchestra family.
+- **Sound effects aren't part of the orchestra, but they're in the flow.** They're a shelf of their own,
+  `Content/Studio/SFX` (`tools/sfx.py`, docs/SFX.md): a story sound names one as `sfx/<name>`, the Database picks and
+  plays it, Play and the Watch play it. The score room doesn't touch them.
+- Claude's calls inside that: CC0 or ours only (CC-BY packs like ObsydianX's drones and anything that can't be
+  shared as files, Philharmonia's and Sonniss's, were left out). The Pilot's and the Sample's placeholder sounds now
+  point at the shelf. Sounds that no single file covered were built from parts (three knocks, steps through the
+  ceiling, stings from metal hits) and the answering machine's beep was made from a sine.
+
 ## 2026-10-26, late night (iris patterns and pupil shapes)
 
 - **Patterns inside the iris and pupils of other shapes, after the user's references, a heart among them** ("could you

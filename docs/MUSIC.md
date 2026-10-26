@@ -248,6 +248,9 @@ more, with sources. Titles are given only where we're sure of them.
 
 ## 7. The added instruments
 
+Sound effects (doors, steps, knocks, breaths, room tones) aren't the orchestra's: they're the Studio's sound shelf,
+docs/SFX.md.
+
 Woohill's orchestra is still what every cue above was written and mixed with. Beside it are 28 more instruments from
 the same CC0 libraries, VSCO-2 Community Edition and the Versilian Community Sample Library (VCSL), both by Versilian
 Studios. `python tools/score/fetch_samples.py` fetches them (`--list` shows what's there, `--only KEY`, `--force`). It
