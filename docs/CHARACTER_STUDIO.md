@@ -98,6 +98,9 @@ along it), and the skin's node carries **each opening's outline** as cut, on the
 is untangled in the Studio too: smoothed, MHR's own left inner corner crossed itself and the little loop showed a
 diamond of eyeball at every character's corner (`untangle`, pulled to the crossing). STUDIO draws the file's skin and
 eyes flat from the front, above, below and 20° to either side: none of an eyeball outside its opening.
+**In Unreal** (UNREAL_FLOW §1d): `storykit.people` imports the GLB as one skeletal mesh and gives each eye
+M_StudioEye, the same eye as a material made from text, its numbers from `studioEye`; Generate does it for every cast
+member whose `previs_body` is the character, the preview posing it from the desk's bake.
 The GLB's scene carries **the recipe** in its extras (`extras.studio`, the server's `api/recipe/<name>`): every file
 the character is made from (`character.json`, `layers.json`, the skin's pictures and paint, `body.bin`, the front and
 side pictures, the salon's `salon/*.json` and bakes), base64, each with its sha1. `<name>.studio.json` beside it is the

@@ -138,6 +138,7 @@ and a bake (DECISIONS 2026-10-26):
   `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
   whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
   bodies, seven outfits hung by gravity on three bodies; about 7 minutes here). TIMES ok, BLENDERLOOK ok.
+  `node tools/character/ueeye.mjs`: UEEYE ok (DXC isn't here: its HLSL ran as GLSL only).
   `node tools/director/peopletest.js`: PEOPLE ok (a Character Studio export as Mari's body, the simple view; it needs
   an export on the machine: STUDIO's `_studiotest` will do). Delete `People/_studiotest_back` before a STUDIO run: an
   old one left there failed the import's "every file the same" once.
@@ -158,9 +159,11 @@ and a bake (DECISIONS 2026-10-26):
    (`extras.studioEye`), the lids resting on the eyes (a file has no stencil) and each opening's outline in the skin's
    extras. The desk wears it as a cast member's body (`previs_body: "people/<name>"`, the Database's body picker:
    "<name> (Character Studio)"), its eyes refracting; the toolbar's **Simple** draws everything plain when it lags
-   (PEOPLE). Next: Unreal (the GLB as a skeletal mesh on MHR's skeleton, an eye material built from text that reads
-   `studioEye`), then §4's steps 5 and 6 (the room in the cornea, photo irises, the eyes' life). Look at a character's
-   eyes in the Studio and on the desk and say what to change.
+   (PEOPLE). In Unreal (written blind: run it once with the editor, UNREAL_FLOW §1d): `storykit.people` imports the
+   export as one skeletal mesh, its eyes wearing M_StudioEye (made from text; UEEYE runs its HLSL as GLSL against a
+   traced ray), and Generate uses it for a cast member who is the character. Next, if wanted: §4's steps 5 and 6
+   (the room in the cornea, photo irises, the eyes' life), the caustic and an eye occlusion in Unreal. Look at a
+   character's eyes in the Studio and on the desk and say what to change.
 00000. **Look at the new bodies and the tailored clothes** (Feminine or Masculine, then the outfits named after the
    references: `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts`, `t-shirt tucked
    in`); characters made before have the new bodies too. Say what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own

@@ -192,9 +192,9 @@ both built.
 
 ## 4. For the Studio: a plan
 
-**Built 2026-10-26** (DECISIONS): steps 1 to 4 in `tools/shared/eye.js`, worn by the Studio's eyes; the export's
-eyeballs carry the paint baked flat with the eye's shape and paint, for a reader that refracts them again (step 7's
-start). Steps 5 and 6 are still open.
+**Built 2026-10-26** (DECISIONS): steps 1 to 4 in `tools/shared/eye.js`, worn by the Studio's eyes and by Studio
+characters on the desk; the export's eyeballs carry the paint baked flat with the eye's shape and paint, and Unreal
+refracts them again with M_StudioEye (step 7, untested in the editor). Steps 5 and 6 are still open.
 
 
 In order of what each gives for what it costs, each one measured (STUDIO) before the next:
@@ -216,7 +216,10 @@ In order of what each gives for what it costs, each one measured (STUDIO) before
    Badler); both eyes turning in on a near target.
 7. **Unreal:** the flat iris layout is what Epic's eye material expects (eyes_mouth_skin.md §3: reuse its material and
    swap the textures), so the Studio's iris can go across as a texture on the export's eyeball, which now gets plain
-   materials.
+   materials. **Built 2026-10-26, untested in the editor:** our own material instead (Epic's is Epic content), M_StudioEye
+   (`Content/Python/storykit/people.py`, UNREAL_FLOW §1d): Clear Coat, the iris read through the cornea from the baked
+   paint by two Custom nodes, the view brought into the eye's frame from the tangent space; UEEYE runs its HLSL as GLSL
+   against a traced ray. Still open: the caustic (a second normal), occlusion and the tear line.
 
 A Cycles render of the same eye (two surfaces, a real refracting cornea, after OpenSculptBoy's Blender setup) from a
 few angles would be the ground truth to measure steps 1 to 3 against, as BLENDERLOOK does for the look.

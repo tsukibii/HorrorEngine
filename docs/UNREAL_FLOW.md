@@ -16,6 +16,7 @@ setup these steps rely on.
 | the levels' kit things, doors and textures (the scene builder, docs/KIT.md, ASSETS.md §6) | `levels` in story.json; `Library/meshes/kit/` (built by the importer); `Content/Studio/PBR/` | kit meshes (static), doors as frame + leaf on its hinges + handle (tagged `door_part:*`), material instances of M_StudioSurface in `/Game/Studio/PBR/` imported only when missing **(built, untested: docs/HANDOFF_SCENE_BUILDER.md §3)** |
 | the look, trackers and idle | scene `look`, `trackers`; the idle has no field | one Control Rig layer for the whole cast, driven by the runner **(to do, local)** |
 | the time of day | `game.time`, each scene's `time` (STORY_FORMAT §3.1) | Light Kit's sky (Day, Dusk, Night) and a Light Kit Window in every window, UltraVHS's night mode with the night: §1c **(built, untested)** |
+| a Character Studio character (a cast member's `previs_body: "people/<name>"`) | `Content/Studio/People/<name>/export/<name>.glb` (the Studio's Export for desk / Unreal) | one skeletal mesh on MHR's skeleton in `/Game/Studio/Imported/People/<name>/`, its eyes wearing M_StudioEye (the iris behind a refracting cornea), in the preview and the level: §1d **(built, untested)** |
 
 ## 1. The blocked game, playable as blocks
 
@@ -68,6 +69,43 @@ loads the scenario a scene needs (LightKit's CLAUDE.md §3). Dynamic (Lumen) nee
 **UltraVHS** goes on the player (the class map's player Blueprint, SETUP S6): Add Component, Ultra VHS. Its night mode
 records black as a cool blue instead of the camcorder's warm lift, so the deep-blue night stays blue; Light Kit's sky
 turns it on at night by itself.
+
+## 1d. A Character Studio character, its eyes too (built, untested; 2026-10-26)
+
+A cast member whose `previs_body` is `people/<name>` (STORY_FORMAT §2) is a Character Studio character, and goes
+across as itself: the Studio's **Export for desk / Unreal** (`Content/Studio/People/<name>/export/<name>.glb`:
+neutral, rigged on MHR's skeleton, every part skinned on it, the eyes on `l_eye` and `r_eye`; CHARACTER_STUDIO.md §3.1).
+`storykit.people.import_character(name)` imports it once per version of the file into
+`/Game/Studio/Imported/People/<name>/v<hash>` (shared: a character may play in several games; not `/Game/Studio/People`, the Studio's own folder on disk) as one skeletal mesh, and gives
+each eye a material instance of **M_StudioEye** with its own paint and numbers. Generate does it by itself: the
+preview poses the character from the desk's bake instead of the desk's body (the same bones by name, the same bind),
+and the importer puts it in the level wherever the story places that cast member, scaled to their height.
+
+**M_StudioEye** is the Studio's eye (tools/shared/eye.js) as an Unreal material, made from the text in
+`people.py` the first time it's needed (and again when the text changes: a version tag on the asset). Clear Coat: two
+Custom nodes read the eye's point back from its flat layout (uv = 0.5 + 0.5 xy), bring the camera vector, which a
+Transform node gives them in the surface's tangent space, into the eye's own frame (the Studio wrote the tangents as
+the eye's X along the surface), bend it at the cornea's dome by Snell's law onto the iris's plane, and read the iris
+there from the paint the file carries baked flat; the white is read where the point is. The base layer has no shine on
+the iris; the cornea's shine is the clear coat. Its parameters come from the eye material's `extras.studioEye` (the
+limbus, the dome, the iris's plane, the IOR, the iris's brightness, the limbus darker from the side, the gloss);
+`node tools/character/ueeye.mjs` (UEEYE) runs the same HLSL as GLSL against a traced ray, and compiles it with DXC
+when `DXC` is set.
+
+**The first run, with the editor:** `import storykit.people as p; p.import_character("<name>")`, then a close-up of an
+eye from the front, from above and from the side, beside the same views in the Studio:
+- the iris slides the wrong way when the eye is seen from above or below (it should stay put behind the cornea, the
+  pupil seen a little toward you): M_StudioEye's `Handed` to -1 (the importer flipped the tangent frame);
+- the paint upside down (the veins at the wrong lid, the inner corner's pink at the outer): `FlipV` to 1;
+- the eye grey: its paint didn't import (the log says), or the instance isn't on its slot (the log lists the slots);
+- several skeletal meshes in the version folder: Interchange split the character's parts (its glTF pipeline's
+  Combine Skeletal Meshes should be on); the one with the eyes plays.
+Both switches are on the parent material, never on a character's instance, so one fix serves every character. Write
+what you find in `people.py` and here.
+
+Not yet: the iris lit as a bowl (the caustic: it needs the project's Clear Coat Enable Second Normal and a
+ClearCoatBottomNormal output), an eye occlusion and a tear line (the Studio's are drawn in its shader), the lids
+following the gaze when an eye bone turns (the export is neutral and has no face shapes yet), the hair as grooms.
 
 ## 2. The MetaHumans in their roles
 

@@ -21,7 +21,11 @@ The user's answers, newest first. They override the plan, the research and the d
   lids rest on the eyes (the skin round each opening brought forward up to 3 to 4 mm onto the eyeball, as real lids
   lie, rather than the eyeball pushed back and dented): from the front it's the Studio's face; from the side the lower
   lid sits a little further forward than the Studio draws it. And the Studio's left inner corner, which showed a
-  diamond of eyeball on every character (the smoothed lid line crossed itself), is a clean corner now.
+  diamond of eyeball on every character (the smoothed lid line crossed itself), is a clean corner now. In Unreal the
+  eye is our own material (M_StudioEye, made from text: Epic's eye material and textures are Epic content), on the
+  Clear Coat model with the refraction in Custom nodes; a cast member who is a Studio character goes across as that
+  character in Generate's preview and in the level. Written without the editor here: its first run is checked by eye
+  (UNREAL_FLOW §1d).
 
 ## 2026-10-26, evening (the T-pose's neck upright; lashes over the lid's rim)
 
