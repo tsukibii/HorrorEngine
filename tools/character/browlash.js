@@ -106,6 +106,22 @@ const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const rot = (v, k, a) => add(add(mul(v, Math.cos(a)), mul(cross3(k, v), Math.sin(a))), mul(k, dot(k, v) * (1 - Math.cos(a))));   // v turned about the unit axis k
 export const LASH_ATLAS = lashAtlas();                 // (after the helpers it uses)
+export const RIM_UP = 2.5;   // mm: how far up the lid the open rim's fourth point is taken (index.html's rimOf); the lash line and the painted liner scale it to their own widths
+// a root on a lid's line now against the same root with the eye open: how far it has swung round the eye's middle c0
+// since, about the lid's tangent there (ang0), and the open lid's rim path at it (rp0: offsets, three or four points)
+// turned with it. What the blink does to a lash's frame: its rim swings with the margin, its hairs with it (eyeLashes)
+function swingCore(root, root0, tg, rp0, c0) {
+  const vo = sub(root0, c0), vn = sub(root, c0), po = sub(vo, mul(tg, dot(vo, tg))), pn = sub(vn, mul(tg, dot(vn, tg)));
+  const ang0 = Math.atan2(dot(cross3(po, pn), tg), dot(po, pn)), rim = [];
+  if (rp0) for (let j = 0; j * 3 + 2 < rp0.length; j++) rim.push(rot([rp0[j * 3], rp0[j * 3 + 1], rp0[j * 3 + 2]], tg, ang0));
+  return { root, root0, tg, ang0, rim, vo };
+}
+// the same at every point of a lid's line P (its line P0 and rim R0 with the eye open, the eye's middle c0): the painted
+// liner's lines (index.html's lidFront) follow the margin the way the lashes do
+export function lidFrame(P, P0, R0, c0) {
+  const n = P.length;
+  return P.map((p, i) => swingCore(p, P0[i], norm(sub(P[Math.min(n - 1, i + 1)], P[Math.max(0, i - 1)])), R0 ? R0[i] : null, c0));
+}
 // the lash line's atlas: the lashes' roots as a dense fringe, opaque along the eye's edge (v 0) and ragged where it ends
 // up the lid (v 1): strands up from the edge, each its own length, over a solid base; u wraps along the lid
 export function lineAtlas(o = {}) {
@@ -181,20 +197,13 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
     const curve = along(P), curve0 = along(O[which], O[which + "Rim"]);   // the line now; the line and its rim path with the eye open
     // at t along the lid: the root now, its root with the eye open and the rim path there, the lid's tangent, and the
     // lid's turn since (the root's swing round the eye's middle, about the tangent): what was made open is turned by it
-    const swing = t => {
-      const { p: root, t: tg } = curve(t), { p: root0, o: rp0 } = curve0(t);
-      const vo = sub(root0, c0), vn = sub(root, c0), po = sub(vo, mul(tg, dot(vo, tg))), pn = sub(vn, mul(tg, dot(vn, tg)));
-      return { root, root0, tg, rp0, vo, ang0: Math.atan2(dot(cross3(po, pn), tg), dot(po, pn)) };
-    };
-    // the upper lid's margin also tips forward and down as it shuts, more than its travel round the eye says (MHR's
-    // blink brings the lids together halfway, where a real lid comes all the way down): a droop with the shutting, the
-    // way the lid's middle swings, so a shut eye's lashes point at the viewer and a little down, as a closed eye's do
-    const droop = upper ? 0.6 * (1 - Math.max(0, Math.min(1, lid.open ?? 1))) * Math.sign(swing(0.5).ang0 || -1) : 0;
-    const frame = t => {
-      const w = swing(t), ang = w.ang0 + droop;
-      const rim = [0, 1, 2, 3].map(j => w.rp0 && w.rp0.length >= 3 * (j + 1) ? rot([w.rp0[j * 3], w.rp0[j * 3 + 1], w.rp0[j * 3 + 2]], w.tg, ang) : null);   // over the rim to its front edge, and (the upper lid) the skin above it
-      return { root: w.root, root0: w.root0, tg: w.tg, ang, rim, vo: w.vo };
-    };
+    const swing = t => { const { p: root, t: tg } = curve(t), { p: root0, o: rp0 } = curve0(t); return swingCore(root, root0, tg, rp0, c0); };
+    // the lashes themselves also tip forward and down as the lid shuts, more than the margin's travel round the eye says
+    // (MHR's blink brings the lids together halfway, where a real lid comes all the way down): a droop with the shutting,
+    // the way the lid's middle swings, on the hairs' direction only (the rim they grow from swings with the margin), so a
+    // shut eye's lashes point at the viewer and a little down, as a closed eye's do, from the upper lid's own edge
+    const droop = upper ? 0.45 * (1 - Math.max(0, Math.min(1, lid.open ?? 1))) * Math.sign(swing(0.5).ang0 || -1) : 0;
+    const frame = t => { const w = swing(t); return { root: w.root, root0: w.root0, tg: w.tg, ang: w.ang0 + droop, rim: w.rim, vo: w.vo }; };
     // the hairs to make: where on the lid (t), its length as a share of the longest, its lean along the lid (toward the
     // outer corner), its cluster. Clusters of a few hairs (more with Clumping; the lower lid's of one to three)
     const per = upper ? 3 + Math.round(o.clump * 5) : 1 + Math.round(o.clump * 2), groups = Math.max(1, Math.round(n / per)), hairs = [], gl = [], glean = [];
@@ -225,7 +234,7 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
       const curl = upper ? 0.35 + 1.25 * o.curl : 0.1 + 0.3 * o.curl, flare = (upper ? o.flare * 0.45 : 0.15) * smooth(0.4, 1, outer) * outward;
       // over the rim first, from the line to its front edge, just off its rounded skin (three points, the open lid's turned
       // with it); the hair itself from there. Without a rim, small steps forward
-      const pts = [root, ...[0, 1, 2].map(j => rim[j] && Math.hypot(...rim[j]) > 0.05 * mm ? add(root, rim[j]) : add(root, mul(F, 0.07 * mm * (j + 1))))];
+      const pts = [root, ...[0, 1, 2].map(j => rim[j] && Math.hypot(...rim[j]) > 0.05 * mm ? add(root, rim[j]) : add(root, mul(F, 0.07 * mm * (j + 1))))];   // (the rim as it is open, swung with the margin)
       const a0 = pts.length; let q = pts[a0 - 1];
       for (let k = 1; k <= m; k++) {
         const a = base + curl * Math.pow(k / m, 1.4);
@@ -267,8 +276,8 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
         const { root, tg, rim } = frame(0.02 + 0.96 * k / mrow);
         let row;
         if (rim[2] && Math.hypot(...rim[2]) > 0.3 * mm) {
-          const front = add(root, rim[2]), top = rim[3] ? add(root, rim[3]) : add(front, mul(U, 0.7 * mm));
-          row = [add(root, mul(F, 0.1 * mm)), add(root, rim[0]), add(root, rim[1]), front, mix(front, top, o.line)];
+          const front = add(root, rim[2]), top = rim[3] ? add(root, rim[3]) : add(front, mul(U, RIM_UP * mm));   // (the fourth rim point: RIM_UP mm up the lid)
+          row = [add(root, mul(F, 0.1 * mm)), add(root, rim[0]), add(root, rim[1]), front, mix(front, top, 0.7 * o.line / RIM_UP)];   // up to 0.7 mm up the lid
         } else {                                                            // no rim to speak of: a narrow band up and forward from the line
           const rad = norm(sub(sub(root, c0), mul(F, dot(sub(root, c0), F)))), acr = norm(add(mul(rad, 0.7), mul(F, 0.7))), q = add(root, mul(F, 0.3 * mm)), w = (0.25 + 0.8 * o.line) * mm;
           row = [-0.3, 0.1, 0.4, 0.7, 1].map(s => add(q, mul(acr, s * w)));

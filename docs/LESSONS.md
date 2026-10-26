@@ -729,3 +729,9 @@ load the page once after an edit.
 - **Check that a crossed card actually crosses:** the second lash card's width ran along the lash itself (the cross
   product of the first card's normal and the lid's tangent is the lash's own direction), a sliver that showed nothing
   from the side. The second card's width is the first card's normal.
+- **Turn the root with the margin, the hair with the droop:** the extra droop a shut lid's lashes want was applied to
+  the whole frame, rim included, and the roots swung below the seam onto the lower lid. What grows from the margin
+  turns with the margin; only the hairs' own direction takes the droop.
+- **Everything painted on a moving lid should take the same frame:** the painted liner found its lines by rays on the
+  lid as it is now, which on a shut lid's bulge put a dark patch up the lid while the lashes (from the open lid, swung)
+  sat at its edge. One frame for all of it: the open lid, swung with the margin.

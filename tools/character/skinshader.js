@@ -325,12 +325,12 @@ vec3 makeup(vec3 c, vec3 p) {
     float ln = 1.0 - smoothstep(d1.y, d1.y + 0.4 * mm, d0 + d1.x);
     float wgl = 0.005 * s * (0.6 + 0.4 * lw);                      // the wing: out and up from the outer corner, tapering to a point
     vec3 tip = outer + uRight * side * wgl + uUp * uf_wing * 0.55 * wgl;
-    float wingd = seg(p, outer, tip), ww = (0.0004 + 0.0004 * lw) * s * (1.0 - clamp(dot(p - outer, uRight) * side / wgl, 0.0, 1.0));
+    float wingd = seg(p, outer, tip), ww = (0.00025 + 0.00025 * lw) * s * (1.0 - clamp(dot(p - outer, uRight) * side / wgl, 0.0, 1.0));   // (a flick, not a patch)
     ln = max(ln, 1.0 - smoothstep(ww, ww + 0.0004 * s, wingd));
     // the inner corner's point: the liner carried on past the inner corner toward the nose, a little down, to a sharp point
     float il = 0.0045 * s * uf_linerInner;
     vec3 itip = inner - uRight * side * il - uUp * 0.25 * il;
-    float innd = seg(p, inner, itip), iw = 0.00045 * s * lw * (1.0 - clamp(dot(inner - p, uRight) * side / max(il, 1e-5), 0.0, 1.0));
+    float innd = seg(p, inner, itip), iw = 0.0003 * s * lw * (1.0 - clamp(dot(inner - p, uRight) * side / max(il, 1e-5), 0.0, 1.0));
     ln = max(ln, (1.0 - smoothstep(iw, iw + 0.0004 * s, innd)) * step(0.001, uf_linerInner));
     float above = step(-0.0005 * s, dot(p - lidc, uUp));            // eyeshadow: from the lid up toward the brow
     float sh = exp(-pow(du / (0.0065 * s), 2.0)) * above * near(p, lidc + uUp * 0.004 * s, 0.016);

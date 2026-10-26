@@ -350,11 +350,20 @@ function skinLook() {
 // sits up the lid, nearly at the front edge already), its last point at every other point of the outline's seventeen;
 // and the liner's top edge, on the skin `ws` mm (one per ring point) out from it (the painted liner is the band
 // between the two lines)
+// A blink: the lines come from the lid as it is open (OPENLID, browLash's cache), swung with the margin round the
+// eyeball's middle the way the lashes are (browlash.js's lidFrame), so the liner stays along the lashes' roots on a shut
+// lid instead of being found by rays on its bulge; the top a share of the open rim's fourth point (RIM_UP mm up the lid)
 function lidFront(side, pts, ws) {
-  const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));
-  U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
   const { pts: o, c } = outline(side, 1), upper = o.slice(16).concat([o[0]]);   // inner corner to outer, as browLash takes it
-  const rows = rimOf(upper, c, F, 2.2, side, upper.map((_, i) => ws[Math.min(8, Math.round((16 - i) / 2))]));
+  const O = OPENLID[side], wAt = i => ws[Math.min(8, Math.round((16 - i) / 2))];
+  if (O && O.upper.length === upper.length && O.upperRim) {
+    const fr = BL.lidFrame(upper, O.upper, O.upperRim, O.eye), at = (i, j) => { const r = fr[i].rim[j] || [0, 0, 0]; return [upper[i][0] + r[0], upper[i][1] + r[1], upper[i][2] + r[2]]; };
+    const top = i => { const f = at(i, 2), t = at(i, 3), k = wAt(i) / BL.RIM_UP; return [f[0] + (t[0] - f[0]) * k, f[1] + (t[1] - f[1]) * k, f[2] + (t[2] - f[2]) * k]; };
+    return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 2)), top: [...Array(9)].map((_, j) => top(16 - 2 * j)) };
+  }
+  const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));   // (before the lashes have seen the eye open: the lid as it is now)
+  U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
+  const rows = rimOf(upper, c, F, 2.2, side, upper.map((_, i) => wAt(i)));
   const at = (i, a) => [upper[i][0] + rows[i][a], upper[i][1] + rows[i][a + 1], upper[i][2] + rows[i][a + 2]];
   return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 6)), top: [...Array(9)].map((_, j) => at(16 - 2 * j, 9)) };
 }
@@ -2065,7 +2074,7 @@ function browLash() {
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
-    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, 0.7), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, eye: EYES[side].position.toArray() };   // (the upper rim's fourth point: the skin 0.7 mm up the lid, the lash line's top; the eyeball's middle: what the lids swing round)
+    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, eye: EYES[side].position.toArray() };   // (the upper rim's fourth point: the skin RIM_UP mm up the lid, for the lash line's and the liner's tops; the eyeball's middle: what the lids swing round)
     if (open >= 0.97 || !OPENLID[side]) OPENLID[side] = now;              // the lids as they are open: the lashes' frame, turned with the lid as it shuts (browlash.js)
     lids[side] = { ...now, open, open0: OPENLID[side] };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };

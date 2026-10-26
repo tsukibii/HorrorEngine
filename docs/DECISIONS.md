@@ -31,6 +31,13 @@ The user's answers, newest first. They override the plan, the research and the d
   (its own mesh and atlas), and each lash's frame is set on the open lid and turned with the lid about the eyeball's
   middle as it shuts, with the margin's droop, so a shut eye's lashes point at the viewer and a little down, still on
   their rim (a bendy bone a lash, in effect: one turn about the lid's line per root).
+- **Shut, the lashes stay on the upper lid, and no dark patch on the lid** ("The eyelash has moved to the bottom eye lid
+  in this photo when it should be aligned with the upper one, what is that dark patch above the eyelash on the eyelid?
+  It doesn't look good"): the margin's droop had been applied to the rim the lashes grow from too, which put their
+  roots below the seam; the rim now swings with the margin alone (the roots level with the seam and forward of it,
+  the upper lid's own edge) and the droop is on the hairs' direction only. The patch was the painted liner, found by
+  rays on the shut lid's bulge, and a wing twice too fat: the liner's lines now come from the open lid swung with the
+  margin like the lashes, a thin line along their roots in any pose, and the wing is a flick.
 - Claude's calls inside that: the painted liner was all but invisible before (it ran along the lid line, which lies
   under the lashes and the eye's cut); it's now painted from the lashes' roots up the lid, between two lines found on
   the skin, so it hugs the lashes in any pose. The old "Doll (anime)" style is relabelled "Doll (full, dense)"; a style
