@@ -878,3 +878,10 @@ typed on the chart (the redraw replaced the element being typed in: `editing` ho
 Enter must not finish the same edit twice. Test an editor through the gestures a person uses (a double-click, typing
 after a drop, a box dragged with Shift held) in the view as it is after the steps before (a step that centres the view
 moves what the next one aims at), not only by calling its functions.
+
+## A wait in a browser test is counted in the slowest frames (2026-10-27)
+
+PLAY's bed step failed twice at the same place ("not lying down", the eye at 0.71 of a 0.69 target): the lie-down is a
+1.1 s tween that moves at most 0.05 s a frame, and a software GPU late in the run draws about two frames a second, so
+it needed some 8 s of real time and the step waited 8. Nothing was broken. A test waiting on anything the frame loop
+drives (tweens, fades, cards) gives it the run's slowest frame rate: 60 s, as PLAY's other steps do.

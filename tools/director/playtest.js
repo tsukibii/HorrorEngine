@@ -283,13 +283,14 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const before = await page.evaluate(() => { const p = window.__dd.play.player; return { x: p.pos.x, z: p.pos.z, eye: p.eye }; });
     await page.evaluate(() => { try { localStorage.removeItem("horrorstudio.saves." + ((window.__dd.S.game || {}).title || "game")); } catch (e) { } });
     await press("KeyE");
-    await page.waitForFunction(() => window.__dd.play.player.sleeping && window.__dd.play.player.eye < 1 && !window.__dd.play.moving, null, { timeout: 8000 }).catch(async e => {
+    // 60 s: the lie-down's tween moves at most 0.05 s a frame, and a software GPU late in the run draws 2 frames a second
+    await page.waitForFunction(() => window.__dd.play.player.sleeping && window.__dd.play.player.eye < 1 && !window.__dd.play.moving, null, { timeout: 60000 }).catch(async e => {
       throw new Error("not lying down: " + await page.evaluate(() => { const rt = window.__dd.play, p = rt.player; return JSON.stringify({ sleeping: p.sleeping, eye: p.eye, target: rt.target && rt.target.userData.id, moving: !!rt.moving, busy: rt.busy, line: rt.hud.lineEl.textContent, ready: rt.ready(rt.byId.study_bed) }); })); });
     const lying = await page.evaluate(() => ({ eye: window.__dd.play.player.eye, pitch: window.__dd.play.player.pitch }));
-    await page.waitForSelector(".ph-chapter.on", { timeout: 10000 });
+    await page.waitForSelector(".ph-chapter.on", { timeout: 60000 });
     const card = await page.evaluate(() => ({ t: document.querySelector(".ph-chapter-t").textContent, s: (document.querySelector(".ph-chapter-s") || {}).textContent,
       black: +document.querySelector("#watchOv .black").style.opacity, save: JSON.parse(localStorage.getItem("horrorstudio.saves." + ((window.__dd.S.game || {}).title || "game")) || "{}").auto }));
-    await page.waitForFunction(() => !window.__dd.play.player.sleeping && !document.querySelector(".ph-chapter"), null, { timeout: 15000 });
+    await page.waitForFunction(() => !window.__dd.play.player.sleeping && !document.querySelector(".ph-chapter"), null, { timeout: 60000 });
     const up = await page.evaluate(() => { const p = window.__dd.play.player; return { x: p.pos.x, z: p.pos.z, eye: p.eye, black: +document.querySelector("#watchOv .black").style.opacity }; });
     console.log(`       lying: eye ${lying.eye.toFixed(2)} m, looking ${Math.round(lying.pitch)}° up; the card “${card.t}” · ${card.s} over black ${card.black}; autosave “${card.save && card.save.where}”`);
     if (card.t !== "Later" || card.s !== "02:13" || card.black < 0.99 || !card.save || card.save.where !== "Later") throw new Error(JSON.stringify(card));
