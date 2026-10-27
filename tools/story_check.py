@@ -31,7 +31,7 @@ TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result",
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo"}
+           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -325,6 +325,14 @@ def check_world(story, things, r):
             ins = p.get("inside")
             if ins is not None and (ins not in things or things[ins].use != "spot" or things[ins].level != t.level):
                 r.err(f"{t.id}: inside {ins!r} isn't a spot on its level")
+        if u == "sleep":                                # a bed: E sleeps when its `if` flags hold; a beat on its use plays the chapter
+            ifs = p.get("if", [])
+            if not (isinstance(ifs, str) or isinstance(ifs, list) and all(isinstance(f, str) for f in ifs)):
+                r.err(f"{t.id}: sleep if is a flag or a list of flags (\"!flag\" for not)")
+            if "not_yet" in p and not isinstance(p["not_yet"], str):
+                r.err(f"{t.id}: not_yet is the thought when it isn't time to sleep")
+            if f'"use": "{t.id}"' not in json.dumps(story, ensure_ascii=False):
+                r.warn(f"{t.id}: a bed to sleep in, but nothing hears it (a beat {{\"when\": {{\"use\": \"{t.id}\"}}}} that plays a chapter)")
         if "safe" in p and not (u == "trigger" and isinstance(p["safe"], bool)):
             r.err(f"{t.id}: safe is for a trigger: true when the player can't be seen in it")
         if "see_through" in p and not (u == "locker" and isinstance(p["see_through"], (int, float)) and 0 <= p["see_through"] <= 1):
@@ -932,6 +940,18 @@ def check_action(bid, a, story, things, r, stage=None):
                     check_action(f"{bid} todo {v} on {res}", sub, story, things, r, stage)
         if "who" in a and a["who"] not in cast:
             r.err(f"{bid}: todo {v!r}: who {a['who']!r} isn't in cast")
+        return
+    if k == "chapter":                                 # a title card: dark, the card, the time of day, an autosave
+        if not isinstance(v, str) or not v.strip():
+            r.err(f"{bid}: chapter needs its title (\"Night 2\")")
+        if "time" in a and a["time"] not in L.TIMES:
+            r.err(f"{bid}: chapter time {a['time']!r} (one of {', '.join(L.TIMES)})")
+        if "secs" in a and not (isinstance(a["secs"], (int, float)) and 0 < a["secs"] <= 12):
+            r.err(f"{bid}: chapter secs: how long the card is held, 0 to 12")
+        if "sub" in a and not isinstance(a["sub"], str):
+            r.err(f"{bid}: chapter sub is a line of text under the title (\"23:40\")")
+        if "save" in a and not isinstance(a["save"], bool):
+            r.err(f"{bid}: chapter save is true or false (an autosave, true by default)")
         return
     if k in ("tick", "fail", "untodo"):
         if v not in todos_of(story) and not (k == "untodo" and v is True):
@@ -1550,6 +1570,11 @@ class World:
             return self.can_reach(v) and (w.get("in") is None or self.can_reach(w["in"]))
         if k == "use":
             t = self.things[v]
+            if t.use == "sleep":                          # a bed sleeps only when its `if` flags hold
+                ifs = t.d.get("if") or []
+                ifs = [ifs] if isinstance(ifs, str) else ifs
+                if not all((f[1:] not in self.flags) if f.startswith("!") else (f in self.flags) for f in ifs):
+                    return False
             if t.use == "pickup":
                 return ("pickup", t.d["item"]) in self.done_events
             if t.use == "note":
@@ -1657,6 +1682,8 @@ class World:
                     self.done_events.add(("answered", v, o.get("id")))
                     if self.run_actions(where, o.get("do") or []):
                         return True
+            elif k == "chapter":
+                self.add("scripted", 3.6 + float(a.get("secs", 3)))
             elif k == "todo":
                 self.todo[v] = ["open", a]
             elif k in ("tick", "fail"):

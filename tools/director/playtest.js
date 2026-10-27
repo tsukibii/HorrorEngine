@@ -272,6 +272,30 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   await step("reading the letter ticks its task on the list by itself (its ticks: read)", async () => {
     const t = await tasks(); if ((t.find(x => x.id === "read_letter") || {}).state !== "done" || (t.find(x => x.id === "find_key") || {}).state !== "open") throw new Error(JSON.stringify(t));
   });
+  await step("the bed: E lies you down on it (the eye just over it, looking up), the view goes dark, the story's beat plays a chapter: its card, an autosave, then you wake and get up where you stood", async () => {
+    const r = await goTo("study_bed", 0.9);
+    if (r.cursor !== "sit") throw new Error("cursor " + r.cursor);
+    const before = await page.evaluate(() => { const p = window.__dd.play.player; return { x: p.pos.x, z: p.pos.z, eye: p.eye }; });
+    await page.evaluate(() => { try { localStorage.removeItem("horrorstudio.saves." + ((window.__dd.S.game || {}).title || "game")); } catch (e) { } });
+    await press("KeyE");
+    await page.waitForFunction(() => window.__dd.play.player.sleeping && window.__dd.play.player.eye < 1 && !window.__dd.play.moving, null, { timeout: 8000 }).catch(async e => {
+      throw new Error("not lying down: " + await page.evaluate(() => { const rt = window.__dd.play, p = rt.player; return JSON.stringify({ sleeping: p.sleeping, eye: p.eye, target: rt.target && rt.target.userData.id, moving: !!rt.moving, busy: rt.busy, line: rt.hud.lineEl.textContent, ready: rt.ready(rt.byId.study_bed) }); })); });
+    const lying = await page.evaluate(() => ({ eye: window.__dd.play.player.eye, pitch: window.__dd.play.player.pitch }));
+    await page.waitForSelector(".ph-chapter.on", { timeout: 10000 });
+    const card = await page.evaluate(() => ({ t: document.querySelector(".ph-chapter-t").textContent, s: (document.querySelector(".ph-chapter-s") || {}).textContent,
+      black: +document.querySelector("#watchOv .black").style.opacity, save: JSON.parse(localStorage.getItem("horrorstudio.saves." + ((window.__dd.S.game || {}).title || "game")) || "{}").auto }));
+    await page.waitForFunction(() => !window.__dd.play.player.sleeping && !document.querySelector(".ph-chapter"), null, { timeout: 15000 });
+    const up = await page.evaluate(() => { const p = window.__dd.play.player; return { x: p.pos.x, z: p.pos.z, eye: p.eye, black: +document.querySelector("#watchOv .black").style.opacity }; });
+    console.log(`       lying: eye ${lying.eye.toFixed(2)} m, looking ${Math.round(lying.pitch)}° up; the card “${card.t}” · ${card.s} over black ${card.black}; autosave “${card.save && card.save.where}”`);
+    if (card.t !== "Later" || card.s !== "02:13" || card.black < 0.99 || !card.save || card.save.where !== "Later") throw new Error(JSON.stringify(card));
+    if (lying.eye > 0.9 || lying.pitch < 30) throw new Error("not lying " + JSON.stringify(lying));
+    if (up.black > 0.01 || Math.abs(up.eye - 1.65) > 0.05 || Math.hypot(up.x - before.x, up.z - before.z) > 0.05) throw new Error("not up " + JSON.stringify(up) + " " + JSON.stringify(before));
+  });
+  await step("a chapter changes the time of day behind its card", async () => {
+    const r = await page.evaluate(async () => { const rt = window.__dd.play, was = window.__dd.run.time; const p = rt.chapter("Test", { time: "dusk", secs: 0.2, save: false });
+      await new Promise(r => setTimeout(r, 1500)); const mid = window.__dd.run.time; await p; const t = window.__dd.run.time; rt.opts.setTime(was); return { was, mid, t }; });
+    if (r.t !== "dusk") throw new Error(JSON.stringify(r));
+  });
   await step("hiding: E gets into the locker (hiding height, its walls slats you see through, no walking), E gets out", async () => {
     const r = await goTo("hall_locker", 0.8);
     if (r.cursor !== "hide") throw new Error("cursor " + r.cursor);
@@ -370,6 +394,13 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await page.waitForTimeout(500);
     if (!(await flag("drawer_open"))) throw new Error("no flag");
     if (!(await page.evaluate(() => window.__dd.play.byId.cellar_key_pickup.visible))) throw new Error("the key isn't shown");
+  });
+  await step("the bed after the drawer's open: its if (!drawer_open) no longer holds, it says Not now and nothing happens", async () => {
+    const r = await goTo("study_bed", 0.9);
+    if (r.cursor !== "locked") throw new Error("cursor " + r.cursor);
+    await press("KeyE"); await page.waitForTimeout(400);
+    const s = await page.evaluate(() => { const rt = window.__dd.play; return { sleeping: !!rt.player.sleeping, line: rt.hud.lineEl.textContent }; });
+    if (s.sleeping || !/Not now/.test(s.line)) throw new Error(JSON.stringify(s));
   });
   await step("the cellar door is locked without the key", async () => {
     await goTo("cellar_door", 1.0);

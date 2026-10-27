@@ -53,6 +53,8 @@ export const SETTINGS = [
 ];
 const ROWS = SETTINGS.flatMap(p => p.groups.flatMap(g => g.rows));
 const SKEY = "horrorstudio.settings", saveKey = game => `horrorstudio.saves.${game}`;
+// the autosave slot (a chapter, a checkpoint): where the game was, its time, when
+export function autosave(game, where, secs) { const s = read(saveKey(game), {}); s.auto = { where: where || game, secs: secs || 0, at: Date.now() }; write(saveKey(game), s); }
 const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 export function loadSettings() { const s = read(SKEY, {}); for (const r of ROWS) if (s[r.id] === undefined) s[r.id] = r.def; return s; }

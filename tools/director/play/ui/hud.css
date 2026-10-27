@@ -227,3 +227,9 @@
 .play-hud.paused > :not(.ph-menu){visibility:hidden}
 /* a card or a choice is up: the world's marks step back (last, so it wins over their own states) */
 .play-hud.modal :is(.ph-cursor,.ph-prompt,.ph-seen){opacity:0}
+/* ---- a chapter's title card: in the middle over the dark, the title large and spaced, its sub (a time) small under it ---- */
+.play-hud .ph-chapter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;
+  opacity:0;transition:opacity .7s ease;color:var(--ph-text,#eee);text-shadow:var(--ph-text-shadow);z-index:5}
+.play-hud .ph-chapter.on{opacity:1}
+.play-hud .ph-chapter-t{font-family:var(--ph-title-font,var(--ph-font));font-size:calc(var(--ph-fs-l) * 2);letter-spacing:.32em;text-transform:uppercase;font-weight:300;padding-left:.32em}
+.play-hud .ph-chapter-s{font-family:var(--ph-ui-font,var(--ph-font));font-size:var(--ph-fs);letter-spacing:.2em;color:var(--ph-muted);font-variant-numeric:tabular-nums}

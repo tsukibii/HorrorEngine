@@ -13,7 +13,7 @@ import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt } from "./hud.js";
 import { Todo } from "./todo.js";
-import { pauseMenu } from "./menu.js";
+import { pauseMenu, autosave } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
 import { loadRules, boardCtx, Table } from "./boardgames.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
@@ -405,6 +405,35 @@ export class PlayRuntime {
     const p = this.player, st = p.stood; p.seat = null;
     if (st) return this.tween({ pos: st.pos, eye: st.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs });
   }
+  // sleeping (a bed, use: sleep): the player lies down on it looking up, and the view goes dark. The story's beat on its
+  // use plays a chapter, which wakes them; with none, they wake by themselves. `ready`: its `if` flags hold
+  ready(t) { const ifs = (t.userData.piece.d || {}).if; return flagsHold(Array.isArray(ifs) ? ifs : ifs ? [ifs] : [], this.flags); }
+  async sleep(t, s) {
+    const p = this.player, box = new THREE.Box3().setFromObject(t), at = box.getCenter(new THREE.Vector3());
+    const down = new THREE.Raycaster(new THREE.Vector3(at.x, box.max.y + 1, at.z), new THREE.Vector3(0, -1, 0));   // the mattress at its middle, not a headboard
+    const top = Math.min((down.intersectObject(t, true)[0] || { point: box.max }).point.y, box.min.y + s.mattress);   // a block stand-in's top is its headboard's
+    p.sleeping = { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw };
+    await this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: top - p.pos.y + s.eye, yaw: p.yaw, pitch: s.pitch, secs: s.secs });
+    await this.fade(1, s.dark);
+    this.wait(s.wake).then(() => { if (p.sleeping && !this.inChapter) this.wake(); });   // nothing played a chapter
+  }
+  async wake(secs = 1) {                            // the view comes back while they lie there, then they get up where they stood
+    const p = this.player, st = p.sleeping; if (!st) return;
+    await this.fade(0, secs); await this.wait(0.7);
+    await this.tween({ pos: st.pos, eye: st.eye, yaw: st.yaw, pitch: 0, secs: 1.0 }); p.sleeping = null;
+  }
+  // a chapter (`chapter`): the view goes dark, its title card ("Night 2", `sub` under it: "23:40") is held up, the time of
+  // day changes behind it (`time`), the game autosaves (unless `save: false`), and the view comes back (a sleeper wakes)
+  async chapter(title, a) {
+    this.inChapter = true; this.busy = true; this.keys = {};
+    await this.fade(1, 1);
+    if (a.time && this.opts.setTime) this.opts.setTime(a.time);
+    if (a.save !== false) autosave(this.gameTitle(), title, this.run ? this.run.secs + this.clock : this.clock);
+    await this.hud.chapter(title, a.sub, +(a.secs ?? 3));
+    this.inChapter = false; this.busy = false;
+    if (this.player.sleeping) await this.wake(1.2); else await this.fade(0, 1.2);
+  }
+  gameTitle() { return (this.story.game || {}).title || "game"; }
   // hiding: the player eases inside (its `inside` spot, else its middle facing its front), the eye at hiding height,
   // the look kept to a cone out of its door, the walls see-through (stage.seeThrough); getting out eases back
   async hide(t, s) {
@@ -514,13 +543,14 @@ export class PlayRuntime {
     return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && o !== held), false)[0] || null;
   }
   async use() {
+    if (this.player.sleeping || this.inChapter) return;
     const seat = this.player.seat;
     if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // E stands you up
     if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // E gets you out
     const t = this.target; if (!t) return;
     const ip = interactableOf(t, this);
     this.hud.press();
-    if (ip) await ip.use(t, this, this.set(ip.name));     // the use is done (seated, the door open, the note read) before the story hears it
+    if (ip && (await ip.use(t, this, this.set(ip.name))) === false) return;   // the use is done (seated, the door open, the note read) before the story hears it; false: nothing happened
     this.emit({ type: "use", id: t.userData.id });
   }
   updateCursor(dt) {
@@ -604,7 +634,7 @@ export class PlayRuntime {
     if (this.held) return;
     this.held = true; this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
-    const v = await pauseMenu(this.hud, { game: (this.story.game || {}).title || "game", where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock });
+    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock });
     this.held = false; this.busy = false; this.last = this.resumed = performance.now();
     if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
     if (v === "escaped") return;                     // closed by Esc: asking for the lock now, the browser would take the same Esc as leaving it
@@ -645,7 +675,7 @@ export class PlayRuntime {
       p.yaw = L.y0 + (L.y1 - L.y0) * k; p.pitch = L.p0 + (L.p1 - L.p0) * k; if (u >= 1) this.lookTween = null;
     }
     const feet = p.pos.clone();
-    if (!this.busy && !this.playing && !p.seat && !p.hiding && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
+    if (!this.busy && !this.playing && !p.seat && !p.hiding && !p.sleeping && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
     p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
     this.hud.setStance(p.hiding ? "hidden" : [p.crouched && "crouched", this.carried && "carrying"].filter(Boolean).join(" · "));
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {

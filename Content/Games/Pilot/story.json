@@ -588,6 +588,20 @@
         1.5
        ],
        "tag": "shelf"
+      },
+      {
+       "id": "study_bed",
+       "kit": "bed_single",
+       "at": [
+        2.0,
+        0.56
+       ],
+       "rot": 90,
+       "use": "sleep",
+       "if": [
+        "!drawer_open"
+       ],
+       "not_yet": "Not now. The key."
       }
      ]
     },
@@ -1346,6 +1360,23 @@
       },
       {
        "flag": "found_photo"
+      }
+     ]
+    },
+    {
+     "id": "b_nap",
+     "when": {
+      "use": "study_bed"
+     },
+     "optional": true,
+     "do": [
+      {
+       "chapter": "Later",
+       "sub": "02:13",
+       "secs": 2.5
+      },
+      {
+       "think": "I must have dozed off."
       }
      ]
     },

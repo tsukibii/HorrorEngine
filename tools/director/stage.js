@@ -132,6 +132,15 @@ export function flowOuts(story, nid) {
   }
   return out;
 }
+// the time of day a task's chapters leave it at (its last `chapter` with a `time`; storylib.chapter_time), or null
+export function chapterTime(story, n) {
+  if (!n || n.type !== "stitch") return null;
+  let out = null;
+  const walk = l => { for (const a of l || []) { if (!a || typeof a !== "object") continue; if (a.chapter !== undefined && TIMES.includes(a.time)) out = a.time;
+    for (const o of a.options || []) walk(o.do); if (a.todo !== undefined && a.on) for (const x of Object.values(a.on)) walk(x); } };
+  for (const b of ((story.stitches || {})[n.ref] || {}).beats || []) walk(b.do);
+  return out;
+}
 export function flowTimes(story) {        // {nid: {time, from (the scene node that set it, or "game"), own, paths}}
   const flow = story.flow || {}, scenes = story.scenes || {}, game = story.game || {}, came = {};
   const ownOf = n => n.type === "scene" ? ((scenes[n.ref] || {}).time || null) : null;
@@ -139,8 +148,8 @@ export function flowTimes(story) {        // {nid: {time, from (the scene node t
   for (let i = 0; i < todo.length; i++) {   // breadth first: the nearest scene before a node wins
     const [nid, t, src] = todo[i]; if (!flow[nid]) continue;
     const seen = came[nid] || (came[nid] = new Map()); if (seen.has(t)) continue; seen.set(t, src);
-    const own = ownOf(flow[nid]);
-    for (const to of flowOuts(story, nid)) todo.push([to, own || t, own ? nid : src]);
+    const on = ownOf(flow[nid]) || chapterTime(story, flow[nid]);   // a scene's own time, or the one a task's chapter leaves (a night's sleep)
+    for (const to of flowOuts(story, nid)) todo.push([to, on || t, on ? nid : src]);
   }
   const out = {};
   for (const [nid, seen] of Object.entries(came)) {

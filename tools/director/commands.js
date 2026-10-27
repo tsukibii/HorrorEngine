@@ -156,6 +156,10 @@ export const ACTIONS = [
     fields: [{ key: "lookat", label: "Look at", kind: "thing", verb: true }, { key: "secs", label: "for (s)", kind: "number", ph: "1", opt: true },
       { key: "lock", label: "hold the view", kind: "bool", opt: true }],
     make: () => ({ lookat: "", secs: 1 }), text: (a, n) => `Turn the view to ${n("thing", a.lookat)} (${a.secs ?? 1} s)` },
+  { verb: "chapter", label: "Chapter card", icon: "film", group: "time", hint: "a title card over the dark (“Night 2”, “23:40” under it): the time of day changes behind it, the game autosaves; a sleeper wakes in their bed",
+    fields: [{ key: "chapter", label: "Title", kind: "text", verb: true, ph: "Night 2" }, { key: "sub", label: "under it", kind: "text", ph: "23:40", opt: true },
+      { key: "time", label: "the time of day after it", kind: "choice", opts: ["day", "dusk", "night"], opt: true }, { key: "secs", label: "held (s)", kind: "number", ph: "3", opt: true }],
+    make: () => ({ chapter: "" }), text: a => `Chapter: ${q(a.chapter || "…")}${a.sub ? " · " + a.sub : ""}${a.time ? ", then " + a.time : ""}${a.save === false ? " (no autosave)" : ""}` },
   { verb: "seq", label: "Level sequence", icon: "scene", group: "time", hint: "an Unreal level sequence by name (a title card on the desk)",
     fields: [{ key: "seq", label: "Sequence", kind: "text", verb: true }], make: () => ({ seq: "" }), text: a => `Sequence ${a.seq || "…"}` },
 

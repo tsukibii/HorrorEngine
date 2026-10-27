@@ -2,6 +2,7 @@
 // "not in Play yet", so a stitch still runs end to end and the gap is visible.
 import { register, part, verbOf } from "./parts.js";
 import { addKarma } from "../stage.js";
+import { autosave } from "./menu.js";
 
 export async function run(act, rt) {
   const v = verbOf("action", act);
@@ -48,7 +49,8 @@ register("action", "fade", { run: (v, a, rt) => rt.fade(v === "out" ? 1 : 0, +(a
 register("action", "lookat", { run: (v, a, rt) => rt.lookAt(v, +(a.secs ?? 1)) });
 register("action", "sound", { run: (v, a, rt) => rt.sound(v, a.at) });      // off the Studio's sound shelf when its file is sfx/<name> (sfx.js)
 register("action", "music", { run: (v, a, rt) => rt.hud.log(`music: ${v}`) });
-register("action", "checkpoint", { run: (v, a, rt) => rt.hud.log("checkpoint") });
+register("action", "checkpoint", { run: (v, a, rt) => { autosave(rt.gameTitle(), rt.stitchTitle, rt.run ? rt.run.secs + rt.clock : rt.clock); rt.hud.log("checkpoint"); } });
+register("action", "chapter", { run: (v, a, rt) => rt.chapter(v, a) });   // a title card ("Night 2"), the time of day, an autosave
 register("action", "done", { run: (v, a, rt) => rt.finish() });
 register("action", "scene", { run: (v, a, rt) => rt.scene(v) });          // a triggered scene, then play goes on
 register("action", "behave", { run: (v, a, rt) => rt.behave(v, a) });      // a cast member's behaviour: {"behave": "mari", "as": "path", "route": ...}

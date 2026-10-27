@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -1999,7 +1999,7 @@ async function watchStitch(st, nid, n) {
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
   if (!RUN.play) {
-    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } }, files: FILES,
+    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, setTime: t => { RUN.time = t; watchStage.setTime(t); }, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } }, files: FILES,
       onBeat: (st, b, secs) => DBG.fired(st, b, secs) });
     for (const i of RUN.items || []) RUN.play.items.add(i);   // what a start from the debug panel holds
   }
@@ -2071,7 +2071,7 @@ async function watch(fromNid, snap) {
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
       await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next;
       if (RUN) RUN.afterScene = { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera.clone() }; }
-    else if (n.type === "stitch") nid = await watchStitch(S.stitches[n.ref] || {}, nid, n);
+    else if (n.type === "stitch") { const ct = chapterTime(S, n); nid = await watchStitch(S.stitches[n.ref] || {}, nid, n); if (RUN && ct) { RUN.time = ct; watchStage.setTime(ct); } }   // a chapter's time from here on
     else if (n.type === "choice") {
       if (n.by === "act" && $("#wPlay").checked) nid = (await playChoice(n)).to;
       else if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }

@@ -332,5 +332,22 @@ print(json.dumps([LF.life_of({"kit": n}) for n in json.load(sys.stdin)]))`], { i
     ? ok("a tick of no task, a task's trigger naming nothing, a ticked trigger of no task: found live and by the story check") : fail("bad todos: " + ps2.join("; ") + " / " + out2.split("\n").filter(l => /todo|tick|nowhere/.test(l)).join(" | "));
 }
 
+// nights as chapters: a task's chapter with a time carries that time on to the nodes after it, the same on the desk
+// (stage.js flowTimes) and in the story check (storylib.flow_times); a chapter's fields are checked
+{
+  const { flowTimes } = await import("./stage.js");
+  const S = story("Pilot"), st = S.stitches.t_search;
+  st.beats.push({ id: "b_t_night2", when: { use: "study_bed" }, optional: true, do: [{ chapter: "Morning", sub: "07:10", time: "day" }] });
+  const js = flowTimes(S), py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+print(json.dumps(L.flow_times(json.load(sys.stdin))))`], { input: JSON.stringify(S), encoding: "utf8" }));
+  const same = Object.keys(js).every(n => js[n].time === (py[n] || {}).time);
+  js.n_search.time === "night" && js.n_knock.time === "day" && js.n_knock.from === "n_search" && same && /STORY ok/.test(storyCheck("Pilot", S))
+    ? ok("a chapter's time carries on after its task (day after the search's night), the desk and the story check agree") : fail(`chapter times: ${JSON.stringify({ search: js.n_search, knock: js.n_knock, same })}`);
+  st.beats[st.beats.length - 1].do[0] = { chapter: "", time: "noon", secs: 40 };
+  const out = storyCheck("Pilot", S);
+  /chapter needs its title/.test(out) && /chapter time 'noon'/.test(out) && /chapter secs/.test(out) ? ok("a chapter with no title, a time that isn't one, a card held 40 s: found by the story check") : fail("bad chapter: " + out.split("\n").filter(l => /chapter/.test(l)).join(" | "));
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

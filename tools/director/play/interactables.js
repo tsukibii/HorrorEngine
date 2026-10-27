@@ -72,6 +72,14 @@ register("interactable", "sit", {                 // a chair, a sofa, a bed's ed
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.seat === t ? s.stand : s.label }),
   use: (t, rt, s) => (rt.player.seat === t ? rt.stand(s) : rt.sit(t, s)),
 });
+register("interactable", "sleep", {               // a bed: E lies the player down on it and the view goes dark (runtime.sleep); the story's beat on its use plays the next chapter
+  settings: { cursor: "sit", label: "Sleep", notYet: "Not tired yet", thought: "I'm not tired yet.", eye: 0.14, mattress: 0.55, pitch: 55, secs: 1.1, dark: 1.4, wake: 1.0 },   // eye: over the mattress (at most `mattress` m up); pitch: looking up
+  prompt: (t, rt, s) => (rt.ready(t) ? { cursor: s.cursor, label: s.label } : { cursor: "locked", label: s.notYet }),
+  use: (t, rt, s) => {                             // not ready (its `if` flags): a thought, and the story hears nothing
+    if (!rt.ready(t)) { rt.hud.shake(); rt.hud.line((t.userData.piece.d || {}).not_yet || s.thought, "", 1.6); return false; }
+    return rt.sleep(t, s);
+  },
+});
 register("interactable", "roll", {                // a die: E throws it from your hand; its face is read when it settles
   settings: { cursor: "take", label: "Roll", speed: 2.6, lift: 1.2, spin: 14 },  // m/s along the look, m/s up, rad/s
   prompt: (t, rt, s) => (rt.physics && rt.physics.rolling(t) ? { cursor: "none", label: "" } : { cursor: "roll", label: s.label }),

@@ -81,6 +81,12 @@ export class Hud {
     this.todoEl.classList.toggle("on", items.length > 0);
     if (fresh && items.length) { this.todoEl.classList.add("fresh"); clearTimeout(this.todoTimer); this.todoTimer = setTimeout(() => this.todoEl.classList.remove("fresh"), 3000); }
   }
+  // a chapter's title card, held up in the middle over the dark ("Night 2", its sub under it: "23:40"); resolves when gone
+  chapter(title, sub, secs) {
+    const c = mk("div", "ph-chapter"); c.append(mk("div", "ph-chapter-t", title || ""), ...(sub ? [mk("div", "ph-chapter-s", sub)] : []));
+    this.root.append(c); void c.offsetWidth; c.classList.add("on");
+    return new Promise(done => setTimeout(() => { c.classList.remove("on"); setTimeout(() => { c.remove(); done(); }, 700); }, 700 + secs * 1000));
+  }
   line(text, who, secs) { paintLine(this.lineEl, text, who); this.lineUntil = performance.now() + secs * 1000; }
   log(text) {
     const e = mk("div", "", text); this.logEl.append(e);

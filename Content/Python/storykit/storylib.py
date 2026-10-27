@@ -15,7 +15,7 @@ WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
-        "carry", "game"}
+        "carry", "game", "sleep"}
 PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
 BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/
 
@@ -279,6 +279,28 @@ def flow_outs(story, nid):
     return out
 
 
+def chapter_time(story, n):
+    """The time of day a stitch's chapters leave it at (its last `chapter` with a `time`), or None."""
+    if n.get("type") != "stitch":
+        return None
+    out = None
+
+    def walk(acts):
+        nonlocal out
+        for a in acts or []:
+            if not isinstance(a, dict):
+                continue
+            if "chapter" in a and a.get("time") in TIMES:
+                out = a["time"]
+            for o in a.get("options") or []:
+                walk(o.get("do") if isinstance(o, dict) else None)
+            for x in (a.get("on") or {}).values() if a.get("todo") is not None and isinstance(a.get("on"), dict) else []:
+                walk(x)
+    for b in (story.get("stitches", {}).get(n.get("ref")) or {}).get("beats", []):
+        walk(b.get("do"))
+    return out
+
+
 def flow_times(story):
     """Each flow node's time of day: a scene's own `time`, else the time it was when the flow got there (the scene it
     branched from, back to game.time). {nid: {"time", "from" (the scene node that set it, or "game"), "own" (the
@@ -296,8 +318,9 @@ def flow_times(story):
         came[nid][t] = src
         n = flow[nid]
         own = (scenes.get(n.get("ref")) or {}).get("time") if n.get("type") == "scene" else None
+        on = own or chapter_time(story, n)              # a scene's own time, or the one a task's chapter leaves (a night's sleep)
         for to in flow_outs(story, nid):
-            todo.append((to, own or t, nid if own else src))
+            todo.append((to, on or t, nid if on else src))
     out = {}
     for nid, seen in came.items():
         n = flow[nid]
