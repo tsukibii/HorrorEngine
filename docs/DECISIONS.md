@@ -2,6 +2,23 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, notes (the whole story written on the phone; choices at the bottom centre)
+
+- **The story written in the phone's notes app, imported into the writers' room**: "I want to be able to write out the
+  whole story in notes on my phone and import it into writers app into a fully fledged story as I like writing on my
+  phone ... come up with a syntax system I can use and I write my whole script in notes". Things are names, not assets:
+  "items etc should be treated as variable names which are small/medium block items that will be replaced with the
+  real visual, location etc later"; "basic Chilla's type actions to do with items, open, close".
+- **The player answers with an act and a thought, not a line**: "rather than writing player dialogue for optional
+  answers/responses I like more of a `[ Greet ] She's probably cold, I should let her inside --- [ Question ] She looks
+  different`. So for player it's the action as a response with a bit of internal monologue". Their own example
+  (thoughts in quotes, `*knock, knock*`, `*open door*`, `Hidden Timed Task - Clean up`, `*Enter Name*`, X for the
+  name) is the syntax's base: docs/NOTES_SYNTAX.md, the phone sheet https://claude.ai/artifact/846Yz5K8LXSQv3YcKsDSiK.
+- **Choices at the bottom centre**: "We will need to update the UI since we moved away from voice acted lines to
+  multiple choice and player choices to be at the bottom centred of the frame (with padding) so it flows better". Every
+  choice (a reply, an `ask`, a timed choice, a board game's call) sits under its question in the footer, at the bottom
+  centre; the camera's focus still holds on whoever asks.
+
 ## 2026-10-27, the change of course (the writers' room is yours: a flowchart you draw)
 
 - **The story is written by the user, as a flowchart**: "I want to change the writers room so the entire story gets

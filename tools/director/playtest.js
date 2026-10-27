@@ -66,7 +66,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const t0 = Date.now();
     while (Date.now() - t0 < ms) {
       if (await page.evaluate(() => !!(window.__dd.play && window.__dd.play.active))) return;
-      if (await page.$(".ph-float .ph-opt")) await page.keyboard.press("Digit1");   // a scene's choice: the first answer (the grab's "Let go of me.")
+      if (await page.$(".ph-dock .ph-opt")) await page.keyboard.press("Digit1");   // a scene's choice: the first answer (the grab's "Let go of me.")
       else if (await page.$(".qte")) {
         for (let i = 0; i < 6; i++) { await page.keyboard.press("KeyE"); await page.keyboard.press("Space"); }
         await page.mouse.click(700, 400);
@@ -103,7 +103,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   const gameWait = async secs => {
     const c0 = await page.evaluate(() => window.__dd.play.clock);
     try { await page.waitForFunction(([c0, s]) => !window.__dd.play.active || window.__dd.play.clock - c0 >= s, [c0, secs], { timeout: 60000 }); }   // or play ended (a walk that chose); 60 s: a software GPU late in the run draws 2 frames a second
-    catch (e) { throw new Error(`the play clock stopped (from ${c0.toFixed(2)}): ${await page.evaluate(() => { const rt = window.__dd.play; return JSON.stringify({ active: rt.active, held: rt.held, busy: rt.busy, stopped: rt.stopped, clock: rt.clock, menu: !!document.querySelector(".ph-menu"), panel: !!document.querySelector(".ph-panel,.ph-float"), trail: (window.__dd.run || {}).trail, inside: [...rt.inside], at: [+rt.player.pos.x.toFixed(2), +(-rt.player.pos.z).toFixed(2)] }); })}`); }
+    catch (e) { throw new Error(`the play clock stopped (from ${c0.toFixed(2)}): ${await page.evaluate(() => { const rt = window.__dd.play; return JSON.stringify({ active: rt.active, held: rt.held, busy: rt.busy, stopped: rt.stopped, clock: rt.clock, menu: !!document.querySelector(".ph-menu"), panel: !!document.querySelector(".ph-panel,.ph-dock"), trail: (window.__dd.run || {}).trail, inside: [...rt.inside], at: [+rt.player.pos.x.toFixed(2), +(-rt.player.pos.z).toFixed(2)] }); })}`); }
   };
   const hold = async (key, secs) => { await page.keyboard.down(key); try { await gameWait(secs); } finally { await page.keyboard.up(key); } };   // a walk of `secs` of play
   const flag = f => page.evaluate(f => window.__dd.run.flags.has(f), f);
@@ -181,15 +181,16 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (r.run !== "Mika" || !r.think || r.panel || !ph) throw new Error(JSON.stringify(Object.assign(r, { ph })));
   });
   await step("a behaviour: Mari walks her route up and down the hall (path, pingpong, a wait in a pose)", () => onRoute("the search"));
-  await step("ask: the answers float beside Mari, the question in the footer; 2 answers, its do runs and answered is heard", async () => {
+  await step("ask: the question in the footer, its answers right under it at the bottom centre, the focus on Mari; 2 answers, its do runs and answered is heard", async () => {
     await page.evaluate(() => { const rt = window.__dd.play; rt.behave("mari", { as: "idle", at: "hall_mari_spot" }); rt.place(new (rt.player.pos.constructor)(2, 0, -2.6), 90, 0); rt.setFlag("ask_now"); });
-    await page.waitForSelector(".ph-float .ph-opt", { timeout: 60000 }); await page.waitForTimeout(300);
-    const f = await page.evaluate(() => { const rt = window.__dd.play, w = document.querySelector(".ph-float");
-      return { centre: w.classList.contains("centre"), focus: rt.hud.root.dataset.focus, line: rt.hud.lineEl.textContent, opts: [...w.querySelectorAll(".ph-opt")].map(o => o.textContent) }; });
-    if (f.centre || f.focus !== "speaker") throw new Error("not beside her " + JSON.stringify(f));
+    await page.waitForSelector(".ph-dock .ph-opt", { timeout: 60000 }); await page.waitForTimeout(300);
+    const f = await page.evaluate(() => { const rt = window.__dd.play, w = document.querySelector(".ph-dock .ph-choice"), r = w.getBoundingClientRect(), R = rt.hud.root.getBoundingClientRect(), L = rt.hud.lineEl.getBoundingClientRect();
+      return { inFooter: !!w.closest(".ph-footer"), off: Math.round(r.left + r.width / 2 - (R.left + R.width / 2)), below: Math.round(r.top - L.bottom), pad: Math.round(R.bottom - r.bottom),
+        focus: rt.hud.root.dataset.focus, line: rt.hud.lineEl.textContent, opts: [...w.querySelectorAll(".ph-opt")].map(o => o.textContent) }; });
+    if (!f.inFooter || Math.abs(f.off) > 2 || f.below < 0 || f.pad < 16 || f.focus !== "speaker") throw new Error("not at the bottom centre under the line, the focus on her " + JSON.stringify(f));
     if (!/Mari/.test(f.line) || f.opts.length !== 2) throw new Error("footer or options " + JSON.stringify(f));
     await page.keyboard.press("Digit2");
-    await page.waitForFunction(() => window.__dd.run.flags.has("said_go") && window.__dd.run.flags.has("heard_go") && !document.querySelector(".ph-float"), null, { timeout: 60000 });
+    await page.waitForFunction(() => window.__dd.run.flags.has("said_go") && window.__dd.run.flags.has("heard_go") && !document.querySelector(".ph-dock"), null, { timeout: 60000 });
     await page.evaluate(() => window.__dd.play.behave("mari", { as: "path", route: "r_hall" }));
   });
   await step("sitting: E sits (the eye at sitting height), E stands", async () => {
@@ -278,8 +279,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const name = await page.textContent(".ph-prompt .ph-name");
     if (r.cursor !== "use" || name !== "Chō-han") throw new Error(`cursor ${r.cursor}, its name ${name}`);
     await press("KeyE");
-    await page.waitForSelector(".ph-float .ph-opt", { timeout: 90000 });
-    const at = await page.evaluate(() => { const rt = window.__dd.play, t = rt.byId.hall_table; return { playing: rt.playing, eye: rt.player.eye, pitch: rt.player.pitch, opts: [...document.querySelectorAll(".ph-float .ph-opt")].map(o => o.textContent),
+    await page.waitForSelector(".ph-dock .ph-opt", { timeout: 90000 });
+    const at = await page.evaluate(() => { const rt = window.__dd.play, t = rt.byId.hall_table; return { playing: rt.playing, eye: rt.player.eye, pitch: rt.player.pitch, opts: [...document.querySelectorAll(".ph-dock .ph-opt")].map(o => o.textContent),
       near: Math.hypot(rt.player.pos.x - t.position.x, rt.player.pos.z - t.position.z), pieces: rt.stage.world.children.filter(o => o.isGroup && o.children.length >= 3).length }; });
     if (at.playing !== "hall_table" || !(at.pitch < -15) || at.near > 1.1 || at.opts.join() !== "Chō (even),Han (odd)") throw new Error(`at the table: ${JSON.stringify(at)}`);
     await page.keyboard.press("Digit1");                 // chō

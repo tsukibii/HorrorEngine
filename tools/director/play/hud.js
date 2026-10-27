@@ -1,7 +1,7 @@
 // The Play HUD (GAMEPLAY_PLAN §4, §10). Plain HTML; every colour, radius and shadow comes from the theme
 // (play/ui/themes/<name>.css), so a game can switch themes. Four places, one rule each (play/ui/hud.css says how):
 // on the thing (the reticle, and the prompt floating where you'd put your hand), the corners (the game talking:
-// objective, timer, log, stance), the footer (people talking; choices float on the thing or beside who asks), the middle (a card held up to read).
+// objective, timer, log, stance), the footer (people talking; a choice's answers under its question, at the bottom centre), the middle (a card held up to read).
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
 const FOCUS_MS = 350;                               // a glance doesn't pull focus, a held look does
@@ -165,13 +165,13 @@ export class Hud {
     });
   }
 
-  // a multiple choice (the story's `ask`): the question is the footer's line (who asks it above, its Japanese `ja`, out
-  // of the world), `secs` times it (`def`, an index, when it runs out), the options float in
-  // the world (see `floating`): beside whoever asks (spec.anchor() each frame, {x, y, flip, fx, fy, speaker}), at the
-  // thing it's about, or under the reticle; resolves with the index picked
+  // a multiple choice (the story's `ask`): the question is the footer's line (who asks it above, its Japanese `ja`), the
+  // options right under it at the bottom centre (see `docked`), `secs` times it (`def`, an index, when it runs out); the
+  // camera's focus holds on whoever asks (spec.anchor() each frame, {x, y, fx, fy, speaker}) or the thing it's about;
+  // resolves with the index picked
   choose(spec) {
     return new Promise(done => {
-      const c = chooser(Object.assign({ timed: !!spec.secs }, spec), i => finish(i)), kd = c.keys, f = floating(this.root, c, spec.anchor);
+      const c = chooser(Object.assign({ timed: !!spec.secs }, spec), i => finish(i)), kd = c.keys, f = docked(this.root, c, spec.anchor);
       if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who, spec.ja); this.lineUntil = 0; }
       let over = false, t0 = performance.now();
       const tick = () => { if (over) return; const u = (performance.now() - t0) / 1000 / spec.secs; c.bar(1 - u); if (u >= 1) return finish(spec.def ?? 0); requestAnimationFrame(tick); };
@@ -183,26 +183,20 @@ export class Hud {
   }
 }
 
-// A choice's panel floating in the world, in a `.play-hud` root: the mark on the point (a shoulder, a thing) and the
-// panel beside it, kept on the screen and above the footer; `anchor()` (or null: under the middle of the view) is asked
-// every frame, so it follows whoever it's beside. The camera's focus holds on them meanwhile (data-focus, --fx/--fy).
-// Returns {el, remove()}
-export function floating(root, c, anchor) {
-  const wrap = mk("div", "ph-float"); wrap.append(mk("span", "ph-mark"), c.el); root.append(wrap);
+// A choice's panel docked at the bottom centre of a `.play-hud` root, in its footer under the line (DECISIONS
+// 2026-10-27, notes: the lines are text now, so the question reads straight on into its answers). `anchor()` (or null:
+// nobody, nothing) is asked every frame for the camera's focus: it holds on whoever asks, or the thing it's about,
+// while the choice is up (data-focus, --fx/--fy). Returns {el, remove()}
+export function docked(root, c, anchor) {
+  const foot = root.querySelector(".ph-footer") || root, wrap = mk("div", "ph-dock"); wrap.append(c.el); foot.append(wrap);
   let raf = 0;
-  const place = () => {
-    const W = root.clientWidth, H = root.clientHeight, m = 40, w = wrap.offsetWidth, h = wrap.offsetHeight;
-    const at = (anchor && anchor()) || null, centre = !at;
-    wrap.classList.toggle("centre", centre); wrap.classList.toggle("flip", !!(at && at.flip));
-    let x = centre ? W / 2 : at.x, y = centre ? H * 0.62 : at.y;
-    if (!centre) x = at.flip ? Math.max(x, m + w) : Math.min(x, W - m - w);
-    y = Math.max(m + h / 2, Math.min(H * 0.72 - h / 2, y));
-    wrap.style.left = x + "px"; wrap.style.top = y + "px";
-    root.dataset.focus = centre ? "centre" : at.speaker ? "speaker" : "thing";
-    if (!centre) { root.style.setProperty("--fx", (at.fx ?? at.x) + "px"); root.style.setProperty("--fy", (at.fy ?? at.y) + "px"); }
-    raf = requestAnimationFrame(place);
+  const focus = () => {
+    const at = (anchor && anchor()) || null;
+    root.dataset.focus = !at ? "centre" : at.speaker ? "speaker" : "thing";
+    if (at) { root.style.setProperty("--fx", (at.fx ?? at.x) + "px"); root.style.setProperty("--fy", (at.fy ?? at.y) + "px"); }
+    raf = requestAnimationFrame(focus);
   };
-  place();
+  focus();
   return { el: wrap, remove: () => { cancelAnimationFrame(raf); wrap.remove(); root.dataset.focus = ""; } };
 }
 // beside a person: the shoulder on the side of the screen with more room, at shoulder height, the panel outward; the
@@ -219,7 +213,7 @@ export function besideAt(cam, f, W, H) {
 // The options of a multiple choice: ONE glass panel, side by side with a dash between each pair (equal columns, so
 // the dashes stay centred), the one under the pointer (or the keys: A/D, arrows; 1-9 or Enter/Space picks) bright and
 // the rest dimmed. spec {options: [text or {label, sub}], timed}; `pick(i)` gets the index. Returns {el, keys, bar}:
-// the panel (floating in the world, see `floating`; the pause menu's Quit keeps it in its footer), the keydown handler,
+// the panel (docked at the bottom centre, see `docked`; the pause menu's Quit keeps it in its own footer), the keydown handler,
 // and the timer line (1 full, 0 out). The Play HUD and the desk's Watch (replies, timed choices) both use it.
 export function chooser(spec, pick) {
   const box = mk("div", "ph-choice"), opts = [], row = mk("div", "ph-opts"), bar = mk("div", "ph-meter on"), fill = mk("div");

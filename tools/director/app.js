@@ -6,7 +6,7 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
-import { chooser, loadTheme, paintLine, floating, besideAt, setName, named } from "./play/hud.js";
+import { chooser, loadTheme, paintLine, docked, besideAt, setName, named } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
 import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
@@ -1796,10 +1796,10 @@ function watchHud() {
   if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }
   return WHUD;
 }
-// a choice in the Watch floats beside whoever asks (or under the middle of the view), as in Play
+// a choice in the Watch sits at the bottom centre under the line, the camera's focus on whoever asks, as in Play
 function choiceBox(spec, pick, who) {
   const c = chooser(spec, pick), root = watchHud().root, f = who && watchStage.cast[who];
-  const fl = floating(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
+  const fl = docked(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
   return { box: { remove: fl.remove }, c };
 }
 // a reply: two or three answers, the Japanese over the English; she waits (her idle keeps going), then carries on

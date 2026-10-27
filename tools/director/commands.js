@@ -75,7 +75,7 @@ export const ACTIONS = [
   { verb: "name", label: "Ask the player's name", icon: "person", group: "story", hint: "a box to type their name in; {name} in any line, thought or answer shows it from then on (game.player_name until then)",
     fields: [{ key: "name", label: "The question", kind: "text", verb: true, ph: "What's your name?" }, { key: "default", label: "if nothing is typed", kind: "text", opt: true, ph: "the game's player name" }],
     make: () => ({ name: "What's your name?" }), text: a => `Ask the player's name${a.name ? " (" + q(a.name) + ")" : ""}${a.default ? `, else ${q(a.default)}` : ""}` },
-  { verb: "ask", label: "Ask a question", icon: "ask", group: "story", hint: "2 to 4 answers floating in the world; each answer runs its own commands",
+  { verb: "ask", label: "Ask a question", icon: "ask", group: "story", hint: "2 to 4 answers at the bottom centre under the question; each answer runs its own commands",
     fields: [{ key: "ask", label: "Id", kind: "text", verb: true, ph: "q_stay" }, { key: "text", label: "Question (a thought)", kind: "text", opt: true },
       { key: "line", label: "or a spoken line", kind: "line", opt: true }, { key: "who", label: "beside", kind: "cast", opt: true },
       { key: "on", label: "or at", kind: "thing", opt: true }, { key: "secs", label: "timed (s)", kind: "number", opt: true },

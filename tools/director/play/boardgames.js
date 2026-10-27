@@ -1,5 +1,5 @@
 // Board games in Play (Content/Studio/BoardGames/README.md): a table's game (use: game) is a rules module that decides
-// everything and says so through `ctx`: lines, choices floating at the table, and the pieces on it (dice, cards, cups,
+// everything and says so through `ctx`: lines, choices (at the bottom centre, the focus on the table), and the pieces on it (dice, cards, cups,
 // a ball, a revolver), small meshes made here and moved on the game's clock (runtime.anim), so the pause menu holds
 // them too. The rules never touch three.js: the same module plays in node's BOARD test on a table that only pretends.
 import * as THREE from "three";

@@ -460,11 +460,11 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
   (walking into a place, sitting down, using a thing), blended in from where they are and back out to play, and the
   stitch goes on. `{"when": {"use": "sofa"}, "do": [{"scene": "s_talk"}]}`. Its `sets` and events count as usual. A
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
-- `ask`: a **question with answers**, asked in play. The answers float in the world, in one panel, the dashes
-  between them: beside `who` (a cast member: at their shoulder, on the side of the frame with more room, the
-  camera's focus on their face), or at `on` (a placed thing it's about), or under the reticle with neither. The
-  question is the footer's line, like every line: `line` (a line id: spoken, its Japanese over it, the speaker's name
-  above) or `text` (a thought). 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
+- `ask`: a **question with answers**, asked in play. The question is the footer's line, like every line: `line` (a
+  line id: spoken, its Japanese over it, the speaker's name above) or `text` (a thought); the answers sit right under
+  it at the bottom centre of the frame, in one panel, the dashes between them (DECISIONS 2026-10-27, notes: the lines
+  are text, so the question reads on into its answers), while the camera's focus holds on `who` (a cast member's face)
+  or `on` (a placed thing it's about). A reply in a scene (§9.9) and a timed choice show theirs the same way. 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
   (actions run when it's picked). `secs` times it, with `default` (an answer's id) taken when time runs out. Picking
   one is heard as `{"answered": ask, "option": id}`, so a later beat in the stitch can follow it; to branch the
   story, the answer's `do` sets a flag and a flag choice (§5) follows it.
