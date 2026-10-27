@@ -93,8 +93,10 @@ export function faceOf(root, F = null) {
       cs.push(c); sl.push(...s); ws.push(W.getX(c), W.getY(c), W.getZ(c));
     }
     let lo = Infinity, hi = -Infinity; for (let c = 0; c < P.count; c++) { lo = Math.min(lo, P.getY(c)); hi = Math.max(hi, P.getY(c)); }
-    out.push({ mesh: o, F, cs: Uint32Array.from(cs), sl: Int32Array.from(sl), ws: Float32Array.from(ws), base: Float32Array.from(P.array), scale: (hi - lo) / F.tall, eyes });
+    out.push({ mesh: o, F, cs: Uint32Array.from(cs), sl: Int32Array.from(sl), ws: Float32Array.from(ws), base: Float32Array.from(P.array), tall: hi - lo, eyes });
   });
+  const tall = Math.max(0, ...out.filter(t => t.F).map(t => t.tall));   // the body's height (the skin's): MHR's moves scaled by it, brows and lashes too
+  for (const t of out) if (t.F) t.scale = tall / t.F.tall;
   return out;
 }
 export function setFace(targets, w72) {

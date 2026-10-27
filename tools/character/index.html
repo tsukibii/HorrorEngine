@@ -2562,6 +2562,18 @@ function fileLook(x, g) {
   }
   return L;
 }
+// brows and lashes in the file ride the face's 72 shapes where the desk plays them (tools/shared/face.js): each point
+// takes the move of the nearest MHR point the shapes move (_MHRP, _MHRW, as the skin's corners carry theirs), so a blink
+// carries the lashes down with the lid and a raised brow its hairs
+function faceRide(g) {
+  const P = g.attributes.position, n = P.count, I = new Float32Array(n * 3), W = new Float32Array(n * 3);
+  for (let v = 0; v < n; v++) {
+    const x = P.getX(v), y = P.getY(v), z = P.getZ(v); let best = Infinity, at = 0;
+    for (let k = 0; k < EIDX.length; k++) { const p = EIDX[k] * 3, d = (POS[p] - x) ** 2 + (POS[p + 1] - y) ** 2 + (POS[p + 2] - z) ** 2; if (d < best) { best = d; at = EIDX[k]; } }
+    I[v * 3] = I[v * 3 + 1] = I[v * 3 + 2] = at; W[v * 3] = 1;
+  }
+  g.setAttribute("mhrp", new THREE.BufferAttribute(I, 3)); g.setAttribute("mhrw", new THREE.BufferAttribute(W, 3));
+}
 function exportSkin() {
   const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [], srcI = [], srcW = [];
   const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
@@ -2703,6 +2715,7 @@ function exportRig(root, parts) {
       } else g.applyMatrix4(M);
       for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
       const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;
+      if (Object.values(BLM).includes(o)) faceRide(g);   // brows and lashes ride the face's shapes in the desk
       wear(g, fileLook(x, g), x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
     }
   }
