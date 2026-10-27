@@ -6,7 +6,7 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
-import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
+import { chooser, loadTheme, paintLine, floating, besideAt, setName, named } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
 import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
@@ -1298,7 +1298,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   if (tab === "line") {
     const oldTake = takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id);
     pane.append(el("div", { class: "row" }, el("span", { class: "lab" }, "id"), txt(c, "id", { style: "width:62px", title: "the clip's id: its take is found by it (game_scene_version_id)", after: () => { if (TAKES[oldTake]) alert(`The take ${TAKES[oldTake].name} was found by the old id: rename the file to ${takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id)} too, or it won't match.`); OPEN[sid].id = c.id; renderInspector(); } }),
-      el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: renderInspector }),
+      el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: () => { if (c.who !== "player") delete c.think; renderInspector(); } }),
+      c.who === "player" ? chk(c, "think", "a thought (shown, never said)", renderInspector) : null,
       el("span", { class: "lab" }, "length"), txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:64px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s")));
     pane.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
     if ((S.format || 2) >= 3) pane.append(takeSec(c));
@@ -1585,8 +1586,8 @@ function scrubTo(T) {
   paintOv("#stageOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${st.clipSeg.clip.id} · ${st.clipSeg.clip.shot || "free"} · ${st.who || ""}` : "", black: st.black, tag: st.seg ? (st.seg.type === "seam" ? "seam: " + st.seg.seam.kind : st.seg.type === "event" ? "⚡ " + st.seg.event.type : "") : "" });
 }
 function paintOv(sel, o) {
-  const ov = $(sel); ov.querySelector(".sub").textContent = o.sub || ""; ov.querySelector(".ja").textContent = o.ja || ""; ov.querySelector(".who").textContent = o.who || "";
-  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || o.speaker, o.ja);   // the Watch's subtitles are the game's footer
+  const ov = $(sel); ov.querySelector(".sub").textContent = named(o.sub) || ""; ov.querySelector(".ja").textContent = o.ja || ""; ov.querySelector(".who").textContent = o.who || "";
+  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, !o.think && o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || (o.think ? "" : o.speaker), o.ja, o.think);   // the Watch's subtitles are the game's footer (a thought: the player's own, set apart)
   ov.querySelector(".black").style.opacity = o.black || 0; ov.querySelector(".tag").textContent = o.tag || "";
 }
 function playScene(sc, ver, fromClip) {
@@ -1806,7 +1807,7 @@ function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 3), t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id), who);
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja, think: o.think })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
@@ -1861,7 +1862,7 @@ async function watchScene(sc, nid, sid, k) {
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); lifeTick(watchStage, t0 + T); watchStage.render();
-    paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
+    paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
     if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
@@ -2062,7 +2063,7 @@ function watchChoice(n) {
 const PKEY = () => `dd.progress.${GAME}`;
 function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{}"); } catch (e) { return {}; } }
 function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
-function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [] }; }
+function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name }; }
 function reach(nid) {                              // the first arrival's state is the checkpoint
   const p = progress(); p.visited = p.visited || {};
   if (!p.visited[nid]) p.visited[nid] = snapOf(RUN);
@@ -2076,6 +2077,7 @@ async function watch(fromNid, snap) {
   RUN.lives = new States(LIVES, lifeThings()).start(0);   // the little things: their states through the whole run
   watchStage.soundOn = $("#wThings").checked;
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
+  RUN.name = setName(RUN.name || (S.game || {}).player_name, true);   // {name}: the game's until the player types theirs (a `name` action)
   DBG.reset();
   wclock();
   $("#watchOv .black").style.opacity = 1;

@@ -1,7 +1,8 @@
 // The to-do list (docs/STORY_FORMAT.md §4, DECISIONS 2026-10-27, late night): a shift's chores, a request, anything
 // the player has to do, ticked off in any order. Each task: {id, text, state: open | done | failed}, and what moves it
 // by itself: `ticks` (a trigger that ticks it: the kettle boiled), `fails` (a trigger that fails it: she caught you),
-// `secs` (it fails when the time's up), `on` ({done: [actions], failed: [actions]}). Kept with the run, so a list goes
+// `secs` (it fails when the time's up), `on` ({done: [actions], failed: [actions]}); `hidden`: kept and heard like the
+// rest, but not on the HUD (a task the player only knows of from their thoughts). Kept with the run, so a list goes
 // on through the stitches (a night's chores) until `untodo` takes a task, or all of them, off.
 import { matches } from "./conditions.js";
 import { runAll } from "./actions.js";
@@ -12,7 +13,7 @@ export const STATES = ["open", "done", "failed"];
 export function todoAdd(list, a, now) {
   const id = a.todo, old = list.find(t => t.id === id);
   const t = { id, text: a.text || String(id).replace(/_/g, " "), state: "open", at: now };
-  for (const k of ["ticks", "fails", "secs", "on", "who"]) if (a[k] !== undefined) t[k] = a[k];
+  for (const k of ["ticks", "fails", "secs", "on", "who", "hidden"]) if (a[k] !== undefined) t[k] = a[k];
   if (old) Object.assign(old, t); else list.push(t);
   return old || t;
 }
@@ -47,11 +48,11 @@ export class Todo {
       else if (t.fails && matches(t.fails, ev, this.rt)) this.set(t.id, "failed");
       else if (t.secs && ev.type === "tick" && this.rt.clock - t.at >= +t.secs) this.set(t.id, "failed");
     }
-    if (ev.type === "tick" && this.list.some(t => t.state === "open" && t.secs)) this.show();
+    if (ev.type === "tick" && this.list.some(t => t.state === "open" && t.secs && !t.hidden)) this.show();
   }
   show(fresh) {
     const cast = this.rt.story.cast || {};
-    this.rt.hud.todo(this.list.map(t => ({ id: t.id, text: t.text, state: t.state, who: t.who ? (cast[t.who] || {}).name || t.who : null,
+    this.rt.hud.todo(this.list.filter(t => !t.hidden).map(t => ({ id: t.id, text: t.text, state: t.state, who: t.who ? (cast[t.who] || {}).name || t.who : null,
       left: t.secs && t.state === "open" ? Math.max(0, +t.secs - (this.rt.clock - t.at)) : null })), fresh);
   }
 }

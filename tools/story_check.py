@@ -31,7 +31,7 @@ TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result",
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter"}
+           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -71,6 +71,8 @@ TIER_SECS = {}              # tier -> seconds of motion (the animation budget re
 SEG_NAMES = {}              # segment name -> where
 STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state"}
 TODO_ON = {"done", "failed"}  # a to-do task's `on`: actions when it's ticked, when it's failed
+NAME_SECS = 8.0             # the walker's time to type a name
+PLACEHOLDER = re.compile(r"\{([^{}\s]*)\}")      # {name} in shown text: the player's name; nothing else is filled in
 MAX_CPS = 17.0
 WALK = 1.4 / 1.6            # metres a second, with looking around (x 1.6)
 ROOM_FIRST = 30             # seconds: the first look round a room
@@ -122,6 +124,44 @@ def todos_of(story):
             walk(b.get("do"))
         for acts in ((st.get("play") or {}).get("on") or {}).values():
             walk(acts)
+    return out
+
+
+def shown_texts(story):
+    """Every text the player reads, where it is: lines, clips, replies, thoughts, objectives, to-dos, asks, notes."""
+    out = []
+
+    def acts(lst, where):
+        for a in lst or []:
+            if not isinstance(a, dict):
+                continue
+            for k in ("think", "objective", "text", "chapter", "sub"):
+                if isinstance(a.get(k), str):
+                    out.append((where, a[k]))
+            for o in a.get("options") or []:
+                if isinstance(o, dict):
+                    out.extend((where, o[k]) for k in ("label", "think") if isinstance(o.get(k), str))
+                    acts(o.get("do"), where)
+            for lst2 in (a.get("on") or {}).values() if isinstance(a.get("on"), dict) else []:
+                acts(lst2, where)
+    for lid, ln in story.get("lines", {}).items():
+        out += [(f"line {lid}", ln[k]) for k in ("en",) if isinstance(ln.get(k), str)]
+    for nid, n in story.get("notes", {}).items():
+        out += [(f"note {nid}", n[k]) for k in ("title", "text") if isinstance(n.get(k), str)]
+    for sid, sc in story.get("scenes", {}).items():
+        for ver in [sc] + list((sc.get("variants") or {}).values()):
+            for c in ver.get("clips") or []:
+                cw = f"scene {sid} clip {c.get('id')}"
+                if isinstance(c.get("en"), str):
+                    out.append((cw, c["en"]))
+                for o in (c.get("reply") or {}).get("options") or []:
+                    out += [(cw, o[k]) for k in ("label", "think") if isinstance(o.get(k), str)]
+                    if isinstance((o.get("then") or {}).get("en"), str):
+                        out.append((cw, o["then"]["en"]))
+            acts(sc.get("sets"), f"scene {sid}")
+    for tid, st in story.get("stitches", {}).items():
+        for b in st.get("beats", []):
+            acts(b.get("do"), f"{tid} {b.get('id')}")
     return out
 
 
@@ -496,6 +536,8 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r):
         ow = f"{cw} reply {o.get('id')}"
         if not o.get("label"):
             r.err(f"{ow}: needs a label (the English the player picks)")
+        if "think" in o and (not isinstance(o["think"], str) or not o["think"].strip()):
+            r.err(f"{ow}: think is the player's thought shown with the answer (text)")
         if FORMAT >= 3 and not o.get("ja") and VOICED:
             r.warn(f"{ow}: no `ja` (the Japanese shown over the English)")
         for a in o.get("sets", []):
@@ -648,6 +690,13 @@ def check_scene(sid, sc, story, things, r):
         for i, c in enumerate(clips):
             cw = f"{where} clip {c.get('id')}"
             check_spoken(cw, c, cast, r, clip_max)
+            if "think" in c:                                # the player's thought: shown, never spoken
+                if c["think"] is not True:
+                    r.err(f"{cw}: think is true (the player's thought) or left out")
+                elif c.get("who") != "player":
+                    r.err(f"{cw}: a thought is the player's: who \"player\"")
+                elif c.get("reply") or c.get("event"):
+                    r.err(f"{cw}: a thought asks nothing: a reply or an event goes on someone's line")
             seam = c.get("seam")
             if i > 0:
                 if not seam:
@@ -943,6 +992,8 @@ def check_action(bid, a, story, things, r, stage=None):
                     check_trigger(f"{bid} todo {v} {f}", a[f], story, things, set(), r)
         if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
             r.err(f"{bid}: todo {v!r}: secs is a number of seconds (it fails when they're up)")
+        if "hidden" in a and not isinstance(a["hidden"], bool):
+            r.err(f"{bid}: todo {v!r}: hidden is true (kept, but not on the list) or false")
         on = a.get("on") or {}
         if not isinstance(on, dict) or set(on) - TODO_ON:
             r.err(f"{bid}: todo {v!r}: `on` is {{done: [actions], failed: [actions]}}")
@@ -954,6 +1005,12 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: todo {v!r}: who {a['who']!r} isn't in cast")
         if "ticks" not in a and f'"tick": "{v}"' not in json.dumps(story.get("stitches", {}), ensure_ascii=False):
             r.warn(f"{bid}: todo {v!r}: nothing ticks it (no `ticks` of its own, no `tick` in a beat)")
+        return
+    if k == "name":                                    # the player types their name; {name} in a line shows it
+        if not isinstance(v, str) or not v.strip():
+            r.err(f"{bid}: name is the question over the box (\"What's your name?\")")
+        if "default" in a and (not isinstance(a["default"], str) or not a["default"].strip()):
+            r.err(f"{bid}: name default is the name kept when nothing is typed (game.player_name otherwise)")
         return
     if k == "chapter":                                 # a title card: dark, the card, the time of day, an autosave
         if not isinstance(v, str) or not v.strip():
@@ -1707,6 +1764,8 @@ class World:
                 self.add("dialogue", L.line_secs(lines[v]) if a.get("wait", True) else 0)
             elif k == "think":
                 self.add("dialogue", max(1.5, len(v) / 15))
+            elif k == "name":
+                self.add("scripted", NAME_SECS)
             elif k == "wait":
                 self.add("scripted", float(v))
             elif k in ("fade", "lookat"):
@@ -2130,6 +2189,13 @@ def main():
     for k, where in names.items():
         if len(where) > 1 and set(where) != {"secrets"}:
             r.err(f"id {k!r} is used by {', '.join(where)}: ids are unique across the file")
+    pn = story.get("game", {}).get("player_name")
+    if pn is not None and (not isinstance(pn, str) or not pn.strip()):
+        r.err("game.player_name is the player's name until they type one (text)")
+    for where, text in shown_texts(story):            # {name} is the only thing filled into what's shown
+        for m in PLACEHOLDER.finditer(text):
+            if m.group(1) != "name":
+                r.warn(f"{where}: {{{m.group(1)}}} isn't filled in: {{name}} (the player's name) is the only one")
     for lid, lvl in story.get("levels", {}).items():
         for rm in lvl.get("rooms", []):
             if rm.get("acoustics") and rm["acoustics"] not in L.ACOUSTICS:

@@ -242,6 +242,9 @@ a line with no speaker`, o);
   const parts = L.filter(l => l.split);
   parts.length >= 2 && parts.every(l => clipSecs(l) <= o.clipMax) ? ok(`a line longer than a take: split at its sentences into ${parts.length} clips, each ${o.clipMax} s or less`) : fail("the split: " + JSON.stringify(parts.map(l => [l.ja, clipSecs(l)])));
   r.warns.some(w => /Kenji isn't in the cast/.test(w)) && r.warns.some(w => /no speaker/.test(w)) ? ok("someone not in the cast, and a line with no speaker: warnings, not lines lost silently") : fail("warns: " + r.warns.join(" · "));
+  { const t = SP.parse(`"She came back."\nMari: You came.`, o).lines, back = SP.parse(SP.toText(t, S.cast), o).lines;
+    t[0].who === "player" && t[0].think === true && t[0].en === "She came back." && !t[1].think && back[0].think === true && back[0].en === "She came back."
+      ? ok("a whole line in quotes is the player's thought (think), and comes back as one") : fail("a thought: " + JSON.stringify(t) + " / " + JSON.stringify(back)); }
   const sc = S.scenes.s_message, before = JSON.parse(JSON.stringify(sc.clips));
   const back = SP.parse(SP.toText(sc.clips, S.cast), o).lines;
   back.length === sc.clips.length && back.every((l, i) => l.who === sc.clips[i].who && (l.en || "") === (sc.clips[i].en || "") && (l.ja || "") === (sc.clips[i].ja || "")) ? ok(`a scene as text and back: the same ${back.length} lines`) : fail("the round trip");

@@ -34,7 +34,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | Key | Holds |
 |---|---|
 | `format` | `2` |
-| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1) |
+| `game` | `id`, `title`, `start` (a flow node), `target_min` (the shortest *typical* path to a normal ending must reach it: **150** for a real game), `fast_min` (the shortest *fast* path must reach it: **120**, Steam's refund window; cutscenes can't be skipped, so they count fully), `voice` (`ja`), `text` (`en`), `clip_max` (seconds one take can be: **10** for MiniMax), `fov` (the player's horizontal field of view, 90 by default: the one lens), `previs_body` (the desk's default body), `time` (the time of day the game starts at: `day`, `dusk` or `night`; `night` when unset, the studio's dark interiors; scenes change it, §3.1), `player_name` (the player's name until they type one, §4 `name`; "Alex" when unset) |
 | `cast` | `{id: {name, metahuman (asset path or null), height, shape, measures, skin, previs_body}}`: `shape` is up to 45 MHR identity numbers (the desk's Shape page writes it; zero is the average body), `measures` the body's widths in cm at that height (`{height, shoulders, chest, waist, belly, hips, thighs, arms}`, the Shape page writes them too) and `skin` a hex skin tone: what `tools/metahuman.py` gives MetaHuman Creator (docs/METAHUMAN_ROUTE.md); `previs_body` a file in `Content/Studio/Bodies` (default: MHR.fbx; after the MetaHuman is rigged, its exported body), or `people/<name>`: a Character Studio character as it was exported for the desk and Unreal (`Content/Studio/People/<name>/export/<name>.glb`), worn with its own look and its eyes, its own shape (`shape` doesn't apply), scaled to `height` |
 | `items`, `notes`, `sounds` | `{id: {name, shape, inspect}}`, `{id: {title, text}}`, `{id: {file}}`: a sound's `file` is `sfx/<name>`, a CC0 sound off the Studio's shelf (`Content/Studio/SFX`, `tools/sfx.py list`; the check fails one that isn't on it; docs/SFX.md), or the game's own file under its Audio folder in Unreal |
 | `lines` | one-off voice outside scenes (`say`, `whisper`): `{id: {who, ja, en, mood, dur}}` |
@@ -257,6 +257,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `camera.look` | a cast id on stage, or a placed thing |
 | `camera.cone` | `[yaw°, pitch°]` either side of `look` |
 | clip `who`, `ja`, `en`, `act` | the speaker; the line recorded (Japanese); the subtitle; the acting note for the take |
+| clip `think` | `true`: the player's own thought (`who: "player"`), shown in the footer set apart (in brackets, slanted) and never said: no take, no face, and nobody on stage hears it. The desk's screenplay typing writes one as a whole line in quotes (`"She came back."`), as the writers' room's notes do (docs/NOTES_SYNTAX.md) |
 | clip `dur` | the take's real length (`story.py durations` or `intake.py` writes it). Without it the length is `dur_tts` (a placeholder voice), else an estimate |
 | clip `face: false` | voice only (an offstage or unseen speaker) |
 | clip `shot` | the shot size: `ecu cu mcu ms fs ws insert pov_down pov_up` (DIRECTING.md §1). In first person it's a **distance**: how close the actor's face comes to the player's eye (ecu under 0.3 m, cu to 0.55, mcu to 0.9, ms to 1.6, fs to 3, ws beyond). The body check and the shot review measure the clip's closest moment and flag a label it doesn't reach |
@@ -422,6 +423,10 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 
 **Actions (`do`, one verb each):**
 - `say`, `think`, `sound` (`at`), `music` (`silence calm uneasy dread chase`)
+- `name`: **the player types their name** (`{"name": "What's your name?"}`: the question over the box; `default`: the
+  name kept when nothing is typed, else `game.player_name`). From then on `{name}` in anything shown (a clip's `en`, a
+  line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
+  unset). It's kept with the run (a checkpoint has it). The walker counts 8 s for the typing. Not in Unreal yet
 - `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
 - `show`, `hide`, `move` (`to` a spot), `objective`
 - `state`: a little thing to one of its states, `{"state": "kitchen_kettle", "to": "heating"}`: in a beat, a scene's
@@ -472,7 +477,9 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
   {"state": "kitchen_kettle", "is": "boiled"}}`). It can be **failed**: by `fail`, by its own trigger (`fails`:
   `{"caught": "mari"}`), or by its time running out (`secs`, counting down on the list). A failed task stays on the
   list struck out in the bad colour. `on`: `{"done": [actions], "failed": [actions]}` run when it's ticked or failed
-  (set a flag there to branch the flow on it later, §5). `who`: the cast member who asked (a request, §9.12). Ticked
+  (set a flag there to branch the flow on it later, §5). `who`: the cast member who asked (a request, §9.12).
+  `hidden: true`: kept, timed, ticked, failed and heard like any task, but not on the HUD's list (a task the player
+  only knows of from their thoughts: "I should clean up before she gets here"). Ticked
   and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
   takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).
   `tick`, `fail`: `{"tick": "mop_floor"}` ticks an open task, `{"fail": "mop_floor"}` fails it.
@@ -796,6 +803,9 @@ really wants.
    {"id": "bad", "label": "Bad.", "ja": "最悪だった。", "sets": [{"flag": "told_bad_day"}], "then": {"ja": "かわいそう。", "en": "Poor thing."}}]}}
 ```
 
+- `think`: the player's thought that goes with the answer, shown under it smaller (`{"id": "greet", "label": "Greet",
+  "think": "She's probably cold, I should let her inside"}`): the answers can be acts, each with the thought behind it,
+  instead of words said (the writers' room's notes write them as `[ Greet ] She's probably cold...`).
 - `then` is her answer to that reply: a clip (its own take, `<take id>_<option id>`), the same `who` unless it says.
   After it, the scene goes on with its next clip: the line it was always going to say.
 - `wait` (6 s by default, 2 to 15): how long she waits. Past it her answer is skipped (`timeout: null`), or a

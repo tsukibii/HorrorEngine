@@ -633,7 +633,7 @@ export class Stage {
     }
     out.trackers = {};
     for (const id of Object.keys(v.trackers || {})) { const p = this.trackerAt(tl, id, T); if (p) out.trackers[id] = p; }
-    if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; }
+    if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; out.think = !!c.think; }
     if (seg.type === "seam") {
       const k = seg.seam.kind, u = (T - seg.start) / (seg.end - seg.start);
       if (k === "blink") out.black = Math.sin(u * Math.PI);

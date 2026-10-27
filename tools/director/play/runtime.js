@@ -11,7 +11,7 @@ import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
-import { Hud, besideAt } from "./hud.js";
+import { Hud, besideAt, setName, playerName } from "./hud.js";
 import { Todo } from "./todo.js";
 import { pauseMenu, autosave } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
@@ -278,6 +278,12 @@ export class PlayRuntime {
     const f = spec.who && this.stage.cast[spec.who], t = spec.on && this.byId[spec.on], W = () => this.hud.root.clientWidth, H = () => this.hud.root.clientHeight;
     const anchor = f ? () => besideAt(this.stage.camera, f, W(), H()) : t ? () => this.anchorAt(t) : null;
     return this.modal(() => this.hud.choose(Object.assign({}, spec, { anchor, who: f ? ((this.story.cast || {})[spec.who] || {}).name || spec.who : spec.who })));
+  }
+  async askName(question, def) {                      // the player types their name (a `name` action): kept with the run, {name} shows it
+    const v = await this.modal(() => this.hud.panel({ title: question || "What's your name?", name: def || (this.story.game || {}).player_name || playerName() }));
+    const name = setName(v);
+    if (this.run) this.run.name = name;
+    return name;
   }
   async modal(show) {                                  // a HUD panel with the pointer freed, then back to looking
     this.busy = true; this.keys = {};

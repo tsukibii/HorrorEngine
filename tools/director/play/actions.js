@@ -18,7 +18,8 @@ register("action", "todo", { run: (v, a, rt) => rt.todo.add(a) });
 register("action", "tick", { run: (v, a, rt) => rt.todo.set(v, "done") });
 register("action", "fail", { run: (v, a, rt) => rt.todo.set(v, "failed") });
 register("action", "untodo", { run: (v, a, rt) => rt.todo.remove(v) });
-register("action", "think", { run: (v, a, rt) => rt.hud.line(v, "", lineSecs(v)) });
+register("action", "think", { run: (v, a, rt) => rt.hud.line(v, "", lineSecs(v), true) });
+register("action", "name", { run: (v, a, rt) => rt.askName(v, a.default) });   // the player types their name: {name} in what's shown from here
 register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? ((rt.story.cast || {})[a.who] || {}).name || a.who : "", lineSecs(a.line || v)) });
 // ask: a question with 2 to 4 answers, floating beside `who` (or at `on`, a thing; else under the reticle) while the
 // question (`line`, spoken, or `text`, a thought) is the footer's line. Each answer's `do` runs, and `answered` is heard

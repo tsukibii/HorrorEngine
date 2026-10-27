@@ -129,6 +129,8 @@
   opacity:0;transition:opacity .25s;background:var(--ph-line-bg,none);padding:var(--ph-line-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-line-shadow,none)}
 .play-hud .ph-line:empty{display:none}
 .play-hud .ph-line.on{opacity:1}
+.play-hud .ph-line.think>span:last-child{font-style:italic;opacity:.92}
+.play-hud .ph-line.think>span:last-child::before{content:"("}.play-hud .ph-line.think>span:last-child::after{content:")"}
 .play-hud .ph-who{display:block;margin-bottom:2px;font-size:var(--ph-fs);font-weight:700;letter-spacing:.03em;color:var(--ph-who,var(--ph-accent))}
 .play-hud .ph-ja{display:block;margin-bottom:2px;font-size:var(--ph-fs-s);color:var(--ph-muted)}
 /* a choice floating in the world (hud.js floating): the mark on the point (a shoulder, a thing), the panel beside it,
@@ -154,6 +156,9 @@
 .play-hud .ph-choice.lit .ph-opt.on{opacity:1;color:var(--ph-lit,var(--ph-accent));text-shadow:var(--ph-opt-glow,none)}
 .play-hud .ph-opt:active{scale:.97}
 .play-hud .ph-opt:focus{outline:0}
+.play-hud .ph-opt.thought{white-space:normal;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.play-hud .ph-opt .ph-think{font-size:calc(var(--ph-fs) - 1px);font-style:italic;line-height:1.35;color:var(--ph-muted);font-weight:400}
+.play-hud .ph-choice.lit .ph-opt.on .ph-think{color:var(--ph-text)}
 .play-hud .ph-dash{width:var(--ph-dash,40px);height:0;border-top:var(--ph-dash-line,1px dashed var(--ph-muted))}
 /* every meter is one thin line: a choice's time, the suspicion under the reticle */
 .play-hud .ph-meter{height:2px;border-radius:2px;background:var(--ph-meter-bg,rgba(255,255,255,.14));overflow:hidden;transition:opacity .2s}
@@ -166,6 +171,8 @@
   box-shadow:var(--ph-pop-l);-webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none);display:flex;flex-direction:column;gap:calc(var(--ph-gap) + 4px);align-items:stretch;
   animation:ph-rise .22s ease-out both}
 .play-hud .ph-text{font-family:var(--ph-font);font-size:calc(var(--ph-fs) + 2px);line-height:1.6;white-space:pre-wrap;max-width:60ch}
+.play-hud .ph-name{font:inherit;font-size:24px;text-align:center;padding:10px 14px;border:0;border-radius:var(--ph-radius);box-shadow:var(--ph-inset);background:none;color:var(--ph-text);width:100%;box-sizing:border-box}
+.play-hud .ph-name:focus{outline:1px solid var(--ph-accent)}
 .play-hud .ph-code{font-size:30px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums;padding:10px;border-radius:var(--ph-radius);box-shadow:var(--ph-inset)}
 .play-hud .ph-pad{display:grid;grid-template-columns:repeat(3,64px);gap:12px;justify-content:center}
 .play-hud .ph-btn{font:inherit;font-size:var(--ph-fs);color:var(--ph-text);border:0;border-radius:var(--ph-radius);background:var(--ph-surface);box-shadow:var(--ph-pop);height:48px;cursor:pointer;

@@ -3,6 +3,7 @@
 //   Mari: 来てくれたんだ。 / You came.         -> ja (what gets recorded) and en (the subtitle)
 //   (she steps back, smiling)               -> the acting note (act) of the line before it, or of the next when first
 //   You: Mari?                              -> the player (You, Me, I, Player)
+//   "She came back."                        -> the player's thought (a whole line in quotes: shown, never said)
 //   Mari: Don't open it. [CU]               -> a shot at its end (ECU CU MCU MS FS WS)
 // A line longer than a take (clip_max) is split at its sentences (a sentence too long, at its commas) into clips that
 // fit, joined by blinks. Blank lines and
@@ -59,6 +60,8 @@ export function parse(text, { cast = {}, clipMax = 10, secs = null } = {}) {
   const lines = [], warns = [], unknown = new Set(); let pending = null;
   String(text || "").replace(/\r/g, "").split("\n").forEach((raw, n) => {
     const t = raw.trim(); if (!t || t.startsWith("#")) return;
+    const thought = t.match(/^["“「](.+)["”」]$/);
+    if (thought) { const line = { who: "player", en: thought[1].trim(), think: true }; if (pending) { line.act = pending; pending = null; } lines.push(line); return; }
     const note = t.match(/^[(（](.*)[)）]$/);
     if (note) { const a = note[1].trim(); if (lines.length) lines[lines.length - 1].act = [lines[lines.length - 1].act, a].filter(Boolean).join("; "); else pending = [pending, a].filter(Boolean).join("; "); return; }
     const m = t.match(/^([^:：]{1,40})[:：]\s*(.*)$/);
@@ -81,6 +84,7 @@ export function parse(text, { cast = {}, clipMax = 10, secs = null } = {}) {
 }
 export function toText(clips, cast = {}) {
   return (clips || []).map(c => {
+    if (c.think) return `"${c.en || "…"}"${c.act ? `\n(${c.act})` : ""}`;
     const who = c.who === "player" ? "You" : ((cast[c.who] || {}).name || c.who || "?");
     const say = [c.ja, c.en].filter(Boolean).join(" / ") || "…";
     return `${who}: ${say}${c.shot ? ` [${c.shot.toUpperCase()}]` : ""}${c.act ? `\n(${c.act})` : ""}`;
@@ -88,7 +92,7 @@ export function toText(clips, cast = {}) {
 }
 const bag = c => new Set(`${c.en || ""} ${c.ja || ""}`.toLowerCase().match(/[a-z0-9']+|[\u3040-\u9fff]/g) || []);
 function like(a, b) { const x = bag(a), y = bag(b); if (!x.size && !y.size) return 1; let k = 0; for (const w of x) if (y.has(w)) k++; return k / (x.size + y.size - k); }   // shared words, 0..1
-const same = (c, l) => c.who === l.who && (c.en || "") === (l.en || "") && (c.ja || "") === (l.ja || "");
+const same = (c, l) => c.who === l.who && !c.think === !l.think && (c.en || "") === (l.en || "") && (c.ja || "") === (l.ja || "");
 export function applyTo(clips, lines, newId) {
   const old = clips || [], n = old.length, m = lines.length;
   const L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));      // the longest run of lines unchanged
@@ -101,6 +105,7 @@ export function applyTo(clips, lines, newId) {
   const out = [], used = new Set(); let kept = 0, changed = 0, added = 0, i0 = 0, j0 = 0;
   const put = (c, l) => {                          // a clip kept: its words, note and shot from the text
     for (const k of ["en", "ja"]) { if (l[k]) c[k] = l[k]; else delete c[k]; }
+    if (l.think) c.think = true; else delete c.think;
     if (l.act) c.act = l.act; else delete c.act;
     if (l.shot) c.shot = l.shot;
     used.add(c); out.push(c);
@@ -115,7 +120,7 @@ export function applyTo(clips, lines, newId) {
     for (let a = 0, b = 0; b < B;) {
       if (a < A && sc(a, b) >= 0 && Math.abs(D[a][b] - (sc(a, b) + D[a + 1][b + 1])) < 1e-9) { put(go[a], gl[b]); changed++; a++; b++; }
       else if (a < A && D[a][b] === D[a + 1][b]) a++;
-      else { const l = gl[b], c = { id: newId(out.concat(old)), who: l.who }; for (const x of ["ja", "en", "act", "shot"]) if (l[x]) c[x] = l[x]; used.add(c); out.push(c); added++; b++; }
+      else { const l = gl[b], c = { id: newId(out.concat(old)), who: l.who }; for (const x of ["ja", "en", "act", "shot", "think"]) if (l[x]) c[x] = l[x]; used.add(c); out.push(c); added++; b++; }
     }
     if (pi < n) { put(old[pi], lines[pj]); kept++; }
     i0 = pi + 1; j0 = pj + 1;

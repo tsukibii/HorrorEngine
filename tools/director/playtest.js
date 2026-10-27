@@ -52,6 +52,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.stitches.t_search.beats.find(b => b.id === "b_search_list").do.push({ todo: "make_tea", text: "Put the kettle on", who: "mari", ticks: { state: "pilot_kettle", is: "boiled" },
       on: { done: [{ behave: "mari", as: "go", via: ["hall_mari_back_spot"], to: "kitchen_chair_spot", then: "sit" }] } });
     S.stitches.t_search.beats.push({ id: "b_tea_sat", when: { arrived: "mari", at: "kitchen_chair_spot" }, optional: true, do: [{ think: "She sat down to wait for her tea." }] });
+    // the player's name (STORY_FORMAT §4 `name`): asked in a box, then {name} in what's shown says it
+    S.stitches.t_search.beats.push({ id: "b_name", when: { flag: "name_now" }, optional: true, do: [{ name: "What's your name?" }, { think: "{name}, keep it together." }] });
     await window.__dd.replan();
   });
   await page.click('nav button[data-v="watchView"]');
@@ -158,6 +160,25 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       rt.todo.remove("t_test"); rt.flags.delete("t_test_failed"); return out; });
     if (!r.flag || !r.heard.some(e => e.id === "t_test" && e.state === "failed") || !/line-through/.test(r.struck) || r.box !== "✕") throw new Error(JSON.stringify(r));
     if ((await tasks()).length !== 3) throw new Error("the test task is still on the list");
+  });
+  await step("a hidden task: kept, ticked and heard like the rest, but never on the list", async () => {
+    const r = await page.evaluate(() => { const rt = window.__dd.play; window.__heard = []; const l = rt.listener; rt.listener = ev => { if (ev.type === "todo") window.__heard.push(ev); if (l) l(ev); };
+      rt.todo.add({ todo: "t_hidden", text: "Tidy up before she comes", hidden: true });
+      const shown = !!document.querySelector(".ph-task[data-id=t_hidden]");
+      rt.todo.set("t_hidden", "done"); rt.listener = l;
+      const out = { shown, kept: (rt.todo.list.find(t => t.id === "t_hidden") || {}).state, heard: window.__heard.map(e => e.id + ":" + e.state) };
+      rt.todo.remove("t_hidden"); return out; });
+    if (r.shown || r.kept !== "done" || !r.heard.includes("t_hidden:done")) throw new Error(JSON.stringify(r));
+    if ((await tasks()).length !== 3) throw new Error("the list changed");
+  });
+  await step("the player's name: a box asks it, it's typed and kept with the run, and {name} in a thought says it", async () => {
+    await page.evaluate(() => window.__dd.play.setFlag("name_now"));
+    await page.waitForSelector(".ph-panel .ph-name", { timeout: 60000 });
+    const ph = await page.getAttribute(".ph-panel .ph-name", "placeholder");
+    await page.keyboard.type("Mika"); await page.keyboard.press("Enter");
+    await page.waitForFunction(() => /Mika, keep it together\./.test(window.__dd.play.hud.lineEl.textContent), null, { timeout: 60000 });
+    const r = await page.evaluate(() => ({ run: window.__dd.run.name, think: window.__dd.play.hud.lineEl.classList.contains("think"), panel: !!document.querySelector(".ph-panel") }));
+    if (r.run !== "Mika" || !r.think || r.panel || !ph) throw new Error(JSON.stringify(Object.assign(r, { ph })));
   });
   await step("a behaviour: Mari walks her route up and down the hall (path, pingpong, a wait in a pose)", () => onRoute("the search"));
   await step("ask: the answers float beside Mari, the question in the footer; 2 answers, its do runs and answered is heard", async () => {

@@ -13,11 +13,19 @@ export function loadTheme(name) {
   l.href = new URL(`./ui/themes/${name}.css`, import.meta.url).href;
 }
 
-// a spoken or written line into a footer line: the speaker above, the Japanese small, then the words. The Watch's
-// scenes and Play's lines both paint with this, so a subtitle looks the same wherever it comes from
-export function paintLine(el, text, who, ja) {
-  el.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), ...(ja ? [mk("span", "ph-ja", ja)] : []), mk("span", "", text || ""));
-  el.classList.toggle("on", !!(text || ja));
+// the player's name (STORY_FORMAT §4 `name`): {name} in anything shown is it. A run starts it from game.player_name
+let NAME = "Alex";
+export const DEFAULT_NAME = "Alex";
+export function setName(n, reset) { const v = String(n || "").trim(); if (v || reset) NAME = v || DEFAULT_NAME; return NAME; }
+export const playerName = () => NAME;
+export const named = t => typeof t === "string" ? t.replace(/\{name\}/g, NAME) : t;
+
+// a spoken or written line into a footer line: the speaker above, the Japanese small, then the words (`think`: the
+// player's own thought, set apart). The Watch's scenes and Play's lines both paint with this, so a subtitle looks the
+// same wherever it comes from
+export function paintLine(el, text, who, ja, think) {
+  el.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), ...(ja ? [mk("span", "ph-ja", ja)] : []), mk("span", "", named(text) || ""));
+  el.classList.toggle("on", !!(text || ja)); el.classList.toggle("think", !!think);
 }
 
 export class Hud {
@@ -67,14 +75,14 @@ export class Hud {
   }
   objective(text) {                                  // a new one says so, then rests dimmer
     if (text && text !== this.obj.textContent) { this.obj.classList.add("fresh"); clearTimeout(this.objTimer); this.objTimer = setTimeout(() => this.obj.classList.remove("fresh"), 4000); }
-    this.obj.textContent = text || ""; this.obj.classList.toggle("on", !!text);
+    this.obj.textContent = named(text) || ""; this.obj.classList.toggle("on", !!text);
   }
   // the to-do list under the objective: [{id, text, state: open | done | failed, who: the asker's name or null, left: seconds or null}]; a ticked task
   // dims with its box ticked, a failed one is struck in the bad colour; `fresh`: something changed, the list says so
   todo(items, fresh) {
     this.todoEl.replaceChildren(...items.map(t => {
       const e = mk("div", "ph-task"); e.dataset.state = t.state; e.dataset.id = t.id;
-      e.append(mk("span", "ph-box", t.state === "done" ? "✓" : t.state === "failed" ? "✕" : ""), mk("span", "ph-task-text", t.text));
+      e.append(mk("span", "ph-box", t.state === "done" ? "✓" : t.state === "failed" ? "✕" : ""), mk("span", "ph-task-text", named(t.text)));
       if (t.who) e.append(mk("span", "ph-task-who", t.who));            // a request: who asked
       if (t.left !== null && t.left !== undefined) e.append(mk("span", "ph-task-left", Math.ceil(t.left) + "s"));
       return e;
@@ -88,7 +96,7 @@ export class Hud {
     this.root.append(c); this.root.classList.add("chapter"); void c.offsetWidth; c.classList.add("on");   // the rest of the HUD steps back
     return new Promise(done => setTimeout(() => { c.classList.remove("on"); this.root.classList.remove("chapter"); setTimeout(() => { c.remove(); done(); }, 700); }, 700 + secs * 1000));
   }
-  line(text, who, secs) { paintLine(this.lineEl, text, who); this.lineUntil = performance.now() + secs * 1000; }
+  line(text, who, secs, think) { paintLine(this.lineEl, text, who, null, think); this.lineUntil = performance.now() + secs * 1000; }
   log(text) {
     const e = mk("div", "", text); this.logEl.append(e);
     setTimeout(() => e.remove(), 5000);
@@ -121,13 +129,24 @@ export class Hud {
     }
   }
 
-  // a panel: {title, text} to read, or {title, code: n} for a code lock. Resolves with the code typed, true when a
-  // text is closed, or null when it's left (Esc, Close)
+  // a panel: {title, text} to read, {title, code: n} for a code lock, or {title, name: the default} for the player's
+  // name. Resolves with the code typed, true when a text is closed, the name typed (the default when it's left empty or
+  // with Esc), or null when it's left (Esc, Close)
   panel(spec) {
     return new Promise(done => {
       const p = mk("div", "ph-panel"), card = mk("div", "ph-card");
       let finish;
-      card.append(mk("div", "ph-title", spec.title || ""));
+      card.append(mk("div", "ph-title", named(spec.title) || ""));
+      if (spec.name) {
+        const inp = mk("input", "ph-name"); inp.type = "text"; inp.maxLength = 20; inp.placeholder = spec.name; inp.autocomplete = "off"; inp.spellcheck = false;
+        const ok = mk("button", "ph-btn ph-ok"); ok.append(key("Enter"), mk("span", "", "OK")); ok.onclick = () => finish(inp.value.trim() || spec.name);
+        card.append(inp, ok); p.append(card);
+        const kd = e => { if (e.key === "Enter") { e.preventDefault(); finish(inp.value.trim() || spec.name); } else if (e.key === "Escape") { e.preventDefault(); finish(spec.name); } else e.stopPropagation(); };
+        finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(v); };
+        window.addEventListener("keydown", kd, true);
+        this.modal(p); this.root.append(p); setTimeout(() => inp.focus(), 30);
+        return;
+      }
       if (spec.code) {
         let typed = "";
         const shown = mk("div", "ph-code", "·".repeat(spec.code)), pad = mk("div", "ph-pad");
@@ -136,7 +155,7 @@ export class Hud {
         for (const k of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"]) { const b = mk("button", "ph-btn", k); b.onclick = () => press(k); pad.append(b); }
         card.append(shown, pad);
         p.keys = e => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === "Backspace") press("⌫"); else if (e.key === "Enter") press("OK"); };
-      } else card.append(mk("div", "ph-text", spec.text || ""));
+      } else card.append(mk("div", "ph-text", named(spec.text) || ""));
       const close = mk("button", "ph-btn ph-close"); close.append(key("Esc"), mk("span", "", "Close")); close.onclick = () => finish(spec.code ? null : true);
       card.append(close); p.append(card);
       const kd = e => { if (e.key === "Escape") { e.preventDefault(); finish(null); } else if (p.keys) p.keys(e); };
@@ -208,7 +227,8 @@ export function chooser(spec, pick) {
   const light = i => { at = i; opts.forEach((o, j) => o.classList.toggle("on", j === i)); box.classList.toggle("lit", i >= 0); };
   (spec.options || []).map(o => (typeof o === "string" ? { label: o } : o)).forEach((o, i) => {
     if (i) row.append(mk("span", "ph-dash"));
-    const b = mk("button", "ph-opt"); if (o.sub) b.append(mk("span", "ph-ja", o.sub)); b.append(mk("span", "", o.label));
+    const b = mk("button", "ph-opt" + (o.think ? " thought" : "")); if (o.sub) b.append(mk("span", "ph-ja", named(o.sub))); b.append(mk("span", "", named(o.label)));
+    if (o.think) b.append(mk("span", "ph-think", named(o.think)));        // the player's thought under the act (an answer's `think`)
     b.onmouseenter = () => light(i); b.onfocus = () => light(i); b.onclick = () => pick(i);
     opts.push(b); row.append(b);
   });
