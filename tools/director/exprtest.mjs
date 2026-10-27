@@ -97,7 +97,7 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
     }, [id, own]);
     if (Math.abs(r.length - own * 2) > 0.02 || !r.same) throw new Error(`the length: ${JSON.stringify(r)} (filmed ${own})`);
   });
-  await step("on a Studio export a lash card stays whole through a blink: its root follows the lid down, its length doesn't change (it turns about the eye, not stretches)", async () => {
+  await step("on a Studio export a lash card stays whole through a blink: its root follows the lid down, its length doesn't change (it turns about the eye, not stretches); and the eyeballs never come through the lids (shut or squinting, no skin deeper into an eye than at rest; at rest nothing moves)", async () => {
     const r = await page.evaluate(async () => {
       const FACE = await import("/shared/face.js"), { FacePreview } = await import("/expressions.js"), M = await FACE.loadMap();
       const people = (await (await fetch("/api/bodies")).json()).bodies.filter(f => f.startsWith("people/"));
@@ -109,13 +109,20 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
         const card = lash.cards.reduce((a, b) => (b.r[1] - b.e[1] > a.r[1] - a.e[1] ? b : a));   // an upper lash (its root highest over its eye)
         const span = () => { let lo = null, far = 0; for (const v of card.v) { const p = [A[v * 3], A[v * 3 + 1], A[v * 3 + 2]]; lo = lo || p; far = Math.max(far, Math.hypot(p[0] - lo[0], p[1] - lo[1], p[2] - lo[2])); } return far; };
         const rootY = () => Math.min(...[...card.v].map(v => A[v * 3 + 1]));
-        P.frame(null); const s0 = span(), y0 = rootY(); P.frame(w); const s1 = span(), y1 = rootY(); P.dispose();
-        return { who, s0, s1, drop: (y0 - y1) * 1000 };
+        P.frame(null); const s0 = span(), y0 = rootY(); P.frame(w); const s1 = span(), y1 = rootY();
+        // the lids kept off the eyeballs: at rest nothing moves; shut or squinting, no skin deeper into an eye than at rest
+        const skin = P.targets.find(t => t.fit && t.fit.length === 2), SA = skin.mesh.geometry.attributes.position.array;
+        const deeper = () => { let n = 0; for (const f of skin.fit) f.near.forEach((v, j) => { const i = v * 3, x = SA[i] - f.c[0], y = SA[i + 1] - f.c[1], z = SA[i + 2] - f.c[2], L = Math.hypot(x, y, z), b = Math.min(f.prof.length - 1, Math.floor((1 - z / L) / 2 * f.prof.length)); if (L < f.prof[b] + f.room[j] - 2e-5) n++; }); return n; };
+        P.frame(null); let rest = 0; for (let i = 0; i < SA.length; i++) rest = Math.max(rest, Math.abs(SA[i] - skin.base[i]));
+        const sq = new Float32Array(72); sq[M.index.lidTightener_L] = sq[M.index.lidTightener_R] = 1; sq[M.index.cheekRaiser_L] = sq[M.index.cheekRaiser_R] = 0.6;
+        P.frame(w); const inBlink = deeper(); P.frame(sq); const inSquint = deeper(); P.dispose();
+        return { who, s0, s1, drop: (y0 - y1) * 1000, rest, inBlink, inSquint };
       }
       return null;
     });
     if (!r) { console.log("       (no Studio export with lashes here: exported again with lashes on, it's checked)"); return; }
     if (Math.abs(r.s1 - r.s0) > 0.02 * r.s0 || !(r.drop > 1)) throw new Error(JSON.stringify(r));
+    if (r.rest > 1e-7 || r.inBlink || r.inSquint) throw new Error(`the eyeballs come through the lids: ${JSON.stringify(r)}`);
     console.log(`       ${r.who}: an upper lash ${(r.s0 * 1000).toFixed(1)} mm long, ${(r.s1 * 1000).toFixed(1)} mm shut; its root down ${r.drop.toFixed(1)} mm with the lid`);
   });
   await step("the red x asks first (Cancel keeps it), then Remove moves it to Saved/Expressions/removed", async () => {

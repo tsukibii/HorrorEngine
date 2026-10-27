@@ -48,11 +48,14 @@ user's ask: "put in how many seconds we want the whole original frames to take a
 preview beside the video playing at the same rate; between the captured frames a Catmull-Rom curve, so a slowed
 capture glides. A placement on the timeline (step 2) stretches it again.
 
-**Open:** on an export a full blink brings the upper lid only about halfway down. The export cuts the eye opening out
-of the skin a little wider than the strip MHR's blink squeezes shut (the Studio's smoothed, fitted lid line), and on a
-face fitted to a photo the Studio also closes the lids by leaving the fit's own offsets. The desk moves the corners by
-MHR's shapes alone. The default MHR body blinks fully. The fix (the lid line's points in the file, closed towards each
-other by the blink weight) belongs with step 2, where blinks matter on the timeline.
+**The lids stay over the eyeballs** (the user saw the whites and irises come through the skin): the Studio grows an
+eyeball to fill its opening and sets it back (about 17 mm, a cornea of 2 mm on it), showing it only through the
+opening (a stencil); a file has only depth, so the export rests the lids on the eyes, but a blink or a squint slid a lid
+down over the eye's front, which bulges further, and the eye came through. The desk measures each eye's shape once from
+its own mesh (its distance from its middle by the angle from where it looks) and every frame keeps the skin round it
+no deeper inside it than at rest: a lid that rests outside stays outside, the socket's hidden skin keeps its depth,
+nothing moves at rest. It also lets a full blink close: the lids come down over the eye instead of passing behind it.
+Measured on an export: 10,000 to 16,000 corners up to 3.3 mm inside an eye in a blink or a squint before, none after.
 
 **Built (step 1, 2026-10-27):** `face_capture.py`, the server's `/api/expressions` (list, import, accept, discard,
 set, remove; the clip with byte ranges), `shared/face.js`, `expressions.js`, the export's `_MHRP`/`_MHRW`; FACECAP

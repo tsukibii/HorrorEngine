@@ -115,7 +115,49 @@ export function faceOf(root, F = null) {
   });
   const tall = Math.max(0, ...out.filter(t => t.F && !t.cards).map(t => t.tall));   // the body's height (the skin's): MHR's moves scaled by it, brows and lashes too
   for (const t of out) if (t.F) t.scale = tall / t.F.tall;
+  const skin = out.find(t => t.F && !t.cards && t.tall === tall);
+  if (skin) skin.fit = eyeFits(root, skin);
   return out;
+}
+
+// the lids kept off the eyeballs: in the Studio an eyeball shows only through its opening (a stencil) and may stand
+// proud of MHR's lids; a file has only depth, so the export rests the lids on the eyes, but a blink or a squint slides
+// a lid down over the eye's front, which bulges further, and the eyeball came through it. Each eye's shape is measured
+// once from its own mesh (its distance from its middle, by the angle from where it looks: the white's sphere, the
+// cornea's dome; the Studio grows an eyeball to fill its opening and sets it back, so it's bigger than a real one), and
+// every frame no skin round it goes deeper into it than it was at rest: a lid outside stays outside (pushed out to the
+// eye's surface and a hair), the socket's skin that rests inside, hidden, keeps its depth (setFace)
+const BINS = 24, GAP = 0.0004;
+function eyeFits(root, skin) {
+  const fits = [], P = skin.base;
+  root.traverse(o => {
+    const m = o.isSkinnedMesh && /_eye_([LR])$/.exec(o.name || ""); if (!m) return;
+    const sk = o.skeleton, bi = sk.bones.findIndex(b => b.name === (m[1] === "L" ? "l_eye" : "r_eye")); if (bi < 0) return;
+    const e = sk.boneInverses[bi].clone().invert().elements, c = [e[12], e[13], e[14]];   // the eye's joint at its middle, in the skin's bind space
+    const V = o.geometry.attributes.position, prof = new Float32Array(BINS);
+    let far = 0;
+    for (let v = 0; v < V.count; v++) {
+      const x = V.getX(v) - c[0], y = V.getY(v) - c[1], z = V.getZ(v) - c[2], L = Math.hypot(x, y, z); if (!L) continue;
+      const b = Math.min(BINS - 1, Math.floor((1 - z / L) / 2 * BINS)); prof[b] = Math.max(prof[b], L); far = Math.max(far, L);   // by the angle from its front (+Z at rest)
+    }
+    for (let b = 1; b < BINS; b++) if (!prof[b]) prof[b] = prof[b - 1];
+    const near = [], room = [];                        // the skin that could reach it (in front of its middle, within half again its size), and how far outside it rests
+    for (let i = 0; i < P.length; i += 3) {
+      const x = P[i] - c[0], y = P[i + 1] - c[1], z = P[i + 2] - c[2], L = Math.hypot(x, y, z);
+      if (!(z > -0.3 * far && L < 1.6 * far && L > 0)) continue;
+      near.push(i / 3); room.push(Math.min(GAP, L - prof[Math.min(BINS - 1, Math.floor((1 - z / L) / 2 * BINS))]));
+    }
+    fits.push({ side: m[1], c, prof, near: Uint32Array.from(near), room: Float32Array.from(room) });
+  });
+  return fits;
+}
+function pushOut(A, fit, yaw, pitch) {
+  const [cx, cy, cz] = fit.c, fx = Math.sin(yaw), fy = -Math.cos(yaw) * Math.sin(pitch), fz = Math.cos(yaw) * Math.cos(pitch);   // where the eye looks now
+  for (let j = 0; j < fit.near.length; j++) {
+    const i = fit.near[j] * 3, x = A[i] - cx, y = A[i + 1] - cy, z = A[i + 2] - cz, L = Math.hypot(x, y, z); if (!L) continue;
+    const u = (1 - (x * fx + y * fy + z * fz) / L) / 2 * BINS, b = Math.min(BINS - 1, Math.floor(u)), r = fit.prof[b] + fit.room[j];   // no deeper than at rest
+    if (L < r) { const k = r / L; A[i] = cx + x * k; A[i + 1] = cy + y * k; A[i + 2] = cz + z * k; }
+  }
 }
 export function setFace(targets, w72) {
   let moved = null;                                    // MHR's moves for these weights, once for every part that needs them
@@ -147,9 +189,10 @@ export function setFace(targets, w72) {
       for (let q = 0; q < 3; q++) { const s = sl[j * 3 + q]; if (s < 0) continue; const w = ws[j * 3 + q]; x += w * mv[s * 3]; y += w * mv[s * 3 + 1]; z += w * mv[s * 3 + 2]; }
       A[c] = base[c] + x * scale; A[c + 1] = base[c + 1] + y * scale; A[c + 2] = base[c + 2] + z * scale;
     }
-    P.needsUpdate = true;
     const at = n => (w72 ? w72[F.names.indexOf(n)] || 0 : 0);   // the eyeballs turned by the gaze, as the Studio turns them
-    t.eyes.forEach((b, i) => { if (!b) return; const sd = i ? "R" : "L";
-      b.rotation.set(Math.asin(Math.sin((at("eyesLookDown_" + sd) - at("eyesLookUp_" + sd)) * 0.35)), Math.asin(Math.sin((at("eyesLookLeft_" + sd) - at("eyesLookRight_" + sd)) * 0.45)), 0); });
+    const gaze = sd => [Math.asin(Math.sin((at("eyesLookLeft_" + sd) - at("eyesLookRight_" + sd)) * 0.45)), Math.asin(Math.sin((at("eyesLookDown_" + sd) - at("eyesLookUp_" + sd)) * 0.35))];
+    for (const f of t.fit || []) { const [yaw, pitch] = gaze(f.side); pushOut(A, f, yaw, pitch); }   // and the lids kept off them
+    P.needsUpdate = true;
+    t.eyes.forEach((b, i) => { if (!b) return; const [yaw, pitch] = gaze(i ? "R" : "L"); b.rotation.set(pitch, yaw, 0); });
   }
 }
