@@ -2,12 +2,37 @@
 
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
-lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours) on
+lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
+dashboard and the writers' room) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-27, late night, on `dev-002`): simpler games, after Chilla's Art
+## 0. Latest (2026-10-27, on `dev-002`): the dashboard and the writers' room
+
+Asked for two things: a dashboard to start and stop every tool, and a writers' room to prototype a game's story
+before the director. Built, checked and pushed:
+- **the dashboard**: `python dashboard.py` (root), http://127.0.0.1:8790: every launcher tool by section, the pages
+  started, opened and stopped, everything else a job with its output (DASH).
+- **the writers' room**, first with a local model drafting the story, then **changed course** (DECISIONS 2026-10-27,
+  the change of course): the user writes the whole story themselves, no AI anywhere in it. `python
+  tools/writers/serve.py` (port 8795) is a Lucidchart-like chart: shapes dragged from a palette (start, scene, talk:
+  the L.A. Noire close-up with 2 or 3 answers, task, chapter, choice by the player, karma or an earlier answer,
+  secret, ending, note), arrows from the dots, acts as frames; About (the brief, the feats), Cast & places, Faces
+  (MiniMax post prompts from `Content/Studio/Expressions/prompts.json`). **Build** writes a rough working outline into
+  `Content/Games/<G>/` (`game.draft`, `voice: "none"`, the board laid out as the chart, acts as `frames`) with
+  `BUILD.md`, the handoff for Claude, and `faces.md`. docs/WRITERS_ROOM.md; WRITERS and WRITERSPAGE.
+- the story format grew for it (STORY_FORMAT §9.1, §9.9, §9.13): `game.draft` (timing as warnings), `voice: "none"`,
+  replies of two or three answers (the check forks on an answer a choice reads), and **achievements** (a secret, an
+  ending or a flag; the desk's Watch toasts them).
+- the example session `ticket-114` (the old model draft, upgraded to the chart) builds and passes STORY, LEVEL and
+  SHOTS.
+
+PLAY's bed step waited 8 s for a tween a software GPU takes about that long to finish; it waits 60 s now (LESSONS).
+Open from the request: **loops and blends in the expressions** (a timeline range made loopable, the loop's seam
+tweened; blending between several expressions dragged on): EXPRESSIONS_PLAN §2b, not started; ask first.
+
+## 0y. Before that (2026-10-27, late night, on `dev-002`): simpler games, after Chilla's Art
 
 The user deprecated quick-time events (the Pilot's grab and locker are dialogue choices now) and asked for a study of
 Chilla's Art's games (docs/research/chillas_art.md). From its five suggestions they picked three (DECISIONS 2026-10-27,
@@ -231,6 +256,12 @@ and a bake (DECISIONS 2026-10-26):
   2026-10-24). Restart a desk or Studio server after changing its Python (find the PID, kill it in a second command).
 
 ## 4. What's next (ask which)
+
+0000000g. **Write a story in the writers' room** (`python tools/writers/serve.py`, then http://127.0.0.1:8795, or the
+   dashboard's tile): drag shapes from the palette, join them by their dots, type titles and labels on the chart,
+   Shift-drag a box round a part for an act, About for the brief; the Problems bar says what's missing. Build it and
+   say what to change: the shapes, what a talk asks for, how the outline lands on the desk (`BUILD.md`). Then
+   "build <G> from its BUILD.md" when it's time to turn it into the game.
 
 0000000f. **Try the salon's easier editing** (the branch `easier-hair-editing`, off main, 2026-10-26; docs/SALON.md has
    how it's used, docs/SALON_REVIEW.md what was hard and what each item became): place a strand (root, end), drag its
