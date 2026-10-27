@@ -353,19 +353,22 @@ function skinLook() {
 // A blink: the lines come from the lid as it is open (OPENLID, browLash's cache), swung with the margin round the
 // eyeball's middle the way the lashes are (browlash.js's lidFrame), so the liner stays along the lashes' roots on a shut
 // lid instead of being found by rays on its bulge; the top a share of the open rim's fourth point (RIM_UP mm up the lid)
-function lidFront(side, pts, ws) {
-  const { pts: o, c } = outline(side, 1), upper = o.slice(16).concat([o[0]]);   // inner corner to outer, as browLash takes it
-  const O = OPENLID[side], wAt = i => ws[Math.min(8, Math.round((16 - i) / 2))];
-  if (O && O.upper.length === upper.length && O.upperRim) {
-    const fr = BL.lidFrame(upper, O.upper, O.upperRim, O.eye), at = (i, j) => { const r = fr[i].rim[j] || [0, 0, 0]; return [upper[i][0] + r[0], upper[i][1] + r[1], upper[i][2] + r[2]]; };
+// which "lower": the lower lid's front edge, where the lower lashes grow, and the skin `ws` mm down from it (the lower
+// liner's band), its line the outline's lower half (outer corner to inner, as browLash takes it and the ring runs)
+function lidFront(side, pts, ws, which = "upper") {
+  const { pts: o, c } = outline(side, 1), lower = which === "lower", line = lower ? o.slice(0, 17) : o.slice(16).concat([o[0]]);   // the upper inner corner to outer, as browLash takes it
+  const ring = j => lower ? 2 * j : 16 - 2 * j, wAt = i => ws[Math.min(8, Math.round(lower ? i / 2 : (16 - i) / 2))];   // the ring's point j (outer corner to inner) on the line, and the line's point i's width
+  const O = OPENLID[side], L0 = O && O[which], R0 = O && O[which + "Rim"];
+  if (L0 && L0.length === line.length && R0 && R0[0].length >= 12) {
+    const fr = BL.lidFrame(line, L0, R0, O.eye), at = (i, j) => { const r = fr[i].rim[j] || [0, 0, 0]; return [line[i][0] + r[0], line[i][1] + r[1], line[i][2] + r[2]]; };
     const top = i => { const f = at(i, 2), t = at(i, 3), k = wAt(i) / BL.RIM_UP; return [f[0] + (t[0] - f[0]) * k, f[1] + (t[1] - f[1]) * k, f[2] + (t[2] - f[2]) * k]; };
-    return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 2)), top: [...Array(9)].map((_, j) => top(16 - 2 * j)) };
+    return { front: [...Array(9)].map((_, j) => at(ring(j), 2)), top: [...Array(9)].map((_, j) => top(ring(j))) };
   }
   const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));   // (before the lashes have seen the eye open: the lid as it is now)
   U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
-  const rows = rimOf(upper, c, F, 2.2, side, upper.map((_, i) => wAt(i)));
-  const at = (i, a) => [upper[i][0] + rows[i][a], upper[i][1] + rows[i][a + 1], upper[i][2] + rows[i][a + 2]];
-  return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 6)), top: [...Array(9)].map((_, j) => at(16 - 2 * j, 9)) };
+  const rows = rimOf(line, c, F, lower ? 1.2 : 2.2, side, line.map((_, i) => wAt(i)));
+  const at = (i, a) => [line[i][0] + rows[i][a], line[i][1] + rows[i][a + 1], line[i][2] + rows[i][a + 2]];
+  return { front: [...Array(9)].map((_, j) => at(ring(j), 6)), top: [...Array(9)].map((_, j) => at(ring(j), 9)) };
 }
 function nailLook() {                                  // the fingernails into the skin's shader (nails.js; skinshader.js paints them)
   const n = st.nails || NAILS.NAIL_DEFAULTS, on = !!NAILAT && !!n.on;
@@ -961,9 +964,9 @@ async function inRest(fn) {
 
 // ---- eyes: MHR's closed shell cut out (in the skin's shader) inside MediaPipe's lid outline, an eyeball behind each opening
 const LMK = await api("api/face/landmarks", {}).catch(() => null);   // {tri, bary}: the 468 points on MHR's body
-// the sculpt (sculpt.js): named shape controls, each an offset field built once on MHR's base body
-const SCULPT = LMK ? SC.buildSculpt({ P: BASEP, T: TRIS, lm: i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0];
-  for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * BASEP[v + a]; } return o; } }) : null;
+// the sculpt (sculpt.js): named shape controls, each an offset field built once on MHR's base body (below, with the
+// model's own lid line: Hooded lids keeps clear of it)
+let SCULPT = null;
 const LIDS = { L: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466],   // the character's left (+x)
                R: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] };
 function lmk(i) {                                       // a landmark's place on the body as it is now
@@ -1617,6 +1620,12 @@ addEventListener("beforeunload", e => {
 });
 // ---- the sculpt's sliders (Body, Sculpt) and its handles on the body: a circle on each feature (its twin across the
 // middle), dragged; the sliders it moves follow the pointer as closely as their own motions there allow, and light up
+if (LMK) {
+  findLids();
+  const lid = MESHLID.L && MESHLID.L.map(([a, b, f]) => [0, 1, 2].map(k => BASEP[a * 3 + k] * (1 - f) + BASEP[b * 3 + k] * f));   // the left eye's own lid line on the base
+  SCULPT = SC.buildSculpt({ P: BASEP, T: TRIS, lid, lm: i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0];
+    for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * BASEP[v + a]; } return o; } });
+}
 const sculptSet = {}, sculptRow = {};
 if (SCULPT) for (const g of SC.GROUPS) {
   const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g }));
@@ -2114,7 +2123,7 @@ function browLash() {
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
-    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, eye: EYES[side].position.toArray() };   // (the upper rim's fourth point: the skin RIM_UP mm up the lid, for the lash line's and the liner's tops; the eyeball's middle: what the lids swing round)
+    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: rimOf(lower, c, F, 1.2, side, BL.RIM_UP), centre: c, eye: EYES[side].position.toArray() };   // (the rims' fourth points: the skin RIM_UP mm up the lid (down, under the lower), for the lash line's and the liners' other edges; the eyeball's middle: what the lids swing round)
     if (open >= 0.97 || !OPENLID[side]) OPENLID[side] = now;              // the lids as they are open: the lashes' frame, turned with the lid as it shuts (browlash.js)
     lids[side] = { ...now, open, open0: OPENLID[side] };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
