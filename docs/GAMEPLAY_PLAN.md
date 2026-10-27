@@ -70,7 +70,7 @@ last one repeated. A line can instead start a scene, an interactive cinematic or
 - **Inventory**: pickups and keys, notes you read; examining an item comes later.
 - **Objectives** on screen, set by beats (the format has `objective`).
 - **Checkpoints, death and retry**: the format has them; Play mode keeps the branch map's progress as the Watch does.
-- **The HUD**: subtitles (Japanese over English), the prompt, a hidden or seen cue (a vignette, a quiet heartbeat), the
+- **The HUD**: subtitles (English only: DECISIONS 2026-10-27, notes), the prompt, a hidden or seen cue (a vignette, a quiet heartbeat), the
   objective, the timer for timed tasks. A pause menu with the branch map.
 - **Sound hooks**: footsteps (quieter crouched), her barks, music states (calm, uneasy, chase) from the score room's
   palette later.

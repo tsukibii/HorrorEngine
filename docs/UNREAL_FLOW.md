@@ -137,7 +137,8 @@ following the gaze when an eye bone turns (the export is neutral and has no face
 
 ## 4b. Replies, gameplay, deaths and sound (format 3, 0.4)
 
-- **Replies:** the runner's two prompts, left and right (the Japanese over the English), while her face holds; her
+- **Replies:** the runner's two or three prompts at the bottom centre under her line (English only, each answer's
+  thought under it; the bake writes no `ja` now, so AStoryPreview's Japanese line stays empty until it's taken out), while her face holds; her
   answer's take plays after, or nothing on time out (RUNNER_SPEC.md). **To do, local.**
 - **Gameplay:** one template Blueprint per `play` type in `/Game/Studio/Horror/Play/` (`BP_Play_hide` and so on),
   started with the stitch's `secs`, `rule`, `warn` and `spots`, ending with a result; built with the engine's own

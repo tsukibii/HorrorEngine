@@ -461,7 +461,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
   stitch goes on. `{"when": {"use": "sofa"}, "do": [{"scene": "s_talk"}]}`. Its `sets` and events count as usual. A
   scene that should end the stitch or branch the story is a flow node instead (or an interrupt).
 - `ask`: a **question with answers**, asked in play. The question is the footer's line, like every line: `line` (a
-  line id: spoken, its Japanese over it, the speaker's name above) or `text` (a thought); the answers sit right under
+  line id: spoken, the speaker's name above) or `text` (a thought); the answers sit right under
   it at the bottom centre of the frame, in one panel, the dashes between them (DECISIONS 2026-10-27, notes: the lines
   are text, so the question reads on into its answers), while the camera's focus holds on `who` (a cast member's face)
   or `on` (a placed thing it's about). A reply in a scene (§9.9) and a timed choice show theirs the same way. 2 to 4 `options`, each `id`, `label`, `ja` (optional, small over the label) and `do`
@@ -790,8 +790,9 @@ its result branches like an event's.
 
 ### 9.9 Replies and hanging lines
 
-A reply is a small dialogue choice that mostly changes what she says back: two options (left and right) or three,
-shown with the Japanese over the English (a game with `voice: "none"` has none). The clip it's on is a **hanging line**:
+A reply is a small dialogue choice that mostly changes what she says back: two options or three, at the bottom centre
+under her line, in English only (no Japanese over it, DECISIONS 2026-10-27, notes: other languages come from a system
+that changes the whole dialogue). The clip it's on is a **hanging line**:
 she asks, then waits, her face doing the waiting. Three answers make an **L.A. Noire close-up** (the writers' room's talk,
 WRITERS_ROOM §2): her face answers yours before her words do (`then.expr`), and a player who watches it learns what she
 really wants.

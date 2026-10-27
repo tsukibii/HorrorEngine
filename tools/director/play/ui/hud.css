@@ -6,8 +6,8 @@
      the point, the key, the verb, the thing's name under it. Every interaction with the world is here.
    - THE CORNERS: the game talking, small and boxless: the objective top-left, the timer and the log top-right, the
      stance bottom-left.
-   - THE FOOTER: people talking, out of the world: the speaker above the line, the Japanese small over the words (a
-     choice's question too), and a choice's answers in one panel right under the question, at the bottom centre
+   - THE FOOTER: people talking, out of the world: the speaker above the line (a choice's question too; English only,
+     no Japanese over it), and a choice's answers in one panel right under the question, at the bottom centre
      (DECISIONS 2026-10-27, notes), on one soft scrim that's there only while someone talks or asks; the camera's
      focus holds on whoever asks meanwhile.
    - THE MIDDLE: a card held up to read or work (a note, a code lock), the world veiled behind it.
@@ -133,7 +133,6 @@
 .play-hud .ph-line.think>span:last-child{font-style:italic;opacity:.92}
 .play-hud .ph-line.think>span:last-child::before{content:"("}.play-hud .ph-line.think>span:last-child::after{content:")"}
 .play-hud .ph-who{display:block;margin-bottom:2px;font-size:var(--ph-fs);font-weight:700;letter-spacing:.03em;color:var(--ph-who,var(--ph-accent))}
-.play-hud .ph-ja{display:block;margin-bottom:2px;font-size:var(--ph-fs-s);color:var(--ph-muted)}
 /* a choice docked at the bottom centre (hud.js docked): in the footer, right under the question's line, the footer's
    padding below it; the panel no wider than it needs */
 .play-hud .ph-dock{display:flex;justify-content:center;max-width:100%;z-index:2}
@@ -182,7 +181,7 @@
 @keyframes ph-shake{20%{margin-left:-6px}40%{margin-left:6px}60%{margin-left:-4px}80%{margin-left:3px}}
 /* the player's settings (play/menu.js applySettings): subtitles off (a choice's question stays), their size, no Japanese */
 .play-hud .ph-footer .ph-line{font-size:calc(var(--ph-fs-l) * var(--ph-sub-scale, 1))}
-.play-hud.no-subs .ph-footer:not(:has(.ph-choice)) .ph-line,.play-hud.no-ja .ph-ja{display:none}
+.play-hud.no-subs .ph-footer:not(:has(.ph-choice)) .ph-line{display:none}
 
 /* ---- the pause menu (play/menu.js): the lights go out, the menu over the dark ----
    left: where you are (Paused, Settings), the list, the mark beside the one you're on (the reticle's ring); right: the

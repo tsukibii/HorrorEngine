@@ -89,7 +89,7 @@ const OUTCOMES = { press: ["success", "fail"], mash: ["success", "fail"], hold: 
 
 function eventOf(ev, story) {
   const out = { type: ev.type, prompt: ev.prompt || "", secs: eventSecs(ev, story) };
-  out.options = ev.type === "choose" ? (ev.options || []).map(o => ({ id: o.id, label: o.label || o.id, ja: o.ja || "" }))
+  out.options = ev.type === "choose" ? (ev.options || []).map(o => ({ id: o.id, label: o.label || o.id, ja: "" }))   // English only (DECISIONS 2026-10-27, notes)
                                      : (OUTCOMES[ev.type] || ["success", "fail"]).map(r => ({ id: r, label: r }));
   if (ev.default) out.default = ev.default;
   return out;
@@ -124,7 +124,7 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
     for (const id of Object.keys(lights)) if (lights[id].length < f + 1) lights[id].push(1);
     frames.push(fr);
     const key = st.sub ? `${st.who}|${st.sub}` : null;            // a subtitle: one entry per stretch it's up
-    if (key !== (sub && sub.key)) { if (sub) sub.t1 = T; sub = key ? { key, t0: T, t1: tl.total, en: st.sub, ja: st.ja || "", who: st.who || "" } : null; if (sub) subs.push(sub); }
+    if (key !== (sub && sub.key)) { if (sub) sub.t1 = T; sub = key ? { key, t0: T, t1: tl.total, en: st.sub, ja: "", who: st.who || "" } : null; if (sub) subs.push(sub); }
   }
   for (const s of tl.segs) if (s.type === "event") events.push(Object.assign(eventOf(s.event, story), { t: +s.start.toFixed(3), end: +s.end.toFixed(3) }));
   subs.forEach(s => { delete s.key; s.t0 = +s.t0.toFixed(3); s.t1 = +s.t1.toFixed(3); });

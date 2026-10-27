@@ -97,8 +97,8 @@ scene: a camera fade, and control taken and given back softly.
   `warn` seconds of "!" before.
 - The result is stored for the scene node, and the event's `on` actions run.
 - Inputs map to Enhanced Input actions (Interact, mouse delta).
-- **Replies (format 3):** after a clip with `reply`, two prompts at the bottom of the screen, left and right (the
-  Japanese over the English, in the player's language), for `wait` seconds while her face holds (`wait_expr`, then
+- **Replies (format 3):** after a clip with `reply`, two or three prompts at the bottom centre under her line (in the
+  player's language, no Japanese over them: DECISIONS 2026-10-27, notes; each with its `think` under it), for `wait` seconds while her face holds (`wait_expr`, then
   the idle); picking one runs its `sets` and plays its `then` take; on time out the answer is skipped (or the
   `timeout` option's plays), and the next clip follows. Left and right map to the mouse buttons and the pad's
   shoulders.

@@ -18,6 +18,12 @@ The user's answers, newest first. They override the plan, the research and the d
   multiple choice and player choices to be at the bottom centred of the frame (with padding) so it flows better". Every
   choice (a reply, an `ask`, a timed choice, a board game's call) sits under its question in the footer, at the bottom
   centre; the camera's focus still holds on whoever asks.
+- **No Japanese over the English**: "we no longer need the japanese dialogue /text above the english since we will
+  have a system for changing the entire dialogue and no japanese audio". The HUD (Play and the Watch) shows the lines
+  and the answers in English only; the pause menu's "Japanese over the English" and the Watch's "speak the Japanese"
+  are gone; the bake gives Unreal's preview no Japanese. A clip's `ja` stays in the format for the voiced games already
+  written (the desk still edits it there, and hides it in a game with `voice: "none"`); other languages come later
+  from a system that swaps the whole dialogue (EXPRESSIONS_PLAN §3's string tables).
 
 ## 2026-10-27, the change of course (the writers' room is yours: a flowchart you draw)
 

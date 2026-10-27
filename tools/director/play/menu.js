@@ -47,7 +47,6 @@ export const SETTINGS = [
     { title: "Subtitles", rows: [
       { id: "subs", label: "Subtitles", values: ONOFF, def: 1, ue: "UI" },
       { id: "sub_size", label: "Size", values: ["Small", "Medium", "Large"], def: 1, ue: "UI" },
-      { id: "ja", label: "Japanese over the English", values: ONOFF, def: 1, ue: "UI" },
     ] },
   ] },
 ];
@@ -59,9 +58,9 @@ const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; 
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 export function loadSettings() { const s = read(SKEY, {}); for (const r of ROWS) if (s[r.id] === undefined) s[r.id] = r.def; return s; }
 
-// what the desk can show of the settings (the rest wait for Unreal): subtitles, their size, the Japanese, brightness
+// what the desk can show of the settings (the rest wait for Unreal): subtitles, their size, brightness
 export function applySettings(root, s = loadSettings()) {
-  root.classList.toggle("no-subs", !s.subs); root.classList.toggle("no-ja", !s.ja);
+  root.classList.toggle("no-subs", !s.subs);
   root.style.setProperty("--ph-sub-scale", [0.85, 1, 1.2][s.sub_size] ?? 1);
   const cv = root.parentElement && root.parentElement.querySelector("canvas");
   if (cv) cv.style.filter = s.brightness === 5 ? "" : `brightness(${(0.6 + s.brightness * 0.08).toFixed(2)})`;

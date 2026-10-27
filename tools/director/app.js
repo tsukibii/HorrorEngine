@@ -204,7 +204,6 @@ function playTake(box, sid, k, c, showVideo) {
 function playLine(lid) {                         // a line outside the scenes (a bark): its take if loaded, else the browser's voice
   const ln = (S.lines || {})[lid], t = TAKES[lid]; if (!ln) return;
   if (t) { const v = takePip("#watchBox"); if (v.dataset.src !== t.url) { v.src = t.url; v.dataset.src = t.url; } v.style.display = "none"; v.currentTime = 0; v.play().catch(() => { }); }
-  else speak(ln.ja);
   const sub = el("div", { class: "barksub" }, `${ln.en || ""}`); $("#watchBox").append(sub); setTimeout(() => sub.remove(), 2600);
 }
 const pickOne = a => a && a.length ? a[Math.floor(Math.random() * a.length)] : null;
@@ -1301,7 +1300,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
       el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: () => { if (c.who !== "player") delete c.think; renderInspector(); } }),
       c.who === "player" ? chk(c, "think", "a thought (shown, never said)", renderInspector) : null,
       el("span", { class: "lab" }, "length"), txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:64px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s")));
-    pane.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
+    pane.append(txt(c, "en", { w: true, ph: (S.game || {}).voice === "none" ? "the line (typed on screen)" : "English subtitle", after: renderInspector }),
+      (S.game || {}).voice === "none" && !c.ja ? null : txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
     if ((S.format || 2) >= 3) pane.append(takeSec(c));
   }
   if (tab === "take") {
@@ -1583,11 +1583,11 @@ function scrubTo(T) {
   const tl = flowStage.timeline(sc);
   $("#sTime").textContent = `${T.toFixed(1)} / ${tl.total.toFixed(1)} s`;
   const ph = $("#playhead"); if (ph) ph.style.left = (T / tl.total * 100) + "%";
-  paintOv("#stageOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${st.clipSeg.clip.id} · ${st.clipSeg.clip.shot || "free"} · ${st.who || ""}` : "", black: st.black, tag: st.seg ? (st.seg.type === "seam" ? "seam: " + st.seg.seam.kind : st.seg.type === "event" ? "⚡ " + st.seg.event.type : "") : "" });
+  paintOv("#stageOv", { sub: st.sub, who: st.clipSeg ? `${st.clipSeg.clip.id} · ${st.clipSeg.clip.shot || "free"} · ${st.who || ""}` : "", black: st.black, tag: st.seg ? (st.seg.type === "seam" ? "seam: " + st.seg.seam.kind : st.seg.type === "event" ? "⚡ " + st.seg.event.type : "") : "" });
 }
 function paintOv(sel, o) {
-  const ov = $(sel); ov.querySelector(".sub").textContent = named(o.sub) || ""; ov.querySelector(".ja").textContent = o.ja || ""; ov.querySelector(".who").textContent = o.who || "";
-  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, !o.think && o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || (o.think ? "" : o.speaker), o.ja, o.think);   // the Watch's subtitles are the game's footer (a thought: the player's own, set apart)
+  const ov = $(sel); ov.querySelector(".sub").textContent = named(o.sub) || ""; ov.querySelector(".who").textContent = o.who || "";
+  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, !o.think && o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || (o.think ? "" : o.speaker), o.think);   // the Watch's subtitles are the game's footer (a thought: the player's own, set apart)
   ov.querySelector(".black").style.opacity = o.black || 0; ov.querySelector(".tag").textContent = o.tag || "";
 }
 function playScene(sc, ver, fromClip) {
@@ -1734,7 +1734,6 @@ let RUN = null;
 const sleep = ms => new Promise(r => { const t = setTimeout(r, ms); RUN && RUN.timers.push(t); });
 function wclear() { $("#watchBox").querySelectorAll(".wcard,.qte,.warnmark").forEach(e => e.remove()); }
 async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.opacity || 0, t0 = performance.now(), d = Math.max(0.05, secs) * 1000; while (RUN) { const u = Math.min(1, (performance.now() - t0) / d); b.style.opacity = from + (to - from) * u; if (u >= 1) break; await new Promise(r => requestAnimationFrame(r)); } }
-function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
 // achievements (STORY_FORMAT §9.13): a secret found, an ending reached or a flag set unlocks one, said in the corner
 function achieved(nid) {
@@ -1802,12 +1801,12 @@ function choiceBox(spec, pick, who) {
   const fl = docked(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
   return { box: { remove: fl.remove }, c };
 }
-// a reply: two or three answers, the Japanese over the English; she waits (her idle keeps going), then carries on
+// a reply: two or three answers (each with its thought under it, if it has one); she waits (her idle keeps going), then carries on
 function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
     const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 3), t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja, think: o.think })), timed: true }, i => finish(opts[i].id), who);
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
@@ -1851,7 +1850,7 @@ async function watchScene(sc, nid, sid, k) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
       const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
-        paintOv("#watchOv", { sub: c.en, ja: c.ja, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
+        paintOv("#watchOv", { sub: c.en, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
       if (o) karmaAct(o.sets);
@@ -1862,8 +1861,8 @@ async function watchScene(sc, nid, sid, k) {
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); lifeTick(watchStage, t0 + T); watchStage.render();
-    paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
-    if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
+    paintOv("#watchOv", { sub: st.sub, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
+    if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
@@ -1893,7 +1892,7 @@ function runChoose(ev) {              // a timed choice: the default is taken wh
   freePointer();
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), opts = ev.options || [], t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id));
     paintLine(watchHud().line, ev.prompt);                                          // the question is the footer's line
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); paintLine(watchHud().line, ""); resolve(id); };
@@ -2137,7 +2136,7 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
+function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } wclear(); paintOv("#watchOv", {});
   if (SYNC_AFTER_WATCH) { const w = SYNC_AFTER_WATCH; SYNC_AFTER_WATCH = null; syncFromDisk(w); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 

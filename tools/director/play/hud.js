@@ -20,12 +20,13 @@ export function setName(n, reset) { const v = String(n || "").trim(); if (v || r
 export const playerName = () => NAME;
 export const named = t => typeof t === "string" ? t.replace(/\{name\}/g, NAME) : t;
 
-// a spoken or written line into a footer line: the speaker above, the Japanese small, then the words (`think`: the
-// player's own thought, set apart). The Watch's scenes and Play's lines both paint with this, so a subtitle looks the
-// same wherever it comes from
-export function paintLine(el, text, who, ja, think) {
-  el.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), ...(ja ? [mk("span", "ph-ja", ja)] : []), mk("span", "", named(text) || ""));
-  el.classList.toggle("on", !!(text || ja)); el.classList.toggle("think", !!think);
+// a spoken or written line into a footer line: the speaker above, then the words (`think`: the player's own thought,
+// set apart). English only: no Japanese over it (DECISIONS 2026-10-27, notes: other languages come from a system that
+// changes the whole dialogue, and there's no Japanese audio). The Watch's scenes and Play's lines both paint with this,
+// so a subtitle looks the same wherever it comes from
+export function paintLine(el, text, who, think) {
+  el.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), mk("span", "", named(text) || ""));
+  el.classList.toggle("on", !!text); el.classList.toggle("think", !!think);
 }
 
 export class Hud {
@@ -96,7 +97,7 @@ export class Hud {
     this.root.append(c); this.root.classList.add("chapter"); void c.offsetWidth; c.classList.add("on");   // the rest of the HUD steps back
     return new Promise(done => setTimeout(() => { c.classList.remove("on"); this.root.classList.remove("chapter"); setTimeout(() => { c.remove(); done(); }, 700); }, 700 + secs * 1000));
   }
-  line(text, who, secs, think) { paintLine(this.lineEl, text, who, null, think); this.lineUntil = performance.now() + secs * 1000; }
+  line(text, who, secs, think) { paintLine(this.lineEl, text, who, think); this.lineUntil = performance.now() + secs * 1000; }
   log(text) {
     const e = mk("div", "", text); this.logEl.append(e);
     setTimeout(() => e.remove(), 5000);
@@ -165,14 +166,14 @@ export class Hud {
     });
   }
 
-  // a multiple choice (the story's `ask`): the question is the footer's line (who asks it above, its Japanese `ja`), the
+  // a multiple choice (the story's `ask`): the question is the footer's line (who asks it above), the
   // options right under it at the bottom centre (see `docked`), `secs` times it (`def`, an index, when it runs out); the
   // camera's focus holds on whoever asks (spec.anchor() each frame, {x, y, fx, fy, speaker}) or the thing it's about;
   // resolves with the index picked
   choose(spec) {
     return new Promise(done => {
       const c = chooser(Object.assign({ timed: !!spec.secs }, spec), i => finish(i)), kd = c.keys, f = docked(this.root, c, spec.anchor);
-      if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who, spec.ja); this.lineUntil = 0; }
+      if (spec.prompt) { paintLine(this.lineEl, spec.prompt, spec.who); this.lineUntil = 0; }
       let over = false, t0 = performance.now();
       const tick = () => { if (over) return; const u = (performance.now() - t0) / 1000 / spec.secs; c.bar(1 - u); if (u >= 1) return finish(spec.def ?? 0); requestAnimationFrame(tick); };
       if (spec.secs) requestAnimationFrame(tick);                                   // timed: `def` when it runs out
@@ -212,7 +213,7 @@ export function besideAt(cam, f, W, H) {
 
 // The options of a multiple choice: ONE glass panel, side by side with a dash between each pair (equal columns, so
 // the dashes stay centred), the one under the pointer (or the keys: A/D, arrows; 1-9 or Enter/Space picks) bright and
-// the rest dimmed. spec {options: [text or {label, sub}], timed}; `pick(i)` gets the index. Returns {el, keys, bar}:
+// the rest dimmed. spec {options: [text or {label, think}], timed}; `pick(i)` gets the index. Returns {el, keys, bar}:
 // the panel (docked at the bottom centre, see `docked`; the pause menu's Quit keeps it in its own footer), the keydown handler,
 // and the timer line (1 full, 0 out). The Play HUD and the desk's Watch (replies, timed choices) both use it.
 export function chooser(spec, pick) {
@@ -221,7 +222,7 @@ export function chooser(spec, pick) {
   const light = i => { at = i; opts.forEach((o, j) => o.classList.toggle("on", j === i)); box.classList.toggle("lit", i >= 0); };
   (spec.options || []).map(o => (typeof o === "string" ? { label: o } : o)).forEach((o, i) => {
     if (i) row.append(mk("span", "ph-dash"));
-    const b = mk("button", "ph-opt" + (o.think ? " thought" : "")); if (o.sub) b.append(mk("span", "ph-ja", named(o.sub))); b.append(mk("span", "", named(o.label)));
+    const b = mk("button", "ph-opt" + (o.think ? " thought" : "")); b.append(mk("span", "", named(o.label)));
     if (o.think) b.append(mk("span", "ph-think", named(o.think)));        // the player's thought under the act (an answer's `think`)
     b.onmouseenter = () => light(i); b.onfocus = () => light(i); b.onclick = () => pick(i);
     opts.push(b); row.append(b);

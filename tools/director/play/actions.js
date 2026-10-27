@@ -27,8 +27,8 @@ register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? 
 register("action", "ask", {
   run: async (v, a, rt) => {
     const opts = a.options || [], l = a.line && (rt.story.lines || {})[a.line];
-    const i = await rt.choose({ prompt: l ? l.en || l.ja : a.text, ja: l && l.en ? l.ja : null, who: a.who || (l && l.who), on: a.on,
-      options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), secs: a.secs, def: Math.max(0, opts.findIndex(o => o.id === a.default)) });
+    const i = await rt.choose({ prompt: l ? l.en || l.ja : a.text, who: a.who || (l && l.who), on: a.on,
+      options: opts.map(o => ({ label: o.label || o.id, think: o.think })), secs: a.secs, def: Math.max(0, opts.findIndex(o => o.id === a.default)) });
     const o = opts[i]; if (!o) return;
     rt.emit({ type: "answered", ask: v, option: o.id });
     await runAll(o.do, rt);
