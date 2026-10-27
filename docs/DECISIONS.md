@@ -44,6 +44,30 @@ The user's answers, newest first. They override the plan, the research and the d
   replaces rather than merges (the salon has no second editor); dragging a lock's body swings it about its root (Shift
   slides), with Blender's R and G as the keyboard way; several picked (Ctrl-click, a box) narrows the pull to them.
 
+## 2026-10-26, last thing (the rest of the lashes: the second reference's five sets)
+
+- **The five lash sets of the user's second reference, made** ("I realised I forgot to make all the eyelashes, earlier I
+  provided a future ref photo in the other session to make more eyelashes, can you make a new branch eyelash-more and
+  create the rest"; the photo, five rendered pairs of eyes, is written up in docs/research/lash_reference.md): lash
+  styles in a group of their own, **sparse, thin (men, older)**, **glam volume**, **fluffy mink**, **doll volume** and
+  **natural medium**, each also a whole look (older man (sparse lashes), glam smoky plum, fluffy mink, doll volume,
+  natural medium), and what they needed: a **lower liner** (the painted liner along the lower lashes' roots too: its
+  amount, thickness and reach), lash looks **brown**, **greying** and **grey**, the makeup presets **smoky plum**, **bold
+  doll liner** and **tinted waterline**, and **Hooded lids** in the sculpt for the reference's old man.
+- Claude's calls inside that: made from the write-up (the photo never came into the repo), judged on renders of the
+  Studio's eyes from the front, three-quarters, close and the side with a violet iris like the reference's; the looks
+  leave the irises as they are (the reference's violet is its render's); the older man's look ages the skin to seventy
+  and over, puts the brows on full and ash, a little red in the whites, no makeup, and the lashes greying (dark hairs
+  with pale tips, about a third grey all along), but leaves the hooded lid to the sculpt (a look never changes the
+  face's shape); Hooded lids never touches the lid's own edge (nothing within 2.8 mm of the line the eye is cut along
+  moves), so the opening, the rim and the lashes' roots stay, and the skin gathers into a fold without turning over;
+  the doll volume's lashes sweep up and out together rather than standing straight up (a fence, on the first render);
+  the plum is a saturated one (a dull plum read grey-brown on skin) and spreads up to the crease (Eyeshadow size: under
+  the glam lashes the lid's own shadow didn't show); the eyeshadow's lower edge and the under-eye wash's are eased (as
+  hard steps they drew straight lines across the skin beside the inner corner once the shadow spread wider: the looks
+  made before change only there); the upper lashes' slider runs to 240 (a fluffy
+  mink set is about 200); a masculine base still starts with the lashes off, as every new character does.
+
 ## 2026-10-26, late night (iris patterns and pupil shapes)
 
 - **Patterns inside the iris and pupils of other shapes, after the user's references, a heart among them** ("could you

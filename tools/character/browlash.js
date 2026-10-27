@@ -22,7 +22,7 @@ export const LASH_DEFAULTS = { on: false, count: 110, length: 8.5, curl: 0.55, l
   lower: true, lowerCount: 30, lowerLength: 4, lowerDrop: 0.25, line: 0.4, look: "lash_black" };
 export const BROW_DEFAULTS = { on: false, shape: "natural", count: 1100, length: 6.5, width: 1, arch: 0, tail: 1, soft: 0.5, powder: 0.45, look: "brow_dark_brown" };
 export const LASH_CONTROLS = [   // [key, label, lo, hi, step, help]
-  ["count", "Upper lashes", 30, 140, 1, "Upper lashes on each eye."], ["length", "Length (mm)", 4, 14, 0.1, "The longest upper lash."],
+  ["count", "Upper lashes", 20, 240, 1, "Upper lashes on each eye (a natural lid about 110, an older man's 40, a fluffy mink set 200)."], ["length", "Length (mm)", 4, 14, 0.1, "The longest upper lash."],
   ["curl", "Curl", 0, 1, 0.01, "How far each lash curls up towards its tip."], ["lift", "Lift", -0.6, 1, 0.01, "How high they leave the lid: 1 swept up, 0 straight out at the viewer, below 0 down over the eye (a lowered, half-lidded look: the lashes a dark band over the top of the eye)."],
   ["sweep", "Sweep", -1, 1, 0.01, "Where the lashes lean along the lid: + toward the outer corner, more the nearer they are to it (a fox eye's fan, the outermost nearly level), − toward the inner corner; 0 each straight out from the lid."],
   ["innerLength", "Inner length", 0.2, 1, 0.01, "The lashes at the inner corner against the outer ones: 0.3 short at the inner corner, growing toward the outer (a fox eye); 1 the same all along."],
@@ -66,6 +66,21 @@ export const LASH_STYLES = {   // presets for the lashes' own settings, after th
                 lowerCount: 0, lowerLength: 3, lowerDrop: 0.3, line: 1 },
   roundDoll: { label: "Round doll (short spikes radiating)", group: "Eye shapes, after the drawing", count: 90, length: 6, curl: 0.4, lift: 0.8, sweep: 0, innerLength: 0.85, clump: 0.9, spikes: 1, vary: 0.25, under: 0.4, cross: 0.2, width: 0.6, flare: 0.15,
                lowerCount: 36, lowerLength: 4, lowerDrop: 0.8, line: 0.4 },
+  // the five lash sets of the user's second reference (docs/research/lash_reference.md: five rendered pairs of eyes,
+  // DECISIONS 2026-10-26): an old man's sparse, thin, nearly straight lashes; a glam volume set (long, dense, fanned
+  // into soft wispy spikes, dense lower lashes); a fluffy mink set (the fullest, soft, criss-crossing, long fluffy lower
+  // lashes); a doll volume set (very long, swept up together in one sweep, long lower lashes); natural medium lashes
+  // (medium, lightly curled, separated, the lower ones thin and short)
+  sparse: { label: "Sparse, thin (men, older)", group: "Lash sets, after the second reference", count: 50, length: 6.2, curl: 0.1, lift: 0.25, sweep: 0.1, innerLength: 0.55, clump: 0.05, spikes: 0, vary: 0.3, under: 0.15, cross: 0.55, width: 0.42, flare: 0.1,
+            lowerCount: 12, lowerLength: 2.5, lowerDrop: 0.2, line: 0.1 },
+  glam: { label: "Glam volume (wispy spikes)", group: "Lash sets, after the second reference", count: 165, length: 12, curl: 0.7, lift: 0.5, sweep: 0.2, innerLength: 0.5, clump: 0.7, spikes: 0.3, vary: 0.5, under: 0.75, cross: 0.5, width: 0.62, flare: 0.65,
+          lowerCount: 42, lowerLength: 5, lowerDrop: 0.45, line: 0.9 },
+  mink: { label: "Fluffy mink (full, soft, criss-cross)", group: "Lash sets, after the second reference", count: 205, length: 12, curl: 0.6, lift: 0.55, sweep: 0.05, innerLength: 0.55, clump: 0.3, spikes: 0, vary: 0.5, under: 1, cross: 1, width: 0.5, flare: 0.4,
+          lowerCount: 50, lowerLength: 6, lowerDrop: 0.3, line: 0.5 },
+  dollVolume: { label: "Doll volume (swept up, long lower)", group: "Lash sets, after the second reference", count: 175, length: 13, curl: 0.8, lift: 0.55, sweep: 0.45, innerLength: 0.55, clump: 0.6, spikes: 0.15, vary: 0.25, under: 0.6, cross: 0.2, width: 0.6, flare: 0.7,
+                lowerCount: 50, lowerLength: 6.5, lowerDrop: 0.4, line: 1 },
+  naturalMedium: { label: "Natural medium (separated)", group: "Lash sets, after the second reference", count: 110, length: 8, curl: 0.5, lift: 0.45, sweep: 0, innerLength: 0.5, clump: 0.05, spikes: 0, vary: 0.15, under: 0.3, cross: 0.3, width: 0.45, flare: 0.3,
+                   lowerCount: 24, lowerLength: 3, lowerDrop: 0.25, line: 0.25 },
 };
 // a style's settings over every control's default (a style that doesn't name a control takes it back to its default)
 export function styleOf(key) {
@@ -79,12 +94,18 @@ export const BROW_SHAPES = {   // presets for the brow's own settings
   thin: { label: "Thin", width: 0.55, arch: 0.3, tail: 1.02, soft: 0.3, count: 600 },
   full: { label: "Full, feathered", width: 1.35, arch: -0.2, tail: 1, soft: 0.75, count: 1700 },
 };
-// the looks, in hairtex.js's words (the hair shader's colours and highlights): soft, little shine
-const look = (root, tip, spec, shine, rim) => ({ root, tip, inner: tip, innerAmount: 0, spec1: spec, spec2: tip, shine, gloss1: 160, gloss2: 40,
+// the looks, in hairtex.js's words (the hair shader's colours and highlights): soft, little shine; `inner` a colour on a
+// share of the hairs (the atlas's strands it picks: greying lashes, dark ones among white)
+const look = (root, tip, spec, shine, rim, inner = tip, innerAmount = 0) => ({ root, tip, inner, innerAmount, spec1: spec, spec2: tip, shine, gloss1: 160, gloss2: 40,
   shift1: -0.05, shift2: 0.08, shiftNoise: 0.25, rim, rimAmount: 0.08, rootLength: 0.35, soft: 0 });   // (soft: the hair's soft edges; lashes and brows stay crisp)
 export const LOOKS = {
   lash_black: { label: "Black", ...look("#050505", "#0e0d0c", "#8f8a85", 0.3, "#2a2826") },
   lash_brown_black: { label: "Brown-black", ...look("#0a0605", "#221610", "#9a8574", 0.3, "#3a2a20") },
+  // after the second reference (docs/research/lash_reference.md): a fair face's brown lashes, and an old man's going grey
+  // (dark hairs with pale tips, a third of them grey all along) and grey (most of them white-grey)
+  lash_brown: { label: "Brown", ...look("#160d08", "#4a3222", "#a8907c", 0.3, "#4a3828") },
+  lash_greying: { label: "Greying (dark, pale tips)", ...look("#121110", "#4e4945", "#aaa49e", 0.25, "#3e3a38", "#bcb5ad", 0.3) },
+  lash_grey: { label: "Grey (white among dark)", ...look("#4a4642", "#cfc8c0", "#e0dad4", 0.25, "#8a8480", "#121110", 0.25) },
   brow_dark_brown: { label: "Dark brown", ...look("#140c08", "#3b2a20", "#a08a78", 0.12, "#3f3128") },
   brow_soft_brown: { label: "Soft brown", ...look("#2a1d15", "#6a5040", "#b8a08c", 0.1, "#6a5444") },
   brow_black: { label: "Black", ...look("#080707", "#1e1b19", "#8a8580", 0.12, "#2e2a27") },
@@ -169,7 +190,7 @@ function along(P, O = null) {
 }
 
 // the cards: each a strip along its points, as wide as w0 at the root and w1 at the tip, across `across`, facing `n`
-function Cards() { return { pos: [], nrm: [], uv: [], tan: [], tint: [], depth: [], idx: [], n: 0, lift: [], rim: [], drop: [], inside: [], gaps: [], glen: [], toward: [], sweep: [] }; }
+function Cards() { return { pos: [], nrm: [], uv: [], tan: [], tint: [], depth: [], idx: [], n: 0, lift: [], rim: [], drop: [], inside: [], gaps: [], glen: [], toward: [], sweep: [], len: [], lowLen: [], cross: [], hairs: 0 }; }
 function card(G, pts, across, n, w0, w1, u0, u1, tint = [0, 0, 0, 0], depth = 0.03) {
   const base = G.pos.length / 3, m = pts.length;
   for (let k = 0; k < m; k++) {
@@ -277,21 +298,24 @@ function eyeLashes(G, B, lid, o, F, U, S, side, seed) {
         d = rot(d, tg, ang0 + droop * ease);                                // turned with the lid
         q = add(q, mul(d, len / m)); pts.push(q);
       }
-      raw.push({ pts, tg, t, len, g: h.g });
       const d = norm(sub(pts[pts.length - 1], pts[a0 - 1])), elev = Math.atan2(dot(d, U), dot(d, F)) * 180 / Math.PI;   // its elevation, the rim's edge to the tip (degrees up from straight out)
-      if (upper) { if (h.g >= 0) { G.lift.push(elev); G.rim.push(Math.hypot(...sub(pts[a0 - 1], root)) / mm); G.toward.push(dot(d, F)); G.sweep.push(dot(d, tg)); } }   // how far over the rim it lies (mm), how much it points at the viewer and leans to the outer corner, for the check
-      else G.drop.push(Math.atan2(-dot(d, U), dot(d, F)) * 180 / Math.PI);
+      raw.push({ pts, tg, t, len, g: h.g, sw: dot(d, tg) });
+      if (upper) { if (h.g >= 0) { G.lift.push(elev); G.rim.push(Math.hypot(...sub(pts[a0 - 1], root)) / mm); G.toward.push(dot(d, F)); G.sweep.push(dot(d, tg)); G.len.push(len / mm); } G.hairs++; }   // how far over the rim it lies (mm), how much it points at the viewer and leans to the outer corner, how long it is (mm), for the check
+      else { G.drop.push(Math.atan2(-dot(d, U), dot(d, F)) * 180 / Math.PI); G.lowLen.push(len / mm); }
     }
     // the clusters draw together towards their tips (into one point with Spiky clumps); for the check, the gap to the next
     // cluster against the roots' spacing inside one
     const draw = upper ? Math.min(0.95, o.clump * 0.85 + 0.1 * sp) : 0.9, byGroup = new Map();   // (a lower spike's hairs all the way together)
     for (const h of raw) if (h.g >= 0) { if (!byGroup.has(h.g)) byGroup.set(h.g, []); byGroup.get(h.g).push(h); }
+    const means = [];                                                      // each upper cluster's lean along the lid, in order: neighbours differing is crossing
     for (const [g, grp] of byGroup) {
+      if (upper) means.push(grp.reduce((a, h) => a + h.sw, 0) / grp.length);
       if (grp.length < 2) continue;
       const avg = grp[0].pts.map((_, k) => mul(grp.reduce((s, h) => add(s, h.pts[k]), [0, 0, 0]), 1 / grp.length));
       for (const h of grp) h.pts = h.pts.map((p, k) => mix(p, avg[k], draw * Math.pow(k / (h.pts.length - 1), 1.6)));   // the root stays, the tip goes most of the way
       if (upper) { const ts = grp.map(h => h.t), next = byGroup.get(g + 1); G.inside.push((Math.max(...ts) - Math.min(...ts)) / (grp.length - 1)); if (next) G.gaps.push(Math.min(...next.map(h => h.t)) - Math.max(...ts)); }
     }
+    for (let k = 1; k < means.length; k++) G.cross.push(Math.abs(means[k] - means[k - 1]));
     // the cards: one strand of the lash atlas each (its cell across the card), thin, tapering to a point; crossed with a
     // second at right angles to it, so the hair shows from the side and from above too
     for (const h of raw) {
@@ -381,5 +405,7 @@ export function build(ctx, lash, brw) {
   const spike = mean(G.gaps) / (mean(G.inside) || 1);                       // the gap between clumps against the roots' spacing inside one: about 1 spread evenly, far more as spikes
   const gm = mean(G.glen) || 1, vary = Math.sqrt(mean(G.glen.map(x => (x - gm) * (x - gm)))) / gm;   // how much the clusters' lengths differ (their spread over their mean)
   const toward = mean(G.toward), sweep = mean(G.sweep);                     // how much the upper lashes point at the viewer (1 straight at them), and lean toward the outer corner (1 along the lid)
-  return { lashes: geometryOf(G), line: geometryOf(B), brows: geometryOf(H), fill, cards: { lashes: G.n, line: B.n, brows: H.n, lift, rim, drop, spike, vary, toward, sweep } };
+  const crossing = mean(G.cross);                                          // how differently neighbouring clusters lean along the lid (crossing: wispy, fluffy), the slow change along the lid left out
+  return { lashes: geometryOf(G), line: geometryOf(B), brows: geometryOf(H), fill, cards: { lashes: G.n, line: B.n, brows: H.n, lift, rim, drop, spike, vary, toward, sweep, crossing,
+    hairs: G.hairs, lowerHairs: G.lowLen.length, length: mean(G.len), lowerLength: mean(G.lowLen) } };   // (the upper hairs, the under-lashes too, and the lower, both eyes; the clusters' hairs' mean length and the lower's, mm)
 }

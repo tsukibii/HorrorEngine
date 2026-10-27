@@ -35,8 +35,12 @@ export const FEATURES = [   // [key, label, lo, hi, step, default, help, group]
   ["wing", "Liner wing", -1, 1, 0.01, -0.3, "−1 a puppy liner angled down, +1 a cat wing up.", "Makeup"],
   ["linerWidth", "Liner thickness", 0.5, 2.5, 0.01, 1, "The liner's thickness, and its wing's length with it: 1 a fine line, 2 a bold one.", "Makeup"],
   ["linerInner", "Inner corner liner", 0, 1, 0.01, 0, "The liner carried past the inner corner toward the nose, to a sharp point (anime, douyin).", "Makeup"],
+  ["lowerLiner", "Lower liner", 0, 1, 0.01, 0, "The liner under the eye too: along the lower lashes' roots (the lower lid's front edge), a band down the skin in the liner's colour (a bold doll's ring, a glam or smoky eye).", "Makeup"],
+  ["lowerWidth", "Lower liner thickness", 0.3, 2.5, 0.01, 0.8, "The lower liner's thickness: 0.5 a fine line, 2 a bold band; thicker toward the outer corner, as the upper one.", "Makeup"],
+  ["lowerReach", "Lower liner reach", 0, 1, 0.01, 1, "How far along the lower lid it runs from the outer corner: 0.4 the outer part only (smoky), 1 corner to corner.", "Makeup"],
   ["shadow", "Eyeshadow", 0, 1, 0.01, 0, "", "Makeup"],
   ["shadowPlace", "Eyeshadow placement", 0, 1, 0.01, 0, "0 along the whole lid, 1 gathered at the outer corner.", "Makeup"],
+  ["shadowSize", "Eyeshadow size", 0.6, 2.2, 0.01, 1, "How far the eyeshadow and the under-eye wash spread: 1 the lid (hidden by long lashes), 1.6 up to the crease and out past the corner (a smoky eye).", "Makeup"],
   ["under", "Under-eye shadow", 0, 1, 0.01, 0, "A wash of colour under the lower lashes, fuller toward the outer corner: with the eyeshadow it rings the eye and draws its shape (the pink round anime eyes).", "Makeup"],
   ["corner", "Inner corner", 0, 1, 0.01, 0, "A dab of colour at the inner corner, with a little shimmer.", "Makeup"],
   ["waterline", "Waterline", 0, 1, 0.01, 0, "The lower lid's rim tinted and wet, corner to corner.", "Makeup"],
@@ -88,6 +92,17 @@ export const MAKEUP_PRESETS = {
                          shadow: 0.3, shadowPlace: 0.3, shadowColor: "#b98c9a", under: 0.5, underColor: "#e9a0ad", corner: 0.25, cornerColor: "#f0b4bc", waterline: 0.3, waterColor: "#d98c98", aegyo: 0.65 },
   "doll pink": { foundation: 0.35, blush: 0.5, blushPlace: 1, blushColor: "#ee8e9e", lips: 0, liner: 0.6, wing: 0.2, linerWidth: 0.8, linerInner: 0.5, linerColor: "#1a1416",
                  shadow: 0.5, shadowPlace: 0, shadowColor: "#e0a2b0", under: 0.7, underColor: "#ec9aa8", corner: 0.5, cornerColor: "#f6b8c2", waterline: 0.4, waterColor: "#e08a98", aegyo: 0.4 },
+  // the makeup of the user's second reference (docs/research/lash_reference.md; the lashes are browlash.js's glam,
+  // dollVolume and naturalMedium sets): the glam eye's thick black winged liner top and bottom in a dark plum smoke all
+  // round the eye, its inner corner lit; the doll volume eye's bold black liner above and below with the lids dark, the
+  // waterline lined; the natural eye's thin red-brown tint along the lower waterline on bare skin
+  "smoky plum": { foundation: 0.5, blush: 0.25, blushPlace: 0.15, blushColor: "#c98088", lips: 0, liner: 1, wing: 0.55, linerWidth: 1.9, linerInner: 0, linerColor: "#0e0b0d",
+                  lowerLiner: 0.85, lowerWidth: 1.2, lowerReach: 0.8, shadow: 0.9, shadowPlace: 0.3, shadowSize: 2, shadowColor: "#7c3c8e", under: 0.8, underColor: "#704078",
+                  corner: 0.6, cornerColor: "#f6e6de", waterline: 0.55, waterColor: "#3a2430", aegyo: 0.1 },
+  "bold doll liner": { foundation: 0.45, blush: 0.3, blushPlace: 0.6, blushColor: "#e08a94", lips: 0, liner: 1, wing: 0.3, linerWidth: 2.1, linerInner: 0.45, linerColor: "#0a0809",
+                       lowerLiner: 1, lowerWidth: 1.5, lowerReach: 1, shadow: 0.7, shadowPlace: 0.15, shadowSize: 1.3, shadowColor: "#4a3a40", under: 0.25, underColor: "#8a6a72",
+                       corner: 0.2, cornerColor: "#f0d8d4", waterline: 0.6, waterColor: "#2a1c22", aegyo: 0.2 },
+  "tinted waterline": { foundation: 0.15, waterline: 0.65, waterColor: "#b0584a" },
 };
 
 const LIDS = {   // MediaPipe's eyelid rings, outer corner to inner (the character's left eye is +x)
@@ -102,6 +117,7 @@ uniform vec3 uTone, uPhotoTone, ${COLOURS.map(c => "uc_" + c[0]).join(", ")};
 uniform vec3 ${Object.keys(POINTS).join(", ")}, uEarL, uEarR, uFaceC, uMouthC, uRight, uUp, uFwd;
 uniform vec3 uLidUL[9], uLidUR[9], uLidLL[9], uLidLR[9], uLidFL[9], uLidFR[9];   // the lid lines (MediaPipe's rings), and the upper lids' front edges (index.html's rimOf: where the lashes grow)
 uniform vec4 uLidTL[9], uLidTR[9];                                 // the liner's top edge over each: on the skin a liner's width out from the front edge (w: that width there)
+uniform vec3 uLowFL[9], uLowFR[9]; uniform vec4 uLowBL[9], uLowBR[9];   // the lower lids' front edges (where the lower lashes grow) and the lower liner's bottom edge under each (w: its width there)
 uniform float uCutOn; uniform vec2 uCutL[32], uCutR[32], uCutZ; uniform vec4 uCutBoxL, uCutBoxR;   // the eyes' openings (index.html)
 bool inCut(vec2 P[32], vec4 box, vec2 p) {                         // inside an eye's lid outline (a smoothed polygon)
   if (p.x < box.x || p.y < box.y || p.x > box.z || p.y > box.w) return false;
@@ -325,7 +341,7 @@ vec3 makeup(vec3 c, vec3 p) {
     float du = k == 0 ? line9(p, uLidUL) : line9(p, uLidUR);         // to the upper lid's line, and the lower's
     float dlo = k == 0 ? line9(p, uLidLL) : line9(p, uLidLR);
     float ex = clamp(dot(p - inner, uRight) * side / max(dot(outer - inner, uRight) * side, 1e-4), 0.0, 1.0);   // along the eye: 0 the inner corner, 1 the outer
-    float lower = step(dlo, du);                                      // nearer the lower lid than the upper: under the eye
+    float lower = smoothstep(-0.001 * s, 0.001 * s, du - dlo);        // nearer the lower lid than the upper: under the eye (eased over 2 mm: a step drew a line up from the inner corner under a strong wash)
     float outw = clamp(dot(p - lidc, uRight) * side / (0.012 * s) + 0.5, 0.0, 1.0);   // thicker toward the outer corner
     // the liner: the band on the lid's skin between the lashes' roots (the lid's front edge, uLidF*: the rim between the
     // eye and the roots is the lash line's, browlash.js) and a line a liner's width out from them on the skin (uLidT*,
@@ -343,14 +359,21 @@ vec3 makeup(vec3 c, vec3 p) {
     vec3 itip = inner - uRight * side * il - uUp * 0.25 * il;
     float innd = seg(p, inner, itip), iw = 0.0003 * s * lw * (1.0 - clamp(dot(inner - p, uRight) * side / max(il, 1e-5), 0.0, 1.0));
     ln = max(ln, (1.0 - smoothstep(iw, iw + 0.0004 * s, innd)) * step(0.001, uf_linerInner));
-    float above = step(-0.0005 * s, dot(p - lidc, uUp));            // eyeshadow: from the lid up toward the brow
-    float sh = exp(-pow(du / (0.0065 * s), 2.0)) * above * near(p, lidc + uUp * 0.004 * s, 0.016);
+    // the lower liner: the same band under the eye, between the lower lashes' roots (the lower lid's front edge, uLowF*:
+    // the waterline stays bare between it and the eye) and a line its width down the skin (uLowB*), from the outer
+    // corner as far along as its reach, thinning out before the inner corner
+    float e0 = k == 0 ? line9(p, uLowFL) : line9(p, uLowFR); vec2 e1 = k == 0 ? line9w(p, uLowBL) : line9w(p, uLowBR);
+    float past = -dot(p - inner, uRight) * side / max(dot(outer - inner, uRight) * side, 1e-4);   // how far past the inner corner toward the nose (eye widths)
+    float lo = (1.0 - smoothstep(e1.y, e1.y + 0.35 * mm, e0 + e1.x)) * smoothstep(1.0 - uf_lowerReach - 0.08, 1.0 - uf_lowerReach + 0.12, ex) * (1.0 - smoothstep(0.0, 0.06, past));
+    float ss = uf_shadowSize;                                         // how far it spreads (a smoky eye's up to the crease and out past the corner)
+    float above = smoothstep(-0.0005 * s - 0.0015 * ss * s, 0.0, dot(p - lidc, uUp));   // eyeshadow: from the lid up toward the brow (eased in under the lid's middle: a step drew a straight line across the skin past the inner corner)
+    float sh = exp(-pow(du / (0.0065 * ss * s), 2.0)) * above * near(p, lidc + uUp * 0.004 * ss * s, 0.016 * ss);
     sh *= mix(1.0, smoothstep(0.1, 0.8, ex), uf_shadowPlace);        // gathered at the outer corner
     c = mix(c, c * uc_shadowColor * 1.3, clamp(uf_shadow * sh, 0.0, 1.0));
     // under the eye: a wash along the lower lid from the lashes down, fuller toward the outer corner, round the corner
     // itself where it meets the shadow (the halo of colour round an anime eye)
-    float un = exp(-pow(dlo / (0.0045 * s), 2.0)) * (0.45 + 0.55 * smoothstep(0.1, 0.8, ex));
-    un = max(un * lower, 0.6 * near(p, outer + uRight * side * 0.002 * s - uUp * 0.001 * s, 0.004));
+    float un = exp(-pow(dlo / (0.0045 * ss * s), 2.0)) * (0.45 + 0.55 * smoothstep(0.1, 0.8, ex));
+    un = max(un * lower, 0.6 * near(p, outer + uRight * side * 0.002 * ss * s - uUp * 0.001 * s, 0.004 * ss));
     c = mix(c, c * uc_underColor * 1.35, clamp(uf_under * un, 0.0, 1.0));
     float cr = near(p, inner - uRight * side * 0.0012 * s, 0.0034) * (1.0 - 0.5 * smoothstep(0.0, 0.004 * s, dot(p - inner, uUp)));   // the inner corner: a dab round it, less above
     c = mix(c, c * uc_cornerColor * 1.4, clamp(uf_corner * cr, 0.0, 1.0));
@@ -362,7 +385,7 @@ vec3 makeup(vec3 c, vec3 p) {
     float ag = exp(-pow(dl / (0.0021 * s), 2.0));
     c = mix(c, c * 1.12 + 0.02, uf_aegyo * ag * 0.6);
     skinCoat += 0.2 * uf_aegyo * ag;
-    c = tint(c, uc_linerColor, clamp(uf_liner * ln * fr, 0.0, 1.0), 1.0);
+    c = tint(c, uc_linerColor, clamp(max(uf_liner * ln, uf_lowerLiner * lo) * fr, 0.0, 1.0), 1.0);
   }
   return c;
 }`;
@@ -385,6 +408,8 @@ export function procedural(material) {
   for (const k of [...Object.keys(POINTS), "uEarL", "uEarR", "uFaceC", "uMouthC", "uRight", "uUp", "uFwd"]) u[k] = { value: new THREE.Vector3() };
   for (const k of [...Object.keys(LIDS), "FL", "FR"]) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };
   for (const k of ["TL", "TR"]) u["uLid" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector4()) };
+  for (const k of ["FL", "FR"]) u["uLow" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector3()) };   // the lower liner's lines
+  for (const k of ["BL", "BR"]) u["uLow" + k] = { value: Array.from({ length: 9 }, () => new THREE.Vector4()) };
   material.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 skinUv; attribute float selW; attribute vec4 nail; attribute vec3 objPos; varying float vSel; varying vec3 vObj; varying vec2 vSkinUv; varying vec4 vNail;")
@@ -456,14 +481,15 @@ if (uProc > 0.5 || uHasLay > 0.5 || uLipOn > 0.5 || uNailOn > 0.5) { material.cl
 if (nailM > 0.0) { material.clearcoat = mix(material.clearcoat, nailCoat, nailM); material.clearcoatRoughness = mix(material.clearcoatRoughness, nailCoatR, nailM); }   // a nail's gloss, a polish's
 #endif`);
   };
-  material.customProgramCacheKey = () => "studio-skin-12";
+  material.customProgramCacheKey = () => "studio-skin-15";
   return u;
 }
 
 // the settings into the uniforms; landmarks (lm(i): a point on the body now) place everything on the face; rim(side,
-// pts, ws), when given, finds the upper lid's front edge at its nine points and the skin ws mm out from it (index.html's
-// rimOf: the liner is painted between the two); without it the edge is taken as a little up and forward of the lid
-// line, fading to it at the corners, and the top straight up from it
+// pts, ws, which), when given, finds a lid's front edge at its nine points and the skin ws mm out from it (index.html's
+// rimOf: the liner is painted between the two; which "upper", or "lower" for the lower liner, ws mm down the skin);
+// without it the edge is taken as a little up (down) and forward of the lid line, fading to it at the corners, and the
+// liner's other line straight up (down) from it
 export const LID_RINGS = LIDS;
 export function update(u, set, tone, lm, scale, rim = null) {
   u.uProc.value = set.on ? 1 : 0; u.uPigOn.value = set.pigmentOn ? 1 : 0; u.uScale.value = scale;
@@ -476,7 +502,8 @@ export function update(u, set, tone, lm, scale, rim = null) {
   for (const [k, ids] of Object.entries(LIDS)) ids.forEach((i, j) => u["uLid" + k].value[j].copy(v(i)));
   const X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152)); U.sub(X.clone().multiplyScalar(U.dot(X))).normalize();
   u.uRight.value.copy(X); u.uUp.value.copy(U); u.uFwd.value.crossVectors(X, U);
-  const lw = set.linerWidth ?? 1, ws = [...Array(9)].map((_, j) => { const ex = 1 - j / 8, t = Math.max(0, Math.min(1, (ex - 0.35) / 0.6)); return (0.7 + 0.8 * t * t * (3 - 2 * t)) * lw; });   // the liner's width (mm) at each point: thicker toward the outer corner (j = 0)
+  const widths = k => [...Array(9)].map((_, j) => { const ex = 1 - j / 8, t = Math.max(0, Math.min(1, (ex - 0.35) / 0.6)); return (0.7 + 0.8 * t * t * (3 - 2 * t)) * k; });   // a liner's width (mm) at each point: thicker toward the outer corner (j = 0)
+  const ws = widths(set.linerWidth ?? 1);
   for (const [k, ids] of [["F", LIDS.UL], ["F", LIDS.UR]].map(([a, b], i) => [a + (i ? "R" : "L"), b])) {
     const side = k === "FL" ? "L" : "R", pts = ids.map(lm), got = rim ? rim(side, pts, ws) : null, F = u.uFwd.value;
     pts.forEach((q, j) => {
@@ -485,6 +512,19 @@ export function update(u, set, tone, lm, scale, rim = null) {
       const t = got ? got.top[j] : [f[0] + U.x * w, f[1] + U.y * w, f[2] + U.z * w];
       u["uLid" + k].value[j].set(f[0], f[1], f[2]);
       u["uLidT" + side].value[j].set(t[0], t[1], t[2], Math.max(0.0002 * scale, Math.hypot(t[0] - f[0], t[1] - f[1], t[2] - f[2])));   // (its w: the lines' separation there)
+    });
+  }
+  // the lower liner's: the lower lid's front edge, where the lower lashes grow (rim(..., "lower")), and the skin its width
+  // down from it; without rim, a little down and forward of the lid line, fading to it at the corners
+  const wl = widths(set.lowerWidth ?? 0.8);
+  for (const side of ["L", "R"]) {
+    const pts = LIDS["L" + side].map(lm), got = rim ? rim(side, pts, wl, "lower") : null, F = u.uFwd.value;
+    pts.forEach((q, j) => {
+      const fade = Math.min(1, j / 2, (8 - j) / 2), w = wl[j] * 0.001 * scale;
+      const f = got ? got.front[j] : [q[0] + (-U.x * 0.0006 + F.x * 0.0012) * scale * fade, q[1] + (-U.y * 0.0006 + F.y * 0.0012) * scale * fade, q[2] + (-U.z * 0.0006 + F.z * 0.0012) * scale * fade];
+      const b = got ? got.top[j] : [f[0] - U.x * w, f[1] - U.y * w, f[2] - U.z * w];
+      u["uLowF" + side].value[j].set(f[0], f[1], f[2]);
+      u["uLowB" + side].value[j].set(b[0], b[1], b[2], Math.max(0.0002 * scale, Math.hypot(b[0] - f[0], b[1] - f[1], b[2] - f[2])));
     });
   }
   const out = (a, b) => v(a).add(v(a).sub(v(b)).multiplyScalar(0.12)).add(new THREE.Vector3(0, 0, -0.02 * scale));

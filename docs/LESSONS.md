@@ -807,3 +807,24 @@ when a click lands nowhere, check the ray against the mesh before the tool.
 The salon's view buttons sat over the top of the view; a test's end click on the forehead, seen from below, landed on
 "Side L" and turned the head instead of placing the sheet. Anything that floats over a canvas takes the clicks under
 it: keep bars in the header or the panel, and keep only what must be in the view (the tools' column, OK by the arrow).
+
+## The second reference's lash sets (2026-10-26)
+
+- **A sculpt near an opening measures from the opening's own line, never from MediaPipe's ring:** on MHR's face the
+  upper ring sits 2 mm below the line the eye is cut along, so Hooded lids, kept still for an eighth of the way up from
+  the ring, still moved the opening's own vertices 0.3 mm and the lashes' rim with them. The sculpt is built now with
+  the model's lid line (`buildSculpt({ lid })`) and nothing within 2.8 mm of it moves.
+- **A height over a line is only as smooth as the line:** measured straight up from the lid's line, a point's height
+  changed fast sideways where the line falls into the corners, and the fold turned twelve triangles over just above
+  the outer corner. Measure from an envelope that can't fall faster than a set slope (its gradient bounded), fade a
+  field out where it stops (no hard cut by depth or by the brow's gap) and count the triangles turned over.
+- **Makeup under long lashes doesn't show:** the smoky plum looked grey-brown on the first render because its whole
+  spread sat inside the 6.5 mm the glam lashes cover; sample the pixels where the colour should be before blaming the
+  colour, and give a look the reach it needs (Eyeshadow size).
+- **Measure the thing the style changes:** neighbouring hairs' lean differences barely told a criss-cross mink from a
+  combed natural set (1.4×: the hairs in one cluster share a lean, so most neighbours agree); neighbouring clusters'
+  mean leans did (2.6×).
+- **A hard step in a makeup mask draws a line wherever the layer is still strong at it:** the eyeshadow's "above the
+  lid's middle" and the wash's "nearer the lower lid" were steps; once the shadow spread wider they showed as straight
+  lines across the skin beside the inner corner (found by sampling a column of pixels: a 20-level jump in one row).
+  Ease every mask a layer can reach past.

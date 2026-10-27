@@ -14,7 +14,9 @@
 // the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab; the anime
 // lash styles gather the lashes into spikes and the natural one spreads them; the anime pink makeup paints the liner from
 // the lashes' roots and pink under the eye, and its look turns the lashes on; the three drawn eye shapes are lash styles
-// (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each;
+// (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each; the second
+// reference's five lash sets (sparse to fluffy mink) against the natural style, each look with its makeup; the lower
+// liner's band under the eye; Hooded lids folds the skin over the lid without turning any over or moving the opening;
 // accessories are held to the skin; the head OBJ exports; the export for the desk and Unreal carries the character's
 // recipe and Import brings it back with every file and setting the same; the pictures clear and the face goes.
 // Ends "STUDIO ok".
@@ -582,6 +584,97 @@ const png = rgb => {
     await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]');
     await page.click('#tabs button[data-tab="body"]');
     console.log(`       under the eye, red over green ${plain.toFixed(1)} plain and ${pink.toFixed(1)} with the preset; the liner's band ${u.band.toFixed(2)} mm wide in the lid's middle, from the lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line`);
+  });
+  await step("the five lash sets of the user's second reference (docs/research/lash_reference.md): sparse (men, older) the fewest and shortest, glam volume long and dense in soft spikes, fluffy mink the fullest with neighbours crossing, doll volume swept up highest with the longest lower lashes, natural medium separated; a look each with its makeup (the lower liner, a tinted waterline) and, for the old man, greying lashes and ash brows", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => [g.label, g.children.length]));
+    if (!groups.some(([g, n]) => /second reference/.test(g) && n === 5)) throw new Error("the style picker's groups: " + JSON.stringify(groups));
+    const r = await page.evaluate(async () => {
+      const b = window.__body, BL = await import("./browlash.js"), keep = structuredClone({ eyes: b.st.eyes, lips: b.st.lips, teeth: b.st.teeth, proc: b.st.skin.proc, rough: b.st.skin.rough, lash: b.st.lash, brow: b.st.brow });
+      const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash;   // per eye
+        return { hairs: c.hairs / 2, lower: c.lowerHairs / 2, length: c.length, lowerLength: c.lowerLength, lift: c.lift, spike: c.spike, crossing: c.crossing }; };
+      const s = { sparse: at("sparse"), glam: at("glam"), mink: at("mink"), doll: at("dollVolume"), medium: at("naturalMedium"), natural: at("natural") };
+      const looks = {};
+      for (const [name, style] of [["older man (sparse lashes)", "sparse"], ["glam smoky plum", "glam"], ["fluffy mink", "mink"], ["doll volume", "dollVolume"], ["natural medium", "naturalMedium"]]) {
+        b.useLook(name); const p = b.st.skin.proc, want = BL.styleOf(style);
+        looks[name] = { style: b.st.lash.on && Object.keys(want).every(k => b.st.lash[k] === want[k]), look: b.st.lash.look, liner: p.liner, lower: p.lowerLiner, water: p.waterline, waterColor: p.waterColor, brow: b.st.brow.on ? b.st.brow.look : null, age: p.age };
+      }
+      const grey = BL.LOOKS.lash_greying;
+      for (const k of ["eyes", "lips", "teeth", "lash", "brow"]) Object.assign(b.st[k], keep[k]); Object.assign(b.st.skin.proc, keep.proc); b.st.skin.rough = keep.rough;   // as the step found it
+      b.useLook("MHR plain"); b.st.lash.on = false; b.st.brow.on = false; b.paintEyes(); b.skinLook(); b.compose();
+      return { ...s, looks, grey: { inner: grey.inner, amount: grey.innerAmount } };
+    });
+    const n = r.natural, fmt = x => JSON.stringify(x);
+    if (!(r.sparse.hairs < 0.6 * n.hairs && r.sparse.length < n.length - 1.5 && r.sparse.lower <= 15 && r.sparse.lift < n.lift)) throw new Error("sparse: " + fmt({ sparse: r.sparse, natural: n }));
+    if (!(r.glam.hairs > 1.6 * n.hairs && r.glam.length > 8.5 && r.glam.spike > 2 && r.glam.lower >= 35)) throw new Error("glam volume: " + fmt(r.glam));
+    if (!(["sparse", "glam", "doll", "medium", "natural"].every(k => r.mink.hairs > r[k].hairs) && r.mink.crossing > 1.5 * r.medium.crossing && r.mink.lower >= 45 && r.mink.lowerLength > 4)) throw new Error("fluffy mink: " + fmt({ mink: r.mink, medium: r.medium }));
+    if (!(r.doll.lift > n.lift + 8 && r.doll.length > 10 && ["sparse", "glam", "mink", "medium", "natural"].every(k => r.doll.lowerLength > r[k].lowerLength))) throw new Error("doll volume: " + fmt({ doll: r.doll, natural: n }));
+    if (!(r.medium.spike < 1.5 && r.medium.length > 5.5 && r.medium.length < 8 && r.medium.lower >= 20 && r.medium.lower <= 30)) throw new Error("natural medium: " + fmt(r.medium));
+    const L = r.looks, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    for (const [k, v] of Object.entries(L)) if (!v.style) throw new Error(`the look ${k} doesn't set its lash set: ${fmt(v)}`);
+    const old = L["older man (sparse lashes)"], w = hex(L["natural medium"].waterColor);
+    if (!(old.look === "lash_greying" && old.brow === "brow_ash" && old.age > 0.8 && !old.liner) || !(r.grey.amount > 0.2)) throw new Error("the older man: " + fmt({ old, grey: r.grey }));
+    if (!(L["glam smoky plum"].lower > 0.5 && L["doll volume"].lower > 0.9 && !L["fluffy mink"].liner && !L["fluffy mink"].lower)) throw new Error("the looks' liners: " + fmt(L));
+    if (!(L["natural medium"].water > 0.5 && w[0] > w[1] && w[1] > w[2] && !L["natural medium"].liner)) throw new Error("natural medium's waterline: " + fmt(L["natural medium"]));
+    await page.click('#tabs button[data-tab="body"]');
+    const one = k => `${r[k].hairs} upper ${r[k].length.toFixed(1)} mm`;
+    console.log(`       an eye's lashes: sparse ${one("sparse")} (natural ${one("natural")}), ${r.sparse.lift.toFixed(0)}° up; glam ${one("glam")}, spikes ${r.glam.spike.toFixed(1)}×; mink ${one("mink")}, neighbours crossing ${r.mink.crossing.toFixed(2)} (natural medium ${r.medium.crossing.toFixed(2)}), ${r.mink.lower} lower; doll volume ${r.doll.lift.toFixed(0)}° up (natural ${n.lift.toFixed(0)}°), lower ${r.doll.lowerLength.toFixed(1)} mm; natural medium spikes ${r.medium.spike.toFixed(1)}×`);
+  });
+  await step("the lower liner: a band from the lower lashes' roots (the lower lid's front edge, found on the skin) its width down the skin, from the outer corner as far as its reach; the picture darker under the eye with it", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    const eyeShot = async () => {                                         // the head view zoomed onto the left eye: the canvas's picture
+      await page.evaluate(() => { const b = window.__body; document.querySelector('#views button[data-v="head"]').click(); const O = b.orbit; O.yaw = 0; O.pitch = 0.02;
+        const e = b.EYES.L.position, ty = b.st.height - 0.12 * b.st.height / 1.7; O.pan.set(e.x, e.y - ty, e.z); O.zoom = 0.14; });
+      await page.evaluate(() => new Promise(r => { let k = 0; const f = () => (++k >= 6 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
+      await page.waitForTimeout(500);
+      const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      return page.screenshot({ clip, timeout: 120000 });
+    };
+    const under = png => page.evaluate(async ([b64]) => {                  // the mean brightness of a strip just under the left eye's lower lid, its outer half
+      const b = window.__body, img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+      const r = document.querySelector("#view canvas").getBoundingClientRect(), p = b.onScreen(374), q = b.onScreen(263), c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0); const x0 = Math.round(Math.min(p[0], q[0]) - r.left), x1 = Math.round(Math.max(p[0], q[0]) - r.left), y = Math.round(p[1] - r.top);
+      const d = g.getImageData(x0, y + 1, Math.max(4, x1 - x0), 9).data; let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      return s / (d.length / 4);
+    }, [png.toString("base64")]);
+    await page.selectOption("#procRows select >> nth=1", "bold doll liner"); await page.waitForTimeout(300);
+    const u = await page.evaluate(() => { const b = window.__body, U = b.SKU, lid = U.uLidLL.value[4], front = U.uLowFL.value[4], bottom = U.uLowBL.value[4], top = U.uLidTL.value[4];
+      return { lower: U.uf_lowerLiner.value, reach: U.uf_lowerReach.value, ahead: (front.z - lid.z) * 1000, band: bottom.w * 1000, down: (front.y - bottom.y) * 1000, upper: top.w * 1000 }; });
+    if (!(u.lower > 0.9 && u.reach > 0.9) || !(u.band > 0.6 && u.band < 3) || !(u.down > 0.4) || !(u.ahead > -0.5 && u.ahead < 2.5)) throw new Error("the lower liner's band: " + JSON.stringify(u));
+    const lined = await under(await eyeShot());
+    await page.evaluate(() => { const b = window.__body; b.st.skin.proc.lowerLiner = 0; b.skinLook(); });
+    const bare = await under(await eyeShot());
+    await page.selectOption("#procRows select >> nth=1", "none"); await page.waitForTimeout(300);
+    if (!(lined < bare - 12)) throw new Error(`under the eye: ${lined.toFixed(0)} with the lower liner, ${bare.toFixed(0)} without (of 255)`);
+    await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]');
+    await page.click('#tabs button[data-tab="body"]');
+    console.log(`       the bold doll liner's lower band ${u.band.toFixed(2)} mm down the skin in the lid's middle (the upper ${u.upper.toFixed(2)} mm), from the lower lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line; under the eye ${lined.toFixed(0)} with it, ${bare.toFixed(0)} without (of 255)`);
+  });
+  await step("hooded lids (the sculpt, after the reference's old man): the skin under the brow comes down over the upper lid in a fold, most at the outer corner, never folding over itself (no triangle turned over, at 1 or -1); the opening and the lashes' roots stay; a circle on the lid", async () => {
+    const r = await page.evaluate(async () => {
+      const b = window.__body, c = b.SCULPT.controls.find(c => c.id === "hooded_lids"); if (!c) return { err: "no Hooded lids control" };
+      const B = b.BASEP, T = b.TRIS, q = new Map(); for (let k = 0; k < c.idx.length; k++) q.set(c.idx[k], k);
+      const P = (i, k) => { const j = q.get(i), o = j === undefined ? [0, 0, 0] : [c.d[j * 3], c.d[j * 3 + 1], c.d[j * 3 + 2]]; return [B[i * 3] + k * o[0], B[i * 3 + 1] + k * o[1], B[i * 3 + 2] + k * o[2]]; };
+      const nrm = (a, e, f) => { const u = [e[0] - a[0], e[1] - a[1], e[2] - a[2]], v = [f[0] - a[0], f[1] - a[1], f[2] - a[2]]; return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; };
+      const flips = k => { let n = 0, seen = 0;   // the triangles it moves turned over (a fold over itself)
+        for (let t = 0; t < T.length; t += 3) { if (!q.has(T[t]) && !q.has(T[t + 1]) && !q.has(T[t + 2])) continue; seen++;
+          const a = nrm(P(T[t], 0), P(T[t + 1], 0), P(T[t + 2], 0)), e = nrm(P(T[t], k), P(T[t + 1], k), P(T[t + 2], k)); if (a[0] * e[0] + a[1] * e[1] + a[2] * e[2] < 0) n++; }
+        return { n, seen }; };
+      const xi = b.lmk(362)[0], xo = b.lmk(263)[0]; let outer = 0, inner = 0;   // the most it drops (mm) over the eye's outer and inner halves (the left eye)
+      for (let k = 0; k < c.idx.length; k++) { const i = c.idx[k], x = B[i * 3]; if (x <= 0) continue; const ex = (x - xi) / (xo - xi), down = -c.d[k * 3 + 1] * 1000;
+        if (ex > 0.5 && ex < 1.3) outer = Math.max(outer, down); else if (ex > -0.1 && ex <= 0.5) inner = Math.max(inner, down); }
+      b.st.sculpt = {}; Object.assign(b.st.lash, { on: true }); b.compose(); const o0 = b.outline("L").pts.map(p => [...p]), rim0 = b.browlash.rim, lift0 = b.browlash.lift;
+      b.st.sculpt = { hooded_lids: 1 }; b.compose(); const o1 = b.outline("L").pts, rim1 = b.browlash.rim, lift1 = b.browlash.lift;
+      const moved = Math.max(...o0.map((p, i) => Math.hypot(p[0] - o1[i][0], p[1] - o1[i][1], p[2] - o1[i][2]))) * 1000;
+      b.st.sculpt = {}; b.st.lash.on = false; b.compose();
+      return { one: flips(1), minus: flips(-1), outer, inner, moved, rim0, rim1, lift0, lift1, circle: !!b.HANDLES.list.find(x => x.h.id === "lid_fold"), label: c.label };
+    });
+    if (r.err) throw new Error(r.err);
+    if (r.one.n || r.minus.n || !r.one.seen) throw new Error(`folds over itself: ${r.one.n} of ${r.one.seen} triangles turned over at 1, ${r.minus.n} at -1`);
+    if (!(r.outer > 2 && r.outer > r.inner)) throw new Error(`the fold's drop: ${r.outer.toFixed(1)} mm over the outer half, ${r.inner.toFixed(1)} over the inner`);
+    if (!(r.moved < 0.05) || !(Math.abs(r.rim1 - r.rim0) < 0.3) || !(Math.abs(r.lift1 - r.lift0) < 5) || !r.circle) throw new Error("the opening and the lashes: " + JSON.stringify(r));
+    console.log(`       ${r.label} 1: the fold drops ${r.outer.toFixed(1)} mm over the outer half of the eye (${r.inner.toFixed(1)} over the inner), no triangle turned over (${r.one.seen} moved); the opening moved ${r.moved.toFixed(3)} mm, the lashes' rim ${r.rim0.toFixed(2)} → ${r.rim1.toFixed(2)} mm`);
   });
   await step("the eyes: cut out of the skin along the model's own lid line (the strip its blink squeezes, found on MHR's own face; moved by hand), on a face fitted to pictures too (its blink still meets), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
     const r = await page.evaluate(() => {
