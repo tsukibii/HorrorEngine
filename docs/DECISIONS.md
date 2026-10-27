@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, evening (the export carries the Studio's colours; branch `dev-002`)
+
+- **A character exported for the desk had no colours** (the user put a Studio character on the Pilot's Mari: "why are
+  the colors for the character missing (no skin, no clothing)"), then **"build it on this branch"** (`dev-002`, the
+  merge of the four branches). The Studio's colours are drawn in shaders (the procedural skin, the tailor's fabric, the
+  hair shader of the brows and lashes) and glTF carries none, so the skin and the clothes came out white and the lashes
+  without a material. Now the export bakes what the shaders draw into textures (`tools/character/albedo.js`,
+  docs/CHARACTER_STUDIO.md §3.1).
+- Claude's calls inside that: the colour **before the light** only (gloss, the dewy glow, the pores' relief and the
+  glow through the skin are left to the renderer, the desk's or Unreal's); the skin at 4096 px on MHR's own UVs; each
+  garment part on its own islands at about 2 mm a pixel with its fabric metres kept as a second UV for a PBR set's
+  other maps; brows and lashes as the salon bakes hair (the atlas in the look's colours, cut out).
+- Earlier the same day, on the salon's retro look ("after I toggle psx dither I see it but once I bake the hair ... it
+  disappears"): the dither is a screen effect; the bake paints it into the strand atlas, where filtering averages it
+  away. Left as it is ("the explanation was fine"); in a game it's a post-process or the hair material's.
+
 ## 2026-10-27, later (the designer clothes reviewed as a lead art engineer)
 
 - **"Review the new clothes and improve, some don't look natural"**: every designer outfit on contact sheets, five

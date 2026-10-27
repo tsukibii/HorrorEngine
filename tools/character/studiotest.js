@@ -1190,6 +1190,42 @@ const png = rgb => {
     console.log(`       the eyes in a file (depth only): the lids rest on them (${r.lids.L} and ${r.lids.R} of MHR's points forward, at most ${(r.lids.most * 1000).toFixed(1)} mm); from the front, above, below and 20° to either side, at most ${(100 * worst).toFixed(2)}% of an eyeball outside its opening`);
     console.log(`       rigged: MHR's ${r.rig.joints} bones from ${r.rig.root}, every part skinned on them; the head turned 0.60 rad takes the eyes ${r.rig.turned.toFixed(2)} round it (each on ${r.rig.eyes.join(" and ")}), the feet stay (${(r.rig.feet * 1000).toFixed(2)} mm)`);
   });
+  await step("the export carries what the shaders draw (albedo.js): the skin's every layer baked on MHR's UVs, each garment's fabric on islands of its own (its metres a second UV), the brows' and lashes' strands in their look's colours", async () => {
+    await page.evaluate(() => window.__body.useLook("anime pink"));      // the lashes on, makeup round the eyes and on the lips
+    await page.click('#tabs button[data-tab="clothes"]');
+    const HANG = "label:has-text('Hang by gravity (cloth simulation)') input";
+    if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone: the drape has its own steps
+    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
+    await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
+    await page.click("#expPack");
+    await page.waitForFunction(n => new RegExp(`wrote People/${n}/export/${n}\\.glb`).test(document.querySelector("#status").textContent), NAME, { timeout: 300000 });
+    const r = await page.evaluate(async n => {
+      const b = window.__body, T = b.THREE, buf = await (await fetch(`api/package/${n}/${n}.glb`)).arrayBuffer();
+      const { GLTFLoader } = await import("./vendor/GLTFLoader.js"), g = await new GLTFLoader().parseAsync(buf, "");
+      const pixels = img => { const c = document.createElement("canvas"), W = Math.min(256, img.width), H = Math.min(256, img.height); c.width = W; c.height = H; const x = c.getContext("2d"); x.drawImage(img, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
+      const mean = d => { const s = [0, 0, 0]; let k = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 10) { s[0] += d[i]; s[1] += d[i + 1]; s[2] += d[i + 2]; k++; } return s.map(v => v / Math.max(1, k)); };
+      const live = new Map(); b.GARMENTS.traverse(o => { const U = o.isMesh && o.material.userData.uniforms; if (U) live.set(o.name, { c: U.uColor.value.clone().convertLinearToSRGB().toArray().map(v => v * 255), plain: !U.uPatternOn.value && !U.uPbrOn.value && !U.uPrintOn.value }); });
+      const out = { skin: null, clothes: [], hair: [] };
+      g.scene.traverse(o => {
+        if (!o.isMesh) return; const m = o.material, map = m.map;
+        if (/_skin$/.test(o.name)) { const d = pixels(map.image), mu = mean(d); let red = 0; for (let i = 0; i < d.length; i += 4) red = Math.max(red, d[i] - d[i + 1]); out.skin = { size: map.image.width, mean: mu, red, redMean: mu[0] - mu[1] }; }
+        else if (live.has(o.name)) out.clothes.push({ name: o.name, want: live.get(o.name), got: map ? mean(pixels(map.image)) : null, uv1: !!o.geometry.attributes.uv1 });
+        else if (map && m.alphaTest === 0.3) out.hair.push({ name: o.name, mean: mean(pixels(map.image)) });
+      });
+      return out;
+    }, NAME);
+    const fmt = v => JSON.stringify(v);
+    if (!r.skin || r.skin.size < 2048 || !(Math.max(...r.skin.mean) < 240) || !(r.skin.red > r.skin.redMean + 30)) throw new Error(`the skin's bake (a texture, the skin's colour, the makeup in it): ${fmt(r.skin)}`);
+    const off = r.clothes.filter(c => !c.got || !c.uv1 || (c.want.plain && c.got.some((v, i) => Math.abs(v - c.want.c[i]) > Math.max(14, 0.15 * c.want.c[i]))));
+    if (r.clothes.length < 3 || off.length) throw new Error(`the clothes' bake: ${r.clothes.length} parts, off ${fmt(off)}`);
+    if (r.hair.length < 2 || r.hair.some(h => Math.max(...h.mean) > 90)) throw new Error(`the lashes' bake (dark strands, cut out): ${fmt(r.hair)}`);
+    console.log(`       the skin ${r.skin.size} px, its mean ${r.skin.mean.map(v => v.toFixed(0)).join(", ")} with the makeup in it (red over green up to ${r.skin.red}); ${r.clothes.length} garment parts each its own colour (${r.clothes.filter(c => c.want.plain).map(c => `${c.name} ${c.got.map(v => v.toFixed(0)).join("/")} for ${c.want.c.map(v => v.toFixed(0)).join("/")}`).slice(0, 3).join("; ")}); ${r.hair.length} lash and brow meshes as strands`);
+    while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
+    await page.click('#tabs button[data-tab="body"]');
+  });
   if (shot) await page.screenshot({ path: shot });
   await step("cleared pictures take the face away", async () => {
     await page.click('#tabs button[data-tab="face"]');

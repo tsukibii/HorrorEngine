@@ -2,11 +2,25 @@
 
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
-lash sets), and last on 2026-10-27 on `clothing-expanded`) on `claude/experiments-afk`. Read this
+lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours) on
+`claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-26, past midnight, on `claude/inspiring-curie-fntkfv`)
+## 0. Latest (2026-10-27, evening, on `dev-002`)
+
+`dev-002` is `main` with the four branches merged (`claude/inspiring-curie-fntkfv`, `easier-hair-editing`,
+`eyelash-more`, `clothing-expanded`; only the docs conflicted, both sides kept), PR #4. Then the user put a Studio
+character on the Pilot's Mari and it stood white: the export didn't carry the Studio's colours, which its shaders draw.
+Built: **the export bakes them** (`tools/character/albedo.js`, DECISIONS 2026-10-27 evening, docs/CHARACTER_STUDIO.md
+§3.1): the skin's every layer at 4096 px on MHR's UVs, each garment part's fabric on its own islands (the metres kept as
+`uv1` for a PBR set's other maps), brows and lashes as their strands in their colours. STUDIO has a step for it.
+
+Open: PEOPLE's eye close-up measures the white at 120 against its > 120 in the cloud container, the same on `main`
+(likely the software renderer): run it on the 3090. The bake is the colour before the light; a roughness or normal
+bake (the oily T-zone, the pores, the weave) would be the next step if Unreal's look needs it.
+
+## 0b. Before that (2026-10-26, past midnight, on `claude/inspiring-curie-fntkfv`)
 
 Asked: search for open horror sound libraries, then "add everything you can", make the strings swappable with notes,
 put new instruments in the expanded scorer, and keep sound effects in the flow, not the orchestra (DECISIONS

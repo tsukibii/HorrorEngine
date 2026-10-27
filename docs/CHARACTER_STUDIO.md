@@ -68,7 +68,7 @@ export is a bake like any other (§3, Export).
 | Body for the salon | the body's weights, the face and the sculpt (above) | `body.bin` (written by Save) | none: remade on every Save |
 | Clothes | each garment's design, colour and edits (fit, shape, hang), in the order worn, in `character.json`; the designs in `Content/Studio/Clothes/` | `drape.bin`: the clothes as they hang, by a key of what they were draped on (made live in a worker; a key that no longer fits hangs them again) | the export has no skin weights yet (docs/TAILOR.md §4) |
 | Accessories | `st.accessories` in `character.json`: each one's kind, style, colours and sliders, its spot or the place clicked (a triangle and where in it) | none (made live) | none |
-| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and **rigged on MHR's skeleton** (2026-10-26: every part skinned on it, the salon's swinging locks folded onto the body's bones); the procedural skin comes out as a plain material; the eyes carry their paint baked flat and the eye's shape and paint, for the desk and Unreal to refract them again, the lids resting on them (a file has no stencil); the desk wears it as a cast member's body (`previs_body: "people/<name>"`) |
+| Export for the desk and Unreal | everything above, carried inside it (the recipe: §3.1) | `export/<name>.glb`, `<name>.studio.json`, `export.made.json` (the receipt: when, the size, each source's sha1) | the GLB is neutral and **rigged on MHR's skeleton** (2026-10-26: every part skinned on it, the salon's swinging locks folded onto the body's bones); **the Studio's colours baked** (2026-10-27, `albedo.js`: the skin's every layer on MHR's UVs, each garment's fabric on islands of its own, brows and lashes as their strands' atlas in their colours; nothing comes out white); the eyes carry their paint baked flat and the eye's shape and paint, for the desk and Unreal to refract them again, the lids resting on them (a file has no stencil); the desk wears it as a cast member's body (`previs_body: "people/<name>"`) |
 | Exports (OBJ) | none | `<name>_body.obj`, `<name>_head.obj`, in the character's own folder | **bakes mixed with sources**: move them to `export/` with the rest |
 
 The fixes are small and belong in the revamp's first steps (§5): a `made.json` receipt on each bake, the body's
@@ -78,8 +78,7 @@ fingerprint in it, the clothes' lock and order saved, exports in their own folde
 
 **Export for desk / Unreal** (the header) saves, writes `body.bin`, and writes `People/<name>/export/<name>.glb`: the
 character as it looks, neutral, in metres, Y up, feet on the floor, facing +Z. MHR's skin with the eyes' openings cut
-out as the shader cuts them (its texture the photo skin; the procedural skin is the Studio's shader, Unreal has its
-own), the eyeballs, the teeth and the tongue, brows and lashes, the salon's baked hair, the clothes and the accessories.
+out as the shader cuts them, the eyeballs, the teeth and the tongue, brows and lashes, the salon's baked hair, the clothes and the accessories.
 **Rigged** (2026-10-26, so the desk can drive it and Unreal imports a skeletal mesh): MHR's own skeleton
 (`MHR_lod1_rig.bin`'s 127 bones by MHR's names, root `body_world`), each joint where it sits in this body (refitted, as
 the T-pose refits them), the eyes' joints at the eyeballs' middles; the bones unturned, the bind pose MHR's rest pose.
@@ -98,6 +97,27 @@ along it), and the skin's node carries **each opening's outline** as cut, on the
 is untangled in the Studio too: smoothed, MHR's own left inner corner crossed itself and the little loop showed a
 diamond of eyeball at every character's corner (`untangle`, pulled to the crossing). STUDIO draws the file's skin and
 eyes flat from the front, above, below and 20° to either side: none of an eyeball outside its opening.
+
+**The colours are baked** (2026-10-27, DECISIONS: the user's character stood white on the desk). glTF carries a
+material's colour and its maps, never a shader, and the Studio draws its colours in shaders: the procedural skin
+(`skinshader.js`: the tone, the mottling, the makeup, the lipstick, the nails, the photo through its mask, the touch-up
+and the layers), the tailor's fabric (`tailor/look.js`: the colour, the weave, a pattern, a print, a PBR set's colour)
+and the hair shader of the brows and lashes. Exported as they were, the skin and the clothes came out white and the
+lashes without a material. `albedo.js` draws each material's own shader flat into its mesh's UV layout (the vertices at
+their UVs, every layer computed as in the view) and reads back the colour it reaches **before the light**: what the
+light does (the coat and the dewy glow, the pores' relief, the glow through the skin, a fabric's sheen) is left to
+whatever draws the file. The empty texels round each island take its edge, eight rings out, so a filtered read doesn't
+pull in black; the rest the islands' mean.
+- **The skin:** 4096 px on MHR's own UVs (the face takes about a quarter of the width), a JPEG in the file.
+- **Each garment part:** its fabric coordinates (metres round each part, `tailor/uv.js`) packed as one island per part
+  at about 2 mm a pixel (64 to 2048 px), the new layout its `uv` (TEXCOORD_0) and the metres kept as `uv1`
+  (TEXCOORD_1), where a PBR set's normal, roughness, metalness and AO maps still tile by their real size; the per-vertex
+  edge shade stays its vertex colour. Sheer and net fabrics keep their alpha (PNG); the weave's relief isn't carried.
+- **Brows and lashes:** their strand atlas in their look's colours (`hairtex.js`'s `albedo`, as the salon's bake), cut
+  out at 0.3.
+
+STUDIO wears the anime pink look and a t-shirt and skirt, exports, and reads the file back: the skin's texture in its
+colour with the makeup in it, every plain garment part within 15% of its colour, the lashes dark strands.
 **In Unreal** (UNREAL_FLOW §1d): `storykit.people` imports the GLB as one skeletal mesh and gives each eye
 M_StudioEye, the same eye as a material made from text, its numbers from `studioEye`; Generate does it for every cast
 member whose `previs_body` is the character, the preview posing it from the desk's bake.

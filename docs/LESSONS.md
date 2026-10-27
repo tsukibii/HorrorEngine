@@ -850,3 +850,11 @@ it: keep bars in the header or the panel, and keep only what must be in the view
   creases down a skirt, a satin sheen band tiled into blocks. Render the outfit before calling a fabric done.
 - **"Loose" is not "open":** a blazer loosened by its fit still closed down the front and read as a long cardigan; the
   reference wore it open. Cut what's worn open open, and let the drape leave it so.
+
+## What a shader draws never reaches a file (2026-10-27)
+
+The Studio's skin, clothes and lashes looked right in the Studio and came out white on the desk: their colours were
+drawn in shaders (`onBeforeCompile` uniforms, a `ShaderMaterial`), and glTF carries only a material's colour and maps
+(GLTFExporter drops a ShaderMaterial without a word in the file). Check an export by reading it back and measuring what
+a plain viewer would draw (STUDIO's export colours step), never by the Studio's own view. Anything new drawn in a
+shader needs its bake (`albedo.js`) before it ships.
