@@ -124,7 +124,12 @@ export class ExpressionsPanel {
     const waiting = modal({ title: "Reading the face…", ok: null, cancel: null, focus: false, body: h("div", { class: "xp-wait" }, h("div", { class: "xp-spin" }), h("p", {}, `${file.name}: every frame's expression (MediaPipe), the head's movement left out. A few seconds a clip.`)), ready: c => { close = c; } });
     let res = null;
     try { res = await api(`/api/expressions/import?file=${encodeURIComponent(file.name)}`, { method: "POST", body: file }); }
-    catch (e) { close && close(null); await waiting; toast("the capture failed: " + e.message); return; }
+    catch (e) {
+      close && close(null); await waiting;
+      toast(e.message === "not found" ? "The desk's server is older than the Expressions tab: stop it and start it again (python tools/director/serve.py), then Import."   // the page is read fresh from disk, the server's routes only when it starts
+        : "the capture failed: " + e.message, { ms: 20000 });
+      return;
+    }
     close && close(null); await waiting;
     const guess = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
     await this.preview(res.expression, { token: res.token, clip: `/expressions/pending/${res.token}/clip.mp4`, name: "", guess });
