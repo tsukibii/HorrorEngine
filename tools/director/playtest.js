@@ -381,6 +381,29 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const end = await page.evaluate(() => window.__watchEnd);
     if (end !== "Out of the house") throw new Error("ending " + end);
   });
+  await step("a second playtest starts from the story's level, not the last one's: the cellar door the first run unlocked and opened is shut and locked, in its frame", async () => {
+    await page.click("#wStart"); await scenesUntilPlay();
+    const d = await page.evaluate(() => { const rt = window.__dd.play, d = rt.doors.cellar_door, b = d.mesh.userData.base; return { level: rt.level, open: d.open, locked: d.locked, turned: b ? Math.abs(d.mesh.rotation.y - b.rot) + d.mesh.position.distanceTo(b.pos) : 0 }; });
+    if (d.open || !d.locked || d.turned > 1e-3) throw new Error(`the cellar door: ${JSON.stringify(d)}`);
+  });
+  await step("Esc toggles the pause menu, with the pointer locked as in a browser (faked: a lock asked for straight after an Esc is lost again to that Esc)", async () => {
+    await page.waitForTimeout(600);
+    await page.evaluate(() => {
+      const box = document.querySelector("#watchBox"), fire = () => document.dispatchEvent(new Event("pointerlockchange"));
+      window.__lock = null; window.__asks = 0; Object.defineProperty(document, "pointerLockElement", { configurable: true, get: () => window.__lock });
+      document.exitPointerLock = () => { if (window.__lock) { window.__lock = null; fire(); } };
+      box.requestPointerLock = () => { window.__asks++; window.__lock = box; fire(); if (window.__escHeld) setTimeout(() => { window.__lock = null; fire(); }, 30); return Promise.resolve(); };
+      box.requestPointerLock(); window.__asks = 0;
+    });
+    const menus = () => page.evaluate(() => document.querySelectorAll(".ph-menu:not(.out)").length);
+    await page.evaluate(() => document.exitPointerLock()); await page.waitForTimeout(500);   // Esc in play: the browser lets the pointer go
+    const open1 = await menus();
+    await page.evaluate(() => { window.__escHeld = true; }); await page.keyboard.press("Escape"); await page.waitForTimeout(600); await page.evaluate(() => { window.__escHeld = false; });
+    const shut = await menus(), asks = await page.evaluate(() => window.__asks);
+    await page.keyboard.press("Escape"); await page.waitForTimeout(500); const open2 = await menus();
+    await page.keyboard.press("Escape"); await page.waitForTimeout(500); const shut2 = await menus();
+    if (open1 !== 1 || shut !== 0 || asks !== 0 || open2 !== 1 || shut2 !== 0) throw new Error(`the menu by Esc: open ${open1}, Esc ${shut} (lock asked ${asks}), Esc ${open2}, Esc ${shut2}`);
+  });
   if (shot) await page.screenshot({ path: shot });
   if (errors.length) fail("page errors: " + errors.join(" | "));
   await browser.close();

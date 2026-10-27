@@ -16,6 +16,11 @@ Built: **the export bakes them** (`tools/character/albedo.js`, DECISIONS 2026-10
 §3.1): the skin's every layer at 4096 px on MHR's UVs, each garment part's fabric on its own islands (the metres kept as
 `uv1` for a PBR set's other maps), brows and lashes as their strands in their colours. STUDIO has a step for it.
 
+Then two Play fixes the user found on the desk: a second playtest kept the first one's world (a door it opened stood
+open, though the new run had it shut and locked: the stage's level wasn't rebuilt when a run first entered it; now it
+is), and Esc in the pause menu reopened it (closing it asked for the pointer lock back and the browser took that same
+Esc as leaving the lock, which pauses; closed by Esc it no longer asks). PLAY has a step for each.
+
 Open: PEOPLE's eye close-up measures the white at 120 against its > 120 in the cloud container, the same on `main`
 (likely the software renderer): run it on the 3090. The bake is the colour before the light; a roughness or normal
 bake (the oily T-zone, the pores, the weave) would be the next step if Unreal's look needs it.

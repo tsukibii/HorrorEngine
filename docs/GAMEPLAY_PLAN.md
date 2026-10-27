@@ -157,7 +157,7 @@ playback; Generate stays the one button.
   high card, blackjack. `boardtest.mjs` (BOARD) plays each hundreds of times offline. Not in Unreal yet.
 - **The UI is CSS, in themes**: `tools/director/play/ui/` holds the HUD as HTML (cursor, prompt, subtitles,
   objective, choices, notes, pause), and every colour, radius and shadow comes from a theme file
-  (`themes/<name>.css`: `glass` is the default now, `glass-rose` its warm romance colours, `neumorph` and `plain` stay; the layout's four places, on the thing, the corners, the footer and the middle, are at the top of `hud.css`; Esc opens the pause menu, `play/menu.js`, whose `SETTINGS` name their Unreal console variables); `game.ui_theme` picks one. The
+  (`themes/<name>.css`: `glass` is the default now, `glass-rose` its warm romance colours, `neumorph` and `plain` stay; the layout's four places, on the thing, the corners, the footer and the middle, are at the top of `hud.css`; Esc opens the pause menu and Esc closes it (closed by Esc it doesn't ask for the pointer lock back: the browser would take that same Esc as leaving the lock and pause again; a click takes it, Resume with Enter takes it at once), `play/menu.js`, whose `SETTINGS` name their Unreal console variables); `game.ui_theme` picks one. The
   neumorphic buttons pop out of the surface and press in when used. Text keeps enough contrast to read over a dark
   frame (neumorphism's weak point). Mini-games are small HTML panels in the same theme.
 - **In Unreal later**: either the same HTML through a web widget (CSS stays the truth) or UMG rebuilt from the theme's

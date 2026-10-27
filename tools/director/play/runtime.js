@@ -53,7 +53,7 @@ export class PlayRuntime {
       click: () => { if (this.active && !this.busy) box.requestPointerLock(); },
       lock: () => {                                 // the lock lost in play (Esc) pauses
         const on = document.pointerLockElement === box;
-        if (this.wasLocked && !on && this.active && !this.busy) this.pause();
+        if (this.wasLocked && !on && this.active && !this.busy && performance.now() - (this.resumed || 0) > 500) this.pause();   // (not the lock a resume just asked for, lost again)
         this.wasLocked = on; this.hud.locked(on);
       },
       move: e => { if (this.active && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
@@ -95,7 +95,8 @@ export class PlayRuntime {
   // is kept per level and put back
   enterLevel(level) {
     if (this.level === level && this.world === this.stage.world.children[0]) return;
-    if (this.stage.level !== level || !this.stage.world.children.length) this.stage.setWorld(this.plan, this.story, level);
+    const first = !(this.kept && this.kept[level]);   // this run's first time here: the level as the story builds it, never as an earlier playtest left it
+    if (first || this.stage.level !== level || !this.stage.world.children.length) this.stage.setWorld(this.plan, this.story, level);
     this.stage.setFree(false);
     this.level = level; this.world = this.stage.world.children[0]; this.byId = {}; this.doors = {};
     const kept = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} };
@@ -602,8 +603,10 @@ export class PlayRuntime {
     this.held = true; this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
     const v = await pauseMenu(this.hud, { game: (this.story.game || {}).title || "game", where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock });
-    this.held = false; this.busy = false; this.last = performance.now();
+    this.held = false; this.busy = false; this.last = this.resumed = performance.now();
     if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
+    if (v === "escaped") return;                     // closed by Esc: asking for the lock now, the browser would take the same Esc as leaving it
+                                                      // and pause again (the menu opening on every Esc); a click on the view takes it
     try { await this.box.requestPointerLock(); } catch (e) { }
   }
   hold() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it

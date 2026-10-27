@@ -67,7 +67,8 @@ export function applySettings(root, s = loadSettings()) {
 
 const clock = secs => `${Math.floor(secs / 3600)}:${String(Math.floor(secs / 60) % 60).padStart(2, "0")}:${String(Math.floor(secs) % 60).padStart(2, "0")}`;
 
-// open it over `hud`; ctx {game, where, secs}. Resolves "resume" or "quit" ({quit: "title" | "desktop"})
+// open it over `hud`; ctx {game, where, secs}. Resolves "resume", "escaped" (Esc closed it: the browser takes that same
+// Esc as leaving a pointer lock, so the game mustn't ask for one back) or "quit" ({quit: "title" | "desktop"})
 export function pauseMenu(hud, ctx) {
   return new Promise(done => {
     const s = loadSettings(), saves = read(saveKey(ctx.game), {});
@@ -169,19 +170,19 @@ export function pauseMenu(hud, ctx) {
       else focus("nav", 0);
       legendFor();
     };
-    const back = () => {
+    const back = key => {
       if (confirm) { confirm = null; const i = idx; showPage(); focus("page", i); return; }
       if (at === "quit") return open("root");
       if (col === "page" && at === "save") { open("root"); return focus("nav", 1); }
       if (at.startsWith("set:") && col === "page") { const i = SETTINGS.findIndex(x => "set:" + x.id === at); col = "nav"; focus("nav", i); legendFor(); return; }
       if (at.startsWith("set:")) { open("root"); return focus("nav", 2); }
-      close("resume");
+      close(key === "escape" ? "escaped" : "resume");
     };
     const kd = e => {
       e.stopPropagation();
       if (quit && e.key !== "Escape" && e.key !== "Backspace") return quit.keys(e);
       const k = e.key.toLowerCase(), cur = items[col][idx];
-      if (k === "escape" || k === "backspace") back();
+      if (k === "escape" || k === "backspace") back(k);
       else if (k === "w" || k === "arrowup") focus(col, idx - 1);
       else if (k === "s" || k === "arrowdown") focus(col, idx + 1);
       else if ((k === "a" || k === "arrowleft") && cur && cur.change) cur.change(-1);
