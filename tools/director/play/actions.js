@@ -12,6 +12,11 @@ export async function runAll(acts, rt) { for (const a of acts || []) { if (!rt.a
 
 const lineSecs = t => Math.min(6, 1.2 + String(t || "").length / 14);
 register("action", "objective", { run: (v, a, rt) => rt.hud.objective(v) });
+// the to-do list (todo.js): a task on it, ticked or failed by the story (or by itself: its `ticks`, `fails`, `secs`), taken off
+register("action", "todo", { run: (v, a, rt) => rt.todo.add(a) });
+register("action", "tick", { run: (v, a, rt) => rt.todo.set(v, "done") });
+register("action", "fail", { run: (v, a, rt) => rt.todo.set(v, "failed") });
+register("action", "untodo", { run: (v, a, rt) => rt.todo.remove(v) });
 register("action", "think", { run: (v, a, rt) => rt.hud.line(v, "", lineSecs(v)) });
 register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? ((rt.story.cast || {})[a.who] || {}).name || a.who : "", lineSecs(a.line || v)) });
 // ask: a question with 2 to 4 answers, floating beside `who` (or at `on`, a thing; else under the reticle) while the

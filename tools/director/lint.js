@@ -15,8 +15,9 @@ const IS = {                                       // what a placed thing must b
 const NOUN = { thing: "placed thing", spot: "spot", door: "door", light: "light", room: "room", zone: "room or trigger", locker: "hiding place",
   carry: "thing you carry", die: "die", table: "game table", line: "line", sound: "sound", item: "item", note: "note", counter: "counter",
   axis: "karma axis", scene: "scene", cast: "cast member", motion: "motion", secret: "secret", route: "route", beat: "beat in this task",
-  ask: "question", pose: "pose", life: "thing with a life" };
+  ask: "question", pose: "pose", life: "thing with a life", todo: "task on the to-do list" };
 const TABLE = { line: "lines", sound: "sounds", item: "items", note: "notes", scene: "scenes", cast: "cast", motion: "motions", secret: "secrets" };
+const ANY = { anyone: "cast", anylocker: "locker", anycarry: "carry", anytodo: "todo" };   // true (any, all) or one of a kind
 const BUILT_IN_POSES = new Set(["idle", "tpose"]);
 const MUST = new Set([...Object.keys(NOUN), "flag", "routes", "lifestate"]);      // a field of these kinds can't be left empty (unless it's optional)
 const SEAM_LOOKS = new Set(["glance", "cutaway"]);                   // seams that need something to look at
@@ -30,6 +31,8 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
   const routes = new Set(Object.values(S.levels || {}).flatMap(l => Object.keys(l.routes || {})));
   const asks = {};
   for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (a.ask) asks[a.ask] = a; });
+  const todos = {};
+  for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (typeof a.todo === "string") todos[a.todo] = a; });
   const counters = game.counters || {}, axes = (game.karma || {}).axes || { karma: {} };
   const has = (kind, v, ctx) => {                  // does v name something of this kind?
     if (IS[kind]) { const t = things[v]; return t ? IS[kind](t) || kind === "thing" : kind === "thing" && !!cast[v]; }
@@ -39,6 +42,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (kind === "route") return routes.has(v);
     if (kind === "beat") return !!(ctx.beats || []).find(b => b.id === v);
     if (kind === "ask") return !!asks[v];
+    if (kind === "todo") return !!todos[v];
     if (kind === "pose") return !poses || poses.includes(v) || BUILT_IN_POSES.has(v);
     return true;
   };
@@ -49,7 +53,8 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
       if (empty(v)) { if (!f.opt && (MUST.has(f.kind) || (f.kind === "choice" && (f.verb || f.key === "set")))) add("error", `${what}: choose the ${f.label.toLowerCase()}`, path, x); continue; }
       if (f.kind === "choice" && f.opts && !f.opts.includes(v)) add("error", `${what}: ${f.label.toLowerCase()} ${v} isn't one of ${f.opts.join(", ")}`, p, x);
       else if (f.kind === "karma") { for (const k of typeof v === "number" ? [] : Object.keys(v || {})) if (!axes[k]) add("error", `${what}: karma axis ${k} isn't in the game's karma axes`, p, x); if (typeof v === "number" && !axes.karma) add("error", `${what}: a plain number counts on the karma axis, which this game hasn't got`, p, x); }
-      else if (f.kind === "anyone" || f.kind === "anylocker" || f.kind === "anycarry") { if (v !== true && !has({ anyone: "cast", anylocker: "locker", anycarry: "carry" }[f.kind], v, ctx)) add("error", `${what}: ${v} isn't ${an(NOUN[{ anyone: "cast", anylocker: "locker", anycarry: "carry" }[f.kind]])}`, p, x); }
+      else if (ANY[f.kind]) { if (v !== true && !has(ANY[f.kind], v, ctx)) add("error", `${what}: ${v} isn't ${an(NOUN[ANY[f.kind]])}`, p, x); }
+      else if (f.kind === "trigger") trigger(v, p, ctx);
       else if (f.kind === "facing") { if (v !== "player" && !cast[v] && !things[v]) add("error", `${what}: facing ${v}, which isn't the player, a cast member or a placed thing`, p, x); }
       else if (f.kind === "routes") { for (const r of v) if (!routes.has(r)) add("error", `${what}: route ${r} isn't a route on any level`, p, x); }
       else if (f.kind === "answer") { if (!(x.options || []).some(o => o.id === v)) add("error", `${what}: ${v} isn't one of its answers`, p, x); }
@@ -64,6 +69,11 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (!d) { add("error", `an unknown command: ${verb}`, path, a); return; }
     fields(d, a, path, ctx, d.label);
     if (verb === "light" && empty(a.light) && empty(a.room)) add("error", "Light: choose a light or a room", path, a);
+    if (verb === "todo") {
+      if (typeof a.todo !== "string" || !/^[a-z0-9_]+$/.test(a.todo)) add("error", "To do: its id is a word (lower case, digits, _), for Tick, Fail and “a task is ticked”", path, a);
+      if (!a.text) add("error", `To do ${a.todo}: what the list says is empty`, path, a);
+      for (const [r, l] of Object.entries(a.on || {})) actions(l, [...path, "on", r], ctx);
+    }
     if (verb === "ask") {
       if ("line" in a && "text" in a && a.text) add("error", `Ask ${a.ask}: the question is a thought or a spoken line, not both`, path, a);
       else if (!("line" in a) && !("text" in a)) add("error", `Ask ${a.ask}: the question needs its words (a thought or a spoken line)`, path, a);
@@ -213,7 +223,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
   for (const [f, path, x] of read) if (f && !set.has(f) && !warned.has(f + path.join("/"))) { warned.add(f + path.join("/")); add("warn", `flag ${f} is waited for, but nothing sets it`, path, x); }
   return out;
 }
-function walkActs(list, fn) { for (const a of list || []) { if (!isObj(a)) continue; fn(a); for (const o of a.options || []) walkActs(o.do, fn); } }
+function walkActs(list, fn) { for (const a of list || []) { if (!isObj(a)) continue; fn(a); for (const o of a.options || []) walkActs(o.do, fn); if (a.todo !== undefined && isObj(a.on)) for (const l of Object.values(a.on)) walkActs(l, fn); } }
 
 // the problems of one place: a flow node, a beat (by its object), a clip (by its object)
 export function byNode(problems) { const m = {}; for (const p of problems) { const n = p.at && p.at.node; if (n) (m[n] = m[n] || []).push(p); } return m; }

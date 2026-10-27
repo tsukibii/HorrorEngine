@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, late night (the study's five: a to-do list that can fail, nights as chapters, requests; no phones, no ending cards)
+
+The user's answers to docs/research/chillas_art.md §3:
+- **1, the to-do list: build it**, "that can be the quest tracker, we should also have a feature for if you failed a
+  task in the to do list". Built: `todo`, `tick`, `fail`, `untodo`, the `ticked` and `failed` triggers; a task ticks
+  or fails by itself (`ticks`, `fails`, `secs`), a failed one stays struck out in red (STORY_FORMAT §4).
+- **2, nights as chapters: "sounds good"** (sleep in a bed, a title card, the time of day, an autosave).
+- **3, the pocket phone: no**. "I don't like mobile phones; if we do use them we will have more analogue ones" (a
+  landline, a payphone, a pager: never a smartphone in the pocket).
+- **4, a visitor: yes, as an easy request system on the to-do list**: "where something is requested, it waits for it
+  to complete, then it leaves. Leaving doesn't need to be the scene, it could basically be [the] character / NPC, if
+  they are a main one, carries out to the next 'shot', e.g. they asked us to do something in the kitchen while standing
+  waiting for us to do it, we do it, next shot is them walking towards the couch and sitting and we continue the next
+  sequence."
+- **5, the epilogue card: no**. "I don't want ending cards, I will have ending cutscenes."
+
 ## 2026-10-27, late (no more quick-time events; keep the game simple)
 
 - **Quick-time events deprecated**: "update the pilot and from the game deprecate for now the spam e or drag etc types

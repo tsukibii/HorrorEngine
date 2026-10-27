@@ -486,6 +486,7 @@ function storyFlags() {
   };
   walk(S); return [...out].sort();
 }
+function todosOf() { const out = {}; const walk = l => { for (const a of l || []) { if (!a) continue; if (typeof a.todo === "string") { out[a.todo] = a; for (const x of Object.values(a.on || {})) walk(x); } for (const o of a.options || []) walk(o.do); } }; for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walk(b.do); return out; }
 function asksOf() { const out = {}; for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) for (const a of b.do || []) if (a.ask) out[a.ask] = a; return out; }
 const CTX = {
   refs(kind) {
@@ -516,6 +517,7 @@ const CTX = {
       case "route": return Object.entries(S.levels || {}).filter(([l]) => !lv || l === lv).flatMap(([, v]) => Object.keys(v.routes || {}).map(r => [r, r]));
       case "beat": return CTX_BEATS.map(b => [b.id, `${b.id}: ${triggerText(b.when, CTX.name)}`]);
       case "ask": return Object.entries(asksOf()).map(([k, a]) => [k, a.text ? `${k} · ${a.text}` : k]);
+      case "todo": return Object.entries(todosOf()).map(([k, a]) => [k, a.text ? `${a.text} (${k})` : k]);
       case "pose": return poseNames().map(p => [p, p]);
       case "motion": return Object.keys(S.motions || {}).map(k => [k, k]);
       case "flag": return storyFlags().map(f => [f, f]);
@@ -533,6 +535,7 @@ const CTX = {
     if (kind === "scene") return `“${((S.scenes || {})[v] || {}).title || v}”`;
     if (kind === "cast") return ((S.cast || {})[v] || {}).name || v;
     if (kind === "counter") return ((S.game.counters || {})[v] || {}).label || v;
+    if (kind === "todo") { const t = todosOf()[v]; return t && t.text ? `“${t.text}”` : v; }
     return String(v);
   },
   changed() { touch(); },
@@ -2042,7 +2045,7 @@ function watchChoice(n) {
 const PKEY = () => `dd.progress.${GAME}`;
 function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{}"); } catch (e) { return {}; } }
 function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
-function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail }; }
+function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [] }; }
 function reach(nid) {                              // the first arrival's state is the checkpoint
   const p = progress(); p.visited = p.visited || {};
   if (!p.visited[nid]) p.visited[nid] = snapOf(RUN);

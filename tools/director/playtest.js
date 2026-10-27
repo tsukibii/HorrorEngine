@@ -139,6 +139,21 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     for (const m of [a, b]) if (!m.vis || Math.abs(m.x - 2) > 0.05 || m.y < 3.55 || m.y > 5.8) throw new Error(`${what}: off her route ${JSON.stringify(m)}`);
     if (Math.abs(a.y - b.y) < 0.2 && !(a.pose === "look_left" || b.pose === "look_left")) throw new Error(`${what}: not walking ${JSON.stringify([a, b])} ${await page.evaluate(() => { const rt = window.__dd.play; return JSON.stringify({ active: rt.active, held: rt.held, busy: rt.busy, clock: rt.clock, menu: !!document.querySelector(".ph-menu"), npc: rt.npcs.mari && Object.keys(rt.npcs.mari) }); })}`);
   };
+  const tasks = () => page.evaluate(() => [...document.querySelectorAll(".ph-todo .ph-task")].map(e => ({ id: e.dataset.id, state: e.dataset.state, text: e.textContent })));
+  await step("the to-do list: the search puts two tasks on the HUD under the objective, both open", async () => {
+    const t = await tasks();
+    if (t.length !== 2 || t.some(x => x.state !== "open") || !/letter/.test(t[0].text)) throw new Error(JSON.stringify(t));
+  });
+  await step("a task failed: one with a time limit counts down and fails by itself, struck in the bad colour; its failed runs and is heard", async () => {
+    await page.evaluate(() => { const rt = window.__dd.play; window.__heard = []; rt.todo.add({ todo: "t_test", text: "A test task", secs: 0.6, on: { failed: [{ flag: "t_test_failed" }] } });
+      const l = rt.listener; rt.listener = ev => { if (ev.type === "todo") window.__heard.push(ev); if (l) l(ev); }; window.__restore = () => { rt.listener = l; }; });
+    await page.waitForFunction(() => (document.querySelector('.ph-task[data-id=t_test]') || {}).dataset?.state === "failed", null, { timeout: 8000 });
+    const r = await page.evaluate(() => { const rt = window.__dd.play, e = document.querySelector(".ph-task[data-id=t_test]"); window.__restore();
+      const out = { flag: rt.flags.has("t_test_failed"), heard: window.__heard, struck: getComputedStyle(e.querySelector(".ph-task-text")).textDecorationLine, box: e.querySelector(".ph-box").textContent };
+      rt.todo.remove("t_test"); rt.flags.delete("t_test_failed"); return out; });
+    if (!r.flag || !r.heard.some(e => e.id === "t_test" && e.state === "failed") || !/line-through/.test(r.struck) || r.box !== "✕") throw new Error(JSON.stringify(r));
+    if ((await tasks()).length !== 2) throw new Error("the test task is still on the list");
+  });
   await step("a behaviour: Mari walks her route up and down the hall (path, pingpong, a wait in a pose)", () => onRoute("the search"));
   await step("ask: the answers float beside Mari, the question in the footer; 2 answers, its do runs and answered is heard", async () => {
     await page.evaluate(() => { const rt = window.__dd.play; rt.behave("mari", { as: "idle", at: "hall_mari_spot" }); rt.place(new (rt.player.pos.constructor)(2, 0, -2.6), 90, 0); rt.setFlag("ask_now"); });
@@ -254,6 +269,9 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const t = await page.textContent(".ph-panel .ph-text"); if (!/door open/.test(t)) throw new Error("note text " + t);
     await page.click(".ph-panel .ph-close");
   });
+  await step("reading the letter ticks its task on the list by itself (its ticks: read)", async () => {
+    const t = await tasks(); if ((t.find(x => x.id === "read_letter") || {}).state !== "done" || (t.find(x => x.id === "find_key") || {}).state !== "open") throw new Error(JSON.stringify(t));
+  });
   await step("hiding: E gets into the locker (hiding height, its walls slats you see through, no walking), E gets out", async () => {
     const r = await goTo("hall_locker", 0.8);
     if (r.cursor !== "hide") throw new Error("cursor " + r.cursor);
@@ -362,7 +380,9 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const r = await goTo("cellar_key_pickup", 0.7);
     if (r.cursor !== "take") throw new Error("cursor " + r.cursor);
     await press("KeyE");
+    await page.waitForFunction(() => (document.querySelector(".ph-task[data-id=find_key]") || {}).dataset?.state === "done", null, { timeout: 5000 });
     await page.waitForFunction(() => !window.__dd.play.end, null, { timeout: 60000 });
+    if ((await tasks()).length) throw new Error("the list isn't cleared at the end of the search (untodo)");
   });
   await step("the choice by act: the key opens the cellar door, walking in chooses it", async () => {
     await playing();

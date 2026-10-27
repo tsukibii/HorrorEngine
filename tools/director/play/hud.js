@@ -27,6 +27,7 @@ export class Hud {
     this.cursor = mk("div", "ph-cursor"); this.cursor.dataset.cursor = "none";
     this.prompt = mk("div", "ph-prompt"); this.shown = "";
     this.obj = mk("div", "ph-objective");
+    this.todoEl = mk("div", "ph-todo"); this.tl = mk("div", "ph-tl"); this.tl.append(this.obj, this.todoEl);   // the objective, the to-do list under it
     this.footer = mk("div", "ph-footer");
     this.lineEl = mk("div", "ph-line"); this.footer.append(this.lineEl);
     this.logEl = mk("div", "ph-log");
@@ -37,7 +38,7 @@ export class Hud {
     this.boardEl = mk("div", "ph-board"); this.flashEl = mk("div", "ph-flash");     // a board game's score; a muzzle's flash
     this.seenEl = mk("div", "ph-seen ph-meter"); this.seenEl.append(mk("div"));
     this.focus = mk("div", "ph-focus");            // the camera's focus: the world softens round what you're about to use
-    this.root.append(this.focus, this.obj, this.timerEl, this.boardEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint, this.flashEl);
+    this.root.append(this.focus, this.tl, this.timerEl, this.boardEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint, this.flashEl);
     box.append(this.root); applySettings(this.root);
     this.lineUntil = 0; this.panelEl = null; this.objTimer = 0;
   }
@@ -67,6 +68,18 @@ export class Hud {
   objective(text) {                                  // a new one says so, then rests dimmer
     if (text && text !== this.obj.textContent) { this.obj.classList.add("fresh"); clearTimeout(this.objTimer); this.objTimer = setTimeout(() => this.obj.classList.remove("fresh"), 4000); }
     this.obj.textContent = text || ""; this.obj.classList.toggle("on", !!text);
+  }
+  // the to-do list under the objective: [{id, text, state: open | done | failed, left: seconds or null}]; a ticked task
+  // dims with its box ticked, a failed one is struck in the bad colour; `fresh`: something changed, the list says so
+  todo(items, fresh) {
+    this.todoEl.replaceChildren(...items.map(t => {
+      const e = mk("div", "ph-task"); e.dataset.state = t.state; e.dataset.id = t.id;
+      e.append(mk("span", "ph-box", t.state === "done" ? "✓" : t.state === "failed" ? "✕" : ""), mk("span", "ph-task-text", t.text));
+      if (t.left !== null && t.left !== undefined) e.append(mk("span", "ph-task-left", Math.ceil(t.left) + "s"));
+      return e;
+    }));
+    this.todoEl.classList.toggle("on", items.length > 0);
+    if (fresh && items.length) { this.todoEl.classList.add("fresh"); clearTimeout(this.todoTimer); this.todoTimer = setTimeout(() => this.todoEl.classList.remove("fresh"), 3000); }
   }
   line(text, who, secs) { paintLine(this.lineEl, text, who); this.lineUntil = performance.now() + secs * 1000; }
   log(text) {

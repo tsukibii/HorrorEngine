@@ -413,6 +413,8 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `{"played": table}`, `"result": "lose"` | a board game at that table (`use: game`) ended: any result, or that one (its game's `results`). A result is chance, so a beat that needs one is `optional` or `secret` (the check warns otherwise): set a flag, and let the flow branch on it |
 | `{"dropped": id}`, `"in": room_or_trigger` | it was put down and has settled (anywhere, or inside that room or trigger on its level): put the doll back in its bed, the box on the shelf |
 | `{"state": thing, "is": s}` | a little thing is in that state (by itself, the story or the player); holds while it is: `{"state": "kitchen_kettle", "is": "boiled"}` |
+| `{"ticked": task}`, `{"ticked": true}` | that task on the to-do list is ticked, or (true) the list is through: nothing on it open (each ticked or failed); holds while it is |
+| `{"failed": task}`, `{"failed": true}` | that task is failed, or (true) any task is; holds while it is |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 
 **Actions (`do`, one verb each):**
@@ -454,6 +456,17 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
   `{"ask": "q_stay", "line": "mari_014", "who": "mari", "options": [{"id": "stay", "label": "I'll stay", "do": [{"karma": 1}]}, {"id": "go", "label": "I should go"}], "secs": 8, "default": "go"}`.
   The walker (STORY, the playthrough's timing) answers with the `default`, else the first.
   A reply inside a scene (§9.9) is the scene's own; `ask` is for the player's tasks.
+- `todo`: a task on **the to-do list** (the HUD's list under the objective; DECISIONS 2026-10-27, late night): a
+  shift's chores, a request, done in any order. `{"todo": "mop_floor", "text": "Mop the floor"}`; it's ticked by a
+  `tick`, or by itself when its own trigger fires (`ticks`: `{"todo": "kettle", "text": "Boil the kettle", "ticks":
+  {"state": "kitchen_kettle", "is": "boiled"}}`). It can be **failed**: by `fail`, by its own trigger (`fails`:
+  `{"caught": "mari"}`), or by its time running out (`secs`, counting down on the list). A failed task stays on the
+  list struck out in the bad colour. `on`: `{"done": [actions], "failed": [actions]}` run when it's ticked or failed
+  (set a flag there to branch the flow on it later, §5). `who`: the cast member who asked (a request, §9.12). Ticked
+  and failed are heard (`ticked`, `failed`). The list is kept with the run, through the stitches, until `untodo`
+  takes a task off (`{"untodo": "mop_floor"}`) or clears it (`{"untodo": true}`).
+  `tick`, `fail`: `{"tick": "mop_floor"}` ticks an open task, `{"fail": "mop_floor"}` fails it.
+  The walker (STORY) does every task it can (its `ticks` when they can fire) and fails only what the story fails.
 - `done`, which ends the stitch
 
 ## 5. The flow

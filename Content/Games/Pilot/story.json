@@ -1278,6 +1278,28 @@
    "target_min": 6,
    "beats": [
     {
+     "id": "b_search_list",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "todo": "read_letter",
+       "text": "Read Mari's letter",
+       "ticks": {
+        "read": "letter_mari"
+       }
+      },
+      {
+       "todo": "find_key",
+       "text": "Find the cellar key",
+       "ticks": {
+        "pickup": "cellar_key"
+       }
+      }
+     ]
+    },
+    {
      "id": "b_letter",
      "when": {
       "read": "letter_mari"
@@ -1366,6 +1388,9 @@
       },
       {
        "objective": null
+      },
+      {
+       "untodo": true
       },
       {
        "done": true

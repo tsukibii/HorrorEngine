@@ -26,12 +26,12 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask", "state"}
+           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -68,6 +68,7 @@ LOOK_WORDS = re.compile(r"\b(at|toward|towards) (the )?(player|viewer|camera|you
 TIER_SECS = {}              # tier -> seconds of motion (the animation budget report)
 SEG_NAMES = {}              # segment name -> where
 STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state"}
+TODO_ON = {"done", "failed"}  # a to-do task's `on`: actions when it's ticked, when it's failed
 MAX_CPS = 17.0
 WALK = 1.4 / 1.6            # metres a second, with looking around (x 1.6)
 ROOM_FIRST = 30             # seconds: the first look round a room
@@ -96,6 +97,29 @@ def asks_of(story):
     for st in story.get("stitches", {}).values():
         for b in st.get("beats", []):
             walk(b.get("do"))
+    return out
+
+
+def todos_of(story):
+    """Every to-do task the stitches put on the list (in answers and `on` too): its id -> its `todo` action."""
+    out = {}
+
+    def walk(acts):
+        for a in acts or []:
+            if not isinstance(a, dict):
+                continue
+            if isinstance(a.get("todo"), str):
+                out.setdefault(a["todo"], a)
+                for acts2 in (a.get("on") or {}).values():
+                    walk(acts2)
+            for o in a.get("options") or []:
+                walk(o.get("do") if isinstance(o, dict) else None)
+            walk(a.get("then"))
+    for st in story.get("stitches", {}).values():
+        for b in st.get("beats", []):
+            walk(b.get("do"))
+        for acts in ((st.get("play") or {}).get("on") or {}).values():
+            walk(acts)
     return out
 
 
@@ -810,6 +834,9 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: state {v!r} isn't a placed thing with a life")
         elif w.get("is") not in LIFE.states(lf):
             r.err(f"{bid}: state {v} is {w.get('is')!r}: one of its states ({', '.join(LIFE.states(lf))})")
+    elif k in ("ticked", "failed"):                    # a to-do task ticked or failed; true: the list through, any failed
+        if v is not True and v not in todos_of(story):
+            r.err(f"{bid}: {k} {v!r}: true or a task some stitch puts on the to-do list (`todo`)")
     elif k == "rolled":                                # a die thrown (use: roll): any roll, one face, or at least a face
         if v not in things or things[v].use != "roll":
             r.err(f"{bid}: rolled {v!r} isn't a placed thing with use: roll")
@@ -882,6 +909,33 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: ask {v!r} is timed: `default` (the answer when time runs out) is one of {', '.join(map(str, ids))}")
         elif "default" in a and a["default"] not in ids:
             r.err(f"{bid}: ask {v!r}: default {a['default']!r} isn't one of its answers")
+        return
+    if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
+        if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
+            r.err(f"{bid}: todo needs an id (a word: lower case, digits, _), for tick, fail and the ticked trigger")
+        if not isinstance(a.get("text"), str) or not a["text"].strip():
+            r.err(f"{bid}: todo {v!r} needs its `text` (what the list says: \"Mop the floor\")")
+        for f in ("ticks", "fails"):
+            if f in a:
+                if not isinstance(a[f], dict):
+                    r.err(f"{bid}: todo {v!r} {f} is a trigger ({{\"enter\": \"kitchen\"}})")
+                else:
+                    check_trigger(f"{bid} todo {v} {f}", a[f], story, things, set(), r)
+        if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
+            r.err(f"{bid}: todo {v!r}: secs is a number of seconds (it fails when they're up)")
+        on = a.get("on") or {}
+        if not isinstance(on, dict) or set(on) - TODO_ON:
+            r.err(f"{bid}: todo {v!r}: `on` is {{done: [actions], failed: [actions]}}")
+        else:
+            for res, acts in on.items():
+                for sub in acts or []:
+                    check_action(f"{bid} todo {v} on {res}", sub, story, things, r, stage)
+        if "who" in a and a["who"] not in cast:
+            r.err(f"{bid}: todo {v!r}: who {a['who']!r} isn't in cast")
+        return
+    if k in ("tick", "fail", "untodo"):
+        if v not in todos_of(story) and not (k == "untodo" and v is True):
+            r.err(f"{bid}: {k} {v!r} isn't a task any stitch puts on the to-do list (`todo`)" + (" (or true: all of them)" if k == "untodo" else ""))
         return
     if k == "say" and v not in lines:
         r.err(f"{bid}: say {v!r} isn't a line")
@@ -1337,6 +1391,7 @@ class World:
         self.dev = 0               # how far this path strays from the spine (later options, interrupts, timeouts)
         self.karma = {}            # axis -> total
         self.counters = {}         # game.counters -> value
+        self.todo = {}             # the to-do list: task id -> [state (open done failed), its todo action]
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
         self.answers = []          # (scene node, clip, option) for the report
         # the little things' lives (docs/IMMERSION.md): each one's state, a follower where its leader puts it
@@ -1510,6 +1565,10 @@ class World:
             return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
+        if k == "ticked":                                 # holds: that task ticked, or the list through (nothing open)
+            return bool(self.todo) and all(x[0] != "open" for x in self.todo.values()) if v is True else self.todo.get(v, [None])[0] == "done"
+        if k == "failed":                                 # the walker fails only what the story fails (`fail`)
+            return any(x[0] == "failed" for x in self.todo.values()) if v is True else self.todo.get(v, [None])[0] == "failed"
         if k == "state":                                  # the walker does what it takes and waits (wait_state)
             return self.reach_state(v, w.get("is")) is not None
         if k == "all":
@@ -1598,9 +1657,43 @@ class World:
                     self.done_events.add(("answered", v, o.get("id")))
                     if self.run_actions(where, o.get("do") or []):
                         return True
+            elif k == "todo":
+                self.todo[v] = ["open", a]
+            elif k in ("tick", "fail"):
+                if self.set_todo(where, v, "done" if k == "tick" else "failed"):
+                    return True
+            elif k == "untodo":
+                if v is True:
+                    self.todo.clear()
+                else:
+                    self.todo.pop(v, None)
             elif k == "done":
                 return True
         return False
+
+    def set_todo(self, where, tid, state):
+        """An open task ticked or failed: its `on` runs. True when that ends the stitch."""
+        t = self.todo.get(tid)
+        if not t or t[0] != "open":
+            return False
+        t[0] = state
+        return self.run_actions(where, (t[1].get("on") or {}).get(state) or [])
+
+    def tick_todos(self, nid):
+        """The greedy player does an open task that ticks by itself (`ticks`) when it can: (fired, ended)."""
+        for tid, (state, a) in list(self.todo.items()):
+            if state != "open" or not isinstance(a.get("ticks"), dict) or not self.can_fire(a["ticks"]):
+                continue
+            at = self.where(a["ticks"])
+            if at:
+                self.go(at)
+            if "state" in a["ticks"]:
+                self.wait_state(nid, a["ticks"]["state"], a["ticks"].get("is"))
+            self.route.append({"node": nid, "do": "expect", "todo": tid})
+            if self.verbose:
+                print(f"  [{nid}] ticks {tid}")
+            return True, self.set_todo(tid, tid, "done")
+        return False, False
 
     def player_move(self):
         for t in self.things.values():
@@ -1662,7 +1755,9 @@ class World:
         for _ in range(10000):
             fired_one = True
             while fired_one:
-                fired_one = False
+                fired_one, ended = self.tick_todos(nid)
+                if ended:
+                    return True
                 for b in beats:
                     if b["id"] in self.fired or (b.get("secret") and not self.seek_secrets):
                         continue

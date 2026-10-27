@@ -12,6 +12,7 @@ import "./abilities.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt } from "./hud.js";
+import { Todo } from "./todo.js";
 import { pauseMenu } from "./menu.js";
 import { Physics, dieMaterials } from "./physics.js";
 import { loadRules, boardCtx, Table } from "./boardgames.js";
@@ -37,6 +38,7 @@ export class PlayRuntime {
     this.items = new Set();
     this.settings = opts.settings || {};
     this.hud = new Hud(box, opts.theme || (story.game || {}).ui_theme || THEME);
+    this.todo = new Todo(this);                        // the to-do list, kept with the run (todo.js)
     this.player = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, eye: EYES.stand, crouched: false };
     this.keys = {}; this.ended = {}; this.clock = 0; this.inside = new Set(); this.doors = {}; this.waits = [];
     this.npcs = {};                                 // cast id -> what they're doing in play (behave), kept across stitches
@@ -207,7 +209,7 @@ export class PlayRuntime {
   pointIn(t, x, y, z) { return x >= t.min[0] && x <= t.max[0] && y >= t.min[1] && y <= t.max[1] && z >= t.min[2] && z <= t.max[2]; }   // story coordinates
 
   // ---- what the story's parts call -------------------------------------------------------------------------------
-  emit(ev) { if (this.listener) this.listener(ev); }
+  emit(ev) { if (this.todo) this.todo.event(ev); if (this.listener) this.listener(ev); }
   setFlag(f) { if (!f) return; this.flags.add(f); this.emit({ type: "flag", id: f }); }
   give(item) { this.items.add(item); this.hud.log(`got: ${this.itemName(item)}`); }
   itemName(id) { return ((this.story.items || {})[id] || {}).name || String(id).replace(/_/g, " "); }

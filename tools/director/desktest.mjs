@@ -316,5 +316,21 @@ print(json.dumps([LF.life_of({"kit": n}) for n in json.load(sys.stdin)]))`], { i
     ? ok("a state a thing hasn't got: found live and by the story check, at the beat") : fail("bad states: " + ps2.join("; "));
 }
 
+// the to-do list (STORY_FORMAT §4): a task that fails and one that's ticked play through; a tick of a task no stitch lists,
+// a trigger inside a task naming nothing, and a ticked trigger of an unknown task are found live and by the story check
+{
+  const S = story("Pilot"), th = thingsOf(S), st = S.stitches.t_search;
+  st.beats.unshift({ id: "b_t_list", when: { start: true }, do: [{ todo: "t_mop", text: "Mop the floor", secs: 30, on: { failed: [{ flag: "t_mop_failed" }] } }, { fail: "t_mop" }] },
+    { id: "b_t_after", when: { failed: "t_mop" }, do: [{ think: "Too late." }, { todo: "t_tea", text: "Make the tea", ticks: { enter: "kitchen" } }] },
+    { id: "b_t_tea", when: { ticked: "t_tea" }, if: ["t_mop_failed"], do: [{ think: "At least the tea." }] });
+  const ps = run(S, th).filter(p => p.sev === "error"), out = storyCheck("Pilot", S).trim().split("\n").pop();
+  !ps.length && /STORY ok/.test(out) ? ok(`a task failed (its failed runs, the failed trigger heard), another ticked by its own trigger: no live problems, the walker plays it through (${out})`) : fail("todo story: " + ps.map(p => p.text).join("; ") + " / " + out);
+  st.beats[0].do[1] = { tick: "t_nothing" }; st.beats[1].do[1].ticks = { enter: "nowhere" }; st.beats[2].when = { ticked: "t_unknown" };
+  const ps2 = run(S, th).filter(p => p.sev === "error").map(p => p.text), out2 = storyCheck("Pilot", S);
+  ps2.some(t => /t_nothing isn't a task on the to-do list/.test(t)) && ps2.some(t => /nowhere isn't a room or trigger/.test(t)) && ps2.some(t => /t_unknown isn't a task/.test(t))
+    && /tick 't_nothing'/.test(out2) && /enter 'nowhere'/.test(out2) && /ticked 't_unknown'/.test(out2)
+    ? ok("a tick of no task, a task's trigger naming nothing, a ticked trigger of no task: found live and by the story check") : fail("bad todos: " + ps2.join("; ") + " / " + out2.split("\n").filter(l => /todo|tick|nowhere/.test(l)).join(" | "));
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

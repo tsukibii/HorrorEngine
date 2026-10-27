@@ -72,10 +72,25 @@
 .play-hud .ph-prompt.at > *{opacity:calc(.6 + .4 * var(--ph-clear, 1));filter:blur(calc((1 - var(--ph-clear, 1)) * 1px));transition:opacity .12s,filter .12s}
 
 /* ---- the corners ---- */
-.play-hud .ph-objective,.play-hud .ph-timer,.play-hud .ph-log,.play-hud .ph-stance,.play-hud .ph-board{position:absolute;text-shadow:var(--ph-text-shadow);isolation:isolate;
+.play-hud .ph-tl>.ph-objective,.play-hud .ph-timer,.play-hud .ph-log,.play-hud .ph-stance,.play-hud .ph-board{position:absolute;text-shadow:var(--ph-text-shadow);isolation:isolate;
   background:var(--ph-corner-bg,none);padding:var(--ph-corner-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-corner-shadow,none)}
 .play-hud .ph-log{background:none;padding:0;box-shadow:none}
-.play-hud .ph-objective{left:var(--ph-margin);top:var(--ph-margin);max-width:34%;font-size:var(--ph-fs);line-height:1.35;opacity:0;transition:opacity .5s}
+.play-hud .ph-tl{position:absolute;left:var(--ph-margin);top:var(--ph-margin);max-width:34%;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.play-hud .ph-tl>.ph-objective{position:relative;font-size:var(--ph-fs);line-height:1.35;opacity:0;transition:opacity .5s}
+/* the to-do list: one task a row, a box to tick; done dims, failed is struck in the bad colour */
+.play-hud .ph-todo{position:relative;isolation:isolate;display:none;flex-direction:column;gap:4px;font-size:var(--ph-fs-s);line-height:1.35;text-shadow:var(--ph-text-shadow);
+  opacity:var(--ph-rest,.72);transition:opacity .5s;background:var(--ph-corner-bg,none);padding:var(--ph-corner-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-corner-shadow,none)}
+.play-hud .ph-todo.on{display:flex}
+.play-hud .ph-todo.fresh{opacity:1}
+.play-hud .ph-todo::before{content:"To do";font-family:var(--ph-ui-font,var(--ph-font));font-size:var(--ph-fs-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--ph-muted);margin-bottom:2px;transition:color .5s}
+.play-hud .ph-todo.fresh::before{color:var(--ph-accent)}
+.play-hud .ph-task{display:flex;align-items:baseline;gap:8px;transition:opacity .4s,color .4s}
+.play-hud .ph-box{flex:none;width:.95em;height:.95em;border:1px solid currentColor;border-radius:2px;display:inline-grid;place-items:center;font-size:.85em;line-height:1;translate:0 .1em}
+.play-hud .ph-task[data-state=done]{opacity:.5}
+.play-hud .ph-task[data-state=done] .ph-task-text{text-decoration:line-through}
+.play-hud .ph-task[data-state=failed]{color:var(--ph-bad)}
+.play-hud .ph-task[data-state=failed] .ph-task-text{text-decoration:line-through}
+.play-hud .ph-task-left{margin-left:auto;padding-left:10px;font-variant-numeric:tabular-nums;color:var(--ph-bad)}
 .play-hud .ph-objective.on{opacity:var(--ph-rest,.72)}
 .play-hud .ph-objective.on.fresh{opacity:1}
 .play-hud .ph-objective::before{content:"Objective";display:block;margin-bottom:3px;transition:color .5s}
@@ -97,7 +112,7 @@
 .play-hud .ph-hint.on{opacity:1}
 .play-hud .ph-pair{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 /* the theme's halo (--ph-halo, a blur; --ph-halo-bg): a soft, edgeless patch behind boxless text, never a shape */
-.play-hud :is(.ph-objective,.ph-timer,.ph-log>div,.ph-stance,.ph-board,.ph-prompt,.ph-hint)::after{content:"";position:absolute;inset:-10px -22px;z-index:-1;pointer-events:none;
+.play-hud :is(.ph-objective,.ph-todo,.ph-timer,.ph-log>div,.ph-stance,.ph-board,.ph-prompt,.ph-hint)::after{content:"";position:absolute;inset:-10px -22px;z-index:-1;pointer-events:none;
   -webkit-backdrop-filter:var(--ph-halo,none);backdrop-filter:var(--ph-halo,none);background:var(--ph-halo-bg,none);
   -webkit-mask-image:radial-gradient(closest-side,#000 45%,transparent);mask-image:radial-gradient(closest-side,#000 45%,transparent)}
 

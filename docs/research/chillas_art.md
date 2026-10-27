@@ -59,6 +59,10 @@ S: a day or two each; M: about a week.
 
 ## 3. What I'd add (smallest first, the user picks)
 
+**The user's picks (DECISIONS 2026-10-27, late night):** 1 built (with tasks that can fail), 2 yes, 4 yes as a request
+on the to-do list (the asker waits, then carries on into the next shot), 3 no (phones only analogue, if ever), 5 no
+(endings are cutscenes).
+
 1. **The to-do list**: an objective with several items ticked off in any order (`objective` with `list`), on the HUD
    under the goal; a beat's `done` ticks one. The whole "work shift" shape rides on it.
 2. **Nights as chapters**: a `sleep` interactable on a bed (fade, a title card "Night 2 · 23:40", the time of day, an
