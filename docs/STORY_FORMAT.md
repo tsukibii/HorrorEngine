@@ -352,6 +352,10 @@ keyframes, so the generated motion follows the staging approved in the desk. ANI
 
 ### 3.6 Events (quick-time events; DIRECTING.md §4)
 
+**Only `choose` is current.** `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are **deprecated** (DECISIONS
+2026-10-27: they break the immersion): they still play, the story check warns, the desk offers only `choose`. A
+moment that used one becomes a dialogue answer (`choose`, its `default` the silence) or a plain scene.
+
 ```json
 "event": {"type": "struggle", "secs": 4, "pull": "back", "need": 0.6, "prompt": "Pull free!", "warn": 0.6,
           "on": {"escape": [{"door": "front_door", "set": "unlock"}]}}

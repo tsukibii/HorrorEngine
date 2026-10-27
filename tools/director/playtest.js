@@ -4,7 +4,7 @@
 // its face heard, a plushie is picked up and put down by holding E (lagging, flopping and bobbing in the hands, squashing
 // as it lands, heard where it lies), a game of chō-han is played at the hall table, the letter reads, the kitchen's kettle is switched on and boils by itself, E hides in the locker and gets out, her eyes catch
 // you in the open but not hidden or in a safe zone, the kitchen's glimpse fires, the drawer's code is typed on the panel,
-// the key shows and is taken, the locked cellar door opens with it, the struggle is mashed free (E), and the timed run
+// the key shows and is taken, the locked cellar door opens with it, the grab is answered ("Let go of me.": no quick-time events, DECISIONS 2026-10-27), and the timed run
 // out of the house ends on the porch. Ends "PLAY ok".
 //
 //   python tools/director/serve.py          (in another shell)
@@ -59,7 +59,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const t0 = Date.now();
     while (Date.now() - t0 < ms) {
       if (await page.evaluate(() => !!(window.__dd.play && window.__dd.play.active))) return;
-      if (await page.$(".qte")) {
+      if (await page.$(".ph-float .ph-opt")) await page.keyboard.press("Digit1");   // a scene's choice: the first answer (the grab's "Let go of me.")
+      else if (await page.$(".qte")) {
         for (let i = 0; i < 6; i++) { await page.keyboard.press("KeyE"); await page.keyboard.press("Space"); }
         await page.mouse.click(700, 400);
       } else await page.keyboard.press("Escape");
@@ -371,7 +372,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await walkIn(0.7, 2, 180, 1400);
     await playing(false, 10000);
   });
-  await step("the cellar, the grab (mashed free), then the run", () => scenesUntilPlay());
+  await step("the cellar, the grab (answered: let go of me), then the run", () => scenesUntilPlay());
   await step("the run out has its timer", async () => {
     const t = await page.textContent(".ph-timer"); if (!(+t > 0)) throw new Error("timer " + t);
   });

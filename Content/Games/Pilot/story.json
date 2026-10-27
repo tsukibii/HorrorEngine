@@ -999,7 +999,7 @@
      "who": "mari",
      "ja": "一緒にいて。",
      "en": "Stay with me.",
-     "act": "lunges, grabs the player's collar, pulls",
+     "act": "lunges, grabs the player's collar and holds on, waiting for an answer",
      "body": {
       "prompt": "lunges forward two quick steps and grabs at chest height with the right hand, then pulls back hard",
       "start": "mari_idle",
@@ -1036,12 +1036,20 @@
       "shake": 0.4
      },
      "event": {
-      "type": "struggle",
-      "secs": 4,
-      "pull": "back",
-      "need": 0.6,
-      "prompt": "Pull free!",
-      "warn": 0.6,
+      "type": "choose",
+      "secs": 8,
+      "prompt": "",
+      "options": [
+       {
+        "id": "escape",
+        "label": "Let go of me."
+       },
+       {
+        "id": "caught",
+        "label": "...I'll stay."
+       }
+      ],
+      "default": "caught",
       "on": {
        "escape": [
         {
@@ -1114,10 +1122,20 @@
       ]
      },
      "event": {
-      "type": "breath",
-      "secs": 5,
-      "prompt": "Keep still",
-      "warn": 0.8
+      "type": "choose",
+      "secs": 6,
+      "prompt": "",
+      "options": [
+       {
+        "id": "success",
+        "label": "(Stay silent.)"
+       },
+       {
+        "id": "fail",
+        "label": "I'm here."
+       }
+      ],
+      "default": "success"
      }
     }
    ],

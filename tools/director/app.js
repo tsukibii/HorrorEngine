@@ -34,7 +34,7 @@ const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
 const SEAMS = ["blink", "glance", "flicker", "occlude", "cutaway", "turn", "stumble", "dip", "jcut", "heartbeat", "none"];
 const CAMS = ["free", "soft", "hard", "held"], PULLS = ["back", "left", "right", "down", "any"], ENDS = ["good", "bad", "secret", "other"];
-const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], TRANS = ["blend", "fade", "cut", "blink", "dip"];
+const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], QTE = EVENTS.filter(t => t !== "choose"), TRANS = ["blend", "fade", "cut", "blink", "dip"];
 const MOODS = {
   intimate: { text: "Close and slow: they come into your space (CU: under 0.55 m) and stay there, the player leans in a little (push 0.1 to 0.2 m), eye contact into the lens, little or no shake, warm practical light, breath under the line, long clips, seams on turns and blinks.", cone: [20, 12], shot: "cu", push: 0.15 },
   dread: { text: "Far and still: the figure over 3 m away (WS), negative space where something could be, a held look, low hum; make the player wait. Coming closer is the scare.", cone: [30, 18], shot: "ws", push: 0 },
@@ -1330,7 +1330,9 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     // event (QTE)
     const evs = el("div", { class: "sec row" }, el("span", { class: "lab" }, "event"));
     const evHolder = { type: c.event ? c.event.type : "" };
-    evs.append(sel(evHolder, "type", EVENTS, { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
+    const evList = ["choose", ...QTE.filter(t => t === evHolder.type).map(t => [t, t + " (deprecated)"])];   // quick-time events are deprecated (DECISIONS 2026-10-27): only a clip that has one shows it
+    evs.append(sel(evHolder, "type", evList.map(t => (t === "choose" ? ["choose", "choose (a dialogue answer)"] : t)), { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
+    if (c.event && QTE.includes(c.event.type)) pane.append(el("p", { class: "kv warn" }, `A ${c.event.type} is a quick-time event: deprecated, they break the immersion. Make it a choose (a dialogue answer), or take the event off.`));
     if (c.event) {
       const e = c.event;
       evs.append("secs", txt(e, "secs", { num: true, style: "width:48px" }), "warn", txt(e, "warn", { num: true, step: "0.1", style: "width:48px", title: "seconds of warning sign before it (Little Hope's indicator)" }), txt(e, "prompt", { ph: "on-screen prompt" }));

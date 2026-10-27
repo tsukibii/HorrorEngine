@@ -53,6 +53,7 @@ SEAMS = {  # kind: (fields it needs, seconds it adds)
 CAMERA = {"free", "soft", "hard", "held"}
 PULLS = {"back", "left", "right", "down", "any"}
 EVENTS = {"struggle", "press", "mash", "hold", "breath", "aim", "choose"}
+QTE = {"struggle", "press", "mash", "hold", "breath", "aim"}   # deprecated (DECISIONS 2026-10-27): they break the immersion
 TRANSITIONS = {"blend", "fade", "cut", "blink", "dip"}   # blend: the view eases from the player's eye (the default)
 CAM_KEYS = {"push": (0, L.LEAN), "zoom": (0, L.ZOOM), "roll": (-30, 30), "shake": (0, 2), "lag": (0, 2)}
 FAST = {"walking": 0.625, "looking round": 8 / 30, "searching": 0.3, "reading": 0.55, "puzzles": 0.35}  # a fast player
@@ -656,6 +657,9 @@ def check_scene(sid, sc, story, things, r):
                 t = ev.get("type")
                 if t not in EVENTS:
                     r.err(f"{cw}: event type {t!r} (one of {', '.join(sorted(EVENTS))})")
+                elif t in QTE:
+                    r.warn(f"{cw}: `{t}` is a quick-time event, deprecated (DECISIONS 2026-10-27: they break the immersion): "
+                           "a `choose` (a dialogue answer) or a plain scene instead")
                 if t == "choose" and FORMAT >= 3 and "secs" not in ev:
                     pass                                    # format 3: a timed choice gives 30 s
                 elif not isinstance(ev.get("secs"), (int, float)) or ev["secs"] <= 0:

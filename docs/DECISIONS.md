@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, late (no more quick-time events; keep the game simple)
+
+- **Quick-time events deprecated**: "update the pilot and from the game deprecate for now the spam e or drag etc types
+  of events, they break the immersion"; "realistically the game should be pretty simple, discover things, interact,
+  choose dialogue options, no more quick time events etc, I need to remember I'm an indie dev so I can't implement as
+  much as something like Dark Anthology". `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are deprecated (the
+  story check warns, the desk offers only `choose`); the Pilot's grab and locker are dialogue choices now.
+- **A quick study of Chilla's Art's games** against what we have: docs/research/chillas_art.md (what's missing, each
+  small; the user picks).
+
 ## 2026-10-27, night (English text with a blip, an expression library, faces on the timeline, look-at by angle)
 
 - **English, with a system to swap in a country's own lines**: "I will be moving away from Japanese and sticking to
