@@ -1168,9 +1168,11 @@ const png = rgb => {
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
       return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
-               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST } };
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST },
+               face: !!(prim && prim.attributes._MHRP && prim.attributes._MHRW && json.accessors[prim.attributes._MHRP].count === acc.count) };
     }, NAME);
     if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
+    if (!r.face) throw new Error("the skin doesn't carry its corners' MHR points (_MHRP, _MHRW): the desk can't play an expression on it");
     if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
     if (!(r.rig.joints === 127 && r.rig.root === "body_world" && r.rig.all && r.rig.eyes[0] === "l_eye" && r.rig.eyes[1] === "r_eye" && Math.abs(r.rig.turned - 0.6) < 0.05 && r.rig.feet < 1e-4))
       throw new Error(`the export's rig: ${JSON.stringify(r.rig)}`);

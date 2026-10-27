@@ -405,3 +405,24 @@ canvas.wave{display:block;width:100%;height:84px;border:1px solid var(--line);bo
 .sfx-row{display:grid;grid-template-columns:18px 170px 1fr auto;gap:8px;align-items:center;padding:4px 8px;cursor:pointer;border-bottom:1px solid var(--line);font-size:12.5px}
 .sfx-row:hover{background:var(--panel2,rgba(255,255,255,.04))}.sfx-row.on{background:rgba(120,160,255,.14)}
 .sfx-row b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sfx-t{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sfx-s{color:var(--dim);font-variant-numeric:tabular-nums}
+/* the expression library (expressions.js): cards of the character wearing each (played through on hover), names only, the import preview */
+.xp-pic canvas{position:absolute;inset:0;width:100%;height:100%}.xp-on{flex:1}
+.xp-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}.xp-find{flex:1;min-width:80px}.xp-tog{white-space:nowrap;color:var(--dim);font-size:12px}
+.xp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.xp-grid.names{grid-template-columns:1fr;gap:3px}
+.xp-card{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;user-select:none}
+.xp-card:hover{border-color:var(--accent)}
+.xp-pic{position:relative;aspect-ratio:1;background:#0d0d10;display:flex;align-items:center;justify-content:center}
+.xp-pic img,.xp-pic video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.xp-name{padding:5px 7px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xp-grid.names .xp-name{padding:6px 30px 6px 9px}
+.xp-x{position:absolute;top:4px;right:4px;width:22px;height:22px;padding:0;border-radius:11px;border:none;background:#c0392b;color:#fff;font-size:15px;line-height:20px;font-weight:700;opacity:.88;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.xp-x:hover{opacity:1;background:#e04a3a}
+.xp-grid.names .xp-x{top:3px}
+.xp-empty{padding:18px 4px}
+.xp-wait{display:flex;gap:14px;align-items:center}.xp-spin{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:xp-spin .8s linear infinite;flex:none}
+@keyframes xp-spin{to{transform:rotate(360deg)}}
+.xp-panes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+.xp-video,.xp-canvas{width:100%;aspect-ratio:1;border-radius:8px;background:#0d0d10;display:block;object-fit:cover}
+.xp-video.muted{display:flex;align-items:center;justify-content:center}
+.xp-prev .frm-r{margin:6px 0}.xp-note{color:var(--warn);min-height:0}

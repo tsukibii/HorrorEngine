@@ -7,7 +7,19 @@ lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the fou
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-27, evening, on `dev-002`)
+## 0. Latest (2026-10-27, night, on `dev-002`): the expression library
+
+The user switched direction (DECISIONS 2026-10-27 night): English text with a typewriter blip instead of voices, and
+a library of captured expressions placed on the timeline per character, with loops, reactions and look-at by angle in
+play. docs/EXPRESSIONS_PLAN.md has the plan (steps 1 to 5). **Step 1 is built:** the desk's Expressions tab beside the
+Inspector (import a video of a face, preview it on the default MHR, a cast member or a Studio export, name it,
+Accept; cards are the character wearing the expression, played on hover, as the user asked; names only; the red ×
+asks first); `tools/face_capture.py` (MediaPipe's 52 scores a frame, the head left out); Studio exports carry their
+corners' MHR points so the desk plays expressions on them. The user's test video is in the library as
+`pout_and_glance` (its curves; the clip stays on this machine). Open: a blink on a photo-fitted export closes only
+part of the way (EXPRESSIONS_PLAN §1). Next: ask which of steps 2 (timeline), 3 (text and blips), 4 (play), 5 (Unreal).
+
+## 0a. Before that (2026-10-27, evening, on `dev-002`)
 
 `dev-002` is `main` with the four branches merged (`claude/inspiring-curie-fntkfv`, `easier-hair-editing`,
 `eyelash-more`, `clothing-expanded`; only the docs conflicted, both sides kept), PR #4. Then the user put a Studio

@@ -28,6 +28,7 @@ import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
 import { States } from "./life.js";
 import { playShelf, shelfName } from "./sfx.js";
+import { ExpressionsPanel } from "./expressions.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -134,6 +135,7 @@ async function load() {
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
   await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
+  if (!$("#exprPanel").hidden) XP.refresh();             // the expression cards wear this game's bodies
   CHECK.list = []; CHECK.key = null; scheduleCheck(1500);
   offerDraft();
 }
@@ -2411,5 +2413,21 @@ const DB = new Database($("#dbView"), {
   goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },
   goLevel: lid => openBuilder(lid),
 });
-window.__dd = { get S() { return S; }, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+// the right side's tabs: the Inspector, and the expression library (expressions.js, docs/EXPRESSIONS_PLAN.md)
+async function ensureBody(f) {                         // a body loaded into the stages' templates on demand (a Studio export no one wears yet)
+  if (!f || f === "capsules" || flowStage.bodies[f]) return;
+  const tpl = await loadBody("/bodies/" + f.split("/").map(encodeURIComponent).join("/"));
+  if (f.startsWith("people/")) tpl.userData = { studio: f.slice(7) };
+  flowStage.bodies[f] = tpl; watchStage.bodies[f] = tpl;
+}
+const XP = new ExpressionsPanel($("#exprPanel"), { stage: () => flowStage, story: () => S, ensureBody, M, bodies: async () => (await api("/api/bodies")).bodies });
+function rightTab(r, draw = true) {
+  for (const b of document.querySelectorAll("#rtabs button")) b.classList.toggle("on", b.dataset.r === r);
+  $("#inspector").hidden = r !== "inspector"; $("#exprPanel").hidden = r !== "exprPanel";
+  try { localStorage.setItem("dd.rtab", r); } catch (e) { }
+  if (r === "exprPanel" && draw && S) XP.refresh();
+}
+for (const b of document.querySelectorAll("#rtabs button")) b.onclick = () => rightTab(b.dataset.r);
+try { if (localStorage.getItem("dd.rtab") === "exprPanel") rightTab("exprPanel", false); } catch (e) { }   // drawn once a game has loaded (load())
+window.__dd = { get S() { return S; }, XP, rightTab, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

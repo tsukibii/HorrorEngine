@@ -120,6 +120,7 @@ TOOLS = [
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Sound shelf check", "tools/sfx.py check", {}),
+    ("Checks", "Expressions test (the library in the desk, headless browser; the desk running)", "node tools/director/exprtest.mjs", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
@@ -164,6 +165,7 @@ TOOLS = [
     ("Look", "Clothes: pictures of every outfit and design on the default model, for the Studio's picker (Content/Studio/Clothes/thumbs)", "node tools/character/tailor/thumbs.mjs", {}),
     ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
+    ("Look", "An expression from a video of a face (the desk's Expressions tab does this with Import)", "tools/face_capture.py solve {ask:Video} --out {ask:Folder}", {}),
     ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),

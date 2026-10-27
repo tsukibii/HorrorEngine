@@ -37,7 +37,12 @@ main{display:flex;flex:1;min-height:0}
 .ov .black{position:absolute;inset:0;background:#000;opacity:0}
 #watchOv .ja,#watchOv .sub{display:none}   /* the Watch shows them in the game's footer (play/hud.js) */
 .ov .tag{position:absolute;top:8px;right:10px;color:var(--accent);font-size:11px;text-shadow:0 0 4px #000}
-#inspector{width:680px;max-width:58%;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:10px 12px}
+#rightcol{width:680px;max-width:58%;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#rtabs{display:flex;gap:2px;padding:6px 10px 0;border-bottom:1px solid var(--line)}
+#rtabs button{border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;background:none;color:var(--dim);padding:5px 12px;display:flex;gap:6px;align-items:center}
+#rtabs button.on{background:var(--panel2);color:var(--text);border-color:var(--line)}
+#inspector,#exprPanel{flex:1;overflow:auto;padding:10px 12px;min-height:0}
+#inspector[hidden],#exprPanel[hidden]{display:none}
 .card{position:absolute;width:176px;min-height:54px;border:1px solid var(--line);border-left:5px solid;border-radius:6px;background:var(--panel2);padding:5px 8px;cursor:pointer;user-select:none}
 .card.sel{outline:2px solid var(--accent)}.card .t{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
 .card .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.card .m{font-size:11px;color:var(--dim)}
@@ -150,7 +155,12 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
         </div>
       </div>
     </div>
-    <aside id="inspector"></aside>
+    <div id="rightcol">
+      <div id="rtabs"><button data-r="inspector" class="on" title="what's picked on the board: its settings, its script, its timeline">Inspector</button>
+        <button data-r="exprPanel" title="the expression library: faces captured from videos, dragged onto a scene's timeline (docs/EXPRESSIONS_PLAN.md)">Expressions</button></div>
+      <aside id="inspector"></aside>
+      <aside id="exprPanel" hidden></aside>
+    </div>
   </section>
   <section id="boardView" class="view page"></section>
   <section id="watchView" class="view">

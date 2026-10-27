@@ -46,6 +46,42 @@ MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", 
 HEADS = L.STUDIO / "Heads"           # the face page's pictures and heads (git-ignored: real people's faces)
 FACE_FILES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
 FACE = {"proc": None}
+EXPRESSIONS = L.STUDIO / "Expressions"   # the expression library (docs/EXPRESSIONS_PLAN.md §1): <id>/expression.json, clip.mp4
+EXPR_SAVED = ROOT / "Saved" / "Expressions"    # pending/<token>: an import waiting for Accept; removed/: what the red x took away
+EXPR_FILES = {"clip.mp4"}
+
+
+def expr_list():
+    """the library, newest first: each expression's id, name, length, stamp and whether it has its clip"""
+    out = []
+    for d in sorted(EXPRESSIONS.iterdir()) if EXPRESSIONS.is_dir() else []:
+        f = d / "expression.json"
+        if d.name.startswith(".") or not f.is_file():
+            continue
+        e = json.loads(f.read_text(encoding="utf-8"))
+        stamp = int(f.stat().st_mtime)
+        out.append({"id": d.name, "name": e.get("name", d.name), "secs": e.get("secs"), "made": e.get("made", ""), "stamp": stamp,
+                    "clip": (d / "clip.mp4").is_file()})
+    return sorted(out, key=lambda x: x["made"], reverse=True)
+
+
+def expr_id(name):
+    """an expression's folder from its name: lower case, letters, digits and _, unique in the library"""
+    base = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[:40] or "expression"
+    i, out = 1, base
+    while (EXPRESSIONS / out).exists():
+        i += 1; out = f"{base}_{i}"
+    return out
+
+
+def mhr_face_names():
+    """MHR's 72 face shapes by Meta's names, in the order of the bodies' shape_c_45..116 (MHR_lod1.bin's header)"""
+    import struct
+    with open(L.STUDIO / "Bodies" / "MHR_lod1.bin", "rb") as fh:
+        n = struct.unpack("<I", fh.read(4))[0]
+        return json.loads(fh.read(n))["expr_names"]
+
+
 PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
 
@@ -241,9 +277,91 @@ class Handler(BaseHTTPRequestHandler):
             if not re.fullmatch(r"\d{8}-\d{6}", parts[3]) or not f.is_file():
                 return self.send(404, {"error": "no such save"})
             return self.send(200, {"name": parts[3], "story": json.loads(f.read_text(encoding="utf-8"))})
+        if parts[:2] == ["api", "expressions"]:          # the expression library (docs/EXPRESSIONS_PLAN.md §1)
+            if len(parts) == 2:
+                return self.send(200, {"expressions": expr_list()})
+            if parts[2] == "map" and len(parts) == 3:     # ARKit's 52 onto MHR's 72, and MHR's order on the bodies
+                amap = json.loads((ROOT / "tools" / "character" / "arkit_mhr.json").read_text(encoding="utf-8"))
+                return self.send(200, {"map": amap["map"], "presets": amap.get("presets", {}), "mhr": mhr_face_names()})
+            d = (EXPR_SAVED / "pending" / parts[3]) if parts[2] == "pending" and len(parts) == 4 else (EXPRESSIONS / parts[2]) if len(parts) == 3 else None
+            if d is not None and face_name(d.name) and (d / "expression.json").is_file():
+                return self.send(200, (d / "expression.json").read_bytes())
+            return self.send(404, {"error": "no such expression"})
+        if parts[0] == "expressions" and len(parts) in (3, 4) and parts[-1] in EXPR_FILES:   # an expression's clip
+            d = (EXPR_SAVED / "pending" / parts[2]) if parts[1] == "pending" and len(parts) == 4 else (EXPRESSIONS / parts[1]) if len(parts) == 3 else None
+            f = d / parts[-1] if d is not None and face_name(d.name) else None
+            if f and f.is_file():
+                return self.send_media(f)
+            return self.send(404, {"error": "no such file"})
         if parts[:2] == ["api", "mtime"] and len(parts) == 3:
             p = self.game_path(parts[2])
             return self.send(200, {"mtime": p.stat().st_mtime if p and p.exists() else 0})
+        return self.send(404, {"error": "not found"})
+
+    def expressions_post(self, parts, query):
+        import shutil
+        import uuid
+        if parts == ["import"]:                         # a video: solved into pending/<token>, then previewed in the desk
+            src = Path((query.get("file") or ["face.mp4"])[0]).name
+            if Path(src).suffix.lower() not in {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}:
+                return self.send(400, {"error": "a video: .mp4 .mov .mkv .webm .avi .m4v"})
+            token = uuid.uuid4().hex[:12]
+            d = EXPR_SAVED / "pending" / token
+            d.mkdir(parents=True, exist_ok=True)
+            video = d / ("source" + Path(src).suffix.lower())
+            video.write_bytes(self.body())
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "face_capture.py"), "solve", str(video), "--out", str(d)],
+                               capture_output=True, text=True, timeout=900, cwd=str(ROOT))
+            if r.returncode or not (d / "expression.json").is_file():
+                shutil.rmtree(d, ignore_errors=True)
+                said = [x for x in (r.stderr + r.stdout).splitlines() if x.strip() and not x.startswith(("W0000", "I0000", "INFO", "WARNING"))]
+                return self.send(400, {"error": (said[-1] if said else "the capture failed")[:300]})
+            e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
+            e["source"]["file"] = src
+            (d / "expression.json").write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
+            return self.send(200, {"token": token, "expression": e})
+        req = json.loads(self.body().decode("utf-8") or "{}")
+        if parts == ["accept"]:                         # pending/<token> into the library under its name
+            d = EXPR_SAVED / "pending" / str(req.get("token", ""))
+            name = str(req.get("name", "")).strip()
+            if not face_name(d.name) or not (d / "expression.json").is_file():
+                return self.send(404, {"error": "nothing waiting under that token"})
+            if not name:
+                return self.send(400, {"error": "name it first"})
+            eid = expr_id(name)
+            e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
+            e.update(name=name, made=time.strftime("%Y-%m-%dT%H:%M:%S"), neutral=req.get("neutral", e.get("neutral", "first")), strength=float(req.get("strength", e.get("strength", 1))))
+            EXPRESSIONS.mkdir(parents=True, exist_ok=True)
+            out = EXPRESSIONS / eid
+            out.mkdir()
+            for f in EXPR_FILES:
+                if (d / f).is_file():
+                    shutil.move(str(d / f), str(out / f))
+            (out / "expression.json").write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
+            shutil.rmtree(d, ignore_errors=True)
+            return self.send(200, {"id": eid, "name": name})
+        if parts == ["discard"]:
+            d = EXPR_SAVED / "pending" / str(req.get("token", ""))
+            if face_name(d.name):
+                shutil.rmtree(d, ignore_errors=True)
+            return self.send(200, {"ok": True})
+        if len(parts) == 2 and face_name(parts[0]) and (EXPRESSIONS / parts[0] / "expression.json").is_file():
+            d = EXPRESSIONS / parts[0]
+            if parts[1] == "set":                       # its name, neutral, strength (the folder keeps its id)
+                f = d / "expression.json"
+                e = json.loads(f.read_text(encoding="utf-8"))
+                if str(req.get("name", "")).strip():
+                    e["name"] = str(req["name"]).strip()
+                for k in ("neutral", "strength"):
+                    if k in req:
+                        e[k] = req[k]
+                f.write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
+                return self.send(200, {"ok": True})
+            if parts[1] == "remove":                    # the red x: kept in Saved/Expressions/removed, out of the library
+                gone = EXPR_SAVED / "removed" / f"{d.name}-{time.strftime('%Y%m%d-%H%M%S')}"
+                gone.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(d), str(gone))
+                return self.send(200, {"ok": True, "kept": str(gone.relative_to(ROOT))})
         return self.send(404, {"error": "not found"})
 
     def do_PUT(self):
@@ -286,7 +404,11 @@ class Handler(BaseHTTPRequestHandler):
         return self.rfile.read(n) if n else b""
 
     def do_POST(self):
-        parts = self.path.strip("/").split("/")
+        import urllib.parse
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        parts = self.path.split("?")[0].strip("/").split("/")
+        if parts[:2] == ["api", "expressions"] and len(parts) >= 3:    # the expression library: import, accept, discard, rename, remove
+            return self.expressions_post(parts[2:], query)
         if parts[:2] == ["api", "take"] and len(parts) == 4 and self.game_path(parts[2]):   # a take dropped on its clip in the desk
             name = parts[3]
             if not re.fullmatch(r"[A-Za-z0-9_]+\.[A-Za-z0-9]+", name) or Path(name).suffix.lower() not in MEDIA:

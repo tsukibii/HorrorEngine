@@ -2,6 +2,30 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, night (English text with a blip, an expression library, faces on the timeline, look-at by angle)
+
+- **English, with a system to swap in a country's own lines**: "I will be moving away from Japanese and sticking to
+  English (though keep a system so we can replace dialogue with country specific easily)".
+- **No spoken dialogue: text with a typewriter blip**: "just have the text and maybe add an undertale text
+  sound/typewriter sound where we play a micro audio snippet per sentence (maybe work out sentence length + some formula
+  for how many times to repeat the snippet of vocal effect)".
+- **A library of mocapped expressions instead of talking faces**, placed on the timeline: "in the timeline I can place
+  facial expressions from my library and even blend between multiple ones (like a new timeline row for facial
+  expressions assigned to a character + ability to add more rows for other characters)", "looped expressions or
+  reaction expressions for non cinematics", and **eyes and head that follow the player inside an angle**: "watch the
+  player for that scene if the player is in lets say x radius e.g. 90 degree radius (from front), otherwise they go back
+  to looking at whatever they're pathing or defaulted to".
+- **Importing**: "pass in a video of a face, we process that mocap face expression data and then I can preview it
+  against a default character or an actor we have in our game (or even just manually select a character we have
+  exported), I should be able to name the expressions"; the library on the right of the storyboard planner, thumbnails
+  that play on hover with the name below or names only, dragged onto the timeline; Import: pick a video, wait, a preview,
+  name it, Accept; delete by a red x on the thumbnail with an "are you sure". **The capture tracks the whole face (eyes,
+  mouth...) but not the head** (Kimodo moves the head). The user's test video: a 3 s MiniMax clip.
+- Claude's calls inside that: docs/EXPRESSIONS_PLAN.md (steps 1 to 5); the library built first (step 1), Studio-wide
+  (`Content/Studio/Expressions/`), the curves tracked and the face videos and posters git-ignored like the face page's
+  pictures; the raw scores kept so Neutral (first frame, quietest, none) and Strength stay choices; a removed expression
+  moved to `Saved/Expressions/removed/`, not deleted outright.
+
 ## 2026-10-27, evening (the export carries the Studio's colours; branch `dev-002`)
 
 - **A character exported for the desk had no colours** (the user put a Studio character on the Pilot's Mari: "why are
