@@ -8,7 +8,22 @@ dashboard and the writers' room) on
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-27, on `dev-002`): the dashboard and the writers' room
+## 0. Latest (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
+
+The user's notes-to-chart route went from a syntax they'd write in to **writing any way, Claude converting it**
+(DECISIONS 2026-10-27, later). Built:
+- **`/chart`** and **`/build-game`**, Claude Code skills in `.claude/skills/`: their notes (any notepad, docs/NOTES.md
+  the few marks suggested) → Claude's script (`.claude/skills/chart/script.md`, the former syntax, read by
+  `storykit/chartscript.py`) → `room.py import` → the writers' room's chart to inspect (format 3: each shape's script
+  as `steps`, the things as `items` sized small, medium, large) → Build → the director, blocks to swap for real things.
+- the writers' room page: the Notes tab is gone; a shape's script shows in the inspector; a session changed on disk is
+  taken in by an open page (Ctrl+Z goes back), a stale save refused with the newer one shown.
+- **English only** on the HUD (no Japanese over the lines) and every choice at the bottom centre: committed before.
+Asked in the same message, next in this order: Play's controls (left click interacts, E shows the inventory row, G
+drops, no gravity), the pause menu's controls on the left like the user's picture, and a place designed first in the
+scene builder for `/build-game` to place the blocks in.
+
+## 0x. Before that (2026-10-27, on `dev-002`): the dashboard and the writers' room
 
 Asked for two things: a dashboard to start and stop every tool, and a writers' room to prototype a game's story
 before the director. Built, checked and pushed:

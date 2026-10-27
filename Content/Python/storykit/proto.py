@@ -15,9 +15,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PROTOS = ROOT / "Content" / "Prototypes"
+SAVED = ROOT / "Saved" / "Writers"                      # each session's history: the versions before each save (the last KEEP)
+KEEP = 40
 PROMPTS = ROOT / "Content" / "Studio" / "Expressions" / "prompts.json"
-FORMAT = 2
+FORMAT = 3
 POINTS = ("scene", "talk", "task", "chapter")            # the story's moments: one arrow on (and arrows to its secrets)
+# a shape's steps, in order (format 3: its script, .claude/skills/chart/script.md): what each one needs
+STEPS = {"say": ("who", "text"), "you": ("text",), "think": ("text",), "see": ("text",), "cast": ("who", "text"), "sound": ("text",),
+         "light": ("set",), "music": ("mood",), "fade": (), "act": ("verb",), "todo": ("text",), "name": (), "wait": ("secs",),
+         "save": (), "feat": ("feat",)}
+LIGHT_SETS = ("on", "off", "flicker", "dim")
+MOODS = ("silence", "calm", "uneasy", "dread", "chase")
+SIZES = ("small", "medium", "large")
+THING_KINDS = ("door", "bed", "seat", "hideout", "switch", "note", "carry", "pickup", "inspect")
 TYPES = ("start",) + POINTS + ("choice", "secret", "ending", "note")
 BY = ("player", "karma", "answer")                         # what decides a choice: the player's act, karma, an answer
 TIMES = ("day", "dusk", "night")
@@ -48,7 +58,7 @@ def blank(title, brief=None):
     b.update({k: v for k, v in (brief or {}).items() if k in b})
     return {"format": FORMAT, "id": "", "title": title, "created": now(), "updated": now(), "brief": b,
             "story": {"logline": "", "hook": "", "truth": "", "ladder": [], "tone": "", "setting": "", "player": "", "time": "night", "karma": ""},
-            "cast": [], "places": [], "nodes": [{"id": "start", "type": "start", "x": 40, "y": 240, "title": "Start"}],
+            "cast": [], "places": [], "items": [], "nodes": [{"id": "start", "type": "start", "x": 40, "y": 240, "title": "Start"}],
             "edges": [], "frames": [], "faces": [], "feats": [], "built": None}
 
 
@@ -66,9 +76,56 @@ def new_session(title, brief=None):
 
 
 def load(path):
-    """A session from its file, in this format (the first format's river is upgraded as it's read)."""
+    """A session from its file, in this format (the first format's river and the second's lines and to-dos are
+    upgraded as it's read)."""
     P = json.loads(Path(path).read_text(encoding="utf-8"))
-    return upgrade(P) if P.get("format") == 1 else P
+    if P.get("format") == 1:
+        P = upgrade(P)
+    return with_steps(P) if P.get("format") == 2 else P
+
+
+def with_steps(P):
+    """The second format's `lines` and `tasks` as the third's `steps` (a line said, a to-do), in the order Build played
+    them: the lines first, then the to-dos."""
+    P = copy.deepcopy(P)
+    for n in P.get("nodes", []):
+        if "lines" not in n and "tasks" not in n:
+            continue
+        steps = []
+        for ln in n.pop("lines", None) or []:
+            if ln.get("who") == "player":
+                steps.append({"do": "you", "text": ln.get("text", "")})
+            else:
+                st = {"do": "say", "who": ln.get("who", ""), "text": ln.get("text", "")}
+                if ln.get("face"):
+                    st["face"] = ln["face"]
+                steps.append(st)
+        for t in n.pop("tasks", None) or []:
+            st = {"do": "todo", "text": t.get("text", "")}
+            for k in ("id", "who", "done", "fails"):
+                if t.get(k):
+                    st[k] = t[k]
+            steps.append(st)
+        n["steps"] = n.get("steps", []) + steps
+    P.setdefault("items", [])
+    P["format"] = FORMAT
+    return P
+
+
+def history_dir(sid):
+    return SAVED / sid / "history"
+
+
+def keep_history(sid):
+    """The session as it is on disk, into its history before it's replaced (the page's Sessions bring one back)."""
+    p = path_of(sid)
+    if not p.exists():
+        return
+    d = history_dir(sid)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / (time.strftime("%Y%m%d-%H%M%S") + f"-{int(time.time() * 1000) % 1000:03d}.json")).write_bytes(p.read_bytes())
+    for old in sorted(d.glob("*.json"))[:-KEEP]:
+        old.unlink()
 
 
 def save(P):
@@ -255,9 +312,9 @@ def faces_used(P):
     """Every face a shape names, where: [(face id, where it is, who)]."""
     out = []
     for n in P.get("nodes", []):
-        for i, ln in enumerate(n.get("lines") or []):
-            if ln.get("face"):
-                out.append((ln["face"], f"{n['id']} line {i + 1}", ln.get("who")))
+        for i, st in enumerate(n.get("steps") or []):
+            if st.get("face"):
+                out.append((st["face"], f"{n['id']} step {i + 1}", st.get("who")))
         t = n.get("talk") or {}
         who = (t.get("line") or {}).get("who") or (n.get("who") or [None])[0]
         if (t.get("line") or {}).get("face"):
@@ -271,6 +328,40 @@ def faces_used(P):
 
 
 # ---- the check ----------------------------------------------------------------------------------------------------
+
+def check_steps(n, where, cast, places, things, feats, E, W):
+    """A shape's steps (what was written, in order): each a known kind with what it needs; who from the cast, things
+    and places from theirs; a line one sentence."""
+    for j, st in enumerate(n.get("steps") or []):
+        sw, d = f"{where} step {j + 1}", st.get("do")
+        if d not in STEPS:
+            E.append(f"{sw}: {d!r} isn't a step ({', '.join(STEPS)})")
+            continue
+        for k in STEPS[d]:
+            if st.get(k) in (None, ""):
+                E.append(f"{sw}: a {d} step needs its {k}")
+        if st.get("who") and st["who"] not in cast and not (d == "say" and st["who"] == "player"):
+            E.append(f"{sw}: who {st['who']!r} isn't in the cast")
+        if d in ("say", "you", "think") and len(str(st.get("text", "")).split()) > 14:
+            W.append(f"{sw}: {len(str(st.get('text', '')).split())} words: one sentence, 12 at most")
+        if st.get("item") and st["item"] not in things:
+            E.append(f"{sw}: thing {st['item']!r} isn't one of the story's things")
+        if st.get("on") and st["on"] not in things:
+            E.append(f"{sw}: thing {st['on']!r} isn't one of the story's things")
+        if st.get("place") and st["place"] not in places:
+            E.append(f"{sw}: place {st['place']!r} isn't a place")
+        if d == "light" and st.get("set") not in LIGHT_SETS:
+            E.append(f"{sw}: the lights {st.get('set')!r} ({', '.join(LIGHT_SETS)})")
+        if d == "music" and st.get("mood") not in MOODS:
+            E.append(f"{sw}: music {st.get('mood')!r} ({', '.join(MOODS)})")
+        if d in ("wait", "todo") and st.get("secs") is not None and not (isinstance(st["secs"], (int, float)) and 0 < st["secs"] <= 3600):
+            E.append(f"{sw}: secs {st['secs']!r}: a number of seconds")
+        if d == "todo" and st.get("hidden") is not None and not isinstance(st["hidden"], bool):
+            E.append(f"{sw}: hidden is true or false")
+        if d == "feat" and st.get("feat") not in feats:
+            E.append(f"{sw}: feat {st.get('feat')!r} isn't one of the story's feats")
+
+
 
 def check(P, lib=None):
     """(errors, warnings): what's wrong with the flow, each starting with the shape it's about (`talk p05: ...`), so the
@@ -300,6 +391,19 @@ def check(P, lib=None):
             E.append(f"cast {c.get('id')}: she or he")
     for x in P.get("places", []):
         own("place", x.get("id"))
+    things = {}
+    for x in P.get("items", []):
+        if own("thing", x.get("id")):
+            things[x["id"]] = x
+        if not str(x.get("name", "")).strip():
+            E.append(f"thing {x.get('id')}: no name")
+        if x.get("size") not in SIZES:
+            E.append(f"thing {x.get('id')}: size {x.get('size')!r} (small, medium or large)")
+        if x.get("kind") not in THING_KINDS:
+            E.append(f"thing {x.get('id')}: kind {x.get('kind')!r} ({', '.join(THING_KINDS)})")
+        if x.get("where") and x["where"] not in places:
+            E.append(f"thing {x.get('id')}: where {x['where']!r} isn't a place")
+    feats = {a.get("id") for a in P.get("feats", [])}
     st = P.get("story") or {}
     if st.get("time", "night") not in TIMES:
         E.append(f"the story starts at {st.get('time')!r}: day, dusk or night")
@@ -361,11 +465,8 @@ def check(P, lib=None):
                     E.append(f"{where}: who {w_!r} isn't in the cast")
             if n.get("minutes") is not None and (not isinstance(n["minutes"], (int, float)) or not 0 <= n["minutes"] <= 15):
                 E.append(f"{where}: minutes {n['minutes']!r} (0 to 15)")
-            for j, ln in enumerate(n.get("lines") or []):
-                if ln.get("who") not in cast and ln.get("who") != "player":
-                    E.append(f"{where} line {j + 1}: who {ln.get('who')!r} isn't in the cast")
-                if len(str(ln.get("text", "")).split()) > 14:
-                    W.append(f"{where} line {j + 1}: {len(str(ln.get('text', '')).split())} words: one sentence, 12 at most")
+        if t in POINTS or t in ("secret", "ending"):
+            check_steps(n, where, cast, places, things, feats, E, W)
         if t == "talk":
             tk = n.get("talk") or {}
             opts = tk.get("options") or []
@@ -386,14 +487,8 @@ def check(P, lib=None):
                     E.append(f"{where} answer {x.get('id')}: karma -3 to 3")
                 if not x.get("tell") and not x.get("face"):
                     W.append(f"{where} answer {x.get('id')}: what her face does when you say it (the face answers before her words do)")
-        if t == "task":
-            if not n.get("tasks"):
-                W.append(f"{where}: nothing on its to-do list yet")
-            for x in n.get("tasks") or []:
-                if not str(x.get("text", "")).strip():
-                    E.append(f"{where}: a to-do without its text")
-                if x.get("who") and x["who"] not in cast:
-                    E.append(f"{where}: to-do {x.get('id')}: asked by {x['who']!r}, not in the cast")
+        if t == "task" and not n.get("steps"):
+            W.append(f"{where}: nothing in it yet (a to-do, a thing to do, a thought on the way)")
         if t == "chapter":
             ch = n.get("chapter") or {}
             if ch.get("time") and ch["time"] not in TIMES:
@@ -560,20 +655,19 @@ def node_text(P, n, N=None, detail=True):
         if detail and n.get(key):
             out.append(f"{pad}{label}: {n[key]}")
     if detail:
-        for ln in n.get("lines") or []:
-            out.append(f"{pad}{ln.get('who')}: “{ln.get('text', '')}”" + (f" [{ln['face']}]" if ln.get("face") else ""))
+        from . import chartscript as written            # the steps as the script's own lines (chartscript reads this format)
+        for line in written.step_lines(P, n.get("steps") or []):
+            out.append(f"{pad}{line}")
         tk = n.get("talk")
         if tk:
             ln = tk.get("line") or {}
             out.append(f"{pad}asks ({ln.get('who', '?')}): “{ln.get('text', '')}”" + (f" listening [{tk['listen']}]" if tk.get("listen") else ""))
             for o in tk.get("options") or []:
-                out.append(f"{pad}  [{o.get('id')}] “{o.get('say', '')}” karma {o.get('karma', 0)}" + (f", sets {o['sets']}" if o.get("sets") else "")
-                           + (f" → [{o['face']}]" if o.get("face") else "") + (f" {o['tell']}" if o.get("tell") else ""))
+                out.append(f"{pad}  [{o.get('id')}] “{o.get('say', '')}”" + (f" ({o['think']})" if o.get("think") else "") + f" karma {o.get('karma', 0)}"
+                           + (f", sets {o['sets']}" if o.get("sets") else "") + (f" → [{o['face']}]" if o.get("face") else "") + (f" {o['tell']}" if o.get("tell") else "")
+                           + (f" → “{o['then']}”" if o.get("then") else ""))
             if tk.get("reveals"):
                 out.append(f"{pad}reveals: {tk['reveals']}")
-        for x in n.get("tasks") or []:
-            out.append(f"{pad}☐ {x.get('text', '')}" + (f" (asked by {x['who']})" if x.get("who") else "") + (f"; done: {x['done']}" if x.get("done") else "")
-                       + (f"; fails: {x['fails']}" if x.get("fails") else ""))
         ch = n.get("chapter")
         if ch:
             out.append(f"{pad}card: {ch.get('title', '')}" + (f" · {ch['sub']}" if ch.get("sub") else "") + (f" ({ch['time']} from here)" if ch.get("time") else ""))
@@ -798,4 +892,4 @@ def upgrade(P1):
         frames.append({"id": act["id"], "title": act.get("title", ""), "x": min(xs) - 30, "y": min(ys) - 60, "w": max(xs) - min(xs) + 260,
                        "h": max(ys) - min(ys) + 190, "color": ["#8a63d2", "#3f8fc9", "#c98a2b", "#4fae7c", "#c0473f"][len(frames) % 5]})
     P.update({"nodes": nodes, "edges": edges, "frames": frames})
-    return P
+    return with_steps(P)

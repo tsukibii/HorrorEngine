@@ -1,8 +1,9 @@
 // The writers' room's page (docs/WRITERS_ROOM.md): you write the story as a flowchart: shapes from the palette, joined
-// by arrows, each holding your gist (what happens, who, where, the lines you have, the talks' answers). The inspector
-// edits what's picked; About holds the brief and the story's heart, Cast & places who and where, Faces the MiniMax post
-// prompts. Every change is saved (the server keeps the versions) and undoable here; Build turns it into a rough,
-// working outline in the director, and Claude reads it all (room.py show, room.py now).
+// by arrows, each holding your gist (what happens, who, where, its script, the talks' answers), or Claude makes it from
+// your notes, written any way you like (/chart, .claude/skills/chart). The inspector edits what's picked; About holds the brief and
+// the story's heart, Cast & places who and where, Faces the MiniMax post prompts. Every change is saved (the server keeps the versions) and undoable here; Build turns it into a rough,
+// working outline in the director, and Claude reads it all (room.py show, room.py now). When the session changes on disk
+// (Claude made it again), the page takes the new one in by itself: what was on screen goes on the undo stack.
 import { Chart, SHAPES, ICONS } from "./canvas.js";
 
 const $ = s => document.querySelector(s);
@@ -22,7 +23,7 @@ const el = (tag, attrs = {}, ...kids) => {
 const api = async (path, body) => {
   const r = await fetch("/api/" + path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || r.statusText);
+  if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { status: r.status, body: j });
   return j;
 };
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -34,7 +35,7 @@ function toast(text, bad = false) {
 
 // ---- the state ---------------------------------------------------------------------------------------------------
 let SID = null, P = null, CHECK = { errors: [], warnings: [], minutes: [0, 0] }, LIB = {};
-let TAB = "flow", UNDO = [], REDO = [], BASE = null, SAVE_T = 0, NOW_T = 0, CHART = null;
+let TAB = "flow", UNDO = [], REDO = [], BASE = null, SAVE_T = 0, NOW_T = 0, CHART = null, STAMP = null;
 const params = new URLSearchParams(location.search);
 const POINTS = ["scene", "talk", "task", "chapter"];
 const TYPE_COLOR = { start: "#6cc58a", scene: "#6fb3d9", talk: "#e07a90", task: "#e3a64e", chapter: "#a185e6", choice: "#d8d2c6", secret: "#e5b450", ending: "#d4655c", note: "#e8d27c" };
@@ -42,7 +43,7 @@ const TYPE_COLOR = { start: "#6cc58a", scene: "#6fb3d9", talk: "#e07a90", task: 
 // ---- the session: load, save, undo -------------------------------------------------------------------------------
 async function open(sid) {
   const r = await api("session/" + encodeURIComponent(sid));
-  SID = sid; P = r.prototype; CHECK = r; BASE = JSON.stringify(P); UNDO = []; REDO = [];
+  SID = sid; P = r.prototype; CHECK = r; BASE = JSON.stringify(P); UNDO = []; REDO = []; STAMP = r.stamp;
   try { localStorage.setItem("writers.last", sid); } catch (e) { }
   const u = new URL(location.href); u.searchParams.set("s", sid); history.replaceState(null, "", u);
   $("#title").value = P.title || "";
@@ -63,11 +64,36 @@ async function flush() {
   const now = JSON.stringify(P);
   if (now === BASE) { $("#saved").textContent = "saved"; return; }
   try {
-    const r = await api("session/" + encodeURIComponent(SID), { prototype: P });
+    const r = await put();
     BASE = now; CHECK = r; $("#saved").textContent = "saved";
     renderBar(); if (TAB === "flow") CHART.render();
-  } catch (e) { $("#saved").textContent = "not saved"; toast(e.message, true); }
+  } catch (e) {
+    if (e.status === 409) return takeIn(e.body, "This chart was made again outside the page (by Claude) while you were editing: here it is. Ctrl+Z brings your edit back.");
+    $("#saved").textContent = "not saved"; toast(e.message, true);
+  }
 }
+// the save says which version it was made from: if the file changed since (Claude made it again), the server says so
+async function put() { const r = await api("session/" + encodeURIComponent(SID), { prototype: P, base: STAMP }); STAMP = r.stamp; return r; }
+// the session as it is on disk taken in, what was on screen kept on the undo stack
+function takeIn(r, say) {
+  UNDO.push(JSON.stringify(P)); REDO = [];
+  P = r.prototype; CHECK = r; BASE = JSON.stringify(P); STAMP = r.stamp;
+  $("#title").value = P.title || ""; $("#saved").textContent = "saved";
+  const ids = new Set((P.nodes || []).map(n => n.id)), sel = CHART.sel;
+  for (const id of [...sel.nodes]) if (!ids.has(id)) sel.nodes.delete(id);
+  sel.edges.clear(); sel.frames.clear();
+  renderAll(); toast(say);
+}
+// a look at the file every couple of seconds: changed on disk with nothing unsaved here, it's taken in
+let MOUSE = 0;
+window.addEventListener("mousedown", () => MOUSE++, true); window.addEventListener("mouseup", () => MOUSE = 0, true);
+setInterval(async () => {
+  if (!SID || document.hidden || SAVE_T || MOUSE || $("#modal").classList.contains("on") || JSON.stringify(P) !== BASE) return;
+  try {
+    const s = await api("stamp/" + encodeURIComponent(SID));
+    if (s.stamp && STAMP && s.stamp !== STAMP && !SAVE_T && JSON.stringify(P) === BASE) takeIn(await api("session/" + encodeURIComponent(SID)), "The chart changed on disk (Claude made it again): this is it now. Ctrl+Z goes back.");
+  } catch (e) { }
+}, 2000);
 async function undo(back = true) {
   await flush();
   const from = back ? UNDO : REDO, to = back ? REDO : UNDO;
@@ -75,7 +101,7 @@ async function undo(back = true) {
   to.push(JSON.stringify(P));
   P = JSON.parse(from.pop()); BASE = null;
   const s = JSON.stringify(P);
-  try { CHECK = await api("session/" + encodeURIComponent(SID), { prototype: P }); } catch (e) { toast(e.message, true); }
+  try { CHECK = await put(); } catch (e) { toast(e.message, true); }
   BASE = s; $("#title").value = P.title || "";
   const ids = new Set((P.nodes || []).map(n => n.id)), es = new Set((P.edges || []).map(x => x.id)), fs = new Set((P.frames || []).map(x => x.id));
   const sel = CHART.sel; for (const id of [...sel.nodes]) if (!ids.has(id)) sel.nodes.delete(id); for (const id of [...sel.edges]) if (!es.has(id)) sel.edges.delete(id); for (const id of [...sel.frames]) if (!fs.has(id)) sel.frames.delete(id);
@@ -133,7 +159,7 @@ function forSubject(prompt, subject) {
 function faceOf(id) { return (P.faces || []).find(f => f.id === id) || LIB[id] || null; }
 function snakeOf(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^[^a-z]+/, "") || "x"; }
 function allIds() {
-  return new Set([...(P.nodes || []).map(n => n.id), ...castOf().map(c => c.id), ...placesOf().map(x => x.id), ...(P.faces || []).map(f => f.id), ...(P.feats || []).map(a => a.id)]);
+  return new Set([...(P.nodes || []).map(n => n.id), ...castOf().map(c => c.id), ...placesOf().map(x => x.id), ...(P.items || []).map(x => x.id), ...(P.faces || []).map(f => f.id), ...(P.feats || []).map(a => a.id)]);
 }
 function freeId(prefix, taken = allIds()) { let n = 1; const w = prefix === "note" ? 1 : 2; while (taken.has(prefix + String(n).padStart(w, "0"))) n++; return prefix + String(n).padStart(w, "0"); }
 function freeEdgeId() { const ids = new Set((P.edges || []).map(e => e.id)); let n = 1; while (ids.has("a" + n)) n++; return "a" + n; }
@@ -204,9 +230,8 @@ function make(type, x, y) {
   if (type === "start" && (P.nodes || []).some(n => n.type === "start")) { toast("the story has its start already"); return null; }
   const id = type === "start" ? "start" : freeId(PREFIX[type] || "x"), n = { id, type, x, y, title: type === "start" ? "Start" : "" };
   const near = (P.nodes || []).filter(m => POINTS.includes(m.type)).slice(-1)[0] || {};
-  if (POINTS.includes(type)) Object.assign(n, { text: "", who: [], where: near.where || "", minutes: { scene: 3, talk: 3, task: 4, chapter: 1 }[type] });
+  if (POINTS.includes(type)) Object.assign(n, { text: "", who: [], where: near.where || "", minutes: { scene: 3, talk: 3, task: 4, chapter: 1 }[type], steps: [] });
   if (type === "talk") n.talk = { line: { who: "", text: "" }, listen: "", options: [{ id: "a", say: "", karma: 0, tell: "", face: "" }, { id: "b", say: "", karma: 0, tell: "", face: "" }], reveals: "" };
-  if (type === "task") n.tasks = [{ id: "t1", text: "", who: "", done: "", fails: "" }];
   if (type === "chapter") n.chapter = { title: "", sub: "", time: "night" };
   if (type === "choice") Object.assign(n, { by: "player", question: "" });
   if (type === "secret") Object.assign(n, { find: "", shows: "", achievement: { title: "", text: "", hidden: false } });
@@ -254,10 +279,12 @@ function card(n) {
   if (n.where) chips.push(el("span", { class: "chip" }, "⌂ " + placeName(n.where)));
   for (const w of n.who || []) chips.push(el("span", { class: "chip who" }, nameOf(w)));
   if (n.type === "talk") { const o = (n.talk || {}).options || []; chips.push(el("span", { class: "chip" }, `${o.length} answer${o.length === 1 ? "" : "s"}`)); }
-  if (n.type === "task") chips.push(el("span", { class: "chip" }, `${(n.tasks || []).length} to do`));
+  const st = n.steps || [], said = st.filter(x => ["say", "you", "think"].includes(x.do)).length, todo = st.filter(x => x.do === "todo").length, acts = st.filter(x => x.do === "act").length;
+  if (todo) chips.push(el("span", { class: "chip" }, `${todo} to do`));
+  if (acts) chips.push(el("span", { class: "chip" }, `${acts} thing${acts > 1 ? "s" : ""} to do`));
   if (n.type === "chapter" && n.chapter && (n.chapter.title || n.chapter.sub)) chips.push(el("span", { class: "chip" }, [n.chapter.title, n.chapter.sub].filter(Boolean).join(" · ")));
   if ((n.type === "secret" || n.type === "ending") && (n.achievement || {}).title) chips.push(el("span", { class: "chip ach" }, "🏆 " + n.achievement.title));
-  if ((n.lines || []).length) chips.push(el("span", { class: "chip" }, `${n.lines.length} line${n.lines.length > 1 ? "s" : ""}`));
+  if (said) chips.push(el("span", { class: "chip" }, `${said} line${said > 1 ? "s" : ""}`));
   if (chips.length) kids.push(el("div", { class: "sh-meta" }, ...chips));
   return { kids, cls: n.type === "ending" && n.kind === "intended" ? "intended" : "", title: sh.hint };
 }
@@ -325,20 +352,16 @@ function inspectNode(box, n) {
   }
   if (POINTS.includes(n.type)) {
     body.push(el("div", { class: "types" }, ...POINTS.map(t => el("button", { class: "tbtn" + (n.type === t ? " on" : ""), style: `--tc:${TYPE_COLOR[t]}`, title: SHAPES[t].hint,
-      on: { click: () => { if (n.type === t) return; const m = make(t, n.x, n.y); for (const k of ["talk", "tasks", "chapter"]) if (m[k] && !n[k]) n[k] = m[k]; n.type = t; n.minutes = n.minutes ?? m.minutes; changed(); re(); } } }, ICONS[t] + " " + SHAPES[t].label))));
+      on: { click: () => { if (n.type === t) return; const m = make(t, n.x, n.y); for (const k of ["talk", "steps", "chapter"]) if (m[k] && !n[k]) n[k] = m[k]; n.type = t; n.minutes = n.minutes ?? m.minutes; changed(); re(); } } }, ICONS[t] + " " + SHAPES[t].label))));
     body.push(...lab("Title", input(n, "title", { placeholder: "a few words" })), ...lab("What happens", area(n, "text", 5, "the gist, in your own words")));
     body.push(el("div", { class: "two" }, el("div", {}, ...lab("Where", placePick(n))), el("div", { style: "max-width:90px" }, ...lab("Minutes", input(n, "minutes", { type: "number", min: 0, max: 15, step: 0.5 })))));
     body.push(...lab("Who's in it", whoChips(n)));
     if (n.type === "talk") body.push(...talkEditor(n));
-    if (n.type === "task") body.push(el("h3", {}, "To do"), list(n.tasks = n.tasks || [], (k, i, rm) => [el("div", { class: "ihead" }, input(k, "text", { placeholder: "as the list says it: Restock the vending machine" }), del(rm)),
-      el("div", { class: "two" }, el("div", {}, ...lab("Asked by", select(k, "who", castOf().map(c => [c.id, c.name || c.id]), null, "nobody"))), el("div", {}, ...lab("Can it fail?", input(k, "fails", { placeholder: "how (or leave it empty)" })))),
-      ...lab("Done when", input(k, "done", { placeholder: "what ticks it" }))], () => ({ id: freeId("t", new Set((n.tasks || []).map(x => x.id))), text: "", who: "", done: "", fails: "" }), "to-do", 12, () => CHART.render()));
+
     if (n.type === "chapter") { n.chapter = n.chapter || { title: "", sub: "", time: "night" };
       body.push(el("h3", {}, "The chapter card"), el("div", { class: "two" }, el("div", {}, ...lab("Title", input(n.chapter, "title", { placeholder: "Night 2" }))),
         el("div", {}, ...lab("Under it", input(n.chapter, "sub", { placeholder: "23:40" }))), el("div", {}, ...lab("From here on", select(n.chapter, "time", ["day", "dusk", "night"]))))); }
-    body.push(el("h3", {}, "Lines (the ones you have)"), list(n.lines = n.lines || [], (ln, k, rm) => [el("div", { class: "ihead" }, select(ln, "who", [...castOf().map(c => [c.id, c.name || c.id]), ["player", "you"]], null, "— who —"), del(rm)),
-      input(ln, "text", { placeholder: "one sentence, 12 words at most" }), el("details", {}, el("summary", {}, "her face"), facePicker(ln, "face", ln.who))],
-      () => ({ who: (n.who || [])[0] || "", text: "", face: "" }), "line", 99, () => CHART.render()));
+    body.push(el("h3", {}, "The script"), scriptOf(n));
     body.push(el("details", { class: "more" }, el("summary", {}, "More: what the player does, the shot, a note for Claude"),
       ...lab("What the player does", area(n, "player", 2)), ...lab("The shot (from the player's eye)", input(n, "shot", { placeholder: "across the low table, her face at arm's length" })),
       ...lab("A note for Claude", area(n, "notes", 2))));
@@ -364,6 +387,13 @@ function inspectNode(box, n) {
   if (!["choice", "secret", "ending"].includes(n.type)) { const a = arrowsOut(n); if (a) body.push(a); }
   box.replaceChildren(inspectHead(`${ICONS[n.type]} ${n.id} · ${SHAPES[n.type].label.toLowerCase()}`, color, ...buttons), el("section", {}, ...body));
 }
+// a shape's script: what happens in it, line by line, as Claude wrote it from your notes (/chart); to change it, tell
+// Claude, or change it in the director once it's built
+function scriptOf(n) {
+  const lines = (CHECK.scripts || {})[n.id] || [];
+  return el("div", { class: "script" }, lines.length ? el("pre", { class: "lines" }, lines.join("\n"))
+    : el("p", { class: "muted small" }, "Nothing in it yet: the gist above is all there is. Made from your notes by Claude (/chart), a shape holds its lines, thoughts, what happens and what you do."));
+}
 function decideBy(c) {                            // a choice's arrows, made to say what decides them now
   const os = outsOf(c.id), t = c.by === "answer" ? talkUpstream(c.id) : null, answers = ((t || {}).talk || {}).options || [];
   os.forEach((e, i) => {
@@ -384,11 +414,13 @@ function talkEditor(n) {
     ...lab("Who asks, and what", el("div", { class: "two ask" }, select(t.line, "who", castOf().map(c => [c.id, c.name || c.id]), () => renderInspector(), "— who —"), input(t.line, "text", { placeholder: "Walt said three sharp. When's he back?" }))),
     el("details", {}, el("summary", {}, "her face while she waits"), facePicker(t, "listen", who)),
     list(t.options = t.options || [], (o, k, rm) => [el("div", { class: "ihead" }, el("b", {}, `Answer ${o.id}`), del(rm)),
-      input(o, "say", { placeholder: "what you say (2 to 8 words)" }),
+      input(o, "say", { placeholder: "what you do or say: Greet" }),
+      input(o, "think", { placeholder: "your thought with it: She's probably cold, I should let her inside" }),
+      input(o, "then", { placeholder: "her reply (her face answers first): You haven't changed at all." }),
       el("div", { class: "two" }, el("div", { style: "max-width:80px" }, ...lab("Karma", input(o, "karma", { type: "number", min: -3, max: 3 }))), el("div", {}, ...lab("Remembered as (a flag)", input(o, "sets", { placeholder: "told_the_truth" })))),
       ...lab("What her face does", input(o, "tell", { placeholder: "her smile stays, her eyes slide to the door" })),
       el("details", {}, el("summary", {}, "the face (a MiniMax post prompt)"), facePicker(o, "face", who))],
-      () => ({ id: "abc"[t.options.length] || "d", say: "", karma: 0, tell: "", face: "", sets: "" }), "answer", 3, () => CHART.render()),
+      () => ({ id: "abc"[t.options.length] || "d", say: "", think: "", then: "", karma: 0, tell: "", face: "", sets: "" }), "answer", 3, () => CHART.render()),
     ...lab("What reading her face here tells you", area(t, "reveals", 2))];
 }
 function wayEditor(c, e) {
@@ -505,7 +537,7 @@ function renderPeople() {
 function renderFaces() {
   const used = new Map(), push = (id, u) => (used.get(id) || used.set(id, []).get(id)).push(u);
   for (const n of P.nodes || []) {
-    (n.lines || []).forEach((l, i) => l.face && push(l.face, { where: `${n.id} line ${i + 1}`, who: l.who, id: n.id }));
+    (n.steps || []).forEach((l, i) => l.face && push(l.face, { where: `${n.id} step ${i + 1}`, who: l.who, id: n.id }));
     const t = n.talk; if (!t) continue;
     const who = (t.line || {}).who || (n.who || [])[0];
     if (t.listen) push(t.listen, { where: `${n.id} listening`, who, id: n.id });
@@ -550,6 +582,7 @@ async function sessionsDialog(first = false) {
   const ok = await dialog(first ? "The writers' room" : "Sessions", [
     el("div", { class: "hint muted", style: "margin-bottom:8px" }, "A session is one game's story, written as a flowchart: its points, its choices, its secrets, its endings. Start a new one, or open one."),
     el("label", {}, "New"), title, kind,
+    el("div", { class: "hint muted small", style: "margin-top:8px" }, "Written your story in notes, any way you like? In Claude Code: /chart and the file. Claude makes the chart, and it opens here."),
     rows.length ? el("label", { style: "margin-top:16px" }, "Open") : null, ...rows], "New session");
   if (chose) return open(chose);
   if (!ok) return;
@@ -570,7 +603,7 @@ async function buildDialog() {
   if (!ok) return;
   try {
     const r = await api("build/" + encodeURIComponent(SID), { game: game.value.trim(), force: force.checked });
-    P.built = { game: r.game }; BASE = JSON.stringify(P);
+    P.built = { game: r.game }; BASE = JSON.stringify(P); if (r.stamp) STAMP = r.stamp;
     const bad = r.check && !r.check.ok;
     await dialog(bad ? "Built, but the story check fails" : "Built", [el("p", {}, r.message),
       bad ? el("p", { style: "color:#ff9b9b" }, ...(r.check.errors || []).map(e => el("div", {}, e))) : null,

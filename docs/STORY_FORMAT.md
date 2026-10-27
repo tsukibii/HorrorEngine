@@ -257,7 +257,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | `camera.look` | a cast id on stage, or a placed thing |
 | `camera.cone` | `[yaw°, pitch°]` either side of `look` |
 | clip `who`, `ja`, `en`, `act` | the speaker; the line recorded (Japanese); the subtitle; the acting note for the take |
-| clip `think` | `true`: the player's own thought (`who: "player"`), shown in the footer set apart (in brackets, slanted) and never said: no take, no face, and nobody on stage hears it. The desk's screenplay typing writes one as a whole line in quotes (`"She came back."`), as the writers' room's notes do (docs/NOTES_SYNTAX.md) |
+| clip `think` | `true`: the player's own thought (`who: "player"`), shown in the footer set apart (in brackets, slanted) and never said: no take, no face, and nobody on stage hears it. The desk's screenplay typing writes one as a whole line in quotes (`"She came back."`), as the chart's script does (.claude/skills/chart/script.md) |
 | clip `dur` | the take's real length (`story.py durations` or `intake.py` writes it). Without it the length is `dur_tts` (a placeholder voice), else an estimate |
 | clip `face: false` | voice only (an offstage or unseen speaker) |
 | clip `shot` | the shot size: `ecu cu mcu ms fs ws insert pov_down pov_up` (DIRECTING.md §1). In first person it's a **distance**: how close the actor's face comes to the player's eye (ecu under 0.3 m, cu to 0.55, mcu to 0.9, ms to 1.6, fs to 3, ws beyond). The body check and the shot review measure the clip's closest moment and flag a label it doesn't reach |

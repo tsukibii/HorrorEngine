@@ -3,10 +3,12 @@
 // land; joined by dragging from a dot (and from a dot into empty space, making the next one there); the inspector: the
 // gist, someone new, a talk's question and answers; a choice whose arrows are labelled on the chart; two endings;
 // undo and redo; copy, paste and delete; an act round the picked shapes; every change saved to the session's file;
-// the problems at their shapes; the About tab; Build into the scratch home with the story check ok.
+// the problems at their shapes; the About tab; Build into the scratch home with the story check ok. Then Claude's side
+// (/chart): a script read in by room.py shows on the page with each shape's script in the inspector, and read in again
+// while the page is open it's taken in by itself, a shape moved on the page keeping its place, Ctrl+Z going back.
 //   node tools/writers/pagetest.mjs           (WRITERS_TEST_PORT for another port than 8796)
 import { createRequire } from "module";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -29,7 +31,12 @@ const page = await (await browser.newContext({ viewport: { width: 1500, height: 
 const errors = []; page.on("pageerror", e => errors.push(e.message));
 const step = async (what, fn) => { try { await fn(); ok(what); } catch (e) { fail(`${what}: ${e.message.split("\n")[0]}`); await page.screenshot({ path: path.join(HOME, "fail.png") }).catch(() => { }); } };
 const P = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__wr.P)));
-const onDisk = () => { const d = path.join(HOME, "Prototypes"); const sid = fs.readdirSync(d)[0]; return JSON.parse(fs.readFileSync(path.join(d, sid, "prototype.json"), "utf8")); };
+const onDisk = (sid = null) => { const d = path.join(HOME, "Prototypes"); sid = sid || fs.readdirSync(d)[0]; return JSON.parse(fs.readFileSync(path.join(d, sid, "prototype.json"), "utf8")); };
+const room = (...args) => {                         // room.py on the scratch home, as Claude runs it
+  const r = spawnSync(process.env.PYTHON || "python3", ["tools/writers/room.py", ...args], { cwd: ROOT, env: Object.assign({}, process.env, { WRITERS_HOME: HOME }), encoding: "utf8" });
+  if (r.status !== 0) throw new Error((r.stdout + r.stderr).slice(-400));
+  return r.stdout;
+};
 const saved = async () => { await page.evaluate(() => window.__wr.flush()); await page.waitForFunction(() => document.querySelector("#saved").textContent === "saved", null, { timeout: 8000 }); };
 const shape = id => page.locator(`.shape[data-id="${id}"]`);
 const chartAt = async (fx, fy) => { const b = await page.locator("#chart").boundingBox(); return { x: b.x + b.width * fx, y: b.y + b.height * fy }; };
@@ -89,7 +96,7 @@ try {
     await page.waitForSelector("#inspector input[placeholder^='Walt said']", { timeout: 3000 });
     await page.locator("#inspector .two.ask select").selectOption("hana");
     await page.fill("#inspector input[placeholder^='Walt said']", "Do you remember her room?");
-    const says = page.locator("#inspector input[placeholder^='what you say']");
+    const says = page.locator("#inspector input[placeholder^='what you do or say']");
     await says.nth(0).fill("Of course I do."); await says.nth(1).fill("Whose room?");
     await saved();
     const n = onDisk().nodes.find(x => x.id === tk);
@@ -198,6 +205,39 @@ try {
     const S = JSON.parse(fs.readFileSync(path.join(HOME, "Games", "PageTest", "story.json"), "utf8"));
     if (!S.flow[`n_${tk}`] || !S.flow[`n_${ch}`] || S.flow[`n_${ch}`].options.map(o => o.label).sort().join() !== "Open it,Walk away") throw new Error(JSON.stringify(S.flow[`n_${ch}`]));
     await page.keyboard.press("Escape");
+  });
+  let sid2, scr;
+  await step("Claude's chart (/chart): a script read in by room.py opens here, each shape's script in the inspector, the answers with their thoughts", async () => {
+    scr = path.join(HOME, "come.script.txt");
+    fs.copyFileSync(path.join(ROOT, "tools", "writers", "script_example.txt"), scr);
+    sid2 = /new session (\S+):/.exec(room("import", scr, "--notes", scr))[1];
+    if (!fs.existsSync(path.join(HOME, "Prototypes", sid2, "notes.txt"))) throw new Error("the notes weren't kept");
+    await page.evaluate(id => window.__wr.open(id), sid2);
+    await page.waitForSelector('.shape[data-id="opening_ji"]', { timeout: 8000 });
+    await page.evaluate(() => { const c = window.__wr.chart; c.pick({ nodes: ["opening_ji"] }); c.center("opening_ji"); });
+    await page.waitForSelector("#inspector .script pre.lines", { timeout: 4000 });
+    const t = await page.textContent("#inspector .script pre.lines");
+    if (!/Ji: .*It's been so long/.test(t) || !/\*Enter Name\*/.test(t)) throw new Error(t.slice(0, 200));
+    const thinks = await page.locator("#inspector input[placeholder^='your thought']").evaluateAll(xs => xs.map(x => x.value));
+    if (!thinks.includes("She's probably cold, I should let her inside")) throw new Error(JSON.stringify(thinks));
+  });
+  await step("read in again while the page is open: taken in by itself, the shape moved here keeps its place, Ctrl+Z goes back", async () => {
+    await page.evaluate(() => { const c = window.__wr.chart; c.pick({ nodes: [] }); c.center("tea"); });
+    await sleep(300);
+    const b = await shape("tea").boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + 12); await page.mouse.down(); await page.mouse.move(b.x + b.width / 2, b.y + 92, { steps: 8 }); await page.mouse.up();
+    await saved();
+    const moved = onDisk(sid2).nodes.find(n => n.id === "tea");
+    fs.writeFileSync(scr, fs.readFileSync(scr, "utf8").replace(`"Her coat is still on. It's warm in here."`, `"Her coat is still on. It's warm in here."\n\n"She hasn't taken her shoes off either."`));
+    room("import", scr, "--into", sid2);
+    await page.waitForFunction(() => JSON.stringify(window.__wr.P).includes("shoes off"), null, { timeout: 10000 });
+    const n = (await P()).nodes.find(x => x.id === "tea");
+    if (n.x !== moved.x || n.y !== moved.y) throw new Error(`moved to ${moved.x},${moved.y}, after: ${n.x},${n.y}`);
+    await page.locator("#chart").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("Control+z");
+    await page.waitForFunction(() => !JSON.stringify(window.__wr.P).includes("shoes off"), null, { timeout: 5000 });
+    await saved();
+    if (JSON.stringify(onDisk(sid2)).includes("shoes off")) throw new Error("undone on the page, not on disk");
   });
   if (errors.length) fail("page errors: " + errors.slice(0, 3).join("; "));
 } finally {

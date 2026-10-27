@@ -2,6 +2,30 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, later (your notes any way you like, Claude makes the chart; an inventory; the controls on Esc)
+
+- **Write any way; Claude turns it into the chart** (the syntax was the wrong approach): "I just realised the syntax
+  script to writer is the wrong approach, I should just be able to write the game out anyway I want in notepad (but
+  I'll try be clear with what happens, maybe suggest a couple of symbols), and then we will use Claude to convert it
+  into a writer block game, maybe just make yourself an .md so I can run the command and maybe a claude folder for
+  storing these kind of claude tools, basically I'd just pass you what I wrote and roughly want, you'd make that into
+  the writer block flow chart so I can inspect, if that looks good you convert it into the director tool and that's
+  where I start refining everything, swapping out block objects for real ones". So `/chart` and `/build-game`
+  (`.claude/skills/`), docs/NOTES.md the few marks suggested; the syntax stays as Claude's own script
+  (`.claude/skills/chart/script.md`, what the chart is read from), and the writers' room's Notes tab is gone.
+- **A place designed first**: "maybe I can predesign a studio before you make the game in director so you can use
+  that as a background reference to place objects".
+- **Simple horror-game controls and an inventory**: "game should have G for drop (typical simple horror game
+  mechanics), don't need gravity mechanics, we do want an inventory system, maybe change E to be inventory (if
+  something else is already that) and we have left click for all interactables, inventory should be a very simple one
+  row with each item that's been picked up in it, press E to hide it (current equipped item should always be
+  centered, so basically it kind of scrolls through, we can see all the items on the left and right, if the player
+  somehow picks up too many items the row should almost be like a hidden wheel where some items disappear when they
+  are too far from the centered equipped so we always show a max of 5 items at once) though I will try limit to what
+  can be picked up at any point. Have the items in front of a frosted glass, gradient UI without a border."
+- **Esc shows the controls**: "When we press escape we should see controller options on the left side similar to
+  image 1" (outlined keys: WASD movement, the mouse to interact, the inventory, Shift run, C crouch).
+
 ## 2026-10-27, notes (the whole story written on the phone; choices at the bottom centre)
 
 - **The story written in the phone's notes app, imported into the writers' room**: "I want to be able to write out the
@@ -13,7 +37,7 @@ The user's answers, newest first. They override the plan, the research and the d
   answers/responses I like more of a `[ Greet ] She's probably cold, I should let her inside --- [ Question ] She looks
   different`. So for player it's the action as a response with a bit of internal monologue". Their own example
   (thoughts in quotes, `*knock, knock*`, `*open door*`, `Hidden Timed Task - Clean up`, `*Enter Name*`, X for the
-  name) is the syntax's base: docs/NOTES_SYNTAX.md, the phone sheet https://claude.ai/artifact/846Yz5K8LXSQv3YcKsDSiK.
+  name) is the syntax's base: now Claude's script, `.claude/skills/chart/script.md` (superseded above: the user writes any way).
 - **Choices at the bottom centre**: "We will need to update the UI since we moved away from voice acted lines to
   multiple choice and player choices to be at the bottom centred of the frame (with padding) so it flows better". Every
   choice (a reply, an `ask`, a timed choice, a board game's call) sits under its question in the footer, at the bottom

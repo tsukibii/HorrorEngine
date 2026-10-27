@@ -25,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 sys.path.insert(0, str(HERE))
+from storykit import chartscript  # noqa: E402
 from storykit import proto  # noqa: E402
 
 PORT = int(os.environ.get("WRITERS_PORT", 8795))
@@ -33,26 +34,13 @@ SAVED = HOME / "Saved" if HOME else ROOT / "Saved" / "Writers"
 NOW = SAVED / "now.json"
 if HOME:                                            # a scratch home: the sessions live there too
     proto.PROTOS = HOME / "Prototypes"
-KEEP = 40
+proto.SAVED = SAVED
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml"}
 PAGES = {"index.html", "app.js", "canvas.js", "ui.css"}
 LOCK = threading.RLock()
 
 
-def history_dir(sid):
-    return SAVED / sid / "history"
-
-
-def keep_history(sid):
-    """The session as it is on disk, into its history before it's replaced."""
-    p = proto.path_of(sid)
-    if not p.exists():
-        return
-    d = history_dir(sid)
-    d.mkdir(parents=True, exist_ok=True)
-    (d / (time.strftime("%Y%m%d-%H%M%S") + f"-{int(time.time() * 1000) % 1000:03d}.json")).write_bytes(p.read_bytes())
-    for old in sorted(d.glob("*.json"))[:-KEEP]:
-        old.unlink()
+history_dir = proto.history_dir
 
 
 def session(sid):
@@ -61,14 +49,22 @@ def session(sid):
     return proto.load(proto.path_of(sid))
 
 
+def stamp(sid):
+    """The version on disk: its file's time, to the nanosecond."""
+    p = proto.path_of(sid)
+    return str(p.stat().st_mtime_ns) if p.exists() else ""
+
+
 def with_check(P):
     errs, warns = proto.check(P)
-    return {"prototype": P, "errors": errs, "warnings": warns, "minutes": list(proto.minutes_range(P))}
+    scripts = {n["id"]: chartscript.shape_lines(P, n) for n in P.get("nodes", []) if n.get("steps")}   # each shape's script as written
+    return {"prototype": P, "errors": errs, "warnings": warns, "minutes": list(proto.minutes_range(P)), "scripts": scripts,
+            "stamp": stamp(P.get("id", ""))}
 
 
 def store(P):
     with LOCK:
-        keep_history(P["id"])
+        proto.keep_history(P["id"])
         proto.save(P)
 
 
@@ -118,6 +114,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"versions": [p.stem for p in sorted(d.glob("*.json"), reverse=True)] if d.is_dir() else []})
         if what == "library":
             return self.send(200, {"faces": list(proto.library().values())})
+        if what == "stamp" and len(parts) == 3:          # which version is on disk (the page takes in what Claude made)
+            return self.send(200, {"stamp": stamp(parts[2])})
         return self.send(404, {"error": "unknown"})
 
     def page(self, name):
@@ -143,7 +141,10 @@ class Handler(BaseHTTPRequestHandler):
                 P = b.get("prototype")
                 if not isinstance(P, dict) or P.get("id") != sid or not session(sid):
                     return self.send(400, {"error": "that isn't this session"})
-                store(P)
+                with LOCK:
+                    if b.get("base") and b["base"] != stamp(sid):    # made again on disk since the page loaded it
+                        return self.send(409, dict(with_check(session(sid)), error="the session changed on disk"))
+                    store(P)
                 return self.send(200, with_check(session(sid)))
             if what == "restore" and sid:                # an earlier version back
                 p = history_dir(sid) / (re.sub(r"[^0-9-]", "", str(b.get("version", ""))) + ".json")
@@ -167,6 +168,7 @@ class Handler(BaseHTTPRequestHandler):
                 if res.get("ok"):
                     P["built"] = {"game": res["game"], "at": proto.now()}
                     store(P)
+                    res["stamp"] = stamp(sid)
                 return self.send(200, res) if res.get("ok") else self.send(400, dict(res, error=res.get("message")))
         except ValueError as e:
             return self.send(400, {"error": str(e)})

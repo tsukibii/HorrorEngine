@@ -197,3 +197,5 @@ button.add{margin-top:4px}
 #toast{position:fixed;left:50%;bottom:24px;translate:-50% 0;background:#1f2633;border:1px solid #3a4558;padding:9px 16px;border-radius:9px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:72vw;z-index:60}
 #toast.on{opacity:1}
 #toast.bad{border-color:var(--bad)}
+/* a shape's script in the inspector, as written */
+.script pre.lines{margin:0 0 8px;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;background:#11151b;border-radius:8px;padding:8px 10px;color:#d6cfc3;max-height:340px;overflow:auto}

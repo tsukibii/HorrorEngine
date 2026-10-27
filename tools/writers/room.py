@@ -9,12 +9,21 @@ check. The page is serve.py.
     python tools/writers/room.py now                    what the page shows right now (the session, the shapes picked)
     python tools/writers/room.py build ID [--game G]    the chart into Content/Games/G (story.json, BUILD.md, faces.md),
                                                         G from the title when not given; --force over a story not built from it
+    python tools/writers/room.py import SCRIPT [--into ID] [--notes FILE]
+                                                        Claude's script of the user's notes (/chart; its syntax is
+                                                        .claude/skills/chart/script.md) into a session: a new one, or ID's
+                                                        chart made again (where its shapes sit kept; one drawn on the page
+                                                        found by its title); --notes keeps the user's own notes beside it
+                                                        (notes.txt); prints what each line became and what it couldn't read
+    python tools/writers/room.py script ID              a session's chart as a script, as it is now (what was changed on
+                                                        the page too): to change it and import it again
     python tools/writers/room.py check                  WRITERS: the format and its check, the post prompt library, the
                                                         upgrade from the first format, a chart built through check_all
 """
 import argparse
 import copy
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -22,11 +31,15 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 sys.path.insert(0, str(HERE))
+from storykit import chartscript  # noqa: E402
 from storykit import proto  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 NOW = ROOT / "Saved" / "Writers" / "now.json"
+HOME = Path(os.environ["WRITERS_HOME"]).resolve() if os.environ.get("WRITERS_HOME") else None
+if HOME:                                            # a scratch home, as the page's (WRITERSPAGE): sessions, history, builds
+    proto.PROTOS, proto.SAVED, NOW = HOME / "Prototypes", HOME / "Saved", HOME / "Saved" / "now.json"
 
 
 def load_session(sid):
@@ -93,6 +106,8 @@ def cmd_now(a):
 
 def cmd_build(a):
     import build
+    if HOME:
+        build.GAMES = HOME / "Games"
     P = load_session(a.id)
     out = build.build(P, a.game, force=a.force)
     print(out["message"])
@@ -103,6 +118,42 @@ def cmd_build(a):
     for e in (out.get("check") or {}).get("errors", []):
         print("  ERROR " + e)
     sys.exit(0 if out.get("ok") and (out.get("check") or {}).get("ok", True) else 1)
+
+
+def cmd_import(a):
+    text = Path(a.file).read_text(encoding="utf-8")
+    old = load_session(a.into) if a.into else None
+    P, rep = chartscript.read(text, old)
+    if old:
+        proto.keep_history(old["id"])            # the chart before: the page's Sessions bring it back
+    if not old:
+        sid, n = proto.slug(P["title"]), 1
+        base = sid
+        while proto.path_of(sid).exists():
+            n += 1
+            sid = f"{base}-{n}"
+        P["id"] = sid
+    for ln in rep["lines"]:
+        if ln["text"].strip() and (ln["problems"] or a.verbose):
+            print(f"{ln['n']:>4} {ln['what'] or '?':<34} {ln['text'][:70]}" + "".join("\n       ! " + x for x in ln["problems"]))
+    c = rep["counts"]
+    print(f"{P['title']}: " + ", ".join(f"{v} {k}" for k, v in c.items() if v) + f"; {len(rep['problems'])} line(s) to look at")
+    if rep["errors"]:
+        print("the chart's problems:" + "".join("\n  ERROR " + e for e in rep["errors"][:12]))
+    proto.save(P)
+    if a.notes:                                  # the user's own notes, as they wrote them, beside the chart
+        (proto.path_of(P["id"]).parent / "notes.txt").write_text(Path(a.notes).read_text(encoding="utf-8"), encoding="utf-8")
+    where = proto.path_of(P["id"])
+    print(f"{'made again' if old else 'new session'} {P['id']}: {where.relative_to(ROOT) if where.is_relative_to(ROOT) else where}"
+          f"  (open it: python tools/writers/serve.py, then http://127.0.0.1:8795/?s={P['id']})")
+
+
+def cmd_script(a):
+    P = load_session(a.id)
+    text = chartscript.write(P)
+    if P.get("script_chart") and P["script_chart"] != text:
+        print("// changed on the page since the script was read in: this is the chart as it is now")
+    print(text, end="")
 
 
 # ---- the check ----------------------------------------------------------------------------------------------------
@@ -165,7 +216,32 @@ def fixture():
     next(e for e in P["edges"] if e["from"] == "c02" and e["to"] == "c03")["when"] = {}
     P["frames"] = [{"id": "act1", "title": "Friday", "x": 0, "y": 0, "w": 1000, "h": 520, "color": "#8a63d2"},
                    {"id": "act2", "title": "Saturday", "x": 1010, "y": 0, "w": 1760, "h": 640, "color": "#3f8fc9"}]
-    return P
+    return proto.with_steps(dict(P, format=2))           # drawn in the second format's lines and to-dos: upgraded
+
+
+USER_EXAMPLE = """( Opening )
+
+Internal monologue
+"Ji should be arriving soon, I should probably clean up the apartment"
+
+Hidden Timed Task  - Clean up
+
+*knock, knock*
+
+"That must be her"
+
+*open door*
+
+She is standing, she smiles and leans in for a hug, she pulls back
+
+*Enter Name*
+
+Ji: "X! It's been so long, I barely recognise you."
+
+[ Greet ] She's probably cold, I should let her inside  --- [ Question ] Is this what she looked like.
+"""
+EXAMPLE = HERE / "script_example.txt"
+DEFAULT_TIMED = chartscript.DEFAULT_SECS
 
 
 def first_format():
@@ -283,6 +359,75 @@ def cmd_check(a):
     res = build.check_build(P)
     (ok if res["ok"] else bad)(res["message"])
 
+    # the script (.claude/skills/chart/script.md): the user's own first example reads as they wrote it
+    U, rep_u = chartscript.read(USER_EXAMPLE)
+    rep = rep_u
+    N = proto.nodes_of(U)
+    task, talk = N.get("opening") or {}, N.get("opening_ji") or {}
+    st = [x.get("do") for x in task.get("steps") or []]
+    td = next((x for x in task.get("steps") or [] if x.get("do") == "todo"), {})
+    tk = talk.get("talk") or {}
+    want = (st == ["think", "todo", "sound", "think", "act"] and td.get("hidden") is True and td.get("secs") == DEFAULT_TIMED
+            and next((x for x in task["steps"] if x["do"] == "act"), {}).get("item") == "door"
+            and [x.get("do") for x in talk.get("steps") or []] == ["see", "name"] and (talk["steps"][0].get("who") == "ji")
+            and tk.get("line", {}).get("text", "").startswith("{name}! It's been so long")
+            and [(o["say"], o.get("think")) for o in tk.get("options") or []] == [("Greet", "She's probably cold, I should let her inside"), ("Question", "Is this what she looked like.")]
+            and any(i["id"] == "door" and i["kind"] == "door" for i in U["items"]))
+    ok("the user's example as written: a task (a thought, the hidden timed clean-up, the knock off the shelf, a thought, the door "
+       "to open), then Ji's close-up (she hugs you, you type your name, her question with X as {name}, Greet and Question each "
+       "with its thought)") if want else bad(f"the user's example: steps {st}, talk {[x.get('do') for x in talk.get('steps') or []]}, {tk.get('options')}")
+
+    # the example story: every part of the syntax, a chart with no problems, built through STORY, LEVEL and SHOTS
+    E, rep = chartscript.read(EXAMPLE.read_text(encoding="utf-8"))
+    E["id"] = "script-check"
+    kinds = {k: sum(1 for n in E["nodes"] if n["type"] == k) for k in ("talk", "secret", "chapter", "ending", "choice")}
+    things = {i["name"]: i["kind"] for i in E["items"]}
+    if rep["problems"] or rep["errors"]:
+        bad(f"the example script: {rep['problems'][:3]} {rep['errors'][:3]}")
+    elif kinds != {"talk": 3, "secret": 1, "chapter": 1, "ending": 3, "choice": 5} or sum(n.get("kind") == "intended" for n in E["nodes"]) != 1 \
+            or not {"door": "door", "bed": "bed", "closet": "hideout", "kettle": "inspect"}.items() <= things.items():
+        bad(f"the example script: {kinds} {things}")
+    else:
+        r2 = build.check_build(E)
+        (ok if r2["ok"] else bad)(f"the example script (tools/writers/script_example.txt): {len(rep['lines'])} lines, no problems, {len(E['nodes'])} shapes "
+                                  f"({kinds['talk']} talks, {kinds['choice']} choices, a secret, a chapter, three endings by karma), {len(E['items'])} things "
+                                  "sized and used; " + r2["message"])
+
+    # the chart written as a script reads back as the same story, and is the same script again
+    T = chartscript.write(E)
+    E2, rep2 = chartscript.read(T)
+    shape = lambda X: sorted((n["type"], len(n.get("steps") or []), len((n.get("talk") or {}).get("options") or [])) for n in X["nodes"])
+    if rep2["problems"] or rep2["errors"] or shape(E2) != shape(E) or len(E2["edges"]) != len(E["edges"]) or chartscript.write(E2) != T:
+        bad(f"the round trip: {rep2['problems'][:3]} {rep2['errors'][:3]} shapes {shape(E2) == shape(E)} arrows {len(E2['edges'])}/{len(E['edges'])}")
+    else:
+        ok(f"the chart written back as a script ({len(T.splitlines())} lines) reads as the same story, and writes the same script again")
+
+    # a chart drawn by hand, written as a script and read back into its session: its shapes keep their ids and places
+    H = copy.deepcopy(P)
+    H2, rep5 = chartscript.read(chartscript.write(H), H)
+    pos = lambda X: {n["id"]: (n["type"], n["x"], n["y"]) for n in X["nodes"] if n["type"] not in ("note", "start")}
+    lost = sorted(set(pos(H).items()) - set(pos(H2).items()))
+    ch = {n["id"]: n.get("title") for n in H["nodes"] if n["type"] == "choice"}
+    ch2 = {n["id"]: n.get("title") for n in H2["nodes"] if n["type"] == "choice"}
+    ok(f"a chart drawn by hand, written as a script and read back into it: all {len(pos(H))} shapes keep their ids and places, "
+       "its choices their titles") if not lost and ch == ch2 and not rep5["errors"] else bad(f"drawn by hand and back: lost {lost[:4]}, choices {ch} -> {ch2}, {rep5['errors'][:2]}")
+
+    # typing habits copied from the user's notes: curly quotes, a long dash, three dots in one, bullets, capitals: the same chart
+    phone = (USER_EXAMPLE.replace('"', "“", 1).replace("\"That must be her\"", "“That must be her”").replace(" --- ", " — ")
+             .replace("Internal monologue", "• internal monologue").replace("*open door*", "*Open Door*"))
+    U2, rep3 = chartscript.read(phone)
+    same = [(n["type"], [x.get("do") for x in n.get("steps") or []]) for n in U2["nodes"]] == [(n["type"], [x.get("do") for x in n.get("steps") or []]) for n in U["nodes"]]
+    ok("typing habits (curly quotes, a long dash between the answers, a bullet, capitals) read the same") if same and rep3["errors"] == rep_u["errors"] \
+        else bad(f"typing habits: {rep3['errors'][:3]}")
+
+    # what the import can't read is said at its line
+    faulty = USER_EXAMPLE + "\n[ Nope ]\nJi: \"Hm.\"\n\n( Later ) if [ Missing ]\n\nTimed task - Wait for the bus\n\n( Secret: Nothing )\n\nA box.\n"
+    _, rep4 = chartscript.read(faulty)
+    said = " | ".join(rep4["problems"])
+    hits = [w for w in ("[ Nope ]: no answer", "no answer [ Missing ]", "a timed task with no time", "how is it found") if w in said]
+    ok("what it can't read is said at its line: an answer that isn't one, an if on an answer that isn't there, a timed task with no time, "
+       "a secret with no Find") if len(hits) == 4 else bad(f"the problems: {said[:400]}")
+
     print("WRITERS " + ("ok" if not fails else f"FAILED ({len(fails)})"))
     sys.exit(1 if fails else 0)
 
@@ -295,9 +440,13 @@ def main(argv=None):
     s = sub.add_parser("show"); s.add_argument("id"); s.add_argument("shape", nargs="?")
     sub.add_parser("now")
     s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", default=""); s.add_argument("--force", action="store_true")
+    s = sub.add_parser("import"); s.add_argument("file"); s.add_argument("--into", default=""); s.add_argument("--notes", default="")
+    s.add_argument("-v", "--verbose", action="store_true")
+    s = sub.add_parser("script"); s.add_argument("id")
     sub.add_parser("check")
     a = ap.parse_args(argv)
-    {"list": cmd_list, "new": cmd_new, "show": cmd_show, "now": cmd_now, "build": cmd_build, "check": cmd_check}[a.cmd](a)
+    {"list": cmd_list, "new": cmd_new, "show": cmd_show, "now": cmd_now, "build": cmd_build, "import": cmd_import, "script": cmd_script,
+     "check": cmd_check}[a.cmd](a)
 
 
 if __name__ == "__main__":

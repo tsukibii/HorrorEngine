@@ -39,6 +39,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
+from storykit import chartscript  # noqa: E402
 from storykit import proto  # noqa: E402
 from storykit import storylib as L  # noqa: E402
 
@@ -51,6 +52,12 @@ FAR, CLOSE = 3.6, 1.85              # the cast's marks: across the room, and clo
 BOX = {"task": "box 0.5 0.5 0.9", "secret": "box 0.4 0.4 0.6", "way": "box 0.5 0.5 1.0"}
 COLORS = ["#8a63d2", "#d26a63", "#4f9bd2", "#5fb37a", "#d2a14f", "#b35f9b"]
 SEAM = {"kind": "blink"}
+LARGE = {"table": (1.2, 0.8, 0.75), "desk": (1.2, 0.6, 0.75), "fridge": (0.7, 0.7, 1.8), "refrigerator": (0.7, 0.7, 1.8), "wardrobe": (1.0, 0.6, 1.9),
+         "closet": (1.0, 0.6, 1.9), "cupboard": (0.9, 0.5, 1.8), "cabinet": (0.9, 0.5, 1.0), "bookshelf": (0.9, 0.35, 1.8), "shelf": (0.9, 0.35, 1.6),
+         "shelves": (0.9, 0.35, 1.6), "sofa": (1.8, 0.8, 0.8), "couch": (1.8, 0.8, 0.8), "bath": (1.6, 0.75, 0.6), "bathtub": (1.6, 0.75, 0.6),
+         "sink": (0.6, 0.5, 0.9), "toilet": (0.4, 0.7, 0.8), "stove": (0.6, 0.6, 0.9), "oven": (0.6, 0.6, 0.9), "counter": (1.6, 0.6, 0.9),
+         "piano": (1.5, 0.6, 1.2), "dresser": (1.0, 0.5, 0.9), "altar": (0.8, 0.5, 1.4), "butsudan": (0.8, 0.5, 1.4), "kotatsu": (0.9, 0.9, 0.4),
+         "bench": (1.4, 0.4, 0.45), "washer": (0.6, 0.6, 0.85), "dryer": (0.6, 0.6, 0.85), "mirror": (0.6, 0.08, 1.4)}
 
 
 def game_name(title):
@@ -76,7 +83,9 @@ def today():
 # ---- the greybox ----------------------------------------------------------------------------------------------------
 
 class Rooms:
-    """The level: a room per place in a row going north, and the free places along their walls for the boxes."""
+    """The level: a room per place in a row going north, and what stands in them along their walls (the story's things,
+    sized as written; the stand-in boxes for tasks, finds and ways; doors in the outer walls), clear of the eye, the
+    marks and the doorways."""
 
     def __init__(self, places, cast):
         self.order = [x["id"] for x in places]
@@ -100,7 +109,11 @@ class Rooms:
             if i < len(places) - 1:
                 room["openings"] = [{"wall": "n", "at": W / 2, "w": 1.2, "h": 2.2}]
             self.rooms[rid] = room
-        self.used = {rid: set() for rid in self.order}
+        # the free stretches of each wall (metres from its south or west end): the west and east whole, the north and
+        # south either side of the middle (the doorways, the start and the eye's line) and clear of the corners, where
+        # what stands on the west and east walls reaches (a bed, a metre deep)
+        side = [(1.2, W / 2 - 0.9), (W / 2 + 0.9, W - 1.2)]
+        self.free = {rid: {"e": [(0.25, D - 0.25)], "w": [(0.25, D - 0.25)], "n": list(side), "s": list(side)} for rid in self.order}
         self.walk_on = {}
         self.placed = set()             # the boxes' ids (owned where they're made)
 
@@ -108,25 +121,57 @@ class Rooms:
         links = [{"a": a, "b": b, "via": None} for a, b in zip(self.order, self.order[1:])]
         return {"start": "start", "rooms": [self.rooms[r] for r in self.order], "links": links}
 
-    def slots(self, kind):
-        """Where a box can stand, clear of the eye, the marks and the way through: along the east and west walls, by
-        the north wall's corners, along the south wall beside the doorway. Tasks fill the east first, secrets the west."""
-        east = [(W - 0.3, y, 180) for y in (0.8, 1.7, 2.6, 3.5, 4.4)]
-        west = [(0.3, y, 0) for y in (0.8, 1.7, 2.6, 3.5, 4.4)]
-        inner = [(1.4, 4.4, 270), (4.6, 4.4, 270), (1.4, 2.7, 270), (4.6, 2.7, 270)]
-        south = [(1.0, 0.35, 90), (1.7, 0.35, 90), (4.3, 0.35, 90), (5.0, 0.35, 90)]
-        return {"task": east + south + inner + west, "secret": west + inner + south + east, "way": inner + east + west + south}[kind]
+    def spot(self, rid, along, walls):
+        """The first stretch of wall (of `walls`, in order) with `along` metres free: (the wall, the middle along it)."""
+        for wall in walls:
+            spans = self.free[rid][wall]
+            for k, (a, b) in enumerate(spans):
+                if b - a >= along:
+                    spans[k] = (a + along + 0.15, b)
+                    return wall, a + along / 2
+        raise ValueError(f"the greybox room {rid} has no wall left for something {along:g} m wide: too many things in one place (split it)")
+
+    def box(self, rid, pid, along, depth, h, walls=("e", "w", "n", "s"), **fields):
+        """A box against a wall, facing into the room (`rot`): `along` the wall, `depth` into the room."""
+        wall, c = self.spot(rid, along, walls)
+        off = depth / 2 + 0.06
+        at = {"w": (off, c), "e": (W - off, c), "n": (c, D - off), "s": (c, off)}[wall]
+        prop = dict({"id": pid, "shape": f"box {depth:g} {along:g} {h:g}", "at": [round(at[0], 3), round(at[1], 3)],
+                     "rot": {"w": 0, "e": 180, "n": 270, "s": 90}[wall]}, **fields)
+        self.rooms[rid]["props"].append(prop)
+        self.placed.add(pid)
+        return prop
 
     def place(self, rid, kind, pid, **fields):
-        """A box in the room: the first free slot for its kind."""
-        for x, y, rot in self.slots(kind):
-            if (x, y) not in self.used[rid]:
-                self.used[rid].add((x, y))
-                prop = dict({"id": pid, "shape": BOX[kind], "at": [x, y], "rot": rot, "tag": kind}, **fields)
-                self.rooms[rid]["props"].append(prop)
-                self.placed.add(pid)
-                return pid
-        raise ValueError(f"the greybox room {rid} has no room left for {pid}: too many tasks and finds in one place (split it)")
+        """A stand-in box for a task (the east wall first), a find (the west) or a way."""
+        walls = {"task": ("e", "s", "n", "w"), "secret": ("w", "n", "s", "e"), "way": ("n", "e", "w", "s")}[kind]
+        d, w, h = (float(x) for x in BOX[kind].split()[1:])
+        return self.box(rid, pid, w, d, h, walls, tag=kind, **fields)["id"]
+
+    def door(self, rid, did):
+        """A door in the room's outer wall (west, then east), away from the corners so what stands on the north and south
+        walls keeps out of the 0.8 m in front of it: an opening with its door, the wall either side of it still free."""
+        for wall in ("w", "e"):
+            spans = self.free[rid][wall]
+            for k, (a, b) in enumerate(spans):
+                lo, hi = max(a, 1.25), min(b, D - 1.25)          # the door's middle: its 0.65 either side within the span
+                if hi - lo >= 0:
+                    c = min(max(D / 2, lo + 0.65), hi - 0.65) if hi - lo >= 1.3 else (lo + hi) / 2
+                    if c - 0.65 < a - 1e-6 or c + 0.65 > b + 1e-6:
+                        continue
+                    spans[k:k + 1] = [x for x in ((a, c - 0.65 - 0.15), (c + 0.65 + 0.15, b)) if x[1] - x[0] > 0.3]
+                    self.rooms[rid].setdefault("openings", []).append({"wall": wall, "at": round(c, 3), "w": 0.9, "h": 2.1, "door": {"id": did}})
+                    self.placed.add(did)
+                    return did
+        raise ValueError(f"the greybox room {rid} has no outer wall left for the door {did}: too many things in one place (split it)")
+
+    def stand(self, rid, pid, w, d, h, **fields):
+        """A small thing on a stand of its own (a little table) against a wall: (the stand, the thing)."""
+        st = self.box(rid, f"{pid}_stand", 0.45, 0.45, 0.75, ("s", "n", "e", "w"), tag="stand")
+        thing = dict({"id": pid, "shape": f"box {w:g} {d:g} {h:g}", "on": st["id"], "at": list(st["at"]), "rot": st["rot"]}, **fields)
+        self.rooms[rid]["props"].append(thing)
+        self.placed.add(pid)
+        return st, thing
 
     def walk_on_of(self, rid):
         """The doorway's end of the room: walking into it ends a look round."""
@@ -160,6 +205,9 @@ class Builder:
         self.secret_key, self.secret_flag = {}, {}
         self.answer_flags = {}          # (talk, answer) -> the flag a choice by an answer reads
         self.moved = []                 # karma bounds moved into the answers' reach
+        self.todo_ids = set()           # the to-dos' ids (one list for the whole run)
+        self.thing, self.thing_named, self.texts = {}, {}, {}
+        self.pend = []                  # a talk's cues waiting for its hanging line
 
     # ids: everything this build makes is unique across the file
     def own(self, i):
@@ -219,82 +267,345 @@ class Builder:
     def who_of(self, n):
         return [c for c in (n.get("who") or []) if c in self.cast]
 
-    def speaker(self, n):
-        """Who a scene's placeholder line is said by: the shape's first cast member, else the player's own thought."""
-        w = self.who_of(n)
-        return w[0] if w else "player"
-
     def about(self, n):
-        bits = [f"what happens: {n.get('text', '')}"]
+        bits = [f"what happens: {n['text']}"] if n.get("text") else []
         for k, label in (("player", "the player"), ("shot", "the shot"), ("notes", "a note from the chart")):
             if n.get(k):
                 bits.append(f"{label}: {n[k]}")
-        return "; ".join(bits)
+        return "; ".join(bits) or "as written on the chart"
 
-    def clips_of(self, lines, fallback_who, act_text):
-        clips = []
-        for ln in lines:
-            who = ln.get("who") if ln.get("who") in self.cast or ln.get("who") == "player" else fallback_who
-            c = {"id": f"c{len(clips) + 1}", "who": who, "en": str(ln.get("text") or "…").strip() or "…"}
-            ex = self.face(ln.get("face"), who)
-            if ex:
-                c["expr"] = ex
+    def feat_flag(self, fid):
+        f = next((a for a in self.P.get("feats", []) if a.get("id") == fid), None) or {}
+        return f"feat_{snake(f.get('title') or fid, 4)}"
+
+    def sound(self, st):
+        """A sound off the shelf (the nearest to its words), in the sounds table once."""
+        name = st.get("sfx") or chartscript.sound_for(st.get("text", ""))
+        if not name or name not in chartscript.shelf():
+            return None
+        sid = f"snd_{snake(name, 6)}"
+        if sid not in self.S["sounds"]:
+            self.S["sounds"][self.own(sid)] = {"file": f"sfx/{name}"}
+        return {"sound": sid}
+
+    # ---- the story's things: each a block of its size where it's first used, with its use --------------------------
+    def prepass(self):
+        """What you see when you use a thing: the plain lines written right after looking at it, reading it or using it
+        (they're its text, not lines of their own)."""
+        self.texts = {}
+        for n in self.N.values():
+            steps = n.get("steps") or []
+            for j, st in enumerate(steps):
+                if st.get("do") == "act" and st.get("item") and st.get("verb") in ("look", "read", "use", "open", "take"):
+                    k, txt = j + 1, []
+                    while k < len(steps) and steps[k].get("do") == "see" and not steps[k].get("who"):
+                        txt.append(steps[k]["text"])
+                        steps[k]["_used"] = True
+                        k += 1
+                    if txt and st["item"] not in self.texts:
+                        self.texts[st["item"]] = " ".join(txt)
+
+    def things(self):
+        """The chart's things (its `items`): a door in its room's outer wall, a bed, a seat, a closet to hide in, a light
+        switch, a note to read and a small thing to take each on a stand of its own, a medium thing to carry, the rest
+        to look at or use, sized small, medium or large; blocks for now (the Database puts the real ones in)."""
+        self.thing, self.thing_named = {}, {}
+        for it in sorted(self.P.get("items") or [], key=lambda x: x.get("kind") != "door"):     # the doors first, mid-wall
+            tid, kind, size = it["id"], it.get("kind", "inspect"), it.get("size", "medium")
+            rid = it.get("where") if it.get("where") in self.rooms.rooms else self.rooms.order[0]
+            name = str(it.get("name") or tid)
+            t = {"kind": kind, "room": rid, "prop": tid, "name": name}
+            text = self.texts.get(tid) or f"The {name}."
+            self.own(tid)
+            if kind == "door":
+                self.rooms.door(rid, tid)
+            elif kind == "bed":
+                self.rooms.box(rid, tid, 2.0, 1.0, 0.55, ("w", "e", "n", "s"), use="sleep", tag="bed")
+            elif kind == "seat":
+                along, depth, h = (1.8, 0.8, 0.8) if size == "large" else (0.5, 0.5, 0.9)
+                self.rooms.box(rid, tid, along, depth, h, use="sit", tag=name)
+            elif kind == "hideout":
+                self.rooms.box(rid, tid, 1.0, 0.6, 1.9, ("w", "e", "n", "s"), use="locker", tag=name)
+            elif kind == "switch":
+                self.rooms.box(rid, tid, 0.12, 0.04, 0.12, ("s", "e", "w", "n"), use="switch", light=f"{rid}_lamp", z=1.2, tag="light_switch")
+            elif kind == "note":
+                t["note"] = nid = self.own(f"{tid}_note")
+                self.S["notes"][nid] = {"title": name[:1].upper() + name[1:], "text": self.texts.get(tid) or "…"}
+                self.own(f"{tid}_stand")
+                self.rooms.stand(rid, tid, 0.22, 0.16, 0.02, use="note", note=nid, tag=name)
+            elif kind == "pickup":
+                t["item"] = iid = self.own(f"{tid}_item")
+                self.S["items"][iid] = {"name": name, "shape": "box 0.12 0.12 0.08", "inspect": text}
+                self.own(f"{tid}_stand")
+                self.rooms.stand(rid, tid, 0.12, 0.12, 0.08, use="pickup", item=iid, tag=name)
+            elif kind == "carry":
+                self.rooms.box(rid, tid, 0.4, 0.35, 0.35, use="carry", tag=name)
+            elif size == "small":
+                self.own(f"{tid}_stand")
+                self.rooms.stand(rid, tid, 0.2, 0.2, 0.15, use="inspect", text=text, tag=name)
+            elif size == "medium":
+                self.rooms.box(rid, tid, 0.5, 0.5, 0.6, use="inspect", text=text, tag=name)
+            else:
+                along, depth, h = LARGE.get(name.split()[-1] if name.split() else name, (1.0, 0.6, 1.2))
+                self.rooms.box(rid, tid, along, depth, h, use="inspect", text=text, tag=name)
+            self.thing[tid] = t
+            self.thing_named[name.lower()] = tid
+
+    def trigger(self, st):
+        """What the game hears when the player does a step's thing: the thing's own trigger for the verb."""
+        if st.get("verb") == "go" and st.get("place") in self.rooms.rooms:
+            return {"enter": st["place"]}
+        t = self.thing.get(st.get("item"))
+        if not t:
+            return None
+        k = t["kind"]
+        if k == "hideout":
+            return {"hidden": t["prop"]}
+        if k == "note":
+            return {"read": t["note"]}
+        if k == "pickup":
+            return {"pickup": t["item"]}
+        if k == "carry":
+            return {"dropped": t["prop"]} if st.get("verb") == "put" else {"carrying": t["prop"]}
+        return {"use": t["prop"]}
+
+    def stand_in(self, n, room, j, text):
+        """Something to do with no thing of its own (wash your face, clean up): a box on the wall to use, by its words."""
+        box = self.rooms.place(room, "task", self.own(f"{n['id']}_{j + 1}_{snake(text, 3)}"), use="inspect", text=text[:1].upper() + text[1:] + ".")
+        return {"use": box}
+
+    # ---- a shape's steps: what you play (a stitch) and what you watch (a scene) ----------------------------------
+    @staticmethod
+    def parts(steps):
+        """Steps cut where the game stops for you (a thing to do, a to-do, your name, a save): runs to play and runs
+        to watch, in order."""
+        out = []
+        for st in steps:
+            what = "play" if st.get("do") in ("act", "todo", "name", "save") else "scene"
+            if out and out[-1][0] == what:
+                out[-1][1].append(st)
+            else:
+                out.append((what, [st]))
+        return out
+
+    def play(self, n, steps, room, tid, title):
+        """Steps to play: one stitch, a new beat after each thing the game waits for (a thing you do, by its own
+        trigger; a list of to-dos, through; a pause, after it); its people stand on their marks meanwhile."""
+        pid, who = n["id"], self.who_of(n)
+        beats, notes_, todos = [], [], []
+        cur = {"id": f"b_{tid[2:]}_1", "when": {"start": True}, "do": [{"behave": c, "as": "idle", "at": f"{room}_{c}", "face": "player"} for c in who]}
+
+        def close(when):
+            nonlocal cur
+            if not cur["do"]:
+                cur["do"].append({"wait": 0.1})
+            beats.append(cur)
+            cur = {"id": f"b_{tid[2:]}_{len(beats) + 1}", "when": when, "do": []}
+        for j, st in enumerate(steps):
+            d = st.get("do")
+            if d != "todo" and todos:                 # what's written after a list of to-dos waits for the list
+                close({"ticked": True})
+                todos = []
+            if d == "think":
+                cur["do"].append({"think": st["text"]})
+            elif d in ("say", "you"):
+                lid = self.own(f"l_{tid[2:]}_{j + 1}")
+                ln = {"who": st.get("who") if d == "say" and st.get("who") in self.cast else "player", "en": st["text"]}
+                ex = self.face(st.get("face"), ln["who"])
+                if ex:
+                    ln["expr"] = ex
+                self.S["lines"][lid] = ln
+                cur["do"].append({"say": lid})
+            elif d in ("see", "cast"):
+                if not st.get("_used"):
+                    notes_.append(st["text"])
+            elif d == "sound":
+                a = self.sound(st)
+                if a:
+                    cur["do"].append(a)
+                else:
+                    notes_.append(f"a sound: {st.get('text', '')} (nothing like it on the shelf yet)")
+            elif d == "light":
+                cur["do"].append({"light": f"{room}_lamp", "set": st["set"]})
+            elif d == "music":
+                cur["do"].append({"music": st["mood"]})
+            elif d == "fade":
+                cur["do"] += [{"fade": "out", "secs": 1}, {"wait": 1}, {"fade": "in", "secs": 1}]
+            elif d == "name":
+                cur["do"].append({"name": "What's your name?"})
+            elif d == "save":
+                cur["do"].append({"checkpoint": True})
+            elif d == "feat":
+                cur["do"].append({"flag": self.feat_flag(st.get("feat"))})
+            elif d == "wait":
+                close({"after": cur["id"], "secs": float(st.get("secs") or 3)})
+            elif d == "todo":
+                kid = snake(st.get("text"), 3)
+                k, base = 2, f"{pid}_{kid}"
+                tdid = base
+                while tdid in self.todo_ids:
+                    tdid, k = f"{base}_{k}", k + 1
+                self.todo_ids.add(tdid)
+                td = {"todo": tdid, "text": st["text"], "ticks": self.trigger(st) or self.stand_in(n, room, j, st.get("done") or st["text"])}
+                for f in ("secs", "hidden"):
+                    if st.get(f):
+                        td[f] = st[f]
+                if st.get("who") in self.cast:
+                    td["who"] = st["who"]
+                if st.get("fails"):
+                    notes_.append(f"“{st['text']}” fails: {st['fails']}")
+                cur["do"].append(td)
+                todos.append(tdid)
+            elif d == "act":
+                text = str(st.get("text") or f"{st.get('verb', 'use')} the {self.thing.get(st.get('item'), {}).get('name', 'thing')}")
+                when = self.trigger(st) or self.stand_in(n, room, j, text)
+                cur["do"].append({"objective": text[:1].upper() + text[1:]})
+                close(when)
+        if todos:
+            close({"ticked": True})
+        cur["do"] += [{"untodo": True}] + [{"behave": c, "as": "off"} for c in who] + [{"objective": ""}, {"done": True}]
+        beats.append(cur)
+        mins = max(0.3, chartscript.minutes_of_steps([x for x in steps if x.get("do") in chartscript.STEP_SECS or x.get("do") == "wait"], "task"))
+        return self.stitch(tid, {"title": title, "goal": next((str(x.get("text")) for x in steps if x.get("do") in ("act", "todo")), title),
+                                 "target_min": mins, "template": "notes", "beats": beats,
+                                 "notes": self.note(self.about(n) + ("; as written: " + " / ".join(notes_) if notes_ else ""))})
+
+    def clips(self, n, steps, room, fill=True):
+        """Steps to watch: (clips, cues, sets). A line said, a thought, you aloud are clips; what happens is the acting
+        note of the clip it goes with (someone else's, or before a thought, a silent clip of its own); sounds, lights
+        and the music are cues on the clips' edges; a pause is a silent clip of its length; a fade a dip into the next."""
+        clips, cues, sets, acts, pend = [], [], [], [], []
+        seam = [None]
+
+        def add(c):
+            c["id"] = f"c{len(clips) + 1}"
             if clips:
-                c["seam"] = dict(SEAM)
+                c["seam"] = seam[0] or dict(SEAM)
+            seam[0] = None
             clips.append(c)
-        if not clips:
-            clips.append({"id": "c1", "who": fallback_who, "en": "…", "act": act_text})
-        return clips
+            cues.extend({"at": {"clip": c["id"], "edge": "start"}, "do": a} for a in pend)
+            pend.clear()
+
+        def silent(w, t):
+            return {"who": w, "en": "…", "act": t} if w in self.cast else {"who": "player", "think": True, "en": "…", "act": t}
+
+        def flush(for_who=None):
+            mine = [t for w, t in acts if for_who and w in (None, for_who)]
+            for w, t in [(w, t) for w, t in acts if not (for_who and w in (None, for_who))]:
+                add(silent(w, t))
+            acts.clear()
+            return "; ".join(mine)
+        for st in steps:
+            d = st.get("do")
+            if d in ("see", "cast"):
+                if not st.get("_used"):
+                    acts.append((st.get("who") if st.get("who") in self.cast else None, st["text"]))
+            elif d == "say" and st.get("who") in self.cast:
+                act = flush(st["who"])
+                c = {"who": st["who"], "en": st["text"]}
+                if act:
+                    c["act"] = act
+                ex = self.face(st.get("face"), st["who"])
+                if ex:
+                    c["expr"] = ex
+                add(c)
+            elif d in ("you", "think", "say"):
+                flush()
+                c = {"who": "player", "en": st["text"]}
+                if d == "think":
+                    c["think"] = True
+                add(c)
+            elif d == "sound":
+                a = self.sound(st)
+                if a:
+                    pend.append(a)
+            elif d == "light":
+                pend.append({"light": f"{room}_lamp", "set": st["set"]})
+            elif d == "music":
+                pend.append({"music": st["mood"]})
+            elif d == "fade":
+                seam[0] = {"kind": "dip"}
+            elif d == "wait":
+                flush()
+                add({"who": "player", "think": True, "en": "…", "dur": float(st.get("secs") or 3)})
+            elif d == "feat":
+                sets.append({"flag": self.feat_flag(st.get("feat"))})
+        flush()
+        if not clips and fill:                   # nothing written yet: a silent moment carrying the gist
+            add(silent((self.who_of(n) or [None])[0], n.get("text") or n.get("shows") or "…"))
+        if clips:
+            cues.extend({"at": {"clip": clips[-1]["id"], "edge": "end"}, "do": a} for a in pend)
+        else:
+            self.pend = list(pend)               # no clip yet (a talk's own): its cues go on the hanging line
+        return clips, cues, sets
 
     # ---- a shape and the nodes it becomes ------------------------------------------------------------------------
+    def steps_of(self, n):
+        steps = list(n.get("steps") or [])
+        if n.get("type") == "task" and not steps:
+            steps = [{"do": "todo", "text": str(n.get("player") or n.get("title") or "Look round")}]
+        return steps
+
     def point(self, n):
-        """A scene, talk, task or chapter: its nodes; what comes after it is written where its exits say."""
+        """A scene, talk, task or chapter: its steps cut into what you play and what you watch, each a node, in order;
+        a talk's answers on its last scene, her question the hanging line; a chapter's card after the rest."""
         pid, room, kind = n["id"], self.room_of(n), n.get("type")
-        who, title = self.who_of(n), n.get("title") or pid
+        title = n.get("title") or pid
         built, todo = [], []
         self.handoff.append((n, built, todo))
         t = n.get("talk") if kind == "talk" else None
-        last, k = None, 0
-        if kind in ("scene", "talk") or (kind == "chapter" and n.get("lines")):
-            asked = re.sub(r"\W+", " ", str(((t or {}).get("line") or {}).get("text", ""))).strip().lower()
-            lines = [ln for ln in n.get("lines") or [] if not asked or re.sub(r"\W+", " ", str(ln.get("text", ""))).strip().lower() != asked]
-            clips = self.clips_of(lines, self.speaker(n), n.get("text", "")) if (lines or not t or not (t.get("options"))) else []
-            talker = None
-            if t and t.get("options"):
-                clips.append(self.hanging(n, t, len(clips)))
-                talker = clips[-1]["who"]
-                if len(clips) > 1:
-                    clips[-1]["seam"] = dict(SEAM)
-                for c in clips:                          # a close-up: the face 0.65 m from the eye, head and shoulders
-                    c["shot"] = "mcu"
-            first = not [e for e in proto.ins(self.P, pid) if (self.N.get(e.get("from")) or {}).get("type") != "start"]
-            mood = "intimate" if talker else "calm" if kind == "chapter" or first else "dread"
-            sid = f"s_{pid}"
-            notes = self.note(self.about(n) + (f"; what reading her face tells you: {t['reveals']}" if t and t.get("reveals") else ""))
-            self.scene(sid, title, room, who, clips, mood, notes, close=talker)
-            last = self.node(pid, f"n_{pid}", {"type": "scene", "ref": sid, "next": None})
-            self.entry[pid] = f"n_{pid}"
-            k = 1
-            if talker:
-                opts = t.get("options") or []
-                her = "his" if (self.cast.get(talker) or {}).get("subject") == "he" else "her"
-                built.append(f"scene `{sid}`, a close-up: {len(clips) - 1} line(s), then the hanging line {clips[-1]['id']} "
-                             f"({len(opts)} answers, the face answering each)")
-                todo += [f"Stage it as a close-up, as the shot says: the mark `{room}_{talker}_close`, the player's eye across a table, "
-                         "beside on a sofa or face to face in a doorway",
-                         f"Write {her} words after each answer (`then.en` is “…”: {her} face answers first), and the lines before the question",
-                         f"Make {her} faces (faces.md): the listening face and one for each answer; each answer's tell is its `then.act`"]
+        talking = bool(t and t.get("options"))
+        steps = self.steps_of(n)
+        parts = [("play", steps)] if kind == "task" else self.parts(steps)
+        if kind not in ("task", "chapter") and (talking and (not parts or parts[-1][0] != "scene") or not parts):
+            parts.append(("scene", []))          # (a chapter with nothing before its card is the card alone)
+        first = not [e for e in proto.ins(self.P, pid) if (self.N.get(e.get("from")) or {}).get("type") != "start"]
+        nodes = []
+        for k, (what, sts) in enumerate(parts):
+            sfx = "" if k == 0 else f"_{k + 1}"
+            if what == "play":
+                tid = f"t_{pid}{sfx}"
+                st = self.play(n, sts, room, tid, title)
+                nd = self.node(pid, f"n_{pid}{sfx}", {"type": "stitch", "ref": tid, "next": None}, k)
+                acts = [x for x in sts if x.get("do") == "act"]
+                tds = [x for x in sts if x.get("do") == "todo"]
+                built.append(f"stitch `{tid}`: {len(st['beats'])} beat(s)" + (f", {len(acts)} thing(s) to do" if acts else "") + (f", {len(tds)} to-do(s)" if tds else ""))
             else:
-                built.append(f"scene `{sid}`: {len(clips)} line(s){' (a placeholder: no lines yet)' if not lines else ''}")
-                todo += ["Write the scene in full: its lines in order with the pauses between, a seam on every cut",
-                         "Block it on the desk: the marks, who moves, where the eye goes"]
-                if kind == "talk":
-                    todo.append("Write the talk's answers on the chart (it has none yet), then build again")
-        if kind == "task":
-            last = self.task(n, room, built, todo)
-        elif kind == "chapter":
+                sid = f"s_{pid}{sfx}"
+                hangs = talking and k == len(parts) - 1
+                clips, cues, sets = self.clips(n, sts, room, fill=not hangs)
+                talker = None
+                if hangs:
+                    clips.append(self.hanging(n, t, len(clips)))
+                    cues += [{"at": {"clip": clips[-1]["id"], "edge": "start"}, "do": a} for a in self.pend]
+                    self.pend = []
+                    talker = clips[-1]["who"] if clips[-1]["who"] in self.cast else None
+                    if len(clips) > 1:
+                        clips[-1]["seam"] = dict(SEAM)
+                    for c in clips:                  # a close-up: her face 0.65 m from the eye, head and shoulders
+                        if talker and c["who"] == talker:
+                            c["shot"] = "mcu"
+                who = [w for w in dict.fromkeys([talker] + [c["who"] for c in clips]) if w in self.cast]
+                mood = "intimate" if talker else "calm" if kind == "chapter" or first else "dread"
+                sc = self.scene(sid, title, room, who, clips, mood, self.note(self.about(n) + (f"; what reading her face tells you: {t['reveals']}" if t and t.get("reveals") else "")), close=talker)
+                if cues:
+                    sc["cues"] = cues
+                if sets:
+                    sc["sets"] = sets
+                nd = self.node(pid, f"n_{pid}{sfx}", {"type": "scene", "ref": sid, "next": None}, k)
+                said = sum(1 for c in clips if c.get("en") not in ("…", None))
+                built.append(f"scene `{sid}`: {len(clips)} clip(s)" + (f", {said} with words" if said != len(clips) else "")
+                             + (f", the close-up's hanging line ({len(t['options'])} answers)" if talker or (talking and k == len(parts) - 1) else ""))
+            if nodes:
+                nodes[-1]["next"] = f"n_{pid}{sfx}"
+            nodes.append(nd)
+        self.entry[pid] = f"n_{pid}"
+        last = nodes[-1] if nodes else None
+        if last and last.get("type") == "stitch" and kind != "chapter":   # it ends in play: what's found after it is found in it
+            self.found_in[pid] = self.S["stitches"][last["ref"]]
+        if kind == "chapter":
             ch = n.get("chapter") or {}
-            tid = f"t_{pid}"
+            tid = f"t_{pid}_card"
             card = {"chapter": ch.get("title") or title}
             if ch.get("sub"):
                 card["sub"] = ch["sub"]
@@ -302,22 +613,27 @@ class Builder:
                 card["time"] = ch["time"]
             self.stitch(tid, {"title": title, "template": "chapter", "target_min": 0.2, "beats": [
                 {"id": f"b_{pid}_card", "when": {"start": True}, "do": [card, {"done": True}]}], "notes": self.note(self.about(n))})
-            nid = f"n_{pid}_card" if last else f"n_{pid}"
-            nd = self.node(pid, nid, {"type": "stitch", "ref": tid, "next": None}, k)
+            nd = self.node(pid, f"n_{pid}_card" if nodes else f"n_{pid}", {"type": "stitch", "ref": tid, "next": None}, len(nodes))
             if last:
-                last["next"] = nid
-            else:
-                self.entry[pid] = nid
+                last["next"] = f"n_{pid}_card"
             last = nd
             built.append(f"the chapter card `{tid}`: “{card['chapter']}{' · ' + card['sub'] if card.get('sub') else ''}”"
                          + (f", {card['time']} from here on" if card.get("time") else ""))
-            todo.append("If the night ends in sleep, a bed in the room (`use: sleep`) and the card on its `use` (STORY_FORMAT §4)")
+        if any(x.get("do") in ("say", "think", "you") for x in steps) or talking:
+            todo.append("Write the lines in full where they're only the gist: one sentence a line, the pauses as their own beats, a seam on every cut")
+        if any(x.get("do") in ("act", "todo") for x in steps):
+            todo.append("Make each thing the real thing where it belongs (its block is a stand-in): the Database, then the scene builder")
+        if talking:
+            her = "his" if (self.cast.get(((t.get("line") or {}).get("who"))) or {}).get("subject") == "he" else "her"
+            todo += [f"Stage the close-up as the shot says: the mark `{room}_{(t.get('line') or {}).get('who')}_close`, the player's eye across a table, beside on a sofa or face to face in a doorway",
+                     f"Write {her} words after each answer that has none yet (“…”: {her} face answers first)", f"Make {her} faces (faces.md): the listening face and one for each answer"]
         self.exits[pid] = [(last, "next")]
 
     def hanging(self, n, t, i):
-        """A talk's question as a hanging line: she asks, waits with her listening face, and her face answers yours."""
+        """A talk's question as a hanging line: she asks, waits with her listening face, and her face answers yours
+        (`then`: her words when written, else “…”); each answer the act, the thought with it (`think`), karma, a flag."""
         ln = t.get("line") or {}
-        who = ln.get("who") if ln.get("who") in self.cast else (self.who_of(n) or list(self.cast) or ["player"])[0]
+        who = ln.get("who") if ln.get("who") in self.cast or ln.get("who") == "player" else (self.who_of(n) or list(self.cast) or ["player"])[0]
         c = {"id": f"c{i + 1}", "who": who, "en": str(ln.get("text") or "…").strip() or "…"}
         ex = self.face(ln.get("face"), who)
         if ex:
@@ -335,60 +651,22 @@ class Builder:
                 flag = o["sets"]
             if flag:
                 sets.append({"flag": flag})
-            then = {"en": "…"}
-            if o.get("tell"):
-                then["act"] = o["tell"]
-            fx = self.face(o.get("face"), who)
-            if fx:
-                then["expr"] = fx
-            opt = {"id": snake(o.get("id") or f"o{len(opts) + 1}", 2), "label": str(o.get("say") or "…"), "then": then}
+            opt = {"id": snake(o.get("id") or f"o{len(opts) + 1}", 2), "label": str(o.get("say") or "…")}
+            if str(o.get("think") or "").strip():
+                opt["think"] = str(o["think"]).strip()
+            if who in self.cast or o.get("then"):
+                then = {"en": str(o.get("then") or "…").strip() or "…"}
+                if o.get("tell"):
+                    then["act"] = o["tell"]
+                fx = self.face(o.get("face"), who)
+                if fx:
+                    then["expr"] = fx
+                opt["then"] = then
             if sets:
                 opt["sets"] = sets
             opts.append(opt)
         c["reply"] = {"wait": 15, "timeout": None, "options": opts}
         return c
-
-    def task(self, n, room, built, todo):
-        """A task: a stitch with its to-do list, each to-do ticked by using its box in the room."""
-        pid = n["id"]
-        tid = f"t_{pid}"
-        start = [{"objective": n.get("title") or pid}]
-        for i, ln in enumerate(n.get("lines") or []):
-            who = ln.get("who") if ln.get("who") in self.cast else None
-            if not who:
-                continue
-            lid = self.own(f"l_{pid}_{i + 1}")
-            self.S["lines"][lid] = {"who": who, "en": str(ln.get("text") or "…")}
-            start.append({"say": lid})
-        for c in self.who_of(n):
-            start.append({"behave": c, "as": "idle", "at": f"{room}_{c}", "face": "player"})
-        tasks = [k for k in n.get("tasks") or [] if str(k.get("text", "")).strip()] or [{"id": "do", "text": n.get("player") or n.get("title") or "Look round"}]
-        fails = []
-        for k in tasks:
-            kid = snake(k.get("id") or f"t{len(start)}", 3)
-            box = self.rooms.place(room, "task", self.own(f"{pid}_{kid}_box"), use="inspect", text=str(k.get("done") or k.get("text") or "Done."))
-            td = {"todo": f"{pid}_{kid}", "text": str(k.get("text") or kid), "ticks": {"use": box}}
-            if k.get("who") in self.cast:
-                td["who"] = k["who"]
-            start.append(td)
-            if k.get("fails"):
-                fails.append(f"“{k.get('text')}” fails: {k['fails']}")
-        done = [{"untodo": True}] + [{"behave": c, "as": "off"} for c in self.who_of(n)] + [{"done": True}]
-        st = self.stitch(tid, {"title": n.get("title") or pid, "goal": n.get("player") or n.get("title") or "", "target_min": float(n.get("minutes") or 2),
-                               "template": "todo", "beats": [
-                                   {"id": f"b_{pid}_start", "when": {"start": True}, "do": start},
-                                   {"id": f"b_{pid}_done", "when": {"ticked": True}, "do": done}],
-                               "notes": self.note(self.about(n) + ("; " + "; ".join(fails) if fails else ""))})
-        nd = self.node(pid, f"n_{pid}", {"type": "stitch", "ref": tid, "next": None})
-        self.entry[pid] = f"n_{pid}"
-        self.found_in[pid] = st
-        built.append(f"stitch `{tid}`: a to-do list of {len(tasks)} (each ticked by using its box on the wall of `{room}`)")
-        todo.append("Make each to-do the real thing where it belongs (the box is a stand-in): " + "; ".join(str(k.get("text")) for k in tasks))
-        todo += [f"Make it failable: {f}" for f in fails]
-        if self.who_of(n):
-            todo.append(f"{', '.join(self.cast[c].get('name', c) for c in self.who_of(n))} waits idle on her mark meanwhile: a request? "
-                        "(`who` on the to-do, `behave` go when it's done: STORY_FORMAT §9.12)")
-        return nd
 
     def choice(self, n):
         """A choice: by the player (a box for each way: using it takes that way), by karma, or by an answer."""
@@ -399,12 +677,17 @@ class Builder:
         if by == "player":
             c = self.node(cid, f"n_{cid}", {"type": "choice", "by": "act", "prompt": str(n.get("question") or n.get("title") or ""), "options": []})
             for e in es:
-                box = self.rooms.place(room, "way", self.own(f"{cid}_{snake(e.get('id'), 2)}"), use="inspect", text=str(e.get("label") or e.get("to")))
-                o = {"label": str(e.get("label") or (self.N.get(e.get("to")) or {}).get("title") or e.get("to")), "when": {"use": box}, "to": None}
+                act = chartscript.parse_act(str(e.get("label") or ""))
+                tid = self.thing_named.get((act or {}).get("thing") or "")
+                when = self.trigger({"verb": act["verb"], "item": tid}) if act and tid else None
+                if not when:
+                    box = self.rooms.place(room, "way", self.own(f"{cid}_{snake(e.get('id'), 2)}"), use="inspect", text=str(e.get("label") or e.get("to")))
+                    when = {"use": box}
+                o = {"label": str(e.get("label") or (self.N.get(e.get("to")) or {}).get("title") or e.get("to")), "when": when, "to": None}
                 c["options"].append(o)
                 self.options[e["id"]] = o
-            built.append(f"a choice by act `n_{cid}`: {len(es)} ways (a box each in `{room}`: using it takes that way)")
-            todo.append("Make the ways real things to do in the room (go to the dryer, look at the monitor...): the boxes stand in for them")
+            built.append(f"a choice by act `n_{cid}`: {len(es)} ways (each by doing its thing in `{room}`, or using a box that stands in)")
+            todo.append("Make the ways real things to do in the room (hide in the closet, answer the phone...): the blocks stand in for them")
         elif by == "karma":
             bounded = [e for e in es if (e.get("when") or {}).get("min") is not None or (e.get("when") or {}).get("max") is not None]
             rest = [e for e in es if e not in bounded][:1]
@@ -446,10 +729,20 @@ class Builder:
         last = next((self.N.get(e.get("from")) for e in proto.ins(self.P, n["id"])), None) or {}
         while last.get("type") == "choice":            # who's there at the end: the cast of the moment before it
             last = next((self.N.get(e.get("from")) for e in proto.ins(self.P, last["id"])), None) or {}
-        who = self.who_of(last)[:2]
+        steps = [x for x in self.steps_of(n) if x.get("do") not in ("act", "todo", "name", "save")]   # an ending is watched
+        if steps:
+            clips, cues, sets = self.clips(n, steps, room)
+            who = [w for w in dict.fromkeys(c["who"] for c in clips) if w in self.cast]
+        else:
+            who = self.who_of(last)[:2]
+            clips, cues, sets = [{"id": "c1", "who": who[0] if who else "player", "en": "…", "act": str(n.get("text") or "")}], [], []
         sid = f"s_end_{eid}"
-        self.scene(sid, n.get("title") or eid, room, who, [{"id": "c1", "who": who[0] if who else "player", "en": "…", "act": str(n.get("text") or "")}],
-                   "aftermath", self.note(f"the ending ({n.get('kind', 'other')}): {n.get('text', '')} How the player gets here: {n.get('how', '')}"), final=True)
+        sc = self.scene(sid, n.get("title") or eid, room, who, clips,
+                        "aftermath", self.note(f"the ending ({n.get('kind', 'other')}): {n.get('text', '')} How the player gets here: {n.get('how', '')}"), final=True)
+        if cues:
+            sc["cues"] = cues
+        if sets:
+            sc["sets"] = sets
         self.node(n["id"], f"n_end_{eid}", {"type": "scene", "ref": sid, "next": f"e_{eid}", "final": True})
         froms = [(self.N.get(e.get("from")) or {}, e) for e in proto.ins(self.P, n["id"])]
         kind = "good" if n.get("kind") == "intended" else \
@@ -458,7 +751,7 @@ class Builder:
         self.node(n["id"], f"e_{eid}", {"type": "ending", "kind": kind, "title": n.get("title") or eid}, 1)
         self.entry[n["id"]] = f"n_end_{eid}"
         built.append(f"`{sid}` (final), then the ending `e_{eid}` ({kind})")
-        todo += ["Write the ending cutscene in full (no ending cards: DECISIONS 2026-10-27)",
+        todo += ["Write the ending cutscene in full where it's only the gist (no ending cards: DECISIONS 2026-10-27)",
                  "Play the way there on the desk (the Watch, and the karma it shows at the end) and see it plays as the chart says"]
 
     # ---- the arrows: next, options, the secrets on the way ------------------------------------------------------
@@ -505,8 +798,11 @@ class Builder:
         beats = []
         for s in secrets:
             key = self.secret_key[s["id"]]
-            box = self.rooms.place(room, "secret", self.own(f"{s['id']}_find"), use="inspect", text=str(s.get("find") or s.get("title") or "…"))
-            beats.append({"id": f"b_{s['id']}_find", "when": {"use": box}, "secret": key, "do": [{"flag": self.secret_flag[s["id"]]}]})
+            when = self.trigger({"verb": "look", "item": s.get("find_item")}) if s.get("find_item") in self.thing else None
+            if not when:
+                box = self.rooms.place(room, "secret", self.own(f"{s['id']}_find"), use="inspect", text=str(s.get("find") or s.get("title") or "…"))
+                when = {"use": box}
+            beats.append({"id": f"b_{s['id']}_find", "when": when, "secret": key, "do": [{"flag": self.secret_flag[s["id"]]}]})
         tid = f"t_{pid}_look"
         if pid in self.found_in:                         # a task: its finds are in the same room, before it's done
             for bt in beats:
@@ -528,17 +824,23 @@ class Builder:
             for holder, key in ends:
                 holder[key] = f"n_{s['id']}_egg"
             sid = f"s_{s['id']}_seen"
-            self.scene(sid, s.get("title") or s["id"], room, [], [{"id": "c1", "who": "player", "en": "…", "act": str(s.get("shows") or "")}],
-                       "reveal", self.note(f"the secret: {s.get('shows', '')} (found: {s.get('find', '')})"))
+            steps = [x for x in s.get("steps") or [] if x.get("do") not in ("act", "todo", "name", "save")]
+            clips, cues, sets = self.clips(s, steps, room) if steps else ([{"id": "c1", "who": "player", "en": "…", "act": str(s.get("shows") or "")}], [], [])
+            sc = self.scene(sid, s.get("title") or s["id"], room, [w for w in dict.fromkeys(c["who"] for c in clips) if w in self.cast], clips,
+                            "reveal", self.note(f"the secret: {s.get('shows', '')} (found: {s.get('find', '')})"))
+            if cues:
+                sc["cues"] = cues
+            if sets:
+                sc["sets"] = sets
             seen = self.node(s["id"], f"n_{s['id']}_seen", {"type": "scene", "ref": sid, "next": None})
             egg["options"][0]["to"] = f"n_{s['id']}_seen"
             back = next((e.get("to") for e in proto.outs(self.P, s["id"])), None)
             seen["next"] = self.entry.get(back) or after
             ends = [(egg["options"][1], "to")]
-            self.handoff.append((s, [f"a find in `{room}` (`{s['id']}_find`, " + ("in the task" if pid in self.found_in else f"in the look round `{tid}`")
-                                     + f"), then `{sid}` if it was found"],
-                                 ["Hide it where the chart says (the box is a stand-in), and make finding it the curious player's reward",
-                                  f"Show what it shows in `{sid}` (a placeholder), then back to the story"]))
+            self.handoff.append((s, [f"a find in `{room}` (" + (f"the {self.thing[s['find_item']]['name']}" if s.get("find_item") in self.thing else f"`{s['id']}_find`")
+                                     + (", in the task" if pid in self.found_in else f", in the look round `{tid}`") + f"), then `{sid}` if it was found"],
+                                 ["Hide it where the chart says (its block is a stand-in), and make finding it the curious player's reward",
+                                  f"Show what it shows in `{sid}`, then back to the story"]))
         return ends
 
     # ---- the whole story -----------------------------------------------------------------------------------------
@@ -557,6 +859,10 @@ class Builder:
                                             "note": "; ".join(f"{k}: {c[k]}" for k in ("role", "look", "wants", "hides", "tells") if c.get(k))}
         for x in self.places:
             self.own(x["id"])
+        if (st.get("player_name") or "").strip():
+            S["game"]["player_name"] = st["player_name"].strip()
+        self.prepass()
+        self.things()
         for k, n in self.N.items():
             if n.get("type") == "secret":
                 self.secret_key[k] = key = self.own(k if k not in self.ids else f"egg_{k}")
@@ -655,8 +961,11 @@ def build_md(P, S, B, moved=()):
             "- [ ] **The bodies.** Block every scene on the desk (marks, poses, who moves), then the Kimodo shot list.",
             "- [ ] **The faces.** faces.md lists every expression video to make in MiniMax, then capture each into the expression "
             "library (the desk's Expressions tab), named by its id.",
-            "- [ ] **The tasks.** Each to-do's box (on the east walls) stands in for the real thing: make it that thing where it belongs.",
-            "- [ ] **The secrets.** Each find's box (on the west walls) stands in for the hiding place: hide it as the chart says.",
+            "- [ ] **The things.** Each thing the chart names is a block of its size (small on a stand, medium on the floor, large "
+            "against a wall) with its use (a door in the outer wall, a bed, a seat, a closet to hide in, a switch, a note, a thing to "
+            "take or carry, the rest to look at): put the real one in through the Database, where it belongs.",
+            "- [ ] **The tasks.** A to-do with no thing of its own is a box on a wall that stands in for it: make it the real thing.",
+            "- [ ] **The secrets.** Each find (its thing, or a box) stands in for the hiding place: hide it as the chart says.",
             "- [ ] **The feats.** Achievements for a flag of their own (below) need that flag set where it happens.",
             "- [ ] **Done.** When the scenes are written in full and the playtime check passes, take `game.draft` out.", ""]
     rank = {k: i for i, k in enumerate(proto.reading_order(P))}
@@ -692,16 +1001,22 @@ def build_md(P, S, B, moved=()):
         else:
             out.append(f"### {item.get('title', item.get('id'))}")
         out.append("")
-        if item.get("text"):
+        if item.get("text") and not item.get("steps"):
             out.append(str(item["text"]))
-        for k, label in (("find", "Found"), ("shows", "It shows"), ("how", "How the player gets here"), ("player", "The player"), ("shot", "The shot"), ("notes", "A note")):
+        for k, label in (("find", "Found"), ("how", "How the player gets here"), ("player", "The player"), ("shot", "The shot"), ("notes", "A note")):
             if item.get(k):
                 out.append(f"*{label}:* {item[k]}")
+        if item.get("shows") and not item.get("steps"):
+            out.append(f"*It shows:* {item['shows']}")
+        if item.get("steps"):                       # what was written, as it was written (its script: .claude/skills/chart/script.md)
+            out += ["", "As written:", "", "```"] + chartscript.step_lines(P, item["steps"]) + ["```"]
         tk = item.get("talk")
         if t == "talk" and tk:
             out.append(f"*The question:* “{(tk.get('line') or {}).get('text', '')}” (listening: `{tk.get('listen', '')}`)")
             for o in tk.get("options") or []:
-                out.append(f"- [{o.get('id')}] “{o.get('say')}” → `{o.get('face', '')}` (karma {o.get('karma', 0)}{', sets ' + o['sets'] if isinstance(o.get('sets'), str) and o.get('sets') else ''}): {o.get('tell', '')}")
+                out.append(f"- [{o.get('id')}] “{o.get('say')}”" + (f" ({o['think']})" if o.get("think") else "")
+                           + f" → `{o.get('face', '')}` (karma {o.get('karma', 0)}{', sets ' + o['sets'] if isinstance(o.get('sets'), str) and o.get('sets') else ''}): {o.get('tell', '')}"
+                           + (f" → “{o['then']}”" if o.get("then") else ""))
             if tk.get("reveals"):
                 out.append(f"*What reading the face tells you:* {tk['reveals']}")
         if t == "choice":
@@ -712,9 +1027,9 @@ def build_md(P, S, B, moved=()):
         out += [""] + [f"- [ ] {x}" for x in todo] + [""]
     if moved:
         out += ["**Karma moved into reach:** " + "; ".join(moved) + ". Balance the answers' karma, or move them back.", ""]
-    notes = [n for n in N.values() if n.get("type") == "note" and str(n.get("text", "")).strip()]
-    if notes:
-        out += ["## The notes on the chart", ""] + [f"- ✎ {n['text']}" for n in notes] + [""]
+    sticky = [n for n in N.values() if n.get("type") == "note" and str(n.get("text", "")).strip()]
+    if sticky:
+        out += ["## The notes on the chart", ""] + [f"- ✎ {n['text']}" for n in sticky] + [""]
     out += ["## Achievements", "", "| id | title | for | hidden | text |", "|---|---|---|---|---|"]
     for k, a in S["achievements"].items():
         f = next(iter(a["for"].items()))
@@ -844,7 +1159,7 @@ def check_build(P):
         placed = [k for k, n in S["flow"].items() if not isinstance(n.get("xy"), list)]
         if len(replies) != len(talks) or len(ends) != sum(n.get("type") == "ending" for n in N.values()) \
                 or len(eggs) != sum(n.get("type") == "secret" for n in N.values()) or missing or placed \
-                or any(f"`{f}`" not in fm for f in faces) or not all(c.get("wait_expr") for c in replies):
+                or any(f"`{f}`" not in fm for f in faces) or sum(1 for c in replies if c.get("wait_expr")) != sum(1 for n in talks if (n.get("talk") or {}).get("listen")):
             return {"ok": False, "message": f"the build: {len(replies)} hanging lines for {len(talks)} talks, {len(ends)} endings, {len(eggs)} "
                                             f"secrets' choices, BUILD.md misses {missing}, unplaced on the board {placed[:4]}"}
         return {"ok": True, "message": f"a chart built through check_all's STORY ({res['check']['line'].split('(')[-1].rstrip(')')}), LEVEL and SHOTS: "

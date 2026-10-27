@@ -6,7 +6,9 @@ else on screen; then **Build** turns it into a rough but working outline in the 
 At first an assistant drafted it; then (DECISIONS 2026-10-27, the change of course) **the user writes it all**: "the
 entire story gets written by me and flow (using drag and drop things like Lucidchart that make it easy for Claude to
 set it up later in director tool). No longer do I want AI to generate the story." No model runs in the room: it's an
-editor, and Claude reads what you made (room.py show) and builds from it.
+editor, and Claude reads what you made (room.py show) and builds from it. And the story can start in your notes,
+written any way you like: Claude makes the chart from them (`/chart`, §9; DECISIONS 2026-10-27, later), you look it
+over here, and `/build-game` takes it into the director.
 
 ## 1. How it's used
 
@@ -19,6 +21,8 @@ editor, and Claude reads what you made (room.py show) and builds from it.
 4. **Flow:** the chart. Drag shapes from the palette, write your gist in them, join them with arrows (§2).
 5. **Faces:** every face your talks and lines name, as its MiniMax post prompt (copy it), and the library.
 6. **Build:** the chart becomes `Content/Games/<Game>/` (§5). Then, in Claude Code: "build <Game> from its BUILD.md".
+
+Or write the story in your notes first: `/chart <the file>` in Claude Code makes the session (§9), and it opens here.
 
 ## 2. The chart
 
@@ -36,7 +40,11 @@ Like a flowchart tool (Lucidchart's way): shapes on a dotted canvas, arrows betw
 - **Keys:** Delete removes; Ctrl+C, Ctrl+V, Ctrl+D copy, paste, duplicate (the arrows between them come along);
   Ctrl+A picks all; Ctrl+Z, Ctrl+Shift+Z undo and redo (every change is saved, with the versions kept); Enter retitles.
 - **The inspector** (right): what's picked, in full: a shape's gist and fields, an arrow's label or condition, an act's
-  title and colour, and with nothing picked a short guide.
+  title and colour, and with nothing picked a short guide. A shape Claude made from your notes shows its **script**
+  there: what happens in it, line by line (to change it, tell Claude, or change it in the director once it's built).
+- **Claude changes it while it's open:** when the session changes on disk (`/chart` made it again), the page takes the
+  new one in by itself, and Ctrl+Z goes back to what was on screen; a save of yours made over a newer file is refused,
+  the newer one shown, and Ctrl+Z brings your edit back.
 - **The bar** (bottom): a playthrough's minutes by the shapes' minutes (of the hour), the counts, and the problems
   (click to list them; click one to go to its shape, marked on the chart).
 
@@ -111,6 +119,15 @@ afraid); "New face…" in any face picker writes the story's own. A he wears the
     reach, and BUILD.md says so.
   - **achievements** (STORY_FORMAT §9.13): each secret's and ending's own, the feats on flags of their own (to set
     where they happen); the Watch and Play say each as it's unlocked. **Notes** go on the game's board for Claude.
+- **from a shape's script** (a chart Claude made from your notes, §9): a task's steps are one stitch, a new beat after each
+  thing you do (`{"use": door}`, `{"pickup": key}`, `{"read": letter}`, `{"hidden": closet}`, `{"enter": kitchen}`,
+  a list through: `{"ticked": true}`, a wait: `{"after": ..., "secs"}`); a scene's are its clips (your thoughts as
+  `think` clips, what happens as each clip's acting note, sounds and lights as cues on its clips' edges, a fade a dip
+  seam), cut into scene, stitch, scene where it stops for you (your name, a thing to do); a talk's question, answers,
+  thoughts and replies its hanging line; **the things** (the session's `items`) are blocks of their size with their use
+  (a door in the room's wall, a bed, a seat, a closet to hide in, a switch, a note, something to pick up, the rest to
+  look at), small ones on a stand, placed along the walls of the room each is first used in; sounds off the sound shelf
+  by their words.
 - `prototype.json`: the chart as it was built (the receipt).
 - `BUILD.md`: **the handoff for Claude**: the story's heart (the truth, the ladder, the cast and their tells, the
   places), what's rough everywhere, then shape by shape in the chart's order (act by act, each secret after its point)
@@ -127,9 +144,11 @@ a story built from another session, or by hand, is replaced only when you say so
 `python tools/writers/room.py show ID` prints the whole chart as text (the brief, the story's heart, the cast and
 places, every shape in reading order under its act with its arrows, the notes, the feats), `show ID SHAPE` one shape
 in full with its faces' prompts, `now` what the page shows (the session, the tab, the shapes picked), `list` the
-sessions. The page writes `Saved/Writers/now.json` as you pick things.
+sessions. The page writes `Saved/Writers/now.json` as you pick things. `import SCRIPT [--into ID] [--notes FILE]`
+reads a script into a session and `script ID` prints a session's chart as one (§9); each keeps the version before in
+the session's history, as the page does.
 
-## 7. The format (`prototype.json`, format 2)
+## 7. The format (`prototype.json`, format 3)
 
 `brief` (`kind`, `references`, `notes`, `minutes`), `story` (`logline`, `hook`, `truth`, `ladder`, `tone`, `setting`,
 `player`, `time`, `karma`), `cast`, `places`, **`nodes`** (`id`, `type`, `x`, `y`, `title`, `text` and the type's own:
@@ -138,16 +157,48 @@ sessions. The page writes `Saved/Writers/now.json` as you pick things.
 `sub`, `time`}; a choice's `by` and `question`; a secret's `find`, `shows`, `achievement`; an ending's `kind`, `how`,
 `achievement`; a note's `color`), **`edges`** (`id`, `from`, `to`, `label`, `when` ({`min`}, {`max`}, {`talk`,
 `answer`} or {} for the rest), `sets`), **`frames`** (`id`, `title`, `x`, `y`, `w`, `h`, `color`), `faces` (the story's
-own post prompts), `feats`, `built`. The first format (a river of points the old assistant drafted) is upgraded as it's
-read: each act a row, a fork's other ways below it, the secrets above, the endings after a choice.
+own post prompts), `feats`, `built`. Format 3 adds what a script holds: a shape's **`steps`**, in order, each `do`
+one of `say` (`who`, `text`, `face`), `you`, `think`, `see`, `cast` (someone does something), `sound`, `light`
+(`set`: on, off, flicker, dim), `music` (`mood`), `fade`, `act` (`verb`, `item`: something you do), `todo` (`text`,
+`who`, `secs`, `hidden`), `name` (you type your name), `wait` (`secs`), `save`, `feat`; a talk's answers' `think`
+(your thought with it) and `then` (her reply); **`items`** (`id`, `name`, `size`: small, medium or large, `kind`: door,
+bed, seat, hideout, switch, note, carry, pickup or inspect, `where`: the place it's first used in); `script` (the
+script it was read from) and `script_chart` (the chart as it was then: changed on the page since, they differ). A
+format 2 chart's lines and to-dos become steps as it's read; the first format (a river of points the old assistant
+drafted) is upgraded too: each act a row, a fork's other ways below it, the secrets above, the endings after a choice.
 
 ## 8. Files and checks
 
 `tools/writers/`: `serve.py` (the page's server, port 8795; `WRITERS_HOME` for a scratch home), `canvas.js` (the
 chart: shapes, dots, arrows, frames, the view), `app.js` (the page: the inspector, the tabs, sessions, Build),
-`index.html`, `ui.css`, `room.py` (the command line), `build.py` (Build); `Content/Python/storykit/proto.py` (the
-format, its check, the text, the upgrade). Checks: **WRITERS** (`room.py check`: the post prompt library, a chart of
-every shape with no problems, each of thirteen faults found at its shape, the chart as text, the first format
-upgraded, a build through check_all's STORY, LEVEL and SHOTS), **WRITERSPAGE** (`pagetest.mjs`: the page in a
-headless browser on a scratch home: shapes dragged on and joined, the inspector, labels, undo, copy and paste, an act,
-the problems, About, now.json, Build).
+`index.html`, `ui.css`, `room.py` (the command line), `build.py` (Build), `script_example.txt` (a story in the script
+using every part of it); `Content/Python/storykit/proto.py` (the format, its check, the text, the upgrade) and
+`chartscript.py` (a script into the chart and back); `.claude/skills/chart/` (`/chart`: SKILL.md, `script.md` the
+script) and `.claude/skills/build-game/` (`/build-game`). Checks: **WRITERS** (`room.py check`: the post prompt library,
+a chart of every shape with no problems, each of thirteen faults found at its shape, the chart as text, the first
+format upgraded, a build through check_all's STORY, LEVEL and SHOTS; the user's first example read as they wrote it,
+the example script made into a chart with no problems and built through STORY, LEVEL and SHOTS, the chart written back
+as a script reading as the same story, a chart drawn by hand written as a script and read back into itself keeping
+every shape's id and place, typing habits, and what a script can't read said at its line), **WRITERSPAGE**
+(`pagetest.mjs`: the page in a headless browser on a scratch home: shapes dragged on and joined, the inspector, labels,
+undo, copy and paste, an act, the problems, About, now.json, Build; a script read in by room.py shown with each
+shape's script, read in again while the page is open and taken in by itself, a moved shape keeping its place, Ctrl+Z).
+
+## 9. Your notes, through Claude (`/chart`, `/build-game`)
+
+The user's ask (DECISIONS 2026-10-27, later): "I should just be able to write the game out anyway I want in notepad
+... and then we will use Claude to convert it into a writer block game ... you'd make that into the writer block flow
+chart so I can inspect, if that looks good you convert it into the director tool and that's where I start refining
+everything, swapping out block objects for real ones." The commands are Claude Code skills in the project's
+`.claude/skills/`:
+
+1. **You write** the story in any notepad, any way (docs/NOTES.md suggests a few marks, all optional).
+2. **`/chart <the file> [what you roughly want]`**: Claude reads it and writes it out as **the chart's script**
+   (`.claude/skills/chart/script.md`, a precise version of the way you write), keeping your words and making the
+   structure explicit; guesses go on the chart as sticky notes. `room.py import` makes the session, your notes kept
+   beside it (`notes.txt`); Claude fixes whatever the report says it couldn't read, then hands you the chart.
+3. **You look it over here.** Move, rename or rewire what you like; a shape's script is in the inspector. Ask Claude
+   for changes: it reads the chart as it is now (`room.py script`), changes that, and reads it in again: what you moved
+   stays put, and an open page takes it in by itself.
+4. **`/build-game <the session> [Game]`**: Build (§5) into `Content/Games/<Game>/`, checked by check_all; then you
+   refine it on the director's desk, blocks swapped for the real things in the Database.
