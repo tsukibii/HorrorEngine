@@ -331,6 +331,8 @@ class Handler(BaseHTTPRequestHandler):
             eid = expr_id(name)
             e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
             e.update(name=name, made=time.strftime("%Y-%m-%dT%H:%M:%S"), neutral=req.get("neutral", e.get("neutral", "first")), strength=float(req.get("strength", e.get("strength", 1))))
+            if float(req.get("length") or 0) > 0:     # the seconds it plays in, when not as filmed
+                e["length"] = round(float(req["length"]), 3)
             EXPRESSIONS.mkdir(parents=True, exist_ok=True)
             out = EXPRESSIONS / eid
             out.mkdir()
@@ -352,7 +354,7 @@ class Handler(BaseHTTPRequestHandler):
                 e = json.loads(f.read_text(encoding="utf-8"))
                 if str(req.get("name", "")).strip():
                     e["name"] = str(req["name"]).strip()
-                for k in ("neutral", "strength"):
+                for k in ("neutral", "strength", "length"):
                     if k in req:
                         e[k] = req[k]
                 f.write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")

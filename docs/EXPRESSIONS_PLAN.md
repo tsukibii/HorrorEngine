@@ -40,10 +40,19 @@ carries, for each skin corner, the three MHR points it's made from (`_MHRP`, `_M
 72 shapes on the 5,681 points they move from `MHR_lod1.bin` and moves those corners itself, and turns the eyeballs on
 their bones by the gaze as the Studio does (72 dense morph targets in the file would be ~118 MB; Unreal's morph targets
 come with step 5). An export made before this has no face: export it again.
-**Open:** on an export a blink closes only part of the way. Its eye openings are cut out of the skin, and on a face
-fitted to a photo the Studio closes the lids by leaving the fit's own offsets (the Studio's blink logic): the desk
-moves the corners by MHR's shapes alone. The default MHR body blinks fully. The fix (the lid line's points in the
-file, closed towards each other by the blink weight) belongs with step 2, where blinks matter on the timeline.
+**Brows and lashes** ride the face too: a brow hair's points each follow their nearest face point; a lash card follows
+the point nearest its root and **swings whole about its eyeball's middle** as that root moves (`_MHRR`, `_MHRE`), so a
+blink takes the lashes down without stretching them (the user saw the upper lashes stretch when each lash point
+followed its own nearest point). **Length**: the seconds the whole capture plays in (`length` in expression.json, the
+user's ask: "put in how many seconds we want the whole original frames to take and use tweening"), set in the
+preview beside the video playing at the same rate; between the captured frames a Catmull-Rom curve, so a slowed
+capture glides. A placement on the timeline (step 2) stretches it again.
+
+**Open:** on an export a full blink brings the upper lid only about halfway down. The export cuts the eye opening out
+of the skin a little wider than the strip MHR's blink squeezes shut (the Studio's smoothed, fitted lid line), and on a
+face fitted to a photo the Studio also closes the lids by leaving the fit's own offsets. The desk moves the corners by
+MHR's shapes alone. The default MHR body blinks fully. The fix (the lid line's points in the file, closed towards each
+other by the blink weight) belongs with step 2, where blinks matter on the timeline.
 
 **Built (step 1, 2026-10-27):** `face_capture.py`, the server's `/api/expressions` (list, import, accept, discard,
 set, remove; the clip with byte ranges), `shared/face.js`, `expressions.js`, the export's `_MHRP`/`_MHRW`; FACECAP

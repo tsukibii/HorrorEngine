@@ -2562,15 +2562,29 @@ function fileLook(x, g) {
   }
   return L;
 }
-// brows and lashes in the file ride the face's 72 shapes where the desk plays them (tools/shared/face.js): each point
-// takes the move of the nearest MHR point the shapes move (_MHRP, _MHRW, as the skin's corners carry theirs), so a blink
-// carries the lashes down with the lid and a raised brow its hairs
-function faceRide(g) {
+// brows and lashes in the file ride the face's 72 shapes where the desk plays them (tools/shared/face.js), with the
+// nearest MHR point the shapes move (_MHRP, _MHRW, as the skin's corners carry theirs). A brow hair lies on the skin:
+// each of its points takes its own nearest point's move. A lash is one piece (`lash`: the lashes and the lash line): every
+// card follows the point nearest its root (uv v = 0, on the lid) and swings about its eyeball's middle as that root
+// moves (_MHRR the root, _MHRE the eye), as the Studio turns a lash with the lid, so a blink takes it down whole and a
+// lash never stretches between its root and its tip
+function faceRide(g, lash = false) {
   const P = g.attributes.position, n = P.count, I = new Float32Array(n * 3), W = new Float32Array(n * 3);
-  for (let v = 0; v < n; v++) {
-    const x = P.getX(v), y = P.getY(v), z = P.getZ(v); let best = Infinity, at = 0;
-    for (let k = 0; k < EIDX.length; k++) { const p = EIDX[k] * 3, d = (POS[p] - x) ** 2 + (POS[p + 1] - y) ** 2 + (POS[p + 2] - z) ** 2; if (d < best) { best = d; at = EIDX[k]; } }
-    I[v * 3] = I[v * 3 + 1] = I[v * 3 + 2] = at; W[v * 3] = 1;
+  const nearest = (x, y, z) => { let best = Infinity, at = 0; for (let k = 0; k < EIDX.length; k++) { const p = EIDX[k] * 3, d = (POS[p] - x) ** 2 + (POS[p + 1] - y) ** 2 + (POS[p + 2] - z) ** 2; if (d < best) { best = d; at = EIDX[k]; } } return at; };
+  if (!lash) {
+    for (let v = 0; v < n; v++) { I[v * 3] = I[v * 3 + 1] = I[v * 3 + 2] = nearest(P.getX(v), P.getY(v), P.getZ(v)); W[v * 3] = 1; }
+  } else {
+    const up = new Int32Array(n).map((_, i) => i), find = i => { while (up[i] !== i) i = up[i] = up[up[i]]; return i; };
+    const ix = g.index ? g.index.array : null; if (ix) for (let t = 0; t < ix.length; t += 3) { const a = find(ix[t]); up[find(ix[t + 1])] = a; up[find(ix[t + 2])] = a; }
+    const UV = g.attributes.uv, cards = new Map();
+    for (let v = 0; v < n; v++) { const c = find(v); let k = cards.get(c); if (!k) cards.set(c, k = { lo: Infinity, root: [0, 0, 0], m: 0, verts: [] }); k.verts.push(v);
+      const t = UV ? UV.getY(v) : 0; if (t < k.lo - 1e-6) { k.lo = t; k.root = [0, 0, 0]; k.m = 0; } if (Math.abs(t - k.lo) <= 1e-6) { k.root[0] += P.getX(v); k.root[1] += P.getY(v); k.root[2] += P.getZ(v); k.m++; } }
+    const R = new Float32Array(n * 3), E = new Float32Array(n * 3), eyes = ["L", "R"].map(s => EYES[s].position);
+    for (const k of cards.values()) {
+      const r = k.root.map(x => x / k.m), at = nearest(...r), e = eyes.reduce((a, b) => (a.distanceToSquared(new THREE.Vector3(...r)) <= b.distanceToSquared(new THREE.Vector3(...r)) ? a : b));
+      for (const v of k.verts) { I.fill(at, v * 3, v * 3 + 3); W[v * 3] = 1; R.set(r, v * 3); E.set([e.x, e.y, e.z], v * 3); }
+    }
+    g.setAttribute("mhrr", new THREE.BufferAttribute(R, 3)); g.setAttribute("mhre", new THREE.BufferAttribute(E, 3));
   }
   g.setAttribute("mhrp", new THREE.BufferAttribute(I, 3)); g.setAttribute("mhrw", new THREE.BufferAttribute(W, 3));
 }
@@ -2715,7 +2729,7 @@ function exportRig(root, parts) {
       } else g.applyMatrix4(M);
       for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
       const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;
-      if (Object.values(BLM).includes(o)) faceRide(g);   // brows and lashes ride the face's shapes in the desk
+      if (Object.values(BLM).includes(o)) faceRide(g, o === BLM.lash || o === BLM.line);   // brows and lashes ride the face's shapes in the desk
       wear(g, fileLook(x, g), x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
     }
   }

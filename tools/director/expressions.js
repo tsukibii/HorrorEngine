@@ -149,27 +149,36 @@ export class ExpressionsPanel {
     const neutral = h("select", {}, FACE.NEUTRALS.map(([v, l]) => h("option", { value: v, selected: (e.neutral || "first") === v || null }, l)));
     const strength = h("input", { type: "range", min: "0", max: "2", step: "0.05", value: e.strength ?? 1 }), sOut = h("span", { class: "muted" }, (+strength.value).toFixed(2));
     strength.addEventListener("input", () => { sOut.textContent = (+strength.value).toFixed(2); });
+    // its length: the seconds the whole capture plays in (slower or faster than filmed, the frames curved between); the
+    // video plays at the same rate, so the two stay side by side
+    const own = +(e.secs || e.frames / e.fps), len = h("input", { type: "number", min: "0.2", max: "60", step: "0.1", value: (+(e.length || own)).toFixed(2), style: "width:80px" });
+    const lenOf = () => Math.max(0.2, Math.min(60, +len.value || own)), rate = h("span", { class: "muted" });
+    const relen = () => { const r = own / lenOf(); rate.textContent = `${r < 1 ? "slower" : r > 1 ? "faster" : "as filmed"} (×${r.toFixed(2)}; filmed ${own.toFixed(2)} s)`; if (video.tagName === "VIDEO") video.playbackRate = Math.max(0.0625, Math.min(16, r)); };
+    len.addEventListener("input", relen);
+    const lenReset = h("button", { class: "ghost", title: "back to the length it was filmed at", on: { click: () => { len.value = own.toFixed(2); relen(); } } }, "as filmed");
     const name = h("input", { type: "text", value: o.name || "", placeholder: o.guess || "a name, e.g. pout and glance", class: "xp-nameIn" });
     const body = h("div", { class: "xp-prev" },
       h("div", { class: "xp-panes" }, h("div", {}, h("div", { class: "kv" }, "the video"), video), h("div", {}, h("div", { class: "kv" }, "on a character"), view)), note,
       h("div", { class: "frm-r" }, h("label", {}, "Character"), who), h("div", { class: "frm-r" }, h("label", { title: "what the face at rest reads as: taken away from every frame" }, "Neutral"), neutral),
-      h("div", { class: "frm-r" }, h("label", {}, "Strength"), h("div", { class: "row" }, strength, sOut)), h("div", { class: "frm-r" }, h("label", {}, "Name"), name),
+      h("div", { class: "frm-r" }, h("label", {}, "Strength"), h("div", { class: "row" }, strength, sOut)),
+      h("div", { class: "frm-r" }, h("label", { title: "how many seconds the whole expression takes: its frames slowed or sped up, smooth between them" }, "Length (s)"), h("div", { class: "row" }, len, lenReset, rate)),
+      h("div", { class: "frm-r" }, h("label", {}, "Name"), name),
       h("p", { class: "kv" }, `${(+e.secs || 0).toFixed(1)} s · ${e.frames} frames at ${e.fps} fps · ${Object.keys(e.curves || {}).length} channels that move · from ${(e.source || {}).file || "a video"}`));
     const P = new FacePreview(view, this.ctx);
     const setWho = async () => { note.textContent = await P.wear(who.value) || ""; };
     who.addEventListener("change", setWho); setWho();
-    const t0 = performance.now();
+    const t0 = performance.now(); relen();
     P.run(() => {
-      const t = video.tagName === "VIDEO" && !video.paused ? video.currentTime : (performance.now() - t0) / 1000;
-      return M ? FACE.toMHR(FACE.sample(e, t, { loop: true, neutral: neutral.value, strength: +strength.value }), M) : null;
+      const t = video.tagName === "VIDEO" && !video.paused ? video.currentTime * lenOf() / own : (performance.now() - t0) / 1000;   // the video's time is the filmed one
+      return M ? FACE.toMHR(FACE.sample(e, t, { loop: true, neutral: neutral.value, strength: +strength.value, length: lenOf() }), M) : null;
     });
     const ans = await modal({ title: fresh ? "A new expression" : `“${e.name || o.name}”`, wide: true, body, ok: fresh ? "Accept" : "Save", cancel: fresh ? "Discard" : "Close", focus: false });
     P.dispose(); if (video.tagName === "VIDEO") video.pause();
     const nm = name.value.trim() || o.guess || "expression";
     try {
-      if (fresh && ans === true) { const r = await api("/api/expressions/accept", { method: "POST", body: JSON.stringify({ token: o.token, name: nm, neutral: neutral.value, strength: +strength.value }) }); toast(`“${r.name}” is in the library`); }
+      if (fresh && ans === true) { const r = await api("/api/expressions/accept", { method: "POST", body: JSON.stringify({ token: o.token, name: nm, neutral: neutral.value, strength: +strength.value, length: lenOf() }) }); toast(`“${r.name}” is in the library`); }
       else if (fresh) await api("/api/expressions/discard", { method: "POST", body: JSON.stringify({ token: o.token }) });
-      else if (ans === true) await api(`/api/expressions/${encodeURIComponent(o.id)}/set`, { method: "POST", body: JSON.stringify({ name: nm, neutral: neutral.value, strength: +strength.value }) });
+      else if (ans === true) await api(`/api/expressions/${encodeURIComponent(o.id)}/set`, { method: "POST", body: JSON.stringify({ name: nm, neutral: neutral.value, strength: +strength.value, length: lenOf() }) });
     } catch (err) { toast(err.message); }
     this.refresh();
   }

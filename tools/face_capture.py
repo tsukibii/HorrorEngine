@@ -159,7 +159,7 @@ def cmd_check(a):
         n += 1
         e = json.loads(f.read_text())
         bad = [k for k, v in e["curves"].items() if k not in arkit or len(v) != e["frames"] or min(v) < 0 or max(v) > 1]
-        if not e.get("name") or bad or e["frames"] < 1 or abs(e["secs"] - e["frames"] / e["fps"]) > 0.01:
+        if not e.get("name") or bad or e["frames"] < 1 or abs(e["secs"] - e["frames"] / e["fps"]) > 0.01 or not 0.05 < float(e.get("length", e["secs"])) <= 600:
             fails.append(f"{d.name}: name {e.get('name')!r}, bad channels {bad}")
     for x in fails:
         print("  FAIL " + x)

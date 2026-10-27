@@ -86,10 +86,37 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
     if (!r.moving) throw new Error("the expression doesn't change over its length");
     console.log("       pixels changed by the face, fully on: " + Object.entries(r.out).map(([w, v]) => `${w} ${v.changed}`).join(", "));
   });
-  await step("click a card: the preview opens; a new name saved keeps its folder", async () => {
+  await step("click a card: the preview opens; a new name and a length twice as filmed saved (its folder kept); played at that length, a frame comes at twice its time", async () => {
     await page.click(`.xp-card[data-id="${id}"]`); await page.waitForSelector(".mdl .xp-prev");
-    await page.fill(".xp-nameIn", TEST + " renamed"); await page.click(".mdl button.primary");
+    const own = await page.evaluate(async id => +(await (await fetch(`/api/expressions/${id}`)).json()).secs, id);
+    await page.fill(".xp-nameIn", TEST + " renamed"); await page.fill(".xp-prev input[type=number]", (own * 2).toFixed(2)); await page.click(".mdl button.primary");
     await page.waitForFunction(id => [...document.querySelectorAll(`.xp-card[data-id="${id}"] .xp-name`)].some(n => n.textContent.includes("renamed")), id, { timeout: 20000 });
+    const r = await page.evaluate(async ([id, own]) => {
+      const FACE = await import("/shared/face.js"), e = await (await fetch(`/api/expressions/${id}`)).json(), at = (o, t) => JSON.stringify(Object.values(FACE.sample(e, t, o)).map(v => v.toFixed(3)));
+      return { length: e.length, same: at({}, e.length * 0.3) === at({ length: own }, own * 0.3), mid: FACE.lengthOf(e) };   // 30% of the way through, at either length
+    }, [id, own]);
+    if (Math.abs(r.length - own * 2) > 0.02 || !r.same) throw new Error(`the length: ${JSON.stringify(r)} (filmed ${own})`);
+  });
+  await step("on a Studio export a lash card stays whole through a blink: its root follows the lid down, its length doesn't change (it turns about the eye, not stretches)", async () => {
+    const r = await page.evaluate(async () => {
+      const FACE = await import("/shared/face.js"), { FacePreview } = await import("/expressions.js"), M = await FACE.loadMap();
+      const people = (await (await fetch("/api/bodies")).json()).bodies.filter(f => f.startsWith("people/"));
+      const box = document.createElement("div"); document.body.append(box);
+      for (const who of people) {
+        const P = new FacePreview(box, window.__dd.XP.ctx, 120); await P.wear(who);
+        const lash = P.targets.find(t => t.cards && t.cards.length > 20); if (!lash) { P.dispose(); continue; }
+        const A = lash.mesh.geometry.attributes.position.array, w = new Float32Array(72); w[M.index.eyesClosed_L] = w[M.index.eyesClosed_R] = 1;
+        const card = lash.cards.reduce((a, b) => (b.r[1] - b.e[1] > a.r[1] - a.e[1] ? b : a));   // an upper lash (its root highest over its eye)
+        const span = () => { let lo = null, far = 0; for (const v of card.v) { const p = [A[v * 3], A[v * 3 + 1], A[v * 3 + 2]]; lo = lo || p; far = Math.max(far, Math.hypot(p[0] - lo[0], p[1] - lo[1], p[2] - lo[2])); } return far; };
+        const rootY = () => Math.min(...[...card.v].map(v => A[v * 3 + 1]));
+        P.frame(null); const s0 = span(), y0 = rootY(); P.frame(w); const s1 = span(), y1 = rootY(); P.dispose();
+        return { who, s0, s1, drop: (y0 - y1) * 1000 };
+      }
+      return null;
+    });
+    if (!r) { console.log("       (no Studio export with lashes here: exported again with lashes on, it's checked)"); return; }
+    if (Math.abs(r.s1 - r.s0) > 0.02 * r.s0 || !(r.drop > 1)) throw new Error(JSON.stringify(r));
+    console.log(`       ${r.who}: an upper lash ${(r.s0 * 1000).toFixed(1)} mm long, ${(r.s1 * 1000).toFixed(1)} mm shut; its root down ${r.drop.toFixed(1)} mm with the lid`);
   });
   await step("the red x asks first (Cancel keeps it), then Remove moves it to Saved/Expressions/removed", async () => {
     await page.hover(`.xp-card[data-id="${id}"]`); await page.click(`.xp-card[data-id="${id}"] .xp-x`);
