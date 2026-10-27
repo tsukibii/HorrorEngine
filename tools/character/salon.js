@@ -51,7 +51,7 @@ const st = {
   bake: { along: 8, full: false, smooth: 0, tame: 0 },   // the bake's points along each card (a swinging lock's at least 12), or every point; its smoothing
 };
 SL.setRoots(st.roots); SL.setThicken(st.volume.thicken);
-let ACTIVE_GROUP = "g1", SELECTED = null, TOOL = "select", UNSAVED = false;   // UNSAVED: edits since the last Save (leaving asks)
+let ACTIVE_GROUP = "g1", SELECTED = null, INHAND = null, TOOL = "select", UNSAVED = false;   // INHAND: the lock just placed or re-aimed, with its arrow and OK; UNSAVED: edits since the last Save (leaving asks)
 
 // ---- the scene --------------------------------------------------------------------------------------------------------
 const view = $("#view");
@@ -67,12 +67,21 @@ const BAKEG = new THREE.Group(); BAKEG.matrixAutoUpdate = false; scene.add(BAKEG
 const HANDLES = new THREE.Group(); HAIR.add(HANDLES);
 let HEAD = null, HF = null, COL = null, LOCAL_PTS = null;
 const HFMAT = new THREE.Matrix4(), RIG = new THREE.Matrix4();            // the head's frame; the head's motion (world)
-let VW = 1, VH = 1;
-function resize() { VW = view.clientWidth; VH = view.clientHeight; renderer.setSize(VW, VH, false); Object.assign(OVL_CAM, { left: 0, right: VW, top: VH, bottom: 0 }); OVL_CAM.updateProjectionMatrix(); draw(); }
+let VW = 1, VH = 1, VWALL = 1, VHALL = 1;                               // the active pane's size, and the whole view's
+function resize() { VWALL = view.clientWidth; VHALL = view.clientHeight; renderer.setSize(VWALL, VHALL, false); usePane(SPLIT.active); layoutSplit(); draw(); }
 new ResizeObserver(resize).observe(view);
 
-// the view: a free orbit round the head, or locked onto the reference frame nearest to it
-const orbit = { yaw: 0.35, pitch: 0.08, dist: 0.85, zoom: 1, pan: [0, 0] };
+// the view: a free orbit round the head, or locked onto the reference frame nearest to it. Split (the user's ask: a side
+// view beside the front): two panes side by side, an orbit each, every tool working in the pane under the pointer;
+// `orbit` is the active pane's (the one the pointer last touched), PANE its rectangle in view pixels.
+const SPLIT = { on: false, at: 0.5, orbits: [{ yaw: 0.35, pitch: 0.08, dist: 0.85, zoom: 1, pan: [0, 0], ortho: false }, { yaw: Math.PI / 2, pitch: 0, dist: 0.85, zoom: 1, pan: [0, 0], ortho: false }], active: 0 };
+let orbit = SPLIT.orbits[0], PANE = { x: 0, y: 0, w: 1, h: 1 };
+function panes() { if (!SPLIT.on) return [{ x: 0, y: 0, w: VWALL, h: VHALL }]; const x = Math.round(VWALL * SPLIT.at); return [{ x: 0, y: 0, w: x, h: VHALL }, { x, y: 0, w: VWALL - x, h: VHALL }]; }
+function usePane(i) {                                                // the pane everything draws, picks and turns in
+  const P = panes(); if (i >= P.length) i = 0;
+  SPLIT.active = i; PANE = P[i]; VW = Math.max(1, PANE.w); VH = Math.max(1, PANE.h); orbit = SPLIT.orbits[i];
+  Object.assign(OVL_CAM, { left: 0, right: VW, top: VH, bottom: 0 }); OVL_CAM.updateProjectionMatrix();
+}
 let SNAP = null;                       // the reference camera the view is on (null: free)
 function headTarget() { return HF ? SR.toWorld(HF, [0, 0.01, 0]) : [0, 1.6, 0]; }
 function freeCamera() {
@@ -81,15 +90,18 @@ function freeCamera() {
   const f = SL.norm(SL.sub(c, p)), r = SL.norm(SL.cross(f, [0, 1, 0])), dn = SL.cross(f, r);
   const R = [r, dn, f], t = SR.MV(R, p).map(x => -x);
   const fy = VH / 2 / Math.tan(15 * Math.PI / 180) * orbit.zoom;
-  return { R, t, fx: fy, fy, cx: VW / 2 + orbit.pan[0], cy: VH / 2 + orbit.pan[1] };
+  return { R, t, fx: fy, fy, cx: VW / 2 + orbit.pan[0], cy: VH / 2 + orbit.pan[1], ortho: orbit.ortho ? d * Math.tan(15 * Math.PI / 180) / orbit.zoom : 0 };   // ortho: the view's half-height in metres at the head
 }
-function setCamera(R, t, fx, fy, cx, cy) {
+function setCamera(R, t, fx, fy, cx, cy, ortho = 0) {
   const C = SR.centre(R, t);
   // OpenCV rows (right, down, forward) -> three's camera axes (x right, y up, looking down -z)
   camera.matrix.set(R[0][0], -R[1][0], -R[2][0], C[0], R[0][1], -R[1][1], -R[2][1], C[1], R[0][2], -R[1][2], -R[2][2], C[2], 0, 0, 0, 1);
   camera.matrixWorld.copy(camera.matrix); camera.matrixWorldInverse.copy(camera.matrix).invert();
-  const P = SR.projection(fx, fy, cx, cy, VW, VH);
-  camera.projectionMatrix.set(...P[0], ...P[1], ...P[2], ...P[3]); camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+  if (ortho) {                                                       // no perspective: the head the same size as at the target's distance, the pan as pixels
+    const h = ortho, w = h * VW / VH, sx = (cx - VW / 2) * 2 * w / VW, sy = (cy - VH / 2) * 2 * h / VH;
+    camera.projectionMatrix.makeOrthographic(-w - sx, w - sx, h + sy, -h + sy, 0.02, 30);
+  } else { const P = SR.projection(fx, fy, cx, cy, VW, VH); camera.projectionMatrix.set(...P[0], ...P[1], ...P[2], ...P[3]); }
+  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
   const h = headTarget(); key.target.position.set(...h); fillL.target.position.set(...h);   // the key above the camera's shoulder, a cool fill from the other side
   key.position.set(C[0] + R[0][0] * 0.5, C[1] + 0.9, C[2] + R[0][2] * 0.5); fillL.position.set(h[0] - R[0][0], h[1], h[2] - R[0][2]);
   lightHair(HAIRU, key.position.clone().sub(key.target.position), null, fillL.position.clone().sub(fillL.target.position), null);
@@ -156,8 +168,8 @@ function landing(cam, u, v, cube, rest) {
   }
   return [cx + (u - cam.K[2]) * k, cy + (v - cam.K[3]) * k];
 }
-function placeOverlay() {
-  if (!SNAP || !st.reference.on) { OVL_MESH.visible = false; $("#frameTag").textContent = REF && st.reference.on && !st.reference.lock ? "reference unlocked: turn freely" : ""; return false; }
+function placeOverlay(tag = true) {                                 // tag: this pane's frame named at the top right (the active pane's)
+  if (!SNAP || !st.reference.on) { OVL_MESH.visible = false; if (tag) $("#frameTag").textContent = REF && st.reference.on && !st.reference.lock ? "reference unlocked: turn freely" : ""; return false; }
   const tex = texture(SNAP), cube = st.reference.fit.cube, rest = !cube || FFD.isRest(cube);
   const P = OVL_MESH.geometry.attributes.position, UV = OVL_MESH.geometry.attributes.uv, [s, dx, dy] = SNAP.nudge;
   for (let r = 0; r <= GRID; r++) for (let c = 0; c <= GRID; c++) {
@@ -170,7 +182,7 @@ function placeOverlay() {
   P.needsUpdate = true; UV.needsUpdate = true;
   OVL_MESH.material.map = tex; OVL_MESH.material.opacity = st.reference.opacity; OVL_MESH.material.needsUpdate = OVL_MESH.userData.tex !== tex; OVL_MESH.userData.tex = tex;
   OVL_MESH.visible = !!tex.userData.loaded; OVL_MESH.userData.flipped = SNAP.mirrored;
-  $("#frameTag").textContent = `frame ${SNAP.name}${SNAP.mirrored ? " mirrored" : ""}  az ${SNAP.az.toFixed(0)}°  el ${SNAP.el.toFixed(0)}°`;
+  if (tag) $("#frameTag").textContent = `frame ${SNAP.name}${SNAP.mirrored ? " mirrored" : ""}  az ${SNAP.az.toFixed(0)}°  el ${SNAP.el.toFixed(0)}°`;
   return OVL_MESH.visible;
 }
 
@@ -442,10 +454,121 @@ function refreshLocks() {
   DIRTY.clear();
   drawHandles();
 }
-let HOVER = null;
+let HOVER = null, HOVER_ARROW = false;
+// the lock's vector (the user's ask): an arrow from its root's middle to its end, for the selected lock in any tool but
+// Fit. Drag the arrowhead to set the lock's length and direction from whatever view (salonlib.js's setVector: turned
+// and scaled about the root, the hand shaping kept; Alt: towards or away from you; the wheel while dragging: sag). The
+// arrowhead sits a little past the end, clear of the end's own handle. OK (or Enter) lets go of the lock in hand.
+const ARROW_PAST = 0.012;
+function arrowTip(l) { const [a, b] = SL.vectorOf(l); return SL.add(b, SL.mul(SL.norm(SL.sub(b, a)), ARROW_PAST)); }
+function drawArrow(l) {
+  if (isLocked(l)) return;
+  const [a, b] = SL.vectorOf(l), d = SL.norm(SL.sub(b, a)), hot = (DRAG && DRAG.kind === "arrow") || HOVER_ARROW, colour = hot ? 0xffffff : 0xffb347;
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b].map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color: colour, depthTest: false, transparent: true, opacity: 0.9 }));
+  line.renderOrder = 11; HANDLES.add(line);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.018, 12), new THREE.MeshBasicMaterial({ color: colour, depthTest: false }));
+  cone.position.set(...arrowTip(l)); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...d)); cone.renderOrder = 12; HANDLES.add(cone);
+}
+function arrowAt(e) {                                                // the arrowhead under the cursor?
+  const l = lockById(SELECTED); if (!l || isLocked(l) || TOOL === "fit" || PLACE.stage || BAKEVIEW) return false;
+  const [mx, my] = rel(e), [sx, sy] = screenOf(arrowTip(l)); return Math.hypot(sx - mx, sy - my) < 14;
+}
+function startArrowDrag(e) {
+  const l = lockById(SELECTED), o = original(l);
+  remember(); DRAG = { kind: "arrow", lock: l.id, from: SL.vectorStart(o, COL), tip: SL.vectorOf(l)[1].slice(), to: null, y: e.clientY };
+  INHAND = l.id; drawHandles(); hint(); draw();
+}
+const OKBTN = el("button", { id: "okBtn", textContent: "OK ✓", title: "done with this lock (Enter); Delete removes it", onclick: () => finishLock() }); view.append(OKBTN);
+function finishLock() { INHAND = null; SELECTED = null; PICKED.clear(); resetPlace(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
+function placeOk() {                                                 // the OK button beside the arrowhead of the lock in hand
+  const l = lockById(SELECTED), on = l && INHAND === l.id && !PLACE.stage && TOOL !== "fit" && !BAKEVIEW && !isLocked(l);
+  OKBTN.style.display = on ? "block" : "none"; if (!on) return;
+  const [sx, sy] = screenOf(arrowTip(l)); OKBTN.style.left = `${Math.round(sx) + 16}px`; OKBTN.style.top = `${Math.round(sy) - 12}px`;
+}
+// ---- several locks picked (Ctrl-click, or Shift-drag a box on empty space): the pull moves only them, and Selected's
+// Delete, Lock, Let it fall, Onto the scalp, Group, Physics and Mirror once act on all of them ------------------------------
+const PICKED = new Set();                                            // ids picked besides the selected one
+function pickedOriginals() { const out = []; for (const id of [SELECTED, ...PICKED]) { const l = lockById(id); if (l && !out.includes(original(l))) out.push(original(l)); } return out; }
+function togglePicked(id) {
+  if (!SELECTED) { select(id); return; }
+  if (id === SELECTED) { if (!PICKED.size) return; SELECTED = PICKED.values().next().value; PICKED.delete(SELECTED); }
+  else if (PICKED.has(id)) PICKED.delete(id); else PICKED.add(id);
+  INHAND = null; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw();
+}
+function deleteMany(ids) {
+  if (!ids.length) return; remember(); const set = new Set(ids);
+  st.locks = st.locks.filter(l => !set.has(l.id) && !set.has(l.mirror_of));
+  for (const l of st.locks) if (l.mirror_of && !lockById(l.mirror_of)) l.mirror_of = null;
+  if (!lockById(SELECTED)) SELECTED = null; PICKED.clear(); INHAND = null; locksPanel(); selPanel(); hint(); draw();
+}
+function drawPicked() {                                              // the picked locks' guides in blue, over everything
+  for (const id of PICKED) { const G = EVAL[id]; if (!G || !lockById(id)) continue;
+    for (const g of G) { const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(g.pts.map(p => new THREE.Vector3(...p))), new THREE.LineBasicMaterial({ color: 0x5a8ad9, depthTest: false })); line.renderOrder = 10; HANDLES.add(line); } }
+}
+const BOX = el("div", { id: "boxSel" }); view.append(BOX);
+function sizeBox(e) { const r = renderer.domElement.getBoundingClientRect(); BOX.style.display = "block"; Object.assign(BOX.style, { left: `${Math.min(DRAG.x, e.clientX) - r.left}px`, top: `${Math.min(DRAG.y, e.clientY) - r.top}px`, width: `${Math.abs(e.clientX - DRAG.x)}px`, height: `${Math.abs(e.clientY - DRAG.y)}px` }); }
+function boxPick(e) {                                                // every lock shown with a point in the box
+  const r = renderer.domElement.getBoundingClientRect(), x0 = Math.min(DRAG.x, e.clientX) - r.left, x1 = Math.max(DRAG.x, e.clientX) - r.left, y0 = Math.min(DRAG.y, e.clientY) - r.top, y1 = Math.max(DRAG.y, e.clientY) - r.top;
+  if (x1 - x0 < 3 && y1 - y0 < 3) return;
+  const shown = isShown(), got = [];
+  for (const l of st.locks) { if (!shown(l) || !EVAL[l.id]) continue; if (EVAL[l.id].some(G => G.pts.some((p, k) => { if (k % 2) return false; const [sx, sy, z] = screenOf(p); return z <= 1 && sx >= x0 && sx <= x1 && sy >= y0 && sy <= y1; }))) got.push(l.id); }
+  PICKED.clear(); if (!got.length) return;
+  SELECTED = got[0]; INHAND = null; for (const id of got.slice(1)) PICKED.add(id);
+  for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw();
+}
+// the lock under the cursor, if it's this one: the nearest of its points within 9 px, not hidden by the head
+function lockUnder(e, l) {
+  if (!EVAL[l.id] || !isShown()(l)) return null;
+  const [mx, my] = rel(e), hit = headAt(e.clientX, e.clientY), cam = new THREE.Vector3(), fwd = new THREE.Vector3(); camera.getWorldPosition(cam); camera.getWorldDirection(fwd);
+  const depth = p => new THREE.Vector3(...SR.toWorld(HF, p)).sub(cam).dot(fwd), dHead = hit ? depth(hit) : Infinity;
+  let best = null, bd = 9;
+  for (const G of EVAL[l.id]) for (let k = 0; k < G.pts.length; k += 2) { const [sx, sy, z] = screenOf(G.pts[k]); if (z > 1) continue; const d = Math.hypot(sx - mx, sy - my); if (d < bd && depth(G.pts[k]) <= dHead + 0.01) { bd = d; best = G.pts[k].slice(); } }
+  return best;
+}
+// G and R (Blender's): the selected lock slides along the scalp, or swings about its root, with the mouse alone until a
+// click or Enter keeps it; Esc puts it back
+let MODAL = null;
+function startModal(kind) {
+  const l = lockById(SELECTED); if (!l || isLocked(l) || !LASTPTR) return;
+  const o = original(l); remember();
+  const ref = kind === "swing" ? SL.vectorOf(l)[1].slice() : SL.rootOf(l).slice();
+  MODAL = { kind, lock: l.id, from: SL.vectorStart(o, COL), ref, start: onPlane(LASTPTR[0], LASTPTR[1], ref) };
+  hint(kind === "swing" ? "Swing (R): move the mouse; a click or Enter keeps it, Esc puts it back" : "Slide (G): move the mouse to slide the lock along the scalp; a click or Enter keeps it, Esc puts it back");
+}
+function modalMove(e) {
+  const l = lockById(MODAL.lock); if (!l) { MODAL = null; return; }
+  const o = original(l), now = onPlane(e.clientX, e.clientY, MODAL.ref); if (!now || !MODAL.start) return;
+  const to = SL.add(MODAL.ref, SL.sub(now, MODAL.start)), R = p => l.mirror_of ? SL.reflectPoint(p, st.mirror.seam) : p;
+  if (MODAL.kind === "swing") SL.swingLock(o, R(MODAL.ref), R(to), COL, MODAL.from);
+  else SL.slideRoot(o, SL.rootPathOf(o), COL.surface(R(to)), COL, MODAL.from);
+  changed(o); draw();
+}
+function endModal(keep) {
+  if (!MODAL) return; const l = lockById(MODAL.lock);
+  if (l && !keep) { const o = original(l); SL.restoreFrom(o, MODAL.from); changed(o); UNDO.pop(); }
+  MODAL = null; if (l) selPanel(); hint(); draw();
+}
+// a drag that reaches the pane's edge pans the view that way, the drag carried on where the cursor is
+let EDGE = null;
+function edgePan(e) {
+  if (!DRAG || !["handle", "arrow", "root", "swing"].includes(DRAG.kind)) { stopEdge(); return; }
+  const r = renderer.domElement.getBoundingClientRect(), x = e.clientX - r.left - PANE.x, y = e.clientY - r.top - PANE.y, m = 24;
+  const dx = x < m ? 1 : x > PANE.w - m ? -1 : 0, dy = y < m ? 1 : y > PANE.h - m ? -1 : 0;
+  if (!dx && !dy) { stopEdge(); return; }
+  const raf = EDGE ? EDGE.raf : 0; EDGE = { dx, dy, e: { clientX: e.clientX, clientY: e.clientY, altKey: e.altKey, shiftKey: e.shiftKey }, raf };
+  if (!EDGE.raf) EDGE.raf = requestAnimationFrame(edgeStep);
+}
+function edgeStep() {
+  if (!EDGE || !DRAG) { EDGE = null; return; }
+  orbit.pan[0] += EDGE.dx * 6; orbit.pan[1] += EDGE.dy * 6; applyCamera(); dragMove(EDGE.e); render();
+  EDGE.raf = requestAnimationFrame(edgeStep);
+}
+function stopEdge() { if (EDGE && EDGE.raf) cancelAnimationFrame(EDGE.raf); EDGE = null; }
 function drawHandles() {
   HANDLES.clear();
-  const l = lockById(SELECTED); if (!l || TOOL !== "select") return;
+  const l = lockById(SELECTED); if (!l || TOOL === "fit" || BAKEVIEW) return;
+  drawArrow(l); drawPicked();
+  if (TOOL !== "select") return;
   const geo = new THREE.SphereGeometry(0.0045, 10, 8);
   for (const h of SL.handles(l)) {
     const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: h.root ? 0x5aa65a : HOVER && HOVER.join() === h.path.join() ? 0xffffff : 0xd9a441, depthTest: false }));
@@ -470,7 +593,7 @@ function drawReach() {
   const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: 0xe8e8e8, depthTest: false, transparent: true, opacity: 0.8 }));
   line.renderOrder = 11; HANDLES.add(line);
   const dot = new THREE.SphereGeometry(0.0025, 8, 6), lo = new THREE.Color(0x7a4e14), hi = new THREE.Color(0xffe08a);
-  for (const x of SL.pullWeights(start, at, g.p, pullOpts())) {
+  for (const x of SL.pullWeights(start, at, g.p, pullOpts(at.id))) {
     if (x.id === at.id && x.key === g.key) continue;
     const l = lockById(x.id), h = l && SL.handles(l).find(q => q.path.join() === x.key); if (!h) continue;
     const m = new THREE.Mesh(dot, new THREE.MeshBasicMaterial({ color: lo.clone().lerp(hi, x.w), depthTest: false }));
@@ -571,7 +694,7 @@ function makeCoverHair() {
   if (!st.groups.find(g => g.id === "cover")) st.groups.push({ id: "cover", name: "Cover", visible: true });
   st.locks.push(...locks);
   COVER.show = false; drawCover(); SELECTED = null; locksPanel(); selPanel(); coverPanel(); render();
-  startDrop(locks.map(l => l.id));
+  startDrop(locks.map(l => l.id), "cover");
   return locks;
 }
 function coverPanel() {
@@ -593,11 +716,15 @@ function coverPanel() {
 // hidden), and with Layer by height on, every frame is laid in layers as the kept hair will be.
 let DROP = null;
 const ID3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], IDP = p => p;
-function startDrop(only = null) {                                     // only: the ids that fall (a cover); the rest stays, in their way
+function startDrop(only = null, what = null) {                        // only: the ids that fall (a cover, a lock let fall); the rest stays, in their way
   if (BAKEVIEW) previewBake(false);
   if (MOTION !== "still") setMotion("still");
   RIG.identity(); applyRig(); render();
-  const all = st.locks.filter(isShown()), locks = only ? all.filter(l => only.includes(l.id)) : all;
+  const all = st.locks.filter(isShown());
+  if (only) only = only.filter(id => { const l = lockById(id); return l && !isLocked(l); });
+  else if (all.some(isLocked)) { only = all.filter(l => !isLocked(l)).map(l => l.id); what = what || "locked"; }   // locked hair stays; the rest falls onto it
+  if (only && !only.length) { status("nothing to drop: it's all locked (the padlocks in Locks)", "bad"); return; }
+  const locks = only ? all.filter(l => only.includes(l.id)) : all;
   const ids = new Set(locks.map(l => l.id)), twin = l => l.mirror_of && ids.has(l.mirror_of);
   const down = SL.norm(SR.MV(SR.T(HF.B), [0, -1, 0]));               // the world's down in the head's space
   let col = COL;
@@ -606,7 +733,7 @@ function startDrop(only = null) {                                     // only: t
     col = { push: (p, gap) => { const [q, m] = COL.push(p, gap), r = map.push(q); return [r, m || r !== q]; } };
   }
   // hair rubs where it touches the head or the hair (it stays where it lies, slides where it's steep): Friction
-  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1, friction: st.dropFriction ?? 1, rootHold: st.dropRootHold ?? 0.5 }), twins: locks.filter(twin), only, frames: [], frame: 0, running: true };
+  DROP = { sim: new SP.Sim(locks.filter(l => !twin(l)), col, { drop: true, down, strength: st.dropStrength ?? 1, friction: st.dropFriction ?? 1, rootHold: st.dropRootHold ?? 0.5 }), twins: locks.filter(twin), only, what, frames: [], frame: 0, running: true };
   DROP.sim.step(IDP, IDP, ID3, 0, 0); DROP.frames.push(DROP.sim.snapshot());
   dropPanel(); requestAnimationFrame(dropLoop);
 }
@@ -652,9 +779,13 @@ function keepDrop() {                                                  // the fr
   DROP = null; dropPanel(); draw();
 }
 function revertDrop() { DROP = null; for (const l of st.locks) DIRTY.add(l.id); dropPanel(); draw(); }
+function letFall(ids) {                                                // some locks fall onto the rest (Selected: Let it fall); the Gravity step opens to keep the moment
+  startDrop(ids, "some"); if (!DROP) return;
+  const d = document.querySelector('details.step[data-step="gravity"]'); if (d) { d.open = true; d.scrollIntoView({ block: "nearest" }); }
+}
 function dropPanel() {
   const box = $("#dropbox"); if (!box) return; box.innerHTML = "";
-  box.append(el("p", { className: "note", textContent: DROP && DROP.only ? "The cover is falling onto the hair. Slide back to any moment; switch off (or Keep this frame) and that's its shape." : "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
+  box.append(el("p", { className: "note", textContent: DROP && DROP.only ? `${DROP.what === "cover" ? "The cover is falling onto the hair" : DROP.what === "locked" ? "The unlocked hair is falling onto the locked hair, which stays" : "The hair let fall is falling onto the rest, which stays"}. Slide back to any moment; switch off (or Keep this frame) and that's its shape.` : "Gravity on: all the hair falls and lies or hangs. Slide back to any moment; switch off (or Keep this frame) and that's the hair's shape, then pull up what should stick up." }));
   const sw = el("button", { textContent: DROP ? "Gravity: on" : "Gravity: off", className: DROP ? "on" : "", onclick: () => DROP ? keepDrop() : startDrop() }); sw.id = "dropSwitch"; box.append(sw);
   slider(box, "Strength", 0.2, 2, 0.1, st.dropStrength ?? 1, v => { st.dropStrength = v; if (DROP) DROP.sim.strength = v, DROP.sim.items.forEach(it => { it.ph.gravity = v; }); }, "how hard gravity pulls (1: the real thing)");
   slider(box, "Root hold", 0, 1, 0.05, st.dropRootHold ?? 0.5, v => { st.dropRootHold = v; if (DROP) DROP.sim.rootHold = v; }, "how stiff the roots are: their first few cm keep their comb while the rest falls (0: nothing holds them)");
@@ -894,26 +1025,34 @@ function bakePanel() {
 // ---- the frame ---------------------------------------------------------------------------------------------------------
 let PENDING = false;
 function draw() { if (PENDING) return; PENDING = true; requestAnimationFrame(() => { PENDING = false; render(); }); }
+function applyCamera() {                                             // the active pane's camera: the reference frame it's on, or its free orbit
+  snapView();
+  if (SNAP) { const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom; setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]); }
+  else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy, f.ortho); }
+}
 function render() {
   if (!HF) { renderer.autoClear = true; renderer.render(scene, camera); return; }
-  snapView();
-  if (SNAP) {
-    const w = SR.worldCamera(SNAP, HF), k = VH / SNAP.H * orbit.zoom;
-    setCamera(w.R, w.t, SNAP.K[0] * k, SNAP.K[1] * k, VW / 2 + orbit.pan[0], VH / 2 + orbit.pan[1]);
-  } else { const f = freeCamera(); setCamera(f.R, f.t, f.fx, f.fy, f.cx, f.cy); }
-  refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding(); previewStale();
-  const ovl = placeOverlay();
-  renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
-  if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
-  renderer.clearDepth(); renderer.render(scene, camera);
-  if (ovl && !st.reference.behind) renderer.render(OVL, OVL_CAM);
+  const active = SPLIT.active, P = panes();
+  P.forEach((R, i) => {                                               // each pane with its own camera; the hair itself refreshed once
+    usePane(i); applyCamera();
+    if (i === 0) { refreshLocks(); drawCube(); drawScalp(); if (PAD_DIRTY) schedulePadding(); previewStale(); } else drawHandles();   // the ring and the handles face this pane
+    const ovl = placeOverlay(i === active);
+    renderer.setViewport(R.x, VHALL - R.y - R.h, R.w, R.h); renderer.setScissor(R.x, VHALL - R.y - R.h, R.w, R.h); renderer.setScissorTest(P.length > 1);
+    renderer.autoClear = false; renderer.setClearColor(0x1b1c20, 1); renderer.clear();
+    if (ovl && st.reference.behind) renderer.render(OVL, OVL_CAM);
+    renderer.clearDepth(); renderer.render(scene, camera);
+    if (ovl && !st.reference.behind) renderer.render(OVL, OVL_CAM);
+  });
+  renderer.setScissorTest(false);
+  usePane(active); applyCamera(); placeOk();                        // the active pane's camera again, for picking
 }
 
 // ---- picking ----------------------------------------------------------------------------------------------------------
 const ray = new THREE.Raycaster();
-function rayAt(x, y) {
-  const r = renderer.domElement.getBoundingClientRect();
-  ray.setFromCamera(new THREE.Vector2((x - r.left) / r.width * 2 - 1, -((y - r.top) / r.height) * 2 + 1), camera);
+function rayAt(x, y) {                                               // the cursor's ray, through whatever projection the camera has (perspective or ortho)
+  const r = renderer.domElement.getBoundingClientRect(), nx = (x - r.left - PANE.x) / PANE.w * 2 - 1, ny = -((y - r.top - PANE.y) / PANE.h) * 2 + 1;
+  const a = new THREE.Vector3(nx, ny, -1).unproject(camera), b = new THREE.Vector3(nx, ny, 0.5).unproject(camera);   // the near plane and a finite depth (the far plane may be at infinity)
+  ray.ray.origin.copy(a); ray.ray.direction.copy(b).sub(a).normalize();
   return ray;
 }
 function headAt(x, y) {                                              // the point on the body under the cursor, local
@@ -921,9 +1060,15 @@ function headAt(x, y) {                                              // the poin
   const hit = rayAt(x, y).intersectObject(HEAD, false)[0];
   return hit ? SR.toLocal(HF, hit.point.toArray()) : null;
 }
-function screenOf(p) {                                               // a local point to view pixels
+function screenOf(p) {                                               // a local point to view pixels (in the active pane)
   const w = new THREE.Vector3(...SR.toWorld(HF, p)).project(camera);
-  return [(w.x + 1) / 2 * VW, (1 - w.y) / 2 * VH, w.z];
+  return [PANE.x + (w.x + 1) / 2 * VW, PANE.y + (1 - w.y) / 2 * VH, w.z];
+}
+function paneAt(e) {                                                 // the pane under the pointer becomes the active one (not mid-drag), its camera set for picking
+  if (!SPLIT.on || DRAG) return;
+  const r = renderer.domElement.getBoundingClientRect(), i = e.clientX - r.left < r.width * SPLIT.at ? 0 : 1;
+  if (i !== SPLIT.active) { usePane(i); markPane(); }
+  applyCamera();
 }
 function onPlane(x, y, through) {                                    // the cursor on the plane through a local point, facing the view
   const r = rayAt(x, y), p = new THREE.Vector3(...SR.toWorld(HF, through)), n = new THREE.Vector3(); camera.getWorldDirection(n);
@@ -937,24 +1082,75 @@ function handleAt(e) {
   for (const h of SL.handles(l)) { const [sx, sy] = screenOf(h.p), d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = h; } }
   return best;
 }
+// the lock under the cursor: the nearest in depth of those within 9 px, never one the head hides (a point behind the
+// body hit under the cursor); a click again on the same spot picks the next one under it
+let LASTPICK = null;
 function lockAt(e) {
-  const [mx, my] = rel(e); let best = null, bd = 9;
-  const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible]));
+  const [mx, my] = rel(e), shown = isShown(), hit = headAt(e.clientX, e.clientY);
+  const cam = new THREE.Vector3(), fwd = new THREE.Vector3(); camera.getWorldPosition(cam); camera.getWorldDirection(fwd);
+  const depth = p => new THREE.Vector3(...SR.toWorld(HF, p)).sub(cam).dot(fwd), dHead = hit ? depth(hit) : Infinity;
+  const near = new Map();                                            // lock -> its nearest depth under the cursor
   for (const l of st.locks) {
-    if (!l.visible || vis[l.group] === false || !EVAL[l.id]) continue;
-    for (const G of EVAL[l.id]) for (let k = 0; k < G.pts.length; k += 2) { const [sx, sy, z] = screenOf(G.pts[k]); if (z > 1) continue; const d = Math.hypot(sx - mx, sy - my); if (d < bd) { bd = d; best = l; } }
+    if (!shown(l) || !EVAL[l.id]) continue;
+    for (const G of EVAL[l.id]) for (let k = 0; k < G.pts.length; k += 2) {
+      const [sx, sy, z] = screenOf(G.pts[k]); if (z > 1 || Math.hypot(sx - mx, sy - my) > 9) continue;
+      const d = depth(G.pts[k]); if (d > dHead + 0.01) continue;      // behind the head
+      if (!near.has(l.id) || d < near.get(l.id)) near.set(l.id, d);
+    }
   }
-  return best;
+  const ids = [...near.entries()].sort((a, b) => a[1] - b[1]).map(x => x[0]); if (!ids.length) { LASTPICK = null; return null; }
+  let i = 0;
+  if (LASTPICK && Math.hypot(LASTPICK.x - mx, LASTPICK.y - my) < 4 && LASTPICK.ids.join() === ids.join()) i = (LASTPICK.i + 1) % ids.length;
+  LASTPICK = { x: mx, y: my, ids, i };
+  return lockById(ids[i]);
+}
+// where a root would go under the cursor, while a placing tool is armed: a green dot on the scalp, red off it
+let DOT = null;
+function showDot(p, ok) {
+  if (!DOT) { DOT = new THREE.Mesh(new THREE.SphereGeometry(0.003, 10, 8), new THREE.MeshBasicMaterial({ color: 0x5aa65a, depthTest: false })); DOT.renderOrder = 13; HAIR.add(DOT); }
+  DOT.visible = !!p; if (!p) return;
+  DOT.position.set(...p); DOT.material.color.set(ok ? 0x5aa65a : 0xe05a4f);
 }
 
 // ---- undo -------------------------------------------------------------------------------------------------------------
 const UNDO = [], REDO = [];
 const snapshot = () => JSON.stringify({ locks: st.locks, groups: st.groups, fit: st.reference.fit, layering: st.layering, scalp: st.scalp, roots: st.roots, volume: st.volume });
-function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; UNSAVED = true; }
+function remember() { UNDO.push(snapshot()); if (UNDO.length > 200) UNDO.shift(); REDO.length = 0; UNSAVED = true; keepDraft(); }
 function restore(s) { SIM_DIRTY = true; const o = JSON.parse(s); if ("layering" in o) st.layering = o.layering; st.locks = o.locks; st.groups = o.groups; if (o.scalp) { st.scalp = o.scalp; SCALP_DIRTY = true; scalpPanel(); } if (o.roots) { st.roots = o.roots; SL.setRoots(st.roots); rootsPanel(); } if (o.volume) { st.volume = o.volume; SL.setThicken(st.volume.thicken); volumePanel(); } if (o.fit && REF) { st.reference.fit = o.fit; recam(); refPanel(); } for (const l of st.locks) DIRTY.add(l.id); if (!lockById(SELECTED)) SELECTED = null; locksPanel(); selPanel(); draw(); }
 function undo() { if (!UNDO.length) return; REDO.push(snapshot()); restore(UNDO.pop()); }
 function redo() { if (!REDO.length) return; UNDO.push(snapshot()); restore(REDO.pop()); }
 $("#undo").onclick = undo; $("#redo").onclick = redo;
+
+// ---- the draft: every unsaved edit kept in this browser, offered back when the same hair opens ------------------------
+// a second after each edit the whole state goes to localStorage under the hair's name (the character's, or the
+// hairstyle's); Save forgets it; opening the same hair with a draft whose locks differ offers it back (Undo takes it
+// away again).
+const draftKey = () => { try { return "salon:draft:" + (st.head.person ? "person:" + st.head.person : "style:" + styleName()); } catch (e) { return null; } };
+let DRAFT_TIMER = null;
+function keepDraft() { clearTimeout(DRAFT_TIMER); DRAFT_TIMER = setTimeout(() => { const k = draftKey(); if (!k) return; try { localStorage.setItem(k, JSON.stringify({ when: Date.now(), st })); } catch (e) { } }, 1000); }
+function dropDraft() { clearTimeout(DRAFT_TIMER); const k = draftKey(); if (!k) return; try { localStorage.removeItem(k); } catch (e) { } }
+function offerDraft() {
+  const k = draftKey(); if (!k) return false; let d = null; try { d = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { }
+  if (!d || !d.st || !d.st.locks || JSON.stringify(d.st.locks) === JSON.stringify(st.locks)) return false;
+  const ago = Math.max(0, Math.round((Date.now() - d.when) / 60000));
+  status(`a draft with unsaved edits from ${new Date(d.when).toLocaleTimeString()} (${ago} min ago): `, "");
+  $("#status").append(el("button", { textContent: "bring it back", onclick: async () => { const disk = snapshot(); await applyHair(d.st, st.head.person); UNDO.length = 0; UNDO.push(disk); UNSAVED = true; status("the draft is back (Undo: the hair as saved)", "ok"); } }), " ",
+                      el("button", { textContent: "forget it", onclick: () => { dropDraft(); status("the draft is forgotten", ""); } }));
+  return true;
+}
+// ---- new locks like the last one ------------------------------------------------------------------------------------------
+// a new lock takes the last lock's settings (placed, or changed in Selected): its width (a strand), taper, drawn as,
+// strands, thickness, physics, colour, a bundle's tip radius and height; a tick in Locks, kept in this browser
+const LIKE_KEY = "salon:likeLast", LAST_FIELDS = ["width", "taper", "render", "density", "thickness", "thicknessTaper", "color", "r1", "height"];
+let LIKE_LAST = true, LAST = null; try { LIKE_LAST = localStorage.getItem(LIKE_KEY) !== "0"; } catch (e) { }
+function rememberLast(l) { LAST = Object.fromEntries(LAST_FIELDS.filter(k => l[k] !== undefined).map(k => [k, l[k]])); if (l.physics) LAST.physics = Object.assign({}, l.physics); }
+function likeLast(l) {
+  if (!LIKE_LAST || !LAST || !l) return l;
+  for (const k of LAST_FIELDS) { if (LAST[k] === undefined || (k === "width" && l.type !== "strand") || ((k === "r1" || k === "height") && l.type !== "bundle")) continue; l[k] = LAST[k]; }
+  if (LAST.physics) l.physics = Object.assign({}, LAST.physics);
+  return l;
+}
+function setLikeLast(v) { LIKE_LAST = !!v; try { localStorage.setItem(LIKE_KEY, v ? "1" : "0"); } catch (e) { } }
 
 // ---- the locks --------------------------------------------------------------------------------------------------------
 const lockById = id => st.locks.find(l => l.id === id) || null;
@@ -972,40 +1168,89 @@ function changedMany(ids) {                                          // several 
 function addLock(l) {
   remember();
   if (SELECTED) DIRTY.add(SELECTED);
-  l.group = ACTIVE_GROUP; st.locks.push(l);
+  l.group = ACTIVE_GROUP; st.locks.push(l); rememberLast(l);
   if (st.mirror.on) { const m = SL.mirrored(l, st.mirror.seam, COL); m.group = ACTIVE_GROUP; st.locks.push(m); }
-  SELECTED = l.id; locksPanel(); selPanel(); draw();
+  SELECTED = l.id; INHAND = l.id; locksPanel(); selPanel(); hint(); draw();
   return l;
 }
 function deleteLock(id) {
   remember();
   st.locks = st.locks.filter(l => l.id !== id && l.mirror_of !== id);
   for (const l of st.locks) if (l.mirror_of && !lockById(l.mirror_of)) l.mirror_of = null;
-  if (SELECTED === id) SELECTED = null; locksPanel(); selPanel(); draw();
+  if (SELECTED === id) SELECTED = null; if (INHAND === id) INHAND = null; locksPanel(); selPanel(); hint(); draw();
 }
 function original(l) { return l.mirror_of ? lockById(l.mirror_of) || l : l; }
 
 // ---- the tools --------------------------------------------------------------------------------------------------------
 const TOOLS = [["select", "Select (V)", "v"], ["strand", "Strand (S)", "s"], ["sheet", "Sheet (L)", "l"], ["bundle", "Bundle (B)", "b"], ["bline", "Bundle line (D)", "d"], ["fit", "Fit ref (F)", "f"]];
 const HINTS = {
-  select: "Click a lock to select it; drag a handle to shape it (Alt-drag: towards you or away). The handles in the ring move with it, less the farther they are: the wheel while dragging grows (down) or shrinks (up) the ring, O turns it off. Drag the empty view to turn the head; the wheel zooms.",
-  strand: "Click a root on the blue scalp, then click where the strand ends. The wheel bows it out (sag) while you place it.",
-  sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends. The wheel spreads or gathers the end.",
-  bundle: "Click a root on the blue scalp, then click the tip. The wheel sets the root's width while you place it.",
-  bline: "Drag a line along the blue scalp: it's the bundle's width (its diameter). Let go, then click the tip. The wheel makes it an oval (its height) while you place it.",
+  select: "Click a lock to select it (again on the same spot: the next one under it; Ctrl-click or Shift-drag a box: several); drag a handle to shape it (Alt-drag: towards you or away), its green root to slide it, its arrowhead for its length and direction, or its body to swing it about its root (Shift: slide; or R and G with the mouse alone). The ring: what the pull takes (Pull: its scope; the wheel while dragging: the reach; O: off). Drag the empty view to turn the head; the wheel zooms, Home steps the zoom.",
+  strand: "Click a root on the blue scalp, then click where the strand ends.",
+  sheet: "Drag a root line along the blue scalp, let go, then click where the sheet ends.",
+  bundle: "Click a root on the blue scalp, then click the tip.",
+  bline: "Drag a line along the blue scalp (the bundle's width), let go, then click the tip.",
   fit: "Drag the picture to move it over the head (the wheel scales it), or pull the cube's points to bend it: corners white, edges orange, faces' middles blue (Alt: towards you).",
 };
-const PLACE = { stage: 0, root: null, line: [], sag: 0, spread: 0.05, r0: 0.015, height: 1, last: null };
+const PLACE = { stage: 0, root: null, line: [], sag: 0, width: 0.006, spread: 0.05, r0: 0.015, height: 1, last: null };
+// the wheel while placing: the sag for every type; with Shift, the type's own number
+const placeWord = () => TOOL === "strand" ? "width" : TOOL === "sheet" ? "spread" : TOOL === "bline" ? "height" : "root width";
+const placeNumber = () => TOOL === "strand" ? `width ${(PLACE.width * 1000).toFixed(1)} mm` : TOOL === "sheet" ? `spread ${(PLACE.spread * 100).toFixed(1)} cm` : TOOL === "bline" ? `height ${Math.round(PLACE.height * 100)}% of the width` : `root width ${(PLACE.r0 * 200).toFixed(1)} cm`;
+// the hint under the view: what to do now, by the tool, the stage of placing and the lock in hand
+function hintText() {
+  if (TOOL === "fit") return HINTS.fit;
+  if (PLACE.stage) return `${TOOL === "sheet" || TOOL === "bline" ? "Root line drawn" : "Root placed"}: click where it ends (on the body, it rests there). Wheel: sag ${PLACE.sag.toFixed(2)}; Shift+wheel: ${placeNumber()}. Esc cancels.`;
+  const l = lockById(SELECTED);
+  if (l && INHAND === l.id && !isLocked(l) && !BAKEVIEW) return "Placed. Drag the arrowhead to set its length and direction (Alt: towards or away from you; the wheel while dragging: sag). Enter or OK when happy, Delete removes it; or start the next lock.";
+  return HINTS[TOOL] + (TOOL !== "select" ? ` The wheel bows it (sag) while placing, Shift+wheel its ${placeWord()}.` : "") + (st.mirror.on && TOOL !== "select" ? "  Mirror is on: the other side follows." : "");
+}
+function hint(text = null) { $("#hint").textContent = text || hintText(); }
 function setTool(t) {
   if (BAKEVIEW && t !== "select") previewBake(false);
   TOOL = t; resetPlace();
   for (const b of document.querySelectorAll("#tools button")) b.classList.toggle("on", b.dataset.t === t);
-  $("#hint").textContent = HINTS[t] + (st.mirror.on && t !== "select" && t !== "fit" ? "  Mirror is on: the other side follows." : "");
-  tintScalp(); draw();
+  hint(); tintScalp(); draw();
 }
 function resetPlace() { PLACE.stage = 0; PLACE.root = null; PLACE.line = []; PLACE.last = null; PLACE.sag = 0;   // every new lock starts flat on the head (the wheel bows it while placing)
-  showPreview(null); showRootLine(null); }
+  showPreview(null); showRootLine(null); showDot(null); hint(); }
 for (const [t, label] of TOOLS) { const b = el("button", { textContent: label, onclick: () => setTool(t) }); b.dataset.t = t; $("#tools").append(b); }
+
+// the view's buttons, with Blender's keys: Front (1), ¾, the character's left side (3) and right (Shift+3), Back
+// (Shift+1), Top (7) and from below (Shift+7): the free orbit turned there (the distance, zoom and pan kept; with the
+// reference locked, the nearest frame). Ortho (5) draws without perspective, for lining up things at different depths.
+const VIEWS = [["front", "Front", "1"], ["three", "¾", ""], ["left", "Side L", "3"], ["right", "Side R", "Shift+3"], ["back", "Back", "Shift+1"], ["top", "Top", "7"]];
+const VIEWBAR = el("div", { id: "views" }); document.querySelector("header").insertBefore(VIEWBAR, $("#status"));   // in the header: nothing over the view steals a click
+function lookAt(name) {
+  const at = { front: [0, 0], three: [0.6, 0.12], left: [Math.PI / 2, 0], right: [-Math.PI / 2, 0], back: [Math.PI, 0], top: [orbit.yaw, 1.55], bottom: [orbit.yaw, -1.55] }[name]; if (!at) return;
+  orbit.yaw = at[0]; orbit.pitch = at[1]; draw();
+}
+function setOrtho(on) { orbit.ortho = !!on; VIEWBAR.querySelector("[data-v=ortho]")?.classList.toggle("on", orbit.ortho); draw(); }
+for (const [v, label, key] of VIEWS) { const b = el("button", { textContent: label, title: key ? `${label} (${key})` : label, onclick: () => lookAt(v) }); b.dataset.v = v; VIEWBAR.append(b); }
+{ const b = el("button", { textContent: "Ortho", title: "no perspective: what's at different depths lines up (5)", onclick: () => setOrtho(!orbit.ortho) }); b.dataset.v = "ortho"; VIEWBAR.append(b); }
+// Split: two panes side by side, an orbit each (the right one a side view to start); the pane the pointer touches is the
+// one the buttons, keys and wheel move and every tool works in; the line between them dragged, a double-click evens them
+const SPLITBAR = el("div", { id: "splitBar", title: "drag: the panes' widths; double-click: even them" }), PANEMARK = el("div", { id: "paneMark" }); view.append(SPLITBAR, PANEMARK);
+function markPane() { PANEMARK.style.display = SPLIT.on ? "block" : "none"; PANEMARK.style.left = `${PANE.x}px`; PANEMARK.style.width = `${PANE.w}px`; VIEWBAR.querySelector("[data-v=ortho]")?.classList.toggle("on", !!orbit.ortho); }
+function layoutSplit() { SPLITBAR.style.display = SPLIT.on ? "block" : "none"; SPLITBAR.style.left = `${Math.round(VWALL * SPLIT.at)}px`; markPane(); }
+function setSplit(on) {
+  SPLIT.on = !!on; VIEWBAR.querySelector("[data-v=split]")?.classList.toggle("on", SPLIT.on);
+  if (SPLIT.on) { const [a, b] = SPLIT.orbits; b.dist = a.dist; b.zoom = a.zoom; }   // the side pane at the working view's distance
+  usePane(0); layoutSplit(); draw();
+}
+function setSplitAt(f) { SPLIT.at = Math.max(0.15, Math.min(0.85, f)); usePane(SPLIT.active); layoutSplit(); draw(); }
+SPLITBAR.addEventListener("pointerdown", e => { SPLITBAR.setPointerCapture(e.pointerId); SPLITBAR.classList.add("drag"); e.preventDefault(); });
+SPLITBAR.addEventListener("pointermove", e => { if (!SPLITBAR.classList.contains("drag")) return; const r = renderer.domElement.getBoundingClientRect(); setSplitAt((e.clientX - r.left) / r.width); });
+SPLITBAR.addEventListener("pointerup", () => SPLITBAR.classList.remove("drag"));
+SPLITBAR.addEventListener("dblclick", () => setSplitAt(0.5));
+{ const b = el("button", { textContent: "Split", title: "two panes side by side, each turned on its own (a side view beside the front): the pane you touch is the one the buttons, keys and wheel move and every tool works in; drag the line between them, double-click it to even them; Split again for one view", onclick: () => setSplit(!SPLIT.on) }); b.dataset.v = "split"; VIEWBAR.append(b); }
+// three zoom stops (Home, or the Zoom button): the head, the bust, the whole body, for hair of any length
+const STOPS = [["head", 0.85], ["bust", 1.4], ["body", 2.4]];
+let STOP = 0;
+function zoomStop(i = null) {
+  STOP = i == null ? (STOP + 1) % STOPS.length : i; const d = STOPS[STOP][1];
+  orbit.dist = d; orbit.zoom = REF && st.reference.on && st.reference.lock ? 0.85 / d : 1; orbit.pan = [0, 0];
+  const b = VIEWBAR.querySelector("[data-v=zoom]"); if (b) b.textContent = `Zoom: ${STOPS[STOP][0]}`; draw();
+}
+{ const b = el("button", { textContent: "Zoom: head", title: "the head, the bust or the whole body in view (Home cycles them)", onclick: () => zoomStop() }); b.dataset.v = "zoom"; VIEWBAR.append(b); }
 
 function previewFrom(e) {
   if (!PLACE.stage) return null;
@@ -1019,22 +1264,35 @@ function previewFrom(e) {
   if (onBody && Math.abs(SL.dot(SL.sub(onBody, anchor), fwd)) > 0.1) onBody = null;
   const end = onBody ? COL.push(onBody, 0.008)[0] : onPlane(e.clientX, e.clientY, anchor); if (!end) return null;
   PLACE.last = [e.clientX, e.clientY];
-  if (TOOL === "strand") return SL.makeStrand(PLACE.root, end, COL, { sag: PLACE.sag });
-  if (TOOL === "bundle") return SL.makeBundle(PLACE.root, end, COL, { sag: PLACE.sag, r0: PLACE.r0 });
-  if (TOOL === "sheet") return SL.makeSheet(PLACE.line, end, PLACE.spread, COL, { sag: PLACE.sag * 0.7 });
-  if (TOOL === "bline") return SL.makeBundleLine(PLACE.line, end, COL, { sag: PLACE.sag, height: PLACE.height });
-  return null;
+  const l = TOOL === "strand" ? SL.makeStrand(PLACE.root, end, COL, { sag: PLACE.sag, width: PLACE.width })
+    : TOOL === "bundle" ? SL.makeBundle(PLACE.root, end, COL, { sag: PLACE.sag, r0: PLACE.r0 })
+    : TOOL === "sheet" ? SL.makeSheet(PLACE.line, end, PLACE.spread, COL, { sag: PLACE.sag * 0.7 })
+    : TOOL === "bline" ? SL.makeBundleLine(PLACE.line, end, COL, { sag: PLACE.sag, height: PLACE.height }) : null;
+  if (l) { l.sag = TOOL === "sheet" ? PLACE.sag * 0.7 : PLACE.sag; likeLast(l); }   // the bow it was placed with (the Sag slider counts from it); the last lock's settings
+  return l;
 }
 function scalpAt(e) { const p = headAt(e.clientX, e.clientY); return p && (e.shiftKey || SL.onScalp(p, COL.C)) ? COL.surface(p) : null; }
 
 let DRAG = null;
 // the pull (Blender's proportional editing, salonlib.js): on (O), the falloff, the reach (the wheel while dragging; Page
 // Up and Down), just the lock taken or all the hair shown
-const PULL = { on: true, falloff: "smooth", size: 0.08, only: false };   // 8 cm: a long strand's handles are 6 cm apart
-const shownIds = () => { const vis = Object.fromEntries(st.groups.map(g => [g.id, g.visible])); return st.locks.filter(l => l.visible && vis[l.group] !== false).map(l => l.id); };
-const pullOpts = () => ({ size: PULL.on ? PULL.size : 0, falloff: PULL.falloff, only: PULL.only, ids: shownIds(), seam: st.mirror.seam, col: COL });
+const PULL = { on: true, falloff: "smooth", size: 0.08, scope: "twin" };   // 8 cm: a long strand's handles are 6 cm apart; scope: what a pull may move
+const groupOf = id => st.groups.find(g => g.id === id) || null;
+const isLocked = l => !!(l.locked || groupOf(l.group)?.locked);        // a locked lock (or one in a locked group) never moves under a pull, Gravity or the cover
+// the locks a pull from `grab` may move: shown, unlocked, and within the scope (Pull): the lock taken, it and its twin,
+// its group, or all the hair shown. The ring lights the same, so you see what a pull takes before pulling.
+function pullIds(grab) {
+  const g = lockById(grab), shown = isShown(), o = g && g.mirror_of ? g.mirror_of : grab;
+  const twin = l => l.id === grab || l.id === o || l.mirror_of === o;
+  const picked = new Set(); if (PICKED.size) for (const id of [SELECTED, ...PICKED]) { const p = lockById(id); if (p) picked.add(original(p).id); }   // several picked: just them (and their twins)
+  const inScope = l => picked.size ? picked.has(l.id) || picked.has(l.mirror_of) || twin(l) : PULL.scope === "all" || (PULL.scope === "group" ? !!g && l.group === g.group : PULL.scope === "twin" ? twin(l) : l.id === grab);
+  return st.locks.filter(l => shown(l) && !isLocked(l) && inScope(l)).map(l => l.id);
+}
+const pullOpts = grab => ({ size: PULL.on ? PULL.size : 0, falloff: PULL.falloff, ids: pullIds(grab), seam: st.mirror.seam, col: COL });
+const SCOPES = [["lock", "This lock"], ["twin", "This lock and its twin"], ["group", "This group"], ["all", "All the hair shown"]];
+const scopeName = () => (SCOPES.find(s => s[0] === PULL.scope) || SCOPES[1])[1].toLowerCase();
 function pullNow() {                                                   // the drag's pull again, from where the handles started
-  const moved = SL.pull(st.locks, DRAG.start, { id: DRAG.lock, path: DRAG.path }, DRAG.to, pullOpts());
+  const moved = SL.pull(st.locks, DRAG.start, { id: DRAG.lock, path: DRAG.path }, DRAG.to, pullOpts(DRAG.lock));
   changedMany([...new Set([...moved, ...DRAG.moved])]); DRAG.moved = moved;
 }
 function reach(up, fine) {
@@ -1061,7 +1319,8 @@ addEventListener("keydown", e => {
 for (const ev of ["input", "change"]) document.querySelector("aside")?.addEventListener(ev, e => { if (e.target.id !== "person") UNSAVED = true; });
 if (!Q.get("embed")) addEventListener("beforeunload", e => { if (UNSAVED) { e.preventDefault(); e.returnValue = ""; } });
 cv.addEventListener("pointerdown", e => {
-  cv.setPointerCapture(e.pointerId);
+  cv.setPointerCapture(e.pointerId); paneAt(e);
+  if (MODAL) { endModal(true); return; }                               // G or R: a click keeps it
   const orbitOnly = e.button !== 0 || !!BAKEVIEW;                       // previewing the bake: the view only turns
   if (!orbitOnly && TOOL === "fit") {
     const h = cubeHandleAt(e);
@@ -1070,10 +1329,18 @@ cv.addEventListener("pointerdown", e => {
   }
   if (!orbitOnly && TOOL === "select") {
     const h = handleAt(e);
+    if (h && isLocked(lockById(SELECTED))) { status("locked: unlock it (Selected, or the padlock in Locks) to shape it", "bad"); return; }
+    if (h && h.root) { const l = lockById(SELECTED); remember(); DRAG = { kind: "root", lock: l.id, path: h.path, from: SL.vectorStart(original(l), COL) }; drawHandles(); draw(); return; }   // the root slides along the scalp
     if (h) { remember(); DRAG = { kind: "handle", path: h.path, lock: SELECTED, x: e.clientX, y: e.clientY, alt: e.altKey, start: SL.pullStart(st.locks), moved: [], to: null }; drawHandles(); draw(); return; }
+    if (arrowAt(e)) { startArrowDrag(e); return; }
+    const l0 = lockById(SELECTED), grab = l0 && !isLocked(l0) && !e.ctrlKey && !e.metaKey ? lockUnder(e, l0) : null;
+    if (grab) { remember(); DRAG = { kind: "swing", lock: l0.id, from: SL.vectorStart(original(l0), COL), grab, to: null, x: e.clientX, y: e.clientY, moved: false, slide: e.shiftKey }; return; }   // the lock's body: swing it about its root (Shift: slide it along the scalp); a click, no drag: pick again
     const l = lockAt(e);
+    if (l && (e.ctrlKey || e.metaKey)) { togglePicked(l.id); return; }
     if (l) { select(l.id); return; }
+    if (e.shiftKey) { DRAG = { kind: "box", x: e.clientX, y: e.clientY }; sizeBox(e); return; }   // a box on empty space picks several
   }
+  if (!orbitOnly && TOOL !== "fit" && TOOL !== "select" && arrowAt(e)) { startArrowDrag(e); return; }   // the lock in hand re-aimed from a placing tool too
   if (!orbitOnly && (TOOL === "strand" || TOOL === "bundle")) {
     if (PLACE.stage === 0) { const p = scalpAt(e); if (p) { PLACE.root = p; PLACE.stage = 1; showPreview(previewFrom(e)); draw(); return; } }
     else { const l = previewFrom(e); if (l) { resetPlace(); addLock(l); } return; }
@@ -1084,18 +1351,37 @@ cv.addEventListener("pointerdown", e => {
   }
   DRAG = { kind: "orbit", x: e.clientX, y: e.clientY };
 });
+let LASTPTR = null;                                                  // the pointer's last place over the view (G and R start from it)
 cv.addEventListener("pointermove", e => {
+  LASTPTR = [e.clientX, e.clientY];
+  if (MODAL) { modalMove(e); return; }
   if (!DRAG) {
-    if (PLACE.stage) { showPreview(previewFrom(e)); draw(); }
-    else if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } }
-    else if (TOOL === "select" && SELECTED) { const h = handleAt(e); const p = h ? h.path : null; if ((p && p.join()) !== (HOVER && HOVER.join())) { HOVER = p; drawHandles(); draw(); } }
+    paneAt(e);
+    if (PLACE.stage) { showPreview(previewFrom(e)); draw(); return; }
+    if (TOOL === "fit") { const h = cubeHandleAt(e); if ((h && h.join()) !== (HOVER_CUBE && HOVER_CUBE.join())) { HOVER_CUBE = h; draw(); } return; }
+    if (TOOL !== "select" && !arrowAt(e)) {                            // a placing tool: the dot where the root would go
+      const p = headAt(e.clientX, e.clientY), ok = !!p && (e.shiftKey || SL.onScalp(p, COL.C));
+      showDot(p ? (ok ? COL.surface(p) : p) : null, ok); draw();
+    } else showDot(null);
+    if (SELECTED) {
+      const h = TOOL === "select" ? handleAt(e) : null, p = h ? h.path : null, ar = !h && arrowAt(e);
+      if ((p && p.join()) !== (HOVER && HOVER.join()) || ar !== HOVER_ARROW) { HOVER = p; HOVER_ARROW = ar; drawHandles(); draw(); }
+    }
     return;
   }
+  dragMove(e); edgePan(e);
+});
+function dragMove(e) {                                               // a drag in progress, at e (the edge pan feeds it the cursor's last place again)
   if (DRAG.kind === "orbit") {
-    orbit.yaw -= (e.clientX - DRAG.x) * 0.008; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - DRAG.y) * 0.006));
+    orbit.yaw -= (e.clientX - DRAG.x) * 0.008; orbit.pitch = Math.max(-1.55, Math.min(1.55, orbit.pitch + (e.clientY - DRAG.y) * 0.006));   // to 89°: the crown from straight above
     DRAG.x = e.clientX; DRAG.y = e.clientY; draw();
   } else if (DRAG.kind === "rootline") {
-    const p = scalpAt(e); if (p && SL.len(SL.sub(p, PLACE.line[PLACE.line.length - 1])) > 0.008) { PLACE.line.push(p); showRootLine(PLACE.line); draw(); }
+    const p = scalpAt(e); if (p && SL.len(SL.sub(p, PLACE.line[PLACE.line.length - 1])) > 0.008) { PLACE.line.push(p); showRootLine(PLACE.line); hint(`root line ${(SL.length(PLACE.line) * 100).toFixed(1)} cm (let go, then click where it ends)`); draw(); }
+    const q = headAt(e.clientX, e.clientY); showDot(q ? (p ? p : q) : null, !!p);   // the dot says where the line would go on, or that it's off the scalp
+  } else if (DRAG.kind === "root") {                                   // the root slides along the scalp, the lock with it
+    const l = lockById(DRAG.lock); if (!l) return;
+    const p = scalpAt(e); if (!p) return;
+    const o = original(l); SL.slideRoot(o, DRAG.path, l.mirror_of ? COL.surface(SL.reflectPoint(p, st.mirror.seam)) : p, COL, DRAG.from); changed(o); draw();
   } else if (DRAG.kind === "handle") {
     const l = lockById(DRAG.lock); if (!l) return;
     const h = SL.handles(l).find(x => x.path.join() === DRAG.path.join()); if (!h) return;
@@ -1106,6 +1392,23 @@ cv.addEventListener("pointermove", e => {
     } else to = onPlane(e.clientX, e.clientY, h.p);
     if (!to) return;
     DRAG.to = to; pullNow(); draw();                                   // the handle and those in reach (a twin's: its original's)
+  } else if (DRAG.kind === "arrow") {                                  // the lock's end to the cursor: turned and scaled about its root
+    const l = lockById(DRAG.lock); if (!l) return;
+    const o = original(l), cur = DRAG.to || DRAG.tip;
+    if (e.altKey) { const n = new THREE.Vector3(); camera.getWorldDirection(n); const nl = SL.norm(SR.MV(SR.T(HF.B), n.toArray())); DRAG.to = SL.add(cur, SL.mul(nl, (e.clientY - DRAG.y) * 0.0015)); }
+    else { const q = onPlane(e.clientX, e.clientY, cur); if (!q) return; DRAG.to = q; }
+    DRAG.y = e.clientY;
+    SL.setVector(o, l.mirror_of ? SL.reflectPoint(DRAG.to, st.mirror.seam) : DRAG.to, COL, DRAG.from); changed(o);
+    hint(`${(SL.lockLength(o) * 100).toFixed(1)} cm`); draw();
+  } else if (DRAG.kind === "swing") {                                  // the lock's body dragged: swung about its root, or slid along the scalp (Shift)
+    if (!DRAG.moved && Math.hypot(e.clientX - DRAG.x, e.clientY - DRAG.y) < 3) return;
+    DRAG.moved = true; const l = lockById(DRAG.lock); if (!l) return;
+    const o = original(l), q = onPlane(e.clientX, e.clientY, DRAG.to || DRAG.grab); if (!q) return; DRAG.to = q;
+    const R = p => l.mirror_of ? SL.reflectPoint(p, st.mirror.seam) : p;
+    if (DRAG.slide) { const fr = o.type === "sheet" ? DRAG.from.root[DRAG.from.root.length >> 1] : DRAG.from.curves[0][0]; SL.slideRoot(o, SL.rootPathOf(o), COL.surface(SL.add(fr, SL.sub(R(q), R(DRAG.grab)))), COL, DRAG.from); }
+    else SL.swingLock(o, R(DRAG.grab), R(q), COL, DRAG.from);
+    changed(o); hint(DRAG.slide ? "sliding it along the scalp" : "swinging it about its root (Shift: slide it)"); draw();
+  } else if (DRAG.kind === "box") { sizeBox(e);
   } else if (DRAG.kind === "cube") {
     const cube = st.reference.fit.cube, m = FFD.centre(cube), sv = cube.stretch || [1, 1, 1];
     const p = cube.pts[FFD.idx(cube, ...DRAG.ijk)].map((x, a) => m[a] + (x - m[a]) * sv[a]);
@@ -1121,8 +1424,11 @@ cv.addEventListener("pointermove", e => {
     orbit.pan[0] += dx; orbit.pan[1] += dy;                          // the picture follows the cursor, the head stays
     recam(); fitPanelSync(); draw();
   }
-});
+}
 cv.addEventListener("pointerup", e => {
+  stopEdge();
+  if (DRAG && DRAG.kind === "swing" && !DRAG.moved) { UNDO.pop(); const l = lockAt(e); DRAG = null; if (l) select(l.id); return; }   // a click on the lock, no drag: the next one under the cursor
+  if (DRAG && DRAG.kind === "box") { boxPick(e); BOX.style.display = "none"; DRAG = null; return; }
   if (DRAG && DRAG.kind === "rootline") {
     if (PLACE.line.length === 1) {                                   // a click, no drag: a short line across the view
       const p = PLACE.line[0], n = new THREE.Vector3(); camera.getWorldDirection(n);
@@ -1131,21 +1437,26 @@ cv.addEventListener("pointerup", e => {
     }
     PLACE.stage = 1; showRootLine(PLACE.line); showPreview(previewFrom(e)); draw();
   }
-  const wasHandle = DRAG && DRAG.kind === "handle";
+  const wasHandle = DRAG && ["handle", "arrow", "root", "swing"].includes(DRAG.kind);
   if (DRAG && DRAG.kind === "fit") saveFitHint();
   DRAG = null;
-  if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); draw(); }
+  if (wasHandle) { if (lockById(SELECTED)) selPanel(); drawHandles(); hint(); draw(); }
 });
 cv.addEventListener("wheel", e => {
-  e.preventDefault();
+  e.preventDefault(); paneAt(e);
   const s = Math.sign(e.deltaY);
   if (DRAG && DRAG.kind === "handle") { if (PULL.on && s) reach(s > 0, e.shiftKey); return; }   // Blender's: down grows the reach, up shrinks it
+  if (DRAG && DRAG.kind === "arrow" && s) {                            // the bow of the lock in hand, while its arrow is dragged
+    const l = lockById(DRAG.lock), o = original(l), sag = Math.max(-0.6, Math.min(1.2, (o.sag || 0) - s * 0.05));
+    SL.setSag(o, sag, COL); DRAG.from = SL.vectorStart(o, COL); changed(o); hint(`sag ${sag.toFixed(2)}, ${(SL.lockLength(o) * 100).toFixed(1)} cm`); draw(); return;
+  }
   if (PLACE.stage) {
-    if (TOOL === "strand") PLACE.sag = Math.max(-0.6, Math.min(1.2, PLACE.sag - s * 0.05));
-    if (TOOL === "sheet") PLACE.spread = Math.max(0.005, Math.min(0.3, PLACE.spread * (s < 0 ? 1.12 : 1 / 1.12)));
-    if (TOOL === "bundle") PLACE.r0 = Math.max(0.003, Math.min(0.06, PLACE.r0 * (s < 0 ? 1.12 : 1 / 1.12)));
-    if (TOOL === "bline") PLACE.height = Math.max(0.1, Math.min(2, PLACE.height * (s < 0 ? 1.1 : 1 / 1.1)));
-    $("#hint").textContent = TOOL === "strand" ? `sag ${PLACE.sag.toFixed(2)}` : TOOL === "sheet" ? `spread ${(PLACE.spread * 100).toFixed(1)} cm` : TOOL === "bline" ? `height ${Math.round(PLACE.height * 100)}% of the width` : `root width ${(PLACE.r0 * 200).toFixed(1)} cm`;
+    if (!e.shiftKey) PLACE.sag = Math.max(-0.6, Math.min(1.2, PLACE.sag - s * 0.05));   // every type bows
+    else if (TOOL === "strand") PLACE.width = Math.max(0.001, Math.min(0.03, PLACE.width * (s < 0 ? 1.12 : 1 / 1.12)));
+    else if (TOOL === "sheet") PLACE.spread = Math.max(0.005, Math.min(0.3, PLACE.spread * (s < 0 ? 1.12 : 1 / 1.12)));
+    else if (TOOL === "bundle") PLACE.r0 = Math.max(0.003, Math.min(0.06, PLACE.r0 * (s < 0 ? 1.12 : 1 / 1.12)));
+    else if (TOOL === "bline") PLACE.height = Math.max(0.1, Math.min(2, PLACE.height * (s < 0 ? 1.1 : 1 / 1.1)));
+    hint();
     if (PLACE.last) showPreview(previewFrom({ clientX: PLACE.last[0], clientY: PLACE.last[1] }));
     draw(); return;
   }
@@ -1158,11 +1469,20 @@ cv.addEventListener("wheel", e => {
 addEventListener("keydown", e => {
   if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName) && !((e.ctrlKey || e.metaKey) && e.target.type !== "text")) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
-  if (e.key === "Escape") { resetPlace(); draw(); return; }
+  if (MODAL) { if (e.key === "Enter") { e.preventDefault(); endModal(true); } else if (e.key === "Escape") endModal(false); return; }
+  if (e.key === "Enter" && !PLACE.stage && SELECTED && INHAND === SELECTED) { e.preventDefault(); finishLock(); return; }   // OK: done with the lock in hand
+  if (e.key === "Escape") { if (PLACE.stage) resetPlace(); else if (PICKED.size) { PICKED.clear(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); } else if (INHAND) finishLock(); draw(); return; }
+  if (e.key === "Home") { e.preventDefault(); zoomStop(); return; }
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && TOOL === "select" && SELECTED && (e.key === "g" || e.key === "r")) { startModal(e.key === "g" ? "slide" : "swing"); return; }
   if (e.key === "PageUp" || e.key === "PageDown") { e.preventDefault(); if (PULL.on) reach(e.key === "PageUp", e.shiftKey); return; }
   if (e.key.toLowerCase() === "o" && !e.ctrlKey) { PULL.on = !PULL.on; pullPanel(); drawHandles(); draw(); return; }
-  if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteLock(original(lockById(SELECTED)).id); return; }
+  if ((e.key === "Delete" || e.key === "Backspace") && SELECTED) { deleteMany(pickedOriginals().map(o => o.id)); return; }
   const t = TOOLS.find(x => x[2] === e.key.toLowerCase()); if (t && !e.ctrlKey) setTool(t[0]);
+  if (!e.ctrlKey && !e.metaKey && !e.altKey) {                        // the views (Blender's keys): 1 front, 3 the left side, 7 the top; Shift: the opposite; 5 ortho
+    const v = { Digit1: e.shiftKey ? "back" : "front", Digit3: e.shiftKey ? "right" : "left", Digit7: e.shiftKey ? "bottom" : "top" }[e.code];
+    if (v) { e.preventDefault(); lookAt(v); return; }
+    if (e.code === "Digit5") { e.preventDefault(); setOrtho(!orbit.ortho); return; }
+  }
   if (e.key === "ArrowRight" && SNAP) stepFrame(1); if (e.key === "ArrowLeft" && SNAP) stepFrame(-1);
 });
 
@@ -1370,34 +1690,59 @@ function pullPanel() {
   fs.value = PULL.falloff; fs.onchange = () => { PULL.falloff = fs.value; drawHandles(); draw(); };
   box.append(el("div", { className: "row" }, el("span", { textContent: "Falloff", title: "how the pull fades with distance" }), fs, el("span")));
   slider(box, "Reach", 0.2, 50, 0.1, +(PULL.size * 100).toFixed(1), v => { PULL.size = v / 100; drawHandles(); draw(); }, "cm: the ring's radius (the wheel while dragging: down grows it, up shrinks it; Shift finer; Page Up and Down)");
-  const o = el("div"); tick(o, "This lock only", PULL.only, v => { PULL.only = v; drawHandles(); draw(); }, "only the handles of the lock you pull, not the hair round it"); box.append(o);
+  const sc = el("select"); for (const [k, label] of SCOPES) sc.append(el("option", { value: k, textContent: label }));
+  sc.value = PULL.scope; sc.onchange = () => { PULL.scope = sc.value; drawHandles(); draw(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Scope", title: "what a pull may move, however wide the reach: the ring lights only these" }), sc, el("span")));
+  box.append(el("p", { className: "note", textContent: "The reach never takes more than the scope: the lock you pull, it and its mirror twin, its group, or all the hair shown. Locked locks and groups (the padlock in Locks, Lock in Selected) never move under a pull, Gravity or the cover." }));
 }
+// the groups and their locks: a row a group (fold, show or hide (Alt-click: only this group), in the base, the name
+// (click: new locks go here; double-click: rename), how many, the padlock, delete), a row a lock (show, name, its kind
+// and length, the padlock); the selected lock's row kept in view
 function locksPanel() {
   if (COVER.length == null) coverPanel();                             // the cover's Length follows the top hair until it's set
   const box = $("#locks"); box.innerHTML = "";
+  const soloed = st.groups.length > 1 && st.groups.filter(g => g.visible).length === 1;
   for (const g of st.groups) {
-    const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group", onclick: () => { g.visible = !g.visible; locksPanel(); draw(); } });
+    const fold = el("span", { className: "eye", textContent: g.folded ? "▸" : "▾", title: "fold or unfold the group's locks", onclick: () => { g.folded = !g.folded; locksPanel(); } });
+    const eye = el("span", { className: "eye", textContent: g.visible ? "◉" : "○", title: "show or hide the group (Alt-click: only this group, again: all)", onclick: ev => { if (ev.altKey) { const only = !(soloed && g.visible); for (const x of st.groups) x.visible = only ? x === g : true; } else g.visible = !g.visible; locksPanel(); draw(); } });
     const base = el("span", { className: "eye", textContent: g.base ? "▣" : "□", title: "in the base (the mass the padding fills out, baked first)", onclick: () => { remember(); g.base = !g.base; PAD_DIRTY = true; BASE_DIRTY = true; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); volumePanel(); draw(); } });
-    const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, eye, base, el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } }));
-    box.append(row);
+    const name = el("b", { textContent: g.name, style: "cursor:pointer", title: "new locks go here (double-click: rename)", onclick: () => { ACTIVE_GROUP = g.id; locksPanel(); } });
+    name.ondblclick = () => { const inp = el("input", { type: "text", value: g.name, size: 10 }); name.replaceWith(inp); inp.focus(); inp.select();
+      inp.onblur = () => { const v = inp.value.trim(); if (v && v !== g.name) { remember(); g.name = v; } locksPanel(); selPanel(); volumePanel(); };
+      inp.onkeydown = ev => { if (ev.key === "Enter") inp.blur(); if (ev.key === "Escape") { inp.value = g.name; inp.blur(); } ev.stopPropagation(); }; };
+    const n = st.locks.filter(l => l.group === g.id).length, count = el("span", { className: "note", textContent: `${n}` });
+    const padlock = el("span", { className: "eye pad" + (g.locked ? " on" : ""), textContent: g.locked ? "🔒" : "🔓", title: g.locked ? "locked: nothing in it moves under a pull, Gravity or the cover (click to unlock)" : "click to lock the group: nothing in it moves under a pull, Gravity or the cover", onclick: () => { remember(); g.locked = !g.locked; locksPanel(); drawHandles(); draw(); } });
+    const del = st.groups.length > 1 ? el("span", { className: "eye", textContent: "✕", title: "delete the group: its locks go to the group above (or below)", onclick: () => { remember(); const to = st.groups.find(x => x.id !== g.id); for (const l of st.locks) if (l.group === g.id) l.group = to.id; st.groups = st.groups.filter(x => x !== g); if (ACTIVE_GROUP === g.id) ACTIVE_GROUP = to.id; for (const l of st.locks) DIRTY.add(l.id); PAD_DIRTY = true; BASE_DIRTY = true; locksPanel(); selPanel(); volumePanel(); draw(); } }) : el("span");
+    const row = el("div", { className: "grp" + (g.id === ACTIVE_GROUP ? " active" : "") }, fold, eye, base, name, count, padlock, del); row.dataset.group = g.id; box.append(row);
+    if (g.folded) continue;
     st.locks.filter(l => l.group === g.id).forEach(l => {
       const e2 = el("span", { className: "eye", textContent: l.visible ? "◉" : "○", onclick: ev => { ev.stopPropagation(); l.visible = !l.visible; locksPanel(); draw(); } });
-      box.append(el("div", { className: "lock" + (l.id === SELECTED ? " sel" : ""), onclick: () => select(l.id) }, e2,
-        el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: l.type + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") })));
+      const own = !!original(l).locked, pad = el("span", { className: "eye pad" + (own ? " on" : g.locked ? " by" : ""), textContent: own || g.locked ? "🔒" : "🔓", title: g.locked && !own ? "locked with its group" : own ? "locked: it never moves under a pull, Gravity or the cover (click to unlock)" : "click to lock it: it never moves under a pull, Gravity or the cover",
+        onclick: ev => { ev.stopPropagation(); const o = original(l); remember(); o.locked = !o.locked; changed(o); locksPanel(); selPanel(); drawHandles(); draw(); } });
+      box.append(el("div", { className: "lock" + (l.id === SELECTED ? " sel" : "") + (PICKED.has(l.id) ? " picked" : "") + (isLocked(l) ? " locked" : ""), title: "click: select (Ctrl-click: pick several)", onclick: ev => ev.ctrlKey || ev.metaKey ? togglePicked(l.id) : select(l.id) }, e2,
+        el("span", { className: l.mirror_of ? "twin" : "", textContent: `${l.name || l.type}` }), el("span", { className: "note", textContent: `${l.type} ${Math.round(SL.lockLength(l) * 100)} cm` + (l.render === "strands" ? " · strands" : "") + (l.physics && l.physics.on ? " · swings" : "") }), pad));
     });
   }
   const lt = el("div"); tick(lt, "Layer by height", !!st.layering, v => { remember(); st.layering = v; for (const l of st.locks) DIRTY.add(l.id); draw(); }, "hair rooted higher always lies over hair rooted lower, like real hair"); box.append(lt);
+  const ll = el("div"); tick(ll, "New locks like the last one", LIKE_LAST, setLikeLast, "a new lock takes the last lock's width, taper, drawn as, thickness, physics and colour"); box.append(ll);
   box.append(el("button", { textContent: "New group", onclick: () => { const id = "g" + (st.groups.length + 1) + Date.now().toString(36).slice(-3); st.groups.push({ id, name: `Group ${st.groups.length + 1}`, visible: true }); ACTIVE_GROUP = id; locksPanel(); } }));
+  const sel = box.querySelector(".lock.sel"); if (sel) sel.scrollIntoView({ block: "nearest" });
 }
-function select(id) { SELECTED = id; for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); draw(); }
+function select(id) { SELECTED = id; if (INHAND !== id) INHAND = null; PICKED.clear(); for (const l of st.locks) DIRTY.add(l.id); locksPanel(); selPanel(); hint(); draw(); }
 function selPanel() {
   const box = $("#selbox"); box.innerHTML = "";
   const l = lockById(SELECTED); stepHint("selected", l ? l.name || l.type : "the lock you picked");
   if (!l) { box.append(el("p", { className: "note", textContent: "Nothing selected." })); return; }
-  const o = original(l), edit = fn => v => { remember(); fn(v); changed(o); draw(); };
+  const o = original(l), edit = fn => v => { remember(); fn(v); changed(o); rememberLast(o); draw(); };
+  const all = pickedOriginals(), many = all.length > 1;              // several picked: the buttons below act on all of them
+  if (many) box.append(el("p", { className: "note", textContent: `${all.length} locks picked: Delete, Lock, Let it fall, Onto the scalp, Group, Physics and Mirror once act on all of them; the sliders on this one. Esc picks none.` }));
   const name = el("input", { type: "text", value: l.name || "", onchange: () => { l.name = name.value; locksPanel(); } });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Name" }), name, el("span")));
+  const gs = el("select"); for (const g of st.groups) gs.append(el("option", { value: g.id, textContent: g.name })); gs.value = l.group;
+  gs.onchange = () => { remember(); for (const t of all) { t.group = gs.value; for (const w of st.locks) if (w.mirror_of === t.id) w.group = gs.value; } for (const t of st.locks) DIRTY.add(t.id); PAD_DIRTY = true; BASE_DIRTY = true; locksPanel(); draw(); };
+  box.append(el("div", { className: "row" }, el("span", { textContent: "Group", title: "the group it's in (its twin goes with it)" }), gs, el("span")));
   if (l.mirror_of) box.append(el("p", { className: "note", textContent: "A mirror twin: it follows its original. Edits here change both." }));
+  if (isLocked(l)) box.append(el("p", { className: "note", textContent: o.locked ? "Locked: it never moves under a pull, Gravity or the cover. Unlock it to shape it." : "Locked with its group (the padlock in Locks)." }));
   const rs = el("select"); for (const v of ["cards", "strands"]) rs.append(el("option", { value: v, textContent: v === "cards" ? "cards (stylised)" : "strands (realism)" }));
   rs.value = o.render; rs.onchange = () => edit(v => { o.render = v; })(rs.value);
   box.append(el("div", { className: "row" }, el("span", { textContent: "Drawn as" }), rs, el("span")));
@@ -1406,12 +1751,16 @@ function selPanel() {
   if (o.type === "bundle") { slider(box, "Root radius", 0.002, 0.06, 0.001, o.r0, edit(v => { o.r0 = v; })); slider(box, "Tip radius", 0, 0.06, 0.001, o.r1, edit(v => { o.r1 = v; }));
     slider(box, "Height", 0.1, 2, 0.05, o.height ?? 1, edit(v => { o.height = v; }), "its other axis, as a share of its width: 1 round, less a flatter oval, more a taller one"); }
   slider(box, "Taper", 0, 1, 0.05, o.taper, edit(v => { o.taper = v; }), "how much thinner the tip is");
+  if (!o.cover) {                                                      // the lock's vector as numbers (the arrow in the view does the same by hand)
+    slider(box, "Length", 2, 100, 0.5, +(SL.lockLength(o) * 100).toFixed(1), edit(v => { SL.setLength(o, v / 100, COL); }), "cm along the lock: the root stays, it grows along its last direction (or drag its arrowhead in the view)");
+    slider(box, "Sag", -0.6, 1.2, 0.05, +(o.sag || 0).toFixed(2), edit(v => { SL.setSag(o, v, COL); }), "the bow away from the head (the wheel while placing, or while its arrow is dragged)");
+  }
   if (o.type !== "bundle") {                                          // a bundle's volume for strands and sheets
     slider(box, "Thickness", 0, 1, 0.05, o.thickness ?? 0, edit(v => { o.thickness = v; }), "flat (0) to round (1): a dome over the lock as high as half its width, like a bundle");
     slider(box, "Thickness taper", 0, 1, 0.05, o.thicknessTaper ?? 1, edit(v => { o.thicknessTaper = v; }), "how much the thickness thins towards the tip (1: to nothing)");
   }
   const ph = o.physics || (o.physics = Object.assign({}, SP.DEFAULTS));
-  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); ph.on = v; changed(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
+  const pt = el("div"); tick(pt, "Physics (it swings)", !!ph.on, v => { remember(); for (const t of all) { (t.physics || (t.physics = Object.assign({}, SP.DEFAULTS))).on = v; changed(t); } rememberLast(o); SIM_DIRTY = true; selPanel(); locksPanel(); draw(); }, "the lock swings with the head and settles back to its style; baked as its own skinned mesh"); box.append(pt);
   if (ph.on) {
     slider(box, "Floppy-stiff", 0, 1, 0.05, ph.stiffness, v => { ph.stiffness = v; changed(o); SIM_DIRTY = true; }, "how hard it's held to its style");
     slider(box, "Gravity", 0, 2, 0.1, ph.gravity, v => { ph.gravity = v; changed(o); SIM_DIRTY = true; }, "how far it hangs down when the head tilts");
@@ -1420,12 +1769,15 @@ function selPanel() {
   if (o.render === "strands") slider(box, "Strands", 1, 400, 1, o.density, edit(v => { o.density = v; }));
   const c = el("input", { type: "color", value: o.color || look().tip, title: "this lock's own colour (instead of the hair's look)", onchange: () => edit(v => { o.color = v; })(c.value) });
   box.append(el("div", { className: "row" }, el("span", { textContent: "Own colour" }), c, o.color ? el("button", { textContent: "x", title: "back to the hair's look", onclick: () => { edit(() => { o.color = null; })(); selPanel(); } }) : el("span")));
-  box.append(el("button", { textContent: "Onto the scalp", title: "its points near the head laid down on it (hair made before lies above the scalp)", onclick: () => { remember(); SL.hug(o, COL); changed(o); draw(); } }),
-             el("button", { textContent: "All onto the scalp", title: "every lock's points near the head laid down on it", onclick: () => { remember(); for (const l of st.locks) if (!l.mirror_of) { SL.hug(l, COL); changed(l); } draw(); } }));
-  box.append(el("button", { textContent: "Duplicate", onclick: () => { const d = structuredClone(o); d.id = SL.newId(); d.mirror_of = null; d.name = (o.name || o.type) + " copy"; SL.moveLock(d, [0.01, 0, 0]); addLock(d); } }),
-             el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { const m = SL.mirrored(o, st.mirror.seam, COL); m.mirror_of = null; m.name = (o.name || o.type) + " mirrored"; remember(); m.group = o.group; st.locks.push(m); locksPanel(); draw(); } }),
+  box.append(el("button", { textContent: "Onto the scalp", title: "its points near the head laid down on it (hair made before lies above the scalp)", onclick: () => { remember(); for (const t of all) { SL.hug(t, COL); changed(t); } draw(); } }),
+             el("button", { textContent: "All onto the scalp", title: "every lock's points near the head laid down on it (locked ones left alone)", onclick: () => { remember(); for (const l of st.locks) if (!l.mirror_of && !isLocked(l)) { SL.hug(l, COL); changed(l); } draw(); } }));
+  box.append(el("button", { textContent: many ? "Let them fall" : "Let it fall", title: "this lock (and its twin) falls under gravity onto the rest of the hair, which stays; keep the moment you like in Gravity and motion", onclick: () => letFall(st.locks.filter(t => all.some(a => t.id === a.id || t.mirror_of === a.id)).map(t => t.id)) }),
+             el("button", { textContent: "Let the group fall", title: "every lock of its group falls onto the rest, which stays", onclick: () => letFall(st.locks.filter(t => t.group === o.group).map(t => t.id)) }));
+  box.append(el("button", { textContent: o.locked ? "Unlock" : "Lock", className: o.locked ? "on" : "", title: "a locked lock never moves under a pull, Gravity or the cover; it's still drawn and laid over", onclick: () => { remember(); const v = !o.locked; for (const t of all) { t.locked = v; changed(t); } locksPanel(); selPanel(); drawHandles(); draw(); } }),
+             el("button", { textContent: "Duplicate", onclick: () => { const d = structuredClone(o); d.id = SL.newId(); d.mirror_of = null; d.name = (o.name || o.type) + " copy"; SL.moveLock(d, [0.01, 0, 0]); addLock(d); } }),
+             el("button", { textContent: "Mirror once", title: "a twin across the seam that doesn't follow", onclick: () => { remember(); for (const t of all) { const m = SL.mirrored(t, st.mirror.seam, COL); m.mirror_of = null; m.name = (t.name || t.type) + " mirrored"; m.group = t.group; st.locks.push(m); } locksPanel(); draw(); } }),
              l.mirror_of ? el("button", { textContent: "Break the mirror", onclick: () => { remember(); l.mirror_of = null; l.name = l.name.replace(" (mirror)", ""); locksPanel(); selPanel(); } }) : "",
-             el("button", { textContent: "Delete", onclick: () => deleteLock(o.id) }));
+             el("button", { textContent: many ? `Delete ${all.length}` : "Delete", onclick: () => deleteMany(all.map(t => t.id)) }));
 }
 function restyle() { applyLook(HAIRU, look()); SCALP_DIRTY = true; HAIRV++; for (const l of st.locks) if (l.render === "strands") DIRTY.add(l.id); draw(); }
 function characterPanel() {                                           // the body the hair is drawn on
@@ -1496,7 +1848,7 @@ async function listPeople() {
 }
 async function save() {
   const at = where();
-  await api(at.url("salon.json"), JSON.stringify(st, null, 1)); UNSAVED = false;
+  await api(at.url("salon.json"), JSON.stringify(st, null, 1)); UNSAVED = false; dropDraft();
   status(at.on ? `saved ${at.on}'s hair (${at.path("salon.json")}); Bake puts it on ${at.on}` : `saved the hairstyle ${at.path("salon.json")}`, "ok");
   if (at.on) listPeople(); else listHair();
 }
@@ -1523,6 +1875,7 @@ async function load(name) {                                           // a hairs
   const o = await api(`api/hair/${enc(name)}/salon.json`);
   await applyHair(o, st.head.person); $("#hairName").value = name;
   status(st.head.person ? `the hairstyle ${name} on ${st.head.person}: Save keeps it on ${st.head.person}` : `loaded the hairstyle ${name}`, "ok");
+  offerDraft();
 }
 async function refreshBody(name, tone) {                                    // the Character Studio changed the body (its Hair tab, again): the head again, the hair kept and laid on it
   if (tone) TONE = tone;
@@ -1539,6 +1892,7 @@ async function openPerson(name) {                                     // a chara
   else { st.head.person = name; await buildHead(); applyPreset("bald"); characterPanel(); bakePanel(); }   // no hair of its own yet: it starts bald
   $("#person").value = name; UNSAVED = false;           // as it was saved
   status(`${name}${PERSON.face ? "" : " (no face yet: save it in the Character Studio)"}: ${r.ok ? "its hair" : "no hair of its own yet: it starts bald (Start from: a preset or a hairstyle)"}`, PERSON.face ? "ok" : "bad");
+  offerDraft();
 }
 function allPanels() { characterPanel(); refPanel(); presetPanel(); mirrorPanel(); pullPanel(); locksPanel(); selPanel(); rootsPanel(); coverPanel(); volumePanel(); scalpPanel(); movePanel(); lookPanel(); bakePanel(); }
 $("#saveHair").onclick = () => save().catch(e => status(e.message, "bad"));
@@ -1554,17 +1908,17 @@ if (Q.get("embed")) document.body.classList.add("embed", ...(Q.get("person") ? [
     if (Q.get("person")) await openPerson(Q.get("person"));
     if (Q.get("hair")) await load(Q.get("hair"));
     else if (Q.get("ref")) await loadReference(Q.get("ref")); else await refPanel();
-    resize(); status("ready", "ok");
+    resize(); status("ready", "ok"); if (!Q.get("person") && !Q.get("hair")) offerDraft();
     window.__salon.ready = true;
   } catch (e) { status(e.message, "bad"); console.error(e); }
 })();
 
 // for the tests and the renders
-window.__salon = { st, SL, SR, orbit, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
-  get selected() { return SELECTED; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
-  screenOf, headAt, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
-  PULL, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
-  bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
+window.__salon = { st, SL, SR, get orbit() { return orbit; }, split: { get on() { return SPLIT.on; }, set: setSplit, setAt: setSplitAt, use: i => { usePane(i); markPane(); applyCamera(); }, get active() { return SPLIT.active; }, get at() { return SPLIT.at; }, panes }, get HEAD() { return HEAD; }, get unsaved() { return UNSAVED; }, get SNAP() { return SNAP; }, get CAMS() { return CAMS; }, get COL() { return COL; }, get HF() { return HF; }, get EVAL() { return EVAL; },
+  get selected() { return SELECTED; }, get inHand() { return INHAND; }, finishLock, arrowTip, okButton: OKBTN, hint, lookAt, setOrtho, get ortho() { return !!orbit.ortho; }, letFall, offerDraft, dropDraft, keepDraft, draftKey, get likeLast() { return LIKE_LAST; }, setLikeLast, get last() { return LAST; }, get picked() { return [...PICKED]; }, togglePicked, deleteMany, startModal, endModal, get modal() { return MODAL && MODAL.kind; }, zoomStop, get edge() { return !!EDGE; }, ready: false, canvas: renderer.domElement, setTool, select, addLock, deleteLock, lookFrom, stepFrame, recam, draw, render, refPanel, locksPanel, selPanel, buildHead,
+  screenOf, headAt, rayAt, onPlane, previewFrom, dot: () => DOT && DOT.visible ? { colour: DOT.material.color.getHex() === 0x5aa65a ? "green" : "red", at: DOT.position.toArray() } : null, save, load, saveStyle, openPerson, get PERSON() { return PERSON; }, where, FFD, pullCube, scalpPanel, scalpInfo: () => SCALPM ? { vertices: SCALPM.geometry.attributes.position.count, alpha: SCALPM.userData.alpha, opacity: SCALPM.material.opacity, colour: Array.from(SCALPM.geometry.attributes.color.array.slice(0, 3)), visible: SCALPM.visible } : null,
+  PULL, pullIds, pullOpts, isLocked, pullPanel, rootsPanel, volumePanel, volume: { refresh: refreshPadding, get pad() { return PAD; }, get check() { return CHECK; }, get base() { return BASE; }, baseLocks, bakeBase, showBase }, presets: { list: PRESETS, apply: applyPreset }, cover: { settings: COVER, make: makeCoverHair, preview: coverLocks, topLength }, coverPanel,
+  bakeDebug: { keepWhere, tameGuides, clearance, bakeCards }, setMotion, bake, previewBake, get BAKEVIEW() { return BAKEVIEW; }, get BAKEG() { return BAKEG; }, drop: { start: startDrop, keep: keepDrop, revert: revertDrop, pause: pauseDrop, run: runDrop, show: showDropFrame, get state() { return DROP && { frames: DROP.frames.length, frame: DROP.frame, running: DROP.running, only: DROP.only, what: DROP.what }; } }, look, restyle, HAIRU, ATLAS, LOOKS, get PLAYING() { return PLAYING; },
   bakeCheck: () => {                                                  // the loaded bake's first skinned mesh: its bind pose, then its root bone turned
     let mesh = null; BAKEG.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; }); if (!mesh) return null;
     BAKEG.updateMatrixWorld(true); mesh.skeleton.update();
