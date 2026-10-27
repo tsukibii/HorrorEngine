@@ -2,6 +2,45 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, later (the designer clothes reviewed as a lead art engineer)
+
+- **"Review the new clothes and improve, some don't look natural"**: every designer outfit on contact sheets, five
+  views and a close one, judged by eye and fixed (docs/TAILOR.md §2b has what read wrong and the rules). What changed:
+  jackets and coats get a built shoulder (`ease.shoulder`) and bridge the body instead of hugging it; the blazers meant
+  to be worn open are cut open (`blazer-open`, the pink oversized one, the coat), their lapels falling open; the
+  turtleneck's collar is soft; the coat's sleeves hang (a turned cuff no longer holds the wrist); the jeans keep their
+  cut at the ankle; the hood lies flat with a rolled rim; the lined lace, the silk and the satin tiles are quiet on a
+  big surface; the knee boots have a boot's shaft, a heel and a top band. The office and school blazers gained the
+  shoulder too (they stay closed).
+
+## 2026-10-27 (the clothes: an edit mode, the designer collection, pictures; branch `clothing-expanded` off main)
+
+- **Editing a garment must be instant** ("clothing is extremely laggy to modify, realistically I can't modify it as it
+  takes 2 minutes to update the change; if we could make a basic non-physics edit mode, which shows the guide lines of
+  the clothing piece, and I can modify that (length, sleeves, fit/tightness etc.), and when I'm done click bake and it
+  creates the new version based off those guidelines"): the Clothes tab's **Edit the cut (no cloth)**: every worn
+  garment as a film on the body with its cut lines (the hem, the neckline, a front opening, the sleeves' ends, the
+  waist, the legs' end; a skirt as its rings), the handles and the Shape sliders (Fit among them) moving a line at once
+  with nothing cut or hung; **Bake** cuts the clothes to the lines and hangs them. The old way stays with the mode off.
+- **New stylish clothes under a Designer tab, one outfit per reference image** ("add some new stylish clothing under a
+  tab called designer maybe and add the clothes/outfits shown in the reference images, try create one for each"):
+  twelve outfits (one for the lace jeogori, four for the street looks, one for the rainy-day coat, two for the modern
+  hanbok, four for the menswear) and the designs they needed, in `Content/Studio/Clothes/`, on their own tab in the
+  outfit picker (Designer, Studio, Underwear).
+- **Pictures instead of names for the outfits** ("instead of just words could we update the presets so there is a
+  thumbnail using the default model with the outfit"): every outfit a picture of the default model (a new character's
+  body, halfway between the bases, 1.70 m) wearing it, hung by gravity, made by `tools/character/tailor/thumbs.mjs`
+  into `Content/Studio/Clothes/thumbs/` (every design alone too) and shown as cards in the Clothes tab.
+- Claude's calls inside that: the guides are the cutter's own lines evaluated on the skin (`tailor/guides.js`), so a
+  slider in the edit mode shows exactly what the tailor will cut, and a film's edge is drawn in the shader so it follows
+  the pose and the zoom; what the references needed in the tailor: a wrap front (`open.shift`, a jeogori's diagonal with
+  its collar band along it), a neckline that climbs the neck (`neck.rise`, the turtleneck), a skirt that never narrows
+  from its top (`straight`, a chima gathered under the bust) and one open down the front (`open.gap`, the long coat's
+  skirts, worn under its top as two garments), a lined lace and a sequin fabric, the knee-high boots cut as a shell
+  (lofted from the foot they cut into the calf); hats as accessories (a beret, a cap, a bucket hat, a beanie, on the
+  head's own outline) brought by the outfit that wears one, sunglasses the same; what the pictures can't show: those
+  hats and sunglasses (they need the face's landmarks), a bag, a scarf.
+
 ## 2026-10-26, past midnight (more instruments, swappable strings, sound effects in the flow)
 
 - **Add every CC0 instrument we can find for horror** ("add everything you can"), after the search for open

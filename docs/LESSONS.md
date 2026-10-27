@@ -828,3 +828,25 @@ it: keep bars in the header or the panel, and keep only what must be in the view
   lid's middle" and the wash's "nearer the lower lid" were steps; once the shadow spread wider they showed as straight
   lines across the skin beside the inner corner (found by sampling a column of pixels: a 20-level jump in one row).
   Ease every mask a layer can reach past.
+
+## The clothes' edit mode and the designer collection (2026-10-27)
+
+- **Radii carried round a middle that moved sink:** a shoe's heel cup took a forward section's radii as they were and
+  blended the middles; on a tall boot the forward section's middle was 20 cm higher, so its radii round the heel's
+  lower middle reached under the floor. Carry an outline as points and measure it again round the new middle.
+- **A cropped top with long sleeves hangs lower than its hem:** the check measured a hem by the cloth's lowest point,
+  and the sleeves' cuffs were lower. Measure a hem off the arms.
+- **A shaft lofted from the foot cuts the calf:** the shoe loft's sections are planes along the foot, so above the
+  ankle they wall off whatever lies behind the heel; a boot to the knee is cut as a shell with the shoe's line instead.
+- **Lace with empty holes reads as see-through:** the reference's lace top was lined. An over-skin fabric needs an
+  opaque twin (`laced`) for anything that isn't meant to show the skin.
+- **A film on the body is the cheap preview of a cut:** the cutter's value on every skin point, drawn with its zero as
+  the line, is a few milliseconds a garment and shows exactly what the tailor will cut; the cloth itself (relaxed,
+  hung) is only for the bake.
+- **A cut that hugs the body reads as knitwear, whatever the fabric says:** every structured garment looked like a
+  cardigan until the cut bridged the hollows (more tension), the shoulders were built (a pad at each joint) and the
+  drape kept the cut (memory, stiff bend, little slack). Fabric tiles can't make a membrane look tailored.
+- **Judge a tile on the garment, not the swatch:** lace flowers at 7 cm were polka dots on a blouse, silk streaks were
+  creases down a skirt, a satin sheen band tiled into blocks. Render the outfit before calling a fabric done.
+- **"Loose" is not "open":** a blazer loosened by its fit still closed down the front and read as a long cardigan; the
+  reference wore it open. Cut what's worn open open, and let the drape leave it so.
