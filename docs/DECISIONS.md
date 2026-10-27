@@ -2,6 +2,43 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, last thing (a dashboard; the writers' room; one-hour relatable games)
+
+- **A dashboard for every tool**: "an easy UI dashboard to launch and stop all of the tools (like the terminal but an
+  actual ui dash ... python dashboard.py and then it handles the rest of the tools ... it should sit in the root
+  folder)". Built: `dashboard.py`.
+- **The writers' room** (docs/WRITERS_ROOM.md): "before we even start working inside the director or character creator
+  I want a new AI/Claude/LocalLLM (toggleable) assistant for writing scripts/flows/storyboard/rough scene setup";
+  sessions loaded or new; the type of game and reference stories ("real life things that happened or stories to use
+  as reference"); Claude works it into a flowchart that Claude can later build in the director: "the workflow turns
+  into a refinement in director whereas this new tool is just prototyping ... director has too much clutter, I just
+  want to be able to see the rough flow chart of the story and what happens and how it ends and follow the
+  rivers/points". "Claude can see what the tool does and is showing."
+- **Three endings by default**: "the intended ending, and two others that I can input or get you to suggest off by the
+  reference stories".
+- **One hour, played again**: "1 hour playthrough with replayability to get the other endings or secret paths"; away
+  from Five Hearts Under One Roof's cut-off branches: "secret parts will just jump you to the next main point (but you
+  got to see an easter egg / unlock a secret achievement) so the game should feel like you're watching a story
+  unfold".
+- **Faces as MiniMax post prompts, 4 seconds**, for the dialogue and cinematics, in this form: "her eyes roll up as she
+  bites her lower lip, she nervously looks down and then back at the viewer"; "I don't really want to have to
+  prompt/generate for more than 4 seconds videos ... compress the expressions into 4 seconds and we manually will
+  extend it in the expression tool ... realistically 8-10 seconds"; a library of generic reusable ones.
+- **Loops and blends in the expression tool**: "in the expression selector I can also see a timeline and create a
+  loopable [part], meaning afterwards we can drag a loopable version of the same expression and it motion tweens a loop
+  of the selected timeline. If I drag multiple expressions I should be able to blend/tween between them so it doesn't
+  instantly jump to default static expression" (EXPRESSIONS_PLAN §2b).
+- **L.A. Noire for the multiple choice**: "you can learn of the story's main intentions via looking at how the
+  character's face reacts to what you say (these scenes should be planned for more intimate close up moments)".
+- **Build**: "when I'm happy with the prototype I click build, and it will build a super rough (non refined) but
+  working outline of the game inside director ... Claude should be able to refine and make it workable in director";
+  how is Claude's call: a working outline and a `BUILD.md` handoff (WRITERS_ROOM §7).
+- **The niche**: "the games need to make it feel relatable ... we mostly will focus on relatable stories like a distant
+  friend invites you over and something isn't quite right ... if it is more bizarre you need to make it flow that we
+  make the person believe this bizarre thing somehow actually managed to happen ... an interactive story that's got
+  light gameplay that matters and affects the story but isn't too confusing, with more niche easter eggs for the
+  players that like to discover and figure things out, which unlock achievements".
+
 ## 2026-10-27, late night (the study's five: a to-do list that can fail, nights as chapters, requests; no phones, no ending cards)
 
 The user's answers to docs/research/chillas_art.md §3:

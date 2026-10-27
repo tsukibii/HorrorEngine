@@ -74,6 +74,17 @@ Play show it; bake.js carries it to Unreal. The word, in STORY_FORMAT, the check
 
 on a scene (or a variant). Blinks the capture didn't have are added between (procedural, 2 to 6 s).
 
+## 2b. Loops and blends (the user's ask, DECISIONS 2026-10-27, last thing)
+
+- **4 s captures, stretched.** Faces are generated as 4 s MiniMax videos (docs/WRITERS_ROOM.md §3) and stretched in
+  the library with Length (8 to 10 s still reads as natural).
+- **A loop from a range.** The preview shows the capture as a timeline; a range picked on it (the held part of the
+  face) saves a **loop** of that expression: the range played over and over, its end tweened back into its start so
+  the wrap doesn't jump. It's its own card in the library ("pout and glance · loop") and drags like any other.
+- **Blends, not snaps.** Placed one after another on a character's face row, expressions crossfade into each other
+  (the overlap, or a short tween when they touch); a loop runs until the next one takes over. The face only goes back
+  to neutral where nothing is placed.
+
 ## 3. Text instead of voices (step 3)
 
 - **English first.** A line's words are `en`; other languages are **string tables**, `Content/Games/<G>/Text/<lang>.json`

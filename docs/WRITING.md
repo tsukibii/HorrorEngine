@@ -1,5 +1,8 @@
 # Writing the games: horror romance in first person
 
+> The one-hour games prototyped in the writers' room follow docs/WRITERS_ROOM.md §2 where it differs (relatable stories,
+> no deaths, forks and secrets that join the river again, close-up talks read by the face; DECISIONS 2026-10-27, last thing).
+
 How we write (and Claude reviews) the scripts: obsession and yandere, a conversation that feels like it's with
 you, intimacy staged for the player's eye, and gameplay simple enough for anyone. The format words are in
 STORY_FORMAT §9; the shapes we borrow are in REFERENCES.md.
