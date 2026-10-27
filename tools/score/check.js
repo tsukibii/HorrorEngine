@@ -10,7 +10,7 @@ const ctx = { console, Math, JSON, Object, Array, Set, Map, TextEncoder, Uint8Ar
 vm.createContext(ctx);
 const files = fs.readdirSync(path.join(HERE, "js")).filter(f => /^[0-6]\d-.*\.js$/.test(f) || f === "70-player.js").sort();
 vm.runInContext(files.map(f => fs.readFileSync(path.join(HERE, "js", f), "utf8")).join("\n;\n") +
-  "\n;globalThis.__x = { motifLine, CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake };", ctx, { filename: "score.js" });
+  "\n;globalThis.__x = { motifLine, CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake, STRING_SETS, STRING_ROLES, STRING_ADVICE, stringMembers, stringInsts };", ctx, { filename: "score.js" });
 const { CUES, FAMILIES, writeCue, variations, takePrint, chainTakes, MIDI, parseActions, resolveAction, sceneTake } = ctx.__x;
 const index = JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Studio/Music/samples/instruments.json"), "utf8"));
 const problems = [];
@@ -31,7 +31,7 @@ function checkTake(id, w, label) {
     if (e.tone && !["ponticello", "tasto", "harmonic", "legno"].includes(e.tone)) bad(id, label + " tone " + e.tone);
     if (!isFinite(e.t) || e.t < 0) bad(id, label + " note at " + e.t);
     if (!(e.vel >= 1 && e.vel <= 127)) bad(id, label + " velocity " + e.vel);
-    if (e.inst === "drums") { if (!def.pieces[e.piece]) bad(id, label + " no drum " + e.piece); continue; }
+    if (def.kind === "kit") { if (!def.pieces[e.piece]) bad(id, label + " no " + e.inst + " piece " + e.piece); continue; }
     if (!Number.isInteger(e.midi)) bad(id, label + " note " + e.midi);
     const [lo, hi] = def.range;
     if (e.midi < lo - 7 || e.midi > hi + 7) bad(id, label + " " + e.inst + " " + e.midi + " outside its samples " + lo + "-" + hi);
@@ -74,10 +74,31 @@ for (let m = 1; m <= 200; m++) {
   if (last !== 0 || halfEnd !== 4) bad("theme " + m, "cadences " + halfEnd + " and " + last);
 }
 
+// the string sets (32-strings.js): every member a real instrument, every role in every set, a note anywhere a cue
+// writes strings lands on something, the advice names real cues and sets
+const { STRING_SETS, STRING_ROLES, STRING_ADVICE, stringMembers, stringInsts } = ctx.__x;
+if (!STRING_SETS.section) bad("strings", "no section set (the original)");
+for (const [sid, set] of Object.entries(STRING_SETS)) {
+  if (!set.label || !set.note) bad("strings " + sid, "needs a label and a note on when it works best");
+  for (const role of STRING_ROLES) {
+    for (const k of stringInsts(role, sid)) if (!index[k]) bad("strings " + sid, role + " names " + k + ", which isn't in instruments.json");
+    for (let m = 24; m <= 100; m++) {
+      const ms = stringMembers(role, m, sid, index);
+      if (!ms.length || ms.some(([k, db]) => !index[k] || !isFinite(db))) bad("strings " + sid, role + " " + m + " -> " + JSON.stringify(ms));
+    }
+  }
+}
+for (const [cue, [sid, why]] of Object.entries(STRING_ADVICE)) {
+  if (!CUES[cue]) bad("strings advice", "no cue " + cue);
+  if (!STRING_SETS[sid] || !why) bad("strings advice", cue + ": " + sid);
+}
+// every instrument a note on: what it's best for (the Instruments list)
+for (const [k, d] of Object.entries(index)) if (d.added && !d.best) bad("instruments", k + " has no `best`");
+
 // a chain and a MIDI file
 const chain = chainTakes([{ take: writeCue("sneak", {}, 1) }, { take: writeCue("slapstick_fall", {}, 2), gap: 0.2 }, { take: writeCue("flustered", {}, 3), gap: -0.3 }]);
 if (chain.parts.length !== 3 || !(chain.secs > 5)) bad("chain", JSON.stringify(chain.parts));
-const mid = MIDI.write({ notes: chain.ev.filter(e => e.inst !== "drums").map(e => ({ inst: e.inst, midi: e.midi, vel: e.vel, t: e.t, dur: e.dur || 1 })), tempos: [{ t: 0, bpm: 100, meter: [4, 4] }], marks: chain.marks });
+const mid = MIDI.write({ notes: chain.ev.filter(e => e.piece == null).map(e => ({ inst: e.inst, midi: e.midi, vel: e.vel, t: e.t, dur: e.dur || 1 })), tempos: [{ t: 0, bpm: 100, meter: [4, 4] }], marks: chain.marks });
 if (String.fromCharCode(...mid.slice(0, 4)) !== "MThd") bad("midi", "no header");
 
 // a scene scored from actions: the K-drama trip (sneak, the fall landing at 4.2 s, the blush), and a romance horror beat

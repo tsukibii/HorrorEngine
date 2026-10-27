@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { part, names, settingsOf, KINDS } from "./parts.js";
 import { matches } from "./conditions.js";
 import { runAll } from "./actions.js";
+import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { behaviourOf } from "./behaviours.js";
@@ -211,6 +212,18 @@ export class PlayRuntime {
   itemName(id) { return ((this.story.items || {})[id] || {}).name || String(id).replace(/_/g, " "); }
   nameOf(t) { const p = t.userData.piece || {}, d = p.d || {}; return d.name || (p.tags || []).find(x => x.startsWith("tag:"))?.slice(4).replace(/_/g, " ") || t.userData.id.replace(/_/g, " "); }
   lineText(id) { const l = (this.story.lines || {})[id]; return l ? l.en || l.ja : null; }
+  // a story sound: off the Studio's shelf when its file is sfx/<name>, placed at `at` (a thing or a cast member) when
+  // it's given, else where the player is; a sound of the game's own is only logged (it plays in Unreal)
+  sound(id, at) {
+    const s = (this.story.sounds || {})[id], n = s && shelfName(s.file);
+    this.hud.log(`♪ ${id}${at ? " at " + at : ""}${n ? "" : " (the game's own file: in Unreal)"}`);
+    if (n) this.shelfSound(n, at);
+  }
+  shelfSound(name, at) {
+    if (!this.active) return;
+    const o = at && (this.byId[at] || (this.stage.cast || {})[at]), pos = o && o.getWorldPosition ? o.getWorldPosition(new THREE.Vector3()) : null;
+    playShelf(name, pos ? { pos, camera: this.stage.camera } : {});
+  }
   setVisible(id, on, restoring) {
     const o = this.byId[id]; if (!o) { this.hud.log(`no ${id} in this level`); return; }
     o.visible = on;
@@ -228,7 +241,7 @@ export class PlayRuntime {
     const open = set === "open";
     if (open === d.open) return;
     d.open = open; d.from = d.deg; d.t = 0; d.secs = set === "slam" ? SLAM_SECS : DOOR_SECS;
-    if (set === "slam") this.hud.log("♪ slam");
+    if (set === "slam") { this.hud.log("♪ slam"); this.shelfSound("door_slam_01", id); }
     d.to = open ? this.awayDeg(d.mesh) : 0;
   }
   awayDeg(m) {                                          // open away from the player: try both ways, keep the farther

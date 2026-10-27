@@ -386,3 +386,113 @@ The game's theme alone: the tune on the piano over plain chords. Try numbers unt
 - **After:** How a K-drama's one piano theme runs through every cue (Crash Landing on You's 'The Song for My Brother', Goblin's 'Stay With Me')
 - **Level:** -6 dB; about 27 s at its defaults
 - **Settings:** key ionian / aeolian / lydian / dorian / harmonic minor; tempo (bpm) 56 to 110 (76); meter 4/4 / 3/4 / 6/8; left hand block chords / broken chords / bass only
+
+## Expanded orchestra
+
+### Glass ghost (`glass_ghost`)
+
+Rubbed wine glasses overlapping high up, a bowed vibraphone chord shifting under them, a double bass felt more than heard; the glasses gather into a cluster where she's closest.
+
+- **For:** ghost, presence, she's here, memory, the cold room
+- **After:** the glass harmonica in ghost films, Hereditary's quiet rooms, Kwaidan's (Takemitsu) cold textures
+- **Level:** -12 dB; about 22 s at its defaults; hit points: she's here
+- **Settings:** key lydian / aeolian / whole tone; length (s) 10 to 44 (22); presence (the cluster) 0 to 1 (0.6); bowed metal 0 to 1 (0.5); double bass 0 to 1 (0.3)
+
+### Psaltery haunting (`psaltery_haunt`)
+
+A slow, wavering tune on a bowed psaltery (a singing-saw tone; long notes sag at their ends), bowed vibraphone chords and a double bass drone.
+
+- **For:** haunted, ghost humming, lullaby, the old house, her song
+- **After:** the singing saw in Delicatessen and Twin Peaks, Silent Hill's lullabies, Pan's Labyrinth's lullaby hummed
+- **Level:** -10 dB; about 30 s at its defaults
+- **Settings:** key aeolian / dorian / harmonic minor; tempo (bpm) 40 to 72 (54); length (s) 12 to 48 (26); sag 0 to 1 (0.5); bowed chords 0 to 1 (0.5)
+
+### Double-bass dread (`bass_dread`)
+
+A double bass pedal with tremolo swells, the tuba under it, a bassoon and a low clarinet creeping by semitones, a bowed brake drum now and then.
+
+- **For:** basement, something big, dread, underground, it's below you
+- **After:** Jaws' low strings, The Thing (Morricone's pulse), Alien's low winds
+- **Level:** -13 dB; about 24 s at its defaults
+- **Settings:** key phrygian / locrian / aeolian; length (s) 10 to 48 (24); tuba depth 0 to 1 (0.5); the creeping line 0 to 1 (0.6); bowed metal 0 to 1 (0.4)
+
+### Brass falls (`brass_falls`)
+
+A low trombone chorale swells, then its notes fall away (trombone falls) over a tuba pedal; a buzzing growl under the biggest fall.
+
+- **For:** reveal, something big, doom, it's real, the floor drops
+- **After:** Inception's horn blasts (in spirit), Jerry Goldsmith's brass in The Omen, A Quiet Place's low brass
+- **Level:** -8 dB; about 14 s at its defaults; hit points: the drop
+- **Settings:** key aeolian / phrygian / locrian; length (s) 6 to 28 (14); menace 0 to 1 (0.6); growl 0 to 1 (0.5); falls one big / three / a cascade
+
+### Metal screech (J-horror) (`metal_screech`)
+
+Bowed metal rising (a brake drum, a cymbal, a gong scraped) into a struck hit with a low double bass pluck, then a tail: silence, the flexatone's wobble or a ratchet's croak.
+
+- **For:** the screech, ghost appears, j-horror sting, ringu, she appears
+- **After:** Ringu's grating metallic screech (Kenji Kawai), Ju-On's croak, Penderecki's scraped percussion
+- **Level:** -2 dB; about 7 s at its defaults; hit points: the screech
+- **Settings:** build (s) 0.5 to 6 (2.5); screech 0 to 1 (0.7); tail flexatone / ratchet / silence / siren
+
+### Rattles and wobbles (`rattle_crawl`)
+
+An uneven pulse of a ratchet's croak, a vibraslap, a flexatone and a bell tree, an ocean drum's rush, a stray kalimba note; it gets closer.
+
+- **For:** crawling, the croak, hallway, j-horror, something in the walls
+- **After:** Ju-On's croak (Kayako), Kwaidan's (Takemitsu) percussion, the Grudge's crawl
+- **Level:** -10 dB; about 16 s at its defaults; hit points: right behind you
+- **Settings:** length (s) 6 to 32 (16); density 0 to 1 (0.5); gets closer 0 to 1 (0.6); stray kalimba 0 to 1 (0.3)
+
+### Funeral organ (`funeral_organ`)
+
+A quiet pipe organ chorale in four parts, slow and minor, a soft trombone doubling the bass; on the last phrase one chord comes out wrong.
+
+- **For:** funeral, shrine, church, the wedding, mourning
+- **After:** Bach chorales played too slowly, The Omen's church, Hereditary's funeral
+- **Level:** -8 dB; about 28 s at its defaults
+- **Settings:** key aeolian / harmonic minor / dorian; tempo (bpm) 36 to 66 (48); length (s) 12 to 48 (24); the wrong chord 0 to 1 (0.5); trombone 0 to 1 (0.4)
+
+### Haunted harpsichord (`haunted_minuet`)
+
+A harpsichord minuet in minor (a tune over broken chords), a bassoon on the bass line, a wrong note at each cadence, slowing towards the end.
+
+- **For:** the mansion, the ballroom, old house, mock elegance, dinner with her
+- **After:** Barry Lyndon's sarabande (in spirit), Crimson Peak's ballroom, Bloodborne's music boxes
+- **Level:** -7 dB; about 23 s at its defaults
+- **Settings:** key harmonic minor / aeolian / dorian; tempo (bpm) 84 to 140 (112); length (s) 10 to 40 (20); wrong notes 0 to 1 (0.5); slowing 0 to 1 (0.5); bassoon 0 to 1 (0.5)
+
+### Kalimba lullaby (`kalimba_lullaby`)
+
+A lullaby on a slightly out-of-tune kalimba over soft vibraphone chords, an ocarina answering each phrase, wine glasses at the end.
+
+- **For:** lullaby, child, toy, memory, her room
+- **After:** Hotel del Luna's gentle ghosts, Spirited Away's (Hisaishi) small tunes, Coraline's lullabies
+- **Level:** -9 dB; about 24 s at its defaults
+- **Settings:** key major pent / ionian / aeolian; tempo (bpm) 56 to 96 (76); length (s) 10 to 40 (20); out of tune 0 to 1 (0.4); ocarina 0 to 1 (0.5)
+
+### Muted trumpet noir (`noir_trumpet`)
+
+A lonely harmon-muted trumpet over a walking double bass and soft vibraphone chords: a slow minor blues with its flat fifth.
+
+- **For:** night street, lonely, the bar, detective, rain
+- **After:** Chinatown (Goldsmith's trumpet), Twin Peaks' jazz, Taxi Driver (Herrmann's saxophone, in spirit)
+- **Level:** -8 dB; about 27 s at its defaults
+- **Settings:** key dorian / aeolian; tempo (bpm) 52 to 84 (66); length (s) 12 to 48 (24); trumpet 0 to 1 (0.7); walking bass 0 to 1 (0.6)
+
+### Solo violin lament (`solo_lament`)
+
+One violin sighing a slow tune (falling seconds that sag at their ends) over held cello chords and a double bass root.
+
+- **For:** grief, her letter, lament, she's gone, the aftermath
+- **After:** Schindler's List (Williams; the solo violin), Silent Hill 2's 'Theme of Laura' slowed, Oldboy's 'The Last Waltz'
+- **Level:** -9 dB; about 30 s at its defaults
+- **Settings:** key aeolian / harmonic minor / dorian; tempo (bpm) 40 to 70 (52); length (s) 12 to 48 (26); sighs 0 to 1 (0.6); cellos 0 to 1 (0.5)
+
+### Siren and chimes (`siren_chimes`)
+
+A toy siren whistle rising and falling far off, wind chimes, glockenspiel glissandi up and down, a slow cymbal crescendo into nothing.
+
+- **For:** empty playground, far off, the wind, unease, night outside
+- **After:** Silent Hill's air-raid siren (in spirit, small and far), It Follows' unease, a schoolyard at night
+- **Level:** -11 dB; about 18 s at its defaults
+- **Settings:** length (s) 8 to 36 (18); siren 0 to 1 (0.5); chimes 0 to 1 (0.6); cymbal swell 0 to 1 (0.5)

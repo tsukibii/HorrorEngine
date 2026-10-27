@@ -1045,6 +1045,27 @@ def check_stitch(tid, st, story, things, r):
         r.err(f"stitch {tid}: no beat ends it ({{\"done\": true}})")
 
 
+SFX_INDEX = L.STUDIO / "SFX" / "index.json"
+
+
+def check_sounds(story, r):
+    """A sound's file: sfx/<name> names the Studio's sound shelf (tools/sfx.py), and must be on it; any other file is
+    the game's own, under its Audio folder in Unreal."""
+    try:
+        shelf = json.loads(SFX_INDEX.read_text("utf-8")).get("sounds", {})
+    except (OSError, ValueError):
+        shelf = None
+    for k, s in story.get("sounds", {}).items():
+        f = (s or {}).get("file")
+        if not f:
+            r.err(f"sound {k}: needs a file (sfx/<name> off the Studio's shelf, or the game's own)")
+        elif f.startswith("sfx/"):
+            if shelf is None:
+                r.warn(f"sound {k}: {f} is on the Studio's sound shelf, which isn't here (python tools/sfx.py fetch)")
+            elif f[4:] not in shelf:
+                r.err(f"sound {k}: {f} isn't on the Studio's sound shelf (python tools/sfx.py list)")
+
+
 def check_motions(story, r):
     for k, m in story.get("motions", {}).items():
         if m.get("in_place") and not m.get("loop"):
@@ -1899,6 +1920,7 @@ def main():
             check_stitch(tid, st, story, things, r)
         check_flow(story, things, r)
         check_motions(story, r)
+        check_sounds(story, r)
     paths = []
     if not r.errors:
         visited = set()

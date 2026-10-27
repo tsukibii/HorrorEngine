@@ -27,6 +27,7 @@ import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
 import { States } from "./life.js";
+import { playShelf, shelfName } from "./sfx.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -1742,6 +1743,22 @@ function stateCues(tl, ver) {
   }
   return out.sort((x, y) => x.t - y.t);
 }
+// a sound cue in the Watch: off the shelf, placed at the cast member or thing it names (else where you are)
+function watchSound(c) {
+  const n = shelfName(((S.sounds || {})[c.sound] || {}).file); if (!n) return;
+  const o = c.at && ((watchStage.cast || {})[c.at] || (watchStage.byId || {})[c.at]), pos = o && o.getWorldPosition ? o.getWorldPosition(o.position.clone()) : null;     // (a spare vector)
+  playShelf(n, pos ? { pos, camera: watchStage.camera } : {});
+}
+// a scene's sound cues, at their times on its timeline: the ones off the sound shelf play in the Watch (sfx.js)
+function soundCues(tl, ver) {
+  const out = [];
+  for (const cu of ver.cues || []) {
+    if (!cu.do || !cu.do.sound) continue;
+    const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), sound: cu.do.sound, at: cu.do.at });
+  }
+  return out.sort((x, y) => x.t - y.t);
+}
 // the Watch's footer: the Play HUD's footer in the game's theme (or the one picked), so scene subtitles, replies and
 // timed choices look as they will in the game: the speaker over the line, the options in their panel under it
 let WHUD = null;
@@ -1794,11 +1811,13 @@ async function watchScene(sc, nid, sid, k) {
   else { watchStage.render(); if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0; }
   let T = 0, last = performance.now(), spoken = null, warned = null;
   const cues = stateCues(tl, sc), t0 = RUN ? RUN.secs : 0;   // the little things set by its cues, at their clip edges
+  const sounds = soundCues(tl, sc);                         // and its sounds, off the shelf
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
     const now = performance.now(); T += (now - last) / 1000; last = now;
     while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); RUN.lives.set(c.id, c.to, t0 + c.t); }
+    while (sounds.length && sounds[0].t <= T) { const c = sounds.shift(); if (T - c.t < 0.5) watchSound(c); }
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
       if (ev.type === "choose") { const o = (ev.options || []).find(x => x.id === res); if (o && o.karma !== undefined) { addKarma(RUN.karma, o.karma); RUN.answers.push(`${o.label} (${JSON.stringify(o.karma)})`); } }

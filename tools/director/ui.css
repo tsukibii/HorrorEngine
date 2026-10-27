@@ -398,3 +398,10 @@ canvas.wave{display:block;width:100%;height:84px;border:1px solid var(--line);bo
 .hist-ch{margin:4px 0;padding-left:18px;font-size:12.5px;line-height:1.6}
 .helpguide{display:flex;align-items:center;gap:8px;grid-column:1/-1;margin:0 0 6px;padding:8px 12px;border:1px solid var(--accent);border-radius:9px;background:rgba(217,164,65,.07)}
 .helpguide a{color:var(--accent);font-weight:600}
+/* the sound shelf's picker (sfx.js) */
+.sfx-pick .sfx-q{width:100%;margin:4px 0 6px}
+.sfx-cats{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}.sfx-cats .sfx-chip{padding:2px 9px;border-radius:12px;font-size:12px}.sfx-cats .sfx-chip.on{border-color:var(--accent);color:var(--accent)}
+.sfx-list{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.sfx-row{display:grid;grid-template-columns:18px 170px 1fr auto;gap:8px;align-items:center;padding:4px 8px;cursor:pointer;border-bottom:1px solid var(--line);font-size:12.5px}
+.sfx-row:hover{background:var(--panel2,rgba(255,255,255,.04))}.sfx-row.on{background:rgba(120,160,255,.14)}
+.sfx-row b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sfx-t{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sfx-s{color:var(--dim);font-variant-numeric:tabular-nums}

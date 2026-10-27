@@ -6,6 +6,7 @@
 import { h, modal, triggerPill, sortable, grip } from "./ui.js";
 import { icon } from "./icons.js";
 import { KINDS, usesOf, flagsOf, renameRef, allIds, ID_RE, placeOf, tableOf } from "./refs.js";
+import { shelf, shelfName, pickShelf, preview } from "./sfx.js";
 
 const TABS = [
   { id: "game", label: "Game", icon: "gear", hint: "The game's own settings: its length, the player's lens, the language of the takes, where it starts." },
@@ -16,7 +17,7 @@ const TABS = [
   { id: "notes", label: "Notes", icon: "note", kind: "note", noun: "note", name: "title",
     hint: "Letters, diary pages, signs: what the player reads. A level places one with use: note." },
   { id: "sounds", label: "Sounds", icon: "sound", kind: "sound", noun: "sound",
-    hint: "Sound effects by name; the file itself lives in the game's Audio folder in Unreal." },
+    hint: "Sound effects by name: one off the Studio's CC0 sound shelf (sfx/<name>, heard in Play and the Watch), or the game's own file in its Audio folder in Unreal." },
   { id: "lines", label: "Lines", icon: "say", kind: "line", noun: "line", name: "en", nameLabel: "English",
     hint: "Voice outside the scenes: barks in play, a whisper, a line a command says. Each is one take, named by its id." },
   { id: "motions", label: "Motions", icon: "motion", kind: "motion", noun: "motion",
@@ -235,7 +236,15 @@ export class Database {
     return h("div", { class: "frm" }, this.row("Title", this.f(n, "title", { after: () => this.retitle(n.title || id) })), this.row("Text", this.f(n, "text", { long: true, rows: 7 })),
       h("div", { class: "paper" }, h("div", { class: "pt" }, n.title || ""), h("div", {}, n.text || "")));
   }
-  soundsForm(s) { return h("div", { class: "frm" }, this.row("File", this.f(s, "file", { ph: "SFX/door_slam", after: () => this.renderList() })), h("p", { class: "hint tight" }, "under the game's Audio folder in Unreal (/Game/Games/<Game>/Audio)")); }
+  soundsForm(s) {
+    const name = shelfName(s.file), info = h("span", { class: "muted" });
+    if (name) shelf().then(all => { const x = all[name]; info.textContent = x ? `${x.category} · ${x.secs.toFixed(1)} s${x.loop ? " · loop" : ""} · ${x.tags.join(", ")}` : "not on the shelf"; });
+    return h("div", { class: "frm" },
+      this.row("File", this.f(s, "file", { ph: "sfx/door_slam_01", after: () => { this.renderList(); this.renderForm(); } }),
+        name ? h("button", { title: "hear it", on: { click: e => { e.preventDefault(); preview(name); } } }, icon("play", 13)) : null),
+      this.row("Shelf", h("button", { on: { click: async e => { e.preventDefault(); const n = await pickShelf(name); if (n) { s.file = "sfx/" + n; this.changed(); this.renderForm(); } } } }, icon("sound", 14), " From the shelf…"), info),
+      h("p", { class: "hint tight" }, "sfx/<name> plays a CC0 sound off the Studio's shelf (Content/Studio/SFX; python tools/sfx.py list) in Play and the Watch. Anything else is the game's own file under its Audio folder in Unreal (/Game/Games/<Game>/Audio)."));
+  }
   linesForm(ln, id) {
     const S = this.S, D = this.D, subs = (S.game.subtitles || ["en"]).filter(x => x !== "en"), t = D.takes()[id], v3 = (S.format || 2) >= 3;
     const who = [["player", "the player"], ...Object.entries(S.cast || {}).map(([k, c]) => [k, c.name || k])];

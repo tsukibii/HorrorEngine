@@ -5,6 +5,25 @@ Written 2026-10-24 (small hours, the user away; brought up to date in the aftern
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. Latest (2026-10-26, past midnight, on `claude/inspiring-curie-fntkfv`)
+
+Asked: search for open horror sound libraries, then "add everything you can", make the strings swappable with notes,
+put new instruments in the expanded scorer, and keep sound effects in the flow, not the orchestra (DECISIONS
+2026-10-26, past midnight). Built, checked and pushed:
+
+- **28 more CC0 instruments** in the score room from VSCO-2 CE and VCSL (`tools/score/fetch_samples.py`; docs/MUSIC.md §7).
+- **String sets** (`js/32-strings.js`): Woohill's section, full, low, solo, eerie, glass. Pick one in the header or per
+  favourite. Each has a note, and the cue says which set it suits.
+- **The Expanded orchestra**: twelve cues for the new instruments (`js/66-expanded.js`), and the Instruments list.
+- **The sound shelf** (`Content/Studio/SFX`, `tools/sfx.py`, docs/SFX.md): 240 CC0 sound effects. A story sound names
+  one as `sfx/<name>`. The Database picks and plays it, Play and the Watch play it, and the Pilot's and Sample's sounds
+  use it. SFX joins check_all.
+
+Open: the levels between the added instruments are matched by loudness, not by ear; the user may want some louder or
+softer (`adjust` in fetch_samples.py). The shelf sounds were picked by name and tags, not heard; swap any that miss in
+the Database. Unreal doesn't import sounds yet (docs/SFX.md §4). Most sound sites (Freesound, OpenGameArt, itch.io)
+can't be reached from a cloud session: `tools/sfx.py add` takes files the user downloads.
+
 ## 1. Where we are
 
 The user left a list before going AFK (DECISIONS 2026-10-24, small hours); all of it is built, checked and pushed:

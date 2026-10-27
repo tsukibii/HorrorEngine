@@ -11,7 +11,7 @@ sys.path.insert(0, str(HERE.parent / "Content" / "Python"))
 from storykit import storylib as L  # noqa: E402
 
 CHECKS = [["story_check.py"], ["level_check.py"], ["shots_sheet.py", "--plan"]]
-STUDIO = [["pbr.py", "check"]]                 # once, not per game
+STUDIO = [["pbr.py", "check"], ["sfx.py", "check"]]   # once, not per game: the PBR shelf, the sound shelf
 
 game, _ = L.pick_game(sys.argv[1:])
 bad = 0

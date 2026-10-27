@@ -105,10 +105,10 @@ reverb the Woohill engine traces from the room's walls and their materials, and 
 - **Hit points.** Each cue marks where the picture's action lands (the fall's thud, the sting, the turn, her
   answer). The desk will line them up with clip edges (§5).
 
-## 4. The cues (42)
+## 4. The cues (54)
 
 The full list, with settings, is in docs/MUSIC_CUES.md. Research §4 designed 32 cues; this is what was built and how
-it differs.
+it differs. The twelve Expanded orchestra cues, written for the added instruments, are in §7.2.
 
 **Horror (16):**
 - Dread drone (H1)
@@ -245,3 +245,76 @@ more, with sources. Titles are given only where we're sure of them.
 | The K-drama ballad underscore | *Crash Landing on You*: "The Song for My Brother" (a piano theme that becomes the orchestra). *Goblin*: "Stay With Me" (the couple song in every big beat). *Descendants of the Sun*: "Always" |
 | K-drama comedy | *Strong Woman Do Bong-soon* and *Business Proposal* scenes. Watch how the pizzicato sneak, the slide and thud and the freeze land on the frame (research §1.3 notes this vocabulary is pieced together, not from a Korean source) |
 | Quiet intimacy | *Your Name* (RADWIMPS): the piano pieces. *To the Moon* (Kan Gao): "For River" |
+
+## 7. The added instruments
+
+Sound effects (doors, steps, knocks, breaths, room tones) aren't the orchestra's: they're the Studio's sound shelf,
+docs/SFX.md.
+
+Woohill's orchestra is still what every cue above was written and mixed with. Beside it are 28 more instruments from
+the same CC0 libraries, VSCO-2 Community Edition and the Versilian Community Sample Library (VCSL), both by Versilian
+Studios. `python tools/score/fetch_samples.py` fetches them (`--list` shows what's there, `--only KEY`, `--force`). It
+checks out only the folders it needs into `Saved/Score/sources/`. It measures each sample's pitch, decides the
+octave by a vote over the whole set (the libraries name octaves two ways), trims the sample, makes it mono Ogg and
+matches each instrument's loudness to one of Woohill's (`calib_db`). Woohill's instruments are never touched. Every
+added instrument carries a `best` in `instruments.json`: when it works best.
+
+### 7.1 The string sets: which strings play
+
+Every cue writes its strings as three parts: `strings` (sustain), `trem` (tremolo) and `pizz` (pizzicato). The
+header's **strings** picker chooses which samples play them. The notes stay the same and only the players change, so
+a favourite keeps its fingerprint. A favourite remembers the set it was kept with and has its own picker. Open and
+Vary bring that set back to the header. Changing the set while a cue plays restarts it from where it was, so you hear
+the swap at once.
+
+| Set | What plays | Works best for |
+| --- | --- | --- |
+| Section (the original) | Woohill's VSCO-2 violin and cello sections | anywhere; everything was mixed with it |
+| Full section | the section, violas in the middle (C3 to G5), a double bass under C3 | dread beds, the chase, death, the ritual, the big romance swell (muddy in a small room) |
+| Low strings | cellos, violas over A5, the double bass under C3; no violins | hiding, grief, the house at night, a sad flashback |
+| Solo | one violin from G3 up, one double bass below | a lament, the lullaby, her theme alone, the close moment |
+| Eerie | a bowed psaltery from A#4 up, one shaking violin for the tremolo; the rest the section | ghost cues: the lullaby, behind you, the music box |
+| Glass | a bowed vibraphone from A3 up, wine glasses from D#5; the rest the section | a long held chord under a ghost, the moment before she appears |
+
+The cue panel shows the set's note. When the cue suits another set, it says which and why ("Suits this cue: Low
+strings (muffled, as if heard through the wardrobe door)"), and **Use it** switches to it. That's `STRING_ADVICE` in
+`js/32-strings.js`. A set's members each play the notes inside their own range. Where they overlap they stack (the
+full section's violins, violas and basses together), about 2 dB a member quieter so the mix stays put. Notes
+outside every member's range go to the set's fallback, or else the nearest member.
+
+### 7.2 The Expanded orchestra: cues for the new instruments
+
+The original 42 cues keep their instruments: Woohill's orchestra, with the string sets to change who plays the
+strings. The new instruments have twelve cues of their own, the **Expanded orchestra** family (`js/66-expanded.js`).
+Each has the shared settings: level, corruption, she's watching, and the game's theme where it quotes it.
+
+- **Glass ghost**: rubbed wine glasses high up, a bowed vibraphone chord shifting under them, a faint double bass.
+  The glasses gather into a cluster where she's closest (hit: she's here).
+- **Psaltery haunting** (theme): a slow, wavering tune on the bowed psaltery, its long notes sagging at their ends,
+  over bowed vibraphone chords and a double bass drone. A ghost humming.
+- **Double-bass dread**: a double bass pedal with tremolo swells, the tuba under it, a bassoon and a low clarinet
+  creeping by semitones, a bowed brake drum now and then. Something big below you.
+- **Brass falls**: a low trombone chorale swells, then falls away (one big fall, three, or a cascade) over a tuba
+  pedal, a buzzing growl under the biggest one (hit: the drop).
+- **Metal screech (J-horror)**: a bowed cymbal, a bowed brake drum and a gong scrape rising into a struck hit with
+  a low bass pluck (hit: the screech). The tail is silence, the flexatone's wobble, a ratchet's croak or a siren.
+  It's Ringu's sound, for the frame she appears.
+- **Rattles and wobbles**: an uneven pulse of a ratchet, a vibraslap, a flexatone and a bell tree, an ocean drum's
+  rush, a stray kalimba note. It gets closer (hit: right behind you). Ju-On's croak.
+- **Funeral organ** (theme): a quiet pipe organ chorale in four parts with a soft trombone on the bass. On the last
+  phrase one chord comes out wrong.
+- **Haunted harpsichord** (theme): a minuet in minor in the empty ballroom, with a bassoon on the bass, a wrong note
+  at the cadences, slowing at the end.
+- **Kalimba lullaby** (theme): a slightly out-of-tune kalimba over soft vibraphone chords, an ocarina answering, wine
+  glasses at the end.
+- **Muted trumpet noir**: a harmon-muted trumpet over a walking double bass and vibraphone, a slow minor blues.
+- **Solo violin lament** (theme): one violin sighing over held cello chords and a double bass root.
+- **Siren and chimes**: a toy siren far off, wind chimes, glockenspiel glissandi, a cymbal swell into nothing.
+
+### 7.3 The Instruments list
+
+Under the cues, **Instruments** lists every instrument, Woohill's and the added ones, each with its `best`: what
+it's for. ▶ plays it alone: a climb through its range and a chord, or every piece of a kit in turn. The filter
+searches it too, so "funeral" or "ghost" finds the instruments as well as the cues. A new instrument goes into
+`fetch_samples.py` with a `best`. SCORE fails on an added instrument without one, and SCOREPAGE renders every
+instrument and every Expanded cue, checking that each has sound and doesn't clip.

@@ -20,7 +20,10 @@ function h(tag, attrs = {}, ...kids) {
 }
 
 const INST_COLOR = { piano: "#e6e3dc", strings: "#d9a441", trem: "#e07a3f", pizz: "#9fd36b", harp: "#6fb3d9", glock: "#b7a6ff", xylo: "#ff9fd0",
-  marimba: "#e0b080", bells: "#9ee6e0", flute: "#7fe0a0", flute_stac: "#5cc080", horn: "#d0704f", timpani: "#a07850", guitar: "#c9a06b", steel: "#a9c0d0", drums: "#8a8a92" };
+  marimba: "#e0b080", bells: "#9ee6e0", flute: "#7fe0a0", flute_stac: "#5cc080", horn: "#d0704f", timpani: "#a07850", guitar: "#c9a06b", steel: "#a9c0d0", drums: "#8a8a92",
+  cbass_sus: "#8a5a2a", cbass_trem: "#a0582a", cbass_pizz: "#7a9a4a", cello_sus: "#b98a3a", vln_solo: "#f0c060", trombone: "#c05a3a", trombone_fall: "#e0603a",
+  trombone_buzz: "#a03a2a", tuba: "#80402a", trumpet_mute: "#e09060", bassoon: "#6aa070", clarinet: "#5ad0c0", glass: "#d0f0ff", psaltery: "#f0e0a0",
+  vibes_bowed: "#a0c0ff", vibes: "#8090e0", kalimba: "#e0c0f0", harpsichord: "#d8c8a0", organ: "#c0a0d0", ocarina: "#a0e0a0", metals: "#b0b0c0" };
 const SPACE_IDS = ["room", "corridor", "basement", "closet", "hut", "hall", "cave", "forest", "meadow", "dungeon"];
 const TONICS = range(0, 12).map(pcName);
 const LS = { get(k, d) { try { const v = localStorage.getItem("score." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -42,7 +45,7 @@ const emptyPalette = scope => ({ format: "horrorstudio-score-palette", version: 
 function drawRoll(cv, take, pos = -1) {
   const g = cv.getContext("2d"), W = cv.width, H = cv.height;
   g.clearRect(0, 0, W, H);
-  const notes = take.ev.filter(e => e.inst !== "drums" && e.inst !== "fx"), drums = take.ev.filter(e => e.inst === "drums");
+  const notes = take.ev.filter(e => e.piece == null && e.inst !== "fx"), drums = take.ev.filter(e => e.piece != null);
   let lo = 127, hi = 0;
   for (const e of notes) { lo = Math.min(lo, e.midi); hi = Math.max(hi, e.midi); }
   if (lo > hi) { lo = 48; hi = 72; }
@@ -149,6 +152,34 @@ function renderLib() {
   }
 }
 
+// ---- the instruments: what each is best for, and a short phrase to hear it alone ----
+function instrumentTake(key) {
+  const def = Engine.index[key], ev = [];
+  let t = 0.1;
+  if (def.kind === "kit") for (const piece of Object.keys(def.pieces)) { ev.push({ inst: key, piece, t, vel: 96, dur: 0.5 }); t += Math.min(2.2, Math.max(0.8, def.pieces[piece].layers.slice(-1)[0].len * 0.6)); }
+  else {
+    const [lo, hi] = REG[key] || def.range, step = def.sustain ? 1.1 : 0.45, notes = [];
+    for (let m = lo; m <= hi && notes.length < 14; m += Math.max(3, Math.round((hi - lo) / 10))) notes.push(m);
+    notes.forEach(m => { ev.push({ inst: key, midi: m, t, dur: def.sustain ? 1.3 : null, vel: 80, attack: def.sustain ? 0.15 : undefined }); t += step; });
+    ev.push(...[0, 3, 7].map(iv => ({ inst: key, midi: clamp(Math.round((lo + hi) / 2) + iv, lo, hi), t: t + 0.3, dur: def.sustain ? 3 : null, vel: 72 })));
+    t += 3.5;
+  }
+  return { cue: "instrument: " + key, gain: -4, ev, marks: [], hits: [], secs: t + 1, tempo: 60, meter: [4, 4] };
+}
+function renderInstruments() {
+  const box = $("instlist"), q = $("filter").value.trim().toLowerCase();
+  box.innerHTML = "";
+  if (!Engine.index) return;
+  const added = Object.entries(Engine.index).filter(([k, d]) => !q || (k + " " + d.name + " " + (d.best || "")).toLowerCase().includes(q));
+  for (const [k, d] of added) {
+    const row = h("div", { class: "inst", title: d.credit || "" },
+      h("button", { title: "hear it alone", onclick: () => playTake(instrumentTake(k), null, row) }, "▶"),
+      h("i", { style: "background:" + (INST_COLOR[k] || "#ccc") }), h("b", {}, d.name), d.added ? h("span", { class: "new" }, " added") : null,
+      h("small", {}, d.best || ""));
+    box.append(row);
+  }
+}
+
 function selectCue(id, params, seed) {
   const c = CUES[id];
   if (!c) return;
@@ -160,8 +191,28 @@ function selectCue(id, params, seed) {
   $("cuehead").innerHTML = "";
   $("cuehead").append(h("h3", { class: "fam-" + c.family }, c.label), h("div", { class: "desc" }, c.desc),
     h("div", { class: "uses" }, "for: ", c.uses.map(u => h("span", { class: "tag" }, u))), h("div", { class: "refs" }, "after: " + c.refs));
-  renderParams(); renderCards(); renderLib();
+  renderParams(); renderCards(); renderLib(); renderStrNote();
 }
+// the string set's note, and which set suits this cue (STRING_ADVICE), with a button to use it
+function renderStrNote() {
+  const box = $("strnote"), set = STRING_SETS[Engine.strings], adv = UI.cue && STRING_ADVICE[UI.cue.id];
+  box.innerHTML = "";
+  if (!UI.cue || !takeUsesStrings(writeCue(UI.cue.id, UI.params, UI.seed))) { box.append(h("span", { class: "dim" }, "no strings in this cue: the string set doesn't change it")); return; }
+  box.append(h("b", {}, "Strings: " + set.label), " · " + set.note);
+  const want = adv ? adv[0] : "section";
+  if (want !== Engine.strings) box.append(h("div", { class: "advice" }, "Suits this cue: ", h("b", {}, STRING_SETS[want].label), adv ? " (" + adv[1] + ") " : " ", h("button", { onclick: () => setStrings(want) }, "Use it")));
+  else if (adv) box.append(h("div", { class: "advice ok" }, "The set this cue suits (" + adv[1] + ")"));
+}
+function setStrings(id) {
+  if (!STRING_SETS[id]) id = "section";
+  const was = UI.playing;
+  Engine.strings = id; LS.set("strings", id); $("strset").value = id; $("strset").title = STRING_SETS[id].note;
+  renderStrNote();
+  if (was && was.take && !was.take.strings) playTake(was.take, was.canvas, was.el, Math.max(0, Engine.position()));   // hear the swap at once
+}
+// a favourite's take, playing with the strings it was kept with
+function favTake(f) { const t = writeCue(f.cue, f.params, f.seed); if (f.strings) t.strings = f.strings; return t; }
+const takeUsesStrings = take => take.ev.some(e => STRING_ROLES.includes(e.inst));
 
 function renderParams() {
   const c = UI.cue, box = $("params");
@@ -257,7 +308,7 @@ function keep(cueId, params, seed, extra = {}) {
   const same = UI.palette.favourites.filter(f => f.cue === cueId).length;
   const fav = Object.assign({ id: newId("f"), name: c.label + " " + (same + 1), cue: cueId, family: c.family, params: JSON.parse(JSON.stringify(params)), seed,
     secs: Math.round(take.secs * 100) / 100, hits: take.hits.map(x => ({ t: Math.round(x.t * 1000) / 1000, label: x.label })), print: takePrint(take),
-    space: $("space").value, uses: c.uses.slice(0, 2), stars: 0, note: "", made: today() }, extra);
+    space: $("space").value, strings: Engine.strings, uses: c.uses.slice(0, 2), stars: 0, note: "", made: today() }, extra);
   UI.palette.favourites.unshift(fav);
   changed();
   status("kept " + fav.name);
@@ -303,18 +354,20 @@ function renderPalette() {
 function favCard(f) {
   const c = CUES[f.cue];
   if (!c) return h("div", { class: "fav" }, "unknown cue " + f.cue + " (", f.name, ")");
-  const take = writeCue(f.cue, f.params, f.seed), drift = f.print && f.print !== takePrint(take);
+  const take = favTake(f), drift = f.print && f.print !== takePrint(take);
   let cv = null;
   const el = h("div", { class: "fav" },
     h("div", { class: "top" }, h("input", { class: "name", value: f.name, onchange: e => { f.name = e.target.value; changed(); } }), stars(f)),
     h("div", { class: "meta" }, h("span", { class: "fam-" + c.family }, c.label), " · " + take.secs.toFixed(1) + " s · seed " + f.seed + (take.key ? " · " + keyName(take.key) : ""),
       drift ? h("b", { style: "color:var(--warn)", title: "the cue's generator changed since this was kept: its notes are different now" }, " · changed") : null),
     h("input", { class: "uses", placeholder: "for (comma separated): her room, the turn...", value: (f.uses || []).join(", "), onchange: e => { f.uses = e.target.value.split(",").map(s => s.trim()).filter(Boolean); changed(); } }),
+    takeUsesStrings(take) ? h("div", { class: "meta" }, "strings ", h("select", { title: "which samples play its strings (the notes stay the same)", onchange: e => { f.strings = e.target.value; take.strings = f.strings; changed(); } },
+      Object.entries(STRING_SETS).map(([id, s]) => h("option", { value: id, selected: id === (f.strings || "section"), title: s.note }, s.label)))) : null,
     h("textarea", { placeholder: "note (where it goes, what to change)", value: f.note || "", onchange: e => { f.note = e.target.value; changed(); } }),
     h("div", { class: "row" },
       h("button", { onclick: () => { if (!cv) { cv = rollCanvas(take, 600, 120); el.insertBefore(cv, el.lastChild); } playTake(take, cv, el); } }, "▶"),
-      h("button", { title: "open its settings", onclick: () => { selectCue(f.cue, f.params, f.seed); } }, "Open"),
-      h("button", { title: "open it and make variations of it", onclick: () => { selectCue(f.cue, f.params, f.seed); makeVariations(); } }, "Vary"),
+      h("button", { title: "open its settings", onclick: () => { setStrings(f.strings || "section"); selectCue(f.cue, f.params, f.seed); } }, "Open"),
+      h("button", { title: "open it and make variations of it", onclick: () => { setStrings(f.strings || "section"); selectCue(f.cue, f.params, f.seed); makeVariations(); } }, "Vary"),
       h("button", { title: "add to the sequence", onclick: () => { UI.seq.push({ fav: f.id, gap: 0 }); renderSeq(); } }, "+ Seq"),
       h("button", { title: "MIDI", onclick: () => downloadBytes(Engine.midi(take, f.name), fileBase(f.cue, f.seed, f.name) + ".mid") }, "MIDI"),
       h("button", { title: "WAV in the room it was kept in", onclick: e => renderWavTo(take, fileBase(f.cue, f.seed, f.name) + ".wav", e.target) }, "WAV"),
@@ -325,7 +378,7 @@ function favCard(f) {
 
 // ---- the sequence strip ----
 function seqTake(items) {
-  const parts = items.map(it => { const f = UI.palette.favourites.find(x => x.id === it.fav); return f && CUES[f.cue] ? { take: writeCue(f.cue, f.params, f.seed), gap: +it.gap || 0 } : null; }).filter(Boolean);
+  const parts = items.map(it => { const f = UI.palette.favourites.find(x => x.id === it.fav); return f && CUES[f.cue] ? { take: favTake(f), gap: +it.gap || 0 } : null; }).filter(Boolean);
   return parts.length ? chainTakes(parts) : null;
 }
 function renderSeq() {
@@ -374,6 +427,9 @@ async function boot() {
   $("space").value = LS.get("space", "room");
   $("space").onchange = () => { LS.set("space", $("space").value); Engine.setSpace($("space").value); };
   Engine.space = $("space").value;
+  for (const [id, s] of Object.entries(STRING_SETS)) $("strset").append(h("option", { value: id, title: s.note }, s.label));
+  $("strset").onchange = () => setStrings($("strset").value);
+  setStrings(LS.get("strings", "section"));
   $("scope").append(h("option", { value: "studio" }, "Studio (every game)"));
   try { const r = await fetch("/api/games"); if (r.ok) for (const g of (await r.json()).games) $("scope").append(h("option", { value: g }, g)); } catch (e) { /* no server */ }
   const scope = LS.get("scope", "studio");
@@ -388,7 +444,8 @@ async function boot() {
   $("motif").onchange = () => setMotif($("motif").value);
   $("motifdice").onclick = () => setMotif(1 + Math.floor(Math.random() * 9998));
   $("motifplay").onclick = () => playTake(writeCue("theme", { motif: UI.palette.motif || 1, key: (UI.params.key && UI.cue.motif) ? UI.params.key : undefined }, 1), null, null);
-  $("filter").oninput = renderLib;
+  $("filter").oninput = () => { renderLib(); renderInstruments(); };
+  Engine.init().then(renderInstruments).catch(e => console.warn("instruments", e));
   $("favfilter").oninput = renderPalette; $("favsort").onchange = renderPalette;
   $("spread").oninput = () => { $("spreadv").textContent = (+$("spread").value).toFixed(2); };
   $("spread").oninput();
