@@ -23,6 +23,7 @@ SCRIPTGEN = ROOT / "setup" / "scriptgen.json"
 DEFAULTS = {"backend": "claude", "claude_via": "auto", "model": "claude-opus-5-5", "effort": "high",
             "ollama": {"url": "http://127.0.0.1:11434", "model": "qwen3.6:27b", "num_ctx": 32768, "temperature": 0.8, "timeout": 900}}
 CODE_MODEL = {"claude-opus-5-5": "opus", "claude-sonnet-5-5": "sonnet", "claude-fable-5-1": "fable"}   # Claude Code's aliases
+PRICE = {"claude-opus-5-5": (4.0, 20.0), "claude-sonnet-5-5": (2.0, 10.0), "claude-fable-5-1": (10.0, 50.0)}   # $ per million tokens in, out
 
 
 class ModelError(Exception):
@@ -155,6 +156,8 @@ class ClaudeCode:
             raise ModelError(f"Claude Code answered with no JSON: {(err or out or '')[-400:]}")
         if res.get("is_error") or res.get("subtype") not in (None, "success"):
             raise ModelError(f"Claude Code: {res.get('result') or res.get('subtype') or 'failed'}")
+        if progress and res.get("total_cost_usd") is not None:
+            progress(f"Claude wrote the {kind} in {time.time() - t0:.0f} s (${res['total_cost_usd']:.2f})")
         if res.get("structured_output") is not None:
             return res["structured_output"]
         return parse_json(res.get("result", ""), "Claude Code")
@@ -191,6 +194,10 @@ class ClaudeAPI:
                 res = json.loads(res_file.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 raise ModelError("the API worker failed: " + " / ".join(tail[-6:]))
+        u = res.get("usage") or {}
+        if progress and u:
+            pin, pout = PRICE.get(self.model, (4.0, 20.0))
+            progress(f"Claude wrote the {kind} ({u.get('output', 0)} tokens, about ${(u.get('input', 0) * pin + u.get('output', 0) * pout) / 1e6:.2f})")
         if not res.get("ok"):
             raise ModelError(res.get("error") or "the API worker failed")
         return res["data"]
