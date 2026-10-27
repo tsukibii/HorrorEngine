@@ -1,0 +1,77 @@
+/* The dashboard: the launcher's colours (blood, bone, ash) on near-black. */
+:root{--bg:#0b0909;--panel:#141011;--panel2:#1b1516;--line:#2c1d1f;--blood:#d4161c;--blood2:#8e0f13;--bone:#ece4da;--ash:#8d827a;
+  --ok:#62c27e;--warn:#e0a240;--bad:#ff5a5a;--r:10px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--bone)}
+body{display:flex;flex-direction:column;font-size:14px}
+button,select,input{font:inherit;color:var(--bone);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 10px}
+button{cursor:pointer;white-space:nowrap}
+button:hover{border-color:#5a2a2e;background:#231819}
+button:disabled{opacity:.45;cursor:default}
+button.go{background:var(--blood2);border-color:var(--blood)}
+button.go:hover{background:var(--blood)}
+button.danger{border-color:#5a1c1f}
+button.ghost{background:none;border-color:transparent;color:var(--ash);padding:4px 7px}
+button.ghost:hover{color:var(--bone);border-color:var(--line)}
+input::placeholder{color:#6d625c}
+header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);background:linear-gradient(#170e0f,#0d0a0a)}
+.brand{font-size:18px;letter-spacing:.24em;color:var(--blood);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{color:var(--blood)}
+#whisper{font-size:12px;letter-spacing:.02em;color:var(--ash);font-style:italic;margin-left:12px}
+.game{color:var(--ash);font-size:12px;display:flex;align-items:center;gap:6px}
+#filter{width:220px}
+.running{color:var(--blood);font-size:13px}
+main{flex:1;display:flex;min-height:0}
+#tools{flex:1;overflow:auto;padding:16px 18px 40px}
+#side{width:min(560px,44vw);border-left:1px solid var(--line);display:flex;flex-direction:column;background:var(--panel);min-height:0}
+.side-h{padding:10px 14px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ash);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.out-h{border-top:1px solid var(--line)}
+#outTitle{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none;letter-spacing:0;font-size:13px;color:var(--bone)}
+#activity{max-height:38%;overflow:auto}
+.act{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid #1d1416;cursor:pointer}
+.act:hover,.act.on{background:#1f1617}
+.act .t{flex:1;min-width:0}
+.act .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act .t .sub{font-size:11px;color:var(--ash)}
+.out{flex:1;margin:0;padding:12px 14px;overflow:auto;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;color:#d9d0c6}
+.out .okl{color:var(--ok)}
+.out .badl{color:var(--bad)}
+.out .cmdl{color:var(--blood)}
+.muted{color:var(--ash)}
+.dot{width:9px;height:9px;border-radius:50%;background:#3a2d2e;flex:none}
+.dot.up{background:var(--blood);box-shadow:0 0 8px var(--blood)}
+.dot.run{background:var(--warn);animation:pulse 1s infinite alternate}
+.dot.ok{background:var(--ok)}
+.dot.failed,.dot.lost{background:var(--bad)}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+.chip{font-size:11px;padding:2px 7px;border-radius:20px;border:1px solid var(--line);color:var(--ash)}
+.chip.ok{color:var(--ok);border-color:#24502f}
+.chip.failed,.chip.lost{color:var(--bad);border-color:#5a2424}
+.chip.running{color:var(--warn);border-color:#5a4220}
+.chip.stopped{color:var(--ash)}
+/* start here: the pages, as tiles */
+#start{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:22px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:118px}
+.tile.up{border-color:#5d1d22;box-shadow:inset 0 0 0 1px #3a1215}
+.tile .h{display:flex;align-items:center;gap:8px;font-weight:600}
+.tile .d{font-size:12px;color:var(--ash);flex:1}
+.tile .b{display:flex;gap:6px}
+/* the sections and their rows */
+.sec{margin-bottom:18px}
+.sec-h{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--blood);padding:4px 0 6px;border-bottom:1px solid var(--line);margin-bottom:4px;cursor:pointer;user-select:none;display:flex;gap:8px}
+.sec-h .n{color:var(--ash)}
+.sec.fold .row{display:none}
+.row{display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:7px}
+.row:hover{background:#140f10}
+.row .t{flex:1;min-width:0}
+.row .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .cmd{font:11px ui-monospace,Menlo,Consolas,monospace;color:#6d625c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .f{display:flex;gap:6px;flex-wrap:wrap}
+.row .f input{width:150px;padding:4px 8px;font-size:12px}
+.row .b{display:flex;gap:6px}
+.row.up .label{color:var(--bone);font-weight:600}
+.hidden{display:none !important}
+#toast{position:fixed;left:50%;bottom:22px;translate:-50% 0;background:#241618;border:1px solid #5a2a2e;padding:9px 16px;border-radius:9px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:70vw}
+#toast.on{opacity:1}
+#toast.bad{border-color:var(--bad)}
+@media (max-width:900px){main{flex-direction:column}#side{width:auto;border-left:none;border-top:1px solid var(--line);height:45vh}}

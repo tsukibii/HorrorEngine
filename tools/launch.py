@@ -13,6 +13,8 @@ and the same number again stops that page (pages on one server, like the desk an
 them only opens its page). Running pages are kept in Saved/launch.json, so a new launcher can still stop them.
 
     python tools/launch.py --close      stop every page the launcher started, then exit
+
+The same tools as a page: python dashboard.py (the dashboard, in the project folder; it shares Saved/launch.json).
 """
 import json
 import os
@@ -126,6 +128,7 @@ TOOLS = [
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
     ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),
     ("Checks", "Time of day on the desk (the desk running)", "node tools/director/timetest.js", {}),
+    ("Checks", "Dashboard test (headless browser, its own dashboard on port 8798)", "node tools/dashboard/dashtest.mjs", {}),
     ("Checks", "Blender look check (Light Kit's times, UltraVHS's camcorder; needs the Blender module)", "tools/blender_look_check.py", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
