@@ -47,6 +47,11 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.stitches.t_search.beats.push({ id: "b_answered", when: { answered: "q_stay", option: "go" }, optional: true, do: [{ flag: "heard_go" }] });
     S.levels.house.rooms.find(r => r.id === "kitchen").props.push({ id: "pilot_kettle", kit: "kettle_jug", on: "kitchen_table", at: [2.5, 1.75], rot: 270, secs: { heating: 1, boiling: 0.5 } });
     S.stitches.t_search.beats.push({ id: "b_kettle", when: { state: "pilot_kettle", is: "boiled" }, optional: true, do: [{ flag: "tea_ready" }] });
+    // a request (STORY_FORMAT §9.12): Mari asks for the kettle; when it's boiled she walks to the kitchen and sits down
+    S.levels.house.rooms.find(r => r.id === "kitchen").props.push({ id: "kitchen_chair_spot", use: "spot", at: [1.4, 1.2], rot: 90 });
+    S.stitches.t_search.beats.find(b => b.id === "b_search_list").do.push({ todo: "make_tea", text: "Put the kettle on", who: "mari", ticks: { state: "pilot_kettle", is: "boiled" },
+      on: { done: [{ behave: "mari", as: "go", via: ["hall_mari_back_spot"], to: "kitchen_chair_spot", then: "sit" }] } });
+    S.stitches.t_search.beats.push({ id: "b_tea_sat", when: { arrived: "mari", at: "kitchen_chair_spot" }, optional: true, do: [{ think: "She sat down to wait for her tea." }] });
     await window.__dd.replan();
   });
   await page.click('nav button[data-v="watchView"]');
@@ -140,9 +145,9 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (Math.abs(a.y - b.y) < 0.2 && !(a.pose === "look_left" || b.pose === "look_left")) throw new Error(`${what}: not walking ${JSON.stringify([a, b])} ${await page.evaluate(() => { const rt = window.__dd.play; return JSON.stringify({ active: rt.active, held: rt.held, busy: rt.busy, clock: rt.clock, menu: !!document.querySelector(".ph-menu"), npc: rt.npcs.mari && Object.keys(rt.npcs.mari) }); })}`);
   };
   const tasks = () => page.evaluate(() => [...document.querySelectorAll(".ph-todo .ph-task")].map(e => ({ id: e.dataset.id, state: e.dataset.state, text: e.textContent })));
-  await step("the to-do list: the search puts two tasks on the HUD under the objective, both open", async () => {
+  await step("the to-do list: the search puts three tasks on the HUD under the objective, all open, Mari's request with her name", async () => {
     const t = await tasks();
-    if (t.length !== 2 || t.some(x => x.state !== "open") || !/letter/.test(t[0].text)) throw new Error(JSON.stringify(t));
+    if (t.length !== 3 || t.some(x => x.state !== "open") || !/letter/.test(t[0].text) || !/kettle.*Mari/.test(t[2].text)) throw new Error(JSON.stringify(t));
   });
   await step("a task failed: one with a time limit counts down and fails by itself, struck in the bad colour; its failed runs and is heard", async () => {
     await page.evaluate(() => { const rt = window.__dd.play; window.__heard = []; rt.todo.add({ todo: "t_test", text: "A test task", secs: 0.6, on: { failed: [{ flag: "t_test_failed" }] } });
@@ -152,7 +157,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       const out = { flag: rt.flags.has("t_test_failed"), heard: window.__heard, struck: getComputedStyle(e.querySelector(".ph-task-text")).textDecorationLine, box: e.querySelector(".ph-box").textContent };
       rt.todo.remove("t_test"); rt.flags.delete("t_test_failed"); return out; });
     if (!r.flag || !r.heard.some(e => e.id === "t_test" && e.state === "failed") || !/line-through/.test(r.struck) || r.box !== "✕") throw new Error(JSON.stringify(r));
-    if ((await tasks()).length !== 2) throw new Error("the test task is still on the list");
+    if ((await tasks()).length !== 3) throw new Error("the test task is still on the list");
   });
   await step("a behaviour: Mari walks her route up and down the hall (path, pingpong, a wait in a pose)", () => onRoute("the search"));
   await step("ask: the answers float beside Mari, the question in the footer; 2 answers, its do runs and answered is heard", async () => {
@@ -355,6 +360,16 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (!(steam > 3)) throw new Error("no steam from the spout while it boils: " + steam);
     await gameWait(1.2);
     if (!(await flag("tea_ready"))) throw new Error("boiled not heard: it's " + await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle")));
+  });
+  await step("a request: Mari's kettle task ticks as it boils, and she walks off to the kitchen (by the hall's end) and sits at the table; the story hears she's arrived", async () => {
+    const t = await tasks(); if ((t.find(x => x.id === "make_tea") || {}).state !== "done") throw new Error(JSON.stringify(t));
+    const going = await page.evaluate(() => { const n = window.__dd.play.npcs.mari; return n && n.as === "go" && !n.st.arrived; });
+    if (!going) throw new Error("she isn't on her way: " + await page.evaluate(() => JSON.stringify(window.__dd.play.npcs.mari && { as: window.__dd.play.npcs.mari.as, st: Object.keys(window.__dd.play.npcs.mari.st) })));
+    for (let i = 0; i < 40 && !(await page.evaluate(() => window.__dd.play.ended.b_tea_sat !== undefined)); i++) await gameWait(0.5);
+    const r = await page.evaluate(() => { const rt = window.__dd.play, n = rt.npcs.mari, sp = rt.plan.things.kitchen_chair_spot;
+      return { arrived: n.st.arrived, pose: n.pose, walking: n.walking, d: Math.hypot(n.pos.x - sp.pos[0], -n.pos.z - sp.pos[1]), yaw: n.yaw, heard: rt.ended.b_tea_sat !== undefined }; });
+    console.log(`       she sat ${r.d.toFixed(2)} m from the chair's spot, facing ${Math.round(r.yaw)}°, pose ${r.pose}`);
+    if (r.arrived !== "kitchen_chair_spot" || r.pose !== "sit" || r.walking || r.d > 0.06 || !r.heard) throw new Error(JSON.stringify(r));
   });
   await step("the little things' sounds: each one made in the browser, rendered offline, is a sound and doesn't clip", async () => {
     const bad = await page.evaluate(async () => {

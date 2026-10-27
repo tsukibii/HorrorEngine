@@ -414,6 +414,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `{"played": table}`, `"result": "lose"` | a board game at that table (`use: game`) ended: any result, or that one (its game's `results`). A result is chance, so a beat that needs one is `optional` or `secret` (the check warns otherwise): set a flag, and let the flow branch on it |
 | `{"dropped": id}`, `"in": room_or_trigger` | it was put down and has settled (anywhere, or inside that room or trigger on its level): put the doll back in its bed, the box on the shelf |
 | `{"state": thing, "is": s}` | a little thing is in that state (by itself, the story or the player); holds while it is: `{"state": "kitchen_kettle", "is": "boiled"}` |
+| `{"arrived": cast}`, `"at": spot` | a cast member got where a `behave` `go` sent her (anywhere, or that spot); holds while she's there (§9.12) |
 | `{"ticked": task}`, `{"ticked": true}` | that task on the to-do list is ticked, or (true) the list is through: nothing on it open (each ticked or failed); holds while it is |
 | `{"failed": task}`, `{"failed": true}` | that task is failed, or (true) any task is; holds while it is |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
@@ -432,7 +433,8 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
   `{"behave": "mari", "as": "path", "route": "r_hall"}`. `as`: `idle` (`at` a spot, `pose`, `face` a thing, a cast
   member or `player`), `sit` (`at`), `path` (`route`: a level's route or a list of spots; `mode`, `speed` m/s,
   `from`: `nearest` or `first` point), `patrol` (`routes`: walks each once, then the next; `pick`: `order` or
-  `random`), `off` (gone). Not AI: the same steps every time, so a player can learn them.
+  `random`), `go` (`to` a spot, by way of `via`, then `then`: `idle` or `sit` there; heard as `arrived`, §9.12),
+  `off` (gone). Not AI: the same steps every time, so a player can learn them.
   `motion` (any of them but `off`): a `motions` id she plays, looped: while she stands (`idle`) or sits, or while she
   walks a `path` or a `patrol` (then `in_place`: the route moves her; a point's `pose` at its waits). Until its
   Kimodo take is made, the desk plays its `block` stand-in, else the pose; Unreal plays the take (its `name`).
@@ -815,3 +817,30 @@ only colours, radii, shadows and the font; the layout is the same for every game
 large_hall church outdoors car`. Without it the room's size, floor and ceiling pick one (`storylib.acoustics_of`).
 The importer puts an AudioVolume with that preset's reverb in each room, so voices and steps sound like the place
 (docs/UNREAL_FLOW.md).
+
+### 9.12 Requests (someone asks, waits, then carries on)
+
+A request (DECISIONS 2026-10-27, late night) is a to-do task (§4) with a `who`: she asks for something, it goes on the
+list with her name beside it, she waits, and when it's done she **carries on into the next shot herself**: walks to the
+sofa and sits down, and the story goes on from there. No new scene is needed for her leaving. The quick task "Someone
+asks for something" (the desk's Quick tasks) writes it:
+
+```json
+"t_tea": {"title": "Tea for Mari", "level": "house", "template": "request", "beats": [
+  {"id": "b_req_ask", "when": {"start": true}, "do": [
+    {"behave": "mari", "as": "idle", "at": "kitchen_door_spot", "face": "player"},
+    {"say": "mari_tea"},
+    {"todo": "req_kettle", "text": "Put the kettle on", "who": "mari", "ticks": {"state": "kitchen_kettle", "is": "boiled"},
+     "on": {"done": [{"behave": "mari", "as": "go", "via": ["hall_end"], "to": "sofa_spot", "then": "sit"}]}}]},
+  {"id": "b_req_done", "when": {"arrived": "mari", "at": "sofa_spot"}, "do": [{"untodo": "req_kettle"}, {"done": true}]}]}
+```
+
+- **`behave` as `go`**: she walks to `to` (a spot), by way of `via` (spots on the way: through a door, round a table;
+  she walks straight from one to the next), then stays there: `then: "idle"` stands facing the spot's rot (or `face`),
+  `then: "sit"` sits. `speed`, `motion` (played while she walks, in place) as for `path`.
+- **`{"arrived": cast, "at": spot}`**: she's got where a `go` sent her (anywhere, or that spot); holds while she's there.
+  The task ends on it, so the flow's next node (a scene on the sofa) starts with her already sitting there.
+- A request can fail like any task (`fails`, `secs`, `fail`): her `on.failed` can walk her off somewhere else, or set a
+  flag the flow branches on.
+- The walker (STORY) does the request, sends her where `go` says and counts a few seconds for the walk.
+

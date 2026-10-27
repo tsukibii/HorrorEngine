@@ -50,7 +50,8 @@ export class Todo {
     if (ev.type === "tick" && this.list.some(t => t.state === "open" && t.secs)) this.show();
   }
   show(fresh) {
-    this.rt.hud.todo(this.list.map(t => ({ id: t.id, text: t.text, state: t.state,
+    const cast = this.rt.story.cast || {};
+    this.rt.hud.todo(this.list.map(t => ({ id: t.id, text: t.text, state: t.state, who: t.who ? (cast[t.who] || {}).name || t.who : null,
       left: t.secs && t.state === "open" ? Math.max(0, +t.secs - (this.rt.clock - t.at)) : null })), fresh);
   }
 }

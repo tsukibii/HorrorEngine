@@ -69,12 +69,13 @@ export class Hud {
     if (text && text !== this.obj.textContent) { this.obj.classList.add("fresh"); clearTimeout(this.objTimer); this.objTimer = setTimeout(() => this.obj.classList.remove("fresh"), 4000); }
     this.obj.textContent = text || ""; this.obj.classList.toggle("on", !!text);
   }
-  // the to-do list under the objective: [{id, text, state: open | done | failed, left: seconds or null}]; a ticked task
+  // the to-do list under the objective: [{id, text, state: open | done | failed, who: the asker's name or null, left: seconds or null}]; a ticked task
   // dims with its box ticked, a failed one is struck in the bad colour; `fresh`: something changed, the list says so
   todo(items, fresh) {
     this.todoEl.replaceChildren(...items.map(t => {
       const e = mk("div", "ph-task"); e.dataset.state = t.state; e.dataset.id = t.id;
       e.append(mk("span", "ph-box", t.state === "done" ? "✓" : t.state === "failed" ? "✕" : ""), mk("span", "ph-task-text", t.text));
+      if (t.who) e.append(mk("span", "ph-task-who", t.who));            // a request: who asked
       if (t.left !== null && t.left !== undefined) e.append(mk("span", "ph-task-left", Math.ceil(t.left) + "s"));
       return e;
     }));

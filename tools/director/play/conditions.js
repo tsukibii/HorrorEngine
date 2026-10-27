@@ -34,5 +34,6 @@ register("condition", "played", { test: (v, w, ev) => ev.type === "played" && ev
 register("condition", "state", { test: (v, w, ev, rt) => rt.stateOf(v) === w.is });   // a little thing in that state: holds while it is (docs/IMMERSION.md)
 register("condition", "ticked", { test: (v, w, ev, rt) => ticked(rt.todo.list, v) });   // a task ticked, or (true) the list through; holds
 register("condition", "failed", { test: (v, w, ev, rt) => failed(rt.todo.list, v) });   // a task failed, or (true) any; holds
+register("condition", "arrived", { test: (v, w, ev, rt) => { const n = rt.npcs[v]; return !!(n && n.as === "go" && n.st.arrived && (w.at === undefined || n.st.arrived === w.at)); } });   // she's got where she was going (behave go); holds while she's there
 register("condition", "all", { test: (v, w, ev, rt) => v.every(c => matches(c, ev, rt)) });
 register("condition", "any", { test: (v, w, ev, rt) => v.some(c => matches(c, ev, rt)) });

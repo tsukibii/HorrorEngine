@@ -7,7 +7,22 @@ lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the fou
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-27, night, on `dev-002`): the expression library
+## 0. Latest (2026-10-27, late night, on `dev-002`): simpler games, after Chilla's Art
+
+The user deprecated quick-time events (the Pilot's grab and locker are dialogue choices now) and asked for a study of
+Chilla's Art's games (docs/research/chillas_art.md). From its five suggestions they picked three (DECISIONS 2026-10-27,
+late night), all built:
+- **the to-do list** with tasks that can fail (`todo`, `tick`, `fail`, `untodo`; `ticked`, `failed`): the HUD's list
+  under the objective; the Pilot's search lists the letter and the key;
+- **nights as chapters**: a bed (`use: sleep`, gated by its `if` flags) and `chapter` (a title card, the time of day
+  carried on after the task, an autosave); the Pilot's study has a bed for a nap ("Later · 02:13");
+- **requests**: a task with a `who`; the asker waits, then walks off and sits (`behave` `go`, the `arrived` trigger);
+  the quick task "Someone asks for something" (STORY_FORMAT §9.12). PLAY tests one on the Pilot's kettle.
+No pocket phone (only analogue phones, if ever) and no ending cards (endings are cutscenes). Not yet in Unreal: the
+list, the chapter card and `go` are desk-only (bake.js doesn't carry them). Next: ask what the user's doing; the
+expression plan's steps 2 to 5 are still open.
+
+## 0z. Before that (2026-10-27, night, on `dev-002`): the expression library
 
 The user switched direction (DECISIONS 2026-10-27 night): English text with a typewriter blip instead of voices, and
 a library of captured expressions placed on the timeline per character, with loops, reactions and look-at by angle in

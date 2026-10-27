@@ -90,6 +90,8 @@
 .play-hud .ph-task[data-state=done] .ph-task-text{text-decoration:line-through}
 .play-hud .ph-task[data-state=failed]{color:var(--ph-bad)}
 .play-hud .ph-task[data-state=failed] .ph-task-text{text-decoration:line-through}
+.play-hud .ph-task-who{color:var(--ph-muted);font-size:.88em}
+.play-hud .ph-task-who::before{content:"· ";}
 .play-hud .ph-task-left{margin-left:auto;padding-left:10px;font-variant-numeric:tabular-nums;color:var(--ph-bad)}
 .play-hud .ph-objective.on{opacity:var(--ph-rest,.72)}
 .play-hud .ph-objective.on.fresh{opacity:1}

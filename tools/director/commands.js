@@ -15,7 +15,7 @@ export const GROUPS = [
 export const MUSIC = ["silence", "calm", "uneasy", "dread", "chase"];
 export const LIGHT_SET = ["on", "off", "flicker", "dim"];
 export const DOOR_SET = ["lock", "unlock", "open", "close", "slam"];
-export const BEHAVE_AS = ["idle", "sit", "path", "patrol", "off"];
+export const BEHAVE_AS = ["idle", "sit", "path", "patrol", "go", "off"];
 // tricks (TRICKS.md §2): each one's own fields
 export const TRICKS = {
   knock: [{ key: "at", label: "on", kind: "thing" }, { key: "count", label: "times", kind: "number", ph: "3" }],
@@ -51,6 +51,9 @@ export const BEHAVE_FIELDS = {
     { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }, { key: "from", label: "starting from", kind: "choice", opts: ["nearest", "first"], opt: true },
     { key: "motion", label: "walking (a motion, in place)", kind: "motion", opt: true }],
   patrol: [{ key: "routes", label: "routes", kind: "routes" }, { key: "pick", label: "pick", kind: "choice", opts: ["order", "random"], opt: true },
+    { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }, { key: "motion", label: "walking (a motion, in place)", kind: "motion", opt: true }],
+  go: [{ key: "to", label: "to", kind: "spot" }, { key: "then", label: "then", kind: "choice", opts: ["idle", "sit"], labels: { idle: "stands there", sit: "sits there" }, opt: true },
+    { key: "via", label: "by way of", kind: "many", of: "spot", opt: true }, { key: "face", label: "facing (standing)", kind: "facing", opt: true },
     { key: "speed", label: "speed (m/s)", kind: "number", ph: "1.1", opt: true }, { key: "motion", label: "walking (a motion, in place)", kind: "motion", opt: true }],
   off: [],
 };
@@ -177,6 +180,7 @@ function behaveText(a, n) {
     case "sit": return `sits at ${n("thing", a.at)}`;
     case "path": return `walks ${a.route ? n("route", a.route) : "a route"}${a.mode ? " (" + a.mode + ")" : ""}`;
     case "patrol": return `patrols ${(a.routes || []).map(r => n("route", r)).join(", ") || "…"}${a.pick === "random" ? " (random)" : ""}`;
+    case "go": return `walks to ${n("thing", a.to)}${(a.via || []).length ? " by way of " + a.via.map(x => n("thing", x)).join(", ") : ""}${a.then === "sit" ? " and sits" : ""}`;
     case "off": return "leaves";
   }
   return a.as;
@@ -223,6 +227,8 @@ export const TRIGGERS = [
     make: () => ({ rolled: "" }), text: (w, n) => `${n("thing", w.rolled)} rolls${w.face ? " a " + w.face : w.at_least ? " " + w.at_least + " or more" : ""}` },
   { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },
     { key: "is", label: "is", kind: "lifestate" }], make: () => ({ state: "", is: "" }), text: (w, n) => `${n("thing", w.state)} is ${w.is || "…"}` },
+  { verb: "arrived", label: "Someone gets there", icon: "person", fields: [{ key: "arrived", label: "Who", kind: "cast", verb: true }, { key: "at", label: "at", kind: "spot", opt: true }],
+    make: () => ({ arrived: "" }), text: (w, n) => `${n("cast", w.arrived)} gets to ${w.at ? n("thing", w.at) : "where she was going"}` },
   { verb: "ticked", label: "A task is ticked", icon: "check", fields: [{ key: "ticked", label: "Task", kind: "anytodo", verb: true }],
     make: () => ({ ticked: true }), text: (w, n) => w.ticked === true ? "the to-do list is through" : `${n("todo", w.ticked)} is ticked` },
   { verb: "failed", label: "A task is failed", icon: "x", fields: [{ key: "failed", label: "Task", kind: "anytodo", verb: true }],

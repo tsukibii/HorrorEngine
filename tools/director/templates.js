@@ -55,6 +55,18 @@ export const TASKS = [
       { key: "rule", label: "The rule, in one line", kind: "text", ph: "Reach the front door before she reaches you" }],
     build: v => ({ title: T(v.title) || "Run", template: "run", target_min: 1, beats: [],
       play: { type: "run", secs: +v.secs || 30, rule: T(v.rule) || "Reach the door before she reaches you", seeker: v.seeker || undefined, spots: v.exit ? [v.exit] : [], on: {} } }) },
+  // a request (DECISIONS 2026-10-27, late night): she asks for something and waits for it; when it's done she goes on
+  // to where the story carries on (the sofa), and the task ends as she gets there
+  { id: "request", label: "Someone asks for something", icon: "person", template: "request",
+    hint: "she asks, it goes on the to-do list, she waits; when it's done she walks off to sit (or stand) somewhere and the story goes on from there",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Tea for Mari" }, { key: "who", label: "Who asks", kind: "cast" },
+      { key: "wait", label: "Where she waits", kind: "spot" }, { key: "line", label: "What she says", kind: "line", opt: true },
+      { key: "text", label: "On the list", kind: "text", ph: "Put the kettle on" }, { key: "ticks", label: "Done when", kind: "trigger" },
+      { key: "after", label: "Then she goes to", kind: "spot" }, { key: "then", label: "and there she", kind: "choice", opts: ["sit", "idle"], labels: { sit: "sits", idle: "stands" } }],
+    build: (v, S, id) => { const task = id("req_" + (T(v.text).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 20) || "task")), who = v.who || ""; return { title: T(v.title) || T(v.text) || "A request", template: "request", target_min: 3, beats: [
+      { id: id("b_req_ask"), when: { start: true }, do: [{ behave: who, as: "idle", at: v.wait || "", face: "player" }, ...(v.line ? [{ say: v.line }] : []),
+        { todo: task, text: T(v.text) || "…", who, ...(v.ticks ? { ticks: v.ticks } : {}), on: { done: [{ behave: who, as: "go", to: v.after || "", then: v.then || "sit" }] } }] },
+      { id: id("b_req_done"), when: { arrived: who, at: v.after || "" }, do: [{ untodo: task }, { done: true }] }] }; } },
 ];
 export const BEATS = [
   { id: "jumpscare", label: "A jump scare on entering", icon: "trick", hint: "a sound to lead the eye, then the figure",

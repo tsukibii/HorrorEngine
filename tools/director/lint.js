@@ -31,8 +31,8 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
   const routes = new Set(Object.values(S.levels || {}).flatMap(l => Object.keys(l.routes || {})));
   const asks = {};
   for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (a.ask) asks[a.ask] = a; });
-  const todos = {};
-  for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (typeof a.todo === "string") todos[a.todo] = a; });
+  const todos = {}, ticks = new Set();
+  for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (typeof a.todo === "string") todos[a.todo] = a; if (a.tick) ticks.add(a.tick); });
   const counters = game.counters || {}, axes = (game.karma || {}).axes || { karma: {} };
   const has = (kind, v, ctx) => {                  // does v name something of this kind?
     if (IS[kind]) { const t = things[v]; return t ? IS[kind](t) || kind === "thing" : kind === "thing" && !!cast[v]; }
@@ -72,6 +72,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (verb === "todo") {
       if (typeof a.todo !== "string" || !/^[a-z0-9_]+$/.test(a.todo)) add("error", "To do: its id is a word (lower case, digits, _), for Tick, Fail and “a task is ticked”", path, a);
       if (!a.text) add("error", `To do ${a.todo}: what the list says is empty`, path, a);
+      if (!a.ticks && !ticks.has(a.todo)) add("warn", `To do ${a.todo}: nothing ticks it: give it a “ticked when”, or Tick it in a beat`, path, a);
       for (const [r, l] of Object.entries(a.on || {})) actions(l, [...path, "on", r], ctx);
     }
     if (verb === "ask") {

@@ -26,8 +26,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed"}
-TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived"}
+TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
@@ -37,7 +37,7 @@ MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
-BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "off": ()}   # a cast member in play: what each needs
+BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "go": ("to",), "off": ()}   # a cast member in play: what each needs
 ROUTE_MODES = {"loop", "pingpong", "once"}
 SIGHT = {"angle", "range", "crouched", "meter", "drain", "calm"}      # behave sees: the play runtime's SIGHT
 TRICKS = {  # name: (required fields, seconds it takes)
@@ -796,6 +796,8 @@ def check_trigger(bid, w, story, things, beats, r):
         r.err(f"{bid}: `result` goes with a played trigger")
     if "is" in w and k != "state":
         r.err(f"{bid}: `is` goes with a state trigger")
+    if "at" in w and k != "arrived":
+        r.err(f"{bid}: `at` goes with an arrived trigger")
     if k not in TRIGGERS:
         r.err(f"{bid}: unknown trigger {k!r}")
     elif k in ("all", "any"):
@@ -842,6 +844,14 @@ def check_trigger(bid, w, story, things, beats, r):
             r.err(f"{bid}: state {v!r} isn't a placed thing with a life")
         elif w.get("is") not in LIFE.states(lf):
             r.err(f"{bid}: state {v} is {w.get('is')!r}: one of its states ({', '.join(LIFE.states(lf))})")
+    elif k == "arrived":                               # a cast member's go got to its spot (any, or `at`)
+        if v not in story.get("cast", {}):
+            r.err(f"{bid}: arrived {v!r} isn't in cast")
+        if "at" in w and (w["at"] not in things or things[w["at"]].use != "spot"):
+            r.err(f"{bid}: arrived at {w['at']!r} isn't a spot")
+        gone = json.dumps(story.get("stitches", {}), ensure_ascii=False)
+        if '"as": "go"' not in gone:
+            r.err(f"{bid}: arrived {v!r}: nothing sends anyone anywhere (behave as go)")
     elif k in ("ticked", "failed"):                    # a to-do task ticked or failed; true: the list through, any failed
         if v is not True and v not in todos_of(story):
             r.err(f"{bid}: {k} {v!r}: true or a task some stitch puts on the to-do list (`todo`)")
@@ -940,6 +950,8 @@ def check_action(bid, a, story, things, r, stage=None):
                     check_action(f"{bid} todo {v} on {res}", sub, story, things, r, stage)
         if "who" in a and a["who"] not in cast:
             r.err(f"{bid}: todo {v!r}: who {a['who']!r} isn't in cast")
+        if "ticks" not in a and f'"tick": "{v}"' not in json.dumps(story.get("stitches", {}), ensure_ascii=False):
+            r.warn(f"{bid}: todo {v!r}: nothing ticks it (no `ticks` of its own, no `tick` in a beat)")
         return
     if k == "chapter":                                 # a title card: dark, the card, the time of day, an autosave
         if not isinstance(v, str) or not v.strip():
@@ -1010,6 +1022,11 @@ def check_action(bid, a, story, things, r, stage=None):
                 r.err(f"{bid}: behave as {as_} needs {f!r}")
         if "at" in a:
             placed(a["at"], "spot")
+        for x in ([a["to"]] if "to" in a else []) + list(a.get("via") or []):     # go: where she walks, by way of
+            if placed(x, "spot") and things[x].use != "spot":
+                r.err(f"{bid}: behave go {x!r} isn't a spot")
+        if as_ == "go" and a.get("then", "idle") not in ("idle", "sit"):
+            r.err(f"{bid}: behave go then {a.get('then')!r}: idle (stands there) or sit")
         rs = a.get("routes", []) + ([a["route"]] if isinstance(a.get("route"), str) else [])
         for x in rs:
             if x not in routes:
@@ -1412,6 +1429,7 @@ class World:
         self.karma = {}            # axis -> total
         self.counters = {}         # game.counters -> value
         self.todo = {}             # the to-do list: task id -> [state (open done failed), its todo action]
+        self.arrived = {}          # cast id -> the spot a behave go took her to
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
         self.answers = []          # (scene node, clip, option) for the report
         # the little things' lives (docs/IMMERSION.md): each one's state, a follower where its leader puts it
@@ -1590,6 +1608,8 @@ class World:
             return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
+        if k == "arrived":                                # she walked where a behave go sent her
+            return v in self.arrived and (w.get("at") is None or self.arrived[v] == w["at"])
         if k == "ticked":                                 # holds: that task ticked, or the list through (nothing open)
             return bool(self.todo) and all(x[0] != "open" for x in self.todo.values()) if v is True else self.todo.get(v, [None])[0] == "done"
         if k == "failed":                                 # the walker fails only what the story fails (`fail`)
@@ -1684,6 +1704,12 @@ class World:
                         return True
             elif k == "chapter":
                 self.add("scripted", 3.6 + float(a.get("secs", 3)))
+            elif k == "behave":                           # go: she walks there (a few seconds) and has arrived
+                if a.get("as") == "go":
+                    self.arrived[v] = a.get("to")
+                    self.add("scripted", 4.0)
+                else:
+                    self.arrived.pop(v, None)
             elif k == "todo":
                 self.todo[v] = ["open", a]
             elif k in ("tick", "fail"):

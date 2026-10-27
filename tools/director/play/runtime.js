@@ -495,7 +495,7 @@ export class PlayRuntime {
       const h = +((this.story.cast || {})[n.cid] || {}).height || 1.7;
       // her motion (behave `motion`, the story's motions table): while she stands or sits, or while she walks a path or
       // a patrol (in place: the route moves her; at a wait, the point's pose); not made and no stand-in: the pose
-      const m = n.s.motion && (this.story.motions || {})[n.s.motion], walks = n.as === "path" || n.as === "patrol";
+      const m = n.s.motion && (this.story.motions || {})[n.s.motion], walks = n.as === "path" || n.as === "patrol" || n.as === "go";
       const mp = m && (n.walking || !walks) ? M.tableMotionPose(lib, m, m.name && this.files[m.name + ".json"], this.clock - (n.t0 || 0), h, walks) : null;
       if (mp) { f.update(mp); continue; }
       let p = M.clonePose(lib.poses[n.pose] || lib.poses.idle);

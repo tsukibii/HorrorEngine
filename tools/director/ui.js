@@ -186,9 +186,10 @@ export function fieldInput(f, obj, ctx, redraw) {
     case "trigger": {                            // a trigger inside a command (a task's `ticks`, `fails`): its pill, or none
       const box = h("span", { class: "rowi" });
       const draw = () => {
-        box.replaceChildren(obj[k] ? triggerPill({ get: () => obj[k], set: v => { obj[k] = v; } }, ctx, { prefix: "", after: draw }) :
-          h("button", { type: "button", on: { click: async () => { const v = await editTrigger({ start: true }, ctx); if (v) { obj[k] = v; draw(); } } } }, icon("plus", 14), " when…"),
-        obj[k] ? h("button", { type: "button", class: "ghost", title: "none", on: { click: () => { delete obj[k]; draw(); } } }, icon("x", 14)) : "");
+        const again = () => { draw(); if (redraw) redraw(); };
+        box.replaceChildren(obj[k] ? triggerPill({ get: () => obj[k], set: v => { obj[k] = v; } }, Object.assign({}, ctx, { changed() { } }), { prefix: "", after: again }) :
+          h("button", { type: "button", on: { click: async () => { const v = await editTrigger({ start: true }, ctx); if (v) { obj[k] = v; again(); } } } }, icon("plus", 14), " when…"),
+        obj[k] ? h("button", { type: "button", class: "ghost", title: "none", on: { click: () => { delete obj[k]; again(); } } }, icon("x", 14)) : "");
       };
       draw(); return box;
     }

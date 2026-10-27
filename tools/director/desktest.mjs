@@ -143,6 +143,7 @@ console.log("quick events (templates.js)");
     read_note: { note: Object.keys(S.notes)[0], thought: "Shaky." }, fetch: { item: Object.keys(S.items)[1], place: room[1] },
     timed_escape: { exit: room[0], secs: 30, fail: ending }, hide_round: { seeker: Object.keys(S.cast)[0], places: locker.slice(0, 2), secs: 40 },
     chase: { seeker: Object.keys(S.cast)[0], exit: door[0], secs: 25 },
+    request: { who: Object.keys(S.cast)[0], wait: of(t => t.use === "spot")[0], text: "Put the kettle on", ticks: { enter: room[1] }, after: of(t => t.use === "spot")[1], then: "sit" },
   };
   const made = [];
   for (const tpl of Q.TASKS) {
