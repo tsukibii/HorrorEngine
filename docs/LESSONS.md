@@ -808,3 +808,10 @@ load the page once after an edit.
 - **A film on the body is the cheap preview of a cut:** the cutter's value on every skin point, drawn with its zero as
   the line, is a few milliseconds a garment and shows exactly what the tailor will cut; the cloth itself (relaxed,
   hung) is only for the bake.
+- **A cut that hugs the body reads as knitwear, whatever the fabric says:** every structured garment looked like a
+  cardigan until the cut bridged the hollows (more tension), the shoulders were built (a pad at each joint) and the
+  drape kept the cut (memory, stiff bend, little slack). Fabric tiles can't make a membrane look tailored.
+- **Judge a tile on the garment, not the swatch:** lace flowers at 7 cm were polka dots on a blouse, silk streaks were
+  creases down a skirt, a satin sheen band tiled into blocks. Render the outfit before calling a fabric done.
+- **"Loose" is not "open":** a blazer loosened by its fit still closed down the front and read as a long cardigan; the
+  reference wore it open. Cut what's worn open open, and let the drape leave it so.

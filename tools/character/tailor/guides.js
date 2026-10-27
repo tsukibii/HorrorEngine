@@ -8,7 +8,7 @@
 // handle moves a line at once; the tailor cuts and hangs the cloth when the edits are baked. Plain typed arrays: the
 // page and node (tailor/check.mjs compares them with the cut).
 import { fitted } from "../tailor.js";
-import { cutter, handles, skirtOutline } from "./pieces.js";
+import { cutter, handles, skirtOutline, shoulderPad } from "./pieces.js";
 import { height } from "./frame.js";
 import { smooth } from "./mesh.js";
 
@@ -39,7 +39,7 @@ export function guide(F, P, N, T, design, under = []) {
   // the ease as the tailor lifts the cloth (pieces.js shell): the body's, the sleeves', the legs' growing to the hem, more
   // round the crotch; a shoe its own; over the garments under it, from how far out their films stand there
   const e = p.ease || {}, eb = (e.body ?? 0.008) * s, ea = (e.sleeve ?? e.body ?? 0.008) * s, el = (e.leg ?? e.body ?? 0.008) * s, fl = (e.flare ?? 0) * s;
-  const knee = F.kneeY, crotch = F.crotchY, legTo = p.legs ? height(F, p.legs.to) : 0, [ccx, ccz] = F.torsoAxis(crotch), gap = 0.0015 * s;
+  const knee = F.kneeY, crotch = F.crotchY, legTo = p.legs ? height(F, p.legs.to) : 0, [ccx, ccz] = F.torsoAxis(crotch), gap = 0.0015 * s, pad = shoulderPad(F, e.shoulder);
   for (let i = 0; i < n; i++) {
     const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2], [v, k] = C.which(x, y, z);
     V[i] = v; K[i] = KIND[k] || 0;
@@ -48,6 +48,7 @@ export function guide(F, P, N, T, design, under = []) {
     for (const g of under) if (g.lift && g.V[i] >= 0) u = Math.max(u, g.lift[i] + g.thickness);
     if (u > 0) u += gap;
     const a = F.arm(x, y, z);
+    if (pad) u += pad(x, y, z);
     if (a) { lift[i] = u + ea; continue; }
     const legW = 1 - smooth(crotch - 0.02 * s, crotch + 0.06 * s, y);
     let L = u + eb + (el - eb) * legW + fl * smooth(knee + 0.1 * s, legTo, y) * legW;

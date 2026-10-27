@@ -18,7 +18,7 @@ references (§2) is in.
 |---|---|---|
 | Measure | horizontal slices of the body: the crotch (where the legs part), the armpit (where the arms leave the torso), the neck's base and axis, the bust, the waist, the hips (the seat at its fullest), the knee; each arm's centre line from the shoulder joint, its seam plane, elbow, wrist and fingertip | `tailor/scan.js`, `tailor/frame.js` |
 | Cut lines | each garment kind as values on the body, positive on the cloth: the neckline (a cone round the neck's base dipped into a round, V or square neck; it starts where the cloth is, so loose garments don't climb the neck; `rise` takes it up the neck instead, a turtleneck), the hem (longer at the front or back for shirt-tails), the waistline (lower in front), sleeves cut square to the arm at a length along it, trouser legs at a height, a front opening (a V from `from` to the neck; `shift` slides it sideways on the way down: a wrap front's diagonal, a jeogori's) | `tailor/pieces.js` `neckline`, `opening`, `cutter` (which also says which line is nearest: `V.which`, for the guides) |
-| Lift | the body's own mesh under the garment, plus a margin, lifted along the skin's normals by the **ease** (the body, the sleeves, the legs, a flare to the hem, more round the crotch), plus how far out the clothes already worn reach | `shell`, `layers` |
+| Lift | the body's own mesh under the garment, plus a margin, lifted along the skin's normals by the **ease** (the body, the sleeves, the legs, a flare to the hem, more round the crotch; `shoulder`: a pad round each shoulder joint, above the armpit, so a jacket's shoulder is built rather than the body's slope: the art review, 2026-10-27), plus how far out the clothes already worn reach | `shell`, `shoulderPad`, `layers` |
 | Relax | `tension` rounds of smoothing along the cloth's normals only, each followed by a push back out to its ease from the body: a stretched membrane that lies on what bulges and bridges what dips (under the bust, the waist, the spine, the small of the back). More rounds hang it looser. It's held back at the armpits and between the legs so it doesn't web them | `tailor/fit.js` `relax` |
 | Refine | split in four (about 5 mm triangles), settled four more rounds at that size, then cut along the lines: the cut edges are interpolated, so every hem and neckline is one clean curve | `shell`, `mesh.js` `cut` |
 | Skirts | rings hung from the waist instead: at every height the convex outline of the body (the torso's own loop above the crotch, never an arm beside it: a dress hung from the bust; both legs below; what's worn under it) plus the ease, never narrowing below the hips (`flare` widens it; `taper` makes a pencil skirt; `straight`: never narrowing from its top, a chima gathered under the bust), knife or box `pleats` stitched down to the hip, or `waves`; `open: {gap}` leaves it open down the front (a coat's skirts); the last ring is on the hem itself | `skirtOutline`, `skirt` |
@@ -137,8 +137,8 @@ on MHR's average body is high, so hems and waistlines are measured from the crot
 | `hem` | `{at, front, back, side}`: a top's hem; `front`/`back` lengthen it there, `side` raises the sides |
 | `waist` | `{at, drop, rise}`: a bottom's waistline, `drop` lower in front, `rise` higher at the back |
 | `legs` | `{to}`: where the trouser legs end |
-| `open` | `{from, gap, top, curve, shift}`: a jacket's front opening, a `gap` down the middle (a closed front's edge when it's a couple of millimetres) widening into a V from `from` to `top` each side at the neck; `shift` (metres, + to the body's left) slides the opening's middle sideways from the neck down to `from`, and straight below: a wrap front, its edge a diagonal across the chest (an `edgeband` along it is a jeogori's collar band) |
-| `ease` | `{body, sleeve, leg, flare, crotch}` in metres off the skin |
+| `open` | `{from, gap, top, curve, shift}`: a jacket's front opening, a `gap` down the middle (a closed front's edge when it's a couple of millimetres) widening into a V from `from` to `top` each side at the neck; `shift` (metres, + to the body's left) slides the opening's middle sideways from the neck down to `from`, and straight below: a wrap front, its edge a diagonal across the chest (an `edgeband` along it is a jeogori's collar band); `closed: false` is a front worn open (a wide `gap` from `from` down, the lapels falling open), which the drape never pulls together |
+| `ease` | `{body, sleeve, leg, flare, crotch, shoulder}` in metres off the skin (`shoulder`: the pad at each shoulder joint, 0.009 to 0.016 on jackets and coats, 0.003 to 0.008 on shirts and sweatshirts) |
 | `tension` | rounds of relaxing: 18 clings, 48 hangs like a work shirt |
 | `fine` | 2: the cloth split once more (about 2.5 mm triangles), for narrow parts: straps, strings |
 | `fit` | 1 as designed, 0 skin tight, 2 loose (§1, `fitted`): the Studio's Fit slider |
@@ -265,6 +265,33 @@ body standing on its own lowest point and gives the clothes back in the body's f
 every height work on it as on the Studio's body. Posed by the desk, the soles are at the floor standing, 4 cm over it
 at both strides of `walkOverlay` (the legs swing, the hips keep their height) and 5 cm under it in `sit`: the desk's
 previs, not the clothes.
+
+## 2b. The art review: what made the clothes read wrong, and the rules that came out of it
+
+The designer collection was reviewed by eye on contact sheets (2026-10-27, "some don't look natural"), five views and a
+close one per outfit, and fixed outfit by outfit. What read wrong, and the rule each left behind:
+
+- **Woven, structured garments read as knitwear** (the denim shirt, the trucker jacket, the blazers, the coat): the
+  cut hugged the body like a membrane and the drape softened it further. A structured garment wants three things: a
+  **shoulder** (`ease.shoulder`, a pad round each shoulder joint), more **tension** (30 to 56 rounds: the cloth
+  bridges the hollows instead of lying in them), and the drape's **memory** with a stiff **bend** and little **slack**
+  (denim and wool keep their cut; jersey and knit may hang loose).
+- **A blazer or coat worn open must be cut open**: `open` from the hip up with a wide `gap` and `closed: false`, the
+  lapels along it and no fastened button (one decorative, on the left front's edge). Cut closed and loosened, a blazer
+  is a cardigan; the coat was a dressing gown. `blazer-open` is the design for it; the office and school blazers stay
+  closed.
+- **A turtleneck's collar is soft**: a modest `rise`, the neckline hugging the neck (`open` 0.002, little ease), a
+  thinner cloth and a narrow rib neckband; risen 7.5 cm with a thick band it was a brace up to the jaw.
+- **A turned cuff must not hold the wrist** (`hold: 0` on a coat's cuff): held, the sleeve's fullness bloused above
+  it into a balloon.
+- **Jeans keep their cut at the ankle**: `memory` and no `slack`, or the wider calf's cloth slides down and bells.
+- **A hood down is a flat flap**, a wide collar over the back with no roll, plus a narrow rolled rim at the neck; one
+  rolled collar was a neck pillow.
+- **Fabric tiles must be quiet on a big surface**: the lined lace's flowers at a 7 cm repeat read as polka dots (now
+  3.6 cm, faint); silk's streaks read as creases down a long skirt (now a faint slub); satin's band of light tiled into
+  blocks (now gentle). Judge a tile on a skirt, not a swatch.
+- **A tall boot's shaft is wider than the leg** (ease 0.012 to 0.013, a heel, a band at the top); cut like a sock it
+  was a sock.
 
 ## 3c. The edit mode: the cut lines, no cloth
 

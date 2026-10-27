@@ -67,7 +67,8 @@ export function* making(B, name, design, opts = {}) {
   // (opts.cover); its front closed where it's buttoned
   let hung = null;
   if (opts.drape && p.drape && p.drape.on !== false) {
-    const bt = (design.details || []).find(d => d.kind === "buttons"), closed = p.open ? (bt ? [height(F, bt.to) - 0.01 * s, height(F, bt.from) + 0.01 * s] : [-1, height(F, p.open.from ?? "bust-0.06")]) : null;
+    const bt = (design.details || []).find(d => d.kind === "buttons");   // a front worn open (`open.closed: false`) is never pulled together
+    const closed = p.open && p.open.closed !== false ? (bt ? [height(F, bt.to) - 0.01 * s, height(F, bt.from) + 0.01 * s] : [-1, height(F, p.open.from ?? "bust-0.06")]) : null;
     const it = draping(B, G, p, { ...p.drape, ...(typeof opts.drape === "object" ? opts.drape : {}), tuck: opts.tuck || null, cover: opts.cover || null, closed, hold: bandHolds(F, G, design), baked: opts.baked || null }, under, th);
     let r; while (!(r = it.next()).done) yield { name, frac: r.value };
     hung = r.value;

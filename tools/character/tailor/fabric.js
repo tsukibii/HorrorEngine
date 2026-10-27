@@ -31,7 +31,7 @@ export const SURFACES = {
   sheer: ["Sheer (pantyhose)", 0.03, 0.4, 0, true],
   fishnet: ["Fishnet", 0.028, 0.2, 0.4, true],
   lace: ["Lace", 0.07, 0.1, 0.3, true],
-  laced: ["Lace, lined", 0.07, 0.15, 0.35, false],
+  laced: ["Lace, lined", 0.036, 0.15, 0.3, false],
   sequin: ["Sequins", 0.03, 0.9, 0.4, false],
 };
 
@@ -96,9 +96,9 @@ export function surfaceTile(kind) {
   } else if (kind === "rib") {                                        // ribs down the piece (cuffs, socks, a sweater's hem)
     for (let xx = 0; xx < n; xx += 4) { x.fillStyle = "rgba(255,255,255,0.12)"; x.fillRect(xx, 0, 2, n); x.fillStyle = "rgba(0,0,0,0.14)"; x.fillRect(xx + 2.5, 0, 1.2, n); }
     for (let yy = 0; yy < n; yy += 3) { x.fillStyle = "rgba(0,0,0,0.05)"; x.fillRect(0, yy, n, 0.6); }
-  } else if (kind === "silk" || kind === "satin") {
-    wrap(() => { for (let i = 0; i < 14; i++) { x.fillStyle = `rgba(255,255,255,${0.03 + rnd() * 0.04})`; x.save(); x.translate(rnd() * n, 0); x.rotate(0.5); x.fillRect(0, -n, 3 + rnd() * 10, n * 3); x.restore(); } });
-    if (kind === "satin") sheen(30, 3, (u, v) => u + v * 0.3);
+  } else if (kind === "silk" || kind === "satin") {                  // a faint slub along the weave, not streaks (they read as creases on a long skirt)
+    wrap(() => { for (let i = 0; i < 18; i++) { x.fillStyle = `rgba(255,255,255,${0.012 + rnd() * 0.02})`; x.save(); x.translate(rnd() * n, 0); x.rotate(0.08); x.fillRect(0, -n, 1.5 + rnd() * 4, n * 3); x.restore(); } });
+    if (kind === "satin") sheen(16, 2, (u, v) => u + v * 0.3);     // a gentle band of light (a strong one tiles into blocks on a long skirt)
   } else if (kind === "spandex") {
     for (let yy = 0; yy < n; yy += 4) { x.fillStyle = yy % 8 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.045)"; x.fillRect(0, yy, n, 1); }
     sheen(26, 3, (u, v) => u + v * 0.6);
@@ -143,16 +143,16 @@ export function surfaceTile(kind) {
     wrap(() => { for (let k = -2; k <= 4; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); } });
     for (let k = 0; k < 4; k++) for (let j = 0; j < 4; j++) dot(k * P + (j % 2 ? P / 2 : 0), j * P / 2, 2.2, "#9a9a9a");
   } else if (kind === "lace" || kind === "laced") {              // lined: the same net and flowers raised on an opaque ground
-    const P = n / 4; x.strokeStyle = kind === "laced" ? "rgba(255,255,255,0.42)" : "#8a8a8a"; x.lineCap = "round";
-    if (kind === "laced") { x.fillStyle = "rgba(0,0,0,0.06)"; x.fillRect(0, 0, n, n); }
+    const P = n / 4, lined = kind === "laced"; x.strokeStyle = lined ? "rgba(255,255,255,0.26)" : "#8a8a8a"; x.lineCap = "round";   // lined: a fine raised net, half the size, never dots
+    if (lined) { x.fillStyle = "rgba(0,0,0,0.05)"; x.fillRect(0, 0, n, n); }
     wrap(() => {
       x.lineWidth = 0.9; x.globalAlpha = 0.6;
       for (let k = -1; k <= 5; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); }
-      x.globalAlpha = 1; x.lineWidth = 2.2;
+      x.globalAlpha = 1; x.lineWidth = lined ? 1.3 : 2.2;
       for (let row = 0; row < 2; row++) for (let col = 0; col < 2; col++) {
-        const cx = col * n / 2 + (row ? n / 4 : 0) + n / 8, cy = row * n / 2 + n / 8;
-        x.beginPath(); x.arc(cx, cy, 7, 0, TAU); x.stroke();
-        for (let i = 0; i < 6; i++) { const a = i * TAU / 6; x.beginPath(); x.arc(cx + Math.cos(a) * 13, cy + Math.sin(a) * 13, 4.5, 0, TAU); x.stroke(); }
+        const cx = col * n / 2 + (row ? n / 4 : 0) + n / 8, cy = row * n / 2 + n / 8, r0 = lined ? 5 : 7, r1 = lined ? 3.2 : 4.5, d = lined ? 10 : 13;
+        x.beginPath(); x.arc(cx, cy, r0, 0, TAU); x.stroke();
+        for (let i = 0; i < 6; i++) { const a = i * TAU / 6; x.beginPath(); x.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, r1, 0, TAU); x.stroke(); }
       }
     });
   }

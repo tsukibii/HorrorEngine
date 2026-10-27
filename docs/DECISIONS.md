@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, later (the designer clothes reviewed as a lead art engineer)
+
+- **"Review the new clothes and improve, some don't look natural"**: every designer outfit on contact sheets, five
+  views and a close one, judged by eye and fixed (docs/TAILOR.md §2b has what read wrong and the rules). What changed:
+  jackets and coats get a built shoulder (`ease.shoulder`) and bridge the body instead of hugging it; the blazers meant
+  to be worn open are cut open (`blazer-open`, the pink oversized one, the coat), their lapels falling open; the
+  turtleneck's collar is soft; the coat's sleeves hang (a turned cuff no longer holds the wrist); the jeans keep their
+  cut at the ankle; the hood lies flat with a rolled rim; the lined lace, the silk and the satin tiles are quiet on a
+  big surface; the knee boots have a boot's shaft, a heel and a top band. The office and school blazers gained the
+  shoulder too (they stay closed).
+
 ## 2026-10-27 (the clothes: an edit mode, the designer collection, pictures; branch `clothing-expanded` off main)
 
 - **Editing a garment must be instant** ("clothing is extremely laggy to modify, realistically I can't modify it as it

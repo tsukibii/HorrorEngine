@@ -14,7 +14,9 @@ the **designer collection** (twelve outfits after the user's five reference imag
 four Korean street looks, a long coat over a turtleneck and wide jeans, two modern hanbok dresses, four menswear looks;
 25 new designs, `open.shift`, `neck.rise`, a skirt's `straight` and `open.gap`, lined lace and sequin fabrics), the
 outfits as **pictures** on cards in groups (`tailor/thumbs.mjs`, `Content/Studio/Clothes/thumbs/`), **hats** as
-accessories. TAILOR checks the guides against the cuts; STUDIO has an edit-mode step and a beret.
+accessories. TAILOR checks the guides against the cuts; STUDIO has an edit-mode step and a beret. Then the designer
+clothes were **reviewed by eye and fixed** (TAILOR.md §2b: a built shoulder for jackets, `ease.shoulder`; blazers and
+the coat cut open, `open.closed: false`; quiet fabric tiles; a soft turtleneck; jeans that keep their cut).
 
 The user left a list before going AFK (DECISIONS 2026-10-24, small hours); all of it is built, checked and pushed:
 

@@ -183,6 +183,17 @@ export function brief(F, o, waist = null) {
   };
 }
 
+/** the shoulder pad's lift at a point: `shoulder` metres at each shoulder joint, falling off over about 8 cm, above
+    the armpit only (below it the pad would puff the armhole); null for none */
+export function shoulderPad(F, shoulder) {
+  const s = F.s, sh = (shoulder ?? 0) * s; if (!(sh > 0)) return null;
+  const J = ["L", "R"].map(k => F.arms[k].J), sig = 0.08 * s, y0 = F.armpitY - 0.05 * s, y1 = F.armpitY + 0.01 * s;
+  return (x, y, z) => {
+    let g = 0; for (const q of J) g = Math.max(g, Math.exp(-(((x - q[0]) ** 2 + (y - q[1]) ** 2 + (z - q[2]) ** 2) / (sig * sig))));
+    return sh * g * smooth(y0, y1, y);
+  };
+}
+
 /** a garment's value at a point (>= 0 on the cloth): the least of its lines there. `V.which(x, y, z)` gives [value, which
     line is nearest: "neck", "open", "sleeve", "hem", "waist", "legs", "shoe", "under" (underwear's own shape)] for the
     guides (tailor/guides.js); `V.parts` the lines themselves */
@@ -273,9 +284,11 @@ export function shell(B, p, under) {
   for (let i = 0; i < n0; i++) v0[i] = V(B.P[i * 3], B.P[i * 3 + 1], B.P[i * 3 + 2]);
   const C = crop(B.P, B.T, v0, 0.06 * s);
   const N = new Float32Array(C.keep.length * 3); C.keep.forEach((i, j) => { N[j * 3] = B.N[i * 3]; N[j * 3 + 1] = B.N[i * 3 + 1]; N[j * 3 + 2] = B.N[i * 3 + 2]; });
-  // the ease: the body's, the sleeves', the legs' (growing towards the hem by `flare`), more round the crotch
+  // the ease: the body's, the sleeves', the legs' (growing towards the hem by `flare`), more round the crotch; `shoulder`
+  // a pad round each shoulder joint (a jacket's shoulder is built, not the body's slope: the art review, 2026-10-27)
   const e = p.ease || {}, eb = (e.body ?? 0.008) * s, ea = (e.sleeve ?? e.body ?? 0.008) * s, el = (e.leg ?? e.body ?? 0.008) * s;
   const fl = (e.flare ?? 0) * s, knee = F.kneeY, crotch = F.crotchY, legTo = p.legs ? height(F, p.legs.to) : 0;
+  const pad = shoulderPad(F, e.shoulder);
   const ease = layers(B, C.P, C.T, under), gap = 0.0015 * s, W = new Float32Array(ease.length);
   for (let j = 0; j < ease.length; j++) if (ease[j] > 0) ease[j] += gap;
   const [ccx, ccz] = F.torsoAxis(crotch), pits = ["L", "R"].map(k => { const A = F.arms[k], q = A.line.at(A.seam); return [q[0] * 0.85, F.armpitY - 0.02 * s, q[2]]; });
@@ -284,6 +297,7 @@ export function shell(B, p, under) {
     // how freely it smooths: not at all into the armpit or down between the legs (it would web them), a little on the limbs
     const dp = Math.min(...pits.map(q => Math.hypot(x - q[0], y - q[1], z - q[2]))), dc = Math.hypot(x - ccx, y - crotch, z - ccz);
     W[j] = p.shoe ? 1 : smooth(0.03 * s, 0.11 * s, dp) * (a || y < crotch ? 0.3 : 1);   // a shoe smooths all over: the toes into one toe box
+    if (pad) ease[j] += pad(x, y, z);
     if (a) { ease[j] += ea; continue; }
     const legW = 1 - smooth(crotch - 0.02 * s, crotch + 0.06 * s, y);
     ease[j] += eb + (el - eb) * legW + fl * smooth(knee + 0.1 * s, legTo, y) * legW;
