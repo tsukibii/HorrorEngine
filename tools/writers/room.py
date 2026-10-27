@@ -8,7 +8,8 @@ check. The page is serve.py.
     python tools/writers/room.py river ID               the river with its talks and to-do lists
     python tools/writers/room.py now                    what the page shows right now (the session, the view, the point)
     python tools/writers/room.py draft ID [--stage bible|endings|river|details|all] [--backend claude|local|fake]
-    python tools/writers/room.py build ID --game G      the prototype into Content/Games/G (story.json, BUILD.md, faces.md)
+    python tools/writers/room.py build ID [--game G]    the prototype into Content/Games/G (story.json, BUILD.md, faces.md),
+                                                        G from the title when not given; --force over a story not built from it
     python tools/writers/room.py setup                  the anthropic SDK in vendor/writers/venv (Claude through the API)
     python tools/writers/room.py check                  WRITERS: the format, the prompt library, the stages and the
                                                         assistant on the stand-in model, the build passing the story check
@@ -121,6 +122,13 @@ def cmd_build(a):
     P = load_session(a.id)
     out = build.build(P, a.game, force=a.force)
     print(out["message"])
+    if out.get("ok"):
+        P["built"] = {"game": out["game"], "at": proto.now()}
+        proto.save(P)
+        print("\n".join("  " + f for f in out["files"]) + f"\nthen, in Claude Code: build {out['game']} from its BUILD.md")
+    for e in (out.get("check") or {}).get("errors", []):
+        print("  ERROR " + e)
+    sys.exit(0 if out.get("ok") and (out.get("check") or {}).get("ok", True) else 1)
 
 
 def cmd_setup(a):
@@ -318,7 +326,7 @@ def main(argv=None):
     sub.add_parser("now")
     s = sub.add_parser("draft"); s.add_argument("id"); s.add_argument("--stage", default="all", choices=["all", "bible", "endings", "river", "details"])
     s.add_argument("--backend", choices=["claude", "local", "fake"])
-    s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", required=True); s.add_argument("--force", action="store_true")
+    s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", default=""); s.add_argument("--force", action="store_true")
     sub.add_parser("setup")
     sub.add_parser("check")
     a = ap.parse_args(argv)

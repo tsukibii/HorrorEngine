@@ -159,6 +159,23 @@ def main_minutes(P):
     return total
 
 
+def karma_range(P):
+    """The karma the talks' answers can add up to on the way through: (the kindest player's, the cruellest's); a fork
+    counts its kindest way for the one and its cruellest for the other."""
+    def of(points):
+        hi = lo = 0.0
+        for p in points:
+            ks = [float(o.get("karma") or 0) for o in (p.get("talk") or {}).get("options") or []]
+            if ks:
+                hi, lo = hi + max(ks), lo + min(ks)
+            ways = (p.get("fork") or {}).get("ways") or []
+            if ways:
+                r = [of(w.get("points") or []) for w in ways]
+                hi, lo = hi + max(x[0] for x in r), lo + min(x[1] for x in r)
+        return hi, lo
+    return of(P.get("points", []))
+
+
 def faces_used(P):
     """Every face a point names, where: [(face id, where it is, who)]."""
     out = []
@@ -342,6 +359,24 @@ def check(P, lib=None):
     if P.get("points") and ends and all((e.get("rule") or {}).get("by") == "karma" for e in ends):
         if not any((e.get("rule") or {}).get("min") is None and (e.get("rule") or {}).get("max") is None for e in ends):
             W.append("the endings by karma have no fallback (one with neither min nor max): some players reach none")
+    by_karma = [e for e in ends if (e.get("rule") or {}).get("by") == "karma"]
+    free = [e.get("id") for e in by_karma if (e.get("rule") or {}).get("min") is None and (e.get("rule") or {}).get("max") is None]
+    if len(free) > 1:
+        E.append(f"endings {', '.join(map(str, free))}: by karma with neither min nor max, but only one can be the fallback: give the others a min or a max")
+    bounds = [(e["rule"].get("min"), e["rule"].get("max")) for e in by_karma if e.get("id") not in free]
+    if len(set(bounds)) != len(bounds):
+        E.append("two endings by karma have the same min and max: the second can never be reached")
+    talks = [p for p, _, _ in all_points(P) if p.get("type") == "talk"]
+    if by_karma and talks and all((p.get("talk") or {}).get("options") for p in talks):   # once the talks are written
+        hi, lo = karma_range(P)
+        for e in by_karma:
+            r = e.get("rule") or {}
+            if r.get("min") is not None and (r["min"] > hi or r["min"] <= 0):
+                W.append(f"ending {e.get('id')}: karma min {r['min']}: the kindest answers add up to {hi:g}, and a player who says nothing "
+                         f"has 0 (the fallback's): between 1 and {hi:g} (Build moves it there)")
+            if r.get("max") is not None and (r["max"] < lo or r["max"] >= 0):
+                W.append(f"ending {e.get('id')}: karma max {r['max']}: the cruellest answers add up to {lo:g}, and a player who says nothing "
+                         f"has 0 (the fallback's): between {lo:g} and -1 (Build moves it there)")
 
     m = main_minutes(P)
     if P.get("points") and not MINUTES[0] <= m <= MINUTES[1]:

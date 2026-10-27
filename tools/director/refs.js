@@ -76,7 +76,7 @@ export function flagsOf(S) { const n = {}; for (const r of allRefs(S)) if (r.kin
 // every id in the file (tables, the flow, beats, everything placed in the levels): a new id must be none of these
 export function allIds(S) {
   const ids = new Set();
-  for (const t of ["cast", "items", "notes", "lines", "sounds", "scenes", "stitches", "flow", "secrets", "motions"]) for (const k of Object.keys(S[t] || {})) ids.add(k);
+  for (const t of ["cast", "items", "notes", "lines", "sounds", "scenes", "stitches", "flow", "secrets", "motions", "achievements"]) for (const k of Object.keys(S[t] || {})) ids.add(k);
   for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) if (b.id) ids.add(b.id);
   for (const k of Object.keys((S.game || {}).counters || {})) ids.add(k);
   for (const k of Object.keys(((S.game || {}).karma || {}).axes || {})) ids.add(k);
@@ -126,6 +126,7 @@ export function placeOf(S, path) {
     return { text: `level ${a}${id ? " · " + id : ""}`, level: a };
   }
   if (t === "interrupts") return { text: `trigger cutscene ${((S.interrupts || [])[a] || {}).id || a}`, db: "interrupts" };
+  if (t === "achievements") return { text: `achievement “${((S.achievements || {})[a] || {}).title || a}”` };
   if (t === "frames") { if (a === undefined) return { text: "the board's acts", node: null }; const f = (S.frames || [])[a] || {}; return { text: `act “${f.title || f.id || a}”`, node: (f.nodes || []).find(n => (S.flow || {})[n]) || null }; }
   const tabs = { lines: "line", motions: "motion", secrets: "secret", cast: "cast member", items: "item", notes: "note", sounds: "sound" };
   if (tabs[t]) return { text: `${tabs[t]} ${a}`, db: t, id: a };

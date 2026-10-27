@@ -61,6 +61,8 @@ GAME_DIR = None
 POSES = set()
 ENDINGS = {"good", "neutral", "bad", "secret", "other", "death"}
 FORMAT = 2                  # the file's format; 3 adds the v2 pipeline (docs/STORY_FORMAT.md §9)
+DRAFT = False               # game.draft: a rough outline (the writers' room's build): the playtime targets only warn
+VOICED = True               # game.voice "none": no recorded voices, the lines are text (no `ja` to ask for)
 STYLES = ("kind", "cruel", "silent")     # how the karma sweeps answer every timed choice
 SEG_NAME = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)+$")
 PERSON = re.compile(r"^(A|An) ([A-Za-z-]+ ){0,3}person\b")
@@ -423,7 +425,7 @@ def check_spoken(where, ln, cast, r, clip_max=None):
         r.err(f"{where}: who {ln.get('who')!r} isn't in cast")
     if not ln.get("en"):
         r.err(f"{where}: no 'en' subtitle")
-    if not ln.get("ja"):
+    if not ln.get("ja") and VOICED:
         r.warn(f"{where}: no 'ja' text to record")
     if FORMAT >= 3 and ln.get("ja") and ln.get("face", True) is not False and "voice" in ln:
         if ln["voice"] not in L.VOICES:
@@ -482,8 +484,8 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r):
     rp = c["reply"]
     opts = rp.get("options", [])
     ids = [o.get("id") for o in opts]
-    if len(opts) != 2:
-        r.warn(f"{cw}: a reply has two options (left and right); this one has {len(opts)}")
+    if not 2 <= len(opts) <= 3:
+        r.warn(f"{cw}: a reply has two or three options; this one has {len(opts)}")
     if None in ids or len(set(ids)) != len(ids):
         r.err(f"{cw}: reply options need unique ids")
     if not 2 <= float(rp.get("wait", L.REPLY_SECS)) <= 15:
@@ -494,7 +496,7 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r):
         ow = f"{cw} reply {o.get('id')}"
         if not o.get("label"):
             r.err(f"{ow}: needs a label (the English the player picks)")
-        if FORMAT >= 3 and not o.get("ja"):
+        if FORMAT >= 3 and not o.get("ja") and VOICED:
             r.warn(f"{ow}: no `ja` (the Japanese shown over the English)")
         for a in o.get("sets", []):
             check_action(f"{ow} sets", a, story, things, r, stage)
@@ -1319,6 +1321,43 @@ def check_flow(story, things, r):
             r.warn(f"secret {k}: nothing sets its flag {s.get('flag')!r}")
 
 
+def check_achievements(story, r):
+    """Achievements (§9.13): {id: {title, text, hidden, for}}, each unlocked by a secret found, an ending reached or a
+    flag set."""
+    flow, secrets = story.get("flow", {}), story.get("secrets", {})
+    sets = json.dumps(story.get("stitches", {})) + json.dumps(story.get("scenes", {})) + json.dumps(story.get("interrupts", []))
+    for k, a in (story.get("achievements") or {}).items():
+        w = f"achievement {k}"
+        if not isinstance(a, dict):
+            r.err(f"{w}: {{title, text, hidden, for}}")
+            continue
+        if not str(a.get("title", "")).strip():
+            r.err(f"{w}: no title (what the player sees when it's unlocked)")
+        if "hidden" in a and not isinstance(a["hidden"], bool):
+            r.err(f"{w}: hidden is true or false (hidden: its title shows only once it's unlocked)")
+        f = a.get("for")
+        if not isinstance(f, dict) or len(f) != 1 or next(iter(f)) not in ("secret", "ending", "flag"):
+            r.err(f"{w}: for is {{\"secret\": a secret}}, {{\"ending\": an ending node}} or {{\"flag\": a flag}}")
+            continue
+        kind, ref = next(iter(f.items()))
+        if kind == "secret" and ref not in secrets:
+            r.err(f"{w}: secret {ref!r} isn't in secrets")
+        elif kind == "ending" and flow.get(ref, {}).get("type") != "ending":
+            r.err(f"{w}: ending {ref!r} isn't an ending node in the flow")
+        elif kind == "flag" and f'"flag": "{ref}"' not in sets:
+            r.warn(f"{w}: nothing sets its flag {ref!r} yet")
+
+
+def unlocks(story, a, p):
+    """Does this path (a walker at its end) unlock the achievement?"""
+    kind, ref = next(iter((a.get("for") or {"flag": None}).items()))
+    if kind == "ending":
+        return p.path[-1] == ref
+    if kind == "secret":
+        return (story.get("secrets", {}).get(ref) or {}).get("flag") in p.flags
+    return ref in p.flags
+
+
 def flow_edges(story):
     """Every edge of the flow: (from, to, why)."""
     flow, out = story.get("flow", {}), []
@@ -1431,6 +1470,9 @@ class World:
         self.todo = {}             # the to-do list: task id -> [state (open done failed), its todo action]
         self.arrived = {}          # cast id -> the spot a behave go took her to
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
+        self.forced = {}           # (scene node, clip) -> the answer this path gives at that reply
+        self.branch_flags = {f.lstrip("!") for n in story.get("flow", {}).values() if n.get("type") == "choice" and n.get("by") == "flag"
+                             for o in n.get("options", []) for f in o.get("if", [])}
         self.answers = []          # (scene node, clip, option) for the report
         # the little things' lives (docs/IMMERSION.md): each one's state, a follower where its leader puts it
         self.lives = {t.id: lf for t in things.values() if t.kind == "prop" for lf in [LIFE.life_of(t.d)] if lf}
@@ -1853,6 +1895,27 @@ class World:
         self.r.err(f"{nid}: the play ran 10000 steps without ending")
         return False
 
+    def reply_pick(self, rp):
+        """The answer this sweep's player gives at a reply: the kindest, the cruellest, or silence (its timeout's, else none)."""
+        opts = rp.get("options", [])
+        if self.style == "silent":
+            return next((x for x in opts if x.get("id") == rp.get("timeout")), None)
+        score = lambda o: sum(sum(L.karma_of(a["karma"]).values()) for a in o.get("sets", []) if "karma" in a)
+        return (max if self.style == "kind" else min)(opts, key=score) if opts else None
+
+    def reply_forks(self, sc):
+        """A reply opens a branch when an answer sets a flag a flag choice reads (§9.9): the answers this sweep wouldn't
+        give there, each to be played on a path of its own: [(clip id, option id)]."""
+        out = []
+        for c in L.scene_version(sc).get("clips", []):
+            rp = c.get("reply")
+            if not rp:
+                continue
+            mine = self.reply_pick(rp)
+            out += [(c.get("id"), o.get("id")) for o in rp.get("options", []) if o is not mine
+                    and any(a.get("flag") in self.branch_flags for a in o.get("sets", []))]
+        return out
+
     def play_scene(self, nid, sc):
         self.enter_level(L.level_of(self.story, sc))
         ver = L.scene_version(sc)
@@ -1875,14 +1938,13 @@ class World:
                 self.add("scenes", float(ev.get("secs", 3)))
             rp = c.get("reply")
             if rp:                                     # the player's reply: by this sweep's style; silence skips her answer
-                opts = rp.get("options", [])
-                score = lambda o: sum(sum(L.karma_of(a["karma"]).values()) for a in o.get("sets", []) if "karma" in a)
-                if self.style == "silent":
-                    o = next((x for x in opts if x.get("id") == rp.get("timeout")), None)
-                    self.add("choices", float(rp.get("wait", L.REPLY_SECS)))
-                else:
-                    o = (max if self.style == "kind" else min)(opts, key=score) if opts else None
+                forced = self.forced.pop((nid, c.get("id")), None)
+                if forced is not None:                 # a branch's own answer (reply_forks)
+                    o = next((x for x in rp.get("options", []) if x.get("id") == forced), None)
                     self.add("choices", min(float(rp.get("wait", L.REPLY_SECS)), L.REPLY_ANSWER))
+                else:
+                    o = self.reply_pick(rp)
+                    self.add("choices", float(rp.get("wait", L.REPLY_SECS)) if self.style == "silent" else min(float(rp.get("wait", L.REPLY_SECS)), L.REPLY_ANSWER))
                 if o:
                     self.run_actions(nid, o.get("sets", []))
                     if o.get("then"):
@@ -1955,7 +2017,14 @@ def explore(w, nid, done_paths, visited_nodes):
                     w.run_actions(nid, (pl.get("on") or {}).get(L.PLAYS.get(pl.get("type"), ["success"])[0], []))
             nid = n["next"]
         elif t == "scene":
-            w.play_scene(nid, story["scenes"][n["ref"]])
+            sc = story["scenes"][n["ref"]]
+            for cid, oid in w.reply_forks(sc):         # an answer that opens a branch later: its own path
+                b = w.fork()
+                b.dev += 1
+                b.forced[(nid, cid)] = oid
+                b.play_scene(nid, sc)
+                explore(b, n["next"], done_paths, visited_nodes)
+            w.play_scene(nid, sc)
             nid = n["next"]
         elif t == "ending":
             done_paths.append(w)
@@ -2028,12 +2097,13 @@ def main():
         i = argv.index("--story")
         story_file = argv[i + 1]
         del argv[i:i + 2]
-    global GAME_DIR, POSES, FORMAT, STORY, BOARDS
+    global GAME_DIR, POSES, FORMAT, STORY, BOARDS, DRAFT, VOICED
     story, path = L.load(game)
     if story_file:
         story = json.loads(Path(story_file).read_text(encoding="utf-8"))
     BOARDS = L.board_games(game)
     FORMAT, STORY = story.get("format"), story
+    DRAFT, VOICED = bool(story.get("game", {}).get("draft")), story.get("game", {}).get("voice", "ja") != "none"
     GAME_DIR = path.parent
     POSES = set(L.poses()["poses"])
     r = Report()
@@ -2049,7 +2119,7 @@ def main():
     for e in errs:
         r.err(e)
     names = {}
-    for table in ("cast", "items", "notes", "lines", "sounds", "scenes", "stitches", "flow", "secrets", "motions"):
+    for table in ("cast", "items", "notes", "lines", "sounds", "scenes", "stitches", "flow", "secrets", "motions", "achievements"):
         for k in story.get(table, {}):
             names.setdefault(k, []).append(table)
     for k in things:
@@ -2073,6 +2143,7 @@ def main():
         check_flow(story, things, r)
         check_motions(story, r)
         check_sounds(story, r)
+        check_achievements(story, r)
     paths = []
     if not r.errors:
         visited = set()
@@ -2121,11 +2192,13 @@ def main():
                     r.warn(f"{e}: retry {rt!r} isn't on the way to this death: the branch map would send the player somewhere they haven't been")
                 continue
             if not flow[e].get("short_ok"):
+                timing = r.warn if DRAFT else r.err          # a draft's scenes aren't written in full yet
                 if lo < target:
-                    r.err(f"the shortest typical path to {e} is {lo:.0f} min, under target_min {target} (an early death ending: short_ok)")
+                    timing(f"the shortest typical path to {e} is {lo:.0f} min, under target_min {target} (an early death ending: short_ok)"
+                           + (" (a draft: game.draft)" if DRAFT else ""))
                 if flo < fast_min:
-                    r.err(f"a fast player reaches {e} in {flo:.0f} min, under fast_min {fast_min}: Steam refunds under 2 hours "
-                          f"(longer cutscenes can't be skipped; add stitches or scenes)")
+                    timing(f"a fast player reaches {e} in {flo:.0f} min, under fast_min {fast_min}: Steam refunds under 2 hours "
+                           f"(longer cutscenes can't be skipped; add stitches or scenes)" + (" (a draft: game.draft)" if DRAFT else ""))
         if FORMAT >= 3:
             print("karma (each sweep's player answers every timed choice the same way):")
             for style in STYLES:
@@ -2145,6 +2218,13 @@ def main():
             if last is not None and t - last < MINOR_GAP:
                 r.warn(f"{where}: {trick} only {t - last:.0f} s after the last scare (keep {MINOR_GAP} s apart)")
             last = t
+        achs = story.get("achievements") or {}
+        if achs:
+            got = {k for k, a in achs.items() for p in paths if unlocks(story, a, p)}
+            print(f"achievements: {len(got)} of {len(achs)} unlocked on some path")
+            for k in achs:
+                if k not in got:
+                    r.warn(f"achievement {k}: no path unlocks it")
         if route_out:
             Path(route_out).parent.mkdir(parents=True, exist_ok=True)
             Path(route_out).write_text(json.dumps(main_path.route, indent=1), encoding="utf-8")

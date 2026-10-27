@@ -577,7 +577,10 @@ async function buildDialog() {
   try {
     const r = await api("build/" + encodeURIComponent(SID), { game: game.value.trim(), force: force.checked });
     P.built = { game: r.game };
-    await dialog("Built", [el("p", {}, r.message), el("p", {}, el("a", { href: `http://127.0.0.1:8780/?game=${encodeURIComponent(r.game)}`, target: "_blank" }, "Open it in the director"), " (the desk's server running)"),
+    const bad = r.check && !r.check.ok;
+    await dialog(bad ? "Built, but the story check fails" : "Built", [el("p", {}, r.message),
+      bad ? el("p", { style: "color:#ff9b9b" }, ...(r.check.errors || []).map(e => el("div", {}, e))) : null,
+      el("p", {}, el("a", { href: `http://127.0.0.1:8780/?game=${encodeURIComponent(r.game)}`, target: "_blank" }, "Open it in the director"), " (the desk's server running)"),
       el("p", { class: "muted" }, `Then, in Claude Code: “build ${r.game} from its BUILD.md”.`)], null);
   } catch (e) { toast(e.message, true); }
 }

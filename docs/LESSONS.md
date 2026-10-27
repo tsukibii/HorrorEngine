@@ -858,3 +858,13 @@ drawn in shaders (`onBeforeCompile` uniforms, a `ShaderMaterial`), and glTF carr
 (GLTFExporter drops a ShaderMaterial without a word in the file). Check an export by reading it back and measuring what
 a plain viewer would draw (STUDIO's export colours step), never by the Studio's own view. Anything new drawn in a
 shader needs its bake (`albedo.js`) before it ships.
+
+## A close-up says its size, and the check plays every answer that matters (2026-10-27)
+
+The writers' room's first builds passed the story check and failed SHOTS: the plan's shot review frames a clip's whole
+body unless the clip says its size, and an actor on a mark 0.65 m from the eye shows only a quarter of a standing body.
+A first-person close-up names its shot (`mcu` at 0.55 to 0.9 m, `cu` closer) so the review frames the head and
+shoulders, and its mark stands straight ahead of the eye (a mark offset sideways put the face 0.97 m away, an MS). And
+the walker answered every reply by its sweep (the kindest, the cruellest, silence), so an ending decided by a middle
+answer was never reached: a reply whose answer sets a flag a flag choice reads now plays each such answer on its own
+path. Build a generated game through all of check_all (STORY, LEVEL, SHOTS) and the desk's own suites, not only STORY.

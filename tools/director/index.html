@@ -85,6 +85,10 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 #watchBar{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
 .wcard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(0,0,0,.72);pointer-events:auto}
 .wcard.round{justify-content:flex-end;padding-bottom:22px;background:linear-gradient(rgba(0,0,0,0) 35%,rgba(0,0,0,.82) 70%)}
+.wachs{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;pointer-events:none;z-index:6}
+.wach{background:rgba(10,10,14,.82);border:1px solid var(--warn);border-radius:8px;padding:8px 12px;max-width:260px;font-size:12px;animation:wachIn .4s ease-out}
+.wach b{display:block;font-size:14px;margin:2px 0}.wach .muted:first-child{color:var(--warn);letter-spacing:.18em;font-size:10px}
+@keyframes wachIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .wcard .big{font-size:24px}.wcard .timer{font-size:30px;color:var(--warn);font-variant-numeric:tabular-nums}
 .reply .rbar{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);width:200px}
 .rbar{height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}.rbar div{height:100%;background:var(--accent);width:100%}

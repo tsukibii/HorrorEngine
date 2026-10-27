@@ -3,6 +3,9 @@
 
     python tools/writers/serve.py            then open http://127.0.0.1:8795 (WRITERS_PORT for another)
 
+WRITERS_HOME=<a scratch folder> keeps everything there instead (its sessions, settings, versions and builds): the page's
+test runs on one.
+
 Sessions live in Content/Prototypes/<id>/prototype.json; every save keeps the one before it in
 Saved/Writers/<id>/history/ (the last 40). Drafting and the assistant run as jobs (one at a time a session) whose
 progress the page follows; the model is the switch's (Claude through the API or Claude Code, or a local model through
@@ -30,8 +33,12 @@ import gen  # noqa: E402
 import fake  # noqa: E402
 
 PORT = int(os.environ.get("WRITERS_PORT", 8795))
-SAVED = ROOT / "Saved" / "Writers"
+HOME = Path(os.environ["WRITERS_HOME"]).resolve() if os.environ.get("WRITERS_HOME") else None
+SAVED = HOME / "Saved" if HOME else ROOT / "Saved" / "Writers"
 NOW = SAVED / "now.json"
+if HOME:                                            # a scratch home: the sessions and the settings live there too
+    proto.PROTOS = HOME / "Prototypes"
+    llm.SETTINGS = HOME / "settings.json"
 KEEP = 40
 TYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml"}
 PAGES = {"index.html", "app.js", "river.js", "ui.css"}
@@ -274,14 +281,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, {"ok": True})
             if what == "build" and sid:
                 import build
+                if HOME:
+                    build.GAMES = HOME / "Games"
                 P = session(sid)
                 if not P:
                     return self.send(404, {"error": "no such session"})
+                if BUSY.get(sid):
+                    return self.send(409, {"error": "the assistant is working on it: wait for it to finish"})
                 res = build.build(P, str(b.get("game") or ""), force=bool(b.get("force")))
                 if res.get("ok"):
                     P["built"] = {"game": res["game"], "at": proto.now()}
                     store(P)
-                return self.send(200 if res.get("ok") else 400, res)
+                return self.send(200, res) if res.get("ok") else self.send(400, dict(res, error=res.get("message")))
         except ValueError as e:
             return self.send(400, {"error": str(e)})
         return self.send(404, {"error": "unknown"})
@@ -292,7 +303,7 @@ def main():
         srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     except OSError:
         sys.exit(f"port {PORT} is taken: is the writers' room already open? (WRITERS_PORT=8796 for another)")
-    print(f"THE WRITERS' ROOM on http://127.0.0.1:{PORT}  (Ctrl+C stops it)")
+    print(f"THE WRITERS' ROOM on http://127.0.0.1:{PORT}" + (f"  (home: {HOME})" if HOME else "") + "  (Ctrl+C stops it)")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

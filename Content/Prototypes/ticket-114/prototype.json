@@ -1,0 +1,1306 @@
+{
+ "format": 1,
+ "id": "ticket-114",
+ "title": "Ticket 114",
+ "created": "2026-10-27T20:05:45",
+ "updated": "2026-10-27T20:39:34",
+ "brief": {
+  "kind": "You take over a late shift at a small family-run laundromat for a neighbour who's been sick; something isn't quite right with the regular who comes in at 3 am",
+  "references": "A real story: a laundromat owner in a small town kept her late husband's shift going for a year, answering his regulars as if he'd only stepped out. Locals said the machines ran by themselves at night.",
+  "notes": "",
+  "endings": [
+   "You realise the regular is the owner's husband's last customer, still waiting for his laundry, and you finally hand it over.",
+   "",
+   ""
+  ],
+  "minutes": 60
+ },
+ "bible": {
+  "logline": "Covering the night shift at your sick neighbour's laundromat, you learn the polite regular who arrives at 3 am has been waiting a year for a bag of laundry no one will hand him.",
+  "hook": "Everyone has said yes to a neighbour's small favour: feed the cat, take the keys, just three nights. You walk into someone else's routine, trust her written instructions, and slowly realise the rules she left you are guarding a grief, not a business.",
+  "truth": "One year ago, on the night of October 24th, Walt Winters, the owner, died of a heart attack in the back room at 2:40 am while folding the last load of his regular, Anselm Pruitt (ticket 114, promised for 3:00). Pruitt, a night-bus mechanic with a bad heart, came at 3, found the shop lit and empty, and sat on the bench outside to wait. He died there at 3:20 and was found at dawn, close to where Walt lay. Neither man was ever told about the other. Dolores found Walt first, and later saw the bag still on the shelf. She could not bear to close the story, so she kept Walt's shift going: opening nightly, leaving the bag, and telling Pruitt 'Walt's stepped out' when he comes. Pruitt returns every night at 3, unable to leave without his laundry, and the machines run on their own to finish his load. Dolores is not sick with a flu, she is worn out from a year of keeping this vigil. The bag can only be handed over by someone who knows what it means, which frees Pruitt and also forces Dolores to let Walt go.",
+  "ladder": [
+   "Dolores's handwritten shift sheet: 'Man comes at 3 for his bag, ticket 114. Tell him Walt stepped out. Don't argue, don't open the bag.' A sweet old quirk, you think.",
+   "Pruitt arrives at exactly 3:00 in a downpour, polite and bone dry, and asks for Walt by name. A night-shift regular with an odd manner, nothing more.",
+   "The claim-ticket book ends at 113 in Walt's handwriting, bag 114 sits on the high shelf under a year of dust, and dryer 6 starts by itself at 2:58 with a warm lint trap. A pattern, not a coincidence.",
+   "The security monitor shows you talking to an empty stool at the counter, and the door chime never rang when he came in. Nothing ordinary explains that.",
+   "Behind the corkboard flyers is a folded newspaper page: Walt's obituary beside the notice of Anselm Pruitt, found on the bench outside the shop the same morning. Both a year old this week.",
+   "In the back room you find Walt's last voicemail on the office answerphone and a note taped inside the folding table: 'Pruitt's load, ready 3 am. Don't let him go without it.' You understand Walt was folding it when he died.",
+   "Dolores finally admits she kept the shift alive so Pruitt would not leave and Walt would not be gone. The one thing that ends the waiting is the thing she cannot do herself: hand the bag over."
+  ],
+  "tone": "Quiet, damp, tender dread: fluorescent hum, warm lint, small-town kindness with a grief underneath.",
+  "setting": "Winters' Wash & Fold, a family-run coin laundromat on Birch Street in the small town of Harlan Falls, late October, three rainy nights from Thursday to Saturday. The shop is open 24 hours, and the 10 pm to 6 am shift is yours. Dolores lives next door in the house with the porch light on.",
+  "player": "You are Dolores's neighbour across the fence, a 20-something or 30-something with a spare week and a debt of small kindnesses (she took in your packages and fed your cat). You've never worked the night shift and barely knew her husband Walt, who died last year.",
+  "time": "dusk",
+  "karma": "Attention and honesty toward the dead and the grieving: whether you notice what the faces and findings tell you, treat Pruitt as a person rather than a problem, and answer Dolores with truth and care instead of comfort or avoidance.",
+  "cast": [
+   {
+    "id": "dolores",
+    "name": "Dolores Winters",
+    "subject": "she",
+    "role": "The owner and your neighbour, in her seventies, who asks you to cover the night shift while she recovers from a 'bad chest'.",
+    "look": "small and soft-spoken, silver hair pinned with a clip, cardigan with tissues in the sleeve, a wedding ring she turns constantly, dark circles under bright eyes.",
+    "wants": "To keep the shop and the night routine exactly as Walt left it, and for you to follow her instructions without asking why.",
+    "hides": "That Walt died in the back room, that she has been telling a dead man's customer he's 'stepped out' for a year, and that she knows what Pruitt is.",
+    "tells": "When she lies she turns her ring and glances at the wall clock; when she is truthful her eyes go wet and settle on your face without blinking."
+   },
+   {
+    "id": "pruitt",
+    "name": "Anselm Pruitt",
+    "subject": "he",
+    "role": "The 3 am regular, Walt's last customer, still waiting for ticket 114.",
+    "look": "tall and thin in a grey work jacket with a bus-depot patch, neat grey moustache, hands folded, wristwatch with a cracked face stopped at 3:00, dry in the rain.",
+    "wants": "His laundry, in Walt's hands or anyone's, so he can finally go home.",
+    "hides": "That he doesn't know he's dead, and a dim fear that something has gone wrong the night he waited on the bench.",
+    "tells": "His smile stays fixed and courteous, but his eyes keep drifting to the back-room door and the shelf; when you say something true his face loosens and his eyes drop to his stopped watch."
+   },
+   {
+    "id": "ruth",
+    "name": "Ruth Winters",
+    "subject": "she",
+    "role": "Dolores's daughter, calling from the city, who wants to sell the laundromat before winter.",
+    "look": "seen only on the phone and in a framed photo: sharp bob, blazer, tired smile, Walt's jaw.",
+    "wants": "To get her mother out of the night shift and sell the shop, because she is afraid of what her mother is doing alone at 3 am.",
+    "hides": "That she has heard the machines running on the phone at night, and that she has never set foot inside since the funeral.",
+    "tells": "Her voice stays brisk, but she pauses too long when you mention 3 am, and in the photo her face is turned slightly away from Walt."
+   }
+  ],
+  "places": [
+   {
+    "id": "dolores_porch",
+    "name": "Dolores's Porch",
+    "look": "Next-door porch at dusk, a yellow bulb moth-heavy, wind chime, rain starting, Dolores handing you the key ring and a shift sheet."
+   },
+   {
+    "id": "front_counter",
+    "name": "Front Counter",
+    "look": "Scratched laminate counter with a cash tray, a claim-ticket book, a stool, a wall clock that runs two minutes slow, and a small security monitor in the corner."
+   },
+   {
+    "id": "machine_floor",
+    "name": "Machine Floor",
+    "look": "Two rows of humming washers and dryers under flickering fluorescents, a wet-footprint-free tile floor, dryer 6 with its door fogged, vending machine glowing blue."
+   },
+   {
+    "id": "back_room",
+    "name": "Back Room",
+    "look": "Narrow folding room with a long table, Walt's cardigan on a hook, an office answerphone, a cot, shelves of unclaimed bags, bag 114 on the highest shelf."
+   },
+   {
+    "id": "street_bench",
+    "name": "Bench Outside",
+    "look": "A wet slatted bench under the shop awning facing the dark street and a buzzing streetlight, a single dry rectangle where someone has been sitting."
+   },
+   {
+    "id": "dolores_kitchen",
+    "name": "Dolores's Kitchen",
+    "look": "Warm cluttered kitchen next door, pill organiser and kettle, Walt's chair untouched at the table, a calendar with every night circled."
+   }
+  ]
+ },
+ "endings": [
+  {
+   "id": "ending_handover",
+   "kind": "intended",
+   "title": "Ready at Three",
+   "what": "At 3:00 you carry bag 114 down from the shelf and place it in Pruitt's hands, telling him Walt folded it himself. He nods, checks his watch, and walks out into the rain as the watch starts ticking, and at dawn Dolores finds the machines silent and sits on the bench to cry.",
+   "how": "Find the obituary, Walt's note and the voicemail, answer Pruitt and Dolores honestly across the talks, and choose to open the bag and give it to him rather than keep the lie.",
+   "by": "user",
+   "rule": {
+    "by": "karma",
+    "min": 2
+   }
+  },
+  {
+   "id": "ending_stepped_out",
+   "kind": "other",
+   "title": "Stepped Out",
+   "what": "You tell Pruitt that Walt will be right back, and he settles onto the stool to wait with a patient smile. Weeks later you are the one who unlocks the shop at ten and tells the 3 am regular the same words, while Dolores watches from her porch light.",
+   "how": "Take Dolores's side: follow her shift sheet, comfort rather than confront her, avoid the back room and the clipping, and keep choosing the gentle lie to Pruitt.",
+   "by": "suggested",
+   "rule": {
+    "by": "karma"
+   }
+  },
+  {
+   "id": "ending_closed_doors",
+   "kind": "other",
+   "title": "Closed for Business",
+   "what": "At 3 am you panic, lock the door and call Ruth to come sell the place, while every washer in the shop fills at once behind the glass. The shop is sold by spring, and Pruitt's bag is thrown out in the clear-out, and the new owners say the machines still run by themselves at night.",
+   "how": "Ignore or dismiss the signs, treat Pruitt as a threat or a hallucination, side with Ruth, and walk out at 3 am without reading Walt's note or opening bag 114.",
+   "by": "suggested",
+   "rule": {
+    "by": "karma",
+    "max": -2
+   }
+  }
+ ],
+ "acts": [
+  {
+   "id": "a1",
+   "title": "Thursday: The Key Ring"
+  },
+  {
+   "id": "a2",
+   "title": "Friday: Ticket 114"
+  },
+  {
+   "id": "a3",
+   "title": "Saturday: Ready at Three"
+  }
+ ],
+ "points": [
+  {
+   "id": "p01",
+   "act": "a1",
+   "type": "scene",
+   "title": "The Porch Light",
+   "where": "dolores_porch",
+   "who": [
+    "dolores"
+   ],
+   "minutes": 3,
+   "what": "At dusk, rain starting, Dolores presses the key ring and a handwritten shift sheet into your hands. She coughs, turns her ring, and glances at the clock through her kitchen window. She thanks you for three nights, no questions.",
+   "player": "Look at the sheet and the porch while she talks; accept the keys.",
+   "fork": null,
+   "shot": "First person on Dolores's porch at dusk. She stands close in the doorway under the moth-heavy yellow bulb, and the key ring and folded sheet are pressed into your open palm. Rain starts to speckle the boards.",
+   "lines": [
+    {
+     "who": "dolores",
+     "text": "Thank you, dear. Three nights, that's all I ask.",
+     "face": "glad_to_see_you"
+    },
+    {
+     "who": "dolores",
+     "text": "It's only my chest. It'll be gone by Sunday.",
+     "face": "dolores_ring_clock"
+    },
+    {
+     "who": "dolores",
+     "text": "Everything is on the sheet. Please just follow it.",
+     "face": "fake_cheer"
+    },
+    {
+     "who": "dolores",
+     "text": "And no questions. Not about the nights. Promise me.",
+     "face": "hard_truth"
+    },
+    {
+     "who": "dolores",
+     "text": "Walt always said the machines like company.",
+     "face": "memory_soft"
+    },
+    {
+     "who": "dolores",
+     "text": "Go on. The front door sticks, lift as you turn.",
+     "face": "lie_glance_away"
+    }
+   ],
+   "talk": null,
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p02",
+   "act": "a1",
+   "type": "task",
+   "title": "Opening Chores",
+   "where": "front_counter",
+   "who": [],
+   "minutes": 3,
+   "what": "Alone in the humming shop, you work through Dolores's list: flip the sign, count the cash tray, wipe the counter, restock the vending machine. The sheet reads: 'Man comes at 3 for his bag, ticket 114. Tell him Walt stepped out. Don't argue, don't open the bag.' A sweet old quirk, you think.",
+   "player": "Tick off the chores and read the shift sheet.",
+   "fork": null,
+   "shot": "First person alone behind the front counter, fluorescents humming. Your hands move over the laminate, the cash tray, the sign and the vending glass, and the shift sheet lies flat beside the claim-ticket book.",
+   "lines": [
+    {
+     "who": "dolores",
+     "text": "Man comes at 3 for his bag. Tell him Walt stepped out.",
+     "face": "waiting_blank"
+    }
+   ],
+   "talk": null,
+   "tasks": [
+    {
+     "id": "t_sign",
+     "text": "Flip the sign to OPEN",
+     "who": "dolores",
+     "done": "The door sign is turned to OPEN.",
+     "fails": ""
+    },
+    {
+     "id": "t_cash",
+     "text": "Count the cash tray against the sheet",
+     "who": "dolores",
+     "done": "The tray is counted and matches the $86.50 written on the sheet.",
+     "fails": ""
+    },
+    {
+     "id": "t_counter",
+     "text": "Wipe down the counter",
+     "who": "dolores",
+     "done": "The laminate is wiped, including around the stool and the corkboard side.",
+     "fails": ""
+    },
+    {
+     "id": "t_vending",
+     "text": "Restock the vending machine",
+     "who": "dolores",
+     "done": "The blue vending machine is filled with the box of snacks from the back shelf.",
+     "fails": "Leaving the vending machine empty by 22:45 fails it, and a note on the sheet scolds you in Dolores's handwriting."
+    }
+   ],
+   "chapter": null
+  },
+  {
+   "id": "p03",
+   "act": "a1",
+   "type": "scene",
+   "title": "Ruth Calls",
+   "where": "front_counter",
+   "who": [
+    "ruth"
+   ],
+   "minutes": 3,
+   "what": "The counter phone rings: Ruth, brisk and tired, calling from the city. She wants to sell the shop before winter and asks what her mother has you doing. She goes quiet when you mention 3 am, and behind her you faintly hear a washer filling.",
+   "player": "Pick up and listen; the framed family photo sits beside you on the counter.",
+   "fork": null,
+   "shot": "First person at the counter, the old phone receiver pressed to your ear. The wall clock ticks two minutes slow above the stool, and the framed family photo sits beside the cash tray. Behind Ruth's voice, a washer fills.",
+   "lines": [
+    {
+     "who": "ruth",
+     "text": "Mom has you on nights? Of course she does.",
+     "face": "waiting_blank"
+    },
+    {
+     "who": "ruth",
+     "text": "I want this place sold before winter. She can't keep going.",
+     "face": "fake_cheer"
+    },
+    {
+     "who": "ruth",
+     "text": "What exactly did she tell you to do?",
+     "face": "suspicious"
+    },
+    {
+     "who": "ruth",
+     "text": "Three. In the morning.",
+     "face": "fear_flicker"
+    },
+    {
+     "who": "ruth",
+     "text": "Never mind. Old building. Pipes. Is something running there right now?",
+     "face": "deflect_laugh"
+    },
+    {
+     "who": "ruth",
+     "text": "Just call me if anything feels odd. Please.",
+     "face": "checks_exit"
+    }
+   ],
+   "talk": null,
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p04",
+   "act": "a1",
+   "type": "scene",
+   "title": "Three O'Clock, Exactly",
+   "where": "front_counter",
+   "who": [
+    "pruitt"
+   ],
+   "minutes": 3,
+   "what": "The wall clock runs two minutes slow, but a man arrives at exactly 3:00 in a downpour, polite and bone dry. He asks for Walt by name and gives ticket number 114. His eyes drift to the back-room door and the high shelf.",
+   "player": "Watch him come in; notice the dry coat and the unrung door.",
+   "fork": null,
+   "shot": "First person at the counter, looking at the front door. The chime stays silent, rain pours behind the glass, and a man stands at the counter, dry, his eyes drifting past you to the back-room door.",
+   "lines": [
+    {
+     "who": "pruitt",
+     "text": "Evening. Or morning, I suppose. Is Walt in?",
+     "face": "pruitt_courteous"
+    },
+    {
+     "who": "pruitt",
+     "text": "Ticket one-fourteen. Shirts and my work jacket.",
+     "face": "pruitt_courteous"
+    },
+    {
+     "who": "pruitt",
+     "text": "He promised me three o'clock. He's never late.",
+     "face": "pruitt_eyes_shelf"
+    },
+    {
+     "who": "pruitt",
+     "text": "Terrible night out there. You new?",
+     "face": "pruitt_courteous"
+    },
+    {
+     "who": "pruitt",
+     "text": "I'll wait. I don't mind waiting.",
+     "face": "pruitt_eyes_shelf"
+    }
+   ],
+   "talk": null,
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p05",
+   "act": "a1",
+   "type": "talk",
+   "title": "Walt Stepped Out",
+   "where": "front_counter",
+   "who": [
+    "pruitt"
+   ],
+   "minutes": 3,
+   "what": "Across the counter, close and face to face, Pruitt asks when Walt will be back. His smile is fixed and courteous, but his eyes keep going to the shelf. You tell him what the sheet says, or something else.",
+   "player": "Choose what to say: repeat the lie, ask who he is, or say you don't know.",
+   "fork": null,
+   "shot": "Extreme close-up across the counter, face to face with Pruitt. The stool is pulled in, his hands rest on the laminate, and his stopped watch is half visible at the edge of the frame.",
+   "lines": [],
+   "talk": {
+    "line": {
+     "who": "pruitt",
+     "text": "Walt said three sharp. When's he back, do you think?"
+    },
+    "listen": "pruitt_listening",
+    "options": [
+     {
+      "id": "a",
+      "say": "He's stepped out. Back soon.",
+      "face": "pruitt_smile_holds",
+      "tell": "His smile stays fixed while his eyes slide to the back-room door, so the lie does not reassure him. He has heard these words before.",
+      "karma": -1,
+      "sets": "told_stepped_out"
+     },
+     {
+      "id": "b",
+      "say": "I don't know. I'm just covering.",
+      "face": "pruitt_loosens",
+      "tell": "His face loosens and his eyes drop to his stopped watch. Plain honesty is the first thing in a long while that has felt true to him.",
+      "karma": 1,
+      "sets": "admitted_cover"
+     },
+     {
+      "id": "c",
+      "say": "How long have you been waiting?",
+      "face": "pruitt_dim_fear",
+      "tell": "The smile falters, his eyes go to the dark window and the bench outside, and he swallows. He does not know how long, and he is afraid of it.",
+      "karma": 2,
+      "sets": "asked_waiting"
+     }
+    ],
+    "reveals": "Pruitt's courtesy is a mask over a dim fear. He looks at the shelf and the back room, never the door he came in by, and he goes still when asked about time. Whatever happened to him happened out on the bench, and he does not know it."
+   },
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p06",
+   "act": "a1",
+   "type": "chapter",
+   "title": "Friday · 06:10",
+   "where": "front_counter",
+   "who": [],
+   "minutes": 1,
+   "what": "Pruitt leaves with a nod, and grey morning light fills the windows. The shop empties, and you sleep through the day with the rain still tapping.",
+   "player": "Watch the card; time passes.",
+   "fork": null,
+   "shot": "First person at the counter as grey light fills the windows. Pruitt stands to leave and nods, the stool slowly empty, then you lock the door and the rain taps the glass.",
+   "lines": [
+    {
+     "who": "pruitt",
+     "text": "Tell Walt I was here. Same time tomorrow.",
+     "face": "pruitt_courteous"
+    }
+   ],
+   "talk": null,
+   "tasks": [],
+   "chapter": {
+    "title": "Friday",
+    "sub": "06:10",
+    "time": "day"
+   }
+  },
+  {
+   "id": "p07",
+   "act": "a2",
+   "type": "talk",
+   "title": "Tea in Walt's Kitchen",
+   "where": "dolores_kitchen",
+   "who": [
+    "dolores"
+   ],
+   "minutes": 4,
+   "what": "Late afternoon in Dolores's warm kitchen, you sit across the table from her, Walt's chair untouched between you. You ask about the man at three. She turns her ring and glances at the clock; with a gentler answer, her eyes go wet and steady.",
+   "player": "Choose how to ask about Pruitt: soothe her, press her, or change the subject.",
+   "fork": null,
+   "shot": "Close across the small kitchen table, steam from the kettle at the edge of frame. Dolores fills the middle. Walt's untouched chair sits at the left corner of your eye. The calendar hangs just behind her shoulder, every night circled in red.",
+   "lines": [
+    {
+     "who": "dolores",
+     "text": "Sit, sit. The kettle's nearly there.",
+     "face": "tired_fond"
+    },
+    {
+     "who": "dolores",
+     "text": "That's Walt's chair. Nobody minds it.",
+     "face": "tears_held"
+    },
+    {
+     "who": "dolores",
+     "text": "Did the shop behave itself?",
+     "face": "fake_cheer"
+    }
+   ],
+   "talk": {
+    "line": {
+     "who": "dolores",
+     "text": "He came, didn't he? At three. Was he kind?"
+    },
+    "listen": "listening_guarded",
+    "options": [
+     {
+      "id": "a",
+      "say": "Who is he to Walt?",
+      "face": "dolores_ring_clock",
+      "tell": "She turns her ring and checks the clock before answering. 'Just a regular.' It isn't true, and she knows more than she says.",
+      "karma": 1,
+      "sets": "pressed_dolores"
+     },
+     {
+      "id": "b",
+      "say": "You miss him. I'm sorry.",
+      "face": "dolores_wet_steady",
+      "tell": "Her eyes go wet and stay on you. For a moment she is telling the truth: this is about Walt, and the man is part of it.",
+      "karma": 2,
+      "sets": "dolores_softened"
+     },
+     {
+      "id": "c",
+      "say": "Easy night. Nothing to report.",
+      "face": "relief_too_much",
+      "tell": "Her relief is too big for such a small answer. She needs you to stay inside the lie.",
+      "karma": -1,
+      "sets": "took_the_lie"
+     }
+    ],
+    "reveals": "Ring and clock mean a lie. Wet, steady eyes mean the truth. Her relief when you ask nothing shows how badly she needs the routine kept, and that the man at three is not just a customer."
+   },
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p08",
+   "act": "a2",
+   "type": "chapter",
+   "title": "Friday · 22:00",
+   "where": "front_counter",
+   "who": [],
+   "minutes": 1,
+   "what": "Night falls again on Birch Street. The sign flips, the rain thickens, and the fluorescents hum.",
+   "player": "Watch the card; begin the second shift.",
+   "fork": null,
+   "shot": "Through the front window from the counter: the dark street, rain thickening on the glass. Your hand flips the sign to OPEN and the fluorescents stutter on and hum.",
+   "lines": [],
+   "talk": null,
+   "tasks": [],
+   "chapter": {
+    "title": "Friday",
+    "sub": "22:00",
+    "time": "night"
+   }
+  },
+  {
+   "id": "p09",
+   "act": "a2",
+   "type": "task",
+   "title": "What the Book Says",
+   "where": "machine_floor",
+   "who": [],
+   "minutes": 4,
+   "what": "Restocking tickets, you find the claim-ticket book ends at 113 in Walt's handwriting. Bag 114 sits on the high shelf under a year of dust. Dryer 6 starts by itself at 2:58 with a warm lint trap.",
+   "player": "Search the counter, the floor and the back-room shelves; examine dryer 6.",
+   "fork": null,
+   "shot": "Eye-level at the counter, hands on the old ticket book, then drifting out to the machine floor and the back-room door. The high shelf with its dust-grey bag stays in view at the end.",
+   "lines": [],
+   "talk": null,
+   "tasks": [
+    {
+     "id": "t_restock",
+     "text": "Restock the claim-ticket pad",
+     "who": "",
+     "done": "The new pad is slotted into the counter tray and the old book pulled out.",
+     "fails": ""
+    },
+    {
+     "id": "t_stub",
+     "text": "Check the last stub in the old book",
+     "who": "",
+     "done": "The old book is opened to its last stub: 113 in Walt's hand, the page after it blank.",
+     "fails": ""
+    },
+    {
+     "id": "t_lint",
+     "text": "Feel the lint trap of dryer 6",
+     "who": "",
+     "done": "You hold your hand to the lint trap of the idle dryer 6 and find it warm.",
+     "fails": ""
+    },
+    {
+     "id": "t_bag",
+     "text": "Find bag 114 in the back room",
+     "who": "",
+     "done": "You stand under the high shelf and read the dusty tag on bag 114.",
+     "fails": ""
+    }
+   ],
+   "chapter": null
+  },
+  {
+   "id": "p10",
+   "act": "a2",
+   "type": "choice",
+   "title": "The Hum at 2:50",
+   "where": "machine_floor",
+   "who": [],
+   "minutes": 2,
+   "what": "Dryer 6 spins up with nobody near it, and something moves in the back room. You have a few minutes before three.",
+   "player": "Decide where to be when he arrives.",
+   "fork": {
+    "question": "Dryer 6 is running by itself. Where do you go?",
+    "ways": [
+     {
+      "id": "p10_a",
+      "label": "Open dryer 6",
+      "sets": "checked_dryer",
+      "points": [
+       {
+        "id": "p10a",
+        "type": "task",
+        "title": "Warm Lint",
+        "where": "machine_floor",
+        "who": [],
+        "minutes": 3,
+        "what": "You open the fogged door: a folded load, warm, a man's shirts and a night-bus work jacket, tagged 114. The load is finished, but no one has touched the machine.",
+        "player": "Open the door and look through the folded load.",
+        "shot": "Close on dryer 6. The fogged door fills the frame. Your hand pulls it open and warm air rolls over your face.",
+        "lines": [],
+        "talk": null,
+        "tasks": [
+         {
+          "id": "t_open6",
+          "text": "Open dryer 6",
+          "who": "",
+          "done": "The door is open and you have touched the warm, folded load.",
+          "fails": ""
+         },
+         {
+          "id": "t_jacket",
+          "text": "Read the tag on the work jacket",
+          "who": "",
+          "done": "You turn the night-bus jacket and read the tag: 114.",
+          "fails": ""
+         }
+        ],
+        "chapter": null
+       }
+      ]
+     },
+     {
+      "id": "p10_b",
+      "label": "Watch the monitor",
+      "sets": "watched_monitor",
+      "points": [
+       {
+        "id": "p10b",
+        "type": "scene",
+        "title": "The Empty Stool",
+        "where": "front_counter",
+        "who": [
+         "pruitt"
+        ],
+        "minutes": 3,
+        "what": "On the security monitor you see yourself at the counter, speaking to an empty stool. The door chime never rings as he sits.",
+        "player": "Watch the grainy screen and then look at the stool beside you.",
+        "shot": "Close on the grainy security monitor from behind the counter. You are on the screen at the counter, leaning toward an empty stool. The chime above the real door hangs still.",
+        "lines": [
+         {
+          "who": "pruitt",
+          "text": "Evening.",
+          "face": "pruitt_courteous"
+         },
+         {
+          "who": "pruitt",
+          "text": "Walt in?",
+          "face": "pruitt_eyes_shelf"
+         }
+        ],
+        "talk": null,
+        "tasks": [],
+        "chapter": null
+       }
+      ]
+     }
+    ]
+   },
+   "shot": "Machine floor, a little before three. Dryer 6's drum hums and starts to turn with no one near it. Behind you the back-room door clicks. Dryer 6 sits ahead on the left and the security monitor shows at the edge of the counter on the right.",
+   "lines": [],
+   "talk": null,
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p11",
+   "act": "a2",
+   "type": "scene",
+   "title": "No Chime",
+   "where": "front_counter",
+   "who": [
+    "pruitt"
+   ],
+   "minutes": 4,
+   "what": "At 3:00 Pruitt is simply there, dry again, and the chime stays silent. He mentions the weather but his eyes find the shelf. His watch is stopped at 3:20.",
+   "player": "Look at his watch, the door and the monitor.",
+   "fork": null,
+   "shot": "Counter, standing, a little low and close. Pruitt is simply on the stool, dry. The chime above the door has not rung. His wrist rests on the laminate and the shelf is behind him.",
+   "lines": [
+    {
+     "who": "pruitt",
+     "text": "Wet one tonight. Buses will run late.",
+     "face": "pruitt_courteous"
+    },
+    {
+     "who": "pruitt",
+     "text": "Ticket one-fourteen. Walt said three, and Walt's never late.",
+     "face": "pruitt_eyes_shelf"
+    },
+    {
+     "who": "pruitt",
+     "text": "Still stepped out, is he?",
+     "face": "pruitt_smile_holds"
+    },
+    {
+     "who": "pruitt",
+     "text": "Odd. My watch says twenty past.",
+     "face": "pruitt_dim_fear"
+    }
+   ],
+   "talk": null,
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p12",
+   "act": "a2",
+   "type": "talk",
+   "title": "Side by Side",
+   "where": "front_counter",
+   "who": [
+    "pruitt"
+   ],
+   "minutes": 4,
+   "what": "He sits on the stool and you sit close beside him on the bench-end of the counter. He asks if you have a bad heart too. When you say something true, his face loosens and his eyes drop to his watch.",
+   "player": "Choose between a comforting lie, a gentle question, or the honest truth that you don't know where Walt is.",
+   "fork": null,
+   "shot": "Very close, side by side at the counter's end. Pruitt's profile fills the left of your view, his stopped watch just visible at the edge, the rain loud behind the glass.",
+   "lines": [
+    {
+     "who": "pruitt",
+     "text": "Mind if I sit a while? Legs aren't what they were.",
+     "face": "pruitt_courteous"
+    },
+    {
+     "who": "pruitt",
+     "text": "Twenty years under night buses. Heart's the one that complains.",
+     "face": "pruitt_hand_chest"
+    }
+   ],
+   "talk": {
+    "line": {
+     "who": "pruitt",
+     "text": "You don't have a bad heart too, do you?"
+    },
+    "listen": "pruitt_listening",
+    "options": [
+     {
+      "id": "a",
+      "say": "Nothing wrong with mine.",
+      "face": "pruitt_smile_holds",
+      "tell": "His smile stays and his eyes slide to the back-room door. A dodge gets you nothing but politeness.",
+      "karma": -1,
+      "sets": "brushed_off_pruitt"
+     },
+     {
+      "id": "b",
+      "say": "Mine skips when I'm scared.",
+      "face": "pruitt_loosens",
+      "tell": "His smile slackens and his eyes drop to the stopped watch. A true answer reaches him.",
+      "karma": 2,
+      "sets": "pruitt_trusted"
+     },
+     {
+      "id": "c",
+      "say": "How long have you been waiting?",
+      "face": "pruitt_dim_fear",
+      "tell": "His smile falters and he glances at the dark window. He doesn't know, and he is starting to fear it.",
+      "karma": 1,
+      "sets": "asked_how_long"
+     }
+    ],
+    "reveals": "Pruitt's face loosens and his eyes drop to the watch when you are honest. His fixed smile and drifting gaze mean he holds something back. The dark window, the watch and his hand on his chest show he is afraid that something happened to him on the bench."
+   },
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p13",
+   "act": "a2",
+   "type": "chapter",
+   "title": "Saturday · 06:00",
+   "where": "front_counter",
+   "who": [],
+   "minutes": 1,
+   "what": "Dawn. The machines fall silent, and Pruitt is gone from the stool. You lock up, wet-eyed with tiredness.",
+   "player": "Watch the card; sleep.",
+   "fork": null,
+   "shot": "Counter at dawn. Grey light on the glass, the machines going quiet one by one, and the stool empty with a faint dent in the vinyl.",
+   "lines": [],
+   "talk": null,
+   "tasks": [],
+   "chapter": {
+    "title": "Saturday",
+    "sub": "06:00",
+    "time": "day"
+   }
+  },
+  {
+   "id": "p14",
+   "act": "a3",
+   "type": "chapter",
+   "title": "Saturday · 21:30",
+   "where": "street_bench",
+   "who": [],
+   "minutes": 1,
+   "what": "The last night. The rain is heavy as you unlock the door a final time.",
+   "player": "Watch the card.",
+   "fork": null,
+   "shot": "Eye-level on the awning's edge, rain sheeting off it in front of you. Your hand turns the key in the lock, the sign still dark, the bench a blur at the edge of frame.",
+   "lines": [],
+   "talk": null,
+   "tasks": [],
+   "chapter": {
+    "title": "Saturday",
+    "sub": "21:30",
+    "time": "night"
+   }
+  },
+  {
+   "id": "p15",
+   "act": "a3",
+   "type": "task",
+   "title": "The Dry Rectangle",
+   "where": "street_bench",
+   "who": [],
+   "minutes": 3,
+   "what": "Under the awning the wet bench has one dry rectangle, as if someone has been sitting there for a year. You notice scuffed marks near the shop door.",
+   "player": "Look at the bench and the awning, then go back in.",
+   "fork": null,
+   "shot": "Looking down at the wet slatted bench under the awning, then slowly toward the shop door. The streetlight buzzes. One dry rectangle sits on the boards, and pale scuffs mark the concrete near the door.",
+   "lines": [],
+   "talk": null,
+   "tasks": [
+    {
+     "id": "t15_bench",
+     "text": "Look at the bench under the awning",
+     "who": "",
+     "done": "You stop at the bench and study the dry rectangle on the wet boards.",
+     "fails": ""
+    },
+    {
+     "id": "t15_scuffs",
+     "text": "Check the scuffs by the shop door",
+     "who": "",
+     "done": "You crouch and look at the marks worn into the concrete by the door.",
+     "fails": ""
+    }
+   ],
+   "chapter": null
+  },
+  {
+   "id": "p16",
+   "act": "a3",
+   "type": "task",
+   "title": "Behind the Flyers",
+   "where": "front_counter",
+   "who": [],
+   "minutes": 4,
+   "what": "Behind the corkboard flyers is a folded newspaper page: Walt's obituary beside the notice of Anselm Pruitt, found on the bench the same morning. Both are a year old this week.",
+   "player": "Take down the flyers and read the page.",
+   "fork": null,
+   "shot": "Close on the corkboard by the counter, lit by flickering fluorescents. Your fingers lift curling flyers one at a time until a yellowed, folded newspaper page slides out into your hands.",
+   "lines": [],
+   "talk": null,
+   "tasks": [
+    {
+     "id": "t16_flyers",
+     "text": "Look behind the corkboard flyers",
+     "who": "",
+     "done": "You lift the flyers and take out the folded newspaper page.",
+     "fails": ""
+    },
+    {
+     "id": "t16_read",
+     "text": "Read the page",
+     "who": "",
+     "done": "You read Walt's obituary and the notice for Anselm Pruitt, side by side and a year old this week.",
+     "fails": ""
+    }
+   ],
+   "chapter": null
+  },
+  {
+   "id": "p17",
+   "act": "a3",
+   "type": "task",
+   "title": "Pruitt's Load",
+   "where": "back_room",
+   "who": [],
+   "minutes": 4,
+   "what": "In the back room you find Walt's last voicemail on the answerphone and a note taped inside the folding table: 'Pruitt's load, ready 3 am. Don't let him go without it.' You understand Walt was folding it when he died.",
+   "player": "Play the answerphone, read the note, look up at bag 114.",
+   "fork": null,
+   "shot": "Narrow back room, close and cramped. Walt's cardigan hangs on its hook, the answerphone's red light blinks, and you crouch to look under the long folding table. Bag 114 sits on the highest shelf above you.",
+   "lines": [],
+   "talk": null,
+   "tasks": [
+    {
+     "id": "t17_voicemail",
+     "text": "Play the old answerphone message",
+     "who": "",
+     "done": "You press play and hear Walt's last voicemail through to the end.",
+     "fails": ""
+    },
+    {
+     "id": "t17_note",
+     "text": "Read the note taped inside the folding table",
+     "who": "",
+     "done": "You read the note: 'Pruitt's load, ready 3 am. Don't let him go without it.'",
+     "fails": ""
+    }
+   ],
+   "chapter": null
+  },
+  {
+   "id": "p18",
+   "act": "a3",
+   "type": "talk",
+   "title": "In the Doorway",
+   "where": "front_counter",
+   "who": [
+    "dolores"
+   ],
+   "minutes": 4,
+   "what": "At 2:30 Dolores stands in the doorway in her coat, face to face with you. You hold the clipping. She finally admits she kept the shift alive so Pruitt would not leave and Walt would not be gone.",
+   "player": "Choose between comfort, confrontation or honesty.",
+   "fork": null,
+   "shot": "Close and face to face. Dolores fills the doorway in her wet coat, rain dripping behind her. The clipping is in your hands between you, the wall clock reading 2:28.",
+   "lines": [
+    {
+     "who": "dolores",
+     "text": "I only came to see if you needed anything.",
+     "face": "dolores_ring_clock"
+    },
+    {
+     "who": "dolores",
+     "text": "That page. Where did you find it?",
+     "face": "shock_mask"
+    },
+    {
+     "who": "dolores",
+     "text": "Tell me what you think you know.",
+     "face": "tears_held"
+    },
+    {
+     "who": "dolores",
+     "text": "If I opened every night, he was never really gone.",
+     "face": "dolores_wet_steady"
+    }
+   ],
+   "talk": {
+    "line": {
+     "who": "dolores",
+     "text": "Tell me what you think you know."
+    },
+    "listen": "listening_guarded",
+    "options": [
+     {
+      "id": "a",
+      "say": "Walt died here. So did Pruitt.",
+      "face": "dolores_wet_steady",
+      "tell": "Her hand stops on the ring and her wet eyes stay on yours. She is being truthful, and relieved to be seen.",
+      "karma": 2,
+      "sets": "told_dolores_truth"
+     },
+     {
+      "id": "b",
+      "say": "Nothing. Go home, rest. I've got it.",
+      "face": "relief_too_much",
+      "tell": "She is far too grateful to be let off. She wants the lie kept alive more than she wants help.",
+      "karma": -1,
+      "sets": "comforted_dolores"
+     },
+     {
+      "id": "c",
+      "say": "Ruth was right. This ends tonight.",
+      "face": "hidden_anger",
+      "tell": "Her jaw sets and she says nothing. Ruth's name hurts, and she stops trusting you.",
+      "karma": -2,
+      "sets": "sided_with_ruth"
+     }
+    ],
+    "reveals": "Her ring-turn and clock glance on the first line mark the lie: she did not come to help. When she is honest her eyes go wet and steady. If you comfort her, she is relieved at being excused, and that shows what she is protecting."
+   },
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p19",
+   "act": "a3",
+   "type": "choice",
+   "title": "Three Minutes",
+   "where": "front_counter",
+   "who": [
+    "dolores",
+    "pruitt"
+   ],
+   "minutes": 2,
+   "what": "The clock is two minutes slow. Bag 114 waits above you and Pruitt is at the door.",
+   "player": "Decide what to do when he arrives.",
+   "fork": null,
+   "shot": "Behind the counter, the wall clock reading 2:58 and two minutes slow. The back-room door stands ajar on the high shelf. Through the front glass a still shape waits beyond the door, and the chime stays silent. Dolores stands close at your shoulder. You can take the bag down, stay at the counter and repeat the lie, or lock the door and go.",
+   "lines": [
+    {
+     "who": "dolores",
+     "text": "That clock's two minutes slow. Walt never fixed it.",
+     "face": "memory_soft"
+    },
+    {
+     "who": "dolores",
+     "text": "The bag's up there. I can't be the one.",
+     "face": "dolores_lets_go"
+    },
+    {
+     "who": "dolores",
+     "text": "Whatever you choose, I won't stop you.",
+     "face": "resigned"
+    }
+   ],
+   "talk": null,
+   "tasks": [],
+   "chapter": null
+  },
+  {
+   "id": "p20",
+   "act": "a3",
+   "type": "talk",
+   "title": "Ticket 114",
+   "where": "front_counter",
+   "who": [
+    "pruitt",
+    "dolores"
+   ],
+   "minutes": 4,
+   "what": "Pruitt asks for Walt once more, and his eyes go to the shelf. Your last answer decides whether you tell him the truth, repeat the lie, or run.",
+   "player": "Choose what to tell Pruitt.",
+   "fork": null,
+   "shot": "Tight across the counter, Pruitt's face close and dry despite the downpour. His eyes keep sliding past you to the back-room door. Dolores waits just out of focus at the edge of frame.",
+   "lines": [
+    {
+     "who": "pruitt",
+     "text": "Evening. It's three o'clock. Is Walt about?",
+     "face": "pruitt_courteous"
+    },
+    {
+     "who": "pruitt",
+     "text": "Ticket one-fourteen. Sorry to be a bother.",
+     "face": "pruitt_eyes_shelf"
+    },
+    {
+     "who": "pruitt",
+     "text": "My chest is tight tonight. Can't think why.",
+     "face": "pruitt_hand_chest"
+    },
+    {
+     "who": "dolores",
+     "text": "He'll hear it from you, whatever you say.",
+     "face": "dolores_wet_steady"
+    },
+    {
+     "who": "pruitt",
+     "text": "Will he be long, do you think?",
+     "face": "pruitt_listening"
+    }
+   ],
+   "talk": {
+    "line": {
+     "who": "pruitt",
+     "text": "Will he be long, do you think?"
+    },
+    "listen": "pruitt_listening",
+    "options": [
+     {
+      "id": "a",
+      "say": "Walt folded it himself. It's ready.",
+      "face": "pruitt_loosens",
+      "tell": "His smile slackens and he looks at his stopped watch. He recognises the truth and is ready to go.",
+      "karma": 2,
+      "sets": "told_pruitt_truth"
+     },
+     {
+      "id": "b",
+      "say": "Walt's stepped out. Wait here.",
+      "face": "pruitt_smile_holds",
+      "tell": "His smile stays fixed and he looks at the back-room door. The lie holds him there, and he will wait again.",
+      "karma": -1,
+      "sets": "repeated_lie"
+     },
+     {
+      "id": "c",
+      "say": "I can't do this. I'm sorry.",
+      "face": "pruitt_dim_fear",
+      "tell": "He swallows and looks at the dark window. He is afraid something has gone wrong, and you have just confirmed it.",
+      "karma": -2,
+      "sets": "ran_at_three"
+     }
+    ],
+    "reveals": "Pruitt's face only loosens when you say something true, and then he looks at his stopped watch. His hand on his chest and his glances at the shelf show that he half-knows why he can't leave. Dolores's wet, steady eyes show she wants you to say it."
+   },
+   "tasks": [],
+   "chapter": null
+  }
+ ],
+ "secrets": [
+  {
+   "id": "s01",
+   "after": "p03",
+   "title": "Turned Away",
+   "find": "Take the family photo from its frame on the counter and look behind it.",
+   "shows": "A second photo of Walt with Ruth turned away, and a note in Ruth's hand: 'I couldn't go in.'",
+   "achievement": "Turned Away"
+  },
+  {
+   "id": "s02",
+   "after": "p07",
+   "title": "Every Night Circled",
+   "find": "Look closely at the kitchen calendar while Dolores fills the kettle.",
+   "shows": "Every night is circled, October 24th pressed through the paper.",
+   "achievement": "Circled in Red"
+  },
+  {
+   "id": "s03",
+   "after": "p09",
+   "title": "Cardigan Pocket",
+   "find": "Check Walt's cardigan hanging in the back room.",
+   "shows": "A stub of ticket 114 and a pencil stub, with a half-written 'ready at'.",
+   "achievement": "Pocket Lint"
+  },
+  {
+   "id": "s04",
+   "after": "p12",
+   "title": "Last Year's Tape",
+   "find": "Rewind the old security recorder under the counter.",
+   "shows": "Last year's October 24th: a lit empty shop and a man waiting on the bench at 3:00.",
+   "achievement": "Rewind"
+  },
+  {
+   "id": "s05",
+   "after": "p15",
+   "title": "Last Bus",
+   "find": "Reach beneath the dry end of the bench.",
+   "shows": "A night-bus pass stamped October 24th, still dry.",
+   "achievement": "Last Bus"
+  }
+ ],
+ "achievements": [
+  {
+   "id": "ach_s01",
+   "title": "Turned Away",
+   "text": "Some photos hide a second one.",
+   "for": "secret:s01",
+   "hidden": false
+  },
+  {
+   "id": "ach_s02",
+   "title": "Circled in Red",
+   "text": "A kitchen calendar remembers more than it says.",
+   "for": "secret:s02",
+   "hidden": false
+  },
+  {
+   "id": "ach_s03",
+   "title": "Pocket Lint",
+   "text": "A cardigan still holds something.",
+   "for": "secret:s03",
+   "hidden": false
+  },
+  {
+   "id": "ach_s04",
+   "title": "Rewind",
+   "text": "The shop keeps its own memory.",
+   "for": "secret:s04",
+   "hidden": true
+  },
+  {
+   "id": "ach_s05",
+   "title": "Last Bus",
+   "text": "Someone left something under the bench.",
+   "for": "secret:s05",
+   "hidden": true
+  },
+  {
+   "id": "ach_end1",
+   "title": "Ready at Three",
+   "text": "Hand over what was promised.",
+   "for": "ending:ending_handover",
+   "hidden": true
+  },
+  {
+   "id": "ach_end2",
+   "title": "Stepped Out",
+   "text": "Keep the gentle lie going.",
+   "for": "ending:ending_stepped_out",
+   "hidden": true
+  },
+  {
+   "id": "ach_end3",
+   "title": "Closed for Business",
+   "text": "Lock the door on it all.",
+   "for": "ending:ending_closed_doors",
+   "hidden": true
+  },
+  {
+   "id": "ach_f1",
+   "title": "Bone Dry",
+   "text": "Notice the rain does not touch him.",
+   "for": "feat",
+   "hidden": false
+  },
+  {
+   "id": "ach_f2",
+   "title": "Clean Counter",
+   "text": "Finish every chore on the sheet.",
+   "for": "feat",
+   "hidden": false
+  }
+ ],
+ "faces": [
+  {
+   "id": "dolores_ring_clock",
+   "prompt": "she coughs once into her fist, turns the ring on her finger, and glances past the viewer at the wall clock before looking back.",
+   "secs": 5,
+   "loop": [
+    0.6,
+    1
+   ],
+   "for": "dolores"
+  },
+  {
+   "id": "pruitt_courteous",
+   "prompt": "his polite smile settles into place as he gives a small nod, his eyes drift to the side toward the back-room door, and the smile stays fixed on the viewer.",
+   "secs": 5,
+   "loop": [
+    0.5,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "pruitt_eyes_shelf",
+   "prompt": "his smile stays fixed as his eyes slowly lift to something high above the viewer's shoulder, and he holds the gaze there without blinking.",
+   "secs": 6,
+   "loop": [
+    0.5,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "pruitt_listening",
+   "prompt": "he tilts his head slightly and raises his eyebrows, his courteous smile held as he waits, and his eyes flick once toward the back room and return to the viewer.",
+   "secs": 6,
+   "loop": [
+    0.5,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "pruitt_smile_holds",
+   "prompt": "his smile stays exactly where it is as his eyes slide toward the back-room door, he gives a slow small nod, and his eyes stay on the door.",
+   "secs": 5,
+   "loop": [
+    0.6,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "pruitt_loosens",
+   "prompt": "his smile slackens and his shoulders ease down, his eyes drop to the watch on his wrist, and he stays looking at it.",
+   "secs": 6,
+   "loop": [
+    0.55,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "pruitt_dim_fear",
+   "prompt": "his smile falters and he swallows, his eyes go to the dark window beside him, and he turns back to the viewer with his mouth slightly open.",
+   "secs": 6,
+   "loop": [
+    0.6,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "dolores_wet_steady",
+   "prompt": "her eyes fill and go wet as her hand stops turning the ring, she lets out a slow breath, and she holds the viewer's gaze without blinking.",
+   "secs": 6,
+   "loop": [
+    0.5,
+    1
+   ],
+   "for": "dolores"
+  },
+  {
+   "id": "pruitt_hand_chest",
+   "prompt": "his hand drifts to the centre of his chest and rests there, his smile thins, and his eyes stay on the viewer.",
+   "secs": 5,
+   "loop": [
+    0.5,
+    1
+   ],
+   "for": "pruitt"
+  },
+  {
+   "id": "dolores_lets_go",
+   "prompt": "her hand stops turning the ring and drops to her side, her chin trembles as she nods once, and she looks up toward the high shelf behind the viewer.",
+   "secs": 6,
+   "loop": [
+    0.6,
+    1
+   ],
+   "for": "dolores"
+  }
+ ],
+ "notes": [],
+ "chat": [],
+ "built": null
+}

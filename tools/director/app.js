@@ -1395,9 +1395,9 @@ function clipCard(sc, ver, c, i, lvl, sid) {
 }
 const WHO_COLORS = ["#e07aa8", "#6fb3d9", "#d9a441", "#3fb3a2", "#9b7be0", "#e0805a"];
 function whoColor(who) { if (who === "player") return "#a8a59c"; const i = castIds().indexOf(who); return WHO_COLORS[(i < 0 ? 0 : i) % WHO_COLORS.length]; }
-// a hanging line (STORY_FORMAT §9.9): she asks and waits; the player answers left or right; each answer gets her line back
+// a hanging line (STORY_FORMAT §9.9): she asks and waits; the player answers (two answers, or three); each gets her line back
 function replyEditor(c) {
-  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player answers left or right, and each answer gets her own line back (its own take, named after this clip's and the answer's)."),
+  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player answers (left or right, or one of three), and each answer gets her own line back (its own take, named after this clip's and the answer's)."),
     el("button", { on: { click: () => { c.reply = { wait: 6, timeout: null, options: [{ id: "yes", label: "", ja: "", then: { ja: "", en: "" } }, { id: "no", label: "", ja: "", then: { ja: "", en: "" } }] }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make this a hanging line"));
   const rp = c.reply, box = el("div", { class: "reply" });
   rp.options = rp.options || [];
@@ -1413,7 +1413,11 @@ function replyEditor(c) {
       el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(o.then, "expr", { ph: "her expression", style: "flex:1", drop: true }), sel(o.then, "voice", VOICES, { drop: true, blank: "voice…" })),
       el("div", {}, el("span", { class: "lab" }, "picking it also does"), actionList(...slot(o, "sets"), { empty: "nothing (most replies set nothing: they're there so it feels like you)" }))));
   });
-  box.append(el("div", { class: "row" }, el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Take the reply off this clip?")) { delete c.reply; delete c.wait_expr; touch(); CTX.rerender(); } } } }, "No reply")));
+  const third = () => { const ids = new Set(rp.options.map(o => o.id)); let id = "other", i = 2; while (ids.has(id)) id = `other${i++}`; rp.options.push({ id, label: "", ja: "", then: { ja: "", en: "" } }); touch(); renderInspector(); };
+  box.append(el("div", { class: "row" },
+    rp.options.length < 3 ? el("button", { class: "small", title: "an L.A. Noire talk has three: warm, probing, evasive...", on: { click: third } }, icon("plus", 14), " A third answer")
+      : el("button", { class: "small", on: { click: () => { rp.options.pop(); if (rp.timeout && !rp.options.some(o => o.id === rp.timeout)) rp.timeout = null; touch(); renderInspector(); } } }, icon("x", 14), " Not the third"),
+    el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Take the reply off this clip?")) { delete c.reply; delete c.wait_expr; touch(); CTX.rerender(); } } } }, "No reply")));
   return box;
 }
 // ---- a clip's Kimodo segments (STORY_FORMAT §9.5): one behaviour each, made in Kimodo's demo from the shot list and
@@ -1731,6 +1735,19 @@ function wclear() { $("#watchBox").querySelectorAll(".wcard,.qte,.warnmark").for
 async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.opacity || 0, t0 = performance.now(), d = Math.max(0.05, secs) * 1000; while (RUN) { const u = Math.min(1, (performance.now() - t0) / d); b.style.opacity = from + (to - from) * u; if (u >= 1) break; await new Promise(r => requestAnimationFrame(r)); } }
 function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
+// achievements (STORY_FORMAT §9.13): a secret found, an ending reached or a flag set unlocks one, said in the corner
+function achieved(nid) {
+  if (!RUN || !S.achievements) return;
+  RUN.achieved = RUN.achieved || new Set();
+  for (const [id, a] of Object.entries(S.achievements)) {
+    const f = a.for || {}, sec = f.secret && (S.secrets || {})[f.secret];
+    if (RUN.achieved.has(id) || !(f.ending ? f.ending === nid : sec ? RUN.flags.has(sec.flag) : f.flag ? RUN.flags.has(f.flag) : false)) continue;
+    RUN.achieved.add(id);
+    let box = $("#watchBox .wachs"); if (!box) { box = el("div", { class: "wachs" }); $("#watchBox").append(box); }
+    const card = el("div", { class: "wach" }, el("div", { class: "muted" }, "ACHIEVEMENT"), el("b", {}, a.title || id), a.text ? el("div", { class: "muted" }, a.text) : null);
+    box.append(card); setTimeout(() => card.remove(), 6000);
+  }
+}
 function karmaAct(acts, t) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, t ?? RUN.secs); } wclock(); }
 // the little things with a life (docs/IMMERSION.md): {id: {life, d}}, their dicts from the story, their lives from the plan
 function lifeThings() {
@@ -1784,11 +1801,11 @@ function choiceBox(spec, pick, who) {
   const fl = floating(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
   return { box: { remove: fl.remove }, c };
 }
-// a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
+// a reply: two or three answers, the Japanese over the English; she waits (her idle keeps going), then carries on
 function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
-    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
+    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 3), t0 = performance.now();
     const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
@@ -2000,7 +2017,7 @@ async function watchStitch(st, nid, n) {
 function playRt() {
   if (!RUN.play) {
     RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, setTime: t => { RUN.time = t; watchStage.setTime(t); }, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } }, files: FILES,
-      onBeat: (st, b, secs) => DBG.fired(st, b, secs) });
+      onBeat: (st, b, secs) => DBG.fired(st, b, secs), onFlag: () => achieved() });
     for (const i of RUN.items || []) RUN.play.items.add(i);   // what a start from the debug panel holds
   }
   return RUN.play;
@@ -2065,7 +2082,7 @@ async function watch(fromNid, snap) {
   let nid = fromNid || S.game.start, guard = 0;
   RUN.time = (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; watchStage.setTime(RUN.time);   // from any node: its time
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
-    const n = S.flow[nid]; reach(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
+    const n = S.flow[nid]; reach(nid); achieved(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
     if (n.type === "scene" && (S.scenes[n.ref] || {}).time) { RUN.time = S.scenes[n.ref].time; watchStage.setTime(RUN.time); }   // a scene's own time, from here on
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you

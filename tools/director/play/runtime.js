@@ -30,7 +30,8 @@ const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !fl
 
 export class PlayRuntime {
   // opts: run (the Watch's run: flags, karma, counters), settings ({crouch: {mode: "hold"}}), theme, fade(to, secs),
-  //       onBeat(stitch, beat, secs) (a beat fired: the desk's debug panel), files (the desk's loaded motions, by file)
+  //       onBeat(stitch, beat, secs) (a beat fired: the desk's debug panel), onFlag(flag) (a flag set: the desk's
+  //       achievements), files (the desk's loaded motions, by file)
   constructor(stage, story, plan, box, opts = {}) {
     Object.assign(this, { stage, story, plan, box, opts });
     this.run = opts.run || null;
@@ -210,7 +211,7 @@ export class PlayRuntime {
 
   // ---- what the story's parts call -------------------------------------------------------------------------------
   emit(ev) { if (this.todo) this.todo.event(ev); if (this.listener) this.listener(ev); }
-  setFlag(f) { if (!f) return; this.flags.add(f); this.emit({ type: "flag", id: f }); }
+  setFlag(f) { if (!f) return; this.flags.add(f); this.emit({ type: "flag", id: f }); if (this.opts.onFlag) this.opts.onFlag(f); }
   give(item) { this.items.add(item); this.hud.log(`got: ${this.itemName(item)}`); }
   itemName(id) { return ((this.story.items || {})[id] || {}).name || String(id).replace(/_/g, " "); }
   nameOf(t) { const p = t.userData.piece || {}, d = p.d || {}; return d.name || (p.tags || []).find(x => x.startsWith("tag:"))?.slice(4).replace(/_/g, " ") || t.userData.id.replace(/_/g, " "); }

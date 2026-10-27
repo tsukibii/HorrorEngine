@@ -141,29 +141,47 @@ dragging pans.
 
 ## 7. Build: into the director
 
-**Build** writes, in `Content/Games/<Game>/`:
+**Build** (the header's button, or `python tools/writers/room.py build ID [--game G]`) writes, in
+`Content/Games/<Game>/` (the name from the title, Ticket114, unless you give one):
 
-- `story.json` (format 3, `game.draft: true`): a greybox room per place (in a row, joined by doors), the cast, each
-  scene and talk a scene of its lines (English, typed), each talk's answers a hanging line's replies with her face
-  as the answer (`then.expr`: the post prompt), each task a stitch with its to-do list (placeholder props in its room
-  that tick it), chapters as chapter cards, forks as choices that join again, secrets as optional finds that set
-  their flag and rejoin, the endings as a choice by karma (or by the last answer) and their ending scenes, the
-  achievements on the secrets and the endings. It passes the story check; `draft` turns the timing targets into
-  warnings until the scenes are written in full.
+- `story.json` (format 3): **a rough, working outline** that opens on the director's desk, plays in the Watch and in
+  Play from the start to each ending, and passes check_all (STORY, LEVEL, SHOTS):
+  - `game.draft: true`: the scenes hold only their key lines, so the playtime targets warn until they're written in
+    full; `game.voice: "none"`: the lines are text (no Japanese asked for); `game.prototype`: the session.
+  - **the place:** a greybox room per place (6 × 5 m, in a row, joined by doorways), each with the player's eye
+    (`<room>_view`), every cast member's marks (`<room>_<cast>` across the room, `<room>_<cast>_close` 0.65 m away for
+    the close-ups) and a lamp.
+  - **a scene** is its lines, each face's post prompt its clip's `expr`; **a talk** is a close-up (MCU, the one asking
+    on the close mark): its lines, then the question as a hanging line with 2 or 3 answers, her listening face its
+    `wait_expr`, each answer's face her answer (`then`: “…”, the face's prompt, what it gives away as the acting
+    note), its karma and its flag (STORY_FORMAT §9.9).
+  - **a task** is a stitch with its to-do list, each task ticked by using its box (a stand-in on the room's east wall);
+    **a chapter** is its lines, then the chapter card (the title, the time of day from here on, an autosave); **a fork**
+    is a choice by act (a box for each way) whose ways join the river again at the next point.
+  - **a secret** is found in its point's task, or after a scene in a short look round the room (walk on to the
+    doorway when you're ready); found, a choice on its flag plays what it shows, then the river goes on.
+  - **the endings:** a choice by the answers that decide one (a flag the answer sets), then by karma, each ending's
+    scene (final) and its ending. A karma bound the answers can't reach (the kindest add up to less than its `min`)
+    moves into reach, and BUILD.md says so.
+  - **achievements** (STORY_FORMAT §9.13): one for each secret and ending, the feats on flags of their own (to set
+    where they happen); the Watch and Play say each as it's unlocked.
 - `prototype.json`: the prototype as it was built (the receipt).
-- `BUILD.md`: **the handoff for Claude**, point by point: what was built and what needs doing to make it the game
-  (lay out the real house in the scene builder, place the props the tasks use, write the full scenes and their
-  pauses, block the bodies, the faces to make), with the checks to run.
-- `faces.md`: every face to make in MiniMax, prompt by prompt (the library's and the prototype's own), with the length
-  to stretch it to and the part to loop.
+- `BUILD.md`: **the handoff for Claude**: the story's heart (the truth, the ladder, the cast and their tells, the
+  places), what's rough everywhere, then point by point what was built and what needs doing to make it the game, as
+  boxes to tick (lay out the real place, write the scenes in full, stage the close-ups, make the tasks and the finds
+  real things, the faces), the achievements and the checks.
+- `faces.md`: every face to make in MiniMax, prompt by prompt (written for him where a he wears it), its length to
+  stretch to, the part to loop, who and where, and whether it's in the expression library already.
 
-Then, in Claude Code: "build <Game> from its BUILD.md". A game built before can be built again from its prototype; the
-story it replaces is kept in the desk's history first (`Saved/Story/<Game>/history`).
+Then, in Claude Code: "build <Game> from its BUILD.md". Built again from its session, the story it replaces is kept in
+the desk's history first (`Saved/Story/<Game>/history`); a story built from another session, or by hand, is replaced
+only when you say so (force).
 
 ## 8. Files and checks
 
 `tools/writers/`: `serve.py` (the page's server, port 8795), `room.py` (the command line: `new`, `list`, `show`,
 `river`, `now`, `draft`, `build`, `setup`, `check`), `llm.py` (the backends), `gen.py` (the stages and the assistant),
-`index.html`, `app.js`, `river.js`, `ui.css`; `Content/Python/storykit/proto.py` (the format, its check, the build).
-Checks: WRITERS (`room.py check`: the format, the prompt library, the stages and the assistant end to end on a
-stand-in model, a build that passes the story check), WRITERSPAGE (`pagetest.mjs`: the page in a headless browser).
+`build.py` (Build: the story, BUILD.md, faces.md), `index.html`, `app.js`, `river.js`, `ui.css`;
+`Content/Python/storykit/proto.py` (the format, its check). Checks: WRITERS (`room.py check`: the format, the prompt
+library, the stages and the assistant end to end on a stand-in model, a build that passes check_all's STORY, LEVEL and
+SHOTS), WRITERSPAGE (`pagetest.mjs`: the page in a headless browser).

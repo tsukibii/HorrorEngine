@@ -44,6 +44,7 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 | `stitches` | the player tasks (§4) |
 | `flow` | the graph (§5) |
 | `secrets` | `{id: {flag, hint}}`: easter eggs; a beat that finds one says `"secret": id` |
+| `achievements` | `{id: {title, text, hidden, for}}`: what a secret found, an ending reached or a flag set unlocks (§9.13) |
 | `interrupts` | trigger cutscenes (§5.1): something the player does during a stitch jumps the flow to a scene, usually a death |
 | `board` | notes for the whole game (§7) |
 | `frames` | the desk's board: acts, coloured frames behind groups of cards (§5) |
@@ -629,6 +630,9 @@ re-shoot that beat only (`storykit.shots.take(G, beat=...)`).
 | `subtitles` | the subtitle languages, `["en", "zh"]`: every clip with `ja` needs each |
 | `karma` | `{"axes": {"karma": {"min": -10, "max": 10, "label": "..."}}}`: one axis by default; more if the story needs them |
 | `no_death` | **true** by default: an ending only comes from a karma choice or a node marked `final` (§9.4) |
+| `voice` | `ja` (the default): the lines are recorded takes in Japanese. **`none`**: no recorded voices, the lines are text typed on screen (EXPRESSIONS_PLAN §3; DECISIONS 2026-10-27, night): the check asks for no `ja`, and MiniMax makes only the faces |
+| `draft` | **true** while the game is a rough outline (the writers' room's Build, docs/WRITERS_ROOM.md §7): its scenes hold only their key lines, so the playtime targets (`target_min`, `fast_min`) are warnings, not errors. Take it out once the scenes are written in full |
+| `prototype` | the writers' room session it was built from (`Content/Prototypes/<id>`): Build again replaces only a story built from that session (or with its force) |
 
 ### 9.2 Lines (a clip after the Japanese pass)
 
@@ -779,9 +783,11 @@ its result branches like an event's.
 
 ### 9.9 Replies and hanging lines
 
-A reply is a small dialogue choice that mostly changes what she says back: two options (left and right), shown with
-the Japanese over the English. The clip it's on is a **hanging line**: she asks, then waits, her face doing the
-waiting.
+A reply is a small dialogue choice that mostly changes what she says back: two options (left and right) or three,
+shown with the Japanese over the English (a game with `voice: "none"` has none). The clip it's on is a **hanging line**:
+she asks, then waits, her face doing the waiting. Three answers make an **L.A. Noire close-up** (the writers' room's talk,
+WRITERS_ROOM §2): her face answers yours before her words do (`then.expr`), and a player who watches it learns what she
+really wants.
 
 ```json
 {"id": "c1r", "who": "mari", "ja": "今日、どうだった？", "en": "How was your day?", "wait_expr": "hopeful, expectant expression",
@@ -797,6 +803,8 @@ waiting.
 - `sets`: actions when the reply is picked (a flag, karma, a count), so a reply can open a branch later through a
   flag choice; most set nothing and are there so it feels like you.
 - `wait_expr`: the face she holds while she waits, for the take's end (MiniMax).
+- An answer that sets a flag a flag choice reads **opens a branch** (an ending decided by the last answer): the check
+  plays each such answer on a path of its own, whatever the karma sweeps would have said.
 
 ### 9.10 Counters
 
@@ -844,3 +852,19 @@ asks for something" (the desk's Quick tasks) writes it:
   flag the flow branches on.
 - The walker (STORY) does the request, sends her where `go` says and counts a few seconds for the walk.
 
+### 9.13 Achievements
+
+```json
+"achievements": {
+  "ach_turned_away": {"title": "Turned Away", "text": "Some photos hide a second one.", "for": {"secret": "s01"}},
+  "ach_handover": {"title": "Ready at Three", "text": "Hand over what was promised.", "hidden": true, "for": {"ending": "e_handover"}},
+  "ach_clean": {"title": "Clean Counter", "text": "Finish every chore on the sheet.", "for": {"flag": "feat_clean_counter"}}
+}
+```
+
+One for each secret, one for each ending and a few small feats (DECISIONS 2026-10-27, last thing: "niche easter eggs
+... which unlock achievements"). `for` is what unlocks it: a secret found (its `flag` set), an ending node reached, or
+a flag set anywhere (a feat: set it where the feat happens). `title` is what the player sees; `text` a hint that
+doesn't spoil; `hidden: true` keeps the title back until it's unlocked. The check names one that no path unlocks (a
+feat whose flag nothing sets yet is a warning). The desk's Watch and Play say each one in the corner as it's
+unlocked. Steam's list is made from this table; Unreal: not yet.
