@@ -4,23 +4,18 @@ check. The page is serve.py.
 
     python tools/writers/room.py list                   the sessions (Content/Prototypes/<id>/prototype.json)
     python tools/writers/room.py new "Title" [--kind "what kind of game"]
-    python tools/writers/room.py show ID [POINT]        the story as text (the river, the bible's heart); a point in full
-    python tools/writers/room.py river ID               the river with its talks and to-do lists
-    python tools/writers/room.py now                    what the page shows right now (the session, the view, the point)
-    python tools/writers/room.py draft ID [--stage bible|endings|river|details|all] [--backend claude|local|fake]
-    python tools/writers/room.py build ID [--game G]    the prototype into Content/Games/G (story.json, BUILD.md, faces.md),
+    python tools/writers/room.py show ID [SHAPE]        the chart as text: the brief, the story's heart, every shape in
+                                                        reading order with its arrows; one shape in full
+    python tools/writers/room.py now                    what the page shows right now (the session, the shapes picked)
+    python tools/writers/room.py build ID [--game G]    the chart into Content/Games/G (story.json, BUILD.md, faces.md),
                                                         G from the title when not given; --force over a story not built from it
-    python tools/writers/room.py setup                  the anthropic SDK in vendor/writers/venv (Claude through the API)
-    python tools/writers/room.py check                  WRITERS: the format, the prompt library, the stages and the
-                                                        assistant on the stand-in model, the build passing the story check
+    python tools/writers/room.py check                  WRITERS: the format and its check, the post prompt library, the
+                                                        upgrade from the first format, a chart built through check_all
 """
 import argparse
+import copy
 import json
-import os
-import shutil
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -28,9 +23,6 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "Content" / "Python"))
 sys.path.insert(0, str(HERE))
 from storykit import proto  # noqa: E402
-import llm  # noqa: E402
-import gen  # noqa: E402
-import fake  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -58,25 +50,26 @@ def cmd_new(a):
     print(f"new session {P['id']}: {proto.path_of(P['id']).relative_to(ROOT)}")
 
 
-def cmd_show(a):
-    P = load_session(a.id)
-    if a.point:
-        p, fork, way = proto.point_by_id(P, a.point)
-        if not p:
-            sys.exit(f"no point {a.point}")
-        print(json.dumps(p, ensure_ascii=False, indent=1))
-        for fid, where, who in proto.faces_used({"points": [p], "faces": P.get("faces", [])}):
-            f = proto.face_of(P, fid)
-            print(f"face {fid} ({where}): {proto.for_subject((f or {}).get('prompt', '?'), next((c.get('subject') for c in P['bible'].get('cast', []) if c['id'] == who), 'she'))}")
-        return
-    print(proto.river_text(P))
+def problems(P, limit=12):
     errs, warns = proto.check(P)
     if errs or warns:
-        print(f"\n{len(errs)} problems, {len(warns)} warnings" + "".join("\n  ERROR " + e for e in errs[:12]) + "".join("\n  warn  " + w for w in warns[:8]))
+        print(f"\n{len(errs)} problems, {len(warns)} notes" + "".join("\n  ERROR " + e for e in errs[:limit]) + "".join("\n  note  " + w for w in warns[:limit]))
 
 
-def cmd_river(a):
-    print(proto.river_text(load_session(a.id), detail=True))
+def cmd_show(a):
+    P = load_session(a.id)
+    if a.shape:
+        n = proto.nodes_of(P).get(a.shape)
+        if not n:
+            sys.exit(f"no shape {a.shape} (room.py show {a.id} lists them)")
+        print(proto.node_text(P, n))
+        for fid, where, who in proto.faces_used({"nodes": [n], "faces": P.get("faces", [])}):
+            f = proto.face_of(P, fid)
+            subject = next((c.get("subject") for c in P.get("cast", []) if c["id"] == who), "she")
+            print(f"face {fid} ({where}): {proto.for_subject((f or {}).get('prompt', '?'), subject)}")
+        return
+    print(proto.flow_text(P))
+    problems(P)
 
 
 def cmd_now(a):
@@ -84,37 +77,18 @@ def cmd_now(a):
         v = json.loads(NOW.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         sys.exit("the writers' room hasn't shown anything yet (open it: python tools/writers/serve.py)")
-    print(f"the page shows session {v.get('session')!r}, the {v.get('tab')} view" + (f", point {v['selected']}" if v.get("selected") else "")
-          + f" ({v.get('at', '')})")
+    picked = v.get("selected") or []
+    print(f"the page shows session {v.get('session')!r}, the {v.get('tab')} tab" + (f", picked: {', '.join(picked)}" if picked else "")
+          + (f", arrows {', '.join(v['arrows'])}" if v.get("arrows") else "") + f" ({v.get('at', '')})")
     if v.get("session") and proto.path_of(v["session"]).exists():
         P = proto.load(proto.path_of(v["session"]))
-        if v.get("selected"):
-            p, _, _ = proto.point_by_id(P, v["selected"])
-            if p:
-                print(json.dumps(p, ensure_ascii=False, indent=1))
+        N = proto.nodes_of(P)
+        if picked:
+            for k in picked:
+                if k in N:
+                    print(proto.node_text(P, N[k], N))
         else:
-            print(proto.river_text(P))
-
-
-def cmd_draft(a):
-    P = load_session(a.id)
-    s = llm.settings()
-    if a.backend:
-        s["backend"] = a.backend
-    be = llm.backend(s, fake.answer)
-    stages = ("bible", "river", "details") if a.stage == "all" else (a.stage,)
-    print(f"drafting {a.id} with {be.label}: {', '.join(stages)}")
-    if stages == ("endings",):
-        gen.stage_endings(P, be, print)
-        proto.save(P)
-    elif stages == ("details",):
-        for act in P.get("acts", []):
-            gen.stage_details(P, be, act["id"], print)
-            proto.save(P)
-    else:
-        gen.draft(P, be, print, proto.save, stages)
-    errs, warns = proto.check(P)
-    print(f"done: {len(P.get('points', []))} points, {proto.main_minutes(P):.0f} min; {len(errs)} problems, {len(warns)} warnings")
+            print(proto.flow_text(P, detail=False))
 
 
 def cmd_build(a):
@@ -131,70 +105,89 @@ def cmd_build(a):
     sys.exit(0 if out.get("ok") and (out.get("check") or {}).get("ok", True) else 1)
 
 
-def cmd_setup(a):
-    home = ROOT / "vendor" / "writers"
-    home.mkdir(parents=True, exist_ok=True)
-    py = llm.venv_python()
-    if shutil.which("uv"):
-        if not py.exists():
-            subprocess.run(["uv", "venv", str(home / "venv")], check=True)
-        subprocess.run(["uv", "pip", "install", "-p", str(py), "anthropic"], check=True)
-    else:
-        if not py.exists():
-            subprocess.run([sys.executable, "-m", "venv", str(home / "venv")], check=True)
-        subprocess.run([str(py), "-m", "pip", "install", "anthropic"], check=True)
-    ver = subprocess.run([str(py), "-c", "import anthropic; print(anthropic.__version__)"], capture_output=True, text=True).stdout.strip()
-    print(f"the anthropic SDK {ver} in {home / 'venv'}")
-    ok, why = llm.api_ready()
-    print(f"Claude through the API: {'ready (' + why + ')' if ok else why}; without a key the writers' room uses Claude Code (claude -p)")
-
-
 # ---- the check ----------------------------------------------------------------------------------------------------
 
-def valid(schema, data, path="$"):
-    """The JSON schema subset the stages use (type, properties, required, additionalProperties, enum, anyOf, items)."""
-    errs = []
-    if "anyOf" in schema:
-        if not any(not valid(s, data, path) for s in schema["anyOf"]):
-            errs.append(f"{path}: matches none of anyOf")
-        return errs
-    t = schema.get("type")
-    ok = {"object": isinstance(data, dict), "array": isinstance(data, list), "string": isinstance(data, str), "null": data is None,
-          "integer": isinstance(data, int) and not isinstance(data, bool), "number": isinstance(data, (int, float)) and not isinstance(data, bool),
-          "boolean": isinstance(data, bool)}.get(t, True)
-    if not ok:
-        return [f"{path}: not {t}"]
-    if "enum" in schema and data not in schema["enum"]:
-        errs.append(f"{path}: {data!r} not in {schema['enum']}")
-    if t == "object":
-        props = schema.get("properties", {})
-        for k in schema.get("required", []):
-            if k not in data:
-                errs.append(f"{path}.{k}: missing")
-        if schema.get("additionalProperties") is False:
-            errs += [f"{path}.{k}: not in the schema" for k in data if k not in props]
-        for k, v in data.items():
-            if k in props:
-                errs += valid(props[k], v, f"{path}.{k}")
-    if t == "array":
-        for i, v in enumerate(data):
-            errs += valid(schema.get("items", {}), v, f"{path}[{i}]")
-    return errs
+def fixture():
+    """A small chart with every kind of shape and arrow: a scene with lines, a task with a secret found in it, a talk,
+    a choice by the player whose ways rejoin (one remembered), a chapter with a line and a secret in a look round, the
+    last talk deciding one ending by its answer and karma the other two, a note, two acts, a feat, a face of its own."""
+    P = proto.blank("Come Over", {"kind": "a distant friend invites you over and something isn't quite right", "minutes": 60})
+    P["id"] = "come-over-check"
+    P["story"].update({"logline": "Hana asks you to stay the weekend; her grandmother's room is shut.", "truth": "Her grandmother died in March.",
+                       "ladder": ["she sets three cups", "the room is locked", "the calendar stops in March"], "time": "dusk", "karma": "how much you let yourself see"})
+    P["cast"] = [{"id": "hana", "name": "Hana", "subject": "she", "role": "your friend", "tells": "she looks at the door when she lies"}]
+    P["places"] = [{"id": "genkan", "name": "Entrance"}, {"id": "kitchen", "name": "Kitchen"}, {"id": "living", "name": "Living room"}, {"id": "upstairs", "name": "Upstairs"}]
+    P["faces"] = [{"id": "hana_door", "prompt": "her eyes widen as she sees the viewer, then she smiles and looks down at her hands.", "secs": 6, "loop": [0.5, 1], "for": "hana"}]
+    P["feats"] = [{"id": "feat_cups", "title": "Clean Kitchen", "text": "Wash every cup.", "hidden": False}]
+
+    def talk(line, opts, listen="listening_guarded"):
+        return {"line": {"who": "hana", "text": line}, "listen": listen,
+                "options": [dict(zip(("id", "say", "karma", "face", "tell"), o)) for o in opts], "reveals": "her eyes go to the shut door"}
+    N = P["nodes"]
+    N[0].update({"x": 40, "y": 260})
+    N += [
+        {"id": "p01", "type": "scene", "x": 290, "y": 260, "title": "The door opens", "text": "Hana lets you in, too glad.", "where": "genkan", "who": ["hana"], "minutes": 8,
+         "lines": [{"who": "hana", "text": "You came. I didn't think you would.", "face": "hana_door"}, {"who": "player", "text": "Of course I came."}]},
+        {"id": "p02", "type": "task", "x": 540, "y": 260, "title": "Tea for Hana", "text": "She asks for tea.", "where": "kitchen", "who": ["hana"], "minutes": 10,
+         "tasks": [{"id": "kettle", "text": "Put the kettle on", "who": "hana", "done": "the kettle boils", "fails": ""}, {"id": "cups", "text": "Find two cups", "who": "", "done": "two cups", "fails": "three cups instead"}]},
+        {"id": "s01", "type": "secret", "x": 600, "y": 40, "title": "The third cup", "find": "behind the rice cooker", "shows": "a cup with a name scratched off",
+         "achievement": {"title": "Three Cups", "text": "Someone else drinks tea here.", "hidden": False}},
+        {"id": "p03", "type": "talk", "x": 790, "y": 260, "title": "Across the low table", "text": "She asks about the room.", "where": "living", "who": ["hana"], "minutes": 8,
+         "talk": talk("Do you remember her room?", [("a", "Of course I do.", 1, "relief_too_much", "she breathes out"), ("b", "Whose room?", -1, "lie_glance_away", "her eyes go to the door"),
+                                                     ("c", "Why is it shut?", 2, "fear_flicker", "fear, smoothed over")])},
+        {"id": "c01", "type": "choice", "x": 1040, "y": 250, "title": "A sound upstairs", "by": "player", "question": "A sound from upstairs: go and look?"},
+        {"id": "p04", "type": "scene", "x": 1290, "y": 150, "title": "Upstairs", "text": "The shut door, a light under it.", "where": "upstairs", "who": [], "minutes": 8},
+        {"id": "p05", "type": "scene", "x": 1290, "y": 380, "title": "Stay with her", "text": "She holds your sleeve.", "where": "living", "who": ["hana"], "minutes": 8,
+         "lines": [{"who": "hana", "text": "Don't go up there.", "face": "tears_held"}]},
+        {"id": "p06", "type": "chapter", "x": 1540, "y": 260, "title": "Night one", "text": "You sleep on the sofa.", "where": "living", "who": ["hana"], "minutes": 2,
+         "lines": [{"who": "hana", "text": "Sleep well.", "face": "waiting_blank"}], "chapter": {"title": "Saturday", "sub": "02:10", "time": "night"}},
+        {"id": "s02", "type": "secret", "x": 1600, "y": 40, "title": "Her diary", "find": "under the sofa cushion", "shows": "the last page is from March",
+         "achievement": {"title": "March", "text": "", "hidden": True}},
+        {"id": "p07", "type": "talk", "x": 1790, "y": 260, "title": "Morning", "text": "She asks you to stay.", "where": "kitchen", "who": ["hana"], "minutes": 10,
+         "talk": talk("Will you stay another night?", [("a", "She's gone, Hana.", 0, "tears_held", "the truth lands"), ("b", "Of course I'll stay.", 1, "relief_too_much", "too grateful"),
+                                                        ("c", "I have to go.", -2, "lie_glance_away", "she looks away")])},
+        {"id": "c02", "type": "choice", "x": 2040, "y": 250, "title": "What you said", "by": "answer", "question": "The last answer"},
+        {"id": "c03", "type": "choice", "x": 2290, "y": 380, "title": "How it ends", "by": "karma", "question": "What it added up to"},
+        {"id": "e01", "type": "ending", "x": 2290, "y": 100, "title": "Let her rest", "kind": "intended", "text": "You open the room together.", "how": "say it",
+         "achievement": {"title": "Let Her Rest", "text": "", "hidden": True}},
+        {"id": "e02", "type": "ending", "x": 2540, "y": 300, "title": "Four places set", "kind": "other", "text": "You stay.", "how": "play along",
+         "achievement": {"title": "Four Places", "text": "", "hidden": True}},
+        {"id": "e03", "type": "ending", "x": 2540, "y": 480, "title": "The last bus", "kind": "other", "text": "You leave.", "how": "leave", "achievement": {"title": "", "text": "", "hidden": True}},
+        {"id": "note1", "type": "note", "x": 300, "y": 520, "text": "Remember the rice cooker's click.", "color": "yellow"}]
+    E = [("start", "p01"), ("p01", "p02"), ("p02", "p03"), ("p02", "s01"), ("s01", "p03"), ("p03", "c01"), ("p04", "p06"), ("p05", "p06"),
+         ("p06", "p07"), ("p06", "s02"), ("s02", "p07"), ("p07", "c02"), ("c02", "c03")]
+    P["edges"] = [{"id": f"a{i + 1}", "from": a, "to": b, "label": ""} for i, (a, b) in enumerate(E)]
+    P["edges"] += [{"id": "w1", "from": "c01", "to": "p04", "label": "Go up and look", "sets": "went_up"},
+                   {"id": "w2", "from": "c01", "to": "p05", "label": "Stay with Hana"},
+                   {"id": "x1", "from": "c02", "to": "e01", "label": "", "when": {"talk": "p07", "answer": "a"}},
+                   {"id": "x2", "from": "c03", "to": "e02", "label": "", "when": {"min": 2}},
+                   {"id": "x3", "from": "c03", "to": "e03", "label": "", "when": {}}]
+    next(e for e in P["edges"] if e["from"] == "c02" and e["to"] == "c03")["when"] = {}
+    P["frames"] = [{"id": "act1", "title": "Friday", "x": 0, "y": 0, "w": 1000, "h": 520, "color": "#8a63d2"},
+                   {"id": "act2", "title": "Saturday", "x": 1010, "y": 0, "w": 1760, "h": 640, "color": "#3f8fc9"}]
+    return P
 
 
-def closed(schema, path="$"):
-    """Every object closed and every property required (what structured outputs accept)."""
-    out = []
-    if isinstance(schema, dict):
-        if schema.get("type") == "object" and "properties" in schema:
-            if schema.get("additionalProperties") is not False or set(schema.get("required", [])) != set(schema["properties"]):
-                out.append(path)
-        for k, v in schema.items():
-            out += closed(v, f"{path}.{k}")
-    elif isinstance(schema, list):
-        for i, v in enumerate(schema):
-            out += closed(v, f"{path}[{i}]")
-    return out
+def first_format():
+    """A first-format prototype (the river the old assistant drafted), for the upgrade."""
+    return {"format": 1, "id": "old-river", "title": "The Old River", "brief": {"kind": "k", "references": "r", "notes": "", "endings": ["the one I want", "", ""], "minutes": 60},
+            "bible": {"logline": "l", "truth": "t", "time": "night", "cast": [{"id": "mari", "name": "Mari", "subject": "she"}], "places": [{"id": "hall", "name": "Hall"}]},
+            "acts": [{"id": "a1", "title": "One"}, {"id": "a2", "title": "Two"}],
+            "points": [{"id": "p1", "act": "a1", "type": "scene", "title": "Hello", "where": "hall", "who": ["mari"], "minutes": 12, "what": "she opens the door",
+                        "lines": [{"who": "mari", "text": "You came.", "face": "glad_to_see_you"}]},
+                       {"id": "p2", "act": "a1", "type": "choice", "title": "Up or down", "where": "hall", "minutes": 2, "what": "a noise",
+                        "fork": {"question": "Up or down?", "ways": [{"id": "w1", "label": "Up", "sets": "went_up", "points": [{"id": "p2a", "type": "scene", "title": "Up", "where": "hall", "minutes": 12}]},
+                                                                      {"id": "w2", "label": "Down", "points": [{"id": "p2b", "type": "task", "title": "Down", "where": "hall", "minutes": 12,
+                                                                                                                "tasks": [{"id": "t1", "text": "Find the fuse"}]}]}]}},
+                       {"id": "p3", "act": "a2", "type": "talk", "title": "Talk", "where": "hall", "who": ["mari"], "minutes": 12,
+                        "talk": {"line": {"who": "mari", "text": "Well?"}, "listen": "listening_guarded",
+                                 "options": [{"id": "a", "say": "Yes.", "karma": 2, "face": "relief_too_much", "tell": "x"}, {"id": "b", "say": "No.", "karma": -2, "face": "lie_glance_away", "tell": "y"}]}},
+                       {"id": "p4", "act": "a2", "type": "chapter", "title": "Night", "where": "hall", "minutes": 8, "chapter": {"title": "Night 2", "time": "night"}}],
+            "secrets": [{"id": "s1", "after": "p1", "title": "A photo", "find": "behind the mirror", "shows": "her and someone", "achievement": "The Photo"}],
+            "endings": [{"id": "e_good", "kind": "intended", "title": "Good", "what": "w", "rule": {"by": "karma", "min": 1}},
+                        {"id": "e_bad", "kind": "other", "title": "Bad", "what": "w", "rule": {"by": "karma", "max": -1}},
+                        {"id": "e_mid", "kind": "other", "title": "Mid", "what": "w", "rule": {"by": "karma"}}],
+            "achievements": [{"id": "ach_feat", "title": "A Feat", "text": "do it", "for": "feat"}], "faces": [], "chat": []}
 
 
 def cmd_check(a):
@@ -202,7 +195,7 @@ def cmd_check(a):
     ok = lambda m: print("  ok  " + m)
     bad = lambda m: (fails.append(m), print("  FAIL " + m))
 
-    # the prompt library
+    # the post prompt library
     lib = proto.library()
     probs = []
     for k, p in lib.items():
@@ -219,98 +212,76 @@ def cmd_check(a):
     he = proto.for_subject("her eyes roll up as she bites her lower lip, she looks at herself.", "he")
     if he != "his eyes roll up as he bites his lower lip, he looks at himself.":
         probs.append("he: " + he)
-    ok(f"the prompt library: {len(lib)} faces, each a 4 s post prompt ({sum('listen' in p['tags'] for p in lib.values())} listening, "
+    ok(f"the post prompt library: {len(lib)} faces, each a 4 s post prompt ({sum('listen' in p['tags'] for p in lib.values())} listening, "
        f"{sum('tell' in p['tags'] for p in lib.values())} tells), loops in range, he for she") if not probs else bad("the library: " + "; ".join(probs[:6]))
 
-    # the schemas: closed, and the stand-in's answers fit them (what a real model is held to)
-    schemas = {"bible": gen.BIBLE, "endings": gen.ENDINGS, "river": gen.RIVER, "details": gen.DETAILS, "chat": gen.CHAT}
-    opened = [f"{k}: {p}" for k, s in schemas.items() for p in closed(llm.strict(s))]
-    fits = []
-    for k, s in schemas.items():
-        users = ["THE ACT: a1", "THE ACT: a2", "THE ACT: a3"] if k == "details" else ['"selected": "p03" THE USER: add a secret'] if k == "chat" else [""]
-        for u in users:
-            fits += [f"{k}: {e}" for e in valid(llm.strict(s), fake.answer(k, u))[:3]]
-    ok("every stage's schema is closed (structured outputs take it) and the stand-in's answers fit them") if not opened and not fits else bad("schemas: " + "; ".join((opened + fits)[:6]))
+    # a whole chart: no problems, read in order, its minutes and karma
+    P = fixture()
+    errs, warns = proto.check(P, lib)
+    order = proto.reading_order(P)
+    lo, hi = proto.minutes_range(P)
+    kind, cruel = proto.karma_range(P)
+    if errs or warns:
+        bad(f"the fixture chart: {errs[:3]} {warns[:3]}")
+    elif order[0] != "start" or order.index("p03") > order.index("c01") or order.index("p06") < max(order.index("p04"), order.index("p05")):
+        bad(f"the reading order: {order}")
+    elif (lo, hi) != (46.0, 46.0) or (kind, cruel) != (3.0, -3.0):
+        bad(f"minutes {lo}-{hi}, karma {kind}/{cruel}")
+    else:
+        ok(f"a chart of every shape: no problems; read in order (a join after both its ways); {lo:g} min; karma {cruel:g} to {kind:g}")
 
-    # a draft end to end on the stand-in, in a scratch folder
-    with tempfile.TemporaryDirectory() as tmp:
-        proto.PROTOS = Path(tmp)
-        P = proto.new_session("Come Over", {"kind": "a distant friend invites you over and something isn't quite right",
-                                            "references": "a friend who kept her grandmother's room shut", "endings": ["", "", ""]})
-        saves = []
-        gen.draft(P, llm.Fake(fake.answer), None, lambda q: saves.append(proto.save(q)))
-        errs, warns = proto.check(P)
-        talks = [p for p, _, _ in proto.all_points(P) if p.get("talk")]
-        if errs:
-            bad("the stand-in's draft: " + "; ".join(errs[:6]))
-        elif len(P["endings"]) != 3 or len(P["points"]) < 10 or not talks or len(saves) < 5:
-            bad(f"the draft: {len(P['endings'])} endings, {len(P['points'])} points, {len(talks)} talks, {len(saves)} saves")
-        else:
-            ok(f"a draft on the stand-in: bible, river and {len(P['acts'])} acts of details, saved as each landed ({len(saves)} saves); "
-               f"{len(P['points'])} points, {proto.main_minutes(P):.0f} min, {len(talks)} talks, {len(P['secrets'])} secrets; no problems, {len(warns)} warnings")
-        rt = proto.river_text(P, detail=True)
-        missing = [p["id"] for p, _, _ in proto.all_points(P) if p["id"] not in rt]
-        ok("the river as text names every point, the secrets and the endings") if not missing and "★ secret" in rt and "ENDINGS" in rt else bad(f"river text: missing {missing}")
+    # the check finds each fault at its shape
+    def fault(what, change, start):
+        Q = copy.deepcopy(P)
+        change(Q)
+        es, _ = proto.check(Q, lib)
+        return (what, any(e.startswith(start) for e in es), es)
+    def edge(Q, a, b, **kw):
+        Q["edges"].append(dict({"id": f"z{len(Q['edges'])}", "from": a, "to": b, "label": ""}, **kw))
+    def node(Q, k):
+        return next(n for n in Q["nodes"] if n["id"] == k)
+    results = [
+        fault("two ways on from a scene", lambda Q: edge(Q, "p01", "p03"), "scene p01: 2 arrows on"),
+        fault("a dead end", lambda Q: Q.__setitem__("edges", [e for e in Q["edges"] if e["from"] != "p03"]), "talk p03: nothing comes after it"),
+        fault("a loop", lambda Q: edge(Q, "p05", "p01"), "scene p01: the flow loops back"),
+        fault("karma with two for the rest", lambda Q: edge(Q, "c03", "e01", when={}), "choice c03: by karma, one arrow is for the rest"),
+        fault("an answer the talk hasn't", lambda Q: next(e for e in Q["edges"] if e["id"] == "x1")["when"].update(answer="z"), "choice c02: the arrow to e01 names answer 'z'"),
+        fault("a secret that never comes back", lambda Q: Q.__setitem__("edges", [e for e in Q["edges"] if e["from"] != "s01"]), "secret s01: one arrow out"),
+        fault("a secret after a choice", lambda Q: edge(Q, "c01", "s01"), "choice c01: a secret is found after a point"),
+        fault("someone not in the cast", lambda Q: node(Q, "p01").update(who=["nobody"]), "scene p01: who 'nobody' isn't in the cast"),
+        fault("an arrow to a note", lambda Q: edge(Q, "p01", "note1"), "note note1: a note takes no arrows"),
+        fault("a face that isn't anywhere", lambda Q: node(Q, "p03")["talk"]["options"][0].update(face="no_such_face"), "talk p03 answer a: face"),
+        fault("two starts", lambda Q: Q["nodes"].append({"id": "start2", "type": "start", "x": 0, "y": 0}), "2 start shapes"),
+        fault("an ending with an arrow out", lambda Q: edge(Q, "e02", "p01"), "ending e02: an ending has no arrows out"),
+        fault("four answers", lambda Q: node(Q, "p03")["talk"]["options"].append({"id": "d", "say": "Hm.", "karma": 0, "tell": "t"}), "talk p03: a talk has 2 or 3 answers"),
+    ]
+    missed = [(w, es[:2]) for w, hit, es in results if not hit]
+    ok(f"the check finds each of {len(results)} faults at its shape (two ways on, a dead end, a loop, karma's rest, an answer, "
+       "secrets, the cast, a note, a face, two starts, an ending's arrow, four answers)") if not missed else bad(f"faults missed: {missed}")
 
-        # a stage's problems go back to the model, and the second answer is taken
-        class Twice:
-            label = "twice"
-            def __init__(self):
-                self.calls, self.msgs = 0, []
-            def ask(self, system, user, schema, kind, progress=None):
-                self.calls += 1
-                self.msgs.append(user)
-                d = fake.answer(kind, user)
-                if self.calls == 1:
-                    d = json.loads(json.dumps(d))
-                    d["cast"][0]["id"] = "Hana Sato"
-                return d
-        t = Twice()
-        Q = proto.blank("x")
-        Q["id"] = "x"
-        gen.stage_bible(Q, t)
-        ok("a stage's problems go back to the model with its request; the fixed answer is taken") if t.calls == 2 and "Hana Sato" in t.msgs[1] and Q["bible"]["cast"][0]["id"] == "hana" \
-            else bad(f"retries: {t.calls} calls")
+    # the chart as text, for Claude
+    t = proto.flow_text(P)
+    absent = [n["id"] for n in P["nodes"] if n["type"] != "note" and f" {n['id']} " not in t]
+    ok("the chart as text: every shape, the ways by their labels and karma, the secrets, the notes") if not absent and "[Go up and look]" in t \
+        and "[karma ≥ 2]" in t and "★ if found → s01" in t and "Remember the rice cooker" in t else bad(f"flow text: missing {absent}")
 
-        # the assistant: a change applied, the same prototype left alone, a question answered
-        reply, Q, done, couldnt = gen.chat(P, "add a secret here", {"tab": "river", "selected": "p05"}, llm.Fake(fake.answer))
-        s = next((x for x in Q["secrets"] if x["id"] == "s_garden"), None)
-        if not s or s["after"] != "p05" or "s_garden" in json.dumps(P) or couldnt or not reply:
-            bad(f"chat: {done} {couldnt} {reply!r}")
-        else:
-            ok(f"the assistant sees the view (the picked point) and its changes apply: {', '.join(done)}")
-        Q2, done2, bad2 = proto.apply_changes(P, [
-            {"op": "add", "what": "point", "after": "p05", "value_json": json.dumps({"id": "p05b", "act": "a2", "type": "scene", "title": "A knock", "where": "genkan", "who": [], "minutes": 2, "what": "x", "player": "y"})},
-            {"op": "move", "what": "point", "id": "p05b", "after": "p06"},
-            {"op": "set", "what": "bible", "field": "tone", "value_json": json.dumps("colder")},
-            {"op": "remove", "what": "secret", "id": "s_chair"},
-            {"op": "set", "what": "point", "id": "p08a", "field": "minutes", "value_json": "3"},
-            {"op": "set", "what": "point", "id": "nope", "field": "x", "value_json": "1"}])
-        order = [p["id"] for p in Q2["points"]]
-        fork_pt, _, _ = proto.point_by_id(Q2, "p08a")
-        if order.index("p05b") != order.index("p06") + 1 or Q2["bible"]["tone"] != "colder" or any(x["id"] == "s_chair" for x in Q2["secrets"]) \
-                or fork_pt["minutes"] != 3 or len(bad2) != 1:
-            bad(f"changes: {done2} {bad2}")
-        else:
-            ok("changes: add after, move, set the bible, remove, set inside a fork's way; one to nothing is reported, not applied")
+    # the first format's river, upgraded
+    Q = proto.upgrade(first_format())
+    qe, qw = proto.check(Q, lib)
+    N = proto.nodes_of(Q)
+    counts = {t: sum(n["type"] == t for n in N.values()) for t in ("scene", "talk", "task", "chapter", "choice", "secret", "ending")}
+    want = {"scene": 2, "talk": 1, "task": 1, "chapter": 1, "choice": 2, "secret": 1, "ending": 3}
+    if qe or counts != want or not Q["feats"] or "the one I want" not in Q["brief"]["notes"] or len(Q["frames"]) != 2 \
+            or not any(e.get("sets") == "went_up" for e in Q["edges"]) or Q["format"] != proto.FORMAT:
+        bad(f"the upgrade: {qe[:3]} {counts} feats {Q['feats']} frames {len(Q['frames'])}")
+    else:
+        ok(f"a first-format river upgraded to a chart: {len(N)} shapes, {len(Q['edges'])} arrows, its acts as frames, the fork a choice whose ways "
+           f"rejoin, the endings after a choice by karma; no problems ({len(qw)} notes)")
 
-        # the build: into a scratch game, through the story check
-        if (HERE / "build.py").exists():
-            import build
-            res = build.check_build(P)
-            (ok if res["ok"] else bad)(res["message"])
-
-    # the backends: what the settings pick
-    s = dict(llm.settings(), backend="local")
-    picks = [type(llm.backend(s)).__name__]
-    s.update(backend="claude", claude_via="code")
-    picks.append(type(llm.backend(s)).__name__)
-    s.update(claude_via="auto")
-    picks.append(type(llm.backend(s)).__name__)
-    want = ["Ollama", "ClaudeCode", "ClaudeAPI" if llm.api_ready()[0] else "ClaudeCode"]
-    st = llm.status()
-    ok(f"the switch picks the backend (local: Ollama; Claude: the API with a key, else Claude Code); here: API {st['claude-api']['why']}, "
-       f"Claude Code {'yes' if st['claude-code']['ok'] else 'no'}, Ollama {'yes' if st['local']['ok'] else 'no'}") if picks == want else bad(f"backends: {picks} for {want}")
+    # the build: through check_all's STORY, LEVEL and SHOTS
+    import build
+    res = build.check_build(P)
+    (ok if res["ok"] else bad)(res["message"])
 
     print("WRITERS " + ("ok" if not fails else f"FAILED ({len(fails)})"))
     sys.exit(1 if fails else 0)
@@ -321,17 +292,12 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list")
     s = sub.add_parser("new"); s.add_argument("title"); s.add_argument("--kind")
-    s = sub.add_parser("show"); s.add_argument("id"); s.add_argument("point", nargs="?")
-    s = sub.add_parser("river"); s.add_argument("id")
+    s = sub.add_parser("show"); s.add_argument("id"); s.add_argument("shape", nargs="?")
     sub.add_parser("now")
-    s = sub.add_parser("draft"); s.add_argument("id"); s.add_argument("--stage", default="all", choices=["all", "bible", "endings", "river", "details"])
-    s.add_argument("--backend", choices=["claude", "local", "fake"])
     s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", default=""); s.add_argument("--force", action="store_true")
-    sub.add_parser("setup")
     sub.add_parser("check")
     a = ap.parse_args(argv)
-    {"list": cmd_list, "new": cmd_new, "show": cmd_show, "river": cmd_river, "now": cmd_now, "draft": cmd_draft,
-     "build": cmd_build, "setup": cmd_setup, "check": cmd_check}[a.cmd](a)
+    {"list": cmd_list, "new": cmd_new, "show": cmd_show, "now": cmd_now, "build": cmd_build, "check": cmd_check}[a.cmd](a)
 
 
 if __name__ == "__main__":

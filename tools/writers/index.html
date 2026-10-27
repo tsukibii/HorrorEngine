@@ -12,43 +12,33 @@
   <input id="title" placeholder="Untitled" title="the game's working title" spellcheck="false">
   <span id="saved" class="muted"></span>
   <nav id="tabs">
-    <button data-tab="brief">Brief</button>
-    <button data-tab="river">River</button>
-    <button data-tab="bible">Bible</button>
+    <button data-tab="flow">Flow</button>
+    <button data-tab="about">About</button>
+    <button data-tab="people">Cast &amp; places</button>
     <button data-tab="faces">Faces</button>
   </nav>
   <div class="spacer"></div>
   <button id="undo" class="ghost" title="undo (Ctrl+Z)">↶</button>
   <button id="redo" class="ghost" title="redo (Ctrl+Shift+Z)">↷</button>
-  <div class="switch" id="model" title="who writes with you">
-    <button data-b="claude">Claude</button><button data-b="local">Local</button>
-  </div>
-  <button id="gear" class="ghost" title="the model's settings">⚙</button>
   <button id="sessionsBtn">Sessions</button>
   <button id="buildBtn" class="go" title="build a rough, working outline of the game in the director">Build</button>
 </header>
 <main>
-  <section id="view">
-    <div id="brief" class="tab"></div>
-    <div id="river" class="tab">
-      <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div id="riverEmpty" class="empty hidden"><b>No river yet</b><span>Fill in the brief, then Draft the story.</span></div>
-      <div id="tip"></div>
-      <div id="problems" class="hidden"></div>
-      <div class="bar" id="riverBar"></div>
+  <section id="flow" class="tab">
+    <div class="flowrow">
+      <aside id="palette"></aside>
+      <div id="chartBox">
+        <div id="chart"></div>
+        <div id="hint" class="empty hidden"><b>An empty chart</b><span>Drag a Scene from the left onto it, then drag from the Start's dot to the scene.</span></div>
+        <div id="problems" class="hidden"></div>
+      </div>
+      <aside id="inspector"></aside>
     </div>
-    <div id="bible" class="tab"></div>
-    <div id="faces" class="tab"></div>
+    <div class="bar" id="bar"></div>
   </section>
-  <aside id="inspector" class="hidden"></aside>
-  <aside id="chat">
-    <div class="ch"><b>Assistant</b><button id="chatFold" class="ghost" title="fold">⇥</button></div>
-    <div id="sees"></div>
-    <div id="msgs"></div>
-    <div id="work" class="hidden"></div>
-    <textarea id="say" placeholder="Ask, or ask for a change: “make the second ending colder”, “add an easter egg in the kitchen”…"></textarea>
-    <div class="send"><span>Enter sends · Shift+Enter a new line</span><button id="stop" class="danger hidden">Stop</button><button id="send" class="go">Send</button></div>
-  </aside>
+  <section id="about" class="tab hidden"></section>
+  <section id="people" class="tab hidden"></section>
+  <section id="faces" class="tab hidden"></section>
 </main>
 <div id="modal"></div>
 <div id="toast"></div>

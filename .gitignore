@@ -108,5 +108,3 @@ Content/Studio/Materials/M_StudioEye.uasset
 Content/Studio/Library/Meshes/
 # the expression library's face videos (a face, often a real one): the curves (expression.json) are tracked
 Content/Studio/Expressions/*/clip.mp4
-# the writers' room's anthropic SDK (tools/writers/room.py setup)
-vendor/writers/

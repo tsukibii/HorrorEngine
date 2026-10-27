@@ -1,187 +1,153 @@
-# The writers' room: a game's story prototyped before the director (2026-10-27)
+# The writers' room: a game's story as your flowchart, before the director (2026-10-27)
 
-The user's ask (DECISIONS 2026-10-27, last thing): before anything is built in the director or the Character Studio,
-**a place to prototype the story** with an assistant (Claude, or a local model: a switch), where the story is a rough
-flowchart you can follow (the points, the rivers between them, how it ends), with nothing else on screen. Then
-**Build** turns the prototype into a rough but working outline in the director, which Claude refines there. The
-director is for refining; the writers' room is for prototyping.
+The user's ask (DECISIONS 2026-10-27): before anything is built in the director or the Character Studio, **a place to
+write the story** as a rough flowchart you can follow (the points, the arrows between them, how it ends), with nothing
+else on screen; then **Build** turns it into a rough but working outline in the director, which Claude refines there.
+At first an assistant drafted it; then (DECISIONS 2026-10-27, the change of course) **the user writes it all**: "the
+entire story gets written by me and flow (using drag and drop things like Lucidchart that make it easy for Claude to
+set it up later in director tool). No longer do I want AI to generate the story." No model runs in the room: it's an
+editor, and Claude reads what you made (room.py show) and builds from it.
 
 ## 1. How it's used
 
-1. **New** (or load a session). A session is one game idea, kept in `Content/Prototypes/<id>/prototype.json`.
-2. **The brief:** what kind of game it is ("a distant friend invites you over and something isn't quite right"),
-   **reference stories** (real events, stories, notes from your research), and **the endings** you already have in
-   mind: the intended one and up to two others, each optional. **Suggest** fills the empty ones from the references.
-3. **Draft:** the assistant works through it in stages, each shown as it lands: the bible (the hook, the truth, how the
-   strange is made believable, the cast and the places, the three endings), the river (the acts and the main points,
-   the forks, the secrets), then each point's details (the lines, the close-up talks with the faces, the tasks).
-4. **The river:** the story as a map: the main points along the river, its forks splitting off and joining again,
-   the secrets as side streams that come back, the three endings at its mouth, the minutes along the bottom. Click a
-   point to read it and change it.
-5. **The assistant**, beside the river, sees what you see (the brief, the river, the point you picked) and answers in
-   words and in changes, applied at once and undone with Undo: "make the second ending colder", "add an easter egg
-   in the kitchen", "she should lie at the lake question".
-6. **Build:** the prototype becomes `Content/Games/<Game>/story.json`, a rough outline that opens and plays in the
-   director (§7), with `BUILD.md`: what Claude does next to make it the game.
+1. `python tools/writers/serve.py` (or the dashboard's Writers' room), then **New** (or open a session). A session is
+   one game, kept in `Content/Prototypes/<id>/prototype.json`.
+2. **About:** what kind of game it is, the reference stories (real events, articles, your research), the story's
+   heart (the logline, why it's relatable, the truth, the believability ladder, the tone), your notes, the feats.
+3. **Cast & places:** who's in it (she or he, who they are to you, what they want and hide, how the face gives them
+   away) and where it happens (Build makes a greybox room for each place). The shapes also add them as you go.
+4. **Flow:** the chart. Drag shapes from the palette, write your gist in them, join them with arrows (§2).
+5. **Faces:** every face your talks and lines name, as its MiniMax post prompt (copy it), and the library.
+6. **Build:** the chart becomes `Content/Games/<Game>/` (§5). Then, in Claude Code: "build <Game> from its BUILD.md".
 
-## 2. The games (the rules the assistant writes by)
+## 2. The chart
 
-**About an hour, and played again.** The typical first playthrough is 55 to 65 minutes. Three endings and a handful of
-secrets bring the player back: the second run sees what the first one missed.
+Like a flowchart tool (Lucidchart's way): shapes on a dotted canvas, arrows between them, frames round groups.
 
-**Relatable first.** The niche is simple: stories the player has nearly lived. A distant friend invites you over; you
-house-sit for a neighbour; your sister's new boyfriend; a late shift alone; a grandparent you haven't visited in
-years; a date that goes well, too well. The horror is that something isn't quite right with a person or a place you
-should be able to trust.
+- **Shapes from the palette:** drag one onto the chart (or click it to drop it in the middle, or double-click the
+  chart for a menu there); it lands ready to type its title, Enter keeps it.
+- **Arrows:** hover a shape for its four dots; drag a dot onto another shape for an arrow, or into empty space to pick
+  what to make there, already joined. Double-click an arrow to label it (a choice's way: what the player does).
+- **Moving:** drag a shape (the picked ones move together, snapping to the grid); Shift-drag on the chart picks the
+  shapes in a box; the arrow keys nudge.
+- **Acts:** frames behind groups of shapes (a night, a chapter of the story): drag Act from the palette, or pick
+  shapes and "Put an act round them"; drag a frame by its title (its shapes come along), resize it by its corner.
+- **The view:** drag the background (or the middle button) to pan, the wheel to zoom, F or Fit to see everything.
+- **Keys:** Delete removes; Ctrl+C, Ctrl+V, Ctrl+D copy, paste, duplicate (the arrows between them come along);
+  Ctrl+A picks all; Ctrl+Z, Ctrl+Shift+Z undo and redo (every change is saved, with the versions kept); Enter retitles.
+- **The inspector** (right): what's picked, in full: a shape's gist and fields, an arrow's label or condition, an act's
+  title and colour, and with nothing picked a short guide.
+- **The bar** (bottom): a playthrough's minutes by the shapes' minutes (of the hour), the counts, and the problems
+  (click to list them; click one to go to its shape, marked on the chart).
 
-**The believability ladder.** The strange arrives in steps, each with an ordinary explanation at first (she's tired,
-the walls are thin, you misremembered the date), then a pattern, then a detail nothing ordinary explains, then the
-truth. A bizarre premise (cosmic horror, the supernatural) is grounded in the personal and the physical: what the
-player finds (a note, a photo, a voicemail, a receipt) makes the impossible feel documented, as if it really happened.
-Nothing is explained by a speech; the player puts it together a beat before the story confirms it. The story never
-breaks a rule it set, and the ordinary details stay consistent (the time, the weather, what's in the fridge).
+**The shapes:**
 
-**An interactive story with light gameplay that matters.** It should feel like watching a story unfold with you in it.
-What the player does is small and always changes something: what you find changes what you know, what you answer
-changes what she says and how it ends, a task done (or failed) changes the next scene. No quick-time events, no combat,
-no game overs (DECISIONS 2026-10-27, late): bad things happen in endings.
+| Shape | What it is | What you write |
+|---|---|---|
+| **Start** | where the story begins (one) | an arrow to the first moment |
+| **Scene** | people talk to you: a cutscene from your eye | the title, what happens (the gist), where, who, minutes; the lines you have (who, the words, a face) |
+| **Talk** | **an L.A. Noire close-up**: she asks, you answer, her face answers before her words do; the faces carry the truth | the question (who asks, the words), her face while she waits, 2 or 3 answers (what you say, karma, what her face does, its face, a flag), what reading her face tells you |
+| **Task** | light gameplay: a to-do list, something to find or do | the to-dos (asked by, done when, how it can fail) |
+| **Chapter** | a night ends: you sleep, a title card, the time of day | the card's title and line, the time from here on |
+| **Choice** (a diamond) | a decision: an arrow for each way | the question; who decides: **the player** (each arrow labelled with what they do, maybe remembered as a flag), **karma** (each arrow "at least", "at most" or the rest), or **an earlier answer** (each arrow a talk's answer, or the rest) |
+| **Secret** (dashed, gold) | a side stream for the curious | how it's found, what it shows, its achievement; one arrow in from the point it's found after, one out to where the story picks up |
+| **Ending** (a double border) | an ending cutscene | the intended one or another, what happens, how a player gets here, its achievement |
+| **Note** (a sticky note) | for whoever reads the chart, Claude too | anything |
 
-**The river.** Main points in order, 16 to 24 of them for an hour, 2 to 5 minutes each, grouped in 3 to 5 acts (often
-nights: sleep ends one, a chapter card starts the next). Each point is one of:
+## 3. The games it's for (the rules the chart is checked by)
 
-| Type | What it is |
-|---|---|
-| `scene` | people talk to you: a cutscene from your eye; you may answer a hanging line |
-| `talk` | **an L.A. Noire close-up**: intimate, face to face; she says something, you choose what to say (2 or 3 answers), and her face answers before her words do. The faces carry the truth: a player who watches them learns what she really wants. 1 to 3 an act, planned as close-ups (seated across a table, side by side on a sofa, face to face in a doorway): a face can't be read from across a room |
-| `task` | light gameplay: a to-do list (chores, a request: she asks, waits, and walks off when it's done), something to find, a room to look through, a note to read |
-| `chapter` | a night ends: you sleep, a title card ("Night 2 · 23:40"), the time of day |
-| `choice` | a decision that matters: a **fork** (the story goes two ways for a while, then joins the river again at the next main point) or, at the end, the way to an ending |
+**About an hour, and played again** (55 to 65 minutes on a first playthrough), **relatable first** (a distant friend
+invites you over; you house-sit; a late shift alone), **the believability ladder** (the strange arrives in steps, each
+with an ordinary explanation first), **an interactive story with light gameplay that matters** (no quick-time events,
+no game overs: bad things happen in endings), **choices whose ways join again** (no branch cut off and replayed from a
+menu), **secrets that come back** (a short extra moment, an achievement, then the story picks up), **three endings**
+(the intended one and two others, as ending cutscenes), **achievements** (one per secret and ending, and a few feats).
+DECISIONS 2026-10-27 (last thing) has the user's words; docs/WRITING.md the craft.
 
-**Forks join again.** At most one or two forks a game; each way is one to three points, and both reach the next main
-point. No branch is cut off and replayed from a menu (the old branch map, after Five Hearts Under One Roof, is not used
-here).
+The check (`proto.check`, the bar's problems) holds the chart to what Build needs: one start; every point one arrow on
+(a choice decides between ways); a choice two ways or more, each saying what decides it (by karma or an answer, one for
+the rest); a secret one arrow in from a point and one out; an ending none out; no loops (the story goes one way);
+everything reachable from the start; who and where from the cast and places; a talk's 2 or 3 answers, each with what
+you say and what her face does; faces that exist. Notes (not errors): three endings, one intended; a playthrough of 45
+to 75 minutes; karma bounds the answers can reach (the kindest add up to at least an ending's "at least", a player who
+says nothing has 0 and gets the rest).
 
-**Secrets come back to the river.** Three to six side streams for the curious: something hidden (a locked phone, a
-photo behind another, a room nobody mentions) shows a short extra moment, **unlocks an achievement**, and the story
-picks up at the next main point. A secret is never needed for the intended ending, but it deepens the truth.
+## 4. The faces: MiniMax post prompts (4 seconds)
 
-**Three endings, as ending cutscenes** (no ending cards, DECISIONS 2026-10-27, late night):
-
-- **the intended ending**: the truth understood and faced, earned;
-- **two others**: what happens if you misread her, ignore the signs, take her side, leave without knowing...
-
-What decides the ending is what the player noticed and chose: the talks' answers (karma: the story says what it means,
-"how much of the truth you let yourself see"), and sometimes a last choice. Each ending should be reachable on a first
-playthrough by a natural way of playing.
-
-**Achievements:** one for each secret, one for each ending, and a few small feats (read every note; never lie to her).
-Short, evocative titles; hints that don't spoil.
-
-**Lines:** English, typed on screen with a vocal blip (EXPRESSIONS_PLAN §3): one sentence each, 12 words at most; the
-pauses are their own beats. The player's answers are short (two to eight words), each believable, each meaning
-something different (warm, probing, evasive, honest, a lie).
-
-## 3. The faces: MiniMax post prompts (4 seconds)
-
-Every face in a dialogue moment (a talk's answers, her face while she waits, a key line) is a **MiniMax post prompt**:
-a fragment appended after your own prompt for the character, written as what the face visibly does:
+A face (on a line, a talk's question, her waiting face, an answer's face) is a **MiniMax post prompt**: what the face
+visibly does, after your own prompt for the character:
 
 > her eyes roll up as she bites her lower lip, she nervously looks down and then back at the viewer.
 
-- **4 seconds of video:** two or three visible moves, the last one **held**, so the expression tool can stretch it
-  (**Length**, tweened: 8 to 10 s still looks natural) and loop the held part (EXPRESSIONS_PLAN §2b).
-- present tense, third person (she, her; he, his), lower case (it follows your prompt), no speech, no camera moves.
-- **The library** (`Content/Studio/Expressions/prompts.json`): reusable ones by what they're for: listening faces
-  (loopable, for waiting), tells (the L.A. Noire reactions: the lie's glance away, fear smoothed over, relief that's
-  too much), warm, unsettling, sad, afraid. The assistant uses one when it fits and writes a new one only when the
-  moment needs it (a prototype's own `faces`). Each has `secs` (its length once stretched) and `loop` (the part to
-  loop, as fractions of the clip). A captured expression keeps the prompt's id as its name.
+4 seconds of video (two or three moves, the last held) that the expression tool stretches (8 to 10 s still reads as
+natural) and loops (EXPRESSIONS_PLAN §2b); present tense, lower case, no speech, no camera. The library
+(`Content/Studio/Expressions/prompts.json`) has reusable ones (listening faces, the tells, warm, unsettling, sad,
+afraid); "New face…" in any face picker writes the story's own. A he wears them written for him.
 
-## 4. The prototype (`prototype.json`)
-
-| Field | What |
-|---|---|
-| `id`, `title` | the session (its folder) and the game's working title |
-| `brief` | `kind` (what kind of game), `references` (stories, real events, notes), `notes`, `endings` (the user's ideas: up to three strings, the first the intended), `minutes` (60) |
-| `bible` | `logline`, `hook` (why it's relatable), `truth` (what's really going on), `ladder` (how the strange is made believable, step by step), `tone`, `setting`, `player` (who you are), `time` (when it starts: day, dusk, night), `karma` (what the answers measure), `cast` (`id`, `name`, `subject` she/he, `role`, `look`, `wants`, `hides`, `tells`: how the face gives them away), `places` (`id`, `name`, `look`) |
-| `endings` | three: `id`, `kind` (`intended` or `other`), `title`, `what` (the ending cutscene), `how` (how the player gets there, in words), `rule` (`{"by": "karma", "min": 2}`, `{"by": "karma", "max": -2}`, `{"by": "karma"}` for the rest, or `{"by": "answer", "point": "p20", "option": "b"}`), `by` (`user` or `suggested`) |
-| `acts` | `id`, `title` |
-| `points` | the main river in order: `id`, `act`, `type`, `title`, `where` (a place), `who` (cast), `minutes`, `what` (what happens), `player` (what the player does), `shot` (how it's framed); `lines` (the key lines: `who`, `text`, `face`); `talk` (`line`, `listen` (her face while she waits), `options`: `id`, `say`, `face`, `tell` (what her face gives away), `karma`, `sets` (a flag to remember it), `reveals`); `tasks` (`id`, `text`, `who` (when she asked), `done` (what ticks it), `fails` (what fails it, if anything)); `chapter` (`title`, `sub`, `time`); `fork` (`question`, `ways`: `id`, `label`, `points` (one to three points, the same fields), `sets`) |
-| `secrets` | `id`, `after` (the point it leaves from), `title`, `find` (how it's found), `shows` (what it shows), `achievement` |
-| `achievements` | `id`, `title`, `text`, `for` (`secret:<id>`, `ending:<id>` or `feat`), `hidden` |
-| `faces` | the prototype's own expression prompts: `id`, `prompt`, `secs`, `loop`, `for` (who) |
-| `notes`, `chat` | notes on points (`by`, `text`, `at`) and the assistant conversation |
-
-A face is named by id: one of the library's or one of `faces`.
-
-## 5. The assistant
-
-**Claude or local, a switch** in the header:
-
-- **Claude through the API** (an `ANTHROPIC_API_KEY`, or an `ant auth login` profile): the official `anthropic` SDK in
-  `vendor/writers/venv` (`python tools/writers/room.py setup` makes it); Claude Opus 5.5 by default, the JSON checked
-  against the stage's schema, streamed, with Anthropic's server-side fallback when a request is declined.
-- **Claude through Claude Code** (no key needed: your Claude Code login): `claude -p` with the stage's JSON schema, no
-  tools, its own system prompt, from an empty folder.
-- **Local through Ollama**: the model in `setup/scriptgen.json` (the script generator's), JSON by schema.
-
-It sees what the page shows: the brief, the bible, the river (compact), the point you picked and its details, and
-which view you're on. Its answer is words and changes (`set`, `add`, `remove`, `move` on a point, a secret, an ending,
-the cast, a place, the bible, a face, an achievement), applied at once; Undo takes them back. What's on screen is also
-written to `Saved/Writers/now.json`, so Claude in Claude Code can see it: `python tools/writers/room.py now`.
-
-## 6. The river on screen
-
-Left to right: the start, the main points on one line (an icon by type: scene, talk (an eye), task (a box), chapter
-(a moon), choice (a fork)), their act as a band behind them with its minutes. A fork splits the river into its ways
-and joins it again at the next main point. A secret is a dotted stream above the river with a star (its achievement),
-leaving after its point and coming back at the next. The three endings fan out at the mouth, the intended one bright.
-The minutes run along the bottom (the hour marked). Hover for a point's summary, click to open it; the wheel zooms,
-dragging pans.
-
-## 7. Build: into the director
+## 5. Build: into the director
 
 **Build** (the header's button, or `python tools/writers/room.py build ID [--game G]`) writes, in
-`Content/Games/<Game>/` (the name from the title, Ticket114, unless you give one):
+`Content/Games/<Game>/` (the name from the title unless you give one):
 
-- `story.json` (format 3): **a rough, working outline** that opens on the director's desk, plays in the Watch and in
-  Play from the start to each ending, and passes check_all (STORY, LEVEL, SHOTS):
-  - `game.draft: true`: the scenes hold only their key lines, so the playtime targets warn until they're written in
-    full; `game.voice: "none"`: the lines are text (no Japanese asked for); `game.prototype`: the session.
+- `story.json` (format 3): **a rough, working outline** that opens on the director's desk **laid out as your chart**
+  (each node's `xy` where its shape sits, the acts as the board's frames), plays in the Watch and in Play from the
+  start to each ending, and passes check_all (STORY, LEVEL, SHOTS):
+  - `game.draft: true` (the scenes hold only their key lines, so the playtime targets warn), `game.voice: "none"` (the
+    lines are text), `game.prototype` (the session).
   - **the place:** a greybox room per place (6 × 5 m, in a row, joined by doorways), each with the player's eye
     (`<room>_view`), every cast member's marks (`<room>_<cast>` across the room, `<room>_<cast>_close` 0.65 m away for
     the close-ups) and a lamp.
   - **a scene** is its lines, each face's post prompt its clip's `expr`; **a talk** is a close-up (MCU, the one asking
-    on the close mark): its lines, then the question as a hanging line with 2 or 3 answers, her listening face its
-    `wait_expr`, each answer's face her answer (`then`: “…”, the face's prompt, what it gives away as the acting
+    on the close mark): its lines, then the question as a hanging line with your 2 or 3 answers, her listening face
+    its `wait_expr`, each answer's face her answer (`then`: “…”, the face's prompt, what it gives away as the acting
     note), its karma and its flag (STORY_FORMAT §9.9).
-  - **a task** is a stitch with its to-do list, each task ticked by using its box (a stand-in on the room's east wall);
-    **a chapter** is its lines, then the chapter card (the title, the time of day from here on, an autosave); **a fork**
-    is a choice by act (a box for each way) whose ways join the river again at the next point.
+  - **a task** is a stitch with its to-do list, each to-do ticked by using its box (a stand-in on the room's east wall);
+    **a chapter** is its lines, then the chapter card; **a choice** by the player is a choice by act (a box for each
+    way), by karma a karma choice, by an answer a choice on the flag that answer sets.
   - **a secret** is found in its point's task, or after a scene in a short look round the room (walk on to the
-    doorway when you're ready); found, a choice on its flag plays what it shows, then the river goes on.
-  - **the endings:** a choice by the answers that decide one (a flag the answer sets), then by karma, each ending's
-    scene (final) and its ending. A karma bound the answers can't reach (the kindest add up to less than its `min`)
-    moves into reach, and BUILD.md says so.
-  - **achievements** (STORY_FORMAT §9.13): one for each secret and ending, the feats on flags of their own (to set
-    where they happen); the Watch and Play say each as it's unlocked.
-- `prototype.json`: the prototype as it was built (the receipt).
+    doorway when you're ready); found, a choice on its flag plays what it shows, then the story goes on where its
+    arrow out says.
+  - **an ending** is its ending scene (final), then the ending. A karma bound the answers can't reach moves into
+    reach, and BUILD.md says so.
+  - **achievements** (STORY_FORMAT §9.13): each secret's and ending's own, the feats on flags of their own (to set
+    where they happen); the Watch and Play say each as it's unlocked. **Notes** go on the game's board for Claude.
+- `prototype.json`: the chart as it was built (the receipt).
 - `BUILD.md`: **the handoff for Claude**: the story's heart (the truth, the ladder, the cast and their tells, the
-  places), what's rough everywhere, then point by point what was built and what needs doing to make it the game, as
-  boxes to tick (lay out the real place, write the scenes in full, stage the close-ups, make the tasks and the finds
-  real things, the faces), the achievements and the checks.
+  places), what's rough everywhere, then shape by shape in the chart's order (act by act, each secret after its point)
+  what you wrote, what was built and what needs doing to make it the game, as boxes to tick; your notes, the
+  achievements and the checks.
 - `faces.md`: every face to make in MiniMax, prompt by prompt (written for him where a he wears it), its length to
   stretch to, the part to loop, who and where, and whether it's in the expression library already.
 
-Then, in Claude Code: "build <Game> from its BUILD.md". Built again from its session, the story it replaces is kept in
-the desk's history first (`Saved/Story/<Game>/history`); a story built from another session, or by hand, is replaced
-only when you say so (force).
+Built again from its session, the story it replaces is kept in the desk's history first (`Saved/Story/<Game>/history`);
+a story built from another session, or by hand, is replaced only when you say so (force).
+
+## 6. For Claude
+
+`python tools/writers/room.py show ID` prints the whole chart as text (the brief, the story's heart, the cast and
+places, every shape in reading order under its act with its arrows, the notes, the feats), `show ID SHAPE` one shape
+in full with its faces' prompts, `now` what the page shows (the session, the tab, the shapes picked), `list` the
+sessions. The page writes `Saved/Writers/now.json` as you pick things.
+
+## 7. The format (`prototype.json`, format 2)
+
+`brief` (`kind`, `references`, `notes`, `minutes`), `story` (`logline`, `hook`, `truth`, `ladder`, `tone`, `setting`,
+`player`, `time`, `karma`), `cast`, `places`, **`nodes`** (`id`, `type`, `x`, `y`, `title`, `text` and the type's own:
+`who`, `where`, `minutes`, `lines`, `player`, `shot`, `notes`; `talk` {`line`, `listen`, `options` [{`id`, `say`,
+`karma`, `tell`, `face`, `sets`}], `reveals`}; `tasks` [{`id`, `text`, `who`, `done`, `fails`}]; `chapter` {`title`,
+`sub`, `time`}; a choice's `by` and `question`; a secret's `find`, `shows`, `achievement`; an ending's `kind`, `how`,
+`achievement`; a note's `color`), **`edges`** (`id`, `from`, `to`, `label`, `when` ({`min`}, {`max`}, {`talk`,
+`answer`} or {} for the rest), `sets`), **`frames`** (`id`, `title`, `x`, `y`, `w`, `h`, `color`), `faces` (the story's
+own post prompts), `feats`, `built`. The first format (a river of points the old assistant drafted) is upgraded as it's
+read: each act a row, a fork's other ways below it, the secrets above, the endings after a choice.
 
 ## 8. Files and checks
 
-`tools/writers/`: `serve.py` (the page's server, port 8795), `room.py` (the command line: `new`, `list`, `show`,
-`river`, `now`, `draft`, `build`, `setup`, `check`), `llm.py` (the backends), `gen.py` (the stages and the assistant),
-`build.py` (Build: the story, BUILD.md, faces.md), `index.html`, `app.js`, `river.js`, `ui.css`;
-`Content/Python/storykit/proto.py` (the format, its check). Checks: WRITERS (`room.py check`: the format, the prompt
-library, the stages and the assistant end to end on a stand-in model, a build that passes check_all's STORY, LEVEL and
-SHOTS), WRITERSPAGE (`pagetest.mjs`: the page in a headless browser).
+`tools/writers/`: `serve.py` (the page's server, port 8795; `WRITERS_HOME` for a scratch home), `canvas.js` (the
+chart: shapes, dots, arrows, frames, the view), `app.js` (the page: the inspector, the tabs, sessions, Build),
+`index.html`, `ui.css`, `room.py` (the command line), `build.py` (Build); `Content/Python/storykit/proto.py` (the
+format, its check, the text, the upgrade). Checks: **WRITERS** (`room.py check`: the post prompt library, a chart of
+every shape with no problems, each of thirteen faults found at its shape, the chart as text, the first format
+upgraded, a build through check_all's STORY, LEVEL and SHOTS), **WRITERSPAGE** (`pagetest.mjs`: the page in a
+headless browser on a scratch home: shapes dragged on and joined, the inspector, labels, undo, copy and paste, an act,
+the problems, About, now.json, Build).

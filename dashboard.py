@@ -47,7 +47,7 @@ PY = launch.PY
 LOCK = threading.RLock()
 
 # the tools to start the day from: shown first, as tiles (labels as in launch.py's TOOLS)
-START_HERE = ["Writers' room (prototype a game's story: the river, its endings, its secrets)", "Director's desk",
+START_HERE = ["Writers' room (write a game's story as a flowchart: its points, choices, secrets, endings)", "Director's desk",
               "Character Studio (body, face, skin, hair in the salon, clothes)", "Score room (music)", "Kimodo demo",
               "Scene builder (floor plans)"]
 

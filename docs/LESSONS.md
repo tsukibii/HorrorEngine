@@ -868,3 +868,13 @@ shoulders, and its mark stands straight ahead of the eye (a mark offset sideways
 the walker answered every reply by its sweep (the kindest, the cruellest, silence), so an ending decided by a middle
 answer was never reached: a reply whose answer sets a flag a flag choice reads now plays each such answer on its own
 path. Build a generated game through all of check_all (STORY, LEVEL, SHOTS) and the desk's own suites, not only STORY.
+
+## A redraw on the first click eats the double-click (2026-10-27)
+
+The writers' room's chart picked a shape or an arrow on mousedown and redrew it, so the element the first click landed
+on was gone by the second: the browser's dblclick never came (an arrow couldn't be labelled, a shape retitled). Read a
+double-click from the second mousedown (`e.detail >= 2`). And an autosave that redraws mustn't run over a title being
+typed on the chart (the redraw replaced the element being typed in: `editing` holds it off); a blur that follows an
+Enter must not finish the same edit twice. Test an editor through the gestures a person uses (a double-click, typing
+after a drop, a box dragged with Shift held) in the view as it is after the steps before (a step that centres the view
+moves what the next one aims at), not only by calling its functions.

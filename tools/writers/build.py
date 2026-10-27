@@ -1,6 +1,6 @@
-"""Build: a writers' room prototype into the director (docs/WRITERS_ROOM.md §7). A rough, working outline of the game
-in Content/Games/<Game>/: story.json (format 3, `game.draft`), the prototype it was built from, BUILD.md (the handoff:
-what Claude does next to make it the game, point by point) and faces.md (the MiniMax post prompts to make).
+"""Build: your chart from the writers' room into the director (docs/WRITERS_ROOM.md §5). A rough, working outline of
+the game in Content/Games/<Game>/: story.json (format 3, `game.draft`), the prototype it was built from, BUILD.md (the
+handoff: what Claude does next to make it the game, shape by shape) and faces.md (the MiniMax post prompts to make).
 
     import build
     res = build.build(P, "Ticket114")        # {"ok", "game", "message", "files", "check"}
@@ -8,18 +8,23 @@ what Claude does next to make it the game, point by point) and faces.md (the Min
 
 The story: one level, a greybox room per place in a row (joined by doorways), each with the player's eye (`<room>_view`),
 a mark for every cast member far (`<room>_<cast>`) and close (`<room>_<cast>_close`, the talks' close-ups) and a lamp;
-the boxes the tasks, the secrets and the forks use stand along its walls. Each point becomes:
+the boxes the tasks, the secrets and the choices use stand along its walls. Each shape becomes:
 
 - scene: a scene of its lines (the face's post prompt as each clip's `expr`);
-- talk: a scene, the close-up: its lines, then the hanging line with her listening face (`wait_expr`) and the answers
-  (2 or 3), each with her face's answer (`then`: "…", the face's prompt and what it gives away), karma and a flag;
-- task: a stitch with its to-do list, each task ticked by using its box;
+- talk: a scene, the close-up: its lines, then the question as a hanging line with her listening face (`wait_expr`)
+  and the answers (2 or 3), each with her face's answer (`then`: "…", the face's prompt and what it gives away), karma
+  and a flag;
+- task: a stitch with its to-do list, each to-do ticked by using its box;
 - chapter: its lines as a scene, then the chapter card (a stitch: the title, the time of day, an autosave);
-- choice: its lines as a scene; a fork is a choice by act (a box for each way) whose ways join the river again.
+- choice: by the player, a choice by act (a box for each way); by karma, a karma choice; by an answer, a flag choice
+  on the flags the talk's answers set;
+- secret: found in its point's task (a secret beat), or after a scene in a short look round the room; then a choice
+  on its flag plays what it shows and goes on where its arrow out says;
+- ending: its ending scene (final) and the ending;
+- note: a note on the game's board, for Claude.
 
-A secret is found in its point's task (a secret beat), or, after a scene, in a short look round the room; then a choice
-on its flag plays what it shows and rejoins the river. The endings: a choice by the answers that decide one, then by
-karma, each ending's scene (final) and its ending. Achievements: the prototype's, each on its secret, ending or flag.
+The arrows are the flow's `next`s and options; every node sits on the director's board where its shape sits on the
+chart (`xy`), the acts' frames are the board's acts. Achievements: each secret's and ending's own, and the feats.
 """
 import copy
 import json
@@ -137,64 +142,60 @@ class Rooms:
 class Builder:
     def __init__(self, P, game):
         self.P, self.game = P, game
-        b = P.get("bible") or {}
-        self.cast = {c["id"]: c for c in b.get("cast", [])}
-        self.places = b.get("places") or [{"id": "room", "name": "A room"}]
+        self.N = proto.nodes_of(P)
+        self.cast = {c["id"]: c for c in P.get("cast", [])}
+        self.places = P.get("places") or [{"id": "room", "name": "A room"}]
         self.lib = proto.library()
-        self.rooms = Rooms(self.places, b.get("cast", []))
+        self.rooms = Rooms(self.places, P.get("cast", []))
         self.ids = set()
         self.S = {"format": 3, "game": {}, "cast": {}, "items": {}, "notes": {}, "lines": {}, "sounds": {}, "levels": {},
                   "secrets": {}, "achievements": {}, "motions": {}, "stitches": {}, "scenes": {}, "flow": {}, "interrupts": [],
                   "board": [], "frames": []}
-        self.open = []                  # (holder, key): where the next node's id goes (a `next`, an option's `to`)
-        self.act_nodes = {}             # act id -> its nodes, for the board's frames
-        self.handoff = []               # BUILD.md: (point, what was built, the todo boxes)
+        self.entry = {}                 # a shape -> the flow node it begins at
+        self.exits = {}                 # a shape -> [(holder, key)]: where what comes after it is written
+        self.made = {}                  # a shape -> every flow node made for it (its acts, its place on the board)
+        self.options = {}               # an arrow out of a choice -> its option (whose `to` is written when wired)
+        self.found_in = {}              # a task -> its stitch (its secrets are found in it)
+        self.handoff = []               # BUILD.md: (shape, what was built, the boxes to tick)
         self.secret_key, self.secret_flag = {}, {}
-        self.answer_flags = {}          # (point, option) -> the flag an ending reads
+        self.answer_flags = {}          # (talk, answer) -> the flag a choice by an answer reads
         self.moved = []                 # karma bounds moved into the answers' reach
 
     # ids: everything this build makes is unique across the file
     def own(self, i):
         if i in self.ids:
-            raise ValueError(f"the build made the id {i!r} twice: rename a point, a secret or an ending in the prototype")
+            raise ValueError(f"the build made the id {i!r} twice: rename a shape on the chart")
         self.ids.add(i)
         return i
 
-    def where(self, p):
-        w = p.get("where")
-        return w if w in self.rooms.rooms else self.rooms.order[0]
+    def room_of(self, n):
+        """A shape's room: its own place, else the nearest one's on the way to it, else the first place."""
+        seen, todo = set(), [n.get("id")]
+        while todo:
+            k = todo.pop(0)
+            if k in seen:
+                continue
+            seen.add(k)
+            w = (self.N.get(k) or {}).get("where")
+            if w in self.rooms.rooms:
+                return w
+            todo += [e.get("from") for e in proto.ins(self.P, k)]
+        return self.rooms.order[0]
 
     def face(self, fid, who):
         f = proto.face_of(self.P, fid, self.lib) if fid else None
-        subject = (self.cast.get(who) or {}).get("subject", "she")
-        return proto.for_subject(f["prompt"], subject) if f and f.get("prompt") else None
+        return proto.for_subject(f["prompt"], (self.cast.get(who) or {}).get("subject", "she")) if f and f.get("prompt") else None
 
     def note(self, text):
         return [{"by": "claude", "text": text, "at": today()}]
 
-    def node(self, nid, n, act):
+    def node(self, shape, nid, n, k=0):
+        """A flow node made for a shape: kept, placed on the board under the shape (k: the how-many-th of its nodes)."""
+        sh = self.N.get(shape) or {}
+        n["xy"] = [round(float(sh.get("x", 0))), round(float(sh.get("y", 0)) + 70 * k)]
         self.S["flow"][self.own(nid)] = n
-        self.act_nodes.setdefault(act, []).append(nid)
-        for holder, key in self.open:
-            holder[key] = nid
-        self.open = []
+        self.made.setdefault(shape, []).append(nid)
         return n
-
-    # a scene of lines (the scene, the talk, a chapter's or a fork's moment, a secret seen, an ending)
-    def clips_of(self, lines, fallback_who, act_text):
-        clips = []
-        for ln in lines:
-            who = ln.get("who") if ln.get("who") in self.cast or ln.get("who") == "player" else fallback_who
-            c = {"id": f"c{len(clips) + 1}", "who": who, "en": str(ln.get("text") or "…").strip() or "…"}
-            ex = self.face(ln.get("face"), who)
-            if ex:
-                c["expr"] = ex
-            if clips:
-                c["seam"] = dict(SEAM)
-            clips.append(c)
-        if not clips:
-            clips.append({"id": "c1", "who": fallback_who, "en": "…", "act": act_text})
-        return clips
 
     def scene(self, sid, title, room, who, clips, mood, notes, close=None, final=False):
         """A scene in a room: the cast on their marks (`close`: the one face to face, on the close mark), the camera
@@ -215,75 +216,84 @@ class Builder:
             self.own(b["id"])
         return st
 
-    def who_of(self, p):
-        return [c for c in (p.get("who") or []) if c in self.cast]
+    def who_of(self, n):
+        return [c for c in (n.get("who") or []) if c in self.cast]
 
-    def speaker(self, p):
-        """Who a scene's placeholder line is said by: the point's first cast member, else the player's own thought."""
-        w = self.who_of(p)
+    def speaker(self, n):
+        """Who a scene's placeholder line is said by: the shape's first cast member, else the player's own thought."""
+        w = self.who_of(n)
         return w[0] if w else "player"
 
-    def about(self, p):
-        bits = [f"what happens: {p.get('what', '')}"]
-        if p.get("player"):
-            bits.append(f"the player: {p['player']}")
-        if p.get("shot"):
-            bits.append(f"the shot: {p['shot']}")
+    def about(self, n):
+        bits = [f"what happens: {n.get('text', '')}"]
+        for k, label in (("player", "the player"), ("shot", "the shot"), ("notes", "a note from the chart")):
+            if n.get(k):
+                bits.append(f"{label}: {n[k]}")
         return "; ".join(bits)
 
-    # ---- a point and the nodes it becomes -----------------------------------------------------------------------
-    def point(self, p, act, way=None, way_flag=None, first=False):
-        """The nodes for one point (on the river or in a fork's way); leaves the ends open for whatever comes next.
-        Returns the stitch the point's secrets are found in, if it has one."""
-        pid, room, kind = p["id"], self.where(p), p.get("type")
-        who, title = self.who_of(p), p.get("title") or pid
+    def clips_of(self, lines, fallback_who, act_text):
+        clips = []
+        for ln in lines:
+            who = ln.get("who") if ln.get("who") in self.cast or ln.get("who") == "player" else fallback_who
+            c = {"id": f"c{len(clips) + 1}", "who": who, "en": str(ln.get("text") or "…").strip() or "…"}
+            ex = self.face(ln.get("face"), who)
+            if ex:
+                c["expr"] = ex
+            if clips:
+                c["seam"] = dict(SEAM)
+            clips.append(c)
+        if not clips:
+            clips.append({"id": "c1", "who": fallback_who, "en": "…", "act": act_text})
+        return clips
+
+    # ---- a shape and the nodes it becomes ------------------------------------------------------------------------
+    def point(self, n):
+        """A scene, talk, task or chapter: its nodes; what comes after it is written where its exits say."""
+        pid, room, kind = n["id"], self.room_of(n), n.get("type")
+        who, title = self.who_of(n), n.get("title") or pid
         built, todo = [], []
-        self.handoff.append((dict(p, _way=way.get("label")) if way else p, built, todo))
-        found_in = None
-
-        def scene_node(nid, sid, sc):
-            n = self.node(nid, {"type": "scene", "ref": sid, "next": None}, act)
-            self.open = [(n, "next")]
-            if way_flag and not sc.get("sets"):
-                sc["sets"] = [{"flag": way_flag}]
-            return n
-
-        t = p.get("talk") if kind != "task" else None
-        if kind in ("scene", "talk") or (kind in ("chapter", "choice") and p.get("lines")) or t:
+        self.handoff.append((n, built, todo))
+        t = n.get("talk") if kind == "talk" else None
+        last, k = None, 0
+        if kind in ("scene", "talk") or (kind == "chapter" and n.get("lines")):
             asked = re.sub(r"\W+", " ", str(((t or {}).get("line") or {}).get("text", ""))).strip().lower()
-            lines = [ln for ln in p.get("lines") or [] if not asked or re.sub(r"\W+", " ", str(ln.get("text", ""))).strip().lower() != asked]
-            clips = self.clips_of(lines, self.speaker(p), p.get("what", "")) if (lines or not t) else []
+            lines = [ln for ln in n.get("lines") or [] if not asked or re.sub(r"\W+", " ", str(ln.get("text", ""))).strip().lower() != asked]
+            clips = self.clips_of(lines, self.speaker(n), n.get("text", "")) if (lines or not t or not (t.get("options"))) else []
             talker = None
-            if t:
-                clips.append(self.hanging(p, t, len(clips)))
+            if t and t.get("options"):
+                clips.append(self.hanging(n, t, len(clips)))
                 talker = clips[-1]["who"]
                 if len(clips) > 1:
                     clips[-1]["seam"] = dict(SEAM)
                 for c in clips:                          # a close-up: the face 0.65 m from the eye, head and shoulders
                     c["shot"] = "mcu"
-            mood = "intimate" if t else "calm" if kind == "chapter" or first else "reveal" if kind == "choice" else "dread"
+            first = not [e for e in proto.ins(self.P, pid) if (self.N.get(e.get("from")) or {}).get("type") != "start"]
+            mood = "intimate" if talker else "calm" if kind == "chapter" or first else "dread"
             sid = f"s_{pid}"
-            notes = self.note(self.about(p) + (f"; what the talk reveals: {t['reveals']}" if t and t.get("reveals") else ""))
-            sc = self.scene(sid, title, room, who, clips, mood, notes, close=talker)
-            scene_node(f"n_{pid}", sid, sc)
-            way_flag = None
-            if t:
+            notes = self.note(self.about(n) + (f"; what reading her face tells you: {t['reveals']}" if t and t.get("reveals") else ""))
+            self.scene(sid, title, room, who, clips, mood, notes, close=talker)
+            last = self.node(pid, f"n_{pid}", {"type": "scene", "ref": sid, "next": None})
+            self.entry[pid] = f"n_{pid}"
+            k = 1
+            if talker:
                 opts = t.get("options") or []
+                her = "his" if (self.cast.get(talker) or {}).get("subject") == "he" else "her"
                 built.append(f"scene `{sid}`, a close-up: {len(clips) - 1} line(s), then the hanging line {clips[-1]['id']} "
                              f"({len(opts)} answers, the face answering each)")
-                her = "his" if (self.cast.get(talker) or {}).get("subject") == "he" else "her"
                 todo += [f"Stage it as a close-up, as the shot says: the mark `{room}_{talker}_close`, the player's eye across a table, "
                          "beside on a sofa or face to face in a doorway",
                          f"Write {her} words after each answer (`then.en` is “…”: {her} face answers first), and the lines before the question",
                          f"Make {her} faces (faces.md): the listening face and one for each answer; each answer's tell is its `then.act`"]
             else:
-                built.append(f"scene `{sid}`: {len(clips)} line(s){' (a placeholder: no lines yet)' if not p.get('lines') else ''}")
+                built.append(f"scene `{sid}`: {len(clips)} line(s){' (a placeholder: no lines yet)' if not lines else ''}")
                 todo += ["Write the scene in full: its lines in order with the pauses between, a seam on every cut",
                          "Block it on the desk: the marks, who moves, where the eye goes"]
+                if kind == "talk":
+                    todo.append("Write the talk's answers on the chart (it has none yet), then build again")
         if kind == "task":
-            found_in = self.task(p, act, room, way_flag, built, todo)
+            last = self.task(n, room, built, todo)
         elif kind == "chapter":
-            ch = p.get("chapter") or {}
+            ch = n.get("chapter") or {}
             tid = f"t_{pid}"
             card = {"chapter": ch.get("title") or title}
             if ch.get("sub"):
@@ -291,28 +301,23 @@ class Builder:
             if ch.get("time") in proto.TIMES:
                 card["time"] = ch["time"]
             self.stitch(tid, {"title": title, "template": "chapter", "target_min": 0.2, "beats": [
-                {"id": f"b_{pid}_card", "when": {"start": True}, "do": ([{"flag": way_flag}] if way_flag else []) + [card, {"done": True}]}],
-                "notes": self.note(self.about(p))})
-            n = self.node(f"n_{pid}_card" if f"n_{pid}" in self.S["flow"] else f"n_{pid}", {"type": "stitch", "ref": tid, "next": None}, act)
-            self.open = [(n, "next")]
+                {"id": f"b_{pid}_card", "when": {"start": True}, "do": [card, {"done": True}]}], "notes": self.note(self.about(n))})
+            nid = f"n_{pid}_card" if last else f"n_{pid}"
+            nd = self.node(pid, nid, {"type": "stitch", "ref": tid, "next": None}, k)
+            if last:
+                last["next"] = nid
+            else:
+                self.entry[pid] = nid
+            last = nd
             built.append(f"the chapter card `{tid}`: “{card['chapter']}{' · ' + card['sub'] if card.get('sub') else ''}”"
                          + (f", {card['time']} from here on" if card.get("time") else ""))
             todo.append("If the night ends in sleep, a bed in the room (`use: sleep`) and the card on its `use` (STORY_FORMAT §4)")
-        fk = p.get("fork")
-        if fk and (fk.get("ways") or []):
-            self.fork(p, fk, act, room, built, todo)
-        elif kind == "choice" and not p.get("lines"):
-            sid = f"s_{pid}"                           # a choice point with no fork and no lines: its moment, as a placeholder
-            sc = self.scene(sid, title, room, who, self.clips_of([], self.speaker(p), p.get("what", "")), "reveal", self.note(self.about(p)))
-            scene_node(f"n_{pid}", sid, sc)
-            built.append(f"scene `{sid}`: a placeholder (no lines yet)")
-            todo.append("Write the moment in full (what the player decides here is in the next talk's answers)")
-        return found_in
+        self.exits[pid] = [(last, "next")]
 
-    def hanging(self, p, t, i):
+    def hanging(self, n, t, i):
         """A talk's question as a hanging line: she asks, waits with her listening face, and her face answers yours."""
         ln = t.get("line") or {}
-        who = ln.get("who") if ln.get("who") in self.cast else (self.who_of(p) or list(self.cast) or ["player"])[0]
+        who = ln.get("who") if ln.get("who") in self.cast else (self.who_of(n) or list(self.cast) or ["player"])[0]
         c = {"id": f"c{i + 1}", "who": who, "en": str(ln.get("text") or "…").strip() or "…"}
         ex = self.face(ln.get("face"), who)
         if ex:
@@ -325,10 +330,9 @@ class Builder:
             sets = []
             if o.get("karma"):
                 sets.append({"karma": o["karma"]})
-            flag = o.get("sets") if isinstance(o.get("sets"), str) and proto.ID.match(o.get("sets") or "") else None
-            if (p["id"], o.get("id")) in self.answer_flags:
-                flag = flag or self.answer_flags[(p["id"], o.get("id"))]
-                self.answer_flags[(p["id"], o.get("id"))] = flag
+            flag = self.answer_flags.get((n["id"], o.get("id")))
+            if not flag and isinstance(o.get("sets"), str) and proto.ID.match(o.get("sets") or ""):
+                flag = o["sets"]
             if flag:
                 sets.append({"flag": flag})
             then = {"en": "…"}
@@ -344,22 +348,21 @@ class Builder:
         c["reply"] = {"wait": 15, "timeout": None, "options": opts}
         return c
 
-    def task(self, p, act, room, way_flag, built, todo):
-        """A task: a stitch with its to-do list, each task ticked by using its box in the room."""
-        pid = p["id"]
+    def task(self, n, room, built, todo):
+        """A task: a stitch with its to-do list, each to-do ticked by using its box in the room."""
+        pid = n["id"]
         tid = f"t_{pid}"
-        start = [{"flag": way_flag}] if way_flag else []
-        start.append({"objective": p.get("title") or pid})
-        for i, ln in enumerate(p.get("lines") or []):
-            lid = self.own(f"l_{pid}_{i + 1}")
+        start = [{"objective": n.get("title") or pid}]
+        for i, ln in enumerate(n.get("lines") or []):
             who = ln.get("who") if ln.get("who") in self.cast else None
             if not who:
                 continue
+            lid = self.own(f"l_{pid}_{i + 1}")
             self.S["lines"][lid] = {"who": who, "en": str(ln.get("text") or "…")}
             start.append({"say": lid})
-        for c in self.who_of(p):
+        for c in self.who_of(n):
             start.append({"behave": c, "as": "idle", "at": f"{room}_{c}", "face": "player"})
-        tasks = p.get("tasks") or [{"id": "do", "text": p.get("player") or p.get("title") or "Look around"}]
+        tasks = [k for k in n.get("tasks") or [] if str(k.get("text", "")).strip()] or [{"id": "do", "text": n.get("player") or n.get("title") or "Look round"}]
         fails = []
         for k in tasks:
             kid = snake(k.get("id") or f"t{len(start)}", 3)
@@ -370,307 +373,348 @@ class Builder:
             start.append(td)
             if k.get("fails"):
                 fails.append(f"“{k.get('text')}” fails: {k['fails']}")
-        done = [{"untodo": True}] + [{"behave": c, "as": "off"} for c in self.who_of(p)] + [{"done": True}]
-        st = self.stitch(tid, {"title": p.get("title") or pid, "goal": p.get("player") or p.get("title") or "", "target_min": float(p.get("minutes") or 2),
+        done = [{"untodo": True}] + [{"behave": c, "as": "off"} for c in self.who_of(n)] + [{"done": True}]
+        st = self.stitch(tid, {"title": n.get("title") or pid, "goal": n.get("player") or n.get("title") or "", "target_min": float(n.get("minutes") or 2),
                                "template": "todo", "beats": [
                                    {"id": f"b_{pid}_start", "when": {"start": True}, "do": start},
                                    {"id": f"b_{pid}_done", "when": {"ticked": True}, "do": done}],
-                               "notes": self.note(self.about(p) + ("; " + "; ".join(fails) if fails else ""))})
-        n = self.node(f"n_{pid}", {"type": "stitch", "ref": tid, "next": None}, act)
-        self.open = [(n, "next")]
+                               "notes": self.note(self.about(n) + ("; " + "; ".join(fails) if fails else ""))})
+        nd = self.node(pid, f"n_{pid}", {"type": "stitch", "ref": tid, "next": None})
+        self.entry[pid] = f"n_{pid}"
+        self.found_in[pid] = st
         built.append(f"stitch `{tid}`: a to-do list of {len(tasks)} (each ticked by using its box on the wall of `{room}`)")
-        todo.append("Make each task the real thing where it belongs (the box is a stand-in): " + "; ".join(str(k.get("text")) for k in tasks))
+        todo.append("Make each to-do the real thing where it belongs (the box is a stand-in): " + "; ".join(str(k.get("text")) for k in tasks))
         todo += [f"Make it failable: {f}" for f in fails]
-        if self.who_of(p):
-            todo.append(f"{', '.join(self.cast[c].get('name', c) for c in self.who_of(p))} waits idle on her mark meanwhile: a request? "
-                        "(`who` on the task, `behave` go when it's done: STORY_FORMAT §9.12)")
-        return st
+        if self.who_of(n):
+            todo.append(f"{', '.join(self.cast[c].get('name', c) for c in self.who_of(n))} waits idle on her mark meanwhile: a request? "
+                        "(`who` on the to-do, `behave` go when it's done: STORY_FORMAT §9.12)")
+        return nd
 
-    def fork(self, p, fk, act, room, built, todo):
-        """A fork: a choice by act (a box for each way: using it takes that way), each way its points, all joining the
-        river again at the next main point."""
-        pid, ways = p["id"], fk["ways"]
-        n = self.node(f"n_{pid}_way" if f"n_{pid}" in self.S["flow"] else f"n_{pid}",
-                      {"type": "choice", "by": "act", "prompt": str(fk.get("question") or p.get("title") or ""), "options": []}, act)
-        ends = []
-        for w in ways:
-            wid = snake(w.get("id") or f"w{len(n['options']) + 1}", 3)
-            box = self.rooms.place(room, "way", self.own(f"{pid}_{wid}" if not wid.startswith(pid) else wid), use="inspect", text=str(w.get("label") or wid))
-            opt = {"label": str(w.get("label") or wid), "when": {"use": box}, "to": None}
-            n["options"].append(opt)
-            self.open = [(opt, "to")]
-            flag = w.get("sets") if isinstance(w.get("sets"), str) and proto.ID.match(w.get("sets") or "") else None
-            for q in w.get("points") or []:
-                self.point(q, act, way=w, way_flag=flag)
-                flag = None
-            ends += self.open
-        self.open = ends
-        built.append(f"the fork `{n['prompt']}`: a choice by act, {len(ways)} ways (a box each in `{room}`: using it takes that way), "
-                     "joining again at the next point")
-        todo.append("Make the ways real choices in the room (go to the dryer, look at the monitor...): the boxes stand in for them")
+    def choice(self, n):
+        """A choice: by the player (a box for each way: using it takes that way), by karma, or by an answer."""
+        cid, by, room = n["id"], n.get("by", "player"), self.room_of(n)
+        built, todo = [], []
+        self.handoff.append((n, built, todo))
+        es = proto.outs(self.P, cid)
+        if by == "player":
+            c = self.node(cid, f"n_{cid}", {"type": "choice", "by": "act", "prompt": str(n.get("question") or n.get("title") or ""), "options": []})
+            for e in es:
+                box = self.rooms.place(room, "way", self.own(f"{cid}_{snake(e.get('id'), 2)}"), use="inspect", text=str(e.get("label") or e.get("to")))
+                o = {"label": str(e.get("label") or (self.N.get(e.get("to")) or {}).get("title") or e.get("to")), "when": {"use": box}, "to": None}
+                c["options"].append(o)
+                self.options[e["id"]] = o
+            built.append(f"a choice by act `n_{cid}`: {len(es)} ways (a box each in `{room}`: using it takes that way)")
+            todo.append("Make the ways real things to do in the room (go to the dryer, look at the monitor...): the boxes stand in for them")
+        elif by == "karma":
+            bounded = [e for e in es if (e.get("when") or {}).get("min") is not None or (e.get("when") or {}).get("max") is not None]
+            rest = [e for e in es if e not in bounded][:1]
+            c = self.node(cid, f"n_{cid}", {"type": "choice", "by": "karma", "options": []})
+            hi, lo = proto.karma_range(self.P)
+            for e in bounded + rest:
+                w, o = dict(e.get("when") or {}), {"to": None}
+                if e not in rest:
+                    if w.get("min") is not None and hi >= 1 and not 1 <= w["min"] <= hi:
+                        to = min(max(1, w["min"]), hi)
+                        self.moved.append(f"{cid} → {e.get('to')}: karma at least {w['min']:g} → {to:g} (the kindest answers add up to {hi:g})")
+                        w["min"] = to
+                    if w.get("max") is not None and lo <= -1 and not lo <= w["max"] <= -1:
+                        to = max(min(-1, w["max"]), lo)
+                        self.moved.append(f"{cid} → {e.get('to')}: karma at most {w['max']:g} → {to:g} (the cruellest add up to {lo:g})")
+                        w["max"] = to
+                    o.update({b_: w[b_] for b_ in ("min", "max") if w.get(b_) is not None})
+                c["options"].append(o)
+                self.options[e["id"]] = o
+            built.append(f"a choice by karma `n_{cid}`: " + ", ".join(proto.when_text(n, e) + f" → {e.get('to')}" for e in bounded + rest))
+        else:
+            named = [e for e in es if (e.get("when") or {}).get("talk")]
+            rest = [e for e in es if e not in named][:1]
+            c = self.node(cid, f"n_{cid}", {"type": "choice", "by": "flag", "options": []})
+            for e in named + rest:
+                w, o = e.get("when") or {}, {"to": None}
+                if e in named:
+                    o["if"] = [self.answer_flags[(w["talk"], w.get("answer"))]]
+                c["options"].append(o)
+                self.options[e["id"]] = o
+            built.append(f"a choice by the answers `n_{cid}`: " + ", ".join(proto.when_text(n, e) + f" → {e.get('to')}" for e in named + rest))
+        self.entry[cid] = f"n_{cid}"
 
-    def secrets_after(self, p, act, found_in):
-        """The secrets that leave from this point: found in its task, or in a short look round its room; then each
-        one's flag choice plays what it shows and rejoins the river."""
-        ss = [s for s in self.P.get("secrets", []) if s.get("after") == p["id"]]
-        if not ss:
+    def ending(self, n):
+        eid = end_id(n["id"])
+        built, todo = [], []
+        self.handoff.append((n, built, todo))
+        room = self.room_of(n)
+        last = next((self.N.get(e.get("from")) for e in proto.ins(self.P, n["id"])), None) or {}
+        while last.get("type") == "choice":            # who's there at the end: the cast of the moment before it
+            last = next((self.N.get(e.get("from")) for e in proto.ins(self.P, last["id"])), None) or {}
+        who = self.who_of(last)[:2]
+        sid = f"s_end_{eid}"
+        self.scene(sid, n.get("title") or eid, room, who, [{"id": "c1", "who": who[0] if who else "player", "en": "…", "act": str(n.get("text") or "")}],
+                   "aftermath", self.note(f"the ending ({n.get('kind', 'other')}): {n.get('text', '')} How the player gets here: {n.get('how', '')}"), final=True)
+        self.node(n["id"], f"n_end_{eid}", {"type": "scene", "ref": sid, "next": f"e_{eid}", "final": True})
+        froms = [(self.N.get(e.get("from")) or {}, e) for e in proto.ins(self.P, n["id"])]
+        kind = "good" if n.get("kind") == "intended" else \
+            "bad" if any(a.get("by") == "karma" and (e.get("when") or {}).get("max") is not None for a, e in froms) else \
+            "other" if any(a.get("by") == "answer" and (e.get("when") or {}).get("talk") for a, e in froms) else "neutral"
+        self.node(n["id"], f"e_{eid}", {"type": "ending", "kind": kind, "title": n.get("title") or eid}, 1)
+        self.entry[n["id"]] = f"n_end_{eid}"
+        built.append(f"`{sid}` (final), then the ending `e_{eid}` ({kind})")
+        todo += ["Write the ending cutscene in full (no ending cards: DECISIONS 2026-10-27)",
+                 "Play the way there on the desk (the Watch, and the karma it shows at the end) and see it plays as the chart says"]
+
+    # ---- the arrows: next, options, the secrets on the way ------------------------------------------------------
+    def wire(self):
+        for k, n in self.N.items():
+            t = n.get("type")
+            if t == "choice":
+                for e in proto.outs(self.P, k):
+                    o = self.options.get(e.get("id"))
+                    if o is not None:
+                        o["to"] = self.entry.get(e.get("to"))
+                    if e.get("sets") and proto.ID.match(str(e["sets"])):
+                        self.way_flag(e)
+                continue
+            if t not in ("start",) + proto.POINTS:
+                continue
+            main = proto.main_out(self.P, k, self.N)
+            after = self.entry.get(main[0].get("to")) if main else None
+            secrets = [self.N[e["to"]] for e in proto.outs(self.P, k) if (self.N.get(e.get("to")) or {}).get("type") == "secret"]
+            ends = self.exits.get(k, [])
+            if secrets:
+                ends = self.secrets_after(n, secrets, ends, after)
+            for holder, key in ends:
+                holder[key] = after
+
+    def way_flag(self, e):
+        """A way that's remembered (a flag): set where it begins, when only this way goes there."""
+        to = self.N.get(e.get("to")) or {}
+        if len(proto.ins(self.P, to.get("id"))) != 1 or to.get("type") not in proto.POINTS:
+            self.handoff.append(({"id": e.get("id"), "type": "arrow", "title": f"the way to {to.get('id')}"}, [],
+                                 [f"The way “{e.get('label', '')}” is remembered as `{e['sets']}`: set that flag where the way begins"]))
             return
-        room = self.where(p)
+        nid = self.entry.get(to["id"])
+        fn = self.S["flow"].get(nid) or {}
+        if fn.get("type") == "scene":
+            self.S["scenes"][fn["ref"]].setdefault("sets", []).append({"flag": e["sets"]})
+        elif fn.get("type") == "stitch":
+            self.S["stitches"][fn["ref"]]["beats"][0]["do"].insert(0, {"flag": e["sets"]})
+
+    def secrets_after(self, n, secrets, ends, after):
+        """The secrets found after a point: in its task, or in a short look round its room; then, for each, a choice on
+        its flag plays what it shows (and goes on where the secret's arrow out says); the rest go straight on."""
+        pid, room = n["id"], self.room_of(n)
         beats = []
-        for s in ss:
+        for s in secrets:
             key = self.secret_key[s["id"]]
             box = self.rooms.place(room, "secret", self.own(f"{s['id']}_find"), use="inspect", text=str(s.get("find") or s.get("title") or "…"))
             beats.append({"id": f"b_{s['id']}_find", "when": {"use": box}, "secret": key, "do": [{"flag": self.secret_flag[s["id"]]}]})
-        tid = f"t_{p['id']}_look"
-        if found_in is not None:                         # a task: its finds are in the same room, before it's done
+        tid = f"t_{pid}_look"
+        if pid in self.found_in:                         # a task: its finds are in the same room, before it's done
             for bt in beats:
                 self.own(bt["id"])
-            found_in["beats"][-1:-1] = beats
+            st = self.found_in[pid]
+            st["beats"][-1:-1] = beats
         else:                                            # after a scene: a moment to look round the room, then walk on
             walk = self.rooms.walk_on_of(room)
-            self.stitch(tid, {"title": f"A look round: {self.place_name(room)}", "goal": "Look round, then walk on", "target_min": 1, "template": "look",
-                              "beats": [{"id": f"b_{p['id']}_look", "when": {"start": True}, "do": [{"objective": "Walk on when you're ready"}]}] + beats +
-                                       [{"id": f"b_{p['id']}_on", "when": {"enter": walk}, "do": [{"done": True}]}],
+            self.stitch(tid, {"title": f"A look round: {self.rooms.rooms[room].get('name', room)}", "goal": "Look round, then walk on", "target_min": 1,
+                              "template": "look", "beats": [{"id": f"b_{pid}_look", "when": {"start": True}, "do": [{"objective": "Walk on when you're ready"}]}] + beats +
+                                                           [{"id": f"b_{pid}_on", "when": {"enter": walk}, "do": [{"done": True}]}],
                               "notes": self.note("a moment to look round before the story goes on: the secrets here are found by the curious")})
-            n = self.node(f"n_{p['id']}_look", {"type": "stitch", "ref": tid, "next": None}, act)
-            self.open = [(n, "next")]
-        for s in ss:
-            egg = self.node(f"n_{s['id']}_egg", {"type": "choice", "by": "flag", "options": [
-                {"if": [self.secret_flag[s["id"]]], "to": None}, {"to": None}]}, act)
+            look = self.node(pid, f"n_{pid}_look", {"type": "stitch", "ref": tid, "next": None}, len(self.made.get(pid, [])))
+            for holder, key in ends:
+                holder[key] = f"n_{pid}_look"
+            ends = [(look, "next")]
+        for s in secrets:
+            egg = self.node(s["id"], f"n_{s['id']}_egg", {"type": "choice", "by": "flag", "options": [{"if": [self.secret_flag[s["id"]]], "to": None}, {"to": None}]}, 1)
+            for holder, key in ends:
+                holder[key] = f"n_{s['id']}_egg"
             sid = f"s_{s['id']}_seen"
-            sc = self.scene(sid, s.get("title") or s["id"], room, [], [{"id": "c1", "who": "player", "en": "…", "act": str(s.get("shows") or "")}],
-                            "reveal", self.note(f"the secret: {s.get('shows', '')} (found: {s.get('find', '')})"))
-            self.open = [(egg["options"][0], "to")]
-            seen = self.node(f"n_{s['id']}_seen", {"type": "scene", "ref": sid, "next": None}, act)
-            self.open = [(seen, "next"), (egg["options"][1], "to")]
-            self.handoff.append((s, [f"a find in `{room}` (`{s['id']}_find`, " + ("in the task" if found_in is not None else f"in the look round `{tid}`")
+            self.scene(sid, s.get("title") or s["id"], room, [], [{"id": "c1", "who": "player", "en": "…", "act": str(s.get("shows") or "")}],
+                       "reveal", self.note(f"the secret: {s.get('shows', '')} (found: {s.get('find', '')})"))
+            seen = self.node(s["id"], f"n_{s['id']}_seen", {"type": "scene", "ref": sid, "next": None})
+            egg["options"][0]["to"] = f"n_{s['id']}_seen"
+            back = next((e.get("to") for e in proto.outs(self.P, s["id"])), None)
+            seen["next"] = self.entry.get(back) or after
+            ends = [(egg["options"][1], "to")]
+            self.handoff.append((s, [f"a find in `{room}` (`{s['id']}_find`, " + ("in the task" if pid in self.found_in else f"in the look round `{tid}`")
                                      + f"), then `{sid}` if it was found"],
-                                 ["Hide it where the prototype says (the box is a stand-in), and make finding it the curious player's reward",
-                                  f"Show what it shows in `{sid}` (a placeholder), then back to the river"]))
-
-    def place_name(self, rid):
-        return self.rooms.rooms[rid].get("name", rid)
-
-    # ---- the endings ---------------------------------------------------------------------------------------------
-    def endings(self, last):
-        ends = self.P.get("endings", [])
-        act = (last or {}).get("act")
-        room = self.where(last) if last else self.rooms.order[0]
-        who = self.who_of(last)[:2] if last else []
-        by_answer = [e for e in ends if (e.get("rule") or {}).get("by") == "answer"]
-        by_karma = [e for e in ends if e not in by_answer]
-        bounded = [e for e in by_karma if (e.get("rule") or {}).get("min") is not None or (e.get("rule") or {}).get("max") is not None]
-        karma_order = bounded + [e for e in by_karma if e not in bounded][:1]
-        self.reach_karma(bounded)
-        heads = []
-        if by_answer:
-            n = self.node("n_end", {"type": "choice", "by": "flag", "options": []}, act)
-            for e in by_answer:
-                r = e["rule"]
-                n["options"].append({"if": [self.answer_flags[(r["point"], r["option"])]], "to": None})
-            if karma_order:
-                n["options"].append({"to": None})
-            else:
-                n["options"][-1].pop("if")
-            heads = list(zip(by_answer + ([None] if karma_order else []), n["options"]))
-        if karma_order:
-            kn = {"type": "choice", "by": "karma", "options": []}
-            for e in karma_order:
-                r, o = e.get("rule") or {}, {"to": None}
-                if e is not karma_order[-1]:
-                    o.update({k: r[k] for k in ("min", "max") if r.get(k) is not None})
-                kn["options"].append(o)
-            if by_answer:
-                self.open = [(heads[-1][1], "to")]
-                heads = heads[:-1]
-            self.node("n_end_karma" if by_answer else "n_end", kn, act)
-            heads += list(zip(karma_order, kn["options"]))
-        for e, o in heads:
-            eid = end_id(e["id"])
-            sid = f"s_end_{eid}"
-            self.scene(sid, e.get("title") or eid, room, who, [{"id": "c1", "who": who[0] if who else "player", "en": "…", "act": str(e.get("what") or "")}],
-                       "aftermath", self.note(f"the ending ({e.get('kind')}): {e.get('what', '')} How the player gets here: {e.get('how', '')}"), final=True)
-            self.open = [(o, "to")]
-            n = self.node(f"n_end_{eid}", {"type": "scene", "ref": sid, "next": f"e_{eid}", "final": True}, act)
-            r = e.get("rule") or {}
-            kind = "good" if e.get("kind") == "intended" else "other" if r.get("by") == "answer" else "bad" if r.get("max") is not None else "neutral"
-            self.S["flow"][self.own(f"e_{eid}")] = {"type": "ending", "kind": kind, "title": e.get("title") or eid}
-            self.act_nodes.setdefault(act, []).append(f"e_{eid}")
-            rule = "by karma " + " ".join(f"{k} {r[k]:g}" for k in ("min", "max") if r.get(k) is not None) if r.get("by") != "answer" else \
-                f"by the answer {r.get('option')} at {r.get('point')}"
-            if r.get("by") != "answer" and o is heads[-1][1] and r.get("by", "karma") == "karma":
-                rule = "by karma: the rest (the fallback)"
-            self.handoff.append((e, [f"`{sid}` (final), then the ending `e_{eid}` ({kind}), {rule}"],
-                                 ["Write the ending cutscene in full (no ending cards: DECISIONS 2026-10-27)",
-                                  "Play the way there on the desk (the Watch, the karma it shows at the end) and see it plays as the prototype says"]))
-        self.open = []
-
-    def reach_karma(self, bounded):
-        """Each ending by karma reachable by the answers: the kindest player's karma at least its `min`, the cruellest's at
-        most its `max`, a player who says nothing (0) on the fallback. A bound out of reach moves into it (said in BUILD.md)."""
-        kind, cruel = proto.karma_range(self.P)
-        for e in bounded:
-            r = e["rule"]
-            if r.get("min") is not None:
-                want = min(max(1, r["min"]), kind) if kind >= 1 else r["min"]
-                if want != r["min"]:
-                    self.moved.append(f"{e['id']}: karma min {r['min']} → {want} (the kindest answers add up to {kind:g})")
-                    r["min"] = want
-            if r.get("max") is not None:
-                want = max(min(-1, r["max"]), cruel) if cruel <= -1 else r["max"]
-                if want != r["max"]:
-                    self.moved.append(f"{e['id']}: karma max {r['max']} → {want} (the cruellest add up to {cruel:g})")
-                    r["max"] = want
+                                 ["Hide it where the chart says (the box is a stand-in), and make finding it the curious player's reward",
+                                  f"Show what it shows in `{sid}` (a placeholder), then back to the story"]))
+        return ends
 
     # ---- the whole story -----------------------------------------------------------------------------------------
     def build(self):
-        P, S, b = self.P, self.S, self.P.get("bible") or {}
-        minutes = int(P["brief"].get("minutes") or 60)
+        P, S, st = self.P, self.S, self.P.get("story") or {}
+        minutes = int((P.get("brief") or {}).get("minutes") or 60)
         S["game"] = {"id": self.game, "title": P.get("title") or self.game, "start": "n_start", "draft": True, "prototype": P["id"],
                      "target_min": minutes, "fast_min": round(minutes * 0.75), "voice": "none", "text": "en", "clip_max": 8,
-                     "time": b.get("time") if b.get("time") in proto.TIMES else "night", "no_death": True,
-                     "karma": {"axes": {"karma": {"min": -10, "max": 10, "label": str(b.get("karma") or "how much of the truth you let yourself see")}}},
+                     "time": st.get("time") if st.get("time") in proto.TIMES else "night", "no_death": True,
+                     "karma": {"axes": {"karma": {"min": -10, "max": 10, "label": str(st.get("karma") or "how much of the truth you let yourself see")}}},
                      "built_with": {"engine": L.engine_version(), "format": 3},
                      "note": f"Built by the writers' room from “{P.get('title')}” ({P['id']}): a rough outline. BUILD.md is what's next; faces.md the faces to make."}
-        for c in b.get("cast", []):
+        for c in P.get("cast", []):
             S["cast"][self.own(c["id"])] = {"name": c.get("name") or c["id"], "subject": c.get("subject", "she"), "metahuman": None,
                                             "height": 1.75 if c.get("subject") == "he" else 1.62,
                                             "note": "; ".join(f"{k}: {c[k]}" for k in ("role", "look", "wants", "hides", "tells") if c.get(k))}
         for x in self.places:
             self.own(x["id"])
-        S["levels"]["main"] = None                   # filled at the end, once every box is placed
-        for s in P.get("secrets", []):
-            self.secret_key[s["id"]] = key = self.own(s["id"] if s["id"] not in self.ids else f"egg_{s['id']}")
-            self.secret_flag[s["id"]] = f"found_{snake(s['id'], 6)}"
-            S["secrets"][key] = {"flag": self.secret_flag[s["id"]], "hint": str(s.get("find") or s.get("title") or "")}
-        for e in P.get("endings", []):
-            r = e.get("rule") or {}
-            if r.get("by") == "answer":
-                self.answer_flags[(r.get("point"), r.get("option"))] = f"said_{snake(r.get('point'), 3)}_{snake(r.get('option'), 2)}"
-        self.stitch("t_start", {"title": "Start", "beats": [{"id": "b_start", "when": {"start": True}, "do": [{"fade": "in", "secs": 2}, {"done": True}]}]})
-        first_act = (P.get("points") or [{}])[0].get("act")
-        n = self.node("n_start", {"type": "stitch", "ref": "t_start", "next": None}, first_act)
-        self.open = [(n, "next")]
-        points = P.get("points", [])
-        for i, p in enumerate(points):
-            found_in = self.point(p, p.get("act"), first=not i)
-            self.secrets_after(p, p.get("act"), found_in)
-        self.endings(points[-1] if points else None)
+        for k, n in self.N.items():
+            if n.get("type") == "secret":
+                self.secret_key[k] = key = self.own(k if k not in self.ids else f"egg_{k}")
+                self.secret_flag[k] = f"found_{snake(k, 6)}"
+                S["secrets"][key] = {"flag": self.secret_flag[k], "hint": str(n.get("find") or n.get("title") or "")}
+            if n.get("type") == "choice" and n.get("by") == "answer":
+                for e in proto.outs(P, k):
+                    w = e.get("when") or {}
+                    if w.get("talk"):
+                        tk = self.N.get(w["talk"]) or {}
+                        o = next((x for x in (tk.get("talk") or {}).get("options") or [] if x.get("id") == w.get("answer")), {})
+                        own = o.get("sets") if isinstance(o.get("sets"), str) and proto.ID.match(o.get("sets") or "") else None
+                        self.answer_flags[(w["talk"], w.get("answer"))] = own or f"said_{snake(w['talk'], 3)}_{snake(w.get('answer'), 2)}"
+        for k in proto.reading_order(P):
+            n = self.N[k]
+            t = n.get("type")
+            if t == "start":
+                self.stitch("t_start", {"title": "Start", "beats": [{"id": "b_start", "when": {"start": True}, "do": [{"fade": "in", "secs": 2}, {"done": True}]}]})
+                self.exits[k] = [(self.node(k, "n_start", {"type": "stitch", "ref": "t_start", "next": None}), "next")]
+                self.entry[k] = "n_start"
+            elif t in proto.POINTS:
+                self.point(n)
+            elif t == "choice":
+                self.choice(n)
+            elif t == "ending":
+                self.ending(n)
+        self.wire()
         S["levels"]["main"] = self.rooms.level()
         for r in S["levels"]["main"]["rooms"]:          # the greybox's own ids (its spots, lamps, triggers) are ids too
             for x in r["props"]:
                 if x["id"] not in self.rooms.placed:
                     self.own(x["id"])
-        for a in P.get("achievements", []):          # each on its secret, its ending, or a flag of its own (a feat)
-            kind, _, ref = str(a.get("for", "feat")).partition(":")
-            if kind == "secret" and ref in self.secret_key:
-                f = {"secret": self.secret_key[ref]}
-            elif kind == "ending" and f"e_{end_id(ref)}" in S["flow"]:
-                f = {"ending": f"e_{end_id(ref)}"}
-            else:
-                f = {"flag": f"feat_{snake(a.get('title') or a.get('id'), 4)}"}
-            S["achievements"][self.own(a["id"])] = {"title": a.get("title") or a["id"], "text": a.get("text", ""), "hidden": bool(a.get("hidden")), "for": f}
-        have = {json.dumps(a["for"]) for a in S["achievements"].values()}
-        for s in P.get("secrets", []):               # a secret or an ending with no achievement gets one: they unlock one each
-            f = {"secret": self.secret_key[s["id"]]}
-            if json.dumps(f) not in have and s.get("achievement"):
-                S["achievements"][self.own(f"ach_{snake(s['id'], 6)}")] = {"title": s["achievement"], "text": s.get("title", ""), "hidden": False, "for": f}
-        for e in P.get("endings", []):
-            f = {"ending": f"e_{end_id(e['id'])}"}
-            if json.dumps(f) not in have and f["ending"] in S["flow"]:
-                S["achievements"][self.own(f"ach_{end_id(e['id'])}")] = {"title": e.get("title") or e["id"], "text": "", "hidden": True, "for": f}
-        acts = {a.get("id"): a.get("title") for a in P.get("acts", [])}
-        for i, (act, nodes) in enumerate(self.act_nodes.items()):
-            if act:
-                S["frames"].append({"id": f"f_{snake(act, 4)}", "title": f"{act}: {acts.get(act) or ''}".strip(": "), "color": COLORS[i % len(COLORS)], "nodes": nodes})
-        S["board"] = self.note(f"Built by the writers' room from “{P.get('title')}” (session {P['id']}) on {today()}: a rough, working outline. "
-                               "BUILD.md beside story.json is the plan to make it the game, point by point; faces.md lists the faces to make in MiniMax.")
+        for k, n in self.N.items():                      # achievements: the secrets', the endings', the feats
+            a = n.get("achievement") or {}
+            if n.get("type") in ("secret", "ending") and str(a.get("title", "")).strip():
+                f = {"secret": self.secret_key[k]} if n["type"] == "secret" else {"ending": f"e_{end_id(k)}"}
+                S["achievements"][self.own(f"ach_{snake(k, 6)}")] = {"title": a["title"], "text": a.get("text", ""), "hidden": bool(a.get("hidden")), "for": f}
+        for a in P.get("feats", []):
+            if str(a.get("title", "")).strip():
+                S["achievements"][self.own(a.get("id") or f"ach_{snake(a['title'], 4)}")] = {"title": a["title"], "text": a.get("text", ""), "hidden": bool(a.get("hidden")),
+                                                                                             "for": {"flag": f"feat_{snake(a['title'], 4)}"}}
+        for f in P.get("frames", []):                    # the acts: the board's frames round what was made for their shapes
+            inside = [k for k, n in self.N.items() if proto.frame_of(P, n) is f]
+            nodes = [nid for k in inside for nid in self.made.get(k, [])]
+            if nodes:
+                S["frames"].append({"id": f"f_{snake(f.get('id'), 4)}", "title": f.get("title") or f.get("id"), "color": f.get("color") or COLORS[len(S["frames"]) % len(COLORS)], "nodes": nodes})
+        S["board"] = self.note(f"Built by the writers' room from “{P.get('title')}” (session {P['id']}) on {today()}: a rough, working outline, laid out as the "
+                               "chart was. BUILD.md beside story.json is the plan to make it the game, shape by shape; faces.md lists the faces to make in MiniMax.")
+        S["board"] += [{"by": "user", "text": n.get("text", ""), "at": today(), "done": False} for n in self.N.values() if n.get("type") == "note" and str(n.get("text", "")).strip()]
         return S
 
 
 # ---- the handoff ----------------------------------------------------------------------------------------------------
 
 def build_md(P, S, B, moved=()):
-    b, game = P.get("bible") or {}, S["game"]["id"]
+    st, game, N = P.get("story") or {}, S["game"]["id"], proto.nodes_of(P)
     out = [f"# {P.get('title')}: from the writers' room to the game", "",
            f"Built {today()} from the writers' room session `{P['id']}` (Content/Prototypes/{P['id']}/prototype.json; the copy built "
-           f"is `prototype.json` beside this). `story.json` is a **rough, working outline**: it opens on the director's desk, plays in "
-           "the Watch from the start to each ending, and passes the story check with `game.draft: true` (the playtime targets only warn "
-           "until the scenes are written in full). Lines are text (`game.voice: \"none\"`, EXPRESSIONS_PLAN §3).", "",
-           f"**For Claude** (\"build {game} from its BUILD.md\"): make it the game point by point, in the director's terms (STORY_FORMAT.md, "
-           "DIRECTING.md, WRITING.md). The prototype is the agreed story: change what happens only with the user. Tick each box as it's done "
-           f"and run `python tools/check_all.py --game {game}` after each act. Ask the user what they're doing first (CLAUDE.md).", "",
+           f"is `prototype.json` beside this). `story.json` is a **rough, working outline** of the chart: it opens on the director's "
+           "desk (its board laid out as the chart was), plays in the Watch from the start to each ending, and passes the story check "
+           "with `game.draft: true` (the playtime targets only warn until the scenes are written in full). Lines are text "
+           "(`game.voice: \"none\"`, EXPRESSIONS_PLAN §3).", "",
+           f"**For Claude** (\"build {game} from its BUILD.md\"): make it the game shape by shape, in the director's terms (STORY_FORMAT.md, "
+           "DIRECTING.md, WRITING.md). The chart is the user's story: change what happens only with the user. Tick each box as it's done "
+           f"and run `python tools/check_all.py --game {game}` after each act. Ask the user what they're doing first (CLAUDE.md). "
+           f"`python tools/writers/room.py show {P['id']}` prints the chart as text.", "",
            "## The story", ""]
+    b = P.get("brief") or {}
+    for k, label in (("kind", "What kind of game"), ("references", "Reference stories")):
+        if str(b.get(k, "")).strip():
+            out.append(f"- **{label}:** {b[k]}")
     for k, label in (("logline", "Logline"), ("hook", "Why it's relatable"), ("truth", "What's really going on"), ("tone", "Tone"),
                      ("setting", "Setting"), ("player", "Who you are"), ("karma", "What the answers measure (karma)")):
-        if b.get(k):
-            out.append(f"- **{label}:** {b[k]}")
-    if b.get("ladder"):
+        if str(st.get(k, "")).strip():
+            out.append(f"- **{label}:** {st[k]}")
+    if str(b.get("notes", "")).strip():
+        out.append(f"- **Notes:** {b['notes']}")
+    if st.get("ladder"):
         out += ["", "**The believability ladder** (each step has an ordinary explanation first; keep them in this order):", ""]
-        out += [f"{i + 1}. {x}" for i, x in enumerate(b["ladder"])]
-    if b.get("cast"):
+        out += [f"{i + 1}. {x}" for i, x in enumerate(st["ladder"])]
+    if P.get("cast"):
         out += ["", "| Cast | Who | Wants | Hides | Tells (how the face gives it away) |", "|---|---|---|---|---|"]
         out += [f"| `{c['id']}` {c.get('name', '')} ({c.get('subject', 'she')}) | {c.get('role', '')} | {c.get('wants', '')} | {c.get('hides', '')} | {c.get('tells', '')} |"
-                for c in b["cast"]]
-    if b.get("places"):
+                for c in P["cast"]]
+    if P.get("places"):
         out += ["", "| Place (a greybox room) | What it looks like |", "|---|---|"]
-        out += [f"| `{x['id']}` {x.get('name', '')} | {x.get('look', '')} |" for x in b["places"]]
+        out += [f"| `{x['id']}` {x.get('name', '')} | {x.get('look', '')} |" for x in P["places"]]
     out += ["", "## Everywhere", "",
             "- [ ] **The place.** The greybox is a row of 6 × 5 m rooms, one per place, joined by doorways. Lay out the real place in "
             "the scene builder (docs/SCENE_BUILDER.md) from the looks above; keep the spot ids (`<room>_view`, `<room>_<cast>`, "
             "`<room>_<cast>_close`) or move the scenes onto the new ones.",
-            "- [ ] **The lines.** Each scene has the prototype's key lines only: write each in full (WRITING.md: one sentence a line, "
+            "- [ ] **The lines.** Each scene has the chart's key lines only: write each in full (WRITING.md: one sentence a line, "
             "the pauses as their own beats, a seam on every cut).",
-            "- [ ] **The talks.** Her words after each answer are “…” (her face answers first): write them, or keep the silence. Stage "
+            "- [ ] **The talks.** The words after each answer are “…” (the face answers first): write them, or keep the silence. Stage "
             "each talk as a close-up (seated across a table, side by side, face to face in a doorway).",
             "- [ ] **The bodies.** Block every scene on the desk (marks, poses, who moves), then the Kimodo shot list.",
             "- [ ] **The faces.** faces.md lists every expression video to make in MiniMax, then capture each into the expression "
             "library (the desk's Expressions tab), named by its id.",
-            "- [ ] **The tasks.** Each task's box (on the east walls) stands in for the real thing: make it that thing where it belongs.",
-            "- [ ] **The secrets.** Each find's box (on the west walls) stands in for the hiding place: hide it as the prototype says.",
+            "- [ ] **The tasks.** Each to-do's box (on the east walls) stands in for the real thing: make it that thing where it belongs.",
+            "- [ ] **The secrets.** Each find's box (on the west walls) stands in for the hiding place: hide it as the chart says.",
             "- [ ] **The feats.** Achievements for a flag of their own (below) need that flag set where it happens.",
             "- [ ] **Done.** When the scenes are written in full and the playtime check passes, take `game.draft` out.", ""]
-    acts = {a.get("id"): a.get("title") for a in P.get("acts", [])}
-    act, ending = object(), False
-    for item, built, todo in B:
-        if "type" in item and item.get("act", act) != act and item.get("act"):
-            act = item["act"]
-            out += [f"## {act}: {acts.get(act, '')}", ""]
-        if "type" in item:
-            on = f" ⑂ the way “{item['_way']}”" if item.get("_way") else ""
-            out.append(f"### {item['id']} · {item.get('title', '')} ({item.get('type')}, {item.get('minutes', 0)} min, `{item.get('where', '')}`){on}")
-        elif "after" in item:
-            out.append(f"### ★ secret {item['id']} · {item.get('title', '')} (after {item.get('after')}; achievement: {item.get('achievement', '')})")
-            item = {"what": f"*Found:* {item.get('find', '')}", "player": None, "shows": item.get("shows")}
+    rank = {k: i for i, k in enumerate(proto.reading_order(P))}
+
+    def where_in(entry):                           # a secret right after the point it's found after; the endings last
+        item = entry[0]
+        if item.get("type") == "secret":
+            src = next((e.get("from") for e in proto.ins(P, item.get("id"))), None)
+            return (0, rank.get(src, 1e9) + 0.5)
+        if item.get("type") == "arrow":
+            return (0, rank.get((item.get("title") or "").split()[-1], 1e9) - 0.25)
+        return (1 if item.get("type") == "ending" else 0, rank.get(item.get("id"), 1e9))
+    act, ending = "", False
+    for item, built, todo in sorted(B, key=where_in):
+        t = item.get("type")
+        if t == "ending" and not ending:
+            out += ["## The endings", ""]
+            ending = True
+        elif t in proto.POINTS + ("choice",) and not ending:
+            f = proto.frame_of(P, item)
+            if (f or {}).get("id") != act:
+                act = (f or {}).get("id")
+                out += [f"## {f.get('title') or f.get('id')}" if f else "## Outside the acts", ""]
+        if t in proto.POINTS:
+            out.append(f"### {item['id']} · {item.get('title', '')} ({t}, {proto.minutes_of(item):g} min, `{item.get('where', '')}`)")
+        elif t == "choice":
+            out.append(f"### ◇ {item['id']} · {item.get('question') or item.get('title', '')} (a choice: "
+                       + {"player": "the player decides", "karma": "karma decides", "answer": "an answer decides"}.get(item.get("by", "player"), "") + ")")
+        elif t == "secret":
+            out.append(f"### ★ secret {item['id']} · {item.get('title', '')} (achievement: {(item.get('achievement') or {}).get('title', '')})")
+        elif t == "ending":
+            out.append(f"### ending {item['id']} · {item.get('title', '')} ({item.get('kind', 'other')})")
         else:
-            if not ending:
-                out += ["## The endings", ""]
-                ending = True
-            out.append(f"### ending {item['id']} · {item.get('title', '')} ({item.get('kind')})")
-            item = {"what": item.get("what"), "how": item.get("how")}
+            out.append(f"### {item.get('title', item.get('id'))}")
         out.append("")
-        if item.get("shows"):
-            item["what"] += f" *It shows:* {item['shows']}"
-        if item.get("how"):
-            item["what"] += f"\n*How the player gets here:* {item['how']}"
-        if item.get("what"):
-            out.append(f"{item['what']}")
-        if item.get("player"):
-            out.append(f"*The player:* {item['player']}")
-        if item.get("shot"):
-            out.append(f"*The shot:* {item['shot']}")
-        t = item.get("talk")
-        if t:
-            out.append(f"*The question:* “{(t.get('line') or {}).get('text', '')}” (listening: `{t.get('listen', '')}`)")
-            for o in t.get("options") or []:
-                out.append(f"- [{o.get('id')}] “{o.get('say')}” → `{o.get('face')}` (karma {o.get('karma', 0)}{', sets ' + o['sets'] if isinstance(o.get('sets'), str) and o.get('sets') else ''}): {o.get('tell', '')}")
-            if t.get("reveals"):
-                out.append(f"*What it reveals:* {t['reveals']}")
+        if item.get("text"):
+            out.append(str(item["text"]))
+        for k, label in (("find", "Found"), ("shows", "It shows"), ("how", "How the player gets here"), ("player", "The player"), ("shot", "The shot"), ("notes", "A note")):
+            if item.get(k):
+                out.append(f"*{label}:* {item[k]}")
+        tk = item.get("talk")
+        if t == "talk" and tk:
+            out.append(f"*The question:* “{(tk.get('line') or {}).get('text', '')}” (listening: `{tk.get('listen', '')}`)")
+            for o in tk.get("options") or []:
+                out.append(f"- [{o.get('id')}] “{o.get('say')}” → `{o.get('face', '')}` (karma {o.get('karma', 0)}{', sets ' + o['sets'] if isinstance(o.get('sets'), str) and o.get('sets') else ''}): {o.get('tell', '')}")
+            if tk.get("reveals"):
+                out.append(f"*What reading the face tells you:* {tk['reveals']}")
+        if t == "choice":
+            for e in proto.outs(P, item["id"]):
+                out.append(f"- [{proto.when_text(item, e)}] → {e.get('to')} {(N.get(e.get('to')) or {}).get('title', '')}")
         if built:
             out += ["", "Built: " + "; ".join(built) + "."]
         out += [""] + [f"- [ ] {x}" for x in todo] + [""]
     if moved:
         out += ["**Karma moved into reach:** " + "; ".join(moved) + ". Balance the answers' karma, or move them back.", ""]
+    notes = [n for n in N.values() if n.get("type") == "note" and str(n.get("text", "")).strip()]
+    if notes:
+        out += ["## The notes on the chart", ""] + [f"- ✎ {n['text']}" for n in notes] + [""]
     out += ["## Achievements", "", "| id | title | for | hidden | text |", "|---|---|---|---|---|"]
     for k, a in S["achievements"].items():
         f = next(iter(a["for"].items()))
@@ -680,14 +724,13 @@ def build_md(P, S, B, moved=()):
         out += ["", "- [ ] Set the feats' flags where they happen: " + ", ".join(f"`{S['achievements'][k]['for']['flag']}` ({S['achievements'][k]['title']}: {S['achievements'][k].get('text', '')})" for k in feats)]
     out += ["", "## Checks", "", f"- `python tools/check_all.py --game {game}`: STORY, LEVEL, SHOTS",
             f"- `python tools/story.py --game {game} flow`: the flow as text; the desk: http://127.0.0.1:8780/?game={game}",
-            "- `node tools/director/desktest.mjs`, `node tools/director/refstest.mjs` (the desk's own checks over every game)",
-            f"- The writers' room: `python tools/writers/room.py show {P['id']}` (the prototype, as text)", ""]
+            "- `node tools/director/desktest.mjs`, `node tools/director/refstest.mjs` (the desk's own checks over every game)", ""]
     return "\n".join(out)
 
 
 def faces_md(P, S):
     lib = proto.library()
-    cast = {c["id"]: c for c in (P.get("bible") or {}).get("cast", [])}
+    cast = {c["id"]: c for c in P.get("cast", [])}
     used = {}
     for fid, where, who in proto.faces_used(P):
         used.setdefault(fid, []).append((where, who))
@@ -707,7 +750,7 @@ def faces_md(P, S):
                    f"{', '.join(whos)} | {', '.join(w for w, _ in used[fid][:4])}{' …' if len(used[fid]) > 4 else ''} | {'✓' if made else ''} |")
     own = [x for x in P.get("faces", []) if x.get("id") not in used]
     if own:
-        out += ["", "The prototype's own faces not used yet: " + ", ".join(f"`{x['id']}`" for x in own)]
+        out += ["", "The story's own faces not used yet: " + ", ".join(f"`{x['id']}`" for x in own)]
     out += ["", f"{len(used)} faces, {sum(1 for f in used if (EXPRESSIONS / f / 'expression.json').exists())} already in the expression library.", ""]
     return "\n".join(out)
 
@@ -723,16 +766,17 @@ def story_check(path, tool="story_check.py", *args):
 
 
 def build(P, game, force=False, games=None, check=True):
-    """The prototype into Content/Games/<game>/ (or `games`/<game>): story.json, prototype.json, BUILD.md, faces.md.
-    A story already there is replaced only with `force` (or when this prototype built it), kept in the desk's history first."""
+    """The chart into Content/Games/<game>/ (or `games`/<game>): story.json, prototype.json, BUILD.md, faces.md.
+    A story already there is replaced only with `force` (or when this session built it), kept in the desk's history first."""
     game = (game or "").strip() or game_name(P.get("title"))
     if not GAME.match(game):
         return {"ok": False, "game": game, "message": f"the game's folder name {game!r}: a capital letter, then letters and digits (Ticket114)"}
     errs, _ = proto.check(P)
     if errs:
-        return {"ok": False, "game": game, "message": f"the prototype has {len(errs)} problem(s): {'; '.join(errs[:4])}"}
-    if not P.get("points") or len(P.get("endings", [])) < 1:
-        return {"ok": False, "game": game, "message": "nothing to build yet: the river and the endings first (Draft)"}
+        return {"ok": False, "game": game, "message": f"the chart has {len(errs)} problem(s): {'; '.join(errs[:4])}"}
+    N = proto.nodes_of(P)
+    if not any(n.get("type") in proto.POINTS for n in N.values()) or not any(n.get("type") == "ending" for n in N.values()):
+        return {"ok": False, "game": game, "message": "nothing to build yet: the story's points and its endings first"}
     folder = (Path(games) if games else GAMES) / game
     path = folder / "story.json"
     if path.exists():
@@ -757,7 +801,7 @@ def build(P, game, force=False, games=None, check=True):
     (folder / "prototype.json").write_text(json.dumps(P, ensure_ascii=False, indent=1), encoding="utf-8")
     (folder / "BUILD.md").write_text(build_md(P, S, B.handoff, B.moved), encoding="utf-8")
     (folder / "faces.md").write_text(faces_md(P, S), encoding="utf-8")
-    res = {"ok": True, "game": game, "files": [str(p.relative_to(ROOT)) if ROOT in p.parents else str(p) for p in
+    res = {"ok": True, "game": game, "files": [str(p.relative_to(ROOT)) if ROOT in p.resolve().parents else str(p) for p in
                                                (path, folder / "prototype.json", folder / "BUILD.md", folder / "faces.md")],
            "nodes": len(S["flow"]), "scenes": len(S["scenes"]), "stitches": len(S["stitches"])}
     if check:
@@ -770,7 +814,7 @@ def build(P, game, force=False, games=None, check=True):
 
 
 def check_build(P):
-    """WRITERS: the prototype built into a scratch folder passes the story check, and holds what the prototype has."""
+    """WRITERS: a chart built into a scratch folder passes check_all's STORY, LEVEL and SHOTS, and holds what the chart has."""
     with tempfile.TemporaryDirectory() as tmp:
         res = build(P, "WritersCheck", games=tmp)
         if not res.get("ok"):
@@ -786,21 +830,24 @@ def check_build(P):
                     return {"ok": False, "message": f"the build fails {tool}: {'; '.join(errors[:4]) or last}"}
         finally:
             shutil.rmtree(report, ignore_errors=True)
-        S = json.loads((Path(tmp) / "WritersCheck" / "story.json").read_text(encoding="utf-8"))
-        talks = [p for p, _, _ in proto.all_points(P) if p.get("talk")]
+        S = json.loads(path.read_text(encoding="utf-8"))
+        N = proto.nodes_of(P)
+        talks = [n for n in N.values() if n.get("type") == "talk" and (n.get("talk") or {}).get("options")]
         replies = [c for sc in S["scenes"].values() for c in sc["clips"] if c.get("reply")]
         ends = [n for n in S["flow"].values() if n["type"] == "ending"]
         eggs = [n for n in S["flow"].values() if n["type"] == "choice" and n["by"] == "flag" and any(
             set(o.get("if", [])) & {s["flag"] for s in S["secrets"].values()} for o in n["options"])]
         md = (Path(tmp) / "WritersCheck" / "BUILD.md").read_text(encoding="utf-8")
         fm = (Path(tmp) / "WritersCheck" / "faces.md").read_text(encoding="utf-8")
-        missing = [p["id"] for p, _, _ in proto.all_points(P) if f"### {p['id']} " not in md]
+        missing = [k for k, n in N.items() if n.get("type") in proto.POINTS + ("choice", "secret", "ending") and f" {k} · " not in md]
         faces = {f for f, _, _ in proto.faces_used(P)}
-        if len(replies) != len(talks) or len(ends) != len(P["endings"]) or len(eggs) != len(P.get("secrets", [])) or missing \
+        placed = [k for k, n in S["flow"].items() if not isinstance(n.get("xy"), list)]
+        if len(replies) != len(talks) or len(ends) != sum(n.get("type") == "ending" for n in N.values()) \
+                or len(eggs) != sum(n.get("type") == "secret" for n in N.values()) or missing or placed \
                 or any(f"`{f}`" not in fm for f in faces) or not all(c.get("wait_expr") for c in replies):
             return {"ok": False, "message": f"the build: {len(replies)} hanging lines for {len(talks)} talks, {len(ends)} endings, {len(eggs)} "
-                                            f"secrets' choices, BUILD.md misses {missing}"}
-        return {"ok": True, "message": f"a build on the stand-in's draft passes check_all's STORY ({res['check']['line'].split('(')[-1].rstrip(')')}), LEVEL and SHOTS: "
-                                       f"{res['nodes']} nodes, {len(replies)} talks as hanging lines with her faces, {len(ends)} endings, "
-                                       f"{len(eggs)} secrets rejoining, {len(S['achievements'])} achievements; BUILD.md point by point, faces.md "
-                                       f"{len(faces)} faces"}
+                                            f"secrets' choices, BUILD.md misses {missing}, unplaced on the board {placed[:4]}"}
+        return {"ok": True, "message": f"a chart built through check_all's STORY ({res['check']['line'].split('(')[-1].rstrip(')')}), LEVEL and SHOTS: "
+                                       f"{res['nodes']} nodes on the board as on the chart, {len(replies)} talks as hanging lines with her faces, "
+                                       f"{len(ends)} endings, {len(eggs)} secrets rejoining, {len(S['achievements'])} achievements, {len(S['frames'])} acts; "
+                                       f"BUILD.md shape by shape, faces.md {len(faces)} faces"}

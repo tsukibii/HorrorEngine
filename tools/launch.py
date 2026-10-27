@@ -102,7 +102,7 @@ def say(text, kind="note"):
 # {opt:Prompt|--flag} the same, but empty leaves it out (and --flag goes before the answer when there is one).
 # options: url (a page: started in its own window, then opened).
 TOOLS = [
-    ("Pages", "Writers' room (prototype a game's story: the river, its endings, its secrets)", "tools/writers/serve.py", {"url": "http://127.0.0.1:8795"}),
+    ("Pages", "Writers' room (write a game's story as a flowchart: its points, choices, secrets, endings)", "tools/writers/serve.py", {"url": "http://127.0.0.1:8795"}),
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
@@ -130,7 +130,8 @@ TOOLS = [
     ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),
     ("Checks", "Time of day on the desk (the desk running)", "node tools/director/timetest.js", {}),
     ("Checks", "Dashboard test (headless browser, its own dashboard on port 8798)", "node tools/dashboard/dashtest.mjs", {}),
-    ("Checks", "Writers' room check (the format, the prompt library, the stages on the stand-in, the build)", "tools/writers/room.py check", {}),
+    ("Checks", "Writers' room check (the chart's format and check, the prompt library, the upgrade, a build through check_all)", "tools/writers/room.py check", {}),
+    ("Checks", "Writers' room page test (the chart drawn in a headless browser, built)", "node tools/writers/pagetest.mjs", {}),
     ("Checks", "Blender look check (Light Kit's times, UltraVHS's camcorder; needs the Blender module)", "tools/blender_look_check.py", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
@@ -146,8 +147,8 @@ TOOLS = [
 
     ("Script", "Writers' room: the sessions", "tools/writers/room.py list", {}),
     ("Script", "Writers' room: what the page shows now", "tools/writers/room.py now", {}),
-    ("Script", "Writers' room: a session's river as text", "tools/writers/room.py river {ask:Session id}", {}),
-    ("Script", "Writers' room: set up Claude through the API (the anthropic SDK)", "tools/writers/room.py setup", {}),
+    ("Script", "Writers' room: a session's chart as text", "tools/writers/room.py show {ask:Session id}", {}),
+    ("Script", "Writers' room: build a session into the director", "tools/writers/room.py build {ask:Session id}", {}),
     ("Script", "Script generator: outline to story (Ollama)", "tools/scriptgen.py --game {game} new {ask:Outline file}", {}),
     ("Script", "Script generator: review pack", "tools/scriptgen.py --game {game} review", {}),
     ("Script", "Script generator: set up Ollama", "tools/scriptgen.py setup", {}),

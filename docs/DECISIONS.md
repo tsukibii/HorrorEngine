@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-27, the change of course (the writers' room is yours: a flowchart you draw)
+
+- **The story is written by the user, as a flowchart**: "I want to change the writers room so the entire story gets
+  written by me and flow (using drag and drop things like lucid chart that make it easy for claude to set it up later
+  in director tool). No longer do I want ai to generate the story etc, I will write the jist myself."
+- Claude's calls inside that: no model runs in the writers' room at all (the drafting stages, the assistant and the
+  Claude/local switch are gone: `gen.py`, `llm.py`, `claude_api.py`, `fake.py`); the river map becomes a chart you
+  draw (docs/WRITERS_ROOM.md §2): shapes dragged from a palette (start, scene, talk, task, chapter, choice, secret,
+  ending, note), arrows from their dots, acts as frames, the inspector for the gist and the details; the prototype's
+  format 2 (nodes, edges, frames), the first format upgraded as it's read; **Build stays** (the chart into a rough,
+  working outline, its board laid out as the chart was) with BUILD.md for Claude, and Claude reads the chart with
+  `room.py show`; the faces stay (a MiniMax post prompt picked per line and answer, optional); the example session
+  "Ticket 114" (the old assistant's draft) kept as a chart.
+
 ## 2026-10-27, last thing (a dashboard; the writers' room; one-hour relatable games)
 
 - **A dashboard for every tool**: "an easy UI dashboard to launch and stop all of the tools (like the terminal but an
