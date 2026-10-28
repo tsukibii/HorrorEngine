@@ -143,7 +143,14 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
         if (secs) { const t = secs(c); if (t > max + 0.01) add(c.dur ? "error" : "warn", `line ${c.id}: ${t.toFixed(1)} s${c.dur ? "" : " at speaking pace"}, over the ${max} s a take can be: split it`, p, c); }
         for (const e of ["start", "end"]) { const m = (c.body || {})[e]; if (m && !(S.motions || {})[m] && !BUILT_IN_POSES.has(m)) add("warn", `line ${c.id}: its body ${e}s from ${m}, which isn't a motion`, [...p, "body"], c); }
         if (c.event) results(c.event.on, [...p, "event", "on"], ctx);
-        ((c.reply || {}).options || []).forEach((o, j) => actions(o.sets, [...p, "reply", "options", j, "sets"], ctx));
+        ((c.reply || {}).options || []).forEach((o, j) => {
+          const op = [...p, "reply", "options", j], g = o.go === undefined ? "next" : o.go, ans = `line ${c.id}: answer ${o.label || o.id}`;
+          actions(o.sets, [...op, "sets"], ctx);
+          for (const th of Array.isArray(o.then) ? o.then : o.then ? [o.then] : []) if (isObj(th) && th.who && th.who !== "player" && !cast[th.who]) add("error", `${ans}: ${th.who} answers, who isn't in the cast`, op, c);
+          if (!(g === "next" || g === "end" || isObj(g) && Object.keys(g).length === 1 && ("clip" in g || "node" in g))) add("error", `${ans}: where it goes is next, end, a later line or a card`, op, c);
+          else if (isObj(g) && "clip" in g && !(v.clips || []).slice(i + 1).some(x => x.id === g.clip)) add("error", `${ans}: it skips to ${g.clip}, which isn't a later line`, op, c);
+          else if (isObj(g) && "node" in g && !flow[g.node]) add("error", `${ans}: it goes to ${g.node}, which isn't on the board`, op, c);
+        });
       });
     }
   }
@@ -166,7 +173,8 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     } else if (n.type !== "ending" && !n.next) add("error", "it goes nowhere: connect it to the next node", p, n);
   }
   const seen = new Set(), todo = [game.start];
-  const outs = n => [n.next, ...(n.options || []).map(o => o.to), n.type === "stitch" && ((S.stitches || {})[n.ref] || {}).timer ? S.stitches[n.ref].timer.fail : null];
+  const jumps = sc => [sc || {}, ...Object.values((sc && sc.variants) || {})].flatMap(v => (v.clips || []).flatMap(c => ((c.reply || {}).options || []).map(o => isObj(o.go) ? o.go.node : null)));   // answers that leave for a card (§9.9)
+  const outs = n => [n.next, ...(n.options || []).map(o => o.to), n.type === "stitch" && ((S.stitches || {})[n.ref] || {}).timer ? S.stitches[n.ref].timer.fail : null, ...(n.type === "scene" ? jumps((S.scenes || {})[n.ref]) : [])];
   while (todo.length) { const id = todo.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); todo.push(...outs(flow[id])); }
   for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); st.push(...outs(flow[id])); } }
   for (const [nid, n] of Object.entries(flow)) if (!seen.has(nid) && flow[game.start]) add(n.type === "ending" ? "error" : "warn", n.type === "ending" ? "no path reaches this ending" : "nothing leads here", ["flow", nid], n);

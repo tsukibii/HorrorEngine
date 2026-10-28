@@ -296,6 +296,20 @@ def flow_outs(story, nid):
             during = it.get("during", "all")
             if it.get("to") and (during == "all" or n.get("ref") in (during or [])):
                 out.append(it["to"])
+    if n.get("type") == "scene":
+        out += answer_jumps(story.get("scenes", {}).get(n.get("ref")))
+    return out
+
+
+def answer_jumps(sc):
+    """The cards a scene's answers send the flow to (§9.9 `go` {"node": id}), from any of its versions."""
+    out = []
+    for v in [sc or {}, *((sc or {}).get("variants") or {}).values()]:
+        for c in (v or {}).get("clips", []):
+            for o in (c.get("reply") or {}).get("options", []):
+                g, to = reply_go(o)
+                if g == "node" and to and to not in out:
+                    out.append(to)
     return out
 
 
@@ -391,13 +405,40 @@ def ja_secs(text):
     return morae / JA_MORAE + pause + 0.5
 
 
+def then_list(option):
+    """A reply option's answer back as a list of lines: `then` is one clip, or a list of them (a conversation card's
+    answer, §9.9)."""
+    th = option.get("then")
+    return [th] if isinstance(th, dict) else [x for x in th if isinstance(x, dict)] if isinstance(th, list) else []
+
+
+def then_id(clip, option, n=0):
+    """The clip id of an answer's nth line: <clip>_<option>, then <clip>_<option>_2, _3... (their takes after them)."""
+    return f"{clip.get('id')}_{option.get('id')}" + (f"_{n + 1}" if n else "")
+
+
+REPLY_GO = ("next", "end")
+
+
+def reply_go(option):
+    """Where an answer leaves the conversation: ("next", None), ("clip", id) a later line of the scene, ("end", None) the
+    scene's end, or ("node", id) a card on the board instead of the scene's next."""
+    g = option.get("go", "next")
+    if isinstance(g, dict):
+        if "clip" in g:
+            return "clip", g["clip"]
+        if "node" in g:
+            return "node", g["node"]
+    return ("end", None) if g == "end" else ("next", None)
+
+
 def reply_secs(clip):
     """What a reply adds after its clip: the player's answer, then her answer back (the first option's), typically."""
     rp = clip.get("reply")
     if not rp:
         return 0.0
-    then = next((o.get("then") for o in rp.get("options", []) if o.get("then")), None)
-    return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (clip_secs(then) if then else 0.0)
+    first = next((o for o in rp.get("options", []) if then_list(o)), None)
+    return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (sum(clip_secs(t) for t in then_list(first)) if first else 0.0)
 
 
 def clip_secs(clip, line_fallback=12.0):
@@ -511,10 +552,11 @@ def minimax_prompt(clip, cast=None):
 
 
 def reply_clips(clip):
-    """A clip's reply answers as clips of their own: (option id, clip); their takes are <take id>_<option id>."""
+    """A clip's reply answers as clips of their own: (option id, clip), each line of an answer its own (then_id); their
+    takes are <take id>_<option id>[_n]."""
     for o in (clip.get("reply") or {}).get("options", []):
-        if o.get("then"):
-            yield o["id"], dict({"who": clip.get("who")}, **o["then"], id=f"{clip.get('id')}_{o['id']}")
+        for n, th in enumerate(then_list(o)):
+            yield o["id"], dict({"who": clip.get("who")}, **th, id=then_id(clip, o, n))
 
 
 def karma_of(delta, axis="karma"):

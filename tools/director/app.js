@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -157,7 +157,7 @@ function allClips() {                            // every take: the clips, and t
   const out = [];
   for (const [sid, sc] of Object.entries(S.scenes || {})) for (const [k, ver] of (sc.variants ? Object.entries(sc.variants) : [[null, sc]])) for (const c of ver.clips || []) {
     out.push({ sid, k, c, id: takeId(sid, k, c.id) });
-    for (const o of (c.reply && c.reply.options) || []) if (o.then) out.push({ sid, k, c: o.then, id: takeId(sid, k, `${c.id}_${o.id}`), answer: true });
+    for (const o of (c.reply && c.reply.options) || []) thenList(o).forEach((th, n) => out.push({ sid, k, c: th, id: takeId(sid, k, thenId(c, o, n)), answer: true }));
   }
   for (const [lid, ln] of Object.entries(S.lines || {})) out.push({ sid: null, k: null, c: ln, id: lid, line: true });   // barks and one-off lines
   return out;
@@ -449,7 +449,7 @@ const placed = lvl => Object.entries(things()).filter(([k, v]) => v.kind !== "ro
 const castIds = () => Object.keys(S.cast || {});
 const poseNames = () => (LIB ? LIB.names : ["idle"]);
 function sceneSecs(sc) { const v = version(sc); let t = 0; (v.clips || []).forEach((c, i) => { t += clipSecs(c) + (i && c.seam ? SEAM_SECS[c.seam.kind] || 0 : 0) + (c.event ? eventSecs(c.event, S) : 0) + replySecs(c); }); return t; }
-function replySecs(c) { const rp = c.reply; if (!rp) return 0; const o = (rp.options || []).find(x => x.then); return Math.min(+(rp.wait || REPLY_SECS), 2.5) + (o ? clipSecs(o.then) : 0); }
+function replySecs(c) { const rp = c.reply; if (!rp) return 0; const o = (rp.options || []).find(x => thenList(x).length); return Math.min(+(rp.wait || REPLY_SECS), 2.5) + (o ? thenList(o).reduce((s, th) => s + clipSecs(th), 0) : 0); }
 function nodeRef(n) { return n.type === "scene" ? S.scenes[n.ref] : n.type === "stitch" ? S.stitches[n.ref] : null; }
 function notesHost(nid) { const n = S.flow[nid]; return nodeRef(n) || n; }
 function openNotes(obj) { return (obj && obj.notes || []).filter(x => !x.done).length; }
@@ -568,6 +568,10 @@ function outs(id) {
     const st = S.stitches[n.ref];
     if (st.timer && st.timer.fail) o.push({ to: st.timer.fail, label: "⏱ " + (st.timer.secs || "") + " s", kind: "timer" });
     for (const it of S.interrupts || []) if (it.during === "all" || (it.during || []).includes(n.ref)) o.push({ to: it.to, label: "☠ " + (it.label || it.id), kind: "interrupt" });
+  }
+  const sc = n.type === "scene" && S.scenes[n.ref];        // an answer that leaves for another card (§9.9 go), from any version
+  if (sc) for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) for (const a of (c.reply && c.reply.options) || []) {
+    const [g, to] = replyGo(a); if (g === "node" && !o.some(x => x.kind === "answer" && x.to === to)) o.push({ to, label: "↪ " + (a.label || a.id), kind: "answer" });
   }
   return o;
 }
@@ -825,6 +829,7 @@ function renameNode(old) {
   for (const m of Object.values(S.flow)) { if (m.next === old) m.next = nid; for (const o of m.options || []) if (o.to === old) o.to = nid; if (m.of === old) m.of = nid; }
   for (const st of Object.values(S.stitches || {})) if (st.timer && st.timer.fail === old) st.timer.fail = nid;
   for (const it of S.interrupts || []) if (it.to === old) it.to = nid;
+  for (const sc of Object.values(S.scenes || {})) for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) for (const o of (c.reply && c.reply.options) || []) if (o.go && o.go.node === old) o.go.node = nid;   // answers that leave for it (§9.9)
   for (const f of S.frames || []) f.nodes = (f.nodes || []).map(n => (n === old ? nid : n));
   if (S.game.start === old) S.game.start = nid; SEL = nid; touch(); renderInspector();
 }
@@ -1465,7 +1470,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     } else pane.append(evs);
 
   }
-  if (tab === "reply") pane.append(c.event ? el("p", { class: "kv" }, "This clip has an event: a clip has a reply or an event, not both (put the reply on the clip before).") : replyEditor(c));
+  if (tab === "reply") pane.append(c.event ? el("p", { class: "kv" }, "This clip has an event: a clip has a reply or an event, not both (put the reply on the clip before).") : replyEditor(c, ver, i));
   if (tab === "body") {
     // body
     c.body = c.body || {};
@@ -1500,27 +1505,57 @@ function clipCard(sc, ver, c, i, lvl, sid) {
 const WHO_COLORS = ["#e07aa8", "#6fb3d9", "#d9a441", "#3fb3a2", "#9b7be0", "#e0805a"];
 function whoColor(who) { if (who === "player") return "#a8a59c"; const i = castIds().indexOf(who); return WHO_COLORS[(i < 0 ? 0 : i) % WHO_COLORS.length]; }
 // a hanging line (STORY_FORMAT §9.9): she asks and waits; the player answers (two answers, or three); each gets her line back
-function replyEditor(c) {
-  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player answers (left or right, or one of three), and each answer gets her own line back (its own take, named after this clip's and the answer's)."),
-    el("button", { on: { click: () => { c.reply = { wait: 6, timeout: null, options: [{ id: "yes", label: "", ja: "", then: { ja: "", en: "" } }, { id: "no", label: "", ja: "", then: { ja: "", en: "" } }] }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make this a hanging line"));
-  const rp = c.reply, box = el("div", { class: "reply" });
+// a conversation card's choice row (STORY_FORMAT §9.9): she waits, the player picks an act with the thought behind it,
+// and each answer has her reply (a line or a few) and where the talk goes then: on, a later line, its end, a card
+function replyEditor(c, ver, ci) {
+  const fresh = id => ({ id, label: "", then: { ja: "", en: "" } });
+  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player picks what to do (an act, and the thought behind it). Each answer gets her reply back, a line or a few (their own takes, named after this clip's and the answer's), and says where the talk goes then: on to the next line, a later one, its end, or another card."),
+    el("button", { on: { click: () => { c.reply = { wait: 6, timeout: null, options: [fresh("yes"), fresh("no")] }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make this a hanging line"));
+  const rp = c.reply, box = el("div", { class: "reply" }), clips = (ver && ver.clips) || [];
   rp.options = rp.options || [];
   box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "she waits"), txt(rp, "wait", { num: true, ph: "6", style: "width:58px", title: "2 to 15 s" }), "s, then",
-    sel({ t: rp.timeout || "" }, "t", rp.options.map(o => [o.id, `answers your silence with “${o.label || o.id}”'s line`]), { blank: "carries on (no answer)", after: function () { } })));
+    sel({ t: rp.timeout || "" }, "t", rp.options.map(o => [o.id, `answers your silence with “${o.label || o.id}”'s reply`]), { blank: "carries on (no answer)", after: function () { } })));
   box.lastChild.querySelector("select").addEventListener("change", e => { rp.timeout = e.target.value || null; touch(); });
   box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "her face"), txt(c, "wait_expr", { w: true, ph: "the face she holds while she waits (MiniMax): a hopeful, expectant expression", drop: true })));
+  const redo = () => { touch(); renderInspector(); };
   rp.options.forEach((o, oi) => {
-    o.then = o.then || {};
-    box.append(el("div", { class: "ropt" },
-      el("div", { class: "row" }, el("b", { class: "side" }, oi === 0 ? "Left" : oi === 1 ? "Right" : `Answer ${oi + 1}`), txt(o, "label", { ph: "what the player says (English)", style: "flex:1", after: renderInspector }), txt(o, "ja", { ph: "日本語", style: "width:150px", drop: true }), txt(o, "id", { style: "width:72px", title: "its id: her answer's take is this clip's take id + _ + this" })),
-      el("div", { class: "row" }, el("span", { class: "lab" }, "she says"), txt(o.then, "ja", { ph: "日本語", style: "flex:1" }), txt(o.then, "en", { ph: "English", style: "flex:1" })),
-      el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(o.then, "expr", { ph: "her expression", style: "flex:1", drop: true }), sel(o.then, "voice", VOICES, { drop: true, blank: "voice…" })),
-      el("div", {}, el("span", { class: "lab" }, "picking it also does"), actionList(...slot(o, "sets"), { empty: "nothing (most replies set nothing: they're there so it feels like you)" }))));
+    const lines = thenList(o), setLines = arr => { if (arr.length) o.then = arr.length === 1 ? arr[0] : arr; else delete o.then; redo(); };
+    const id = el("input", { value: o.id || "", style: "width:72px", title: "its id: her reply's takes are this clip's take id + _ + this (then _2, _3)", on: { change: e => {
+      const v = e.target.value.trim(); if (!v || rp.options.some(x => x !== o && x.id === v)) { e.target.value = o.id; return; }
+      if (rp.timeout === o.id) rp.timeout = v; o.id = v; redo(); } } });
+    const head = el("div", { class: "row" }, el("b", { class: "side", title: "the key that picks it" }, rp.options.length <= 2 ? (oi ? "Right" : "Left") : String(oi + 1)),
+      txt(o, "label", { ph: "the act: what you do (Greet, Lie, Stay quiet)", style: "flex:1", after: renderInspector }), id,
+      oi ? el("button", { class: "small", title: "earlier in the list", on: { click: () => { rp.options.splice(oi - 1, 0, ...rp.options.splice(oi, 1)); redo(); } } }, "↑") : null,
+      el("button", { class: "small", title: "take this answer out", on: { click: () => { rp.options.splice(oi, 1); if (rp.timeout === o.id) rp.timeout = null; redo(); } } }, icon("x", 14)));
+    const opt = el("div", { class: "ropt" }, head,
+      el("div", { class: "row" }, el("span", { class: "lab" }, "you think"), txt(o, "think", { ph: "the thought behind it, under the act (She's cold, I should let her in)", style: "flex:1", drop: true })));
+    if (!lines.length) opt.append(el("div", { class: "row muted" }, el("span", { class: "lab" }, "she says"), "nothing back"));
+    lines.forEach((th, n) => opt.append(
+      el("div", { class: "row" }, el("span", { class: "lab" }, n ? "and" : "she says"), sel(th, "who", castIds(), { drop: true, blank: c.who || "she", title: "who says it: the one who asked, unless it's someone else" }),
+        txt(th, "ja", { ph: "日本語", style: "flex:1" }), txt(th, "en", { ph: "English", style: "flex:1" }),
+        el("button", { class: "small", title: "take this line out of her reply", on: { click: () => setLines(lines.filter(x => x !== th)) } }, icon("x", 14))),
+      el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(th, "expr", { ph: "her expression", style: "flex:1", drop: true }), sel(th, "voice", VOICES, { drop: true, blank: "voice…" }))));
+    // where the talk goes after her reply: on (the default), skip ahead to a later line, end it, or leave for a card
+    const [g, to] = replyGo(o), cur = g === "clip" || g === "node" ? `${g}:${to}` : g;
+    const later = clips.slice(ci + 2).filter(x => x.id), go = el("select", { title: "where the conversation goes after her reply", on: { change: e => {
+      const v = e.target.value; if (v === "next") delete o.go; else if (v === "end") o.go = "end"; else { const k = v.indexOf(":"); o.go = { [v.slice(0, k)]: v.slice(k + 1) }; } redo(); } } });
+    go.append(el("option", { value: "next", selected: cur === "next" }, "Next: on to the next line"), el("option", { value: "end", selected: cur === "end" }, "End the conversation"));
+    const sk = el("optgroup", { label: "Skip to a later line" }), gn = el("optgroup", { label: "Go to a card on the board" });
+    const words = x => `Skip to ${x.id}: ${x.who || ""} “${(x.en || x.ja || "").slice(0, 32)}”`;
+    for (const x of later) sk.append(el("option", { value: "clip:" + x.id, selected: cur === "clip:" + x.id }, words(x)));
+    if (g === "clip" && !later.some(x => x.id === to)) sk.append(el("option", { value: cur, selected: true }, `${to} (not a later line)`));
+    for (const [nid, n] of Object.entries(S.flow)) gn.append(el("option", { value: "node:" + nid, selected: cur === "node:" + nid }, `Go to ${nodeTitle(nid, n)} (${nid})`));
+    if (g === "node" && !S.flow[to]) gn.append(el("option", { value: cur, selected: true }, `${to} (not on the board)`));
+    if (sk.children.length) go.append(sk); go.append(gn);
+    opt.append(el("div", { class: "row" }, el("span", { class: "lab" }, "then"), go, el("span", { class: "grow" }),
+      el("button", { class: "small", title: "another line in her reply (its own take)", on: { click: () => setLines([...lines, { ja: "", en: "" }]) } }, icon("plus", 14), " a line")),
+      el("div", {}, el("span", { class: "lab" }, "picking it also does"), actionList(...slot(o, "sets"), { empty: "nothing (most replies set nothing: they're there so it feels like you)" })));
+    box.append(opt);
   });
-  const third = () => { const ids = new Set(rp.options.map(o => o.id)); let id = "other", i = 2; while (ids.has(id)) id = `other${i++}`; rp.options.push({ id, label: "", ja: "", then: { ja: "", en: "" } }); touch(); renderInspector(); };
+  const add = () => { const ids = new Set(rp.options.map(o => o.id)); let n = rp.options.length + 1; while (ids.has("opt" + n)) n++; rp.options.push(fresh("opt" + n)); redo(); };
   box.append(el("div", { class: "row" },
-    rp.options.length < 3 ? el("button", { class: "small", title: "an L.A. Noire talk has three: warm, probing, evasive...", on: { click: third } }, icon("plus", 14), " A third answer")
-      : el("button", { class: "small", on: { click: () => { rp.options.pop(); if (rp.timeout && !rp.options.some(o => o.id === rp.timeout)) rp.timeout = null; touch(); renderInspector(); } } }, icon("x", 14), " Not the third"),
+    el("button", { class: "small", title: "as many as the moment needs: an L.A. Noire close-up has three (warm, probing, evasive...)", on: { click: add } }, icon("plus", 14), " Add answer"),
+    rp.options.length > 3 ? el("span", { class: "muted" }, `${rp.options.length} answers: a close-up reads best with two or three`) : null,
     el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Take the reply off this clip?")) { delete c.reply; delete c.wait_expr; touch(); CTX.rerender(); } } } }, "No reply")));
   return box;
 }
@@ -1909,7 +1944,7 @@ function choiceBox(spec, pick, who) {
 function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
-    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 3), t0 = performance.now();
+    const secs = +(rp.wait || REPLY_SECS), opts = rp.options || [], t0 = performance.now();
     const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
@@ -1978,6 +2013,7 @@ async function watchScene(sc, nid, sid, k) {
   karmaAct(sc.sets);
   const ex = sc.exit || BLEND;
   if (ex.kind !== "blend") await fade(1, ex.kind === "cut" ? 0.05 : ex.secs || 0.6);   // a blend: what follows carries on from this view
+  return tl.go ? tl.go.node : null;                     // the card an answer sent the flow to, if one did
 }
 // the view eases from where the eye was (the player walking, or the last scene) into the scene's first framing; the
 // figures hold their first pose meanwhile; any black lifts with it
@@ -2199,7 +2235,7 @@ async function watch(fromNid, snap) {
     if (n.type === "scene" && (S.scenes[n.ref] || {}).time) { RUN.time = S.scenes[n.ref].time; watchStage.setTime(RUN.time); }   // a scene's own time, from here on
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
-      await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next;
+      const to = await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = (to && S.flow[to]) ? to : n.next;   // an answer may send the flow to another card (§9.9 go)
       if (RUN) RUN.afterScene = { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera.clone() }; }
     else if (n.type === "stitch") { const ct = chapterTime(S, n); nid = await watchStitch(S.stitches[n.ref] || {}, nid, n); if (RUN && ct) { RUN.time = ct; watchStage.setTime(ct); } }   // a chapter's time from here on
     else if (n.type === "choice") {
@@ -2260,7 +2296,7 @@ function renderClips() {
   const tb = el("table", {}, el("tr", {}, ...["take id", "scene", "ver", "clip", "who", "ja", "en", "act", "shot", "event", "secs", "seam in", ...(v3 ? ["MiniMax prompt", ""] : [])].map(h => el("th", {}, h))));
   for (const [sid, sc] of Object.entries(S.scenes || {})) {
     const vers = sc.variants ? Object.entries(sc.variants) : [[null, sc]];
-    for (const [k, ver] of vers) (ver.clips || []).flatMap(c => [c, ...((c.reply && c.reply.options) || []).filter(o => o.then).map(o => { const t = thenClip(c, o); ANS.add(t); return t; })]).forEach((c, i) => {
+    for (const [k, ver] of vers) (ver.clips || []).flatMap(c => [c, ...((c.reply && c.reply.options) || []).flatMap(o => thenClips(c, o)).map(t => { ANS.add(t); return t; })]).forEach((c, i) => {
       all++; if (c.dur) rec++;
       tb.append(el("tr", { style: clipSecs(c) > max ? "background:#4a1f1c" : "" }, el("td", {}, `${GAME}_${sid}_${k || "main"}_${c.id}`), el("td", {}, sid), el("td", {}, (k || "main") + (k && k === sc.pick ? " ★" : "")), el("td", {}, c.id), el("td", {}, c.who || ""),
         el("td", {}, c.ja || ""), el("td", {}, c.en || ""), el("td", { class: "muted" }, c.act || ""), el("td", {}, c.shot || ""), el("td", {}, c.event ? c.event.type : ""),

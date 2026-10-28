@@ -1055,3 +1055,14 @@ a white is belongs to the character's paint and the light; the check now asks wh
 dark, the white's lightest clearly over the lids' mean beside it (118 against 93). A test measuring a picture compares
 parts of the same picture, not a number tuned on one run's leftovers.
 
+## One budget for six walks (2026-10-28)
+
+The story check walks a game six times (the kind, the cruel and the silent player, each missing every secret and then
+finding them all), and all six shared one cap of 4096 paths. A conversation card whose answers go different ways (the
+end, another card) multiplies the paths after it; in the Sample with one four-answer talk the first five walks took
+759 each and the last, the silent player who finds the secrets, was cut at 301, silently: what it would have found
+past that went unchecked, and an ending only it reaches would have read as unreachable. Each walk has its own cap now,
+a walk cut short says so, and an ending no walk reached is an error only when nothing was cut. An answer is walked on
+a path of its own only when its way differs from the sweep's (another card, or replies and events it skips); a skip
+over plain lines is only time.
+

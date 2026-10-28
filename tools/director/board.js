@@ -129,7 +129,7 @@ export class Board {
         const x1 = a.x + CARD_W, y1 = a.y + CARD_H / 2, x2 = t.x, y2 = t.y + CARD_H / 2, back = x2 < x1 - 10;
         const dx = Math.max(40, Math.abs(x2 - x1) / 2);
         const d = back ? `M${x1},${y1} C${x1 + 70},${y1} ${x2 - 70},${y2} ${x2},${y2}` : `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
-        const col = o.kind === "interrupt" ? "#b04a42" : o.kind === "timer" ? "#b0862a" : "#66666f";
+        const col = o.kind === "interrupt" ? "#b04a42" : o.kind === "timer" ? "#b0862a" : o.kind === "answer" ? "#6f8fd0" : "#66666f";
         paths += `<path d="${d}" stroke="${col}" fill="none" stroke-width="1.7" ${o.kind ? 'stroke-dasharray="5 4"' : ""} marker-end="url(#ar)" opacity=".9"/>`;
         if (o.label && !this.hide[id]) { const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - 5; paths += `<text x="${mx}" y="${my}" text-anchor="middle" fill="${o.kind ? col : "#d39a45"}" font-size="10.5" paint-order="stroke" stroke="#121214" stroke-width="3">${esc(o.label).slice(0, 26)}</text>`; }
       }

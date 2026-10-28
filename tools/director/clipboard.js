@@ -50,12 +50,13 @@ export function pasteBeats(S, items, taken = null) {
 // a scene's lines: new ids in that version (c<n>); the take was the old line's, so its length and trim go; Kimodo's
 // segments take the new line's name and are made again
 export function pasteClips(ver, items, { scene = null, fromScene = null } = {}) {
-  const used = new Set((ver.clips || []).map(c => c.id)), out = clone(items);
+  const used = new Set((ver.clips || []).map(c => c.id)), out = clone(items), ids = {};
   for (const c of out) {
-    let n = used.size + 1; while (used.has("c" + n)) n++; const old = c.id; c.id = "c" + n; used.add(c.id);
+    let n = used.size + 1; while (used.has("c" + n)) n++; const old = c.id; c.id = "c" + n; used.add(c.id); ids[old] = c.id;
     delete c.dur; delete c.trim;
     renameSegments(c, fromScene, old, scene, c.id);
   }
+  for (const c of out) for (const o of (c.reply && c.reply.options) || []) if (o.go && ids[o.go.clip]) o.go.clip = ids[o.go.clip];   // a skip among the pasted lines keeps pointing at its line
   return out;
 }
 function renameSegments(c, fromScene, fromClip, toScene, toClip) {
@@ -86,7 +87,8 @@ export function pasteNodes(S, clip, at = [0, 0]) {
     delete n.notes;
     if (it.scene) {
       const sid = fresh(n.ref, taken), sc = it.scene; delete sc.notes;
-      for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) { delete c.dur; delete c.trim; renameSegments(c, n.ref, c.id, sid, c.id); }
+      for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) { delete c.dur; delete c.trim; renameSegments(c, n.ref, c.id, sid, c.id);
+        for (const o of (c.reply && c.reply.options) || []) if (o.go && o.go.node) o.go.node = link(o.go.node) || o.go.node; }   // an answer's card: the copy's, if it came too
       S.scenes[sid] = sc; n.ref = sid;
     }
     if (it.stitch) {

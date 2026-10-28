@@ -132,6 +132,15 @@ export function flowOuts(story, nid) {
     if (st.timer && st.timer.fail) out.push(st.timer.fail);
     for (const it of story.interrupts || []) { const during = it.during || "all"; if (it.to && (during === "all" || during.includes(n.ref))) out.push(it.to); }
   }
+  if (n.type === "scene") out.push(...answerJumps((story.scenes || {})[n.ref]));
+  return out;
+}
+// the cards a scene's answers send the flow to (§9.9 go {node}), from any of its versions (storylib.answer_jumps)
+export function answerJumps(sc) {
+  const out = [];
+  for (const v of [sc || {}, ...Object.values((sc && sc.variants) || {})]) for (const c of v.clips || []) for (const o of (c.reply && c.reply.options) || []) {
+    const [g, to] = replyGo(o); if (g === "node" && to && !out.includes(to)) out.push(to);
+  }
   return out;
 }
 // the time of day a task's chapters leave it at (its last `chapter` with a `time`; storylib.chapter_time), or null
@@ -180,11 +189,22 @@ export function jaSecs(t) {
 export const PLAYS = { hide: ["hidden", "found"], run: ["escaped", "caught"], collect: ["done", "failed"], sneak: ["made_it", "spotted"],
   hold: ["held", "broke"], search: ["found", "out_of_time"], escape: ["out", "caught"] };   // storylib.PLAYS
 export const REPLY_SECS = 6, REPLY_ANSWER = 2.5;   // storylib's: she waits this long; a player answers in about this
-export function thenClip(c, o) {                     // her answer to a reply, as a clip of its own (its take: <take id>_<option>)
+// her answer to a reply, its lines as clips of their own (their takes: <take id>_<option>, then _2, _3...): `then` is
+// one line, or a list of them (a conversation card's answer, STORY_FORMAT §9.9)
+export const thenList = o => (Array.isArray(o.then) ? o.then.filter(x => x && typeof x === "object") : o.then && typeof o.then === "object" ? [o.then] : []);
+export const thenId = (c, o, n = 0) => `${c.id}_${o.id}${n ? "_" + (n + 1) : ""}`;
+export function thenClips(c, o) {
   if (!c._then) Object.defineProperty(c, "_then", { value: {}, enumerable: false, writable: true });
-  const key = JSON.stringify(o.then) + c.who, hit = c._then[o.id];        // the same object while it's unchanged
-  if (hit && hit.key === key) return hit.clip;
-  return (c._then[o.id] = { key, clip: Object.assign({ who: c.who }, o.then, { id: `${c.id}_${o.id}` }) }).clip;
+  const key = JSON.stringify(o.then) + c.who, hit = c._then[o.id];        // the same objects while it's unchanged
+  if (hit && hit.key === key) return hit.clips;
+  return (c._then[o.id] = { key, clips: thenList(o).map((th, n) => Object.assign({ who: c.who }, th, { id: thenId(c, o, n) })) }).clips;
+}
+export const thenClip = (c, o) => thenClips(c, o)[0];
+// where an answer leaves the conversation: ["next"], ["clip", id] (a later line), ["end"], or ["node", id] (another card)
+export function replyGo(o) {
+  const g = (o && o.go) || "next";
+  if (g && typeof g === "object") return g.clip !== undefined ? ["clip", g.clip] : g.node !== undefined ? ["node", g.node] : ["next"];
+  return g === "end" ? ["end"] : ["next"];
 }
 export function eventSecs(ev, story) { return +ev.secs || (ev.type === "choose" && story && (story.format || 2) >= 3 ? 30 : 3); }
 export function karmaOf(d) { if (d === undefined || d === null) return {}; return typeof d === "number" ? { karma: d } : Object.assign({}, d); }
@@ -430,8 +450,9 @@ export class Stage {
   // picks: {clip id: reply option id, or null for silence}; without a pick a reply shows its first option's answer
   timeline(sc, picks = {}) {
     const v = version(sc), clips = v.clips || [], segs = [];
-    let t = 0;
-    clips.forEach((c, i) => {
+    let t = 0, go = null;
+    for (let i = 0; i < clips.length; i++) {          // in order, unless an answer skips ahead, ends it, or leaves for another card (go)
+      const c = clips[i];
       if (i && c.seam && SEAM_SECS[c.seam.kind]) { segs.push({ type: "seam", start: t, end: t + SEAM_SECS[c.seam.kind], seam: c.seam, i }); t += SEAM_SECS[c.seam.kind]; }
       const d = clipSecs(c);
       segs.push({ type: "clip", start: t, end: t + d, dur: d, clip: c, i }); t += d;
@@ -443,12 +464,12 @@ export class Stage {
         const o = (rp.options || []).find(x => x.id === (picked === null ? rp.timeout : picked));
         const ws = picked === null ? +(rp.wait || REPLY_SECS) : Math.min(+(rp.wait || REPLY_SECS), REPLY_ANSWER);
         segs.push({ type: "reply", start: t, end: t + ws, reply: rp, clip: c, i, picked }); t += ws;
-        if (o && o.then) {
-          const th = thenClip(c, o), td = clipSecs(th);
-          segs.push({ type: "clip", start: t, end: t + td, dur: td, clip: th, i, answer: o.id }); t += td;
-        }
+        if (o) for (const th of thenClips(c, o)) { const td = clipSecs(th); segs.push({ type: "clip", start: t, end: t + td, dur: td, clip: th, i, answer: o.id }); t += td; }
+        const [g, to] = replyGo(o);
+        if (g === "clip") { const j = clips.findIndex(x => x.id === to); if (j > i) i = j - 1; }   // on from that line
+        else if (g === "end" || g === "node") { go = g === "node" ? { node: to, from: c.id, answer: o.id } : null; break; }
       }
-    });
+    }
     const hold = (v.hold && +v.hold.max) ? +v.hold.max / 2 : 0;
     if (hold) { segs.push({ type: "hold", start: t, end: t + hold }); t += hold; }
     const last = {};                                  // each actor starts a clip where their previous clip left them
@@ -458,7 +479,7 @@ export class Stage {
       const moved = ((c.body && c.body.block) || []).filter(k => k.moveVec);
       if (moved.length) last[c.who] = moved[moved.length - 1].moveVec.clone();
     }
-    return { segs, total: t, v };
+    return { segs, total: t, v, go };                 // go: the card an answer sends the flow to, after the scene
   }
   resolveMoves(v, c) {             // blocking keys that `move` to a spot: the travel in the actor's own frame
     const keys = c.body && c.body.block; if (!keys) return;

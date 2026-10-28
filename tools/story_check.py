@@ -159,8 +159,7 @@ def shown_texts(story):
                     out.append((cw, c["en"]))
                 for o in (c.get("reply") or {}).get("options") or []:
                     out += [(cw, o[k]) for k in ("label", "think") if isinstance(o.get(k), str)]
-                    if isinstance((o.get("then") or {}).get("en"), str):
-                        out.append((cw, o["then"]["en"]))
+                    out += [(cw, th["en"]) for th in L.then_list(o) if isinstance(th.get("en"), str)]
             acts(sc.get("sets"), f"scene {sid}")
     for tid, st in story.get("stitches", {}).items():
         for b in st.get("beats", []):
@@ -561,13 +560,19 @@ def check_trackers(where, trackers, ids, things, lvl, r):
                 r.err(f"{tw}: key to {to!r}: a spot or thing, or [x, y, z]")
 
 
-def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r):
-    """A reply (format 3): the player answers left or right; her answer back plays, then the scene goes on."""
+GO_WORDS = ("next", "end")
+
+
+def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, later=()):
+    """A reply (format 3): the player answers; her answer back plays (a line, or a few), then the conversation goes where
+    the answer says (§9.9): on, to a later line (`later`: the ids after this clip), its end, or another card."""
     rp = c["reply"]
     opts = rp.get("options", [])
     ids = [o.get("id") for o in opts]
-    if not 2 <= len(opts) <= 3:
-        r.warn(f"{cw}: a reply has two or three options; this one has {len(opts)}")
+    if len(opts) < 2:
+        r.warn(f"{cw}: a reply has two answers or more; this one has {len(opts)}")
+    elif len(opts) > 3:
+        r.warn(f"{cw}: {len(opts)} answers: a close-up reads best with two or three (L.A. Noire's)")
     if None in ids or len(set(ids)) != len(ids):
         r.err(f"{cw}: reply options need unique ids")
     if not 2 <= float(rp.get("wait", L.REPLY_SECS)) <= 15:
@@ -584,12 +589,22 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r):
             r.warn(f"{ow}: no `ja` (the Japanese shown over the English)")
         for a in o.get("sets", []):
             check_action(f"{ow} sets", a, story, things, r, stage)
-        th = o.get("then")
-        if th:
+        then = o.get("then")
+        if then is not None and not isinstance(then, (dict, list)) or isinstance(then, list) and not all(isinstance(x, dict) for x in then):
+            r.err(f"{ow}: then is her answer back: a line {{who, en...}}, or a list of them")
+        for n, th in enumerate(L.then_list(o)):
+            tw = f"{ow} then" + (f" {n + 1}" if n else "")
             th = dict({"who": c.get("who")}, **th)
-            check_spoken(f"{ow} then", th, cast, r, clip_max)
+            check_spoken(tw, th, cast, r, clip_max)
             if th.get("body"):
-                check_body_v3(f"{ow} then", None, th, th["body"], story, things, lvl, r)
+                check_body_v3(tw, None, th, th["body"], story, things, lvl, r)
+        g = o.get("go", "next")
+        if not (g in GO_WORDS or isinstance(g, dict) and len(g) == 1 and ("clip" in g or "node" in g)):
+            r.err(f"{ow}: go {g!r}: \"next\", \"end\", {{\"clip\": a later line}} or {{\"node\": a card}}")
+        elif isinstance(g, dict) and "clip" in g and g["clip"] not in later:
+            r.err(f"{ow}: go to clip {g['clip']!r}: a later line of this scene (a conversation only skips forward)")
+        elif isinstance(g, dict) and "node" in g and g["node"] not in story.get("flow", {}):
+            r.err(f"{ow}: go to node {g['node']!r}, not on the board")
     if not c.get("ja", "").rstrip().endswith(("？", "?", "……", "…", "。", "ね", "の")) and FORMAT >= 3:
         pass                                          # a hanging line usually asks; the check doesn't insist
 
@@ -776,7 +791,7 @@ def check_scene(sid, sc, story, things, r):
             if c.get("struggle"):
                 r.err(f"{cw}: `struggle` is an event now: \"event\": {{\"type\": \"struggle\", \"secs\": 4, \"pull\": \"back\", \"need\": 0.6}}")
             if c.get("reply"):
-                check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r)
+                check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, ids[i + 1:])
                 if c.get("event"):
                     r.err(f"{cw}: a clip has a reply or an event, not both (put the event on the next clip)")
             ev = c.get("event")
@@ -1673,6 +1688,7 @@ class World:
         self.power = {}            # level -> "on" or "off" (the power action; on until it's cut)
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
         self.forced = {}           # (scene node, clip) -> the answer this path gives at that reply
+        self.jump = None           # a card an answer sent the flow to (§9.9 go node), instead of the scene's next
         self.branch_flags = {f.lstrip("!") for n in story.get("flow", {}).values() if n.get("type") == "choice" and n.get("by") == "flag"
                              for o in n.get("options", []) for f in o.get("if", [])}
         self.answers = []          # (scene node, clip, option) for the report
@@ -1946,6 +1962,7 @@ class World:
                         return True
             elif k == "scene":
                 self.play_scene(v, self.story["scenes"][v])
+                self.jump = None                        # a triggered scene: an answer's jump to a card just ends it
             elif k == "karma":
                 self.add_karma(v)
             elif k == "count":
@@ -2123,24 +2140,30 @@ class World:
         return (max if self.style == "kind" else min)(opts, key=score) if opts else None
 
     def reply_forks(self, sc):
-        """A reply opens a branch when an answer sets a flag a flag choice reads (§9.9): the answers this sweep wouldn't
-        give there, each to be played on a path of its own: [(clip id, option id)]."""
-        out = []
-        for c in L.scene_version(sc).get("clips", []):
+        """A reply opens a branch when an answer sets a flag a flag choice reads, or goes somewhere else than this sweep's
+        answer does (a later line, the end, another card: §9.9): the answers this sweep wouldn't give there, each to be
+        played on a path of its own: [(clip id, option id)]."""
+        out, clips = [], L.scene_version(sc).get("clips", [])
+        for i, c in enumerate(clips):
             rp = c.get("reply")
             if not rp:
                 continue
             mine = self.reply_pick(rp)
+            here = reply_route(clips, i, mine)
             out += [(c.get("id"), o.get("id")) for o in rp.get("options", []) if o is not mine
-                    and any(a.get("flag") in self.branch_flags for a in o.get("sets", []))]
+                    and (any(a.get("flag") in self.branch_flags for a in o.get("sets", [])) or reply_route(clips, i, o) != here)]
         return out
 
     def play_scene(self, nid, sc):
+        self.jump = None
         self.enter_level(L.level_of(self.story, sc))
         ver = L.scene_version(sc)
         if sc.get("view") and sc["view"] in self.things:
             self.go(sc["view"])
-        for i, c in enumerate(ver.get("clips", [])):
+        clips, i = ver.get("clips", []), -1
+        while i + 1 < len(clips):                       # in order, but an answer may skip ahead, end it, or leave for a card
+            i += 1
+            c = clips[i]
             self.add("scenes", L.clip_secs(c))
             if i and c.get("seam"):
                 self.add("scenes", SEAMS.get(c["seam"].get("kind"), (None, 0))[1])
@@ -2166,9 +2189,16 @@ class World:
                     self.add("choices", float(rp.get("wait", L.REPLY_SECS)) if self.style == "silent" else min(float(rp.get("wait", L.REPLY_SECS)), L.REPLY_ANSWER))
                 if o:
                     self.run_actions(nid, o.get("sets", []))
-                    if o.get("then"):
-                        self.add("scenes", L.clip_secs(o["then"]))
+                    self.add("scenes", sum(L.clip_secs(th) for th in L.then_list(o)))
                 self.answers.append((nid, c.get("id"), (o or {}).get("id", "silence")))
+                go, to = L.reply_go(o) if o else ("next", None)
+                if go == "clip":
+                    j = next((k for k, x in enumerate(clips) if x.get("id") == to), -1)
+                    if j > i:
+                        i = j - 1                       # (the loop steps onto it)
+                elif go in ("end", "node"):
+                    self.jump = to if go == "node" else None
+                    break
         self.add("scenes", float((sc.get("hold") or {}).get("max", 0)) / 2)
         for cue in ver.get("cues", []):
             a = cue.get("do", {})
@@ -2180,6 +2210,18 @@ class World:
         self.route.append({"node": nid, "do": "scene", "id": sc.get("title", nid)})
         self.run_actions(nid, sc.get("sets", []))
         return True
+
+
+def reply_route(clips, i, o):
+    """Where an answer to clip i's reply takes the walk (§9.9 go): the card it leaves for, or the replies and events it
+    still meets in the scene (lines it skips matter to the walk only when they hold one; the rest is time)."""
+    go, to = L.reply_go(o) if o else ("next", None)
+    if go == "node":
+        return ("node", to)
+    j = len(clips) if go == "end" else i + 1
+    if go == "clip":
+        j = max(j, next((k for k, x in enumerate(clips) if x.get("id") == to), j))
+    return ("on", tuple(k for k in range(j, len(clips)) if clips[k].get("reply") or clips[k].get("event")))
 
 
 def explore(w, nid, done_paths, visited_nodes):
@@ -2237,14 +2279,15 @@ def explore(w, nid, done_paths, visited_nodes):
             nid = n["next"]
         elif t == "scene":
             sc = story["scenes"][n["ref"]]
-            for cid, oid in w.reply_forks(sc):         # an answer that opens a branch later: its own path
+            for cid, oid in w.reply_forks(sc):         # an answer that opens a branch later, or goes elsewhere: its own path
                 b = w.fork()
                 b.dev += 1
                 b.forced[(nid, cid)] = oid
                 b.play_scene(nid, sc)
-                explore(b, n["next"], done_paths, visited_nodes)
+                to, b.jump = b.jump, None
+                explore(b, to or n["next"], done_paths, visited_nodes)
             w.play_scene(nid, sc)
-            nid = n["next"]
+            nid, w.jump = w.jump or n["next"], None
         elif t == "ending":
             done_paths.append(w)
             return
@@ -2372,16 +2415,24 @@ def main():
         check_achievements(story, r)
     paths = []
     if not r.errors:
-        visited = set()
+        visited, capped = set(), []
         styles = STYLES if FORMAT >= 3 else ("kind",)
         for style in styles:                # format 3: the kind, the cruel and the silent player
             for seek in (False, True):      # a player who misses every secret, then one who finds them all
                 w = World(story, things, r, verbose)
                 w.seek_secrets, w.style = seek, style
-                explore(w, story["game"]["start"], paths, visited)
+                mine = []                   # each walk its own MAX_PATHS: one that branches a lot can't starve the rest
+                explore(w, story["game"]["start"], mine, visited)
+                if len(mine) >= MAX_PATHS:
+                    capped.append(style + (" (secrets found)" if seek else ""))
+                paths += mine
+        if capped:
+            r.warn(f"the walk stopped at {MAX_PATHS} paths for the {', '.join(capped)} player: past that its paths went unchecked "
+                   "(every answer, choice and secret that branches multiplies them)")
         for nid in story["flow"]:
             if nid not in visited:
-                (r.err if story["flow"][nid]["type"] == "ending" else r.warn)(f"flow {nid}: no path reaches it")
+                (r.err if story["flow"][nid]["type"] == "ending" and not capped else r.warn)(
+                    f"flow {nid}: no path reaches it" + (" (of the paths walked)" if capped else ""))
         fired = set().union(*(p.fired for p in paths)) if paths else set()
         for tid, st in story.get("stitches", {}).items():
             for b in st.get("beats", []):

@@ -63,6 +63,36 @@ for (const g of games) {
     (p, c) => p.sev === "error" && p.at.clip === c.id && /no seam/.test(p.text));
   expect("a flag waited for that nothing sets", S => { S.stitches.t_search.beats.push({ id: "b_ghost", when: { flag: "ghost_flag" }, optional: true, do: [] }); },
     p => p.sev === "warn" && /ghost_flag/.test(p.text) && p.at.beat === "b_ghost");
+
+  // a conversation card (STORY_FORMAT §9.9): an answer's reply a few lines, one skipping ahead, one ending the talk, one
+  // leaving for a card nothing else leads to; four answers. Nothing wrong with it, as the story check says; then faults
+  const talk = S => {
+    const c = S.scenes.s_message.clips.find(x => x.reply), os = c.reply.options, later = S.scenes.s_message.clips.slice(S.scenes.s_message.clips.indexOf(c) + 2);
+    os[0].then = [Object.assign({ en: "Mm." }, os[0].then || {}), { en: "Then stay a while.", ja: "じゃあ、少しいて。" }];
+    os[1].go = { clip: later[later.length - 1].id };
+    os.push({ id: "bye", label: "Leave", think: "Not tonight.", then: { en: "Oh. Goodnight, then.", ja: "そう。おやすみ。" }, go: "end" },
+      { id: "away", label: "Look away", go: { node: "n_detour" } });
+    S.scenes.s_detour = clone(S.scenes.s_game); S.flow.n_detour = { type: "scene", ref: "s_detour", next: S.flow.n_game.next };
+    for (const x of S.scenes.s_detour.clips || []) for (const g of (x.body || {}).segments || []) g.reuse = true;   // the same motions as the scene it's copied from
+    return c;
+  };
+  {
+    const S = clone(S0); talk(S); const ps = run(S, th), errs = ps.filter(p => p.sev === "error"), lost = ps.filter(p => p.at.node === "n_detour" && /nothing leads/.test(p.text));
+    const out = storyCheck("Sample", S), okd = /STORY ok/.test(out) && !/n_detour: no path reaches/.test(out);
+    errs.length || lost.length ? fail(`a conversation card: ${[...errs, ...lost].map(p => p.text).join("; ")}`) : !okd ? fail(`a conversation card: the story check says ${out.trim().split("\n").slice(-3).join(" / ")}`)
+      : ok(`a conversation card (a reply of two lines, a skip, the end, a card only an answer leads to, four answers): no errors, the story check passes (${out.trim().split("\n").pop()})`);
+  }
+  expect("an answer that skips back", S => { const c = talk(S); c.reply.options[1].go = { clip: S.scenes.s_message.clips[0].id }; return c; },
+    (p, c) => p.sev === "error" && p.at.clip === c.id && /isn't a later line/.test(p.text));
+  expect("an answer leaving for a card that's gone", S => { const c = talk(S); c.reply.options[3].go = { node: "n_gone" }; return c; },
+    (p, c) => p.sev === "error" && p.at.clip === c.id && /isn't on the board/.test(p.text));
+  expect("an answer going somewhere the format hasn't a word for", S => { const c = talk(S); c.reply.options[2].go = "sideways"; return c; },
+    (p, c) => p.sev === "error" && p.at.clip === c.id && /next, end, a later line or a card/.test(p.text));
+  {
+    const S = clone(S0), c = talk(S); c.reply.options[1].go = { clip: S.scenes.s_message.clips[0].id }; c.reply.options[3].go = { node: "n_gone" };
+    const out = storyCheck("Sample", S), want = [/a later line of this scene/, /n_gone.*not on the board/];
+    want.every(r => r.test(out)) ? ok("… and the story check says both (a skip back, a card that isn't there)") : fail(`the story check on the bad answers: ${out.trim().split("\n").slice(-4).join(" / ")}`);
+  }
 }
 
 // ---- the merge: the desk's edits and Claude's on disk, from the version both started from

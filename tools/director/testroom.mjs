@@ -197,8 +197,23 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_hello", async () => {
-    await step("Aoi in the lobby (a scene): her reply answered (Ready: karma +1), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
-      await scene([1]);
+    await step("Aoi in the lobby (a scene): her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
+      // skipped along to her question; then, answered, watched to its end: a conversation card's answer (§9.9), her reply
+      // two lines, then on to the line it skips to (her line for the other answer never said)
+      const t0 = Date.now(), subs = [];
+      while (!(await page.$(".ph-dock .ph-opt"))) { if (Date.now() - t0 > 60000) throw new Error("her question never came"); await page.keyboard.press("Escape"); await page.waitForTimeout(300); }
+      await page.keyboard.press("Digit1");
+      while (Date.now() - t0 < 120000) {
+        const o = await page.evaluate(() => { const R = window.__dd.run, p = window.__dd.play; return { sub: (document.querySelector("#watchOv .sub") || {}).textContent || "", out: !!(p && p.active) || !R || R.trail[R.trail.length - 1] !== "n_hello" }; });
+        if (o.sub && subs[subs.length - 1] !== o.sub) subs.push(o.sub);
+        if (o.out) break;
+        await page.waitForTimeout(80);
+      }
+      const said = ["Good. Then let's begin.", "The corridor's yours. I'll be watching.", "One thing a room. Fine."], skipped = "Tell me if it gets to be too much.";
+      if (said.some(x => !subs.includes(x)) || subs.includes(skipped) || subs.indexOf(said[0]) > subs.indexOf(said[1]) || subs.indexOf(said[1]) > subs.indexOf(said[2])) throw new Error("the conversation said " + JSON.stringify(subs));
+      const tk = await page.evaluate(async () => { const { version } = await import("/stage.js");
+        return window.__dd.watchStage.timeline(version(window.__dd.S.scenes.s_hello), { c3: "good" }).segs.filter(s => s.type === "clip").map(s => s.clip.id).join(); });
+      if (tk !== "c1,c2,c3,c3_good,c3_good_2,c4") throw new Error("its takes: " + tk);
       const r = await page.evaluate(() => ({ karma: window.__dd.run.karma.karma, met: window.__dd.run.flags.has("met_aoi"), tv: window.__dd.run.lives.at("kitchen_tv", window.__dd.run.secs + 999).state }));
       if (r.karma !== 1 || !r.met || r.tv !== "static") throw new Error(JSON.stringify(r));
       const f = await page.evaluate(async () => {                // the face over the scene's timeline: at rest before its first placement, on after

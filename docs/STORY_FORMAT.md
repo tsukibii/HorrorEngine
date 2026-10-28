@@ -641,6 +641,8 @@ If the stitch isn't `done` in time, the flow jumps to `fail`. The checks:
 - a task that would end its stitch before its own beat is done (its `ticks` the trigger that starts a beat that takes
   time, in a stitch that ends when its list is through): a warning, unless that beat opens the way to another task (§4)
 - faces: `who` in the cast, `expr` in the expression library, `at` a clip of the version, the numbers in range (§3.7)
+- replies: two answers or more (past three a warning), unique ids, each answer's lines spoken by the cast, its `go` one
+  of the four and pointing at a later line of the scene or a card on the board (§9.9)
 - `--route` writes the main path's steps for the playthrough bot
 
 `level_check.py`: overlaps, props in walls, blocked doorways, standing room at interactables.
@@ -858,25 +860,42 @@ its result branches like an event's.
 
 ### 9.9 Replies and hanging lines
 
-A reply is a small dialogue choice that mostly changes what she says back: two options or three, at the bottom centre
+A reply is a small dialogue choice that mostly changes what she says back: two answers or more, at the bottom centre
 under her line, in English only (no Japanese over it, DECISIONS 2026-10-27, notes: other languages come from a system
 that changes the whole dialogue). The clip it's on is a **hanging line**:
 she asks, then waits, her face doing the waiting. Three answers make an **L.A. Noire close-up** (the writers' room's talk,
 WRITERS_ROOM §2): her face answers yours before her words do (`then.expr`), and a player who watches it learns what she
-really wants.
+really wants. More than three are allowed (the check warns: a close-up reads best with two or three). The player never
+speaks a line (DECISIONS 2026-10-28, noon): an answer is an act with the thought behind it, `[ Greet ] She's cold...`.
+
+A scene's lines with their replies are **a conversation card** (the desk's script, its Reply tab): each answer has her
+reply as a line or a few, and says where the talk goes then (`go`): on to the next line, a later one, its end, or another
+card on the board (HANDOFF_DIRECTOR_TODO §1).
 
 ```json
 {"id": "c1r", "who": "mari", "ja": "今日、どうだった？", "en": "How was your day?", "wait_expr": "hopeful, expectant expression",
  "reply": {"wait": 6, "timeout": null, "options": [
-   {"id": "good", "label": "Good.", "ja": "よかったよ。", "then": {"ja": "そう……よかった。", "en": "Good...", "expr": "...", "voice": "says softly"}},
-   {"id": "bad", "label": "Bad.", "ja": "最悪だった。", "sets": [{"flag": "told_bad_day"}], "then": {"ja": "かわいそう。", "en": "Poor thing."}}]}}
+   {"id": "good", "label": "Smile", "think": "It was fine, really.", "then": {"ja": "そう……よかった。", "en": "Good...", "expr": "...", "voice": "says softly"}},
+   {"id": "bad", "label": "Look away", "sets": [{"flag": "told_bad_day"}], "go": {"clip": "c4"},
+    "then": [{"ja": "かわいそう。", "en": "Poor thing."}, {"ja": "こっちにおいで。", "en": "Come here."}]},
+   {"id": "leave", "label": "Leave", "think": "Not tonight.", "then": {"en": "Oh. Goodnight, then."}, "go": {"node": "n_alone"}}]}}
 ```
 
 - `think`: the player's thought that goes with the answer, shown under it smaller (`{"id": "greet", "label": "Greet",
   "think": "She's probably cold, I should let her inside"}`): the answers can be acts, each with the thought behind it,
   instead of words said (the writers' room's notes write them as `[ Greet ] She's probably cold...`).
-- `then` is her answer to that reply: a clip (its own take, `<take id>_<option id>`), the same `who` unless it says.
-  After it, the scene goes on with its next clip: the line it was always going to say.
+- `then` is her answer to that reply: a clip (its own take, `<take id>_<option id>`), or a list of clips (a few lines,
+  their takes `<take id>_<option id>`, then `_2`, `_3`...), each the same `who` unless it says (someone else may answer).
+  None: she says nothing back.
+- `go`: where the conversation goes after her answer:
+  - `"next"` (the default): the scene goes on with its next clip, the line it was always going to say;
+  - `{"clip": id}`: on from a later line of this scene, the lines between skipped (a conversation only skips forward:
+    the check says so);
+  - `"end"`: the conversation ends there: the scene's hold, its `sets` and its exit, then the flow's `next`;
+  - `{"node": id}`: another card on the board: the scene ends as `"end"` does, and the flow goes there instead of its
+    `next` (the board draws the arrow, dashed blue; a card reached only this way is reached). In a triggered scene (a
+    beat's `scene`) it just ends the scene: play carries on.
+  The check plays every answer that goes somewhere else than its sweep's answer on a path of its own.
 - `wait` (6 s by default, 2 to 15): how long she waits. Past it her answer is skipped (`timeout: null`), or a
   `timeout` option's answer plays (an answer to your silence).
 - `sets`: actions when the reply is picked (a flag, karma, a count), so a reply can open a branch later through a

@@ -2696,8 +2696,16 @@
           "karma": 1
          }
         ],
-        "then": {
-         "en": "Good. Then let's begin."
+        "then": [
+         {
+          "en": "Good. Then let's begin."
+         },
+         {
+          "en": "The corridor's yours. I'll be watching."
+         }
+        ],
+        "go": {
+         "clip": "c4"
         }
        },
        {
@@ -2711,9 +2719,28 @@
         "then": {
          "en": "Then we'll go slowly."
         }
+       },
+       {
+        "id": "quiet",
+        "label": "Say nothing",
+        "think": "I don't owe her an answer.",
+        "then": {
+         "en": "...Fine. Off you go."
+        },
+        "go": "end"
        }
       ]
      }
+    },
+    {
+     "id": "c3b",
+     "who": "aoi",
+     "seam": {
+      "kind": "blink"
+     },
+     "en": "Tell me if it gets to be too much.",
+     "act": "softer, a step closer",
+     "shot": "fs"
     },
     {
      "id": "c4",
