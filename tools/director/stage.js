@@ -8,7 +8,8 @@ import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { LifeFX } from "./lifefx.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
-import { wearEye } from "../shared/eye.js";      // tools/shared (served at /shared: the page sits at the root)
+import { wearEye } from "../shared/eye.js";
+import { stainMaterial } from "./stain.js";      // tools/shared (served at /shared: the page sits at the root)
 const Y_UP = new THREE.Vector3(0, 1, 0);
 // the simple view (the toolbar's Simple, for when the desk lags): every lit surface a plain Lambert of its own colour, no
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
@@ -324,6 +325,7 @@ export class Stage {
         m.position.copy(s2t(...p.pos));
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null, use: (p.tags.find(t => t.startsWith("use:")) || "").slice(4) || null, piece: p };
+        if (m.userData.use === "clean") m.material = stainMaterial((p.d || {}).stain, p.id);   // a stain: a blot on what it lies on
         m.visible = !hidden;
         m.userData.doorPart = (p.tags.find(t => t.startsWith("door_part:")) || "").slice(10) || null;
         m.userData.attach = (p.tags.find(t => t.startsWith("attach:")) || "").slice(7) || null;
@@ -334,7 +336,7 @@ export class Stage {
                                  handleZ: f.handle_z, handleIn: f.handle_in };
           } catch (e) { }
         }
-        this.world.add(m); if (!p.tags.includes("hollow") && !hidden) this.solid.push(m);     // a door frame: you see and walk through it
+        this.world.add(m); if (!p.tags.includes("hollow") && !hidden && m.userData.use !== "clean") this.solid.push(m);     // a door frame: you see and walk through it; a stain: you walk over it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
       } else if (p.kind === "light") {

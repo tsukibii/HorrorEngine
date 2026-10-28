@@ -10,6 +10,7 @@ import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { Torch } from "./torch.js";
+import "./clean.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
@@ -59,7 +60,8 @@ export class PlayRuntime {
     this.on = {
       click: () => { if (this.active && !this.busy && document.pointerLockElement !== box) box.requestPointerLock(); },   // the first click takes the mouse
       // a left click uses what's under the reticle (every interactable: DECISIONS 2026-10-27, later); the wheel turns the inventory
-      down: e => { if (e.button === 0 && document.pointerLockElement === box && this.active && !this.busy && !this.playing) { e.preventDefault(); this.use(); } },
+      down: e => { if (e.button === 0 && document.pointerLockElement === box && this.active && !this.busy && !this.playing) { e.preventDefault(); this.use(true); } },
+      up: e => { if (e.button === 0 && this.holding) { this.holding = null; this.hud.progress(null); } },   // a held use (scrubbing) let go
       wheel: e => { if (document.pointerLockElement === box && this.active && !this.busy && !this.playing) { e.preventDefault(); this.inv.scroll(e.deltaY); } },
       lock: () => {                                 // the lock lost in play (Esc) pauses
         const on = document.pointerLockElement === box;
@@ -70,6 +72,7 @@ export class PlayRuntime {
       key: e => this.keyEvent(e, e.type === "keydown"),
     };
     box.addEventListener("click", this.on.click); box.addEventListener("mousedown", this.on.down); box.addEventListener("wheel", this.on.wheel, { passive: false });
+    window.addEventListener("mouseup", this.on.up);
     document.addEventListener("pointerlockchange", this.on.lock);
     document.addEventListener("mousemove", this.on.move);
     window.addEventListener("keydown", this.on.key); window.addEventListener("keyup", this.on.key);
@@ -80,6 +83,7 @@ export class PlayRuntime {
     for (const w of this.waits) w.res(); this.waits = [];
     for (const a of this.anims) a.done(); this.anims = [];
     this.box.removeEventListener("click", this.on.click); this.box.removeEventListener("mousedown", this.on.down); this.box.removeEventListener("wheel", this.on.wheel);
+    window.removeEventListener("mouseup", this.on.up);
     document.removeEventListener("pointerlockchange", this.on.lock);
     if (this.hand) { this.hand.x.m.removeFromParent(); this.hand = null; }
     if (this.iconR) { this.iconR.dispose(); this.iconR.forceContextLoss(); this.iconR = null; }
@@ -363,6 +367,7 @@ export class PlayRuntime {
     const cam = this.stage.camera, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...this.hand.x.s.hand);
     this.stepPhase = ((this.stepPhase || 0) + dt * walk * Math.PI * 2 * 1.8) % (Math.PI * 2);      // about two steps a second at a walk
     hand.y += Math.sin(this.stepPhase) * 0.012 * walk;
+    if (this.clock - (this.scrubbing ?? -9) < 0.15) { hand.x += Math.sin(this.clock * 15) * 0.05; hand.y -= 0.06; }   // scrubbing: the hand works it to and fro
     const eye = cam.position.clone(), want = cam.localToWorld(hand), d = want.clone().sub(eye), len = d.length();
     this.ray.set(eye, d.divideScalar(len)); this.ray.far = len + e.r;
     const hit = this.ray.intersectObjects(this.blocks(), false)[0];
@@ -613,7 +618,7 @@ export class PlayRuntime {
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
   aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible), false)[0] || null; }
-  async use() {
+  async use(press) {
     if (this.player.sleeping || this.inChapter) return;
     const seat = this.player.seat;
     if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // a click stands you up
@@ -621,6 +626,11 @@ export class PlayRuntime {
     const t = this.target; if (!t) return;
     const ip = interactableOf(t, this);
     this.hud.press();
+    if (ip && ip.holds) {                                  // held (scrubbing): hold() every frame till it's let go
+      if (press && ip.prompt(t, this, this.set(ip.name)).cursor !== "locked") this.holding = t;
+      else ip.use(t, this, this.set(ip.name));            // what's missing, said
+      return;
+    }
     if (ip && (await ip.use(t, this, this.set(ip.name))) === false) return;   // the use is done (seated, the door open, the note read) before the story hears it; false: nothing happened
     this.emit({ type: "use", id: t.userData.id });
   }
@@ -635,6 +645,17 @@ export class PlayRuntime {
     if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
     const pr = ip.prompt(o, this, this.set(ip.name));
     this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o));
+  }
+  // a held use (play/clean.js): its hold() every frame while the button is down and the reticle on it (looked away: it
+  // waits); done, the story hears its use
+  holdTick(dt) {
+    const t = this.holding, ip = interactableOf(t, this);
+    if (!ip || !ip.hold || !t.visible) { this.holding = null; this.hud.progress(null); return; }
+    if (this.target !== t) return;
+    if (ip.hold(t, this, dt, this.set(ip.name))) {
+      this.holding = null; this.hud.progress(null); this.setVisible(t.userData.id, false);
+      this.hud.log(`clean: ${this.nameOf(t)}`); this.emit({ type: "use", id: t.userData.id });
+    }
   }
   // where a thing's prompt floats, in the HUD's pixels: a door's handle (on your side of the leaf, so it's where your
   // hand goes; the whole door still takes E), anything else its middle. Kept to the safe area (the screen's margin,
@@ -782,6 +803,7 @@ export class PlayRuntime {
     this.drawNpcs(dt);
     this.watch(dt);
     if (!this.busy && !this.playing) this.updateCursor(dt);
+    if (this.holding) this.holdTick(dt);
     this.emit({ type: "tick" });
     this.hud.tick();
     if (this.stage.life && this.lives) { const T = this.now(); this.stage.life.update(T, id => ({ st: this.lives.at(id, T), hist: this.lives.history(id) })); }

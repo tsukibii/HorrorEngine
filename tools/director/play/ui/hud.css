@@ -25,6 +25,10 @@
 .play-hud .ph-cursor:not([data-cursor="none"]){width:var(--ph-ring);height:var(--ph-ring);margin:calc(var(--ph-ring) / -2) 0 0 calc(var(--ph-ring) / -2);
   background:var(--ph-ring-fill,transparent);border-color:var(--ph-cursor)}
 .play-hud .ph-cursor[data-cursor="locked"]{border-color:var(--ph-bad)}
+/* a held use (scrubbing a stain): the ring fills round as it's done (--ph-progress, 0..1) */
+.play-hud .ph-cursor.progress{border-color:color-mix(in srgb,var(--ph-cursor) 35%,transparent);
+  background:conic-gradient(var(--ph-accent) calc(var(--ph-progress,0) * 1turn),transparent 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px))}
 .play-hud .ph-cursor.press{scale:.75}
 .play-hud.free .ph-cursor{opacity:0}
 .play-hud .ph-prompt{position:absolute;left:50%;top:calc(50% + var(--ph-ring));translate:-50% 0;display:flex;gap:8px;align-items:center;white-space:nowrap;

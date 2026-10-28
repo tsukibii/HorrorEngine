@@ -149,6 +149,8 @@ export class Hud {
   }
   setStance(s) { this.stance.textContent = s; this.root.dataset.stance = s; }
   locked(on) { this.hint.classList.toggle("on", !on && !this.panelEl); this.root.classList.toggle("free", !on); }
+  // a held use's progress (scrubbing: 0..1) as a ring round the reticle; null takes it away
+  progress(p) { this.cursor.classList.toggle("progress", p !== null && p !== undefined); if (p !== null && p !== undefined) this.cursor.style.setProperty("--ph-progress", p); }
   // a key the game adds to the hint (the flashlight's F once the player has one), before Esc; once
   hintKey(k, w) {
     if ([...this.hint.children].some(p => p.dataset.k === k)) return;

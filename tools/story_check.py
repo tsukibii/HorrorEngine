@@ -386,6 +386,15 @@ def check_world(story, things, r):
                 r.err(f"{t.id}: not_yet is the thought when it isn't time to sleep")
             if f'"use": "{t.id}"' not in json.dumps(story, ensure_ascii=False):
                 r.warn(f"{t.id}: a bed to sleep in, but nothing hears it (a beat {{\"when\": {{\"use\": \"{t.id}\"}}}} that plays a chapter)")
+        if u == "clean":                                # a stain scrubbed away by holding the click (play/clean.js)
+            if p.get("stain", "dirt") not in L.STAINS:
+                r.err(f"{t.id}: stain {p.get('stain')!r} (one of {', '.join(L.STAINS)})")
+            if "secs" in p and not (isinstance(p["secs"], (int, float)) and 0.2 <= p["secs"] <= 60):
+                r.err(f"{t.id}: secs is how long it takes to scrub clean, 0.2 to 60 s")
+            if p.get("with") is not None and p["with"] not in items:
+                r.err(f"{t.id}: with {p['with']!r} isn't an item (what has to be in the hand to clean it: a mop, a rag)")
+            if t.size and len(t.size) > 2 and t.size[2] > 0.05:
+                r.warn(f"{t.id}: a stain is flat (its shape {t.size[2]:.2f} m high): \"box 0.6 0.4 0.01\"")
         if "safe" in p and not (u == "trigger" and isinstance(p["safe"], bool)):
             r.err(f"{t.id}: safe is for a trigger: true when the player can't be seen in it")
         if "see_through" in p and not (u == "locker" and isinstance(p["see_through"], (int, float)) and 0 <= p["see_through"] <= 1):
@@ -1719,6 +1728,8 @@ class World:
                 return ("read", t.d["note"]) in self.done_events
             if t.kind == "door" and self.door_locked(v):
                 return False
+            if t.use == "clean" and t.d.get("with") and t.d["with"] not in self.inv:   # it needs the mop in hand
+                return False
             return self.can_reach(v)
         if k in ("pickup", "read"):
             return (k, v) in self.done_events
@@ -1948,6 +1959,8 @@ class World:
                         k = next(iter(set(b["when"]) - TRIGGER_EXTRA))
                         if k in ("use", "look"):
                             self.route.append({"node": nid, "do": k, "id": at, "secs": b["when"].get("secs", 1.0)})
+                        if k == "use" and self.things[at].use == "clean":   # scrubbed: its seconds of holding the click
+                            self.add("gameplay", float(self.things[at].d.get("secs", 3)))
                         if k in ("carrying", "dropped"):           # picked up; put down where it's asked for, and it lies there
                             self.route.append({"node": nid, "do": "carry", "id": at})
                         if k == "dropped":

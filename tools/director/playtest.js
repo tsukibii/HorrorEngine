@@ -37,7 +37,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "plush", shape: "box 0.3 0.25 0.35", at: [1.0, 3.0], use: "carry", physics: "plushie" });
     for (let i = 1; i <= 6; i++) S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "inv_" + i, shape: "box 0.08 0.08 0.08", at: [0.5 + 0.3 * ((i - 1) % 3), i <= 3 ? 5.0 : 5.4], use: "pickup", item: "inv_item_" + i });
     S.stitches.t_search.beats.push({ id: "b_inv_put", when: { dropped: "inv_6", in: "hall" }, optional: true, do: [{ flag: "inv_put" }] });
-    S.items = Object.assign(S.items || {}, { flashlight: { name: "Flashlight", torch: true } });      // the flashlight: F, and the story's torch
+    S.items = Object.assign(S.items || {}, { flashlight: { name: "Flashlight", torch: true }, mop: { name: "Mop" } });      // the flashlight: F, and the story's torch; a mop
+    S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_stain", shape: "box 0.7 0.5 0.01", at: [3.0, 1.5], use: "clean", stain: "mud", secs: 2, with: "mop" },
+      { id: "mop1", shape: "box 0.06 0.06 0.5", at: [1.0, 4.0], use: "pickup", item: "mop" });
+    S.stitches.t_search.beats.push({ id: "b_clean", when: { use: "hall_stain" }, optional: true, do: [{ flag: "stain_clean" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "torch1", shape: "cyl 0.025 0.18", at: [1.4, 5.0], use: "pickup", item: "flashlight" });
     S.stitches.t_search.beats.push({ id: "b_torch_on", when: { torch: "on" }, optional: true, do: [{ flag: "torch_on" }] },
       { id: "b_torch_dead", when: { flag: "kill_torch" }, optional: true, do: [{ torch: "dead" }] }, { id: "b_torch_works", when: { flag: "fix_torch" }, optional: true, do: [{ torch: "works" }] });
@@ -365,6 +368,28 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await press("KeyF"); await gameWait(0.3); const b5 = await beam();
     if (!b4.on || !(b4.k > 0) || b4.dead || b5.on || b5.k > 0) throw new Error(`works: F ${JSON.stringify(b4)}, F ${JSON.stringify(b5)}`);
     console.log(`       the frame's middle ${off.toFixed(0)} dark, ${lit.toFixed(0)} in the beam; on a turn the beam lags to ${(Math.acos(lag.low) * 180 / Math.PI).toFixed(1)}° off the look`);
+  });
+  await step("cleaning: a stain says it needs the mop and a click only thinks so; with the mop in the hand, holding the left button scrubs it (a ring fills, the blot fades), letting go keeps where it got to, and clean it's gone and heard", async () => {
+    const r = await goTo("hall_stain", 1.0);
+    const p0 = await page.evaluate(() => document.querySelector(".ph-prompt").textContent);
+    if (r.cursor !== "locked" || !/need/i.test(p0)) throw new Error(`without the mop: cursor ${r.cursor}, the prompt ${p0}`);
+    await click(); await gameWait(0.3);
+    if (await page.evaluate(() => window.__dd.play.holding)) throw new Error("scrubbing without the mop");
+    const m = await goTo("mop1", 0.8); if (m.cursor !== "take") throw new Error("the mop: cursor " + m.cursor);
+    await click(); await gameWait(0.3);
+    if (await page.evaluate(() => (window.__dd.play.carried || {}).item) !== "mop") throw new Error("the mop isn't in the hand");
+    const s = await goTo("hall_stain", 1.0); if (s.cursor !== "use") throw new Error("with the mop: cursor " + s.cursor);
+    const state = () => page.evaluate(() => { const rt = window.__dd.play, t = rt.byId.hall_stain; return { p: (rt.kept[rt.level].clean || {}).hall_stain || 0, op: t.material.opacity, vis: t.visible,
+      ring: document.querySelector(".ph-cursor").classList.contains("progress"), held: !!rt.holding }; });
+    const b = await page.locator("#watchBox").boundingBox();
+    await page.evaluate(() => { window.__lock = null; }); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.evaluate(() => document.querySelector("#watchBox").requestPointerLock());
+    await page.mouse.down(); await gameWait(0.8); const a = await state(); await page.mouse.up(); await gameWait(0.4); const a2 = await state();
+    if (!(a.p > 0.2 && a.p < 0.8) || !(a.op < 0.95) || !a.ring || !a.held || a2.held || a2.ring || Math.abs(a2.p - a.p) > 0.12) throw new Error(`half scrubbed: ${JSON.stringify(a)}, let go: ${JSON.stringify(a2)}`);
+    await page.mouse.down(); await gameWait(1.8); await page.mouse.up(); await gameWait(0.3);
+    const c = await state(), heard = await flag("stain_clean");
+    if (c.vis || !heard || c.p < 1) throw new Error(`scrubbed clean: ${JSON.stringify(c)}, heard ${heard}`);
+    await page.evaluate(() => { const rt = window.__dd.play; rt.inv.remove("mop1"); rt.items.delete("mop"); });   // out of the way of the rest
   });
   await step("Shift runs (forward, standing): about twice the walk", async () => {
     const speed = async keys => { await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(0.8, 0, -2.6), 0, 0); });

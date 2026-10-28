@@ -170,6 +170,9 @@ playback; Generate stays the one button.
   games"): an item with `torch` is one; picked up or given it's in the pocket, not the row, and **F** switches it (its
   beam from the right hand, a moment behind the look, bobbing with the steps); the story's `torch` flickers it, kills
   it (F only clicks) or brings it back, and hears it switched (`play/torch.js`; RUNNER_SPEC has Unreal's).
+- **Cleaning** (built 2026-10-28, the same ask): a stain (`use: clean`, its `stain` kind) scrubbed away by holding the
+  left button on it, with the mop or rag in the hand if it says `with`: a ring fills round the reticle, the blot fades,
+  and its `use` ticks the chore (`play/clean.js`, `stain.js`).
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,

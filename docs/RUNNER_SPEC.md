@@ -152,6 +152,10 @@ scene: a camera fade, and control taken and given back softly.
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - A little thing with a life (`life:*`) is used like one when its state has an act (Content/Studio/Life/lives.json):
   the prompt is the act's label, a click moves it to the act's state, and `use` is heard.
+- **Cleaning** (`use: clean`, play/clean.js the reference): a stain is a decal (its kind's blot) on whatever it lies on,
+  with a box collider for the trace; `IA_Interact` held on it scrubs (a progress ring on the reticle, the decal's
+  opacity falling with an ease, a cloth sound every 0.36 s, the held mop or rag worked to and fro); the progress is kept
+  per stain (let go, it waits); `with` must be the item in the hand; clean, it's hidden and `use` heard.
 - **The inventory:** a `pickup` or a `carry` thing used goes into one row (its item given), the newest in the hand,
   held in view; the wheel turns the row, the one in the hand in the middle, at most five shown; Drop sets it down in
   front of the player on whatever is under that spot (no physics fall), facing them, and `dropped` (with the rooms it's
