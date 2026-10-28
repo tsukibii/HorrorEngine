@@ -30,7 +30,7 @@ const snapFor = nid => {                               // the run's state on rea
 };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await createRequire(import.meta.url)("../browser.cjs").launch(chromium);
   const page = await (await browser.newContext({ viewport: { width: 900, height: 560 } })).newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));

@@ -43,7 +43,7 @@ const png = rgb => {
 };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 820 } })).newPage();
   // a click here never navigates: don't wait for one after it (with a heavy shader in software GL the page can be too
   // busy to answer that wait, and a click that was done timed out)

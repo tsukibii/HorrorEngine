@@ -20,7 +20,7 @@ const OPTIONAL = /\/api\/(takes|motion)\//;          // a game without takes or 
 const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const page = await (await browser.newContext({ viewport: { width: 1400, height: 820 } })).newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));

@@ -24,7 +24,7 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
 };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } }), page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));

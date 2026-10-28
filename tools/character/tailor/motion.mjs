@@ -169,7 +169,7 @@ const server = createServer((q, r) => {
 await new Promise(r => server.once("listening", r));
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
-const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+const browser = await require("../../browser.cjs").launch(chromium);
 const pg = await (await browser.newContext({ viewport: { width: size * poses.length, height: size * 1.5 * views.length * bodies.length } })).newPage();
 const errs = []; let fail; const failed = new Promise(r => { fail = r; });
 pg.on("pageerror", e => { errs.push(e.message); fail(); });

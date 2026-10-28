@@ -1081,3 +1081,13 @@ working on: the user drew the mask they wanted (red, over our renders), and the 
 arch from lid to lid. When something drawn looks wrong, take parts away one at a time (colour the mask, hide the
 object) and see what's left, before changing the shape of anything.
 
+
+## A browser check in the cloud wants the machine to itself (2026-10-28)
+
+The full STUDIO run failed 30 steps in: a click on the Head view's button timed out after 30 seconds. Nothing was
+wrong with the page; the picture the failure left shows the button right there. CHECKS, DESK, CMDS and REFS were
+running beside it on the cloud's four cores. SwiftShader already spends about a second on a frame there, and
+Playwright's click waits for the button to hold still over two frames, so with the cores shared the wait ran out. The
+same steps passed when the run had the machine to itself. In the cloud, run nothing heavy beside a browser check, not
+even the offline ones. On the user's machine, with `GPU=1` (docs/RUN_LOCALLY.md), a frame is milliseconds and this
+doesn't arise.

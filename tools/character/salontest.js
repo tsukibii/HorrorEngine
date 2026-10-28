@@ -29,7 +29,7 @@ const TEST = "_salontest", shot = process.argv[2];
 const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
 
 (async () => {
-  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || undefined, args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--disable-background-networking", "--disable-component-update"] });
+  const browser = await require("../browser.cjs").launch(chromium, { executablePath: process.env.PW_CHROME || undefined, args: ["--disable-background-networking", "--disable-component-update"] });
   const page = await (await browser.newContext({ viewport: { width: 1100, height: 744 } })).newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));

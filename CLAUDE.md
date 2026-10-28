@@ -125,6 +125,11 @@ Unreal build must match. Directing craft: docs/DIRECTING.md.
 
 Before every push: CHECKS ok, and PLAYTHROUGH ok on every game the change can touch.
 
+**The browser checks when the user is at the machine** (DECISIONS 2026-10-28, later night): here they draw on the CPU
+(no graphics card: STUDIO takes about 50 minutes). When the user is around, push once the offline checks pass and ask
+them for a local run (docs/RUN_LOCALLY.md: `GPU=1` on their 3090, through `tools/browser.cjs`), then fix forward on what
+it reports. When they're away, run the checks here, one at a time.
+
 ## Rules
 
 - **Text is the truth.** Change story.json and rebuild; never hand-edit a story actor (the importer rebuilds

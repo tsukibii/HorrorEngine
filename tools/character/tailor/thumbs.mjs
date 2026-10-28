@@ -94,7 +94,7 @@ const server = createServer((q, r) => {
 await new Promise(r => server.once("listening", r));
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
-const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+const browser = await require("../../browser.cjs").launch(chromium);
 const pg = await (await browser.newContext({ viewport: { width: size, height: Math.round(size * 1.5) } })).newPage();
 const errs = []; pg.on("pageerror", e => errs.push(e.message)); pg.on("console", m => { if (m.type() === "error") errs.push(m.text()); });
 await pg.goto(`http://127.0.0.1:${server.address().port}/`);

@@ -21,7 +21,7 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
 
 (async () => {
   cleanup();
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
+  const browser = await createRequire(import.meta.url)("../browser.cjs").launch(chromium, { args: ["--autoplay-policy=no-user-gesture-required"] });
   const page = await (await browser.newContext({ viewport: { width: 1500, height: 900 } })).newPage();
   const errors = []; page.on("pageerror", e => errors.push(e.message)); page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: "exprtest_fail.png" }); await browser.close(); fail(`${what}: ${e.message}${errors.length ? "\n  page errors: " + errors.join(" | ") : ""}`); } };

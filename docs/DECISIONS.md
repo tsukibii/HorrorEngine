@@ -2,6 +2,26 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, later night (the long checks on the user's machine)
+
+- **Ask for a local run when I'm here**: "how much faster would the run be locally ? If its significant (I have an
+  rtx3090) then make a note to start asking me to just do the run locally (make a do run .md for claude local) as
+  40min waiting is bizarre if im not afk". It is: one frame of the Character Studio takes about a second here
+  (SwiftShader on four CPU cores) and a few milliseconds on a 3090, so STUDIO's 50 minutes should come down to perhaps
+  5 to 10 (an estimate). When the user is around, the cloud session pushes once the offline checks pass and asks for
+  the browser checks to be run there (docs/RUN_LOCALLY.md, `GPU=1`); when they're away, it runs them itself.
+
+## 2026-10-28, night (the Character Studio: the eyes from the side, the hair's bake, the nose, the face's bake)
+
+- **The eyes from the side**: they vanished in profile; "keep the illusion that its more flat from the side", "it
+  needs to arch around the top and bottom of whatever visible point, not bulge out in the middle", matched to the
+  user's red masks and smoothed ("we dont want an amateur roughly ugly mask"): an invisible arched mask behind each
+  opening.
+- **The hair dull after its bake**: leave it, "I think that will be a shader thing we will do later in unreal maybe".
+- **A small nose** ("even dragging everything low still has a fat nose that sticks out from side profile") and
+  **the face's proportions baked** ("So I can remove the reference image for image to face once Im done"): Nose size,
+  Nose projection; Bake the face.
+
 ## 2026-10-28, night (texture templates for the placeholder things)
 
 - **UV templates for Krita**: "for small untextured things that we get physically/proportionally correct could you

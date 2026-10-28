@@ -15,7 +15,7 @@ const BASE = process.env.BODY_URL || "http://127.0.0.1:8793/";
 const OUT = process.argv[2] || path.join(__dirname, "..", "..", "Saved", "SalonAudit");
 fs.mkdirSync(OUT, { recursive: true });
 (async () => {
-  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || undefined, args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--disable-background-networking", "--disable-component-update"] });
+  const browser = await require("../browser.cjs").launch(chromium, { executablePath: process.env.PW_CHROME || undefined, args: ["--disable-background-networking", "--disable-component-update"] });
   const page = await (await browser.newContext({ viewport: { width: 1100, height: 744 } })).newPage();
   page.on("dialog", d => d.accept());
   const errors = []; page.on("pageerror", e => errors.push(e.message));
