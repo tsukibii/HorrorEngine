@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -248,7 +248,7 @@ async function loadFiles() {
 async function loadBodies() {
   try { BODIES = (await api("/api/bodies")).bodies; } catch (e) { BODIES = []; }
   if (!BodyFigure.soma) try { BodyFigure.soma = await api("/api/soma"); } catch (e) { }
-  const want = new Set([S.game.previs_body, ...Object.values(S.cast || {}).map(c => c.previs_body)].filter(f => f && f !== "capsules"));
+  const want = new Set([S.game.previs_body, ...Object.values(S.cast || {}).flatMap(c => [c.previs_body, ...Object.values(c.models || {})])].filter(f => f && f !== "capsules"));   // every model too (§5)
   const def = BODIES.find(f => /^default\./i.test(f)) || BODIES.find(f => !/_hi\./i.test(f) && !f.startsWith("people/")) || null;   // MHR_hi is for exports; a Studio character only when chosen
   if (def) want.add(def);
   for (const f of want) {
@@ -578,7 +578,8 @@ function outs(id) {              // the arrows out of a card, labelled (flowedit
 let BOARD = null;
 function cardOf(id, n) {
   const ref = nodeRef(n), times = flowTimes(S); let meta = "";
-  if (n.type === "scene" && ref) { const v = version(ref), ft = times[id]; meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : ""); }
+  if (n.type === "scene" && ref) { const v = version(ref), ft = times[id], om = Object.entries(sceneModels(ref)); meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : "")
+    + (om.length ? " · " + om.map(([c, m]) => `${((S.cast || {})[c] || {}).name || c}: ${m}`).join(", ") : ""); }   // the models it picks (§5)
   if (n.type === "stitch" && ref) meta = (ref.play ? `${ref.play.type} round` : `${(ref.beats || []).length} beats`) + ` · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
   if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
   const probs = problems(id), nn = openNotes(notesHost(id)), worst = probs.some(p => p.sev === "error") ? "var(--bad)" : "var(--warn)";
@@ -592,6 +593,8 @@ function cardOf(id, n) {
     el("div", { class: "m" }, id + (meta ? " · " + meta : "")),
     probs.length ? el("span", { class: "badge", style: `background:${worst};color:${worst === "var(--bad)" ? "#fff" : "#000"}` }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
 }
+// {cast id: body file} for the models a node's cast wear ({cast id: variant}, flowModels); everyone else their default
+function modelFiles(models) { const out = {}; for (const [cid, v] of Object.entries(models || {})) { const f = modelFile(S, cid, v); if (f) out[cid] = f; } return out; }
 function nodeTitle(id, n) { const ref = nodeRef(n); return (ref && ref.title) || n.title || n.prompt || (n.type === "choice" ? `choice by ${n.by}${n.of ? " of " + n.of : ""}` : id); }
 let SELS = new Set();                              // the cards picked together (Ctrl or Shift click, a box): copied, moved, deleted together
 function selectNode(id, { add = false } = {}) {
@@ -889,6 +892,14 @@ function sceneEditor(box, sc, sid) {
   // the time of day: the scene's own, or the time it was (the scene it branched from, back to the game's start)
   const ft = flowTimes(S)[SEL], was = ft && !ft.own ? ft : null, from = was && was.from !== "game" ? nodeRef(S.flow[was.from]) : null;
   const before = was ? `as before: ${was.paths.join(" or ")} (${was.from === "game" ? "the game's start" : "from " + ((from && from.title) || was.from)})` : "as before (the scene it branched from)";
+  // each cast member's model: the scene's own pick, else as the flow brings it, down every branch after it (§3.1 models)
+  const fm = flowModels(S)[SEL] || { before: {}, mixed: [] }, dressed = castIds().filter(cid => Object.keys((S.cast[cid] || {}).models || {}).length);
+  if (dressed.length) setting.append(field("models", ...dressed.flatMap(cid => {
+    const c = S.cast[cid], hold = { v: sceneModels(sc)[cid] || "" }, mixed = fm.mixed.includes(cid);
+    return [el("span", { class: "kv" }, (c.name || cid) + " "), sel(hold, "v", [["default", "default"], ...Object.keys(c.models).map(k => [k, k])], {
+      blank: mixed ? "as before: depends on the way you came (pick one)" : `as before: ${fm.before[cid] || "default"}`, title: "the model from this scene on; left as before, the one the scene it branched from gave",
+      after: () => { if (hold.v) (sc.models = sc.models || {})[cid] = hold.v; else if (sc.models) { delete sc.models[cid]; if (!Object.keys(sc.models).length) delete sc.models; } touch(); renderInspector(); showStage(); } })];
+  })));
   setting.append(field("time", sel(sc, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: before, drop: true, title: "day, dusk or night from this scene on; left as before, it keeps the time of the scene it branched from", after: () => { renderBoard(); renderInspector(); showStage(); } })));
   sc.camera = sc.camera || { mode: "free" };
   setting.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
@@ -1737,6 +1748,7 @@ function showStage() {
   const lvl = (ref && ref.level) || Object.keys(S.levels)[0];
   flowStage.setWorld(PLAN, S, lvl);
   flowStage.setTime((flowTimes(S)[SEL] || {}).time || S.game.time || TIME_DEFAULT);
+  flowStage.setModels(modelFiles((flowModels(S)[SEL] || {}).models));   // each cast member's model as the flow brings it here
   const sc = currentScene();
   if (sc) { const tl = flowStage.timeline(sc); $("#scrub").max = tl.total.toFixed(2); scrubTo(+$("#scrub").value || 0);
     const fs = version(sc).faces; if ((fs || []).some(p => p.expr && !FACES.lib[p.expr]) || (fs && fs.length && !FACES.M)) loadFaces(fs).then(() => { if (currentScene() === sc && !PLAY) scrubTo(+$("#scrub").value || 0); }); }   // its faces, once the expressions are in
@@ -2204,7 +2216,9 @@ function playPlace(rt, lvl) {
 }
 async function playTriggered(sid) {                 // a beat's `scene`: blended in from the player, then back to play
   const sc0 = S.scenes[sid]; if (!sc0 || !RUN) return;
+  watchStage.setModels(modelFiles(wearModels(RUN.models || {}, sceneModels(sc0))));   // its own models while it plays (not carried: it isn't on the board)
   await watchScene(version(sc0), sid, sid, sc0.variants ? sc0.pick : null);
+  if (RUN) watchStage.setModels(modelFiles(RUN.models));
   return { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera };
 }
 async function playStitch(st, n, lvl) {
@@ -2238,7 +2252,7 @@ function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{
 function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
 function snapOf(R) {                                 // a checkpoint: the run as it is, the pocket and the little things too (a retry after a death keeps them)
   const rt = R.play, T = rt ? rt.now() : R.secs;
-  return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name,
+  return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name, models: R.models || {},
     items: [...((rt && rt.items) || R.items || [])],
     states: R.lives ? Object.fromEntries(Object.keys(R.lives.things).map(id => [id, (R.lives.at(id, T) || {}).state]).filter(([, st]) => st)) : {} };
 }
@@ -2262,9 +2276,12 @@ async function watch(fromNid, snap) {
   $("#watchOv .black").style.opacity = 1;
   let nid = fromNid || S.game.start, guard = 0;
   RUN.time = (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; watchStage.setTime(RUN.time);   // from any node: its time
+  if (!(snap && snap.models)) RUN.models = Object.assign({}, (flowModels(S)[nid] || {}).before);   // and the models the flow brings there (a checkpoint keeps its own)
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
     const n = S.flow[nid]; reach(nid); achieved(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
     if (n.type === "scene" && (S.scenes[n.ref] || {}).time) { RUN.time = S.scenes[n.ref].time; watchStage.setTime(RUN.time); }   // a scene's own time, from here on
+    if (n.type === "scene") RUN.models = wearModels(RUN.models || {}, sceneModels(S.scenes[n.ref]));   // a scene's models, from here on
+    watchStage.setModels(modelFiles(RUN.models));
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
       const to = await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = (to && S.flow[to]) ? to : n.next;   // an answer may send the flow to another card (§9.9 go)
@@ -2643,5 +2660,5 @@ for (const b of document.querySelectorAll("#rtabs button")) b.onclick = () => ri
 { const ib = $('#rtabs button[data-r="inspector"]'), ours = e => [...e.dataTransfer.types].includes(DRAG_TYPE);   // an expression card dragged over the Inspector's tab opens it: dropped on a face row there
   ib.addEventListener("dragenter", e => { if (ours(e)) rightTab("inspector"); }); ib.addEventListener("dragover", e => { if (ours(e)) e.preventDefault(); }); }
 try { if (localStorage.getItem("dd.rtab") === "exprPanel") rightTab("exprPanel", false); } catch (e) { }   // drawn once a game has loaded (load())
-window.__dd = { get S() { return S; }, XP, rightTab, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+window.__dd = { get S() { return S; }, XP, rightTab, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); }, models: () => flowModels(S) };
 boot();

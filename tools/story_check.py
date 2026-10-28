@@ -204,6 +204,20 @@ def check_library(story, r):
         r.warn(f"{len(missing)} library assets not fetched yet ({', '.join(missing[:4])}{' ...' if len(missing) > 4 else ''}): "
                f"`python tools/cc0.py fetch`")
     bodies = [("game", story.get("game", {}).get("previs_body"))] + [(c, v.get("previs_body")) for c, v in story.get("cast", {}).items()]
+    for c, v in story.get("cast", {}).items():          # a cast member's models (STORY_FORMAT §2): named variants, each a body
+        ms = v.get("models")
+        if ms is None:
+            continue
+        if not isinstance(ms, dict):
+            r.err(f"cast {c}: models {{name: body file}}, the variants besides the default (previs_body)")
+            continue
+        for k, f in ms.items():
+            if not isinstance(k, str) or not re.match(r"^[a-z0-9][a-z0-9_ -]*$", k) or k == "default":
+                r.err(f"cast {c}: model {k!r}: a name of its own (letters, digits, spaces; `default` is previs_body)")
+            elif not isinstance(f, str) or not f:
+                r.err(f"cast {c}: model {k!r}: its body file (people/<name>, or a file in Content/Studio/Bodies)")
+            else:
+                bodies.append((f"cast {c} model {k}", f))
     for who, f in bodies:
         if f and f.startswith("people/"):                # a Character Studio character, as exported for the desk
             name = f[len("people/"):]
@@ -692,6 +706,16 @@ def check_scene(sid, sc, story, things, r):
         r.err(f"scene {sid}: mood {sc['mood']!r} (one of {', '.join(L.MOODS)})")
     if "time" in sc and sc["time"] not in L.TIMES:
         r.err(f"scene {sid}: time {sc['time']!r} (one of {', '.join(L.TIMES)}; leave it out to keep the time it was)")
+    if "models" in sc:                                 # which model each cast member wears from this scene on (§3.1)
+        if not isinstance(sc["models"], dict):
+            r.err(f"scene {sid}: models {{cast id: a model of theirs, or \"default\"}}")
+        else:
+            for cid, v in sc["models"].items():
+                c = story.get("cast", {}).get(cid)
+                if c is None:
+                    r.err(f"scene {sid}: models: {cid!r} isn't in the cast")
+                elif v != "default" and v not in (c.get("models") or {}):
+                    r.err(f"scene {sid}: models: {cid} has no model {v!r} ({', '.join(['default', *(c.get('models') or {})])})")
     for edge in ("enter", "exit"):
         if sc.get(edge) and sc[edge].get("kind") not in TRANSITIONS:
             r.err(f"scene {sid}: {edge} kind {sc[edge].get('kind')!r} (one of {', '.join(sorted(TRANSITIONS))})")
@@ -1436,6 +1460,21 @@ def check_flow(story, things, r):
     for nid, ft in L.flow_times(story).items():          # a scene staged for one time that a path brings at another
         if flow[nid].get("type") == "scene" and not ft["own"] and len(ft["paths"]) > 1:
             r.warn(f"flow {nid}: its scene plays at {' or '.join(ft['paths'])} depending on the path; give it a `time` if it's staged for one")
+    fms, bad = L.flow_models(story), {}                 # ways meeting with different models on someone a scene after shows
+    for nid, fm in fms.items():
+        n = flow[nid]
+        if n.get("type") != "scene" or not fm["mixed"]:
+            continue
+        sc = story.get("scenes", {}).get(n.get("ref")) or {}
+        there = set(sc.get("stage") or {}) | {c.get("who") for v in [sc, *(sc.get("variants") or {}).values()] for c in v.get("clips", [])}
+        for cid in fm["mixed"]:
+            if cid in there:
+                bad.setdefault(cid, []).append(nid)
+    for nid, fm in fms.items():                        # said once, where the ways meet, naming the first scenes it shows in
+        for cid, ms in fm["meets"].items():
+            if bad.get(cid):
+                r.warn(f"flow {nid}: the ways meeting here bring {cid} in different models ({' or '.join(ms)}), and {cid} is in "
+                       f"{', '.join(bad[cid][:3])}{' …' if len(bad[cid]) > 3 else ''} after it: pick one there (the scene's `models`)")
     frames, in_act = story.get("frames", []), {}        # the board's acts: coloured frames behind groups of cards
     if not isinstance(frames, list):
         r.err("frames: a list of the board's acts, each {id, title, color, nodes}")

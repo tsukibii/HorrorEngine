@@ -126,6 +126,10 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     const ctx = { beats: [] };
     actions(sc.sets, ["scenes", sid, "sets"], ctx);
     if (sc.level && !(S.levels || {})[sc.level]) add("error", `it's set in level ${sc.level}, which doesn't exist`, ["scenes", sid], sc);
+    if (isObj(sc.models)) for (const [cid, m] of Object.entries(sc.models)) {   // the models it picks (§3.1): a cast member's own, or default
+      if (!cast[cid]) add("error", `its models: ${cid} isn't in the cast`, ["scenes", sid, "models"], sc);
+      else if (m !== "default" && !((cast[cid].models || {})[m])) add("error", `its models: ${cast[cid].name || cid} has no model “${m}”`, ["scenes", sid, "models"], sc);
+    }
     if (sc.view && !things[sc.view]) add("error", `the player stands at ${sc.view}, which isn't placed`, ["scenes", sid], sc);
     for (const v of [sc, ...Object.values(sc.variants || {})]) for (const [cid, at] of Object.entries(v.stage || {})) {
       if (!cast[cid]) add("error", `its stage names ${cid}, who isn't in the cast`, ["scenes", sid, "stage"], sc);

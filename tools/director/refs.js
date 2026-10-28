@@ -57,6 +57,7 @@ export function allRefs(S) {
       for (const kind in VALUES_OF) if (VALUES_OF[kind].includes(k) && isObj(v)) for (const [r, w] of Object.entries(v)) strings(v, r, w, kind, [...p, r], out);
       for (const kind in KEYED) if (KEYED[kind].includes(k) && isObj(v) && !top) for (const dk of Object.keys(v)) out.push({ kind, id: dk, holder: x, key: k, path: [...p, dk], dictKey: true });
       if (k === "clip" && "anim" in x && typeof v === "string") out.push({ kind: "motion", id: v, holder: x, key: k, path: p });
+      if (k === "models" && isObj(v) && path[0] === "scenes") for (const dk of Object.keys(v)) out.push({ kind: "cast", id: dk, holder: x, key: k, path: [...p, dk], dictKey: true });   // a scene's models, by cast member (a cast member's own are its looks' names)
       if (k === "if" && Array.isArray(v)) v.forEach((f, i) => { if (typeof f === "string") out.push({ kind: "flag", id: f.replace(/^!/, ""), holder: v, key: i, path: [...p, i], token: f.startsWith("!") ? "!" : "" }); });
       if (k === "if" && typeof v === "string") out.push({ kind: "flag", id: v.replace(/^!/, ""), holder: x, key: k, path: p, token: v.startsWith("!") ? "!" : "" });   // a bed's one flag
       if (k === "shape" && typeof v === "string" && /^person\s+\S+/.test(v)) out.push({ kind: "cast", id: v.split(/\s+/)[1], holder: x, key: k, path: p, token: "person" });

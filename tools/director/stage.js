@@ -158,6 +158,39 @@ export function answerJumps(sc) {
   }
   return out;
 }
+// each cast member's model through the flow (STORY_FORMAT §2 a cast member's `models`, §3.1 a scene's; storylib.
+// flow_models): a scene's choice carries down every way after it until a later scene picks another or sets it back to
+// default, as the time carries. {nid: {before, models, own: {cast id: variant}, mixed: [cast ids whose model depends on
+// the way you came, the scene not saying], meets: {cast id: [models]} where ways bringing different ones meet}}; a cast
+// member not in it wears the default
+export const sceneModels = sc => (sc && sc.models && typeof sc.models === "object" && !Array.isArray(sc.models) ? sc.models : {});
+export const wearModels = (m, own) => { const out = Object.assign({}, m); for (const [cid, v] of Object.entries(own || {})) { if (!v || v === "default") delete out[cid]; else out[cid] = v; } return out; };
+export function flowModels(story) {
+  const flow = story.flow || {}, scenes = story.scenes || {}, came = {};
+  const ownOf = n => (n.type === "scene" ? sceneModels(scenes[n.ref]) : {});
+  const key = m => JSON.stringify(Object.keys(m).sort().map(k => [k, m[k]]));
+  const todo = [[(story.game || {}).start, {}]];
+  for (let i = 0; i < todo.length; i++) {   // breadth first, as flowTimes
+    const [nid, m] = todo[i]; if (!flow[nid]) continue;
+    const seen = came[nid] || (came[nid] = new Map()), k = key(m); if (seen.has(k)) continue; seen.set(k, m);
+    const after = wearModels(m, ownOf(flow[nid]));
+    for (const to of flowOuts(story, nid)) todo.push([to, after]);
+  }
+  const preds = {}, afters = {}, out = {};
+  for (const k of Object.keys(came)) { afters[k] = [...came[k].values()].map(st => wearModels(st, ownOf(flow[k]))); for (const to of flowOuts(story, k)) (preds[to] = preds[to] || new Set()).add(k); }
+  for (const [nid, seen] of Object.entries(came)) {
+    const states = [...seen.values()], own = ownOf(flow[nid]), cids = [...new Set(states.flatMap(st => Object.keys(st)))].sort();
+    const vals = Object.fromEntries(cids.map(c => [c, [...new Set(states.map(st => st[c] || "default"))].sort()])), meets = {};
+    for (const c of cids) if (vals[c].length > 1 && [...(preds[nid] || [])].every(p => new Set((afters[p] || []).map(st => st[c] || "default")).size <= 1)) meets[c] = vals[c];   // where the ways meet
+    out[nid] = { before: states[0], models: wearModels(states[0], own), own, mixed: cids.filter(c => !(c in own) && vals[c].length > 1), meets };
+  }
+  return out;
+}
+// the body file a cast member wears in a variant, else their default (previs_body, the game's; storylib.model_file)
+export function modelFile(story, cid, variant) {
+  const c = ((story && story.cast) || {})[cid] || {};
+  return (variant && variant !== "default" && (c.models || {})[variant]) || c.previs_body || ((story && story.game) || {}).previs_body || null;
+}
 // the time of day a task's chapters leave it at (its last `chapter` with a `time`; storylib.chapter_time), or null
 export function chapterTime(story, n) {
   if (!n || n.type !== "stitch") return null;
@@ -419,7 +452,7 @@ export class Stage {
       }
     }
     for (const [cid, c] of Object.entries(story.cast || {})) {
-      const f = this.makeFigure(c);
+      const f = this.makeFigure(this.dressed(cid, c));
       f.group.visible = false;
       this.world.add(f.group); this.cast[cid] = f;
     }
@@ -447,20 +480,39 @@ export class Stage {
     for (const l of this.windows) { l.color.set(L.win[0]); l.intensity = L.win[1] * l.userData.area; l.distance = L.win[2]; }
   }
 
+  fileFor(c) { return (c && c.previs_body) || (this.story && this.story.game && this.story.game.previs_body) || this.defaultBody; }
   bodyFor(c) {
-    const file = (c && c.previs_body) || (this.story && this.story.game && this.story.game.previs_body) || this.defaultBody;
+    const file = this.fileFor(c);
     return file && file !== "capsules" ? this.bodies[file] : null;
   }
   makeFigure(c, color) {
     const h = +(c.height || 1.7), tpl = this.bodyFor(c);
+    let f = null;
     if (tpl) {
       const studio = !!(tpl.userData && tpl.userData.studio);   // a Character Studio character: its own look and its eyes (tools/shared/eye.js), its own shape
-      const f = new BodyFigure(this.lib, h, tpl, { color, shape: studio ? null : c.shape, keepMaterials: studio });
+      f = new BodyFigure(this.lib, h, tpl, { color, shape: studio ? null : c.shape, keepMaterials: studio });
       if (f.ok && studio) f.model.traverse(o => { if (o.isMesh) wearEye(o); });
-      if (f.ok) return f;
-      console.warn("body file: bones not found:", f.missing.join(", "));
+      if (!f.ok) { console.warn("body file: bones not found:", f.missing.join(", ")); f = null; }
     }
-    return new Figure(this.lib, h, color);
+    f = f || new Figure(this.lib, h, color);
+    f.file = tpl ? this.fileFor(c) : null;             // the body it wears (a model switched: made again, setModels)
+    return f;
+  }
+  // a cast member as this scene dresses them: their model (STORY_FORMAT §2 `models`), as setModels says
+  dressed(cid, c) { const file = (this.models || {})[cid]; return file ? Object.assign({}, c, { previs_body: file }) : c; }
+  // which model each cast member wears now: {cast id: body file} (flowModels, or the Watch's own run); a figure whose
+  // body changes is made again where the old one stood
+  setModels(map = {}) {
+    this.models = map;
+    for (const [cid, c] of Object.entries((this.story && this.story.cast) || {})) {
+      const old = this.cast[cid]; if (!old) continue;
+      const d = this.dressed(cid, c), file = this.bodyFor(d) ? this.fileFor(d) : null;
+      if ((old.file || null) === file) continue;
+      const f = this.makeFigure(d);
+      f.group.position.copy(old.group.position); f.group.quaternion.copy(old.group.quaternion); f.group.visible = old.group.visible;
+      (old.group.parent || this.world).add(f.group); if (old.group.parent) old.group.parent.remove(old.group);
+      this.cast[cid] = f;
+    }
   }
 
   // ---- a scene's timeline (elastic: every length comes from its clip) ----------------------------------------

@@ -131,6 +131,7 @@ TOOLS = [
     ("Checks", "Test room (TestRoom001 played station by station, headless browser; the desk running; the reference for Unreal)", "node tools/director/testroom.mjs", {}),
     ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),
     ("Checks", "Time of day on the desk (the desk running)", "node tools/director/timetest.js", {}),
+    ("Checks", "A cast member's models on the desk (the desk running)", "node tools/director/modelstest.js", {}),
     ("Checks", "Dashboard test (headless browser, its own dashboard on port 8798)", "node tools/dashboard/dashtest.mjs", {}),
     ("Checks", "Writers' room check (the chart's format and check, the prompt library, the upgrade, a build through check_all)", "tools/writers/room.py check", {}),
     ("Checks", "Writers' room page test (the chart drawn in a headless browser, built)", "node tools/writers/pagetest.mjs", {}),

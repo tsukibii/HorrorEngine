@@ -434,3 +434,4 @@ canvas.wave{display:block;width:100%;height:84px;border:1px solid var(--line);bo
 .xp-loopbox{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}.xp-loopbox .row{flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
 .xp-strip{width:100%;height:44px;border-radius:6px;cursor:col-resize;display:block}.xp-loop{color:#6fb3d9}
 .xp-pickl{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;margin-top:6px}.xp-pickl button{text-align:left}
+.db-models{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.db-model{display:inline-flex;gap:4px;align-items:center}

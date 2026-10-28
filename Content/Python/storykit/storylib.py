@@ -335,6 +335,67 @@ def chapter_time(story, n):
     return out
 
 
+def scene_models(sc):
+    """A scene's own model choices (STORY_FORMAT §3.1 `models`): {cast id: variant, or "default"}."""
+    m = (sc or {}).get("models")
+    return m if isinstance(m, dict) else {}
+
+
+def flow_models(story):
+    """Each cast member's model through the flow (STORY_FORMAT §2 a cast member's `models`, §3.1 a scene's): a scene's
+    choice carries down every way after it until a later scene sets another or sets it back to default, as the time of
+    day carries (flow_times). {nid: {"before": {cast id: variant} (as the flow brings it, the first way found),
+    "models": (after the node's own), "own": (the scene's own choices), "mixed": [cast ids whose model depends on the
+    way you came, the scene not saying], "meets": {cast id: [the models]} where ways bringing different ones meet (each
+    way in alone brings one)}}; a cast member not in it wears the default."""
+    flow, scenes = story.get("flow", {}), story.get("scenes", {})
+    own_of = lambda n: scene_models(scenes.get(n.get("ref"))) if n.get("type") == "scene" else {}
+
+    def wear(m, own):
+        out = dict(m)
+        for cid, v in own.items():
+            if not v or v == "default":
+                out.pop(cid, None)
+            else:
+                out[cid] = v
+        return out
+    came, todo, i = {}, [(story.get("game", {}).get("start"), {})], 0
+    while i < len(todo):                                # breadth first, as flow_times
+        nid, m = todo[i]
+        i += 1
+        key = json.dumps(sorted(m.items()))
+        if nid not in flow or key in came.setdefault(nid, {}):
+            continue
+        came[nid][key] = m
+        after = wear(m, own_of(flow[nid]))
+        for to in flow_outs(story, nid):
+            todo.append((to, after))
+    preds = {}
+    for k in came:
+        for to in flow_outs(story, k):
+            preds.setdefault(to, set()).add(k)
+    afters = {k: [wear(st, own_of(flow[k])) for st in seen.values()] for k, seen in came.items()}
+    out = {}
+    for nid, seen in came.items():
+        states, own = list(seen.values()), own_of(flow[nid])
+        if not states:
+            continue
+        cids = sorted({c for st in states for c in st})
+        vals = {c: sorted({st.get(c, "default") for st in states}) for c in cids}
+        mixed = [c for c in cids if c not in own and len(vals[c]) > 1]
+        meets = {c: vals[c] for c in cids if len(vals[c]) > 1
+                 and all(len({st.get(c, "default") for st in afters.get(p, [])}) <= 1 for p in preds.get(nid, ()))}
+        out[nid] = {"before": states[0], "models": wear(states[0], own), "own": own, "mixed": mixed, "meets": meets}
+    return out
+
+
+def model_file(story, cid, variant=None):
+    """The body file a cast member wears in a variant (STORY_FORMAT §2 `models`), else their default (previs_body, the
+    game's)."""
+    c = story.get("cast", {}).get(cid) or {}
+    return ((c.get("models") or {}).get(variant) if variant and variant != "default" else None) or c.get("previs_body") or story.get("game", {}).get("previs_body")
+
+
 def flow_times(story):
     """Each flow node's time of day: a scene's own `time`, else the time it was when the flow got there (the scene it
     branched from, back to game.time). {nid: {"time", "from" (the scene node that set it, or "game"), "own" (the

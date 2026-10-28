@@ -154,6 +154,49 @@ console.log("the flow cut and joined again (flowedit.js)");
   }
 }
 
+// ---- a cast member's models, picked per scene and carried down the flow (HANDOFF_DIRECTOR_TODO §5)
+console.log("a cast member's models (stage.js flowModels, storylib.flow_models)");
+{
+  const { flowModels, modelFile } = await import("./stage.js"), { renameRef } = await import("./refs.js");
+  const S0 = story("Sample"), th = thingsOf(S0);
+  const dress = S => { S.cast.mari.models = { wet: "MHR_lod1.fbx" }; S.scenes[S.flow.n_r1_cute.ref].models = { mari: "wet" }; return S; };
+  const py = S => JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+print(json.dumps(L.flow_models(json.load(sys.stdin))))`], { input: JSON.stringify(S), encoding: "utf8" }));
+  {  // the carry: a pick down every way after it; the desk and the story check agree
+    const S = dress(clone(S0)), js = flowModels(S), p = py(S);
+    const same = Object.keys(js).length === Object.keys(p).length && Object.entries(js).every(([k, v]) => JSON.stringify(v.models) === JSON.stringify((p[k] || {}).models) && JSON.stringify(v.mixed) === JSON.stringify((p[k] || {}).mixed));
+    const after = js.n_hide2 || {}, before = js.n_hide1 || {};
+    same && (js.n_r1_cute.models.mari === "wet") && !before.models.mari && after.mixed.includes("mari") && modelFile(S, "mari", "wet") === "MHR_lod1.fbx" && modelFile(S, "mari") === S.cast.mari.previs_body
+      ? ok(`Mari's wet model picked by “${S.scenes[S.flow.n_r1_cute.ref].title}”: worn there and after it, not before; round 2 reached both ways mixes (${after.mixed}); the desk and storylib agree on all ${Object.keys(js).length} nodes`)
+      : fail(`the carry: same ${same}, at the pick ${JSON.stringify(js.n_r1_cute)}, before ${JSON.stringify(before)}, after ${JSON.stringify(after)}`);
+  }
+  {  // where the ways meet with different models on someone in a scene: a warning, gone once the scene picks one
+    const S = dress(clone(S0)), out = storyCheck("Sample", S), w = out.split("\n").filter(l => /the ways meeting here bring mari in different models/.test(l));
+    const at = w.map(l => l.split(" ")[2].replace(":", "")), named = w.length ? (w[0].match(/mari is in (.*) after it/) || [])[1] || "" : "";
+    const T = dress(clone(S0)), firsts = named.replace(" …", "").split(", ").filter(Boolean);
+    let left = true, out2 = "";
+    for (let k = 0; k < 6 && left; k++) {             // pick in the scenes it names, as the user would, until it's quiet
+      out2 = storyCheck("Sample", T); const w2 = out2.split("\n").find(l => /the ways meeting here bring mari/.test(l)); left = !!w2;
+      if (w2) for (const nid of ((w2.match(/mari is in (.*) after it/) || [])[1] || "").replace(" …", "").split(", ")) T.scenes[T.flow[nid].ref].models = { mari: "default" };
+    }
+    w.length === 1 && at[0] === "n_hide2" && firsts.length && /STORY ok/.test(out) && !left && /STORY ok/.test(out2)
+      ? ok(`the ways meet with different models on Mari: one warning, at ${at[0]} where they meet, naming ${named}; picked in the scenes it names, it's gone; the story check passes`)
+      : fail(`the meeting warning: ${w.length} (${at.join(",")}) naming ${named}; after picking: ${left ? "still there" : "gone"}; ${out.trim().split("\n").pop()} / ${out2.trim().split("\n").pop()}`);
+  }
+  {  // a pick naming no model, or no cast member: errors, live and in the story check
+    const S = dress(clone(S0)); S.scenes[S.flow.n_message.ref].models = { mari: "dry", ghost: "default" };
+    const ps = run(S, th).filter(p => p.sev === "error" && /its models/.test(p.text)), out = storyCheck("Sample", S);
+    ps.length === 2 && /has no model 'dry'/.test(out) && /'ghost' isn't in the cast/.test(out) ? ok(`a pick of a model she hasn't and of someone not in the cast: errors (${ps.map(p => p.text).join("; ")}), and the story check's`)
+      : fail(`bad picks: live ${ps.map(p => p.text).join("; ") || "none"}; story check ${/has no model/.test(out)} ${/isn't in the cast/.test(out)}`);
+  }
+  {  // a cast member renamed: the scenes' picks follow
+    const S = dress(clone(S0)); renameRef(S, "cast", "mari", "mari2");
+    const sc = S.scenes[S.flow.n_r1_cute.ref];
+    sc.models && sc.models.mari2 === "wet" && !("mari" in sc.models) ? ok("Mari renamed: the scene's pick moves with her") : fail(`a rename: ${JSON.stringify(sc.models)}`);
+  }
+}
+
 // ---- the merge: the desk's edits and Claude's on disk, from the version both started from
 console.log("the merge (merge.js)");
 {

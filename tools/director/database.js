@@ -198,6 +198,28 @@ export class Database {
       h("p", { class: "hint tight" }, D.bodies().length > 1 ? "Content/Studio/Bodies holds: " + D.bodies().slice(1).map(b => Array.isArray(b) ? b[1] : b).join(", ") + ". A Character Studio character's Export for desk / Unreal shows here too, for a cast member." : "Drop a rigged human (.fbx or .glb) into Content/Studio/Bodies, or export a character from the Character Studio, and reload."));
   }
 
+  // a cast member's other looks (STORY_FORMAT §2 `models`): named variants, each a body, the body above the default; a
+  // scene picks one (its Models picker in Setting the scene) and every scene after it wears it until one picks another
+  modelsEditor(c, id) {
+    const D = this.D, ms = c.models || {}, box = h("span", { class: "db-models" });
+    const picks = fn => { for (const sc of Object.values(this.S.scenes || {})) if (sc.models && id in sc.models) fn(sc); };
+    for (const k of Object.keys(ms)) {
+      const name = h("input", { value: k, style: "width:110px", title: "its name, as scenes pick it", on: { change: e => {
+        const v = e.target.value.trim(); if (!v || v === "default" || (v !== k && v in ms)) { e.target.value = k; return; }
+        c.models = Object.fromEntries(Object.entries(ms).map(([x, f]) => [x === k ? v : x, f])); picks(sc => { if (sc.models[id] === k) sc.models[id] = v; });   // the scenes that pick it follow
+        this.changed(); this.renderForm(); } } });
+      box.append(h("span", { class: "db-model" }, name, this.sel(ms, k, D.bodies(), { blank: false, after: () => D.afterBody() }),
+        h("button", { class: "ghost", title: "take it out (the scenes that pick it carry on as the flow brings them)", on: { click: e => { e.preventDefault();
+          delete ms[k]; if (!Object.keys(ms).length) delete c.models; picks(sc => { if (sc.models[id] === k) { delete sc.models[id]; if (!Object.keys(sc.models).length) delete sc.models; } });
+          this.changed(); this.renderForm(); D.afterBody(); } } }, icon("x", 13))));
+    }
+    box.append(h("button", { class: "small", title: "another look of theirs (lilac eyes, wet, hurt...): a body each, picked per scene", on: { click: e => { e.preventDefault();
+      let n = 1; while (("look " + n) in ms) n++;
+      (c.models = c.models || {})["look " + n] = c.previs_body || D.bodies().map(b => (Array.isArray(b) ? b[0] : b)).find(f => f !== "capsules") || "capsules";
+      this.changed(); this.renderForm(); D.afterBody(); } } }, icon("plus", 13), " Add a model"));
+    return box;
+  }
+
   /* ---- each table's form ---- */
   castForm(c, id) {
     const D = this.D, m = c.measures;
@@ -207,6 +229,7 @@ export class Database {
       (this.S.format || 2) >= 3 ? this.row("Subject", this.sel(c, "subject", [["she", "she"], ["he", "he"]], { blank: "—" }), h("span", { class: "muted" }, "for the MiniMax prompts")) : null,
       this.row("Height", this.f(c, "height", { num: true, step: "0.01", world: true }), "m"),
       this.row("Body in the desk", this.sel(c, "previs_body", D.bodies(), { blank: "the game's default", after: () => D.afterBody() })),
+      this.row("Models", this.modelsEditor(c, id)),
       this.row("Skin", h("input", { type: "color", value: c.skin || "#c8a089", on: { change: e => { c.skin = e.target.value; this.changed(); } } }),
         c.skin ? h("button", { class: "ghost", title: "no skin tone", on: { click: () => { delete c.skin; this.changed(); this.renderForm(); } } }, icon("x", 13)) : h("span", { class: "muted" }, "not set")),
       this.row("Shape", h("span", { class: "muted" }, c.shape ? `${c.shape.length} identity numbers` + (m ? ` · ${m.height || "?"} cm, waist ${m.waist || "?"}, hips ${m.hips || "?"}` : "") : "the average body"),
