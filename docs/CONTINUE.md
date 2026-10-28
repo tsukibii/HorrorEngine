@@ -19,9 +19,14 @@ The user's notes-to-chart route went from a syntax they'd write in to **writing 
 - the writers' room page: the Notes tab is gone; a shape's script shows in the inspector; a session changed on disk is
   taken in by an open page (Ctrl+Z goes back), a stale save refused with the newer one shown.
 - **English only** on the HUD (no Japanese over the lines) and every choice at the bottom centre: committed before.
-Asked in the same message, next in this order: Play's controls (left click interacts, E shows the inventory row, G
-drops, no gravity), the pause menu's controls on the left like the user's picture, and a place designed first in the
-scene builder for `/build-game` to place the blocks in.
+- **Play's controls, as the user asked** (GAMEPLAY_PLAN §10): a left click uses everything, E shows or hides **the
+  inventory** (`play/inventory.js`: one row at the bottom centre, the one in the hand in the middle and held in view,
+  the wheel turns it, at most five shown, frosted glass fading at its ends), G puts the one in the hand down in front of
+  you (no fall), Shift runs; the pause menu shows the controls on its left, each key drawn in outline after the user's
+  picture. PLAY walks all of it (the faked pointer lock from the start, LESSONS). Not in Unreal yet (RUNNER_SPEC says
+  how). The guide's pictures (`guide/help.jpg`) still show the old keys: `guide_shots.mjs` makes them again.
+Asked in the same message, next: a place designed first in the scene builder (a set) for `/build-game` to place the
+blocks in.
 
 ## 0x. Before that (2026-10-27, on `dev-002`): the dashboard and the writers' room
 

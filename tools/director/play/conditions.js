@@ -27,8 +27,8 @@ register("condition", "look", {                             // looked at for `se
   test: (v, w, ev, rt) => ev.type === "tick" && rt.lookedAt(v, +(w.within ?? 8)) >= +(w.secs ?? 1) });
 register("condition", "rolled", {                         // a die settled: any face, `face`, or `at_least`
   test: (v, w, ev) => ev.type === "rolled" && ev.id === v && (w.face === undefined || ev.face === w.face) && (w.at_least === undefined || ev.face >= w.at_least) });
-register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v === true || v === rt.carried.id) });   // in the hands: anything, or that; holds while carried
-register("condition", "dropped", {                        // put down and settled: anywhere, or `in` a room or a trigger
+register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v === true || v === rt.carried.id) });   // in the hand (the inventory's one): anything, or that; holds while it is
+register("condition", "dropped", {                        // put down (G): anywhere, or `in` a room or a trigger
   test: (v, w, ev) => ev.type === "dropped" && ev.id === v && (w.in === undefined || ev.in.includes(w.in)) });
 register("condition", "played", { test: (v, w, ev) => ev.type === "played" && ev.id === v && (w.result === undefined || ev.result === w.result) });   // a board game ended: any result, or that one
 register("condition", "state", { test: (v, w, ev, rt) => rt.stateOf(v) === w.is });   // a little thing in that state: holds while it is (docs/IMMERSION.md)

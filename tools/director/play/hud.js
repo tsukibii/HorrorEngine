@@ -2,10 +2,16 @@
 // (play/ui/themes/<name>.css), so a game can switch themes. Four places, one rule each (play/ui/hud.css says how):
 // on the thing (the reticle, and the prompt floating where you'd put your hand), the corners (the game talking:
 // objective, timer, log, stance), the footer (people talking; a choice's answers under its question, at the bottom centre), the middle (a card held up to read).
+// And what you carry: the inventory's row at the bottom centre when nobody's talking (inventory.js).
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
+// the left mouse button, as a key chip (a click uses everything: DECISIONS 2026-10-27, later)
+export const MOUSE = '<svg viewBox="0 0 12 16" width="10" height="14" aria-hidden="true"><rect x="1" y="1" width="10" height="14" rx="5" fill="none" stroke="currentColor" stroke-width="1.3"/>' +
+  '<path d="M6 1v5.4M1.3 6.4h9.4" stroke="currentColor" stroke-width="1.1" fill="none"/><path d="M6 1.7A4.3 4.3 0 0 0 1.7 6H6z" fill="currentColor"/></svg>';
+export const mouseKey = () => { const e = mk("span", "ph-key ph-mouse"); e.innerHTML = MOUSE; e.title = "left click"; return e; };
 const FOCUS_MS = 350;                               // a glance doesn't pull focus, a held look does
 import { applySettings } from "./menu.js";
+import { slot, SHOWN } from "./inventory.js";
 
 export function loadTheme(name) {
   let l = document.getElementById("playTheme");
@@ -42,12 +48,15 @@ export class Hud {
     this.logEl = mk("div", "ph-log");
     this.timerEl = mk("div", "ph-timer");
     this.hint = mk("div", "ph-hint");
-    for (const [k, w] of [["Click", "look around"], ["W A S D", "walk"], ["E", "use"], ["C", "crouch"], ["Esc", "pause"]]) { const p = mk("span", "ph-pair"); p.append(key(k), mk("span", "", w)); this.hint.append(p); }
+    for (const [k, w] of [["Click", "to play"], ["W A S D", "walk"], ["Shift", "run"], [null, "use"], ["E", "inventory"], ["G", "put down"], ["C", "crouch"], ["Esc", "pause"]]) {
+      const p = mk("span", "ph-pair"); p.append(k ? key(k) : mouseKey(), mk("span", "", w)); this.hint.append(p);
+    }
+    this.invEl = mk("div", "ph-inv"); this.invRow = mk("div", "ph-inv-row"); this.invName = mk("div", "ph-inv-name"); this.invEl.append(this.invRow, this.invName);
     this.stance = mk("div", "ph-stance");
     this.boardEl = mk("div", "ph-board"); this.flashEl = mk("div", "ph-flash");     // a board game's score; a muzzle's flash
     this.seenEl = mk("div", "ph-seen ph-meter"); this.seenEl.append(mk("div"));
     this.focus = mk("div", "ph-focus");            // the camera's focus: the world softens round what you're about to use
-    this.root.append(this.focus, this.tl, this.timerEl, this.boardEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.footer, this.stance, this.hint, this.flashEl);
+    this.root.append(this.focus, this.tl, this.timerEl, this.boardEl, this.logEl, this.cursor, this.seenEl, this.prompt, this.invEl, this.footer, this.stance, this.hint, this.flashEl);
     box.append(this.root); applySettings(this.root);
     this.lineUntil = 0; this.panelEl = null; this.objTimer = 0;
   }
@@ -55,15 +64,15 @@ export class Hud {
   // what's under the reticle: its kind (the reticle opens into a ring; `locked` is red and has no key), the verb, the
   // thing's name, and `at` {x, y, flip, bare, fx, fy, clear} where the prompt floats (the HUD's pixels), or null: under
   // the reticle. `clear` (0..1, how near the reticle is to the point) sharpens the prompt; a look held FOCUS_MS pulls
-  // the camera's focus onto the thing: the world softens round it (data-focus="thing", the hole at fx, fy). `hold`: E
-  // is held for it (picking up, putting down), the key says so and the ring fills while it's held (hold())
-  setCursor(kind, label, at, name, hold) {
+  // the camera's focus onto the thing: the world softens round it (data-focus="thing", the hole at fx, fy). The key
+  // chip is the mouse's left button: a click uses it
+  setCursor(kind, label, at, name) {
     kind = kind || "none"; this.cursor.dataset.cursor = kind;
-    const sig = `${kind}|${label}|${name || ""}|${hold ? 1 : 0}`;
+    const sig = `${kind}|${label}|${name || ""}`;
     if (sig !== this.shown) {
       this.shown = sig; this.prompt.dataset.cursor = kind;
       const words = mk("span", "ph-words"); words.append(mk("span", "ph-label", label || "")); if (name) words.append(mk("span", "ph-name", name));
-      this.prompt.replaceChildren(...(label ? [mk("span", "ph-mark"), ...(kind === "locked" ? [] : [key(hold ? "Hold E" : "E")]), words] : []));
+      this.prompt.replaceChildren(...(label ? [mk("span", "ph-mark"), ...(kind === "locked" ? [] : [mouseKey()]), words] : []));
     }
     this.prompt.classList.toggle("on", !!label);
     this.prompt.classList.toggle("at", !!at); this.prompt.classList.toggle("flip", !!(at && at.flip)); this.prompt.classList.toggle("bare", !!(at && at.bare));
@@ -106,9 +115,32 @@ export class Hud {
   timer(secs) { this.timerEl.textContent = secs === null ? "" : Math.max(0, secs).toFixed(1); }
   board(text) { this.boardEl.textContent = text || ""; }   // a board game's score at the top (null clears it)
   flash() { const e = this.flashEl; e.classList.remove("on"); void e.offsetWidth; e.classList.add("on"); }
-  hold(k) {                                         // E held: the reticle's ring fills (0..1); null: let go
-    this.root.classList.toggle("holding", k !== null && k !== undefined);
-    this.cursor.style.setProperty("--ph-hold", Math.max(0, Math.min(1, k || 0)).toFixed(3));
+  // the inventory's row (play/inventory.js): `list` [{id, name, icon}], `at` the one in the hand, in the middle; the
+  // rest either side round the wheel (inventory.slot), at most SHOWN, the farther ones smaller and fainter; its name
+  // under it. `shown`: E's choice; `peek`: hidden, it shows for a moment because something changed. Each thing keeps
+  // its element, so the row slides as the wheel turns (one coming round the back of the wheel doesn't slide across)
+  inventory(list, at, shown, peek) {
+    const n = list.length, had = new Map([...this.invRow.children].map(c => [c.dataset.id, c]));
+    list.forEach((t, i) => {
+      let c = had.get(t.id); had.delete(t.id);
+      const d = slot(i, at, n), was = c ? +c.dataset.d : null;
+      if (!c) {
+        c = mk("div", "ph-inv-i"); c.dataset.id = t.id;
+        const img = mk("img"); img.alt = t.name; img.draggable = false; if (t.icon) img.src = t.icon; else img.classList.add("none");
+        c.append(img); this.invRow.append(c);
+      }
+      const jump = was === null || Math.abs(d - was) > 1;
+      c.classList.toggle("jump", jump); if (jump) void c.offsetWidth;
+      c.dataset.d = d; c.style.setProperty("--d", d); c.style.setProperty("--ad", Math.min(Math.abs(d), 3));
+      c.classList.toggle("far", Math.abs(d) > (SHOWN - 1) / 2); c.classList.toggle("held", d === 0);
+      if (jump) requestAnimationFrame(() => c.classList.remove("jump"));
+    });
+    for (const c of had.values()) c.remove();      // put down
+    this.invName.textContent = list[at] ? named(list[at].name) : "";
+    this.invEl.classList.toggle("on", n > 0 && shown);
+    clearTimeout(this.invT);
+    if (peek && n > 0 && !shown) { this.invEl.classList.add("peek"); this.invT = setTimeout(() => this.invEl.classList.remove("peek"), 1800); }
+    else this.invEl.classList.remove("peek");
   }
   seen(k) {                                         // the suspicion meter: 0 hidden, 1 caught
     this.seenEl.classList.toggle("on", k > 0.01);

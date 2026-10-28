@@ -136,13 +136,22 @@ scene: a camera fade, and control taken and given back softly.
 | state | a little thing's state (docs/IMMERSION.md): its actor (tagged `life:<name>`) told through its life's Blueprint (class_map's `life` table, once made); its timers run on the game's clock, so a kettle switched on boils by itself; `{"state": id, "is": s}` holds while it's in that state |
 | done | ends the stitch |
 
-**Interaction:**
+**Interaction** (the desk's Play is the reference: GAMEPLAY_PLAN §10, DECISIONS 2026-10-27, later):
+- The controls, as Enhanced Input actions (`CONTROLS` in play/menu.js): `IA_Move` (WASD), `IA_Interact` (the left
+  mouse button: every interactable), `IA_Inventory` (E: the row shown or hidden), `IA_InventoryScroll` (the wheel),
+  `IA_Drop` (G), `IA_Run` (Shift, forward, standing), `IA_Crouch` (C), Esc pauses; the pause menu lists them on its left.
 - Class-mapped template Blueprints call `NotifyUse` through a small interface (one call each, added through MCP).
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - A little thing with a life (`life:*`) is used like one when its state has an act (Content/Studio/Life/lives.json):
-  the prompt is the act's label, E moves it to the act's state, and `use` is heard.
-- Widgets (UMG, kept plain): subtitles, the objective, the note reader, the keypad, the inventory, the ending card,
-  the debug HUD, the floating prompt and the floating choice (play/ui/hud.css is the layout: four places, one rule each).
+  the prompt is the act's label, a click moves it to the act's state, and `use` is heard.
+- **The inventory:** a `pickup` or a `carry` thing used goes into one row (its item given), the newest in the hand,
+  held in view; the wheel turns the row, the one in the hand in the middle, at most five shown; Drop sets it down in
+  front of the player on whatever is under that spot (no physics fall), facing them, and `dropped` (with the rooms it's
+  in) is heard; the item is gone with it. Kept with the run (the checkpoint's inventory: the things, their order, the
+  one in the hand).
+- Widgets (UMG, kept plain): subtitles, the objective, the note reader, the keypad, the inventory's row (frosted glass
+  fading at its ends, no border), the ending card, the debug HUD, the floating prompt and the floating choice
+  (play/ui/hud.css is the layout: four places, one rule each).
 
 ## Debug (the console), for Claude as much as for you
 

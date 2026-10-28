@@ -1,8 +1,10 @@
 // The pause menu (Esc in Play; docs/GAMEPLAY_PLAN.md §10): the game holds, the lights go out (the frame flickers down
-// to nearly black) and the menu is drawn over it in the HUD's theme. Resume, Save game (slots), Settings (Display &
+// to nearly black) and the menu is drawn over it in the HUD's theme. The controls on the left (each key drawn in
+// outline, after the user's picture: DECISIONS 2026-10-27, later), then Resume, Save game (slots), Settings (Display &
 // Graphics, Audio), Quit (a footer choice, like any other). The reference for Unreal's menu: the same pages and rows,
-// and every setting names what it maps to there (`ue`: a console variable, a scalability group, a sound class).
-// Values step with ‹ › (A/D), never a slider; levels are ten dashes, the HUD's meter cut in steps.
+// and every setting names what it maps to there (`ue`: a console variable, a scalability group, a sound class; a
+// control its Enhanced Input action). Values step with ‹ › (A/D), never a slider; levels are ten dashes, the HUD's
+// meter cut in steps.
 import { chooser, paintLine } from "./hud.js";
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
@@ -51,6 +53,54 @@ export const SETTINGS = [
   ] },
 ];
 const ROWS = SETTINGS.flatMap(p => p.groups.flatMap(g => g.rows));
+
+// the controls, as the pause menu shows them on its left: the keys (or the mouse) and what they do; `ue` the Enhanced
+// Input action it is in Unreal
+export const CONTROLS = [
+  { keys: ["W", "A", "S", "D"], label: "Movement", ue: "IA_Move" },
+  { mouse: "click", label: "Interact", ue: "IA_Interact" },
+  { keys: ["E"], label: "Inventory", ue: "IA_Inventory" },
+  { mouse: "wheel", label: "Switch item", ue: "IA_InventoryScroll" },
+  { keys: ["G"], label: "Drop", ue: "IA_Drop" },
+  { keys: ["Shift"], label: "Run", ue: "IA_Run" },
+  { keys: ["C"], label: "Crouch", ue: "IA_Crouch" },
+];
+// a key drawn as its cap in outline: the cap's edge, its top face inside it, the legend at the top face's corner
+const CAP = 40, GAP = 5;
+function cap(x, y, label, w = CAP) {
+  const word = label.length > 1;
+  return `<rect x="${x + 1}" y="${y + 1}" width="${w - 2}" height="${CAP - 2}" rx="7" fill="none" stroke="currentColor" stroke-width="1.6"/>` +
+    `<rect x="${x + 4.5}" y="${y + 3.5}" width="${w - 9}" height="${CAP - 12}" rx="5" fill="none" stroke="currentColor" stroke-width="1.1"/>` +
+    `<text x="${x + 9}" y="${y + (word ? 16 : 19)}" font-size="${word ? 11 : 14}" font-weight="500" fill="currentColor">${label}</text>`;
+}
+function keysSvg(keys) {
+  if (keys.length === 4) {                           // W over S, A S D along the bottom, as on the keyboard
+    const W = 3 * CAP + 2 * GAP, H = 2 * CAP + GAP;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${cap(CAP + GAP, 0, keys[0])}${cap(0, CAP + GAP, keys[1])}${cap(CAP + GAP, CAP + GAP, keys[2])}${cap(2 * (CAP + GAP), CAP + GAP, keys[3])}</svg>`;
+  }
+  const w = keys[0].length > 1 ? 2 * CAP : CAP;
+  return `<svg width="${w}" height="${CAP}" viewBox="0 0 ${w} ${CAP}" aria-hidden="true">${cap(0, 0, keys[0], w)}</svg>`;
+}
+// the mouse in outline, its cable up out of the top: "click" its left button lit and the lines of a click beside it,
+// "wheel" the wheel lit with an arrow up and down
+function mouseSvg(how) {
+  const body = '<rect x="12" y="16" width="30" height="46" rx="15" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
+    '<path d="M27 16v15M12.6 31h28.8" stroke="currentColor" stroke-width="1.2" fill="none"/>' +
+    '<path d="M27 16c0-6 5-6 8-9s2-6 2-6" stroke="currentColor" stroke-width="1.4" fill="none"/>';
+  const lit = how === "click"
+    ? '<path d="M27 17.6A13.4 13.4 0 0 0 13.7 30H27z" fill="currentColor" opacity=".55"/><path d="M9 13L4 8M13 9.5L11.5 3M6.5 18.5L.5 17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
+    : '<rect x="24.5" y="19" width="5" height="9" rx="2.5" fill="currentColor"/><path d="M48 15l3.5-4 3.5 4M48 31l3.5 4 3.5-4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  return `<svg width="58" height="64" viewBox="0 0 58 64" aria-hidden="true">${body}${lit}</svg>`;
+}
+export function controlsPanel() {
+  const box = mk("div", "ph-controls");
+  for (const c of CONTROLS) {
+    const row = mk("div", "ph-ctl"), icon = mk("div", "ph-ctl-icon");
+    icon.innerHTML = c.keys ? keysSvg(c.keys) : mouseSvg(c.mouse);
+    row.title = "Unreal: " + c.ue; row.append(icon, mk("span", "ph-ctl-label", c.label)); box.append(row);
+  }
+  return box;
+}
 const SKEY = "horrorstudio.settings", saveKey = game => `horrorstudio.saves.${game}`;
 // the autosave slot (a chapter, a checkpoint): where the game was, its time, when
 export function autosave(game, where, secs) { const s = read(saveKey(game), {}); s.auto = { where: where || game, secs: secs || 0, at: Date.now() }; write(saveKey(game), s); }
@@ -74,7 +124,7 @@ export function pauseMenu(hud, ctx) {
   return new Promise(done => {
     const s = loadSettings(), saves = read(saveKey(ctx.game), {});
     const m = mk("div", "ph-menu"), dark = mk("div", "ph-dark"), nav = mk("div", "ph-nav"), page = mk("section", "ph-page"), legend = mk("div", "ph-legend");
-    m.append(dark, nav, page, legend);
+    m.append(dark, controlsPanel(), nav, page, legend);
     let at = "root", col = "nav", idx = 0, items = { nav: [], page: [] }, quit = null, confirm = null;
 
     const focus = (c, i) => {
@@ -166,6 +216,7 @@ export function pauseMenu(hud, ctx) {
     const open = p => {
       if (quit) { quit.footer.remove(); quit = null; }
       at = p; confirm = null; showNav(); showPage();
+      m.classList.toggle("root", p === "root" || p === "quit");   // the controls on the left, until a page opens
       if (p === "quit") { askQuit(); focus("nav", 3); }
       else if (items.page.length) focus("page", 0);
       else focus("nav", 0);

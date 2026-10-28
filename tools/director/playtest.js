@@ -1,8 +1,10 @@
 // Play mode in a headless browser (docs/GAMEPLAY_PLAN.md §8 step 1): the Pilot walked from the start to the good
-// ending with the keys and the cursor, as a player would: a wall stops you, the front door opens with E, the hall's
-// trigger ends the arrival, Mari walks her route in the hall, a question (ask) is answered beside her, a die is rolled and
-// its face heard, a plushie is picked up and put down by holding E (lagging, flopping and bobbing in the hands, squashing
-// as it lands, heard where it lies), a game of chō-han is played at the hall table, the letter reads, the kitchen's kettle is switched on and boils by itself, E hides in the locker and gets out, her eyes catch
+// ending with the keys, the mouse and the cursor, as a player would (a left click uses: DECISIONS 2026-10-27, later): a
+// wall stops you, the front door opens with a click, the hall's trigger ends the arrival, Mari walks her route in the
+// hall, a question (ask) is answered beside her, a die is rolled and its face heard, a plushie is picked up into the
+// inventory (lagging, flopping and bobbing in the hand) and put down with G (on the floor in front of you, heard where
+// it lies), the inventory's row (E hides and shows it, the one in the hand in the middle, the wheel turns it, at most
+// five), Shift runs, a game of chō-han is played at the hall table, the letter reads, the kitchen's kettle is switched on and boils by itself, a click hides in the locker and gets out, her eyes catch
 // you in the open but not hidden or in a safe zone, the kitchen's glimpse fires, the drawer's code is typed on the panel,
 // the key shows and is taken, the locked cellar door opens with it, the grab is answered ("Let go of me.": no quick-time events, DECISIONS 2026-10-27), and the timed run
 // out of the house ends on the porch. Ends "PLAY ok".
@@ -33,6 +35,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "big_die", shape: "box 0.3 0.3 0.3", at: [2.6, 4.2], use: "roll" });
     S.stitches.t_search.beats.push({ id: "b_roll", when: { rolled: "big_die", at_least: 1 }, optional: true, do: [{ flag: "rolled_once" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "plush", shape: "box 0.3 0.25 0.35", at: [1.0, 3.0], use: "carry", physics: "plushie" });
+    for (let i = 1; i <= 6; i++) S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "inv_" + i, shape: "box 0.08 0.08 0.08", at: [0.5 + 0.3 * ((i - 1) % 3), i <= 3 ? 5.0 : 5.4], use: "pickup", item: "inv_item_" + i });
+    S.stitches.t_search.beats.push({ id: "b_inv_put", when: { dropped: "inv_6", in: "hall" }, optional: true, do: [{ flag: "inv_put" }] });
     S.stitches.t_search.beats.push({ id: "b_plush", when: { carrying: "plush" }, optional: true, do: [{ flag: "has_plush" }] });
     S.stitches.t_search.beats.push({ id: "b_put", when: { dropped: "plush", in: "hall" }, optional: true, do: [{ flag: "plush_put" }] });
     S.stitches.t_search.beats.push({ id: "b_put_k", when: { dropped: "plush", in: "kitchen" }, optional: true, do: [{ flag: "plush_kitchen" }] });
@@ -58,6 +62,13 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   });
   await page.click('nav button[data-v="watchView"]');
   await page.check("#wPlay"); await page.check("#wSkip");
+  // the pointer lock, faked (a headless browser has none): a left click while it's "locked" uses what's under the reticle
+  await page.evaluate(() => {
+    const box = document.querySelector("#watchBox"), fire = () => document.dispatchEvent(new Event("pointerlockchange"));
+    window.__lock = null; Object.defineProperty(document, "pointerLockElement", { configurable: true, get: () => window.__lock });
+    document.exitPointerLock = () => { if (window.__lock) { window.__lock = null; fire(); } };
+    box.requestPointerLock = () => { window.__lock = box; fire(); return Promise.resolve(); };
+  });
   await page.click("#wStart");
 
   const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "playtest_fail.png" }); fail(`${what}: ${e.message}${errors.length ? "\n  page errors: " + errors.join(" | ") : ""}`); } };
@@ -98,6 +109,15 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     throw new Error(`can't get the cursor on ${id} ${JSON.stringify({ tween: !!rt.lookTween, moving: !!rt.moving, busy: rt.busy, hiding: rt.player.hiding, seat: !!rt.player.seat, eye: rt.player.eye, hit: rt.look.id, vis: o.visible })}`);
   }, [id, d]));
   const press = async (key, ms = 120) => { await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
+  // a left click on what's under the reticle: the mouse parked in the middle of the view with the lock let go for that
+  // moment (a locked mouse that moves turns the view; another click elsewhere may have moved it), the lock taken, the click
+  const click = async () => {
+    const b = await page.locator("#watchBox").boundingBox();
+    await page.evaluate(() => { window.__lock = null; });
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.evaluate(() => document.querySelector("#watchBox").requestPointerLock());
+    await page.mouse.down(); await page.waitForTimeout(80); await page.mouse.up();
+  };
   // wait for the game's own clock, not the wall's: on slow frames (a software GPU) a second of real time is less play;
   // done early when play ends (walking into the place that answers a choice)
   const gameWait = async secs => {
@@ -121,10 +141,11 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (x < 0.2 || x > 0.6) throw new Error(`walked to x=${x.toFixed(2)}: the hall's west wall is at 0`);
     await page.evaluate(() => { const rt = window.__dd.play; rt.placeAt(rt.level, "start"); });
   });
-  await step("the front door: the cursor says open, E opens it", async () => {
+  await step("the front door: the cursor says open (the mouse's button as its key), a click opens it", async () => {
     const r = await goTo("front_door", 1.0);
     if (r.cursor !== "open") throw new Error("cursor " + r.cursor);
-    await press("KeyE"); await gameWait(0.9);
+    if (!(await page.$(".ph-prompt .ph-mouse"))) throw new Error("the prompt's key isn't the mouse");
+    await click(); await gameWait(0.9);
     if (!(await page.evaluate(() => window.__dd.play.doors.front_door.open))) throw new Error("not open");
   });
   await step("walking in through it ends the arrival (the hall's trigger)", async () => {
@@ -141,8 +162,9 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   const mari = () => page.evaluate(() => { const rt = window.__dd.play, f = rt.stage.cast.mari, n = rt.npcs.mari;
     return { vis: f.group.visible, x: f.group.position.x, y: -f.group.position.z, walking: n && n.walking, pose: n && n.pose }; });
   const onRoute = async what => {                      // on the line between her two spots, and moving along it
-    const a = await mari(); let b = a;                  // up to 4 s for her to move: slow frames (a software GPU) walk less per second
-    for (let t0 = Date.now(); Date.now() - t0 < 4000 && Math.abs(a.y - b.y) < 0.2 && b.pose !== "look_left"; ) { await page.waitForTimeout(250); b = await mari(); }
+    const a = await mari(); let b = a;                  // up to 4 s of the game's clock for her to move (a software GPU's slow frames: a wall-clock second is less play)
+    const c0 = await page.evaluate(() => window.__dd.play.clock);
+    for (let t0 = Date.now(); Date.now() - t0 < 60000 && Math.abs(a.y - b.y) < 0.2 && b.pose !== "look_left" && (await page.evaluate(() => window.__dd.play.clock)) - c0 < 4; ) { await page.waitForTimeout(250); b = await mari(); }
     for (const m of [a, b]) if (!m.vis || Math.abs(m.x - 2) > 0.05 || m.y < 3.55 || m.y > 5.8) throw new Error(`${what}: off her route ${JSON.stringify(m)}`);
     if (Math.abs(a.y - b.y) < 0.2 && !(a.pose === "look_left" || b.pose === "look_left")) throw new Error(`${what}: not walking ${JSON.stringify([a, b])} ${await page.evaluate(() => { const rt = window.__dd.play; return JSON.stringify({ active: rt.active, held: rt.held, busy: rt.busy, clock: rt.clock, menu: !!document.querySelector(".ph-menu"), npc: rt.npcs.mari && Object.keys(rt.npcs.mari) }); })}`);
   };
@@ -193,20 +215,20 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await page.waitForFunction(() => window.__dd.run.flags.has("said_go") && window.__dd.run.flags.has("heard_go") && !document.querySelector(".ph-dock"), null, { timeout: 60000 });
     await page.evaluate(() => window.__dd.play.behave("mari", { as: "path", route: "r_hall" }));
   });
-  await step("sitting: E sits (the eye at sitting height), E stands", async () => {
+  await step("sitting: a click sits (the eye at sitting height), a click stands", async () => {
     const r = await goTo("chair_a", 0.8);
     if (r.cursor !== "sit") throw new Error("cursor " + r.cursor);
-    await press("KeyE"); await gameWait(0.9);
+    await click(); await gameWait(0.9);
     const e = await page.evaluate(() => [window.__dd.play.player.eye, !!window.__dd.play.player.seat]);
     if (!e[1] || Math.abs(e[0] - 1.15) > 0.05) throw new Error("seated " + e);
     const p = await page.textContent(".ph-prompt"); if (!/Stand up/.test(p)) throw new Error("prompt " + p);
-    await press("KeyE"); await gameWait(0.9);
+    await click(); await gameWait(0.9);
     const s = await page.evaluate(() => [window.__dd.play.player.eye, !!window.__dd.play.player.seat]);
     if (s[1] || s[0] < 1.6) throw new Error("standing " + s);
   });
   await step("a triggered scene: sitting on the other chair plays one, then walking goes on", async () => {
     await goTo("chair_b", 0.8);
-    await press("KeyE");
+    await click();
     await playing(false, 60000);                   // the scene takes over; 60 s, not 5: it missed once on the software GPU (LESSONS)
     await scenesUntilPlay();
     const st = await page.evaluate(() => { const rt = window.__dd.play; return { seat: !!rt.player.seat, stitch: !!rt.end, y: -rt.player.pos.z }; });
@@ -214,10 +236,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (Math.abs(st.y - 2.2) > 0.6) throw new Error(`carried on from y=${st.y.toFixed(2)}, the scene's eye is at 2.2`);
     await onRoute("after the scene");
   });
-  await step("the die: E throws it, it settles on the floor, its face is heard (rolled)", async () => {
+  await step("the die: a click throws it, it settles on the floor, its face is heard (rolled)", async () => {
     const r = await goTo("big_die", 1.1);
     if (r.cursor !== "roll") throw new Error("cursor " + r.cursor);
-    await press("KeyE");
+    await click();
     await page.waitForFunction(() => window.__dd.run.flags.has("rolled_once"), null, { timeout: 60000 });   // a ceiling: physics on a slow software renderer settles late
     const d = await page.evaluate(() => { const m = window.__dd.play.byId.big_die; return { y: m.position.y, log: document.querySelector(".ph-log").textContent }; });
     if (Math.abs(d.y - 0.15) > 0.04) throw new Error(`the die rests at y=${d.y.toFixed(3)}, not on the floor`);
@@ -231,54 +253,94 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     });
     if (faces.join() !== "1,4,3,2,5") throw new Error("faces " + faces);
   });
-  await step("a plushie: held E picks it up (a tap doesn't); in the hands it lags and flops on a turn and bobs as you walk; held E puts it down, it falls, squashes, settles on the floor and is heard where it lies", async () => {
+  await step("a plushie: a click picks it up into the inventory, in the hand (lagging and flopping on a turn, bobbing as you walk); G puts it down on the floor in front of you, no fall, and it's heard where it lies", async () => {
     const r = await goTo("plush", 0.8);
-    const key = await page.textContent(".ph-prompt .ph-key");
-    if (r.cursor !== "take" || key !== "Hold E") throw new Error(`cursor ${r.cursor}, the key says ${key}`);
-    await press("KeyE"); await gameWait(0.3);
-    if (await page.evaluate(() => !!window.__dd.play.carried)) throw new Error("a tap picked it up");
-    await hold("KeyE", 0.65); await gameWait(0.2);
-    const c = await page.evaluate(() => { const rt = window.__dd.play; return { id: rt.carried && rt.carried.id, flag: window.__dd.run.flags.has("has_plush"), prompt: document.querySelector(".ph-prompt").textContent }; });
-    if (c.id !== "plush" || !c.flag || !/Hold E.*Put down/.test(c.prompt)) throw new Error(`picked up: ${JSON.stringify(c)}`);
+    if (r.cursor !== "take" || !(await page.$(".ph-prompt .ph-mouse"))) throw new Error(`cursor ${r.cursor}, the prompt ${await page.textContent(".ph-prompt")}`);
+    await click(); await gameWait(0.3);
+    const c = await page.evaluate(() => { const rt = window.__dd.play, h = rt.hand; return { id: rt.carried && rt.carried.id, flag: window.__dd.run.flags.has("has_plush"), world: rt.byId.plush.visible,
+      row: [...document.querySelectorAll(".ph-inv-i")].map(e => e.dataset.id + (e.classList.contains("held") ? "*" : "")), hand: h && h.x.m.visible ? h.x.m.position.distanceTo(rt.stage.camera.position) : null }; });
+    if (c.id !== "plush" || !c.flag || c.world || c.row.join() !== "plush*" || !(c.hand > 0.3 && c.hand < 1)) throw new Error(`picked up: ${JSON.stringify(c)}`);
     await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(1.0, 0, -2.6), 0, 0); });   // in the open, facing east
     await gameWait(1.2);
     const turn = await page.evaluate(async () => {           // a brisk look north and back, as a mouse turns: 90 degrees in 0.35 s each way, eased
-      const rt = window.__dd.play, x = rt.physics.moverOf(rt.carried.m), frame = () => new Promise(f => requestAnimationFrame(f)), t0 = rt.clock, e = u => u * u * (3 - 2 * u);
+      const rt = window.__dd.play, x = rt.hand.x, frame = () => new Promise(f => requestAnimationFrame(f)), t0 = rt.clock, e = u => u * u * (3 - 2 * u);
       let lag = 0, bend = 0;
       while (rt.clock - t0 < 1.2) {
         const u = (rt.clock - t0) / 0.35; rt.player.yaw = 90 * (u < 1 ? e(u) : u < 2 ? 1 - e(u - 1) : 0);
-        await frame(); if (rt.carried.at) lag = Math.max(lag, x.st.pos.distanceTo(rt.carried.at)); bend = Math.max(bend, x.st.bend.length());
+        await frame(); if (rt.hand.at) lag = Math.max(lag, x.st.pos.distanceTo(rt.hand.at)); bend = Math.max(bend, x.st.bend.length());
       }
       return { lag, bend };
     });
-    if (!(turn.lag > 0.01 && turn.lag < 0.2) || !(turn.bend > 0.01)) throw new Error(`on a turn it should stay in the hands, lagging a little, its top flopping: ${JSON.stringify(turn)}`);
+    if (!(turn.lag > 0.01 && turn.lag < 0.2) || !(turn.bend > 0.01)) throw new Error(`on a turn it should stay in the hand, lagging a little, its top flopping: ${JSON.stringify(turn)}`);
     await gameWait(1.0);
     const bob = page.evaluate(async () => {                   // its squash while walking
-      const rt = window.__dd.play, x = rt.physics.moverOf(rt.carried.m), frame = () => new Promise(f => requestAnimationFrame(f)), t0 = rt.clock;
+      const rt = window.__dd.play, x = rt.hand.x, frame = () => new Promise(f => requestAnimationFrame(f)), t0 = rt.clock;
       let lo = 1, hi = -1; while (rt.clock - t0 < 1.0) { await frame(); if (rt.player.speed > 0.5) { lo = Math.min(lo, x.st.sq); hi = Math.max(hi, x.st.sq); } }
       return hi - lo;
     });
     await hold("KeyW", 1.1);
     const bobbed = await bob;
     if (!(bobbed > 0.004)) throw new Error(`it should bob with the steps: squash range ${bobbed}`);
-    const fall = page.evaluate(async () => {                  // put down: how far it squashes as it lands
-      const rt = window.__dd.play, m = rt.byId.plush, x = rt.physics.moverOf(m), frame = () => new Promise(f => requestAnimationFrame(f)), t0 = rt.clock;
-      let lo = 0; while (rt.clock - t0 < 2.5 && !window.__dd.run.flags.has("plush_put")) { await frame(); if (!rt.carried) lo = Math.min(lo, x.st.sq); }
-      return lo;
-    });
-    await hold("KeyE", 0.65);
-    await page.waitForFunction(() => window.__dd.run.flags.has("plush_put"), null, { timeout: 60000 });   // settled in the hall
-    const squash = await fall;
-    const d = await page.evaluate(() => { const rt = window.__dd.play, m = rt.byId.plush; return { carried: !!rt.carried, y: m.position.y, kept: !!rt.kept.house.bodies.plush, kitchen: window.__dd.run.flags.has("plush_kitchen") }; });
-    if (d.carried || d.kitchen || !d.kept || d.y < 0.11 || d.y > 0.2) throw new Error(`put down: ${JSON.stringify(d)}`);
-    if (!(squash < -0.015)) throw new Error(`it should squash as it lands: ${squash}`);
-    console.log(`       on a turn ${(turn.lag * 100).toFixed(1)} cm behind the hands, its top ${(turn.bend * 100).toFixed(1)} cm over; a ${(bobbed * 100).toFixed(1)} % bob walking; ${(-squash * 100).toFixed(1)} % squashed landing; rests at ${d.y.toFixed(3)} m`);
+    const before = await page.evaluate(() => { const p = window.__dd.play.player; return { x: p.pos.x, z: p.pos.z, yaw: p.yaw }; });
+    await press("KeyG"); await gameWait(0.2);
+    await page.waitForFunction(() => window.__dd.run.flags.has("plush_put"), null, { timeout: 60000 });   // heard: in the hall
+    const d = await page.evaluate(() => { const rt = window.__dd.play, m = rt.byId.plush; return { carried: !!rt.carried, vis: m.visible, x: m.position.x, z: m.position.z, y: m.position.y,
+      kept: !!rt.kept.house.bodies.plush, kitchen: window.__dd.run.flags.has("plush_kitchen"), row: document.querySelectorAll(".ph-inv-i").length, hand: !!rt.hand }; });
+    const a = before.yaw * Math.PI / 180, ahead = (d.x - before.x) * Math.cos(a) - (d.z - before.z) * Math.sin(a);
+    if (d.carried || !d.vis || d.kitchen || !d.kept || d.row || d.hand || Math.abs(d.y - 0.175) > 0.01 || !(ahead > 0.3 && ahead < 0.7)) throw new Error(`put down: ${JSON.stringify(d)}, ${ahead.toFixed(2)} m ahead`);
+    console.log(`       on a turn ${(turn.lag * 100).toFixed(1)} cm behind the hand, its top ${(turn.bend * 100).toFixed(1)} cm over; a ${(bobbed * 100).toFixed(1)} % bob walking; put down ${ahead.toFixed(2)} m ahead, resting at ${d.y.toFixed(3)} m`);
   });
-  await step("a board game: E at the table sits you down facing it, its rules play it out (chō-han: the cup shakes and comes down, you call, it lifts on the dice), you stand up and the story hears the result", async () => {
+  await step("the inventory: one row, the newest in the hand in the middle, at most five shown (the farther ones fade), each its picture; the wheel turns it, E hides it and shows it, G puts the one in the hand down and a click takes it back", async () => {
+    await page.evaluate(() => { const rt = window.__dd.play; for (let i = 1; i <= 6; i++) rt.take(rt.byId["inv_" + i]); rt.place(new (rt.player.pos.constructor)(1.0, 0, -2.6), 0, 0); });
+    await page.waitForTimeout(500);
+    const row = () => page.evaluate(async () => {           // measured once the row's slides and fades have run (a software GPU's long frames start them late)
+      const inv = document.querySelector(".ph-inv");
+      for (const e of [inv, ...inv.querySelectorAll(".ph-inv-i")]) getComputedStyle(e).transform;
+      await Promise.all(inv.getAnimations({ subtree: true }).map(a => a.finished.catch(() => null)));
+      const R = inv.getBoundingClientRect(), mid = R.left + R.width / 2;
+      return { on: inv.classList.contains("on"), opacity: +getComputedStyle(inv).opacity, name: document.querySelector(".ph-inv-name").textContent,
+        items: [...document.querySelectorAll(".ph-inv-i")].map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.id, held: e.classList.contains("held"), far: e.classList.contains("far"),
+          off: Math.round(r.left + r.width / 2 - mid), op: +getComputedStyle(e).opacity, png: /^data:image\/png/.test(e.querySelector("img").src) }; }),
+        held: window.__dd.play.carried && window.__dd.play.carried.id }; });
+    const r1 = await row(), shown = r1.items.filter(x => !x.far), held = r1.items.find(x => x.held);
+    if (r1.items.length !== 6 || shown.length !== 5 || !held || held.id !== "inv_6" || r1.held !== "inv_6" || Math.abs(held.off) > 2 || !r1.on || !r1.items.every(x => x.png))
+      throw new Error("the row " + JSON.stringify(r1));
+    const far = r1.items.find(x => x.far), side = shown.filter(x => !x.held).map(x => x.off).sort((a, b) => a - b);
+    if (far.op > 0.01 || side.length !== 4 || !(side[0] < side[1] && side[1] < 0 && side[2] > 0 && side[2] < side[3])) throw new Error("either side " + JSON.stringify(r1.items));
+    await page.evaluate(() => document.querySelector("#watchBox").dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true })));
+    await page.waitForTimeout(500);
+    const r2 = await row(), h2 = r2.items.find(x => x.held);
+    if (r2.held !== "inv_1" || !h2 || h2.id !== "inv_1" || Math.abs(h2.off) > 2 || r2.items.find(x => x.id === "inv_6").off >= 0) throw new Error("the wheel " + JSON.stringify(r2));
+    await page.evaluate(() => document.querySelector("#watchBox").dispatchEvent(new WheelEvent("wheel", { deltaY: -100, bubbles: true, cancelable: true })));
+    await page.waitForTimeout(400);
+    if ((await row()).held !== "inv_6") throw new Error("the wheel back");
+    await press("KeyE"); await page.waitForTimeout(500);
+    const r3 = await row(); if (r3.on || r3.opacity > 0.01) throw new Error("E didn't hide it " + JSON.stringify({ on: r3.on, o: r3.opacity }));
+    await press("KeyE"); await page.waitForTimeout(500);
+    const r4 = await row(); if (!r4.on || r4.opacity < 0.99) throw new Error("E didn't show it again");
+    await press("KeyG"); await gameWait(0.2);
+    await page.waitForFunction(() => window.__dd.run.flags.has("inv_put"), null, { timeout: 60000 });
+    const r5 = await row(); if (r5.items.length !== 5 || r5.items.some(x => x.id === "inv_6") || r5.held !== "inv_5") throw new Error("put down " + JSON.stringify(r5));
+    const t = await goTo("inv_6", 0.7);
+    if (t.cursor !== "take") throw new Error("cursor " + t.cursor);
+    await click(); await gameWait(0.2);
+    const r6 = await row(); if (r6.items.length !== 6 || r6.held !== "inv_6" || !(await page.evaluate(() => window.__dd.play.items.has("inv_item_6")))) throw new Error("taken back " + JSON.stringify(r6));
+    await page.evaluate(() => { const rt = window.__dd.play; for (let i = 1; i <= 6; i++) { rt.inv.remove("inv_" + i); rt.items.delete("inv_item_" + i); } });   // out of the way of the rest
+  });
+  await step("Shift runs (forward, standing): about twice the walk", async () => {
+    const speed = async keys => { await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(0.8, 0, -2.6), 0, 0); });
+      const x0 = await page.evaluate(() => window.__dd.play.player.pos.x), c0 = await page.evaluate(() => window.__dd.play.clock);
+      for (const k of keys) await page.keyboard.down(k);
+      try { await gameWait(0.8); } finally { for (const k of keys) await page.keyboard.up(k); }
+      return await page.evaluate(([x0, c0]) => (window.__dd.play.player.pos.x - x0) / (window.__dd.play.clock - c0), [x0, c0]); };
+    const walk = await speed(["KeyW"]), run = await speed(["ShiftLeft", "KeyW"]);
+    if (!(run > walk * 1.6)) throw new Error(`walk ${walk.toFixed(2)} m/s, run ${run.toFixed(2)} m/s`);
+  });
+  await step("a board game: a click at the table sits you down facing it, its rules play it out (chō-han: the cup shakes and comes down, you call, it lifts on the dice), you stand up and the story hears the result", async () => {
     const r = await goTo("hall_table", 1.0);
     const name = await page.textContent(".ph-prompt .ph-name");
     if (r.cursor !== "use" || name !== "Chō-han") throw new Error(`cursor ${r.cursor}, its name ${name}`);
-    await press("KeyE");
+    await click();
     await page.waitForSelector(".ph-dock .ph-opt", { timeout: 90000 });
     const at = await page.evaluate(() => { const rt = window.__dd.play, t = rt.byId.hall_table; return { playing: rt.playing, eye: rt.player.eye, pitch: rt.player.pitch, opts: [...document.querySelectorAll(".ph-dock .ph-opt")].map(o => o.textContent),
       near: Math.hypot(rt.player.pos.x - t.position.x, rt.player.pos.z - t.position.z), pieces: rt.stage.world.children.filter(o => o.isGroup && o.children.length >= 3).length }; });
@@ -292,19 +354,19 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   await step("the letter: the cursor says read, the note opens", async () => {
     const r = await goTo("letter_hall", 0.7);
     if (r.cursor !== "read") throw new Error("cursor " + r.cursor);
-    await press("KeyE"); await page.waitForSelector(".ph-panel .ph-text");
+    await click(); await page.waitForSelector(".ph-panel .ph-text");
     const t = await page.textContent(".ph-panel .ph-text"); if (!/door open/.test(t)) throw new Error("note text " + t);
     await page.click(".ph-panel .ph-close");
   });
   await step("reading the letter ticks its task on the list by itself (its ticks: read)", async () => {
     const t = await tasks(); if ((t.find(x => x.id === "read_letter") || {}).state !== "done" || (t.find(x => x.id === "find_key") || {}).state !== "open") throw new Error(JSON.stringify(t));
   });
-  await step("the bed: E lies you down on it (the eye just over it, looking up), the view goes dark, the story's beat plays a chapter: its card, an autosave, then you wake and get up where you stood", async () => {
+  await step("the bed: a click lies you down on it (the eye just over it, looking up), the view goes dark, the story's beat plays a chapter: its card, an autosave, then you wake and get up where you stood", async () => {
     const r = await goTo("study_bed", 0.9);
     if (r.cursor !== "sit") throw new Error("cursor " + r.cursor);
     const before = await page.evaluate(() => { const p = window.__dd.play.player; return { x: p.pos.x, z: p.pos.z, eye: p.eye }; });
     await page.evaluate(() => { try { localStorage.removeItem("horrorstudio.saves." + ((window.__dd.S.game || {}).title || "game")); } catch (e) { } });
-    await press("KeyE");
+    await click();
     // 60 s: the lie-down's tween moves at most 0.05 s a frame, and a software GPU late in the run draws 2 frames a second
     await page.waitForFunction(() => window.__dd.play.player.sleeping && window.__dd.play.player.eye < 1 && !window.__dd.play.moving, null, { timeout: 60000 }).catch(async e => {
       throw new Error("not lying down: " + await page.evaluate(() => { const rt = window.__dd.play, p = rt.player; return JSON.stringify({ sleeping: p.sleeping, eye: p.eye, target: rt.target && rt.target.userData.id, moving: !!rt.moving, busy: rt.busy, line: rt.hud.lineEl.textContent, ready: rt.ready(rt.byId.study_bed) }); })); });
@@ -324,10 +386,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       await new Promise(r => setTimeout(r, 1500)); const mid = window.__dd.run.time; await p; const t = window.__dd.run.time; rt.opts.setTime(was); return { was, mid, t }; });
     if (r.t !== "dusk") throw new Error(JSON.stringify(r));
   });
-  await step("hiding: E gets into the locker (hiding height, its walls slats you see through, no walking), E gets out", async () => {
+  await step("hiding: a click gets you into the locker (hiding height, its walls slats you see through, no walking), a click gets you out", async () => {
     const r = await goTo("hall_locker", 0.8);
     if (r.cursor !== "hide") throw new Error("cursor " + r.cursor);
-    await press("KeyE");
+    await click();
     await page.waitForFunction(() => { const rt = window.__dd.play; return rt.player.hiding === "hall_locker" && !rt.moving; }, null, { timeout: 60000 });
     const inside = () => page.evaluate(() => { const rt = window.__dd.play, m = rt.byId.hall_locker;
       return { eye: rt.player.eye, x: rt.player.pos.x, y: -rt.player.pos.z, slats: !!m.material.alphaMap, stance: document.querySelector(".ph-stance").textContent,
@@ -337,7 +399,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (!a.slats || a.stance !== "hidden" || !/Get out/.test(a.label)) throw new Error(JSON.stringify(a));
     await hold("KeyW", 0.4);
     const b = await inside(); if (Math.hypot(b.x - a.x, b.y - a.y) > 1e-3) throw new Error("walked while hidden");
-    await press("KeyE");
+    await click();
     await page.waitForFunction(() => { const rt = window.__dd.play; return !rt.player.hiding && !rt.moving; }, null, { timeout: 60000 });
     const c = await inside(); if (c.slats || Math.hypot(c.x - 0.35, c.y - 4.3) < 0.5) throw new Error("not out " + JSON.stringify(c));
   });
@@ -354,10 +416,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       if (st.c !== c0 || st.k > 0.05) throw new Error(`${what}: seen ${JSON.stringify(st)}`);
     };
     await stand(3.3, 3.5); await quiet("in the safe zone");
-    await goTo("hall_locker", 0.8); await press("KeyE");
+    await goTo("hall_locker", 0.8); await click();
     await page.waitForFunction(() => window.__dd.play.player.hiding === "hall_locker", null, { timeout: 60000 });
     await quiet("in the locker");
-    await press("KeyE"); await page.waitForFunction(() => !window.__dd.play.player.hiding && !window.__dd.play.moving, null, { timeout: 60000 });
+    await click(); await page.waitForFunction(() => !window.__dd.play.player.hiding && !window.__dd.play.moving, null, { timeout: 60000 });
     await page.evaluate(() => window.__dd.play.behave("mari", { as: "path", route: "r_hall" }));            // back to her walk, not looking
   });
   await step("crouch (toggle) lowers the eye", async () => {
@@ -370,13 +432,13 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await walkIn(2, 5.4, 90, 1300); await gameWait(0.5);          // every line Play showed on the way in (a short one may be gone already)
     const lines = await page.evaluate(() => window.__lines); if (!lines.some(t => /Mari\?/.test(t))) throw new Error("lines " + JSON.stringify(lines));
   });
-  await step("a little thing: the kettle says Switch on, E switches it on, it boils by itself (steam from its spout) and the story hears it (state)", async () => {
+  await step("a little thing: the kettle says Switch on, a click switches it on, it boils by itself (steam from its spout) and the story hears it (state)", async () => {
     await goTo("pilot_kettle", 0.8);
     const label = await page.evaluate(() => document.querySelector(".ph-label").textContent);
     if (label !== "Switch on") throw new Error("the prompt says " + JSON.stringify(label));
-    await press("KeyE"); await gameWait(0.3);
+    await click(); await gameWait(0.3);
     const st = await page.evaluate(() => window.__dd.play.stateOf("pilot_kettle"));
-    if (st !== "heating") throw new Error("after E it's " + st);
+    if (st !== "heating") throw new Error("after a click it's " + st);
     await gameWait(0.9);
     const steam = await page.evaluate(() => { const it = window.__dd.play.stage.life.items.find(i => i.id === "pilot_kettle"), p = it && it.parts["steam@spout0"];
       return p ? [...p.pts.geometry.attributes.alpha.array].filter(a => a > 0.01).length : -1; });
@@ -426,7 +488,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   });
   await step("the drawer's code on the keypad sets drawer_open and shows the key", async () => {
     await goTo("desk_lock", 0.8);
-    await press("KeyE"); await page.waitForSelector(".ph-pad");
+    await click(); await page.waitForSelector(".ph-pad");
     for (const k of "0314") await page.click(`.ph-pad button:text-is("${k}")`);
     await page.click('.ph-pad button:text-is("OK")');
     await page.waitForTimeout(500);
@@ -436,7 +498,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   await step("the bed after the drawer's open: its if (!drawer_open) no longer holds, it says Not now and nothing happens", async () => {
     const r = await goTo("study_bed", 0.9);
     if (r.cursor !== "locked") throw new Error("cursor " + r.cursor);
-    await press("KeyE"); await page.waitForTimeout(400);
+    await click(); await page.waitForTimeout(400);
     const s = await page.evaluate(() => { const rt = window.__dd.play; return { sleeping: !!rt.player.sleeping, line: rt.hud.lineEl.textContent }; });
     if (s.sleeping || !/Not now/.test(s.line)) throw new Error(JSON.stringify(s));
   });
@@ -448,15 +510,16 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   await step("the key: taken, the stitch ends after the knocking", async () => {
     const r = await goTo("cellar_key_pickup", 0.7);
     if (r.cursor !== "take") throw new Error("cursor " + r.cursor);
-    await press("KeyE");
+    await click();
     await page.waitForFunction(() => (document.querySelector(".ph-task[data-id=find_key]") || {}).dataset?.state === "done", null, { timeout: 5000 });
+    if (await page.evaluate(() => !(window.__dd.play.carried && window.__dd.play.carried.id === "cellar_key_pickup"))) throw new Error("the key isn't in the hand");
     await page.waitForFunction(() => !window.__dd.play.end, null, { timeout: 60000 });
     if ((await tasks()).length) throw new Error("the list isn't cleared at the end of the search (untodo)");
   });
   await step("the choice by act: the key opens the cellar door, walking in chooses it", async () => {
     await playing();
     await goTo("cellar_door", 1.0);
-    await press("KeyE"); await gameWait(0.9);
+    await click(); await gameWait(0.9);
     if (!(await page.evaluate(() => window.__dd.play.doors.cellar_door.open))) throw new Error("not open");
     await walkIn(0.7, 2, 180, 1400);
     await playing(false, 10000);
@@ -476,7 +539,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const d = await page.evaluate(() => { const rt = window.__dd.play, d = rt.doors.cellar_door, b = d.mesh.userData.base; return { level: rt.level, open: d.open, locked: d.locked, turned: b ? Math.abs(d.mesh.rotation.y - b.rot) + d.mesh.position.distanceTo(b.pos) : 0 }; });
     if (d.open || !d.locked || d.turned > 1e-3) throw new Error(`the cellar door: ${JSON.stringify(d)}`);
   });
-  await step("Esc toggles the pause menu, with the pointer locked as in a browser (faked: a lock asked for straight after an Esc is lost again to that Esc)", async () => {
+  await step("Esc toggles the pause menu, with the pointer locked as in a browser (faked: a lock asked for straight after an Esc is lost again to that Esc); the controls on its left, each key drawn", async () => {
     await page.waitForTimeout(600);
     await page.evaluate(() => {
       const box = document.querySelector("#watchBox"), fire = () => document.dispatchEvent(new Event("pointerlockchange"));
@@ -488,6 +551,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const menus = () => page.evaluate(() => document.querySelectorAll(".ph-menu:not(.out)").length);
     await page.evaluate(() => document.exitPointerLock()); await page.waitForTimeout(500);   // Esc in play: the browser lets the pointer go
     const open1 = await menus();
+    const ctl = await page.evaluate(() => { const c = document.querySelector(".ph-menu .ph-controls"), n = document.querySelector(".ph-menu .ph-nav"); if (!c || !n) return null;
+      const a = c.getBoundingClientRect(), b = n.getBoundingClientRect();
+      return { rows: [...c.querySelectorAll(".ph-ctl-label")].map(r => r.textContent), icons: c.querySelectorAll(".ph-ctl svg").length, left: a.right <= b.left + 1 && a.width > 0 }; });
+    if (!ctl || ctl.rows.join() !== "Movement,Interact,Inventory,Switch item,Drop,Run,Crouch" || ctl.icons !== 7 || !ctl.left) throw new Error("the controls on the pause menu's left: " + JSON.stringify(ctl));
     await page.evaluate(() => { window.__escHeld = true; }); await page.keyboard.press("Escape"); await page.waitForTimeout(600); await page.evaluate(() => { window.__escHeld = false; });
     const shut = await menus(), asks = await page.evaluate(() => window.__asks);
     await page.keyboard.press("Escape"); await page.waitForTimeout(500); const open2 = await menus();

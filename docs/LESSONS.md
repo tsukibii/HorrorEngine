@@ -17,6 +17,11 @@ the fix.
   turn and meter. `gameWait`/`hold` in playtest.js wait for `rt.clock` (and stop when play ends: a walk that answers
   a choice ends play). Upper bounds can be generous; they only cost time when something is broken. PLAY failed at
   step 4 for a whole session before this was found.
+- **A click in a headless test lands where the mouse last was:** Playwright's `page.click(selector)` moves the mouse
+  to that element, so a mouse parked over the view before the Watch's Start button was clicked was over the button,
+  and the game never saw the click (PLAY's first try of a left click to use). Park it again right before pressing, with
+  the faked pointer lock let go for that moment: a locked mouse that moves turns the view (`click()` in playtest.js).
+  And a check of someone walking measures the game's clock too (`onRoute`: Mari moved 0.18 m in 4 wall seconds).
 - **A test's search must not touch the story:** `goTo` tried 16 spots and ticked the game at each, so a spot on the
   cellar stairs fired `enter` and answered a choice. Aim-test a candidate without a tick, and skip spots inside a
   trigger the player isn't already in.

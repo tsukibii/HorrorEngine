@@ -26,10 +26,6 @@
   background:var(--ph-ring-fill,transparent);border-color:var(--ph-cursor)}
 .play-hud .ph-cursor[data-cursor="locked"]{border-color:var(--ph-bad)}
 .play-hud .ph-cursor.press{scale:.75}
-.play-hud .ph-cursor::after{content:"";position:absolute;inset:-6px;border-radius:50%;opacity:0;transition:opacity .12s;pointer-events:none;  /* E held: a ring filling */
-  background:conic-gradient(var(--ph-accent,var(--ph-cursor)) calc(var(--ph-hold,0) * 360deg),transparent 0);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
-.play-hud.holding .ph-cursor::after{opacity:1}
 .play-hud.free .ph-cursor{opacity:0}
 .play-hud .ph-prompt{position:absolute;left:50%;top:calc(50% + var(--ph-ring));translate:-50% 0;display:flex;gap:8px;align-items:center;white-space:nowrap;
   font-size:var(--ph-fs);text-shadow:var(--ph-text-shadow);opacity:0;transition:opacity .14s;isolation:isolate;
@@ -51,6 +47,8 @@
   font-family:var(--ph-ui-font,var(--ph-font));font-size:var(--ph-fs-xs);font-weight:600;letter-spacing:.04em;text-shadow:none;
   color:var(--ph-key-text,var(--ph-accent));background:var(--ph-key-bg,var(--ph-surface));border:var(--ph-key-border,0);box-shadow:var(--ph-key-shadow,var(--ph-pop));transition:scale .1s}
 .play-hud .ph-key.press{scale:.85}
+.play-hud .ph-mouse{padding:0 5px}                                    /* the left mouse button: a click uses it */
+.play-hud .ph-mouse svg{display:block}
 .play-hud .ph-seen{position:absolute;left:50%;top:calc(50% + var(--ph-ring) / 2 + 10px);width:72px;margin-left:-36px;opacity:0}
 .play-hud .ph-seen.on{opacity:1}
 .play-hud .ph-seen>div{background:var(--ph-bad);width:0}
@@ -118,6 +116,31 @@
 .play-hud :is(.ph-objective,.ph-todo,.ph-timer,.ph-log>div,.ph-stance,.ph-board,.ph-prompt,.ph-hint)::after{content:"";position:absolute;inset:-10px -22px;z-index:-1;pointer-events:none;
   -webkit-backdrop-filter:var(--ph-halo,none);backdrop-filter:var(--ph-halo,none);background:var(--ph-halo-bg,none);
   -webkit-mask-image:radial-gradient(closest-side,#000 45%,transparent);mask-image:radial-gradient(closest-side,#000 45%,transparent)}
+
+/* ---- what you carry: the inventory (play/inventory.js) ----
+   one row at the bottom centre: the thing in your hand in the middle (a line under it, its name below), the rest
+   either side round a wheel, the farther ones smaller and fainter, at most five; in front of frosted glass that fades
+   out towards its ends, with no border. E hides it and shows it again (hidden, it peeks when something changes); it
+   steps aside while someone talks or asks (the footer is theirs) and behind a card */
+.play-hud .ph-inv{position:absolute;left:50%;bottom:calc(var(--ph-margin) * .8);width:min(500px,66%);height:104px;translate:-50% 0;pointer-events:none;
+  opacity:0;transition:opacity .3s ease-out}
+.play-hud .ph-inv:is(.on,.peek){opacity:1}
+.play-hud .ph-inv::before{content:"";position:absolute;left:0;right:0;top:2px;height:80px;border-radius:var(--ph-radius-l);
+  background:var(--ph-inv-glass,linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 70%,rgba(255,255,255,.02)));
+  -webkit-backdrop-filter:var(--ph-inv-blur,blur(14px) saturate(1.25));backdrop-filter:var(--ph-inv-blur,blur(14px) saturate(1.25));
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 26%,#000 74%,transparent);mask-image:linear-gradient(90deg,transparent,#000 26%,#000 74%,transparent)}
+.play-hud .ph-inv-row{position:absolute;left:50%;top:10px;width:0;height:64px}
+.play-hud .ph-inv-i{position:absolute;left:-32px;top:0;width:64px;height:64px;display:grid;place-items:center;
+  transform:translateX(calc(var(--d,0) * 88px)) scale(calc(1 - var(--ad,0) * .17));opacity:calc(1 - var(--ad,0) * .3);
+  transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .26s}
+.play-hud .ph-inv-i.far{opacity:0}
+.play-hud .ph-inv-i.jump{transition:none}
+.play-hud .ph-inv-i img{max-width:100%;max-height:100%;filter:drop-shadow(0 3px 6px rgba(0,0,0,.55))}
+.play-hud .ph-inv-i img.none{width:34px;height:34px;border-radius:6px;background:rgba(255,255,255,.18)}   /* no picture: a block */
+.play-hud .ph-inv-i.held::after{content:"";position:absolute;left:22%;right:22%;bottom:-7px;height:2px;border-radius:2px;background:var(--ph-accent);opacity:.85}
+.play-hud .ph-inv-name{position:absolute;left:0;right:0;top:84px;text-align:center;font-size:var(--ph-fs-s);letter-spacing:.03em;color:var(--ph-text);text-shadow:var(--ph-text-shadow);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-hud:has(.ph-footer .ph-line.on,.ph-footer .ph-dock) .ph-inv,.play-hud.modal .ph-inv{opacity:0}
 
 /* ---- the footer ---- */
 .play-hud .ph-footer{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:calc(var(--ph-gap) + 4px);
@@ -189,6 +212,17 @@
 .play-hud .ph-menu{position:absolute;inset:0;z-index:10;pointer-events:auto;cursor:default;isolation:isolate;display:grid;grid-template-columns:minmax(220px,26%) minmax(0,640px);
   align-items:center;gap:calc(var(--ph-margin) * 2);padding:calc(var(--ph-margin) * 2) calc(var(--ph-margin) * 3)}
 .play-hud .ph-menu.out{opacity:0;transition:opacity .18s}
+/* paused, before a page opens: the controls on the left, each key drawn in outline (after the user's picture), what it
+   does beside it, no box; then the list. A page (Save game, Settings) takes their place */
+.play-hud .ph-menu.root{grid-template-columns:minmax(250px,34%) minmax(200px,1fr)}
+.play-hud .ph-menu.root .ph-page{display:none}
+.play-hud .ph-menu:not(.root) .ph-controls{display:none}
+.play-hud .ph-controls{display:flex;flex-direction:column;align-items:stretch;gap:14px;color:var(--ph-text);animation:ph-rise .3s .2s ease-out both}
+.play-hud .ph-ctl{display:grid;grid-template-columns:140px auto;align-items:center;gap:20px;font-family:var(--ph-ui-font,var(--ph-font));font-size:calc(var(--ph-fs-l) + 1px);
+  letter-spacing:.01em;text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-ctl-icon{display:flex;justify-content:center}
+.play-hud .ph-ctl-icon svg{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7));font-family:var(--ph-ui-font,var(--ph-font))}
+.play-hud .ph-ctl-label{color:var(--ph-text)}
 .play-hud .ph-dark{position:absolute;inset:0;z-index:-1;background:var(--ph-dark,rgba(2,3,5,.9));-webkit-backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));
   backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));animation:ph-lights-out .75s linear both}
 @keyframes ph-lights-out{0%{opacity:0}10%{opacity:.75}18%{opacity:.3}30%{opacity:.85}38%{opacity:.6}100%{opacity:1}}   /* a bulb dying */

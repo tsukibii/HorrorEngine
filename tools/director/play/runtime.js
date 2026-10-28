@@ -14,7 +14,8 @@ import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
 import { Todo } from "./todo.js";
 import { pauseMenu, autosave } from "./menu.js";
-import { Physics, dieMaterials } from "./physics.js";
+import { Physics, dieMaterials, inHand, follow } from "./physics.js";
+import { Inventory } from "./inventory.js";
 import { loadRules, boardCtx, Table } from "./boardgames.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
@@ -22,10 +23,11 @@ const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
 const THEME = "glass";                           // the HUD theme when a game names none (game.ui_theme)
 const LIT = 2.2;                                   // a lamp that starts off: its strength when it's switched on (stage.js's bulb)
 const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
+const DROP_AHEAD = 0.55, ICON = 112;               // G sets a thing down this far in front of you; the inventory's pictures (px)
 // a cast member who `sees` (behave): her cone (degrees, full width), its reach (m), how much of it a crouched player
 // is seen at, the seconds the suspicion meter takes to fill and to drain, and how long she's calm after a catch
 export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1.5, calm: 3 };
-const UP = new THREE.Vector3(0, 1, 0);
+const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 export class PlayRuntime {
@@ -48,12 +50,15 @@ export class PlayRuntime {
     this.livesSeen = this.lives ? this.lives.changes.length : 0; this.clock0 = 0;
     this.suspicion = 0; this.calm = 0; this.lastCaught = null;
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
-    this.carried = null; this.holding = null;          // the thing in the hands ({m, id, level, yaw, r}); E being held ({t, secs, on | put})
+    this.inv = new Inventory(this); this.hand = null;  // what the player has picked up (inventory.js); the copy of the one in the hand ({entry, x: its spring})
     this.playing = null; this.anims = []; this.boardTitles = {};   // a board game going on (its id); tweens on the game's clock
     fetch(`/api/boardgames/${encodeURIComponent(opts.game || "_")}`).then(r => (r.ok ? r.json() : {})).then(j => { for (const g of j.games || []) this.boardTitles[g.id] = g.title; }).catch(() => { });
     this.listener = null; this.ray = new THREE.Raycaster();
     this.on = {
-      click: () => { if (this.active && !this.busy) box.requestPointerLock(); },
+      click: () => { if (this.active && !this.busy && document.pointerLockElement !== box) box.requestPointerLock(); },   // the first click takes the mouse
+      // a left click uses what's under the reticle (every interactable: DECISIONS 2026-10-27, later); the wheel turns the inventory
+      down: e => { if (e.button === 0 && document.pointerLockElement === box && this.active && !this.busy && !this.playing) { e.preventDefault(); this.use(); } },
+      wheel: e => { if (document.pointerLockElement === box && this.active && !this.busy && !this.playing) { e.preventDefault(); this.inv.scroll(e.deltaY); } },
       lock: () => {                                 // the lock lost in play (Esc) pauses
         const on = document.pointerLockElement === box;
         if (this.wasLocked && !on && this.active && !this.busy && performance.now() - (this.resumed || 0) > 500) this.pause();   // (not the lock a resume just asked for, lost again)
@@ -62,7 +67,7 @@ export class PlayRuntime {
       move: e => { if (this.active && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
       key: e => this.keyEvent(e, e.type === "keydown"),
     };
-    box.addEventListener("click", this.on.click);
+    box.addEventListener("click", this.on.click); box.addEventListener("mousedown", this.on.down); box.addEventListener("wheel", this.on.wheel, { passive: false });
     document.addEventListener("pointerlockchange", this.on.lock);
     document.addEventListener("mousemove", this.on.move);
     window.addEventListener("keydown", this.on.key); window.addEventListener("keyup", this.on.key);
@@ -72,24 +77,28 @@ export class PlayRuntime {
     this.active = false; this.listener = null; this.stopped = true;
     for (const w of this.waits) w.res(); this.waits = [];
     for (const a of this.anims) a.done(); this.anims = [];
-    this.box.removeEventListener("click", this.on.click);
+    this.box.removeEventListener("click", this.on.click); this.box.removeEventListener("mousedown", this.on.down); this.box.removeEventListener("wheel", this.on.wheel);
     document.removeEventListener("pointerlockchange", this.on.lock);
+    if (this.hand) { this.hand.x.m.removeFromParent(); this.hand = null; }
+    if (this.iconR) { this.iconR.dispose(); this.iconR.forceContextLoss(); this.iconR = null; }
     document.removeEventListener("mousemove", this.on.move);
     window.removeEventListener("keydown", this.on.key); window.removeEventListener("keyup", this.on.key);
     if (document.pointerLockElement === this.box) document.exitPointerLock();
     this.hud.remove();
   }
   set(name) { const p = part("ability", name) || part("interactable", name); return settingsOf(p, this.settings[name]); }
+  get carried() { return this.inv.held; }            // the thing in the hand (the `carrying` condition)
   ability(name, fn, ...args) { const p = part("ability", name); if (p && p[fn]) p[fn](this, ...args, this.set(name)); }
   keyEvent(e, down) {
     if (!this.active || this.busy) return;
     if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
       e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
     }
-    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyC", "Space"].includes(e.code)) e.preventDefault();
+    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
     if (this.playing) return;                          // at a board game: its choices take the keys
     this.keys[e.code] = down;
-    if (e.code === "KeyE" && !e.repeat) { if (down) this.pressE(); else this.releaseE(); }
+    if (down && !e.repeat && e.code === "KeyE") this.inv.toggle();        // E: the inventory's row, shown or hidden
+    if (down && !e.repeat && e.code === "KeyG") this.drop();              // G: the one in the hand put down
     if (!this.player.hiding) for (const a of ABILITIES) this.ability(a, "key", e, down);
   }
 
@@ -114,21 +123,15 @@ export class PlayRuntime {
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
     if (this.player.hiding) this.stage.seeThrough(this.player.hiding, this.stage.seeThroughOf(this.player.hiding));
     for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // shown again by their behaviour (drawNpcs)
-    const movers = this.stage.world.children.filter(o => o.isMesh && (o.userData.use === "roll" || o.userData.use === "carry"));   // dice, things you carry
-    for (const m of movers) {
-      if (m.userData.use === "roll") m.material = dieMaterials();
-      const k = kept.bodies[m.userData.id]; if (k) { m.position.copy(k.p); m.quaternion.copy(k.q); }
+    // what the player set down here from another level (a copy of it, kept.brought), and where everything moved sits
+    for (const [id, b] of Object.entries(kept.brought || {})) {
+      const o = b.src.clone(); o.visible = true; this.stage.world.add(o); this.byId[id] = o;
+      if (!((o.userData.piece || {}).tags || []).includes("hollow")) this.stage.solid.push(o);
     }
-    this.physics = movers.length ? new Physics(this.stage, movers, m => m.userData.use === "carry" ? this.physicsOf(m) : { name: "rigid" }) : null;
-    // what's in the hands goes on with the player: picked up again in the rebuilt world (a scene played), or, to another
-    // level, left at their feet in its own
-    const was = this.carried; this.carried = null; this.holding = null; this.hud.hold(null);
-    if (was && was.level === level && this.byId[was.id]) { this.pickUp(this.byId[was.id], was.yaw); if (this.carried) this.carried.snap = true; }
-    else if (was) {
-      const p = this.player, a = p.yaw * Math.PI / 180, g = was.m.geometry.parameters, h = g.height ?? (g.radius || 0.15) * 2;
-      this.kept[was.level].bodies[was.id] = { p: new THREE.Vector3(p.pos.x + Math.cos(a) * 0.35, p.pos.y + h / 2, p.pos.z - Math.sin(a) * 0.35),
-                                              q: new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180 + was.yaw) };
-    }
+    for (const [id, k] of Object.entries(kept.bodies)) { const m = this.byId[id]; if (m) { m.position.copy(k.p); m.quaternion.copy(k.q); } }
+    const movers = this.stage.world.children.filter(o => o.isMesh && o.userData.use === "roll");   // dice
+    for (const m of movers) m.material = dieMaterials();
+    this.physics = movers.length ? new Physics(this.stage, movers) : null;   // (what's in the inventory is hidden: not in the way)
     this.triggers = this.plan.pieces.filter(p => p.level === level && p.kind === "trigger").map(p => {
       const rv = p.tags.find(t => t.startsWith("room_volume:")), [w, d, h] = p.size, [x, y, z] = p.pos;
       return { id: rv ? rv.slice(12) : p.id, safe: !!(p.d || {}).safe, min: [x - w / 2, y - d / 2, z - h / 2], max: [x + w / 2, y + d / 2, z + h / 2] };
@@ -306,62 +309,106 @@ export class PlayRuntime {
       this.emit({ type: "rolled", id: t.userData.id, face });
     });
   }
-  // carrying (use: carry): a thing held E picks up rides in the hands, springing after them as its physics kind says
-  // (physics.js: a plushie lags, squashes and flops), until E is held again to put it down; it falls from there, and
-  // when it has settled it's kept where it lies and heard: {type: "dropped", id, in: [the rooms and triggers it's in]}
+  // ---- the inventory (inventory.js): taking a thing, the one in the hand, setting it down -----------------------------
+  // a click on a pickup or a thing to carry: it leaves the world into the inventory, in the hand. Heard as `pickup` (its
+  // item) or `carry`. One set down here from another level is taken back up from where it was set
   physicsOf(m) { const d = (m.userData.piece || {}).d || {}; return { name: d.physics || "rigid", settings: d.jiggle !== undefined ? { jiggle: +d.jiggle } : null }; }
-  pickUp(m, yaw) {
-    if (!this.physics || this.carried) return;
-    if (!this.physics.pick(m)) return;
-    const g = m.geometry.parameters;
-    this.carried = { m, id: m.userData.id, level: this.level, r: Math.max(g.width || 0, g.depth || 0, (g.radius || g.radiusTop || 0) * 2) / 2,
-                     yaw: yaw ?? new THREE.Euler().setFromQuaternion(m.quaternion, "YXZ").y - (this.player.yaw - 90) * Math.PI / 180 };   // its turn to the player, kept
-    this.emit({ type: "carry", id: m.userData.id });
+  take(t) {
+    const id = t.userData.id, d = (t.userData.piece || {}).d || {}, kept = this.kept[this.level], back = (kept.brought || {})[id];
+    if (this.inv.has(id)) return;
+    const src = t.clone(); delete src.userData.mid;
+    if (back) { delete kept.brought[id]; t.removeFromParent(); const i = this.stage.solid.indexOf(t); if (i >= 0) this.stage.solid.splice(i, 1); delete this.byId[id]; }
+    else this.setVisible(id, false);
+    delete kept.bodies[id];
+    if (this.physics) this.physics.removeStatic(t);
+    const mesh = src.clone(); mesh.position.set(0, 0, 0); mesh.quaternion.identity(); mesh.visible = true; mesh.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(mesh), size = bb.getSize(new THREE.Vector3());
+    const e = { id, item: d.item || null, name: this.titleOf(t) || this.nameOf(t), kind: t.userData.use === "carry" ? "carry" : "pickup", level: back ? back.from : this.level,
+                src, mesh, physics: this.physicsOf(t), r: Math.max(size.x, size.z) / 2, bottom: -bb.min.y, icon: this.iconOf(mesh) };
+    this.inv.add(e);
+    if (e.item) { this.give(e.item); this.emit({ type: "pickup", item: e.item }); }
+    if (e.kind === "carry") this.emit({ type: "carry", id });
   }
-  putDown() {
-    const c = this.carried; if (!c) return;
-    this.carried = null;
-    this.physics.drop(c.m, () => {
-      const at = c.m.position;
-      this.kept[this.level].bodies[c.id] = { p: at.clone(), q: c.m.quaternion.clone() };
-      this.emit({ type: "dropped", id: c.id, in: this.triggers.filter(t => this.pointIn(t, at.x, -at.z, at.y)).map(t => t.id) });
-    });
-  }
-  // in the hands: ahead of the eye, a little right and down (its kind's `hand`), bobbing with the steps, pulled in short
-  // of a wall; turned with the player
-  carryTick(dt) {
-    const c = this.carried, s = this.physics && this.physics.settingsOf(c.m); if (!s) return;
-    const cam = this.stage.camera, p = this.player, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...s.hand);
+  // the one in the hand: a copy of it in front of the eye, a little right and down (its physics kind's `hand`), after the
+  // hand on its kind's spring (a plushie lags, squashes and flops), bobbing with the steps, pulled in short of a wall.
+  // Put away while a scene plays, at a board game, sitting, hiding, asleep or reading
+  handTick(dt) {
+    const e = this.inv.held, p = this.player;
+    if (this.hand && this.hand.entry !== e) { this.hand.x.m.removeFromParent(); this.hand = null; }
+    if (!e) return;
+    if (!this.hand) { this.stage.scene.add(e.mesh); this.hand = { entry: e, x: inHand(e.mesh, e.physics) }; }
+    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || this.busy;
+    m.visible = !away; if (away) return;
+    const cam = this.stage.camera, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...this.hand.x.s.hand);
     this.stepPhase = ((this.stepPhase || 0) + dt * walk * Math.PI * 2 * 1.8) % (Math.PI * 2);      // about two steps a second at a walk
     hand.y += Math.sin(this.stepPhase) * 0.012 * walk;
     const eye = cam.position.clone(), want = cam.localToWorld(hand), d = want.clone().sub(eye), len = d.length();
-    this.ray.set(eye, d.divideScalar(len)); this.ray.far = len + c.r;
+    this.ray.set(eye, d.divideScalar(len)); this.ray.far = len + e.r;
     const hit = this.ray.intersectObjects(this.blocks(), false)[0];
-    if (hit) want.copy(eye).addScaledVector(d, Math.max(0.12, hit.distance - c.r));
-    const q = new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180 + c.yaw);
-    if (c.snap) { const st = this.physics.moverOf(c.m).st; st.pos.copy(want); st.vel.set(0, 0, 0); st.quat.copy(q); c.snap = false; }
-    c.at = want; this.physics.carry(c.m, want, q, dt);
+    if (hit) want.copy(eye).addScaledVector(d, Math.max(0.12, hit.distance - e.r));
+    this.hand.at = want;
+    follow(this.hand.x, want, new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180), dt);
   }
-  // E: a use at once, or held for a thing whose interactable has `hold` (seconds: picking it up), the reticle's ring
-  // filling. With a thing in the hands, held puts it down, and a tap uses what's under the reticle when it's let go
-  pressE() {
-    const t = this.target, ip = t && interactableOf(t, this), s = ip && this.set(ip.name);
-    if (this.carried) this.holding = { t: 0, secs: this.set("carry").hold, put: true };
-    else if (s && s.hold) this.holding = { t: 0, secs: s.hold, on: t };
-    else this.use();
+  // G: the one in the hand set down on whatever is under a spot just in front of you (the floor, a table), facing you:
+  // no falling, it's simply there. Out of the inventory (its item too), and heard where it lies: {type: "dropped", id,
+  // in: [the rooms and triggers it's in]}. Set down in the level it came from it's the thing itself again; in another,
+  // a copy of it stays there (kept with that level)
+  drop() {
+    const e = this.inv.held, p = this.player;
+    if (!e || this.busy || this.playing || p.seat || p.hiding || p.sleeping) return;
+    const at = this.dropSpot(e); if (!at) { this.hud.shake(); this.hud.line("There's no room to put it down.", "", 1.4, true); return; }
+    const kept = this.kept[this.level], q = new THREE.Quaternion().setFromAxisAngle(UP, (p.yaw - 90) * Math.PI / 180);
+    let o = e.level === this.level ? this.byId[e.id] : null;
+    if (o) { o.position.copy(at); o.quaternion.copy(q); this.setVisible(e.id, true); }
+    else {
+      o = e.src.clone(); o.position.copy(at); o.quaternion.copy(q); o.visible = true;
+      this.stage.world.add(o); this.byId[e.id] = o;
+      if (!((o.userData.piece || {}).tags || []).includes("hollow")) this.stage.solid.push(o);
+      (kept.brought = kept.brought || {})[e.id] = { src: e.src, from: e.level };
+    }
+    o.updateMatrixWorld(true);
+    kept.bodies[e.id] = { p: o.position.clone(), q: o.quaternion.clone() };
+    if (this.physics) this.physics.addStatic(o);
+    this.inv.remove(e.id);
+    if (e.item) this.items.delete(e.item);
+    this.hud.log(`put down: ${e.name}`);
+    this.emit({ type: "dropped", id: e.id, in: this.triggers.filter(t => this.pointIn(t, at.x, -at.z, at.y)).map(t => t.id) });
   }
-  releaseE() {
-    const h = this.holding; if (!h) return;
-    this.holding = null; this.hud.hold(null);
-    if (h.put) this.use();                              // a tap: the door, the switch (or standing up)
+  // where a thing goes down: DROP_AHEAD in front of your feet (nearer when a wall is), on top of whatever is under that
+  // spot; null when you're against a wall
+  dropSpot(e) {
+    const p = this.player, a = p.yaw * Math.PI / 180, fwd = new THREE.Vector3(Math.cos(a), 0, -Math.sin(a));
+    const from = p.pos.clone().setY(p.pos.y + 0.45), blocks = this.blocks();
+    this.ray.set(from, fwd); this.ray.far = DROP_AHEAD + e.r + 0.1;
+    const wall = this.ray.intersectObjects(blocks, false)[0], dist = wall ? Math.min(DROP_AHEAD, wall.distance - e.r - 0.04) : DROP_AHEAD;
+    if (dist < 0.12) return null;
+    const x = from.x + fwd.x * dist, z = from.z + fwd.z * dist;
+    this.ray.set(new THREE.Vector3(x, p.pos.y + Math.max(p.eye, 1.2), z), DOWN); this.ray.far = Math.max(p.eye, 1.2) + 0.5;
+    const hit = this.ray.intersectObjects(blocks, false)[0];
+    return new THREE.Vector3(x, (hit ? hit.point.y : p.pos.y) + e.bottom, z);
   }
-  holdTick(dt) {
-    const h = this.holding;
-    if (!this.keys.KeyE || this.busy || (h.on && this.target !== h.on)) { this.holding = null; this.hud.hold(null); return; }   // let go, or looked away
-    h.t += dt; this.hud.hold(h.t / h.secs);
-    if (h.t < h.secs) return;
-    this.holding = null; this.hud.hold(null); this.hud.press();
-    if (h.put) this.putDown(); else this.pickUp(h.on);
+  // a picture of a thing for the inventory's row: it alone, three quarters from the front and a little above, lit, on
+  // nothing (a small renderer of its own, made the first time)
+  iconOf(src) {
+    try {
+      if (!this.iconR) {
+        this.iconR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); this.iconR.setSize(ICON, ICON, false); this.iconR.setClearColor(0x000000, 0);
+        this.iconScene = new THREE.Scene(); this.iconCam = new THREE.PerspectiveCamera(28, 1, 0.01, 60);
+        const key = new THREE.DirectionalLight(0xfff0dd, 2.2); key.position.set(1.4, 2.4, 2.6);
+        const rim = new THREE.DirectionalLight(0x9fb6ff, 0.9); rim.position.set(-2, 1.2, -2);
+        this.iconScene.add(new THREE.HemisphereLight(0xd9dde6, 0x2a2622, 1.1), key, rim);
+      }
+      const o = src.clone(); o.position.set(0, 0, 0); o.quaternion.setFromAxisAngle(UP, -0.55); o.visible = true;
+      this.iconScene.add(o); o.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(o), c = box.getCenter(new THREE.Vector3()), r = Math.max(0.02, box.getSize(new THREE.Vector3()).length() / 2);
+      const cam = this.iconCam, dist = r / Math.sin(cam.fov * Math.PI / 360) * 1.04;
+      cam.position.copy(c).addScaledVector(new THREE.Vector3(0, 0.5, 1).normalize(), dist); cam.lookAt(c);
+      cam.near = Math.max(0.005, dist - r * 2); cam.far = dist + r * 2; cam.updateProjectionMatrix();
+      this.iconR.render(this.iconScene, cam);
+      const url = this.iconR.domElement.toDataURL("image/png");
+      this.iconScene.remove(o);
+      return url;
+    } catch (err) { return null; }
   }
   // a board game (use: game): the player sits down at the table (seatAt) and its rules (Content/Studio/BoardGames/,
   // or the game's own BoardGames/) play it out through ctx (play/boardgames.js); then they stand up again, and the
@@ -370,8 +417,7 @@ export class PlayRuntime {
     if (this.playing) return;
     const d = (t.userData.piece || {}).d || {}, id = t.userData.id;
     let rules; try { rules = await loadRules(this.opts.game, d.game); } catch (e) { this.hud.log(`no rules for ${d.game}`); return; }
-    if (this.carried) this.putDown();                   // set down to play
-    this.playing = id; this.keys = {}; this.holding = null; this.hud.hold(null); this.hud.setCursor("none", "");
+    this.playing = id; this.keys = {}; this.hud.setCursor("none", "");
     const p = this.player, back = { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw, pitch: p.pitch, secs: s.secs }, seat = this.seatAt(t, s);
     await this.tween(seat);
     const them = d.vs ? ((this.story.cast || {})[d.vs] || {}).name || d.vs : s.house, table = new Table(this, t, seat.yaw);
@@ -545,15 +591,12 @@ export class PlayRuntime {
 
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
-  aim() {
-    const held = this.carried && this.carried.m;
-    return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && o !== held), false)[0] || null;
-  }
+  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible), false)[0] || null; }
   async use() {
     if (this.player.sleeping || this.inChapter) return;
     const seat = this.player.seat;
-    if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // E stands you up
-    if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // E gets you out
+    if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // a click stands you up
+    if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // a click gets you out
     const t = this.target; if (!t) return;
     const ip = interactableOf(t, this);
     this.hud.press();
@@ -566,13 +609,11 @@ export class PlayRuntime {
     const hit = this.aim(), o = hit && hit.object, id = o && o.userData.id;
     if (id && id === this.look.id) this.look.t += dt; else this.look = { id, t: 0, dist: hit ? hit.distance : Infinity };
     if (hit) this.look.dist = hit.distance;
-    let ip = o && hit.distance <= USE_RANGE ? interactableOf(o, this) : null;
-    if (ip && this.carried && this.set(ip.name).hold) ip = null;          // the hands are full: another thing to carry waits
+    const ip = o && hit.distance <= USE_RANGE ? interactableOf(o, this) : null;
     this.target = ip ? o : null;
-    if (!ip && this.carried) { this.hud.setCursor("drop", this.set("carry").drop, null, this.titleOf(this.carried.m), true); return; }
     if (!ip) { this.hud.setCursor("none", this.player.seat ? this.set("sit").stand : ""); return; }
     const pr = ip.prompt(o, this, this.set(ip.name));
-    this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o), pr.hold);
+    this.hud.setCursor(pr.cursor, pr.label, pr.label ? this.anchorAt(o) : null, this.titleOf(o));
   }
   // where a thing's prompt floats, in the HUD's pixels: a door's handle (on your side of the leaf, so it's where your
   // hand goes; the whole door still takes E), anything else its middle. Kept to the safe area (the screen's margin,
@@ -648,7 +689,7 @@ export class PlayRuntime {
                                                       // and pause again (the menu opening on every Esc); a click on the view takes it
     try { await this.box.requestPointerLock(); } catch (e) { }
   }
-  hold() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; }   // the pointer stays locked: a scene looks round with it
+  hold() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (this.hand) this.hand.x.m.visible = false; }   // the pointer stays locked: a scene looks round with it
   go() {
     if (this.stopped) return;
     this.hud.root.style.display = "";
@@ -684,7 +725,7 @@ export class PlayRuntime {
     const feet = p.pos.clone();
     if (!this.busy && !this.playing && !p.seat && !p.hiding && !p.sleeping && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
     p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
-    this.hud.setStance(p.hiding ? "hidden" : [p.crouched && "crouched", this.carried && "carrying"].filter(Boolean).join(" · "));
+    this.hud.setStance(p.hiding ? "hidden" : p.crouched ? "crouched" : "");
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {
       d.t = Math.min(1, d.t + dt / d.secs); const k = 1 - (1 - d.t) * (1 - d.t);
       d.deg = d.from + (d.to - d.from) * k; this.stage.swingDoor(d.mesh, d.deg);
@@ -711,8 +752,7 @@ export class PlayRuntime {
       if (u.flicker) k *= 1 - u.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
       l.intensity = (u.base || 1) * k;
     }
-    if (this.holding) this.holdTick(dt);
-    if (this.carried) this.carryTick(dt);
+    this.handTick(dt);
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
     this.watch(dt);

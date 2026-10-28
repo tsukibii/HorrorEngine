@@ -169,21 +169,21 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 - `mat`: a library texture set on the block (`ambientcg/Wood049`).
 - `tag`: what it is, for the art shopping list.
 
-**Uses:**
+**Uses** (in play, every one is a left click on the thing; DECISIONS 2026-10-27, later):
 
 | `use` | Fields |
 |---|---|
-| `pickup` | `item` |
+| `pickup` | `item`: a click takes it into the inventory (the row E shows, it in the hand), and `{"pickup": item}` is heard; **G** puts the one in the hand down in front of the player, on whatever is under that spot (no falling), and then the player hasn't got it (`{"dropped": id, "in": room}` is heard, as for `carry`) |
 | `note` | `note` |
 | `inspect` | `text`, optional `line` |
 | `switch` | `light` |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
-| `locker` | (hide inside: E gets in, E gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
-| `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): E throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
-| `sit` | (a chair, a sofa, a bed's edge: E sits the player down, the eye at sitting height, E stands them up; a beat's `{"use": id}` hears it) |
-| `carry` | a thing the player carries: **hold E** to pick it up, **hold E** again to put it down (a tap while carrying still opens a door). Its `shape` (`box`, `cyl`, `sphere`, or `asset` for a library mesh at its size; under 1 m) is its body; `art` dresses it (any library mesh: your own goes in with `python tools/cc0.py add <file> local/<name>`), and in Play a bare plushie's block is drawn rounded, like a cushion. `physics`: how it moves, `rigid` (default: follows the hands stiffly) or `plushie` (light and soft: it lags and swings in the hands, squashes and stretches, bobs with the steps, its top flops behind a turn; dropped, it barely bounces and squashes as it lands); `jiggle` 0..2 a plushie's softness (0 still, 1 a plushie, 2 jelly). Put down, it falls and settles where it lands and stays there; `{"carrying": id}` holds while it's in the hands, `{"dropped": id, "in": room}` when it has settled |
-| `game` | a table with a board game: E sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time). Needs a `shape` or a `kit`: the table |
-| `sleep` | a bed (a `kit` like `bed_single`, `futon`, or a shape): E lies the player down on it, looking up, and the view goes dark; the story hears `{"use": id}`, and its beat plays a `chapter` (§4), which wakes them in the bed and gets them up where they stood (with no chapter they wake by themselves). `if`: a flag or a list (`"!flag"` for not) that must hold before they can sleep (the chores first); until then the bed says **Not tired yet**, and E thinks `not_yet` (else "I'm not tired yet."), and nothing is heard |
+| `locker` | (hide inside: a click gets in, a click gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
+| `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): a click throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
+| `sit` | (a chair, a sofa, a bed's edge: a click sits the player down, the eye at sitting height, a click stands them up; a beat's `{"use": id}` hears it) |
+| `carry` | a thing the player carries in both hands: a click picks it up into the inventory, in the hand; **G** puts it down in front of the player, on whatever is under that spot, facing them (no falling: it's simply there, and stays). Its `shape` (`box`, `cyl`, `sphere`, or `asset` for a library mesh at its size; under 1 m) is its body; `art` dresses it (any library mesh: your own goes in with `python tools/cc0.py add <file> local/<name>`), and in Play a bare plushie's block is drawn rounded, like a cushion. `physics`: how it follows the hand, `rigid` (default: stiffly) or `plushie` (light and soft: it lags and swings, squashes and stretches, bobs with the steps, its top flops behind a turn); `jiggle` 0..2 a plushie's softness (0 still, 1 a plushie, 2 jelly). `{"carrying": id}` holds while it's the one in the hand (the inventory's middle), `{"dropped": id, "in": room}` when it's put down |
+| `game` | a table with a board game: a click sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time). Needs a `shape` or a `kit`: the table |
+| `sleep` | a bed (a `kit` like `bed_single`, `futon`, or a shape): a click lies the player down on it, looking up, and the view goes dark; the story hears `{"use": id}`, and its beat plays a `chapter` (§4), which wakes them in the bed and gets them up where they stood (with no chapter they wake by themselves). `if`: a flag or a list (`"!flag"` for not) that must hold before they can sleep (the chores first); until then the bed says **Not tired yet**, and a click thinks `not_yet` (else "I'm not tired yet."), and nothing is heard |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
 | `use_on` | `needs`, `then`, `consume` |
 | `trigger` | `size [w, d, h]`; `safe: true` makes it a safe zone (no one sees the player in it) |
@@ -193,7 +193,7 @@ Every room also gets an invisible volume, so `enter <room>` works.
 
 **Little things** (docs/IMMERSION.md): a kettle, a hob, a pot, a cup, a cigarette, a clock, a phone, a tap... have a
 **life**: states they move through by themselves, what they show and play in each, and what the player can do to them
-(E switches the kettle on). A kit thing has its kit's life (Content/Studio/Life/lives.json says which); any prop can be
+(a click switches the kettle on). A kit thing has its kit's life (Content/Studio/Life/lives.json says which); any prop can be
 given one:
 
 ```json
@@ -216,7 +216,7 @@ given one:
   can't touch it), and a life's own: `liquid` (a cup or a teapot: `tea green_tea coffee water milk barley_tea soup`),
   `from` (the kettle or teapot it's filled from: Pour needs that one boiled or full), `rings` (a hob's rings that are
   on), `level` (the number on its digits), `light` (a candle's light, `use: light`, lit while it burns).
-- The player's acts (E) are the state's: the kettle's *Switch on*, the cigarette's *Put it out*, the cup's *Pour*. A
+- The player's acts (a click) are the state's: the kettle's *Switch on*, the cigarette's *Put it out*, the cup's *Pour*. A
   use is heard as `{"use": id}`, and where it leaves the thing as `{"state": id, "is": s}`.
 
 ## 3. Scenes (the spine)

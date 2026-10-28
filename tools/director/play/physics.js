@@ -32,6 +32,38 @@ register("physics", "plushie", {
 
 const STEP = 1 / 120;                               // the soft springs' steps: steady on slow frames
 
+// a thing in the hand, outside any world (the inventory's: a copy of the thing, held in front of the eye): its physics
+// kind's spring after the hand and its own soft shape, as a carried body follows it. kindOf: {name, settings}
+export function inHand(m, kindOf = { name: "rigid" }) {
+  const kind = part("physics", kindOf.name) || part("physics", "rigid"), s = settingsOf(kind, kindOf.settings), g = m.geometry ? m.geometry.parameters || {} : {};
+  return { m, kind, s, st: { pos: m.position.clone(), vel: new THREE.Vector3(), quat: m.quaternion.clone(), sq: 0, sv: 0, bend: new THREE.Vector3(), bv: new THREE.Vector3(),
+                             lastV: new THREE.Vector3(), base: m.scale.clone(), h: g.height ?? (g.radius ?? 0.25) * 2, soft: null, hand: null } };
+}
+// one frame of the hand: the spring pulls the thing after `target` (lagging only as the hand speeds up or stops), turns
+// it toward `quat`, and its kind's soft shape answers the pull
+export function follow(x, target, quat, dt) {
+  const { st, s } = x, c = 2 * Math.sqrt(s.follow) * s.give, acc = new THREE.Vector3();
+  if (!st.hand || st.hand.distanceTo(target) > 1) { st.hand = target.clone(); st.pos.copy(target); st.vel.set(0, 0, 0); st.quat.copy(quat); }   // a jump, a teleport: there at once
+  const hv = target.clone().sub(st.hand).divideScalar(Math.max(dt, 1e-3)).clampLength(0, 8); st.hand.copy(target);
+  for (let n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n, i = 0; i < n; i++) {
+    acc.copy(target).sub(st.pos).multiplyScalar(s.follow).addScaledVector(hv.clone().sub(st.vel), c);
+    st.vel.addScaledVector(acc, h); st.pos.addScaledVector(st.vel, h);
+    if (x.kind.soft) x.kind.soft(st, acc, h, s);
+  }
+  st.quat.slerp(quat, 1 - Math.exp(-s.turn * dt));
+  x.m.position.copy(st.pos); x.m.quaternion.copy(st.quat);
+  showSoft(x);
+}
+// a soft thing's shape now: squashed about its own volume, its top leaning (each mesh's bend in its own space)
+export function showSoft(x) {
+  if (!x.kind.soft) return;
+  const { m, st } = x;
+  if (!st.soft || st.dressed !== !!m.userData.dressed) { st.soft = softMeshes(m, x.s); st.dressed = !!m.userData.dressed; }
+  const k = 1 + st.sq, w = 1 / Math.sqrt(Math.max(0.3, k));
+  m.scale.set(st.base.x * w, st.base.y * k, st.base.z * w); m.updateMatrixWorld(true);
+  for (const u of st.soft) u.uBend.value.copy(st.bend).applyMatrix3(u.toLocal.setFromMatrix4(u.mesh.matrixWorld).invert());
+}
+
 // the soft shape: every visible mesh in the thing bent by height in the thing's own space (its top leans, its base
 // stays), and a block with no art rounded into a cushion (`round`). Uniforms per mesh; built again once art arrives
 function softMeshes(m, s) {
@@ -136,17 +168,7 @@ export class Physics {
   }
   carry(m, target, quat, dt) {
     const x = this.moverOf(m); if (!x || !x.carried) return;
-    const { st, s } = x, c = 2 * Math.sqrt(s.follow) * s.give, acc = new THREE.Vector3();
-    if (!st.hand || st.hand.distanceTo(target) > 1) st.hand = target.clone();           // the hands' own speed (a jump, a teleport: none)
-    const hv = target.clone().sub(st.hand).divideScalar(Math.max(dt, 1e-3)).clampLength(0, 8); st.hand.copy(target);
-    for (let n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n, i = 0; i < n; i++) {
-      acc.copy(target).sub(st.pos).multiplyScalar(s.follow).addScaledVector(hv.clone().sub(st.vel), c);
-      st.vel.addScaledVector(acc, h); st.pos.addScaledVector(st.vel, h);
-      if (x.kind.soft) x.kind.soft(st, acc, h, s);
-    }
-    st.quat.slerp(quat, 1 - Math.exp(-s.turn * dt));
-    m.position.copy(st.pos); m.quaternion.copy(st.quat);
-    this.show(x);
+    follow(x, target, quat, dt);
   }
   drop(m, onRest) {
     const x = this.moverOf(m); if (!x || !x.carried) return;
@@ -157,14 +179,14 @@ export class Physics {
     this.watch = this.watch.filter(w => w.m !== m).concat({ m, b: x.b, onRest: () => onRest && onRest(), t: 0 });
   }
   carrying(m) { const x = this.moverOf(m); return !!(x && x.carried); }
-  // a soft thing's shape now: squashed about its own volume, its top leaning (each mesh's bend in its own space)
-  show(x) {
-    if (!x.kind.soft) return;
-    const { m, st } = x;
-    if (!st.soft || st.dressed !== !!m.userData.dressed) { st.soft = softMeshes(m, x.s); st.dressed = !!m.userData.dressed; }
-    const k = 1 + st.sq, w = 1 / Math.sqrt(Math.max(0.3, k));
-    m.scale.set(st.base.x * w, st.base.y * k, st.base.z * w); m.updateMatrixWorld(true);
-    for (const u of st.soft) u.uBend.value.copy(st.bend).applyMatrix3(u.toLocal.setFromMatrix4(u.mesh.matrixWorld).invert());
+  show(x) { showSoft(x); }
+  // a still thing taken out of the world (into the inventory) and put back (set down where the player put it)
+  removeStatic(m) { const i = this.statics.findIndex(x => x.m === m); if (i >= 0) { this.world.removeBody(this.statics[i].b); this.statics.splice(i, 1); } }
+  addStatic(m) {
+    if (this.statics.some(x => x.m === m)) return;
+    const shape = m.geometry && m.geometry.parameters && shapeOf(m.geometry.parameters); if (!shape) return;
+    const b = new CANNON.Body({ mass: 0, type: CANNON.Body.STATIC, shape, material: this.statics.length ? this.statics[0].b.material : undefined });
+    m.updateMatrixWorld(true); this.place(b, m); this.world.addBody(b); this.statics.push({ m, b });
   }
   place(b, m) {
     const p = m.getWorldPosition(new THREE.Vector3()), q = m.getWorldQuaternion(new THREE.Quaternion());

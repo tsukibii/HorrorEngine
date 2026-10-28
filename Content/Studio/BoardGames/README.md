@@ -1,6 +1,6 @@
 # Board games: the rules
 
-A table in a level can hold a board game (`use: "game"`, docs/STORY_FORMAT.md §2): the player uses it (E), sits down
+A table in a level can hold a board game (`use: "game"`, docs/STORY_FORMAT.md §2): the player uses it (a click), sits down
 at its long side (the half they came from), leaning in over the top, and the game's rules play it out; then they stand up again and the story
 hears `{"played": table, "result": ...}`. Each game is **one file here**, its rules in plain JavaScript: the rules
 decide everything (whose turn, what the dice say, who won) and say so through `ctx`. They never touch three.js: the

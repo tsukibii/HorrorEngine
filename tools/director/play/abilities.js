@@ -18,11 +18,12 @@ register("ability", "look", {
 });
 
 register("ability", "walk", {
-  settings: { speed: 1.4, crouched: 0.7, radius: 0.25, step: 0.35 },   // m/s standing and crouched; body radius; step up
+  settings: { speed: 1.4, run: 2.8, crouched: 0.7, radius: 0.25, step: 0.35 },   // m/s walking, running (Shift held) and crouched; body radius; step up
   update: (rt, dt, s) => {
     const k = rt.keys, f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0), r = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
+    rt.player.running = !rt.player.crouched && !!(k.ShiftLeft || k.ShiftRight) && f > 0;     // forward only, standing
     if (!f && !r) return;
-    const a = rt.player.yaw * Math.PI / 180, len = Math.hypot(f, r), v = (rt.player.crouched ? s.crouched : s.speed) * dt / len;
+    const a = rt.player.yaw * Math.PI / 180, len = Math.hypot(f, r), v = (rt.player.crouched ? s.crouched : rt.player.running ? s.run : s.speed) * dt / len;
     // forward is (cos yaw, -sin yaw) in three's x, z (story y is three's -z); right is (sin yaw, cos yaw)
     rt.move((Math.cos(a) * f + Math.sin(a) * r) * v, (-Math.sin(a) * f + Math.cos(a) * r) * v, s);
   },

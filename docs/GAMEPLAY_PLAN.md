@@ -142,13 +142,28 @@ playback; Generate stays the one button.
   or a **side path that rejoins the main line** (a flow branch whose last node's `next` is back on the spine). The
   desk needs a physics engine beside three.js (vendored, like three.js). Doors and drawers open and close with E,
   never dragged (the user dropped Amnesia's dragging, 2026-10-21).
-- **Things you carry** (**built 2026-10-24**, DECISIONS 2026-10-24: `use: carry`, hold E to pick up and hold E to put
-  down, a tap still uses a door; the `carrying` and `dropped` (`in`) triggers): how a thing moves is a **physics kind**,
-  a part (`register("physics", name, ...)` in `play/physics.js`): `rigid` follows the hands stiffly, `plushie` lags,
-  swings past, squashes and stretches with the hands' acceleration, bobs with the steps and flops its top behind a turn
-  (a vertex bend by height, so any imported mesh goes soft), and lands soft (`jiggle` 0..2). A new kind (glass that
-  breaks, a liquid that slops) is a new part and a word in `storylib.PHYSICS`. Put down, a thing falls and stays where
-  it settles (kept per level, like the die).
+- **Things you carry** (**built 2026-10-24**, DECISIONS 2026-10-24; into the inventory since 2026-10-27, later: `use:
+  carry`, the `carrying` and `dropped` (`in`) triggers): how a thing follows the hand is a **physics kind**, a part
+  (`register("physics", name, ...)` in `play/physics.js`, `inHand` and `follow` its spring): `rigid` follows stiffly,
+  `plushie` lags, swings past, squashes and stretches with the hand's acceleration, bobs with the steps and flops its
+  top behind a turn (a vertex bend by height, so any imported mesh goes soft; `jiggle` 0..2). A new kind (glass that
+  breaks, a liquid that slops) is a new part and a word in `storylib.PHYSICS`. Put down with G it doesn't fall: it's
+  set on whatever is under the spot (kept per level, like the die).
+- **The controls and the inventory** (**built 2026-10-27, later**, DECISIONS 2026-10-27, later: "typical simple horror
+  game mechanics"): **a left click uses** whatever is under the reticle (every interactable: a door, a pickup, a thing
+  to carry, a note, a seat, a bed, a hiding place, a switch, a board game, a die, a little thing's act; the prompt's key
+  chip is the mouse's button), **WASD** walks, **Shift** runs (forward, standing: `walk.run`, 2.8 m/s), **C** crouches,
+  **E** shows or hides **the inventory**, the **mouse wheel** turns it, **G** puts the one in the hand down, **Esc**
+  pauses. The inventory (`play/inventory.js`): every thing picked up (a pickup's item, a thing to carry) goes into one
+  row at the bottom centre, the newest in the hand; the one in the hand always in the middle, the rest either side
+  round a wheel, at most five shown, the farther ones smaller and fading out; a picture of each (rendered from the
+  thing itself); in front of frosted glass that fades out at its ends, no border; its name under it. Hidden, it peeks
+  for a moment when something changes; it steps aside while someone talks or asks. The one in the hand is held in view
+  (a copy of it on its physics kind's spring), put away while seated, hiding, asleep, at a board game or in a scene.
+  G sets it down 0.55 m ahead (nearer a wall), facing you, on the floor or a table, and the player no longer has its
+  item; set down in another level, a copy of it stays there. A click takes it back. The pause menu shows the controls
+  on its left (each key drawn in outline, after the user's picture; `CONTROLS` in `play/menu.js`, each its Enhanced
+  Input action for Unreal).
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,
