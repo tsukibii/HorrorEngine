@@ -9,7 +9,7 @@ The user's answers, newest first. They override the plan, the research and the d
   (basically procedural skin v2 but more real like MetaHuman skin and the screenshots provided). Give yourself 5 hours
   to work on whatever." With three stills: a young East Asian woman's face under a soft key light on dark, her lips in
   close-up (fine lip lines, wet highlights), her eye and nose in close-up (pores, sparkle, a wet tear line).
-  Built from it: the flashlight (F), cleaning (a stain scrubbed away by holding the click); the skin research in
+  Built from it: the flashlight (F), cleaning (a stain scrubbed away by holding the click), the peephole; the skin research in
   docs/research/skin_v2.md (the stills measured, the plan in eight steps: research only, nothing built).
 
 ## 2026-10-28 (the controls' symbols, our own)

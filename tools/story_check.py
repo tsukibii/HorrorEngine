@@ -26,7 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
@@ -294,6 +294,9 @@ def check_world(story, things, r):
                         r.err(f"door {op['door'].get('id')}: kit: {e}")
                 if op.get("door") and op["door"].get("class") is not None and not str(op["door"]["class"]).endswith("_C"):
                     r.err(f"door {op['door'].get('id')}: class {op['door']['class']!r} isn't a Blueprint class path (…_C)")
+                pk = (op.get("door") or {}).get("peephole")
+                if pk is not None and pk is not True and not (isinstance(pk, (int, float)) and not isinstance(pk, bool) and 1.0 <= pk <= 1.9):
+                    r.err(f"door {op['door'].get('id')}: peephole is true (at 1.52 m) or its height on the door, 1.0 to 1.9 m")
                 if op.get("door") and op["door"].get("swing", "in") not in ("in", "out", "slide"):
                     r.err(f"door {op['door'].get('id')}: swing {op['door']['swing']!r} isn't in, out or slide")
                 if op.get("door") and op["door"].get("locked_by"):
@@ -923,6 +926,9 @@ def check_trigger(bid, w, story, things, beats, r):
         gone = json.dumps(story.get("stitches", {}), ensure_ascii=False)
         if '"as": "go"' not in gone:
             r.err(f"{bid}: arrived {v!r}: nothing sends anyone anywhere (behave as go)")
+    elif k == "peeping":                               # the player's eye at that door's peephole; holds while it is
+        if v not in things or things[v].kind != "door" or not things[v].d.get("peephole"):
+            r.err(f"{bid}: peeping {v!r} isn't a door with a peephole (its door's \"peephole\": true)")
     elif k == "torch":                                 # the player switched the flashlight (F) on, or off
         if v not in ("on", "off"):
             r.err(f"{bid}: torch {v!r}: \"on\" or \"off\" (the player switched it with F)")
@@ -1707,7 +1713,7 @@ class World:
         v = w[k]
         if k == "start":
             return ("start", self.cur) in self.done_events
-        if k in ("enter", "exit", "look", "rolled", "played"):   # rolled, played: the walker plays until the face, the result, comes up
+        if k in ("enter", "exit", "look", "rolled", "played", "peeping"):   # rolled, played: the walker plays until the face, the result, comes up; peeping: it looks through
             return self.can_reach(v)
         if k == "hidden":                                 # the walker gets into that locker, or the nearest one it can reach
             return any(self.can_reach(t.id) for t in self.things.values() if t.use == "locker" and (v is True or t.id == v))
@@ -1758,7 +1764,7 @@ class World:
     def where(self, w):
         k = next(iter(set(w) - TRIGGER_EXTRA))
         v = w[k]
-        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden", "carrying", "dropped", "played") and v in self.things else None
+        return v if k in ("enter", "exit", "use", "look", "rolled", "hidden", "carrying", "dropped", "played", "peeping") and v in self.things else None
 
     def apply_state(self, a):
         k = verbs(a)[0]
@@ -1959,6 +1965,8 @@ class World:
                         k = next(iter(set(b["when"]) - TRIGGER_EXTRA))
                         if k in ("use", "look"):
                             self.route.append({"node": nid, "do": k, "id": at, "secs": b["when"].get("secs", 1.0)})
+                        if k == "peeping":                     # an eye to the lens a few seconds
+                            self.add("scripted", 3.0)
                         if k == "use" and self.things[at].use == "clean":   # scrubbed: its seconds of holding the click
                             self.add("gameplay", float(self.things[at].d.get("secs", 3)))
                         if k in ("carrying", "dropped"):           # picked up; put down where it's asked for, and it lies there

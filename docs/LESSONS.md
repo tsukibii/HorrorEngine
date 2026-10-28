@@ -901,3 +901,11 @@ PLAY's pause-menu step expected the flashlight's row (picked up a few steps earl
 test had started a second playtest (the one that checks a new run starts from the story's level), and a new run starts
 with nothing in the pocket. The menu was right. Before asserting what a step "already has", check whether a step since
 began a new run; give the step what it needs itself (here `give("flashlight")` before the menu opens).
+
+## An Esc sent to skip a scene can pause the play after it (2026-10-28)
+
+PLAY skips the Watch's scenes by pressing Esc until play is back. Once (third run of the day, the step had passed twice)
+the last Esc landed after play had resumed: on the software GPU's slow frames it arrived more than the runtime's 400 ms
+after `go()`, so it was a pause, and the next step found the menu up. Nothing in the game was wrong. A test that sends
+keys to get past something must check what its last key did once it's past (`scenesUntilPlay` now closes a pause it
+opened), not only that it got there.

@@ -11,6 +11,7 @@ import { interactableOf } from "./interactables.js";
 import "./abilities.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
+import { lensesFor, followLeaf, LENS } from "./peephole.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
@@ -102,6 +103,7 @@ export class PlayRuntime {
       e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
     }
     if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
+    if (down && this.player.peeping && ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) { this.unpeep(); return; }   // a step: the eye back
     if (this.playing) return;                          // at a board game: its choices take the keys
     this.keys[e.code] = down;
     this.ability("torch", "key", e, down);             // F: the flashlight, hidden or not
@@ -128,6 +130,12 @@ export class PlayRuntime {
       kept.doors[m.userData.id] = d; d.mesh = m; d.t = 1; d.deg = d.to;
       if (d.deg) this.stage.swingDoor(m, d.deg);
     }
+    this.lenses = [];                                    // a door with a peephole: its lens on both faces (peephole.js), riding the leaf
+    for (const m of this.stage.world.children) {
+      const pk = m.userData && m.userData.kind === "door" && ((m.userData.piece || {}).d || {}).peephole;
+      if (!pk || this.lenses.some(x => x.door.userData.id === m.userData.id)) continue;
+      for (const l of lensesFor(m, typeof pk === "number" ? pk : LENS.z)) { l.userData.id += l.userData.side > 0 ? ":a" : ":b"; this.stage.world.add(l); this.byId[l.userData.id] = l; this.lenses.push({ l, door: m }); followLeaf(l, m); }
+    }
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
     if (this.player.hiding) this.stage.seeThrough(this.player.hiding, this.stage.seeThroughOf(this.player.hiding));
     for (const f of Object.values(this.stage.cast)) f.group.visible = false;          // shown again by their behaviour (drawNpcs)
@@ -146,7 +154,7 @@ export class PlayRuntime {
     });
   }
   placeAt(level, spot) {                               // the player on a spot (story coordinates and its yaw)
-    this.player.seat = null; this.leaveHiding();
+    this.player.seat = null; this.leaveHiding(); this.unpeep();
     this.enterLevel(level);
     const t = this.plan.things[spot];
     if (t) this.place(s2t(t.pos[0], t.pos[1], 0), t.yaw || 0, 0);
@@ -362,7 +370,7 @@ export class PlayRuntime {
     if (this.hand && this.hand.entry !== e) { this.hand.x.m.removeFromParent(); this.hand = null; }
     if (!e) return;
     if (!this.hand) { this.stage.scene.add(e.mesh); this.hand = { entry: e, x: inHand(e.mesh, e.physics) }; }
-    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || this.busy;
+    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || !!p.peeping || this.busy;
     m.visible = !away; if (away) return;
     const cam = this.stage.camera, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...this.hand.x.s.hand);
     this.stepPhase = ((this.stepPhase || 0) + dt * walk * Math.PI * 2 * 1.8) % (Math.PI * 2);      // about two steps a second at a walk
@@ -535,6 +543,21 @@ export class PlayRuntime {
     this.stage.seeThrough(id, 0); p.hiding = null; p.limit = null;
     this.emit({ type: "unhidden", id });
   }
+  // the peephole (peephole.js): the eye to the lens on the far face of the door, looking out along it through a wide
+  // lens in a round hole (the HUD's .peep), a little room to look about; a click or a step takes it back to where it was
+  peep(door, s) {
+    const p = this.player, near = this.target, far = (this.lenses || []).find(x => x.door.userData.id === door && (!near || x.l.userData.side !== near.userData.side));
+    if (!far || p.peeping) return;
+    followLeaf(far.l, far.door);
+    const n = new THREE.Vector3(0, 1, 0).applyQuaternion(far.l.quaternion), yaw = Math.atan2(-n.z, n.x) * 180 / Math.PI;
+    p.peeping = { door, at: far.l.getWorldPosition(new THREE.Vector3()).addScaledVector(n, 0.03), back: { yaw: p.yaw, pitch: p.pitch } };
+    p.limit = { yaw, dy: s.look[0], dp: s.look[1] }; p.yaw = yaw; p.pitch = 0; this.keys = {};
+    this.hud.peep(true); this.hud.setCursor("none", "");
+  }
+  unpeep() {
+    const p = this.player, pk = p.peeping; if (!pk) return;
+    p.peeping = null; p.limit = null; p.yaw = pk.back.yaw; p.pitch = pk.back.pitch; this.hud.peep(false);
+  }
   tween(to) {
     const p = this.player;
     return new Promise(done => { this.moving = { from: { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw, pitch: p.pitch }, to, t: 0, done }; });
@@ -620,6 +643,7 @@ export class PlayRuntime {
   aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible), false)[0] || null; }
   async use(press) {
     if (this.player.sleeping || this.inChapter) return;
+    if (this.player.peeping) { this.hud.press(); this.unpeep(); return; }   // a click takes the eye from the peephole
     const seat = this.player.seat;
     if (seat && (!this.target || this.target === seat)) { this.hud.press(); this.stand(this.set("sit")); return; }   // a click stands you up
     if (this.player.hiding && !this.target) { this.hud.press(); this.unhide(this.set("hide")); return; }             // a click gets you out
@@ -768,7 +792,7 @@ export class PlayRuntime {
       p.yaw = L.y0 + (L.y1 - L.y0) * k; p.pitch = L.p0 + (L.p1 - L.p0) * k; if (u >= 1) this.lookTween = null;
     }
     const feet = p.pos.clone();
-    if (!this.busy && !this.playing && !p.seat && !p.hiding && !p.sleeping && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
+    if (!this.busy && !this.playing && !p.seat && !p.hiding && !p.sleeping && !p.peeping && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
     p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
     this.hud.setStance(p.hiding ? "hidden" : p.crouched ? "crouched" : "");
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {
@@ -776,6 +800,7 @@ export class PlayRuntime {
       d.deg = d.from + (d.to - d.from) * k; this.stage.swingDoor(d.mesh, d.deg);
       if (d.t >= 1 && !d.open) this.emit({ type: "closed", id });
     }
+    for (const x of this.lenses || []) followLeaf(x.l, x.door);
     for (const t of this.triggers) {
       const now = this.isIn(t), was = this.inside.has(t.id);
       if (now && !was) { this.inside.add(t.id); this.emit({ type: "enter", id: t.id }); }
@@ -786,10 +811,10 @@ export class PlayRuntime {
       if (this.timerLeft <= 0) { const to = this.timerFail; this.end({ to, timeout: true }); }
     }
     for (const w of this.waits.filter(w => this.clock >= w.at)) { this.waits.splice(this.waits.indexOf(w), 1); w.res(); }
-    const c = this.stage.camera, eye = this.eyePos();
+    const c = this.stage.camera, eye = p.peeping ? p.peeping.at : this.eyePos();
     c.position.copy(eye); c.rotation.order = "YXZ";
     c.rotation.set(p.pitch * Math.PI / 180, (p.yaw - 90) * Math.PI / 180, 0);
-    c.fov = vfov(+((this.story.game || {}).fov || FOV_H), c.aspect || 16 / 9); c.updateProjectionMatrix();
+    c.fov = p.peeping ? LENS.fov : vfov(+((this.story.game || {}).fov || FOV_H), c.aspect || 16 / 9); c.updateProjectionMatrix();   // through a peephole: its wide lens
     c.updateMatrixWorld();                               // the cursor's ray (and the hands) from where the eye is now, not the last frame
     const T = this.clock;
     for (const l of this.stage.lights) {
@@ -802,7 +827,7 @@ export class PlayRuntime {
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
     this.watch(dt);
-    if (!this.busy && !this.playing) this.updateCursor(dt);
+    if (!this.busy && !this.playing && !p.peeping) this.updateCursor(dt);
     if (this.holding) this.holdTick(dt);
     this.emit({ type: "tick" });
     this.hud.tick();

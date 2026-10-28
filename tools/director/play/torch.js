@@ -49,7 +49,7 @@ export class Torch {
     const from = cam.localToWorld(new THREE.Vector3(...s.hand)), walk = Math.min(1, (p.speed || 0) / 1.2);
     from.y += Math.sin((rt.stepPhase || 0) + 0.6) * 0.01 * walk;                    // bobbing with the steps
     const aim = from.clone().addScaledVector(this.dir, 6);
-    let k = this.on ? 1 : 0;
+    let k = this.on && !p.peeping ? 1 : 0;                                          // (not through a peephole)
     if (this.flick > 0) {                                                         // a stutter: hashed on the clock, never steady
       this.flick -= dt; const n = Math.sin(rt.clock * 61.3) * Math.sin(rt.clock * 23.9 + 1.7);
       k = this.dying ? (n > 0.1 - this.flick * 0.4 ? 1 : 0.05) : n > -0.2 ? 1 : 0.15;

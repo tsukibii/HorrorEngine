@@ -98,6 +98,10 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
 - `locked_by` is an item, or `flag:<name>`.
 - `swing` is `in` (into the room that holds the door), `out`, or `slide`: a sliding door (fusuma, shoji, a modern
   sliding door, a glass door onto a balcony), which has no swing.
+- `peephole: true` (or its height on the door, 1.0 to 1.9 m; 1.52 by default): a little lens in the leaf, on both
+  faces (DECISIONS 2026-10-28). In Play a click on it puts the eye to it: the other side through a wide lens in a round
+  hole, a little room to look about; a click or a step takes the eye back. `{"peeping": door}` holds while the eye is
+  there (whoever knocked, there or not). The scene builder's door has its box.
 - An opening on a wall that also serves an upper floor (a stairwell's door onto the landing) has its `sill` at that
   floor's height.
 
@@ -420,6 +424,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `{"arrived": cast}`, `"at": spot` | a cast member got where a `behave` `go` sent her (anywhere, or that spot); holds while she's there (§9.12) |
 | `{"ticked": task}`, `{"ticked": true}` | that task on the to-do list is ticked, or (true) the list is through: nothing on it open (each ticked or failed); holds while it is |
 | `{"failed": task}`, `{"failed": true}` | that task is failed, or (true) any task is; holds while it is |
+| `{"peeping": door}` | the player's eye is at that door's peephole (`peephole: true`); holds while it is |
 | `{"torch": "on"}`, `{"torch": "off"}` | the player switched the flashlight on or off with **F** (either: `any` of both) |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 

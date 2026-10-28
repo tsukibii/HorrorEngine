@@ -27,6 +27,7 @@ register("condition", "look", {                             // looked at for `se
   test: (v, w, ev, rt) => ev.type === "tick" && rt.lookedAt(v, +(w.within ?? 8)) >= +(w.secs ?? 1) });
 register("condition", "rolled", {                         // a die settled: any face, `face`, or `at_least`
   test: (v, w, ev) => ev.type === "rolled" && ev.id === v && (w.face === undefined || ev.face === w.face) && (w.at_least === undefined || ev.face >= w.at_least) });
+register("condition", "peeping", { test: (v, w, ev, rt) => !!rt.player.peeping && rt.player.peeping.door === v });   // the eye at that door's peephole; holds while it is
 register("condition", "torch", { test: (v, w, ev) => ev.type === "torch" && v === (ev.on ? "on" : "off") });   // the player switched the flashlight (F) on, or off
 register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v === true || v === rt.carried.id) });   // in the hand (the inventory's one): anything, or that; holds while it is
 register("condition", "dropped", {                        // put down (G): anywhere, or `in` a room or a trigger

@@ -41,6 +41,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_stain", shape: "box 0.7 0.5 0.01", at: [3.0, 1.5], use: "clean", stain: "mud", secs: 2, with: "mop" },
       { id: "mop1", shape: "box 0.06 0.06 0.5", at: [1.0, 4.0], use: "pickup", item: "mop" });
     S.stitches.t_search.beats.push({ id: "b_clean", when: { use: "hall_stain" }, optional: true, do: [{ flag: "stain_clean" }] });
+    S.levels.house.rooms.find(r => r.id === "hall").openings.find(o => o.door && o.door.id === "front_door").door.peephole = true;   // a lens in the front door
+    S.stitches.t_search.beats.push({ id: "b_peep", when: { peeping: "front_door" }, optional: true, do: [{ flag: "peeped" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "torch1", shape: "cyl 0.025 0.18", at: [1.4, 5.0], use: "pickup", item: "flashlight" });
     S.stitches.t_search.beats.push({ id: "b_torch_on", when: { torch: "on" }, optional: true, do: [{ flag: "torch_on" }] },
       { id: "b_torch_dead", when: { flag: "kill_torch" }, optional: true, do: [{ torch: "dead" }] }, { id: "b_torch_works", when: { flag: "fix_torch" }, optional: true, do: [{ torch: "works" }] });
@@ -83,7 +85,12 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   const scenesUntilPlay = async (ms = 90000) => {          // skip scenes (dev skip), mash free of any struggle
     const t0 = Date.now();
     while (Date.now() - t0 < ms) {
-      if (await page.evaluate(() => !!(window.__dd.play && window.__dd.play.active))) return;
+      if (await page.evaluate(() => !!(window.__dd.play && window.__dd.play.active))) {
+        // an Esc sent to skip the scene's last moment can land once play is back and pause it (a slow frame lets it past
+        // the runtime's 400 ms guard, LESSONS): close the menu it opened
+        if (await page.evaluate(() => !!window.__dd.play.held)) { await page.keyboard.press("Escape"); await page.waitForTimeout(600); }
+        return;
+      }
       if (await page.$(".ph-dock .ph-opt")) await page.keyboard.press("Digit1");   // a scene's choice: the first answer (the grab's "Let go of me.")
       else if (await page.$(".qte")) {
         for (let i = 0; i < 6; i++) { await page.keyboard.press("KeyE"); await page.keyboard.press("Space"); }
@@ -390,6 +397,26 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const c = await state(), heard = await flag("stain_clean");
     if (c.vis || !heard || c.p < 1) throw new Error(`scrubbed clean: ${JSON.stringify(c)}, heard ${heard}`);
     await page.evaluate(() => { const rt = window.__dd.play; rt.inv.remove("mop1"); rt.items.delete("mop"); });   // out of the way of the rest
+  });
+  await step("the peephole: the front door's lens says Look through; a click puts the eye to it (out on the porch side, a wide lens in a round hole, the HUD away, peeping heard), a little room to look about, and a step takes the eye back", async () => {
+    let lens = null, r = null;
+    for (const id of ["front_door:peephole:a", "front_door:peephole:b"]) { try { r = await goTo(id, 0.6); lens = id; break; } catch (e) { } }
+    if (!lens) throw new Error("can't get the reticle on the front door's lens");
+    const label = await page.evaluate(() => document.querySelector(".ph-prompt").textContent);
+    if (r.cursor !== "look" || !/look through/i.test(label)) throw new Error(`the lens: cursor ${r.cursor}, ${label}`);
+    const before = await page.evaluate(() => { const c = window.__dd.play.stage.camera; return { z: c.position.z, fov: c.fov }; });
+    await click(); await gameWait(0.4);
+    const s = () => page.evaluate(() => { const rt = window.__dd.play, c = rt.stage.camera, d = rt.doors.front_door.mesh.getWorldPosition(new c.position.constructor());
+      return { peeping: rt.player.peeping && rt.player.peeping.door, fov: c.fov, cz: c.position.z, dz: d.z, mask: rt.hud.root.classList.contains("peep"), limit: !!rt.player.limit }; });
+    const a = await s(), heard = await flag("peeped");
+    const sameSide = Math.sign(before.z - a.dz) === Math.sign(a.cz - a.dz);
+    if (a.peeping !== "front_door" || !(a.fov > 100) || !a.mask || !a.limit || sameSide || !heard) throw new Error(`at the lens: ${JSON.stringify(a)}, from z ${before.z.toFixed(2)}, heard ${heard}`);
+    await page.evaluate(() => window.__dd.play.ability("look", "mouse", 4000, 0)); await gameWait(0.2);   // a hard look aside: held to the cone
+    const yaw = await page.evaluate(() => { const p = window.__dd.play.player; return ((p.yaw - p.limit.yaw) % 360 + 540) % 360 - 180; });
+    if (Math.abs(yaw) > 33) throw new Error(`the look should stay within the lens's room: ${yaw.toFixed(1)}°`);
+    await press("KeyS"); await gameWait(0.3);
+    const b = await s();
+    if (b.peeping || b.mask || b.limit || Math.abs(b.fov - before.fov) > 0.5 || Math.sign(b.cz - b.dz) !== Math.sign(before.z - a.dz)) throw new Error("a step back: " + JSON.stringify(b));
   });
   await step("Shift runs (forward, standing): about twice the walk", async () => {
     const speed = async keys => { await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(0.8, 0, -2.6), 0, 0); });

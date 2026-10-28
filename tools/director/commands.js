@@ -233,6 +233,8 @@ export const TRIGGERS = [
   { verb: "rolled", label: "A die is rolled", icon: "dice", fields: [{ key: "rolled", label: "Die", kind: "die", verb: true },
     { key: "face", label: "showing", kind: "number", opt: true }, { key: "at_least", label: "or at least", kind: "number", opt: true }],
     make: () => ({ rolled: "" }), text: (w, n) => `${n("thing", w.rolled)} rolls${w.face ? " a " + w.face : w.at_least ? " " + w.at_least + " or more" : ""}` },
+  { verb: "peeping", label: "The player looks through a peephole", icon: "eye", fields: [{ key: "peeping", label: "Door", kind: "door", verb: true }],
+    make: () => ({ peeping: "" }), text: (w, n) => `the player looks through ${n("thing", w.peeping)}'s peephole` },
   { verb: "torch", label: "The player switches the flashlight", icon: "torch", fields: [{ key: "torch", label: "Switched", kind: "choice", verb: true, opts: ["on", "off"] }],
     make: () => ({ torch: "on" }), text: w => `the player switches the flashlight ${w.torch || "…"}` },
   { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },

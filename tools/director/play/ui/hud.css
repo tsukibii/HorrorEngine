@@ -25,6 +25,11 @@
 .play-hud .ph-cursor:not([data-cursor="none"]){width:var(--ph-ring);height:var(--ph-ring);margin:calc(var(--ph-ring) / -2) 0 0 calc(var(--ph-ring) / -2);
   background:var(--ph-ring-fill,transparent);border-color:var(--ph-cursor)}
 .play-hud .ph-cursor[data-cursor="locked"]{border-color:var(--ph-bad)}
+/* the eye at a peephole: the view through a round hole, its brass rim catching a little light, black round it; the
+   rest of the HUD steps away */
+.play-hud.peep::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(circle closest-side at 50% 50%,transparent 0 80%,rgba(150,128,90,.22) 84%,rgba(0,0,0,.75) 88%,#000 95%)}
+.play-hud.peep :is(.ph-cursor,.ph-prompt,.ph-inv,.ph-tl,.ph-hint,.ph-stance){opacity:0 !important}
 /* a held use (scrubbing a stain): the ring fills round as it's done (--ph-progress, 0..1) */
 .play-hud .ph-cursor.progress{border-color:color-mix(in srgb,var(--ph-cursor) 35%,transparent);
   background:conic-gradient(var(--ph-accent) calc(var(--ph-progress,0) * 1turn),transparent 0);

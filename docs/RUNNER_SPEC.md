@@ -152,6 +152,11 @@ scene: a camera fade, and control taken and given back softly.
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - A little thing with a life (`life:*`) is used like one when its state has an act (Content/Studio/Life/lives.json):
   the prompt is the act's label, a click moves it to the act's state, and `use` is heard.
+- **The peephole** (a door's `peephole`, play/peephole.js the reference): a lens on both faces of the leaf at its
+  height, with a collider a hand wide for the trace; used, the view blends to a camera just outside the far face
+  looking out (a cine camera with a wide lens and a fisheye post-process: barrel distortion, a round black mask with
+  the brass rim, chromatic fringe at the edge), the look held to a cone (32° by 22°), the HUD away; `IA_Interact` or any
+  move takes it back. `peeping` holds while there.
 - **Cleaning** (`use: clean`, play/clean.js the reference): a stain is a decal (its kind's blot) on whatever it lies on,
   with a box collider for the trace; `IA_Interact` held on it scrubs (a progress ring on the reticle, the decal's
   opacity falling with an ease, a cloth sound every 0.36 s, the held mop or rag worked to and fro); the progress is kept
