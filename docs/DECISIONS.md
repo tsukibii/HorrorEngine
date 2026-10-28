@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28 (Godot: a branch, HumanShaders, the port to come)
+
+- **A `godot-support` branch, with HumanShaders in a plugins folder** ("make a new branch called godot-support,
+  incorporate this plugin (pull this into a plugins folder) https://github.com/matmadness/HumanShaders"):
+  `GodotPlugins/HumanShaders/`, upstream's shader folder unchanged (UPSTREAM.md).
+- **Later, the Character Studio is translated onto these shaders, keeping the colours and patterns we designed** ("we
+  will want to translate later the character creator to use these shaders however maintain the colors, and patterns we
+  designed in character creator"): docs/GODOT_PLAN.md §2.
+- **Not now:** the user's large dev branch lands first, and what it adds gets ported too.
+- **Godot 4.7 Mono** ("that will let you port the c language stuff easier"): C# for the C++ port.
+- Claude's calls inside that: only upstream's `HumanShaders/` folder came across, not its demo project or its head
+  scans (Digital Emily 2's licence isn't stated; Infinite is CC BY 3.0); its textures are MIT and CC BY 4.0, so a game
+  that ships them credits matmadness. Our eye keeps its refracting cornea (HumanShaders' eye only does parallax).
+
 ## 2026-10-26, late night (iris patterns and pupil shapes)
 
 - **Patterns inside the iris and pupils of other shapes, after the user's references, a heart among them** ("could you
