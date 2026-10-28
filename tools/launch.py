@@ -127,6 +127,7 @@ TOOLS = [
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
+    ("Checks", "Test room (TestRoom001 played station by station, headless browser; the desk running; the reference for Unreal)", "node tools/director/testroom.mjs", {}),
     ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),
     ("Checks", "Time of day on the desk (the desk running)", "node tools/director/timetest.js", {}),
     ("Checks", "Dashboard test (headless browser, its own dashboard on port 8798)", "node tools/dashboard/dashtest.mjs", {}),

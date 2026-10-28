@@ -111,3 +111,5 @@ Content/Studio/Expressions/*/clip.mp4
 
 # the PLAY test's picture of a failing step (tools/director/playtest.js)
 playtest_fail.png
+testroom_fail.png
+exprtest_fail.png

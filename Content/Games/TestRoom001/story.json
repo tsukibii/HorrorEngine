@@ -1,0 +1,5188 @@
+{
+ "format": 3,
+ "game": {
+  "id": "TestRoom001",
+  "title": "TestRoom001: the lab",
+  "start": "n_arrive",
+  "target_min": 25,
+  "fast_min": 10,
+  "voice": "none",
+  "text": "en",
+  "clip_max": 8,
+  "subtitles": [
+   "en"
+  ],
+  "time": "day",
+  "player_name": "Tester",
+  "see_through": 0.6,
+  "counters": {
+   "found": {
+    "label": "times Aoi found you"
+   }
+  },
+  "karma": {
+   "axes": {
+    "karma": {
+     "min": -10,
+     "max": 10,
+     "label": "how you treat Aoi"
+    }
+   }
+  },
+  "built_with": {
+   "engine": "0.6.0",
+   "format": 3
+  },
+  "note": "A test game, not a story (DECISIONS 2026-10-28, back): a lab whose rooms each test one thing the format has, station by station, each with its to-do list as the checklist. The desk plays it through (TESTROOM); the same checklist is what an Unreal build is compared against (docs/UNREAL_NEXT.md)."
+ },
+ "cast": {
+  "aoi": {
+   "name": "Aoi",
+   "metahuman": null,
+   "height": 1.6,
+   "subject": "she",
+   "skin": "#c99f84",
+   "previs_body": "MHR.fbx"
+  }
+ },
+ "items": {
+  "key_brass": {
+   "name": "Brass key",
+   "shape": "box 0.08 0.03 0.01",
+   "inspect": true
+  },
+  "tin_a": {
+   "name": "Tin A"
+  },
+  "tin_b": {
+   "name": "Tin B"
+  },
+  "tin_c": {
+   "name": "Tin C"
+  },
+  "mop": {
+   "name": "Mop"
+  },
+  "flashlight": {
+   "name": "Flashlight",
+   "torch": {
+    "kelvin": 4200,
+    "cone": 24,
+    "range": 16
+   }
+  },
+  "batteries": {
+   "name": "Batteries"
+  },
+  "fuse": {
+   "name": "Fuse"
+  },
+  "doll": {
+   "name": "Porcelain doll",
+   "shape": "box 0.12 0.08 0.25",
+   "inspect": true
+  }
+ },
+ "notes": {
+  "note_code": {
+   "title": "The vault",
+   "text": "Vault code: 4071. Don't write it anywhere else."
+  },
+  "diary": {
+   "title": "Lab diary",
+   "text": "Day 1. Every room tests one thing. If a room works here, it has to work in the real build too. Write down anything that looks different."
+  },
+  "note_painting": {
+   "title": "Behind the frame",
+   "text": "If you're reading this, you looked long enough. Most testers never do."
+  },
+  "note_annex": {
+   "title": "Annex",
+   "text": "The annex runs on its own fuse. Bring one from the vault."
+  }
+ },
+ "lines": {
+  "aoi_knock": {
+   "who": "aoi",
+   "en": "It's me. Are you going to let me in?"
+  },
+  "aoi_kettle": {
+   "who": "aoi",
+   "en": "Could you put the kettle on for me?"
+  },
+  "aoi_ask_stay": {
+   "who": "aoi",
+   "en": "Stay for one more game?"
+  },
+  "aoi_count_1": {
+   "who": "aoi",
+   "en": "One... two... three...",
+   "face": false
+  },
+  "aoi_count_2": {
+   "who": "aoi",
+   "en": "Ready or not...",
+   "face": false
+  },
+  "aoi_found_1": {
+   "who": "aoi",
+   "en": "Found you."
+  },
+  "aoi_whisper": {
+   "who": "aoi",
+   "en": "Over here...",
+   "face": false
+  },
+  "aoi_seen": {
+   "who": "aoi",
+   "en": "I can see you."
+  }
+ },
+ "sounds": {
+  "knock3": {
+   "file": "sfx/knock_three"
+  },
+  "slam": {
+   "file": "sfx/door_slam_02"
+  },
+  "sting": {
+   "file": "sfx/sting_short"
+  },
+  "sting_big": {
+   "file": "sfx/sting_big"
+  },
+  "hum_cut": {
+   "file": "sfx/power_hum_cut"
+  },
+  "creak": {
+   "file": "sfx/floorboard_creak"
+  },
+  "whoosh": {
+   "file": "sfx/whoosh_01"
+  },
+  "thunder": {
+   "file": "sfx/thunder"
+  }
+ },
+ "motions": {
+  "aoi_idle": {
+   "who": "aoi",
+   "name": "testroom_aoi_idle",
+   "prompt": "A person stands still breathing slowly",
+   "secs": 6,
+   "loop": true,
+   "block": [
+    {
+     "at": 0,
+     "pose": "idle"
+    },
+    {
+     "at": 0.5,
+     "pose": "idle_shift",
+     "ease": "inout"
+    },
+    {
+     "at": 1,
+     "pose": "idle",
+     "ease": "inout"
+    }
+   ]
+  },
+  "aoi_walk": {
+   "who": "aoi",
+   "name": "testroom_aoi_walk",
+   "prompt": "A person walks slowly while looking around",
+   "secs": 4,
+   "loop": true,
+   "in_place": true
+  },
+  "aoi_count": {
+   "who": "aoi",
+   "name": "testroom_aoi_count",
+   "prompt": "A person stands facing a wall covering their eyes with their hands",
+   "secs": 4,
+   "loop": true,
+   "in_place": true
+  }
+ },
+ "levels": {
+  "lab": {
+   "start": "start",
+   "trim": {
+    "skirting": 0.06,
+    "cornice": 0.03,
+    "casing": 0.06
+   },
+   "threshold": 0.012,
+   "routes": {
+    "r_atrium": {
+     "points": [
+      {
+       "at": "atr_b",
+       "wait": 2,
+       "pose": "look_right"
+      },
+      {
+       "at": "atr_a",
+       "wait": 2,
+       "pose": "look_left",
+       "check": "atr_locker_1"
+      }
+     ],
+     "mode": "pingpong"
+    }
+   },
+   "rooms": [
+    {
+     "id": "yard",
+     "at": [
+      -5,
+      -9,
+      0
+     ],
+     "size": [
+      13,
+      4,
+      3
+     ],
+     "floor": "dirt",
+     "light": "dim",
+     "kind": "garden",
+     "name": "Yard",
+     "skip": [
+      "n"
+     ],
+     "ceiling": false,
+     "acoustics": "outdoors",
+     "openings": [],
+     "props": [
+      {
+       "id": "start",
+       "use": "spot",
+       "at": [
+        6.5,
+        1.0
+       ],
+       "rot": 90
+      },
+      {
+       "id": "yard_aoi_spot",
+       "use": "spot",
+       "at": [
+        6.5,
+        2.6
+       ],
+       "rot": 90
+      },
+      {
+       "id": "yard_tree",
+       "shape": "cyl 0.25 3",
+       "at": [
+        1.6,
+        1.8
+       ],
+       "tag": "tree"
+      },
+      {
+       "id": "yard_bin",
+       "shape": "box 0.6 0.6 1.0",
+       "at": [
+        11.6,
+        1.0
+       ],
+       "tag": "bin"
+      },
+      {
+       "id": "yard_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        7.4,
+        3.85
+       ],
+       "z": 2.3,
+       "kelvin": 2400
+      }
+     ]
+    },
+    {
+     "id": "lobby",
+     "at": [
+      -5,
+      -5,
+      0
+     ],
+     "size": [
+      13,
+      5,
+      3
+     ],
+     "floor": "tile",
+     "light": "lit",
+     "kind": "genkan",
+     "name": "Lobby",
+     "openings": [
+      {
+       "wall": "s",
+       "at": 6.5,
+       "w": 1.0,
+       "h": 2.1,
+       "door": {
+        "id": "front_door",
+        "swing": "in",
+        "creak": true,
+        "peephole": true,
+        "latch": true
+       }
+      },
+      {
+       "wall": "n",
+       "at": 6.5,
+       "w": 1.6,
+       "h": 2.4
+      },
+      {
+       "wall": "s",
+       "at": 2.5,
+       "w": 1.2,
+       "h": 1.1,
+       "sill": 0.9,
+       "window": true
+      },
+      {
+       "wall": "s",
+       "at": 10.5,
+       "w": 1.2,
+       "h": 1.1,
+       "sill": 0.9,
+       "window": true
+      }
+     ],
+     "props": [
+      {
+       "id": "lobby_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        6.5,
+        2.5
+       ],
+       "z": 2.9
+      },
+      {
+       "id": "lobby_bench",
+       "shape": "box 1.6 0.45 0.45",
+       "at": [
+        2.0,
+        4.6
+       ],
+       "tag": "bench"
+      },
+      {
+       "id": "lobby_shoes",
+       "kit": "shoe_cabinet",
+       "at": [
+        11.0,
+        4.7
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lobby_rug",
+       "kit": "rug",
+       "at": [
+        6.5,
+        2.4
+       ],
+       "rot": 0
+      },
+      {
+       "id": "lobby_clock",
+       "kit": "wall_clock",
+       "at": [
+        2.0,
+        4.92
+       ],
+       "z": 2.2,
+       "rot": 0
+      },
+      {
+       "id": "lobby_aoi_spot",
+       "use": "spot",
+       "at": [
+        6.5,
+        3.9
+       ],
+       "rot": 270
+      },
+      {
+       "id": "lobby_view_spot",
+       "use": "spot",
+       "at": [
+        6.5,
+        1.5
+       ],
+       "rot": 90
+      }
+     ]
+    },
+    {
+     "id": "corridor",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      3,
+      30,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "corridor",
+     "name": "Corridor",
+     "skip": [
+      "s",
+      "n"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 2.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_keys",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 2.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_power",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 7.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_store",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 7.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_kitchen",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 12.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_rest",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 12.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_chores",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 17.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_games",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 17.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_dark",
+        "swing": "out",
+        "creak": true
+       }
+      },
+      {
+       "wall": "w",
+       "at": 22.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_library",
+        "swing": "out",
+        "creak": true,
+        "kit": "door_panels"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 22.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_workshop",
+        "swing": "out"
+       }
+      },
+      {
+       "wall": "w",
+       "at": 27.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "door_bath",
+        "swing": "slide"
+       }
+      },
+      {
+       "wall": "e",
+       "at": 27.5,
+       "w": 1.6,
+       "h": 2.4
+      }
+     ],
+     "props": [
+      {
+       "id": "corr_lamp_1",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.5,
+        5
+       ],
+       "z": 2.9
+      },
+      {
+       "id": "corr_lamp_2",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.5,
+        15
+       ],
+       "z": 2.9,
+       "flicker": 0.3
+      },
+      {
+       "id": "corr_lamp_3",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.5,
+        25
+       ],
+       "z": 2.9
+      },
+      {
+       "id": "corr_spot_s",
+       "use": "spot",
+       "at": [
+        1.5,
+        1.0
+       ],
+       "rot": 90
+      },
+      {
+       "id": "corr_spot_n",
+       "use": "spot",
+       "at": [
+        1.5,
+        29.0
+       ],
+       "rot": 270
+      }
+     ]
+    },
+    {
+     "id": "keys",
+     "at": [
+      -5,
+      0,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "storage",
+     "name": "Keys",
+     "skip": [
+      "s",
+      "e"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 2.5,
+       "w": 0.8,
+       "h": 2.0,
+       "door": {
+        "id": "closet_door",
+        "locked_by": "key_brass",
+        "swing": "out"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "keys_table",
+       "shape": "box 1.0 0.6 0.75",
+       "at": [
+        2.5,
+        1.2
+       ],
+       "tag": "table"
+      },
+      {
+       "id": "key_brass_pickup",
+       "shape": "box 0.08 0.03 0.01",
+       "at": [
+        2.5,
+        1.2
+       ],
+       "on": "keys_table",
+       "use": "pickup",
+       "item": "key_brass"
+      },
+      {
+       "id": "keys_hooks",
+       "shape": "box 0.6 0.05 0.1",
+       "at": [
+        2.5,
+        4.9
+       ],
+       "z": 1.5,
+       "tag": "hooks"
+      },
+      {
+       "id": "keys_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "closet",
+     "at": [
+      -7,
+      1,
+      0
+     ],
+     "size": [
+      2,
+      3,
+      2.6
+     ],
+     "floor": "carpet",
+     "light": "dark",
+     "kind": "closet",
+     "name": "Closet",
+     "skip": [
+      "e"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "closet_shelf",
+       "shape": "box 0.6 0.35 1.0",
+       "at": [
+        0.5,
+        2.6
+       ],
+       "tag": "shelf"
+      },
+      {
+       "id": "code_note",
+       "shape": "box 0.21 0.3 0.005",
+       "at": [
+        0.5,
+        2.6
+       ],
+       "on": "closet_shelf",
+       "use": "note",
+       "note": "note_code"
+      },
+      {
+       "id": "closet_bulb",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.0,
+        1.5
+       ],
+       "z": 2.4
+      }
+     ]
+    },
+    {
+     "id": "store",
+     "at": [
+      -5,
+      5,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "storage",
+     "name": "Store",
+     "skip": [
+      "s",
+      "e"
+     ],
+     "openings": [
+      {
+       "wall": "w",
+       "at": 2.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "vault_door",
+        "locked_by": "flag:vault_open",
+        "swing": "out"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "vault_keypad",
+       "shape": "box 0.04 0.12 0.18",
+       "at": [
+        0.08,
+        3.4
+       ],
+       "z": 1.3,
+       "use": "combo",
+       "code": "4071",
+       "then": "vault_open",
+       "opens": "vault_door",
+       "tag": "keypad"
+      },
+      {
+       "id": "store_table",
+       "shape": "box 1.6 0.6 0.75",
+       "at": [
+        2.5,
+        1.0
+       ],
+       "tag": "table"
+      },
+      {
+       "id": "tin_a_pickup",
+       "shape": "box 0.08 0.08 0.1",
+       "at": [
+        2.0,
+        1.0
+       ],
+       "on": "store_table",
+       "use": "pickup",
+       "item": "tin_a"
+      },
+      {
+       "id": "tin_b_pickup",
+       "shape": "box 0.08 0.08 0.1",
+       "at": [
+        2.5,
+        1.0
+       ],
+       "on": "store_table",
+       "use": "pickup",
+       "item": "tin_b"
+      },
+      {
+       "id": "tin_c_pickup",
+       "shape": "box 0.08 0.08 0.1",
+       "at": [
+        3.0,
+        1.0
+       ],
+       "on": "store_table",
+       "use": "pickup",
+       "item": "tin_c"
+      },
+      {
+       "id": "store_shelf",
+       "shape": "box 2.0 0.4 1.6",
+       "at": [
+        2.5,
+        4.7
+       ],
+       "tag": "shelf"
+      },
+      {
+       "id": "store_shelf_zone",
+       "use": "trigger",
+       "size": [
+        2.4,
+        1.2,
+        2.0
+       ],
+       "at": [
+        2.5,
+        3.9
+       ]
+      },
+      {
+       "id": "store_box",
+       "shape": "box 0.4 0.3 0.3",
+       "at": [
+        1.3,
+        3.6
+       ],
+       "use": "carry",
+       "tag": "box"
+      },
+      {
+       "id": "store_plush",
+       "shape": "box 0.3 0.25 0.35",
+       "at": [
+        3.8,
+        3.0
+       ],
+       "use": "carry",
+       "physics": "plushie",
+       "jiggle": 1,
+       "tag": "plushie"
+      },
+      {
+       "id": "store_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "vault",
+     "at": [
+      -7,
+      6,
+      0
+     ],
+     "size": [
+      2,
+      3,
+      2.6
+     ],
+     "floor": "metal",
+     "light": "dark",
+     "kind": "storage",
+     "name": "Vault",
+     "skip": [
+      "e"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "vault_shelf",
+       "shape": "box 0.6 0.35 1.0",
+       "at": [
+        0.5,
+        2.6
+       ],
+       "tag": "shelf"
+      },
+      {
+       "id": "fuse_pickup",
+       "shape": "box 0.04 0.04 0.1",
+       "at": [
+        0.5,
+        2.6
+       ],
+       "on": "vault_shelf",
+       "use": "pickup",
+       "item": "fuse"
+      },
+      {
+       "id": "vault_bulb",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        1.0,
+        1.5
+       ],
+       "z": 2.4,
+       "flicker": 0.5
+      }
+     ]
+    },
+    {
+     "id": "rest",
+     "at": [
+      -5,
+      10,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "bedroom",
+     "name": "Rest room",
+     "skip": [
+      "s",
+      "e"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "rest_sofa",
+       "kit": "sofa_3",
+       "at": [
+        2.5,
+        4.45
+       ],
+       "rot": 0,
+       "use": "sit"
+      },
+      {
+       "id": "rest_bed",
+       "kit": "bed_single",
+       "at": [
+        0.6,
+        1.5
+       ],
+       "rot": 0,
+       "use": "sleep",
+       "if": "chores_done",
+       "not_yet": "Not before the chores."
+      },
+      {
+       "id": "rest_chair",
+       "kit": "dining_chair",
+       "at": [
+        4.0,
+        0.8
+       ],
+       "rot": 180,
+       "use": "sit"
+      },
+      {
+       "id": "rest_lamp_stand",
+       "kit": "floor_lamp",
+       "at": [
+        4.5,
+        4.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "rest_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        4.5,
+        4.5
+       ],
+       "z": 1.45
+      },
+      {
+       "id": "aoi_sofa_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        2.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "rest_view_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        4.3
+       ],
+       "rot": 270
+      },
+      {
+       "id": "rest_door_spot",
+       "use": "spot",
+       "at": [
+        4.2,
+        2.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "rest_wake_spot",
+       "use": "spot",
+       "at": [
+        2.2,
+        2.5
+       ],
+       "rot": 0
+      }
+     ]
+    },
+    {
+     "id": "games",
+     "at": [
+      -5,
+      15,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "other",
+     "name": "Games",
+     "skip": [
+      "s",
+      "e"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "games_table",
+       "shape": "box 1.4 0.8 0.75",
+       "at": [
+        2.5,
+        2.5
+       ],
+       "use": "game",
+       "game": "chohan",
+       "vs": "aoi",
+       "settings": {
+        "seed": 3
+       },
+       "tag": "table"
+      },
+      {
+       "id": "games_die",
+       "shape": "box 0.3 0.3 0.3",
+       "at": [
+        1.0,
+        4.2
+       ],
+       "use": "roll",
+       "tag": "die"
+      },
+      {
+       "id": "games_aoi_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        3.6
+       ],
+       "rot": 270
+      },
+      {
+       "id": "games_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "library",
+     "at": [
+      -5,
+      20,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "study",
+     "name": "Library",
+     "skip": [
+      "s",
+      "e"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "library_shelf",
+       "kit": "bookshelf",
+       "at": [
+        2.5,
+        4.75
+       ],
+       "rot": 0,
+       "use": "inspect",
+       "text": "Binders, one for every room in the lab. The last one is labelled with your name."
+      },
+      {
+       "id": "library_desk",
+       "kit": "desk",
+       "at": [
+        1.2,
+        0.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "library_diary",
+       "shape": "box 0.2 0.28 0.03",
+       "at": [
+        0.95,
+        0.5
+       ],
+       "on": "library_desk",
+       "use": "note",
+       "note": "diary"
+      },
+      {
+       "id": "library_photo",
+       "shape": "box 0.12 0.02 0.17",
+       "at": [
+        1.5,
+        0.55
+       ],
+       "on": "library_desk",
+       "use": "inspect",
+       "text": "Aoi in a lab coat, squinting at the camera. On the back: \"First day. Don't let them see you're scared.\""
+      },
+      {
+       "id": "library_painting",
+       "shape": "box 0.04 0.8 0.6",
+       "at": [
+        0.08,
+        2.5
+       ],
+       "z": 1.4,
+       "tag": "painting"
+      },
+      {
+       "id": "painting_note",
+       "shape": "box 0.12 0.16 0.003",
+       "at": [
+        0.4,
+        2.5
+       ],
+       "hidden": true,
+       "use": "note",
+       "note": "note_painting"
+      },
+      {
+       "id": "doll_pickup",
+       "shape": "box 0.12 0.08 0.25",
+       "at": [
+        4.3,
+        4.3
+       ],
+       "use": "pickup",
+       "item": "doll",
+       "tag": "doll"
+      },
+      {
+       "id": "library_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9,
+       "flicker": 0.1
+      }
+     ]
+    },
+    {
+     "id": "bath",
+     "at": [
+      -5,
+      25,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "water",
+     "light": "dim",
+     "kind": "bath",
+     "name": "Bath",
+     "skip": [
+      "s",
+      "e",
+      "n"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "bath_sink",
+       "shape": "box 0.6 0.45 0.85",
+       "at": [
+        1.0,
+        4.65
+       ],
+       "tag": "sink"
+      },
+      {
+       "id": "bath_tap",
+       "kit": "tap_cross",
+       "on": "bath_sink",
+       "at": [
+        1.0,
+        4.75
+       ],
+       "rot": 0,
+       "state": "off"
+      },
+      {
+       "id": "bath_mirror",
+       "kit": "mirror",
+       "at": [
+        1.0,
+        4.93
+       ],
+       "z": 1.0,
+       "rot": 0
+      },
+      {
+       "id": "bath_mirror_text",
+       "shape": "box 0.3 0.01 0.2",
+       "at": [
+        1.0,
+        4.9
+       ],
+       "z": 1.5,
+       "hidden": true,
+       "tag": "writing"
+      },
+      {
+       "id": "bath_towel",
+       "shape": "box 0.4 0.05 0.6",
+       "at": [
+        2.6,
+        4.9
+       ],
+       "z": 1.1,
+       "tag": "towel"
+      },
+      {
+       "id": "bath_locker",
+       "shape": "box 0.6 0.55 1.9",
+       "at": [
+        3.8,
+        4.6
+       ],
+       "rot": 270,
+       "use": "locker",
+       "tag": "locker"
+      },
+      {
+       "id": "bath_tub",
+       "shape": "box 1.7 0.75 0.6",
+       "at": [
+        1.2,
+        1.0
+       ],
+       "tag": "bathtub"
+      },
+      {
+       "id": "bath_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9,
+       "flicker": 0.15
+      }
+     ]
+    },
+    {
+     "id": "power",
+     "at": [
+      3,
+      0,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "service",
+     "name": "Power room",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "breaker_box",
+       "shape": "box 0.1 0.3 0.4",
+       "at": [
+        4.9,
+        2.5
+       ],
+       "z": 1.3,
+       "use": "breaker",
+       "tag": "breaker"
+      },
+      {
+       "id": "power_switch",
+       "kit": "switch_jp_1",
+       "at": [
+        0.07,
+        3.4
+       ],
+       "z": 1.2,
+       "rot": 90,
+       "use": "switch",
+       "light": "power_bulb"
+      },
+      {
+       "id": "power_bulb",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      },
+      {
+       "id": "power_lamp_stand",
+       "kit": "floor_lamp",
+       "at": [
+        4.5,
+        4.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "power_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        4.5,
+        4.5
+       ],
+       "z": 1.45
+      },
+      {
+       "id": "power_bench",
+       "shape": "box 1.0 0.4 0.75",
+       "at": [
+        2.5,
+        0.3
+       ],
+       "tag": "bench"
+      },
+      {
+       "id": "power_candle",
+       "kit": "candle_pillar",
+       "on": "power_bench",
+       "at": [
+        2.5,
+        0.3
+       ],
+       "state": "lit",
+       "light": "power_candle_light"
+      },
+      {
+       "id": "power_candle_light",
+       "use": "light",
+       "kind": "candle",
+       "lit": true,
+       "at": [
+        2.5,
+        0.3
+       ],
+       "z": 0.95
+      }
+     ]
+    },
+    {
+     "id": "kitchen",
+     "at": [
+      3,
+      5,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "tile",
+     "light": "lit",
+     "kind": "kitchen",
+     "name": "Kitchen",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "kitchen_counter",
+       "shape": "box 0.65 2.4 0.9",
+       "at": [
+        4.6,
+        2.5
+       ],
+       "tag": "counter"
+      },
+      {
+       "id": "kitchen_kettle",
+       "kit": "kettle_jug",
+       "on": "kitchen_counter",
+       "at": [
+        4.6,
+        1.6
+       ],
+       "rot": 270,
+       "secs": {
+        "heating": 4,
+        "boiling": 2
+       }
+      },
+      {
+       "id": "kitchen_hob",
+       "kit": "hob_ceramic_2",
+       "on": "kitchen_counter",
+       "at": [
+        4.6,
+        2.5
+       ],
+       "rot": 270
+      },
+      {
+       "id": "kitchen_pot",
+       "kit": "saucepan",
+       "on": "kitchen_hob",
+       "at": [
+        4.6,
+        2.5
+       ],
+       "rot": 270,
+       "secs": {
+        "heating": 3
+       }
+      },
+      {
+       "id": "kitchen_rice",
+       "kit": "rice_cooker",
+       "on": "kitchen_counter",
+       "at": [
+        4.6,
+        3.4
+       ],
+       "rot": 270
+      },
+      {
+       "id": "kitchen_table",
+       "shape": "box 1.2 0.8 0.75",
+       "at": [
+        2.2,
+        2.5
+       ],
+       "tag": "table"
+      },
+      {
+       "id": "kitchen_mug",
+       "kit": "mug",
+       "on": "kitchen_table",
+       "at": [
+        2.45,
+        2.6
+       ],
+       "state": "empty",
+       "liquid": "tea",
+       "from": "kitchen_kettle"
+      },
+      {
+       "id": "kitchen_ashtray",
+       "kit": "ashtray_burning",
+       "on": "kitchen_table",
+       "at": [
+        1.9,
+        2.3
+       ],
+       "state": "unlit"
+      },
+      {
+       "id": "kitchen_phone",
+       "kit": "smartphone",
+       "on": "kitchen_table",
+       "at": [
+        2.05,
+        2.75
+       ],
+       "state": "off"
+      },
+      {
+       "id": "kitchen_chair",
+       "kit": "dining_chair",
+       "at": [
+        2.2,
+        1.6
+       ],
+       "rot": 180
+      },
+      {
+       "id": "kitchen_chair_spot",
+       "use": "spot",
+       "at": [
+        2.2,
+        1.6
+       ],
+       "rot": 90
+      },
+      {
+       "id": "kitchen_aoi_spot",
+       "use": "spot",
+       "at": [
+        1.2,
+        3.8
+       ],
+       "rot": 180
+      },
+      {
+       "id": "kitchen_via_spot",
+       "use": "spot",
+       "at": [
+        1.0,
+        1.4
+       ],
+       "rot": 0
+      },
+      {
+       "id": "kitchen_clock",
+       "kit": "wall_clock",
+       "at": [
+        2.5,
+        4.92
+       ],
+       "z": 2.2,
+       "rot": 0
+      },
+      {
+       "id": "kitchen_tv",
+       "kit": "tv_55",
+       "at": [
+        2.5,
+        0.09
+       ],
+       "z": 1.0,
+       "rot": 180,
+       "state": "off"
+      },
+      {
+       "id": "kitchen_fridge",
+       "kit": "fridge",
+       "at": [
+        0.5,
+        4.55
+       ],
+       "rot": 0
+      },
+      {
+       "id": "kitchen_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "chores",
+     "at": [
+      3,
+      10,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "wood",
+     "light": "dim",
+     "kind": "service",
+     "name": "Chores",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [
+      {
+       "wall": "e",
+       "at": 2.5,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "back_door",
+        "swing": "in",
+        "latch": true
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "mop_pickup",
+       "shape": "box 0.06 0.06 1.0",
+       "at": [
+        1.0,
+        4.6
+       ],
+       "use": "pickup",
+       "item": "mop",
+       "tag": "mop"
+      },
+      {
+       "id": "chores_bucket",
+       "shape": "box 0.3 0.3 0.35",
+       "at": [
+        0.4,
+        4.5
+       ],
+       "tag": "bucket"
+      },
+      {
+       "id": "chores_stain",
+       "shape": "box 0.7 0.5 0.01",
+       "at": [
+        2.5,
+        2.5
+       ],
+       "use": "clean",
+       "stain": "mud",
+       "secs": 2,
+       "with": "mop"
+      },
+      {
+       "id": "chores_stain_2",
+       "shape": "box 0.5 0.4 0.01",
+       "at": [
+        2.2,
+        4.0
+       ],
+       "use": "clean",
+       "stain": "blood",
+       "secs": 1.5
+      },
+      {
+       "id": "chores_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "back_yard",
+     "at": [
+      8,
+      10,
+      0
+     ],
+     "size": [
+      4,
+      5,
+      3
+     ],
+     "floor": "dirt",
+     "light": "dark",
+     "kind": "garden",
+     "name": "Back yard",
+     "skip": [
+      "w"
+     ],
+     "ceiling": false,
+     "acoustics": "outdoors",
+     "openings": [],
+     "props": [
+      {
+       "id": "back_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        2.0,
+        4.5
+       ],
+       "z": 2.2
+      },
+      {
+       "id": "back_spot",
+       "use": "spot",
+       "at": [
+        2.0,
+        2.5
+       ],
+       "rot": 180
+      }
+     ]
+    },
+    {
+     "id": "dark",
+     "at": [
+      3,
+      15,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "wood",
+     "light": "off",
+     "kind": "storage",
+     "name": "Dark room",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "dark_shelf",
+       "shape": "box 1.0 0.4 0.9",
+       "at": [
+        4.2,
+        4.6
+       ],
+       "tag": "shelf"
+      },
+      {
+       "id": "torch_pickup",
+       "shape": "cyl 0.025 0.18",
+       "on": "dark_shelf",
+       "at": [
+        4.0,
+        4.6
+       ],
+       "use": "pickup",
+       "item": "flashlight"
+      },
+      {
+       "id": "batteries_pickup",
+       "shape": "box 0.06 0.04 0.02",
+       "at": [
+        4.5,
+        4.6
+       ],
+       "on": "dark_shelf",
+       "use": "pickup",
+       "item": "batteries",
+       "hidden": true
+      },
+      {
+       "id": "dark_figure",
+       "shape": "person aoi stand",
+       "at": [
+        4.0,
+        1.0
+       ],
+       "rot": 180,
+       "hidden": true
+      },
+      {
+       "id": "dark_in",
+       "use": "trigger",
+       "size": [
+        1.0,
+        1.6,
+        2.4
+       ],
+       "at": [
+        1.0,
+        2.5
+       ]
+      },
+      {
+       "id": "dark_bulb",
+       "use": "light",
+       "kind": "bulb",
+       "lit": false,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "workshop",
+     "at": [
+      3,
+      20,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "metal",
+     "light": "dim",
+     "kind": "other",
+     "name": "Workshop",
+     "skip": [
+      "s",
+      "w"
+     ],
+     "openings": [],
+     "props": [
+      {
+       "id": "workshop_bench",
+       "shape": "box 2.0 0.7 0.9",
+       "at": [
+        2.5,
+        4.55
+       ],
+       "tag": "workbench"
+      },
+      {
+       "id": "workshop_locker",
+       "shape": "box 0.6 0.55 1.9",
+       "at": [
+        4.6,
+        1.0
+       ],
+       "rot": 180,
+       "use": "locker",
+       "tag": "locker"
+      },
+      {
+       "id": "workshop_locker_2",
+       "shape": "box 0.6 0.55 1.9",
+       "at": [
+        4.6,
+        3.2
+       ],
+       "rot": 180,
+       "use": "locker",
+       "tag": "locker"
+      },
+      {
+       "id": "workshop_aoi_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        3.4
+       ],
+       "rot": 270
+      },
+      {
+       "id": "workshop_bench_spot",
+       "use": "spot",
+       "at": [
+        1.6,
+        3.5
+       ],
+       "rot": 270
+      },
+      {
+       "id": "workshop_view_spot",
+       "use": "spot",
+       "at": [
+        2.5,
+        0.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "workshop_count_spot",
+       "use": "spot",
+       "at": [
+        1.0,
+        3.9
+       ],
+       "rot": 90
+      },
+      {
+       "id": "wl1_spot",
+       "use": "spot",
+       "at": [
+        4.0,
+        1.0
+       ],
+       "rot": 180
+      },
+      {
+       "id": "wl1_aoi_spot",
+       "use": "spot",
+       "at": [
+        3.45,
+        1.0
+       ],
+       "rot": 0
+      },
+      {
+       "id": "wl2_spot",
+       "use": "spot",
+       "at": [
+        4.0,
+        3.2
+       ],
+       "rot": 180
+      },
+      {
+       "id": "wl2_aoi_spot",
+       "use": "spot",
+       "at": [
+        3.45,
+        3.2
+       ],
+       "rot": 0
+      },
+      {
+       "id": "workshop_lamp",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        2.5,
+        2.5
+       ],
+       "z": 2.9,
+       "flicker": 0.2
+      }
+     ]
+    },
+    {
+     "id": "court",
+     "at": [
+      3,
+      25,
+      0
+     ],
+     "size": [
+      5,
+      5,
+      3
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "garden",
+     "name": "Court",
+     "skip": [
+      "s",
+      "w",
+      "n"
+     ],
+     "ceiling": false,
+     "acoustics": "outdoors",
+     "openings": [],
+     "props": [
+      {
+       "id": "court_tree",
+       "shape": "cyl 0.3 3",
+       "at": [
+        3.5,
+        3.5
+       ],
+       "tag": "tree"
+      },
+      {
+       "id": "court_safe",
+       "use": "trigger",
+       "size": [
+        1.2,
+        1.2,
+        2.4
+       ],
+       "at": [
+        4.2,
+        1.0
+       ],
+       "safe": true
+      },
+      {
+       "id": "court_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        2.5,
+        4.5
+       ],
+       "z": 2.4
+      }
+     ]
+    },
+    {
+     "id": "atrium",
+     "at": [
+      -5,
+      30,
+      0
+     ],
+     "size": [
+      13,
+      6,
+      4
+     ],
+     "floor": "stone",
+     "light": "dim",
+     "kind": "common",
+     "name": "Atrium",
+     "acoustics": "large_hall",
+     "openings": [
+      {
+       "wall": "s",
+       "at": 6.5,
+       "w": 1.6,
+       "h": 2.4
+      }
+     ],
+     "props": [
+      {
+       "id": "atr_pillar_1",
+       "shape": "cyl 0.3 3.9",
+       "at": [
+        3.5,
+        3.0
+       ],
+       "tag": "pillar"
+      },
+      {
+       "id": "atr_pillar_2",
+       "shape": "cyl 0.3 3.9",
+       "at": [
+        9.5,
+        3.0
+       ],
+       "tag": "pillar"
+      },
+      {
+       "id": "atr_locker_1",
+       "shape": "box 0.6 0.55 1.9",
+       "at": [
+        0.5,
+        5.5
+       ],
+       "rot": 270,
+       "use": "locker",
+       "tag": "locker"
+      },
+      {
+       "id": "atr_locker_2",
+       "shape": "box 0.6 0.55 1.9",
+       "at": [
+        12.5,
+        0.5
+       ],
+       "rot": 180,
+       "use": "locker",
+       "tag": "locker"
+      },
+      {
+       "id": "atr_far",
+       "use": "trigger",
+       "size": [
+        2.0,
+        1.5,
+        2.4
+       ],
+       "at": [
+        11.5,
+        4.9
+       ]
+      },
+      {
+       "id": "atr_safe",
+       "use": "trigger",
+       "size": [
+        1.4,
+        1.4,
+        2.4
+       ],
+       "at": [
+        1.2,
+        1.2
+       ],
+       "safe": true
+      },
+      {
+       "id": "atr_a",
+       "use": "spot",
+       "at": [
+        2.0,
+        4.5
+       ],
+       "rot": 0
+      },
+      {
+       "id": "atr_b",
+       "use": "spot",
+       "at": [
+        11.0,
+        4.5
+       ],
+       "rot": 180
+      },
+      {
+       "id": "atr_view_spot",
+       "use": "spot",
+       "at": [
+        6.5,
+        1.0
+       ],
+       "rot": 90
+      },
+      {
+       "id": "atr_figure",
+       "shape": "person aoi stand",
+       "at": [
+        9.6,
+        1.0
+       ],
+       "rot": 180,
+       "hidden": true
+      },
+      {
+       "id": "atr_mid",
+       "use": "trigger",
+       "size": [
+        2.4,
+        1.0,
+        2.4
+       ],
+       "at": [
+        6.5,
+        1.6
+       ]
+      },
+      {
+       "id": "atr_lamp_1",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.0,
+        3.0
+       ],
+       "z": 3.8
+      },
+      {
+       "id": "atr_lamp_2",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        10.0,
+        3.0
+       ],
+       "z": 3.8
+      }
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "yard",
+     "b": "lobby",
+     "via": "front_door"
+    },
+    {
+     "a": "lobby",
+     "b": "corridor",
+     "via": null
+    },
+    {
+     "a": "corridor",
+     "b": "keys",
+     "via": "door_keys"
+    },
+    {
+     "a": "corridor",
+     "b": "power",
+     "via": "door_power"
+    },
+    {
+     "a": "corridor",
+     "b": "store",
+     "via": "door_store"
+    },
+    {
+     "a": "corridor",
+     "b": "kitchen",
+     "via": "door_kitchen"
+    },
+    {
+     "a": "corridor",
+     "b": "rest",
+     "via": "door_rest"
+    },
+    {
+     "a": "corridor",
+     "b": "chores",
+     "via": "door_chores"
+    },
+    {
+     "a": "corridor",
+     "b": "games",
+     "via": "door_games"
+    },
+    {
+     "a": "corridor",
+     "b": "dark",
+     "via": "door_dark"
+    },
+    {
+     "a": "corridor",
+     "b": "library",
+     "via": "door_library"
+    },
+    {
+     "a": "corridor",
+     "b": "workshop",
+     "via": "door_workshop"
+    },
+    {
+     "a": "corridor",
+     "b": "bath",
+     "via": "door_bath"
+    },
+    {
+     "a": "corridor",
+     "b": "court",
+     "via": null
+    },
+    {
+     "a": "keys",
+     "b": "closet",
+     "via": "closet_door"
+    },
+    {
+     "a": "store",
+     "b": "vault",
+     "via": "vault_door"
+    },
+    {
+     "a": "chores",
+     "b": "back_yard",
+     "via": "back_door"
+    },
+    {
+     "a": "corridor",
+     "b": "atrium",
+     "via": null
+    }
+   ]
+  },
+  "annex": {
+   "start": "annex_start",
+   "rooms": [
+    {
+     "id": "annex_hall",
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "size": [
+      6,
+      4,
+      3
+     ],
+     "floor": "metal",
+     "light": "dark",
+     "kind": "corridor",
+     "name": "Annex hall",
+     "openings": [
+      {
+       "wall": "n",
+       "at": 3.0,
+       "w": 1.6,
+       "h": 2.4
+      }
+     ],
+     "props": [
+      {
+       "id": "annex_start",
+       "use": "spot",
+       "at": [
+        1.0,
+        2.0
+       ],
+       "rot": 0
+      },
+      {
+       "id": "fusebox",
+       "shape": "box 0.15 0.4 0.5",
+       "at": [
+        5.85,
+        2.0
+       ],
+       "z": 1.2,
+       "use": "use_on",
+       "needs": "fuse",
+       "then": "annex_lit",
+       "consume": true,
+       "tag": "fusebox"
+      },
+      {
+       "id": "annex_crate",
+       "shape": "box 0.6 0.6 0.6",
+       "at": [
+        0.6,
+        0.6
+       ],
+       "tag": "crate"
+      },
+      {
+       "id": "annex_note",
+       "shape": "box 0.21 0.3 0.005",
+       "at": [
+        0.6,
+        0.6
+       ],
+       "on": "annex_crate",
+       "use": "note",
+       "note": "note_annex"
+      },
+      {
+       "id": "annex_bulb",
+       "use": "light",
+       "kind": "bulb",
+       "lit": true,
+       "at": [
+        3.0,
+        2.0
+       ],
+       "z": 2.9
+      }
+     ]
+    },
+    {
+     "id": "annex_room",
+     "at": [
+      0,
+      4,
+      0
+     ],
+     "size": [
+      6,
+      4,
+      3
+     ],
+     "floor": "carpet",
+     "light": "dim",
+     "kind": "living",
+     "name": "Annex room",
+     "skip": [
+      "s"
+     ],
+     "openings": [
+      {
+       "wall": "n",
+       "at": 3.0,
+       "w": 0.9,
+       "h": 2.1,
+       "door": {
+        "id": "exit_door",
+        "swing": "out"
+       }
+      }
+     ],
+     "props": [
+      {
+       "id": "annex_sofa",
+       "kit": "loveseat",
+       "at": [
+        1.2,
+        0.6
+       ],
+       "rot": 180,
+       "use": "sit"
+      },
+      {
+       "id": "annex_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        5.0,
+        3.0
+       ],
+       "z": 1.5
+      },
+      {
+       "id": "aoi_annex_spot",
+       "use": "spot",
+       "at": [
+        4.5,
+        2.0
+       ],
+       "rot": 180
+      },
+      {
+       "id": "annex_view_spot",
+       "use": "spot",
+       "at": [
+        2.4,
+        2.0
+       ],
+       "rot": 0
+      }
+     ]
+    },
+    {
+     "id": "annex_out",
+     "at": [
+      0,
+      8,
+      0
+     ],
+     "size": [
+      6,
+      3,
+      3
+     ],
+     "floor": "dirt",
+     "light": "dark",
+     "kind": "garden",
+     "name": "Outside",
+     "skip": [
+      "s"
+     ],
+     "ceiling": false,
+     "acoustics": "outdoors",
+     "openings": [],
+     "props": [
+      {
+       "id": "out_lamp",
+       "use": "light",
+       "kind": "lamp",
+       "lit": true,
+       "at": [
+        3.0,
+        2.5
+       ],
+       "z": 2.4
+      }
+     ]
+    }
+   ],
+   "links": [
+    {
+     "a": "annex_hall",
+     "b": "annex_room",
+     "via": null
+    },
+    {
+     "a": "annex_room",
+     "b": "annex_out",
+     "via": "exit_door"
+    }
+   ]
+  }
+ },
+ "scenes": {
+  "s_hello": {
+   "title": "Aoi in the lobby",
+   "level": "lab",
+   "stage": {
+    "aoi": "lobby_aoi_spot"
+   },
+   "view": "lobby_view_spot",
+   "camera": {
+    "mode": "soft",
+    "look": "aoi",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "mood": "calm",
+   "time": "day",
+   "look": {
+    "aoi": {
+     "at": "player",
+     "limit": [
+      70,
+      20,
+      30
+     ],
+     "past": "hold"
+    }
+   },
+   "trackers": {
+    "t_shelf": {
+     "height": 1.0,
+     "keys": [
+      {
+       "clip": "c2",
+       "at": 0,
+       "to": "lobby_lamp"
+      },
+      {
+       "clip": "c2",
+       "at": 1,
+       "to": "lobby_shoes"
+      }
+     ]
+    }
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "aoi",
+     "en": "You made it. Welcome to the lab.",
+     "act": "looks up from her clipboard",
+     "shot": "fs",
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "head_down"
+       },
+       {
+        "at": 0.6,
+        "pose": "idle",
+        "ease": "inout"
+       }
+      ],
+      "tier": "simple",
+      "segments": [
+       {
+        "name": "testroom_hello_c1_01_lookup",
+        "prompt": "A person standing with their head lowered slowly raises their head",
+        "secs": 3
+       }
+      ],
+      "prompt": "looks up from her clipboard"
+     }
+    },
+    {
+     "id": "c2",
+     "who": "aoi",
+     "seam": {
+      "kind": "blink"
+     },
+     "en": "Every room down that corridor tests one thing.",
+     "act": "glances along the corridor",
+     "shot": "fs",
+     "look": {
+      "aoi": {
+       "at": "t_shelf",
+       "lag": 0.25
+      }
+     },
+     "cam": {
+      "push": 0.08
+     },
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       },
+       {
+        "at": 0.5,
+        "pose": "look_left",
+        "ease": "inout"
+       },
+       {
+        "at": 1,
+        "pose": "idle",
+        "ease": "inout"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "glances along the corridor"
+     }
+    },
+    {
+     "id": "c3",
+     "who": "aoi",
+     "seam": {
+      "kind": "glance",
+      "look": "lobby_lamp"
+     },
+     "en": "How are you feeling today?",
+     "act": "head tilted, waiting",
+     "shot": "fs",
+     "wait_expr": "hopeful, expectant expression",
+     "reply": {
+      "wait": 6,
+      "timeout": null,
+      "options": [
+       {
+        "id": "good",
+        "label": "Ready.",
+        "think": "Let's get this over with.",
+        "sets": [
+         {
+          "karma": 1
+         }
+        ],
+        "then": {
+         "en": "Good. Then let's begin."
+        }
+       },
+       {
+        "id": "bad",
+        "label": "Not great.",
+        "sets": [
+         {
+          "karma": -1
+         }
+        ],
+        "then": {
+         "en": "Then we'll go slowly."
+        }
+       }
+      ]
+     }
+    },
+    {
+     "id": "c4",
+     "who": "player",
+     "think": true,
+     "seam": {
+      "kind": "blink"
+     },
+     "en": "One thing a room. Fine."
+    }
+   ],
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start",
+      "offset": 0.2
+     },
+     "do": {
+      "sound": "creak",
+      "at": "lobby_bench"
+     }
+    },
+    {
+     "at": {
+      "clip": "c2",
+      "edge": "end",
+      "offset": -0.3
+     },
+     "do": {
+      "light": "lobby_lamp",
+      "set": "flicker"
+     }
+    },
+    {
+     "at": {
+      "clip": "c3",
+      "edge": "start"
+     },
+     "do": {
+      "state": "kitchen_tv",
+      "to": "static"
+     }
+    }
+   ],
+   "faces": [
+    {
+     "who": "aoi",
+     "expr": "pout_and_glance",
+     "at": {
+      "clip": "c1",
+      "edge": "start",
+      "offset": 0.3
+     },
+     "in": 0.4
+    },
+    {
+     "who": "aoi",
+     "expr": "pout_and_glance_loop",
+     "at": {
+      "clip": "c3",
+      "edge": "start"
+     },
+     "in": 0.5,
+     "w": 0.8
+    }
+   ],
+   "hold": {
+    "min": 0,
+    "max": 1.5
+   },
+   "sets": [
+    {
+     "flag": "met_aoi"
+    }
+   ]
+  },
+  "s_sofa": {
+   "title": "On the sofa",
+   "level": "lab",
+   "stage": {
+    "aoi": "aoi_sofa_spot"
+   },
+   "view": "rest_view_spot",
+   "stance": "sit",
+   "camera": {
+    "mode": "soft",
+    "look": "aoi",
+    "cone": [
+     25,
+     15
+    ]
+   },
+   "mood": "intimate",
+   "clips": [
+    {
+     "id": "c1",
+     "who": "aoi",
+     "en": "Comfortable? Good.",
+     "act": "smiles, clipboard against her chest",
+     "shot": "ms",
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       },
+       {
+        "at": 0.5,
+        "pose": "arms_crossed",
+        "ease": "inout"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "smiles, clipboard against her chest"
+     }
+    },
+    {
+     "id": "c2",
+     "who": "aoi",
+     "seam": {
+      "kind": "blink"
+     },
+     "en": "I'll need a name for the report.",
+     "act": "pen ready",
+     "shot": "ms",
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "arms_crossed"
+       },
+       {
+        "at": 0.6,
+        "pose": "point_r",
+        "ease": "inout"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "pen ready"
+     }
+    }
+   ],
+   "hold": {
+    "min": 0,
+    "max": 1
+   }
+  },
+  "s_talk": {
+   "title": "Aoi in the workshop",
+   "level": "lab",
+   "view": "workshop_view_spot",
+   "camera": {
+    "mode": "soft",
+    "look": "aoi",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "mood": "dread",
+   "enter": {
+    "kind": "fade",
+    "secs": 0.6
+   },
+   "exit": {
+    "kind": "blend",
+    "secs": 0.8
+   },
+   "look": {
+    "aoi": {
+     "at": "player"
+    }
+   },
+   "pick": "a",
+   "variants": {
+    "a": {
+     "label": "standing",
+     "stage": {
+      "aoi": "workshop_aoi_spot"
+     },
+     "clips": [
+      {
+       "id": "c1",
+       "who": "aoi",
+       "en": "You've done well. Most testers give up at the dark room.",
+       "act": "turns to face you in the middle of the room",
+       "shot": "fs",
+       "body": {
+        "block": [
+         {
+          "at": 0,
+          "pose": "turn_away"
+         },
+         {
+          "at": 0.5,
+          "pose": "idle",
+          "ease": "inout"
+         }
+        ],
+        "tier": "activity",
+        "segments": [
+         {
+          "name": "testroom_talk_c1_01_turnroom",
+          "prompt": "A person turns around slowly to face forward",
+          "secs": 5
+         }
+        ],
+        "prompt": "turns to face you in the middle of the room"
+       }
+      },
+      {
+       "id": "c2",
+       "who": "aoi",
+       "seam": {
+        "kind": "heartbeat"
+       },
+       "en": "Tell me honestly. Do you trust me?",
+       "act": "steps closer, very still",
+       "shot": "fs",
+       "cam": {
+        "push": 0.12
+       },
+       "body": {
+        "block": [
+         {
+          "at": 0,
+          "pose": "idle"
+         },
+         {
+          "at": 0.7,
+          "pose": "lean_in",
+          "ease": "inout"
+         }
+        ],
+        "tier": "simple",
+        "hero": true,
+        "prompt": "steps closer, very still"
+       },
+       "event": {
+        "type": "choose",
+        "secs": 12,
+        "default": "o_silent",
+        "options": [
+         {
+          "id": "o_trust",
+          "label": "I trust you.",
+          "karma": 2
+         },
+         {
+          "id": "o_no",
+          "label": "No.",
+          "karma": -2
+         },
+         {
+          "id": "o_silent",
+          "label": "(Say nothing)",
+          "karma": 0
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "b": {
+     "label": "by the bench",
+     "stage": {
+      "aoi": "workshop_bench_spot"
+     },
+     "clips": [
+      {
+       "id": "c1",
+       "who": "aoi",
+       "en": "You've done well. Most testers give up at the dark room.",
+       "act": "turns to face you from the bench",
+       "shot": "fs",
+       "body": {
+        "block": [
+         {
+          "at": 0,
+          "pose": "turn_away"
+         },
+         {
+          "at": 0.5,
+          "pose": "idle",
+          "ease": "inout"
+         }
+        ],
+        "tier": "activity",
+        "segments": [
+         {
+          "name": "testroom_talk_c1_01_turnbench",
+          "prompt": "A person turns around slowly to face forward",
+          "secs": 5
+         }
+        ],
+        "prompt": "turns to face you from the bench"
+       }
+      },
+      {
+       "id": "c2",
+       "who": "aoi",
+       "seam": {
+        "kind": "heartbeat"
+       },
+       "en": "Tell me honestly. Do you trust me?",
+       "act": "steps closer, very still",
+       "shot": "fs",
+       "cam": {
+        "push": 0.12
+       },
+       "body": {
+        "block": [
+         {
+          "at": 0,
+          "pose": "idle"
+         },
+         {
+          "at": 0.7,
+          "pose": "lean_in",
+          "ease": "inout"
+         }
+        ],
+        "tier": "simple",
+        "hero": true,
+        "prompt": "steps closer, very still"
+       },
+       "event": {
+        "type": "choose",
+        "secs": 12,
+        "default": "o_silent",
+        "options": [
+         {
+          "id": "o_trust",
+          "label": "I trust you.",
+          "karma": 2
+         },
+         {
+          "id": "o_no",
+          "label": "No.",
+          "karma": -2
+         },
+         {
+          "id": "o_silent",
+          "label": "(Say nothing)",
+          "karma": 0
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start"
+     },
+     "do": {
+      "music": "uneasy"
+     }
+    },
+    {
+     "at": {
+      "clip": "c2",
+      "edge": "end",
+      "offset": 0.3
+     },
+     "do": {
+      "light": "workshop_lamp",
+      "set": "dim"
+     }
+    }
+   ],
+   "hold": {
+    "min": 0,
+    "max": 1
+   },
+   "sets": [
+    {
+     "objective": "14 · Hide and seek"
+    }
+   ]
+  },
+  "s_found": {
+   "title": "Found",
+   "level": "lab",
+   "camera": {
+    "mode": "held",
+    "look": "aoi"
+   },
+   "mood": "panic",
+   "pick": "workshop_locker",
+   "pick_by": "found_at",
+   "variants": {
+    "workshop_locker": {
+     "label": "locker 1",
+     "stage": {
+      "aoi": "wl1_aoi_spot"
+     },
+     "view": "wl1_spot",
+     "clips": [
+      {
+       "id": "c1",
+       "who": "aoi",
+       "en": "Found you.",
+       "act": "pulls the locker open and grabs your collar",
+       "shot": "cu",
+       "body": {
+        "block": [
+         {
+          "at": 0,
+          "pose": "reach_r"
+         },
+         {
+          "at": 0.6,
+          "pose": "grab_pull",
+          "ease": "snap"
+         }
+        ],
+        "tier": "action",
+        "reach": {
+         "hand": "right",
+         "to": "player_collar",
+         "from": 0.3,
+         "at": 0.6,
+         "until": 1
+        },
+        "prompt": "pulls the locker open and grabs your collar"
+       }
+      }
+     ]
+    },
+    "workshop_locker_2": {
+     "label": "locker 2",
+     "stage": {
+      "aoi": "wl2_aoi_spot"
+     },
+     "view": "wl2_spot",
+     "clips": [
+      {
+       "id": "c1",
+       "who": "aoi",
+       "en": "Found you.",
+       "act": "pulls the locker open and grabs your collar",
+       "shot": "cu",
+       "body": {
+        "block": [
+         {
+          "at": 0,
+          "pose": "reach_r"
+         },
+         {
+          "at": 0.6,
+          "pose": "grab_pull",
+          "ease": "snap"
+         }
+        ],
+        "tier": "action",
+        "reach": {
+         "hand": "right",
+         "to": "player_collar",
+         "from": 0.3,
+         "at": 0.6,
+         "until": 1
+        },
+        "prompt": "pulls the locker open and grabs your collar"
+       }
+      }
+     ]
+    }
+   },
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start"
+     },
+     "do": {
+      "sound": "sting_big"
+     }
+    }
+   ]
+  },
+  "s_night": {
+   "title": "Night 2",
+   "level": "lab",
+   "stage": {
+    "aoi": "rest_door_spot"
+   },
+   "view": "rest_wake_spot",
+   "time": "night",
+   "camera": {
+    "mode": "soft",
+    "look": "aoi",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "mood": "dread",
+   "enter": {
+    "kind": "dip",
+    "secs": 1.0
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "aoi",
+     "en": "You're awake. Good. One last room: the annex.",
+     "act": "at the door, half in the dark",
+     "shot": "fs",
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "at the door, half in the dark"
+     }
+    }
+   ]
+  },
+  "s_doll": {
+   "title": "Put her back",
+   "level": "lab",
+   "stage": {
+    "aoi": "corr_spot_n"
+   },
+   "view": "corr_spot_s",
+   "camera": {
+    "mode": "hard",
+    "look": "aoi"
+   },
+   "mood": "reveal",
+   "enter": {
+    "kind": "cut"
+   },
+   "clips": [
+    {
+     "id": "c1",
+     "who": "aoi",
+     "en": "That's not yours. Put her back.",
+     "act": "at the far end of the corridor, not moving",
+     "shot": "ws",
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "head_down"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "at the far end of the corridor, not moving"
+     }
+    }
+   ]
+  },
+  "s_secret": {
+   "title": "Behind the frame",
+   "level": "annex",
+   "stage": {
+    "aoi": "aoi_annex_spot"
+   },
+   "view": "annex_view_spot",
+   "camera": {
+    "mode": "soft",
+    "look": "aoi",
+    "cone": [
+     30,
+     18
+    ]
+   },
+   "mood": "intimate",
+   "clips": [
+    {
+     "id": "c1",
+     "who": "aoi",
+     "en": "You found my note. Then you know I wrote these tests.",
+     "act": "a small, guilty smile",
+     "shot": "fs",
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       },
+       {
+        "at": 0.5,
+        "pose": "hug_self",
+        "ease": "inout"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "a small, guilty smile"
+     }
+    }
+   ]
+  }
+ },
+ "stitches": {
+  "t_arrive": {
+   "title": "1 · Moving",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_arrive_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "fade": "in",
+       "secs": 2
+      },
+      {
+       "music": "calm"
+      },
+      {
+       "objective": "1 · Moving: walk (W A S D), run (Shift), crouch (C); open the front door"
+      },
+      {
+       "todo": "t1_door",
+       "text": "Open the front door",
+       "ticks": {
+        "use": "front_door"
+       }
+      },
+      {
+       "todo": "t1_in",
+       "text": "Walk into the lobby",
+       "ticks": {
+        "enter": "lobby"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_arrive_hint",
+     "when": {
+      "after": "b_arrive_start",
+      "secs": 3
+     },
+     "do": [
+      {
+       "think": "The lab's lights are on. Someone's expecting me."
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_arrive_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_front": {
+   "title": "2 · The front door",
+   "level": "lab",
+   "template": "peephole",
+   "beats": [
+    {
+     "id": "b_front_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "yard_aoi_spot",
+       "face": "player",
+       "motion": "aoi_idle"
+      },
+      {
+       "objective": "2 · The front door: someone's knocking"
+      },
+      {
+       "trick": "knock",
+       "at": "front_door",
+       "count": 3
+      },
+      {
+       "todo": "t2_peep",
+       "text": "Look through the peephole",
+       "ticks": {
+        "peeping": "front_door"
+       }
+      },
+      {
+       "todo": "t2_lock",
+       "text": "Shut the door and lock it (the thumb turn)",
+       "ticks": {
+        "locked": "front_door"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_front_peep",
+     "when": {
+      "peeping": "front_door"
+     },
+     "do": [
+      {
+       "say": "aoi_knock"
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_front_locked",
+     "when": {
+      "locked": "front_door"
+     },
+     "do": [
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
+      {
+       "think": "Locked. She'll find another way in."
+      }
+     ]
+    },
+    {
+     "id": "b_front_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_doors": {
+   "title": "3 · Doors and keys",
+   "level": "lab",
+   "template": "code",
+   "beats": [
+    {
+     "id": "b_doors_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "3 · Doors and keys: the keys room, the closet, the store and its vault"
+      },
+      {
+       "todo": "t3_key",
+       "text": "Find the brass key",
+       "ticks": {
+        "pickup": "key_brass"
+       }
+      },
+      {
+       "todo": "t3_closet",
+       "text": "Open the closet with it",
+       "ticks": {
+        "enter": "closet"
+       }
+      },
+      {
+       "todo": "t3_code",
+       "text": "Read the vault code",
+       "ticks": {
+        "read": "note_code"
+       }
+      },
+      {
+       "todo": "t3_vault",
+       "text": "Open the vault (the keypad)",
+       "ticks": {
+        "enter": "vault"
+       }
+      },
+      {
+       "todo": "t3_fuse",
+       "text": "Take the fuse",
+       "ticks": {
+        "pickup": "fuse"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_doors_vault",
+     "when": {
+      "pickup": "fuse"
+     },
+     "do": [
+      {
+       "trick": "slam_behind",
+       "door": "vault_door"
+      },
+      {
+       "think": "It slammed. It isn't locked... is it?"
+      }
+     ]
+    },
+    {
+     "id": "b_doors_out",
+     "when": {
+      "exit": "vault"
+     },
+     "do": [
+      {
+       "think": "Out."
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_doors_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_power": {
+   "title": "4 · Power",
+   "level": "lab",
+   "template": "power",
+   "beats": [
+    {
+     "id": "b_power_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "4 · Power: the power room"
+      },
+      {
+       "todo": "t4_in",
+       "text": "Go into the power room",
+       "ticks": {
+        "enter": "power"
+       }
+      },
+      {
+       "todo": "t4_breaker",
+       "text": "Throw the breaker",
+       "ticks": {
+        "all": [
+         {
+          "use": "breaker_box"
+         },
+         {
+          "power": "on"
+         }
+        ]
+       }
+      },
+      {
+       "todo": "t4_switch",
+       "text": "Switch the light on",
+       "ticks": {
+        "all": [
+         {
+          "use": "power_switch"
+         },
+         {
+          "power": "on"
+         },
+         {
+          "flag": "power_cut"
+         }
+        ]
+       }
+      },
+      {
+       "todo": "t4_candle",
+       "text": "Blow out the candle",
+       "ticks": {
+        "state": "power_candle",
+        "is": "out"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_power_cut",
+     "when": {
+      "enter": "power"
+     },
+     "do": [
+      {
+       "sound": "hum_cut",
+       "at": "breaker_box"
+      },
+      {
+       "power": "off"
+      },
+      {
+       "flag": "power_cut"
+      },
+      {
+       "think": "The power's gone. The candle's still burning."
+      }
+     ]
+    },
+    {
+     "id": "b_power_back",
+     "when": {
+      "power": "on"
+     },
+     "do": [
+      {
+       "light": "power_lamp",
+       "set": "flicker"
+      },
+      {
+       "think": "There. Lights."
+      }
+     ],
+     "if": [
+      "power_cut"
+     ]
+    },
+    {
+     "id": "b_power_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_store": {
+   "title": "5 · In your hands",
+   "level": "lab",
+   "template": "fetch",
+   "beats": [
+    {
+     "id": "b_store_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "5 · In your hands: the inventory (E), carrying, putting down (G)"
+      },
+      {
+       "trick": "lights_die",
+       "room": "store",
+       "secs": 2
+      },
+      {
+       "todo": "t5_a",
+       "text": "Take tin A",
+       "ticks": {
+        "pickup": "tin_a"
+       }
+      },
+      {
+       "todo": "t5_b",
+       "text": "Take tin B",
+       "ticks": {
+        "pickup": "tin_b"
+       }
+      },
+      {
+       "todo": "t5_c",
+       "text": "Take tin C",
+       "ticks": {
+        "pickup": "tin_c"
+       }
+      },
+      {
+       "todo": "t5_box",
+       "text": "Carry the box to the shelf and put it down (G)",
+       "ticks": {
+        "dropped": "store_box",
+        "in": "store_shelf_zone"
+       }
+      },
+      {
+       "todo": "t5_plush",
+       "text": "Pick up the plushie",
+       "ticks": {
+        "carrying": "store_plush"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_store_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_kitchen": {
+   "title": "6 · Little things",
+   "level": "lab",
+   "template": "chore",
+   "beats": [
+    {
+     "id": "b_kitchen_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "6 · Little things: the kettle, a cup, the cigarette, the TV, the hob"
+      },
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "kitchen_aoi_spot",
+       "face": "player"
+      },
+      {
+       "state": "kitchen_ashtray",
+       "to": "lit"
+      },
+      {
+       "say": "aoi_kettle"
+      },
+      {
+       "todo": "t6_kettle",
+       "text": "Put the kettle on",
+       "ticks": {
+        "state": "kitchen_kettle",
+        "is": "boiled"
+       },
+       "who": "aoi",
+       "on": {
+        "done": [
+         {
+          "behave": "aoi",
+          "as": "go",
+          "via": [
+           "kitchen_via_spot"
+          ],
+          "to": "kitchen_chair_spot",
+          "then": "sit"
+         }
+        ]
+       }
+      },
+      {
+       "todo": "t6_cup",
+       "text": "Pour a cup of tea",
+       "ticks": {
+        "state": "kitchen_mug",
+        "is": "full"
+       }
+      },
+      {
+       "todo": "t6_cig",
+       "text": "Put the cigarette out",
+       "ticks": {
+        "state": "kitchen_ashtray",
+        "is": "out"
+       }
+      },
+      {
+       "todo": "t6_tv",
+       "text": "Turn the TV off",
+       "ticks": {
+        "state": "kitchen_tv",
+        "is": "off"
+       }
+      },
+      {
+       "todo": "t6_hob",
+       "text": "Turn the hob on and let the pot heat",
+       "ticks": {
+        "state": "kitchen_pot",
+        "is": "simmering"
+       }
+      },
+      {
+       "todo": "t6_phone",
+       "text": "Answer the phone when it rings",
+       "ticks": {
+        "all": [
+         {
+          "flag": "phone_rang"
+         },
+         {
+          "state": "kitchen_phone",
+          "is": "lit"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_kitchen_sat",
+     "when": {
+      "arrived": "aoi",
+      "at": "kitchen_chair_spot"
+     },
+     "do": [
+      {
+       "think": "She sat down to wait for her tea."
+      },
+      {
+       "state": "kitchen_phone",
+       "to": "ringing"
+      },
+      {
+       "flag": "phone_rang"
+      }
+     ]
+    },
+    {
+     "id": "b_kitchen_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_chores": {
+   "title": "7 · Chores",
+   "level": "lab",
+   "template": "chore",
+   "beats": [
+    {
+     "id": "b_chores_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "7 · Chores: mop, scrub, lock the back door"
+      },
+      {
+       "todo": "t7_mop",
+       "text": "Take the mop",
+       "ticks": {
+        "pickup": "mop"
+       }
+      },
+      {
+       "todo": "t7_mud",
+       "text": "Mop up the mud (hold the click)",
+       "ticks": {
+        "use": "chores_stain"
+       }
+      },
+      {
+       "todo": "t7_blood",
+       "text": "Scrub the blood",
+       "ticks": {
+        "use": "chores_stain_2"
+       }
+      },
+      {
+       "todo": "t7_latch",
+       "text": "Lock the back door",
+       "ticks": {
+        "locked": "back_door"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_chores_feat",
+     "when": {
+      "all": [
+       {
+        "ticked": "t7_mud"
+       },
+       {
+        "ticked": "t7_blood"
+       }
+      ]
+     },
+     "do": [
+      {
+       "flag": "feat_clean"
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_chores_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "flag": "chores_done"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_rest": {
+   "title": "8 · Sitting",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_rest_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "8 · Sitting: a chair, and the sofa (Aoi has something to ask)"
+      },
+      {
+       "trick": "whisper",
+       "line": "aoi_whisper",
+       "at": "rest_lamp_stand"
+      },
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "aoi_sofa_spot",
+       "face": "player"
+      },
+      {
+       "todo": "t8_chair",
+       "text": "Sit on the chair",
+       "ticks": {
+        "use": "rest_chair"
+       }
+      },
+      {
+       "todo": "t8_sofa",
+       "text": "Sit on the sofa"
+      }
+     ]
+    },
+    {
+     "id": "b_rest_sofa",
+     "when": {
+      "use": "rest_sofa"
+     },
+     "do": [
+      {
+       "scene": "s_sofa"
+      },
+      {
+       "name": "What should she call you?",
+       "default": "Tester"
+      },
+      {
+       "think": "{name}. She'll write that in the report."
+      },
+      {
+       "tick": "t8_sofa"
+      }
+     ]
+    },
+    {
+     "id": "b_rest_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_games": {
+   "title": "9 · Games",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_games_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "9 · Games: the die, chō-han with Aoi"
+      },
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "games_aoi_spot",
+       "face": "player"
+      },
+      {
+       "todo": "t9_die",
+       "text": "Roll the die",
+       "ticks": {
+        "rolled": "games_die"
+       }
+      },
+      {
+       "todo": "t9_game",
+       "text": "Play chō-han with Aoi",
+       "ticks": {
+        "played": "games_table"
+       }
+      },
+      {
+       "todo": "t9_ask",
+       "text": "Answer Aoi",
+       "ticks": {
+        "answered": "q_stay"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_games_six",
+     "when": {
+      "rolled": "games_die",
+      "face": 6
+     },
+     "do": [
+      {
+       "flag": "rolled_six"
+      },
+      {
+       "think": "A six."
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_games_win",
+     "when": {
+      "played": "games_table",
+      "result": "win"
+     },
+     "do": [
+      {
+       "flag": "won_game"
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_games_lose",
+     "when": {
+      "played": "games_table",
+      "result": "lose"
+     },
+     "do": [
+      {
+       "flag": "lost_game"
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_games_ask",
+     "when": {
+      "ticked": "t9_game"
+     },
+     "do": [
+      {
+       "ask": "q_stay",
+       "line": "aoi_ask_stay",
+       "who": "aoi",
+       "secs": 12,
+       "default": "go",
+       "options": [
+        {
+         "id": "stay",
+         "label": "One more.",
+         "think": "She looks lonely.",
+         "do": [
+          {
+           "karma": 1
+          }
+         ]
+        },
+        {
+         "id": "go",
+         "label": "I should move on.",
+         "do": [
+          {
+           "karma": -1
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "b_games_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_dark": {
+   "title": "10 · The dark",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_dark_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "10 · The dark: find the flashlight, F switches it"
+      },
+      {
+       "todo": "t10_torch",
+       "text": "Find the flashlight",
+       "ticks": {
+        "pickup": "flashlight"
+       }
+      },
+      {
+       "todo": "t10_on",
+       "text": "Switch it on (F)",
+       "ticks": {
+        "torch": "on"
+       }
+      },
+      {
+       "todo": "t10_bat",
+       "text": "Find batteries when it dies",
+       "ticks": {
+        "pickup": "batteries"
+       }
+      },
+      {
+       "todo": "t10_out",
+       "text": "Get out of the dark room",
+       "ticks": {
+        "all": [
+         {
+          "exit": "dark"
+         },
+         {
+          "flag": "glimpsed"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_dark_on",
+     "when": {
+      "torch": "on"
+     },
+     "do": [
+      {
+       "flag": "torch_on"
+      },
+      {
+       "wait": 1
+      },
+      {
+       "torch": "flicker"
+      },
+      {
+       "wait": 1.5
+      },
+      {
+       "torch": "dead"
+      },
+      {
+       "think": "Dead. There were batteries on the shelf."
+      },
+      {
+       "show": "batteries_pickup"
+      }
+     ]
+    },
+    {
+     "id": "b_dark_bat",
+     "when": {
+      "pickup": "batteries"
+     },
+     "do": [
+      {
+       "torch": "works"
+      },
+      {
+       "think": "Better. Time to go."
+      }
+     ]
+    },
+    {
+     "id": "b_dark_glimpse",
+     "when": {
+      "enter": "dark_in"
+     },
+     "do": [
+      {
+       "sound": "creak",
+       "at": "dark_figure"
+      },
+      {
+       "wait": 0.8
+      },
+      {
+       "trick": "glimpse",
+       "figure": "dark_figure"
+      },
+      {
+       "music": "dread"
+      },
+      {
+       "flag": "glimpsed"
+      }
+     ],
+     "if": [
+      "torch_on"
+     ]
+    },
+    {
+     "id": "b_dark_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_library": {
+   "title": "11 · Reading and looking",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_library_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "11 · Reading and looking: the diary, the photo, the shelf, the painting"
+      },
+      {
+       "todo": "t11_diary",
+       "text": "Read the diary",
+       "ticks": {
+        "read": "diary"
+       }
+      },
+      {
+       "todo": "t11_photo",
+       "text": "Pick up the photo and turn it over",
+       "ticks": {
+        "use": "library_photo"
+       }
+      },
+      {
+       "todo": "t11_shelf",
+       "text": "Look at the bookshelf",
+       "ticks": {
+        "use": "library_shelf"
+       }
+      },
+      {
+       "todo": "t11_paint",
+       "text": "Look at the painting for a while",
+       "ticks": {
+        "look": "library_painting",
+        "secs": 2,
+        "within": 4
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_library_paint",
+     "when": {
+      "look": "library_painting",
+      "secs": 2,
+      "within": 4
+     },
+     "do": [
+      {
+       "show": "painting_note"
+      },
+      {
+       "flag": "found_painting"
+      },
+      {
+       "think": "Something slipped out from behind the frame."
+      }
+     ],
+     "secret": "painting"
+    },
+    {
+     "id": "b_library_paint_note",
+     "when": {
+      "read": "note_painting"
+     },
+     "do": [
+      {
+       "think": "She left it for whoever looked."
+      }
+     ],
+     "optional": true
+    },
+    {
+     "id": "b_library_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_bath": {
+   "title": "12 · Hiding",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_bath_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "12 · Hiding: the tap, the locker"
+      },
+      {
+       "todo": "t12_tap",
+       "text": "Turn the tap on",
+       "ticks": {
+        "state": "bath_tap",
+        "is": "running"
+       }
+      },
+      {
+       "todo": "t12_hide",
+       "text": "Hide in the locker"
+      }
+     ]
+    },
+    {
+     "id": "b_bath_hidden",
+     "when": {
+      "hidden": "bath_locker"
+     },
+     "do": [
+      {
+       "trick": "swap",
+       "hide": "bath_towel",
+       "show": "bath_mirror_text"
+      },
+      {
+       "think": "Quiet in here."
+      },
+      {
+       "tick": "t12_hide"
+      }
+     ]
+    },
+    {
+     "id": "b_bath_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_hide": {
+   "title": "14 · Hide and seek",
+   "level": "lab",
+   "template": "hide",
+   "beats": [],
+   "play": {
+    "type": "hide",
+    "secs": 30,
+    "rule": "Hide before Aoi counts to ten",
+    "warn": "she counts out loud, eyes covered",
+    "spots": [
+     "workshop_locker",
+     "workshop_locker_2"
+    ],
+    "seeker": "aoi",
+    "loops": {
+     "count": "aoi_count",
+     "search": "aoi_walk"
+    },
+    "barks": {
+     "count": [
+      "aoi_count_1",
+      "aoi_count_2"
+     ],
+     "found": [
+      "aoi_found_1"
+     ]
+    },
+    "on": {
+     "found": [
+      {
+       "count": "found"
+      }
+     ]
+    }
+   }
+  },
+  "t_run": {
+   "title": "15 · Run",
+   "level": "lab",
+   "template": "escape",
+   "timer": {
+    "secs": 60,
+    "label": "Before the lights go out",
+    "fail": "e_late"
+   },
+   "beats": [
+    {
+     "id": "b_run_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "15 · Run: the atrium, before the lights go"
+      },
+      {
+       "music": "chase"
+      },
+      {
+       "todo": "t15_run",
+       "text": "Get to the atrium",
+       "ticks": {
+        "enter": "atrium"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_run_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "music": "calm"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_sneak": {
+   "title": "16 · Sneak",
+   "level": "lab",
+   "template": "sneak",
+   "beats": [
+    {
+     "id": "b_sneak_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "16 · Sneak: cross the atrium without Aoi seeing you"
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
+      {
+       "todo": "t16_cross",
+       "text": "Reach the far corner unseen",
+       "ticks": {
+        "enter": "atr_far"
+       },
+       "fails": {
+        "caught": "aoi"
+       },
+       "on": {
+        "failed": [
+         {
+          "say": "aoi_seen"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_sneak_scare",
+     "when": {
+      "enter": "atr_mid"
+     },
+     "do": [
+      {
+       "sound": "creak",
+       "at": "atr_figure"
+      },
+      {
+       "wait": 1
+      },
+      {
+       "trick": "jumpscare",
+       "figure": "atr_figure"
+      },
+      {
+       "behave": "aoi",
+       "as": "path",
+       "route": "r_atrium",
+       "motion": "aoi_walk",
+       "sees": {
+        "angle": 90,
+        "range": 9,
+        "meter": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_sneak_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "behave": "aoi",
+       "as": "off"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_sleep": {
+   "title": "17 · Night",
+   "level": "lab",
+   "template": "explore",
+   "beats": [
+    {
+     "id": "b_sleep_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "objective": "17 · Night: sleep in the rest room's bed"
+      },
+      {
+       "todo": "t17_sleep",
+       "text": "Sleep in the bed"
+      }
+     ]
+    },
+    {
+     "id": "b_sleep_sleep",
+     "when": {
+      "use": "rest_bed"
+     },
+     "do": [
+      {
+       "chapter": "Night 2",
+       "sub": "23:40",
+       "time": "night",
+       "secs": 2.5
+      },
+      {
+       "state": "lobby_clock",
+       "to": "stopped"
+      },
+      {
+       "checkpoint": true
+      },
+      {
+       "tick": "t17_sleep"
+      }
+     ]
+    },
+    {
+     "id": "b_sleep_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  },
+  "t_annex": {
+   "title": "18 · The annex",
+   "level": "annex",
+   "template": "fetch",
+   "beats": [
+    {
+     "id": "b_annex_start",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "power": "off"
+      },
+      {
+       "checkpoint": true
+      },
+      {
+       "objective": "18 · The annex: the fuse, the note; then leave, or stay"
+      },
+      {
+       "behave": "aoi",
+       "as": "idle",
+       "at": "aoi_annex_spot",
+       "face": "player"
+      },
+      {
+       "todo": "t18_fuse",
+       "text": "Put the fuse in the fusebox",
+       "ticks": {
+        "flag": "annex_lit"
+       }
+      },
+      {
+       "todo": "t18_note",
+       "text": "Read the note",
+       "ticks": {
+        "read": "note_annex"
+       }
+      }
+     ]
+    },
+    {
+     "id": "b_annex_lit",
+     "when": {
+      "flag": "annex_lit"
+     },
+     "do": [
+      {
+       "power": "on"
+      },
+      {
+       "think": "Light."
+      }
+     ]
+    },
+    {
+     "id": "b_annex_done",
+     "when": {
+      "ticked": true
+     },
+     "do": [
+      {
+       "untodo": true
+      },
+      {
+       "objective": "Leave by the door, or sit with Aoi"
+      },
+      {
+       "done": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "flow": {
+  "n_arrive": {
+   "type": "stitch",
+   "ref": "t_arrive",
+   "next": "n_hello"
+  },
+  "n_hello": {
+   "type": "scene",
+   "ref": "s_hello",
+   "next": "n_front"
+  },
+  "n_front": {
+   "type": "stitch",
+   "ref": "t_front",
+   "next": "n_doors"
+  },
+  "n_doors": {
+   "type": "stitch",
+   "ref": "t_doors",
+   "next": "n_power"
+  },
+  "n_power": {
+   "type": "stitch",
+   "ref": "t_power",
+   "next": "n_store"
+  },
+  "n_store": {
+   "type": "stitch",
+   "ref": "t_store",
+   "next": "n_kitchen"
+  },
+  "n_kitchen": {
+   "type": "stitch",
+   "ref": "t_kitchen",
+   "next": "n_chores"
+  },
+  "n_chores": {
+   "type": "stitch",
+   "ref": "t_chores",
+   "next": "n_rest"
+  },
+  "n_rest": {
+   "type": "stitch",
+   "ref": "t_rest",
+   "next": "n_games"
+  },
+  "n_games": {
+   "type": "stitch",
+   "ref": "t_games",
+   "next": "n_dark"
+  },
+  "n_dark": {
+   "type": "stitch",
+   "ref": "t_dark",
+   "next": "n_library"
+  },
+  "n_library": {
+   "type": "stitch",
+   "ref": "t_library",
+   "next": "n_bath"
+  },
+  "n_bath": {
+   "type": "stitch",
+   "ref": "t_bath",
+   "next": "n_talk"
+  },
+  "n_talk": {
+   "type": "scene",
+   "ref": "s_talk",
+   "next": "n_hide"
+  },
+  "n_hide": {
+   "type": "stitch",
+   "ref": "t_hide",
+   "next": "n_hide_r"
+  },
+  "n_hide_r": {
+   "type": "choice",
+   "by": "result",
+   "of": "n_hide",
+   "options": [
+    {
+     "result": "hidden",
+     "to": "n_run"
+    },
+    {
+     "result": "found",
+     "to": "n_found"
+    }
+   ]
+  },
+  "n_found": {
+   "type": "scene",
+   "ref": "s_found",
+   "next": "e_found"
+  },
+  "n_run": {
+   "type": "stitch",
+   "ref": "t_run",
+   "next": "n_sneak"
+  },
+  "n_sneak": {
+   "type": "stitch",
+   "ref": "t_sneak",
+   "next": "n_sleep"
+  },
+  "n_sleep": {
+   "type": "stitch",
+   "ref": "t_sleep",
+   "next": "n_night"
+  },
+  "n_night": {
+   "type": "scene",
+   "ref": "s_night",
+   "next": "n_annex"
+  },
+  "n_annex": {
+   "type": "stitch",
+   "ref": "t_annex",
+   "next": "n_final"
+  },
+  "n_final": {
+   "type": "choice",
+   "by": "act",
+   "prompt": "Leave, or stay with Aoi?",
+   "options": [
+    {
+     "label": "Leave by the door",
+     "when": {
+      "enter": "annex_out"
+     },
+     "to": "n_secret"
+    },
+    {
+     "label": "Sit with Aoi",
+     "when": {
+      "use": "annex_sofa"
+     },
+     "to": "e_stay"
+    }
+   ]
+  },
+  "n_secret": {
+   "type": "choice",
+   "by": "flag",
+   "options": [
+    {
+     "if": [
+      "found_painting"
+     ],
+     "to": "n_egg"
+    },
+    {
+     "to": "n_karma"
+    }
+   ]
+  },
+  "n_egg": {
+   "type": "scene",
+   "ref": "s_secret",
+   "next": "n_karma"
+  },
+  "n_karma": {
+   "type": "choice",
+   "by": "karma",
+   "options": [
+    {
+     "min": 2,
+     "to": "e_good"
+    },
+    {
+     "max": -2,
+     "to": "e_bad"
+    },
+    {
+     "to": "e_neutral"
+    }
+   ]
+  },
+  "n_doll": {
+   "type": "scene",
+   "ref": "s_doll",
+   "next": "e_doll"
+  },
+  "e_good": {
+   "type": "ending",
+   "kind": "good",
+   "title": "Passed"
+  },
+  "e_neutral": {
+   "type": "ending",
+   "kind": "neutral",
+   "title": "Inconclusive"
+  },
+  "e_bad": {
+   "type": "ending",
+   "kind": "bad",
+   "title": "Failed"
+  },
+  "e_stay": {
+   "type": "ending",
+   "kind": "other",
+   "title": "Stayed"
+  },
+  "e_doll": {
+   "type": "ending",
+   "kind": "bad",
+   "title": "She wanted her back",
+   "short_ok": true
+  },
+  "e_found": {
+   "type": "ending",
+   "kind": "death",
+   "title": "Found",
+   "retry": "n_hide"
+  },
+  "e_late": {
+   "type": "ending",
+   "kind": "death",
+   "title": "Too slow",
+   "retry": "n_run"
+  }
+ },
+ "frames": [
+  {
+   "id": "f_world",
+   "title": "The way in, doors",
+   "color": "#4f8ad2",
+   "nodes": [
+    "n_arrive",
+    "n_hello",
+    "n_front",
+    "n_doors"
+   ]
+  },
+  {
+   "id": "f_things",
+   "title": "Things",
+   "color": "#3fa57a",
+   "nodes": [
+    "n_power",
+    "n_store",
+    "n_kitchen",
+    "n_chores"
+   ]
+  },
+  {
+   "id": "f_people",
+   "title": "People and play",
+   "color": "#c98a2b",
+   "nodes": [
+    "n_rest",
+    "n_games",
+    "n_dark",
+    "n_library",
+    "n_bath",
+    "n_doll",
+    "e_doll"
+   ]
+  },
+  {
+   "id": "f_danger",
+   "title": "Danger",
+   "color": "#c2453d",
+   "nodes": [
+    "n_talk",
+    "n_hide",
+    "n_hide_r",
+    "n_found",
+    "e_found",
+    "n_run",
+    "e_late",
+    "n_sneak"
+   ]
+  },
+  {
+   "id": "f_night",
+   "title": "Night, the annex, the endings",
+   "color": "#8a63d2",
+   "nodes": [
+    "n_sleep",
+    "n_night",
+    "n_annex",
+    "n_final",
+    "n_secret",
+    "n_egg",
+    "n_karma",
+    "e_good",
+    "e_neutral",
+    "e_bad",
+    "e_stay"
+   ]
+  }
+ ],
+ "interrupts": [
+  {
+   "id": "i_doll",
+   "label": "Takes the doll",
+   "when": {
+    "pickup": "doll"
+   },
+   "during": [
+    "t_library"
+   ],
+   "to": "n_doll"
+  }
+ ],
+ "secrets": {
+  "painting": {
+   "flag": "found_painting",
+   "hint": "the painting in the library, looked at long enough"
+  }
+ },
+ "achievements": {
+  "ach_good": {
+   "title": "Passed",
+   "text": "Finish the tests on good terms.",
+   "for": {
+    "ending": "e_good"
+   }
+  },
+  "ach_neutral": {
+   "title": "Inconclusive",
+   "text": "Finish the tests, somehow.",
+   "for": {
+    "ending": "e_neutral"
+   }
+  },
+  "ach_bad": {
+   "title": "Failed",
+   "text": "Finish the tests on bad terms.",
+   "for": {
+    "ending": "e_bad"
+   }
+  },
+  "ach_stay": {
+   "title": "Stayed",
+   "text": "Don't leave.",
+   "for": {
+    "ending": "e_stay"
+   },
+   "hidden": true
+  },
+  "ach_doll": {
+   "title": "Not Yours",
+   "text": "Some things aren't for taking.",
+   "for": {
+    "ending": "e_doll"
+   },
+   "hidden": true
+  },
+  "ach_found": {
+   "title": "Found",
+   "text": "Lose at hide and seek.",
+   "for": {
+    "ending": "e_found"
+   }
+  },
+  "ach_late": {
+   "title": "Too Slow",
+   "text": "Let the lights go out.",
+   "for": {
+    "ending": "e_late"
+   }
+  },
+  "ach_painting": {
+   "title": "Behind the Frame",
+   "text": "Some paintings are worth a longer look.",
+   "for": {
+    "secret": "painting"
+   }
+  },
+  "ach_clean": {
+   "title": "Spotless",
+   "text": "Clean every stain.",
+   "for": {
+    "flag": "feat_clean"
+   }
+  },
+  "ach_six": {
+   "title": "Six",
+   "text": "Roll a six.",
+   "for": {
+    "flag": "rolled_six"
+   },
+   "hidden": true
+  }
+ }
+}

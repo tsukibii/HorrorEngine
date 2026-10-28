@@ -4,12 +4,34 @@ Written 2026-10-24 (small hours, the user away; brought up to date in the aftern
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
 lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
 dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
-latch, examining, skin v2) on
+latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
+## 0. Latest (2026-10-28, back, on `dev-002`): TestRoom001, the Unreal note, skin like HumanShaders, expression loops
+
+The user's four asks (DECISIONS 2026-10-28, back), each its own commit:
+- **TestRoom001** (docs/games/TestRoom001.md): a lab of stations, a feature of the format each, its to-do list the
+  checklist; `node tools/director/testroom.mjs [--from n_station]` (TESTROOM) plays it start to end in the simple view
+  and writes the desk's reference for Unreal (`Saved/Story/TestRoom001/reference/`). Building it found and fixed in
+  Play: `use_on`, `swap`, `jumpscare`, `take` leaving the row, a switch's own light, a beat's instant actions run
+  together, beats hearing an event before the to-do list, the reticle through a kit door's frame, a checkpoint keeping
+  the pocket and the little things (a retry used to empty them), a skipped scene's state cues; the simple view drawing
+  only the rooms in sight (Play was a frame a second on its 23 rooms); the checks for a second level; and the story
+  check's new warning for a task that would end its station before its own beat (LESSONS: the last tick).
+- **The Unreal note** (docs/UNREAL_NEXT.md): what the next local session does, top to bottom: S5, TestRoom001 into
+  Unreal, the preview (faces now too), the StoryRunner built to Play's parts with TestRoom001 as its acceptance test
+  station by station, the skin, what's built but untested in the editor.
+- **Skin like HumanShaders** (`tools/shared/skinlight.js`, `tools/character/thin.js`): the Studio's skin lit per
+  colour through smoothed normals and wrapped, light through the thin parts, two highlights (Skin, Light on the skin);
+  the export bakes the colour, a normal map and one map of roughness and thinness with the light's numbers; the desk
+  lights a Studio export the same way; `storykit.people` makes M_StudioSkin for Unreal (untested in the editor).
+- **Expression loops**: a loop cut from a range in the preview (↻ cards, the wrap blended), and **face rows** on a
+  scene's timeline (`faces`, STORY_FORMAT §3.7): dropped or double-clicked on, crossfading, a loop until the next; the
+  stage, the Watch and Play's scenes wear them; the bake carries them for Unreal. TestRoom001's lobby scene has one.
+
+## 0'. Before that (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
 
 The user's brief (DECISIONS 2026-10-28, later): add the simple systems we're missing for Chilla's Art-style games,
 else research realistic skin (v2, like MetaHuman and their three stills). Both, each step its own commit, PLAY and

@@ -966,3 +966,69 @@ of the server's `do_GET` had their own `import urllib.parse`, which makes `urlli
 function, so the history branch (on paths those lines never run) found it unbound, raised, and the server dropped the
 connection. GUIDE's history step was the first to notice. The module imports it once at the top; a function never
 imports again what the module already has.
+
+## A second level at the same coordinates found the checks comparing across maps (2026-10-28)
+
+TestRoom001 is the first game with two levels, and its annex sits at the lab's own coordinates (each level is its
+own map, in Unreal and on the desk's stage). The level check then put the lab's cornices "3 cm into a wall of
+annex_hall", and the shot review found an annex camera "inside corridor__wall_e4": both compared every piece with
+every wall, whatever its level. Whatever compares two pieces compares them on one level; a new kind of story (two
+levels, a set, a second floor) is worth one run of every check before trusting what they say about it.
+
+## The reticle reaches a door from either side, so a test must say which side (2026-10-28)
+
+TESTROOM's walk through the front door went the wrong way: the helper that stands the player where the cursor lands on
+a thing tried the side north of the door first, and a door is in its wall's plane, so the reticle found it from the
+lobby too. Walked "through" from there, the player went out into the yard. Through a door, a test stands on the side
+away from the room it wants and faces it (`walkThrough(door, into)`), never where a search happened to stop.
+
+## A station's last tick clears its list at once (2026-10-28)
+
+The latch locked the front door, its task ticked, and the test waiting to see it ticked on the HUD never did: the
+station's own `done` (`untodo` then `done`) had cleared the list in the same moment. A test hears what the story hears
+(the runtime's events: `{type: "todo", id, state}`), not what's left on the screen afterwards.
+
+## The software GPU and a big level: draw only what can be seen (2026-10-28)
+
+Play in TestRoom001's lab ran at one frame a second in the headless browser (24 lights over 565 meshes, half a second
+a frame with every light lit per pixel; the Pilot runs at three), and the game's clock moves at most 0.05 s a frame, so
+a 40 s station took ten minutes. A smaller window or the simple view alone barely helped. What did: the simple view
+leaves out the rooms the eye can't see through any opening in view (their props, floors, lights; never walls or
+doors), thirty frames a second, the pictures the same to the pixel. Measure where the time goes (a render read back,
+then with lights off, then far things off) before reaching for a fix.
+
+## A list that's through before it's whole (2026-10-28)
+
+TestRoom001's power station ended the moment you walked in: walking in ticked its first task ("Go into the power
+room") and fired the beat that cut the power and put the other three tasks on the list, but Play ran a beat's actions
+one awaited step at a time, so the station's `{"ticked": true}` beat heard the same event first, found a list of one
+ticked task, and ended it. The story check never saw it (its walker runs a beat whole). Play now runs a beat's
+instant actions together before the next beat looks (STORY_FORMAT §4), and the test room puts each station's whole
+list on at its start, its later tasks ticking only once their moment has come (`all` with a flag). A `{"ticked": true}`
+station needs its list whole before any of it can be ticked.
+
+## The last tick cut its own beat off (2026-10-28)
+
+TestRoom001's sofa and locker: "Sit on the sofa" ticked on `use: rest_sofa`, the same event that started the sofa's
+beat (a scene, then the name box); the tick was the station's last, so the station ended there and the name was never
+asked. The locker's "Hide in the locker" did the same to the look-away swap, and the run went on through the next scene
+and the round's card while the test was still waiting in the locker. A station ends when its list is through, so the
+task that closes it ticks at the end of the beat it's about (`{"tick": id}`), never on the trigger that starts it
+(STORY_FORMAT §4); the story check now warns about it. The bed did it too, and so did the fuse, whose beat only slams
+a door: there Play was wrong, the to-do list heard the pickup before the beats did, so the list ended the station
+before the slam. Beats hear an event first now. The same day: a kit door's frame is a block spanning the doorway,
+drawn only at its edges, and it caught the reticle, so a kit door couldn't be opened from its middle; Play's aim now
+passes through hollow pieces.
+
+## A retry with empty pockets (2026-10-28)
+
+The full TestRoom001 run failed at the annex's fusebox ("Needs: Fuse") though every station alone passed: the death
+in the round and its retry ("Return to") restarted the run from the round's checkpoint, and a checkpoint kept flags,
+karma and counters but not the items or the little things' states, so the fuse from the vault was gone. A start
+`--from` a station is given what the stations before it leave (LEAVES), so it never showed. A checkpoint keeps the
+pocket and the little things now, and the test checks them after the retry. Run the whole room from the start before
+calling it done: what one station leaves the next is only tested there. The full run's clock showed one more: the
+kitchen's cigarette, lit from the start, burns seven minutes and keeps what it burnt (`keep`), so by the time a whole
+playthrough reached the kitchen it was out for good and there was nothing to put out. A little thing a station is
+about starts there (unlit, and lit as you come in).
+
