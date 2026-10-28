@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, night (texture templates for the placeholder things)
+
+- **UV templates for Krita**: "for small untextured things that we get physically/proportionally correct could you
+  export a uv map (and a guide layer for the sides) so I can just import it into krita and texture. If its photos
+  though consider that I might want the frame to be pbr so Id only want to export the actual photograph part". In
+  docs/HANDOFF_DIRECTOR_TODO.md §6 (the blocks are made by the director's build, so the template and the block's UVs
+  are built together there): a box as a cross net on one scale, a plane front and back, a photo's print alone (its
+  frame a PBR set); an OpenRaster file per thing with Guide, Paint and Base layers; a painted PNG saved beside it
+  becomes its texture.
+
 ## 2026-10-28, evening (placeholder things)
 
 - **Flat boxes and planes for now**: "For items like pills and cards, they should just be flat boxes or planes for now

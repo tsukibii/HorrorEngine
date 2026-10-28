@@ -108,7 +108,37 @@ hand carries on down the flow (`flowTimes`, TIMES).
 - The story format (the cast's `models`, a scene's `models` override), the check (every variant's file exists), the
   desk, the Watch and Play, the bake for Unreal; a DESK test and a TIMES-like test of the carry.
 
-## 6. What The Visitor needs on the desk when it's built (from its chart's sticky notes)
+## 6. Texture templates for the placeholder things, to paint in Krita (missing)
+
+**The ask** (DECISIONS 2026-10-28, night): "for small untextured things that we get physically/proportionally correct
+could you export a uv map (and a guide layer for the sides) so I can just import it into Krita and texture. If its
+photos though consider that I might want the frame to be pbr so I'd only want to export the actual photograph part".
+
+**Build.**
+- **The blocks' UVs are the template.** Every placeholder thing Build makes (§3: a box at its real size, a plane for
+  paper and cards) gets UVs laid out the same way every time, so a picture painted on the template lands on the block
+  exactly:
+  - a **box**: a cross net, the front in the middle, the top above it, the bottom below, the left and right beside
+    it, the back at the far end; every face at its real size on **one scale** (nothing stretched), 8 px of bleed
+    round each island;
+  - a **plane** (a note, a card, a playing card): its front and its back side by side, at its real aspect;
+  - a **photo**: only **the print** gets a template (its real aspect, e.g. an L print 89 × 127 mm); the frame is a
+    separate part wearing a PBR set off the shelf, never in the template.
+- **The export**: `python tools/uv_templates.py --game G [thing]` writes, per thing, into
+  `Content/Games/<G>/Art/Textures/<thing>/` (the user's hand work's place):
+  - `<thing>.ora` (OpenRaster, which Krita opens with its layers): **Guide** (each face's outline and name, FRONT,
+    TOP, LEFT..., an arrow for which way is up, the fold lines, the bleed shaded; locked), **Paint** (empty,
+    transparent, where the user paints), **Base** (a flat mid grey under it);
+  - `<thing>_guide.png` (the guide alone, for other apps).
+  - The canvas a power of two, the scale chosen so the layout's longest side fills it (2048 px by default; `--px`).
+- **The way back**: a flattened `<thing>.png` saved there (the guide hidden) is the thing's base colour on the desk
+  and in Unreal, picked up on the next build; nothing to wire by hand.
+- **When a thing's size changes**: its template is made again; a painted `<thing>.png` is kept, and the Problems list
+  warns when its proportions no longer match.
+- **Checks**: KIT (or WRITERS) that every placeholder's UVs and its template agree, face for face, and that a photo's
+  template is its print alone.
+
+## 7. What The Visitor needs on the desk when it's built (from its chart's sticky notes)
 
 - A **name variable** in lines and the speaker name (`{her}`: Natsu or Natsuki, by a counter).
 - **Two expression tracks** for one character at chosen lines (his version and hers), picked by a counter. No eye
