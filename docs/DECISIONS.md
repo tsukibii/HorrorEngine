@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, noon (The Visitor: the player never speaks)
+
+- **Only acts and thoughts for the player**: "we shouldnt have dialogue in this style ... Its fine for the npcs to have
+  dialogue like that but players dialogue is always stuff like [ Greet ] She looks cold, welcome her inside ---
+  [ Question ] She looks different. So inner monologue, player can imagine what they said."
+- Done in the session `the-visitor`: his one spoken line at the door is now a choice (`[ Welcome ] Natsu came back.
+  Tell her --- [ Stare ] Twelve years. Is it really her?`), the garden's answer reads as a thought, and a note on the
+  chart says he never speaks. LESSONS has the rule.
+
 ## 2026-10-28, late morning (The Visitor's chart as pseudo-code)
 
 - **Less text, Chilla's Art's way**: "its a bit too detailed like a novel, needs to be more chillas art game style and

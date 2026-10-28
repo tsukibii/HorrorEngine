@@ -196,6 +196,9 @@ flatten a scooped neckline to one height: it hitches the whole top up.
 - **Write the writers' room's script as literal things:** who does what with which thing, short lines, sounds as cues,
   a `Note:` for anything the director must know. No narrative description ("she's soaked", "cicadas outside"): every
   described thing is a model, a state or a shot someone has to make. Chilla's Art's density: few words, a to-do list.
+- **The player never speaks a line** (no `You: "..."`): his answers are an act and a thought, `[ Greet ] She looks
+  cold, welcome her inside --- [ Question ] She looks different`, and the player imagines what he said. Only the cast
+  talk in quotes. A talk needs a line from someone in the cast before the answers.
 - The first chart of The Visitor read like a novel (scene-setting lines, a wet arrival needing its own model, a cold
   open); the user asked for pseudo-code. Rewritten terse, the same structure held.
 
