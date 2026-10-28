@@ -76,6 +76,8 @@
 .play-hud[data-focus="centre"] .ph-focus{opacity:1;transition-duration:.25s;   /* a choice about nothing in particular: the middle stays sharp */
   -webkit-mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%);mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%)}
 .play-hud:has(> .ph-panel) .ph-focus{opacity:1;transition-duration:.25s;-webkit-mask-image:none;mask-image:none}   /* a card: all of it */
+.play-hud:has(> .ph-exam) .ph-focus{opacity:1;transition-duration:.25s;   /* a thing in the hands: it sharp, the room soft behind it */
+  -webkit-mask-image:radial-gradient(ellipse 20% 28% at 50% 42%,transparent 60%,#000 100%);mask-image:radial-gradient(ellipse 20% 28% at 50% 42%,transparent 60%,#000 100%)}
 /* a floating prompt sharpens as the reticle nears its point (--ph-clear, 1 on it) */
 .play-hud .ph-prompt.at > *{opacity:calc(.6 + .4 * var(--ph-clear, 1));filter:blur(calc((1 - var(--ph-clear, 1)) * 1px));transition:opacity .12s,filter .12s}
 
@@ -194,6 +196,11 @@
 .play-hud .ph-choice .ph-meter{margin:0 14px 2px}
 
 /* ---- the middle ---- */
+/* a thing taken up in the hands (play/examine.js): the view stays, its words at the bottom, dragged anywhere to turn it */
+.play-hud .ph-exam{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-bottom:calc(var(--ph-margin) * 2);pointer-events:auto;cursor:grab;user-select:none;-webkit-user-select:none}
+.play-hud .ph-exam.turning{cursor:grabbing}
+.play-hud .ph-exam .ph-card{cursor:default;min-width:280px;display:flex;flex-direction:column;gap:8px}
+.play-hud .ph-exam-hint{font-size:calc(var(--ph-fs) * .8);color:var(--ph-text);opacity:.6;text-shadow:0 1px 3px #000a}
 .play-hud .ph-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ph-veil);pointer-events:auto;cursor:default}
 .play-hud .ph-card{min-width:300px;max-width:min(520px,80%);padding:calc(var(--ph-margin) + 4px) calc(var(--ph-margin) + 8px);border-radius:var(--ph-radius-l);background:var(--ph-surface);
   box-shadow:var(--ph-pop-l);-webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none);display:flex;flex-direction:column;gap:calc(var(--ph-gap) + 4px);align-items:stretch;

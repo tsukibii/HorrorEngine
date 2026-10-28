@@ -42,6 +42,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       { id: "mop1", shape: "box 0.06 0.06 0.5", at: [1.0, 4.0], use: "pickup", item: "mop" });
     S.stitches.t_search.beats.push({ id: "b_clean", when: { use: "hall_stain" }, optional: true, do: [{ flag: "stain_clean" }] });
     Object.assign(S.levels.house.rooms.find(r => r.id === "hall").openings.find(o => o.door && o.door.id === "front_door").door, { peephole: true, latch: true });   // a lens in the front door, a latch inside
+    S.stitches.t_search.beats.push({ id: "b_machine", when: { use: "answering_machine" }, optional: true, do: [{ flag: "machine_seen" }] });   // looked at in the hands (examine.js)
     S.stitches.t_search.beats.push({ id: "b_locked", when: { all: [{ locked: "front_door" }, { flag: "latch_test" }] }, optional: true, do: [{ flag: "front_locked" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_breaker", shape: "box 0.3 0.1 0.4", at: [3.85, 0.6], z: 1.3, use: "breaker", tag: "breaker" });
     S.stitches.t_search.beats.push({ id: "b_cut", when: { flag: "cut_power" }, optional: true, do: [{ power: "off" }] },
@@ -507,6 +508,27 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (run.length < 25 || run.some(h => h.floor !== "tile" || !/^step_concrete_0[1-5]$/.test(h.n)) || twice >= 0 || new Set(run.map(h => h.n)).size < 4)
       throw new Error(`on the kitchen's tile: ${run.length} steps, ${new Set(run.map(h => h.n)).size} sounds, the same twice at ${twice}: ${run.slice(0, 8).map(h => h.n + "@" + h.floor)}`);
     console.log(`       walking ${w.d.toFixed(2)} m: ${w.heard.length} steps (${w.heard.map(h => h.n.replace("step_", "")).join(" ")}), one every ${every(w.heard).toFixed(2)} s; crouched ${c.d.toFixed(2)} m: ${c.heard.length}, one every ${every(c.heard).toFixed(2)} s at ${c.heard[0].db} dB; on tile ${run.length} steps, never the same twice`);
+  });
+  await step("examining: the answering machine's Look takes it up in your hands (itself in front of the eye, over the room, its words under it, the one on the table gone), a drag turns it, Esc puts it back where it was with no pause, and the story hears it used (not the kitchen photo: looked at, that's the Pilot's secret ending)", async () => {
+    const r = await goTo("answering_machine", 0.8);
+    if (r.cursor !== "look") throw new Error(`the answering machine: cursor ${r.cursor}`);
+    await click();
+    await page.waitForSelector(".ph-exam", { timeout: 60000 }); await gameWait(0.3);
+    const a = await page.evaluate(() => { const rt = window.__dd.play, ex = rt.examining, c = rt.stage.camera, at = ex.pivot.position;
+      return { on: !!ex, hidden: !rt.byId.answering_machine.visible, dist: at.distanceTo(c.position), text: document.querySelector(".ph-exam .ph-card").textContent, angle: ex.angle(), over: ex.turner.children[0].material.depthTest === false }; });
+    if (!a.on || !a.hidden || Math.abs(a.dist - 0.36) > 0.03 || !/One message/.test(a.text) || !a.over) throw new Error(`taken up: ${JSON.stringify(a)}`);
+    const b = await page.locator("#watchBox").boundingBox(), x = b.x + b.width * 0.3, y = b.y + b.height * 0.35;
+    await page.mouse.move(x, y); await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(x + i * 26, y, { steps: 2 });
+    await page.mouse.up(); await gameWait(0.6);
+    const turned = await page.evaluate(() => window.__dd.play.examining.angle());
+    if (!(turned > 2.2)) throw new Error(`a drag should turn it over: ${turned.toFixed(2)} rad`);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.querySelector(".ph-exam") && !window.__dd.play.examining, null, { timeout: 60000 });
+    await gameWait(0.4);
+    const c = await page.evaluate(() => ({ back: window.__dd.play.byId.answering_machine.visible, heard: window.__dd.run.flags.has("machine_seen"), busy: window.__dd.play.busy, menu: !!document.querySelector(".ph-menu") }));
+    if (!c.back || !c.heard || c.busy || c.menu) throw new Error(`put back: ${JSON.stringify(c)}`);
+    console.log(`       held ${a.dist.toFixed(2)} m from the eye, turned ${(turned * 180 / Math.PI).toFixed(0)}° by a drag, put back and heard`);
   });
   await step("a board game: a click at the table sits you down facing it, its rules play it out (chō-han: the cup shakes and comes down, you call, it lifts on the dice), you stand up and the story hears the result", async () => {
     const r = await goTo("hall_table", 1.0);

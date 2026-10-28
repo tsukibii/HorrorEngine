@@ -185,7 +185,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 |---|---|
 | `pickup` | `item`: a click takes it into the inventory (the row E shows, it in the hand), and `{"pickup": item}` is heard; **G** puts the one in the hand down in front of the player, on whatever is under that spot (no falling), and then the player hasn't got it (`{"dropped": id, "in": room}` is heard, as for `carry`) |
 | `note` | `note` |
-| `inspect` | `text`, optional `line` |
+| `inspect` | `text`, optional `line`. In Play a small thing (its longest side 0.6 m or less) is taken up in the hands (DECISIONS 2026-10-28, later): itself in front of the eye, a drag turns it (a photo turned over to read its back), `text` under it, Esc puts it back; a bigger one shows `text` on a card. `{"use": id}` is heard once it's put back |
 | `switch` | `light` |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
 | `breaker` | the breaker box (DECISIONS 2026-10-28): a click throws it, the level's power goes off or comes back (the lights flickering up), and `{"use": id}` is heard. While the power's out (the `power` action) every bulb and lamp in the level is dark (each keeps its own on or off for when it's back; candles and fires burn on) and a `switch` only clicks: **No power** |

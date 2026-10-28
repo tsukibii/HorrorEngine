@@ -3,6 +3,7 @@
 // event (beats and act choices hear it) before its own.
 // `cursor` is a name the HUD's theme draws (play/ui/themes/*.css).
 import { register, part } from "./parts.js";
+import { small } from "./examine.js";
 import { EYES } from "../stage.js";
 
 export function interactableOf(thing, rt) {
@@ -12,10 +13,10 @@ export function interactableOf(thing, rt) {
 }
 
 const panelText = (title, text) => ({ title, text });
-register("interactable", "inspect", {
+register("interactable", "inspect", {                 // a small thing is taken up and turned in the hands (examine.js), a big one read on a card
   settings: { cursor: "look", label: "Look" },
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
-  use: (t, rt) => rt.panel(panelText(rt.nameOf(t), (t.userData.piece.d || {}).text || "")),
+  use: (t, rt) => small(t) ? rt.examine(t, rt.nameOf(t), (t.userData.piece.d || {}).text || "") : rt.panel(panelText(rt.nameOf(t), (t.userData.piece.d || {}).text || "")),
 });
 register("interactable", "note", {
   settings: { cursor: "read", label: "Read" },

@@ -14,6 +14,7 @@ import { Torch } from "./torch.js";
 import "./clean.js";
 import { lensesFor, followLeaf, LENS } from "./peephole.js";
 import { latchFor, turnBar } from "./latch.js";
+import { Examine } from "./examine.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
@@ -103,7 +104,7 @@ export class PlayRuntime {
   keyEvent(e, down) {
     if (!this.active || this.busy) return;
     if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
-      e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
+      e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended, or the card
     }
     if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
     if (down && this.player.peeping && ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) { this.unpeep(); return; }   // a step: the eye back
@@ -362,6 +363,11 @@ export class PlayRuntime {
   }
   lookedAt(id, within) { return this.look.id === id && this.look.dist <= within ? this.look.t : 0; }
   async panel(spec) { return this.modal(() => this.hud.panel(spec)); }
+  async examine(t, title, text) {                      // a small thing taken up in the hands (examine.js): dragged to turn, put back
+    const ex = this.examining = new Examine(this, t);
+    try { await this.modal(() => this.hud.examine({ title, text, turn: (dx, dy) => ex.turn(dx, dy) })); }
+    finally { ex.end(); this.examining = null; }
+  }
   async choose(spec) {                                 // a multiple choice: the index picked. Beside `who` (a cast member), at `on` (a thing), else under the reticle
     const f = spec.who && this.stage.cast[spec.who], t = spec.on && this.byId[spec.on], W = () => this.hud.root.clientWidth, H = () => this.hud.root.clientHeight;
     const anchor = f ? () => besideAt(this.stage.camera, f, W(), H()) : t ? () => this.anchorAt(t) : null;
@@ -378,7 +384,7 @@ export class PlayRuntime {
     if (document.pointerLockElement === this.box) document.exitPointerLock();
     this.hud.locked(false);
     const v = await show();
-    this.busy = false; this.hud.locked(false);
+    this.busy = false; this.hud.locked(false); this.since = performance.now();   // the Esc that closed it isn't a pause too
     try { await this.box.requestPointerLock(); } catch (e) { }   // back to looking (a click does it if the browser says no)
     return v;
   }
@@ -858,6 +864,7 @@ export class PlayRuntime {
     }
     for (const x of this.lenses || []) followLeaf(x.l, x.door);
     for (const x of this.latches || []) followLeaf(x.l, x.door);
+    if (this.examining) this.examining.tick(dt);
     for (const t of this.triggers) {
       const now = this.isIn(t), was = this.inside.has(t.id);
       if (now && !was) { this.inside.add(t.id); this.emit({ type: "enter", id: t.id }); }

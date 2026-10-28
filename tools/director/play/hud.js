@@ -176,6 +176,26 @@ export class Hud {
   // a panel: {title, text} to read, {title, code: n} for a code lock, or {title, name: the default} for the player's
   // name. Resolves with the code typed, true when a text is closed, the name typed (the default when it's left empty or
   // with Esc), or null when it's left (Esc, Close)
+  // a thing taken up in the hands (play/examine.js): its name and words under it, a drag anywhere else turns it, Esc,
+  // E or the button puts it back
+  examine(spec) {
+    return new Promise(done => {
+      const p = mk("div", "ph-exam"), card = mk("div", "ph-card"), hint = mk("div", "ph-exam-hint", "drag to turn it");
+      card.append(mk("div", "ph-title", named(spec.title) || ""));
+      if (spec.text) card.append(mk("div", "ph-text", named(spec.text)));
+      const back = mk("button", "ph-btn ph-close"); back.append(key("Esc"), mk("span", "", "Put it back"));
+      card.append(back); p.append(hint, card);
+      let drag = null, finish;
+      p.onpointerdown = e => { if (e.target.closest(".ph-card")) return; drag = { x: e.clientX, y: e.clientY }; p.classList.add("turning"); try { p.setPointerCapture(e.pointerId); } catch (x) { } };
+      p.onpointermove = e => { if (!drag) return; spec.turn(e.clientX - drag.x, e.clientY - drag.y); drag = { x: e.clientX, y: e.clientY }; };
+      p.onpointerup = p.onpointercancel = () => { drag = null; p.classList.remove("turning"); };
+      const kd = e => { if (e.key === "Escape" || e.code === "KeyE") { e.preventDefault(); finish(); } };
+      finish = () => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(true); };
+      back.onclick = () => finish();
+      window.addEventListener("keydown", kd, true);
+      this.modal(p); this.root.append(p);
+    });
+  }
   panel(spec) {
     return new Promise(done => {
       const p = mk("div", "ph-panel"), card = mk("div", "ph-card");

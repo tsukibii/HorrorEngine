@@ -26,6 +26,8 @@ CHECKS passing before each push:
 - **Footsteps** (`play/steps.js`): the player's steps by the room's `floor` (the format always said it sets them), a
   step a stride of ground covered, softer crouched, a creak now and then on wood, never the same sound twice running;
   and the cast's, heard from where they walk (through walls, fainter with distance), hidden in a locker too.
+- **Examining** (`play/examine.js`): a small `inspect` thing (0.6 m or less) is taken up in the hands, the thing
+  itself in front of the eye; a drag turns it (the Pilot's photo turned over), its words under it, Esc puts it back.
 - **The latch** (a door's `latch`, `play/latch.js`): a thumb turn on the inside face; a click locks the shut door or
   unlocks it; from outside it's Locked; `{"locked": door}` holds while it is (lock up, then the handle turns).
 - **From the user's notes** (`/chart`, `/build-game`): the chart script reads a mess to mop (a stain), the fuse box (a
@@ -41,7 +43,7 @@ CHECKS passing before each push:
   someone shown while you look, gone after), and the quick beat *The flashlight flickers* (or dies). The pickers know
   stains and breaker boxes; DESK builds each into the Sample.
 - Not done: the guide's pictures (`guide/help.jpg` still shows the old keys: `guide_shots.mjs`), the shelf's own dirt and metal
-  steps (they borrow carpet's and concrete's), and Unreal for all six (RUNNER_SPEC says how).
+  steps (they borrow carpet's and concrete's), and Unreal for all seven (RUNNER_SPEC says how).
 
 ## 0b. Before that (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
 

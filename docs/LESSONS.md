@@ -942,3 +942,19 @@ slams the front door and locks it behind you (`door` `lock`), and a thumb turn t
 player walk straight out of the story. The latch now keeps its own lock (`latched`) apart from the door's: it locks and
 unlocks only what it locked, and against the story's lock or a key's it won't turn. Anything new that opens, unlocks or
 moves past something should first ask what else already holds it shut, and leave that alone.
+
+## The key that closes a card keeps going (2026-10-28)
+
+Putting the examined photo back with Esc paused the game straight after. The HUD's Esc handler (a capture listener,
+first to run) closed the card and resolved its promise; the runtime's `modal` then set `busy` back to false in a
+microtask, which runs between listeners, so by the time the same keydown reached the runtime's own handler the game
+was no longer busy and Esc meant pause. Text cards closed with Esc did the same; the tests had always closed them
+with the button. The runtime's guard for "an Esc meant for the scene that just ended" (`since`, 400 ms) now starts
+when a card closes too. A key that ends one thing must be checked against everything else listening for it.
+
+## A test that touches the story's things can change its ending (2026-10-28)
+
+PLAY's new examining step looked at the Pilot's kitchen photo, and twenty steps later the walk out onto the porch
+ended in "Mother's day" instead of the good ending: looking at that photo is the Pilot's secret (`found_photo`). The
+step itself was fine. Before a test step uses one of a game's things, check what the story hears from it (`story.py
+flow`, a grep for its id); use one nothing listens to (the answering machine), or give the step a thing of its own.

@@ -67,7 +67,7 @@ last one repeated. A line can instead start a scene, an interactive cinematic or
   the thing highlights, with a prompt (`E Open`, `E Hide`, `E Talk`). Hold-to-use for some things. Styled by the UI
   theme (§10).
 - **Doors**: open and close on their hinges or slides (the kit has them), locked by an item, the tricks (slam).
-- **Inventory**: pickups and keys, notes you read; examining an item comes later.
+- **Inventory**: pickups and keys, notes you read; examining a small thing: built 2026-10-28 (below).
 - **Objectives** on screen, set by beats (the format has `objective`).
 - **Checkpoints, death and retry**: the format has them; Play mode keeps the branch map's progress as the Watch does.
 - **The HUD**: subtitles (English only: DECISIONS 2026-10-27, notes), the prompt, a hidden or seen cue (a vignette, a quiet heartbeat), the
@@ -179,6 +179,10 @@ playback; Generate stays the one button.
 - **The peephole** (built 2026-10-28, the same ask): a door with `peephole` has a lens on both faces; a click puts the
   eye to it (the other side through a wide lens in a round hole, a little room to look about), a click or a step takes
   it back, and `{"peeping": door}` holds meanwhile: the knock, the look, nobody there (`play/peephole.js`).
+- **Examining** (built 2026-10-28, the same ask): a small thing you look at (`use: inspect`, its longest side 0.6 m or
+  less) is taken up in your hands: the thing itself in front of the eye, drawn over the room, lit from your shoulder;
+  a drag turns it (the photo turned over to read its back), its words under it, Esc or E puts it back where it was; a
+  bigger thing keeps the card (`play/examine.js`).
 - **The latch** (built 2026-10-28, the same ask: a shift ends locking up): a door with `latch` has a thumb turn on the
   face of the room that holds it; a click locks it shut or unlocks it (its bar across or upright), and from that side a
   click on the locked door unlocks it; from the other side it's Locked. It undoes only its own lock: the door the story

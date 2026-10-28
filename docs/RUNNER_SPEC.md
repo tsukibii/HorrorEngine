@@ -160,6 +160,11 @@ scene: a camera fade, and control taken and given back softly.
   looking out (a cine camera with a wide lens and a fisheye post-process: barrel distortion, a round black mask with
   the brass rim, chromatic fringe at the edge), the look held to a cone (32° by 22°), the HUD away; `IA_Interact` or any
   move takes it back. `peeping` holds while there.
+- **Examining** (`use: inspect` on a thing whose longest side is 0.6 m or less, play/examine.js the reference): the
+  actor's mesh copied onto a component on the camera (0.36 m ahead, its longest side 0.17 m, a thing lying flat tilted
+  to show its top), drawn after the world (custom depth or an overlay pass, so it never sinks into a wall), a small warm
+  light at the right shoulder; the original hidden; a mouse drag turns it about the view's axes, the text widget
+  under it; Esc or E puts it back, and `use` is heard then. Bigger things keep the text widget.
 - **The latch** (a door's `latch`, play/latch.js the reference): a thumb turn on the leaf's face in the room that holds
   the door, a hand above the handle, with a collider a hand wide; `IA_Interact` on it locks the shut door or unlocks it
   (its bar turned across or upright, the shelf's `latch`), and from that side `IA_Interact` on the locked door unlocks
