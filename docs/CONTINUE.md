@@ -31,6 +31,10 @@ writer block flow. On a new branch off `dev-002`, in a new folder:
 - **Revised again** (DECISIONS 2026-10-28, late night): the sister, Natsuki, is honest and he's too ill to see her
   (the names one letter apart), they were thirteen so no police ending (Okuribi now), the pills as to-do tasks, the
   secret ending (Mō ii yo) off the pills with the call and the geta.
+- **Third pass** (DECISIONS 2026-10-28, small hours): the pills decide what you see (his romance or her real faces,
+  her name, her eyes, her corrections; reflections always true); no confession; three endings, three pieces of the
+  truth (Okuribi, Thank You for Tonight, Don't Let Go with the police); the branches are secrets. Three questions at
+  the end of the abstract.
 - **Waiting on the user:** a yes on the abstract. Then step 3: the flow as the writers' room's
   chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
   `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in

@@ -336,6 +336,7 @@ significant factor.
 | **Higurashi: Onikakushi** (2002) | a boy's paranoia turns his friends' kindness into a plot (a prank ohagi he believes is full of needles) | the tea that tastes funny; kindness read as poison |
 | **Retribution / Sakebi** (Kiyoshi Kurosawa, 2006) | a detective investigating drownings comes to suspect himself, haunted by a drowned woman in red | the man suspicious of his visitor is the one with something under the water; a red scarf |
 | **Silent Hill 2** (2001) | a man's guilt meets him as a woman who is almost his dead wife | the visitor as guilt; ours is a living woman (except in the secret ending) |
+| **Joker** (2019) and **Joker: Folie à Deux** (2024) | Arthur's romance with his neighbour is revealed as imagined: the scenes replay without her in them, and she's frightened of him | off his pills Haruki lives a romance with her that isn't happening; the secret ending replays the night with her real faces |
 | **Chilla's Art** | short games, a to-do list in an ordinary place, slow dread, two or three endings | the tasks and the pace (docs/research/chillas_art.md) |
 | **The Exit 8** (2023) | spot what's different | the mole on the wrong side, the hand she holds her chopsticks in |
 | our **Come Over** (the writers' room's example script) | an old friend back after ten years, who turns out to be a ghost | our first misdirection, not our answer |

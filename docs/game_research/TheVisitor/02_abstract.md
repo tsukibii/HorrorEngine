@@ -1,10 +1,11 @@
 # The Visitor (来訪者): the abstract (step 2)
 
 > Waiting for the user's yes. Nothing is charted or built until then. The research behind it: `01_research.md`.
-> Revised twice after the user's notes (DECISIONS 2026-10-28, night, and late night). The second pass: the twist
-> stays the sister, but **she isn't tricking him**: he is too ill to see who she is, and she reacts confused; the
-> sisters' names are nearly the same; it happened when they were children, so the police ending is gone; his pills
-> are tasks on the to-do list now and then; the secret ending needs him *not* to take them, and one thing more.
+> Third pass, after the user's notes (DECISIONS 2026-10-28, small hours). What changed: **the pills decide what you
+> see** (her name, her eyes, her faces, whether she corrects you); off them he's living a romance with her that isn't
+> happening (Arthur and Sophie in *Joker*); **nobody confesses**, because the player doesn't know what happened either;
+> **each ending shows one piece of the truth**, and only all three together show the whole night; **little branching
+> dialogue**: the story runs one way, and the branches are for secrets and for finding things out yourself.
 
 ## The pitch
 
@@ -13,339 +14,280 @@ mother's apartment in months. It's her first Obon since she died, and it's twelv
 Kikuchi, the girl he loved when they were thirteen, vanished on the night of the river festival. A summer card came in
 July: Natsu is coming home for Obon, and she wants to visit. He has twenty minutes to tidy up.
 
-She arrives in a summer storm, soaked and shivering, and she knows everything about their childhood. She calls him
-Haru-nii. Her eyes are Natsumi's lilac, almost. As the fireworks go up and the lanterns for the dead float down the
-river, the evening keeps going wrong: she looks confused when he talks about the two of them, hurt when he mentions
-the promise they made, frightened when he says her name. Is she a ghost come home for Obon? Is something wearing her
-face? Or is the girl at his table someone he can't let himself see?
+She arrives in a summer storm, soaked and shivering, and she's everything he remembers: Natsumi's lilac eyes,
+Natsumi's laugh, a look that says she's missed him too. The evening is the one he's waited twelve years for. Except
+for the reflections. In the black TV screen, in the night window, in the bathroom mirror, the girl at his table has
+brown eyes, and she isn't smiling.
 
 ## What kind of game
 
 - First person, one night, one apartment (a 2LDK) with its balcony and corridor. About 75 minutes on a first
-  playthrough: her lines type out with a blip and can't be skipped. Played again for the other endings and the
-  secrets.
+  playthrough: her lines type out with a blip and can't be skipped.
 - Chilla's Art's gameplay: a to-do list, things you pick up, open, wipe, carry and look at; her requests (she asks,
-  waits, then carries on); now and then the to-do list says *take your pills*. No chases, no quick-time events, no
-  game overs: bad things happen in endings.
-- L.A. Noire's talks: close-ups where her face answers before her words. You answer with an act and a thought, never
-  a speech: `[ Greet ] She's probably cold. I should let her inside.`
-- **Two mysteries at once:** who she is (read from her face), and who you are (read from your own answers, thoughts
-  and hands). They turn out to be the same mystery.
-- Three endings (the intended one, the other way it could have gone, a secret one), secrets that rejoin the story,
-  and about two dozen achievements.
-- English text first, simple enough to swap for Japanese through the string tables later. No voices.
+  waits, then carries on); and three times, **Take your pills**. No chases, no quick-time events, no game overs.
+- L.A. Noire's close-ups, but **the face you're reading may not be hers**: the camera is Haruki's eye.
+- **The story runs one way.** Dialogue choices change her reactions and what you learn, and open secrets; they don't
+  split the story. What decides the ending is mostly the pills.
+- **Three endings, three pieces.** No ending tells the whole truth. The intended ending gives her side, the other one
+  gives his guilt, the secret one gives the night itself, and only together do they make the picture.
+- Secrets that rejoin the story, and about two dozen achievements. English text first, simple enough to translate
+  through the string tables later. No voices.
 
 ## The place and the day
 
 - **Kirisawa** (fictional), a small river town in Iwate, Tohoku. Below the bridge, a low weir of stones crosses the
   river; kids used to run across it to watch the fireworks from the sandbank. It was forbidden.
 - **16 August 2026**, the last day of Obon, when families send the dead back with a fire at the door (*okuribi*) and
-  paper lanterns down the river (*tōrō nagashi*). From 17:30, in the heat and the cicadas, to first light just before
-  five.
-- **The weather:** an evening storm (*yūdachi*) breaks as she arrives, passes before the fireworks, and comes back in
-  the small hours to take the power.
-- **The apartment**: unit 302, third floor of a 1990s block. A 2LDK:
+  paper lanterns down the river (*tōrō nagashi*). From 17:30, in the heat and the cicadas, to first light.
+- **The weather:** an evening storm (*yūdachi*) breaks as she arrives and comes back in the small hours to take the
+  power.
+- **The apartment**: unit 302, third floor of a 1990s block, thin walls. A 2LDK:
 
 | Room | What's in it | What happens there |
 |---|---|---|
-| Genkan and hall | shoes and slippers; the shoe cabinet's drawer (a flashlight, his mother's funeral salt); the door's peephole and latch | her arrival, the officer, the last choice at the door |
-| LDK (kitchen and living room in one) | kettle, hob, fridge (a photo, notes in his handwriting); the low table with the mail; an electric fan, a mosquito coil, a wind chime; the TV; the landline with its answering machine; the balcony door | tea, somen, every talk at the table, the news, the calls |
-| Washroom and bath | the sink and its mirror cabinet (his pills), the washing machine, the bath and its panel | the pills, running the bath, her reflection |
+| Genkan and hall | shoes and slippers; the shoe cabinet's drawer (a flashlight, his mother's funeral salt); the door's peephole and latch | her arrival, the officer, the police |
+| LDK (kitchen and living room in one) | kettle, hob, fridge (a photo, notes in his handwriting); the low table with the mail; an electric fan, a mosquito coil, a wind chime; the TV (its black screen a mirror); the landline with its answering machine; the balcony door | tea, somen, the talks, the news, the calls |
+| Washroom and bath | the sink and its mirror cabinet (his pills), the washing machine, the bath | the pills, running the bath, the mirror |
 | Toilet | separate, as in most Japanese flats | somewhere to be alone |
-| Haruki's room (Western style) | bed, desk, the closet he taped shut | the wall: what he's done for twelve years |
-| Guest room (washitsu, tatami) | his mother's room: her butsudan with the Obon offerings (her photo, the bell, two cucumber horses, an eggplant cow, a drawer with her diary), the white lantern of a first Obon, the oshiire with the futons | incense, the futon, where she sleeps, the drawer |
-| Balcony | the laundry pole, the air conditioner's unit; the river, the bridge, the weir | the fireworks, the lanterns, first light |
-| The building's corridor | the notice board with missing posters, the stairs | seen from the door; one ending's last image |
+| Haruki's room (Western style) | bed, desk (his diary), the closet he taped shut | the wall: twelve years of string |
+| Guest room (washitsu, tatami) | his mother's room: her butsudan with the Obon offerings (her photo, the bell, two cucumber horses, an eggplant cow, a drawer), the white lantern of a first Obon, the oshiire with the futons | incense, the futon, where she sleeps |
+| Balcony | the laundry pole; the river, the bridge, the weir; the glass door behind you | the fireworks, the lanterns, first light |
+| The building's corridor | the notice board with missing posters, the stairs | seen from the door |
 
 ## The people
 
-| Who | Who they are | What they want, and their tells |
+| Who | Who they are | Notes |
 |---|---|---|
-| **Haruki Onodera**, 25 (you) | quiet, kind, frayed. He has lived alone in his mother's apartment since she died last winter; this is her first Obon. Schizophrenia since 20; skipping his pills for two weeks. Threw his phone in the river in the spring ("it was listening") | in his head, Natsumi never died: she grew up in Tokyo, and tonight she's back. His tells, for the player to find: scarred palms, locks checked twice, a closet taped shut, notes to himself, thoughts that rewrite themselves |
-| **Natsuki Kikuchi**, 21: the visitor | Natsumi's little sister, *Ko-natsu* ("little Natsu") to the kids, who tagged along behind them and called him Haru-nii. A university student in Sendai. Honest, warm, careful | came, as herself, to ask him what happened to her sister; her card said so. She doesn't know he's ill until tonight. Her face: confused, then hurt, then frightened, and at last sorry for him. Once she understands who he thinks she is, she sometimes plays along, because it's the only way he'll talk |
-| **Natsumi Kikuchi** (she'd be 25) | his childhood friend and first love, *Natsu*. Vanished 16 August 2014, aged 13; declared dead this spring | in photos, the album, on the fridge: long hair, a red yukata, pale lilac eyes (rare; the kids called her Murasaki), left-handed, two sugars, stole his negi. In the secret ending, more than photos |
-| **Akiko Onodera** | his mother; died in the bath last winter; the photo on the butsudan | lied for him twelve years ago (her diary) |
-| **Officer Sasaki**, about 55 | from the local police box; searched for Natsumi in 2014; knows both families | one scene at the door |
-| Voices (text only) | the TV newsreader, his visiting nurse and his aunt on the answering machine; once, on a tape, his mother | |
+| **Haruki Onodera**, 25 (you) | quiet, kind, frayed. Alone in his mother's apartment since she died last winter. Schizophrenia since 20; skipping his pills for two weeks. Threw his phone in the river in the spring ("it was listening") | in his head Natsumi never died: she grew up in Tokyo, and tonight she's come back to him. His tells, for the player to find: scarred palms, locks checked twice, the taped closet, notes to himself |
+| **Natsuki Kikuchi**, 21: the visitor | Natsumi's little sister, *Ko-natsu* ("little Natsu") to the kids; she tagged along behind them and called him Haru-nii. A university student in Sendai. Honest, warm, careful | came as herself to ask him about her sister; her card said so. She doesn't know he's ill. What she really feels tonight: confused, then uneasy, then afraid, and sorry for him |
+| **Natsumi Kikuchi** (she'd be 25) | his childhood friend and first love, *Natsu*. Vanished 16 August 2014, aged 13; declared dead this spring | in photos, the album, on the fridge: long hair, a red yukata, pale lilac eyes (rare: the kids called her Murasaki), left-handed, two sugars, stole his negi |
+| **Akiko Onodera** | his mother; died in the bath last winter; her photo on the butsudan | told everyone he was home by eleven that night |
+| **Officer Sasaki**, about 55, and a younger officer | the local police box; Sasaki searched for Natsumi in 2014 and knows both families | the door at 20:15; and, in one ending, the door at 03:40 |
+| Voices (text only) | the TV newsreader; his visiting nurse and his aunt on the answering machine | |
 
 **The names.** Natsumi (夏美) and Natsuki (夏希): both "summer", one letter apart in English and one kana apart in
-Japanese (なつみ, なつき). The Kikuchis named both daughters for the summer. The kids called them Natsu and Ko-natsu.
-When she signs her card "Natsuki", he reads "Natsumi"; when she says "it's me, Natsu", she means herself; when he says
-"Natsu", she thinks he means her. Haru (spring) and Aki (autumn) are still in his and his mother's names.
+Japanese (なつみ, なつき); the kids called them Natsu and Ko-natsu. Her card is signed *Natsuki*, and he reads
+*Natsumi*. On the phone she says "It's me, Natsu," and she means herself.
 
-## Her eyes
+## What the pills decide
 
-Natsumi's eyes were a rare pale lilac with a darker ring, the thing everyone remembered. Natsuki's are brown. But the
-camera is Haruki's eye, so **off his pills the player sees her with Natsumi's lilac eyes**, and her face a little
-softer and younger, a little more like the photos. The truth is in what his illness doesn't reach: in the black TV
-screen, the night window and the bathroom mirror her eyes are brown. When he takes his pills, they're brown in front of
-him too, and her face is simply her own. (The Character Studio's eye does both pairs: one character, two irises.)
+The camera is Haruki's eye, and the evening begins the way he sees it: he's been off his pills for two weeks. **His
+illness rewrites her and only her.** The card, the officer, the answering machine, the news and every reflection stay
+true; she alone is shown as he wants her.
 
-## Two mysteries: her, and you
+| | Off his pills (how the night starts) | After a pill |
+|---|---|---|
+| **What he calls her** | Natsu (the name is a variable in every line he speaks or thinks) | Natsuki, Ko-natsu |
+| **Her eyes** | Natsumi's lilac | her own brown |
+| **Her faces** | the romance he's playing: shy smiles, a blush, a look held a beat too long, her hand finding his | what's really there: puzzled, polite, uneasy, frightened |
+| **Her corrections** | never seen: when she says "Haru-nii, I'm Natsuki", the line simply isn't there | on screen, gently at first, then plainly |
+| **Some of her lines** | warmer than she meant them ("I missed you." for "I missed everyone.") | as she said them |
+| **His head** | the altar's bell, the white lantern turning, the TV saying his name, figures on the balcony | quiet |
+| **Reflections** | her real face and her brown eyes, in the TV, the window, the mirror: the only place the truth shows | the same as in front of him |
 
-### Clues about her (read from her face)
-What she knows (all the childhood, the festival, the fireflies, the time he broke his arm: she was there) and what she
-doesn't (the private things between Natsumi and him); no sugar; right-handed; the negi she pushes aside; the age she
-looks; her eyes in reflections; her confusion every time he speaks as if she were Natsumi.
-
-### Clues about you (read from your own answers, thoughts and hands)
-The player starts out investigating her and slowly notices the evidence is about him.
-- **What she actually says, and what you hear.** The text is honest; his thoughts aren't. The officer says "Natsuki"
-  on screen, and the inner monologue thinks "He knows Natsumi's back." Off his pills, some of her lines *retype
-  themselves* as they come: "It's me, Natsuki" types out, backs up, and becomes "It's me, Natsumi". On his pills,
-  they stay.
-- **The answers you're offered tell on you.** Some choices only someone in his state would think of, and seeing them
-  is a clue: `[ Lock it ] Twice. Then check it again.`, `[ Turn off the TV ] Before it says my name.`, `[ Hide my
-  hands ] She doesn't need to see them.`
-- **Her questions are probes, and the true answers expose him.** "Do you still go down to the river?" `[ Lie ] I
-  don't go out.` / `[ Truth ] Every year. Today.` Honesty costs him and earns her trust.
-- **His own thoughts correct themselves.** *"I walked her home that night."* backs up and becomes *"I walked home
-  that night."*
-- **What your hands show.** When he reaches for a cup or a door, his palms are scarred (from the weir's stones). The
-  inner monologue never mentions it.
-- **What you find in your own home.** The card, signed *Natsuki*. Notes on the fridge in his handwriting ("Don't
-  answer the phone after eleven"; "Pills: did you?"). The taped closet. And two cucumber horses on his mother's Obon
-  altar: one for his mother, and one he made for Natsumi. Part of him has always known she's dead.
-
-Every clue about him is a **memory** (a flag). The more he has, the more of the truth he can tell at the end; with
-few, his confession is partial, and her face shows she knows it.
+So the mocap is shot twice for about a dozen key moments: **his version** (the romance) and **hers** (what's really
+happening). Off the pills the player sees his version in front of them and hers in the glass. The pills are tasks on
+the to-do list three times (after dinner, at midnight, at two), each with a time to do it in; let it pass and it fails,
+struck out in red. The first one doesn't cure him (no pill works in minutes); it's the moment he chooses to stop
+looking away. Game logic, not pharmacology.
 
 ## What the player believes, in order (the believability ladder)
 
-Each strange thing arrives with an ordinary explanation first.
-
-1. She looks younger than he expected. → In his head Natsumi grew up alongside him, 25 like him; the woman at the door
-   looks 21. Make-up; Tokyo; he's remembering wrong.
+1. Natsu has come back, and she still likes him. → Twelve years; they were children; it's Obon, a night for
+   homecomings.
 2. A black-bordered letter in his unopened mail: Natsumi was declared dead this spring, and the Kikuchis invite him to
-   her first Obon. → A mistake? Then who sent the card? It's Obon: the dead come home *(the first ghost reading)*.
-3. She's soaked and shivering in August and asks for something hot. She says the tea is perfect, and her mouth
-   tightens; later the tea is in the sink. → The storm; politeness. → She lies about little things?
-4. She calls him Haru-nii; Natsu always said Haru-kun. She eats right-handed. Her eyes are lilac in front of him and
-   brown in the mirror. → Teasing; he's remembering wrong; the light. → Something is wearing Natsu's face *(the second
-   ghost reading)*.
-5. A woman from the next town has been missing since the 12th; her photo on the news looks like the visitor. She asks
-   what he keeps looking at. → Coincidence. → She's mixed up in something *(she's dangerous)*.
-6. The officer at the door greets her as "Natsuki-chan" (on screen) and calls Haruki "the Onodera boy. From back
-   then. Twelve years today." → Haruki heard "Natsumi"; everyone was questioned. → What happened back then? *(the
-   first time the player suspects Haruki)*
-7. His hands, his notes, the second cucumber horse, the pills on the to-do list, the nurse's messages, the wall in his
-   closet. → He's ill, and the strange things are in his head *(the Shutter Island reading)*.
-8. She overhears him talking about "our promise at the weir", and her face crumples: "Haru-nii... that was
-   Onee-chan." → She's Natsuki. She has been all night *(the truth about her, and about him)*.
-9. The old tape and the diary. → What his mother did *(the truth about that night)*.
-10. And yet, off his pills: a call that says "moshi" only once, small wet footprints, a lantern floating upstream *(what's
-    left over: the secret)*.
+   her first Obon. → A mistake? Then who's sitting at his table? *(a ghost come home for Obon)*
+3. She looks younger than he expected (in his head Natsumi grew up to 25 beside him; the woman at the door is 21).
+   She calls him Haru-nii; Natsu always said Haru-kun. She eats right-handed. → Teasing; he's remembering wrong.
+4. In the black TV screen her eyes are brown and she's sitting stiffly, watching him. → The light. → Something is
+   wearing Natsu's face *(possession)*.
+5. A woman from the next town has been missing since the 12th, and the officer at the door is asking about her. He
+   greets the visitor as "Natsuki-chan", and calls Haruki "the Onodera boy. From back then. Twelve years today." →
+   Everyone was questioned back then. → What happened back then? *(the first time the player suspects Haruki)*
+6. His scarred hands, his notes, the second cucumber horse he made, the pills, the nurse's messages, the wall in his
+   closet. → He's ill. The romance is in his head *(the Shutter Island reading, and the Joker one)*.
+7. After a pill: "Haru-nii... I'm Natsuki." She has been all night *(the truth about her)*.
+8. What happened at the weir: never told outright. Each ending gives a piece.
 
-## What really happened (for us, not the player)
+## The truth, and how it's split
 
-- **16 August 2014.** Haruki and Natsumi, thirteen, watch the fireworks from the sandbank and float a lantern for her
-  grandmother; eight-year-old Ko-natsu has gone home with their mother. He tells Natsumi he likes her. She laughs, not
-  unkindly (only the secret ending lets us hear what she actually said). He sulks. Walking home, the strap of her geta
-  snaps (a bad omen, everyone knows); she leaves the sandal on the bank and runs barefoot onto the weir, the river high
-  from the afternoon's storm: "Race you!" She slips on the stones. He goes into the water after her, tears his hands
-  on the weir, reaches, can't reach her. The current takes her at 23:47.
-- He runs home soaked, his hands bleeding, carrying her geta. His mother decides in a minute: she cleans his hands,
-  washes his clothes, and when the Kikuchis phone at two in the morning, tells them Haruki was home by eleven and that
-  the two of them said goodbye at the bridge. She is protecting a frightened child from the town, not from the law: a
-  child under fourteen can't be charged in Japan, and it was an accident. The search follows the road from the bridge;
-  the swollen river keeps her. Haruki says what his mother told him to say, and in time he believes it. He keeps the
-  geta.
-- **At 20 the illness comes.** In his mind Natsumi is alive in Tokyo, grown up as he is, and the girl on the posters
-  isn't her. For years he writes to her at her parents' address: love, apologies ("I should have held on"),
-  delusions.
-- **Last winter** his mother dies in the bath. **This spring** the Kikuchis have Natsumi declared dead and bury an empty
-  coffin. Natsuki, 21, finds his letters, which her parents never opened, and reads "I should have held on".
-- **In July** she sends him a summer greeting card: "Haru-nii, it's been so long. I'm coming home for Obon. Can I visit
-  on the 16th? I want to talk about Onee-chan. Natsuki." He reads Natsumi's name and nothing else.
-- **Tonight**, she means to ask him, gently, as herself. She doesn't know he's ill. By the album she understands that he
-  thinks she's her sister, and she has to decide whether to keep correcting him or let him talk to Natsu.
-- **Two things are true at once:** Haruki is ill, and Natsumi has never quite left. It's Obon, when the dead come home.
+**What happened (for us):** on 16 August 2014 Natsumi told Haruki, on the sandbank after the fireworks, that her
+family was moving to Tokyo at the end of the summer. He told her he liked her. Walking home, the strap of her geta
+snapped (a bad omen); she left the sandal on the bank and ran barefoot across the weir, the river high from the
+afternoon's storm. She slipped. He caught her wrist and held it, the current pulling, and then he let go. Whether he
+couldn't hold on or didn't, he has never let himself know. He ran home soaked, his palms torn by the weir. His mother
+cleaned his hands, washed his clothes, and when the Kikuchis phoned at two in the morning, told them Haruki had been
+home by eleven. He has lived inside that sentence ever since. In July, Natsuki found his letters to her sister ("I
+should have held on") and wrote to him.
+
+**No one confesses.** The player is finding out with him, and he doesn't remember. The pieces:
+
+| Ending | The piece it shows |
+|---|---|
+| **Okuribi** (intended) | **Her side.** Natsumi was leaving that summer, and she loved him back: her lantern for that night, never floated, with "Haru-kun, wait for me" on it. And the Kikuchis never believed he was home by eleven |
+| **Thank You for Tonight** (the other way) | **His guilt.** A page of his diary: twelve years of living a lie he can't name ("Mom said I was home. I let everyone believe it."). Feelings, never the cause |
+| **Don't Let Go** (secret) | **The night itself,** in flashes: the weir, her wrist in his hand, her voice, and his fingers opening. Then the present, repeating it the other way |
+
+Only all three answer the question the game asks: she loved him, she was leaving, he was there, he let go, his mother
+covered it, and he lived the lie until it came back for her sister.
 
 ## How it plays
 
-### Tasks, requests and the hidden clean-up
-The to-do list carries the night. The first task is hidden and timed: tidy up before she arrives (about two minutes
-from her call; the player isn't told). Take out the rubbish, wash the dishes, wipe the table, take in the laundry
-before the storm, set out his mother's Obon altar, put your things away. Whatever's left, she sees and comments on. If
-the pill organiser is still on the table she sees that too, and understands sooner that he's ill. After that come her
-requests: a towel, something hot, somen for dinner, the bath, the futon, and later more tea. She asks, waits where she
-is, and the scene carries on once it's done.
-
-### The pills (a task now and then)
-Three times the to-do list says **Take your pills** (after dinner, at midnight, when she wakes at two), each with a
-time to do it in; let it pass and the task fails, struck out in red. Each dose taken: her eyes are brown in front of
-him, her words stop retyping themselves, the hallucinations quiet, and the inner monologue stops reading fear as anger.
-None is required. At two in the morning the same pill can go into his mouth or into her tea.
-
-### Talks: reading her face (L.A. Noire, turned round)
-- The intimate moments are close-ups: at the low table, on the balcony, at the door. She speaks; her face (a mocapped
-  expression) answers before her words; you answer with an act and a thought.
-- Answers come in three kinds. **Trust her** (`[ Greet ]`, `[ Let it go ]`). **Look closer** (`[ Question ]`,
-  `[ Look ]`): she reacts, and a tell may show. **Name it** (`[ Recognise ] You're not Natsu. You're Ko-natsu.`):
-  offered only when he holds enough evidence, as L.A. Noire's accusations are.
-- **The narrator you can't trust:** Haruki's inner monologue tells you what her face means. Off his pills it reads her
-  confusion as lying and her fear as anger ("She's smirking"), which is how paranoia reads faces (research §7.2). The
-  performance itself shows a young woman who doesn't understand why he keeps talking to her as someone else. The
-  player learns to trust what they see over what they're told.
-- **She's reading you too.** Once she understands, every question she asks about that night is a gentle
-  interrogation, and each time he repeats the story about the bridge, her face tells you she knows it isn't true.
-
-### What's tracked
-- **Karma** (her trust): honest and kind answers raise it; lies, snooping she catches and cruelty lower it. It decides
-  whether she stays, how much she says, and how each ending plays.
-- **Evidence about her** (flags): the card, the age, "Haru-nii", her hand, the negi, her eyes in a reflection, the
-  officer's "Natsuki-chan", her bag, her call. Three or more unlock `[ Recognise ]`.
-- **Memories about him** (flags): the scars, the notes, the second horse, the true answers given, the corrections
-  seen, the wall, the tape, the diary. They decide how much of the truth he can tell.
-- **Signs** (flags): what happens off his pills that the illness doesn't explain (the single "moshi", the wet
-  footprints, the lantern going upstream, the bell at the altar, a second voice in the song).
-- **Doses** (0 to 3: the pill tasks done or failed).
+- **The hidden, timed clean-up** to start (about two minutes from her call; the player isn't told): rubbish, dishes,
+  the table, the laundry in before the storm, his mother's Obon altar, his things put away. Whatever's left, she sees
+  and comments on (two achievements). If the pill organiser is still on the table, she sees it.
+- **Her requests**: a towel, something hot, somen, the bath, the futon, more tea. She asks, waits, and the scene
+  carries on once it's done.
+- **Take your pills**, three times, each able to fail.
+- **Talks** at the low table, on the balcony and at the door: close-ups, her face answering before her words, his
+  answers an act and a thought. The choices don't fork the story; they change what she says back, what you notice and
+  what you learn, and some open secrets. A few give him away just by being offered (`[ Lock it ] Twice. Then check it
+  again.`, `[ Hide my hands ] She doesn't need to see them.`).
+- **Looking**: the reflections are the game's real clue. A player who keeps glancing at the TV screen or the window
+  learns the truth long before Haruki does.
+- **What's tracked:** **doses** (0 to 3); **devotion** (how far he leans into the romance off his pills: choices like
+  `[ Hold her hand ] She wants me to.`); a few flags (the card read, the reflection seen, the letter read, the wall,
+  her room entered at night).
 
 ## The night, part by part
 
 | Part | Time | Min | What happens |
 |---|---|---|---|
-| Cold open, then **The Clean-Up** | 17:30 | 8 | Black: rushing water, a girl laughing, a wooden sandal on stone. Haruki wakes on the tatami under the fan, cicadas outside. "August sixteenth. Twelve years today." "Natsu's coming." The landline: "Moshi moshi, Haru-nii? It's me, Natsu. I'm at the station. Twenty minutes. Don't clean for me." The hidden, timed clean-up. Things you may find while tidying: her card (signed *Natsuki*: "Natsumi," thinks the inner monologue); the black-bordered letter from the Kikuchis; the photo on the fridge (Natsumi at 13 in a red yukata, lilac eyes, a ramune bottle in her left hand, a small girl holding her sleeve); his notes on the fridge; the TV news (a woman missing from the next town; a storm warning); the funeral salt; the taped closet ("Not today."); the Obon altar's two cucumber horses. Thunder. The knock. |
-| 1. **The Visitor** | 18:10 | 12 | The storm breaks. The peephole: she's soaked, smiling, waving at the lens. "Haru-nii? I can see your shadow under the door." `[ Greet ] She's probably cold. I should let her inside.` or `[ Question ] She looks younger than I remember.` He says "Natsu. You came back." Her face: a flicker of confusion ("...I said I would."). The genkan; his mother's slippers. Her verdict on the flat. Requests: a towel, then something hot ("I'm freezing. Isn't that silly, in August?"); two sugars, the way Natsu took it; she says it's perfect, and her mouth says otherwise. A talk at the table: university in Sendai (the inner monologue: "Tokyo"), his mother. She lights incense at the altar for his mother; her eyes stop on the second horse: "Who's the second one for, Haru-nii?" |
-| 2. **Somen** | 19:30 | 14 | Request: somen (boil, cool it under the tap, cut the negi). Dinner talk: the river summers, the fireflies, the time he broke his arm (all true: she was there, smaller, behind them). She picks out her negi; Natsu used to steal his. She eats right-handed. Something wet brushes his ankle under the table while both her hands are on it ("Sorry. My feet are still wet."). "Do you still go down to the river?" The first fireworks; the doorbell at 20:15. Officer Sasaki, canvassing for the missing woman, sees her at the table: "Natsuki-chan? Home for Obon? Your mother must be glad." To Haruki: "You're the Onodera boy. From back then. Twelve years today." The inner monologue: "He knows Natsu's back." `[ Shut the door ] He's looking at her too long.` or `[ Let him in ] Ask him in for tea.` The pill task appears: after dinner. |
-| 3. **The Bath and the Album** | 21:00 | 12 | Request: run the bath (his mother's bath; he showers now). She bathes, humming. The flat is yours: her bag (a student ID, *Kikuchi Natsuki*; Natsumi's poster from 2014; his own letters to Natsumi); the bathroom cabinet, the mirror. She comes out in his mother's old yukata. "Can I use your phone? Don't listen, okay?" (to her mother: "Mom... he thinks I'm Onee-chan. No. I'm staying. He knows something."). The album at the table: Natsu's eyes in every photo; the small girl in every photo, a caption under one, *Ko-natsu & Haru-nii*. "Let's play. Like we used to." Kagome Kagome: her hands over your eyes. Who's right behind you? |
-| 4. **The Lanterns** | 22:30 | 10 | The balcony, the air still wet: lanterns for the dead drift down the river under the bridge. He talks about "our promise at the weir". Her face crumples: "Haru-nii... that was Onee-chan." `[ Recognise ]`, if he can; otherwise his mind turns it into a test. She decides to stay, and asks: "Do you remember the last time you watched them? With her?" `[ Remember ] We walked home over the weir.` or `[ Deny ] We said goodbye at the bridge.` One lantern is floating upstream. Her eyes go to the door behind him, and she goes in. At 23:47 the phone rings: "Moshi." Request: the futon in his mother's room. The pill task: midnight, the anniversary over. |
-| 5. **Ushimitsu** | 01:00 | 12 | Alone, in the hour of ghosts. The storm comes back. Off his pills, his head is loud: the altar's bell, the white lantern turning by itself, the TV's static saying his name, figures on the balcony, wet footprints, knocking inside the oshiire. The power goes; the flashlight; the mosquito coil and the altar's candle burn on. The wall in his closet: every missing person in Iwate since 2014, Natsumi in the middle, string, his handwriting; and her geta, its strap snapped. The answering machine: the nurse, his aunt, and an old tape in his mother's hand, marked 8/16. Her futon in the dark: her eyes are open. The altar's drawer: the diary. At two she can't sleep: "Make me tea like before?" The pill task again: his mouth, or her cup. |
-| 6. **Right Behind You** | 02:30 | 8 | The last talk at the table. If he's named her, she asks as herself: "What happened to my sister, Haru-nii?" If not, she asks as the only person he'll answer: "What happened to me on the weir, Haru-kun?" What he can say depends on what he's remembered. |
-| Ending | 03:00 to first light | 3 to 5 | One of three. |
+| Cold open, then **The Clean-Up** | 17:30 | 8 | Black: rushing water, a girl laughing, a wooden sandal on stone. Haruki wakes on the tatami under the fan, cicadas outside. "August sixteenth. Twelve years today." "Natsu's coming." The landline: "Moshi moshi, Haru-nii? It's me, Natsu. I'm at the station. Twenty minutes. Don't clean for me." The hidden clean-up, and what you may find doing it: her card, signed *Natsuki*; the black-bordered letter; the photo on the fridge (Natsumi at 13 in a red yukata, lilac eyes, a small girl holding her sleeve); his notes; the news (a missing woman; a storm warning); the funeral salt; the taped closet ("Not today."); the altar's two cucumber horses. Thunder. The knock. |
+| 1. **The Visitor** | 18:10 | 12 | The peephole: she's soaked, waving at the lens. `[ Greet ] She's probably cold. I should let her inside.` or `[ Question ] She looks younger than I remember.` "Natsu. You came back." His version: she smiles as if she's waited for this. The genkan; his mother's slippers. Her requests: a towel, then something hot ("I'm freezing. Isn't that silly, in August?"); two sugars, the way Natsu took it. Talk at the table. She lights incense at the altar; her eyes stop on the second horse: "Who's the second one for, Haru-nii?" The TV is off, and in its black glass she isn't smiling. |
+| 2. **Somen** | 19:30 | 14 | Request: somen. Dinner talk: the river summers, the fireflies, the time he broke his arm (all true: she was there, smaller, behind them). She picks out her negi; Natsu used to steal his. His version: she laughs at everything he says. The doorbell at 20:15, the first fireworks: Officer Sasaki, asking about the missing woman, sees her at the table: "Natsuki-chan? Home for Obon? Your mother must be glad." To Haruki: "You're the Onodera boy. From back then. Twelve years today." The first **Take your pills**. |
+| 3. **The Bath and the Album** | 21:00 | 12 | Request: the bath (his mother's bath; he showers now). She bathes, humming. The flat is yours: her bag (a student ID, *Kikuchi Natsuki*; his own letters to her sister); the mirror cabinet. "Can I use your phone? Don't listen, okay?" (to her mother: "He keeps calling me Onee-chan's name."; off his pills he hears only "...I'm staying."). The album: Natsu's eyes in every photo, the small girl in every photo, a caption, *Ko-natsu & Haru-nii*. Kagome Kagome: her hands over your eyes. Who's right behind you? |
+| 4. **The Lanterns** | 22:30 | 10 | The balcony: lanterns for the dead drift down the river. Off his pills: the romance's peak, her head on his shoulder; in the glass door behind them, she's rigid, eyes wide. On them: "Haru-nii... I'm Natsuki. Natsumi's gone." Either way she asks, "Do you remember the last time you watched them? With her?" One lantern floats upstream. At 23:47 the phone rings: "Moshi." Request: the futon in his mother's room. **Take your pills**: midnight, the anniversary over. |
+| 5. **Ushimitsu** | 01:00 | 12 | Alone, the hour of ghosts. The storm comes back; the power goes; the flashlight; the mosquito coil and the altar's candle burn on. The wall in his closet: every missing person in Iwate since 2014, Natsumi in the middle, string, his handwriting; and her geta. His diary on the desk. The answering machine: the nurse, his aunt. Her futon in the dark: her eyes are open. At two, **Take your pills** once more; and off them, `[ Watch her sleep ] She said she'd stay.` |
+| 6. **Morning** | to first light | 8 | One of three. |
 
 ## The three endings
 
-**1. The intended ending: Okuribi** (送り火, *the sending-off fire*). He tells her the truth: the weir, the geta on the
-bank, going in after her, running home, the story about the bridge that his mother gave him. He gives Natsuki the
-geta. Her face goes through everything (anger, grief, then something like relief): "You were thirteen, Haru-nii. I
-don't blame the boy. I blame the twelve years." She phones her parents from his landline: "I know where she went in."
-Nobody comes for him; it was an accident, a child's, and the law has nothing to say about it. What's left is what he
-owes them. At first light, late, the two of them light the sending-off fire at the door that nobody lit twelve years
-ago, for Natsumi and for his mother. The to-do list: *Take your pills.* He does, and in the firelight her eyes are
-brown. He finally sees Ko-natsu. *He wasn't a murderer; his silence was the crime, and it kept a family waiting twelve
-years.*
-- How: the truth told at the end (`[ Remember ]`) with enough memories, and her cup never touched. With few memories
-  his confession is partial, and she leaves at dawn still not knowing everything.
+**1. The intended ending: Okuribi** (送り火, *the sending-off fire*). His head is clear enough to see her: "Ko-natsu."
+They talk until first light, not about what he did (he doesn't know) but about Natsumi: the summer she was leaving, the
+things her little sister was never told. Natsuki gives him what her family kept: Natsumi's lantern from that night,
+never floated, its paper written in a thirteen-year-old's hand: "Haru-kun, wait for me." And quietly: "Your mother said
+you were home by eleven. Mom never believed it." He has no answer, and the player has none either. At first light
+they light the sending-off fire at the door, for Natsumi and for his mother, and Natsumi's lantern is lit beside it at last, twelve years late. She goes home. Her eyes are brown in the firelight.
+- How: at least two pill tasks done.
 
-**2. The other way it could have gone: Kamikakushi** (神隠し, *spirited away*). He never lets himself see her. Off his
-pills, afraid, sure something is wearing Natsu's face and calling itself by her sister's name, he keeps to the bridge
-story, and when she goes for the door he stops her. Cut to black on her face. Morning: the apartment is spotless, and
-he washes two cups. The doorbell: Officer Sasaki. "Natsuki-chan's mother has been calling. She said she'd come here."
-"She left in the night." (The bridge story again.) In the corridor a new poster goes up beside the faded one:
-*Natsuki Kikuchi, 21, missing since 16 August.* His inner monologue: "Natsu's coming next summer. I should keep the
-place clean." *He was the villain, then and now.* Nothing is shown.
-- How: the pill in her cup, or `[ Stop her ]` at the door. (A `[ Deny ]` at the end isn't final: she goes for the
-  door, and he chooses between calling her back with the truth and stopping her.)
+**2. The other way it could have gone: Thank You for Tonight.** Nothing happens. The visit is the lovely evening he
+dreamed of, the romance never breaks (or breaks only in the glass), and in the morning she leaves after breakfast,
+polite, bowing at the door. The next day the answering machine blinks: "Thank you for last night, Haru-nii. It felt like
+when we were kids. ...You called me Natsu all night. I didn't mind." He sits at his desk and writes in his diary, and
+the player reads the page over his shoulder: twelve years of a lie he can't name, his mother's sentence, "I should have
+held on", and nothing about what it was he let go of. The truth stays under the water, and she never learns it.
+- How: anything else (fewer than two pills, without the secret ending's conditions).
 
-**3. The secret ending: Mō ii yo** (もういいよ, *ready, come and find me*). It needs him off his pills (every pill
-task failed) and two things done: the 23:47 call answered "moshi moshi" (folk belief: the dead can only say it once),
-and Natsumi's geta, from the closet, set on the altar beside the second cucumber horse, so she has a way home. At
-2:30 the phone rings again. "Moshi." He answers "moshi moshi", and a girl's voice says what they used to call in
-hide-and-seek: "Mō ii yo." Natsuki hears it too, the first time anyone has heard what he hears. The balcony door is
-open, small wet footprints lead to the railing, and in the glass behind Natsuki stands her sister, thirteen, in her red
-yukata, lilac-eyed: two summers in the same room. Natsumi says what she really said that night, and it wasn't no. In
-the first light, caught on the weir's stones, a red geta strap: the sandal's other half. They light the sending-off
-fire together, and the footprints go out with the smoke. The to-do list: *Take your pills.* "She's home now," he
-thinks. "I can take them." *Everything was real at once: the illness, the lie, and her.*
-- How: every pill task failed, the 23:47 call answered "moshi moshi", the geta on the altar; and no harm done to her.
+**3. The secret ending: Don't Let Go.** The night skips: 02:10, then the clock says 03:40, and Haruki is sitting at the
+low table in the dark, calm, his palms wet. A knock. "Police. A neighbour reported a disturbance." Two officers; the
+younger one goes down the hall to the guest room and stops at the door, and the player sees only his face. Then a
+revolver, drawn: "On your knees! Hands where I can see them!" Japanese police almost never draw. Kneeling on the
+tatami, the inner monologue is wrong in every way ("You'll wake her." "She said she'd stay." "Natsu, they're being so
+loud."), and between its lines the night replays in flashes with her real faces: the frightened eyes in the TV, the
+rigid shoulders in the glass, the correction he never saw. Then the oldest flash: the weir, a girl's wrist in his
+hand, the current, her voice, his fingers opening. And the last line, as the screen goes black: "This time I held on."
+*He was the villain, then and now.* Nothing of the violence is shown.
+- How: never a pill (every task failed), devotion high (he leaned into the romance at every turn), and her room
+  entered at two (`[ Watch her sleep ]`).
 
 ## Secrets and achievements
 
-Each secret is a short extra moment that rejoins the story where it left it (the writers' room's rule).
+The branches live here: each is a short extra moment that rejoins the story, and several hand the player a fragment.
 
 | Achievement | How | What it shows |
 |---|---|---|
 | **Spotless** | everything tidied before the knock | "You cleaned. For me?" |
 | **Lived-In** | nothing tidied | "Haru-nii... when did you last take the rubbish out?" |
+| **One Letter** | read her card closely: *Natsuki* | the inner monologue says Natsumi anyway |
 | **Black Border** | read the Kikuchis' letter before she arrives | "...Then who's coming?" |
-| **One Letter** | read her card closely enough to see *Natsuki* | the inner monologue says Natsumi anyway |
 | **Not Home** | don't answer the door | she rings from the payphone downstairs: "I'm still here. I'm soaked." |
 | **Kiyome** | sprinkle the funeral salt on her at the door | "Did someone die?" |
-| **Two Sugars** | make her tea the way Natsu took it | the wince |
+| **Two Sugars** | make her tea the way Natsu took it | the wince (in the glass) |
 | **Purified** | salt in her tea | she splutters and laughs |
 | **Secret Recipe** | soy sauce in her tea | "...Is this soup?" |
 | **Old Times** | give her your negi | she eats it, smiling, hating it |
-| **Tea for Three** | ask the officer in | he talks to her about her mother; Haruki hears none of the names right |
-| **Snoop** / **Good Host** | go through her bag / never touch it | her student ID / nothing, and her trust |
-| **Don't Listen** | listen at the door while she phones her mother | "He thinks I'm Onee-chan." |
-| **Two Colours** | see her eyes brown in a reflection | |
-| **Ko-natsu** | name her | "...You remember me." |
-| **Kagome** | guess "Ko-natsu" in Kagome Kagome | "...Why would you say that?" |
-| **Two Voices** | off your pills, guess "there are two of you" | a second voice finishes the song in front of you |
-| **Two Horses** | ask yourself who the second cucumber horse is for | |
+| **Glass** | see her real face in a reflection | |
+| **Two Colours** | see her eyes brown and lilac in the same moment (him, and the mirror) | |
+| **Don't Listen** | listen at the door while she phones her mother | what she says, if you're on your pills |
+| **Ko-natsu** | call her by her own name | "...You remember me." |
+| **Kagome** | guess right in Kagome Kagome | "...Why would you say that?" |
+| **Two Horses** | look at the second cucumber horse | "Who's the second one for?" |
 | **Upstream** | watch the lantern that floats against the current | |
-| **Moshi Moshi** | answer the 23:47 call "moshi moshi" | |
+| **Moshi Moshi** | answer the 23:47 call "moshi moshi" | a girl's voice: "Mō ii yo." (ready, come and find me) |
 | **The Wall** | open the taped closet | twelve years of string, and one geta |
-| **Old Messages** | play the tape marked 8/16 | his mother at two in the morning, 17 August 2014, telling Mrs Kikuchi the bridge story, with a boy crying behind her |
-| **Mother's Diary** | open the altar's drawer while the visitor sleeps | |
-| **Clear Head** | take every pill on the list | |
-| **Okuribi**, **Kamikakushi**, **Mō ii yo** | the three endings | |
-| **Summer's End** | all three endings | |
+| **Mother's Drawer** | open the altar's drawer | her diary: "I'd lie for him again." Nothing more |
+| **Clear Head** | do every pill task | |
+| **Okuribi**, **Thank You for Tonight**, **Don't Let Go** | the three endings | |
+| **The Whole Night** | all three endings | the three pieces |
 
 ## The lines
 
-Her lines are short: a beat each, about twelve English words, one take, plain English that will translate cleanly.
-Childhood lives in the details (the river, the fireflies, the festival, the sandbank, ramune bottles, following them
-everywhere), not in speeches. Some of hers:
+Short: a beat each, about twelve English words, plain English that will translate cleanly. Childhood in the details
+(the river, the fireflies, the sandbank, ramune bottles, a little sister always behind them). Hers, as she says them:
 
 - "Haru-nii. You got tall."
 - "I'm freezing. Isn't that silly, in August?"
 - "You cleaned. For me?"
-- "Perfect. Just how I like it."
-- "Do you still go down to the river?"
 - "Who's the second one for, Haru-nii?"
 - "You two never let me come to the sandbank."
-- "Haru-nii... that was Onee-chan."
-- "It's me. Natsuki. Look at me."
-- "What happened to my sister?"
+- "Haru-nii... I'm Natsuki."
+- "Do you remember the last time you watched them? With her?"
 
-His are acts and thoughts. Some read her; some give *him* away:
+The same moment, his version and hers (off the pills he sees the first; the glass shows the second):
+
+- *at the door*: she smiles as if she's waited years for this / her smile falters when he says "Natsu".
+- *the tea*: she sips and looks at him over the cup, pleased / her mouth tightens at the sweetness; she's polite.
+- *the lanterns*: her head on his shoulder / she's standing a step away, holding the rail.
+
+His answers (an act and a thought; {her} is Natsu or Natsuki, by the pills):
 
 - `[ Greet ] She's probably cold. I should let her inside.` / `[ Question ] She looks younger than I remember.`
-- `[ Two sugars ] She always took two.` / `[ Ask ] Maybe she takes it differently now.`
-- `[ Question ] Natsu always said Haru-kun.` / `[ Let it go ] She's teasing me.`
-- `[ Truth ] Every year. Today.` / `[ Lie ] I don't go out.`
+- `[ Two sugars ] {her} always took two.` / `[ Ask ] Maybe she takes it differently now.`
+- `[ Hold her hand ] She wants me to.` / `[ Stay where you are ] Not yet.`
 - `[ Lock it ] Twice. Then check it again.` / `[ Hide my hands ] She doesn't need to see them.`
-- `[ Remember ] We walked home over the weir.` / `[ Deny ] We said goodbye at the bridge.`
-- `[ Recognise ] You're not Natsu. You're Ko-natsu.`
 
 ## Faces (MiniMax post prompts, 4 seconds)
 
-About fifty faces for the talks, in the writers' room's form: what the face visibly does, no words. She's honest, so
-most of her faces are confusion, hurt and worry, not lies. For example:
+About sixty: her real faces for the whole night, and a second, romantic set for the dozen moments his version
+rewrites. For example:
 
-- *"you came back"*: her smile falters, her brows draw together for a moment, then she smiles again, unsure.
-- *the sugar*: she sips, her mouth tightens for a moment, then she smiles politely at the viewer.
-- *the second horse*: her eyes rest on something below the viewer, her lips part, and she looks up slowly, worried.
-- *"that was Onee-chan"*: her chin trembles, her eyes fill, and she looks at the viewer as if at a stranger.
-- *the bridge*: her face goes still; she breathes out slowly through her nose and looks down.
-- *your hands*: her eyes drop to the viewer's hands, stay there a moment too long, then come back up, careful.
+- *his version, the door*: she beams, her eyes shining, and looks down shyly, then back at the viewer.
+- *hers, the door*: her smile falters, her brows draw together for a moment, then she smiles again, unsure.
+- *his version, the lanterns*: she tilts her head to rest it on something just beside the viewer, eyes half closed.
+- *hers, the lanterns*: she stands very still, her eyes wide, looking sideways at the viewer without turning her head.
+- *hers, "I'm Natsuki"*: her chin trembles, her eyes fill, and she looks at the viewer as if at a stranger.
 
 ## Building it with what we have
 
 Nearly all of it exists: the to-do list (a hidden timer, tasks that fail by their time), requests, talks with faces,
-chapters, the peephole, the latch, the power cut and the breaker, the flashlight, examining small things, cleaning,
-footsteps, the inventory, and the little things (a kettle that boils, a cup of tea going cold, a clock, a phone that
-rings, a TV of static, candles that burn on through a power cut; a mosquito coil can burn down as a cigarette does).
-The kit has the kitchen's things, and the scene builder has Japanese layouts on the 910 mm module; the Character
-Studio's eye makes both irises. New, and all small: her eyes and lines changing with the doses (a choice by an earlier
-answer before each key talk, two eye colours on one character), lines that retype themselves, her lines unskippable
-under the typewriter, reflections that show her brown eyes, the answering machine's messages, the lanterns and the
-fireworks as cued effects, and a low table, a butsudan, Obon offerings and futons for the kit. To capture: one main
-face (Natsuki), one child's look for the photos and the secret ending (Natsumi at 13), and one small part (the
-officer).
+the peephole, the latch, the power cut and the breaker, the flashlight, examining small things, cleaning, footsteps,
+the inventory, and the little things (a kettle, a cup of tea going cold, a clock, a phone that rings, a TV, candles
+that burn on through a power cut; a mosquito coil can burn down as a cigarette does). The kit has the kitchen, the
+scene builder has Japanese layouts on the 910 mm module, and the Character Studio's eye makes both irises. New, and all
+small: two expression tracks for one character, chosen by the dose count; a name variable in the lines; lines left
+out by a flag; her eyes swapped by the doses; reflections that show the other track (the TV, the window, the mirror:
+the hardest part, a second render of her in the glass); the answering machine's messages; the lanterns and fireworks
+as cued effects; a skipped hour; a low table, a butsudan, Obon offerings and futons for the kit. To capture: one main
+face (Natsuki) in two moods, one child's look for the photos and flashes (Natsumi at 13), and two small parts (the
+officers).
 
 ## Care notes
 
-- The illness is Haruki's lived experience, not the monster. What happened at the weir happened to two children before
-  he was ill, and it was an accident; his mother's lie and the illness grew round it. The intended ending shows him
-  helped; the bad ending is a tragedy, never a reveal that "the ill man was the killer" (research §7.5).
-- **The secret ending asks the player to skip his pills.** It's the user's call and a strong one: it's the one door
-  his illness opens. To keep it from reading as "medication hides the truth", it ends with him choosing to take them
-  once Natsumi has gone home, and the intended ending (the main one) is the one where he sees clearly.
+- The illness is Haruki's experience, not a reveal. The intended ending (the main one) is the one where he sees her.
+  The secret ending is a tragedy of untreated illness and a buried lie, staged in fragments, never a "gotcha"; what
+  happened at the weir happened to two children (research §7.5).
+- The romance he imagines stays tender and imagined (smiles, a hand, a head on a shoulder): never sexual, and never
+  something she did.
 - A content note at the start (mental illness, the death of a child, drowning, implied violence) and a short resources
   screen at the end.
-- The drowning is private and fictional, and so is the town; real cases give us shapes only.
+
+## Your calls
+
+1. **The other ending**: "Thank You for Tonight" (my pick: the quiet horror of nothing happening, and the diary page),
+   or your other idea, her finding the diary and picking up a knife as she walks towards him?
+2. **The body** in the secret ending is Natsuki's. Yes?
+3. **"He let go"**: the truth at the weir is that he held her wrist and let go, and never lets himself know whether he
+   couldn't hold on or didn't. Keep it?
 
 Once you say yes (with any changes), step 3 begins: the flow, as the writers' room's chart.

@@ -2,6 +2,30 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, small hours (The Visitor: the pills decide what you see; three endings, three pieces of the truth)
+
+- **His version of her**: "if he's off his pills we will have different facial expressions for some parts (he will
+  think she likes him, think the new joker joaquin phoenix movie where he is creating a false romance scenario)".
+- **The secret, dark ending**: "the cops show up to say heard a disturbance, they go into the bedroom to find the body
+  lying and tell you to get on your knees (they pull out a gun at you), you have some weird inner monologue and the
+  game ends."
+- **No confession**: "The good ending shouldnt be you confessing, because you as the player dont actually know what
+  happened and are trying to figure it out yourself, maybe whether you take the pills or not determines the name you
+  call her (variable), and if your off the pills you never see her correct you."
+- **The other ending, undecided**: her finding his diary (guilt at living the lie) and picking up a knife as she walks
+  towards him, "or the visit goes normal, you have fun, she never learns the truth and leaves and thanks you the next
+  day."
+- **Little branching**: "Maybe we dont need to care about major branching dialogue (that can be for easter eggs and
+  learning stuff yourself, maybe write the story where we only get a clear picture of what actually happened if we do
+  all 3 endings, so even if she found your diary it wont tell the player the full picture just maybe a page about your
+  guilty feelings etc but not the cause)."
+- Claude's calls inside that, in the abstract's third pass (waiting for the user's yes): his illness rewrites her and
+  only her (her name, eyes, faces, corrections, a few warmer lines), while the card, the officer and every reflection
+  stay true; two expression tracks for a dozen key moments; endings by the pill tasks (two or more: Okuribi, her side
+  of the truth; otherwise Thank You for Tonight, his diary page; never a pill, the romance leaned into and her room
+  entered at two: Don't Let Go, the police, the night itself in flashes); the truth at the weir: he held her wrist and
+  let go; the pill in her cup and the mother's lie as a told story are gone.
+
 ## 2026-10-28, late night (The Visitor: an honest sister, names one letter apart, no police, the pills as tasks)
 
 - **The user's answers to the abstract's calls**: the twist, the visitor as the lost girl's sister ("Sure"); the
