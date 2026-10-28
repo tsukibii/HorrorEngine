@@ -127,6 +127,8 @@
     <section data-tab="skin" hidden>
       <h3>Tone</h3>
       <div id="skinRows"></div>
+      <h3>Light on the skin</h3>
+      <div id="litRows"></div>
       <h3>Photo skin</h3>
       <div id="photoSkin"></div>
       <h3>Procedural skin</h3>
@@ -189,6 +191,8 @@ import { CutEditor } from "./cutedit.js";
 import * as PO from "./pose.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
+import { skinLit, setSkinLit, SKIN_LIT, recordOf as skinLitRecord } from "/shared/skinlight.js";
+import { thinness } from "./thin.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const api = async (u, body) => {
@@ -351,6 +355,7 @@ function skinLook() {
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
   material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on || (NAILAT && st.nails?.on) ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
+  setSkinLit(material, st.skin.lit); if (st.skin.lit?.on) SKU.uGlowK.value = 0;   // the light through the skin is the lighting's now, not the emissive glow's
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
   nailLook();
 }
@@ -409,6 +414,24 @@ async function loadSkin() {
   await TOUCH.load(`api/skin/${encodeURIComponent(WHO)}?paint=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?touch=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?pigment=1&v=${Date.now()}`);
   touchState(); skinLook();
 }
+// the light on the skin (/shared/skinlight.js, after HumanShaders): on or off to compare, and its numbers; saved with
+// the character, and carried by the export for the desk and Unreal
+st.skin.lit = { ...SKIN_LIT };
+const litSet = {};
+{
+  const box = $("#litRows"), on = el("input", { type: "checkbox", checked: !!st.skin.lit.on });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Skin light", el("small", { textContent: "Each colour of the light through a softer normal (red the softest: it travels furthest under the skin), wrapped past the shadow's edge; light through the thin parts (ears, nostrils, fingers); two highlights. Off: three's plain physical light." }))));
+  on.onchange = () => { st.skin.lit.on = on.checked ? 1 : 0; litGlow(); skinLook(); };
+  const rows = [["smooth", "Smoothness", 0, 10, 0.1, "How far each colour's light is smoothed under the skin (the pores and fine relief fade from the diffuse; they stay in the highlights)."],
+    ["fall", "Falloff", 0.7, 2, 0.01, "How soft the light's edge is: higher, a longer, warmer fall into shadow."],
+    ["wrap", "Wrap", 0, 1, 0.01, "How far the light reaches past the terminator."],
+    ["spec", "Specular", 0, 1, 0.01, "The skin's own shine (f0 = 0.04 × this²): 0.5 is skin's."],
+    ["double", "Second highlight", 0, 1, 1, "A broader highlight under the sharp one (the skin's fine roughness under the oil)."],
+    ["trans", "Translucency", 0, 2, 0.01, "Light coming through the thin parts toward you: an ear's rim red against a lamp behind it."]];
+  for (const [k, label, lo, hi, step, help] of rows) litSet[k] = slider(box, "lit_" + k, label, lo, hi, step, st.skin.lit[k], help, v => { st.skin.lit[k] = v; skinLook(); });
+  litSet.all = () => { on.checked = !!st.skin.lit.on; for (const [k] of rows) litSet[k](st.skin.lit[k]); };
+}
+function litGlow() { SKU.uGlowK.value = st.skin.lit?.on || (LIGHTS[LIGHT.name] || {}).film ? 0 : 1; }   // the emissive glow only without the skin light (and not under the reference light)
 // the procedural skin's controls: a toggle, every feature its own slider, two colours
 st.skin.proc = { ...SKINSH.DEFAULTS };
 const procSet = {};
@@ -901,6 +924,8 @@ dgeo.setAttribute("objPos", new THREE.BufferAttribute(new Float32Array(C * 3), 3
 if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
 if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
 const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
+dgeo.setAttribute("skinThin", new THREE.BufferAttribute(new Float32Array(C), 1));   // how thin the body is at each corner (thin.js): the light through ears and fingers
+skinLit(material, { thin: "attr" });                   // lit as HumanShaders lights skin (/shared/skinlight.js), over the procedural skin
 const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
 const STUDIO = new StudioView({ renderer, scene, hide: [floor], floorY: 0 });   // tools/shared/studioview.js: a white studio, an HDR, a key light with shadows   // the body and all it wears: the head motion moves it
@@ -997,6 +1022,15 @@ function compose() {                                   // POS: RAW + the face, s
   WEAR?.update();                                       // the accessories on the face as it is now
   if (typeof refit === "function") refit();           // the clothes cut again once the body holds still
   poseGarments();                                       // and shown in the body's pose meanwhile
+  thinLater();
+}
+// how thin the body is at each point (thin.js), once it holds still for a moment: the skin's translucency reads it
+let THIN_T = 0, THIN = null;
+function thinLater() { clearTimeout(THIN_T); THIN_T = setTimeout(computeThin, 700); }
+function computeThin() {
+  THIN = thinness(POS, TRIS, geo.attributes.normal.array, { smooth: 1 });
+  const a = dgeo.attributes.skinThin.array; for (let c = 0; c < C; c++) a[c] = THIN[TRIS[c]];
+  dgeo.attributes.skinThin.needsUpdate = true;
 }
 // SHOW: the body in the view's pose (pose.js: MHR's skinning, its joints refitted to the body as it is); only the arms
 // and the legs turn, and the body under the head moves forward to stand the neck up, so the head and everything on it
@@ -2469,6 +2503,7 @@ async function open(name) {
   st.sculpt = { ...(c.sculpt || {}) }; sculptAll();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
+  st.skin.lit = { ...SKIN_LIT, ...(c.skin?.lit || {}) }; litSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
   if (me !== OPENING) return;
@@ -2545,7 +2580,14 @@ function skinFileMaterial() {
   const rough = st.skin.rough ?? 0.62;
   if (!dgeo.attributes.uv) return new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: rough });
   const sel = SKU.uShowSel.value; SKU.uShowSel.value = 0;            // the layers' selection isn't the skin
-  try { return new THREE.MeshStandardMaterial({ name: `${WHO}_skin`, map: ALB.bake(renderer, dgeo, material, dgeo.attributes.uv.array, { size: SKIN_BAKE }).texture, roughness: rough }); }
+  try {
+    const uv = dgeo.attributes.uv.array, map = ALB.bake(renderer, dgeo, material, uv, { size: SKIN_BAKE }).texture;
+    clearTimeout(THIN_T); computeThin();                // the thinness of the body as it is now
+    const { normal, orm } = ALB.bakeSkinMaps(renderer, dgeo, material, uv, { size: SKIN_BAKE / 2 });   // the relief, the roughness and the thinness (one map: R 1, G rough, B thin)
+    const m = new THREE.MeshStandardMaterial({ name: `${WHO}_skin`, map, normalMap: normal, roughnessMap: orm, metalnessMap: orm, roughness: 1, metalness: 0 });
+    m.userData.studioSkin = skinLitRecord(st.skin.lit);  // the light on the skin, for whatever draws the file (the desk: skinlight.js; Unreal: M_StudioSkin)
+    return m;
+  }
   finally { SKU.uShowSel.value = sel; }
 }
 // a worn part's material as a file can carry it: a garment's fabric (tailor/look.js) baked onto islands of its own,
@@ -2813,7 +2855,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

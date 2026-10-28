@@ -1102,6 +1102,54 @@ const png = rgb => {
     if (!(Math.abs(o1.yaw - o0.yaw) > 0.3) || pan1 > 1e-9 || Math.abs(o2.yaw - o1.yaw) > 1e-9 || !(pan2 > 0.01) || !g.back || !g.forward || !g.menu || !g.paste || !g.backspace || !g.altLeft || g.typing) throw new Error("the view's controls: " + JSON.stringify({ o0, o1, o2, g }));
     console.log(`       middle-drag turned the view ${((o1.yaw - o0.yaw) * 180 / Math.PI).toFixed(0)} degrees (no pan), Shift+middle-drag panned ${(pan2 * 100).toFixed(1)} cm (no turn); back and forward buttons, right-click's menu, middle-click's paste, Backspace and Alt+Left stopped; Backspace in a text box types`);
   });
+  await step("the skin light (after HumanShaders, /shared/skinlight.js): on by default; the thin parts found (the ears' rims and the fingers thin, the torso thick); under one side light its shadow's edge softer and warmer than three's plain light; a lamp behind the head shines red through the ear's rim, not through the cheek", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, T = b.THREE, R = b.renderer, M = b.material, scene = b.rig.parent;
+      b.computeThin();
+      const th = b.THIN, P = b.POS, n = th.length, q = (a, f) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(f * (s.length - 1))] : NaN; };
+      let top = -1e9, wide = 0; for (let i = 0; i < n; i++) { top = Math.max(top, P[i * 3 + 1]); wide = Math.max(wide, Math.abs(P[i * 3])); }
+      const head = [...Array(n).keys()].filter(i => P[i * 3 + 1] > top - 0.2 && P[i * 3 + 1] < top - 0.07);
+      const hx = head.map(i => Math.abs(P[i * 3])).sort((a, c) => c - a), cut = hx[Math.floor(hx.length * 0.04)];
+      const ears = head.filter(i => Math.abs(P[i * 3]) >= cut), cheeks = head.filter(i => Math.abs(P[i * 3]) < cut * 0.7 && Math.abs(P[i * 3]) > cut * 0.45 && P[i * 3 + 2] > 0.02);
+      const fingers = [...Array(n).keys()].filter(i => Math.abs(P[i * 3]) > wide * 0.93), torso = [...Array(n).keys()].filter(i => Math.abs(P[i * 3]) < 0.12 && P[i * 3 + 1] > top * 0.55 && P[i * 3 + 1] < top * 0.8);
+      const thin = { ears: q(ears.map(i => th[i]), 0.9), fingers: q(fingers.map(i => th[i]), 0.5), torso: q(torso.map(i => th[i]), 0.9), cheeks: q(cheeks.map(i => th[i]), 0.9) };
+      // the face lit by one light in the dark, drawn off screen; everything put back after
+      const kept = []; scene.traverse(o => { if (o.isLight) { kept.push([o, o.intensity]); o.intensity = 0; } });
+      const env = scene.environment, bg = scene.background, tm = R.toneMapping; scene.environment = null; scene.background = new T.Color(0); R.toneMapping = T.NoToneMapping;
+      const sun = new T.DirectionalLight(0xffffff, 2.5); scene.add(sun, sun.target);
+      const W = 256, rt = new T.WebGLRenderTarget(W, W), cam = new T.PerspectiveCamera(30, 1, 0.01, 10), px = new Uint8Array(W * W * 4);
+      const world = i => new T.Vector3(...b.lmk(i)).applyMatrix4(b.rig.matrixWorld);
+      const nose = world(1), side = world(454);           // the nose's tip, the face's side by the ear
+      const draw = () => { R.setRenderTarget(rt); R.setClearColor(0, 1); R.clear(); R.render(scene, cam); R.readRenderTargetPixels(rt, 0, 0, W, W, px); R.setRenderTarget(null); return px.slice(); };
+      const lum = (d, i) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      // 1: a side light, the face from the front: the band between lit and dark (5 to 50% of the brightest), its width and its warmth
+      cam.position.set(nose.x, nose.y, nose.z + 0.55); cam.lookAt(nose.x, nose.y, nose.z - 0.05); cam.updateMatrixWorld();
+      sun.position.set(nose.x + 2, nose.y + 0.3, nose.z + 0.3); sun.target.position.copy(nose); sun.target.updateMatrixWorld();
+      const band = on => { b.setSkinLit(M, { on }); const d = draw(); let hi = 0; for (let i = 0; i < d.length; i += 4) hi = Math.max(hi, lum(d, i));
+        let k = 0, warm = 0; for (let i = 0; i < d.length; i += 4) { const l = lum(d, i) / hi; if (l > 0.05 && l < 0.5) { k++; warm += (d[i] - d[i + 2]) / Math.max(1, lum(d, i)); } }
+        return { px: k, warm: warm / Math.max(1, k) }; };
+      const plain = band(0), lit = band(1);
+      // 2: a lamp behind the head, the ear seen from its side: the rim red with translucency, the cheek not
+      cam.position.set(side.x + 0.45, side.y, side.z + 0.1); cam.lookAt(side); cam.updateMatrixWorld();
+      sun.position.set(side.x - 2, side.y + 0.2, side.z - 0.4); sun.target.position.copy(side); sun.target.updateMatrixWorld();
+      const at = ids => ids.filter(i => P[i * 3] > 0).map(i => new T.Vector3(...[...b.SHOW.slice(i * 3, i * 3 + 3)]).applyMatrix4(b.rig.matrixWorld).project(cam)).filter(v => Math.abs(v.x) < 1 && Math.abs(v.y) < 1)
+        .map(v => Math.floor((v.y + 1) / 2 * W) * W + Math.floor((v.x + 1) / 2 * W));
+      const earPx = at(ears.filter(i => th[i] > 0.4)), cheekPx = at(cheeks);
+      const glow = trans => { b.setSkinLit(M, { on: 1, trans }); const d = draw(), red = ids => ids.reduce((s, j) => s + d[j * 4], 0) / Math.max(1, ids.length); return { ear: red(earPx), cheek: red(cheekPx) }; };
+      const dark = glow(0), through = glow(2);
+      b.setSkinLit(M, b.st.skin.lit);
+      scene.remove(sun, sun.target); sun.dispose(); rt.dispose();
+      for (const [o, v] of kept) o.intensity = v;
+      scene.environment = env; scene.background = bg; R.toneMapping = tm; b.skinLook();
+      return { def: b.st.skin.lit.on, thin, n: { ears: ears.length, fingers: fingers.length, torso: torso.length, earPx: earPx.length, cheekPx: cheekPx.length }, plain, lit, dark, through };
+    });
+    const f = v => JSON.stringify(v);
+    if (r.def !== 1) throw new Error("the skin light isn't on by default");
+    if (!(r.thin.ears > 0.35 && r.thin.fingers > 0.3 && r.thin.torso < 0.05 && r.thin.cheeks < 0.2)) throw new Error(`the thin parts: ${f(r.thin)} (${f(r.n)})`);
+    if (!(r.lit.px > r.plain.px * 1.15 && r.lit.warm > r.plain.warm + 0.03)) throw new Error(`the light's edge (skin light against three's): ${f(r.lit)} against ${f(r.plain)}`);
+    if (!(r.n.earPx > 10 && r.through.ear > r.dark.ear + 12 && r.through.cheek - r.dark.cheek < (r.through.ear - r.dark.ear) / 3)) throw new Error(`the light through the ear: ${f(r.through)} against ${f(r.dark)} (${f(r.n)})`);
+    console.log(`       thin: the ears' rims ${r.thin.ears.toFixed(2)}, the fingers ${r.thin.fingers.toFixed(2)}, the cheeks ${r.thin.cheeks.toFixed(2)}, the torso ${r.thin.torso.toFixed(2)}; the shadow's edge ${r.lit.px} px wide and warm ${r.lit.warm.toFixed(2)} (three's ${r.plain.px}, ${r.plain.warm.toFixed(2)}); a lamp behind: the ear's rim red ${r.dark.ear.toFixed(0)} to ${r.through.ear.toFixed(0)}, the cheek ${r.dark.cheek.toFixed(0)} to ${r.through.cheek.toFixed(0)}`);
+  });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
@@ -1212,7 +1260,11 @@ const png = rgb => {
       const out = { skin: null, clothes: [], hair: [] };
       g.scene.traverse(o => {
         if (!o.isMesh) return; const m = o.material, map = m.map;
-        if (/_skin$/.test(o.name)) { const d = pixels(map.image), mu = mean(d); let red = 0; for (let i = 0; i < d.length; i += 4) red = Math.max(red, d[i] - d[i + 1]); out.skin = { size: map.image.width, mean: mu, red, redMean: mu[0] - mu[1] }; }
+        if (/_skin$/.test(o.name)) { const d = pixels(map.image), mu = mean(d); let red = 0; for (let i = 0; i < d.length; i += 4) red = Math.max(red, d[i] - d[i + 1]); out.skin = { size: map.image.width, mean: mu, red, redMean: mu[0] - mu[1] };
+          const nm = m.normalMap && pixels(m.normalMap.image), orm = m.roughnessMap && pixels(m.roughnessMap.image);   // the relief, and the roughness and thinness (the skin light's maps)
+          let dev = 0, thinPx = 0; if (nm) for (let i = 0; i < nm.length; i += 4) dev = Math.max(dev, Math.abs(nm[i] - 128) + Math.abs(nm[i + 1] - 128));
+          if (orm) for (let i = 0; i < orm.length; i += 4) if (orm[i + 2] > 100) thinPx++;
+          out.maps = { normal: nm ? mean(nm) : null, dev, orm: orm ? mean(orm) : null, thinPx, same: m.roughnessMap === m.metalnessMap, metal: m.metalness, lit: m.userData.studioSkin || null }; }
         else if (live.has(o.name)) out.clothes.push({ name: o.name, want: live.get(o.name), got: map ? mean(pixels(map.image)) : null, uv1: !!o.geometry.attributes.uv1 });
         else if (map && m.alphaTest === 0.3) out.hair.push({ name: o.name, mean: mean(pixels(map.image)) });
       });
@@ -1220,9 +1272,13 @@ const png = rgb => {
     }, NAME);
     const fmt = v => JSON.stringify(v);
     if (!r.skin || r.skin.size < 2048 || !(Math.max(...r.skin.mean) < 240) || !(r.skin.red > r.skin.redMean + 30)) throw new Error(`the skin's bake (a texture, the skin's colour, the makeup in it): ${fmt(r.skin)}`);
+    const sm = r.maps;                                     // the skin light's maps: a relief that bends the normal, the roughness near the skin's, thin pixels, the light's numbers in extras
+    if (!sm || !sm.normal || Math.abs(sm.normal[0] - 128) > 12 || Math.abs(sm.normal[1] - 128) > 12 || sm.normal[2] < 200 || sm.dev < 8 || !sm.orm || !sm.same || sm.metal !== 0 || sm.thinPx < 20
+        || Math.abs(sm.orm[1] / 255 - 0.62) > 0.3 || !sm.lit || sm.lit.version !== 1 || !("trans" in sm.lit)) throw new Error(`the skin's maps for the skin light: ${fmt(sm)}`);
     const off = r.clothes.filter(c => !c.got || !c.uv1 || (c.want.plain && c.got.some((v, i) => Math.abs(v - c.want.c[i]) > Math.max(14, 0.15 * c.want.c[i]))));
     if (r.clothes.length < 3 || off.length) throw new Error(`the clothes' bake: ${r.clothes.length} parts, off ${fmt(off)}`);
     if (r.hair.length < 2 || r.hair.some(h => Math.max(...h.mean) > 90)) throw new Error(`the lashes' bake (dark strands, cut out): ${fmt(r.hair)}`);
+    console.log(`       the skin's relief ${sm.normal.map(v => v.toFixed(0)).join("/")} (bent up to ${sm.dev}), its roughness ${(sm.orm[1] / 255).toFixed(2)}, ${sm.thinPx} thin pixels in 256²; the light ${JSON.stringify(sm.lit)}`);
     console.log(`       the skin ${r.skin.size} px, its mean ${r.skin.mean.map(v => v.toFixed(0)).join(", ")} with the makeup in it (red over green up to ${r.skin.red}); ${r.clothes.length} garment parts each its own colour (${r.clothes.filter(c => c.want.plain).map(c => `${c.name} ${c.got.map(v => v.toFixed(0)).join("/")} for ${c.want.c.map(v => v.toFixed(0)).join("/")}`).slice(0, 3).join("; ")}); ${r.hair.length} lash and brow meshes as strands`);
     while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });

@@ -108,7 +108,28 @@ their UVs, every layer computed as in the view) and reads back the colour it rea
 light does (the coat and the dewy glow, the pores' relief, the glow through the skin, a fabric's sheen) is left to
 whatever draws the file. The empty texels round each island take its edge, eight rings out, so a filtered read doesn't
 pull in black; the rest the islands' mean.
-- **The skin:** 4096 px on MHR's own UVs (the face takes about a quarter of the width), a JPEG in the file.
+- **The skin:** 4096 px on MHR's own UVs (the face takes about a quarter of the width), a JPEG in the file. **And how
+  it's lit** (2026-10-28, back: the skin light, below): its relief (the pores, the wrinkles, a nail's edge) as a
+  tangent-space normal map in glTF's convention (+X along u, +Y up the picture), and one map of R 1 (no occlusion
+  yet), G the roughness (the oil, the lips' gloss, the nails' polish) and B how thin the skin is (the file's metalness
+  is 0, so its blue is free), 2048 px PNGs; the light's numbers in the skin material's `extras.studioSkin`. The desk
+  lights the file's skin with the same `skinlight.js` (`bodies.js`, the thinness from the map's blue); Unreal makes
+  **M_StudioSkin** (`storykit/people.py`, Subsurface Profile, written blind: UNREAL_FLOW §1d).
+
+**The skin light** (2026-10-28, back, the user: "something like the skin shader in this godot repo",
+github.com/matmadness/HumanShaders, MIT): `tools/shared/skinlight.js` replaces three's direct light on the skin (the
+Studio's and an export's on the desk) with HumanShaders' way of lighting skin, rebuilt in three.js (none of its textures
+or scans): each colour through a normal smoothed by a different amount toward the surface's own (red the most: red
+light travels furthest under the skin), each wrapped past the terminator by a smoothstep, so a shadow's edge is soft and
+warm instead of grey; the light coming through the thin parts toward the eye (ears, nostrils, fingers, lips) through a
+ramp from dark red to orange, as thin as `thin.js` finds the body (a ray from each point straight in to where it comes
+out again, a grid of the triangles keeping it to a fraction of a second; 0 thick, 1 thin, averaged once with the
+neighbours); two GGX highlights, the second broader, from Specular's f0 (0.04 × s²). The environment's light, the
+clear coat (the oil, glass skin) and the shadows stay three's. Skin, **Light on the skin**: Skin light (on by default;
+off is three's plain light, to compare), Smoothness, Falloff, Wrap, Specular, Second highlight, Translucency; with it on,
+the procedural skin's emissive glow through the skin is off (the light does it now). STUDIO measures the thin parts
+(the ears' rims and the fingers thin, the cheeks and the torso thick), the shadow's edge wider and warmer than three's
+under one side light, the ear's rim red against a lamp behind the head and the cheek not, and the export's maps.
 - **Each garment part:** its fabric coordinates (metres round each part, `tailor/uv.js`) packed as one island per part
   at about 2 mm a pixel (64 to 2048 px), the new layout its `uv` (TEXCOORD_0) and the metres kept as `uv1`
   (TEXCOORD_1), where a PBR set's normal, roughness, metalness and AO maps still tile by their real size; the per-vertex

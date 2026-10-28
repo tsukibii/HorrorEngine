@@ -31,6 +31,15 @@ PEOPLE = L.STUDIO / "People"                       # the Studio's characters (gi
 DEST = "/Game/Studio/Imported/People"               # shared by every game (a character may play in several); not /Game/Studio/People: that is the Studio's own folder on disk
 MATERIALS = "/Game/Studio/Materials"
 EYE_MATERIAL = f"{MATERIALS}/M_StudioEye"
+SKIN_MATERIAL = f"{MATERIALS}/M_StudioSkin"
+SKIN_PROFILE = f"{MATERIALS}/SP_StudioSkin"
+
+# M_StudioSkin's scalar parameters and their defaults; a character's instance sets them from its skin's studioSkin
+# (skin_params()). The Studio lights its skin after HumanShaders (tools/shared/skinlight.js); Unreal has the real
+# thing, a Subsurface Profile, so the numbers are translated, not copied: Specular from the skin's (f0 = 0.04 s², its
+# two highlights about twice one), the subsurface amount from its smoothness, more of it where the skin is thin
+SKIN_PARAMS = [("Specular", 0.25), ("RoughScale", 1.0), ("Subsurface", 0.85), ("ThinBoost", 0.15)]
+SKIN_VERSION = hashlib.sha1(f"{SKIN_PARAMS}skin-1".encode("utf-8")).hexdigest()[:10]
 
 # M_StudioEye's scalar parameters and their defaults (eye units: the eyeball's radius is 1); a character's instance
 # sets them from its eyes' studioEye (params()). Handed and FlipV are the engine's conventions, not the character's.
@@ -164,6 +173,34 @@ def eyes(path):
     return sorted(out, key=lambda e: str(e["side"]))
 
 
+def skin(path):
+    """The skin in an export, if it carries one: {material (the slot's name), record (studioSkin: the light on it),
+    color, normal, orm: (bytes, ext)}: the colour, the relief (a normal map in glTF's convention: +Y up the picture) and
+    one map of R 1, G the roughness, B how thin the skin is (the file's metalness is 0, so its blue is free)."""
+    gltf, binary = read_glb(path)
+    for m in gltf.get("materials", []):
+        rec = (m.get("extras") or {}).get("studioSkin")
+        if not rec:
+            continue
+        pbr, out = m.get("pbrMetallicRoughness") or {}, {"material": m.get("name", ""), "record": rec}
+        for k, ref in (("color", pbr.get("baseColorTexture")), ("normal", m.get("normalTexture")), ("orm", pbr.get("metallicRoughnessTexture"))):
+            if ref and ref.get("index") is not None:
+                data, mime = _image(gltf, binary, ref["index"])
+                out[k] = (data, ".jpg" if "jpeg" in mime else ".png")
+        return out
+    return None
+
+
+def skin_params(record):
+    """M_StudioSkin's scalar parameters for a skin's studioSkin (skinlight.js's numbers in Unreal's words)."""
+    s, out = float(record.get("spec", 0.5)), dict(SKIN_PARAMS)
+    if record.get("on", 1):
+        out["Specular"] = min(1.0, 0.5 * s * s * (2.0 if record.get("double", 1) else 1.0) / 0.5 * 0.5 + 0.125)
+        out["Subsurface"] = min(1.0, 0.55 + 0.06 * float(record.get("smooth", 5)))
+        out["ThinBoost"] = 0.2 * float(record.get("trans", 0.75))
+    return {k: float(v) for k, v in out.items()}
+
+
 def height(path, name=None):
     """The character's height in metres: its skin's (the node `<name>_skin`, else the first skinned mesh) from the
     floor to its top."""
@@ -284,6 +321,129 @@ def eye_material(rebuild=False):
     return mat
 
 
+def skin_material(rebuild=False):
+    """M_StudioSkin, made the first time (and again when its version changes): Subsurface Profile (SP_StudioSkin), the
+    colour, the relief (Normal), the roughness and the occlusion from one map, the subsurface amount more where it's
+    thin (the map's blue)."""
+    unreal = _unreal()
+    EAL, MEL = unreal.EditorAssetLibrary, unreal.MaterialEditingLibrary
+    if EAL.does_asset_exist(SKIN_MATERIAL) and not rebuild:
+        mat = unreal.load_asset(SKIN_MATERIAL)
+        if EAL.get_metadata_tag(mat, "StudioSkinVersion") == SKIN_VERSION:
+            return mat
+    tools = unreal.AssetToolsHelpers.get_asset_tools()
+    profile = unreal.load_asset(SKIN_PROFILE) if EAL.does_asset_exist(SKIN_PROFILE) else \
+        tools.create_asset("SP_StudioSkin", MATERIALS, unreal.SubsurfaceProfile, None)   # the engine's defaults are skin's
+    if EAL.does_asset_exist(SKIN_MATERIAL):
+        mat = unreal.load_asset(SKIN_MATERIAL)
+        MEL.delete_all_material_expressions(mat)
+    else:
+        mat = tools.create_asset("M_StudioSkin", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE_PROFILE)
+    if profile:
+        mat.set_editor_property("subsurface_profile", profile)
+    mat.set_editor_property("used_with_skeletal_mesh", True)
+    make = lambda cls, x, y: MEL.create_material_expression(mat, cls, x, y)  # noqa: E731
+    P = unreal.MaterialProperty
+
+    def tex(name, y, kind):
+        t = make(unreal.MaterialExpressionTextureSampleParameter2D, -700, y)
+        t.set_editor_property("parameter_name", name)
+        t.set_editor_property("sampler_type", kind)
+        return t
+    ST = unreal.MaterialSamplerType
+    colour, normal, orm = tex("Color", -400, ST.SAMPLERTYPE_COLOR), tex("Normal", -100, ST.SAMPLERTYPE_NORMAL), tex("ORM", 200, ST.SAMPLERTYPE_MASKS)
+    scal = {}
+    for k, (n, d) in enumerate(SKIN_PARAMS):
+        x = make(unreal.MaterialExpressionScalarParameter, -700, 500 + k * 60)
+        x.set_editor_property("parameter_name", n)
+        x.set_editor_property("default_value", float(d))
+        scal[n] = x
+    rough = make(unreal.MaterialExpressionMultiply, -350, 200)
+    MEL.connect_material_expressions(orm, "G", rough, "A")
+    MEL.connect_material_expressions(scal["RoughScale"], "", rough, "B")
+    thin = make(unreal.MaterialExpressionMultiply, -350, 330)                 # more scattering where it's thin
+    MEL.connect_material_expressions(orm, "B", thin, "A")
+    MEL.connect_material_expressions(scal["ThinBoost"], "", thin, "B")
+    amount = make(unreal.MaterialExpressionAdd, -200, 330)
+    MEL.connect_material_expressions(scal["Subsurface"], "", amount, "A")
+    MEL.connect_material_expressions(thin, "", amount, "B")
+    sat = make(unreal.MaterialExpressionSaturate, -80, 330)
+    MEL.connect_material_expressions(amount, "", sat, "")
+    MEL.connect_material_property(colour, "RGB", P.MP_BASE_COLOR)
+    MEL.connect_material_property(normal, "RGB", P.MP_NORMAL)
+    MEL.connect_material_property(rough, "", P.MP_ROUGHNESS)
+    MEL.connect_material_property(orm, "R", P.MP_AMBIENT_OCCLUSION)
+    MEL.connect_material_property(scal["Specular"], "", P.MP_SPECULAR)
+    MEL.connect_material_property(sat, "", P.MP_OPACITY)                        # Subsurface Profile: the scattering's amount
+    MEL.recompile_material(mat)
+    EAL.set_metadata_tag(mat, "StudioSkinVersion", SKIN_VERSION)
+    EAL.save_loaded_asset(mat)
+    unreal.log(f"storykit: made {SKIN_MATERIAL} ({SKIN_VERSION})")
+    return mat
+
+
+def wear_skin(name, mesh, path, dest):
+    """The skin's three maps imported as textures (the relief's green flipped to Unreal's convention, the ORM linear)
+    and an instance of M_StudioSkin with the skin's numbers, on the skin's slot. False when the export carries none (an
+    export made before the skin light: the skin keeps the import's own material)."""
+    unreal = _unreal()
+    EAL, MEL = unreal.EditorAssetLibrary, unreal.MaterialEditingLibrary
+    sk = skin(path)
+    if not sk:
+        return False
+    parent = skin_material()
+    tmp = L.ROOT / "Saved" / "People" / name
+    tmp.mkdir(parents=True, exist_ok=True)
+    TC = unreal.TextureCompressionSettings
+    texs = {}
+    for k, param in (("color", "Color"), ("normal", "Normal"), ("orm", "ORM")):
+        if k not in sk:
+            continue
+        data, ext = sk[k]
+        f = tmp / f"skin_{k}{ext}"
+        f.write_bytes(data)
+        tex_name = f"T_{name}_skin_{k}"
+        t = unreal.load_asset(f"{dest}/{tex_name}") if EAL.does_asset_exist(f"{dest}/{tex_name}") else None
+        if t is None:
+            got = _import(f, dest, tex_name)
+            t = unreal.load_asset(got[0]) if got else None
+        if t is None:
+            unreal.log_warning(f"storykit: {name}'s skin: its {k} map didn't import")
+            continue
+        if k == "normal":
+            t.set_editor_property("compression_settings", TC.TC_NORMALMAP)
+            t.set_editor_property("flip_green_channel", True)                 # glTF's +Y up to Unreal's
+        elif k == "orm":
+            t.set_editor_property("srgb", False)
+            t.set_editor_property("compression_settings", TC.TC_MASKS)
+        EAL.save_loaded_asset(t)
+        texs[param] = t
+    mi_name = f"MI_{name}_skin"
+    mi_path = f"{dest}/{mi_name}"
+    mi = unreal.load_asset(mi_path) if EAL.does_asset_exist(mi_path) else \
+        unreal.AssetToolsHelpers.get_asset_tools().create_asset(mi_name, dest, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+    MEL.set_material_instance_parent(mi, parent)
+    for k, v in skin_params(sk["record"]).items():
+        MEL.set_material_instance_scalar_parameter_value(mi, k, v)
+    for param, t in texs.items():
+        MEL.set_material_instance_texture_parameter_value(mi, param, t)
+    MEL.update_material_instance(mi)
+    EAL.save_loaded_asset(mi)
+    mats = list(mesh.get_editor_property("materials"))
+    worn = False
+    for m in mats:
+        slot = str(m.get_editor_property("material_slot_name"))
+        if slot == sk["material"] or slot.endswith("_skin"):
+            m.set_editor_property("material_interface", mi)
+            worn = True
+    mesh.set_editor_property("materials", mats)
+    EAL.save_loaded_asset(mesh)
+    if not worn:
+        unreal.log_warning(f"storykit: {name}: no skin slot found for {sk['material']} (slots: {_slots(mesh)})")
+    return worn
+
+
 def _import(file, dest, name=None):
     unreal = _unreal()
     task = unreal.AssetImportTask()
@@ -378,9 +538,14 @@ def import_character(name, force=False):
             unreal.log_warning(f"storykit: {path.name} didn't import as a skeletal mesh")
             return None
         wear_eyes(name, mesh, path, dest)
-    elif not unreal.EditorAssetLibrary.get_metadata_tag(mesh, "StudioEyeVersion") == EYE_VERSION:
-        wear_eyes(name, mesh, path, dest)                     # the eye's material changed since: its instances again
+        wear_skin(name, mesh, path, dest)
+    else:
+        if not unreal.EditorAssetLibrary.get_metadata_tag(mesh, "StudioEyeVersion") == EYE_VERSION:
+            wear_eyes(name, mesh, path, dest)                 # the eye's material changed since: its instances again
+        if not unreal.EditorAssetLibrary.get_metadata_tag(mesh, "StudioSkinVersion") == SKIN_VERSION:
+            wear_skin(name, mesh, path, dest)                 # and the skin's
     unreal.EditorAssetLibrary.set_metadata_tag(mesh, "StudioEyeVersion", EYE_VERSION)
+    unreal.EditorAssetLibrary.set_metadata_tag(mesh, "StudioSkinVersion", SKIN_VERSION)
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
     unreal.log(f"storykit: {name} from the Character Studio: {mesh.get_path_name()}")
     return mesh
