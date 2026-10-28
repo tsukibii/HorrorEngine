@@ -12,7 +12,7 @@ never names or details (§9). The abstract built on this is `02_abstract.md`.
 |---|---|
 | About 90,000 people are reported missing in Japan every year. Most are found, many within a week; some never are | missing posters, a news item, a police officer at the door: ordinary there, personal here |
 | After seven years missing, a family court can declare a person dead. A family in mourning sends postcards in November or December asking people not to send New Year greetings | a mourning postcard in the mail, found while you tidy: the girl coming tonight was declared dead this year |
-| New Year's Eve is the night visitors come from the other side: the year god the house is cleaned for, the masked visiting deities who go door to door, Origuchi's *marebito* | a game called The Visitor that opens with the year-end clean, on the night of the 108 bells |
+| New Year's Eve is the night visitors come from the other side: the year god the house is cleaned for, the masked visiting deities who go door to door, Origuchi's *marebito*; and at Obon in August the dead themselves come home (§5b) | a game called The Visitor on the last day of Obon, the anniversary of her disappearance, with lanterns for the dead on the river |
 | The dead visiting the living isn't only folklore. Ishinomaki's taxi drivers paid the fares of passengers who vanished; a Zen priest exorcised people possessed by the tsunami's dead; Tōno's spirited-away girl came home once, on a windy day | the paranormal reading the game keeps alive to the end, and its secret ending |
 | Actively paranoid patients see anger in neutral faces. Capgras is the conviction that someone you love has been replaced by an impostor wearing their face | L.A. Noire's face-reading becomes the theme: the narrator's reading of her face can be wrong; the face itself is the evidence |
 | Families have taken in impostors because they wanted to believe. In Tokyo you can rent someone to play your relative. A missing woman's brother was the one who found the truth | a visitor who isn't who she says she is, for a reason the player ends up on the side of |
@@ -54,9 +54,9 @@ A household that lost someone during the year sends no New Year cards. Instead, 
 sends a mourning postcard so that nobody sends it festive greetings. Many people learn of a death this way.
 - **Why it fits:** it's a real, everyday Japanese object that almost no Western player knows, and it arrives in the
   very weeks the story happens.
-- **What we take:** in the unopened mail on the kotatsu, a mourning postcard from the Kikuchis: *"Our elder daughter
-  Natsumi, missing since 31 December 2014, was declared deceased this year."* The player can read it while tidying,
-  minutes before Natsumi knocks.
+- **What we take:** in the unopened mail, word from the Kikuchis that Natsumi was declared dead. (The game moved to
+  August, §5b, so it's a black-bordered letter with an invitation to her first Obon rather than a New Year card.) The
+  player can read it while tidying, minutes before Natsumi knocks.
 
 ## 2. Homes that hide things
 
@@ -195,6 +195,39 @@ births fell by roughly a fifth (sources give 15% to 25%). 2026 is the next one, 
 night. Natsumi vanished at the end of 2014, also a horse year: twelve years, the zodiac come full circle.
 - **What we take:** an old superstition that blames women, on the night a man's fear turns a woman into his monster.
   One line on the TV, one from her.
+
+## 5b. Summer instead: Obon (the user's change, DECISIONS 2026-10-28, night)
+
+The user moved the game to a summer day, the anniversary of her disappearance. §5 stays as background (the visiting
+gods and the hospitality test still frame the visitor); what the summer gives:
+
+### 5b.1 Obon: the dead come home
+Mid-August (13 to 16 in most of Japan), the dead return to their families. A welcoming fire (*mukaebi*) is lit at the
+door on the 13th and a sending-off fire (*okuribi*) on the 16th; the altar gets a cucumber horse, so the dead come
+quickly, and an eggplant cow, so they go back slowly (*shōryō-uma*). The first Obon after a death (*hatsubon*,
+*niibon*) is kept with special care, a white lantern among its signs. On the last night, paper lanterns with candles
+are floated down rivers to the sea (*tōrō nagashi*).
+- **What we take:** the day itself, 16 August: the dead are here until tonight's fire. It's his mother's first Obon,
+  and, since her funeral this spring, Natsumi's. Two cucumber horses on his mother's altar (he made one for Natsumi).
+  The lanterns on the river from the balcony, and one floating upstream. The ending that lights the fire nobody lit.
+
+### 5b.2 Summer rivers
+Water accidents peak in July and August; the National Police Agency counted 436 water-related incidents in summer
+2026, and the Nippon Foundation's analysis of summer 2025 found most drowning victims died. Evening storms (*yūdachi*)
+swell rivers fast.
+- **What we take:** the weir below the bridge, the river high after the afternoon storm, and a storm tonight too.
+
+### 5b.3 The broken geta strap
+A snapped *hanao*, the thong of a wooden sandal, is a well-known bad omen, like a broken comb.
+- **What we take:** Natsumi's strap snaps on the walk home; she leaves the geta on the bank (Tōno's sandals under the
+  pear tree, §4.1) and runs barefoot onto the weir. He keeps the geta.
+
+### 5b.4 Coloured contact lenses
+Coloured contacts are a fashion staple for young Japanese women; since November 2009 even non-corrective ones are
+medical devices needing the health ministry's approval, after reports of eye damage, and the approved products went
+from under ten in 2009 to about 300 by 2013.
+- **What we take:** Natsumi's rare lilac eyes, and Fuyumi's lilac lenses: nearly right, too even, one lost in the
+  bath.
 
 ## 6. Folk tells we can use
 
@@ -365,6 +398,16 @@ significant factor.
 [(Japanese Wiki Corpus)](https://japanese-wiki-corpus.github.io/culture/Somin%20Shorai%20(a%20Japanese%20old%20story%20about%20a%20folk%20religion).html);
 [the Fire Horse (nippon.com)](https://www.nippon.com/en/japan-topics/g02550/),
 [(World Bank blog)](https://blogs.worldbank.org/en/opendata/curse-fire-horse-how-superstition-impacted-fertility-rates-japan).
+
+**§5b Summer.** [Obon (nippon.com)](https://www.nippon.com/en/features/jg00098/obon-a-summer-festival-for-honoring-ancestors.html),
+[(Tokyo Weekender)](https://www.tokyoweekender.com/art_and_culture/history/obon-japan-festival-of-the-dead/),
+[(Fun Japan)](https://fun-japan.jp/en/articles/14108);
+[summer water accidents 2026 (NPA, PDF)](https://www.npa.go.jp/publications/statistics/safetylife/chiiki/r8_kaki_suinan_data.pdf),
+[(Nippon Foundation via nippon.com, JP)](https://www.nippon.com/ja/japan-data/h02119/);
+[the broken geta strap (Muza-chan)](https://muza-chan.net/japan/index.php/blog/japanese-superstitions-broken-geta),
+[(tkgje: hanao)](https://www.tkgje.jp/entries/15000/15379_hanao.html);
+[coloured contacts as medical devices (MHLW, PDF)](https://www.mhlw.go.jp/topics/bukyoku/iyaku/colorcontact/dl/colorcontact01.pdf),
+[(Osaka prefecture, PDF)](https://www.pref.osaka.lg.jp/documents/4087/20140522kokusenkarakonn.pdf).
 
 **§6 Folk tells.** [moshi moshi (Factmyth)](https://factmyth.com/factoids/saying-moshi-moshi-proves-you-arent-a-ghost),
 [(Uncanny Japan)](https://uncannyjapan.com/podcast/moshi-moshi-meet-some-demons/),

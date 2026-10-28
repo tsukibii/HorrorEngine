@@ -2,6 +2,21 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, night (The Visitor's abstract revised: a summer day, lilac eyes, clues about yourself)
+
+- **The user's notes on the abstract**: "lets make a summer day rather than new year, instead of a mole let it be a
+  different eye color (Lets say Lilac), today would have been the aniversarry of her disappearence, your mother who
+  protected you also has passed away."
+- **Clues about yourself**: "The dialogue needs to be written where not only are we getting clues from her, but also
+  our dialogue choices and what we can ask/do gives us clues about ourselves."
+- Claude's calls inside that, in the revised abstract (still waiting for the user's yes): 16 August, the last day of
+  Obon, when the dead go back, and the night Natsumi vanished in 2014 during the river festival; she slipped on the
+  weir (her geta's strap snapped, the omen), not through ice; his mother's first Obon; the visitor's lilac is coloured
+  contacts over brown eyes (one lost in the bath: one lilac eye, one brown); a second mystery about him: the answers
+  he's offered, his true answers to her probes, thoughts that rewrite themselves, his scarred palms, his own notes,
+  and the cucumber horse he made for Natsumi, kept as memories that decide how much truth he can tell at the end;
+  lanterns on the river in place of the bells, one floating upstream.
+
 ## 2026-10-28, evening (a new game, The Visitor: research, an abstract, then the flow; branch `game-research-001`)
 
 - **A branch and a folder for game research**: "Don't use dev-002 branch, but forked off it, make a new branch called
