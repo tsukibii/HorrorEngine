@@ -958,3 +958,11 @@ PLAY's new examining step looked at the Pilot's kitchen photo, and twenty steps 
 ended in "Mother's day" instead of the good ending: looking at that photo is the Pilot's secret (`found_photo`). The
 step itself was fine. Before a test step uses one of a game's things, check what the story hears from it (`story.py
 flow`, a grep for its id); use one nothing listens to (the answering machine), or give the step a thing of its own.
+
+## An import inside a function hides the module's name everywhere in it (2026-10-28)
+
+The desk's "saves kept" list (the toolbar's clock) had failed since 2026-10-26 without anyone seeing it: two branches
+of the server's `do_GET` had their own `import urllib.parse`, which makes `urllib` a local name for the whole
+function, so the history branch (on paths those lines never run) found it unbound, raised, and the server dropped the
+connection. GUIDE's history step was the first to notice. The module imports it once at the top; a function never
+imports again what the module already has.

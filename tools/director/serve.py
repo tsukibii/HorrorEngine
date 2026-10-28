@@ -176,7 +176,6 @@ class Handler(BaseHTTPRequestHandler):
             files = sorted(f.name for f in BODIES.glob("*") if f.suffix.lower() in (".glb", ".gltf", ".fbx")) if BODIES.exists() else []
             return self.send(200, {"bodies": files + people_bodies()})
         if parts[:2] == ["bodies", "people"] and len(parts) == 3:    # a Character Studio character, as exported for the desk (rigged, its eyes)
-            import urllib.parse
             name = urllib.parse.unquote(parts[2])
             gf = PEOPLE / name / "export" / f"{name}.glb" if name and "/" not in name and "\\" not in name and not name.startswith(".") else None
             if gf and gf.is_file():
@@ -204,7 +203,6 @@ class Handler(BaseHTTPRequestHandler):
                 m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
             return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
         if parts[0] == "pbr" and len(parts) >= 3:
-            import urllib.parse
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
             pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
             if pf and pf.is_file() and pf.suffix.lower() in BODY:
