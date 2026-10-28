@@ -421,6 +421,25 @@ Play play it on each body that carries MHR's face (the desk's MHR bodies, a Stud
 frame's 72 face weights to Unreal (`face` in preview.json). The check: `who` in the cast, `expr` in the library, `at`
 a clip of this version, the numbers in range.
 
+### 3.8 Body tracks: what a cast member does across lines
+
+A scene's cue whose action is a `behave` (§4: `idle` at a spot with a `pose` or `face`, `sit`, `go` to a spot by way
+of `via` and `then` idle or sit, `path` along a route, `patrol` along routes, `off`; a looped `motion` while she stands,
+sits or walks) drives that cast member **from its clip edge until her next one or the shot's end**, over whatever her
+clips' bodies would have done: a state that outlives a motion (after the walk, she sits on the chair till the shot
+ends), a patrol round and round, someone walking in (she needn't be on the scene's `stage`). It's Play's own behaviour,
+replayed from the cue: it starts where her last one left her, else at her mark as far as her clip had moved her, so
+a walk's end carries into it. HANDOFF_DIRECTOR_TODO §4.
+
+```json
+"cues": [{"at": {"clip": "c2", "edge": "start"}, "do": {"behave": "aoi", "as": "go", "to": "lobby_bench_spot", "then": "sit"}}]
+```
+
+The desk draws them as **body rows** under the face rows, a block per cue from its edge to the next (dragged along,
+it rides the nearest clip edge; a click opens it; a double-click adds one), and the stage, the Watch, Play's scenes
+and the bake for Unreal play them. Once her track starts it has her for the rest of the shot (`sees` is Play's:
+nobody is caught in a scene). The story check holds them to §4's rules (the spots, the routes, the motions).
+
 ## 4. Stitches (the player's tasks)
 
 ```json

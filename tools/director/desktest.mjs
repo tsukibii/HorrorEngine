@@ -197,6 +197,18 @@ print(json.dumps(L.flow_models(json.load(sys.stdin))))`], { input: JSON.stringif
   }
 }
 
+// ---- a body track (STORY_FORMAT §3.8, HANDOFF_DIRECTOR_TODO §4): a scene's behave cues, checked as Play's behaviours are
+console.log("a body track (a scene's behave cues)");
+{
+  const S0 = story("TestRoom001"), th = thingsOf(S0), sc0 = S0.scenes.s_hello, has = (sc0.cues || []).some(c => c.do && c.do.behave);
+  const S = clone(S0), cue = S.scenes.s_hello.cues.find(c => c.do && c.do.behave);
+  cue.do.to = "no_spot"; S.scenes.s_hello.cues.push({ at: { clip: "c4", edge: "start" }, do: { behave: "aoi", as: "path", route: "r_nope" } });
+  const ps = run(S, th).filter(p => p.sev === "error" && p.at.node === "n_hello" && /no_spot|r_nope/.test(p.text)), out = storyCheck("TestRoom001", S);
+  has && ps.length === 2 && /no_spot/.test(out) && /r_nope/.test(out)
+    ? ok(`TestRoom001's lobby has one (Aoi walks to the bench and sits); a spot and a route that aren't there: found at the scene's cue (${ps.map(p => p.text).join("; ")}), and by the story check`)
+    : fail(`a body track: TestRoom001's lobby has one ${has}; live ${ps.map(p => p.text).join("; ") || "none"}; story check ${/no_spot/.test(out)} ${/r_nope/.test(out)}`);
+}
+
 // ---- the merge: the desk's edits and Claude's on disk, from the version both started from
 console.log("the merge (merge.js)");
 {

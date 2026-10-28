@@ -197,18 +197,32 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_hello", async () => {
-    await step("Aoi in the lobby (a scene): her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
+    await step("Aoi in the lobby (a scene): her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), her body track (from her second line she walks to the bench and sits there till the shot ends), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
       // skipped along to her question; then, answered, watched to its end: a conversation card's answer (§9.9), her reply
       // two lines, then on to the line it skips to (her line for the other answer never said)
-      const t0 = Date.now(), subs = [];
+      // her body track: from her mark (x 1.5) to the bench (x -3); a skip jumps to her question, so the Watch is seen
+      // there (where the timeline has her then: on her way) and from there to the bench
+      const t0 = Date.now(), subs = [], xs = [];
       while (!(await page.$(".ph-dock .ph-opt"))) { if (Date.now() - t0 > 60000) throw new Error("her question never came"); await page.keyboard.press("Escape"); await page.waitForTimeout(300); }
+      const xq = await page.evaluate(() => { const g = window.__dd.watchStage.cast.aoi.group; return g.visible ? +g.position.x.toFixed(2) : null; });
       await page.keyboard.press("Digit1");
       while (Date.now() - t0 < 120000) {
-        const o = await page.evaluate(() => { const R = window.__dd.run, p = window.__dd.play; return { sub: (document.querySelector("#watchOv .sub") || {}).textContent || "", out: !!(p && p.active) || !R || R.trail[R.trail.length - 1] !== "n_hello" }; });
+        const o = await page.evaluate(() => { const R = window.__dd.run, p = window.__dd.play, g = window.__dd.watchStage.cast.aoi.group;
+          return { sub: (document.querySelector("#watchOv .sub") || {}).textContent || "", x: g.visible ? g.position.x : null, out: !!(p && p.active) || !R || R.trail[R.trail.length - 1] !== "n_hello" }; });
         if (o.sub && subs[subs.length - 1] !== o.sub) subs.push(o.sub);
         if (o.out) break;
+        if (o.x !== null) xs.push(o.x);
         await page.waitForTimeout(80);
       }
+      const tr = await page.evaluate(async () => {      // by the scene's timeline: at her mark till her second line, walking two seconds in, on her way at her question, at the bench sitting by the end
+        const { version } = await import("/stage.js"), st = window.__dd.watchStage, tl = st.timeline(version(window.__dd.S.scenes.s_hello)), c2 = tl.segs.find(x => x.type === "clip" && x.clip.id === "c2"), q = tl.segs.find(x => x.type === "reply");
+        const at = T => { const s = st.stateAt(tl, T, window.__dd.FILES), pl = s.place.aoi; return pl ? { x: +pl.pos.x.toFixed(2), z: +pl.pos.z.toFixed(2), yaw: Math.round(pl.yaw), pelvis: +s.poses.aoi.pelvis.y.toFixed(2) } : null; };
+        return { before: at(c2.start - 0.1), walking: at(c2.start + 2), asked: at(q.start), end: at(tl.total) };
+      });
+      const { before, walking, asked, end } = tr;
+      if (before !== null || !walking || !(walking.x < 1.2 && walking.x > -2.8) || !(end && Math.abs(end.x + 3) < 0.1 && Math.abs(end.z - 0.85) < 0.1 && end.yaw === 270 && end.pelvis < 0.6)
+          || !asked || xq === null || Math.abs(xq - asked.x) > 0.15 || !(xs.length && Math.min(...xs) < -2.9))
+        throw new Error(`her body track: ${JSON.stringify(tr)}; in the Watch at her question x ${xq}, then down to ${xs.length ? Math.min(...xs).toFixed(2) : "unseen"}`);
       const said = ["Good. Then let's begin.", "The corridor's yours. I'll be watching.", "One thing a room. Fine."], skipped = "Tell me if it gets to be too much.";
       if (said.some(x => !subs.includes(x)) || subs.includes(skipped) || subs.indexOf(said[0]) > subs.indexOf(said[1]) || subs.indexOf(said[1]) > subs.indexOf(said[2])) throw new Error("the conversation said " + JSON.stringify(subs));
       const tk = await page.evaluate(async () => { const { version } = await import("/stage.js");

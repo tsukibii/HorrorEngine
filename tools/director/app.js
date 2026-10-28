@@ -951,7 +951,7 @@ function sceneEditor(box, sc, sid) {
     });
   bar.append(el("div", { class: "playhead", id: "playhead", style: "left:0%" }));
   wireTimeline(bar, tl, ver, total);
-  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, faceRows(sid, ver, pv, tl, total), el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip · under it a face row per character: drag an expression from the Expressions tab onto one"));
+  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, faceRows(sid, ver, pv, tl, total), bodyRows(sid, ver, pv, tl, total), el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip · under it a face row per character: drag an expression from the Expressions tab onto one"));
   const script = el("div", { class: "script" });
   ver.clips.forEach((c, i) => script.append(clipCard(sc, ver, c, i, lvl, sid)));
   sortable(script, ver.clips, "clip", CTX, ".clip");
@@ -1063,6 +1063,60 @@ function wireTimeline(bar, tl, ver, total) {
     const d = ACTION[verb], a = d.make(), v = d.fields.length ? await editAction(a, CTX, { isNew: true }) : a; if (!v) return;
     (ver.cues = ver.cues || []).push({ at: Object.assign({ clip: at.clip, edge: at.edge }, at.offset ? { offset: at.offset } : {}), do: v }); touch(); CTX.rerender();
   });
+}
+// a scene's body tracks (STORY_FORMAT §3.8, HANDOFF_DIRECTOR_TODO §4): a row per character, each of their behave cues a
+// block from its clip edge to the next one or the shot's end: what Play's behaviour has them do from there (stand at a
+// spot, sit, walk to a spot and stay, a route round and round, off), over whatever their clips' bodies did. Dragged
+// along, a block rides the nearest clip edge; a click opens it; a double-click adds one there
+const BODYROWS = {};
+function behaveWords(a) {
+  const m = a.motion ? ` ↻ ${a.motion}` : "", as = a.as || "idle";
+  return (as === "idle" ? `stand${a.at ? " at " + a.at : ""}${a.pose && a.pose !== "idle" ? ", " + a.pose : ""}` : as === "sit" ? `sit${a.at ? " at " + a.at : ""}` :
+    as === "go" ? `→ ${a.to || "…"}${(a.via || []).length ? " via " + a.via.join(", ") : ""}${a.then === "sit" ? ", sits" : ""}` : as === "path" ? `route ${Array.isArray(a.route) ? a.route.join(" › ") : a.route || "…"}${a.mode ? " (" + a.mode + ")" : ""}` :
+    as === "patrol" ? `patrol ${(a.routes || []).join(", ")}` : as === "off" ? "off the stage" : as) + m;
+}
+function bodyRows(sid, ver, pv, tl, total) {
+  const box = el("div", { class: "facerows bodyrows" }), E = edgeFinder(tl, total); if (!E || !S.cast) return box;
+  const cues = ver.cues || [], name = w => (S.cast[w] || {}).name || w;
+  const mine = w => cues.map((cu, i) => ({ cu, i, t: edgeTime(tl.segs, cu.at) })).filter(x => x.cu.do && x.cu.do.behave === w && x.t !== undefined).sort((x, y) => x.t - y.t);
+  const rows = [...new Set([...Object.keys(pv.stage || {}), ...cues.filter(cu => cu.do && typeof cu.do.behave === "string").map(cu => cu.do.behave), ...(BODYROWS[sid] || [])])].filter(w => S.cast[w]);
+  for (const w of rows) {
+    const track = el("div", { class: "ftrack btrack", "data-who": w, title: `${name(w)}'s body: double-click where she starts something (standing at a spot, sitting, walking to a spot, a route); her clips' bodies play till then` },
+      el("span", { class: "fwho", style: `color:${whoColor(w)}` }, name(w) + " · body"));
+    const list = mine(w);
+    list.forEach((x, k) => {
+      const t1 = k + 1 < list.length ? list[k + 1].t : total, wd = Math.max(1e-3, t1 - x.t);
+      track.append(el("div", { class: "fblk bblk", "data-i": x.i, title: `${actionText(x.cu.do, CTX.name)}\nfrom ${E.label(x.cu.at || {})} till ${k + 1 < list.length ? "the next" : "the shot's end"} · click: open · drag: along the clips`,
+        style: `left:${x.t / total * 100}%;width:${wd / total * 100}%` }, el("span", {}, behaveWords(x.cu.do))));
+    });
+    track.addEventListener("dblclick", async e => {
+      if (e.target.closest(".fblk")) return;
+      const at = E.near(E.tAt(track, e.clientX), e.shiftKey, track.getBoundingClientRect().width);
+      const a = { behave: w, as: "idle" }; if ((pv.stage || {})[w]) a.at = pv.stage[w];
+      const v = await editAction(a, CTX, { isNew: true }); if (!v) return;
+      (ver.cues = ver.cues || []).push({ at: E.atOf(at), do: v }); touch(); CTX.rerender();
+    });
+    track.addEventListener("mousedown", e => {        // a block dragged along the clips (it rides the edge it's dropped nearest), or clicked open
+      const b = e.target.closest(".bblk"); if (!b || e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      const cu = cues[+b.dataset.i]; if (!cu) return;
+      const x0 = e.clientX, grab = E.tAt(track, x0) - (edgeTime(tl.segs, cu.at) || 0), tip = el("div", { class: "cuetip" }); let at = null;
+      const move = ev => {
+        if (!at && Math.abs(ev.clientX - x0) < 4) return;
+        at = E.near(Math.max(0, E.tAt(track, ev.clientX) - grab), ev.shiftKey, track.getBoundingClientRect().width);
+        b.style.left = tip.style.left = (at.t / total * 100) + "%"; tip.textContent = E.label(at); if (!tip.isConnected) track.append(tip);
+      };
+      const up = async () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); tip.remove();
+        if (at) { cu.at = E.atOf(at); touch(); CTX.rerender(); return; }
+        const v = await editAction(cu.do, CTX); if (v) { cu.do = v; touch(); CTX.rerender(); } };
+      window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    });
+    box.append(track);
+  }
+  const others = castIds().filter(c => !rows.includes(c));
+  if (others.length) box.append(el("select", { class: "fadd", title: "a body row for someone not on this scene's stage (she can walk in)", on: { change: e => { if (!e.target.value) return; (BODYROWS[sid] = BODYROWS[sid] || []).push(e.target.value); CTX.rerender(); } } },
+    el("option", { value: "" }, "+ a body row for…"), others.map(c => el("option", { value: c }, name(c)))));
+  return box;
 }
 // a scene's face rows (EXPRESSIONS_PLAN §2, STORY_FORMAT §3.7): a row per character on its stage, under the clips. An
 // expression dragged from the Expressions tab lands where it's dropped, riding the nearest clip edge as a cue does

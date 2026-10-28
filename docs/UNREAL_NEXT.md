@@ -104,6 +104,8 @@ The order (each a commit with an automation test, as S7 says):
 - [ ] The PBR shelf: `surfaces.sync_pbr()` imports a set the first time a game uses it (docs/ASSETS.md §6).
 - [ ] Kimodo's motions onto the MetaHumans: `tools/retarget.py ... unreal`, its VERIFY lines (SETUP S12).
 - [ ] The skin (the Character Studio's skin light, after HumanShaders): §6 below.
+- [ ] A scene's body tracks (STORY_FORMAT §3.8, its `behave` cues): the preview's bake records them as it does every
+  body (nothing new to play); the StoryRunner plays a scene's behave cues with the same behaviours as Play's (RUNNER_SPEC).
 - [ ] A cast member's models (STORY_FORMAT §2 `models`, a scene's picks carried down the flow; not written for Unreal
   yet): the bake records each scene on the bodies its cast wear there (`scenes[sid].models`) and exports each model's
   body (`bodies[who].models[name]`); AStoryPreview wears that mesh for that scene (its skinning frames are its own).

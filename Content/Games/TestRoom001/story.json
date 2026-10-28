@@ -381,6 +381,15 @@
        "tag": "bench"
       },
       {
+       "id": "lobby_bench_spot",
+       "use": "spot",
+       "at": [
+        2.0,
+        4.15
+       ],
+       "rot": 270
+      },
+      {
        "id": "lobby_shoes",
        "kit": "shoe_cabinet",
        "at": [
@@ -2783,6 +2792,18 @@
      "do": {
       "state": "kitchen_tv",
       "to": "static"
+     }
+    },
+    {
+     "at": {
+      "clip": "c2",
+      "edge": "start"
+     },
+     "do": {
+      "behave": "aoi",
+      "as": "go",
+      "to": "lobby_bench_spot",
+      "then": "sit"
      }
     }
    ],

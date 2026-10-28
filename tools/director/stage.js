@@ -12,6 +12,8 @@ import { wearEye } from "../shared/eye.js";
 import { stainMaterial } from "./stain.js";
 import * as FACE from "../shared/face.js";      // tools/shared (served at /shared: the page sits at the root)
 import { layUVs } from "./painted.js";
+import { behaviourOf } from "./play/behaviours.js";   // a scene's behave cues play Play's own behaviours (a body track)
+import { settingsOf } from "./play/parts.js";
 const Y_UP = new THREE.Vector3(0, 1, 0);
 // the simple view (the toolbar's Simple, for when the desk lags): every lit surface a plain Lambert of its own colour, no
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
@@ -711,6 +713,74 @@ export class Stage {
   }
 
   // everything at scene time T: who stands where in what pose, the camera, the cover (black), the subtitle
+  // ---- a body track (STORY_FORMAT §3.8, HANDOFF_DIRECTOR_TODO §4): a scene's cues doing `behave` (idle, sit, go,
+  // path, patrol, off: Play's own behaviours, play/behaviours.js) drive their cast member from the cue's clip edge
+  // until the next one or the shot's end: a state that outlives a clip's motion (after the walk, sit on the chair till
+  // the shot ends), a patrol round and round. Replayed at a fixed step from the cue (kept while time moves on, so a
+  // scrub back plays it again), starting where the last one left her, else at her mark as her clip had her then
+  behaveCues(tl) {                              // {who: [{t, a}]}, in time
+    if (tl._bcues) return tl._bcues;
+    const out = {};
+    for (const cu of tl.v.cues || []) {
+      const a = cu.do; if (!a || typeof a.behave !== "string") continue;
+      const t = edgeTime(tl.segs, cu.at); if (t === undefined) continue;
+      (out[a.behave] = out[a.behave] || []).push({ t, a });
+    }
+    for (const l of Object.values(out)) l.sort((x, y) => x.t - y.t);
+    return tl._bcues = out;
+  }
+  behaveRt() {                                  // what a behaviour needs of a runtime, from the stage
+    if (this._brt && this._brt.things === this.things) return this._brt;
+    const st = this, byId = {};
+    this.world.traverse(o => { if (o.userData && o.userData.id && !byId[o.userData.id]) byId[o.userData.id] = o; });
+    return this._brt = { things: this.things, plan: { things: this.things }, story: this.story, hud: { log() {} }, byId, npcs: {}, emit() {}, caught() {},
+      player: { get pos() { return st.camera.position.clone().setY(st.camera.position.y - 1.6); }, hiding: null },
+      route(ref) {                               // runtime.route: a level's route or a list of spots, as points
+        let r = null, level = null;
+        if (Array.isArray(ref)) r = { points: ref };
+        else for (const [lid, lv] of Object.entries(st.story.levels || {})) if ((lv.routes || {})[ref]) { r = lv.routes[ref]; level = lid; }
+        if (!r) return null;
+        const points = [];
+        for (const p of r.points || []) { const q = typeof p === "string" ? { at: p } : p, t = st.things[q.at]; if (!t) continue; level = level || t.level; points.push({ pos: s2t(t.pos[0], t.pos[1], t.pos[2] || 0), yaw: t.yaw || 0, wait: +(q.wait || 0), pose: q.pose || null, check: q.check || null }); }
+        return points.length ? { level, mode: r.mode || "loop", points } : null;
+      } };
+  }
+  behaveAt(tl, who, cues, k, T, files) {        // the behaviour's npc at T (its pos in three's space, yaw in story degrees, pose, walking)
+    const memo = this._bmemo || (this._bmemo = new Map()), key = who + "|" + JSON.stringify(cues.slice(0, k + 1).map(c => [c.t, c.a])) + "|" + JSON.stringify((tl.v.stage || {})[who] || null) + "|" + this.level;
+    const cue = cues[k], b = behaviourOf(cue.a.as || "idle"), rt = this.behaveRt();
+    let m = memo.get(key);
+    if (!m || m.t > T + 1e-6) {
+      const from = k > 0 ? this.behaveAt(tl, who, cues, k - 1, cue.t, files) : this.markOf(tl, who, cue.t, files);
+      const npc = { cid: who, as: cue.a.as || "idle", s: settingsOf(b || { settings: {} }, cue.a), st: {}, pos: from && from.pos ? from.pos.clone() : null, yaw: from ? from.yaw || 0 : 0,
+                    level: (from && from.level) || this.level, pose: (from && from.pose) || "idle", walking: false, t0: cue.t };
+      if (b && npc.as !== "off") b.start(npc, rt, npc.s);
+      m = { t: cue.t, npc }; memo.set(key, m);
+      if (memo.size > 400) memo.delete(memo.keys().next().value);
+    }
+    const DT = 1 / 30;
+    if (b && b.update && m.npc.as !== "off") while (m.t + DT <= T + 1e-9) { b.update(m.npc, rt, DT, m.npc.s); m.t += DT; }
+    return m.npc;
+  }
+  markOf(tl, who, t, files) {                   // where she is when her track takes over: her mark, moved as far as her clip had moved her
+    const spot = this.things[(tl.v.stage || {})[who]]; if (!spot) return null;
+    const pos = s2t(spot.pos[0], spot.pos[1], spot.pos[2] || 0), yaw = spot.yaw || 0;
+    const mine = tl.segs.filter(s => s.type === "clip" && s.clip.who === who), cur = [...mine].reverse().find(s => s.start <= t);
+    if (cur) {                                    // the clip's own travel (a Kimodo walk, blocking that moves): its hips, from the mark
+      const bd = cur.clip.body || {}, bs = +bd.secs || cur.dur, lt = Math.min(bs, Math.max(0, t - cur.start - (+bd.delay || 0)));
+      const p = this.clipPose(cur.clip, lt, bs, files, this.startOf(tl, cur, files)), hip = p && (p.pelvis || p["soma:Hips"]);
+      if (hip) pos.add(new THREE.Vector3(hip.x, 0, hip.z).applyAxisAngle(new THREE.Vector3(0, 1, 0), yawToThree(yaw)));
+    }
+    return { pos, yaw, level: spot.level || this.level };
+  }
+  behavePose(npc, who, T, files) {              // as Play draws her (runtime.drawNpcs): her motion, else the pose (walking: the walk over it)
+    const lib = this.lib, h = +((this.story.cast || {})[who] || {}).height || 1.7;
+    const m = npc.s.motion && (this.story.motions || {})[npc.s.motion], walks = npc.as === "path" || npc.as === "patrol" || npc.as === "go";
+    const mp = m && (npc.walking || !walks) ? M.tableMotionPose(lib, m, m.name && files && files[m.name + ".json"], T - (npc.t0 || 0), h, walks) : null;
+    if (mp) return mp;
+    let p = M.clonePose(lib.poses[npc.pose] || lib.poses.idle);
+    if (npc.walking) p = M.walkOverlay(lib, p, T);
+    return M.fk(lib, p, h).pos;
+  }
   stateAt(tl, T, files, look = { yaw: 0, pitch: 0 }) {
     const v = tl.v, segs = tl.segs;
     let seg = segs.find(s => T >= s.start && T < s.end) || segs[segs.length - 1];
@@ -718,8 +788,22 @@ export class Stage {
     const out = { seg, clipSeg, black: 0, sub: null, ja: null, who: null, poses: {}, reach: {}, cam: {} };
     if (!clipSeg) return out;
     const c = clipSeg.clip, local = Math.min(clipSeg.dur, T - clipSeg.start);
+    // a body track: a behave cue (STORY_FORMAT §3.8) drives its cast member from its time on, Play's behaviour replayed
+    out.place = {};
+    const bhv = this.behaveCues(tl);
+    for (const [who, cues] of Object.entries(bhv)) {
+      let k = -1; for (let i = 0; i < cues.length; i++) if (cues[i].t <= T + 1e-9) k = i;
+      if (k < 0 || !this.cast[who]) continue;
+      const npc = this.behaveAt(tl, who, cues, k, T, files);
+      out.place[who] = { pos: npc.pos ? npc.pos.clone() : null, yaw: npc.yaw || 0, level: npc.level, hidden: npc.as === "off" || !npc.pos };
+      if (out.place[who].hidden) continue;
+      let pos = this.idleLayer(this.behavePose(npc, who, T, files), who, T, npc.walking ? 0.3 : 1, v.mood);
+      const spec = (v.look || {})[who]; if (spec) pos = this.lookLayer(pos, who, spec, tl, T, v);   // the scene's look still turns her head
+      out.poses[who] = pos;
+    }
     // poses: the speaking clip drives its actor; others idle; blends at clip starts
     for (const who of Object.keys(v.stage || {})) {
+      if (out.place[who]) continue;                    // (its body track has her)
       const mine = segs.filter(s => s.type === "clip" && s.clip.who === who);
       const cur = [...mine].reverse().find(s => s.start <= T) || mine[0];
       let pos;
@@ -897,11 +981,17 @@ export class Stage {
       this._trk[id].position.copy(p); this._trk[id].visible = Stage.showTrackers;
     }
     for (const [cid, f] of Object.entries(this.cast)) {
-      const spot = this.things[(v.stage || {})[cid]];
-      f.group.visible = !!spot;
-      if (!spot) continue;
-      f.group.position.copy(s2t(spot.pos[0], spot.pos[1], spot.pos[2]));
-      f.group.rotation.y = yawToThree(spot.yaw);
+      const spot = this.things[(v.stage || {})[cid]], pl = (state.place || {})[cid];
+      if (pl) {                                    // her body track: where the behaviour has her
+        f.group.visible = !pl.hidden && (!pl.level || pl.level === this.level);
+        if (!f.group.visible) continue;
+        f.group.position.copy(pl.pos); f.group.rotation.y = yawToThree(pl.yaw);
+      } else {
+        f.group.visible = !!spot;
+        if (!spot) continue;
+        f.group.position.copy(s2t(spot.pos[0], spot.pos[1], spot.pos[2]));
+        f.group.rotation.y = yawToThree(spot.yaw);
+      }
       f.group.updateMatrixWorld(true);
       f.reach = {};
       const rc = (state.reach || {})[cid];
