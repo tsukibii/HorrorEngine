@@ -164,6 +164,11 @@ scene: a camera fade, and control taken and given back softly.
   with a box collider for the trace; `IA_Interact` held on it scrubs (a progress ring on the reticle, the decal's
   opacity falling with an ease, a cloth sound every 0.36 s, the held mop or rag worked to and fro); the progress is kept
   per stain (let go, it waits); `with` must be the item in the hand; clean, it's hidden and `use` heard.
+- **Footsteps** (a room's `floor`, play/steps.js the reference): the importer gives each room's floor a physical
+  material by its word (`PM_Wood`, `PM_Stone`, `PM_Carpet`, `PM_Tile`, `PM_Dirt`, `PM_Metal`, `PM_Water`); the player
+  steps every 0.7 m of ground covered (1.05 m running, 0.45 m crouched), a trace down picks the sound by the material
+  (a MetaSound picking at random, never the one just played; on wood a creak about one step in twelve), -8 dB walking,
+  -4 running, -17 crouched; none in a cinematic, seated, hidden or at a lens.
 - **The inventory:** a `pickup` or a `carry` thing used goes into one row (its item given), the newest in the hand,
   held in view; the wheel turns the row, the one in the hand in the middle, at most five shown; Drop sets it down in
   front of the player on whatever is under that spot (no physics fall), facing them, and `dropped` (with the rooms it's

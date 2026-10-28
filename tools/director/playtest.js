@@ -442,6 +442,38 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const walk = await speed(["KeyW"]), run = await speed(["ShiftLeft", "KeyW"]);
     if (!(run > walk * 1.6)) throw new Error(`walk ${walk.toFixed(2)} m/s, run ${run.toFixed(2)} m/s`);
   });
+  await step("footsteps: each room's floor found under the feet; walking plays a step a stride of the ground covered, off the shelf by the floor (wood in the hall), never the same sound twice running; none standing still; crouched softer and further apart", async () => {
+    const floors = await page.evaluate(() => { const rt = window.__dd.play, V = rt.player.pos.constructor, out = {};
+      for (const [id, x, y] of [["porch", 2, -1.5], ["hall", 2, 3], ["kitchen", 2, 8], ["study", 6, 3], ["cellar_stairs", -1.5, 2]]) { rt.place(new V(x, 0, -y), 90, 0); out[id] = rt.floorUnder(); }
+      window.__stepsHeard = []; const f = rt.shelfSound; window.__restoreSteps = () => { rt.shelfSound = f; };
+      rt.shelfSound = function (n, at, db) { if (/^step_/.test(n)) window.__stepsHeard.push({ n, db, floor: rt.lastStep.floor, clock: rt.clock }); return f.call(this, n, at, db); };
+      return out; });
+    if (JSON.stringify(floors) !== JSON.stringify({ porch: "wood", hall: "wood", kitchen: "tile", study: "carpet", cellar_stairs: "stone" })) throw new Error(`the floors under the feet: ${JSON.stringify(floors)}`);
+    const walkFor = async (secs, crouch) => {
+      await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(0.8, 0, -2.6), 0, 0); window.__stepsHeard.length = 0; });
+      if (crouch) await page.keyboard.press("KeyC");
+      const x0 = await page.evaluate(() => window.__dd.play.player.pos.x);
+      await hold("KeyW", secs);
+      const r = await page.evaluate(x0 => ({ d: window.__dd.play.player.pos.x - x0, heard: window.__stepsHeard.splice(0) }), x0);
+      if (crouch) await page.keyboard.press("KeyC");
+      return r; };
+    const w = await walkFor(1.6), stride = w.d / Math.max(1, w.heard.length);
+    if (w.heard.length < 2 || Math.abs(w.heard.length - Math.round(w.d / 0.7 + 0.5)) > 1 || w.heard.some(h => h.floor !== "wood" || !/^step_(wood|creaky)_0\d$/.test(h.n) || h.db !== -8))
+      throw new Error(`walking ${w.d.toFixed(2)} m on the hall's wood: ${JSON.stringify(w.heard)}`);
+    await gameWait(0.8);
+    const still = await page.evaluate(() => window.__stepsHeard.splice(0));
+    if (still.length) throw new Error(`standing still: ${JSON.stringify(still)}`);
+    const c = await walkFor(2.4, true), every = h => (h[h.length - 1].clock - h[0].clock) / (h.length - 1);   // the seconds between steps
+    if (c.heard.length < 3 || c.heard.some(h => h.db !== -17) || !(c.d / c.heard.length < stride) || !(every(c.heard) > every(w.heard) * 1.15))
+      throw new Error(`crouched ${c.d.toFixed(2)} m: ${JSON.stringify(c.heard)} (walking: a step every ${every(w.heard).toFixed(2)} s)`);
+    const run = await page.evaluate(() => { const rt = window.__dd.play, p = rt.player.pos; rt.place(new (rt.player.constructor === Object ? p.constructor : p.constructor)(2, 0, -8), 90, 0);   // the kitchen's tile, thirty steps on the spot
+      window.__stepsHeard.length = 0; for (let i = 0; i < 300; i++) { p.x += i % 2 ? 0.1 : -0.1; rt.ability("steps", "update", 0.07); }
+      const h = window.__stepsHeard.splice(0); window.__restoreSteps(); rt.placeAt(rt.level, "start"); return h; });
+    const twice = run.findIndex((h, i) => i && h.n === run[i - 1].n);
+    if (run.length < 25 || run.some(h => h.floor !== "tile" || !/^step_concrete_0[1-5]$/.test(h.n)) || twice >= 0 || new Set(run.map(h => h.n)).size < 4)
+      throw new Error(`on the kitchen's tile: ${run.length} steps, ${new Set(run.map(h => h.n)).size} sounds, the same twice at ${twice}: ${run.slice(0, 8).map(h => h.n + "@" + h.floor)}`);
+    console.log(`       walking ${w.d.toFixed(2)} m: ${w.heard.length} steps (${w.heard.map(h => h.n.replace("step_", "")).join(" ")}), one every ${every(w.heard).toFixed(2)} s; crouched ${c.d.toFixed(2)} m: ${c.heard.length}, one every ${every(c.heard).toFixed(2)} s at ${c.heard[0].db} dB; on tile ${run.length} steps, never the same twice`);
+  });
   await step("a board game: a click at the table sits you down facing it, its rules play it out (chō-han: the cup shakes and comes down, you call, it lifts on the dice), you stand up and the story hears the result", async () => {
     const r = await goTo("hall_table", 1.0);
     const name = await page.textContent(".ph-prompt .ph-name");

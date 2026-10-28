@@ -72,7 +72,7 @@ last one repeated. A line can instead start a scene, an interactive cinematic or
 - **Checkpoints, death and retry**: the format has them; Play mode keeps the branch map's progress as the Watch does.
 - **The HUD**: subtitles (English only: DECISIONS 2026-10-27, notes), the prompt, a hidden or seen cue (a vignette, a quiet heartbeat), the
   objective, the timer for timed tasks. A pause menu with the branch map.
-- **Sound hooks**: footsteps (quieter crouched), her barks, music states (calm, uneasy, chase) from the score room's
+- **Sound hooks**: footsteps (quieter crouched: built 2026-10-28, `play/steps.js`), her barks, music states (calm, uneasy, chase) from the score room's
   palette later.
 - **Settings**: mouse sensitivity, crouch toggle or hold, subtitle size.
 - **For a romance game, the same parts**: conversations are interactive cinematics with timed choices, affection is
@@ -87,7 +87,7 @@ player's hands or a mini-game by adding a file, not by changing the runtime:
 - **actions** (`do`: `objective`, `door`, `behave`, `scene`, `hide`, `trick`...)
 - **behaviours** (`idle`, `sit`, `path`, `patrol`...)
 - **interactables** (`inspect`, `note`, `pickup`, `door`, `hide`, `talk`, `switch`...)
-- **player abilities** (`walk`, `crouch`, `hide`, `torch`: the flashlight, built 2026-10-28; later `hands`)
+- **player abilities** (`walk`, `crouch`, `hide`, `torch`: the flashlight, built 2026-10-28; `steps`: footsteps, the same day; later `hands`)
 
 The desk's are JS modules (`tools/director/play/<kind>/<name>.js`); Unreal's are C++ classes (or components)
 registered by the same names. One file lists every word, its settings and which side implements it
@@ -179,6 +179,11 @@ playback; Generate stays the one button.
 - **The peephole** (built 2026-10-28, the same ask): a door with `peephole` has a lens on both faces; a click puts the
   eye to it (the other side through a wide lens in a round hole, a little room to look about), a click or a step takes
   it back, and `{"peeping": door}` holds meanwhile: the knock, the look, nobody there (`play/peephole.js`).
+- **Footsteps** (built 2026-10-28, the same ask): the player's own steps off the sound shelf by the room's `floor` (wood
+  the wooden ones, a creak now and then; stone, tile and metal the hard ones; carpet and dirt the soft ones; water the
+  wet ones), a step each 0.7 m of ground really covered (1.05 m running, 0.45 m crouched and 9 dB softer), none
+  standing or walking into a wall, never the same sound twice running (`play/steps.js`, the ability `steps`, its
+  settings the game's).
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,

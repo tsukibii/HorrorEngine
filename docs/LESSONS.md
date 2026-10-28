@@ -919,3 +919,10 @@ visible and still: two headless browsers drawing WebGL on four cores starve each
 subset failed on the eyes: that step checks a face fitted to pictures, which two earlier steps (the front and side
 pictures) make, and `ONLY` had skipped them. So: one browser suite at a time; a suite's timeout over its whole length
 (STUDIO an hour); and `ONLY` only for steps that stand alone, else the whole suite.
+
+## A count over a short window isn't a rate (2026-10-28)
+
+PLAY's footsteps step compared the steps heard in 1.6 s walking and crouched and wanted fewer crouched. Both were
+three: the first step comes half a stride in, so a short window rounds both rates to the same count. The steps were
+right (0.52 s apart walking, 0.65 s crouched). Measure what's meant (the time between steps, from the game's clock),
+not a count over a window that small.

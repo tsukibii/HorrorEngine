@@ -9,6 +9,7 @@ import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
+import "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
 import { lensesFor, followLeaf, LENS } from "./peephole.js";
@@ -22,7 +23,7 @@ import { Inventory } from "./inventory.js";
 import { loadRules, boardCtx, Table } from "./boardgames.js";
 import { EYES, FOV_H, vfov, s2t } from "../stage.js";
 
-const ABILITIES = ["look", "walk", "crouch"];     // in the order they run
+const ABILITIES = ["look", "walk", "crouch", "steps"];     // in the order they run (steps.js hears what walking did)
 const THEME = "glass";                           // the HUD theme when a game names none (game.ui_theme)
 const LIT = 2.2;                                   // a lamp that starts off: its strength when it's switched on (stage.js's bulb)
 const USE_RANGE = 2.2, LOOK_RANGE = 30, DOOR_SECS = 0.6, SLAM_SECS = 0.15;
@@ -227,6 +228,19 @@ export class PlayRuntime {
     }
     return best > -Infinity ? best : pos.y;
   }
+  // the floor under the feet, the room's `floor` (wood, stone, carpet, tile, dirt, metal, water): its footsteps (steps.js)
+  floorUnder() {
+    const p = this.player.pos; let best = null, top = -Infinity;
+    for (const m of this.stage.solid) {
+      if (m.userData.kind !== "floor") continue;
+      const e = this.extent(m); if (!e || e.r !== undefined) continue;
+      const t = e.cy + e.hy; if (t > p.y + 0.05 || t <= top) continue;
+      const L = m.worldToLocal(p.clone());
+      if (Math.abs(L.x) <= e.hx && Math.abs(L.z) <= e.hz) { best = m; top = t; }
+    }
+    const tag = best && ((best.userData.piece || {}).tags || []).find(t => t.startsWith("floor:"));
+    return tag ? tag.slice(6) : "wood";
+  }
   isIn(t) { const p = this.player.pos; return this.pointIn(t, p.x, -p.z, p.y + 0.5); }
   pointIn(t, x, y, z) { return x >= t.min[0] && x <= t.max[0] && y >= t.min[1] && y <= t.max[1] && z >= t.min[2] && z <= t.max[2]; }   // story coordinates
 
@@ -257,10 +271,10 @@ export class PlayRuntime {
     this.hud.log(`♪ ${id}${at ? " at " + at : ""}${n ? "" : " (the game's own file: in Unreal)"}`);
     if (n) this.shelfSound(n, at);
   }
-  shelfSound(name, at) {
+  shelfSound(name, at, db = 0) {
     if (!this.active) return;
     const o = at && (this.byId[at] || (this.stage.cast || {})[at]), pos = o && o.getWorldPosition ? o.getWorldPosition(new THREE.Vector3()) : null;
-    playShelf(name, pos ? { pos, camera: this.stage.camera } : {});
+    playShelf(name, pos ? { pos, camera: this.stage.camera, db } : { db });
   }
   setVisible(id, on, restoring) {
     const o = this.byId[id]; if (!o) { this.hud.log(`no ${id} in this level`); return; }
@@ -388,8 +402,7 @@ export class PlayRuntime {
     const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || !!p.peeping || this.busy;
     m.visible = !away; if (away) return;
     const cam = this.stage.camera, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...this.hand.x.s.hand);
-    this.stepPhase = ((this.stepPhase || 0) + dt * walk * Math.PI * 2 * 1.8) % (Math.PI * 2);      // about two steps a second at a walk
-    hand.y += Math.sin(this.stepPhase) * 0.012 * walk;
+    hand.y -= Math.cos((this.stepAt ?? 0.5) * Math.PI * 2) * 0.012 * walk;      // dipping with each footstep (steps.js)
     if (this.clock - (this.scrubbing ?? -9) < 0.15) { hand.x += Math.sin(this.clock * 15) * 0.05; hand.y -= 0.06; }   // scrubbing: the hand works it to and fro
     const eye = cam.position.clone(), want = cam.localToWorld(hand), d = want.clone().sub(eye), len = d.length();
     this.ray.set(eye, d.divideScalar(len)); this.ray.far = len + e.r;
