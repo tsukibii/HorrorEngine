@@ -39,13 +39,21 @@ Godot, measured side by side (the colours within a small tolerance, the patterns
 UEEYE measure today. HumanShaders' own textures (MIT and CC BY 4.0) are used only where our paint has nothing to
 give (the micro-detail normal, perhaps); if a game ships them, it credits matmadness.
 
-## 3. Godot 4.7 Mono
+## 3. Godot 4.7, GDScript (decided 2026-10-28, night)
 
-Work on **Godot 4.7 Mono** (the .NET build), which is what the user has installed: C# makes porting our C++
-(`Source/StoryRunner/`: `AStoryPreview`, the StoryRunner, the struggle) much more direct than GDScript would. Cloud
-sessions need the Mono build too (Woohill's `tools/cloud_setup.sh` fetches the standard build: change it to
-`Godot_v4.7-stable_mono_linux_x86_64.zip` and install the .NET SDK it asks for). GDScript stays fine for the
-editor-side scripts and the checks.
+**GDScript, not C#** (the user left it to Claude: "decide yourself whether to use gdscript or c#; since our games are
+math light we can do gdscript if you think it's fine"). Why: the runtime that is tested is the desk's
+`play/runtime.js` (JS, dynamic: it ports to GDScript nearly line for line; the C++ `Source/StoryRunner/` was never
+run, and RUNNER_SPEC.md is its real source); cloud checks stay one command (`godot --headless -s check.gd`), no .NET
+SDK and no compile step; Woohill's GDScript lessons and lint carry over; anyone editing an exported project edits its
+scripts inside the editor. The user's machine has **Godot 4.7 Mono** installed, which runs GDScript projects
+unchanged; where speed matters later (soft bones, cloth) it's a shader, a compute pass or a GDExtension, not C#.
+
+**The cloud setup:** `tools/godot_setup.sh` (after Woohill's `tools/cloud_setup.sh`: Godot 4.7 standard to
+`/usr/local/bin/godot`, xvfb and lavapipe; a no-op when they're there or off the cloud, `--force` otherwise).
+**The check:** `tools/godot/check.sh`, GODOT: a headless script and a lit box rendered under xvfb on lavapipe
+(Forward+ on llvmpipe works here: Vulkan 1.4, a shadowed omni light). Scripts take `$GODOT`, else `godot`, else
+`godot-mono` (the user's). Godot prints ALSA errors under xvfb: harmless, filtered.
 
 ## 4. Lighting (from the 2026-10-28 discussion)
 
@@ -122,8 +130,8 @@ what a re-export from the desk will and won't touch. Whatever else turns up whil
 
 ## 8. When it starts
 
-1. Merge the user's dev branch into `godot-support`; list what it adds that the Godot side needs (§6).
-2. The cloud setup (Godot 4.7 Mono, .NET, xvfb, lavapipe), as Woohill's.
+1. Merge the user's dev branch into `godot-support` (done: `dev-002` through main, 2026-10-28, night); list what it adds that the Godot side needs (§6).
+2. The cloud setup (§3): done 2026-10-28, night.
 3. **The analysis (§5)**: the most efficient way to export, the project's layout, the sequence in the editor, the
    re-export; written up for the user before anything is built.
 4. The trial (§1, §4): one Pilot room, its light baked, a contact sheet.

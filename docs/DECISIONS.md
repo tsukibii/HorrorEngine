@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, night (Godot: start; GDScript)
+
+- **Start the Godot work** ("I merged in main, pull it in and start working on this"): main (`dev-002`) merged into
+  `godot-support`; the plan's order (GODOT_PLAN §8) from its analysis step.
+- **Godot 4.7 set up on the cloud first** ("first figure out how to set up godot mono 4.7 on yours"): Woohill's way
+  (`tools/godot_setup.sh`, `tools/godot/check.sh`: GODOT ok, headless and a picture under xvfb on lavapipe).
+- **GDScript, Claude's call** ("decide yourself whether to use gdscript or c#; since our games are math light we can
+  do gdscript if you think it's fine"): GDScript (GODOT_PLAN §3: the tested runtime is the desk's JS, no .NET in the
+  cloud, the user edits inside the editor; the user's Mono build runs it unchanged).
+
 ## 2026-10-28, later (Godot: a project per game, everything Unreal never got, a guide in each)
 
 - **When the branch starts, build out for Godot all the shaders and effects never built out for Unreal** ("build out
