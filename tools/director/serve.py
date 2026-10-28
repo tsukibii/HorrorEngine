@@ -61,8 +61,10 @@ def expr_list():
             continue
         e = json.loads(f.read_text(encoding="utf-8"))
         stamp = int(f.stat().st_mtime)
+        of = (e.get("of") or {}).get("id")              # a loop cut from another: its clip is the other's
         out.append({"id": d.name, "name": e.get("name", d.name), "secs": e.get("secs"), "made": e.get("made", ""), "stamp": stamp,
-                    "clip": (d / "clip.mp4").is_file()})
+                    "clip": (d / "clip.mp4").is_file() or bool(of and (EXPRESSIONS / of / "clip.mp4").is_file()),
+                    "loop": bool(e.get("loop")), "of": e.get("of")})
     return sorted(out, key=lambda x: x["made"], reverse=True)
 
 
@@ -361,8 +363,32 @@ class Handler(BaseHTTPRequestHandler):
                 for k in ("neutral", "strength", "length"):
                     if k in req:
                         e[k] = req[k]
+                if e.get("loop") and "blend" in req:     # a loop's wrap
+                    e["loop"] = dict(e["loop"], blend=round(max(0.0, min(5.0, float(req["blend"]))), 3))
                 f.write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
                 return self.send(200, {"ok": True})
+            if parts[1] == "loop":                      # a loop cut from a range of it: a card of its own (EXPRESSIONS_PLAN §2b)
+                e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
+                n = int(e.get("frames") or 0)
+                a, b = (max(0, min(n - 1, int(req.get(k, v)))) for k, v in (("from", 0), ("to", n - 1)))
+                if b - a < 4:
+                    return self.send(400, {"error": "a loop needs at least 5 frames"})
+                name = str(req.get("name", "")).strip() or f"{e.get('name', d.name)} · loop"
+                curves = e.get("curves", {})
+                rest = e.get("rest") or {"first": {k: sum(v[:3]) / len(v[:3]) for k, v in curves.items() if v},   # the face at rest as the whole capture has it (face.js zeroOf; a loop's own, kept)
+                                         "quiet": {k: sorted(v)[min(len(v) - 1, int(0.05 * len(v)))] for k, v in curves.items() if v}}
+                of = e.get("of") or {}                  # where it came from: the capture with the clip (a loop of a loop: the first)
+                out = {k: e[k] for k in ("about", "version", "fps", "source", "neutral", "strength") if k in e}
+                out.update(name=name, made=time.strftime("%Y-%m-%dT%H:%M:%S"), frames=b - a + 1, secs=round((b - a + 1) / float(e.get("fps") or 30), 3),
+                           curves={k: v[a:b + 1] for k, v in curves.items()}, rest=rest,
+                           of={"id": of["id"], "from": of.get("from", 0) + a, "to": of.get("from", 0) + b} if of.get("id") else {"id": d.name, "from": a, "to": b},
+                           loop={"blend": round(max(0.0, min(5.0, float(req.get("blend", 0.4)))), 3)})
+                if e.get("length"):                     # stretched as its whole capture is
+                    out["length"] = round(float(e["length"]) * (b - a + 1) / n, 3)
+                eid = expr_id(name)
+                (EXPRESSIONS / eid).mkdir()
+                (EXPRESSIONS / eid / "expression.json").write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+                return self.send(200, {"id": eid, "name": name})
             if parts[1] == "remove":                    # the red x: kept in Saved/Expressions/removed, out of the library
                 gone = EXPR_SAVED / "removed" / f"{d.name}-{time.strftime('%Y%m%d-%H%M%S')}"
                 gone.parent.mkdir(parents=True, exist_ok=True)

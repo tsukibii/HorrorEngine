@@ -426,3 +426,6 @@ canvas.wave{display:block;width:100%;height:84px;border:1px solid var(--line);bo
 .xp-video,.xp-canvas{width:100%;aspect-ratio:1;border-radius:8px;background:#0d0d10;display:block;object-fit:cover}
 .xp-video.muted{display:flex;align-items:center;justify-content:center}
 .xp-prev .frm-r{margin:6px 0}.xp-note{color:var(--warn);min-height:0}
+.xp-loopbox{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}.xp-loopbox .row{flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.xp-strip{width:100%;height:44px;border-radius:6px;cursor:col-resize;display:block}.xp-loop{color:#6fb3d9}
+.xp-pickl{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;margin-top:6px}.xp-pickl button{text-align:left}

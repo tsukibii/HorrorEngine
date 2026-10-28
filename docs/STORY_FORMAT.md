@@ -277,6 +277,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
 | clip `body` | the body animation, generated from text (§3.5) |
 | clip `event` | a quick-time event after the clip (§3.6): `{"type": "press"|"mash"|"hold"|"breath"|"aim"|"struggle"|"choose", "secs", "prompt", "warn", ...}`. Its result goes to a result choice (§5) and/or runs `on` actions |
 | `cues` | actions anchored to a clip's `start` or `end` plus an `offset` (seconds, may be negative). **Cues never use absolute times**, so a longer take carries its cues along |
+| `faces` | the cast's expressions over the scene, a row per character: each placed on a clip edge as a cue is (§3.7) |
 | `hold` | seconds the scene waits after its last clip (an idle loop, the player can look round) before the flow moves on |
 | `sets` | actions when the scene ends (flags, objectives, doors) |
 | `variants` + `pick` | prototype versions of the same moment (§3.3) |
@@ -308,7 +309,7 @@ is one take**, at most `clip_max` seconds. A longer speech is several clips, and
   "c": {"label": "only the voice", "stage": {}, "camera": {...}, "clips": [...]}}}
 ```
 
-- A variant overrides any of `stage`, `camera`, `clips` and `cues`.
+- A variant overrides any of `stage`, `camera`, `clips`, `cues` and `faces`.
 - `pick` is the one that plays, unless `pick_by: "found_at"` names it by where the player was caught (§9.8); such
   variants may also set `view` and `stance`.
 - The checks prove every variant, and `story.py clips --all` lists every variant's takes, so all of them can be
@@ -389,6 +390,35 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 - `warn` shows an "!" that many seconds before.
 - `on` runs actions per result.
 - A result choice right after the scene branches the flow.
+
+
+### 3.7 Faces: expressions on the timeline
+
+The cast's faces come from **the expression library** (`Content/Studio/Expressions/<id>/expression.json`: a captured
+face's ARKit curves, docs/EXPRESSIONS_PLAN.md), placed on the scene's timeline per character. Like a cue, each rides
+a clip edge (never a time of its own), so a longer take carries it along:
+
+```json
+"faces": [{"who": "mari", "expr": "pout_and_glance", "at": {"clip": "c2", "edge": "start", "offset": 0.4}},
+          {"who": "mari", "expr": "pout_and_glance_loop", "at": {"clip": "c3", "edge": "start"}, "in": 0.5, "w": 0.8}]
+```
+
+| Field | Meaning |
+|---|---|
+| `who` | a cast member (on the scene's stage) |
+| `expr` | the expression's id in the library: a capture, or **a loop** cut from a range of one (it loops by itself, its end crossfaded into its start: the Expressions tab's preview, *Save the range as a loop*) |
+| `at` | `{clip, edge, offset}` as a cue's: where it starts |
+| `secs` | its length on the row: a capture stretched to it, a loop run for it. Left out, a capture plays its own length and **a loop runs until the next one on the row takes over** (or the scene ends) |
+| `loop` | `true` plays any capture over and over; `false` plays a loop once. Left out, as the expression is |
+| `in`, `out` | seconds it fades in over (0.25) and out over (0.3). One that runs into, or touches, the next on its row is **taken over**: the two crossfade over the next one's `in` |
+| `w` | its weight (1; 0 to 2) |
+| `speed` | faster or slower than its length (1) |
+
+Where nothing is placed the face is at rest. The desk shows a face row per character under the clips (an expression
+dragged from the Expressions tab onto it, a block dragged along it, a click for the rest); the stage, the Watch and
+Play play it on each body that carries MHR's face (the desk's MHR bodies, a Studio export); the bake carries every
+frame's 72 face weights to Unreal (`face` in preview.json). The check: `who` in the cast, `expr` in the library, `at`
+a clip of this version, the numbers in range.
 
 ## 4. Stitches (the player's tasks)
 

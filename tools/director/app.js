@@ -1,7 +1,7 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
@@ -28,7 +28,7 @@ import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
 import { States } from "./life.js";
 import { playShelf, shelfName } from "./sfx.js";
-import { ExpressionsPanel } from "./expressions.js";
+import { ExpressionsPanel, DRAG_TYPE } from "./expressions.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
@@ -903,7 +903,7 @@ function sceneEditor(box, sc, sid) {
     });
   bar.append(el("div", { class: "playhead", id: "playhead", style: "left:0%" }));
   wireTimeline(bar, tl, ver, total);
-  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip"));
+  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, faceRows(sid, ver, pv, tl, total), el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip · under it a face row per character: drag an expression from the Expressions tab onto one"));
   const script = el("div", { class: "script" });
   ver.clips.forEach((c, i) => script.append(clipCard(sc, ver, c, i, lvl, sid)));
   sortable(script, ver.clips, "clip", CTX, ".clip");
@@ -975,16 +975,24 @@ function throughEditor(sc, lvl) {
 // the scene's timeline by mouse: a click or a drag scrubs the stage; a cue dragged along it rides the clip edge it's
 // dropped nearest (snapped onto the edge when close, else an offset from it: never a time of its own); a double-click
 // adds a cue there (what it does from the palette)
-function wireTimeline(bar, tl, ver, total) {
+// a timeline's clip edges and the nearest one to a moment (a start before an end at the same moment): what a cue or a
+// face placed by mouse rides, snapped onto it within 8 pixels of the box it's on (Shift: never), else an offset from it
+function edgeFinder(tl, total) {
   const edges = []; for (const s of tl.segs) if (s.type === "clip" && !s.answer) edges.push({ t: s.start, clip: s.clip.id, edge: "start" }, { t: s.end, clip: s.clip.id, edge: "end" });
-  if (!edges.length) return;
-  const tAt = x => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(total, (x - r.left) / r.width * total)); };
-  const near = (T, free) => {                      // the nearest clip edge (a start before an end at the same moment)
+  if (!edges.length) return null;
+  const near = (T, free, px) => {
     let best = edges[0]; for (const e of edges) { const d = Math.abs(T - e.t) - Math.abs(T - best.t); if (d < -1e-6 || (Math.abs(d) <= 1e-6 && e.edge === "start" && best.edge === "end")) best = e; }
-    const tol = free ? 0 : 8 / bar.getBoundingClientRect().width * total, off = Math.abs(T - best.t) < tol ? 0 : +(T - best.t).toFixed(1);
+    const tol = free ? 0 : 8 / Math.max(1, px) * total, off = Math.abs(T - best.t) < tol ? 0 : +(T - best.t).toFixed(1);
     return { clip: best.clip, edge: best.edge, offset: off, t: best.t + off };
   };
-  const label = at => `the ${at.edge} of ${at.clip}${at.offset ? ` ${at.offset > 0 ? "+" : "−"} ${Math.abs(at.offset)} s` : ""}`;
+  return { edges, near,
+    tAt: (box, x) => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(total, (x - r.left) / r.width * total)); },
+    label: at => `the ${at.edge || "start"} of ${at.clip}${+at.offset ? ` ${at.offset > 0 ? "+" : "−"} ${Math.abs(at.offset)} s` : ""}`,
+    atOf: at => Object.assign({ clip: at.clip, edge: at.edge }, at.offset ? { offset: at.offset } : {}) };
+}
+function wireTimeline(bar, tl, ver, total) {
+  const E = edgeFinder(tl, total); if (!E) return;
+  const tAt = x => E.tAt(bar, x), near = (T, free) => E.near(T, free, bar.getBoundingClientRect().width), label = E.label;
   bar.addEventListener("mousedown", e => {
     if (e.button !== 0) return;
     const cue = e.target.closest(".cue");
@@ -1007,6 +1015,99 @@ function wireTimeline(bar, tl, ver, total) {
     const d = ACTION[verb], a = d.make(), v = d.fields.length ? await editAction(a, CTX, { isNew: true }) : a; if (!v) return;
     (ver.cues = ver.cues || []).push({ at: Object.assign({ clip: at.clip, edge: at.edge }, at.offset ? { offset: at.offset } : {}), do: v }); touch(); CTX.rerender();
   });
+}
+// a scene's face rows (EXPRESSIONS_PLAN §2, STORY_FORMAT §3.7): a row per character on its stage, under the clips. An
+// expression dragged from the Expressions tab lands where it's dropped, riding the nearest clip edge as a cue does
+// (never a time of its own); a block dragged along moves it; a click opens its settings under the rows. A block is
+// what plays: its own length (or stretched to its secs), a loop until the next one takes over, its fades in and out
+// (the darker ends); where nothing is placed the face is at rest
+let EXLIST = null, EXBY = null;                        // the library's cards (names, lengths, loops), fetched again when it changes
+const FACETRIED = new Set(), FACEROWS = {}, FACESEL = {};   // expressions asked for once; per scene, rows added by hand and the placement open
+function exprList() { return EXLIST || (EXLIST = api("/api/expressions").then(r => r.expressions || []).catch(() => []).then(l => { EXBY = Object.fromEntries(l.map(x => [x.id, x])); return l; })); }
+function libraryChanged() { EXLIST = EXBY = null; FACETRIED.clear(); forgetFace(); }
+async function pickExpr(title) {                       // an expression from the library, by name (loops marked)
+  const list = await exprList();
+  if (!list.length) { toast("No expressions yet: Import a video of a face in the Expressions tab."); return null; }
+  let close = null;
+  const find = el("input", { type: "search", placeholder: "find…", on: { input: () => { const q = find.value.trim().toLowerCase(); for (const b of box.children) b.hidden = !!q && !b.textContent.toLowerCase().includes(q); } } });
+  const box = el("div", { class: "xp-pickl" }, list.map(x => el("button", { class: "ghost", "data-id": x.id, title: `${(+x.secs || 0).toFixed(1)} s${x.loop ? ", a loop" : ""}`, on: { click: () => close(x.id) } }, (x.loop ? "↻ " : "") + x.name)));
+  const r = await modal({ title, body: el("div", {}, find, box), ok: null, ready: c => { close = c; } });
+  return typeof r === "string" ? r : null;
+}
+function faceRows(sid, ver, pv, tl, total) {
+  const box = el("div", { class: "facerows" }), E = edgeFinder(tl, total); if (!E || !S.cast) return box;
+  const shown = pv.faces || [], own = () => (ver.faces = ver.faces || JSON.parse(JSON.stringify(shown)));   // a variant's own list: the scene's copied in on its first change
+  if (!EXBY) exprList().then(() => CTX.rerender());
+  const want = shown.map(p => p.expr).filter(id => id && !FACES.lib[id] && !FACETRIED.has(id));
+  if (want.length) { want.forEach(id => FACETRIED.add(id)); loadFaces(shown).then(() => { CTX.rerender(); if (!PLAY) scrubTo(+$("#scrub").value || 0); }); }
+  const rows = [...new Set([...Object.keys(pv.stage || {}), ...shown.map(f => f.who), ...(FACEROWS[sid] || [])])].filter(w => S.cast[w]);
+  const plan = facePlanOf(pv, tl), ends = new Map(); for (const l of Object.values(plan)) for (const it of l) ends.set(it.p, it);
+  const name = w => (S.cast[w] || {}).name || w;
+  for (const w of rows) {
+    const track = el("div", { class: "ftrack", "data-who": w, title: `${name(w)}'s face: drop an expression from the Expressions tab here` }, el("span", { class: "fwho", style: `color:${whoColor(w)}` }, name(w)));
+    shown.forEach((p, i) => {
+      if (p.who !== w) return;
+      const s0 = edgeTime(tl.segs, p.at); if (s0 === undefined) return;
+      const it = ends.get(p), x = (EXBY || {})[p.expr] || {}, loop = !!(p.loop ?? x.loop);
+      const e0 = Math.min(total, it ? it.E : s0 + (+p.secs || +x.secs || 2)), wd = Math.max(1e-3, e0 - s0);
+      const fin = it ? it.fin : +(p.in ?? 0.25), fout = it ? it.fout : +(p.out ?? 0.3), gone = EXBY && !x.id;
+      track.append(el("div", { class: "fblk" + (loop ? " loop" : "") + (FACESEL[sid] === i ? " sel" : "") + (gone ? " gone" : ""), "data-i": i, "data-expr": p.expr,
+        title: `${x.name || p.expr}${loop ? " (a loop)" : ""}${gone ? ": not in the library" : ""}\nfrom ${E.label(p.at || {})} · ${wd.toFixed(1)} s\nclick: its settings · drag: along the clips`,
+        style: `left:${s0 / total * 100}%;width:${wd / total * 100}%` },
+        el("i", { class: "fin", style: `width:${Math.min(100, fin / wd * 100)}%` }), el("i", { class: "fout", style: `width:${Math.min(100, fout / wd * 100)}%` }),
+        el("span", {}, (x.name || p.expr) + (loop ? " ↻" : ""))));
+    });
+    track.addEventListener("dblclick", async e => {     // or picked from a list, placed where it's double-clicked
+      if (e.target.closest(".fblk")) return;
+      const at = E.near(E.tAt(track, e.clientX), e.shiftKey, track.getBoundingClientRect().width), id = await pickExpr(`${name(w)}'s face from ${E.label(at)}`); if (!id) return;
+      const L = own(); L.push({ who: w, expr: id, at: E.atOf(at) }); FACESEL[sid] = L.length - 1; touch(); CTX.rerender();
+    });
+    track.addEventListener("dragover", e => { if (![...e.dataTransfer.types].includes(DRAG_TYPE)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; track.classList.add("over"); });
+    track.addEventListener("dragleave", () => track.classList.remove("over"));
+    track.addEventListener("drop", e => {
+      track.classList.remove("over"); const id = e.dataTransfer.getData(DRAG_TYPE); if (!id) return; e.preventDefault();
+      const at = E.near(E.tAt(track, e.clientX), e.shiftKey, track.getBoundingClientRect().width), L = own();
+      L.push({ who: w, expr: id, at: E.atOf(at) }); FACESEL[sid] = L.length - 1; touch(); CTX.rerender();
+    });
+    track.addEventListener("mousedown", e => {        // a block dragged along the clips (it rides the edge it's dropped nearest), or clicked open
+      const b = e.target.closest(".fblk"); if (!b || e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      const i = +b.dataset.i, x0 = e.clientX, grab = E.tAt(track, x0) - (edgeTime(tl.segs, shown[i].at) || 0), tip = el("div", { class: "cuetip" }); let at = null;
+      const move = ev => {
+        if (!at && Math.abs(ev.clientX - x0) < 4) return;
+        at = E.near(Math.max(0, E.tAt(track, ev.clientX) - grab), ev.shiftKey, track.getBoundingClientRect().width);
+        b.style.left = tip.style.left = (at.t / total * 100) + "%"; tip.textContent = E.label(at); if (!tip.isConnected) track.append(tip);
+      };
+      const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); tip.remove();
+        if (at) { own()[i].at = E.atOf(at); FACESEL[sid] = i; touch(); } else FACESEL[sid] = FACESEL[sid] === i ? null : i;
+        CTX.rerender(); };
+      window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    });
+    box.append(track);
+  }
+  const others = castIds().filter(c => !rows.includes(c));
+  if (others.length) box.append(el("select", { class: "fadd", title: "a face row for someone not on this scene's stage", on: { change: e => { if (!e.target.value) return; (FACEROWS[sid] = FACEROWS[sid] || []).push(e.target.value); CTX.rerender(); } } },
+    el("option", { value: "" }, "+ a face row for…"), others.map(c => el("option", { value: c }, name(c)))));
+  const i = FACESEL[sid], p = shown[i];
+  if (p) {                                             // the open placement's settings
+    const at = p.at || {}, x = (EXBY || {})[p.expr] || {};
+    const set = (k, v) => { const q = own()[i]; if (v === "" || v === null || v === undefined || Number.isNaN(v)) delete q[k]; else q[k] = v; touch(); CTX.rerender(); };
+    const setAt = (k, v) => { const q = own()[i]; q.at = Object.assign({}, q.at, { [k]: v }); if (!q.at.offset) delete q.at.offset; touch(); CTX.rerender(); };
+    const num = (k, ph, step, title) => el("input", { type: "number", step, min: "0", value: p[k] ?? "", placeholder: ph, title, style: "width:58px", on: { change: e => set(k, e.target.value === "" ? "" : +e.target.value) } });
+    const pick = el("select", { on: { change: e => set("expr", e.target.value) } }, (EXBY && !EXBY[p.expr] ? [el("option", { value: p.expr, selected: true }, p.expr + " (not in the library)")] : []),
+      Object.values(EXBY || {}).map(y => el("option", { value: y.id, selected: y.id === p.expr }, y.name + (y.loop ? " ↻" : ""))));
+    const loop = el("input", { type: "checkbox", checked: !!(p.loop ?? x.loop), on: { change: e => set("loop", e.target.checked === !!x.loop ? undefined : e.target.checked) } });
+    box.append(el("div", { class: "cuerow fform" }, el("b", { style: `color:${whoColor(p.who)}` }, name(p.who)), "wears", pick, "from the",
+      el("select", { on: { change: e => setAt("edge", e.target.value) } }, ["start", "end"].map(v => el("option", { value: v, selected: (at.edge || "start") === v }, v))), "of",
+      el("select", { on: { change: e => setAt("clip", e.target.value) } }, (pv.clips || []).map(c => el("option", { value: c.id, selected: at.clip === c.id }, `${c.id}: ${(c.en || c.ja || "").slice(0, 24)}`))),
+      el("input", { type: "number", step: "0.1", value: at.offset ?? "", placeholder: "0", title: "seconds after it (or before, negative)", style: "width:58px", on: { change: e => setAt("offset", +e.target.value || 0) } }), "s ·",
+      "length", num("secs", "its own", "0.1", "seconds on the row: a stretched expression, or how long a loop runs (blank: its own length; a loop until the next one)"), "s",
+      el("label", { class: "kv", title: "played over and over (a loop card loops by itself)" }, loop, " loop"),
+      "· blend in", num("in", "0.25", "0.05", "seconds it fades in over (from rest, or from the one before)"), "out", num("out", "0.3", "0.05", "seconds it fades out over (into rest; one that runs into the next crossfades over the next one's blend in)"),
+      "· weight", num("w", "1", "0.05", "how strongly it shows (0 to 2)"), "speed", num("speed", "1", "0.05", "faster or slower than its length"),
+      el("button", { class: "ghost", title: "take it off the row", on: { click: () => { const L = own(); L.splice(i, 1); if (!L.length) delete ver.faces; FACESEL[sid] = null; touch(); CTX.rerender(); } } }, icon("x", 14))));
+  }
+  return box;
 }
 function cuesEditor(ver) {
   const box = el("div", {}), cues = ver.cues || [], ids = (ver.clips || []).map(c => [c.id, `${c.id}: ${(c.en || c.ja || "").slice(0, 28)}`]);
@@ -1570,7 +1671,8 @@ function showStage() {
   flowStage.setWorld(PLAN, S, lvl);
   flowStage.setTime((flowTimes(S)[SEL] || {}).time || S.game.time || TIME_DEFAULT);
   const sc = currentScene();
-  if (sc) { const tl = flowStage.timeline(sc); $("#scrub").max = tl.total.toFixed(2); scrubTo(+$("#scrub").value || 0); }
+  if (sc) { const tl = flowStage.timeline(sc); $("#scrub").max = tl.total.toFixed(2); scrubTo(+$("#scrub").value || 0);
+    const fs = version(sc).faces; if ((fs || []).some(p => p.expr && !FACES.lib[p.expr]) || (fs && fs.length && !FACES.M)) loadFaces(fs).then(() => { if (currentScene() === sc && !PLAY) scrubTo(+$("#scrub").value || 0); }); }   // its faces, once the expressions are in
   else { // a stitch or choice: the level from its start spot
     const start = things()[S.levels[lvl].start]; const fake = { view: S.levels[lvl].start, camera: { mode: "free" }, clips: [{ id: "x", who: "", en: "" }], stage: {} };
     if (start) { flowStage.frame(fake, 0, FILES); paintOv("#stageOv", { sub: null, who: (ref && ref.title) || SEL, black: 0, tag: n ? n.type : "" }); }
@@ -1827,6 +1929,7 @@ function wireLook() {
 const BLEND = { kind: "blend", secs: 0.8 };        // a scene's enter and exit when it names none (STORY_FORMAT §3.1)
 async function watchScene(sc, nid, sid, k) {
   const lvl = sc.level || Object.keys(S.levels)[0];
+  if ((sc.faces || []).length) await loadFaces(sc.faces);   // the expressions its face rows place
   if (watchStage.level !== lvl) watchStage.setWorld(PLAN, S, lvl);   // a scene on the level you're in keeps it as play left it
   const picks = {}, replied = new Set();
   let tl = watchStage.timeline(sc, picks);
@@ -2445,7 +2548,8 @@ async function ensureBody(f) {                         // a body loaded into the
   if (f.startsWith("people/")) tpl.userData = { studio: f.slice(7) };
   flowStage.bodies[f] = tpl; watchStage.bodies[f] = tpl;
 }
-const XP = new ExpressionsPanel($("#exprPanel"), { stage: () => flowStage, story: () => S, ensureBody, M, bodies: async () => (await api("/api/bodies")).bodies });
+const XP = new ExpressionsPanel($("#exprPanel"), { stage: () => flowStage, story: () => S, ensureBody, M, bodies: async () => (await api("/api/bodies")).bodies,
+  changed: () => { libraryChanged(); if (currentScene()) renderInspector(); } });   // the library changed (an import, a loop, a rename): the face rows read it again
 function rightTab(r, draw = true) {
   for (const b of document.querySelectorAll("#rtabs button")) b.classList.toggle("on", b.dataset.r === r);
   $("#inspector").hidden = r !== "inspector"; $("#exprPanel").hidden = r !== "exprPanel";
@@ -2453,6 +2557,8 @@ function rightTab(r, draw = true) {
   if (r === "exprPanel" && draw && S) XP.refresh();
 }
 for (const b of document.querySelectorAll("#rtabs button")) b.onclick = () => rightTab(b.dataset.r);
+{ const ib = $('#rtabs button[data-r="inspector"]'), ours = e => [...e.dataTransfer.types].includes(DRAG_TYPE);   // an expression card dragged over the Inspector's tab opens it: dropped on a face row there
+  ib.addEventListener("dragenter", e => { if (ours(e)) rightTab("inspector"); }); ib.addEventListener("dragover", e => { if (ours(e)) e.preventDefault(); }); }
 try { if (localStorage.getItem("dd.rtab") === "exprPanel") rightTab("exprPanel", false); } catch (e) { }   // drawn once a game has loaded (load())
 window.__dd = { get S() { return S; }, XP, rightTab, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
 boot();

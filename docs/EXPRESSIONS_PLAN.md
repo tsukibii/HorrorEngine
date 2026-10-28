@@ -74,6 +74,13 @@ Play show it; bake.js carries it to Unreal. The word, in STORY_FORMAT, the check
 
 on a scene (or a variant). Blinks the capture didn't have are added between (procedural, 2 to 6 s).
 
+**Built (step 2, 2026-10-28):** the word `faces` (STORY_FORMAT §3.7, the story check); the desk's face rows under a
+scene's clips (`faceRows` in app.js: dropped from the Expressions tab, whose card opens the Inspector's tab when dragged
+over it, or picked by a double-click; blocks dragged along a clip edge; a click opens their settings); the face plan
+and its blend in `tools/shared/face.js` (`facePlan`, `faceAt`); the stage (`stateAt` and `apply`: the flow stage, the
+Watch and Play's scenes) setting MHR's 72 on each body; the bake's `face` per frame and `face_shapes`. Not yet: the
+procedural blinks between captures.
+
 ## 2b. Loops and blends (the user's ask, DECISIONS 2026-10-27, last thing)
 
 - **4 s captures, stretched.** Faces are generated as 4 s MiniMax videos (docs/WRITERS_ROOM.md §3) and stretched in
@@ -84,6 +91,13 @@ on a scene (or a variant). Blinks the capture didn't have are added between (pro
 - **Blends, not snaps.** Placed one after another on a character's face row, expressions crossfade into each other
   (the overlap, or a short tween when they touch); a loop runs until the next one takes over. The face only goes back
   to neutral where nothing is placed.
+
+**Built (2026-10-28):** the preview's strip (the face's distance from rest, frame by frame) with a range dragged on it,
+*play the range as a loop* and *Save the range as a loop* (the server's `/api/expressions/<id>/loop`: the range's
+curves, the whole capture's rest (`rest`, so its neutral stays the face at rest), where it came from (`of`, whose clip
+the preview plays within the range), `loop.blend`); a loop's card marked ↻; `face.js` `sample` looping a loop by itself
+with its last `blend` seconds laid over its start (no jump at the wrap: EXPRESSIONS measures it), `slice` for the
+preview. A loop card's Blend is set in its preview.
 
 ## 3. Text instead of voices (step 3)
 

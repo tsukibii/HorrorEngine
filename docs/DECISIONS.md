@@ -2,6 +2,19 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, back (expression loops go; skin like HumanShaders; Unreal next; a test room)
+
+- **Expression loops: go** (task #6, held for the user's word): "expression loops is fine to do".
+- **Skin v2 changes course**: "for skin v2 ignore what you've done; what we want is something like the skin shader in
+  this Godot repo https://github.com/matmadness/HumanShaders, and I should be able to preview/bake it in when I
+  export." So: HumanShaders' skin (its shader code is MIT; its head scans aren't ours and stay out) rebuilt in the
+  Character Studio on our procedural skin, previewed there, and baked into the export so the desk and Unreal can light
+  it the same way. The research note (docs/research/skin_v2.md) stays as background; its plan is set aside; the
+  reference (film) light stays as an option.
+- **Unreal, next local session**: "make a note what we need to do for the next local session I do".
+- **A test room**: "make a testroom001 (diff than pilot) in director and have it test every functionality added so far
+  so we can check if we can re-create it in Unreal Engine accurately."
+
 ## 2026-10-28, later (five hours alone: Chilla's Art's small systems, else skin v2)
 
 - **The brief while away**: "I'm going afk, if there are any other simple game systems we are missing for Chilla's Art

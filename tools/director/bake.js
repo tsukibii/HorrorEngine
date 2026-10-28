@@ -7,8 +7,10 @@
 // A cast member with a real body (MHR, shaped) goes across as that body: bodyGlb() exports it shaped and in its bind
 // pose, and every frame records each bone's skinning matrix (bind mesh space -> world, `skin`), so Unreal deforms
 // the same mesh the same way. Unreal measures its own import axes from the bones' bind positions (`bind`).
+// The faces (a scene's face rows, STORY_FORMAT §3.7) go as each frame's 72 weights of MHR's face shapes per cast member
+// with an expression on (`face`; their names in order: `face_shapes`), to be set on the body's morph targets.
 import * as THREE from "three";
-import { version, eventSecs, PLAYS, RADIUS, flowTimes, TIME_DEFAULT } from "./stage.js";
+import { version, eventSecs, PLAYS, RADIUS, flowTimes, TIME_DEFAULT, FACES, loadFaces } from "./stage.js";
 
 const skinnedOf = fig => { let m = null; if (fig && fig.model) fig.model.traverse(o => { if (!m && o.isSkinnedMesh) m = o; }); return m; };
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -117,6 +119,7 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
       fr.bodies[who] = joints.map(j => { const p = fig.jointWorld(j); return p ? ue(p) : null; });
       if (skinned[who]) { fig.group.updateMatrixWorld(true); (fr.skin = fr.skin || {})[who] = skinMatrices(skinned[who]); }
     }
+    for (const [who, w] of Object.entries(st.faces || {})) if (w && fr.bodies[who]) (fr.face = fr.face || {})[who] = Array.from(w, x => Math.round(x * 1000) / 1000);
     for (const l of stage.lights) {
       const k = l.userData.base ? l.intensity / l.userData.base : 1;
       if (Math.abs(k - 1) > 0.01 || lights[l.userData.id]) (lights[l.userData.id] = lights[l.userData.id] || new Array(f).fill(1)).push(+k.toFixed(3));
@@ -155,6 +158,8 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
                 times: Object.fromEntries(Object.entries(flowTimes(story)).map(([nid, t]) => [nid, t.time])) };
   for (const [id, c] of Object.entries(story.cast || {})) out.cast[id] = { name: c.name || id, height: +(c.height || 1.7) };
   const ids = Object.keys(story.scenes || {});
+  await loadFaces(Object.values(story.scenes || {}).flatMap(sc => [sc, ...Object.values(sc.variants || {})].flatMap(v => v.faces || [])));   // the expressions the face rows place
+  if (FACES.M) out.face_shapes = FACES.M.mhr;
   for (let i = 0; i < ids.length; i++) {
     onProgress(i, ids.length, ids[i]);
     await new Promise(r => setTimeout(r, 0));                     // let the page draw its progress

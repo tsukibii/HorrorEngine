@@ -6,7 +6,18 @@
 //   loadMap()                        {map: ARKit -> [[MHR shape, weight]], mhr: MHR's 72 names in the bodies' order}
 //   sample(e, t, o)                  {ARKit name: 0..1} at t seconds of its playing (o.loop, o.neutral, o.strength, o.w,
 //                                    o.length: the seconds the whole capture takes, else e.length, else its own; between
-//                                    frames a smooth curve, so a slowed capture glides)
+//                                    frames a smooth curve, so a slowed capture glides; o.speed); a loop made from a
+//                                    range (e.loop: {blend}) loops by itself, its end crossfaded into its start over
+//                                    blend seconds, so the wrap never jumps (o.blend for any loop)
+//   slice(e, a, b, blend)            frames a..b of an expression as a loop of its own (what the server keeps when a
+//                                    range is saved as a loop): the whole capture's rest kept, its end blended over
+//                                    blend seconds into its start
+//   facePlan(faces, edgeT, total, lib)  a scene's face rows (STORY_FORMAT §3.7: [{who, expr, at, secs, loop, in, out, w,
+//                                    speed}]) laid on its timeline: edgeT(at) the seconds a clip edge is at, lib the
+//                                    expressions by id; {who: [{p, e, S, E, fin, fout, loop}]}
+//   faceAt(plan, who, T)             {ARKit name: 0..1} on who's face at T seconds of the scene (null: nothing placed,
+//                                    neutral): each placement faded in and out, a loop running until the next takes
+//                                    over, overlapping ones crossfaded, one touching the next blended into it
 //   toMHR(scores, M)                 Float32Array(72) in MHR's order
 //   loadMHRFace()                    MHR's 72 face shapes on the points they move (Content/Studio/Bodies/MHR_lod1.bin)
 //   faceOf(root, F)                  what on a body takes the 72: MHR's shape_c_45..116 morphs (the desk's MHR bodies),
@@ -26,10 +37,12 @@ export function loadMap(base = "") {
 }
 
 const pct = (v, p) => { const s = [...v].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p / 100 * s.length))]; };
-/** each channel's rest under `neutral` (cached on the expression per neutral) */
+/** each channel's rest under `neutral` (cached on the expression per neutral; a loop cut from a range keeps its whole
+ * capture's, `rest`: its own first frames are the middle of the expression, not the face at rest) */
 export function zeroOf(e, neutral = e.neutral || "first") {
   e._zero = e._zero || {};
   if (e._zero[neutral]) return e._zero[neutral];
+  if (e.rest && e.rest[neutral]) return (e._zero[neutral] = e.rest[neutral]);
   const z = {};
   for (const [k, v] of Object.entries(e.curves || {})) {
     z[k] = neutral === "none" ? 0 : neutral === "quiet" ? pct(v, 5) : (v[0] + v[Math.min(1, v.length - 1)] + v[Math.min(2, v.length - 1)]) / 3;
@@ -43,18 +56,77 @@ export const lengthOf = (e, o = {}) => +(o.length || e.length || e.secs || (e.fr
  * (a slowed capture glides instead of stepping), past the end held (or looped), the rest taken away (what's under it
  * reads as 0), scaled back to 0..1 and by the strength and o.w */
 export function sample(e, t, o = {}) {
-  const n = e.frames || 1, fps = e.fps || 30, out = {}, own = n / fps;
-  let f = t * (own / lengthOf(e, o)) * fps * (o.speed ?? 1);
-  f = o.loop ? ((f % n) + n) % n : Math.max(0, Math.min(n - 1, f));
-  const i = Math.floor(f), u = f - i, at = k => (o.loop ? ((k % n) + n) % n : Math.max(0, Math.min(n - 1, k)));
-  const i0 = at(i - 1), i1 = at(i), i2 = at(i + 1), i3 = at(i + 2), u2 = u * u, u3 = u2 * u;
+  const n = e.frames || 1, fps = e.fps || 30, out = {}, own = n / fps, k = own / lengthOf(e, o) * fps * (o.speed ?? 1);   // captured frames a second of playing
+  const loop = !!(o.loop || e.loop), B = loop ? Math.min(n / 2, Math.max(0, +(o.blend ?? (e.loop || {}).blend ?? 0)) * k) : 0;
   const z = zeroOf(e, o.neutral || e.neutral || "first"), s = (o.strength ?? e.strength ?? 1) * (o.w ?? 1);
-  for (const [k, c] of Object.entries(e.curves || {})) {
-    const p0 = c[i0], p1 = c[i1], p2 = c[i2], p3 = c[i3];
-    const v = 0.5 * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (3 * p1 - p0 - 3 * p2 + p3) * u3), z0 = z[k] || 0;
-    out[k] = Math.max(0, Math.min(1, (v - z0) / Math.max(0.05, 1 - z0) * s));
+  let f = t * k, g = -1, x = 0;                         // f the frame; with a blended wrap, g the frame it fades from (x of the way out of it)
+  if (!loop) f = Math.max(0, Math.min(n - 1, f));
+  else if (B < 1) f = ((f % n) + n) % n;
+  else {                                                // the loop's last B frames laid over its first: the end turns into the start
+    const P = n - B; f = ((f % P) + P) % P;
+    if (f < B) { g = f + P; x = f / B; x = x * x * (3 - 2 * x); }
+  }
+  const wrap = loop && B < 1;
+  for (const [key, c] of Object.entries(e.curves || {})) {
+    let v = curveAt(c, f, n, wrap);
+    if (g >= 0) v = curveAt(c, g, n, false) * (1 - x) + v * x;
+    const z0 = z[key] || 0;
+    out[key] = Math.max(0, Math.min(1, (v - z0) / Math.max(0.05, 1 - z0) * s));
   }
   return out;
+}
+// a curve between its frames (Catmull-Rom: a slowed capture glides instead of stepping); its neighbours wrapped round a
+// loop, else held at its ends
+function curveAt(c, f, n, wrap) {
+  const i = Math.floor(f), u = f - i, at = k => (wrap ? ((k % n) + n) % n : Math.max(0, Math.min(n - 1, k)));
+  const p0 = c[at(i - 1)], p1 = c[at(i)], p2 = c[at(i + 1)], p3 = c[at(i + 2)], u2 = u * u, u3 = u2 * u;
+  return 0.5 * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (3 * p1 - p0 - 3 * p2 + p3) * u3);
+}
+
+export function slice(e, a, b, blend = 0.4) {
+  const n = e.frames || 1; a = Math.max(0, Math.min(n - 1, a | 0)); b = Math.max(a, Math.min(n - 1, b | 0));
+  const curves = {}, rest = e.rest || { first: zeroOf(e, "first"), quiet: zeroOf(e, "quiet") };
+  for (const [k, c] of Object.entries(e.curves || {})) curves[k] = c.slice(a, b + 1);
+  const out = Object.assign({}, e, { frames: b - a + 1, secs: (b - a + 1) / (e.fps || 30), curves, rest, loop: { blend }, _zero: undefined });
+  if (e.length) out.length = e.length * (b - a + 1) / n; else delete out.length;
+  return out;
+}
+
+/** a scene's face rows on its timeline: per character its placements in order, each from where it's placed (S) to where
+ * it's gone (E): its own length (stretched to secs), a loop until the next one (or secs, or the scene's end); one that
+ * runs into or touches the next is taken over by it, the two crossfading over the next one's blend in */
+export function facePlan(faces, edgeT, total, lib) {
+  const rows = {};
+  for (const p of faces || []) {
+    const e = lib[p.expr], S = edgeT(p.at || {}); if (!e || S === undefined || S === null || !isFinite(S)) continue;
+    (rows[p.who] = rows[p.who] || []).push({ p, e, S: Math.max(0, S) });
+  }
+  for (const list of Object.values(rows)) {
+    list.sort((a, b) => a.S - b.S);
+    list.forEach((it, i) => {
+      const nx = list[i + 1], p = it.p;
+      it.loop = !!(p.loop ?? it.e.loop); it.fin = Math.max(0, +(p.in ?? 0.25)); it.fout = Math.max(0, +(p.out ?? 0.3));
+      let E = it.S + (+p.secs > 0 ? +p.secs : it.loop ? Infinity : lengthOf(it.e) / (+p.speed || 1));
+      if (nx && nx.S < E + 0.05) { const nin = Math.max(0.05, +(nx.p.in ?? 0.25)); E = nx.S + nin; it.fout = nin; }   // the next takes over
+      it.E = isFinite(E) ? E : Math.max(total, it.S) + it.fout;
+    });
+  }
+  return rows;
+}
+const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+export function faceAt(plan, who, T) {
+  const list = plan && plan[who]; if (!list) return null;
+  let sum = 0; const acc = {};
+  for (const it of list) {
+    if (T < it.S || T > it.E) continue;
+    const env = smooth(Math.min(it.fin > 0 ? (T - it.S) / it.fin : 1, it.fout > 0 ? (it.E - T) / it.fout : 1)); if (env <= 0) continue;
+    const p = it.p, sc = sample(it.e, T - it.S, { loop: it.loop, speed: +p.speed || 1, w: p.w ?? 1, length: !it.loop && +p.secs > 0 ? +p.secs * (+p.speed || 1) : undefined });
+    for (const k in sc) acc[k] = (acc[k] || 0) + sc[k] * env;
+    sum += env;
+  }
+  if (!sum) return null;
+  if (sum > 1) for (const k in acc) acc[k] /= sum;
+  return acc;
 }
 
 /** ARKit scores onto MHR's 72 (summed where two ARKit curves drive one shape, capped at 1) */

@@ -2,7 +2,8 @@
 // Expressions tab beside the Inspector; a card drawn as the character wearing the expression (not the video), played
 // through on hover; names only; the preview on the default body, a cast member and a Studio export (the face moving on
 // each); Import (a video solved by tools/face_capture.py, previewed, named, accepted); rename; the red x asking first and
-// moving it to Saved/Expressions/removed. Faces stay out of git, so the video is EXPR_VIDEO, or a clip already in the
+// moving it to Saved/Expressions/removed; a loop cut from a range of it (its wrap blended), placed on a scene's face row
+// (dropped, dragged along, set, picked by a double-click, taken off) and moving the face on the stage. Faces stay out of git, so the video is EXPR_VIDEO, or a clip already in the
 // library, or (neither) the import is skipped and a made-up expression is used for the rest.
 //   node tools/director/exprtest.mjs          (the desk's server running; DESK_URL for another port)
 import { createRequire } from "module";
@@ -124,6 +125,60 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
     if (Math.abs(r.s1 - r.s0) > 0.02 * r.s0 || !(r.drop > 1)) throw new Error(JSON.stringify(r));
     if (r.rest > 1e-7 || r.inBlink || r.inSquint) throw new Error(`the eyeballs come through the lids: ${JSON.stringify(r)}`);
     console.log(`       ${r.who}: an upper lash ${(r.s0 * 1000).toFixed(1)} mm long, ${(r.s1 * 1000).toFixed(1)} mm shut; its root down ${r.drop.toFixed(1)} mm with the lid`);
+  });
+  const loopId = TEST + "_renamed_loop";
+  await step("a loop from a range: dragged across the capture's strip, played on the character as a loop, saved as a card of its own (↻); its wrap blended (no jump where a hard loop jumps), its rest the whole capture's", async () => {
+    await page.click(`.xp-card[data-id="${id}"]`); await page.waitForSelector(".mdl .xp-strip");
+    const sb = await page.locator(".mdl .xp-strip").boundingBox(), y = sb.y + sb.height / 2;
+    await page.mouse.move(sb.x + sb.width * 0.3, y); await page.mouse.down(); await page.mouse.move(sb.x + sb.width * 0.8, y, { steps: 8 }); await page.mouse.up();
+    await page.check(".mdl .xp-asloop"); await page.waitForTimeout(400);
+    await page.click(".mdl .xp-saveloop");
+    await page.waitForSelector(`.xp-card[data-id="${loopId}"]`, { timeout: 20000 });
+    await page.click(".mdl .mdl-f button:not(.primary)");
+    if (!(await page.textContent(`.xp-card[data-id="${loopId}"] .xp-name`)).includes("↻")) throw new Error("the loop's card has no ↻");
+    const L = JSON.parse(fs.readFileSync(path.join(LIB, loopId, "expression.json"), "utf8")), B = JSON.parse(fs.readFileSync(path.join(LIB, id, "expression.json"), "utf8"));
+    if (!L.loop || !(L.loop.blend > 0) || !L.rest || !L.rest.first || (L.of || {}).id !== id || Math.abs(L.of.from - Math.round(B.frames * 0.3)) > 2 || Math.abs(L.of.to - Math.round(B.frames * 0.8)) > 2 || L.frames !== L.of.to - L.of.from + 1)
+      throw new Error("the loop's file: " + JSON.stringify({ loop: L.loop, of: L.of, frames: L.frames, of_frames: B.frames, rest: !!L.rest }));
+    const r = await page.evaluate(async L => {
+      const FACE = await import("/shared/face.js"), big = (e, o, T) => { let m = 0, prev = null; for (let t = 0; t < T; t += 1 / 120) { const s = FACE.sample(e, t, o); if (prev) for (const k in s) m = Math.max(m, Math.abs(s[k] - prev[k])); prev = s; } return m; };
+      const len = FACE.lengthOf(L);
+      return { blended: big(L, {}, len * 3), hard: big(Object.assign({}, L, { loop: { blend: 0 } }), {}, len * 3), inside: big(Object.assign({}, L, { loop: null }), {}, len) };
+    }, L);
+    if (!(r.blended <= r.inside * 1.6 + 0.01) || !(r.hard > r.blended)) throw new Error("the wrap: " + JSON.stringify(r));
+    console.log(`       the biggest step a 120th of a second: ${r.inside.toFixed(3)} inside the range, ${r.blended.toFixed(3)} looped and blended, ${r.hard.toFixed(3)} looped hard`);
+  });
+  await step("the loop on a scene's face row: dropped on Mari's row it rides the nearest clip edge; the stage's face moves inside it and rests outside; the block dragged along moves its edge; its weight set; picked by a double-click too; taken off", async () => {
+    await page.evaluate(() => { window.__dd.select("n_message"); window.__dd.rightTab("inspector"); });
+    await page.waitForSelector('.ftrack[data-who="mari"]', { timeout: 20000 });
+    const drop = (sel, id, fx) => page.evaluate(([sel, id, fx, type]) => { const t = document.querySelector(sel), r = t.getBoundingClientRect(), dt = new DataTransfer(); dt.setData(type, id);
+      const o = { clientX: r.left + r.width * fx, clientY: r.top + r.height / 2, dataTransfer: dt, bubbles: true, cancelable: true };
+      t.dispatchEvent(new DragEvent("dragenter", o)); t.dispatchEvent(new DragEvent("dragover", o)); t.dispatchEvent(new DragEvent("drop", o)); }, [sel, id, fx, "application/x-expression"]);
+    await drop('.ftrack[data-who="mari"]', loopId, 0.5);
+    const faces = () => page.evaluate(() => JSON.parse(JSON.stringify(window.__dd.S.scenes.s_message.faces || [])));
+    let f = await faces();
+    if (f.length !== 1 || f[0].who !== "mari" || f[0].expr !== loopId || !/^c\d$/.test((f[0].at || {}).clip)) throw new Error("the drop: " + JSON.stringify(f));
+    await page.waitForSelector(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`, { timeout: 20000 });
+    const faceAt = T => page.evaluate(async T => {
+      const { FACES } = await import("/stage.js"); const t0 = performance.now(); while (!FACES.M && performance.now() - t0 < 20000) await new Promise(r => setTimeout(r, 100));
+      const sc = document.querySelector("#scrub"); sc.value = T; sc.dispatchEvent(new Event("input"));
+      const fig = window.__dd.flowStage.cast.mari; let s = 0; for (const t of fig._faceT || []) if (t.idx) for (const i of t.idx) if (i >= 0) s += t.mesh.morphTargetInfluences[i]; return s;
+    }, T);
+    const span = await page.evaluate(id => { const b = document.querySelector(`.ftrack[data-who="mari"] .fblk[data-expr="${id}"]`), tot = +document.querySelector("#scrub").max; return { s: parseFloat(b.style.left) / 100 * tot, e: (parseFloat(b.style.left) + parseFloat(b.style.width)) / 100 * tot, tot }; }, loopId);
+    await page.waitForFunction(id => import("/stage.js").then(m => !!m.FACES.lib[id]), loopId, { timeout: 20000 });
+    const inside = await faceAt(Math.min(span.e - 0.2, span.s + 1.2)), before = span.s > 0.6 ? await faceAt(span.s - 0.5) : 0;
+    if (!(inside > 0.05) || before > 1e-6) throw new Error(`the face on the stage: ${inside} inside (${span.s.toFixed(2)} to ${span.e.toFixed(2)} s), ${before} before`);
+    const b = await page.locator(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`).boundingBox(), tb = await page.locator('.ftrack[data-who="mari"]').boundingBox();
+    await page.mouse.move(b.x + 6, b.y + b.height / 2); await page.mouse.down(); await page.mouse.move(tb.x + tb.width * 0.08, b.y + b.height / 2, { steps: 6 }); await page.mouse.up();
+    f = await faces(); if (f[0].at.clip !== "c1" || (f[0].at.edge || "start") !== "start") throw new Error("dragged to the start: " + JSON.stringify(f[0].at));
+    await page.click(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`); await page.waitForSelector(".fform");
+    const w = page.locator('.fform input[placeholder="1"]').first(); await w.fill("0.5"); await w.dispatchEvent("change");
+    f = await faces(); if (f[0].w !== 0.5) throw new Error("the weight: " + JSON.stringify(f[0]));
+    const tb2 = await page.locator('.ftrack[data-who="mari"]').boundingBox(); await page.mouse.dblclick(tb2.x + tb2.width * 0.95, tb2.y + tb2.height / 2);
+    await page.waitForSelector(".mdl .xp-pickl"); await page.click(`.mdl .xp-pickl button[data-id="${loopId}"]`);
+    f = await faces(); if (f.length !== 2 || f[1].expr !== loopId) throw new Error("picked by a double-click: " + JSON.stringify(f));
+    for (let k = 0; k < 2; k++) { await page.click(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`); await page.waitForSelector(".fform"); await page.click(".fform button.ghost"); }
+    f = await faces(); if (f.length) throw new Error("taken off: " + JSON.stringify(f));
+    if (await page.evaluate(() => "faces" in window.__dd.S.scenes.s_message)) throw new Error("an empty faces list left on the scene");
   });
   await step("the red x asks first (Cancel keeps it), then Remove moves it to Saved/Expressions/removed", async () => {
     await page.hover(`.xp-card[data-id="${id}"]`); await page.click(`.xp-card[data-id="${id}"] .xp-x`);

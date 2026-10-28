@@ -4,7 +4,9 @@
 // face rows take them: step 2); Import: a video sent to the server (tools/face_capture.py solves it), then a preview,
 // the clip beside a character playing the face in sync (the default MHR, a cast member in their body, or an exported
 // Studio character), its neutral, strength and name; Accept keeps it, Discard throws it away. A card's red x asks first,
-// then the server moves it to Saved/Expressions/removed. Clicking a card opens the same preview to change it.
+// then the server moves it to Saved/Expressions/removed. Clicking a card opens the same preview to change it, and to cut
+// a loop from it (EXPRESSIONS_PLAN §2b): a range dragged on the capture's strip, played on the character as a loop (its
+// end blended into its start), saved as a card of its own (↻), which plays over and over wherever it's placed.
 import * as THREE from "three";
 import { modal, toast } from "./ui.js";
 import { icon } from "./icons.js";
@@ -39,6 +41,7 @@ export class ExpressionsPanel {
     try { this.list = (await api("/api/expressions")).expressions; } catch (e) { this.list = []; }
     this.pics.clear(); this.wearThumbs();               // the character dressed again (a game's cast changes with the game)
     this.render();
+    if (this.ctx.changed) this.ctx.changed();           // the timeline's face rows read the library again
   }
   render() {
     const r = this.root; r.querySelectorAll(":scope > :not(input[type=file])").forEach(x => x.remove());
@@ -63,7 +66,7 @@ export class ExpressionsPanel {
     const pic = cv ? h("div", { class: "xp-pic" }, cv) : null;
     const del = h("button", { class: "xp-x", title: "remove this expression", on: { click: e => { e.stopPropagation(); this.remove(x); } } }, "×");
     const c = h("div", { class: "xp-card", draggable: "true", "data-id": x.id, title: `${x.name} · ${(+x.secs || 0).toFixed(1)} s\nclick: preview · drag: onto a face row` },
-      pic, h("div", { class: "xp-name" }, x.name, this.namesOnly ? h("span", { class: "muted" }, ` ${(+x.secs || 0).toFixed(1)} s`) : null), del);
+      pic, h("div", { class: "xp-name" }, x.loop ? h("span", { class: "xp-loop", title: "a loop: it plays over and over, its end blended into its start" }, "↻ ") : null, x.name, this.namesOnly ? h("span", { class: "muted" }, ` ${(+x.secs || 0).toFixed(1)} s`) : null), del);
     c.addEventListener("dragstart", e => { e.dataTransfer.setData(DRAG_TYPE, x.id); e.dataTransfer.setData("text/plain", x.id); e.dataTransfer.effectAllowed = "copy"; });
     c.addEventListener("click", () => this.open(x));
     if (cv) {                                          // the character at its strongest moment; hover: the whole expression on it
@@ -136,7 +139,7 @@ export class ExpressionsPanel {
   }
   async open(x) {
     let e; try { e = await api(`/api/expressions/${encodeURIComponent(x.id)}`); } catch (err) { toast(err.message); return; }
-    await this.preview(e, { id: x.id, clip: x.clip ? `/expressions/${encodeURIComponent(x.id)}/clip.mp4?v=${x.stamp}` : null, name: e.name || x.name });
+    await this.preview(e, { id: x.id, clip: x.clip ? `/expressions/${encodeURIComponent((e.of && e.of.id) || x.id)}/clip.mp4?v=${x.stamp}` : null, name: e.name || x.name });
   }
   // the preview: the clip and the character side by side, in sync; neutral, strength, name; Accept (new) or Save
   async preview(e, o) {
@@ -157,20 +160,75 @@ export class ExpressionsPanel {
     len.addEventListener("input", relen);
     const lenReset = h("button", { class: "ghost", title: "back to the length it was filmed at", on: { click: () => { len.value = own.toFixed(2); relen(); } } }, "as filmed");
     const name = h("input", { type: "text", value: o.name || "", placeholder: o.guess || "a name, e.g. pout and glance", class: "xp-nameIn" });
+    // a loop card's wrap: the seconds its end blends into its start
+    const blend = e.loop ? h("input", { type: "number", min: "0", max: "5", step: "0.05", value: +(e.loop.blend ?? 0.4), style: "width:80px" }) : null;
+    // a loop from a range: the capture as a strip (how far the face is from rest, frame by frame), a range dragged on it,
+    // played on the character as a loop (its end blended into its start), kept as a card of its own
+    const n = e.frames || 1, fps = e.fps || 30, base = e.of ? +e.of.from || 0 : 0;   // a loop's frames in its capture's video
+    const range = { a: 0, b: n - 1 }, strip = h("canvas", { class: "xp-strip", width: 560, height: 44, title: "drag across it: the range to loop (the held part of the face); drag an end to move it" });
+    const cut = h("input", { type: "number", min: "0", max: "5", step: "0.05", value: 0.4, style: "width:64px", title: "seconds the range's end blends into its start, so the wrap never jumps" });
+    const asLoop = h("input", { type: "checkbox", class: "xp-asloop" }), rangeOut = h("span", { class: "muted" });
+    let sliced = null, slicedKey = "", loopT0 = 0;
+    const loopOf = () => { const k = `${range.a}|${range.b}|${cut.value}`; if (k !== slicedKey) { sliced = FACE.slice(e, range.a, range.b, Math.max(0, +cut.value || 0)); slicedKey = k; } return sliced; };
+    const amount = (() => { const z = FACE.zeroOf(e), cs = Object.entries(e.curves || {}), m = new Float32Array(n); let top = 1e-6;
+      for (let i = 0; i < n; i++) { let v = 0; for (const [k, c] of cs) v += Math.abs(c[i] - (z[k] || 0)); m[i] = v; top = Math.max(top, v); }
+      return m.map(v => v / top); })();
+    let nowF = -1;
+    const drawStrip = () => {
+      const g = strip.getContext("2d"), W = strip.width, H = strip.height, fx = f => (f + 0.5) / n * W;
+      g.fillStyle = "#141418"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "rgba(111,179,217,.22)"; g.fillRect(fx(range.a) - W / n / 2, 0, (range.b - range.a + 1) / n * W, H);
+      g.fillStyle = "#6fb3d9"; for (let i = 0; i < n; i++) { const hh = Math.max(1, amount[i] * (H - 8)); g.fillRect(i / n * W, H - hh, Math.max(1, W / n - 0.5), hh); }
+      g.fillStyle = "#fff"; for (const f of [range.a, range.b]) g.fillRect(fx(f) - 1.5, 0, 3, H);
+      if (nowF >= 0) { g.fillStyle = "#f2c14e"; g.fillRect(fx(nowF) - 0.5, 0, 1, H); }
+      rangeOut.textContent = `frames ${range.a} to ${range.b} (${((range.b - range.a + 1) / fps).toFixed(2)} s filmed)`;
+    };
+    strip.addEventListener("mousedown", ev => {
+      const r = strip.getBoundingClientRect(), fAt = x => Math.max(0, Math.min(n - 1, Math.round((x - r.left) / r.width * n - 0.5)));
+      const f0 = fAt(ev.clientX), px = f => r.left + (f + 0.5) / n * r.width;
+      const end = Math.abs(ev.clientX - px(range.a)) < 7 ? "a" : Math.abs(ev.clientX - px(range.b)) < 7 ? "b" : null;
+      const move = m => { const f = fAt(m.clientX);
+        if (end === "a") range.a = Math.min(f, range.b - 4); else if (end === "b") range.b = Math.max(f, range.a + 4);
+        else { range.a = Math.max(0, Math.min(f0, f)); range.b = Math.min(n - 1, Math.max(f0, f, range.a + 4)); }
+        loopT0 = performance.now(); drawStrip(); };
+      const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+      window.addEventListener("mousemove", move); window.addEventListener("mouseup", up); move(ev);
+    });
+    asLoop.addEventListener("change", () => { loopT0 = performance.now(); });
+    const save = h("button", { class: "xp-saveloop", disabled: fresh || null, title: fresh ? "Accept it first, then open it again to cut a loop" : "the range as a card of its own: it loops by itself wherever it's placed",
+      on: { click: async () => {
+        try { const r = await api(`/api/expressions/${encodeURIComponent(o.id)}/loop`, { method: "POST", body: JSON.stringify({ name: `${name.value.trim() || e.name || "expression"} · loop`, from: range.a, to: range.b, blend: Math.max(0, +cut.value || 0) }) });
+              toast(`“${r.name}” is in the library: drag it onto a face row`); this.refresh(); }
+        catch (err) { toast(err.message); }
+      } } }, icon("plus", 13), " Save the range as a loop");
+    drawStrip();
     const body = h("div", { class: "xp-prev" },
       h("div", { class: "xp-panes" }, h("div", {}, h("div", { class: "kv" }, "the video"), video), h("div", {}, h("div", { class: "kv" }, "on a character"), view)), note,
       h("div", { class: "frm-r" }, h("label", {}, "Character"), who), h("div", { class: "frm-r" }, h("label", { title: "what the face at rest reads as: taken away from every frame" }, "Neutral"), neutral),
       h("div", { class: "frm-r" }, h("label", {}, "Strength"), h("div", { class: "row" }, strength, sOut)),
       h("div", { class: "frm-r" }, h("label", { title: "how many seconds the whole expression takes: its frames slowed or sped up, smooth between them" }, "Length (s)"), h("div", { class: "row" }, len, lenReset, rate)),
+      blend ? h("div", { class: "frm-r" }, h("label", { title: "a loop's wrap: the seconds its end blends into its start" }, "Blend (s)"), blend) : null,
       h("div", { class: "frm-r" }, h("label", {}, "Name"), name),
+      h("div", { class: "xp-loopbox" }, h("div", { class: "kv" }, "A loop from a range: drag across the strip (the face's distance from rest, frame by frame) for the part to hold"), strip,
+        h("div", { class: "row" }, rangeOut, h("label", { class: "kv", title: "the character plays the range over and over, as the loop will" }, asLoop, " play the range as a loop"), h("span", { class: "muted" }, "blend"), cut, h("span", { class: "muted" }, "s"), save)),
       h("p", { class: "kv" }, `${(+e.secs || 0).toFixed(1)} s · ${e.frames} frames at ${e.fps} fps · ${Object.keys(e.curves || {}).length} channels that move · from ${(e.source || {}).file || "a video"}`));
     const P = new FacePreview(view, this.ctx);
     const setWho = async () => { note.textContent = await P.wear(who.value) || ""; };
     who.addEventListener("change", setWho); setWho();
     const t0 = performance.now(); relen();
     P.run(() => {
-      const t = video.tagName === "VIDEO" && !video.paused ? video.currentTime * lenOf() / own : (performance.now() - t0) / 1000;   // the video's time is the filmed one
-      return M ? FACE.toMHR(FACE.sample(e, t, { loop: true, neutral: neutral.value, strength: +strength.value, length: lenOf() }), M) : null;
+      const vid = video.tagName === "VIDEO" ? video : null, lo = (base + (asLoop.checked ? range.a : 0)) / fps, hi = (base + (asLoop.checked ? range.b : n - 1) + 1) / fps;
+      if (vid && (e.of || asLoop.checked) && vid.readyState > 0 && (vid.currentTime < lo - 0.05 || vid.currentTime > hi)) vid.currentTime = lo;   // the video kept to the loop's frames
+      const o2 = { neutral: neutral.value, strength: +strength.value };
+      if (blend) o2.blend = Math.max(0, +blend.value || 0);
+      if (asLoop.checked) {                             // the range as the loop will play: its own clock, its wrap blended
+        const L = loopOf(), t = (performance.now() - loopT0) / 1000;
+        nowF = range.a + Math.floor(t / (lenOf() / n)) % L.frames; drawStrip();   // (where on the strip, about: a blended wrap comes round a little early)
+        return M ? FACE.toMHR(FACE.sample(L, t, Object.assign(o2, { loop: true, length: lenOf() * L.frames / n })), M) : null;
+      }
+      const t = vid && !vid.paused ? (vid.currentTime - base / fps) * lenOf() / own : (performance.now() - t0) / 1000;   // the video's time is the filmed one
+      const f = Math.floor(t / lenOf() * n); if (f !== nowF) { nowF = ((f % n) + n) % n; drawStrip(); }
+      return M ? FACE.toMHR(FACE.sample(e, t, Object.assign(o2, { loop: true, length: lenOf() })), M) : null;
     });
     const ans = await modal({ title: fresh ? "A new expression" : `“${e.name || o.name}”`, wide: true, body, ok: fresh ? "Accept" : "Save", cancel: fresh ? "Discard" : "Close", focus: false });
     P.dispose(); if (video.tagName === "VIDEO") video.pause();
@@ -178,7 +236,7 @@ export class ExpressionsPanel {
     try {
       if (fresh && ans === true) { const r = await api("/api/expressions/accept", { method: "POST", body: JSON.stringify({ token: o.token, name: nm, neutral: neutral.value, strength: +strength.value, length: lenOf() }) }); toast(`“${r.name}” is in the library`); }
       else if (fresh) await api("/api/expressions/discard", { method: "POST", body: JSON.stringify({ token: o.token }) });
-      else if (ans === true) await api(`/api/expressions/${encodeURIComponent(o.id)}/set`, { method: "POST", body: JSON.stringify({ name: nm, neutral: neutral.value, strength: +strength.value, length: lenOf() }) });
+      else if (ans === true) await api(`/api/expressions/${encodeURIComponent(o.id)}/set`, { method: "POST", body: JSON.stringify(Object.assign({ name: nm, neutral: neutral.value, strength: +strength.value, length: lenOf() }, blend ? { blend: Math.max(0, +blend.value || 0) } : {})) });
     } catch (err) { toast(err.message); }
     this.refresh();
   }

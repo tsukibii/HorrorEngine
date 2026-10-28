@@ -872,8 +872,45 @@ def check_scene(sid, sc, story, things, r):
             if at.get("edge", "start") not in ("start", "end"):
                 r.err(f"{where}: cue edge {at.get('edge')!r} (start or end)")
             check_action(f"{where} cue", cue.get("do", {}), story, things, r, stage)
+        check_faces(where, ver.get("faces"), ids, story, r)
     for a in sc.get("sets", []):
         check_action(f"scene {sid} sets", a, story, things, r)
+
+
+FACE_KEYS = {"who", "expr", "at", "secs", "loop", "in", "out", "w", "speed"}
+EXPRESSIONS = L.STUDIO / "Expressions"
+
+
+def check_faces(where, faces, ids, story, r):
+    """a scene's face rows (§3.7): each a cast member wearing an expression from the library, from a clip edge"""
+    if faces is None:
+        return
+    if not isinstance(faces, list):
+        return r.err(f"{where}: faces is a list of placed expressions")
+    for i, f in enumerate(faces):
+        fw = f"{where} face {i + 1}"
+        if not isinstance(f, dict):
+            r.err(f"{fw}: {{who, expr, at}}")
+            continue
+        for k in sorted(set(f) - FACE_KEYS):
+            r.err(f"{fw}: {k!r} isn't a face's word ({', '.join(sorted(FACE_KEYS))})")
+        if f.get("who") not in story.get("cast", {}):
+            r.err(f"{fw}: who {f.get('who')!r} isn't in the cast")
+        e = str(f.get("expr") or "")
+        if not e or "/" in e or ".." in e or not (EXPRESSIONS / e / "expression.json").is_file():
+            r.err(f"{fw}: expression {f.get('expr')!r} isn't in the library (Content/Studio/Expressions)")
+        at = f.get("at") or {}
+        if at.get("clip") not in ids:
+            r.err(f"{fw}: at clip {at.get('clip')!r}, not in this version")
+        if at.get("edge", "start") not in ("start", "end"):
+            r.err(f"{fw}: edge {at.get('edge')!r} (start or end)")
+        if not isinstance(at.get("offset", 0), (int, float)):
+            r.err(f"{fw}: offset {at.get('offset')!r} (seconds)")
+        for k, lo, hi in (("secs", 0.05, 600), ("in", 0, 30), ("out", 0, 30), ("w", 0, 2), ("speed", 0.05, 20)):
+            if k in f and (not isinstance(f[k], (int, float)) or isinstance(f[k], bool) or not lo <= f[k] <= hi):
+                r.err(f"{fw}: {k} {f[k]!r} ({lo} to {hi})")
+        if "loop" in f and not isinstance(f["loop"], bool):
+            r.err(f"{fw}: loop is true or false")
 
 
 def check_trigger(bid, w, story, things, beats, r):

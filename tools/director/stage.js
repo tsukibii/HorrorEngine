@@ -9,7 +9,8 @@ import { BodyFigure } from "./bodies.js";
 import { LifeFX } from "./lifefx.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { wearEye } from "../shared/eye.js";
-import { stainMaterial } from "./stain.js";      // tools/shared (served at /shared: the page sits at the root)
+import { stainMaterial } from "./stain.js";
+import * as FACE from "../shared/face.js";      // tools/shared (served at /shared: the page sits at the root)
 const Y_UP = new THREE.Vector3(0, 1, 0);
 // the simple view (the toolbar's Simple, for when the desk lags): every lit surface a plain Lambert of its own colour, no
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
@@ -209,6 +210,29 @@ export function minimaxPrompt(c, cast) {
   return out;
 }
 export const VOICES = ["says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly", "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums"];
+// the expression library as scenes use it (their face rows: STORY_FORMAT §3.7), fetched once a page: each expression
+// a scene places, ARKit's map onto MHR's 72 shapes and MHR's face for Studio exports (tools/shared/face.js)
+export const FACES = { lib: {}, wait: {}, M: null, F: null };
+export function loadFaces(faces) {
+  const list = faces || [], jobs = [];
+  for (const id of new Set(list.map(p => p.expr).filter(Boolean))) {
+    if (FACES.lib[id]) continue;
+    jobs.push(FACES.wait[id] = FACES.wait[id] || fetch(`/api/expressions/${encodeURIComponent(id)}`).then(r => r.ok ? r.json() : null).then(e => { if (e) FACES.lib[id] = e; else delete FACES.wait[id]; }).catch(() => { delete FACES.wait[id]; }));
+  }
+  if (list.length && !FACES.M) jobs.push(FACE.loadMap().then(m => { FACES.M = m; }).catch(() => null));
+  if (list.length && !FACES.F) jobs.push(FACE.loadMHRFace().then(f => { FACES.F = f; }).catch(() => null));
+  return Promise.all(jobs);
+}
+export function forgetFace(id) { if (id) { delete FACES.lib[id]; delete FACES.wait[id]; } else { FACES.lib = {}; FACES.wait = {}; } }   // the library changed
+// a clip edge's time on a timeline (a face's or a cue's `at`), or undefined when the clip isn't in it
+export function edgeTime(segs, at) {
+  const s = segs.find(x => x.type === "clip" && !x.answer && x.clip.id === (at || {}).clip);
+  return s ? (at.edge === "end" ? s.end : s.start) + (+at.offset || 0) : undefined;
+}
+
+// a scene version's face rows laid on its timeline (face.js facePlan), with the expressions loaded so far
+export function facePlanOf(v, tl) { return FACE.facePlan(v.faces, at => edgeTime(tl.segs, at), tl.total, FACES.lib); }
+
 export function version(sc) { const v = sc && sc.variants && sc.pick && sc.variants[sc.pick]; return v ? Object.assign({}, sc, v) : (sc || {}); }
 
 // ---- the figure -------------------------------------------------------------------------------------------------
@@ -633,6 +657,12 @@ export class Stage {
         if (tg && w > 0) out.reach[who] = { hand: r.hand || "right", target: tg, w, offset: r.offset };
       }
     }
+    if ((v.faces || []).length && FACES.M) {         // the face rows: MHR's 72 for each face with something on it at T (null: at rest)
+      const n = Object.keys(FACES.lib).length;
+      if (!tl.facePlan || tl.faceN !== n) { tl.facePlan = FACE.facePlan(v.faces, at => edgeTime(segs, at), tl.total, FACES.lib); tl.faceN = n; }
+      out.faces = {};
+      for (const who of Object.keys(tl.facePlan)) { const sc = FACE.faceAt(tl.facePlan, who, T); out.faces[who] = sc ? FACE.toMHR(sc, FACES.M) : null; }
+    }
     out.trackers = {};
     for (const id of Object.keys(v.trackers || {})) { const p = this.trackerAt(tl, id, T); if (p) out.trackers[id] = p; }
     if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; out.think = !!c.think; }
@@ -759,6 +789,11 @@ export class Stage {
     return null;
   }
 
+  faceOn(f, w72) {               // a figure's face: MHR's 72 shapes on its morphs, or a Studio export's skin (face.js)
+    if (!f.model) return;
+    if (!f._faceT || f._faceF !== FACES.F) { f._faceT = FACE.faceOf(f.model, FACES.F); f._faceF = FACES.F; }   // (a Studio export's needs MHR's face loaded)
+    FACE.setFace(f._faceT, w72); f._faceOn = !!w72;
+  }
   apply(tl, state, T) {          // pose the figures, aim the camera, set the lights
     const v = tl.v;
     const through = new Set((v.camera || {}).through || []);           // the props the scene's eye is inside
@@ -789,6 +824,8 @@ export class Stage {
         }
       }
       if (state.poses[cid]) f.update(state.poses[cid]);
+      const w72 = (state.faces || {})[cid] || null;
+      if (w72 || f._faceOn) this.faceOn(f, w72);
     }
     const eye = this.eyeOf(v), view = this.things[v.view];
     const fwd = view ? new THREE.Vector3(Math.cos(view.yaw * Math.PI / 180), 0, -Math.sin(view.yaw * Math.PI / 180)) : new THREE.Vector3(0, 0, -1);
