@@ -711,6 +711,8 @@ def check_scene(sid, sc, story, things, r):
     clip_max = story["game"].get("clip_max", 8 if FORMAT >= 3 else 10)
     for where, ver in versions:
         stage = ver.get("stage", {})
+        if ver.get("view") != sc.get("view") and (ver.get("view") not in things or things[ver["view"]].use != "spot"):
+            r.err(f"{where}: view {ver.get('view')!r} isn't a spot")
         for who, spot in stage.items():
             if who not in cast:
                 r.err(f"{where}: stage names {who!r}, not in cast")
@@ -849,7 +851,7 @@ def check_scene(sid, sc, story, things, r):
                         r.err(f"{cw}: reach hand {rc.get('hand')!r} (right, left or both)")
                     if rc.get("to") not in ("player_collar", "player_face") and rc.get("to") not in things:
                         r.err(f"{cw}: reach to {rc.get('to')!r} (player_collar, player_face or a placed thing)")
-                    if rc.get("to", "").startswith("player") and not sc.get("view"):
+                    if rc.get("to", "").startswith("player") and not ver.get("view"):   # a variant's own view counts (pick_by found_at)
                         r.err(f"{cw}: reaching for the player needs the scene's view spot (where the player stands)")
                 for edge in ("start", "end"):
                     if body.get(edge) and body[edge] not in story.get("motions", {}) and body[edge] not in ("idle", "tpose"):
