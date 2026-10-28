@@ -85,6 +85,37 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     return Math.max(0, b + 0.5 * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a))));
   };
 
+  // the nose as a height over the face under it (its size, its projection): under it, the line from its root (the
+  // nasion) to the subnasale down the middle, falling across to the skin at its border, where it meets the face (its
+  // half-width by height, NW: 7 mm between the eyes, the alar crease's by the alae; that skin measured on the base,
+  // smoothed). MHR's average nose is broad (its alae 37 mm across) and stands 16 mm out of that line at the tip: the
+  // tip's and the bridge's own controls move a spot each, leaving the rest standing. A narrower nose takes the cheek
+  // beside it in too, eased out over NF (4 mm between the eyes, 16 by the alae: the alar crease itself moves, or a
+  // narrowed nose would stand on its old, wide foot), nothing within 6 mm of the eye's inner corner
+  const nasion = L(168), subn = L(2), crease = pair(129, 358), canthus = pair(133, 362), yN = nasion[1], yS = subn[1];
+  const NW = y => 0.007 + (crease[0] - 0.007) * sm(yN, crease[1], y), NF = y => 0.004 + 0.012 * sm(yN, crease[1], y);
+  const NY0 = yS - 0.008, NB = [], NP = [];
+  for (let i = 0; i < N; i++) if (P[i * 3 + 2] > 0.08 && Math.abs(P[i * 3]) < 0.04 && P[i * 3 + 1] > NY0 - 0.002 && P[i * 3 + 1] < yN + 0.01) NP.push(i);   // the face round the nose
+  for (let y = NY0; y <= yN + 0.008; y += 0.001) {
+    const x = NW(y); let z = -Infinity;
+    for (const i of NP) if (Math.abs(Math.abs(P[i * 3]) - x) < 0.0015 && Math.abs(P[i * 3 + 1] - y) < 0.0015) z = Math.max(z, P[i * 3 + 2]);
+    NB.push(z);
+  }
+  for (let i = 0; i < NB.length; i++) if (!isFinite(NB[i])) {                // rows the mesh missed: between their neighbours
+    let j = i; while (j < NB.length && !isFinite(NB[j])) j++;
+    const a = i > 0 ? NB[i - 1] : NB[j], b = j < NB.length ? NB[j] : a;
+    for (let k = i; k < j; k++) NB[k] = a + (b - a) * (k - i + 1) / (j - i + 1);
+    i = j;
+  }
+  for (let r = 0; r < 2; r++) { const A = NB.slice(); for (let i = 0; i < A.length; i++) { let s = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(A.length - 1, i + 2); j++) { s += A[j]; c++; } NB[i] = s / c; } }
+  const noseH = p => {                                                     // how far a point stands out of the face under the nose
+    const w = NW(p[1]), f = Math.min(NB.length - 1, Math.max(0, (p[1] - NY0) / 0.001)), i = Math.min(NB.length - 2, Math.floor(f));
+    const zl = nasion[2] + (subn[2] - nasion[2]) * Math.min(1, Math.max(0, (yN - p[1]) / (yN - yS))), zr = Math.min(zl, NB[i] + (NB[i + 1] - NB[i]) * (f - i)), u = Math.min(1, p[0] / w);
+    return Math.max(0, p[2] - (zl - (zl - zr) * u * u)) * sm(w + 0.003, w - 0.001, p[0]);
+  };
+  const noseV = y => sm(yN + 0.002, yN - 0.006, y) * sm(yS - 0.004, yS + 0.001, y);   // its bulk: from the root to the subnasale
+  const noseVX = y => sm(yN, yN - 0.015, y) * sm(yS - 0.012, yS + 0.001, y);          // its width: little at the root, all of it from the bridge's middle to the alae, easing out down the upper lip
+
   // each control: f(p, nrm) for a point on the left (x >= 0), its offset at 1; mirrored for the right
   const C = [
     ["forehead_height", "Forehead height", "Forehead", "Taller or shorter above the brows (the skull's top with it; hair covers it).",
@@ -125,6 +156,14 @@ export function buildSculpt({ P, T, lm, lid = null }) {
       p => { const w = bump(dist(p, chin), 0.035); return w ? [0.3 * p[0] * w, 0, 0] : null; }],
     ["chin_forward", "Chin forward", "Face", "The chin out or back.",
       p => { const w = bump(dist(p, chinFront), 0.032); return w ? [0, 0, 0.008 * w] : null; }],
+    // the whole nose scaled toward the face under it: −1 its width (the alae, the tip, the bridge) 30% in and how far it
+    // stands out 35% back, the cheek beside it eased along, the eyes and the lips as they were; Nose projection the
+    // standing out alone (a flatter profile)
+    ["nose_size", "Nose size", "Face", "The whole nose smaller (narrower, its nostrils in, standing less far out of the face) or bigger. The eyes and the mouth stay.",
+      p => { const vz = noseV(p[1]), w = NW(p[1]), vx = p[0] < w + NF(p[1]) ? noseVX(p[1]) : 0; if (!vx && !vz) return null;
+        return [vx && 0.3 * p[0] * sm(w + NF(p[1]), w, p[0]) * vx * sm(0.006, 0.012, dist(p, canthus)), 0, vz && 0.35 * noseH(p) * vz]; }],
+    ["nose_projection", "Nose projection", "Face", "How far the nose stands out of the face, its bridge to its tip, seen from the side: −1 a flatter, smaller profile. Its root stays.",
+      p => { const v = p[0] < NW(p[1]) + 0.003 && noseV(p[1]); return v ? [0, 0, 0.5 * noseH(p) * v] : null; }],
     ["nose_length", "Nose length", "Face", "The nose's tip lower (a longer nose) or higher.",
       p => { const w = bump(dist(p, tip), 0.02); return w ? [0, -0.005 * w, 0] : null; }],
     ["nose_tip", "Nose tip", "Face", "The tip out or in.",
@@ -189,6 +228,8 @@ export function buildSculpt({ P, T, lm, lid = null }) {
     ["jaw", "Jaw", ["jaw_width"], jaw, true],
     ["chin", "Chin", ["chin_length", "chin_forward"], chin, false],
     ["chin_side", "Chin's width", ["chin_width"], [chin[0] + 0.018, chin[1] + 0.004, chin[2] - 0.004], true],
+    ["nose_side", "Nose size", ["nose_size"], pair(236, 456), true],
+    ["nose_dorsum", "Nose projection", ["nose_projection"], L(5), false],
     ["nose_bridge", "Nose bridge", ["nose_bridge"], bridge, false],
     ["nose_tip", "Nose tip", ["nose_length", "nose_tip"], tip, false],
     ["nostril", "Nose width", ["nose_width"], ala, true],

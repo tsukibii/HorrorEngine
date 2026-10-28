@@ -147,6 +147,24 @@ const png = rgb => {
     console.log(`       Belly -1 takes the stomach back ${(r.flat * 1000).toFixed(0)} mm (a flat line from the pubic bone to the ribs)`);
     console.log(`       ${r.controls} controls, ${r.handles} circles; Forehead height 1 raises the head's top ${(r.topUp * 1000).toFixed(0)} mm and nothing under the chest; every control mirrored (within ${r.worst.toExponential(0)} m where the base is: all but ${r.unmatched} of ${r.moved} points); the forehead's circle dragged 60 px up: Forehead height ${after.v} (its row green while held), saved`);
   });
+  await step("the nose: Nose size −1 the whole nose smaller (narrower, standing less far out of the face), Nose projection −1 a flatter profile at its width; the lids, the eyes' corners and the lips stay; no skin turned over", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, M = b.MESHLID, T = b.TRIS, keep = [33, 133, 159, 145, 263, 362, 386, 374, 0, 17, 13, 14, 61, 291];
+      const now = () => ({ tip: b.lmk(4)[2], wide: Math.abs(b.lmk(278)[0] - b.lmk(48)[0]), keep: keep.map(i => b.lmk(i)), P: Float32Array.from(b.POS),
+        lid: ["L", "R"].flatMap(s => (M[s] || []).map(([a, c, f]) => [0, 1, 2].map(k => b.POS[a * 3 + k] * (1 - f) + b.POS[c * 3 + k] * f))) });
+      const was = { ...b.st.sculpt }, at = s => { b.st.sculpt = s; b.compose(); return now(); };
+      const o = at({}), small = at({ nose_size: -1 }), flat = at({ nose_projection: -1 }), both = at({ nose_size: -1, nose_projection: -1 }), big = at({ nose_size: 1, nose_projection: 1 });
+      b.st.sculpt = was; b.compose();
+      const far = (A, B) => Math.max(0, ...A.map((p, i) => Math.hypot(p[0] - B[i][0], p[1] - B[i][1], p[2] - B[i][2])));
+      const n = (P, t) => { const a = T[t] * 3, c = T[t + 1] * 3, d = T[t + 2] * 3, u = [0, 1, 2].map(k => P[c + k] - P[a + k]), v = [0, 1, 2].map(k => P[d + k] - P[a + k]); return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; };
+      const flips = X => { let k = 0; for (let t = 0; t < T.length; t += 3) { const p = n(o.P, t), q = n(X.P, t); if (p[0] * q[0] + p[1] * q[1] + p[2] * q[2] < 0) k++; } return k; };
+      const all = [small, flat, both, big];
+      return { scale: b.scale, back: o.tip - small.tip, narrower: 1 - small.wide / o.wide, flatBack: o.tip - flat.tip, flatWide: Math.abs(flat.wide - o.wide), keep: Math.max(...all.map(x => far(x.keep, o.keep))),
+        lids: o.lid.length, lid: Math.max(...all.map(x => far(x.lid, o.lid))), flips: [both, big].map(flips), handles: b.HANDLES.list.filter(H => /^nose_(side|dorsum)$/.test(H.h.id)).length };
+    });
+    if (!(r.back > 0.004 * r.scale) || !(r.narrower > 0.18) || !(r.flatBack > 0.006 * r.scale) || r.flatWide > 1e-5 || r.keep > 1e-6 || !(r.lids >= 32) || r.lid > 1e-6 || r.flips.some(k => k) || r.handles !== 3) throw new Error("the nose: " + JSON.stringify(r));
+    console.log(`       Nose size −1: the tip ${(r.back * 1000 / r.scale).toFixed(1)} mm back, the alae ${(r.narrower * 100).toFixed(0)}% narrower; Nose projection −1: the tip ${(r.flatBack * 1000 / r.scale).toFixed(1)} mm back at the same width; the ${r.lids} points of the lids' lines, the eyes' corners and the lips still (${r.keep.toExponential(0)} m), no skin turned over`);
+  });
   await step("the view's pose: a T-pose to shape in (the arms level from the shoulders, the legs straight, the neck stood up under a head untouched to the last bit); the A-pose is MHR's own, and what's written stays in it", async () => {
     const r = await page.evaluate(async () => {
       const b = window.__body, R = b.RIG, X = b.POSED, J = n => { const i = R.byName.get(n); return [X.J2[i * 3], X.J2[i * 3 + 1], X.J2[i * 3 + 2]]; };
