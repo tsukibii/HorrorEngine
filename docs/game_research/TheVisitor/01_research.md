@@ -273,6 +273,12 @@ fried tofu and avoid your eyes).
 - **What we take:** Haruki's illness reaches for the old explanation, "something is wearing her face", and the player
   is invited to believe it.
 
+### 6.6 Shinkei-suijaku: the card game called "nervous breakdown"
+Japan's name for Concentration (Pairs, Memory), played with a standard deck face down, pairs turned two at a time, is
+*shinkei-suijaku*, 神経衰弱: "nervous exhaustion", the old word for a nervous breakdown.
+- **What we take:** the card game of the visit, a game of memory for a man whose memory lies, its stake the loser's
+  answer to one question. (*Babanuki*, Old Maid, with its single Joker, would be the other one.)
+
 ## 7. The mind
 
 ### 7.1 Capgras

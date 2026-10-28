@@ -2,6 +2,32 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, before dawn (The Visitor: no reflections, ending slots, a card game, the garden, a real visit)
+
+- **No reflections**: "I dont like 'the night window and the bathroom mirror, you see her real brown eyes and her real
+  expression.' as it will be harder to program and why would we watch her while shes in the bathroom."
+- **The endings as slots**: "Modify the endings so you just create a generic cutscene slot that I can easily modify
+  for each ending (so just give a rough outline so when we move from writer to director I can customize the whole last
+  part), add an ending title card though after where we will add more info." (This supersedes 2026-10-27's "no ending
+  cards" for this game: the cutscene, then a title card.)
+- **The answers to the three calls**: the other ending is Thank You for Tonight ("Sounds good"); the body in the
+  dark ending is Natsuki's ("yes, dark ending"); he let go at the weir ("Sure, thats okay for now").
+- **A card game**: "For each flow to keep the game interesting we should add maybe a simple card game (using standard
+  cards), but based on what flow your going into is what will determine some of the options and results in the card
+  game."
+- **The garden, not the lanterns**: "rework the lantern part, I dont want to model a lantern, maybe have it more casual
+  like we go to the small garden outside and see her smoking and theres a more intimate discussion."
+- **A real visit**: "sprinkle multiple small moments like making her tea, maybe later she gets hungry and we make her a
+  ramen, things that basically make it feel more real and how a visit would go. Basically the game needs to feel like
+  your there but with amnesia and dont know why but it feels memorable and relatable enough that it convinces you".
+- Claude's calls inside that, in the abstract's fourth pass (waiting for the user's yes): off his pills the truth
+  comes from the world, not the glass (her card, the officer, her mother phoning for "Natsuki", her bag), and her real
+  faces are seen only after a pill or in the dark ending's flashes; the card game is shinkei-suijaku (Concentration,
+  "nervous breakdown"), the loser answering a question, his memory lying and her letting him win off his pills; the
+  small moments (a towel, her shoes stuffed with newspaper, tea, a watermelon chilled and salted, somen, cards, her
+  cigarette in the little garden, a vending-machine can, ramen at midnight, the futon), most with a memory flicker
+  that breaks off; Natsumi's piece in Okuribi is a Tanabata wish on paper.
+
 ## 2026-10-28, small hours (The Visitor: the pills decide what you see; three endings, three pieces of the truth)
 
 - **His version of her**: "if he's off his pills we will have different facial expressions for some parts (he will
