@@ -11,11 +11,12 @@ const IS = {                                       // what a placed thing must b
   thing: t => t.kind !== "room", spot: t => t.use === "spot", door: t => t.kind === "door", light: t => t.use === "light",
   room: t => t.kind === "room", zone: t => t.kind === "room" || t.use === "trigger", locker: t => t.use === "locker",
   carry: t => t.use === "carry", die: t => t.use === "roll", table: t => t.use === "game", life: t => !!t.life,
+  stain: t => t.use === "clean", breaker: t => t.use === "breaker",
 };
 const NOUN = { thing: "placed thing", spot: "spot", door: "door", light: "light", room: "room", zone: "room or trigger", locker: "hiding place",
   carry: "thing you carry", die: "die", table: "game table", line: "line", sound: "sound", item: "item", note: "note", counter: "counter",
   axis: "karma axis", scene: "scene", cast: "cast member", motion: "motion", secret: "secret", route: "route", beat: "beat in this task",
-  ask: "question", pose: "pose", life: "thing with a life", todo: "task on the to-do list" };
+  ask: "question", pose: "pose", life: "thing with a life", todo: "task on the to-do list", stain: "stain", breaker: "breaker box" };
 const TABLE = { line: "lines", sound: "sounds", item: "items", note: "notes", scene: "scenes", cast: "cast", motion: "motions", secret: "secrets" };
 const ANY = { anyone: "cast", anylocker: "locker", anycarry: "carry", anytodo: "todo" };   // true (any, all) or one of a kind
 const BUILT_IN_POSES = new Set(["idle", "tpose"]);

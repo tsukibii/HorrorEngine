@@ -32,8 +32,11 @@ CHECKS passing before each push:
   against them, the plan in eight steps each with its number. Step 1's light is built as an option: the Character
   Studio's **reference (film)** light (lit to shadow 7.7:1, the lit cheek L\* 62, a\* 3.5, b\* 7.6 against the stills'
   57-63, 2-6, 7-8), the old emissive glow off under it. The rest is the user's call (§6 of the note).
-- Not done: a quick task for cleaning (the desk's Quick tasks only reference what exists; a game needs stains first),
-  the guide's pictures (`guide/help.jpg` still shows the old keys: `guide_shots.mjs`), the shelf's own dirt and metal
+- **Quick events** for them on the desk (`templates.js`): *A chore: clean up a mess* (on the to-do list, its stain
+  given the mop it needs), *The power cut* (find the breaker box), *A knock at the door* (its door given a peephole;
+  someone shown while you look, gone after), and the quick beat *The flashlight flickers* (or dies). The pickers know
+  stains and breaker boxes; DESK builds each into the Sample.
+- Not done: the guide's pictures (`guide/help.jpg` still shows the old keys: `guide_shots.mjs`), the shelf's own dirt and metal
   steps (they borrow carpet's and concrete's), and Unreal for all five (RUNNER_SPEC says how).
 
 ## 0b. Before that (2026-10-27, later, on `dev-002`): the story from your notes, through Claude

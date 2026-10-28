@@ -95,7 +95,9 @@ vocabulary.
 |---|---|---|
 | `fetch` | A locked door; its key is somewhere in 2 to 4 rooms, behind a note that hints | 4 to 8 |
 | `code` | A combo lock; the digits are spread over notes, a photo and a calendar | 5 to 10 |
-| `power` | Lights out; find a fuse (`use_on` on the fuse box); the lights come back changed | 5 to 8 |
+| `power` | Lights out (`power: off`: every bulb and lamp in the level, the switches dead); find the breaker box (`use: breaker`) in the dark; the lights come back changed. The quick task *The power cut* | 5 to 8 |
+| `chore` | A job of the shift on the to-do list: a mess scrubbed away (`use: clean`, the mop in the hand), wiping, tidying; done in any order. The quick task *A chore* | 1 to 3 |
+| `peephole` | A knock at night; the eye to the door's peephole (`peeping`): nobody there, or someone shown while you look and gone after. The quick task *A knock at the door* | 1 to 2 |
 | `hide` | Something walks the corridor (stalker `patrol`); get to a locker and wait it out | 3 to 6 |
 | `escape` | A chase (`stalker chase`) along a fixed route of doors that slam open | 2 to 4 |
 | `explore` | No lock: rooms to read and look at, scares on a timer, a `glimpse` | 5 to 10 |

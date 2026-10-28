@@ -509,6 +509,8 @@ const CTX = {
       case "room": return T(t => t.kind === "room");
       case "zone": return T(t => t.kind === "room" || t.use === "trigger");
       case "locker": return T(t => t.use === "locker");
+      case "stain": return T(t => t.use === "clean");
+      case "breaker": return T(t => t.use === "breaker");
       case "carry": return T(t => t.use === "carry");
       case "die": return T(t => t.use === "roll");
       case "table": return T(t => t.use === "game");

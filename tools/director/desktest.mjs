@@ -135,7 +135,11 @@ console.log("copy and paste (clipboard.js)");
 console.log("quick events (templates.js)");
 {
   const Q = await import("./templates.js");
-  const S = story("Sample"), th = thingsOf(S), of = f => Object.keys(th).filter(k => f(th[k]));
+  const S = story("Sample"), hall = S.levels.house.rooms.find(r => r.id === "hall");   // the day's small systems need a stain, a breaker, a mop and a flashlight
+  hall.props.push({ id: "hall_mud", shape: "box 0.7 0.5 0.01", at: [3.0, 1.5], use: "clean", stain: "mud" }, { id: "hall_breaker", shape: "box 0.3 0.1 0.4", at: [3.85, 0.6], z: 1.3, use: "breaker" },
+    { id: "hall_mop", shape: "box 0.1 0.1 1.2", at: [0.3, 2.0], use: "pickup", item: "mop" }, { id: "hall_torch", shape: "cyl 0.025 0.18", at: [0.5, 1.0], use: "pickup", item: "flashlight" });
+  Object.assign(S.items, { mop: { name: "Mop" }, flashlight: { name: "Flashlight", torch: true } });
+  const th = thingsOf(S), of = f => Object.keys(th).filter(k => f(th[k]));
   const room = of(t => t.kind === "room"), door = of(t => t.kind === "door"), locker = of(t => t.use === "locker"), person = of(t => /^person/.test(t.shape || ""));
   const ending = Object.keys(S.flow).find(k => S.flow[k].type === "ending"), back = S.game.start;
   const values = {
@@ -144,6 +148,8 @@ console.log("quick events (templates.js)");
     timed_escape: { exit: room[0], secs: 30, fail: ending }, hide_round: { seeker: Object.keys(S.cast)[0], places: locker.slice(0, 2), secs: 40 },
     chase: { seeker: Object.keys(S.cast)[0], exit: door[0], secs: 25 },
     request: { who: Object.keys(S.cast)[0], wait: of(t => t.use === "spot")[0], text: "Put the kettle on", ticks: { enter: room[1] }, after: of(t => t.use === "spot")[1], then: "sit" },
+    chore: { stain: "hall_mud", with: "mop", text: "Mop up the mud", thought: "That's better." }, power_cut: { breaker: "hall_breaker" },
+    door_knock: { door: "front_door", count: 3, figure: person[0], thought: "Nobody there. Then someone." },
   };
   const made = [];
   for (const tpl of Q.TASKS) {
@@ -155,10 +161,13 @@ console.log("quick events (templates.js)");
   const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 },
     slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] },
     kettle_on: { zone: "kitchen", kettle: "kitchen_kettle" }, still_burning: { zone: "hall", cigarette: "hall_ash" }, phone_rings: { zone: "study", phone: "study_phone" },
-    tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." } };
+    tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." }, torch_flickers: { zone: room[0], how: "dead" } };
   const bst = Q.buildTask(S, Q.TASK.read_note, values.read_note), beats = Q.BEATS.map(t => Object.assign(Q.buildBeat(S, t, bv[t.id] || {}), { optional: true }));
   bst.stitch.beats.push(...beats); S.flow.n_qe_beats = { type: "stitch", ref: bst.tid, next: back }; made.push("n_qe_beats");
   ok(`${Q.TASKS.length} tasks and ${Q.BEATS.length} beats built: ${Q.TASKS.map(t => t.id).join(", ")}; ${Q.BEATS.map(t => t.id).join(", ")}`);
+  const fd = S.levels.house.rooms.flatMap(r => r.openings || []).find(o => o.door && o.door.id === "front_door").door;
+  hall.props.find(p => p.id === "hall_mud").with === "mop" && fd.peephole === true
+    ? ok("the chore gave its stain the mop it needs, the knock gave the front door its peephole") : fail(`the level hooks: the stain's with ${hall.props.find(p => p.id === "hall_mud").with}, the door's peephole ${fd.peephole}`);
   const errs = run(S, th).filter(p => p.sev === "error");
   errs.length ? fail(`the live checks: ${errs.slice(0, 3).map(p => p.text + " (" + p.at.text + ")").join("; ")}`) : ok("the live checks find nothing wrong in them");
   const out = storyCheck("Sample", S), last = out.trim().split("\n").pop();
