@@ -1066,3 +1066,18 @@ a walk cut short says so, and an ending no walk reached is an error only when no
 a path of its own only when its way differs from the sweep's (another card, or replies and events it skips); a skip
 over plain lines is only time.
 
+## Look at what fills a hole before reshaping it (2026-10-28)
+
+The Studio's eyes vanished seen from the side. The eyeball is drawn only where a fan over its opening marks the
+stencil, over whatever is inside the head (no depth test), and from the side that fan is nearly edge-on, so the first
+two fixes widened where the eyeball may show: drawn again as a solid inside the opening's outline, then a fan domed
+over the cornea. Each made the eye bulge out of the lids, which the user didn't want, and neither touched the cause.
+Rendering the opening with its eyeball hidden and the fan coloured green showed it: from 75° the opening was full of
+an eyeball all the same, the other one. Both eyes wrote the same stencil value, and seen from the side they line up,
+so the far eyeball, drawn after the near one with no depth test, painted itself through the near opening; and where
+the skin is cut deeper than the fan, a grazing ray slipped past the fan into the head and onto the other eye's. Each
+eye has its own stencil value now, its fan is walled back to the cut and writes depth. Only then was the shape worth
+working on: the user drew the mask they wanted (red, over our renders), and the fan became that mask made smooth, an
+arch from lid to lid. When something drawn looks wrong, take parts away one at a time (colour the mask, hide the
+object) and see what's left, before changing the shape of anything.
+

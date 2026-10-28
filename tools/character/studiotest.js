@@ -748,6 +748,33 @@ const png = rgb => {
     console.log(`       on the face fitted to the pictures: the lid line ${r.fit.width.toFixed(2)} times MediaPipe's width, in order; a blink leaves ${(r.fit.meet * 100).toFixed(0)}% of the lids' opening`);
     console.log(`       openings ${(r.open * 1e6).toFixed(0)} mm² open, ${(r.shut * 1e6).toFixed(1)} shut; the eyeball fitted at ${(r.r1 * 1000).toFixed(1)} mm (12 mm: ${(r.r0 * 1000).toFixed(1)}), size 2: ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
   });
+  await step("the eyes from the side (the user's report, 2026-10-28: they vanished in profile): each eye through its own opening only (the far eyeball no longer paints itself through the near one, the opening walled back to the cut), filled to a round front by the arched fan, its white white, not a dark red hole", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, T = b.THREE, R = b.renderer, E = b.EYES.L;
+      b.st.expr.fill(0); b.st.eyes.size = 1; b.paintEyes(); b.compose();
+      let scene = b.rig; while (scene.parent) scene = scene.parent; scene.updateMatrixWorld(true);
+      const W = 200, rt = new T.WebGLRenderTarget(W, W, { stencilBuffer: true }), cam = new T.PerspectiveCamera(14, 1, 0.01, 10), cc = R.getClearColor(new T.Color()), ca = R.getClearAlpha();
+      const fans = b.HOLES.material.map(m => m.color.clone()), refs = [b.HOLES.material.map(m => m.stencilRef), b.eyeMats.L.stencilRef, b.eyeMats.R.stencilRef];
+      const c = E.getWorldPosition(new T.Vector3()), fwd = new T.Vector3(0, 0, 1).transformDirection(b.rig.matrixWorld).normalize(), right = new T.Vector3(1, 0, 0).transformDirection(b.rig.matrixWorld).normalize();
+      const px = () => { R.setRenderTarget(rt); R.setClearColor(0xffffff, 1); R.clear(); R.render(scene, cam); const A = new Uint8Array(W * W * 4); R.readRenderTargetPixels(rt, 0, 0, W, W, A); return A; };
+      const at = yaw => {                                   // turned toward the left eye's outer side: the opening as its fan shows (green) with the eyeball hidden, then the eyeball there
+        const a = yaw * Math.PI / 180; cam.position.copy(c).addScaledVector(fwd.clone().multiplyScalar(Math.cos(a)).addScaledVector(right, Math.sin(a)), 0.2); cam.up.set(0, 1, 0); cam.lookAt(c); cam.updateMatrixWorld();
+        b.HOLES.material.forEach(m => m.color.set(0x00ff00)); E.visible = false; const hole = px(); E.visible = true; const eye = px(); b.HOLES.material.forEach((m, k) => m.color.copy(fans[k]));
+        let n = 0, left = 0, white = 0, red = 0;
+        for (let i = 0; i < hole.length; i += 4) if (hole[i + 1] > 200 && hole[i] < 60 && hole[i + 2] < 60) {
+          n++; const l = (eye[i] + eye[i + 1] + eye[i + 2]) / 3;
+          if (eye[i + 1] > 200 && eye[i] < 60 && eye[i + 2] < 60) left++; else if (l > 120 && eye[i] - eye[i + 2] < 40) white++; else if (eye[i] - eye[i + 2] > 30 && l > 40) red++;
+        }
+        return { yaw, opening: n, uncovered: left, white: +(white / Math.max(1, n)).toFixed(2), red: +(red / Math.max(1, n)).toFixed(2) };
+      };
+      const out = { refs, views: [0, 60, 75, 85].map(at) };
+      R.setRenderTarget(null); R.setClearColor(cc, ca); rt.dispose(); return out;
+    });
+    const [front, , ...side] = r.views;
+    if (r.refs[0][0] !== r.refs[1] || r.refs[0][1] !== r.refs[2] || r.refs[1] === r.refs[2] || [r.refs[1], r.refs[2]].includes(2)) throw new Error("each eye's own stencil value: " + JSON.stringify(r.refs));
+    if (side.some(v => v.opening < 100 || v.uncovered > 0.05 * v.opening || !(v.white > 0.4) || !(v.red < 0.05)) || front.uncovered > 0.02 * front.opening) throw new Error(JSON.stringify(r.views));
+    console.log("       the left opening seen from " + r.views.map(v => `${v.yaw}°: ${v.opening} px, ${v.uncovered} not covered by its eyeball, ${Math.round(v.white * 100)}% white, ${Math.round(v.red * 100)}% red`).join("; "));
+  });
   await step("the eyes softened: the iris melts into the white (Iris edge softness), the eye occlusion shades the white at the lids and corners, a tear line along each lower lid (only when set)", async () => {
     const r = await page.evaluate(() => {
       const b = window.__body, column = () => {                     // the eye's paint (baked flat, the shader's own) along a few radii from the middle: brightness per step

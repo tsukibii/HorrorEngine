@@ -1209,12 +1209,18 @@ const EYES = { L: new THREE.Mesh(EYEPAINT.eyeGeometry(EYEPAINT.eyeShape(EYEPAINT
 // the openings: each lid outline smoothed (Catmull-Rom through MediaPipe's 16 points, 32 round), cut out of the skin in
 // its shader (MHR's coarse triangles would leave teeth), and filled by a fan in the eye corner's pink that marks the
 // stencil; the eyeballs are drawn only there and over whatever is inside: an opening is always full, in any pose, and a
-// bigger eyeball grows inside the head and never shows outside it
+// bigger eyeball grows inside the head and never shows outside it. Each eye has its own stencil value (the left 1,
+// the right 3; the mouth's is 2): seen from the side the two eyes line up, and with one value the far eyeball, drawn
+// over whatever is inside, painted itself through the near eye's opening and the near eye was gone (the eyes vanished
+// in profile: the user's report, 2026-10-28). Seen from the side, what shows through an opening is its eyeball's
+// flank under the lids: the eye's paint and the lids' shadow fade to the white there (below). The fan is arched over
+// the middle and walled back to the cut (openings()), so in profile the eye fills to a round front between the lids
 const holeGeo = new THREE.BufferGeometry();
-const HOLES = new THREE.Mesh(holeGeo, new THREE.MeshBasicMaterial({ depthWrite: false, side: THREE.DoubleSide,
-  stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
+const EYEREF = { L: 1, R: 3 };
+const HOLES = new THREE.Mesh(holeGeo, ["L", "R"].map(side => new THREE.MeshBasicMaterial({ side: THREE.DoubleSide,
+  stencilWrite: true, stencilRef: EYEREF[side], stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp })));
 HOLES.renderOrder = 1; HOLES.frustumCulled = false;
-for (const m of Object.values(eyeMats)) Object.assign(m, { stencilWrite: true, stencilWriteMask: 0, stencilRef: 1, stencilFunc: THREE.EqualStencilFunc, depthTest: false });
+for (const [side, m] of Object.entries(eyeMats)) Object.assign(m, { stencilWrite: true, stencilWriteMask: 0, stencilRef: EYEREF[side], stencilFunc: THREE.EqualStencilFunc, depthTest: false });
 for (const e of Object.values(EYES)) e.renderOrder = 2;
 // the lids' shadow on the eyeball: darker just under the upper lid's line and a little over the lower's, in the head's
 // space (the lid lines from the outline: 0..16 the lower lid, outer corner to inner; 16..32 the upper, back out)
@@ -1244,6 +1250,7 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   float wUp = 0.0032 * (1.0 + 2.0 * uOcc), wLo = 0.0014 * (1.0 + 3.5 * uOcc);   // the eye occlusion: wider all round, into the corners
   float cn = max(1.0 - smoothstep(0.0, 0.0065, length(vRig.xy - uLo[0])), 1.0 - smoothstep(0.0, 0.0055, length(vRig.xy - uLo[16])));
   float sh = (0.6 + 0.3 * uOcc) * (1.0 - smoothstep(0.0, wUp, up)) + (0.25 + 0.5 * uOcc) * (1.0 - smoothstep(0.0, wLo, lo)) + 0.7 * uOcc * cn * cn;
+  sh *= smoothstep(0.25, 0.6, dot(normalize(vViewPosition), normalize(vEyeF)));   // seen from the side (past ~55° off the eye's own axis), what shows through the opening is the white under the lids: the lids' shadow, painted for a view from the front, fades out (it made the eye a dark, pink hole in profile: 2026-10-28)
   diffuseColor.rgb *= 1.0 - min(0.95, uLidShade * sh); }`);
   };
 }
@@ -1419,10 +1426,19 @@ function lidView() {
 }
 const AREA0 = {};                                      // each opening's area on the neutral face (placeEyes)
 const area = pts => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] + pts[i][0]) * (pts[j][1] - pts[i][1]); return Math.abs(a) / 2; };
+const EYEINV = new THREE.Matrix4(), EO = new THREE.Vector3(), ED = new THREE.Vector3();
+function eyeFrontZ(side, x, y) {                       // the eyeball's front at (x, y) in the head's space, its z (or -Infinity), as it looks now
+  const m = EYES[side], sh = eyeShapeOf(side); m.updateMatrix(); EYEINV.copy(m.matrix).invert();
+  EO.set(x, y, m.position.z + 2 * m.scale.x).applyMatrix4(EYEINV); ED.set(0, 0, -1).transformDirection(EYEINV);
+  const hit = (cz, r) => { const oz = EO.z - cz, b = EO.x * ED.x + EO.y * ED.y + oz * ED.z, q = b * b - (EO.x * EO.x + EO.y * EO.y + oz * oz - r * r); return q < 0 ? Infinity : -b - Math.sqrt(q); };
+  let t = hit(0, 1);                                     // the white's sphere (eye units), then the cornea's dome over the limbus
+  const tc = hit(sh.zc, sh.rc); if (tc < t && EO.z + tc * ED.z >= sh.zl) t = tc;
+  return isFinite(t) ? m.position.z + (2 - t) * m.scale.x : -Infinity;
+}
 function openings() {
   const on = !!LMK && st.eyes.on; SKU.uCutOn.value = on ? 1 : 0;
-  if (!on) { holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3)); TEAR.L.visible = TEAR.R.visible = false; return; }
-  const P = [];
+  if (!on) { holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3)); holeGeo.clearGroups(); TEAR.L.visible = TEAR.R.visible = false; return; }
+  const P = []; let PL = 0;
   ["L", "R"].forEach((side, s) => {
     const { pts, c } = outline(side), U = SKU[`uCut${side}`].value;
     const raw = area(outline(side, 1, false).pts), f = raw / (AREA0[side] || raw), t = Math.min(1, Math.max(0, (f - 0.25) / 0.2)), shut = t * t * (3 - 2 * t);   // a blink: the opening shrinks to nothing as the lids meet (MHR's shut lids still leave 15 to 20%)
@@ -1439,10 +1455,47 @@ function openings() {
     E.uCatch.value.set(ec.x + st.eyes.catchX * ir, ec.y + st.eyes.catchY * ir, ec.x - st.eyes.catchX * ir * 0.7, ec.y - st.eyes.catchY * ir * 0.8);
     const painted = st.eyes.real === false ? 1 : 0;   // a refracting cornea reflects the lights themselves: no painted catchlights
     E.uCatchA.value.set(st.eyes.catch1 * painted, st.eyes.catch2 * painted); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
-    for (let i = 0; i < pts.length; i++) P.push(...mid, ...pts[i], ...pts[(i + 1) % pts.length]);
+    // the fan arched over the middle, an invisible shape whose outline from any side is where the eye shows (the
+    // user's red masks, 2026-10-28: a smooth mask, not a rough one): seen from the side the eye fills forward to one
+    // round front between the lids, reaching as far as the pupil. Its rim is the lid line through a spline, three
+    // points to each of the line's; along each spoke a quarter ellipse from the lid line up to just behind the
+    // eyeball's front at the opening's middle (the cornea's top), so it meets the lids round, never at a corner; held
+    // softly just inside the eyeball's surface so the eyeball always covers it (followed exactly, the cornea made a
+    // bump between notches); all the way to the lids above and below, toward the corners only over the middle (the
+    // eyeball came out of the lids there)
+    const ss = (a0, a1, v) => { const u = Math.min(1, Math.max(0, (v - a0) / (a1 - a0))); return u * u * (3 - 2 * u); };
+    const smin = (a, b, k) => { const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (b - a) / k)); return b + (a - b) * h - k * h * (1 - h); };
+    const nP = pts.length, RIM = [];
+    for (let i = 0; i < nP; i++) {                         // Catmull-Rom through the lid line: 3 points to each of its
+      const p0 = pts[(i - 1 + nP) % nP], p1 = pts[i], p2 = pts[(i + 1) % nP], p3 = pts[(i + 2) % nP];
+      for (const u of [0, 1 / 3, 2 / 3]) RIM.push([0, 1, 2].map(k => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * u + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * u * u + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * u * u * u)));
+    }
+    const apex = eyeFrontZ(side, c[0], c[1]) - 0.0002 * SCALE, soft = 0.0004 * SCALE;
+    const ring = (i, t) => {                               // spoke i (to rim point i), t from the middle (0) to the rim (1)
+      const q = RIM[i % RIM.length], x = c[0] + t * (q[0] - c[0]), y = c[1] + t * (q[1] - c[1]), flat = mid[2] + t * (q[2] - mid[2]);
+      if (!(apex > -Infinity) || t >= 1) return [x, y, t >= 1 ? q[2] : flat];
+      const up = Math.abs(q[1] - c[1]) / (Math.hypot(q[0] - c[0], q[1] - c[1]) || 1);   // the spoke toward a lid (1) or a corner (0)
+      const w = shut * Math.max(1 - ss(0.3, 0.65, t), ss(0.25, 0.8, up));
+      let z = q[2] + (apex - q[2]) * Math.sqrt(Math.max(0, 1 - t * t));                 // the quarter ellipse
+      const sz = eyeFrontZ(side, x, y); if (sz > -Infinity) z = smin(z, sz - 0.0002 * SCALE, soft);
+      return [x, y, flat + w * Math.max(0, z - flat)];
+    };
+    const TS = [0, 0.15, 0.3, 0.42, 0.53, 0.63, 0.72, 0.8, 0.86, 0.91, 0.945, 0.97, 0.988, 1], RG = TS.map(t => RIM.map((_, i) => ring(i, t)));
+    for (let k = 0; k < TS.length - 1; k++) for (let i = 0; i < RIM.length; i++) {
+      const j = (i + 1) % RIM.length, a = RG[k][i], b = RG[k][j], d = RG[k + 1][i], e = RG[k + 1][j];
+      if (k === 0) P.push(...a, ...d, ...e); else P.push(...a, ...d, ...e, ...a, ...e, ...b);   // the middle's ring is one point
+    }
+    // and a wall from the lid line back to where the skin is cut to: a ray through the opening that slips past the fan
+    // (seen from the side, the cut runs deeper than the lid line) crosses the wall, and its eyeball is drawn there; the
+    // fan and the wall write depth, so the other eye's, inside the head behind them, can't be seen through this opening
+    const back = Math.min(...pts.map(p => p[2])) - 0.006;
+    for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length];
+      P.push(...a, a[0], a[1], back, ...b, ...b, a[0], a[1], back, b[0], b[1], back); }
+    if (side === "L") PL = P.length;
   });
   holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P), 3)); holeGeo.computeBoundingSphere();
-  HOLES.material.color.set(st.eyes.corner).multiplyScalar(0.55);   // what shows where the eyeball doesn't: the corner's pink, darker
+  holeGeo.clearGroups(); holeGeo.addGroup(0, PL / 3, 0); holeGeo.addGroup(PL / 3, (P.length - PL) / 3, 1);   // each eye's fan with its own stencil value
+  for (const m of HOLES.material) m.color.set(st.eyes.corner).multiplyScalar(0.55);   // what shows where the eyeball doesn't: the corner's pink, darker
   lidView();
 }
 const EYEFIT = { size: 1, depth: 0, opening: 1, lidShade: 0.6, occlusion: 0.5, tearline: 0.5 };   // the eyeball's size (grown back from the pupil), how far back, the opening's size

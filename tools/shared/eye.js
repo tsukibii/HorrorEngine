@@ -272,19 +272,23 @@ vec3 eyeIrisPaint(vec2 u, float graze, float w) {               // u: the iris's
   ic = mix(ic, vec3(10.0, 7.0, 7.0) / 255.0, lim * eyeSm(1.0 - uPaint2.x - 0.3 * w, 1.0, rr));
   return mix(ic, uPupilCol, 1.0 - eyeSm(-0.025, 0.025, pd));                                                  // the pupil
 }
-vec3 eyeScleraPaint(vec3 P) {
+vec3 eyeScleraPaint(vec3 P, float graze) {
   float R = uPaint.x, th = acos(clamp(normalize(P).z, -1.0, 1.0)), ph = atan(P.y, P.x);
-  vec3 col = mix(uSclera, mix(uSclera, vec3(150.0, 120.0, 115.0) / 255.0, 0.6), uPaint2.z * eyeSm(R, R + 0.9, th));
+  // the white's rim shading, the corners' pink and the veins are painted for a view from the front, where the lids hide
+  // the eyeball's flank: seen from the side (past ~55° off its axis), that flank is what shows, and they fade to the
+  // plain white (they made a dark red hole of the eye at 75°: the user's report, 2026-10-28). The bake (graze 0) keeps them
+  float side = 1.0 - eyeSm(0.4, 0.75, graze);
+  vec3 col = mix(uSclera, mix(uSclera, vec3(150.0, 120.0, 115.0) / 255.0, 0.6), side * uPaint2.z * eyeSm(R, R + 0.9, th));
   float sx = P.x, sy = P.y;
   float ci = eyeSm(0.35, 0.95, sx * uPaint3.z), co = eyeSm(0.55, 1.0, -sx * uPaint3.z), lid = eyeSm(0.4, 0.95, abs(sy)) * 0.5;
-  col = mix(col, uCorner, min(1.0, uPaint2.w * (ci * 0.9 + co * 0.3 + lid * 0.4)) * eyeSm(R * 0.9, R * 1.5, th));
+  col = mix(col, uCorner, side * min(1.0, uPaint2.w * (ci * 0.9 + co * 0.3 + lid * 0.4)) * eyeSm(R * 0.9, R * 1.5, th));
   if (uPaint3.x > 0.0) {                                      // veins: thin wavy lines from the rim toward the iris
     float a = ph / 6.2831853 + 0.5, warp = eyeVn(a * 9.0, th * 2.5, 9.0) - 0.5;
     float l1 = 1.0 - abs(eyeVn(a * 46.0 + warp * 3.0, th * 3.0, 46.0) * 2.0 - 1.0);
     float l2 = 1.0 - abs(eyeVn(a * 130.0 + warp * 7.0, th * 7.0, 130.0) * 2.0 - 1.0);
     float v = pow(l1, 14.0) * 0.8 + pow(l2, 18.0) * 0.6;
     v *= eyeSm(R * 1.15, R + 1.0, th) * (0.55 + 0.45 * eyeVn(a * 23.0, th * 4.0, 23.0));
-    col = mix(col, vec3(0.78, 0.33, 0.3), clamp(v * uPaint3.x * 1.6, 0.0, 0.85));
+    col = mix(col, vec3(0.78, 0.33, 0.3), side * clamp(v * uPaint3.x * 1.6, 0.0, 0.85));
   }
   float rr = th / R, soft = uPaint2.y, w = 0.03 + 0.24 * soft;
   if (soft > 0.0) {                                            // the limbus's soft shadow on the white
@@ -294,7 +298,7 @@ vec3 eyeScleraPaint(vec3 P) {
   return col;
 }
 vec3 eyePaint(vec2 q, vec3 P, float graze) {                   // sRGB: the white at P, the iris read at q
-  vec3 col = eyeScleraPaint(P);
+  vec3 col = eyeScleraPaint(P, graze);
   float w = 0.03 + 0.24 * uPaint2.y, rr = length(q) / uShape.x;
   if (rr <= 1.0 + w) col = mix(col, eyeIrisPaint(q / uShape.x, graze, w), 1.0 - eyeSm(1.0 - 0.35 * w, 1.0 + 0.65 * w, rr));
   return col;
