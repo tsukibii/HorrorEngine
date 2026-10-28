@@ -38,6 +38,9 @@ writer block flow. On a new branch off `dev-002`, in a new folder:
 - **Fourth pass** (DECISIONS 2026-10-28, before dawn): no reflections; the endings as cutscene slots with rough
   outlines and a title card each; shinkei-suijaku as the card game, its settings by the pills; her cigarette in the
   building's little garden instead of the lanterns; the small moments of a visit, with memory flickers.
+- **Fifth pass** (DECISIONS 2026-10-28, morning): he is the reason she died (a fight in the shrine woods at sixteen
+  over the boy she was seeing, a shove, the river); Shun, the boy the town blamed; Ren, Natsuki's boyfriend, the echo;
+  the dark ending is Stay.
 - **Waiting on the user:** a yes on the abstract. Then step 3: the flow as the writers' room's
   chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
   `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in

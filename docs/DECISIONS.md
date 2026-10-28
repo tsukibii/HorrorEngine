@@ -2,6 +2,22 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, morning (The Visitor: he is the reason she died)
+
+- **The truth rewritten**: "instead of her accidentally dying in your youth the player actually was the reason for her
+  death, he found out she was dating/seeing someone else and they got in a fight in a forest, you pushed her and she
+  slipped and fell in the river and got swept away, you didnt mean to actually kill her but ultimately you were the
+  reason she died (almost like an argument that spirals out), she was your childhood crush but she saw you as a
+  brother".
+- Claude's calls inside that, in the abstract's fifth pass (waiting for the user's yes): they were sixteen (he's 28
+  now, Natsuki 23); the boy was Shun Sakamoto, whom the town suspected for years while his mother's "home by eleven"
+  covered Haruki; the fight on the path through the shrine woods above the river after the fireworks ("you're like my
+  brother"), a shove, her geta slipping, the bank, the river; the echo: Natsuki also calls him brother and also has
+  someone (Ren, who phones at 01:30, his lines about her boyfriend left out off the pills); the endings' pieces
+  rewritten (Okuribi: the Tanabata wish "I wish Haru-kun will always be my big brother" and Shun's word that he
+  followed them; Thank You for Tonight: the guilt and the jealousy in his diary; the dark ending renamed Stay, its last
+  line "This time, she stayed.").
+
 ## 2026-10-28, before dawn (The Visitor: no reflections, ending slots, a card game, the garden, a real visit)
 
 - **No reflections**: "I dont like 'the night window and the bathroom mirror, you see her real brown eyes and her real

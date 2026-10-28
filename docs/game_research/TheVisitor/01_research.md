@@ -232,8 +232,8 @@ from under ten in 2009 to about 300 by 2013.
 ### 5b.5 A child can't be charged
 Japan's Penal Code, art. 41: an act of a person under 14 is not punishable; a child under the age goes to a child
 guidance centre, not a court.
-- **What we take:** Haruki and Natsumi were thirteen, so the intended ending can't be a confession to the police.
-  What his silence owes is owed to her family.
+- **What we take:** (superseded by the fifth pass: they were sixteen, so in 2014 he could have gone before the family
+  court, which is what his mother's lie kept from him.) Either way nobody confesses: the endings show pieces.
 
 ## 6. Folk tells we can use
 
