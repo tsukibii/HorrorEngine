@@ -37,6 +37,22 @@ whose boyfriend.
   ending title card. Only all three together show what happened, and who he is.
 - No chases, no quick-time events, no game overs. English text first, simple enough to translate later. No voices.
 
+## How it's written
+
+- **The player has amnesia, and so does Haruki's head.** His thoughts know only what's in front of him and what his
+  body remembers ("My hands know where the cups are." "Two. My hand already knows."). He never states the backstory,
+  her name's history, or what happened.
+- **Facts come from outside him, once each:** the to-do list ("Clean up the apartment before Natsu arrives"), her
+  lines ("Twelve years, Haru-nii. Can you believe it?"), the props (the card, the photo, the pharmacy bag), the officer,
+  the phone. Each is a small surprise the player and Haruki take in together.
+- **He never speaks a line.** His answers are a small human reaction to what just happened, an act and a thought:
+  `[ Greet ] She looks cold, welcome her inside --- [ Question ] She looks different.` The player imagines what he
+  said.
+- **The gaps are the horror.** "Twelve years since what?" "Why two?" "Lie about what?" "Why do I see trees?" Each
+  thought ends on a question the night answers later, or never.
+- **Pseudo-code on the chart**: only literal things (who does what with which thing, short lines, sounds as cues),
+  never prose (docs/LESSONS.md).
+
 ## The place and the day
 
 - **Kirisawa** (fictional), a small river town in Iwate, Tohoku. On the far bank, the shrine woods: a path along the
@@ -324,13 +340,14 @@ The same moment, his version and hers (off the pills the player sees the first; 
 - *the cards*: she groans, delighted, as he wins / she turns the last pair without looking.
 - *the garden*: she leans close and offers him the cigarette / she's been crying, and keeps the bench between them.
 
-His answers (an act and a thought; {her} is Natsu or Natsuki, by the pills):
+His answers are an act and a thought, and they only know what's in front of him (see How it's written):
 
-- `[ Greet ] She's probably cold. I should let her inside.` / `[ Question ] She looks younger than I remember.`
-- `[ Two sugars ] {her} always took two.` / `[ Ask ] Maybe she takes it differently now.`
-- `[ Hold her hand ] She wants me to.` / `[ Stay where you are ] Not yet.`
-- `[ Lock it ] Twice. Then check it again.` / `[ Hide my hands ] She doesn't need to see them.`
-- `[ Say it ] He was no good for her.` / `[ Say nothing ] It was a long time ago.`
+- `[ Greet ] She looks cold, welcome her inside --- [ Question ] She looks different.`
+- `[ Smile ] She knows me. Smile back --- [ Look ] Twelve years? It feels like last week.`
+- `[ Mom ] They're both for Mom. Aren't they? --- [ Say nothing ] I don't remember making two.`
+- `[ Tense ] That name. My jaw is tight --- [ Blank ] Sakamoto? I don't know him.`
+- `[ Home ] Home. Mom always said so --- [ What night ] What night? --- [ Trees ] Trees. Rain. Why do I see trees?`
+- `[ Hold her hand ] She wants me to --- [ Wait ] What night? Everyone keeps saying that night.`
 
 ## Faces (MiniMax post prompts, 4 seconds)
 

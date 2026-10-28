@@ -3,15 +3,15 @@
  "id": "the-visitor",
  "title": "The Visitor",
  "created": "2026-10-28T13:24:30",
- "updated": "2026-10-28T13:55:27",
+ "updated": "2026-10-28T14:04:50",
  "brief": {
   "kind": "first-person horror, one night, one apartment, about 80 minutes, three endings",
   "references": "docs/game_research/TheVisitor/01_research.md; Shutter Island; L.A. Noire; Joker; Higurashi; Chilla's Art",
-  "notes": "{her} = Natsu off his pills, Natsuki after one. Use it in his thoughts and in the speaker name.\nHaruki never speaks a line. His answers are an act and a thought: [ Greet ] She looks cold, let her in. The player imagines what he said.\nkarma = his clarity. Pill taken +1, pill left -1, romance answer -1, lying to Ren -1. Everything else 0.\nOff his pills her faces are his version (romantic). After a pill: her real faces (confused, afraid). Shoot both for the talks marked (2 faces).",
+  "notes": "HOW IT'S WRITTEN. The player knows nothing, and neither does Haruki's head: his thoughts only know what's in front of him and what his body remembers (\"My hands know where the cups are.\"). Facts come from outside him, once each: the to-do list, her lines, the props, the officer, the phone. He never speaks a line; his answers are a small act and a thought, and the player imagines what he said.\n{her} = Natsu off his pills, Natsuki after one. Use it in his thoughts and in the speaker name.\nkarma = his clarity. Pill taken +1, pill left -1, romance answer -1, lying to Ren -1. Everything else 0.\nOff his pills her faces are his version (romantic). After a pill: her real faces (confused, afraid). Shoot both for the talks marked (2 faces).",
   "minutes": 60
  },
  "story": {
-  "logline": "On the last night of Obon, twelve years after Natsumi vanished, Natsu comes to visit.",
+  "logline": "On the last night of Obon, a woman he should know comes to visit.",
   "hook": "",
   "truth": "",
   "ladder": [],
@@ -168,8 +168,8 @@
    "where": "living_room"
   },
   {
-   "id": "summer_card",
-   "name": "summer card",
+   "id": "card",
+   "name": "card",
    "size": "small",
    "kind": "note",
    "where": "living_room"
@@ -287,6 +287,13 @@
    "where": "bathroom"
   },
   {
+   "id": "pharmacy_bag",
+   "name": "pharmacy bag",
+   "size": "medium",
+   "kind": "inspect",
+   "where": "bathroom"
+  },
+  {
    "id": "bath",
    "name": "bath",
    "size": "large",
@@ -399,7 +406,7 @@
    "x": 540,
    "y": 470,
    "title": "Opening",
-   "text": "Haru-nii, I'm coming home for Obon. Can I visit on the 16th? I want to talk about Onee-chan. Natsuki. Natsumi, 16, red yukata. A small girl holding her sleeve. Two cucumber horses. News: a woman from the next town, missing since the 12th.",
+   "text": "Haru-nii, I'm coming home for Obon. Can I visit on the 16th? I want to talk about Onee-chan. Natsuki. A girl in a red yukata. A smaller girl holding her sleeve. Two cucumber horses. News: a woman from the next town, missing since the 12th.",
    "who": [],
    "where": "living_room",
    "minutes": 10.0,
@@ -415,6 +422,14 @@
      "secs": 120,
      "verb": "use",
      "item": "apartment_before_natsu_arrives"
+    },
+    {
+     "do": "think",
+     "text": "Natsu."
+    },
+    {
+     "do": "think",
+     "text": "Someone's coming."
     },
     {
      "do": "todo",
@@ -458,10 +473,10 @@
     },
     {
      "do": "act",
-     "text": "read the summer card",
+     "text": "read the card on the fridge",
      "verb": "read",
      "said": "read",
-     "item": "summer_card"
+     "item": "card"
     },
     {
      "do": "see",
@@ -469,7 +484,7 @@
     },
     {
      "do": "think",
-     "text": "Natsu."
+     "text": "Natsu. She's coming here."
     },
     {
      "do": "act",
@@ -480,7 +495,11 @@
     },
     {
      "do": "see",
-     "text": "Natsumi, 16, red yukata. A small girl holding her sleeve."
+     "text": "A girl in a red yukata. A smaller girl holding her sleeve."
+    },
+    {
+     "do": "think",
+     "text": "I know her. I know that face."
     },
     {
      "do": "act",
@@ -492,6 +511,10 @@
     {
      "do": "see",
      "text": "Two cucumber horses."
+    },
+    {
+     "do": "think",
+     "text": "Why two?"
     },
     {
      "do": "act",
@@ -538,7 +561,7 @@
     },
     {
      "do": "think",
-     "text": "Then who's at the door?"
+     "text": "Deceased?"
     }
    ],
    "find": "read the black-bordered letter",
@@ -582,11 +605,21 @@
    ],
    "where": "genkan",
    "minutes": 0.5,
-   "steps": [],
+   "steps": [
+    {
+     "do": "say",
+     "who": "natsuki",
+     "text": "Haru-nii? It's me."
+    },
+    {
+     "do": "think",
+     "text": "That voice."
+    }
+   ],
    "talk": {
     "line": {
      "who": "natsuki",
-     "text": "Haru-nii? It's me."
+     "text": "…"
     },
     "listen": "",
     "options": [
@@ -597,7 +630,7 @@
       "tell": "smiles",
       "face": "natsuki_smiles",
       "sets": "",
-      "think": "She's probably cold. Let her in",
+      "think": "She looks cold, welcome her inside",
       "then": "Finally."
      },
      {
@@ -607,7 +640,7 @@
       "tell": "puzzled, then smiles",
       "face": "natsuki_puzzled_then_smiles",
       "sets": "",
-      "think": "She looks younger than I remember.",
+      "think": "She looks different.",
       "then": "Are you going to open the door?"
      }
     ],
@@ -656,30 +689,30 @@
    "talk": {
     "line": {
      "who": "natsuki",
-     "text": "Hi, Haru-nii.",
+     "text": "Twelve years, Haru-nii. Can you believe it?",
      "face": "natsuki_smiles_a_little_shy"
     },
     "listen": "",
     "options": [
      {
-      "id": "welcome",
-      "say": "Welcome",
+      "id": "smile",
+      "say": "Smile",
       "karma": 0,
       "tell": "2 faces: his, a happy smile; hers, the smile falters",
       "face": "natsuki_2_faces_his_a",
       "sets": "",
-      "think": "Natsu came back. Tell her",
-      "then": "...I said I would."
+      "think": "She knows me. Smile back",
+      "then": "You haven't changed."
      },
      {
-      "id": "stare",
-      "say": "Stare",
+      "id": "look",
+      "say": "Look",
       "karma": 0,
       "tell": "uneasy laugh",
       "face": "natsuki_uneasy_laugh",
       "sets": "",
-      "think": "Twelve years. Is it really her?",
-      "then": "What? Is there something on my face?"
+      "think": "Twelve years? It feels like last week.",
+      "then": "Is there something on my face?"
      }
     ],
     "reveals": ""
@@ -758,6 +791,10 @@
      "item": "kettle"
     },
     {
+     "do": "think",
+     "text": "My hands know where the cups are."
+    },
+    {
      "do": "act",
      "text": "give the tea to Natsuki",
      "verb": "use",
@@ -814,7 +851,7 @@
   },
   {
    "id": "the_altar",
-   "type": "talk",
+   "type": "scene",
    "x": 790,
    "y": 940,
    "title": "The Altar",
@@ -830,7 +867,45 @@
      "who": "natsuki",
      "text": "Natsuki lights incense at the altar"
     }
+   ]
+  },
+  {
+   "id": "the_altar_look_at",
+   "type": "task",
+   "x": 1040,
+   "y": 940,
+   "title": "The Altar · Look at the photo on the altar",
+   "text": "",
+   "who": [],
+   "where": "guest_room",
+   "minutes": 0.5,
+   "steps": [
+    {
+     "do": "act",
+     "text": "look at the photo on the altar",
+     "verb": "look",
+     "said": "look at",
+     "item": "photo"
+    },
+    {
+     "do": "think",
+     "text": "Mom."
+    }
+   ]
+  },
+  {
+   "id": "the_altar_natsuki",
+   "type": "talk",
+   "x": 1290,
+   "y": 940,
+   "title": "The Altar · Natsuki",
+   "text": "",
+   "who": [
+    "natsuki"
    ],
+   "where": "guest_room",
+   "minutes": 0.5,
+   "steps": [],
    "talk": {
     "line": {
      "who": "natsuki",
@@ -846,7 +921,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Both are for Mom"
+      "think": "They're both for Mom. Aren't they?"
      },
      {
       "id": "say_nothing",
@@ -855,7 +930,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "I don't know."
+      "think": "I don't remember making two."
      }
     ],
     "reveals": ""
@@ -912,7 +987,7 @@
     },
     {
      "do": "think",
-     "text": "Someone always stole my negi."
+     "text": "Someone always stole my negi. Someone—"
     }
    ]
   },
@@ -932,23 +1007,23 @@
    "talk": {
     "line": {
      "who": "natsuki",
-     "text": "Do you still go to the river?"
+     "text": "Do you still go down to the river?"
     },
     "listen": "",
     "options": [
      {
-      "id": "truth",
-      "say": "Truth",
+      "id": "nod",
+      "say": "Nod",
       "karma": 0,
       "tell": "looks down",
       "face": "natsuki_looks_down",
       "sets": "",
-      "think": "Every year. Today",
-      "then": "...Today."
+      "think": "My shoes are always muddy. I must",
+      "then": "...Even today."
      },
      {
-      "id": "lie",
-      "say": "Lie",
+      "id": "shake_head",
+      "say": "Shake head",
       "karma": 0,
       "tell": "studies your face, nods",
       "face": "natsuki_studies_your_face_nods",
@@ -1038,12 +1113,16 @@
     },
     {
      "do": "think",
-     "text": "He means Natsu."
+     "text": "Natsuki? He means Natsu."
     },
     {
      "do": "say",
      "who": "sasaki",
      "text": "Onodera. Twelve years today."
+    },
+    {
+     "do": "think",
+     "text": "Twelve years since what?"
     }
    ],
    "talk": {
@@ -1054,23 +1133,23 @@
     "listen": "",
     "options": [
      {
-      "id": "say_it",
-      "say": "Say it",
+      "id": "tense",
+      "say": "Tense",
       "karma": 0,
       "tell": "stares a moment",
       "face": "sasaki_stares_a_moment",
       "sets": "",
-      "think": "He was no good for her",
-      "then": "Is that right."
+      "think": "That name. My jaw is tight",
+      "then": "Still, after all this time."
      },
      {
-      "id": "say_nothing",
-      "say": "Say nothing",
+      "id": "blank",
+      "say": "Blank",
       "karma": 0,
-      "tell": "nods",
-      "face": "sasaki_nods",
+      "tell": "nods slowly",
+      "face": "sasaki_nods_slowly",
       "sets": "",
-      "think": "It was a long time ago.",
+      "think": "Sakamoto? I don't know him.",
       "then": "Goodnight."
      }
     ],
@@ -1125,7 +1204,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Twice. Check it again"
+      "think": "Lock it. Twice. Check it again"
      },
      {
       "id": "leave_it",
@@ -1134,7 +1213,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "He's gone."
+      "think": "He's gone. It's fine."
      }
     ],
     "reveals": ""
@@ -1181,6 +1260,10 @@
     {
      "do": "sound",
      "text": "fireworks"
+    },
+    {
+     "do": "think",
+     "text": "Salt on watermelon. Mom did that."
     }
    ]
   },
@@ -1215,10 +1298,10 @@
    "x": 540,
    "y": 2520,
    "title": "Pill 1",
-   "text": "",
+   "text": "Onodera Haruki. Once a day, after dinner.",
    "who": [],
    "where": "bathroom",
-   "minutes": 0.5,
+   "minutes": 1.0,
    "steps": [
     {
      "do": "act",
@@ -1226,6 +1309,17 @@
      "verb": "open",
      "said": "open",
      "item": "cabinet"
+    },
+    {
+     "do": "act",
+     "text": "look at the pharmacy bag",
+     "verb": "look",
+     "said": "look at",
+     "item": "pharmacy_bag"
+    },
+    {
+     "do": "see",
+     "text": "Onodera Haruki. Once a day, after dinner."
     }
    ]
   },
@@ -1241,11 +1335,21 @@
    ],
    "where": "bathroom",
    "minutes": 0.5,
-   "steps": [],
+   "steps": [
+    {
+     "do": "say",
+     "who": "akiko",
+     "text": "Did you take them, Haru?"
+    },
+    {
+     "do": "think",
+     "text": "Mom?"
+    }
+   ],
    "talk": {
     "line": {
      "who": "akiko",
-     "text": "Did you take them, Haru?"
+     "text": "…"
     },
     "listen": "",
     "options": [
@@ -1256,7 +1360,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Just one"
+      "think": "Her voice. Just one, for her"
      },
      {
       "id": "leave_them",
@@ -1265,7 +1369,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "I'm fine."
+      "think": "I feel fine. Better than fine."
      }
     ],
     "reveals": ""
@@ -1344,6 +1448,10 @@
      "text": "Student ID: Kikuchi Natsuki."
     },
     {
+     "do": "think",
+     "text": "Natsuki."
+    },
+    {
      "do": "sound",
      "text": "phone rings",
      "sfx": "machine_beep"
@@ -1373,7 +1481,7 @@
    "talk": {
     "line": {
      "who": "kikuchi",
-     "text": "Is Natsuki there?"
+     "text": "Is my daughter there? Natsuki?"
     },
     "listen": "",
     "options": [
@@ -1384,7 +1492,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "She's in the bath"
+      "think": "That name again. She's in the bath"
      },
      {
       "id": "hang_up",
@@ -1393,7 +1501,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Wrong number."
+      "think": "Wrong number. It must be."
      }
     ],
     "reveals": ""
@@ -1405,16 +1513,20 @@
    "x": 1915,
    "y": 2350,
    "title": "The Wall",
-   "text": "Missing posters. String. A photo of Natsumi and a boy, his face scratched out. One geta.",
+   "text": "Missing posters. String. A photo of the girl in the red yukata and a boy, his face scratched out. One wooden sandal.",
    "where": "living_room",
    "steps": [
     {
      "do": "see",
-     "text": "Missing posters. String. A photo of Natsumi and a boy, his face scratched out. One geta."
+     "text": "Missing posters. String. A photo of the girl in the red yukata and a boy, his face scratched out. One wooden sandal."
+    },
+    {
+     "do": "think",
+     "text": "That's my handwriting."
     }
    ],
    "find": "open the taped closet",
-   "shows": "Missing posters. String. A photo of Natsumi and a boy, his face scratched out. One geta.",
+   "shows": "Missing posters. String. A photo of the girl in the red yukata and a boy, his face scratched out. One wooden sandal.",
    "achievement": {
     "title": "The Wall",
     "text": "Open the taped closet",
@@ -1463,6 +1575,10 @@
     {
      "do": "see",
      "text": "Caption: Ko-natsu & Haru-nii. The last photo is folded."
+    },
+    {
+     "do": "think",
+     "text": "Ko-natsu. The little one."
     }
    ]
   },
@@ -1472,16 +1588,16 @@
    "x": 415,
    "y": 2820,
    "title": "The Folded Photo",
-   "text": "Natsumi and a boy, holding hands.",
+   "text": "The girl in the red yukata and a boy, holding hands.",
    "where": "living_room",
    "steps": [
     {
      "do": "see",
-     "text": "Natsumi and a boy, holding hands."
+     "text": "The girl in the red yukata and a boy, holding hands."
     }
    ],
    "find": "unfold the last photo",
-   "shows": "Natsumi and a boy, holding hands.",
+   "shows": "The girl in the red yukata and a boy, holding hands.",
    "achievement": {
     "title": "The Folded Photo",
     "text": "Unfold the last photo",
@@ -1505,7 +1621,7 @@
     {
      "do": "say",
      "who": "natsuki",
-     "text": "Cards? Loser answers a question."
+     "text": "Cards? Loser answers a question. Like when we were kids."
     }
    ]
   },
@@ -1556,28 +1672,28 @@
       "tell": "face goes still",
       "face": "natsuki_face_goes_still",
       "sets": "",
-      "think": "Mom said so",
+      "think": "Home. Mom always said so",
       "then": "That's what she said."
      },
      {
-      "id": "dont_know",
-      "say": "Don't know",
+      "id": "what_night",
+      "say": "What night",
       "karma": 0,
       "tell": "careful",
       "face": "natsuki_careful",
       "sets": "",
-      "think": "I don't remember",
-      "then": "Nothing at all?"
+      "think": "What night?",
+      "then": "You really don't know?"
      },
      {
-      "id": "the_woods",
-      "say": "The woods",
+      "id": "trees",
+      "say": "Trees",
       "karma": 0,
       "tell": "freezes",
       "face": "natsuki_freezes",
       "sets": "",
-      "think": "I followed them.",
-      "then": "...Them?"
+      "think": "Trees. Rain. Why do I see trees?",
+      "then": "...The woods?"
      }
     ],
     "reveals": ""
@@ -1629,23 +1745,13 @@
      "do": "cast",
      "who": "natsuki",
      "text": "Natsuki smokes on the bench"
-    },
-    {
-     "do": "say",
-     "who": "natsuki",
-     "text": "I'm Natsuki, Haru-nii. Natsumi's gone.",
-     "face": "natsuki_crying"
-    },
-    {
-     "do": "say",
-     "who": "natsuki",
-     "text": "Ren says I shouldn't have come."
     }
    ],
    "talk": {
     "line": {
      "who": "natsuki",
-     "text": "Do you remember that night?"
+     "text": "I'm Natsuki, Haru-nii. Natsumi's gone.",
+     "face": "natsuki_crying"
     },
     "listen": "",
     "options": [
@@ -1656,22 +1762,42 @@
       "tell": "wipes her eyes, almost smiles",
       "face": "natsuki_wipes_her_eyes_almost",
       "sets": "",
-      "think": "It's her sister. It was always her sister",
+      "think": "Ko-natsu. The little one. It was always her",
       "then": "...You remember me."
      },
      {
-      "id": "say_nothing",
-      "say": "Say nothing",
+      "id": "gone",
+      "say": "Gone",
       "karma": 0,
-      "tell": "looks away, smoke",
-      "face": "natsuki_looks_away_smoke",
+      "tell": "stares",
+      "face": "natsuki_stares",
       "sets": "",
-      "think": "I don't remember anything.",
-      "then": "Okay."
+      "think": "Gone? Gone where?",
+      "then": "Twelve years ago. Tonight."
      }
     ],
     "reveals": ""
    }
+  },
+  {
+   "id": "the_garden_natsuki_2",
+   "type": "scene",
+   "x": 1540,
+   "y": 2180,
+   "title": "The Garden · Natsuki",
+   "text": "",
+   "who": [
+    "natsuki"
+   ],
+   "where": "garden",
+   "minutes": 0.5,
+   "steps": [
+    {
+     "do": "say",
+     "who": "natsuki",
+     "text": "Ren says I shouldn't have come."
+    }
+   ]
   },
   {
    "id": "the_garden_3",
@@ -1694,10 +1820,10 @@
    ]
   },
   {
-   "id": "the_garden_natsuki_2",
+   "id": "the_garden_natsuki_3",
    "type": "talk",
-   "x": 1790,
-   "y": 3160,
+   "x": 1290,
+   "y": 2350,
    "title": "The Garden · Natsuki",
    "text": "",
    "who": [
@@ -1736,13 +1862,13 @@
       "then": "Haru-nii..."
      },
      {
-      "id": "stay_where_you",
-      "say": "Stay where you are",
+      "id": "wait",
+      "say": "Wait",
       "karma": 0,
-      "tell": "relieved",
-      "face": "natsuki_relieved",
+      "tell": "looks at you a long moment",
+      "face": "natsuki_looks_at_you_a",
       "sets": "",
-      "think": "Not yet.",
+      "think": "What night? Everyone keeps saying that night.",
       "then": "It's late."
      }
     ],
@@ -1819,7 +1945,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Say it twice",
+      "think": "Say it twice. Mom always did",
       "then": "Mō ii yo."
      },
      {
@@ -1829,7 +1955,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "No."
+      "think": "Nobody's there."
      }
     ],
     "reveals": ""
@@ -1908,7 +2034,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "One more"
+      "think": "It's getting loud. One more"
      },
      {
       "id": "leave_them",
@@ -2003,7 +2129,11 @@
     {
      "do": "say",
      "who": "natsuki",
-     "text": "First train tomorrow."
+     "text": "I'll take the first train tomorrow."
+    },
+    {
+     "do": "think",
+     "text": "Tomorrow. She's leaving."
     }
    ]
   },
@@ -2072,6 +2202,10 @@
     {
      "do": "see",
      "text": "Diary: I'd lie for him again."
+    },
+    {
+     "do": "think",
+     "text": "Lie about what?"
     }
    ],
    "find": "open the altar's drawer",
@@ -2153,7 +2287,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "She should know"
+      "think": "Someone's worried about her"
      },
      {
       "id": "lie",
@@ -2162,7 +2296,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Wrong number."
+      "think": "Someone else. Wrong number."
      }
     ],
     "reveals": ""
@@ -2303,7 +2437,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Before it gets worse"
+      "think": "My hands won't stop. Take them"
      },
      {
       "id": "leave_them",
@@ -2354,7 +2488,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "She said she'd stay"
+      "think": "Just for a moment. She said she'd stay"
      },
      {
       "id": "go_to_bed",
@@ -2363,7 +2497,7 @@
       "tell": "",
       "face": "",
       "sets": "",
-      "think": "Not tonight."
+      "think": "Let her sleep."
      }
     ],
     "reveals": ""
@@ -2540,7 +2674,7 @@
    "type": "note",
    "x": 570,
    "y": 320,
-   "text": "one minute of free look round the apartment before the list appears.",
+   "text": "one minute of free look round the apartment. No list, no thoughts.",
    "color": "yellow"
   },
   {
@@ -2564,7 +2698,7 @@
    "type": "note",
    "x": 570,
    "y": 1430,
-   "text": "sugar 0, 1 or 2. Two is Natsumi's way (Two Sugars). Soy sauce is a second secret beside Purified (Secret Recipe), added in the director.",
+   "text": "sugar 0, 1 or 2; the inner monologue only says \"Two. My hand already knows.\" Two is Natsumi's way (Two Sugars). Soy sauce is a second secret beside Purified (Secret Recipe), added in the director.",
    "color": "yellow"
   },
   {
@@ -2594,8 +2728,8 @@
   {
    "id": "note08",
    "type": "note",
-   "x": 1820,
-   "y": 3010,
+   "x": 1320,
+   "y": 2200,
    "text": "her shoes are gone from the genkan before this. Off his pills, every line about Ren is cut.",
    "color": "yellow"
   },
@@ -2706,145 +2840,155 @@
   {
    "id": "a15",
    "from": "the_altar",
-   "to": "somen_2"
+   "to": "the_altar_look_at"
   },
   {
    "id": "a16",
+   "from": "the_altar_look_at",
+   "to": "the_altar_natsuki"
+  },
+  {
+   "id": "a17",
+   "from": "the_altar_natsuki",
+   "to": "somen_2"
+  },
+  {
+   "id": "a18",
    "from": "somen_2",
    "to": "somen_natsuki"
   },
   {
-   "id": "a17",
+   "id": "a19",
    "from": "somen_natsuki",
    "to": "old_times"
   },
   {
-   "id": "a18",
+   "id": "a20",
    "from": "somen_natsuki",
    "to": "the_officer"
   },
   {
-   "id": "a19",
+   "id": "a21",
    "from": "old_times",
    "to": "the_officer"
   },
   {
-   "id": "a20",
+   "id": "a22",
    "from": "the_officer",
    "to": "the_officer_sasaki"
   },
   {
-   "id": "a21",
+   "id": "a23",
    "from": "the_officer_sasaki",
    "to": "the_officer_close_the"
   },
   {
-   "id": "a22",
+   "id": "a24",
    "from": "the_officer_close_the",
    "to": "the_officer_your_answer"
   },
   {
-   "id": "a23",
+   "id": "a25",
    "from": "the_officer_your_answer",
    "to": "watermelon_2"
   },
   {
-   "id": "a24",
+   "id": "a26",
    "from": "watermelon_2",
    "to": "watermelon_he_salts_it"
   },
   {
-   "id": "a25",
+   "id": "a27",
    "from": "watermelon_he_salts_it",
    "to": "seed_spitter"
   },
   {
-   "id": "a26",
+   "id": "a28",
    "from": "watermelon_he_salts_it",
    "to": "the_first_pill"
   },
   {
-   "id": "a27",
+   "id": "a29",
    "from": "seed_spitter",
    "to": "the_first_pill"
   },
   {
-   "id": "a28",
+   "id": "a30",
    "from": "the_first_pill",
    "to": "the_first_pill_your"
   },
   {
-   "id": "a29",
+   "id": "a31",
    "from": "the_first_pill_your",
    "to": "the_bath"
   },
   {
-   "id": "a30",
+   "id": "a32",
    "from": "the_bath",
    "to": "the_bath_she_bathes"
   },
   {
-   "id": "a31",
+   "id": "a33",
    "from": "the_bath_she_bathes",
    "to": "while_she_bathes"
   },
   {
-   "id": "a32",
+   "id": "a34",
    "from": "while_she_bathes",
    "to": "while_she_bathes_kikuchi"
   },
   {
-   "id": "a33",
+   "id": "a35",
    "from": "while_she_bathes_kikuchi",
    "to": "the_wall"
   },
   {
-   "id": "a34",
+   "id": "a36",
    "from": "while_she_bathes_kikuchi",
    "to": "the_album"
   },
   {
-   "id": "a35",
+   "id": "a37",
    "from": "the_wall",
    "to": "the_album"
   },
   {
-   "id": "a36",
+   "id": "a38",
    "from": "the_album",
    "to": "the_album_look_at"
   },
   {
-   "id": "a37",
+   "id": "a39",
    "from": "the_album_look_at",
    "to": "the_folded_photo"
   },
   {
-   "id": "a38",
+   "id": "a40",
    "from": "the_album_look_at",
    "to": "the_cards"
   },
   {
-   "id": "a39",
+   "id": "a41",
    "from": "the_folded_photo",
    "to": "the_cards"
   },
   {
-   "id": "a40",
+   "id": "a42",
    "from": "the_cards",
    "to": "the_cards_play_cards"
   },
   {
-   "id": "a41",
+   "id": "a43",
    "from": "the_cards_play_cards",
    "to": "the_cards_natsuki"
   },
   {
-   "id": "a42",
+   "id": "a44",
    "from": "the_cards_natsuki",
    "to": "the_garden"
   },
   {
-   "id": "a43",
+   "id": "a45",
    "from": "the_garden",
    "to": "the_garden_2",
    "when": {
@@ -2852,48 +2996,53 @@
    }
   },
   {
-   "id": "a44",
+   "id": "a46",
    "from": "the_garden_2",
    "to": "the_garden_natsuki"
   },
   {
-   "id": "a45",
+   "id": "a47",
+   "from": "the_garden_natsuki",
+   "to": "the_garden_natsuki_2"
+  },
+  {
+   "id": "a48",
    "from": "the_garden",
    "to": "the_garden_3",
    "when": {}
   },
   {
-   "id": "a46",
+   "id": "a49",
    "from": "the_garden_3",
-   "to": "the_garden_natsuki_2"
+   "to": "the_garden_natsuki_3"
   },
   {
-   "id": "a47",
-   "from": "the_garden_natsuki",
-   "to": "back_upstairs"
-  },
-  {
-   "id": "a48",
+   "id": "a50",
    "from": "the_garden_natsuki_2",
    "to": "back_upstairs"
   },
   {
-   "id": "a49",
+   "id": "a51",
+   "from": "the_garden_natsuki_3",
+   "to": "back_upstairs"
+  },
+  {
+   "id": "a52",
    "from": "back_upstairs",
    "to": "back_upstairs_answer_the"
   },
   {
-   "id": "a50",
+   "id": "a53",
    "from": "back_upstairs_answer_the",
    "to": "back_upstairs_a_girls"
   },
   {
-   "id": "a51",
+   "id": "a54",
    "from": "back_upstairs_a_girls",
    "to": "s_23_47_after_your"
   },
   {
-   "id": "a52",
+   "id": "a55",
    "from": "s_23_47_after_your",
    "to": "s_23_47_moshi_moshi",
    "when": {
@@ -2902,73 +3051,73 @@
    }
   },
   {
-   "id": "a53",
+   "id": "a56",
    "from": "s_23_47_moshi_moshi",
    "to": "pill_2"
   },
   {
-   "id": "a54",
+   "id": "a57",
    "from": "s_23_47_after_your",
    "to": "pill_2",
    "when": {}
   },
   {
-   "id": "a55",
+   "id": "a58",
    "from": "pill_2",
    "to": "pill_2_akiko"
   },
   {
-   "id": "a56",
+   "id": "a59",
    "from": "pill_2_akiko",
    "to": "ramen"
   },
   {
-   "id": "a57",
+   "id": "a60",
    "from": "ramen",
    "to": "ramen_make_ramen"
   },
   {
-   "id": "a58",
+   "id": "a61",
    "from": "ramen_make_ramen",
    "to": "ramen_natsuki"
   },
   {
-   "id": "a59",
+   "id": "a62",
    "from": "ramen_natsuki",
    "to": "the_futon"
   },
   {
-   "id": "a60",
+   "id": "a63",
    "from": "the_futon",
    "to": "the_futon_she_goes"
   },
   {
-   "id": "a61",
+   "id": "a64",
    "from": "the_futon_she_goes",
    "to": "mothers_drawer"
   },
   {
-   "id": "a62",
+   "id": "a65",
    "from": "the_futon_she_goes",
    "to": "ushimitsu"
   },
   {
-   "id": "a63",
+   "id": "a66",
    "from": "mothers_drawer",
    "to": "ushimitsu"
   },
   {
-   "id": "a64",
+   "id": "a67",
    "from": "ushimitsu",
    "to": "ushimitsu_ren"
   },
   {
-   "id": "a65",
+   "id": "a68",
    "from": "ushimitsu_ren",
    "to": "ushimitsu_after_your_answer"
   },
   {
-   "id": "a66",
+   "id": "a69",
    "from": "ushimitsu_after_your_answer",
    "to": "ushimitsu_wake_her",
    "when": {
@@ -2977,38 +3126,38 @@
    }
   },
   {
-   "id": "a67",
+   "id": "a70",
    "from": "ushimitsu_wake_her",
    "to": "ushimitsu_flip_the_breaker"
   },
   {
-   "id": "a68",
+   "id": "a71",
    "from": "ushimitsu_after_your_answer",
    "to": "ushimitsu_flip_the_breaker",
    "when": {}
   },
   {
-   "id": "a69",
+   "id": "a72",
    "from": "ushimitsu_flip_the_breaker",
    "to": "pill_3"
   },
   {
-   "id": "a70",
+   "id": "a73",
    "from": "pill_3",
    "to": "pill_3_make_tea"
   },
   {
-   "id": "a71",
+   "id": "a74",
    "from": "pill_3_make_tea",
    "to": "pill_3_natsuki"
   },
   {
-   "id": "a72",
+   "id": "a75",
    "from": "pill_3_natsuki",
    "to": "two_oclock"
   },
   {
-   "id": "a73",
+   "id": "a76",
    "from": "two_oclock",
    "to": "two_oclock_2",
    "when": {
@@ -3016,18 +3165,18 @@
    }
   },
   {
-   "id": "a74",
+   "id": "a77",
    "from": "two_oclock_2",
    "to": "how_it_ends_your"
   },
   {
-   "id": "a75",
+   "id": "a78",
    "from": "two_oclock",
    "to": "how_it_ends_your",
    "when": {}
   },
   {
-   "id": "a76",
+   "id": "a79",
    "from": "how_it_ends_your",
    "to": "stay",
    "when": {
@@ -3036,13 +3185,13 @@
    }
   },
   {
-   "id": "a77",
+   "id": "a80",
    "from": "how_it_ends_your",
    "to": "how_it_ends_karma",
    "when": {}
   },
   {
-   "id": "a78",
+   "id": "a81",
    "from": "how_it_ends_karma",
    "to": "okuribi",
    "when": {
@@ -3050,7 +3199,7 @@
    }
   },
   {
-   "id": "a79",
+   "id": "a82",
    "from": "how_it_ends_karma",
    "to": "thank_you_for_tonight",
    "when": {}
@@ -3074,6 +3223,15 @@
    "w": 748,
    "h": 168,
    "color": "#3f8fc9"
+  },
+  {
+   "id": "act_the_altar",
+   "title": "The Altar",
+   "x": 766,
+   "y": 888,
+   "w": 748,
+   "h": 168,
+   "color": "#c98a2b"
   },
   {
    "id": "act_somen",
@@ -3151,18 +3309,18 @@
    "id": "act_the_garden",
    "title": "The Garden",
    "x": 1266,
-   "y": 2938,
+   "y": 2128,
    "w": 748,
-   "h": 168,
+   "h": 978,
    "color": "#c98a2b"
   },
   {
    "id": "act_the_garden_2",
    "title": "The Garden",
-   "x": 1516,
-   "y": 3108,
+   "x": 1266,
+   "y": 2298,
    "w": 498,
-   "h": 168,
+   "h": 978,
    "color": "#c98a2b"
   },
   {
@@ -3324,8 +3482,8 @@
    "for": "sasaki"
   },
   {
-   "id": "sasaki_nods",
-   "prompt": "nods.",
+   "id": "sasaki_nods_slowly",
+   "prompt": "nods slowly.",
    "secs": 6,
    "loop": null,
    "for": "sasaki"
@@ -3380,8 +3538,8 @@
    "for": "natsuki"
   },
   {
-   "id": "natsuki_looks_away_smoke",
-   "prompt": "looks away, smoke.",
+   "id": "natsuki_stares",
+   "prompt": "stares.",
    "secs": 6,
    "loop": null,
    "for": "natsuki"
@@ -3401,8 +3559,8 @@
    "for": "natsuki"
   },
   {
-   "id": "natsuki_relieved",
-   "prompt": "relieved.",
+   "id": "natsuki_looks_at_you_a",
+   "prompt": "looks at you a long moment.",
    "secs": 6,
    "loop": null,
    "for": "natsuki"
@@ -3431,6 +3589,6 @@
   }
  ],
  "built": null,
- "script": "Title: The Visitor\nStarts: dusk\nName: Haruki\nPlayer: Haruki, 28, lives alone in his late mother's apartment; off his pills\nKind: first-person horror, one night, one apartment, about 80 minutes, three endings\nLogline: On the last night of Obon, twelve years after Natsumi vanished, Natsu comes to visit.\nNatsuki (she): Natsuki Kikuchi, 23, Natsumi's little sister; Haruki sees her as Natsumi\nSasaki (he): Officer Sasaki, local police\nOfficer (he): a younger officer\nKikuchi (she): Mrs Kikuchi, the sisters' mother, phone only\nRen (he): Natsuki's boyfriend, phone only\nAkiko (she): Haruki's dead mother, a voice in his head\nVoice (she): a girl's voice, phone only\n@ Living room: kitchen and living room: low table, kettle, hob, fridge, TV, landline, balcony door\n@ Genkan: entrance: shoes, shoe cabinet, front door (peephole, latch)\n@ Bathroom: sink cabinet (pills), washing machine, bath\n@ Guest room: tatami room: Obon altar (two cucumber horses, drawer), oshiire (futons)\n@ Haruki's room: bed, desk (diary), taped closet\n@ Balcony: view of the river\n@ Garden: downstairs: bench, vending machine\n\nNote: {her} = Natsu off his pills, Natsuki after one. Use it in his thoughts and in the speaker name.\nNote: Haruki never speaks a line. His answers are an act and a thought: [ Greet ] She looks cold, let her in. The player imagines what he said.\nNote: karma = his clarity. Pill taken +1, pill left -1, romance answer -1, lying to Ren -1. Everything else 0.\nNote: Off his pills her faces are his version (romantic). After a pill: her real faces (confused, afraid). Shoot both for the talks marked (2 faces).\n\n( Opening )\n\n@ Living room\n\n*wait 60s*\n\nNote: one minute of free look round the apartment before the list appears.\n\nTimed task (2 min) - Clean up the apartment before Natsu arrives\n\nTask - Take out the rubbish\n\nTask - Wash the dishes\n\nTask - Wipe the low table\n\nTask - Bring in the laundry\n\nTask - Set out the Obon altar\n\nTask - Put the pill organiser away\n\nNote: the timer stays hidden; only the tasks show. Not done in time: failed, and she comments.\n\n*read the summer card*\n\nHaru-nii, I'm coming home for Obon. Can I visit on the 16th? I want to talk about Onee-chan. Natsuki.\n\n\"Natsu.\"\n\n*look at the photo on the fridge*\n\nNatsumi, 16, red yukata. A small girl holding her sleeve.\n\n*look at the Obon altar (large)*\n\nTwo cucumber horses.\n\n*turn on the TV*\n\nNews: a woman from the next town, missing since the 12th.\n\n*look at the taped closet (large)*\n\n\"Not today.\"\n\n*knock, knock*\n\n( Secret: Black Border )\n\nFind: *read the black-bordered letter*\n\nAchievement: Black Border - Read the letter before she arrives\n\nNatsumi Kikuchi. Declared deceased this spring.\n\n\"Then who's at the door?\"\n\n( The Visitor )\n\n@ Genkan\n\n*look through the peephole*\n\nNatsuki: \"Haru-nii? It's me.\"\n\n[ Greet ] She's probably cold. Let her in --- [ Question ] She looks younger than I remember.\n\n[ Greet ]\nNatsuki: (smiles) \"Finally.\"\n\n[ Question ]\nNatsuki: (puzzled, then smiles) \"Are you going to open the door?\"\n\n[ Either way ]\n\n*open the door*\n\n*Natsuki walks in*\n\nNatsuki: (smiles, a little shy) \"Hi, Haru-nii.\"\n\n[ Welcome ] Natsu came back. Tell her --- [ Stare ] Twelve years. Is it really her?\n\n[ Welcome ]\nNatsuki: (2 faces: his, a happy smile; hers, the smile falters) \"...I said I would.\"\n\n[ Stare ]\nNatsuki: (uneasy laugh) \"What? Is there something on my face?\"\n\n[ Either way ]\n\nNote: her comment on the flat comes from the clean-up: spotless (Spotless) or nothing done (Lived-In).\n\nRequest from Natsuki - Put the watermelon in a bucket of water\n\n( Tea )\n\n@ Living room\n\n*Natsuki sits at the low table*\n\nRequest from Natsuki - Make tea\n\n*turn on the kettle*\n\n*give the tea to Natsuki*\n\nNatsuki: (2 faces: his, pleased; hers, her mouth tightens, then polite) \"Perfect.\"\n\nNote: sugar 0, 1 or 2. Two is Natsumi's way (Two Sugars). Soy sauce is a second secret beside Purified (Secret Recipe), added in the director.\n\n( Secret: Purified )\n\nFind: *put salt in her tea*\n\nAchievement: Purified - Salt in her tea\n\nNatsuki: (coughs, then laughs) \"Salt?\"\n\n( The Altar )\n\n@ Guest room\n\n*Natsuki lights incense at the altar*\n\nNatsuki: (looks at the altar, then at you, worried) \"Who's the second horse for?\"\n\n[ Mom ] Both are for Mom --- [ Say nothing ] I don't know.\n\n( Somen )\n\n@ Living room\n\nRequest from Natsuki - Make somen\n\n*boil the water*\n\n*rinse the somen*\n\n*cut the negi*\n\n*give the somen to Natsuki*\n\n\"Someone always stole my negi.\"\n\nNatsuki: \"Do you still go to the river?\"\n\n[ Truth ] Every year. Today --- [ Lie ] I don't go out.\n\n[ Truth ]\nNatsuki: (looks down) \"...Today.\"\n\n[ Lie ]\nNatsuki: (studies your face, nods) \"Okay.\"\n\n[ Either way ]\n\n( Secret: Old Times )\n\nFind: *give her your negi*\n\nAchievement: Old Times - Give her your negi\n\nNatsuki: (smiles, forces it down) \"Thanks.\"\n\n( The Officer )\n\n@ Genkan\n\n*fireworks*\n\n*doorbell*\n\n*open the door*\n\nSasaki: \"Evening. A woman's missing from the next town.\"\n\nSasaki: \"Natsuki-chan? Home for Obon?\"\n\n\"He means Natsu.\"\n\nSasaki: \"Onodera. Twelve years today.\"\n\nSasaki: \"I always wondered about the Sakamoto boy.\"\n\n[ Say it ] He was no good for her --- [ Say nothing ] It was a long time ago.\n\n[ Say it ]\nSasaki: (stares a moment) \"Is that right.\"\n\n[ Say nothing ]\nSasaki: (nods) \"Goodnight.\"\n\n[ Either way ]\n\n*close the door*\n\nNatsuki: (worried) \"Everything okay?\"\n\n[ Lock it ] Twice. Check it again --- [ Leave it ] He's gone.\n\n( Watermelon )\n\n@ Balcony\n\n*cut the watermelon*\n\n*Natsuki eats watermelon on the balcony*\n\n*fireworks*\n\n( Secret: Seed Spitter )\n\nFind: *spit the seeds off the balcony*\n\nAchievement: Seed Spitter - Win the seed contest\n\nNatsuki: (laughs) \"No fair.\"\n\n( Pill 1 )\n\n@ Bathroom\n\n*open the cabinet*\n\nAkiko: \"Did you take them, Haru?\"\n\n[ Take them +1 ] Just one --- [ Leave them -1 ] I'm fine.\n\nNote: in the director this is a timed to-do, Take your pills, that fails when its time is up.\n\n( The Bath )\n\nRequest from Natsuki - Run the bath\n\n*run the bath*\n\n*Natsuki goes into the bathroom*\n\n( While She Bathes )\n\n@ Living room\n\n*look in her bag*\n\nStudent ID: Kikuchi Natsuki.\n\n*phone rings*\n\n*answer the phone*\n\nKikuchi: \"Is Natsuki there?\"\n\n[ Fetch her ] She's in the bath --- [ Hang up ] Wrong number.\n\n( Secret: The Wall )\n\nFind: *open the taped closet*\n\nAchievement: The Wall - Open the taped closet\n\n@ Haruki's room\n\nMissing posters. String. A photo of Natsumi and a boy, his face scratched out. One geta.\n\n( The Album )\n\n@ Living room\n\n*Natsuki sits at the low table*\n\n*look at the album*\n\nCaption: Ko-natsu & Haru-nii. The last photo is folded.\n\n( Secret: The Folded Photo )\n\nFind: *unfold the last photo*\n\nAchievement: The Folded Photo - Unfold the last photo\n\nNatsumi and a boy, holding hands.\n\n( The Cards )\n\nNatsuki: \"Cards? Loser answers a question.\"\n\n*play cards at the low table*\n\nNote: shinkei-suijaku (Concentration), a new rules module. Off his pills: his memory lies and she lets him win. After a pill: true cards, she wins.\n\nNatsuki: \"Where were you at eleven that night?\"\n\n[ Home ] Mom said so --- [ Don't know ] I don't remember --- [ The woods ] I followed them.\n\n[ Home ]\nNatsuki: (face goes still) \"That's what she said.\"\n\n[ Don't know ]\nNatsuki: (careful) \"Nothing at all?\"\n\n[ The woods ]\nNatsuki: (freezes) \"...Them?\"\n\n[ Either way ]\n\nNote: off his pills only Home is offered.\n\n( The Garden ) if karma 1+\n\n@ Garden\n\n*go to the garden*\n\n*Natsuki smokes on the bench*\n\nNatsuki: (crying) \"I'm Natsuki, Haru-nii. Natsumi's gone.\"\n\nNatsuki: \"Ren says I shouldn't have come.\"\n\nNatsuki: \"Do you remember that night?\"\n\n[ Ko-natsu ] It's her sister. It was always her sister --- [ Say nothing ] I don't remember anything.\n\n[ Ko-natsu ]\nNatsuki: (wipes her eyes, almost smiles) \"...You remember me.\"\n\n[ Say nothing ]\nNatsuki: (looks away, smoke) \"Okay.\"\n\n[ Either way ]\n\n( The Garden ) otherwise\n\n@ Garden\n\n*go to the garden*\n\n*Natsuki smokes on the bench*\n\nNatsuki: (smiles, offers the cigarette) \"Don't tell my mom.\"\n\nNatsuki: \"Do you remember that night?\"\n\n[ Hold her hand -1 ] She wants me to --- [ Stay where you are ] Not yet.\n\n[ Hold her hand ]\nNatsuki: (2 faces: his, she leans in; hers, she pulls her hand away) \"Haru-nii...\"\n\n[ Stay where you are ]\nNatsuki: (relieved) \"It's late.\"\n\n[ Either way ]\n\nNote: her shoes are gone from the genkan before this. Off his pills, every line about Ren is cut.\n\n( 23:47 )\n\n@ Garden\n\n*buy two cans from the vending machine*\n\n@ Living room\n\n*phone rings*\n\n*answer the phone*\n\nVoice: \"Moshi.\"\n\n[ Moshi moshi ] Say it twice --- [ Hang up ] No.\n\n[ Moshi moshi ]\nVoice: \"Mō ii yo.\"\nAchievement: Moshi Moshi - Answer the 23:47 call properly\n\n[ Either way ]\n\n( Pill 2 )\n\n@ Bathroom\n\n*open the cabinet*\n\nAkiko: \"Haru. The pills.\"\n\n[ Take them +1 ] One more --- [ Leave them -1 ] If I take them, she'll go.\n\n( Ramen )\n\n@ Living room\n\nNatsuki: \"I'm starving.\"\n\nRequest from Natsuki - Make ramen\n\n*boil the water*\n\n*crack the egg*\n\n*give the ramen to Natsuki*\n\nNatsuki: \"First train tomorrow.\"\n\n( The Futon )\n\n@ Guest room\n\nRequest from Natsuki - Lay out the futon\n\n*open the oshiire*\n\n*lay out the futon*\n\n*Natsuki goes to bed*\n\n( Secret: Mother's Drawer )\n\nFind: *open the altar's drawer*\n\nAchievement: Mother's Drawer - Open the altar's drawer\n\nDiary: I'd lie for him again.\n\n( Ushimitsu )\n\n@ Living room\n\n*the power goes out*\n\n*take the flashlight*\n\n*turn on the flashlight*\n\n*phone rings*\n\n*answer the phone*\n\nRen: \"Is Natsuki there? It's Ren.\"\n\n[ Wake her ] She should know --- [ Lie -1 ] Wrong number.\n\n[ Wake her ]\nNatsuki: (sleepy) \"Thanks, Haru-nii.\"\n\n[ Either way ]\n\n*flip the breaker*\n\nNote: off his pills: the altar bell rings, the TV says his name, knocking in the oshiire.\n\n( Pill 3 )\n\n@ Living room\n\nNatsuki: \"Can't sleep. More tea?\"\n\nRequest from Natsuki - Make tea\n\n*turn on the kettle*\n\n*give the tea to Natsuki*\n\nNatsuki: (looks at your hands) \"You're shaking.\"\n\n[ Take them +1 ] Before it gets worse --- [ Leave them -1 ] She said she'd stay.\n\n( Two O'Clock ) if karma -5 or less\n\n@ Guest room\n\nNatsuki: \"Goodnight, Haru-nii.\"\n\n[ Watch her sleep ] She said she'd stay --- [ Go to bed ] Not tonight.\n\n( Ending: Stay ) if [ Watch her sleep ]\n\n@ Living room\n\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Stay.\n\nClock: 02:10, then 03:40.\n\n*knock, knock*\n\nSasaki: \"Police. A neighbour heard a disturbance.\"\n\n*the officer walks to the guest room*\n\nOfficer: \"On your knees! Hands up!\"\n\nFlashes: her real faces. The woods. His hands on her shoulders. The river.\n\n\"This time, she stayed.\"\n\nAchievement: Stay - The secret ending\n\n( True ending: Okuribi ) if karma 1+\n\n@ Genkan\n\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Okuribi.\n\n*Natsuki gives you a paper wish*\n\nI wish Haru-kun will always be my big brother. Natsumi.\n\nNatsuki: \"Shun said you followed them. Your mom said you were home.\"\n\n*light the fire at the door*\n\n*Natsuki leaves*\n\nAchievement: Okuribi - The intended ending\n\n( Ending: Thank You for Tonight ) otherwise\n\n@ Living room\n\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Thank You for Tonight.\n\n*Natsuki leaves*\n\n*answering machine beeps*\n\nNatsuki: \"Thanks for last night. You called me Natsu all night.\"\n\n*read the diary*\n\nI let them blame him.\n\nAchievement: Thank You for Tonight - The other ending\n",
- "script_chart": "Title: The Visitor\nStarts: dusk\nName: Haruki\nPlayer: Haruki, 28, lives alone in his late mother's apartment; off his pills\nLogline: On the last night of Obon, twelve years after Natsumi vanished, Natsu comes to visit.\nKind: first-person horror, one night, one apartment, about 80 minutes, three endings\nReferences: docs/game_research/TheVisitor/01_research.md; Shutter Island; L.A. Noire; Joker; Higurashi; Chilla's Art\nNatsuki (she): Natsuki Kikuchi, 23, Natsumi's little sister; Haruki sees her as Natsumi\nSasaki (he): Officer Sasaki, local police\nOfficer (he): a younger officer\nKikuchi (she): Mrs Kikuchi, the sisters' mother, phone only\nRen (he): Natsuki's boyfriend, phone only\nAkiko (she): Haruki's dead mother, a voice in his head\nVoice (she): a girl's voice, phone only\n@ Living room: kitchen and living room: low table, kettle, hob, fridge, TV, landline, balcony door\n@ Genkan: entrance: shoes, shoe cabinet, front door (peephole, latch)\n@ Bathroom: sink cabinet (pills), washing machine, bath\n@ Guest room: tatami room: Obon altar (two cucumber horses, drawer), oshiire (futons)\n@ Haruki's room: bed, desk (diary), taped closet\n@ Balcony: view of the river\n@ Garden: downstairs: bench, vending machine\nNote: {her} = Natsu off his pills, Natsuki after one. Use it in his thoughts and in the speaker name.\nNote: Haruki never speaks a line. His answers are an act and a thought: [ Greet ] She looks cold, let her in. The player imagines what he said.\nNote: karma = his clarity. Pill taken +1, pill left -1, romance answer -1, lying to Ren -1. Everything else 0.\nNote: Off his pills her faces are his version (romantic). After a pill: her real faces (confused, afraid). Shoot both for the talks marked (2 faces).\n\n( Opening )\n\n@ Living room\n*wait 60s*\nTimed task (2 min) - Clean up the apartment before Natsu arrives\nTask - Take out the rubbish\nTask - Wash the dishes\nTask - Wipe the low table\nTask - Bring in the laundry\nTask - Set out the Obon altar\nTask - Put the pill organiser away\n*read the summer card*\nHaru-nii, I'm coming home for Obon. Can I visit on the 16th? I want to talk about Onee-chan. Natsuki.\n\"Natsu.\"\n*look at the photo on the fridge*\nNatsumi, 16, red yukata. A small girl holding her sleeve.\n*look at the Obon altar*\nTwo cucumber horses.\n*turn on the TV*\nNews: a woman from the next town, missing since the 12th.\n*look at the taped closet*\n\"Not today.\"\n*knock, knock*\nNote: one minute of free look round the apartment before the list appears.\nNote: the timer stays hidden; only the tasks show. Not done in time: failed, and she comments.\n\n( Secret: Black Border )\n\nFind: *read the black-bordered letter*\nNatsumi Kikuchi. Declared deceased this spring.\n\"Then who's at the door?\"\nAchievement: Black Border - Read the letter before she arrives\n\n( The Visitor )\n\n@ Genkan\n*look through the peephole (medium)*\n\n( The Visitor · Natsuki )\n\nNatsuki: \"Haru-nii? It's me.\"\n[ Greet ] She's probably cold. Let her in --- [ Question ] She looks younger than I remember.\n\n[ Greet ]\nNatsuki: (smiles) \"Finally.\"\n\n[ Question ]\nNatsuki: (puzzled, then smiles) \"Are you going to open the door?\"\n[ Either way ]\n\n( The Visitor · Open the door )\n\n*open the door*\n\n( The Visitor · Natsuki )\n\n*Natsuki walks in*\nNatsuki: (smiles, a little shy) \"Hi, Haru-nii.\"\n[ Welcome ] Natsu came back. Tell her --- [ Stare ] Twelve years. Is it really her?\n\n[ Welcome ]\nNatsuki: (2 faces: his, a happy smile; hers, the smile falters) \"...I said I would.\"\n\n[ Stare ]\nNatsuki: (uneasy laugh) \"What? Is there something on my face?\"\n[ Either way ]\nNote: her comment on the flat comes from the clean-up: spotless (Spotless) or nothing done (Lived-In).\n\n( The Visitor · Put the watermelon in a bucket of water )\n\nRequest from Natsuki - Put the watermelon in a bucket of water\n\n( Tea )\n\n@ Living room\n*Natsuki sits at the low table*\n\n( Tea · Make tea )\n\nRequest from Natsuki - Make tea\n*turn on the kettle*\n*give the tea to Natsuki (medium)*\n\n( Tea · Natsuki )\n\nNatsuki: (2 faces: his, pleased; hers, her mouth tightens, then polite) \"Perfect.\"\n\n( Secret: Purified )\n\nFind: *put salt in her tea*\nNatsuki: (coughs, then laughs) \"Salt?\"\nAchievement: Purified - Salt in her tea\nNote: sugar 0, 1 or 2. Two is Natsumi's way (Two Sugars). Soy sauce is a second secret beside Purified (Secret Recipe), added in the director.\n\n( The Altar )\n\n@ Guest room\n*Natsuki lights incense at the altar*\nNatsuki: (looks at the altar, then at you, worried) \"Who's the second horse for?\"\n[ Mom ] Both are for Mom --- [ Say nothing ] I don't know.\n\n( Somen )\n\n@ Living room\nRequest from Natsuki - Make somen\n*boil the water (medium)*\n*rinse the somen (medium)*\n*cut the negi (medium)*\n*give the somen to Natsuki (medium)*\n\"Someone always stole my negi.\"\n\n( Somen · Natsuki )\n\nNatsuki: \"Do you still go to the river?\"\n[ Truth ] Every year. Today --- [ Lie ] I don't go out.\n\n[ Truth ]\nNatsuki: (looks down) \"...Today.\"\n\n[ Lie ]\nNatsuki: (studies your face, nods) \"Okay.\"\n[ Either way ]\n\n( Secret: Old Times )\n\nFind: *give her your negi*\nNatsuki: (smiles, forces it down) \"Thanks.\"\nAchievement: Old Times - Give her your negi\n\n( The Officer )\n\n@ Genkan\n*fireworks*\n*doorbell*\n*open the door*\n\n( The Officer · Sasaki )\n\nSasaki: \"Evening. A woman's missing from the next town.\"\nSasaki: \"Natsuki-chan? Home for Obon?\"\n\"He means Natsu.\"\nSasaki: \"Onodera. Twelve years today.\"\nSasaki: \"I always wondered about the Sakamoto boy.\"\n[ Say it ] He was no good for her --- [ Say nothing ] It was a long time ago.\n\n[ Say it ]\nSasaki: (stares a moment) \"Is that right.\"\n\n[ Say nothing ]\nSasaki: (nods) \"Goodnight.\"\n[ Either way ]\n\n( The Officer · Close the door )\n\n*close the door*\n\n( The Officer · Natsuki )\n\nNatsuki: (worried) \"Everything okay?\"\n[ Lock it ] Twice. Check it again --- [ Leave it ] He's gone.\n\n( Watermelon )\n\n@ Balcony\n*cut the watermelon (medium)*\n\n( Watermelon · Natsuki eats watermelon on the… )\n\n*Natsuki eats watermelon on the balcony*\n*fireworks*\n\n( Secret: Seed Spitter )\n\nFind: *spit the seeds off the balcony*\nNatsuki: (laughs) \"No fair.\"\nAchievement: Seed Spitter - Win the seed contest\n\n( Pill 1 )\n\n@ Bathroom\n*open the cabinet*\n\n( Pill 1 · Akiko )\n\nAkiko: \"Did you take them, Haru?\"\n[ Take them +1 ] Just one --- [ Leave them -1 ] I'm fine.\nNote: in the director this is a timed to-do, Take your pills, that fails when its time is up.\n\n( The Bath )\n\nRequest from Natsuki - Run the bath\n*run the bath*\n\n( The Bath · Natsuki goes into the bathroom )\n\n*Natsuki goes into the bathroom*\n\n( While She Bathes )\n\n@ Living room\n*look in her bag*\nStudent ID: Kikuchi Natsuki.\n*phone rings*\n*answer the phone*\n\n( While She Bathes · Kikuchi )\n\nKikuchi: \"Is Natsuki there?\"\n[ Fetch her ] She's in the bath --- [ Hang up ] Wrong number.\n\n( Secret: The Wall )\n\nFind: *open the taped closet*\nMissing posters. String. A photo of Natsumi and a boy, his face scratched out. One geta.\nAchievement: The Wall - Open the taped closet\n\n( The Album )\n\n*Natsuki sits at the low table*\n\n( The Album · Look at the album )\n\n*look at the album (medium)*\nCaption: Ko-natsu & Haru-nii. The last photo is folded.\n\n( Secret: The Folded Photo )\n\nFind: *unfold the last photo*\nNatsumi and a boy, holding hands.\nAchievement: The Folded Photo - Unfold the last photo\n\n( The Cards )\n\nNatsuki: \"Cards? Loser answers a question.\"\n\n( The Cards · Play cards at the low table )\n\n*play cards at the low table (medium)*\nNote: shinkei-suijaku (Concentration), a new rules module. Off his pills: his memory lies and she lets him win. After a pill: true cards, she wins.\n\n( The Cards · Natsuki )\n\nNatsuki: \"Where were you at eleven that night?\"\n[ Home ] Mom said so --- [ Don't know ] I don't remember --- [ The woods ] I followed them.\n\n[ Home ]\nNatsuki: (face goes still) \"That's what she said.\"\n\n[ Don't know ]\nNatsuki: (careful) \"Nothing at all?\"\n\n[ The woods ]\nNatsuki: (freezes) \"...Them?\"\n[ Either way ]\n\n( The Garden ) if karma 1+\n\n@ Garden\n*go to the garden*\n\n( The Garden · Natsuki ) if karma 1+\n\n*Natsuki smokes on the bench*\nNatsuki: (crying) \"I'm Natsuki, Haru-nii. Natsumi's gone.\"\nNatsuki: \"Ren says I shouldn't have come.\"\nNatsuki: \"Do you remember that night?\"\n[ Ko-natsu ] It's her sister. It was always her sister --- [ Say nothing ] I don't remember anything.\n\n[ Ko-natsu ]\nNatsuki: (wipes her eyes, almost smiles) \"...You remember me.\"\n\n[ Say nothing ]\nNatsuki: (looks away, smoke) \"Okay.\"\n[ Either way ]\nNote: her shoes are gone from the genkan before this. Off his pills, every line about Ren is cut.\n\n( The Garden ) otherwise\n\n*go to the garden*\n\n( The Garden · Natsuki ) otherwise\n\n*Natsuki smokes on the bench*\nNatsuki: (smiles, offers the cigarette) \"Don't tell my mom.\"\nNatsuki: \"Do you remember that night?\"\n[ Hold her hand -1 ] She wants me to --- [ Stay where you are ] Not yet.\n\n[ Hold her hand ]\nNatsuki: (2 faces: his, she leans in; hers, she pulls her hand away) \"Haru-nii...\"\n\n[ Stay where you are ]\nNatsuki: (relieved) \"It's late.\"\n[ Either way ]\n\n( 23:47 )\n\n*buy two cans from the vending machine*\n\n( 23:47 · Answer the phone )\n\n@ Living room\n*phone rings*\n*answer the phone*\n\n( 23:47 · Voice )\n\nVoice: \"Moshi.\"\n[ Moshi moshi ] Say it twice --- [ Hang up ] No.\n\n[ Moshi moshi ]\nVoice: \"Mō ii yo.\"\nAchievement: Moshi Moshi - Answer the 23:47 call properly\n[ Either way ]\n\n( Pill 2 )\n\n@ Bathroom\n*open the cabinet*\n\n( Pill 2 · Akiko )\n\nAkiko: \"Haru. The pills.\"\n[ Take them +1 ] One more --- [ Leave them -1 ] If I take them, she'll go.\n\n( Ramen )\n\n@ Living room\nNatsuki: \"I'm starving.\"\n\n( Ramen · Make ramen )\n\nRequest from Natsuki - Make ramen\n*boil the water (medium)*\n*crack the egg (medium)*\n*give the ramen to Natsuki (medium)*\n\n( Ramen · Natsuki )\n\nNatsuki: \"First train tomorrow.\"\n\n( The Futon )\n\n@ Guest room\nRequest from Natsuki - Lay out the futon\n*open the oshiire (medium)*\n*lay out the futon*\n\n( The Futon · Natsuki goes to bed )\n\n*Natsuki goes to bed*\n\n( Secret: Mother's Drawer )\n\nFind: *open the altar's drawer*\nDiary: I'd lie for him again.\nAchievement: Mother's Drawer - Open the altar's drawer\n\n( Ushimitsu )\n\n@ Living room\n*the power goes out*\n*take the flashlight*\n*turn on the flashlight*\n*phone rings*\n*answer the phone*\n\n( Ushimitsu · Ren )\n\nRen: \"Is Natsuki there? It's Ren.\"\n[ Wake her ] She should know --- [ Lie -1 ] Wrong number.\n\n[ Wake her ]\nNatsuki: (sleepy) \"Thanks, Haru-nii.\"\n[ Either way ]\n\n( Ushimitsu · Flip the breaker )\n\n*flip the breaker (medium)*\nNote: off his pills: the altar bell rings, the TV says his name, knocking in the oshiire.\n\n( Pill 3 )\n\nNatsuki: \"Can't sleep. More tea?\"\n\n( Pill 3 · Make tea )\n\nRequest from Natsuki - Make tea\n*turn on the kettle*\n*give the tea to Natsuki (medium)*\n\n( Pill 3 · Natsuki )\n\nNatsuki: (looks at your hands) \"You're shaking.\"\n[ Take them +1 ] Before it gets worse --- [ Leave them -1 ] She said she'd stay.\n\n( Two O'Clock ) if karma -5 or less\n\n@ Guest room\nNatsuki: \"Goodnight, Haru-nii.\"\n[ Watch her sleep ] She said she'd stay --- [ Go to bed ] Not tonight.\n\n( Ending: Stay ) if [ Watch her sleep ]\n\n@ Living room\nClock: 02:10, then 03:40.\n*knock, knock*\nSasaki: \"Police. A neighbour heard a disturbance.\"\n*the officer walks to the guest room*\nOfficer: \"On your knees! Hands up!\"\nFlashes: her real faces. The woods. His hands on her shoulders. The river.\n\"This time, she stayed.\"\nAchievement: Stay - The secret ending\n\n( True ending: Okuribi ) if karma 1+\n\n@ Genkan\n*Natsuki gives you a paper wish*\nI wish Haru-kun will always be my big brother. Natsumi.\nNatsuki: \"Shun said you followed them. Your mom said you were home.\"\n*light the fire at the door (medium)*\n*Natsuki leaves*\nAchievement: Okuribi - The intended ending\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Stay.\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Okuribi.\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Thank You for Tonight.\n\n( Ending: Thank You for Tonight ) otherwise\n\n@ Living room\n*Natsuki leaves*\n*answering machine beeps*\nNatsuki: \"Thanks for last night. You called me Natsu all night.\"\n*read the diary*\nI let them blame him.\nAchievement: Thank You for Tonight - The other ending\nNote: off his pills only Home is offered.\n"
+ "script": "Title: The Visitor\nStarts: dusk\nName: Haruki\nPlayer: Haruki, 28, lives alone in his late mother's apartment; off his pills\nKind: first-person horror, one night, one apartment, about 80 minutes, three endings\nLogline: On the last night of Obon, a woman he should know comes to visit.\nNatsuki (she): Natsuki Kikuchi, 23, Natsumi's little sister; Haruki sees her as Natsumi\nSasaki (he): Officer Sasaki, local police\nOfficer (he): a younger officer\nKikuchi (she): Mrs Kikuchi, the sisters' mother, phone only\nRen (he): Natsuki's boyfriend, phone only\nAkiko (she): Haruki's dead mother, a voice in his head\nVoice (she): a girl's voice, phone only\n@ Living room: kitchen and living room: low table, kettle, hob, fridge, TV, landline, balcony door\n@ Genkan: entrance: shoes, shoe cabinet, front door (peephole, latch)\n@ Bathroom: sink cabinet (pills), washing machine, bath\n@ Guest room: tatami room: Obon altar (two cucumber horses, drawer), oshiire (futons)\n@ Haruki's room: bed, desk (diary), taped closet\n@ Balcony: view of the river\n@ Garden: downstairs: bench, vending machine\n\nNote: HOW IT'S WRITTEN. The player knows nothing, and neither does Haruki's head: his thoughts only know what's in front of him and what his body remembers (\"My hands know where the cups are.\"). Facts come from outside him, once each: the to-do list, her lines, the props, the officer, the phone. He never speaks a line; his answers are a small act and a thought, and the player imagines what he said.\nNote: {her} = Natsu off his pills, Natsuki after one. Use it in his thoughts and in the speaker name.\nNote: karma = his clarity. Pill taken +1, pill left -1, romance answer -1, lying to Ren -1. Everything else 0.\nNote: Off his pills her faces are his version (romantic). After a pill: her real faces (confused, afraid). Shoot both for the talks marked (2 faces).\n\n( Opening )\n\n@ Living room\n\n*wait 60s*\n\nNote: one minute of free look round the apartment. No list, no thoughts.\n\nTimed task (2 min) - Clean up the apartment before Natsu arrives\n\n\"Natsu.\"\n\n\"Someone's coming.\"\n\nTask - Take out the rubbish\n\nTask - Wash the dishes\n\nTask - Wipe the low table\n\nTask - Bring in the laundry\n\nTask - Set out the Obon altar\n\nTask - Put the pill organiser away\n\nNote: the timer stays hidden; only the tasks show. Not done in time: failed, and she comments.\n\n*read the card on the fridge*\n\nHaru-nii, I'm coming home for Obon. Can I visit on the 16th? I want to talk about Onee-chan. Natsuki.\n\n\"Natsu. She's coming here.\"\n\n*look at the photo on the fridge*\n\nA girl in a red yukata. A smaller girl holding her sleeve.\n\n\"I know her. I know that face.\"\n\n*look at the Obon altar (large)*\n\nTwo cucumber horses.\n\n\"Why two?\"\n\n*turn on the TV*\n\nNews: a woman from the next town, missing since the 12th.\n\n*look at the taped closet (large)*\n\n\"Not today.\"\n\n*knock, knock*\n\n( Secret: Black Border )\n\nFind: *read the black-bordered letter*\n\nAchievement: Black Border - Read the letter before she arrives\n\nNatsumi Kikuchi. Declared deceased this spring.\n\n\"Deceased?\"\n\n( The Visitor )\n\n@ Genkan\n\n*look through the peephole*\n\nNatsuki: \"Haru-nii? It's me.\"\n\n\"That voice.\"\n\n[ Greet ] She looks cold, welcome her inside --- [ Question ] She looks different.\n\n[ Greet ]\nNatsuki: (smiles) \"Finally.\"\n\n[ Question ]\nNatsuki: (puzzled, then smiles) \"Are you going to open the door?\"\n\n[ Either way ]\n\n*open the door*\n\n*Natsuki walks in*\n\nNatsuki: (smiles, a little shy) \"Twelve years, Haru-nii. Can you believe it?\"\n\n[ Smile ] She knows me. Smile back --- [ Look ] Twelve years? It feels like last week.\n\n[ Smile ]\nNatsuki: (2 faces: his, a happy smile; hers, the smile falters) \"You haven't changed.\"\n\n[ Look ]\nNatsuki: (uneasy laugh) \"Is there something on my face?\"\n\n[ Either way ]\n\nNote: her comment on the flat comes from the clean-up: spotless (Spotless) or nothing done (Lived-In).\n\nRequest from Natsuki - Put the watermelon in a bucket of water\n\n( Tea )\n\n@ Living room\n\n*Natsuki sits at the low table*\n\nRequest from Natsuki - Make tea\n\n*turn on the kettle*\n\n\"My hands know where the cups are.\"\n\n*give the tea to Natsuki*\n\nNatsuki: (2 faces: his, pleased; hers, her mouth tightens, then polite) \"Perfect.\"\n\nNote: sugar 0, 1 or 2; the inner monologue only says \"Two. My hand already knows.\" Two is Natsumi's way (Two Sugars). Soy sauce is a second secret beside Purified (Secret Recipe), added in the director.\n\n( Secret: Purified )\n\nFind: *put salt in her tea*\n\nAchievement: Purified - Salt in her tea\n\nNatsuki: (coughs, then laughs) \"Salt?\"\n\n( The Altar )\n\n@ Guest room\n\n*Natsuki lights incense at the altar*\n\n*look at the photo on the altar*\n\n\"Mom.\"\n\nNatsuki: (looks at the altar, then at you, worried) \"Who's the second horse for?\"\n\n[ Mom ] They're both for Mom. Aren't they? --- [ Say nothing ] I don't remember making two.\n\n( Somen )\n\n@ Living room\n\nRequest from Natsuki - Make somen\n\n*boil the water*\n\n*rinse the somen*\n\n*cut the negi*\n\n*give the somen to Natsuki*\n\n\"Someone always stole my negi. Someone—\"\n\nNatsuki: \"Do you still go down to the river?\"\n\n[ Nod ] My shoes are always muddy. I must --- [ Shake head ] I don't go out.\n\n[ Nod ]\nNatsuki: (looks down) \"...Even today.\"\n\n[ Shake head ]\nNatsuki: (studies your face, nods) \"Okay.\"\n\n[ Either way ]\n\n( Secret: Old Times )\n\nFind: *give her your negi*\n\nAchievement: Old Times - Give her your negi\n\nNatsuki: (smiles, forces it down) \"Thanks.\"\n\n( The Officer )\n\n@ Genkan\n\n*fireworks*\n\n*doorbell*\n\n*open the door*\n\nSasaki: \"Evening. A woman's missing from the next town.\"\n\nSasaki: \"Natsuki-chan? Home for Obon?\"\n\n\"Natsuki? He means Natsu.\"\n\nSasaki: \"Onodera. Twelve years today.\"\n\n\"Twelve years since what?\"\n\nSasaki: \"I always wondered about the Sakamoto boy.\"\n\n[ Tense ] That name. My jaw is tight --- [ Blank ] Sakamoto? I don't know him.\n\n[ Tense ]\nSasaki: (stares a moment) \"Still, after all this time.\"\n\n[ Blank ]\nSasaki: (nods slowly) \"Goodnight.\"\n\n[ Either way ]\n\n*close the door*\n\nNatsuki: (worried) \"Everything okay?\"\n\n[ Lock it ] Lock it. Twice. Check it again --- [ Leave it ] He's gone. It's fine.\n\n( Watermelon )\n\n@ Balcony\n\n*cut the watermelon*\n\n*Natsuki eats watermelon on the balcony*\n\n*fireworks*\n\n\"Salt on watermelon. Mom did that.\"\n\n( Secret: Seed Spitter )\n\nFind: *spit the seeds off the balcony*\n\nAchievement: Seed Spitter - Win the seed contest\n\nNatsuki: (laughs) \"No fair.\"\n\n( Pill 1 )\n\n@ Bathroom\n\n*open the cabinet*\n\n*look at the pharmacy bag*\n\nOnodera Haruki. Once a day, after dinner.\n\nAkiko: \"Did you take them, Haru?\"\n\n\"Mom?\"\n\n[ Take them +1 ] Her voice. Just one, for her --- [ Leave them -1 ] I feel fine. Better than fine.\n\nNote: in the director this is a timed to-do, Take your pills, that fails when its time is up.\n\n( The Bath )\n\nRequest from Natsuki - Run the bath\n\n*run the bath*\n\n*Natsuki goes into the bathroom*\n\n( While She Bathes )\n\n@ Living room\n\n*look in her bag*\n\nStudent ID: Kikuchi Natsuki.\n\n\"Natsuki.\"\n\n*phone rings*\n\n*answer the phone*\n\nKikuchi: \"Is my daughter there? Natsuki?\"\n\n[ Fetch her ] That name again. She's in the bath --- [ Hang up ] Wrong number. It must be.\n\n( Secret: The Wall )\n\nFind: *open the taped closet*\n\nAchievement: The Wall - Open the taped closet\n\n@ Haruki's room\n\nMissing posters. String. A photo of the girl in the red yukata and a boy, his face scratched out. One wooden sandal.\n\n\"That's my handwriting.\"\n\n( The Album )\n\n@ Living room\n\n*Natsuki sits at the low table*\n\n*look at the album*\n\nCaption: Ko-natsu & Haru-nii. The last photo is folded.\n\n\"Ko-natsu. The little one.\"\n\n( Secret: The Folded Photo )\n\nFind: *unfold the last photo*\n\nAchievement: The Folded Photo - Unfold the last photo\n\nThe girl in the red yukata and a boy, holding hands.\n\n( The Cards )\n\nNatsuki: \"Cards? Loser answers a question. Like when we were kids.\"\n\n*play cards at the low table*\n\nNote: shinkei-suijaku (Concentration), a new rules module. Off his pills: his memory lies and she lets him win. After a pill: true cards, she wins.\n\nNatsuki: \"Where were you at eleven that night?\"\n\n[ Home ] Home. Mom always said so --- [ What night ] What night? --- [ Trees ] Trees. Rain. Why do I see trees?\n\n[ Home ]\nNatsuki: (face goes still) \"That's what she said.\"\n\n[ What night ]\nNatsuki: (careful) \"You really don't know?\"\n\n[ Trees ]\nNatsuki: (freezes) \"...The woods?\"\n\n[ Either way ]\n\nNote: off his pills only Home is offered.\n\n( The Garden ) if karma 1+\n\n@ Garden\n\n*go to the garden*\n\n*Natsuki smokes on the bench*\n\nNatsuki: (crying) \"I'm Natsuki, Haru-nii. Natsumi's gone.\"\n\n[ Ko-natsu ] Ko-natsu. The little one. It was always her --- [ Gone ] Gone? Gone where?\n\n[ Ko-natsu ]\nNatsuki: (wipes her eyes, almost smiles) \"...You remember me.\"\n\n[ Gone ]\nNatsuki: (stares) \"Twelve years ago. Tonight.\"\n\n[ Either way ]\n\nNatsuki: \"Ren says I shouldn't have come.\"\n\n( The Garden ) otherwise\n\n@ Garden\n\n*go to the garden*\n\n*Natsuki smokes on the bench*\n\nNatsuki: (smiles, offers the cigarette) \"Don't tell my mom.\"\n\nNatsuki: \"Do you remember that night?\"\n\n[ Hold her hand -1 ] She wants me to --- [ Wait ] What night? Everyone keeps saying that night.\n\n[ Hold her hand ]\nNatsuki: (2 faces: his, she leans in; hers, she pulls her hand away) \"Haru-nii...\"\n\n[ Wait ]\nNatsuki: (looks at you a long moment) \"It's late.\"\n\n[ Either way ]\n\nNote: her shoes are gone from the genkan before this. Off his pills, every line about Ren is cut.\n\n( 23:47 )\n\n@ Garden\n\n*buy two cans from the vending machine*\n\n@ Living room\n\n*phone rings*\n\n*answer the phone*\n\nVoice: \"Moshi.\"\n\n[ Moshi moshi ] Say it twice. Mom always did --- [ Hang up ] Nobody's there.\n\n[ Moshi moshi ]\nVoice: \"Mō ii yo.\"\nAchievement: Moshi Moshi - Answer the 23:47 call properly\n\n[ Either way ]\n\n( Pill 2 )\n\n@ Bathroom\n\n*open the cabinet*\n\nAkiko: \"Haru. The pills.\"\n\n[ Take them +1 ] It's getting loud. One more --- [ Leave them -1 ] If I take them, she'll go.\n\n( Ramen )\n\n@ Living room\n\nNatsuki: \"I'm starving.\"\n\nRequest from Natsuki - Make ramen\n\n*boil the water*\n\n*crack the egg*\n\n*give the ramen to Natsuki*\n\nNatsuki: \"I'll take the first train tomorrow.\"\n\n\"Tomorrow. She's leaving.\"\n\n( The Futon )\n\n@ Guest room\n\nRequest from Natsuki - Lay out the futon\n\n*open the oshiire*\n\n*lay out the futon*\n\n*Natsuki goes to bed*\n\n( Secret: Mother's Drawer )\n\nFind: *open the altar's drawer*\n\nAchievement: Mother's Drawer - Open the altar's drawer\n\nDiary: I'd lie for him again.\n\n\"Lie about what?\"\n\n( Ushimitsu )\n\n@ Living room\n\n*the power goes out*\n\n*take the flashlight*\n\n*turn on the flashlight*\n\n*phone rings*\n\n*answer the phone*\n\nRen: \"Is Natsuki there? It's Ren.\"\n\n[ Wake her ] Someone's worried about her --- [ Lie -1 ] Someone else. Wrong number.\n\n[ Wake her ]\nNatsuki: (sleepy) \"Thanks, Haru-nii.\"\n\n[ Either way ]\n\n*flip the breaker*\n\nNote: off his pills: the altar bell rings, the TV says his name, knocking in the oshiire.\n\n( Pill 3 )\n\n@ Living room\n\nNatsuki: \"Can't sleep. More tea?\"\n\nRequest from Natsuki - Make tea\n\n*turn on the kettle*\n\n*give the tea to Natsuki*\n\nNatsuki: (looks at your hands) \"You're shaking.\"\n\n[ Take them +1 ] My hands won't stop. Take them --- [ Leave them -1 ] She said she'd stay.\n\n( Two O'Clock ) if karma -5 or less\n\n@ Guest room\n\nNatsuki: \"Goodnight, Haru-nii.\"\n\n[ Watch her sleep ] Just for a moment. She said she'd stay --- [ Go to bed ] Let her sleep.\n\n( Ending: Stay ) if [ Watch her sleep ]\n\n@ Living room\n\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Stay.\n\nClock: 02:10, then 03:40.\n\n*knock, knock*\n\nSasaki: \"Police. A neighbour heard a disturbance.\"\n\n*the officer walks to the guest room*\n\nOfficer: \"On your knees! Hands up!\"\n\nFlashes: her real faces. The woods. His hands on her shoulders. The river.\n\n\"This time, she stayed.\"\n\nAchievement: Stay - The secret ending\n\n( True ending: Okuribi ) if karma 1+\n\n@ Genkan\n\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Okuribi.\n\n*Natsuki gives you a paper wish*\n\nI wish Haru-kun will always be my big brother. Natsumi.\n\nNatsuki: \"Shun said you followed them. Your mom said you were home.\"\n\n*light the fire at the door*\n\n*Natsuki leaves*\n\nAchievement: Okuribi - The intended ending\n\n( Ending: Thank You for Tonight ) otherwise\n\n@ Living room\n\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Thank You for Tonight.\n\n*Natsuki leaves*\n\n*answering machine beeps*\n\nNatsuki: \"Thanks for last night. You called me Natsu all night.\"\n\n*read the diary*\n\nI let them blame him.\n\nAchievement: Thank You for Tonight - The other ending\n",
+ "script_chart": "Title: The Visitor\nStarts: dusk\nName: Haruki\nPlayer: Haruki, 28, lives alone in his late mother's apartment; off his pills\nLogline: On the last night of Obon, a woman he should know comes to visit.\nKind: first-person horror, one night, one apartment, about 80 minutes, three endings\nReferences: docs/game_research/TheVisitor/01_research.md; Shutter Island; L.A. Noire; Joker; Higurashi; Chilla's Art\nNatsuki (she): Natsuki Kikuchi, 23, Natsumi's little sister; Haruki sees her as Natsumi\nSasaki (he): Officer Sasaki, local police\nOfficer (he): a younger officer\nKikuchi (she): Mrs Kikuchi, the sisters' mother, phone only\nRen (he): Natsuki's boyfriend, phone only\nAkiko (she): Haruki's dead mother, a voice in his head\nVoice (she): a girl's voice, phone only\n@ Living room: kitchen and living room: low table, kettle, hob, fridge, TV, landline, balcony door\n@ Genkan: entrance: shoes, shoe cabinet, front door (peephole, latch)\n@ Bathroom: sink cabinet (pills), washing machine, bath\n@ Guest room: tatami room: Obon altar (two cucumber horses, drawer), oshiire (futons)\n@ Haruki's room: bed, desk (diary), taped closet\n@ Balcony: view of the river\n@ Garden: downstairs: bench, vending machine\nNote: HOW IT'S WRITTEN. The player knows nothing, and neither does Haruki's head: his thoughts only know what's in front of him and what his body remembers (\"My hands know where the cups are.\"). Facts come from outside him, once each: the to-do list, her lines, the props, the officer, the phone. He never speaks a line; his answers are a small act and a thought, and the player imagines what he said.\nNote: {her} = Natsu off his pills, Natsuki after one. Use it in his thoughts and in the speaker name.\nNote: karma = his clarity. Pill taken +1, pill left -1, romance answer -1, lying to Ren -1. Everything else 0.\nNote: Off his pills her faces are his version (romantic). After a pill: her real faces (confused, afraid). Shoot both for the talks marked (2 faces).\n\n( Opening )\n\n@ Living room\n*wait 60s*\nTimed task (2 min) - Clean up the apartment before Natsu arrives\n\"Natsu.\"\n\"Someone's coming.\"\nTask - Take out the rubbish\nTask - Wash the dishes\nTask - Wipe the low table\nTask - Bring in the laundry\nTask - Set out the Obon altar\nTask - Put the pill organiser away\n*read the card on the fridge*\nHaru-nii, I'm coming home for Obon. Can I visit on the 16th? I want to talk about Onee-chan. Natsuki.\n\"Natsu. She's coming here.\"\n*look at the photo on the fridge*\nA girl in a red yukata. A smaller girl holding her sleeve.\n\"I know her. I know that face.\"\n*look at the Obon altar*\nTwo cucumber horses.\n\"Why two?\"\n*turn on the TV*\nNews: a woman from the next town, missing since the 12th.\n*look at the taped closet*\n\"Not today.\"\n*knock, knock*\nNote: one minute of free look round the apartment. No list, no thoughts.\nNote: the timer stays hidden; only the tasks show. Not done in time: failed, and she comments.\n\n( Secret: Black Border )\n\nFind: *read the black-bordered letter*\nNatsumi Kikuchi. Declared deceased this spring.\n\"Deceased?\"\nAchievement: Black Border - Read the letter before she arrives\n\n( The Visitor )\n\n@ Genkan\n*look through the peephole (medium)*\n\n( The Visitor · Natsuki )\n\nNatsuki: \"Haru-nii? It's me.\"\n\"That voice.\"\n[ Greet ] She looks cold, welcome her inside --- [ Question ] She looks different.\n\n[ Greet ]\nNatsuki: (smiles) \"Finally.\"\n\n[ Question ]\nNatsuki: (puzzled, then smiles) \"Are you going to open the door?\"\n[ Either way ]\n\n( The Visitor · Open the door )\n\n*open the door*\n\n( The Visitor · Natsuki )\n\n*Natsuki walks in*\nNatsuki: (smiles, a little shy) \"Twelve years, Haru-nii. Can you believe it?\"\n[ Smile ] She knows me. Smile back --- [ Look ] Twelve years? It feels like last week.\n\n[ Smile ]\nNatsuki: (2 faces: his, a happy smile; hers, the smile falters) \"You haven't changed.\"\n\n[ Look ]\nNatsuki: (uneasy laugh) \"Is there something on my face?\"\n[ Either way ]\nNote: her comment on the flat comes from the clean-up: spotless (Spotless) or nothing done (Lived-In).\n\n( The Visitor · Put the watermelon in a bucket of water )\n\nRequest from Natsuki - Put the watermelon in a bucket of water\n\n( Tea )\n\n@ Living room\n*Natsuki sits at the low table*\n\n( Tea · Make tea )\n\nRequest from Natsuki - Make tea\n*turn on the kettle*\n\"My hands know where the cups are.\"\n*give the tea to Natsuki (medium)*\n\n( Tea · Natsuki )\n\nNatsuki: (2 faces: his, pleased; hers, her mouth tightens, then polite) \"Perfect.\"\n\n( Secret: Purified )\n\nFind: *put salt in her tea*\nNatsuki: (coughs, then laughs) \"Salt?\"\nAchievement: Purified - Salt in her tea\nNote: sugar 0, 1 or 2; the inner monologue only says \"Two. My hand already knows.\" Two is Natsumi's way (Two Sugars). Soy sauce is a second secret beside Purified (Secret Recipe), added in the director.\n\n( The Altar )\n\n@ Guest room\n*Natsuki lights incense at the altar*\n\n( The Altar · Look at the photo on the altar )\n\n*look at the photo on the altar*\n\"Mom.\"\n\n( The Altar · Natsuki )\n\nNatsuki: (looks at the altar, then at you, worried) \"Who's the second horse for?\"\n[ Mom ] They're both for Mom. Aren't they? --- [ Say nothing ] I don't remember making two.\n\n( Somen )\n\n@ Living room\nRequest from Natsuki - Make somen\n*boil the water (medium)*\n*rinse the somen (medium)*\n*cut the negi (medium)*\n*give the somen to Natsuki (medium)*\n\"Someone always stole my negi. Someone—\"\n\n( Somen · Natsuki )\n\nNatsuki: \"Do you still go down to the river?\"\n[ Nod ] My shoes are always muddy. I must --- [ Shake head ] I don't go out.\n\n[ Nod ]\nNatsuki: (looks down) \"...Even today.\"\n\n[ Shake head ]\nNatsuki: (studies your face, nods) \"Okay.\"\n[ Either way ]\n\n( Secret: Old Times )\n\nFind: *give her your negi*\nNatsuki: (smiles, forces it down) \"Thanks.\"\nAchievement: Old Times - Give her your negi\n\n( The Officer )\n\n@ Genkan\n*fireworks*\n*doorbell*\n*open the door*\n\n( The Officer · Sasaki )\n\nSasaki: \"Evening. A woman's missing from the next town.\"\nSasaki: \"Natsuki-chan? Home for Obon?\"\n\"Natsuki? He means Natsu.\"\nSasaki: \"Onodera. Twelve years today.\"\n\"Twelve years since what?\"\nSasaki: \"I always wondered about the Sakamoto boy.\"\n[ Tense ] That name. My jaw is tight --- [ Blank ] Sakamoto? I don't know him.\n\n[ Tense ]\nSasaki: (stares a moment) \"Still, after all this time.\"\n\n[ Blank ]\nSasaki: (nods slowly) \"Goodnight.\"\n[ Either way ]\n\n( The Officer · Close the door )\n\n*close the door*\nNote: her shoes are gone from the genkan before this. Off his pills, every line about Ren is cut.\n\n( The Officer · Natsuki )\n\nNatsuki: (worried) \"Everything okay?\"\n[ Lock it ] Lock it. Twice. Check it again --- [ Leave it ] He's gone. It's fine.\n\n( Watermelon )\n\n@ Balcony\n*cut the watermelon (medium)*\n\n( Watermelon · Natsuki eats watermelon on the… )\n\n*Natsuki eats watermelon on the balcony*\n*fireworks*\n\"Salt on watermelon. Mom did that.\"\n\n( Secret: Seed Spitter )\n\nFind: *spit the seeds off the balcony*\nNatsuki: (laughs) \"No fair.\"\nAchievement: Seed Spitter - Win the seed contest\n\n( Pill 1 )\n\n@ Bathroom\n*open the cabinet*\n*look at the pharmacy bag*\nOnodera Haruki. Once a day, after dinner.\n\n( Pill 1 · Akiko )\n\nAkiko: \"Did you take them, Haru?\"\n\"Mom?\"\n[ Take them +1 ] Her voice. Just one, for her --- [ Leave them -1 ] I feel fine. Better than fine.\nNote: in the director this is a timed to-do, Take your pills, that fails when its time is up.\n\n( The Bath )\n\nRequest from Natsuki - Run the bath\n*run the bath*\n\n( The Bath · Natsuki goes into the bathroom )\n\n*Natsuki goes into the bathroom*\n\n( While She Bathes )\n\n@ Living room\n*look in her bag*\nStudent ID: Kikuchi Natsuki.\n\"Natsuki.\"\n*phone rings*\n*answer the phone*\n\n( While She Bathes · Kikuchi )\n\nKikuchi: \"Is my daughter there? Natsuki?\"\n[ Fetch her ] That name again. She's in the bath --- [ Hang up ] Wrong number. It must be.\n\n( Secret: The Wall )\n\nFind: *open the taped closet*\nMissing posters. String. A photo of the girl in the red yukata and a boy, his face scratched out. One wooden sandal.\n\"That's my handwriting.\"\nAchievement: The Wall - Open the taped closet\n\n( The Album )\n\n*Natsuki sits at the low table*\n\n( The Album · Look at the album )\n\n*look at the album (medium)*\nCaption: Ko-natsu & Haru-nii. The last photo is folded.\n\"Ko-natsu. The little one.\"\n\n( Secret: The Folded Photo )\n\nFind: *unfold the last photo*\nThe girl in the red yukata and a boy, holding hands.\nAchievement: The Folded Photo - Unfold the last photo\n\n( The Cards )\n\nNatsuki: \"Cards? Loser answers a question. Like when we were kids.\"\n\n( The Cards · Play cards at the low table )\n\n*play cards at the low table (medium)*\nNote: shinkei-suijaku (Concentration), a new rules module. Off his pills: his memory lies and she lets him win. After a pill: true cards, she wins.\n\n( The Cards · Natsuki )\n\nNatsuki: \"Where were you at eleven that night?\"\n[ Home ] Home. Mom always said so --- [ What night ] What night? --- [ Trees ] Trees. Rain. Why do I see trees?\n\n[ Home ]\nNatsuki: (face goes still) \"That's what she said.\"\n\n[ What night ]\nNatsuki: (careful) \"You really don't know?\"\n\n[ Trees ]\nNatsuki: (freezes) \"...The woods?\"\n[ Either way ]\n\n( The Garden ) if karma 1+\n\n@ Garden\n*go to the garden*\n\n( The Garden · Natsuki ) if karma 1+\n\n*Natsuki smokes on the bench*\nNatsuki: (crying) \"I'm Natsuki, Haru-nii. Natsumi's gone.\"\n[ Ko-natsu ] Ko-natsu. The little one. It was always her --- [ Gone ] Gone? Gone where?\n\n[ Ko-natsu ]\nNatsuki: (wipes her eyes, almost smiles) \"...You remember me.\"\n\n[ Gone ]\nNatsuki: (stares) \"Twelve years ago. Tonight.\"\n[ Either way ]\n\n( The Garden · Natsuki ) if karma 1+\n\nNatsuki: \"Ren says I shouldn't have come.\"\n\n( The Garden ) otherwise\n\n*go to the garden*\n\n( The Garden · Natsuki ) otherwise\n\n*Natsuki smokes on the bench*\nNatsuki: (smiles, offers the cigarette) \"Don't tell my mom.\"\nNatsuki: \"Do you remember that night?\"\n[ Hold her hand -1 ] She wants me to --- [ Wait ] What night? Everyone keeps saying that night.\n\n[ Hold her hand ]\nNatsuki: (2 faces: his, she leans in; hers, she pulls her hand away) \"Haru-nii...\"\n\n[ Wait ]\nNatsuki: (looks at you a long moment) \"It's late.\"\n[ Either way ]\n\n( 23:47 )\n\n*buy two cans from the vending machine*\n\n( 23:47 · Answer the phone )\n\n@ Living room\n*phone rings*\n*answer the phone*\n\n( 23:47 · Voice )\n\nVoice: \"Moshi.\"\n[ Moshi moshi ] Say it twice. Mom always did --- [ Hang up ] Nobody's there.\n\n[ Moshi moshi ]\nVoice: \"Mō ii yo.\"\nAchievement: Moshi Moshi - Answer the 23:47 call properly\n[ Either way ]\n\n( Pill 2 )\n\n@ Bathroom\n*open the cabinet*\n\n( Pill 2 · Akiko )\n\nAkiko: \"Haru. The pills.\"\n[ Take them +1 ] It's getting loud. One more --- [ Leave them -1 ] If I take them, she'll go.\n\n( Ramen )\n\n@ Living room\nNatsuki: \"I'm starving.\"\n\n( Ramen · Make ramen )\n\nRequest from Natsuki - Make ramen\n*boil the water (medium)*\n*crack the egg (medium)*\n*give the ramen to Natsuki (medium)*\n\n( Ramen · Natsuki )\n\nNatsuki: \"I'll take the first train tomorrow.\"\n\"Tomorrow. She's leaving.\"\n\n( The Futon )\n\n@ Guest room\nRequest from Natsuki - Lay out the futon\n*open the oshiire (medium)*\n*lay out the futon*\n\n( The Futon · Natsuki goes to bed )\n\n*Natsuki goes to bed*\n\n( Secret: Mother's Drawer )\n\nFind: *open the altar's drawer*\nDiary: I'd lie for him again.\n\"Lie about what?\"\nAchievement: Mother's Drawer - Open the altar's drawer\n\n( Ushimitsu )\n\n@ Living room\n*the power goes out*\n*take the flashlight*\n*turn on the flashlight*\n*phone rings*\n*answer the phone*\n\n( Ushimitsu · Ren )\n\nRen: \"Is Natsuki there? It's Ren.\"\n[ Wake her ] Someone's worried about her --- [ Lie -1 ] Someone else. Wrong number.\n\n[ Wake her ]\nNatsuki: (sleepy) \"Thanks, Haru-nii.\"\n[ Either way ]\n\n( Ushimitsu · Flip the breaker )\n\n*flip the breaker (medium)*\nNote: off his pills: the altar bell rings, the TV says his name, knocking in the oshiire.\n\n( Pill 3 )\n\nNatsuki: \"Can't sleep. More tea?\"\n\n( Pill 3 · Make tea )\n\nRequest from Natsuki - Make tea\n*turn on the kettle*\n*give the tea to Natsuki (medium)*\n\n( Pill 3 · Natsuki )\n\nNatsuki: (looks at your hands) \"You're shaking.\"\n[ Take them +1 ] My hands won't stop. Take them --- [ Leave them -1 ] She said she'd stay.\n\n( Two O'Clock ) if karma -5 or less\n\n@ Guest room\nNatsuki: \"Goodnight, Haru-nii.\"\n[ Watch her sleep ] Just for a moment. She said she'd stay --- [ Go to bed ] Let her sleep.\n\n( Ending: Stay ) if [ Watch her sleep ]\n\n@ Living room\nClock: 02:10, then 03:40.\n*knock, knock*\nSasaki: \"Police. A neighbour heard a disturbance.\"\n*the officer walks to the guest room*\nOfficer: \"On your knees! Hands up!\"\nFlashes: her real faces. The woods. His hands on her shoulders. The river.\n\"This time, she stayed.\"\nAchievement: Stay - The secret ending\n\n( True ending: Okuribi ) if karma 1+\n\n@ Genkan\n*Natsuki gives you a paper wish*\nI wish Haru-kun will always be my big brother. Natsumi.\nNatsuki: \"Shun said you followed them. Your mom said you were home.\"\n*light the fire at the door (medium)*\n*Natsuki leaves*\nAchievement: Okuribi - The intended ending\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Stay.\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Okuribi.\nNote: CUTSCENE SLOT, built in the director. Then the TITLE CARD: Thank You for Tonight.\n\n( Ending: Thank You for Tonight ) otherwise\n\n@ Living room\n*Natsuki leaves*\n*answering machine beeps*\nNatsuki: \"Thanks for last night. You called me Natsu all night.\"\n*read the diary*\nI let them blame him.\nAchievement: Thank You for Tonight - The other ending\nNote: off his pills only Home is offered.\n"
 }

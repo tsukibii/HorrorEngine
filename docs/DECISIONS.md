@@ -2,6 +2,16 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, early afternoon (The Visitor: written as amnesia)
+
+- **The writing rethought**: "dialogue like this makes no sense: [ Welcome ] Natsu came back. Tell her --- And breaks
+  the immersion because its too abrupt, the player has no clue whats going on yet, it needs to unfold almost like the
+  player has amnesia".
+- Done: the session `the-visitor` written again in that voice. His thoughts know only what's in front of him and what
+  his body remembers; facts come from outside (the list, her lines, the props, the officer, the phone), once each; his
+  answers are small reactions ending on a question ("Twelve years since what?", "Why do I see trees?"). The abstract
+  gets a How it's written section; LESSONS the rule.
+
 ## 2026-10-28, noon (The Visitor: the player never speaks)
 
 - **Only acts and thoughts for the player**: "we shouldnt have dialogue in this style ... Its fine for the npcs to have

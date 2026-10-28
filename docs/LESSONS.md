@@ -199,6 +199,9 @@ flatten a scooped neckline to one height: it hitches the whole top up.
 - **The player never speaks a line** (no `You: "..."`): his answers are an act and a thought, `[ Greet ] She looks
   cold, welcome her inside --- [ Question ] She looks different`, and the player imagines what he said. Only the cast
   talk in quotes. A talk needs a line from someone in the cast before the answers.
+- **His thoughts know only what's in front of him:** never a thought that states what the player hasn't been shown
+  ("Natsu came back. Tell her", "Twelve years. Is it really her?" before anyone said twelve years). Facts come from
+  outside (the list, her lines, the props, the phone), and his answers react to them; the player has amnesia with him.
 - The first chart of The Visitor read like a novel (scene-setting lines, a wet arrival needing its own model, a cold
   open); the user asked for pseudo-code. Rewritten terse, the same structure held.
 
