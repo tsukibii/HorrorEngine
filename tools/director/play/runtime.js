@@ -254,7 +254,9 @@ export class PlayRuntime {
   pointIn(t, x, y, z) { return x >= t.min[0] && x <= t.max[0] && y >= t.min[1] && y <= t.max[1] && z >= t.min[2] && z <= t.max[2]; }   // story coordinates
 
   // ---- what the story's parts call -------------------------------------------------------------------------------
-  emit(ev) { if (this.todo) this.todo.event(ev); if (this.listener) this.listener(ev); }
+  // what happened: the stitch's beats hear it first, then the to-do list (so a beat on the same moment as the last task's
+  // tick still runs: taking the fuse slams the vault door before the list, through, ends the station)
+  emit(ev) { if (this.listener) this.listener(ev); if (this.todo) this.todo.event(ev); }
   setFlag(f) { if (!f) return; this.flags.add(f); this.emit({ type: "flag", id: f }); if (this.opts.onFlag) this.opts.onFlag(f); }
   give(item) { this.items.add(item); this.hud.log(`got: ${this.itemName(item)}`); }
   takeItem(item) {                                   // the story's take, or used up (use_on): out of the pocket and the row

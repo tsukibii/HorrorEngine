@@ -2168,7 +2168,12 @@ function watchChoice(n) {
 const PKEY = () => `dd.progress.${GAME}`;
 function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{}"); } catch (e) { return {}; } }
 function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
-function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name }; }
+function snapOf(R) {                                 // a checkpoint: the run as it is, the pocket and the little things too (a retry after a death keeps them)
+  const rt = R.play, T = rt ? rt.now() : R.secs;
+  return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name,
+    items: [...((rt && rt.items) || R.items || [])],
+    states: R.lives ? Object.fromEntries(Object.keys(R.lives.things).map(id => [id, (R.lives.at(id, T) || {}).state]).filter(([, st]) => st)) : {} };
+}
 function reach(nid) {                              // the first arrival's state is the checkpoint
   const p = progress(); p.visited = p.visited || {};
   if (!p.visited[nid]) p.visited[nid] = snapOf(RUN);

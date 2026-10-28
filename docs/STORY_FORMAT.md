@@ -443,10 +443,11 @@ A beat's actions run in order. The ones that take no time (a flag, a task, the p
 together, before another beat that hears the same event is looked at; one that takes time (`wait`, `fade`, an `ask`,
 a `name`, a `chapter`, a triggered `scene`, a timed trick) holds the rest of its beat until it's over, and other beats
 go on meanwhile. So a list that a `{"ticked": true}` beat waits on should be whole from the start: a task added after a
-`wait` can come too late, when everything before it was already ticked and the stitch has ended. And the stitch ends
-the moment its last task ticks: a beat started by the same event is cut off there (its scene, its `name`, its trick's
-end never come). A task whose beat does something after it ticks with `{"tick": "<id>"}` at the end of that beat, not
-by its own trigger.
+`wait` can come too late, when everything before it was already ticked and the stitch has ended. A stitch's beats
+hear an event before its to-do list does, so a beat on the same moment as a task's tick runs its instant actions (the
+door slams as the fuse is taken); but the stitch ends the moment its last task ticks, so whatever that beat does after
+something that takes time never comes (its scene's end, its `name`, a trick's end). A task whose beat takes time ticks
+with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the story check warns).
 
 **Triggers (`when`):**
 
