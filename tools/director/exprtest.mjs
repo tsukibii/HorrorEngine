@@ -129,6 +129,7 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
   const loopId = TEST + "_renamed_loop";
   await step("a loop from a range: dragged across the capture's strip, played on the character as a loop, saved as a card of its own (↻); its wrap blended (no jump where a hard loop jumps), its rest the whole capture's", async () => {
     await page.click(`.xp-card[data-id="${id}"]`); await page.waitForSelector(".mdl .xp-strip");
+    await page.locator(".mdl .xp-strip").scrollIntoViewIfNeeded();
     const sb = await page.locator(".mdl .xp-strip").boundingBox(), y = sb.y + sb.height / 2;
     await page.mouse.move(sb.x + sb.width * 0.3, y); await page.mouse.down(); await page.mouse.move(sb.x + sb.width * 0.8, y, { steps: 8 }); await page.mouse.up();
     await page.check(".mdl .xp-asloop"); await page.waitForTimeout(400);
@@ -147,7 +148,7 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
     if (!(r.blended <= r.inside * 1.6 + 0.01) || !(r.hard > r.blended)) throw new Error("the wrap: " + JSON.stringify(r));
     console.log(`       the biggest step a 120th of a second: ${r.inside.toFixed(3)} inside the range, ${r.blended.toFixed(3)} looped and blended, ${r.hard.toFixed(3)} looped hard`);
   });
-  await step("the loop on a scene's face row: dropped on Mari's row it rides the nearest clip edge; the stage's face moves inside it and rests outside; the block dragged along moves its edge; its weight set; picked by a double-click too; taken off", async () => {
+  await step("the loop on a scene's face row: dropped on Mari's row it rides the nearest clip edge; the stage's face moves inside it and rests outside; the block dragged along moves its edge; its weight and length set; picked by a double-click too; taken off", async () => {
     await page.evaluate(() => { window.__dd.select("n_message"); window.__dd.rightTab("inspector"); });
     await page.waitForSelector('.ftrack[data-who="mari"]', { timeout: 20000 });
     const drop = (sel, id, fx) => page.evaluate(([sel, id, fx, type]) => { const t = document.querySelector(sel), r = t.getBoundingClientRect(), dt = new DataTransfer(); dt.setData(type, id);
@@ -170,15 +171,18 @@ if (!video && fs.existsSync(LIB)) for (const d of fs.readdirSync(LIB)) { const f
     const b = await page.locator(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`).boundingBox(), tb = await page.locator('.ftrack[data-who="mari"]').boundingBox();
     await page.mouse.move(b.x + 6, b.y + b.height / 2); await page.mouse.down(); await page.mouse.move(tb.x + tb.width * 0.08, b.y + b.height / 2, { steps: 6 }); await page.mouse.up();
     f = await faces(); if (f[0].at.clip !== "c1" || (f[0].at.edge || "start") !== "start") throw new Error("dragged to the start: " + JSON.stringify(f[0].at));
-    await page.click(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`); await page.waitForSelector(".fform");
+    await page.waitForSelector(".fform");                     // a block dragged stays open (a click on it again closes it)
     const w = page.locator('.fform input[placeholder="1"]').first(); await w.fill("0.5"); await w.dispatchEvent("change");
     f = await faces(); if (f[0].w !== 0.5) throw new Error("the weight: " + JSON.stringify(f[0]));
+    const len = page.locator('.fform input[placeholder="its own"]').first(); await len.fill("2"); await len.dispatchEvent("change");   // a loop runs to the scene's end: 2 s of it leaves the row's end free
+    f = await faces(); if (f[0].secs !== 2) throw new Error("the length: " + JSON.stringify(f[0]));
     const tb2 = await page.locator('.ftrack[data-who="mari"]').boundingBox(); await page.mouse.dblclick(tb2.x + tb2.width * 0.95, tb2.y + tb2.height / 2);
     await page.waitForSelector(".mdl .xp-pickl"); await page.click(`.mdl .xp-pickl button[data-id="${loopId}"]`);
     f = await faces(); if (f.length !== 2 || f[1].expr !== loopId) throw new Error("picked by a double-click: " + JSON.stringify(f));
     for (let k = 0; k < 2; k++) { await page.click(`.ftrack[data-who="mari"] .fblk[data-expr="${loopId}"]`); await page.waitForSelector(".fform"); await page.click(".fform button.ghost"); }
     f = await faces(); if (f.length) throw new Error("taken off: " + JSON.stringify(f));
     if (await page.evaluate(() => "faces" in window.__dd.S.scenes.s_message)) throw new Error("an empty faces list left on the scene");
+    await page.evaluate(() => window.__dd.rightTab("exprPanel")); await page.waitForSelector(`.xp-card[data-id="${id}"]`);
   });
   await step("the red x asks first (Cancel keeps it), then Remove moves it to Saved/Expressions/removed", async () => {
     await page.hover(`.xp-card[data-id="${id}"]`); await page.click(`.xp-card[data-id="${id}"] .xp-x`);
