@@ -1122,11 +1122,12 @@ const png = rgb => {
       const nose = world(1), side = world(454);           // the nose's tip, the face's side by the ear
       const draw = () => { R.setRenderTarget(rt); R.setClearColor(0, 1); R.clear(); R.render(scene, cam); R.readRenderTargetPixels(rt, 0, 0, W, W, px); R.setRenderTarget(null); return px.slice(); };
       const lum = (d, i) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-      // 1: a side light, the face from the front: the band between lit and dark (5 to 50% of the brightest), its width and its warmth
+      // 1: a side light, the face from the front: the toe of the light, where it fades into the dark (2 to 12% of the
+      // brightest): the skin's wrap reaches past the shadow's edge and fades in slowly (an S-curve), three's stops at it
       cam.position.set(nose.x, nose.y, nose.z + 0.55); cam.lookAt(nose.x, nose.y, nose.z - 0.05); cam.updateMatrixWorld();
       sun.position.set(nose.x + 2, nose.y + 0.3, nose.z + 0.3); sun.target.position.copy(nose); sun.target.updateMatrixWorld();
       const band = on => { b.setSkinLit(M, { on }); const d = draw(); let hi = 0; for (let i = 0; i < d.length; i += 4) hi = Math.max(hi, lum(d, i));
-        let k = 0, warm = 0; for (let i = 0; i < d.length; i += 4) { const l = lum(d, i) / hi; if (l > 0.05 && l < 0.5) { k++; warm += (d[i] - d[i + 2]) / Math.max(1, lum(d, i)); } }
+        let k = 0, warm = 0; for (let i = 0; i < d.length; i += 4) { const l = lum(d, i) / hi; if (l > 0.02 && l < 0.12) { k++; warm += (d[i] - d[i + 2]) / Math.max(1, lum(d, i)); } }
         return { px: k, warm: warm / Math.max(1, k) }; };
       const plain = band(0), lit = band(1);
       // 2: a lamp behind the head, the ear seen from its side: the rim red with translucency, the cheek not
@@ -1146,7 +1147,7 @@ const png = rgb => {
     const f = v => JSON.stringify(v);
     if (r.def !== 1) throw new Error("the skin light isn't on by default");
     if (!(r.thin.ears > 0.35 && r.thin.fingers > 0.3 && r.thin.torso < 0.05 && r.thin.cheeks < 0.2)) throw new Error(`the thin parts: ${f(r.thin)} (${f(r.n)})`);
-    if (!(r.lit.px > r.plain.px * 1.15 && r.lit.warm > r.plain.warm + 0.03)) throw new Error(`the light's edge (skin light against three's): ${f(r.lit)} against ${f(r.plain)}`);
+    if (!(r.lit.px > r.plain.px * 1.2 && r.lit.warm > r.plain.warm + 0.03)) throw new Error(`the light's edge (skin light against three's): ${f(r.lit)} against ${f(r.plain)}`);
     if (!(r.n.earPx > 10 && r.through.ear > r.dark.ear + 12 && r.through.cheek - r.dark.cheek < (r.through.ear - r.dark.ear) / 3)) throw new Error(`the light through the ear: ${f(r.through)} against ${f(r.dark)} (${f(r.n)})`);
     console.log(`       thin: the ears' rims ${r.thin.ears.toFixed(2)}, the fingers ${r.thin.fingers.toFixed(2)}, the cheeks ${r.thin.cheeks.toFixed(2)}, the torso ${r.thin.torso.toFixed(2)}; the shadow's edge ${r.lit.px} px wide and warm ${r.lit.warm.toFixed(2)} (three's ${r.plain.px}, ${r.plain.warm.toFixed(2)}); a lamp behind: the ear's rim red ${r.dark.ear.toFixed(0)} to ${r.through.ear.toFixed(0)}, the cheek ${r.dark.cheek.toFixed(0)} to ${r.through.cheek.toFixed(0)}`);
   });
@@ -1274,7 +1275,7 @@ const png = rgb => {
     if (!r.skin || r.skin.size < 2048 || !(Math.max(...r.skin.mean) < 240) || !(r.skin.red > r.skin.redMean + 30)) throw new Error(`the skin's bake (a texture, the skin's colour, the makeup in it): ${fmt(r.skin)}`);
     const sm = r.maps;                                     // the skin light's maps: a relief that bends the normal, the roughness near the skin's, thin pixels, the light's numbers in extras
     if (!sm || !sm.normal || Math.abs(sm.normal[0] - 128) > 12 || Math.abs(sm.normal[1] - 128) > 12 || sm.normal[2] < 200 || sm.dev < 8 || !sm.orm || !sm.same || sm.metal !== 0 || sm.thinPx < 20
-        || Math.abs(sm.orm[1] / 255 - 0.62) > 0.3 || !sm.lit || sm.lit.version !== 1 || !("trans" in sm.lit)) throw new Error(`the skin's maps for the skin light: ${fmt(sm)}`);
+        || !(sm.orm[1] / 255 > 0.1 && sm.orm[1] / 255 < 0.9) || !sm.lit || sm.lit.version !== 1 || !("trans" in sm.lit)) throw new Error(`the skin's maps for the skin light: ${fmt(sm)}`);   // (the look's own roughness: a dewy one low)
     const off = r.clothes.filter(c => !c.got || !c.uv1 || (c.want.plain && c.got.some((v, i) => Math.abs(v - c.want.c[i]) > Math.max(14, 0.15 * c.want.c[i]))));
     if (r.clothes.length < 3 || off.length) throw new Error(`the clothes' bake: ${r.clothes.length} parts, off ${fmt(off)}`);
     if (r.hair.length < 2 || r.hair.some(h => Math.max(...h.mean) > 90)) throw new Error(`the lashes' bake (dark strands, cut out): ${fmt(r.hair)}`);

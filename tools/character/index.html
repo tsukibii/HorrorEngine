@@ -1028,6 +1028,7 @@ function compose() {                                   // POS: RAW + the face, s
 let THIN_T = 0, THIN = null;
 function thinLater() { clearTimeout(THIN_T); THIN_T = setTimeout(computeThin, 700); }
 function computeThin() {
+  if (!geo.attributes.normal) geo.computeVertexNormals();   // (before the first compose)
   THIN = thinness(POS, TRIS, geo.attributes.normal.array, { smooth: 1 });
   const a = dgeo.attributes.skinThin.array; for (let c = 0; c < C; c++) a[c] = THIN[TRIS[c]];
   dgeo.attributes.skinThin.needsUpdate = true;

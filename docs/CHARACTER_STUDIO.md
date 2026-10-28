@@ -128,8 +128,10 @@ neighbours); two GGX highlights, the second broader, from Specular's f0 (0.04 ×
 clear coat (the oil, glass skin) and the shadows stay three's. Skin, **Light on the skin**: Skin light (on by default;
 off is three's plain light, to compare), Smoothness, Falloff, Wrap, Specular, Second highlight, Translucency; with it on,
 the procedural skin's emissive glow through the skin is off (the light does it now). STUDIO measures the thin parts
-(the ears' rims and the fingers thin, the cheeks and the torso thick), the shadow's edge wider and warmer than three's
-under one side light, the ear's rim red against a lamp behind the head and the cheek not, and the export's maps.
+(the ears' rims and the fingers thin, the cheeks and the torso thick), the shadow's edge under one side light (where
+the light fades into the dark, 2 to 12% of the brightest: wider than three's, the light reaching past the terminator and
+fading in slowly, an S-curve, and warmer), the ear's rim red against a lamp behind the head and the cheek not, and the
+export's maps (a relief that bends the normal, the look's own roughness, thin pixels, the light's numbers).
 - **Each garment part:** its fabric coordinates (metres round each part, `tailor/uv.js`) packed as one island per part
   at about 2 mm a pixel (64 to 2048 px), the new layout its `uv` (TEXCOORD_0) and the metres kept as `uv1`
   (TEXCOORD_1), where a PBR set's normal, roughness, metalness and AO maps still tile by their real size; the per-vertex
