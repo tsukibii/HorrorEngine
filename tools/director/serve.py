@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -87,7 +88,7 @@ KEEP = 50
 
 
 def history_dir(game):
-    d = ROOT / "Saved" / "Story" / game / "history"
+    d = ROOT / "Saved" / "Story" / game.replace(":", "-") / "history"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -143,8 +144,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def game_path(self, name):
+        name = urllib.parse.unquote(name or "")         # a set's name comes as set%3A<name>
         if not name or "/" in name or "\\" in name or name.startswith("."):
             return None
+        if name.startswith("set:"):                    # a set (Content/Studio/Sets): the scene builder designs it like a game's level
+            return L.SETS / name[4:] / "story.json" if L.SET_NAME.match(name[4:]) else None
         return L.GAMES / name / "story.json"
 
     def do_GET(self):
@@ -263,13 +267,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, KIT.presets_file())
         if parts[:2] == ["api", "games"]:
             return self.send(200, {"games": L.games()})
+        if parts[:2] == ["api", "sets"]:              # the places designed before their games (the scene builder)
+            return self.send(200, {"sets": L.sets()})
         if parts[:2] == ["api", "story"] and len(parts) == 3:
             p = self.game_path(parts[2])
             if not p or not p.exists():
                 return self.send(404, {"error": "no such game"})
             return self.send(200, {"story": json.loads(p.read_text(encoding="utf-8")), "mtime": p.stat().st_mtime})
         if parts[:2] == ["api", "history"] and len(parts) in (3, 4) and self.game_path(parts[2]):   # the saves kept, newest first; one of them
-            hist = ROOT / "Saved" / "Story" / parts[2] / "history"
+            hist = ROOT / "Saved" / "Story" / urllib.parse.unquote(parts[2]).replace(":", "-") / "history"
             if len(parts) == 3:
                 files = sorted(hist.glob("*.json"), reverse=True) if hist.is_dir() else []
                 return self.send(200, {"saves": [{"name": f.stem, "at": f.stat().st_mtime, "size": f.stat().st_size} for f in files]})
@@ -394,7 +400,7 @@ class Handler(BaseHTTPRequestHandler):
         if body.get("mtime") and abs(body["mtime"] - p.stat().st_mtime) > 0.001 and not body.get("force"):
             return self.send(409, {"error": "the file changed on disk since you loaded it (Claude edited it?): reload, "
                                             "or save anyway to overwrite", "mtime": p.stat().st_mtime})
-        hist = history_dir(parts[2])
+        hist = history_dir(urllib.parse.unquote(parts[2]))
         (hist / f"{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
         for old in sorted(hist.glob("*.json"))[:-KEEP]:
             old.unlink()
@@ -503,6 +509,12 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:  # noqa: BLE001 - a half-built world: say why
                 return self.send(200, {"errors": [f"the world doesn't plan yet: {e}"], "warnings": []})
             return self.send(200, {"errors": r.errors, "warnings": r.warnings})
+        if parts[:2] == ["api", "sets"] and len(parts) == 3:   # a new set: story.py new-set
+            if not L.SET_NAME.match(parts[2]) or (L.SETS / parts[2]).exists():
+                return self.send(400, {"error": "a new set needs a fresh name of lower-case letters, digits and _"})
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "story.py"), "new-set", parts[2]], capture_output=True,
+                               text=True, encoding="utf-8")
+            return self.send(200 if r.returncode == 0 else 500, {"output": r.stdout + r.stderr, "sets": L.sets()})
         if parts[:2] == ["api", "new"] and len(parts) == 3:
             name = parts[2]
             if not name.replace("_", "").isalnum() or (L.GAMES / name).exists():

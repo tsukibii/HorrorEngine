@@ -39,10 +39,15 @@ const snapV = v => Math.round(v / B.snap) * B.snap;
 
 // ---- loading ----
 async function loadGames() {
-  const g = await api("/api/games");
+  const g = await api("/api/games"), sets = await api("/api/sets").catch(() => ({ sets: [] }));
   const sel = $("#game");
   sel.innerHTML = "";
   for (const name of g.games || g) sel.append(new Option(name, name));
+  // sets: a place designed before its game exists (DECISIONS 2026-10-27, later), kept in Content/Studio/Sets; a game is
+  // built into one (room.py build --set), or takes its level as a start (layout: From a set)
+  const grp = document.createElement("optgroup"); grp.label = "Sets (a place designed before its game)";
+  for (const name of sets.sets || []) grp.append(new Option("set: " + name, "set:" + name));
+  grp.append(new Option("+ new set…", "__newset")); sel.append(grp);
   const want = Q.get("game") || localStorage.getItem("builder.game");
   if (want && [...sel.options].some(o => o.value === want)) sel.value = want;
   await loadGame(sel.value);
@@ -730,12 +735,24 @@ document.addEventListener("keydown", e => {
 // ---- boot ----
 async function boot() {
   for (const P of PRESETS) $("#preset").append(new Option(P.name, P.id));
-  $("#preset").onchange = () => { const v = $("#preset").value; $("#preset").value = ""; if (v.startsWith("other:")) { const [, g, l] = v.split(":"); openOther(g, l); } else openPreset(v); };
+  $("#preset").onchange = () => {
+    const v = $("#preset").value; $("#preset").value = "";
+    if (v.startsWith("other:")) { const [, g, l] = v.split(":"); openOther(g, l); }
+    else if (v.startsWith("oset:")) { const [, n, l] = v.split(":"); openOther("set:" + n, l); }     // a set's level as the start
+    else openPreset(v);
+  };
   $("#marks").onchange = () => draw();
   await loadAssetLibrary().catch(() => { });
   BM.KITS.presets = LIBRARY.kit;
   const css = document.createElement("style"); css.textContent = KIT_CSS; document.head.append(css);
-  $("#game").onchange = () => loadGame($("#game").value);
+  $("#game").onchange = async () => {
+    if ($("#game").value !== "__newset") return loadGame($("#game").value);
+    const name = prompt("The new set's name (lower-case, _ between words): the place, like studio_apartment", "studio_apartment");
+    if (!name || !/^[a-z][a-z0-9_]*$/.test(name)) { $("#game").value = B.game; return; }
+    try { await api("/api/sets/" + encodeURIComponent(name), { method: "POST" }); } catch (e) { alert(e.message); $("#game").value = B.game; return; }
+    Q.set("game", "set:" + name); localStorage.setItem("builder.game", "set:" + name);
+    await loadGames();
+  };
   $("#level").onchange = () => {
     const v = $("#level").value;
     if (v === "__new") {
@@ -983,7 +1000,7 @@ function renderScript() {
 
 // ---- another game's level as a start ----
 async function loadOthers() {
-  const games = (await api("/api/games")).games.filter(g => g !== B.game);
+  const games = (await api("/api/games")).games.filter(g => g !== B.game), sets = ((await api("/api/sets").catch(() => ({}))).sets || []).filter(n => "set:" + n !== B.game);
   const sel = $("#preset");
   sel.querySelectorAll("optgroup.other").forEach(o => o.remove());
   const grp = document.createElement("optgroup"); grp.label = "From another game's script"; grp.className = "other";
@@ -991,6 +1008,11 @@ async function loadOthers() {
     try { const j = await api("/api/story/" + encodeURIComponent(g)); B.others[g] = j.story; for (const l of Object.keys(j.story.levels || {})) grp.append(new Option(`${g}: ${l}`, `other:${g}:${l}`)); } catch (e) { }
   }
   if (grp.children.length) sel.append(grp);
+  const sg = document.createElement("optgroup"); sg.label = "From a set"; sg.className = "other";
+  for (const n of sets) {
+    try { const j = await api("/api/story/" + encodeURIComponent("set:" + n)); B.others["set:" + n] = j.story; for (const l of Object.keys(j.story.levels || {})) sg.append(new Option(`${n}: ${l}`, `oset:${n}:${l}`)); } catch (e) { }
+  }
+  if (sg.children.length) sel.append(sg);
 }
 function openOther(game, level) {
   const st = B.others[game];

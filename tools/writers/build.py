@@ -8,7 +8,9 @@ handoff: what Claude does next to make it the game, shape by shape) and faces.md
 
 The story: one level, a greybox room per place in a row (joined by doorways), each with the player's eye (`<room>_view`),
 a mark for every cast member far (`<room>_<cast>`) and close (`<room>_<cast>_close`, the talks' close-ups) and a lamp;
-the boxes the tasks, the secrets and the choices use stand along its walls. Each shape becomes:
+the boxes the tasks, the secrets and the choices use stand along its walls. Or, built into a set (`set=`: a place the
+user designed first in the scene builder, Content/Studio/Sets/<name>), its level: each place on one of its rooms, the
+marks and the things fitted in round its own furniture and doorways (SetRooms). Each shape becomes:
 
 - scene: a scene of its lines (the face's post prompt as each clip's `expr`);
 - talk: a scene, the close-up: its lines, then the question as a hanging line with her listening face (`wait_expr`)
@@ -117,9 +119,18 @@ class Rooms:
         self.walk_on = {}
         self.placed = set()             # the boxes' ids (owned where they're made)
 
+    taken = frozenset()             # ids the level brings with it (a set's): never made again
+
     def level(self):
         links = [{"a": a, "b": b, "via": None} for a, b in zip(self.order, self.order[1:])]
         return {"start": "start", "rooms": [self.rooms[r] for r in self.order], "links": links}
+
+    def lamp(self, rid):
+        return f"{rid}_lamp"
+
+    def room_id(self, rid):
+        """The level's room a place is (walking into it is `enter` that room)."""
+        return rid
 
     def spot(self, rid, along, walls):
         """The first stretch of wall (of `walls`, in order) with `along` metres free: (the wall, the middle along it)."""
@@ -182,17 +193,236 @@ class Rooms:
         return self.walk_on[rid]
 
 
+KEEP_USES = {"light", "switch", "spot", "sit", "sleep", "locker", "inspect"}   # a set's props that are the place's own
+ROOM_WORDS = {                      # a place's words -> the room kinds they mean (storylib.ROOM_KINDS; the scene builder's)
+    "genkan": "genkan entrance entry front door doorway hallway", "corridor": "corridor hall hallway passage landing",
+    "ldk": "ldk living lounge sitting kitchen dining apartment flat studio home", "living": "living lounge sitting family",
+    "dining": "dining", "kitchen": "kitchen kitchenette", "washitsu": "washitsu tatami japanese", "bedroom": "bedroom bed sleeping",
+    "kids": "kids child children nursery", "study": "study office", "bath": "bath bathroom shower", "washroom": "washroom laundry sink",
+    "toilet": "toilet wc restroom loo lavatory", "closet": "closet wardrobe", "walkin": "walk walkin dressing", "storage": "storage store attic basement cellar",
+    "stairs": "stairs staircase stairwell upstairs downstairs", "balcony": "balcony veranda", "engawa": "engawa porch veranda",
+    "garden": "garden yard outside", "garage": "garage"}
+
+
+class SetRooms(Rooms):
+    """The level of a set (a place the user designed first in the scene builder: Content/Studio/Sets/<name>, DECISIONS
+    2026-10-27, later), as Rooms is for the greybox: each of the chart's places on one of its rooms (by name, then by
+    kind, else the biggest one not taken; several places can share one), the marks of each place in its room (the eye a
+    little in from its south wall facing north, the cast across from it and close), a lamp where it has none, and what
+    the story needs (its things, the tasks' and the finds' boxes) fitted against its walls round what's there: its
+    furniture, a doorway's clearance, the marks, each other. Its own doors are used where a thing is a door. What's the
+    set's own stays (its furniture, lights, switches, seats, beds, hiding places); what belongs to a game (things to take,
+    notes, people, keys on its doors) is left out."""
+
+    def __init__(self, places, cast, sset, name):
+        S = copy.deepcopy(sset)
+        lid = name if name in S.get("levels", {}) else next(iter(S["levels"]))
+        self.set_name, lvl = name, S["levels"][lid]
+        for r in lvl["rooms"]:                         # the place's own, not a game's
+            props = []
+            for x in r.get("props", []):
+                if str(x.get("shape", "")).startswith("person") or (x.get("use") and x["use"] not in KEEP_USES):
+                    continue
+                x.pop("line", None)
+                props.append(x)
+            ids = {x["id"] for x in props}
+            r["props"] = [x for x in props if not isinstance(x.get("on"), str) or x["on"] in ids or x["on"] in {q["id"] for q in lvl["rooms"]}]
+            for op in r.get("openings", []):
+                if op.get("door"):
+                    op["door"].pop("locked_by", None)
+        self.lvl, self.order = lvl, [x["id"] for x in places]
+        self.by_room = {r["id"]: r for r in lvl["rooms"]}
+        self.map = self.match(places, lvl["rooms"])
+        self.rooms = {pid: self.by_room[rid] for pid, rid in self.map.items()}
+        things, errs = L.index({"levels": {lid: lvl}, "cast": {}, "items": {}, "notes": {}, "lines": {}, "sounds": {}})
+        if errs:
+            raise ValueError(f"the set {name}: " + "; ".join(errs[:3]))
+        self.taken = frozenset(set(things) | set(self.by_room) | {lid})
+        self.used_doors, self.walk_on, self.placed, self.lamps = set(), {}, set(), {}
+        self.spilled = []                              # (a thing, its place, the room it went to instead): no room left in its own
+        self.obs = {rid: self.obstacles(r, things, lvl) for rid, r in self.by_room.items()}
+        n = len(cast)
+        for pid in self.order:                         # the marks, then a lamp where the room has no light
+            r = self.rooms[pid]
+            w, d = r["size"][0], r["size"][1]
+            vy = min(1.2, max(0.6, d * 0.22))
+            close, far = vy + 0.65, min(d - 0.6, vy + 2.4)
+            gap = min(1.2, max(0.0, w - 1.2) / max(1, n - 1))
+            props = r.setdefault("props", [])
+            marks = [{"id": f"{pid}_view", "use": "spot", "at": [round(w / 2, 2), round(vy, 2)], "rot": 90}]
+            for j, c in enumerate(cast):
+                marks.append({"id": f"{pid}_{c['id']}", "use": "spot", "at": [round(w / 2 + (j - (n - 1) / 2) * gap, 2), round(max(close + 0.3, far), 2)], "rot": 270})
+                marks.append({"id": f"{pid}_{c['id']}_close", "use": "spot", "at": [round(w / 2, 2), round(close, 2)], "rot": 270})
+            props += marks
+            for m in marks:                             # room to stand on each
+                self.obs[r["id"]].append((m["at"][0] - 0.3, m["at"][1] - 0.3, m["at"][0] + 0.3, m["at"][1] + 0.3))
+            light = next((x["id"] for x in props if x.get("use") == "light"), None)
+            if not light:
+                light = f"{pid}_lamp"
+                props.append({"id": light, "use": "light", "kind": "bulb", "lit": True, "flicker": 0.05, "at": [round(w / 2, 2), round(d / 2, 2)], "z": round(r["size"][2] - 0.2, 2)})
+            self.lamps[pid] = light
+
+    @staticmethod
+    def match(places, rooms):
+        """Each place onto a room: its own name or id, then a room of the kind its words mean, else the biggest room not
+        taken yet (and once they're all taken, the biggest)."""
+        words = lambda t: set(re.findall(r"[a-z]+", str(t or "").lower()))
+        area = lambda r: r["size"][0] * r["size"][1]
+        out, used = {}, set()
+        for x in places:
+            pw = words(x.get("name")) | words(x.get("id"))
+            best, score = None, 0
+            for r in rooms:
+                rw = words(r.get("name")) | words(r.get("id"))
+                sc = 4 if pw & rw and (pw <= rw or rw <= pw) else 3 if pw & rw else 2 if pw & words(ROOM_WORDS.get(r.get("kind") or "", "")) else 0
+                sc -= 0.5 if r["id"] in used else 0
+                if sc > score:
+                    best, score = r, sc
+            if not best:
+                free = [r for r in rooms if r["id"] not in used and r.get("kind") not in ("stairs", "closet", "oshiire")] or rooms
+                best = max(free, key=area)
+            out[x["id"]] = best["id"]
+            used.add(best["id"])
+        return out
+
+    @staticmethod
+    def obstacles(r, things, lvl):
+        """What's in the way in a room, as rectangles in its own metres: its furniture (what stands on the floor or low on
+        a wall) and the clearance in front of every doorway on its walls (its own and a neighbour's on the same line)."""
+        x0, y0, z0 = r["at"]
+        w, d = r["size"][0], r["size"][1]
+        out = []
+        for t in things.values():
+            if t.room != r["id"] or t.kind == "room" or t.use in ("spot", "trigger", "light") or t.kind == "door":
+                continue
+            if (t.pos[2] if len(t.pos) > 2 else 0) - z0 > 1.0:
+                continue                                # up on the wall: things stand under it
+            sw, sd = (t.size[0], t.size[1]) if len(t.size) > 1 else (0.4, 0.4)
+            if abs(((t.yaw or 0) % 180) - 90) < 45:
+                sw, sd = sd, sw
+            cx, cy = t.pos[0] - x0, t.pos[1] - y0
+            out.append((cx - sw / 2 - 0.05, cy - sd / 2 - 0.05, cx + sw / 2 + 0.05, cy + sd / 2 + 0.05))
+        for o in lvl["rooms"]:
+            for op in o.get("openings", []):
+                if op.get("sill", 0) > 0.3 or op.get("h", 2.1) < 1.8:
+                    continue
+                axis, v, lo, _ = L.wall_line(o, op["wall"])
+                c, hw = lo + op["at"], op["w"] / 2 + 0.1
+                if axis == "y" and (abs(v - y0) < 0.06 or abs(v - (y0 + d)) < 0.06) and x0 - 0.01 <= c <= x0 + w + 0.01:
+                    yy = v - y0
+                    out.append((c - x0 - hw, yy - 0.9, c - x0 + hw, yy + 0.9))
+                elif axis == "x" and (abs(v - x0) < 0.06 or abs(v - (x0 + w)) < 0.06) and y0 - 0.01 <= c <= y0 + d + 0.01:
+                    xx = v - x0
+                    out.append((xx - 0.9, c - y0 - hw, xx + 0.9, c - y0 + hw))
+        return out
+
+    def level(self):
+        return self.lvl
+
+    def lamp(self, rid):
+        return self.lamps[rid]
+
+    def room_id(self, rid):
+        return self.map[rid]
+
+    def fit(self, rid, along, depth, walls, room=None):
+        """The first spot against a wall (of `walls`, in order) where `along` by `depth` stands clear of everything
+        there: (the wall, the middle along it, the rectangle). `room`: that room of the set instead of the place's."""
+        r = room or self.rooms[rid]
+        w, d = r["size"][0], r["size"][1]
+        obs = self.obs[r["id"]]
+        for wall in walls:
+            length = w if wall in ("n", "s") else d
+            k = 0.2 + along / 2
+            while k <= length - 0.2 - along / 2 + 1e-9:
+                off0, off1 = 0.06, 0.06 + depth
+                rect = {"w": (off0, k - along / 2, off1, k + along / 2), "e": (w - off1, k - along / 2, w - off0, k + along / 2),
+                        "s": (k - along / 2, off0, k + along / 2, off1), "n": (k - along / 2, d - off1, k + along / 2, d - off0)}[wall]
+                if not any(rect[0] < o[2] and o[0] < rect[2] and rect[1] < o[3] and o[1] < rect[3] for o in obs):
+                    obs.append((rect[0] - 0.08, rect[1] - 0.08, rect[2] + 0.08, rect[3] + 0.08))
+                    return wall, k, rect
+                k += 0.05
+        raise ValueError(f"the set's room {r['id']} (for {rid}) has no wall left for something {along:g} m wide: too many things in one place (split it, "
+                         "or make the room bigger in the scene builder)")
+
+    def box(self, rid, pid, along, depth, h, walls=("e", "w", "n", "s"), **fields):
+        """Against a wall of the place's room; when it's full, of the next biggest room with space (kept in `spilled`)."""
+        try:
+            room = self.rooms[rid]
+            wall, c, rect = self.fit(rid, along, depth, walls)
+        except ValueError:
+            for room in sorted(self.lvl["rooms"], key=lambda q: -q["size"][0] * q["size"][1]):
+                if room is self.rooms[rid] or room.get("kind") == "stairs":
+                    continue
+                try:
+                    wall, c, rect = self.fit(rid, along, depth, walls, room)
+                    self.spilled.append((pid, rid, room["id"]))
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise
+        prop = dict({"id": pid, "shape": f"box {depth:g} {along:g} {h:g}", "at": [round((rect[0] + rect[2]) / 2, 3), round((rect[1] + rect[3]) / 2, 3)],
+                     "rot": {"w": 0, "e": 180, "n": 270, "s": 90}[wall]}, **fields)
+        room["props"].append(prop)
+        self.placed.add(pid)
+        self.in_room = room
+        return prop
+
+    def stand(self, rid, pid, w, d, h, **fields):
+        st = self.box(rid, f"{pid}_stand", 0.45, 0.45, 0.75, ("s", "n", "e", "w"), tag="stand")
+        thing = dict({"id": pid, "shape": f"box {w:g} {d:g} {h:g}", "on": st["id"], "at": list(st["at"]), "rot": st["rot"]}, **fields)
+        self.in_room["props"].append(thing)            # on its stand, wherever that went
+        self.placed.add(pid)
+        return st, thing
+
+    def door(self, rid, did):
+        """A door the story uses: one of the room's own doors not used yet (one onto the outside first), else a new one
+        in a stretch of its wall that's free."""
+        r = self.rooms[rid]
+        doors = [op["door"]["id"] for op in r.get("openings", []) if op.get("door") and op["door"].get("id") and op["door"]["id"] not in self.used_doors]
+        if doors:
+            self.used_doors.add(doors[0])
+            return doors[0]
+        wall, c, rect = self.fit(rid, 1.3, 0.9, ("w", "e", "s", "n"))
+        r.setdefault("openings", []).append({"wall": wall, "at": round(c, 3), "w": 0.9, "h": 2.1, "door": {"id": did}})
+        self.placed.add(did)
+        self.used_doors.add(did)
+        return did
+
+    def walk_on_of(self, rid):
+        """In front of the room's first doorway (walking into it ends a look round), else its middle."""
+        if rid not in self.walk_on:
+            r = self.rooms[rid]
+            w, d = r["size"][0], r["size"][1]
+            op = next((o for o in r.get("openings", []) if o.get("sill", 0) <= 0.3 and not o.get("window")), None)
+            at = [w / 2, d / 2]
+            if op:
+                at = {"n": [op["at"], d - 0.45], "s": [op["at"], 0.45], "e": [w - 0.45, op["at"]], "w": [0.45, op["at"]]}[op["wall"]]
+            tid = f"{rid}_walk_on"
+            r["props"].append({"id": tid, "use": "trigger", "size": [1.4, 0.8, 2.2], "at": [round(at[0], 3), round(at[1], 3)]})
+            self.walk_on[rid] = tid
+        return self.walk_on[rid]
+
+    def mapping(self):
+        """The places and the rooms they're on, for BUILD.md."""
+        return [(pid, self.map[pid], self.by_room[self.map[pid]].get("name") or self.map[pid]) for pid in self.order]
+
+    def spills(self):
+        return [f"`{t}` (in {pid}) is in `{rid}`: no room left in its own" for t, pid, rid in self.spilled if not t.endswith("_stand")]
+
+
 # ---- the story ------------------------------------------------------------------------------------------------------
 
 class Builder:
-    def __init__(self, P, game):
+    def __init__(self, P, game, sset=None, set_name=None):
         self.P, self.game = P, game
         self.N = proto.nodes_of(P)
         self.cast = {c["id"]: c for c in P.get("cast", [])}
         self.places = P.get("places") or [{"id": "room", "name": "A room"}]
         self.lib = proto.library()
-        self.rooms = Rooms(self.places, P.get("cast", []))
-        self.ids = set()
+        self.rooms = SetRooms(self.places, P.get("cast", []), sset, set_name) if sset else Rooms(self.places, P.get("cast", []))
+        self.ids = set(self.rooms.taken)         # a set's ids are its own
         self.S = {"format": 3, "game": {}, "cast": {}, "items": {}, "notes": {}, "lines": {}, "sounds": {}, "levels": {},
                   "secrets": {}, "achievements": {}, "motions": {}, "stitches": {}, "scenes": {}, "flow": {}, "interrupts": [],
                   "board": [], "frames": []}
@@ -314,11 +544,14 @@ class Builder:
             tid, kind, size = it["id"], it.get("kind", "inspect"), it.get("size", "medium")
             rid = it.get("where") if it.get("where") in self.rooms.rooms else self.rooms.order[0]
             name = str(it.get("name") or tid)
-            t = {"kind": kind, "room": rid, "prop": tid, "name": name}
             text = self.texts.get(tid) or f"The {name}."
+            iid, k = tid, 2
+            while tid in self.ids:                     # a set's own id: the thing takes another
+                tid, k = f"{iid}_{k}", k + 1
+            t = {"kind": kind, "room": rid, "prop": tid, "name": name}
             self.own(tid)
             if kind == "door":
-                self.rooms.door(rid, tid)
+                t["prop"] = self.rooms.door(rid, tid)    # a set's own door, where the room has one
             elif kind == "bed":
                 self.rooms.box(rid, tid, 2.0, 1.0, 0.55, ("w", "e", "n", "s"), use="sleep", tag="bed")
             elif kind == "seat":
@@ -327,7 +560,7 @@ class Builder:
             elif kind == "hideout":
                 self.rooms.box(rid, tid, 1.0, 0.6, 1.9, ("w", "e", "n", "s"), use="locker", tag=name)
             elif kind == "switch":
-                self.rooms.box(rid, tid, 0.12, 0.04, 0.12, ("s", "e", "w", "n"), use="switch", light=f"{rid}_lamp", z=1.2, tag="light_switch")
+                self.rooms.box(rid, tid, 0.12, 0.04, 0.12, ("s", "e", "w", "n"), use="switch", light=self.rooms.lamp(rid), z=1.2, tag="light_switch")
             elif kind == "note":
                 t["note"] = nid = self.own(f"{tid}_note")
                 self.S["notes"][nid] = {"title": name[:1].upper() + name[1:], "text": self.texts.get(tid) or "…"}
@@ -348,13 +581,13 @@ class Builder:
             else:
                 along, depth, h = LARGE.get(name.split()[-1] if name.split() else name, (1.0, 0.6, 1.2))
                 self.rooms.box(rid, tid, along, depth, h, use="inspect", text=text, tag=name)
-            self.thing[tid] = t
-            self.thing_named[name.lower()] = tid
+            self.thing[iid] = t
+            self.thing_named[name.lower()] = iid
 
     def trigger(self, st):
         """What the game hears when the player does a step's thing: the thing's own trigger for the verb."""
         if st.get("verb") == "go" and st.get("place") in self.rooms.rooms:
-            return {"enter": st["place"]}
+            return {"enter": self.rooms.room_id(st["place"])}
         t = self.thing.get(st.get("item"))
         if not t:
             return None
@@ -426,7 +659,7 @@ class Builder:
                 else:
                     notes_.append(f"a sound: {st.get('text', '')} (nothing like it on the shelf yet)")
             elif d == "light":
-                cur["do"].append({"light": f"{room}_lamp", "set": st["set"]})
+                cur["do"].append({"light": self.rooms.lamp(room), "set": st["set"]})
             elif d == "music":
                 cur["do"].append({"music": st["mood"]})
             elif d == "fade":
@@ -520,7 +753,7 @@ class Builder:
                 if a:
                     pend.append(a)
             elif d == "light":
-                pend.append({"light": f"{room}_lamp", "set": st["set"]})
+                pend.append({"light": self.rooms.lamp(room), "set": st["set"]})
             elif d == "music":
                 pend.append({"music": st["mood"]})
             elif d == "fade":
@@ -858,7 +1091,8 @@ class Builder:
                                             "height": 1.75 if c.get("subject") == "he" else 1.62,
                                             "note": "; ".join(f"{k}: {c[k]}" for k in ("role", "look", "wants", "hides", "tells") if c.get(k))}
         for x in self.places:
-            self.own(x["id"])
+            if x["id"] not in self.rooms.taken:          # the greybox's rooms are the places (a set's are its own)
+                self.own(x["id"])
         if (st.get("player_name") or "").strip():
             S["game"]["player_name"] = st["player_name"].strip()
         self.prepass()
@@ -893,7 +1127,7 @@ class Builder:
         S["levels"]["main"] = self.rooms.level()
         for r in S["levels"]["main"]["rooms"]:          # the greybox's own ids (its spots, lamps, triggers) are ids too
             for x in r["props"]:
-                if x["id"] not in self.rooms.placed:
+                if x["id"] not in self.rooms.placed and x["id"] not in self.rooms.taken:
                     self.own(x["id"])
         for k, n in self.N.items():                      # achievements: the secrets', the endings', the feats
             a = n.get("achievement") or {}
@@ -917,7 +1151,7 @@ class Builder:
 
 # ---- the handoff ----------------------------------------------------------------------------------------------------
 
-def build_md(P, S, B, moved=()):
+def build_md(P, S, B, moved=(), rooms=None):
     st, game, N = P.get("story") or {}, S["game"]["id"], proto.nodes_of(P)
     out = [f"# {P.get('title')}: from the writers' room to the game", "",
            f"Built {today()} from the writers' room session `{P['id']}` (Content/Prototypes/{P['id']}/prototype.json; the copy built "
@@ -951,9 +1185,16 @@ def build_md(P, S, B, moved=()):
         out += ["", "| Place (a greybox room) | What it looks like |", "|---|---|"]
         out += [f"| `{x['id']}` {x.get('name', '')} | {x.get('look', '')} |" for x in P["places"]]
     out += ["", "## Everywhere", "",
-            "- [ ] **The place.** The greybox is a row of 6 × 5 m rooms, one per place, joined by doorways. Lay out the real place in "
-            "the scene builder (docs/SCENE_BUILDER.md) from the looks above; keep the spot ids (`<room>_view`, `<room>_<cast>`, "
-            "`<room>_<cast>_close`) or move the scenes onto the new ones.",
+            ("- [ ] **The place.** Built into the set `" + rooms.set_name + "` (Content/Studio/Sets/" + rooms.set_name + ", designed first in the "
+             "scene builder): " + "; ".join(f"{pid} is its room `{rid}` ({nm})" for pid, rid, nm in rooms.mapping()) + ". Every thing the story names "
+             "was fitted against a free stretch of its room's walls, clear of the furniture and the doorways: move each where it belongs (the kettle "
+             "on the counter, the album on the shelf: its `at`, or `on` a piece of furniture), and the marks (`<place>_view`, `<place>_<cast>`, "
+             "`<place>_<cast>_close`) where the scenes are seen from; `python tools/story.py --game " + game + " rooms` lists them, LEVEL checks them."
+             + (" Moved for now: " + "; ".join(rooms.spills()) + "." if rooms.spills() else "")
+             if isinstance(rooms, SetRooms) else
+             "- [ ] **The place.** The greybox is a row of 6 × 5 m rooms, one per place, joined by doorways. Lay out the real place in "
+             "the scene builder (docs/SCENE_BUILDER.md) from the looks above; keep the spot ids (`<room>_view`, `<room>_<cast>`, "
+             "`<room>_<cast>_close`) or move the scenes onto the new ones."),
             "- [ ] **The lines.** Each scene has the chart's key lines only: write each in full (WRITING.md: one sentence a line, "
             "the pauses as their own beats, a seam on every cut).",
             "- [ ] **The talks.** The words after each answer are “…” (the face answers first): write them, or keep the silence. Stage "
@@ -1080,9 +1321,11 @@ def story_check(path, tool="story_check.py", *args):
     return r.returncode == 0, (lines[-1] if lines else ""), [x for x in lines if x.startswith(("ERROR: ", "FAIL "))]
 
 
-def build(P, game, force=False, games=None, check=True):
+def build(P, game, force=False, games=None, check=True, set_name=None, sset=None):
     """The chart into Content/Games/<game>/ (or `games`/<game>): story.json, prototype.json, BUILD.md, faces.md.
-    A story already there is replaced only with `force` (or when this session built it), kept in the desk's history first."""
+    A story already there is replaced only with `force` (or when this session built it), kept in the desk's history first.
+    `set_name`: built into that set's level (Content/Studio/Sets/<name>, the place designed first; `sset` its story when
+    it's already in hand)."""
     game = (game or "").strip() or game_name(P.get("title"))
     if not GAME.match(game):
         return {"ok": False, "game": game, "message": f"the game's folder name {game!r}: a capital letter, then letters and digits (Ticket114)"}
@@ -1101,8 +1344,13 @@ def build(P, game, force=False, games=None, check=True):
             was = None
         if was != P["id"] and not force:
             return {"ok": False, "game": game, "message": f"{game} exists and wasn't built from this session: build over it (its story goes into the desk's history first), or pick another name"}
+    if set_name and sset is None:
+        try:
+            sset, _ = L.load("set:" + set_name)
+        except SystemExit as e:
+            return {"ok": False, "game": game, "message": str(e)}
     try:
-        B = Builder(copy.deepcopy(P), game)
+        B = Builder(copy.deepcopy(P), game, sset, set_name)
         S = B.build()
     except (ValueError, KeyError) as e:
         return {"ok": False, "game": game, "message": f"the build failed: {e}"}
@@ -1114,7 +1362,7 @@ def build(P, game, force=False, games=None, check=True):
     folder.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(S, ensure_ascii=False, indent=1), encoding="utf-8")
     (folder / "prototype.json").write_text(json.dumps(P, ensure_ascii=False, indent=1), encoding="utf-8")
-    (folder / "BUILD.md").write_text(build_md(P, S, B.handoff, B.moved), encoding="utf-8")
+    (folder / "BUILD.md").write_text(build_md(P, S, B.handoff, B.moved, B.rooms), encoding="utf-8")
     (folder / "faces.md").write_text(faces_md(P, S), encoding="utf-8")
     res = {"ok": True, "game": game, "files": [str(p.relative_to(ROOT)) if ROOT in p.resolve().parents else str(p) for p in
                                                (path, folder / "prototype.json", folder / "BUILD.md", folder / "faces.md")],
@@ -1123,15 +1371,16 @@ def build(P, game, force=False, games=None, check=True):
         ok, last, errors = story_check(path)
         res["check"] = {"ok": ok, "line": last, "errors": [x[7:] for x in errors[:8]]}
     where = folder.resolve().relative_to(ROOT).as_posix() if ROOT in folder.resolve().parents else str(folder)
-    res["message"] = (f"Built {game} in {where}: {res['nodes']} flow nodes, {res['scenes']} scenes, {res['stitches']} tasks, "
-                      f"{len(S['achievements'])} achievements" + (f"; the story check: {res['check']['line']}" if check else "") + ".")
+    res["message"] = (f"Built {game} in {where}" + (f" into the set {set_name}" if set_name else "") + f": {res['nodes']} flow nodes, {res['scenes']} scenes, "
+                      f"{res['stitches']} tasks, {len(S['achievements'])} achievements" + (f"; the story check: {res['check']['line']}" if check else "") + ".")
     return res
 
 
-def check_build(P):
-    """WRITERS: a chart built into a scratch folder passes check_all's STORY, LEVEL and SHOTS, and holds what the chart has."""
+def check_build(P, set_name=None, sset=None):
+    """WRITERS: a chart built into a scratch folder (into a set's level when one's given) passes check_all's STORY, LEVEL
+    and SHOTS, and holds what the chart has."""
     with tempfile.TemporaryDirectory() as tmp:
-        res = build(P, "WritersCheck", games=tmp)
+        res = build(P, "WritersCheck", games=tmp, set_name=set_name, sset=sset)
         if not res.get("ok"):
             return {"ok": False, "message": f"the build: {res.get('message')}"}
         if not res["check"]["ok"]:

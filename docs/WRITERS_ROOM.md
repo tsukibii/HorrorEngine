@@ -139,6 +139,17 @@ afraid); "New face…" in any face picker writes the story's own. A he wears the
 Built again from its session, the story it replaces is kept in the desk's history first (`Saved/Story/<Game>/history`);
 a story built from another session, or by hand, is replaced only when you say so (force).
 
+**Into a set** (the place designed first in the scene builder, docs/SCENE_BUILDER.md §1; the Build dialog's *The place*,
+or `room.py build ID --set NAME`): the game's level is the set's (`SetRooms` in build.py) instead of greybox rooms. Each
+place goes on one of its rooms (by name, then by what kind of room its words mean, else the biggest one not taken; two
+places can share one); its marks a little in from the room's south wall (the eye facing north, the cast across and
+close) and a lamp if the room has no light; the things, the tasks' and the finds' boxes fitted against free stretches
+of its walls, clear of its furniture, of every doorway's clearance and of the marks (a room that's full sends the next
+one to the biggest room with space, and BUILD.md says so); a door the story opens is one of the room's own doors. The
+set's furniture, lights, switches, seats, beds and hiding places stay; what belongs to a game (things to take, notes,
+people, keys) is left out. BUILD.md's first box names each place's room, for Claude to move each block where it
+belongs (`/build-game`).
+
 ## 6. For Claude
 
 `python tools/writers/room.py show ID` prints the whole chart as text (the brief, the story's heart, the cast and
@@ -200,5 +211,6 @@ everything, swapping out block objects for real ones." The commands are Claude C
 3. **You look it over here.** Move, rename or rewire what you like; a shape's script is in the inspector. Ask Claude
    for changes: it reads the chart as it is now (`room.py script`), changes that, and reads it in again: what you moved
    stays put, and an open page takes it in by itself.
-4. **`/build-game <the session> [Game]`**: Build (§5) into `Content/Games/<Game>/`, checked by check_all; then you
-   refine it on the director's desk, blocks swapped for the real things in the Database.
+4. **`/build-game <the session> [Game] [set <name>]`**: Build (§5) into `Content/Games/<Game>/`, into your own set if
+   you designed the place first in the scene builder, checked by check_all; then you refine it on the director's desk,
+   blocks swapped for the real things in the Database.

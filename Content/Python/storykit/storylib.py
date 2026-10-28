@@ -5,6 +5,7 @@ Story space: metres, x east, y north, z up; yaw (rot) in degrees counter-clockwi
 Unreal space: centimetres, X = x, Y = -y, Z = z, yaw = -rot (see to_ue in importer.py).
 """
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]          # the project folder (Content/Python/storykit/ -> up 3)
@@ -45,12 +46,30 @@ def games():
     return sorted(d.name for d in GAMES.iterdir() if (d / "story.json").exists()) if GAMES.exists() else []
 
 
+# a set: a place designed in the scene builder before its game exists (DECISIONS 2026-10-27, later: "predesign a
+# studio before you make the game in director"), kept as a small story of its own in Content/Studio/Sets/<name>/, its
+# level what a game is built into (`room.py build --set`); called `set:<name>` wherever a game's name goes
+SETS = ROOT / "Content" / "Studio" / "Sets"
+SET_NAME = re.compile(r"^[a-z][a-z0-9_]{0,40}$")
+
+
+def sets():
+    return sorted(d.name for d in SETS.iterdir() if (d / "story.json").exists()) if SETS.exists() else []
+
+
 def story_path(game=None):
-    """A game name, a path to a story.json, or nothing: the HORROR_GAME environment variable, else the only game."""
+    """A game name (or `set:<name>`), a path to a story.json, or nothing: the HORROR_GAME environment variable, else
+    the only game."""
     import os
     game = game or os.environ.get("HORROR_GAME")
     if game and str(game).endswith(".json"):
         return Path(game)
+    if game and str(game).startswith("set:"):
+        name = str(game)[4:]
+        p = SETS / name / "story.json"
+        if not SET_NAME.match(name) or not p.exists():
+            raise SystemExit(f"no set {name!r} (sets: {', '.join(sets()) or 'none'}; make one: python tools/story.py new-set <name>)")
+        return p
     if not game:
         found = games()
         if len(found) != 1:

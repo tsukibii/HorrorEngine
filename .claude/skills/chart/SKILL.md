@@ -32,6 +32,8 @@ Write it to `Saved/Writers/<name>.script.txt` (Saved/ isn't tracked; the session
   with how they're reached (an answer, karma, or what you do).
 - **Things are names.** Every object the player touches is a thing in a few words (`the photo album`), sized when it
   isn't obvious (`(large)`). They become blocks of that size, swapped for the real ones in the director.
+- **A place designed first** (a set: `python tools/writers/room.py sets`, `python tools/story.py --game set:<name>
+  rooms`): name the places after its rooms (`@ Kitchen` for its kitchen), so `/build-game` puts each part in its room.
 - **Say what you decided.** A guess (where a scene happens, an ending's condition they didn't give, an answer's karma)
   is a `Note:` line where it applies: a sticky note on the chart they'll see. Never invent a plot turn, a character or
   an ending: ask (a `Note:`, and in your reply).

@@ -22,6 +22,10 @@ the fix.
   and the game never saw the click (PLAY's first try of a left click to use). Park it again right before pressing, with
   the faked pointer lock let go for that moment: a locked mouse that moves turns the view (`click()` in playtest.js).
   And a check of someone walking measures the game's clock too (`onRoute`: Mari moved 0.18 m in 4 wall seconds).
+- **A renamed room takes its built pieces' names with it:** the scene builder renames a borrowed level's rooms that clash
+  (`genkan` → `genkan_2`), but the pieces it keeps as props (`genkan_fx_floor`, its built-ins, a cushion `on` its sofa)
+  kept the old names, so a level taken twice into one game (a set borrowed where its layout already was) had every
+  fixture twice and wouldn't plan. `renameItems` renames them and the `on`s; BUILDER borrows a set into such a game.
 - **A test's search must not touch the story:** `goTo` tried 16 spots and ticked the game at each, so a spot on the
   cellar stairs fired `enter` and answered a choice. Aim-test a candidate without a tick, and skip spots inside a
   trigger the player isn't already in.

@@ -7,8 +7,12 @@ check. The page is serve.py.
     python tools/writers/room.py show ID [SHAPE]        the chart as text: the brief, the story's heart, every shape in
                                                         reading order with its arrows; one shape in full
     python tools/writers/room.py now                    what the page shows right now (the session, the shapes picked)
-    python tools/writers/room.py build ID [--game G]    the chart into Content/Games/G (story.json, BUILD.md, faces.md),
-                                                        G from the title when not given; --force over a story not built from it
+    python tools/writers/room.py build ID [--game G] [--set S]
+                                                        the chart into Content/Games/G (story.json, BUILD.md, faces.md),
+                                                        G from the title when not given; --force over a story not built from it;
+                                                        --set into the set S's level (the place designed first in the scene
+                                                        builder: Content/Studio/Sets/S) instead of greybox rooms
+    python tools/writers/room.py sets                   the sets there are
     python tools/writers/room.py import SCRIPT [--into ID] [--notes FILE]
                                                         Claude's script of the user's notes (/chart; its syntax is
                                                         .claude/skills/chart/script.md) into a session: a new one, or ID's
@@ -109,10 +113,10 @@ def cmd_build(a):
     if HOME:
         build.GAMES = HOME / "Games"
     P = load_session(a.id)
-    out = build.build(P, a.game, force=a.force)
+    out = build.build(P, a.game, force=a.force, set_name=a.set or None)
     print(out["message"])
     if out.get("ok"):
-        P["built"] = {"game": out["game"], "at": proto.now()}
+        P["built"] = dict({"game": out["game"], "at": proto.now()}, **({"set": a.set} if a.set else {}))
         proto.save(P)
         print("\n".join("  " + f for f in out["files"]) + f"\nthen, in Claude Code: build {out['game']} from its BUILD.md")
     for e in (out.get("check") or {}).get("errors", []):
@@ -146,6 +150,13 @@ def cmd_import(a):
     where = proto.path_of(P["id"])
     print(f"{'made again' if old else 'new session'} {P['id']}: {where.relative_to(ROOT) if where.is_relative_to(ROOT) else where}"
           f"  (open it: python tools/writers/serve.py, then http://127.0.0.1:8795/?s={P['id']})")
+
+
+def cmd_sets(a):
+    from storykit import storylib
+    names = storylib.sets()
+    print("\n".join(f"{n}  (Content/Studio/Sets/{n}; python tools/story.py --game set:{n} rooms)" for n in names) or
+          "no sets yet: design the place in the scene builder (its game picker: + new set…), or python tools/story.py new-set <name>")
 
 
 def cmd_script(a):
@@ -393,6 +404,28 @@ def cmd_check(a):
                                   f"({kinds['talk']} talks, {kinds['choice']} choices, a secret, a chapter, three endings by karma), {len(E['items'])} things "
                                   "sized and used; " + r2["message"])
 
+    # into a set (a place designed first in the scene builder: here the Pilot's house as one): each place on its room,
+    # the things fitted round its furniture and doorways, a door the story opens one of its own; STORY, LEVEL, SHOTS
+    from storykit import storylib
+    pilot, _ = storylib.load("Pilot")
+    sset = {"format": 3, "game": {"id": "pilot_house", "title": "pilot_house", "start": "n_start"}, "levels": {"pilot_house": copy.deepcopy(pilot["levels"]["house"])},
+            "cast": {}, "items": {}, "notes": {}, "lines": {}, "sounds": {}}
+    SB = build.Builder(copy.deepcopy(E), "SetCheck", sset, "pilot_house")
+    SS = SB.build()
+    mapping = {pid: rid for pid, rid, _ in SB.rooms.mapping()}
+    door = SB.thing.get("door", {}).get("prop")
+    rooms_of = {x["id"]: r["id"] for r in SS["levels"]["main"]["rooms"] for x in r.get("props", [])}
+    misplaced = [i for i, t in SB.thing.items() if t["kind"] not in ("door",) and t["prop"] not in rooms_of]
+    r3 = build.check_build(E, "pilot_house", sset)
+    F = fixture()
+    r4 = build.check_build(F, "pilot_house", sset)
+    if not r3["ok"] or not r4["ok"] or mapping.get("bathroom") != "kitchen" or door != "front_door" or misplaced or "rooms" not in json.dumps(SS["levels"]["main"]):
+        bad(f"into a set: {r3['message'][:200]} | {r4['message'][:200]} | {mapping} door {door} misplaced {misplaced}")
+    else:
+        ok(f"built into a set (the Pilot's house as one): the places on its rooms ({', '.join(f'{a} → {b}' for a, b in mapping.items())}), "
+           f"{len(SB.thing)} things fitted round its furniture ({len(SB.rooms.spilled)} moved to a room with space), the door its own front door; "
+           "the example and the fixture through STORY, LEVEL and SHOTS")
+
     # the chart written as a script reads back as the same story, and is the same script again
     T = chartscript.write(E)
     E2, rep2 = chartscript.read(T)
@@ -439,13 +472,14 @@ def main(argv=None):
     s = sub.add_parser("new"); s.add_argument("title"); s.add_argument("--kind")
     s = sub.add_parser("show"); s.add_argument("id"); s.add_argument("shape", nargs="?")
     sub.add_parser("now")
-    s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", default=""); s.add_argument("--force", action="store_true")
+    s = sub.add_parser("build"); s.add_argument("id"); s.add_argument("--game", default=""); s.add_argument("--force", action="store_true"); s.add_argument("--set", default="")
+    sub.add_parser("sets")
     s = sub.add_parser("import"); s.add_argument("file"); s.add_argument("--into", default=""); s.add_argument("--notes", default="")
     s.add_argument("-v", "--verbose", action="store_true")
     s = sub.add_parser("script"); s.add_argument("id")
     sub.add_parser("check")
     a = ap.parse_args(argv)
-    {"list": cmd_list, "new": cmd_new, "show": cmd_show, "now": cmd_now, "build": cmd_build, "import": cmd_import, "script": cmd_script,
+    {"list": cmd_list, "new": cmd_new, "show": cmd_show, "now": cmd_now, "build": cmd_build, "import": cmd_import, "script": cmd_script, "sets": cmd_sets,
      "check": cmd_check}[a.cmd](a)
 
 

@@ -116,6 +116,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"faces": list(proto.library().values())})
         if what == "stamp" and len(parts) == 3:          # which version is on disk (the page takes in what Claude made)
             return self.send(200, {"stamp": stamp(parts[2])})
+        if what == "sets":                               # the places designed first in the scene builder (Build into one)
+            from storykit import storylib  # noqa: PLC0415
+            return self.send(200, {"sets": storylib.sets()})
         return self.send(404, {"error": "unknown"})
 
     def page(self, name):
@@ -164,9 +167,9 @@ class Handler(BaseHTTPRequestHandler):
                 P = session(sid)
                 if not P:
                     return self.send(404, {"error": "no such session"})
-                res = build.build(P, str(b.get("game") or ""), force=bool(b.get("force")))
+                res = build.build(P, str(b.get("game") or ""), force=bool(b.get("force")), set_name=str(b.get("set") or "") or None)
                 if res.get("ok"):
-                    P["built"] = {"game": res["game"], "at": proto.now()}
+                    P["built"] = dict({"game": res["game"], "at": proto.now()}, **({"set": b["set"]} if b.get("set") else {}))
                     store(P)
                     res["stamp"] = stamp(sid)
                 return self.send(200, res) if res.get("ok") else self.send(400, dict(res, error=res.get("message")))

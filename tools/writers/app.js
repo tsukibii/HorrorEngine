@@ -594,16 +594,21 @@ async function buildDialog() {
   await flush();
   const camel = (P.title || "Game").replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join("") || "Game";
   const game = el("input", { value: (P.built || {}).game || (/^[A-Z]/.test(camel) ? camel : "G" + camel) }), force = el("input", { type: "checkbox", checked: !!(P.built || {}).game });
-  const errs = (CHECK.errors || []).length;
+  const errs = (CHECK.errors || []).length, sets = (await api("sets").catch(() => ({}))).sets || [];
+  // the place: greybox rooms, or a set designed first in the scene builder (DECISIONS 2026-10-27, later)
+  const place = el("select", {}, el("option", { value: "" }, "greybox rooms, a room per place (lay out the real place later)"),
+    ...sets.map(n => el("option", { value: n, selected: (P.built || {}).set === n }, `the set “${n}” (designed in the scene builder)`)));
   const ok = await dialog("Build it in the director", [
-    el("p", { class: "muted" }, "A rough, working outline of the game from your chart: Content/Games/<Game>/story.json (a greybox room per place, each shape as its scene or task, the talks as close-ups with your answers, the choices, the secrets, the endings, the achievements, laid out on the director's board as you drew it), with BUILD.md, what Claude does next to make it the game, and faces.md, the faces to make."),
+    el("p", { class: "muted" }, "A rough, working outline of the game from your chart: Content/Games/<Game>/story.json (a room per place, each shape as its scene or task, the talks as close-ups with your answers, the choices, the secrets, the endings, the achievements, laid out on the director's board as you drew it), with BUILD.md, what Claude does next to make it the game, and faces.md, the faces to make."),
     ...lab("The game's folder name", game),
+    ...lab("The place", place),
+    el("div", { class: "hint muted small" }, sets.length ? "A set: each place on its room of the same name (else the biggest free one), the things fitted round its furniture." : "No sets yet: design the place first in the scene builder (its game picker: + new set…), and it's offered here."),
     el("label", { class: "chips", style: "margin-top:10px" }, el("label", {}, force, " build over it if it exists (its story goes into the desk's history first)")),
     errs ? el("p", { style: "color:#ff9b9b" }, `${errs} problem${errs > 1 ? "s" : ""} on the chart: fix them first (the bar at the bottom lists them).`) : null], "Build");
   if (!ok) return;
   try {
-    const r = await api("build/" + encodeURIComponent(SID), { game: game.value.trim(), force: force.checked });
-    P.built = { game: r.game }; BASE = JSON.stringify(P); if (r.stamp) STAMP = r.stamp;
+    const r = await api("build/" + encodeURIComponent(SID), { game: game.value.trim(), force: force.checked, set: place.value || null });
+    P.built = Object.assign({ game: r.game }, place.value ? { set: place.value } : {}); BASE = JSON.stringify(P); if (r.stamp) STAMP = r.stamp;
     const bad = r.check && !r.check.ok;
     await dialog(bad ? "Built, but the story check fails" : "Built", [el("p", {}, r.message),
       bad ? el("p", { style: "color:#ff9b9b" }, ...(r.check.errors || []).map(e => el("div", {}, e))) : null,

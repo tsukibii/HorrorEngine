@@ -25,8 +25,12 @@ The user's notes-to-chart route went from a syntax they'd write in to **writing 
   you (no fall), Shift runs; the pause menu shows the controls on its left, each key drawn in outline after the user's
   picture. PLAY walks all of it (the faked pointer lock from the start, LESSONS). Not in Unreal yet (RUNNER_SPEC says
   how). The guide's pictures (`guide/help.jpg`) still show the old keys: `guide_shots.mjs` makes them again.
-Asked in the same message, next: a place designed first in the scene builder (a set) for `/build-game` to place the
-blocks in.
+- **Sets** (`Content/Studio/Sets/`): the place designed first in the scene builder (its game picker's Sets, `+ new
+  set…`), a small story of its own; `room.py build --set <name>` (and the Build dialog's *The place*, `/build-game ...
+  set <name>`) builds the chart into its level: each place on its room, the things fitted round its furniture and
+  doorways, a door the story opens one of its own; then Claude moves each block where the notes say (BUILD.md's first
+  box). WRITERS builds the example and the fixture into the Pilot's house as a set; BUILDER makes, saves and borrows one.
+Open: the expression loops and blends (EXPRESSIONS_PLAN §2b), waiting for the user's go-ahead.
 
 ## 0x. Before that (2026-10-27, on `dev-002`): the dashboard and the writers' room
 
