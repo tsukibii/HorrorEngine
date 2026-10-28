@@ -2,6 +2,12 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, evening (placeholder things)
+
+- **Flat boxes and planes for now**: "For items like pills and cards, they should just be flat boxes or planes for now
+  and I will add the textures/models later myself". In docs/HANDOFF_DIRECTOR_TODO.md §3: small things stay plain
+  blocks or planes at their real size, the card game's cards plain planes.
+
 ## 2026-10-28, later afternoon (a character's models per scene, carried down the flow)
 
 - **No eye swap**: "We dont need eye swap, I can just export the same model twice with diff eyes".

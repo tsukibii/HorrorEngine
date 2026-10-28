@@ -56,8 +56,13 @@ the user animates in Kimodo.
 close-ups) and no `body`; a task puts the cast `behave` `idle` at their marks facing the player. Marks are dragged on
 the stage (`blocking.js`).
 
-**Build.** A WRITERS check that a built game has no `body` on any clip and no motions; a one-line note in
-WRITERS_ROOM §5. Nothing else.
+**Placeholder things** (DECISIONS 2026-10-28, evening): small items such as pills, playing cards, notes, photos, a
+card, a cup stay **flat boxes or planes** (a plain box for a thing, a plane for paper and cards), untextured, at their
+real size; the user adds the textures and models later. Build's blocks by size already do this for the things; keep it
+so, and the card game's cards are plain planes too (no card faces made in code beyond their value written on them).
+
+**Build.** A WRITERS check that a built game has no `body` on any clip and no motions, and that its things are plain
+blocks; a one-line note in WRITERS_ROOM §5. Nothing else.
 
 ## 4. A cast member's state through a shot, and patrols inside a shot (missing)
 
@@ -113,7 +118,7 @@ hand carries on down the flow (`flowTimes`, TIMES).
 - **Memory flickers** (a thought that types out and breaks off) and **thoughts that retype themselves**.
 - **Pill tasks**: a timed to-do (*Take your pills*) three times, done or failed, feeding a `doses` counter (the chart
   uses karma for it now).
-- **The card game**: `Content/Games/TheVisitor/BoardGames/shinkei_suijaku.js` (Concentration), settings from flags
+- **The card game**: `Content/Games/TheVisitor/BoardGames/shinkei_suijaku.js` (Concentration; the cards plain planes, §3), settings from flags
   (his memory lies, she lets him win), the loser answers a question.
 - **The endings as cutscene slots**, each followed by a **title card** with room for more text (DECISIONS 2026-10-28,
   before dawn: this game's endings have title cards).
