@@ -2,6 +2,17 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, mid-morning (The Visitor's abstract approved; the flow charted)
+
+- **The abstract approved**: "I think this is a strong start (we can always refine later)". Step 3 begun: the flow as
+  the writers' room's chart, `/chart` from `docs/game_research/TheVisitor/02_abstract.md`, session `the-visitor`.
+- Claude's calls inside that (sticky notes on the chart): karma stands for his clarity (a pill +1, a pill left -1,
+  leaning into the romance or lying to Ren -1, everything else 0), so the endings read Stay if `[ Watch her sleep ]`
+  (offered only at karma -5 or less), Okuribi at karma 1+, Thank You for Tonight otherwise; the garden in two versions
+  by karma (hers after a pill, his otherwise); the pill moments as answers to his mother's remembered voice, standing
+  in for the timed to-do the director will make; her name a variable; the soy-sauce tea secret left as a note beside
+  the salt one (the chart can't hold two secrets in a row).
+
 ## 2026-10-28, morning (The Visitor: he is the reason she died)
 
 - **The truth rewritten**: "instead of her accidentally dying in your youth the player actually was the reason for her

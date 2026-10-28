@@ -9,5 +9,5 @@ good Steam achievements.
 | File | What | Where it is |
 |---|---|---|
 | `01_research.md` | step 1: real events, cases and stories, and what each gives the game | done |
-| `02_abstract.md` | step 2: the whole game in a few pages | waiting for the user's yes |
-| (the flow) | step 3: the game as the writers' room's chart, made with `/chart` | after the yes |
+| `02_abstract.md` | step 2: the whole game in a few pages | approved ("a strong start") |
+| `Content/Prototypes/the-visitor/` | step 3: the game as the writers' room's chart, made with `/chart` from the abstract (its script: the session's `script`) | made; waiting for the user's look |

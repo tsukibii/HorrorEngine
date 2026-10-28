@@ -41,7 +41,10 @@ writer block flow. On a new branch off `dev-002`, in a new folder:
 - **Fifth pass** (DECISIONS 2026-10-28, morning): he is the reason she died (a fight in the shrine woods at sixteen
   over the boy she was seeing, a shove, the river); Shun, the boy the town blamed; Ren, Natsuki's boyfriend, the echo;
   the dark ending is Stay.
-- **Waiting on the user:** a yes on the abstract. Then step 3: the flow as the writers' room's
+- **Approved** ("a strong start"), and **step 3 charted** (DECISIONS 2026-10-28, mid-morning): the writers' room
+  session `the-visitor` (59 shapes, 0 problems, 23 sticky notes), made by `/chart` from the abstract.
+- **Waiting on the user:** a look at the chart in the writers' room; `/build-game the-visitor TheVisitor` once they say
+  it looks right. Then step 3: the flow as the writers' room's
   chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
   `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in
   Content/Games.

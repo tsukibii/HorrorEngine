@@ -13,4 +13,4 @@ Nothing in a game's folder is a decision until the user says so; their answers g
 
 | Game | Where it is |
 |---|---|
-| [The Visitor](TheVisitor/) | step 2: research and abstract written, revised twice after the user's notes; the abstract waits for the user's yes |
+| [The Visitor](TheVisitor/) | step 3: the abstract approved (after five passes); the flow is the writers' room session `the-visitor` (`python tools/writers/serve.py`, then http://127.0.0.1:8795/?s=the-visitor), waiting for the user's look before `/build-game` |
