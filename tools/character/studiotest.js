@@ -84,8 +84,8 @@ const png = rgb => {
     if (!/: \w/.test(label)) throw new Error(`no label: ${label}`);
   });
   await step("a new character", async () => {
-    // a run that stopped early leaves its pictures behind (the last step clears them): clear them first
-    await page.evaluate(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" }))), NAME);
+    // a run that stopped early leaves its pictures and a baked face behind (the last steps clear them): clear them first
+    await page.evaluate(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" })).concat(fetch(`api/people/${n}/face.bin`, { method: "POST", body: "" }))), NAME);
     await page.fill("#newName", NAME); await page.click("#make");
     await page.waitForFunction(n => window.__body.who === n, NAME);
     // it starts from the studio's look (soft cinematic), applied and saved once it's open: the steps below were written for MHR's plain one
@@ -194,6 +194,37 @@ const png = rgb => {
   await step("a side picture gives the depth", async () => {
     await page.setInputFiles("#slots .slot:nth-child(2) input", { name: "side.png", mimeType: "image/png", buffer: side });
     await page.waitForFunction(() => window.__body.report && window.__body.report.sides === 1, null, { timeout: 90000 });
+  });
+  await step("the face baked: kept as its pictures gave it with them gone, the character opened again, Face strength still working and the fit's settings waiting; a broken file refused; unbaked, fitted to its pictures again", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    const face = () => page.evaluate(() => Array.from(window.__body.POS));
+    const off = (A, B) => { let m = 0; for (let i = 0; i < A.length; i++) m = Math.max(m, Math.abs(A[i] - B[i])); return m; };
+    const fitted = await face();
+    await page.click("#bakeFace");
+    await page.waitForFunction(() => /is baked/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    const bad = await page.evaluate(async n => (await fetch(`api/people/${n}/face.bin`, { method: "POST", body: new Uint8Array([9, 0, 0, 0, 1, 2, 3]) })).status, NAME);
+    for (const s of ["front", "side"]) await page.evaluate(([n, s]) => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" }), [NAME, s]);
+    await saveNow(); await page.reload(); await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 90000 });
+    await page.selectOption("#who", NAME); await page.waitForFunction(n => window.__body.who === n && window.__body.delta, NAME, { timeout: 90000 });
+    await page.waitForFunction(() => window.__body.pics.length === 0 && /face baked/.test(document.querySelector("#hud").textContent), null, { timeout: 60000 });
+    await page.click('#tabs button[data-tab="face"]');
+    const kept = await face();
+    const ui = await page.evaluate(() => { const rows = [...document.querySelectorAll("#faceRows .row")]; return { off: rows.filter(r => r.querySelector("input").disabled).length, rows: rows.length, strength: rows[0].querySelector("input").disabled, relative: document.querySelector("#relative").disabled, unbake: !document.querySelector("#unbakeFace").hidden, note: document.querySelector("#bakeNote").textContent }; });
+    await page.$$eval("#faceRows input", ins => { ins[0].value = 0.5; ins[0].dispatchEvent(new Event("input")); });
+    const half = await face();
+    await page.$$eval("#faceRows input", ins => { ins[0].value = 1; ins[0].dispatchEvent(new Event("input")); });
+    if (bad !== 400 || off(kept, fitted) > 1e-6 || !(off(half, fitted) > 1e-4) || ui.off !== ui.rows - 1 || ui.strength || !ui.relative || !ui.unbake || !/its pictures can go/.test(ui.note)) throw new Error("baked: " + JSON.stringify({ bad, kept: off(kept, fitted), half: off(half, fitted), ui }));
+    // the pictures back: still the baked face (nothing refitted); unbaked, the face fits them again, as before
+    await page.setInputFiles("#slots .slot:nth-child(1) input", { name: "front.png", mimeType: "image/png", buffer: front });
+    await page.waitForFunction(() => window.__body.pics.length === 1, null, { timeout: 90000 });
+    await page.setInputFiles("#slots .slot:nth-child(2) input", { name: "side.png", mimeType: "image/png", buffer: side });
+    await page.waitForFunction(() => window.__body.pics.length === 2, null, { timeout: 90000 }); await page.waitForTimeout(500);
+    const still = await face();
+    await page.click("#unbakeFace");
+    await page.waitForFunction(() => window.__body.report && window.__body.report.sides === 1 && !/face baked/.test(document.querySelector("#hud").textContent), null, { timeout: 90000 });
+    const refit = await face(), gone = await page.evaluate(async n => (await fetch(`api/people/${n}/face.bin`)).status, NAME);
+    if (off(still, fitted) > 1e-6 || off(refit, fitted) > 1e-4 || gone !== 404) throw new Error("unbaked: " + JSON.stringify({ still: off(still, fitted), refit: off(refit, fitted), gone }));
+    console.log(`       baked, the pictures gone and the character opened again: the face the same to ${off(kept, fitted).toExponential(0)} m; unbaked, refitted to its pictures within ${(off(refit, fitted) * 1000).toFixed(3)} mm`);
   });
   await step("expressions: a preset moves the face only; the map sends a blink to eyesClosed", async () => {
     await page.click('#tabs button[data-tab="expr"]');

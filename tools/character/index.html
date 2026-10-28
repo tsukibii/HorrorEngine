@@ -41,6 +41,8 @@
   .slot .label.bad { color: var(--bad); } .slot .x { position: absolute; right: 4px; top: 4px; padding: 0 6px; line-height: 16px; background: #000a; }
   details { margin: 2px 0; } summary { cursor: pointer; color: var(--dim); margin: 4px 0; }
   .note { color: var(--dim); line-height: 1.45; margin: 4px 0; }
+  .bakerow { display: flex; gap: 6px; margin: 8px 0 2px; } .bakerow button { flex: 1; }
+  #faceRows .row.baked { opacity: .45; }
   #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
   #tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 8px; }   /* the stages, across the top */
   #tabs button { padding: 4px 10px; } #tabs button.on { border-color: var(--gold); color: var(--gold); }
@@ -98,6 +100,8 @@
       <h3>Pictures</h3>
       <div id="slots"></div>
       <p class="note">Optional. A front picture shapes the face; a side picture (or a three-quarter one: MediaPipe needs to find the face, so up to about 70°) gives its depth. With none, the base and the head sliders make the face.</p>
+      <div class="bakerow"><button id="bakeFace" title="Keep the face as its pictures give it now (People/&lt;name&gt;/face.bin): then the pictures can be removed">Bake the face</button><button id="unbakeFace" hidden title="Fit the face to its pictures again (with none left, back to the base and the sliders)">Unbake</button></div>
+      <p class="note" id="bakeNote"></p>
       <h3>Fit</h3>
       <div id="faceRows"></div>
       <h3>Brows and lashes</h3>
@@ -242,7 +246,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {} };   // sculpt: the named controls' values (sculpt.js)
-let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
+let WHO = null, DELTA = null, PICS = [], REPORT = null, FACEBAKE = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
 function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
@@ -2475,6 +2479,7 @@ function changed(what) {
   if (what === "body" || what === "face") { clearTimeout(faceTimer); faceTimer = setTimeout(refitFace, what === "body" ? 350 : 150); }
 }
 async function fitFace() {
+  if (FACEBAKE) { hud(); return; }                     // baked: the face stays as it was fitted, pictures or none
   if (!WHO || !PICS.length) { if (DELTA) { DELTA = null; compose(); } hud(); return; }
   const mine = ++seq; status("fitting the face…");
   const side = PICS.filter(p => p.name.startsWith("side.")).map(p => p.name);
@@ -2486,9 +2491,49 @@ async function fitFace() {
 }
 function hud() {
   const lines = [`${H.lod} · ${N} points · ${st.height.toFixed(2)} m`];
-  if (REPORT) lines.push(`face from ${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}`);
+  if (FACEBAKE) lines.push(`face baked (from ${FACEBAKE.from})`);
+  else if (REPORT) lines.push(`face from ${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}`);
+  bakeUI();
   $("#hud").replaceChildren(...lines.map(t => el("div", { textContent: t })), ...(REPORT?.warnings || []).map(w => el("div", { className: "warn", textContent: w })));
 }
+
+// ---- the face baked: the fit kept as it is in the character's face.bin (a header saying when and from what, then the
+// points' indices and their offsets, before Face strength), so its pictures can go; the fit's own settings wait while
+// it's baked (Face strength still works). Unbake: fitted to its pictures again, or with none left, the base's face
+function bakeUI() {
+  $("#bakeFace").disabled = !WHO || !DELTA || !!FACEBAKE; $("#unbakeFace").hidden = !FACEBAKE;
+  $("#bakeNote").textContent = FACEBAKE ? `Baked ${FACEBAKE.at.slice(0, 10)}, from ${FACEBAKE.from}: the face stays as it is, its pictures can go. The fit (new pictures, its settings) waits until it's unbaked; Face strength still works.`
+    : DELTA ? "Happy with the face? Bake it: it stays as the pictures give it now, and they can go." : "";
+  [...$("#faceRows").children].forEach((row, i) => { const off = !!FACEBAKE && FACE[i][0] !== "strength"; row.classList.toggle("baked", off); row.querySelector("input").disabled = off; });
+  $("#relative").disabled = !!FACEBAKE;
+}
+function faceBin(head, D) {                            // the bake's file: a uint32 header length, the header (JSON), the indices, the offsets
+  const hb = new TextEncoder().encode(JSON.stringify(head)), pad = (4 - hb.length % 4) % 4, k = D.idx.length, buf = new Uint8Array(4 + hb.length + pad + k * 16);
+  new DataView(buf.buffer).setUint32(0, hb.length + pad, true); buf.set(hb, 4); buf.fill(32, 4 + hb.length, 4 + hb.length + pad);
+  const o = 4 + hb.length + pad; new Uint32Array(buf.buffer, o, k).set(D.idx); new Float32Array(buf.buffer, o + k * 4, k * 3).set(D.d);
+  return buf;
+}
+async function loadFaceBake(who) {
+  const r = await fetch(`api/people/${encodeURIComponent(who)}/face.bin`).catch(() => null); if (!r || !r.ok) return null;
+  const b = await r.arrayBuffer(), n = new DataView(b).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(b, 4, n))), k = head.points;
+  return { head, delta: { idx: new Uint32Array(b.slice(4 + n, 4 + n + k * 4)), d: new Float32Array(b.slice(4 + n + k * 4, 4 + n + k * 16)) } };
+}
+$("#bakeFace").onclick = async () => {
+  if (faceTimer) { clearTimeout(faceTimer); refitFace(); }   // a setting just moved: the face fitted to it first
+  await FACEFIT?.catch(() => null);
+  if (!WHO || !DELTA || FACEBAKE) return;
+  const from = REPORT ? `${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}` : "its pictures";
+  const head = { about: "the Character Studio's face fitted to its pictures (tools/face_mesh.py's body op), baked: MHR's points by index and their offsets in metres, before Face strength (tools/character/index.html)",
+    version: 1, at: new Date().toISOString(), from, pictures: PICS.map(p => p.name), settings: { ...st.face, relative: $("#relative").checked }, weights: weights(), points: DELTA.idx.length };
+  try { await api(`api/people/${encodeURIComponent(WHO)}/face.bin`, new Blob([faceBin(head, DELTA)])); } catch (e) { return status(e.message, "bad"); }
+  ++seq; FACEBAKE = head; hud(); status(`the face is baked (${WHO}/face.bin): its pictures can go`, "ok");
+};
+$("#unbakeFace").onclick = async () => {
+  if (!WHO || !FACEBAKE) return;
+  if (!PICS.length && !confirm("No pictures are left to fit the face to: unbaked, it goes back to the base and the sliders. Unbake it?")) return;
+  try { await api(`api/people/${encodeURIComponent(WHO)}/face.bin`, ""); } catch (e) { return status(e.message, "bad"); }   // an empty one: gone
+  FACEBAKE = null; await fitFace(); status(PICS.length ? "unbaked: the face fits its pictures again" : "unbaked: the base's face", "ok");
+};
 
 // ---- the pictures ---------------------------------------------------------------------------------------------------
 const SLOT_TEXT = { front: "Front picture\nclick or drop", side: "Side picture\n(optional)" };
@@ -2547,6 +2592,9 @@ async function open(name) {
   WHO = name || null; PICS = []; DELTA = null; REPORT = null; drawSlots();
   const c = WHO ? await api(`api/people/${encodeURIComponent(WHO)}`) : {};
   if (me !== OPENING) return;                          // another character was picked meanwhile: its own open() sets everything
+  FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
+  if (me !== OPENING) return;
+  if (baked) { FACEBAKE = baked.head; DELTA = baked.delta; }   // its face baked: kept, its pictures not needed
   st.base = c.base ?? 0; st.height = c.height ?? 1.7;
   st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
   Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
@@ -2587,7 +2635,7 @@ $("#make").onclick = async () => {
   const n = $("#newName").value.trim();
   if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(n)) return status("a name is letters, digits, _ - .", "bad");
   const exists = [...$("#who").options].some(o => o.value === n);
-  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures stay)`)) return;
+  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures and a baked face stay)`)) return;
   await api(`api/people/${encodeURIComponent(n)}`, {}); $("#newName").value = "";   // a fresh character: the defaults
   await people(n); await open(n); useLook(LOOKS.NEW_LOOK);   // a new character starts from the studio's look
   await api(`api/people/${encodeURIComponent(n)}`, character()); UNSAVED = false;
