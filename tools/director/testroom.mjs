@@ -37,6 +37,7 @@ const snapFor = nid => {                               // the run's state on rea
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on("response", r => { if (r.status() >= 400 && !OPTIONAL.test(r.url())) errors.push(`${r.status()} ${r.url()}`); });
   await page.goto(DESK);
+  await page.evaluate(() => new MutationObserver(() => { if (document.querySelector(".ph-glitch")) window.__glitched = (window.__glitched || 0) + 1; }).observe(document.body, { subtree: true, childList: true }));
   await page.waitForFunction(() => window.__dd && window.__dd.S && window.__dd.PLAN, null, { timeout: 60000 });
   await page.evaluate(() => window.__dd.setSimple(true));
   await page.click('nav button[data-v="watchView"]');
@@ -197,7 +198,7 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_hello", async () => {
-    await step("Aoi in the lobby (a scene): her name a word (the guide, till you've met her), her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), her body track (from her second line she walks to the bench and sits there till the shot ends), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
+    await step("Aoi in the lobby (a scene): her name a word (the guide, till you've met her), her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), her body track (from her second line she walks to the bench and sits there till the shot ends), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end), the player's thought typing itself out and retyped (Easy. -> Fine.)", async () => {
       // skipped along to her question; then, answered, watched to its end: a conversation card's answer (§9.9), her reply
       // two lines, then on to the line it skips to (her line for the other answer never said)
       // her body track: from her mark (x 1.5) to the bench (x -3); a skip jumps to her question, so the Watch is seen
@@ -226,6 +227,8 @@ const snapFor = nid => {                               // the run's state on rea
           || !asked || xq === null || Math.abs(xq - asked.x) > 0.15 || !(xs.length && Math.min(...xs) < -2.9))
         throw new Error(`her body track: ${JSON.stringify(tr)}; in the Watch at her question x ${xq}, then down to ${xs.length ? Math.min(...xs).toFixed(2) : "unseen"}`);
       const said = ["Good. Then let's begin.", "The corridor's yours. I'll be watching.", "One thing a room. Fine."], skipped = "Tell me if it gets to be too much.";
+      const typed = ["One thing a room. Easy.", "One thing a room. Fine."].map(x => subs.indexOf(x));   // typed out, then retyped (§9.15)
+      if (!(typed[0] >= 0 && typed[1] > typed[0] && subs.some((x, i) => i < typed[0] && x.startsWith("One th") && x.length < 23))) throw new Error("the thought typing itself out: " + JSON.stringify(subs.slice(-24)));
       if (said.some(x => !subs.includes(x)) || subs.includes(skipped) || subs.indexOf(said[0]) > subs.indexOf(said[1]) || subs.indexOf(said[1]) > subs.indexOf(said[2])) throw new Error("the conversation said " + JSON.stringify(subs));
       const tk = await page.evaluate(async () => { const { version } = await import("/stage.js");
         return window.__dd.watchStage.timeline(version(window.__dd.S.scenes.s_hello), { c3: "good" }).segs.filter(s => s.type === "clip").map(s => s.clip.id).join(); });
@@ -549,7 +552,7 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_night", async () => {
-    await step("Aoi at the door at night (a scene): her name now Aoi (a word, §9.14); a line kept by the chores done, one left out; the answer for the painting offered, the one for skipped chores not; her face by the painting", async () => {
+    await step("Aoi at the door at night (a scene): her name now Aoi (a word, §9.14); a line kept by the chores done, one left out; the answer for the painting offered, the one for skipped chores not; her face by the painting; an hour and a half skipped (the kitchen clock jumps on)", async () => {
       const t0 = Date.now();
       while (!(await page.$(".ph-dock .ph-opt"))) { if (Date.now() - t0 > 60000) throw new Error("her question never came"); await page.keyboard.press("Escape"); await page.waitForTimeout(300); }
       const q = await page.evaluate(async () => {
@@ -559,14 +562,17 @@ const snapFor = nid => {                               // the run's state on rea
           lines: tl.segs.filter(x => x.type === "clip" && !x.answer).map(x => x.clip.id), faces: ((tl.facePlan || {}).aoi || []).map(it => (it.p.if || []).join()) };
       });
       if (q.who !== "Aoi" || q.opts.join("|") !== "Ready.|I saw the painting." || q.lines.join() !== "c1,c2,c4" || q.faces.join("|") !== "found_painting") throw new Error(JSON.stringify(q));
+      const ran = await page.evaluate(() => { const R = window.__dd.run, s = R.lives.at("kitchen_clock", R.secs); return (s.spent || {}).running || 0; });
+      if (!(ran > 5400 && ran < 5400 + 3600)) throw new Error(`the kitchen clock after the skip ran ${ran.toFixed(0)} s (an hour and a half skipped: skip 5400)`);
       await page.keyboard.press("Digit2");
       await scene();
     });
   });
 
   await station("n_annex", async () => {
-    await step("18 · The annex (another level): dark, a checkpoint; the note read (ticks); the fusebox says it needs the fuse, takes it (gone from the pocket), and the power comes on (ticks)", async () => {
+    await step("18 · The annex (another level): a memory flicker that types out and breaks off; dark, a checkpoint; the note read (ticks); the fusebox says it needs the fuse, takes it (gone from the pocket), and the power comes on (ticks)", async () => {
       await until(() => window.__dd.play.level === "annex" && !window.__dd.play.powered(), null, "the annex, dark", 30000);
+      await until(() => (window.__glitched || 0) > 0 && !document.querySelector(".ph-glitch"), null, "the memory flicker breaking off (§9.15)", 30000);
       await use("annex_note", 0.6); await page.waitForSelector(".ph-panel .ph-text", { timeout: 30000 }); await closePanel(); await ticked("t18_note");
       const f = await goTo("fusebox", 0.8); if (!/^use: fuse/i.test(f.label)) throw new Error("the fusebox says " + f.label);
       await click(); await gameWait(0.4);

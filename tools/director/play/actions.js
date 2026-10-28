@@ -2,6 +2,8 @@
 // "not in Play yet", so a stitch still runs end to end and the gap is visible.
 import { register, part, verbOf } from "./parts.js";
 import { addKarma, holds } from "../stage.js";
+import { typedSecs } from "./typing.js";
+import { named } from "./hud.js";
 import { autosave } from "./menu.js";
 
 // an action's own result: a promise for one that takes time (a wait, a fade, a question), else nothing
@@ -24,7 +26,11 @@ register("action", "todo", { run: (v, a, rt) => rt.todo.add(a) });
 register("action", "tick", { run: (v, a, rt) => rt.todo.set(v, "done") });
 register("action", "fail", { run: (v, a, rt) => rt.todo.set(v, "failed") });
 register("action", "untodo", { run: (v, a, rt) => rt.todo.remove(v) });
-register("action", "think", { run: (v, a, rt) => rt.hud.line(v, "", lineSecs(v), true) });
+register("action", "think", { run: (v, a, rt) => {                                   // typing itself out if it breaks off or is retyped (§9.15)
+  const typed = typedSecs(named(v), { retype: a.retype && named(a.retype), breaks: a.breaks });
+  rt.hud.line(v, "", typed ? Math.max(1.5, typed + (a.breaks ? 0.4 : 1.0)) : lineSecs(v), true, typed ? { retype: a.retype, breaks: a.breaks } : null);
+} });
+register("action", "skip", { run: (v, a, rt) => rt.skipTime(+v) });            // time skipped: the clock's hands jump on, the tea goes cold
 register("action", "name", { run: (v, a, rt) => rt.askName(v, a.default) });   // the player types their name: {name} in what's shown from here
 register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? ((rt.story.cast || {})[a.who] || {}).name || a.who : "", lineSecs(a.line || v)) });
 // ask: a question with 2 to 4 answers at the bottom centre, under the question (`line`, spoken, or `text`, a thought) in

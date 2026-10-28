@@ -85,6 +85,20 @@ export const TASKS = [
       { id: id("b_lock_start"), when: { start: true }, do: [{ todo: task, text, ticks: { locked: v.door || "" } }] },
       { id: id("b_lock_done"), when: { ticked: task }, do: [...(T(v.thought) ? [{ think: T(v.thought) }] : []), { done: true }] }] }; },
     level: (v, S) => setOn(S, v.door, "latch", true, (x, k) => k === "door" || isDoor(x)) },
+  { id: "pills", label: "A timed chore: take your pills", icon: "clock", template: "chore",
+    hint: "a job on the to-do list with its time counting down: the player takes the thing up (the pills) in time and a counter goes up; out of time it's struck out, failed. Put one in each night for a count of doses taken",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Pill 1" }, { key: "thing", label: "What's taken (the pills)", kind: "thing" },
+      { key: "text", label: "On the list", kind: "text", ph: "Take your pills" }, { key: "secs", label: "Seconds to do it in", kind: "number", ph: "60" },
+      { key: "count", label: "Counted on (a counter)", kind: "counter", opt: true },
+      { key: "taken", label: "Taken, what they think", kind: "text", ph: "Bitter. Like always.", opt: true },
+      { key: "missed", label: "Out of time, what they think", kind: "text", ph: "Later. I'll take them later.", opt: true }],
+    build: (v, S, id) => { const text = T(v.text) || "Take your pills", task = id("chore_" + slug(text));
+      const done = [...(v.count ? [{ count: v.count }] : []), ...(T(v.taken) ? [{ think: T(v.taken) }] : [])], failed = T(v.missed) ? [{ think: T(v.missed) }] : [];
+      return { title: T(v.title) || text, template: "chore", target_min: 1, beats: [
+        { id: id("b_pills_start"), when: { start: true }, do: [{ todo: task, text, secs: +v.secs > 0 ? +v.secs : 60, ticks: { use: v.thing || "" }, ...(done.length || failed.length ? { on: Object.assign(done.length ? { done } : {}, failed.length ? { failed } : {}) } : {}) }] },
+        { id: id("b_pills_done"), when: { ticked: task }, do: [{ done: true }] },
+        { id: id("b_pills_missed"), when: { failed: task }, do: [{ done: true }] }] }; },
+    level: (v, S) => { setOn(S, v.thing, "use", "inspect", x => !x.use); setOn(S, v.thing, "text", "Two, with water.", x => x.use === "inspect" && !x.text); } },
   { id: "power_cut", label: "The power cut", icon: "light", template: "power",
     hint: "every bulb and lamp in the level dies (candles and fire burn on) and the switches with it; the player finds the breaker box in the dark and throws it",
     blanks: [{ key: "title", label: "The task", kind: "text", ph: "The power cut" }, { key: "breaker", label: "The breaker box", kind: "breaker" },

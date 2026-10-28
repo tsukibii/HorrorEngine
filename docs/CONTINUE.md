@@ -5,12 +5,28 @@ Written 2026-10-24 (small hours, the user away; brought up to date in the aftern
 lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
 dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
 latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
-on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002`) on
+on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
+the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-28, evening, on `game-research-001`, off `dev-002`): The Visitor, steps 1 and 2
+## 0. Latest (2026-10-28, night, on `dev-002`): the director's to-do built, the Studio's eyes, nose and face bake
+
+The user's asks this session, each its own commit:
+- **Merged `game-research-001`** (44773fe: The Visitor's research, abstract and chart, docs/HANDOFF_DIRECTOR_TODO.md)
+  and built its to-do: §1 to §6 and most of §7. The handoff's top lists the commits and what's still open: the
+  answering machine, the fireworks, the Obon kit pieces, the second tea secret, Build carrying a talk's answers' `go`.
+- **The Character Studio**, from the user's report and asks:
+  - the eyes vanished seen from the side: each eye its own stencil, the opening walled and arched into a smooth mask
+    after the user's red masks, the white's paint fading side on (1d595ff; LESSONS 2026-10-28);
+  - the hair's dullness after the bake: the user said leave it (a shader matter for Unreal later, maybe);
+  - a small nose: **Nose size** and **Nose projection** in the sculpt (aa7188c);
+  - **Bake the face**: the fit kept in `face.bin`, so the reference pictures can go (d5fa64b).
+- **Waiting on the user:** a look at the eyes from the side, the nose sliders and the bake; The Visitor's
+  `/build-game` once they say its chart looks right (below).
+
+## 0v. Before that (2026-10-28, evening, on `game-research-001`, off `dev-002`): The Visitor, steps 1 and 2
 
 The user started a new game (DECISIONS 2026-10-28, evening): The Visitor, set in Japan in one apartment, an old friend
 and crush who comes to visit. Their three steps are research, an abstract, and (once the abstract is approved) the

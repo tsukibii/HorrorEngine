@@ -61,6 +61,7 @@ export const BEHAVE_FIELDS = {
 
 const q = s => `“${s}”`;
 const plus = n => (n > 0 ? "+" : "") + n;
+const span = s => { s = +s || 0; const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h && m ? `${h} h ${m} min` : h ? `${h} h` : m ? `${m} min` : `${s} s`; };
 
 // ---- actions (a beat's `do`) ------------------------------------------------------------------------------------
 // n(kind, value): the desk's name for a reference (a line's English, a scene's title, an item's name)
@@ -71,8 +72,10 @@ export const ACTIONS = [
   { verb: "say", label: "Say a line", icon: "say", group: "story", hint: "a line from the lines table, spoken with its take",
     fields: [{ key: "say", label: "Line", kind: "line", verb: true }], make: () => ({ say: "" }), text: (a, n) => `Say ${n("line", a.say)}` },
   { verb: "think", label: "Think", icon: "think", group: "story", hint: "the player's own thought, as a subtitle",
-    fields: [{ key: "think", label: "Thought", kind: "longtext", verb: true, ph: "Her handwriting. Shakier than I remember." }],
-    make: () => ({ think: "" }), text: a => `Think ${q(a.think || "…")}` },
+    fields: [{ key: "think", label: "Thought", kind: "longtext", verb: true, ph: "Her handwriting. Shakier than I remember." },
+      { key: "retype", label: "then erased and retyped as", kind: "text", opt: true, ph: "Natsu." },
+      { key: "breaks", label: "breaks off (a memory flicker)", kind: "bool", opt: true }],
+    make: () => ({ think: "" }), text: a => `Think ${q(a.think || "…")}${a.retype ? `, then retyped as ${q(a.retype)}` : ""}${a.breaks ? ", breaking off" : ""}` },
   { verb: "name", label: "Ask the player's name", icon: "person", group: "story", hint: "a box to type their name in; {name} in any line, thought or answer shows it from then on (game.player_name until then)",
     fields: [{ key: "name", label: "The question", kind: "text", verb: true, ph: "What's your name?" }, { key: "default", label: "if nothing is typed", kind: "text", opt: true, ph: "the game's player name" }],
     make: () => ({ name: "What's your name?" }), text: a => `Ask the player's name${a.name ? " (" + q(a.name) + ")" : ""}${a.default ? `, else ${q(a.default)}` : ""}` },
@@ -163,6 +166,9 @@ export const ACTIONS = [
 
   { verb: "wait", label: "Wait", icon: "clock", group: "time", fields: [{ key: "wait", label: "Seconds", kind: "number", verb: true, ph: "1" }],
     make: () => ({ wait: 1 }), text: a => `Wait ${a.wait} s` },
+  { verb: "skip", label: "Time skips", icon: "clock", group: "time", hint: "missing time: the little things live through it at once (a clock's hands jump on, the tea goes cold); nothing else moves",
+    fields: [{ key: "skip", label: "Seconds skipped", kind: "number", verb: true, ph: "5400 (an hour and a half)" }],
+    make: () => ({ skip: 3600 }), text: a => `Time skips ${span(a.skip)}` },
   { verb: "fade", label: "Fade", icon: "fade", group: "time",
     fields: [{ key: "fade", label: "Fade", kind: "choice", verb: true, opts: ["out", "in"] }, { key: "secs", label: "over (s)", kind: "number", ph: "1", opt: true }],
     make: () => ({ fade: "out", secs: 1 }), text: a => `Fade ${a.fade} (${a.secs ?? 1} s)` },

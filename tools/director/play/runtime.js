@@ -847,6 +847,7 @@ export class PlayRuntime {
   stateOf(id) { const s = this.lives && this.lives.at(id, this.now()); return s ? s.state : null; }
   lifeActs(id) { return this.lives && this.lives.things[id] ? this.lives.acts(id, this.now()) : []; }
   setState(id, to, by = "story") { if (!this.lives) return; this.lives.set(id, to, this.now(), by); this.lifeEvents(); }
+  skipTime(secs) { if (!this.lives) return; this.lives.skip(this.now(), secs); this.lifeEvents(); }   // missing time: the little things live through it
   lifeEvents() {
     const ch = this.lives.changes;
     for (; this.livesSeen < ch.length; this.livesSeen++) { const c = ch[this.livesSeen]; this.emit({ type: "state", id: c.id, is: c.to, by: c.by }); }

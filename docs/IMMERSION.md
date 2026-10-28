@@ -67,6 +67,10 @@ States carry on: a kettle put on in a task is still boiling in the scene after i
 clip edges, never at a time of their own; a state that times out (the kettle boils after its `heating` seconds)
 counts from its cue.
 
+**Time skipped** (`{"skip": 5400}`, STORY_FORMAT §4): missing time. Every little thing lives through it at once (the
+wall clock's hands jump on an hour and a half, the tea poured before it is cold, the cigarette burnt out), and the
+player notices only by them. `life.js` `States.skip` moves every one's clock back by it and lets the timers run.
+
 ## 3. On the desk
 
 - **Add one from the stage:** right-click a counter, a table or the floor, *Add a little thing here…*, pick it from

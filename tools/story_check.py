@@ -32,7 +32,7 @@ BOARDS = {}                 # the board games this game's tables can have (story
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
            "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
-           "power"}
+           "power", "skip"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -72,7 +72,7 @@ PERSON = re.compile(r"^(A|An) ([A-Za-z-]+ ){0,3}person\b")
 LOOK_WORDS = re.compile(r"\b(at|toward|towards) (the )?(player|viewer|camera|you)\b|\blooks? at (him|her|them)\b", re.I)
 TIER_SECS = {}              # tier -> seconds of motion (the animation budget report)
 SEG_NAMES = {}              # segment name -> where
-STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state", "power"}
+STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state", "power", "skip"}
 TODO_ON = {"done", "failed"}  # a to-do task's `on`: actions when it's ticked, when it's failed
 NAME_SECS = 8.0             # the walker's time to type a name
 PLACEHOLDER = re.compile(r"\{([^{}\s]*)\}")      # {name} in shown text: the player's name; nothing else is filled in
@@ -138,7 +138,7 @@ def shown_texts(story):
         for a in lst or []:
             if not isinstance(a, dict):
                 continue
-            for k in ("think", "objective", "text", "chapter", "sub"):
+            for k in ("think", "objective", "text", "chapter", "sub", "retype"):
                 if isinstance(a.get(k), str):
                     out.append((where, a[k]))
             for o in a.get("options") or []:
@@ -155,8 +155,7 @@ def shown_texts(story):
         for ver in [sc] + list((sc.get("variants") or {}).values()):
             for c in ver.get("clips") or []:
                 cw = f"scene {sid} clip {c.get('id')}"
-                if isinstance(c.get("en"), str):
-                    out.append((cw, c["en"]))
+                out += [(cw, c[k]) for k in ("en", "retype") if isinstance(c.get(k), str)]
                 for o in (c.get("reply") or {}).get("options") or []:
                     out += [(cw, o[k]) for k in ("label", "think") if isinstance(o.get(k), str)]
                     out += [(cw, th["en"]) for th in L.then_list(o) if isinstance(th.get("en"), str)]
@@ -790,6 +789,7 @@ def check_scene(sid, sc, story, things, r):
                     r.err(f"{cw}: a thought is the player's: who \"player\"")
                 elif c.get("reply") or c.get("event"):
                     r.err(f"{cw}: a thought asks nothing: a reply or an event goes on someone's line")
+            check_typed(cw, c, c.get("think") is True, r)
             seam = c.get("seam")
             if i > 0:
                 if not seam:
@@ -925,6 +925,20 @@ def check_scene(sid, sc, story, things, r):
         check_faces(where, ver.get("faces"), ids, story, r)
     for a in sc.get("sets", []):
         check_action(f"scene {sid} sets", a, story, things, r)
+
+
+def check_typed(where, x, thought, r):
+    """A thought that types itself out (§9.15): `breaks` (true: types out and breaks off, a memory flicker) and `retype`
+    (the words it's erased back and retyped as); only a thought does."""
+    for k in ("breaks", "retype"):
+        if k in x and not thought:
+            r.err(f"{where}: {k} is a thought's (a think, or a player's line with think: true)")
+    if "breaks" in x and not isinstance(x["breaks"], bool):
+        r.err(f"{where}: breaks is true or false")
+    if "retype" in x and (not isinstance(x["retype"], str) or not x["retype"].strip()):
+        r.err(f"{where}: retype is the words it's retyped as")
+    elif "retype" in x and x["retype"] == (x.get("think") if isinstance(x.get("think"), str) else x.get("en")):
+        r.warn(f"{where}: retyped as the same words")
 
 
 FACE_KEYS = {"who", "expr", "at", "secs", "loop", "in", "out", "w", "speed", "if", "count", "min", "max"}   # (a condition: §9.14)
@@ -1220,6 +1234,13 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: power level {a['level']!r} isn't a level")
         if v == "off" and not any(t.use == "breaker" for t in things.values()) and '"power": "on"' not in json.dumps(story.get("stitches", {})):
             r.warn(f"{bid}: power off, and nothing brings it back (no breaker, no power on)")
+    elif k == "think":                                  # the player's thought, typing itself out if it breaks or retypes (§9.15)
+        if not isinstance(v, str) or not v.strip():
+            r.err(f"{bid}: think is the thought's words")
+        check_typed(bid, a, True, r)
+    elif k == "skip":                                   # time skipped: the little things live through it at once
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 < v <= 7 * 86400:
+            r.err(f"{bid}: skip {v!r}: the seconds skipped (5400: an hour and a half; a week at most)")
     elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
         if v not in TORCH_SET:
             r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")
@@ -1821,6 +1842,20 @@ class World:
             if m and LIFE.reach(lf, dict(self.things[f].d, acts=False), m, self.states[f]) is None:
                 self.set_state(f, m)
 
+    def skip_states(self, secs):
+        """Time skipped (`skip`): each little thing lives through it at once, its timers running out on the way (counted
+        from its state's start: the walk doesn't keep how long it's been in one; life.js States.skip keeps it)."""
+        for tid, lf in self.lives.items():
+            s, left = self.states[tid], secs
+            for _ in range(50):
+                d = LIFE.secs_of(lf, self.things[tid].d, s)
+                nxt = (LIFE.state_def(lf, s) or {}).get("next")
+                if not nxt or d is None or d > left:
+                    break
+                left, s = left - d, nxt
+            if s != self.states[tid]:
+                self.set_state(tid, s)
+
     def wait_state(self, nid, tid, to):
         """Play until it's in `to`: the player does what it takes beside it (and its leader), then waits."""
         secs = self.reach_state(tid, to)
@@ -2011,6 +2046,8 @@ class World:
                 self.locked.discard(v)
         elif k == "state":
             self.set_state(v, a.get("to"))
+        elif k == "skip" and isinstance(v, (int, float)):   # (one that isn't seconds is the check's to report)
+            self.skip_states(float(v))
         elif k == "power":
             self.power[a.get("level") or self.level] = v
 
@@ -2024,8 +2061,9 @@ class World:
                 self.apply_state(a)
             elif k == "say":
                 self.add("dialogue", L.line_secs(lines[v]) if a.get("wait", True) else 0)
-            elif k == "think":
-                self.add("dialogue", max(1.5, len(v) / 15))
+            elif k == "think":                            # (typing itself out: its typing and a moment to read)
+                typed = L.typed_secs(v if isinstance(v, str) else "", a.get("retype") if isinstance(a.get("retype"), str) else None, a.get("breaks"))
+                self.add("dialogue", max(1.5, typed + (0.4 if a.get("breaks") else 1.0)) if typed else max(1.5, len(v) / 15))
             elif k == "name":
                 self.add("scripted", NAME_SECS)
             elif k == "wait":

@@ -518,6 +518,11 @@ with `{"tick": "<id>"}` at the end of that beat, not by its own trigger (the sto
   cue (on its clip edge: what lasts counts from there) or an answer's `do`. States carry on through the run
 - `flag`, `unflag`, `give`, `take`
 - `wait`, `fade` (`in`/`out`, `secs`), `lookat` (`secs`, `lock`)
+- `skip`: **time skipped** (missing time; HANDOFF_DIRECTOR_TODO §7): `{"skip": 5400}` (seconds: an hour and a half, a
+  week at most): every little thing lives through it at once, as if each had been that much longer in its state (a
+  clock's hands jump on, 02:10 to 03:40; the tea goes cold; a cigarette burns down), and nothing else moves. In a beat,
+  a scene's cue (on its clip edge) or an answer's `do`. The walk runs each one's timers through it from its state's
+  start
 - `shot` (`closeup`, `who`, `line`), `seq` (a level sequence), `anim` (`clip`: a motions id)
 - `stalker` (`spawn despawn patrol hunt chase`, `at`, `route`)
 - `behave`: what a cast member does in play, until another `behave` (or a scene takes them and hands them back):
@@ -1016,3 +1021,19 @@ counter's `count` with `min` and/or `max`; with neither it always holds.
   block (*worn only if*) carry a condition as chips (+ a flag, + a count); the Database's Flags & counters tab keeps the
   game's **Words** (each word's choices in order, the last the fallback); an ending's inspector has its **words**. The
   Watch and Play fill and leave out by the run; the desk's script shows every line.
+
+### 9.15 Thoughts that type themselves out: memory flickers and retyping (HANDOFF_DIRECTOR_TODO §7)
+
+A thought (a `think` action, or a player's line with `think: true`) can type itself out, letter by letter (28 a
+second, a pause after punctuation):
+
+- **`breaks: true`, a memory flicker:** it types out, its last letters break up (glitching, in the bad colour) and
+  it's gone before it's read: `{"think": "Cold water. Her hands on my—", "breaks": true}`. Write it up to where it
+  breaks.
+- **`retype`, a thought correcting itself:** typed, held a moment, erased back to where the two part, and typed again
+  as these words: `{"think": "Natsuki.", "retype": "Natsu."}`. Both at once: retyped, then broken off.
+
+A thought with neither shows whole, as before. Its time is its typing and a moment to read (`storylib.typed_secs`, the
+desk's `play/typing.js`: the same numbers); a scene's thought clip is as long as that. Only thoughts type themselves
+out (the check refuses `breaks` or `retype` on anyone's spoken line). On the desk: the Line tab of a thought (*breaks
+off*, *then erased and retyped as*) and the Think command's fields.

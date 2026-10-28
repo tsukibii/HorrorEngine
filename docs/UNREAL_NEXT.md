@@ -114,6 +114,10 @@ The order (each a commit with an automation test, as S7 says):
   or a face with a condition left out where it doesn't hold (the night scene's c3, the answer "Not yet"); an ending's
   `text` under its title on the card. The StoryRunner reads them as the desk does (stage.js `holds`, `wordOf`); a
   table's setting `"flag:x"` is true or false by the run's flags. The reference: the lobby and night stations, the end.
+- [ ] Time skipped and thoughts typed (STORY_FORMAT `skip`, §9.15; not written for Unreal yet): a `skip` moves
+  every little thing's clock on at once (the kitchen clock in the night scene: its hands an hour and a half on); a
+  thought with `breaks` or `retype` types itself out in the footer as `play/typing.js` does (the same letters a second,
+  pauses, hold and erase), breaking up in the bad colour. The reference: the lobby's last thought, the annex's start.
 - [ ] A painted placeholder (docs/ASSETS.md §7, not written for Unreal yet): the importer builds its block with the
   template's UVs (`Art/Textures/<thing>/<thing>.json`: each face's island; Unreal's UVs from the top left, `(px / W,
   py / H)`, where the desk's `painted.js` flips v) and wears `<thing>.png` as its base colour; a close look beside the

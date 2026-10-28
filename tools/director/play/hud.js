@@ -10,6 +10,7 @@ export const MOUSE = '<svg viewBox="0 0 12 16" width="10" height="14" aria-hidde
   '<path d="M6 1v5.4M1.3 6.4h9.4" stroke="currentColor" stroke-width="1.1" fill="none"/><path d="M6 1.7A4.3 4.3 0 0 0 1.7 6H6z" fill="currentColor"/></svg>';
 export const mouseKey = () => { const e = mk("span", "ph-key ph-mouse"); e.innerHTML = MOUSE; e.title = "left click"; return e; };
 const FOCUS_MS = 350;                               // a glance doesn't pull focus, a held look does
+import { typedAt, glitched } from "./typing.js";
 import { applySettings } from "./menu.js";
 import { slot, SHOWN } from "./inventory.js";
 
@@ -33,8 +34,8 @@ export const named = t => typeof t === "string" ? t.replace(/\{name\}/g, NAME).r
 // set apart). English only: no Japanese over it (DECISIONS 2026-10-27, notes: other languages come from a system that
 // changes the whole dialogue, and there's no Japanese audio). The Watch's scenes and Play's lines both paint with this,
 // so a subtitle looks the same wherever it comes from
-export function paintLine(el, text, who, think) {
-  el.replaceChildren(...(who ? [mk("span", "ph-who", named(who))] : []), mk("span", "", named(text) || ""));   // a name can be a word: {her}
+export function paintLine(el, text, who, think, glitch = 0) {
+  el.replaceChildren(...(who ? [mk("span", "ph-who", named(who))] : []), mk("span", glitch ? "ph-glitch" : "", named(text) || ""));   // a name can be a word: {her}
   el.classList.toggle("on", !!text); el.classList.toggle("think", !!think);
 }
 
@@ -110,7 +111,20 @@ export class Hud {
     this.root.append(c); this.root.classList.add("chapter"); void c.offsetWidth; c.classList.add("on");   // the rest of the HUD steps back
     return new Promise(done => setTimeout(() => { c.classList.remove("on"); this.root.classList.remove("chapter"); setTimeout(() => { c.remove(); done(); }, 700); }, 700 + secs * 1000));
   }
-  line(text, who, secs, think) { paintLine(this.lineEl, text, who, think); this.lineUntil = performance.now() + secs * 1000; }
+  // a line for secs; a thought that types itself out (`how`: breaks, retype; typing.js) redrawn as it types, till
+  // another line comes or its time is up
+  line(text, who, secs, think, how) {
+    cancelAnimationFrame(this.typing || 0); this.typing = 0; this.lineUntil = performance.now() + secs * 1000;
+    if (!how || !(how.retype || how.breaks)) return paintLine(this.lineEl, text, who, think);
+    const t0 = performance.now(), words = named(text), again = how.retype ? named(how.retype) : null, until = this.lineUntil;
+    const step = () => {
+      if (performance.now() > until) return;
+      const u = (performance.now() - t0) / 1000, s = typedAt(words, { retype: again, breaks: how.breaks }, u);
+      paintLine(this.lineEl, s.glitch ? glitched(s.shown, s.glitch, Math.floor(u * 20)) : s.shown, who, think, s.glitch);
+      this.typing = s.done ? 0 : requestAnimationFrame(step);
+    };
+    step();
+  }
   log(text) {
     const e = mk("div", "", text); this.logEl.append(e);
     setTimeout(() => e.remove(), 5000);

@@ -1,6 +1,7 @@
 // The director's stage: a scene's level in greybox (the same plan the Unreal importer builds), the cast as previs
 // figures, and the player's eye. Plays a scene's clips on its elastic timeline with blends, seams and camera moves;
 // renders storyboard frames; finds which body parts the player can see; exports the blocking as glTF for Unreal.
+import { typedSecs } from "./play/typing.js";
 import * as THREE from "three";
 import * as M from "./motion.js";
 import * as K3 from "./kit3.js";
@@ -277,6 +278,7 @@ export function karmaPick(n, karma, story) {             // a flow choice by kar
   return (n.options || [])[n.options.length - 1];
 }
 export function clipSecs(c) {
+  if (c.think && (c.retype || c.breaks)) return Math.max(1.5, typedSecs(c.en || "", c) + (c.breaks ? 0.4 : 1.0));   // typing itself out (§9.15; storylib.clip_secs)
   if (c.dur) { const tr = c.trim || {}; return Math.max(0.1, +c.dur - +(tr.in || 0) - +(tr.out || 0)); }
   if (c.dur_tts) return +c.dur_tts;
   if (c.ja && /[\u3000-\u9fff]/.test(c.ja)) return Math.max(1.5, jaSecs(c.ja));
@@ -855,7 +857,8 @@ export class Stage {
     }
     out.trackers = {};
     for (const id of Object.keys(v.trackers || {})) { const p = this.trackerAt(tl, id, T); if (p) out.trackers[id] = p; }
-    if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; out.think = !!c.think; }
+    if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; out.think = !!c.think;
+      if (c.think && (c.retype || c.breaks)) out.typing = { text: c.en || "", retype: c.retype, breaks: !!c.breaks, t: T - seg.start }; }   // drawn as it types (typing.js)
     if (seg.type === "seam") {
       const k = seg.seam.kind, u = (T - seg.start) / (seg.end - seg.start);
       if (k === "blink") out.black = Math.sin(u * Math.PI);

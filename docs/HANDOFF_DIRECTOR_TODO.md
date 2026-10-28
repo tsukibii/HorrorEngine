@@ -9,6 +9,16 @@ the desk must make dialogue, order and staging easy to change. Read first: DECIS
 Each item below says what exists today (checked on 2026-10-28), what's missing, and what to build. **Ask the user
 before building any of it**; one step per commit, its check passing.
 
+**Built on `dev-002` (2026-10-28, the user's ask: "merge game-research-001 ... and do any of the
+HANDOFF_DIRECTOR_TODO"):** §1 the conversation card (c110826), §2 cutting and re-attaching the flow (f914d57), §3
+WRITERS keeping a build to dialogue, tasks and gameplay (e53c5fc), §4 the body track (e7749b7), §5 a character's
+models per scene (3340a5b), §6 the texture templates (bb3acf6); and of §7: the name variable as the game's words, lines,
+answers and faces left out or worn by a condition (the two expression tracks by a counter), the card game's settings
+by a flag, the endings' words on their title card (f3d83cf); time skipped, memory flickers and retyped thoughts, the
+pills quick task (committed with this note). **Still open from §7:** the answering machine's messages, the
+fireworks, the kit pieces (a butsudan with its offerings, the watermelon, futons in an oshiire, the garden's bench and
+vending machine), the second tea secret, and Build carrying a talk's answers' `go`.
+
 ## 1. A conversation card: one dialogue list, mandatory, easy to change (missing; the user's first ask)
 
 **Today.** A scene is a script, a row per line (add after, delete, drag to reorder, screenplay typing). Any line can be

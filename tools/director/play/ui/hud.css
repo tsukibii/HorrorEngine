@@ -165,6 +165,7 @@
 .play-hud .ph-line:empty{display:none}
 .play-hud .ph-line.on{opacity:1}
 .play-hud .ph-line.think>span:last-child{font-style:italic;opacity:.92}
+.play-hud .ph-line .ph-glitch{color:var(--ph-bad);text-shadow:1px 0 rgba(255,40,40,.55),-1px 0 rgba(40,200,255,.55)}   /* a memory flicker breaking up */
 .play-hud .ph-line.think>span:last-child::before{content:"("}.play-hud .ph-line.think>span:last-child::after{content:")"}
 .play-hud .ph-who{display:block;margin-bottom:2px;font-size:var(--ph-fs);font-weight:700;letter-spacing:.03em;color:var(--ph-who,var(--ph-accent))}
 /* a choice docked at the bottom centre (hud.js docked): in the footer, right under the question's line, the footer's

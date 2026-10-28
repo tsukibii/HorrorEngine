@@ -2771,7 +2771,8 @@
      "seam": {
       "kind": "blink"
      },
-     "en": "One thing a room. Fine."
+     "en": "One thing a room. Easy.",
+     "retype": "One thing a room. Fine."
     }
    ],
    "cues": [
@@ -3424,6 +3425,17 @@
      "if": [
       "!found_painting"
      ]
+    }
+   ],
+   "cues": [
+    {
+     "at": {
+      "clip": "c1",
+      "edge": "start"
+     },
+     "do": {
+      "skip": 5400
+     }
     }
    ]
   },
@@ -4919,6 +4931,10 @@
       "start": true
      },
      "do": [
+      {
+       "think": "Cold water. Her hands on my—",
+       "breaks": true
+      },
       {
        "power": "off"
       },

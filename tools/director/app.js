@@ -1,5 +1,6 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
+import { typedAt, glitched } from "./play/typing.js";
 import * as M from "./motion.js";
 import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels, wordOf, holds } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
@@ -1509,9 +1510,11 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     pane.append(el("div", { class: "row" }, el("span", { class: "lab" }, "id"), txt(c, "id", { style: "width:62px", title: "the clip's id: its take is found by it (game_scene_version_id)", after: () => { if (TAKES[oldTake]) alert(`The take ${TAKES[oldTake].name} was found by the old id: rename the file to ${takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id)} too, or it won't match.`); OPEN[sid].id = c.id; renderInspector(); } }),
       el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: () => { if (c.who !== "player") delete c.think; renderInspector(); } }),
       c.who === "player" ? chk(c, "think", "a thought (shown, never said)", renderInspector) : null,
+      c.think ? chk(c, "breaks", "breaks off (a memory flicker)", renderInspector) : null,
       el("span", { class: "lab" }, "length"), txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:64px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s")));
     pane.append(txt(c, "en", { w: true, ph: (S.game || {}).voice === "none" ? "the line (typed on screen)" : "English subtitle", after: renderInspector }),
       (S.game || {}).voice === "none" && !c.ja ? null : txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }),
+      c.think ? txt(c, "retype", { w: true, drop: true, ph: "then erased and retyped as… (its words become these: Natsuki. → Natsu.)", after: renderInspector }) : null,
       condRow(c, CTX, "said only if"));                // a line left out unless it holds (§9.14)
     if ((S.format || 2) >= 3) pane.append(takeSec(c));
   }
@@ -1831,7 +1834,7 @@ function scrubTo(T) {
 }
 function paintOv(sel, o) {
   const ov = $(sel); ov.querySelector(".sub").textContent = named(o.sub) || ""; ov.querySelector(".who").textContent = o.who || "";
-  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, !o.think && o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || (o.think ? "" : o.speaker), o.think);   // the Watch's subtitles are the game's footer (a thought: the player's own, set apart)
+  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, !o.think && o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || (o.think ? "" : o.speaker), o.think, o.glitch);   // the Watch's subtitles are the game's footer (a thought: the player's own, set apart)
   ov.querySelector(".black").style.opacity = o.black || 0; ov.querySelector(".tag").textContent = o.tag || "";
 }
 function playScene(sc, ver, fromClip) {
@@ -1993,7 +1996,7 @@ function achieved(nid) {
     box.append(card); setTimeout(() => card.remove(), 6000);
   }
 }
-function karmaAct(acts, t) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, t ?? RUN.secs); } wclock(); }
+function karmaAct(acts, t) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, t ?? RUN.secs); if (a.skip && RUN.lives) RUN.lives.skip(t ?? RUN.secs, +a.skip); } wclock(); }
 // the little things with a life (docs/IMMERSION.md): {id: {life, d}}, their dicts from the story, their lives from the plan
 function lifeThings() {
   const out = {}, th = things();
@@ -2006,9 +2009,9 @@ function lifeTick(stage, T) { if (stage.life && RUN && RUN.lives) stage.life.upd
 function stateCues(tl, ver) {
   const out = [];
   for (const cu of ver.cues || []) {
-    if (!cu.do || !cu.do.state) continue;
+    if (!cu.do || !(cu.do.state || cu.do.skip)) continue;
     const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
-    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), id: cu.do.state, to: cu.do.to });
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), id: cu.do.state, to: cu.do.to, skip: +cu.do.skip || 0 });
   }
   return out.sort((x, y) => x.t - y.t);
 }
@@ -2086,7 +2089,7 @@ async function watchScene(sc, nid, sid, k) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
     const now = performance.now(); T += (now - last) / 1000; last = now;
-    while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); RUN.lives.set(c.id, c.to, t0 + c.t); }
+    while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }
     while (sounds.length && sounds[0].t <= T) { const c = sounds.shift(); if (T - c.t < 0.5) watchSound(c); }
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
@@ -2107,12 +2110,14 @@ async function watchScene(sc, nid, sid, k) {
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); lifeTick(watchStage, t0 + T); watchStage.render();
-    paintOv("#watchOv", { sub: st.sub, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
+    let sub = st.sub, glitch = 0;
+    if (st.typing) { const y = st.typing, s = typedAt(named(y.text), { retype: y.retype && named(y.retype), breaks: y.breaks }, y.t); glitch = s.glitch; sub = glitch ? glitched(s.shown, glitch, Math.floor(y.t * 20)) : s.shown; }   // a thought typing itself out (§9.15)
+    paintOv("#watchOv", { sub, glitch, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
     if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
-  if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
+  if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
   stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
@@ -2214,7 +2219,7 @@ async function watchStitch(st, nid, n) {
   watchStage.frame({ view: S.levels[lvl].start, camera: { mode: "free" }, clips: [{ id: "x", who: "", en: "" }], stage: {} }, 0, FILES);
   await fade(0.25, 0.5);
   const mins = +(st.target_min || 3);
-  for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, RUN.secs); }
+  for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, RUN.secs); if (a.skip && RUN.lives) RUN.lives.skip(RUN.secs, +a.skip); }
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(n.ref));
   if (st.play) {                                   // a round of gameplay: did it go your way?
     const pl = st.play, results = PLAYS[pl.type] || ["success", "fail"], seek = roundSeeker(pl, lvl);

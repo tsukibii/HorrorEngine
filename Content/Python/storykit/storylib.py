@@ -525,9 +525,41 @@ def reply_secs(clip):
     return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (sum(clip_secs(t) for t in then_list(first)) if first else 0.0)
 
 
+TYPE_CPS, ERASE_CPS, TYPE_HOLD, TYPE_GLITCH = 28.0, 70.0, 0.6, 0.45   # as tools/director/play/typing.js
+
+
+def type_secs(s):
+    """The time to type s letter by letter, a pause after punctuation (none after the last): play/typing.js typeSecs."""
+    a, t = list(s or ""), 0.0
+    for i, ch in enumerate(a):
+        t += 1 / TYPE_CPS
+        if i < len(a) - 1:
+            t += 0.12 if ch in ",;" else 0.3 if ch in ".!?" else 0.35 if ch in "…—" else 0.0
+    return t
+
+
+def typed_secs(text, retype=None, breaks=False):
+    """A thought that types itself out (STORY_FORMAT §9.15): typed, then erased back to where `retype` parts from it and
+    typed again, or broken up at its end (`breaks`); 0 for a thought with neither (it shows whole). typing.js typedSecs."""
+    if not retype and not breaks:
+        return 0.0
+    a, t = list(text or ""), type_secs(text)
+    if retype:
+        b, k = list(retype), 0
+        while k < len(a) and k < len(b) and a[k] == b[k]:
+            k += 1
+        t += TYPE_HOLD + (len(a) - k) / ERASE_CPS + type_secs("".join(b[k:]))
+    if breaks:
+        t += TYPE_GLITCH
+    return t
+
+
 def clip_secs(clip, line_fallback=12.0):
     """A clip's length: its measured `dur` (from the take, after its trim), else the placeholder voice's `dur_tts`,
-    else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath."""
+    else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath; a
+    thought that types itself out (§9.15) at least its typing and a moment to read (none after it breaks off)."""
+    if clip.get("think") and (clip.get("retype") or clip.get("breaks")):
+        return max(1.5, typed_secs(clip.get("en", ""), clip.get("retype"), clip.get("breaks")) + (0.4 if clip.get("breaks") else 1.0))
     if clip.get("dur"):
         tr = clip.get("trim") or {}
         return max(0.1, float(clip["dur"]) - float(tr.get("in", 0)) - float(tr.get("out", 0)))

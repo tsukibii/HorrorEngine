@@ -281,7 +281,9 @@ console.log("quick events (templates.js)");
   const Q = await import("./templates.js");
   const S = story("Sample"), hall = S.levels.house.rooms.find(r => r.id === "hall");   // the day's small systems need a stain, a breaker, a mop and a flashlight
   hall.props.push({ id: "hall_mud", shape: "box 0.7 0.5 0.01", at: [3.0, 1.5], use: "clean", stain: "mud" }, { id: "hall_breaker", shape: "box 0.3 0.1 0.4", at: [3.85, 0.6], z: 1.3, use: "breaker" },
-    { id: "hall_mop", shape: "box 0.1 0.1 1.2", at: [0.3, 2.0], use: "pickup", item: "mop" }, { id: "hall_torch", shape: "cyl 0.025 0.18", at: [0.5, 1.0], use: "pickup", item: "flashlight" });
+    { id: "hall_mop", shape: "box 0.1 0.1 1.2", at: [0.3, 2.0], use: "pickup", item: "mop" }, { id: "hall_torch", shape: "cyl 0.025 0.18", at: [0.5, 1.0], use: "pickup", item: "flashlight" },
+    { id: "hall_pills", shape: "box 0.05 0.05 0.09", at: [3.6, 2.2], z: 0.9 });
+  S.game.counters = Object.assign({}, S.game.counters, { doses: { label: "pills taken" } });
   Object.assign(S.items, { mop: { name: "Mop" }, flashlight: { name: "Flashlight", torch: true } });
   const th = thingsOf(S), of = f => Object.keys(th).filter(k => f(th[k]));
   const room = of(t => t.kind === "room"), door = of(t => t.kind === "door"), locker = of(t => t.use === "locker"), person = of(t => /^person/.test(t.shape || ""));
@@ -295,6 +297,7 @@ console.log("quick events (templates.js)");
     chore: { stain: "hall_mud", with: "mop", text: "Mop up the mud", thought: "That's better." }, power_cut: { breaker: "hall_breaker" },
     lock_up: { door: "front_door", text: "Lock the front door", thought: "There." },
     door_knock: { door: "front_door", count: 3, figure: person[0], thought: "Nobody there. Then someone." },
+    pills: { thing: "hall_pills", text: "Take your pills", secs: 60, count: "doses", taken: "Bitter.", missed: "Later." },
   };
   const made = [];
   for (const tpl of Q.TASKS) {
@@ -560,6 +563,46 @@ print(json.dumps({"words": [L.word_of(d["S"], "her", set(f), c) for f, c in d["c
     && new RegExp(`${tbl.game}'s rounds by a flag is true or false`).test(out3) && t3.settings.extra === "!flag:met_her"
     ? ok("a table's setting by a flag: true or false by the run's flags (and not, with !), a number by a flag refused, the flag's rename moving it")
     : fail(`settings by a flag: ${JSON.stringify({ pillsOff, pillsOn, extra: t3.settings.extra })} ${out3.split("\n").filter(l => /rounds/.test(l)).join(" | ")}`);
+}
+
+// time skipped and thoughts that type themselves out (STORY_FORMAT `skip`, §9.15; HANDOFF_DIRECTOR_TODO §7): the little
+// things live through a skip at once, a thought types, holds, is erased back and retyped, or breaks off; the desk and the
+// story check count the same time
+console.log("time skipped, thoughts typed (life.js States.skip, play/typing.js; storylib.typed_secs)");
+{
+  const { States } = await import("./life.js"), Y = await import("./play/typing.js"), { clipSecs } = await import("./stage.js");
+  const st = new States(LIVES, { k: { life: "kettle", d: {} }, run: { life: "clock", d: {} }, still: { life: "clock", d: { state: "stopped" } } }).start(0);
+  st.set("k", "heating", 10);
+  st.skip(20, 5400);
+  const k = st.at("k", 20), c = st.at("run", 20), c2 = st.at("still", 20), later = st.at("run", 30);
+  k.state === "off" && Math.abs(c.spent.running - 5420) < 1e-6 && !(c2.spent.running > 0) && Math.abs(later.spent.running - 5430) < 1e-6
+    && st.changes.filter(x => x.id === "k").map(x => x.to).join() === "heating,boiling,boiled,off"
+    ? ok("an hour and a half skipped: a kettle heating boils, boiled and cools off on the way; a running clock jumps on 5400 s and runs on; a stopped one doesn't")
+    : fail(`skip: ${JSON.stringify({ k: k.state, run: c.spent, still: c2.spent, later: later.spent, ch: st.changes })}`);
+  const at = (t, o, u) => Y.typedAt(t, o, u).shown, R = { retype: "Natsu." }, t1 = Y.typeSecs("Natsuki.");
+  const seq = [at("Natsuki.", R, 0), at("Natsuki.", R, t1 / 2), at("Natsuki.", R, t1 + 0.3), at("Natsuki.", R, t1 + 0.6 + 0.02), at("Natsuki.", R, Y.typedSecs("Natsuki.", R) + 0.01)];
+  const b = Y.typedAt("Her hands on my—", { breaks: true }, Y.typeSecs("Her hands on my—") + 0.2), gone = Y.typedAt("Her hands on my—", { breaks: true }, Y.typedSecs("Her hands on my—", { breaks: true }) + 0.01);
+  const whole = Y.typedAt("Just a thought.", {}, 0);
+  const texts = [["Natsuki.", "Natsu.", false], ["Her hands on my—", null, true], ["One thing a room. Easy.", "One thing a room. Fine.", false], ["Wait, what? No.", "Wait. No.", true]];
+  const py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+d = json.load(sys.stdin)
+print(json.dumps({"typed": [L.typed_secs(t, r, b) for t, r, b in d["texts"]], "clips": [L.clip_secs({"who": "player", "think": True, "en": t, **({"retype": r} if r else {}), **({"breaks": True} if b else {})}) for t, r, b in d["texts"]]}))`], { input: JSON.stringify({ texts }), encoding: "utf8" }));
+  const js = texts.map(([t, r, br]) => Y.typedSecs(t, { retype: r, breaks: br })), jc = texts.map(([t, r, br]) => clipSecs(Object.assign({ who: "player", think: true, en: t }, r ? { retype: r } : {}, br ? { breaks: true } : {})));
+  const near = (a, b) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) < 1e-9);
+  seq[0] === "" && seq[1].length > 0 && seq[1].length < 8 && "Natsuki.".startsWith(seq[1]) && seq[2] === "Natsuki." && seq[3].startsWith("Natsu") && seq[3].length < 8 && seq[4] === "Natsu."
+    && b.glitch > 0 && b.shown === "Her hands on my—" && Y.glitched(b.shown, b.glitch, 3) !== b.shown && gone.shown === "" && gone.done && whole.shown === "Just a thought." && whole.done
+    && near(js, py.typed) && near(jc, py.clips)
+    ? ok(`a thought typed, held, erased back to “Natsu” and retyped; one breaking up and gone; a plain one whole; the desk and the story check count the same (${js.map(x => x.toFixed(2)).join(", ")} s)`)
+    : fail(`typing: ${JSON.stringify({ seq, b, gone, js, py, jc })}`);
+  // the faults: a skip that isn't seconds, a typed line that isn't a thought, breaks that isn't true or false
+  const S = clone(story("TestRoom001")), hello = S.scenes.s_hello.clips;
+  S.stitches.t_annex.beats[0].do.push({ skip: "1:30" }, { think: "Now.", breaks: "yes" });
+  hello[0].retype = "Hi.";
+  const out = storyCheck("TestRoom001", S);
+  /skip '1:30': the seconds skipped/.test(out) && /breaks is true or false/.test(out) && /clip c1: retype is a thought's/.test(out)
+    ? ok("a skip that isn't seconds, breaks that isn't true or false, a spoken line retyped: found by the story check")
+    : fail("typed faults: " + out.split("\n").filter(l => /skip|breaks|retype/.test(l)).join(" | "));
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
