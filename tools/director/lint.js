@@ -6,6 +6,7 @@
 //   things: the plan's placed things (id -> {kind, use, level}); poses: the pose names; secs(clip): a clip's length
 import { ACTION, TRIGGER, verbOfAction, verbOfTrigger, fieldsOf } from "./commands.js";
 import { placeOf } from "./refs.js";
+import { arrows, cutsOf } from "./flowedit.js";
 
 const IS = {                                       // what a placed thing must be for a field of each kind
   thing: t => t.kind !== "room", spot: t => t.use === "spot", door: t => t.kind === "door", light: t => t.use === "light",
@@ -165,19 +166,19 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (n.type === "choice") {
       if (!(n.options || []).length) add("error", "a choice with no options", p, n);
       (n.options || []).forEach((o, i) => {
-        if (!o.to) add("error", `option ${o.label || i + 1} goes nowhere: choose where`, [...p, "options", i], n);
+        if (!o.to) add("warn", `option ${o.label || i + 1} goes nowhere: the flow's cut here (choose where)`, [...p, "options", i], n);
         else if (!flow[o.to]) add("error", `option ${o.label || i + 1} goes to ${o.to}, which doesn't exist`, [...p, "options", i], n);
         if (n.by === "act" && o.when) trigger(o.when, [...p, "options", i, "when"], { beats: [] });
         if (n.by === "count" && o.count && !counters[o.count]) add("error", `option ${i + 1} counts ${o.count}, which isn't a counter`, [...p, "options", i], n);
       });
-    } else if (n.type !== "ending" && !n.next) add("error", "it goes nowhere: connect it to the next node", p, n);
+    } else if (n.type !== "ending" && !n.next) add("warn", "the flow's cut here: drag its stub onto the card that comes next", p, n);   // sliced on the board (§2)
   }
   const seen = new Set(), todo = [game.start];
-  const jumps = sc => [sc || {}, ...Object.values((sc && sc.variants) || {})].flatMap(v => (v.clips || []).flatMap(c => ((c.reply || {}).options || []).map(o => isObj(o.go) ? o.go.node : null)));   // answers that leave for a card (§9.9)
-  const outs = n => [n.next, ...(n.options || []).map(o => o.to), n.type === "stitch" && ((S.stitches || {})[n.ref] || {}).timer ? S.stitches[n.ref].timer.fail : null, ...(n.type === "scene" ? jumps((S.scenes || {})[n.ref]) : [])];
-  while (todo.length) { const id = todo.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); todo.push(...outs(flow[id])); }
-  for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); st.push(...outs(flow[id])); } }
-  for (const [nid, n] of Object.entries(flow)) if (!seen.has(nid) && flow[game.start]) add(n.type === "ending" ? "error" : "warn", n.type === "ending" ? "no path reaches this ending" : "nothing leads here", ["flow", nid], n);
+  const outs = id => arrows(S, id).map(a => a.to);   // its next, its ways, its timer's, an answer's card (§9.9)
+  while (todo.length) { const id = todo.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); todo.push(...outs(id)); }
+  for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); st.push(...outs(id)); } }
+  const sliced = cutsOf(S).length > 0;               // cut on the board: what the cut leaves out is a warning till it's joined (§2)
+  for (const [nid, n] of Object.entries(flow)) if (!seen.has(nid) && flow[game.start]) add(n.type === "ending" && !sliced ? "error" : "warn", n.type === "ending" ? "no path reaches this ending" + (sliced ? " (the flow's cut)" : "") : "nothing leads here" + (sliced ? " (the flow's cut)" : ""), ["flow", nid], n);
 
   // ---- the board's acts
   const inAct = {};

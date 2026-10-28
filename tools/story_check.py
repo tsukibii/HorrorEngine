@@ -1451,7 +1451,9 @@ def check_flow(story, things, r):
             table = scenes if t == "scene" else stitches
             if n.get("ref") not in table:
                 r.err(f"flow {nid}: {t} {n.get('ref')!r} doesn't exist")
-            if n.get("next") not in flow:
+            if not n.get("next"):                       # sliced on the board (HANDOFF_DIRECTOR_TODO §2): a warning till it's joined
+                r.warn(f"flow {nid}: the flow's cut here (nothing comes after it): drag its stub onto the card that does")
+            elif n.get("next") not in flow:
                 r.err(f"flow {nid}: next {n.get('next')!r} isn't a flow node")
         elif t == "choice":
             by, opts = n.get("by"), n.get("options", [])
@@ -1477,8 +1479,10 @@ def check_flow(story, things, r):
                     r.err(f"flow {nid}: the last karma option is the fallback: no `min` or `max`")
             if len(opts) < 2:
                 r.err(f"flow {nid}: a choice needs two options or more")
-            for o in opts:
-                if o.get("to") not in flow:
+            for i, o in enumerate(opts):
+                if not o.get("to"):
+                    r.warn(f"flow {nid}: option {o.get('label') or o.get('result') or i + 1} goes nowhere: the flow's cut here (choose where)")
+                elif o.get("to") not in flow:
                     r.err(f"flow {nid}: option goes to {o.get('to')!r}, not a flow node")
                 if by == "act":
                     check_trigger(nid, o.get("when", {}), story, things, set(), r)
@@ -2227,7 +2231,7 @@ def reply_route(clips, i, o):
 def explore(w, nid, done_paths, visited_nodes):
     flow, story = w.story["flow"], w.story
     while True:
-        if len(done_paths) >= MAX_PATHS:
+        if len(done_paths) >= MAX_PATHS or not nid:    # (no node: the flow's cut there, a warning of its own; the walk stops)
             return
         if nid in w.path and flow[nid]["type"] != "ending":
             w.r.err(f"flow loops back to {nid} (path {' > '.join(w.path)}): loops need a flag choice to leave")
@@ -2273,10 +2277,10 @@ def explore(w, nid, done_paths, visited_nodes):
                     explore(b, it["to"], done_paths, visited_nodes)
             pl = st.get("play")
             if pl:                                      # no result choice next: the first result's `on` happens
-                nxt = flow.get(n["next"], {})
+                nxt = flow.get(n.get("next"), {})
                 if not (nxt.get("type") == "choice" and nxt.get("by") == "result" and nxt.get("of") == nid):
                     w.run_actions(nid, (pl.get("on") or {}).get(L.PLAYS.get(pl.get("type"), ["success"])[0], []))
-            nid = n["next"]
+            nid = n.get("next")
         elif t == "scene":
             sc = story["scenes"][n["ref"]]
             for cid, oid in w.reply_forks(sc):         # an answer that opens a branch later, or goes elsewhere: its own path
@@ -2285,9 +2289,9 @@ def explore(w, nid, done_paths, visited_nodes):
                 b.forced[(nid, cid)] = oid
                 b.play_scene(nid, sc)
                 to, b.jump = b.jump, None
-                explore(b, to or n["next"], done_paths, visited_nodes)
+                explore(b, to or n.get("next"), done_paths, visited_nodes)
             w.play_scene(nid, sc)
-            nid, w.jump = w.jump or n["next"], None
+            nid, w.jump = w.jump or n.get("next"), None
         elif t == "ending":
             done_paths.append(w)
             return
@@ -2296,7 +2300,7 @@ def explore(w, nid, done_paths, visited_nodes):
             if by == "flag":
                 opt = next(o for o in n["options"] if all(
                     (f[1:] not in w.flags) if f.startswith("!") else (f in w.flags) for f in o.get("if", [])))
-                nid = opt["to"]
+                nid = opt.get("to")
                 continue
             if by == "act":              # the player can still act while the choice waits (use a key, read a note)
                 while w.player_move():
@@ -2313,7 +2317,7 @@ def explore(w, nid, done_paths, visited_nodes):
                 for o in n["options"]:
                     v = w.counters.get(o.get("count"), 0.0)
                     if ("min" not in o or v >= o["min"]) and ("max" not in o or v <= o["max"]):
-                        nid = o["to"]
+                        nid = o.get("to")
                         break
                 continue
             if by == "karma":
@@ -2321,7 +2325,7 @@ def explore(w, nid, done_paths, visited_nodes):
                     axis = o.get("axis") or ("karma" if "karma" in L.karma_axes(story) else next(iter(L.karma_axes(story))))
                     v = w.karma.get(axis, 0.0)
                     if ("min" not in o or v >= o["min"]) and ("max" not in o or v <= o["max"]):
-                        nid = o["to"]
+                        nid = o.get("to")
                         break
                 continue
             for i, o in enumerate(ok):
@@ -2342,7 +2346,7 @@ def explore(w, nid, done_paths, visited_nodes):
                     b.results[n.get("of")] = o["result"]
                     b.run_actions(nid, (ev.get("on") or {}).get(o["result"], []))
                     b.route.append({"node": nid, "do": "event", "result": o["result"]})
-                explore(b, o["to"], done_paths, visited_nodes)
+                explore(b, o.get("to"), done_paths, visited_nodes)
             return
 
 
@@ -2429,10 +2433,13 @@ def main():
         if capped:
             r.warn(f"the walk stopped at {MAX_PATHS} paths for the {', '.join(capped)} player: past that its paths went unchecked "
                    "(every answer, choice and secret that branches multiplies them)")
-        for nid in story["flow"]:
+        flow = story["flow"]                   # sliced on the board: what the cut leaves out is a warning till it's joined
+        sliced = any(not n.get("next") for n in flow.values() if n.get("type") in ("scene", "stitch")) or \
+            any(not o.get("to") for n in flow.values() if n.get("type") == "choice" for o in n.get("options", []))
+        for nid in flow:
             if nid not in visited:
-                (r.err if story["flow"][nid]["type"] == "ending" and not capped else r.warn)(
-                    f"flow {nid}: no path reaches it" + (" (of the paths walked)" if capped else ""))
+                (r.err if flow[nid]["type"] == "ending" and not capped and not sliced else r.warn)(
+                    f"flow {nid}: no path reaches it" + (" (of the paths walked)" if capped else " (the flow's cut)" if sliced else ""))
         fired = set().union(*(p.fired for p in paths)) if paths else set()
         for tid, st in story.get("stitches", {}).items():
             for b in st.get("beats", []):
@@ -2514,6 +2521,8 @@ def main():
     if r.errors:
         print(f"STORY FAILED ({len(r.errors)} errors)")
         sys.exit(1)
+    if not summary and story.get("flow"):
+        summary = "no path reaches an ending yet (the flow's cut)" if any("the flow's cut" in w for w in r.warnings) else "no path reaches an ending"
     print(f"STORY ok ({story['game'].get('id', path.parent.name)}: {summary}, {len(r.warnings)} warnings)")
 
 

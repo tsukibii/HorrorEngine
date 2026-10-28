@@ -585,6 +585,12 @@ The story's `frames` are the board's acts: `[{"id": "f_act1", "title": "Act 1: t
 ["n_arrive", "n_message"]}]`, a coloured frame behind each group of cards, moved and folded together on the desk; a node
 is in one act at most. Only the desk reads them.
 
+**A cut flow** (sliced on the desk's board while it's reordered, HANDOFF_DIRECTOR_TODO §2): a scene's or task's `next`
+may be `null` and a choice's option's `to` empty: the flow's cut there. Until it's joined again the checks say so as
+**warnings**, never errors (the cut, the cards nothing reaches, an ending no path reaches, "no path reaches an ending
+yet" in STORY's line), the walk stops at the cut, and the Watch ends there with a card saying the flow's cut; a `next`
+or `to` naming a node that doesn't exist is still an error.
+
 **Endings:** `kind` is `good neutral bad secret other`. `short_ok` exempts an early death ending from `target_min` and
 `fast_min`.
 

@@ -83,6 +83,11 @@ select.secret{max-width:170px}
 /* ---- the flow board (board.js) and its side: the palette, the outline ---- */
 .bworld{position:absolute;left:0;top:0;transform-origin:0 0}
 .bworld svg#edges{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.bworld svg#edges .ehit{pointer-events:stroke;cursor:pointer}
+.bworld svg#edges .ehit:hover{stroke:rgba(217,164,65,.28)}
+#board .card.loose{opacity:.5}
+#board .card.loose:hover,#board .card.loose.sel{opacity:.85}
+#board .card.cut .port{border-color:#c0473f;background:#3a1714}
 #board .card{transition:box-shadow .12s,outline-color .12s;box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer}
 #board .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.5)}
 #board .card.lifting{box-shadow:0 12px 28px rgba(0,0,0,.6);z-index:5;cursor:grabbing;opacity:.95}

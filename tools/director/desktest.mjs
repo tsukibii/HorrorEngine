@@ -95,6 +95,65 @@ for (const g of games) {
   }
 }
 
+// ---- the flow cut and joined again on the board (flowedit.js, HANDOFF_DIRECTOR_TODO §2)
+console.log("the flow cut and joined again (flowedit.js)");
+{
+  const F = await import("./flowedit.js");
+  const S0 = story("Sample"), th = thingsOf(S0);
+  const chain = (S, k = 7) => { const out = []; for (let id = S.game.start; id && out.length < k; id = (S.flow[id] || {}).next) out.push(id); return out.join(" › "); };
+  const errsOf = S => run(S, th).filter(p => p.sev === "error");
+  const checkOk = S => { const out = storyCheck("Sample", S); return /STORY ok/.test(out) ? true : out.trim().split("\n").slice(-3).join(" / "); };
+  {  // cut: warnings, not errors; the cards after it loose; joined again, the story as it was
+    const S = clone(S0); F.setArrow(S, "n_message", ["next"], null);
+    const ps = run(S, th), cut = ps.find(p => p.at.node === "n_message" && /cut here/.test(p.text)), errs = ps.filter(p => p.sev === "error"), loose = ps.filter(p => /\(the flow's cut\)/.test(p.text)).length;
+    const c = checkOk(S), cuts = F.cutsOf(S);
+    F.setArrow(S, "n_message", ["next"], S0.flow.n_message.next);
+    const back = JSON.stringify(S.flow) === JSON.stringify(S0.flow);
+    cut && cut.sev === "warn" && !errs.length && c === true && cuts.length === 1 && loose > 3 && back
+      ? ok(`cut after “Mari in the hall”: a stub (${cut.text}), ${loose} cards loose as warnings, no errors, the story check passes; joined again, the flow as it was`)
+      : fail(`a cut: ${cut ? cut.sev : "not said"}, errors ${errs.map(p => p.text).join("; ")}, story check ${c}, cuts ${cuts.length}, loose ${loose}, back ${back}`);
+  }
+  {  // a choice's way cut
+    const S = clone(S0), ch = Object.keys(S.flow).find(k => S.flow[k].type === "choice" && S.flow[k].by === "act");
+    F.setArrow(S, ch, ["option", 0], null);
+    const p = run(S, th).find(x => x.at.node === ch && /goes nowhere/.test(x.text)), c = checkOk(S);
+    p && p.sev === "warn" && c === true ? ok(`a choice's way cut (${ch}): ${p.text}, a warning; the story check passes`) : fail(`a choice's way cut: ${p ? p.sev : "not said"}, story check ${c}`);
+  }
+  {  // a card put on an arrow
+    const S = clone(S0); S.scenes.s_inserted = clone(S.scenes.s_game); for (const x of S.scenes.s_inserted.clips || []) for (const g of (x.body || {}).segments || []) g.reuse = true;
+    F.insertOn(S, "n_arrive", ["next"], "n_inserted", { type: "scene", ref: "s_inserted" });
+    const c = checkOk(S), want = "n_arrive › n_inserted › n_message › n_game";
+    chain(S).startsWith(want) && !errsOf(S).length && c === true ? ok(`a card put on an arrow: ${chain(S, 4)}; no errors, the story check passes`) : fail(`insert: ${chain(S)}, story check ${c}`);
+  }
+  {  // two cards swapped, and back
+    const S = clone(S0); S.frames = [{ id: "f_a", title: "A", nodes: ["n_message"] }, { id: "f_b", title: "B", nodes: ["n_game"] }];
+    const xy = [S.flow.n_message.xy, S.flow.n_game.xy] = [[10, 20], [30, 40]];
+    F.swapNodes(S, "n_message", "n_game");
+    const one = chain(S, 4), acts = S.frames.map(f => f.nodes[0]).join(), at = JSON.stringify([S.flow.n_message.xy, S.flow.n_game.xy]), c = checkOk(S);
+    F.swapNodes(S, "n_message", "n_game");
+    const back = chain(S, 4) === chain(S0, 4);
+    one === "n_arrive › n_game › n_message › n_hide1" && acts === "n_game,n_message" && at === JSON.stringify([xy[1], xy[0]]) && c === true && back
+      ? ok(`two cards swapped: ${one} (their places on the board and their acts too); the story check passes; swapped back, as it was`)
+      : fail(`swap: ${one}, acts ${acts}, places ${at}, story check ${c}, back ${back}`);
+    const T = clone(S0); F.swapNodes(T, "n_arrive", "n_game");
+    T.game.start === "n_game" && chain(T, 4) === "n_game › n_message › n_arrive › n_hide1" ? ok(`… the start too: ${chain(T, 4)}`) : fail(`swap with the start: ${T.game.start} ${chain(T, 4)}`);
+  }
+  {  // a run of cards moved onto another arrow
+    const S = clone(S0), run2 = F.runOf(S, ["n_game", "n_message"]), no = F.runOf(S, ["n_arrive", "n_game"]);
+    const moved = F.moveRun(S, ["n_game", "n_message"], "n_hide1", ["next"]), onItself = F.moveRun(clone(S0), ["n_game", "n_message"], "n_game", ["next"]);
+    const want = "n_arrive › n_hide1 › n_message › n_game › n_hide1_r";
+    String(run2) === "n_message,n_game" && no === null && moved && !onItself && chain(S, 5) === want && !errsOf(S).length
+      ? ok(`a run of two cards (picked in any order) moved after the first round: ${chain(S, 5)}; not onto its own arrow; no errors`)
+      : fail(`move a run: run ${run2}, not a run ${no}, moved ${moved}, onto itself ${onItself}, ${chain(S, 5)}, errors ${errsOf(S).map(p => p.text).join("; ")}`);
+  }
+  {  // an answer's jump is an arrow of its own: cut, it goes back to the next line
+    const S = clone(S0), c = S.scenes.s_message.clips.find(x => x.reply); c.reply.options[1].go = { node: "n_game" };
+    const a = F.arrows(S, "n_message").find(x => x.kind === "answer");
+    F.setArrow(S, "n_message", a.at, null);
+    a && a.to === "n_game" && !("go" in c.reply.options[1]) ? ok(`an answer's jump is an arrow of its own (${JSON.stringify(a.at)}); cut, the answer goes on to the next line`) : fail(`an answer's arrow: ${JSON.stringify(a)}`);
+  }
+}
+
 // ---- the merge: the desk's edits and Claude's on disk, from the version both started from
 console.log("the merge (merge.js)");
 {

@@ -27,6 +27,7 @@ import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
 import { States } from "./life.js";
+import { arrows, arrowAt, canCut, setArrow, insertOn, swapNodes, runOf, moveRun } from "./flowedit.js";
 import { playShelf, shelfName } from "./sfx.js";
 import { ExpressionsPanel, DRAG_TYPE } from "./expressions.js";
 
@@ -561,19 +562,17 @@ const advanced = (...kids) => el("details", { class: "advanced" }, el("summary",
 
 /* ---------- the flow board ---------- */
 function karmaLabel(o) { const a = o.axis && o.axis !== "karma" ? o.axis + " " : ""; return o.min !== undefined && o.max !== undefined ? `${a}${o.min}..${o.max}` : o.min !== undefined ? `${a}≥ ${o.min}` : o.max !== undefined ? `${a}≤ ${o.max}` : "else"; }
-function outs(id) {
+function outs(id) {              // the arrows out of a card, labelled (flowedit.arrows: each with where it lives, `at`)
   const n = S.flow[id]; if (!n) return [];
-  const o = n.options ? n.options.map(o => ({ to: o.to, label: o.label || o.result || (o.if ? o.if.join("&") : n.by === "karma" ? karmaLabel(o) : n.by === "count" ? (o.count ? o.count + " " : "") + karmaLabel(o) : "else") })) : n.next ? [{ to: n.next, label: "" }] : [];
-  if (n.type === "stitch" && S.stitches[n.ref]) {
-    const st = S.stitches[n.ref];
-    if (st.timer && st.timer.fail) o.push({ to: st.timer.fail, label: "⏱ " + (st.timer.secs || "") + " s", kind: "timer" });
-    for (const it of S.interrupts || []) if (it.during === "all" || (it.during || []).includes(n.ref)) o.push({ to: it.to, label: "☠ " + (it.label || it.id), kind: "interrupt" });
-  }
-  const sc = n.type === "scene" && S.scenes[n.ref];        // an answer that leaves for another card (§9.9 go), from any version
-  if (sc) for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) for (const a of (c.reply && c.reply.options) || []) {
-    const [g, to] = replyGo(a); if (g === "node" && !o.some(x => x.kind === "answer" && x.to === to)) o.push({ to, label: "↪ " + (a.label || a.id), kind: "answer" });
-  }
-  return o;
+  const label = a => {
+    const [k, i] = a.at;
+    if (k === "option") { const o = n.options[i]; return o.label || o.result || (o.if ? o.if.join("&") : n.by === "karma" ? karmaLabel(o) : n.by === "count" ? (o.count ? o.count + " " : "") + karmaLabel(o) : "else"); }
+    if (k === "timer") return "⏱ " + (S.stitches[n.ref].timer.secs || "") + " s";
+    if (k === "interrupt") return "☠ " + (S.interrupts[i].label || S.interrupts[i].id);
+    if (k === "answer") return "↪ " + (a.option.label || a.option.id);   // an answer that leaves for another card (§9.9 go)
+    return "";
+  };
+  return arrows(S, id).filter((a, i, all) => a.to && (a.kind !== "answer" || all.findIndex(b => b.kind === "answer" && b.to === a.to) === i)).map(a => Object.assign(a, { label: label(a) }));
 }
 // the board (board.js): what's on a card, and what moving, connecting and adding do to the story
 let BOARD = null;
@@ -652,6 +651,8 @@ function cardMenu(id, x, y, at) {
     n.type === "scene" || n.type === "stitch" ? { label: "Watch from here", icon: "play", on: () => { openView("watchView"); watch(id); } } : null,
     n.type !== "ending" ? { label: "Watch from here with a state…", icon: "gear", hint: "the debug panel: the flags, counters, karma and items to start with", on: () => { openView("watchView"); DBG.node = id; DBG.toggle(true); } } : null,
     { label: "Make it the start", icon: "flag", disabled: S.game.start === id, on: () => { S.game.start = id; touch(); renderInspector(); } },
+    ids.length === 2 && ids.every(k => ["scene", "stitch"].includes((S.flow[k] || {}).type)) ? { label: "Swap their places in the flow", icon: "flow", hint: "what led to each leads to the other, each goes on where the other went", on: () => { freezeLayout(); if (swapNodes(S, ids[0], ids[1])) { status(`${ids[0]} ⇄ ${ids[1]}`); touch(); renderInspector(); } } } : null,
+    !many && (n.type === "scene" || n.type === "stitch") && n.next ? { label: "Cut what comes after", icon: "x", hint: "its next goes: a stub to drag onto a card later", on: () => { setArrow(S, id, ["next"], null); touch(); renderInspector(); } } : null,
     "-",
     { label: many ? `Copy ${ids.length} cards` : "Copy", icon: "copy", kbd: "Ctrl+C", on: () => copyCards(ids) },
     { label: "Paste here", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("nodes"), on: () => pasteCards(CLIP.get(), at) },
@@ -666,6 +667,30 @@ function freezeLayout() {                          // the first node moved: ever
   if (!BOARD || Object.values(S.flow).every(n => Array.isArray(n.xy))) return;
   for (const [id, p] of Object.entries(BOARD.layout())) if (S.flow[id] && !Array.isArray(S.flow[id].xy)) S.flow[id].xy = [Math.round(p.x), Math.round(p.y)];
 }
+// an arrow on the board, clicked or right-clicked (HANDOFF_DIRECTOR_TODO §2): cut it (its card keeps a stub to drag
+// onto a card later, what came after stays on the board as a loose chain), put a new card on it, or move the picked
+// run of cards onto it; dragging an arrow by its end onto another card re-points it (Board's repoint)
+function arrowMenu(from, at, x, y, xy) {
+  const a = arrowAt(S, from, at); if (!a) return;
+  const ids = pickedCards(), run = ids.length && !ids.includes(from) && !ids.includes(a.to) ? runOf(S, ids) : null;
+  const ins = (t, l, ic) => ({ label: `Insert a ${l} here`, icon: ic, on: () => insertCard(from, at, t, xy) });
+  contextMenu(x, y, [
+    canCut(at) ? { label: "Cut here", icon: "x", hint: "its card keeps a stub to drag onto a card when it's ready; what came after stays on the board", on: () => { setArrow(S, from, at, null); status(`${from}: cut (drag its stub onto a card to join it again)`); touch(); renderInspector(); } } : null,
+    { label: "Point it at another card…", icon: "link", hint: "or drag the arrow by its end onto the card", on: () => toast("Drag the arrow by its end (near the arrowhead) onto the card it should go to") },
+    "-", ins("scene", "scene", "scene"), ins("talk", "conversation", "ask"), ins("stitch", "task", "task"), ins("choice", "choice", "choice"),
+    run ? "-" : null,
+    run ? { label: run.length > 1 ? `Move the ${run.length} picked cards here` : `Move “${nodeTitle(run[0], S.flow[run[0]])}” here`, icon: "move", hint: "out of where they are (what led into them goes on to what came after them) and onto this arrow", on: () => {
+      freezeLayout(); if (moveRun(S, run, from, at)) { status(`${run.join(" › ")} moved after ${from}`); touch(); renderInspector(); } else toast("Can't move them there") } } : null,
+  ], `${nodeTitle(from, S.flow[from])} → ${a.to ? nodeTitle(a.to, S.flow[a.to]) : "…"}`);
+}
+function insertCard(from, at, type, xy) {          // a new card put on an arrow, where the arrow was clicked
+  const f = S.flow[from], cur = nodeRef(f || {}), lvl = (cur && cur.level) || Object.keys(S.levels)[0];
+  freezeLayout();
+  const nid = newId("n_", S.flow), node = newNodeOf(type, lvl, null);
+  if (xy) node.xy = [Math.round((xy[0] - CARD_W / 2) / 8) * 8, Math.round((xy[1] - CARD_H / 2) / 8) * 8];
+  if (!insertOn(S, from, at, nid, node)) return;
+  SEL = nid; SELS = new Set([nid]); touch(); renderInspector(); showStage();
+}
 function connectNodes(from, to) {
   const n = S.flow[from]; if (!n || from === to) return;
   if (n.type === "ending") return;
@@ -674,6 +699,12 @@ function connectNodes(from, to) {
   touch(); renderInspector();
 }
 function newNodeOf(type, lvl, next) {
+  if (type === "talk") {                           // a conversation: a scene whose line is a hanging line with two answers (§9.9)
+    const node = newNodeOf("scene", lvl, next), sc = S.scenes[node.ref], c = sc.clips[0];
+    sc.title = "New conversation"; c.shot = "mcu";
+    c.reply = { wait: 6, timeout: null, options: [{ id: "yes", label: "", then: { ja: "", en: "" } }, { id: "no", label: "", then: { ja: "", en: "" } }] };
+    return node;
+  }
   if (type === "scene") { const sid = newId("s_", S.scenes); S.scenes[sid] = { title: "New scene", level: lvl, mood: "dread", stage: {}, camera: { mode: "soft", look: castIds()[0] || null, cone: [30, 18] }, clips: [{ id: "c1", who: castIds()[0] || "", ja: "", en: "", act: "", shot: "ms", body: { block: [{ at: 0, pose: "idle" }] } }] }; return { type, ref: sid, next }; }
   if (type === "stitch") { const tid = newId("t_", S.stitches); S.stitches[tid] = { title: "New task", level: lvl, goal: "", target_min: 5, beats: [{ id: "b_" + tid.slice(2) + "_start", when: { start: true }, do: [{ objective: "…" }, { done: true }] }] }; return { type, ref: tid, next }; }
   if (type === "choice") return { type, by: "act", prompt: "", options: next ? [{ label: "A", when: { use: "" }, to: next }, { label: "B", when: { use: "" }, to: next }] : [] };
@@ -701,6 +732,7 @@ function renderBoard() {
   if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs, multi: () => SELS,
     moved: all => { for (const [id, xy] of Object.entries(all)) if (S.flow[id]) S.flow[id].xy = xy; touch(); },
     connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu, quick: (id, at) => quickTask(id, at),
+    arrow: arrowMenu, repoint: (from, at, to) => { if (setArrow(S, from, at, to)) { status(`${from} → ${to}`); touch(); renderInspector(); } },
     pickMany: ids => { SELS = new Set(ids); SEL = ids[0]; setFocus("cards"); renderBoard(); renderInspector(); showStage(); },
     frameMenu, join: (fid, id) => { for (const f of S.frames || []) f.nodes = (f.nodes || []).filter(x => x !== id); const f = (S.frames || []).find(x => x.id === fid); if (f) { f.nodes.push(id); toast(`${nodeTitle(id, S.flow[id])} is in “${f.title}” now`, { ms: 3000 }); } } });
   BOARD.render(); renderOutline();
@@ -2255,6 +2287,14 @@ async function watch(fromNid, snap) {
           el("button", { style: "margin:4px", on: { click: () => openBranches(n.retry || nid) } }, "Branch map"))));
       window.__watchEnd = n.title || nid; break;
     }
+  }
+  if (RUN && !nid && RUN.trail.length) {           // the flow's cut here (sliced on the board, §2): said, not a silent stop
+    const last = RUN.trail[RUN.trail.length - 1];
+    freePointer(); $("#watchOv .black").style.opacity = 0.6; paintOv("#watchOv", { sub: "", who: "" });
+    $("#watchBox").append(el("div", { class: "wcard" }, el("div", { class: "muted" }, "THE FLOW'S CUT HERE"), el("div", { class: "big" }, nodeTitle(last, S.flow[last] || {})),
+      el("div", { class: "muted" }, "nothing comes after this card yet: drag its stub onto the card that does"),
+      el("div", {}, el("button", { class: "primary", style: "margin:4px", on: { click: () => { stopWatch(); openView("flowView"); selectNode(last); if (BOARD) BOARD.center(last); } } }, "Show it on the board"))));
+    window.__watchEnd = "cut:" + last;
   }
 }
 function openBranches(hl) { document.querySelector('nav button[data-v="branchView"]').click(); renderBranches(hl); }
