@@ -2,6 +2,227 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, night (texture templates for the placeholder things)
+
+- **UV templates for Krita**: "for small untextured things that we get physically/proportionally correct could you
+  export a uv map (and a guide layer for the sides) so I can just import it into krita and texture. If its photos
+  though consider that I might want the frame to be pbr so Id only want to export the actual photograph part". In
+  docs/HANDOFF_DIRECTOR_TODO.md §6 (the blocks are made by the director's build, so the template and the block's UVs
+  are built together there): a box as a cross net on one scale, a plane front and back, a photo's print alone (its
+  frame a PBR set); an OpenRaster file per thing with Guide, Paint and Base layers; a painted PNG saved beside it
+  becomes its texture.
+
+## 2026-10-28, evening (placeholder things)
+
+- **Flat boxes and planes for now**: "For items like pills and cards, they should just be flat boxes or planes for now
+  and I will add the textures/models later myself". In docs/HANDOFF_DIRECTOR_TODO.md §3: small things stay plain
+  blocks or planes at their real size, the card game's cards plain planes.
+
+## 2026-10-28, later afternoon (a character's models per scene, carried down the flow)
+
+- **No eye swap**: "We dont need eye swap, I can just export the same model twice with diff eyes".
+- **Models per character, overridden per scene and carried on**: "we might in database want to make a group per
+  character so I can add diff models for their diff states and have it always use default, but in scenes be able to
+  override which one to use, however it should be continuous so if in a later scene I say use y, then the rest of the
+  scenes that branch from that use that one, until I go to a later scene and default it back, then the rest after that
+  one go to default". In docs/HANDOFF_DIRECTOR_TODO.md §5, after the way the time of day carries down the flow.
+
+## 2026-10-28, afternoon (the director's to-do, for after the merge)
+
+- **Not on this branch**: "you dont have to work on this in this branch but I will merge this branch into the other
+  one and you need to give me a to do". docs/HANDOFF_DIRECTOR_TODO.md is it.
+- **Rough outlines, refined on the desk**: "ideally I want the writer block to be just a very rough outline, I will
+  refine the actual stuff by playing through, editing in between, modifying, is there a way for me to slice a flow (to
+  stop it continuing), then re-attach it to another."
+- **Writer to director**: "only move the dialogue, tasks, gameplay element of that shot/scene, no adding animations to
+  the npcs etc, you can just give them an easily changeable starting position and they'll stay still".
+- **State through a shot, patrols**: "if I animate them walking somewhere, once the animation is done, I in the same
+  shot might want them sitting on a chair for the rest of the shot, or in the same shot add patrols (which can be a
+  generic looped walk, stand, or patrol through premade animations that are specific). If this is missing add it as a
+  pass down to next session".
+
+## 2026-10-28, early afternoon (The Visitor: written as amnesia)
+
+- **The writing rethought**: "dialogue like this makes no sense: [ Welcome ] Natsu came back. Tell her --- And breaks
+  the immersion because its too abrupt, the player has no clue whats going on yet, it needs to unfold almost like the
+  player has amnesia".
+- Done: the session `the-visitor` written again in that voice. His thoughts know only what's in front of him and what
+  his body remembers; facts come from outside (the list, her lines, the props, the officer, the phone), once each; his
+  answers are small reactions ending on a question ("Twelve years since what?", "Why do I see trees?"). The abstract
+  gets a How it's written section; LESSONS the rule.
+
+## 2026-10-28, noon (The Visitor: the player never speaks)
+
+- **Only acts and thoughts for the player**: "we shouldnt have dialogue in this style ... Its fine for the npcs to have
+  dialogue like that but players dialogue is always stuff like [ Greet ] She looks cold, welcome her inside ---
+  [ Question ] She looks different. So inner monologue, player can imagine what they said."
+- Done in the session `the-visitor`: his one spoken line at the door is now a choice (`[ Welcome ] Natsu came back.
+  Tell her --- [ Stare ] Twelve years. Is it really her?`), the garden's answer reads as a thought, and a note on the
+  chart says he never speaks. LESSONS has the rule.
+
+## 2026-10-28, late morning (The Visitor's chart as pseudo-code)
+
+- **Less text, Chilla's Art's way**: "its a bit too detailed like a novel, needs to be more chillas art game style and
+  not hyper text heavy"; "opening is just you in the apartment, you spend 1 minute looking around when a to do quest
+  comes up (Clean up the apartment before x arrives)"; "I dont want things like 'shes soaked', since I dont want to make
+  a seperate model, writer block needs to be written almost like a pseudo code format where we only talk about literal
+  things not narrative type of writing since this isnt a book".
+- Claude's calls inside that: the session `the-visitor` written again as terse script (literal actions, short lines,
+  sounds as cues, notes for the director); the cold open and the phone call at the start gone (a minute's free look,
+  then the timed clean-up on the list, its timer hidden); the rain, the towel, her wet shoes and the change of clothes
+  gone; the same structure and endings. docs/LESSONS.md has the rule.
+
+## 2026-10-28, mid-morning (The Visitor's abstract approved; the flow charted)
+
+- **The abstract approved**: "I think this is a strong start (we can always refine later)". Step 3 begun: the flow as
+  the writers' room's chart, `/chart` from `docs/game_research/TheVisitor/02_abstract.md`, session `the-visitor`.
+- Claude's calls inside that (sticky notes on the chart): karma stands for his clarity (a pill +1, a pill left -1,
+  leaning into the romance or lying to Ren -1, everything else 0), so the endings read Stay if `[ Watch her sleep ]`
+  (offered only at karma -5 or less), Okuribi at karma 1+, Thank You for Tonight otherwise; the garden in two versions
+  by karma (hers after a pill, his otherwise); the pill moments as answers to his mother's remembered voice, standing
+  in for the timed to-do the director will make; her name a variable; the soy-sauce tea secret left as a note beside
+  the salt one (the chart can't hold two secrets in a row).
+
+## 2026-10-28, morning (The Visitor: he is the reason she died)
+
+- **The truth rewritten**: "instead of her accidentally dying in your youth the player actually was the reason for her
+  death, he found out she was dating/seeing someone else and they got in a fight in a forest, you pushed her and she
+  slipped and fell in the river and got swept away, you didnt mean to actually kill her but ultimately you were the
+  reason she died (almost like an argument that spirals out), she was your childhood crush but she saw you as a
+  brother".
+- Claude's calls inside that, in the abstract's fifth pass (waiting for the user's yes): they were sixteen (he's 28
+  now, Natsuki 23); the boy was Shun Sakamoto, whom the town suspected for years while his mother's "home by eleven"
+  covered Haruki; the fight on the path through the shrine woods above the river after the fireworks ("you're like my
+  brother"), a shove, her geta slipping, the bank, the river; the echo: Natsuki also calls him brother and also has
+  someone (Ren, who phones at 01:30, his lines about her boyfriend left out off the pills); the endings' pieces
+  rewritten (Okuribi: the Tanabata wish "I wish Haru-kun will always be my big brother" and Shun's word that he
+  followed them; Thank You for Tonight: the guilt and the jealousy in his diary; the dark ending renamed Stay, its last
+  line "This time, she stayed.").
+
+## 2026-10-28, before dawn (The Visitor: no reflections, ending slots, a card game, the garden, a real visit)
+
+- **No reflections**: "I dont like 'the night window and the bathroom mirror, you see her real brown eyes and her real
+  expression.' as it will be harder to program and why would we watch her while shes in the bathroom."
+- **The endings as slots**: "Modify the endings so you just create a generic cutscene slot that I can easily modify
+  for each ending (so just give a rough outline so when we move from writer to director I can customize the whole last
+  part), add an ending title card though after where we will add more info." (This supersedes 2026-10-27's "no ending
+  cards" for this game: the cutscene, then a title card.)
+- **The answers to the three calls**: the other ending is Thank You for Tonight ("Sounds good"); the body in the
+  dark ending is Natsuki's ("yes, dark ending"); he let go at the weir ("Sure, thats okay for now").
+- **A card game**: "For each flow to keep the game interesting we should add maybe a simple card game (using standard
+  cards), but based on what flow your going into is what will determine some of the options and results in the card
+  game."
+- **The garden, not the lanterns**: "rework the lantern part, I dont want to model a lantern, maybe have it more casual
+  like we go to the small garden outside and see her smoking and theres a more intimate discussion."
+- **A real visit**: "sprinkle multiple small moments like making her tea, maybe later she gets hungry and we make her a
+  ramen, things that basically make it feel more real and how a visit would go. Basically the game needs to feel like
+  your there but with amnesia and dont know why but it feels memorable and relatable enough that it convinces you".
+- Claude's calls inside that, in the abstract's fourth pass (waiting for the user's yes): off his pills the truth
+  comes from the world, not the glass (her card, the officer, her mother phoning for "Natsuki", her bag), and her real
+  faces are seen only after a pill or in the dark ending's flashes; the card game is shinkei-suijaku (Concentration,
+  "nervous breakdown"), the loser answering a question, his memory lying and her letting him win off his pills; the
+  small moments (a towel, her shoes stuffed with newspaper, tea, a watermelon chilled and salted, somen, cards, her
+  cigarette in the little garden, a vending-machine can, ramen at midnight, the futon), most with a memory flicker
+  that breaks off; Natsumi's piece in Okuribi is a Tanabata wish on paper.
+
+## 2026-10-28, small hours (The Visitor: the pills decide what you see; three endings, three pieces of the truth)
+
+- **His version of her**: "if he's off his pills we will have different facial expressions for some parts (he will
+  think she likes him, think the new joker joaquin phoenix movie where he is creating a false romance scenario)".
+- **The secret, dark ending**: "the cops show up to say heard a disturbance, they go into the bedroom to find the body
+  lying and tell you to get on your knees (they pull out a gun at you), you have some weird inner monologue and the
+  game ends."
+- **No confession**: "The good ending shouldnt be you confessing, because you as the player dont actually know what
+  happened and are trying to figure it out yourself, maybe whether you take the pills or not determines the name you
+  call her (variable), and if your off the pills you never see her correct you."
+- **The other ending, undecided**: her finding his diary (guilt at living the lie) and picking up a knife as she walks
+  towards him, "or the visit goes normal, you have fun, she never learns the truth and leaves and thanks you the next
+  day."
+- **Little branching**: "Maybe we dont need to care about major branching dialogue (that can be for easter eggs and
+  learning stuff yourself, maybe write the story where we only get a clear picture of what actually happened if we do
+  all 3 endings, so even if she found your diary it wont tell the player the full picture just maybe a page about your
+  guilty feelings etc but not the cause)."
+- Claude's calls inside that, in the abstract's third pass (waiting for the user's yes): his illness rewrites her and
+  only her (her name, eyes, faces, corrections, a few warmer lines), while the card, the officer and every reflection
+  stay true; two expression tracks for a dozen key moments; endings by the pill tasks (two or more: Okuribi, her side
+  of the truth; otherwise Thank You for Tonight, his diary page; never a pill, the romance leaned into and her room
+  entered at two: Don't Let Go, the police, the night itself in flashes); the truth at the weir: he held her wrist and
+  let go; the pill in her cup and the mother's lie as a told story are gone.
+
+## 2026-10-28, late night (The Visitor: an honest sister, names one letter apart, no police, the pills as tasks)
+
+- **The user's answers to the abstract's calls**: the twist, the visitor as the lost girl's sister ("Sure"); the
+  player's name fixed as Haruki ("sure"); the secret ending: "Maybe not taking your pills + something else (we have to
+  do list quest occasionally to take pills)".
+- **The intended ending rethought**: "We need to rethink the intended ending, calling cops would make sense since it
+  happened in childhool." (Read as: the police don't fit, it happened when they were children.)
+- **The door's question**: "the question could be she looks a lot younger than you last remember?"
+- **An honest sister**: "Maybe the sister isnt trying to trick the player but actually the player is too mentally ill
+  to realise its the sister so she reacts confused. Maybe the sisters should have very similar names for this
+  purpose".
+- Claude's calls inside that, in the abstract's second revision (waiting for the user's yes): they were thirteen (a
+  child under 14 can't be charged in Japan), now 25, and the sister is 21; Natsumi and Natsuki, called Natsu and
+  Ko-natsu, so her card, her "it's me, Natsu" and the officer's "Natsuki-chan" all read both ways; off his pills he
+  sees her with Natsumi's lilac eyes and some of her lines retype into her sister's name, while reflections and his
+  pills show her own brown eyes; the intended ending is Okuribi (the truth told, her parents phoned, the sending-off
+  fire lit late, the pills taken, her eyes brown); the secret ending needs every pill task failed, the one-word call
+  answered "moshi moshi" and Natsumi's geta set on the altar, and ends with him taking the pills once she's gone home.
+
+## 2026-10-28, night (The Visitor's abstract revised: a summer day, lilac eyes, clues about yourself)
+
+- **The user's notes on the abstract**: "lets make a summer day rather than new year, instead of a mole let it be a
+  different eye color (Lets say Lilac), today would have been the aniversarry of her disappearence, your mother who
+  protected you also has passed away."
+- **Clues about yourself**: "The dialogue needs to be written where not only are we getting clues from her, but also
+  our dialogue choices and what we can ask/do gives us clues about ourselves."
+- Claude's calls inside that, in the revised abstract (still waiting for the user's yes): 16 August, the last day of
+  Obon, when the dead go back, and the night Natsumi vanished in 2014 during the river festival; she slipped on the
+  weir (her geta's strap snapped, the omen), not through ice; his mother's first Obon; the visitor's lilac is coloured
+  contacts over brown eyes (one lost in the bath: one lilac eye, one brown); a second mystery about him: the answers
+  he's offered, his true answers to her probes, thoughts that rewrite themselves, his scarred palms, his own notes,
+  and the cucumber horse he made for Natsumi, kept as memories that decide how much truth he can tell at the end;
+  lanterns on the river in place of the bells, one floating upstream.
+
+## 2026-10-28, evening (a new game, The Visitor: research, an abstract, then the flow; branch `game-research-001`)
+
+- **A branch and a folder for game research**: "Don't use dev-002 branch, but forked off it, make a new branch called
+  game-research-001, and make a new folder to store these game research." The folder is `docs/game_research/`, one
+  folder per game (its README has the three steps).
+- **The game, The Visitor**: "based in japan, an old female friend/crush comes to visit you, things start to go
+  weird"; "mostly based in just 1 apartment (mid sized, 2 bedrooms (1 guest), 1 bathroom, 1 kitchen + living room in
+  same room)".
+- **Three steps**: "Research: find real life scenarios or stories for inspiration. Come up with an abstract. Once I
+  approve the abstract come up with the writer block flow for the game."
+- **The opening**: "inner monologue about cleaning up the apartment, if you dont clean it she will comment on it when
+  she comes in", "a hidden timer of 2min or whatever", "2 achievements for clean/messy"; "start off with inner
+  monologue of whats happening today".
+- **The player answers with acts and thoughts**: "very inner monologue / action rather than dialogue options e.g.
+  [ Greet ] She's proabbly cold I should let her inside ? --- [ Question ] Did she always look like this ?"
+- **The play**: "little tasks and dialogue to discover whats happening", "similar to chillas games where you lift,
+  click itneract", "her dialogue to be heavily using mocapped expressions almost like LA Noire", "I dont want big
+  actionny horror run scenes", "very to do list"; "your dialogue options and analysing their expressiosn helps guide
+  to the end".
+- **Length**: "take at least 1 hour to beat (we dont let peopel skim dialogue as its appears + typewriter effect for
+  her)".
+- **The spins**: "hints at people going missing making the player think shes involved but the twist is it turns out
+  you were the villian (at least for one ending)"; "paranormal stuff and weird behaviour/tells for her"; "a kind of
+  shutter island thing where we are being led to believe one narrative but it might not be the answer"; "maybe we
+  think that she is possessed but it turns out the viewer is schizoprhenic (hinted via medications in the bathroom
+  cupboard etc)".
+- **Three endings**: "the intended ending, the other way it could have gone, and a secret hidden ending".
+- **Secrets as achievements**: "easter eggs and slight branch off flows that come back to main ... good steam
+  achievements", such as "you make her tea, but you can possible add a weird ingredient to the tea and she will comment
+  on it tasting funny".
+- **Names and lines**: "appropriate english/japanese names (japanese names written in their english format)";
+  dialogue "written in a way that makes you think she was a childhood friend, but also simple enough that we can later
+  use claude to translate the locale to Japanese".
+- Claude's proposals, **waiting for the user's yes** (docs/game_research/TheVisitor/02_abstract.md, its five calls at
+  the end): New Year's Eve in a fictional Iwate river town; the visitor is the lost girl's younger sister playing her
+  (Shutter Island's role-play), so "Did she always look like this?" is both the illness and the truth; reading her face
+  is the theme (the narrator's reading bent by paranoia, her face the evidence); three optional doses of his
+  medication that quiet the hallucinations, the same pill able to go into her tea; no smartphones (a landline, a
+  payphone, a postcard), as decided on 2026-10-27; Haruki, Natsumi, Fuyumi and Akiko, the four seasons.
+
 ## 2026-10-28, back (expression loops go; skin like HumanShaders; Unreal next; a test room)
 
 - **Expression loops: go** (task #6, held for the user's word): "expression loops is fine to do".

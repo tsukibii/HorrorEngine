@@ -4,12 +4,58 @@ Written 2026-10-24 (small hours, the user away; brought up to date in the aftern
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
 lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
 dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
-latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops) on
+latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
+on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002`) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-28, back, on `dev-002`): TestRoom001, the Unreal note, skin like HumanShaders, expression loops
+## 0. Latest (2026-10-28, evening, on `game-research-001`, off `dev-002`): The Visitor, steps 1 and 2
+
+The user started a new game (DECISIONS 2026-10-28, evening): The Visitor, set in Japan in one apartment, an old friend
+and crush who comes to visit. Their three steps are research, an abstract, and (once the abstract is approved) the
+writer block flow. On a new branch off `dev-002`, in a new folder:
+- `docs/game_research/README.md`: the folder (one per game, the three steps).
+- `docs/game_research/TheVisitor/01_research.md`: step 1, sourced. Missing people and jōhatsu, the seven-year
+  declaration and the mourning postcard, homes that hide things, impostors, the dead who visit (Tōno, Ishinomaki,
+  *Ghosts of the Tsunami*, itako), New Year's Eve (ōsōji, soba, the 108 bells, raihōshin, marebito, Somin Shōrai, the
+  Fire Horse), folk tells (moshi moshi, salt, Kagome Kagome, the prohibition of looking, fox possession), the mind
+  (Capgras, paranoia and faces, Japan's rename, the props of treatment, care), and the shapes we borrow.
+- `docs/game_research/TheVisitor/02_abstract.md`: step 2, the pitch. New Year's Eve; Haruki, and "Natsumi" (her
+  younger sister Fuyumi playing her); the believability ladder; what really happened; how it plays (tasks, the hidden
+  clean-up, talks read by the face with an unreliable narrator, the pills); six parts, about 75 minutes; three endings
+  (First Light, Kamikakushi, Shiki); about two dozen achievements; the lines, the faces, what we have and what's new,
+  care notes and five questions for the user.
+- **Revised the same night** after the user's notes (DECISIONS 2026-10-28, night): a summer day (16 August, the last
+  day of Obon, the anniversary), lilac eyes (her lenses) instead of the mole, his mother's first Obon, and a second
+  mystery about Haruki himself, told by his own answers, thoughts and hands; research §5b for the summer.
+- **Revised again** (DECISIONS 2026-10-28, late night): the sister, Natsuki, is honest and he's too ill to see her
+  (the names one letter apart), they were thirteen so no police ending (Okuribi now), the pills as to-do tasks, the
+  secret ending (Mō ii yo) off the pills with the call and the geta.
+- **Third pass** (DECISIONS 2026-10-28, small hours): the pills decide what you see (his romance or her real faces,
+  her name, her eyes, her corrections; reflections always true); no confession; three endings, three pieces of the
+  truth (Okuribi, Thank You for Tonight, Don't Let Go with the police); the branches are secrets. Three questions at
+  the end of the abstract.
+- **Fourth pass** (DECISIONS 2026-10-28, before dawn): no reflections; the endings as cutscene slots with rough
+  outlines and a title card each; shinkei-suijaku as the card game, its settings by the pills; her cigarette in the
+  building's little garden instead of the lanterns; the small moments of a visit, with memory flickers.
+- **Fifth pass** (DECISIONS 2026-10-28, morning): he is the reason she died (a fight in the shrine woods at sixteen
+  over the boy she was seeing, a shove, the river); Shun, the boy the town blamed; Ren, Natsuki's boyfriend, the echo;
+  the dark ending is Stay.
+- **Approved** ("a strong start"), and **step 3 charted** (DECISIONS 2026-10-28, mid-morning): the writers' room
+  session `the-visitor` (59 shapes, 0 problems, 23 sticky notes), made by `/chart` from the abstract.
+- **Rewritten as pseudo-code** (DECISIONS 2026-10-28, late morning): 52 shapes, 0 problems; literal lines only.
+- **The director's to-do for after the merge**: docs/HANDOFF_DIRECTOR_TODO.md (a conversation card with Next, Skip,
+  End and Go to per answer; cutting and re-attaching the flow on the wire; Build moving only dialogue, tasks and
+  gameplay; a body track per cast member through a shot with states and patrols; what The Visitor needs). Not built
+  here: the user merges this branch and asks the next session.
+- **Waiting on the user:** a look at the chart in the writers' room; `/build-game the-visitor TheVisitor` once they say
+  it looks right. Then step 3: the flow as the writers' room's
+  chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
+  `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in
+  Content/Games.
+
+## 0'. In parallel (2026-10-28, back, on `dev-002`): TestRoom001, the Unreal note, skin like HumanShaders, expression loops
 
 The user's four asks (DECISIONS 2026-10-28, back), each its own commit:
 - **TestRoom001** (docs/games/TestRoom001.md): a lab of stations, a feature of the format each, its to-do list the
@@ -31,7 +77,7 @@ The user's four asks (DECISIONS 2026-10-28, back), each its own commit:
   scene's timeline (`faces`, STORY_FORMAT §3.7): dropped or double-clicked on, crossfading, a loop until the next; the
   stage, the Watch and Play's scenes wear them; the bake carries them for Unreal. TestRoom001's lobby scene has one.
 
-## 0'. Before that (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
+## 0''. Before both (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
 
 The user's brief (DECISIONS 2026-10-28, later): add the simple systems we're missing for Chilla's Art-style games,
 else research realistic skin (v2, like MetaHuman and their three stills). Both, each step its own commit, PLAY and
