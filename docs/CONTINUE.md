@@ -43,6 +43,7 @@ writer block flow. On a new branch off `dev-002`, in a new folder:
   the dark ending is Stay.
 - **Approved** ("a strong start"), and **step 3 charted** (DECISIONS 2026-10-28, mid-morning): the writers' room
   session `the-visitor` (59 shapes, 0 problems, 23 sticky notes), made by `/chart` from the abstract.
+- **Rewritten as pseudo-code** (DECISIONS 2026-10-28, late morning): 52 shapes, 0 problems; literal lines only.
 - **Waiting on the user:** a look at the chart in the writers' room; `/build-game the-visitor TheVisitor` once they say
   it looks right. Then step 3: the flow as the writers' room's
   chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and

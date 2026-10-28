@@ -191,6 +191,14 @@ blew Blender's cloth apart (seams a metre apart). Laying them round the body's c
 its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
 flatten a scooped neckline to one height: it hitches the whole top up.
 
+## A chart is pseudo-code, not prose (2026-10-28)
+
+- **Write the writers' room's script as literal things:** who does what with which thing, short lines, sounds as cues,
+  a `Note:` for anything the director must know. No narrative description ("she's soaked", "cicadas outside"): every
+  described thing is a model, a state or a shot someone has to make. Chilla's Art's density: few words, a to-do list.
+- The first chart of The Visitor read like a novel (scene-setting lines, a wet arrival needing its own model, a cold
+  open); the user asked for pseudo-code. Rewritten terse, the same structure held.
+
 ## Tops: no cuff bands, sleeves at the arms' angle (2026-10-22)
 
 GarmentCode's tops on our A-pose bodies came out cropped and crumpled. Not the tightness or the sewing force: the hem

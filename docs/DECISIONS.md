@@ -2,6 +2,18 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, late morning (The Visitor's chart as pseudo-code)
+
+- **Less text, Chilla's Art's way**: "its a bit too detailed like a novel, needs to be more chillas art game style and
+  not hyper text heavy"; "opening is just you in the apartment, you spend 1 minute looking around when a to do quest
+  comes up (Clean up the apartment before x arrives)"; "I dont want things like 'shes soaked', since I dont want to make
+  a seperate model, writer block needs to be written almost like a pseudo code format where we only talk about literal
+  things not narrative type of writing since this isnt a book".
+- Claude's calls inside that: the session `the-visitor` written again as terse script (literal actions, short lines,
+  sounds as cues, notes for the director); the cold open and the phone call at the start gone (a minute's free look,
+  then the timed clean-up on the list, its timer hidden); the rain, the towel, her wet shoes and the change of clothes
+  gone; the same structure and endings. docs/LESSONS.md has the rule.
+
 ## 2026-10-28, mid-morning (The Visitor's abstract approved; the flow charted)
 
 - **The abstract approved**: "I think this is a strong start (we can always refine later)". Step 3 begun: the flow as
