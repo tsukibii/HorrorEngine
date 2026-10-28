@@ -23,7 +23,7 @@ import { pauseMenu, autosave } from "./menu.js";
 import { Physics, dieMaterials, inHand, follow } from "./physics.js";
 import { Inventory } from "./inventory.js";
 import { loadRules, boardCtx, Table } from "./boardgames.js";
-import { EYES, FOV_H, vfov, s2t } from "../stage.js";
+import { EYES, FOV_H, vfov, s2t, Stage } from "../stage.js";
 
 const ABILITIES = ["look", "walk", "crouch", "steps"];     // in the order they run (steps.js hears what walking did)
 const THEME = "glass";                           // the HUD theme when a game names none (game.ui_theme)
@@ -61,7 +61,7 @@ export class PlayRuntime {
     this.torchLight = null;                            // the flashlight (torch.js), made once the player has one
     this.playing = null; this.anims = []; this.boardTitles = {};   // a board game going on (its id); tweens on the game's clock
     fetch(`/api/boardgames/${encodeURIComponent(opts.game || "_")}`).then(r => (r.ok ? r.json() : {})).then(j => { for (const g of j.games || []) this.boardTitles[g.id] = g.title; }).catch(() => { });
-    this.listener = null; this.ray = new THREE.Raycaster();
+    this.listener = null; this.ray = new THREE.Raycaster(); this.ray.layers.enableAll();   // every ray sees what the simple view leaves undrawn (stage.cull)
     this.on = {
       click: () => { if (this.active && !this.busy && document.pointerLockElement !== box) box.requestPointerLock(); },   // the first click takes the mouse
       // a left click uses what's under the reticle (every interactable: DECISIONS 2026-10-27, later); the wheel turns the inventory
@@ -84,7 +84,7 @@ export class PlayRuntime {
     this.hud.locked(false);
   }
   stop() {
-    this.active = false; this.listener = null; this.stopped = true;
+    this.active = false; this.listener = null; this.stopped = true; this.stage.uncull();
     for (const w of this.waits) w.res(); this.waits = [];
     for (const a of this.anims) a.done(); this.anims = [];
     this.box.removeEventListener("click", this.on.click); this.box.removeEventListener("mousedown", this.on.down); this.box.removeEventListener("wheel", this.on.wheel);
@@ -567,7 +567,7 @@ export class PlayRuntime {
   ready(t) { const ifs = (t.userData.piece.d || {}).if; return flagsHold(Array.isArray(ifs) ? ifs : ifs ? [ifs] : [], this.flags); }
   async sleep(t, s) {
     const p = this.player, box = new THREE.Box3().setFromObject(t), at = box.getCenter(new THREE.Vector3());
-    const down = new THREE.Raycaster(new THREE.Vector3(at.x, box.max.y + 1, at.z), new THREE.Vector3(0, -1, 0));   // the mattress at its middle, not a headboard
+    const down = new THREE.Raycaster(new THREE.Vector3(at.x, box.max.y + 1, at.z), new THREE.Vector3(0, -1, 0)); down.layers.enableAll();   // the mattress at its middle, not a headboard
     const top = Math.min((down.intersectObject(t, true)[0] || { point: box.max }).point.y, box.min.y + s.mattress);   // a block stand-in's top is its headboard's
     p.sleeping = { pos: p.pos.clone(), eye: p.eye, yaw: p.yaw };
     await this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: top - p.pos.y + s.eye, yaw: p.yaw, pitch: s.pitch, secs: s.secs });
@@ -829,6 +829,7 @@ export class PlayRuntime {
   }
   hold() {
     this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (this.hand) this.hand.x.m.visible = false;
+    this.stage.uncull();                              // a scene's eye may be anywhere: all of it drawn
     if (this.torchLight) for (const l of [this.torchLight.hot, this.torchLight.spill]) l.intensity = 0;   // the beam out while a scene plays
   }   // the pointer stays locked: a scene looks round with it
   go() {
@@ -908,6 +909,7 @@ export class PlayRuntime {
     this.emit({ type: "tick" });
     this.hud.tick();
     if (this.stage.life && this.lives) { const T = this.now(); this.stage.life.update(T, id => ({ st: this.lives.at(id, T), hist: this.lives.history(id) })); }
+    if (Stage.simple) this.stage.cull(c, id => { const d = this.doors[id]; return !d || d.open || d.t < 1; }); else this.stage.uncull();   // the simple view: what's out of sight not drawn
     this.stage.render();
   }
 }

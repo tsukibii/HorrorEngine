@@ -319,6 +319,7 @@ export class Stage {
   setWorld(plan, story, level) {
     this.story = story; this.plan = plan; this.level = level;
     this.things = plan.things;
+    this.uncull(); this._rooms = null;                // what Play left out of sight comes back first (cull)
     this.world.clear(); this.lights = []; this.solid = []; this.cast = {}; this.pending = []; this._through = new Set();
     const mats = {
       wall: new THREE.MeshStandardMaterial({ color: 0x55524d, roughness: 0.95 }),
@@ -858,6 +859,58 @@ export class Stage {
     }
   }
   render() { this.simplify(); this.renderer.render(this.scene, this.camera); }
+  // the simple view also leaves out what Play's eye can't see (cull): the rooms the eye is in, and the rooms seen from
+  // them through an opening in view (an archway, a window, an open door or one still swinging), three deep. A room out of
+  // sight keeps its walls and doors (a wall belongs to one of the two rooms it parts) and loses its props, floor, ceiling
+  // and lights to a layer the camera doesn't draw; every ray still finds them (the game's rules don't change). Its lights
+  // out, the light that came through a wall from it goes too: the simple view's look, not the game's
+  cull(camera, isOpen) {
+    const R = this._rooms || (this._rooms = this.roomsForCull());
+    const c = camera.position, x = c.x, y = -c.z, z = c.y, m = 0.35;
+    const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const seen = new Map();
+    for (const r of R.list) if (x >= r.x0 - m && x <= r.x1 + m && y >= r.y0 - m && y <= r.y1 + m && z >= r.z0 - 0.2 && z <= r.z1 + 0.2) seen.set(r.id, 0);
+    const q = [...seen.keys()];
+    while (q.length) {
+      const id = q.shift(), d = seen.get(id); if (d >= 3) continue;
+      for (const p of R.portals[id] || []) if (!seen.has(p.to) && (!p.door || isOpen(p.door)) && fr.intersectsBox(p.box)) { seen.set(p.to, d + 1); q.push(p.to); }
+    }
+    if (!seen.size) return this.uncull();             // the eye in no room (outside the level): draw it all
+    for (const r of R.list) {
+      const out = !seen.has(r.id); if (out === !!R.out[r.id]) continue;
+      R.out[r.id] = out;
+      for (const o of R.objs[r.id] || []) o.traverse(k => k.layers.set(out ? 1 : 0));
+    }
+  }
+  uncull() {
+    const R = this._rooms; if (!R) return;
+    for (const id of Object.keys(R.out)) if (R.out[id]) { R.out[id] = false; for (const o of R.objs[id] || []) o.traverse(k => k.layers.set(0)); }
+  }
+  roomsForCull() {                // the level's rooms (story metres), the openings between them, and what goes with each
+    const rooms = ((this.story.levels || {})[this.level] || {}).rooms || [], R = { list: [], portals: {}, objs: {}, out: {} };
+    for (const r of rooms) { const [x0, y0, z0] = r.at, [w, d, h] = r.size; R.list.push({ id: r.id, x0, y0, z0, x1: x0 + w, y1: y0 + d, z1: z0 + h }); }
+    const within = (x, y, z) => R.list.find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1 && z >= r.z0 && z <= r.z1);
+    for (const r of rooms) for (const op of r.openings || []) {
+      const [x0, y0, z0] = r.at, [w, d] = r.size, along = op.wall === "n" || op.wall === "s";
+      const [lx, ly] = { n: [op.at, d], s: [op.at, 0], e: [w, op.at], w: [0, op.at] }[op.wall] || [0, 0];
+      const [nx, ny] = { n: [0, 1], s: [0, -1], e: [1, 0], w: [-1, 0] }[op.wall] || [0, 0];
+      const bot = z0 + (op.sill || 0), top = bot + op.h, cx = x0 + lx, cy = y0 + ly;
+      const other = within(cx + nx * 0.25, cy + ny * 0.25, (bot + top) / 2); if (!other || other.id === r.id) continue;
+      const hx = along ? op.w / 2 : 0.1, hy = along ? 0.1 : op.w / 2;
+      const box = new THREE.Box3(new THREE.Vector3(cx - hx, bot, -(cy + hy)), new THREE.Vector3(cx + hx, top, -(cy - hy)));
+      const door = op.door ? op.door.id : null;
+      (R.portals[r.id] = R.portals[r.id] || []).push({ to: other.id, door, box });
+      (R.portals[other.id] = R.portals[other.id] || []).push({ to: r.id, door, box });
+    }
+    for (const o of this.world.children) {            // props, floors, ceilings, trim; never walls, doors, their parts, what's set in a wall, or what's picked up and carried
+      const p = o.userData && o.userData.piece; if (!p || !p.room || !["mesh", "floor", "ceiling"].includes(p.kind)) continue;
+      if ((p.tags || []).some(t => t.startsWith("door_part:") || t === "in_wall") || ["carry", "pickup"].includes(o.userData.use)) continue;
+      (R.objs[p.room] = R.objs[p.room] || []).push(o);
+    }
+    for (const l of this.lights) if (l.userData.room) (R.objs[l.userData.room] = R.objs[l.userData.room] || []).push(l);
+    for (const l of this.windows || []) (R.objs[l.userData.window] = R.objs[l.userData.window] || []).push(l);
+    return R;
+  }
   simplify() {                   // the simple view on (or off again) for whatever the scene holds now
     const on = Stage.simple;
     if (!on && !this._simple) return;
