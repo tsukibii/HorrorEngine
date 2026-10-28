@@ -1395,7 +1395,8 @@ def build(P, game, force=False, games=None, check=True, set_name=None, sset=None
     (folder / "faces.md").write_text(faces_md(P, S), encoding="utf-8")
     res = {"ok": True, "game": game, "files": [str(p.relative_to(ROOT)) if ROOT in p.resolve().parents else str(p) for p in
                                                (path, folder / "prototype.json", folder / "BUILD.md", folder / "faces.md")],
-           "nodes": len(S["flow"]), "scenes": len(S["scenes"]), "stitches": len(S["stitches"])}
+           "nodes": len(S["flow"]), "scenes": len(S["scenes"]), "stitches": len(S["stitches"]),
+           "placed": sorted(B.rooms.placed), "items": sorted(t["item"] for t in B.thing.values() if t.get("item"))}   # the blocks and items it made
     if check:
         ok, last, errors = story_check(path)
         res["check"] = {"ok": ok, "line": last, "errors": [x[7:] for x in errors[:8]]}
@@ -1403,6 +1404,42 @@ def build(P, game, force=False, games=None, check=True, set_name=None, sset=None
     res["message"] = (f"Built {game} in {where}" + (f" into the set {set_name}" if set_name else "") + f": {res['nodes']} flow nodes, {res['scenes']} scenes, "
                       f"{res['stitches']} tasks, {len(S['achievements'])} achievements" + (f"; the story check: {res['check']['line']}" if check else "") + ".")
     return res
+
+
+DRESS = ("mesh", "kit", "preset", "look", "art", "texture", "pbr")   # what makes a thing more than a plain block
+
+
+def bare_build(S, placed, items=()):
+    """What a build mustn't have (DECISIONS 2026-10-28, evening; HANDOFF_DIRECTOR_TODO §3): the cast stays still at its
+    marks, no `body` on any line (an answer's included) and no motions for the user to animate over in Kimodo; and the
+    things it placed (`placed`: its blocks' ids; a set's own furniture isn't) and the items it made are plain blocks at
+    their size (`box w d h`), untextured, for the Database's real ones. '' when so."""
+    bodies = []
+    for sid, sc in S.get("scenes", {}).items():
+        for v in [sc, *(sc.get("variants") or {}).values()]:
+            for c in v.get("clips", []):
+                bodies += [f"{sid} {c.get('id')}"] if c.get("body") else []
+                bodies += [f"{sid} {c.get('id')} answer {o.get('id')}" for o in (c.get("reply") or {}).get("options", [])
+                           for th in L.then_list(o) if th.get("body")]
+    moves = []                                       # a behaviour playing a motion, a round's looped motions
+    def walk(x, at):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                if k in ("motion", "loops") and v:
+                    moves.append(f"{at} {k}")
+                walk(v, at)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v, at)
+    for table in ("stitches", "scenes"):
+        for k, v in S.get(table, {}).items():
+            walk(v, k)
+    props = {p.get("id"): p for lv in S.get("levels", {}).values() for r in lv.get("rooms", []) for p in r.get("props", [])}
+    dressed = [f"{k} ({x.get('shape')})" for k, x in [*((k, props[k]) for k in placed if k in props), *((k, S.get("items", {})[k]) for k in items if k in S.get("items", {}))]
+               if not str(x.get("shape", "")).startswith("box ") or any(d in x for d in DRESS)]
+    said = [f"bodies on {', '.join(bodies[:3])}" if bodies else "", f"motions {', '.join(list(S.get('motions') or {})[:3])}" if S.get("motions") else "",
+            f"the cast moving ({', '.join(moves[:3])})" if moves else "", f"things that aren't plain blocks: {', '.join(dressed[:3])}" if dressed else ""]
+    return "; ".join(x for x in said if x)
 
 
 def check_build(P, set_name=None, sset=None):
@@ -1424,6 +1461,9 @@ def check_build(P, set_name=None, sset=None):
         finally:
             shutil.rmtree(report, ignore_errors=True)
         S = json.loads(path.read_text(encoding="utf-8"))
+        bare = bare_build(S, res["placed"], res["items"])
+        if bare:
+            return {"ok": False, "message": f"the build {bare}: only the dialogue, the tasks and the gameplay go across (HANDOFF_DIRECTOR_TODO §3)"}
         N = proto.nodes_of(P)
         talks = [n for n in N.values() if n.get("type") == "talk" and (n.get("talk") or {}).get("options")]
         replies = [c for sc in S["scenes"].values() for c in sc["clips"] if c.get("reply")]

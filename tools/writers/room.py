@@ -370,6 +370,23 @@ def cmd_check(a):
     import build
     res = build.check_build(P)
     (ok if res["ok"] else bad)(res["message"])
+    # only the dialogue, the tasks and the gameplay go across (HANDOFF_DIRECTOR_TODO §3): the cast still, the things blocks
+    B0 = build.Builder(copy.deepcopy(P), "BareCheck")
+    S0, placed0 = B0.build(), sorted(B0.rooms.placed)
+    props0 = {x["id"]: x for lv in S0["levels"].values() for r in lv.get("rooms", []) for x in r.get("props", [])}
+    thing0 = next(k for k in placed0 if k in props0)
+    def dirty(f):
+        S1 = copy.deepcopy(S0); f(S1); return build.bare_build(S1, placed0)
+    def first_beat(S1):
+        return next(b for st in S1["stitches"].values() for b in st.get("beats", []))
+    put = [("a body on a line", lambda S1: next(iter(S1["scenes"].values()))["clips"][0].update(body={"block": [{"at": 0, "pose": "idle"}]}), "bodies on"),
+           ("a motion in the table", lambda S1: S1["motions"].update(walk={"prompt": "a person walks"}), "motions walk"),
+           ("a behaviour playing one", lambda S1: first_beat(S1).setdefault("do", []).append({"behave": next(iter(S1["cast"])), "motion": "walk"}), "the cast moving"),
+           ("a thing given a mesh", lambda S1: next(x for lv in S1["levels"].values() for r in lv["rooms"] for x in r.get("props", []) if x["id"] == thing0).update(mesh="sm_vase"), "plain blocks")]
+    missed = [w for w, f, want in put if want not in dirty(f)]
+    clean = build.bare_build(S0, placed0)
+    ok(f"a build moves only the dialogue, the tasks and the gameplay: no body, no motion, its {sum(k in props0 for k in placed0)} things plain blocks; "
+       f"each found when put in ({', '.join(w for w, _, _ in put)})") if not clean and not missed else bad(f"a bare build: {clean or ''} missed {missed}")
 
     # the script (.claude/skills/chart/script.md): the user's own first example reads as they wrote it
     U, rep_u = chartscript.read(USER_EXAMPLE)

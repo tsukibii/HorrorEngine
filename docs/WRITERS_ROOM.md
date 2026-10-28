@@ -119,6 +119,9 @@ afraid); "New face…" in any face picker writes the story's own. A he wears the
     reach, and BUILD.md says so.
   - **achievements** (STORY_FORMAT §9.13): each secret's and ending's own, the feats on flags of their own (to set
     where they happen); the Watch and Play say each as it's unlocked. **Notes** go on the game's board for Claude.
+  - **only the dialogue, the tasks and the gameplay go across** (DECISIONS 2026-10-28, evening): no `body` on any line
+    and no motions (the cast stands still at its marks, for you to animate in Kimodo), and every thing a plain block at
+    its size (a box, a thin one for paper and cards), untextured, for the real one later; WRITERS checks a build for it.
 - **from a shape's script** (a chart Claude made from your notes, §9): a task's steps are one stitch, a new beat after each
   thing you do (`{"use": door}`, `{"pickup": key}`, `{"read": letter}`, `{"hidden": closet}`, `{"enter": kitchen}`,
   a list through: `{"ticked": true}`, a wait: `{"after": ..., "secs"}`); a scene's are its clips (your thoughts as
