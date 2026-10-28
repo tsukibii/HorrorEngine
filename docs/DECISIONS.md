@@ -2,6 +2,24 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, later (Godot: a project per game, everything Unreal never got, a guide in each)
+
+- **When the branch starts, build out for Godot all the shaders and effects never built out for Unreal** ("build out
+  all the shaders and effects we never built out for unreal for godot"): docs/GODOT_PLAN.md §6.
+- **The initial time goes into analysing the most efficient way to do it** ("spend your initial time analysing the
+  most efficient way to do this"), before building: §5, §8.
+- **Export makes a Godot project per game, ideally as a .zip** ("maybe clicking export creates a new godot project
+  .zip, rather than the unreal approach one project for all games (because godot is more lightweight)").
+- **The project's folders and sequence are easy to work in Godot's editor** ("the folder structure and sequencing
+  needs to be very ui friendly in godot so I can easily modify everything after exporting").
+- **An .html guide in each project** ("a .html app/tutorial on how to modify and edit anything in godot for each
+  project including guides on adding new inbetween scenes, porting over new animations etc"): §7.
+- **Still not started:** the user says when; the dev branch lands first.
+- Claude's calls inside that: the shared things go into each project as copies so it stands alone; a re-export must
+  keep what the user changed in Godot by hand (part of the analysis); the guide's pictures made by driving Godot, as
+  GUIDE does the desk's. From the lighting talk the same day: baked first (a bake per lighting state of a room,
+  swapped), VoxelGI only where a light moves; the three-way trial is proposed, not agreed (§4).
+
 ## 2026-10-28 (Godot: a branch, HumanShaders, the port to come)
 
 - **A `godot-support` branch, with HumanShaders in a plugins folder** ("make a new branch called godot-support,
