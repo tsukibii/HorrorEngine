@@ -2,6 +2,20 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, afternoon (the director's to-do, for after the merge)
+
+- **Not on this branch**: "you dont have to work on this in this branch but I will merge this branch into the other
+  one and you need to give me a to do". docs/HANDOFF_DIRECTOR_TODO.md is it.
+- **Rough outlines, refined on the desk**: "ideally I want the writer block to be just a very rough outline, I will
+  refine the actual stuff by playing through, editing in between, modifying, is there a way for me to slice a flow (to
+  stop it continuing), then re-attach it to another."
+- **Writer to director**: "only move the dialogue, tasks, gameplay element of that shot/scene, no adding animations to
+  the npcs etc, you can just give them an easily changeable starting position and they'll stay still".
+- **State through a shot, patrols**: "if I animate them walking somewhere, once the animation is done, I in the same
+  shot might want them sitting on a chair for the rest of the shot, or in the same shot add patrols (which can be a
+  generic looped walk, stand, or patrol through premade animations that are specific). If this is missing add it as a
+  pass down to next session".
+
 ## 2026-10-28, early afternoon (The Visitor: written as amnesia)
 
 - **The writing rethought**: "dialogue like this makes no sense: [ Welcome ] Natsu came back. Tell her --- And breaks
