@@ -109,6 +109,11 @@ The order (each a commit with an automation test, as S7 says):
 - [ ] A cast member's models (STORY_FORMAT §2 `models`, a scene's picks carried down the flow; not written for Unreal
   yet): the bake records each scene on the bodies its cast wear there (`scenes[sid].models`) and exports each model's
   body (`bodies[who].models[name]`); AStoryPreview wears that mesh for that scene (its skinning frames are its own).
+- [ ] What's shown by what's happened (STORY_FORMAT §9.14, not written for Unreal yet): `game.words` filled into
+  every text and speaker name by the run's flags and counters (`{guide}`: "the guide", then "Aoi"); a line, an answer
+  or a face with a condition left out where it doesn't hold (the night scene's c3, the answer "Not yet"); an ending's
+  `text` under its title on the card. The StoryRunner reads them as the desk does (stage.js `holds`, `wordOf`); a
+  table's setting `"flag:x"` is true or false by the run's flags. The reference: the lobby and night stations, the end.
 - [ ] A painted placeholder (docs/ASSETS.md §7, not written for Unreal yet): the importer builds its block with the
   template's UVs (`Art/Textures/<thing>/<thing>.json`: each face's island; Unreal's UVs from the top left, `(px / W,
   py / H)`, where the desk's `painted.js` flips v) and wears `<thing>.png` as its base colour; a close look beside the

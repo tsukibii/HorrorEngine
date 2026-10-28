@@ -24,14 +24,17 @@ let NAME = "Alex";
 export const DEFAULT_NAME = "Alex";
 export function setName(n, reset) { const v = String(n || "").trim(); if (v || reset) NAME = v || DEFAULT_NAME; return NAME; }
 export const playerName = () => NAME;
-export const named = t => typeof t === "string" ? t.replace(/\{name\}/g, NAME) : t;
+// and the game's own words (STORY_FORMAT §9.14, game.words: {her} by the run's flags and counters), when the desk says how
+let WORD = () => null;
+export function setWords(fn) { WORD = fn || (() => null); }
+export const named = t => typeof t === "string" ? t.replace(/\{name\}/g, NAME).replace(/\{([a-z][a-z0-9_]*)\}/g, (m, w) => { const v = WORD(w); return v === null || v === undefined ? m : v; }) : t;
 
 // a spoken or written line into a footer line: the speaker above, then the words (`think`: the player's own thought,
 // set apart). English only: no Japanese over it (DECISIONS 2026-10-27, notes: other languages come from a system that
 // changes the whole dialogue, and there's no Japanese audio). The Watch's scenes and Play's lines both paint with this,
 // so a subtitle looks the same wherever it comes from
 export function paintLine(el, text, who, think) {
-  el.replaceChildren(...(who ? [mk("span", "ph-who", who)] : []), mk("span", "", named(text) || ""));
+  el.replaceChildren(...(who ? [mk("span", "ph-who", named(who))] : []), mk("span", "", named(text) || ""));   // a name can be a word: {her}
   el.classList.toggle("on", !!text); el.classList.toggle("think", !!think);
 }
 
@@ -94,7 +97,7 @@ export class Hud {
     this.todoEl.replaceChildren(...items.map(t => {
       const e = mk("div", "ph-task"); e.dataset.state = t.state; e.dataset.id = t.id;
       e.append(mk("span", "ph-box", t.state === "done" ? "✓" : t.state === "failed" ? "✕" : ""), mk("span", "ph-task-text", named(t.text)));
-      if (t.who) e.append(mk("span", "ph-task-who", t.who));            // a request: who asked
+      if (t.who) e.append(mk("span", "ph-task-who", named(t.who)));     // a request: who asked (a name can be a word)
       if (t.left !== null && t.left !== undefined) e.append(mk("span", "ph-task-left", Math.ceil(t.left) + "s"));
       return e;
     }));

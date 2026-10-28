@@ -197,7 +197,7 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_hello", async () => {
-    await step("Aoi in the lobby (a scene): her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), her body track (from her second line she walks to the bench and sits there till the shot ends), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
+    await step("Aoi in the lobby (a scene): her name a word (the guide, till you've met her), her reply answered as a conversation card (Ready: karma +1, her reply two lines, then on past the line for Not great), her body track (from her second line she walks to the bench and sits there till the shot ends), the scene's cues on its clips' edges (the kitchen's TV to static), its sets (met_aoi), her face row (an expression, then a loop of its held part to the end)", async () => {
       // skipped along to her question; then, answered, watched to its end: a conversation card's answer (§9.9), her reply
       // two lines, then on to the line it skips to (her line for the other answer never said)
       // her body track: from her mark (x 1.5) to the bench (x -3); a skip jumps to her question, so the Watch is seen
@@ -205,6 +205,8 @@ const snapFor = nid => {                               // the run's state on rea
       const t0 = Date.now(), subs = [], xs = [];
       while (!(await page.$(".ph-dock .ph-opt"))) { if (Date.now() - t0 > 60000) throw new Error("her question never came"); await page.keyboard.press("Escape"); await page.waitForTimeout(300); }
       const xq = await page.evaluate(() => { const g = window.__dd.watchStage.cast.aoi.group; return g.visible ? +g.position.x.toFixed(2) : null; });
+      const whoQ = await page.evaluate(() => (document.querySelector("#watchBox .ph-line .ph-who") || {}).textContent || "");   // her name, a word: not met yet
+      if (whoQ !== "the guide") throw new Error(`her name at her question: ${JSON.stringify(whoQ)} (the guide till you've met her: {guide}, §9.14)`);
       await page.keyboard.press("Digit1");
       while (Date.now() - t0 < 120000) {
         const o = await page.evaluate(() => { const R = window.__dd.run, p = window.__dd.play, g = window.__dd.watchStage.cast.aoi.group;
@@ -547,7 +549,19 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_night", async () => {
-    await step("Aoi at the door at night (a scene)", () => scene());
+    await step("Aoi at the door at night (a scene): her name now Aoi (a word, §9.14); a line kept by the chores done, one left out; the answer for the painting offered, the one for skipped chores not; her face by the painting", async () => {
+      const t0 = Date.now();
+      while (!(await page.$(".ph-dock .ph-opt"))) { if (Date.now() - t0 > 60000) throw new Error("her question never came"); await page.keyboard.press("Escape"); await page.waitForTimeout(300); }
+      const q = await page.evaluate(async () => {
+        const { version } = await import("/stage.js"), st = window.__dd.watchStage, tl = st.timeline(version(window.__dd.S.scenes.s_night));
+        st.stateAt(tl, 0.5, window.__dd.FILES);
+        return { who: (document.querySelector("#watchBox .ph-line .ph-who") || {}).textContent || "", opts: [...document.querySelectorAll(".ph-dock .ph-opt > span:first-child")].map(e => e.textContent),
+          lines: tl.segs.filter(x => x.type === "clip" && !x.answer).map(x => x.clip.id), faces: ((tl.facePlan || {}).aoi || []).map(it => (it.p.if || []).join()) };
+      });
+      if (q.who !== "Aoi" || q.opts.join("|") !== "Ready.|I saw the painting." || q.lines.join() !== "c1,c2,c4" || q.faces.join("|") !== "found_painting") throw new Error(JSON.stringify(q));
+      await page.keyboard.press("Digit2");
+      await scene();
+    });
   });
 
   await station("n_annex", async () => {
@@ -563,12 +577,14 @@ const snapFor = nid => {                               // the run's state on rea
   });
 
   await station("n_final", async () => {
-    await step("the end by act (leave by the door), the secret's scene (found_painting), and karma 4: Passed", async () => {
+    await step("the end by act (leave by the door), the secret's scene (found_painting), and karma 4: Passed, its title card's words (§9.14) with the name typed", async () => {
       await enterRoom("exit_door", "annex_out").catch(() => null);
       await scene();
       await until(() => window.__watchEnd, null, "an ending", 120000);
       const end = await page.evaluate(() => ({ end: window.__watchEnd, trail: window.__dd.run.trail.slice(-4), karma: window.__dd.run.karma.karma }));
       if (end.end !== "Passed" || !end.trail.includes("n_egg")) throw new Error(JSON.stringify(end));
+      const words = await page.evaluate(() => (document.querySelector("#watchBox .wcard .etext") || {}).textContent || "");
+      if (words !== "Every room passed, Riko. The report goes in tomorrow.") throw new Error("the title card's words: " + JSON.stringify(words));
     });
   });
 

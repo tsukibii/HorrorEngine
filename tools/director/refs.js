@@ -60,6 +60,8 @@ export function allRefs(S) {
       if (k === "models" && isObj(v) && path[0] === "scenes") for (const dk of Object.keys(v)) out.push({ kind: "cast", id: dk, holder: x, key: k, path: [...p, dk], dictKey: true });   // a scene's models, by cast member (a cast member's own are its looks' names)
       if (k === "if" && Array.isArray(v)) v.forEach((f, i) => { if (typeof f === "string") out.push({ kind: "flag", id: f.replace(/^!/, ""), holder: v, key: i, path: [...p, i], token: f.startsWith("!") ? "!" : "" }); });
       if (k === "if" && typeof v === "string") out.push({ kind: "flag", id: v.replace(/^!/, ""), holder: x, key: k, path: p, token: v.startsWith("!") ? "!" : "" });   // a bed's one flag
+      if (k === "settings" && isObj(v)) for (const [sk, sv] of Object.entries(v)) if (typeof sv === "string" && /^!?flag:/.test(sv)) {   // a table's setting by a flag
+        const tok = sv.slice(0, sv.indexOf(":") + 1); out.push({ kind: "flag", id: sv.slice(tok.length), holder: v, key: sk, path: [...p, sk], token: tok }); }
       if (k === "shape" && typeof v === "string" && /^person\s+\S+/.test(v)) out.push({ kind: "cast", id: v.split(/\s+/)[1], holder: x, key: k, path: p, token: "person" });
       if (v && typeof v === "object") walk(v, p);
     }

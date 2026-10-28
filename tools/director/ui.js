@@ -473,6 +473,26 @@ export function beatCard(b, i, beats, ctx, { secrets = [] } = {}) {
     ifRow, actionList(b.do, ctx, { empty: "No commands: add what happens." }));
   return card;
 }
+// ---- a shown thing's condition (STORY_FORMAT §9.14): a line, an answer, a face, a word's choice. Its flags as chips (`if`,
+// "not" for `!`), a counter's range as one chip (`count`, `min`, `max`), + a flag or a count; `own` gives the object to
+// change when it isn't x itself (a scene's face copied into its version on the first change)
+export function condRow(x, ctx, label = "only if", { own = () => x } = {}) {
+  const changed = () => { ctx.changed(); ctx.rerender(); }, flags = x.if || [];
+  const range = x.min != null && x.max != null ? `${x.min} to ${x.max}` : x.min != null ? `at least ${x.min}` : `at most ${x.max}`;
+  return h("div", { class: "beat-if cond" }, h("span", { class: "lab" }, label),
+    flags.map((f, j) => h("span", { class: "chip" + (f.startsWith("!") ? " neg" : ""), title: f.startsWith("!") ? "this flag must NOT be set" : "this flag must be set" },
+      (f.startsWith("!") ? "not " : "") + f.replace(/^!/, ""), h("button", { class: "x", on: { click: () => { const o = own(); o.if.splice(j, 1); if (!o.if.length) delete o.if; changed(); } } }, "×"))),
+    x.count ? h("span", { class: "chip", title: "this counter must be in the range" }, `${x.count} ${range}`,
+      h("button", { class: "x", on: { click: () => { const o = own(); delete o.count; delete o.min; delete o.max; changed(); } } }, "×")) : null,
+    h("button", { class: "ghost small", title: "only while a flag is set (or isn't)", on: { click: async () => {
+      const draft = { flag: "", not: false }, body = h("div", {}, form([{ key: "flag", label: "Flag", kind: "flag" }, { key: "not", label: "must NOT be set", kind: "bool" }], draft, ctx));
+      if (await modal({ title: "Only if a flag…", body }) && draft.flag) { const o = own(); (o.if = o.if || []).push((draft.not ? "!" : "") + draft.flag); changed(); }
+    } } }, icon("plus", 12), " a flag"),
+    x.count ? null : h("button", { class: "ghost small", title: "only while a counter is in a range", on: { click: async () => {
+      const draft = {}, body = h("div", {}, form([{ key: "count", label: "Counter", kind: "counter" }, { key: "min", label: "at least", kind: "number" }, { key: "max", label: "at most", kind: "number" }], draft, ctx));
+      if (await modal({ title: "Only if a counter…", body }) && draft.count && (draft.min !== undefined || draft.max !== undefined)) { Object.assign(own(), draft); changed(); }
+    } } }, icon("plus", 12), " a count"));
+}
 export function nextId(list, base = "b_") {
   const stem = String(base).replace(/_?\d+$/, "") || "b";
   let n = 1; while (list.some(x => x.id === `${stem}_${n}`)) n++;

@@ -33,11 +33,24 @@
    "engine": "0.6.0",
    "format": 3
   },
-  "note": "A test game, not a story (DECISIONS 2026-10-28, back): a lab whose rooms each test one thing the format has, station by station, each with its to-do list as the checklist. The desk plays it through (TESTROOM); the same checklist is what an Unreal build is compared against (docs/UNREAL_NEXT.md)."
+  "note": "A test game, not a story (DECISIONS 2026-10-28, back): a lab whose rooms each test one thing the format has, station by station, each with its to-do list as the checklist. The desk plays it through (TESTROOM); the same checklist is what an Unreal build is compared against (docs/UNREAL_NEXT.md).",
+  "words": {
+   "guide": [
+    {
+     "if": [
+      "met_aoi"
+     ],
+     "say": "Aoi"
+    },
+    {
+     "say": "the guide"
+    }
+   ]
+  }
  },
  "cast": {
   "aoi": {
-   "name": "Aoi",
+   "name": "{guide}",
    "metahuman": null,
    "height": 1.6,
    "subject": "she",
@@ -3285,6 +3298,132 @@
       "tier": "simple",
       "prompt": "at the door, half in the dark"
      }
+    },
+    {
+     "id": "c2",
+     "who": "aoi",
+     "en": "And the chores done. Nothing left undone.",
+     "if": [
+      "chores_done"
+     ],
+     "act": "a small nod",
+     "shot": "fs",
+     "seam": {
+      "kind": "blink"
+     },
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "a small nod at the door"
+     }
+    },
+    {
+     "id": "c3",
+     "who": "aoi",
+     "en": "You left the chores. I noticed.",
+     "if": [
+      "!chores_done"
+     ],
+     "act": "flat, unimpressed",
+     "shot": "fs",
+     "seam": {
+      "kind": "blink"
+     },
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "arms folded at the door"
+     }
+    },
+    {
+     "id": "c4",
+     "who": "aoi",
+     "en": "Ready for the last one?",
+     "act": "a hand on the door",
+     "shot": "fs",
+     "seam": {
+      "kind": "blink"
+     },
+     "body": {
+      "block": [
+       {
+        "at": 0,
+        "pose": "idle"
+       }
+      ],
+      "tier": "simple",
+      "prompt": "a hand on the door, waiting"
+     },
+     "reply": {
+      "wait": 6,
+      "timeout": null,
+      "options": [
+       {
+        "id": "ready",
+        "label": "Ready.",
+        "then": {
+         "en": "Then come."
+        }
+       },
+       {
+        "id": "painting",
+        "label": "I saw the painting.",
+        "if": [
+         "found_painting"
+        ],
+        "think": "She painted it. I'm sure of it.",
+        "then": {
+         "en": "Then you know who wrote these tests."
+        }
+       },
+       {
+        "id": "not_yet",
+        "label": "Not yet.",
+        "if": [
+         "!chores_done"
+        ],
+        "then": {
+         "en": "There's no going back for them now."
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "faces": [
+    {
+     "who": "aoi",
+     "expr": "pout_and_glance",
+     "at": {
+      "clip": "c4",
+      "edge": "start"
+     },
+     "in": 0.4,
+     "if": [
+      "found_painting"
+     ]
+    },
+    {
+     "who": "aoi",
+     "expr": "pout_and_glance_loop",
+     "at": {
+      "clip": "c4",
+      "edge": "start"
+     },
+     "in": 0.4,
+     "if": [
+      "!found_painting"
+     ]
     }
    ]
   },
@@ -5032,7 +5171,8 @@
   "e_good": {
    "type": "ending",
    "kind": "good",
-   "title": "Passed"
+   "title": "Passed",
+   "text": "Every room passed, {name}. The report goes in tomorrow."
   },
   "e_neutral": {
    "type": "ending",

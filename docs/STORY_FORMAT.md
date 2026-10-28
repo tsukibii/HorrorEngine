@@ -193,7 +193,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): a click throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
 | `sit` | (a chair, a sofa, a bed's edge: a click sits the player down, the eye at sitting height, a click stands them up; a beat's `{"use": id}` hears it) |
 | `carry` | a thing the player carries in both hands: a click picks it up into the inventory, in the hand; **G** puts it down in front of the player, on whatever is under that spot, facing them (no falling: it's simply there, and stays). Its `shape` (`box`, `cyl`, `sphere`, or `asset` for a library mesh at its size; under 1 m) is its body; `art` dresses it (any library mesh: your own goes in with `python tools/cc0.py add <file> local/<name>`), and in Play a bare plushie's block is drawn rounded, like a cushion. `physics`: how it follows the hand, `rigid` (default: stiffly) or `plushie` (light and soft: it lags and swings, squashes and stretches, bobs with the steps, its top flops behind a turn); `jiggle` 0..2 a plushie's softness (0 still, 1 a plushie, 2 jelly). `{"carrying": id}` holds while it's the one in the hand (the inventory's middle), `{"dropped": id, "in": room}` when it's put down |
-| `game` | a table with a board game: a click sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time). Needs a `shape` or a `kit`: the table |
+| `game` | a table with a board game: a click sits the player down at its long side (their half), leaning in over it, its rules play it out (`game`: one of `Content/Studio/BoardGames/`, or the game's own `BoardGames/`: `russian_roulette`, `high_dice`, `chohan`, `spin_the_cup`, `shell_game`, `high_card`, `blackjack`, `shinkei_suijaku`; their README has each one's results and settings), they stand up, and `{"played": id, "result": ...}` is heard. `vs` the cast member they play (else the dealer), `settings` the game's own (each named in its rules' meta; `seed` plays the same game every time; a setting's value `"flag:off_pills"` is true while that flag is set, `"!flag:off_pills"` while it isn't: his memory lies only off his pills). Needs a `shape` or a `kit`: the table |
 | `sleep` | a bed (a `kit` like `bed_single`, `futon`, or a shape): a click lies the player down on it, looking up, and the view goes dark; the story hears `{"use": id}`, and its beat plays a `chapter` (§4), which wakes them in the bed and gets them up where they stood (with no chapter they wake by themselves). `if`: a flag or a list (`"!flag"` for not) that must hold before they can sleep (the chores first); until then the bed says **Not tired yet**, and a click thinks `not_yet` (else "I'm not tired yet."), and nothing is heard |
 | `clean` | a stain (DECISIONS 2026-10-28: the shift's chores): a flat block (`"shape": "box 0.6 0.4 0.01"`) drawn as a blot on what it lies on, `stain` its kind (`dirt` by default, `mud`, `blood`, `water`, `ash`). The player holds the left button on it to scrub it away: a ring fills round the reticle and it fades over `secs` of scrubbing (3 by default; let go or look away and it waits where it got to). `with`: an item that must be the one in the hand (the mop, a rag), else it says **Need the mop**. Clean, it's gone and `{"use": id}` is heard (tick a to-do with it: `"ticks": {"use": "hall_stain"}`, or `all` of several) |
 | `combo` | `code` (written in some readable text), `then` (a flag), `opens` (a door) |
@@ -992,3 +992,27 @@ a flag set anywhere (a feat: set it where the feat happens). `title` is what the
 doesn't spoil; `hidden: true` keeps the title back until it's unlocked. The check names one that no path unlocks (a
 feat whose flag nothing sets yet is a warning). The desk's Watch and Play say each one in the corner as it's
 unlocked. Steam's list is made from this table; Unreal: not yet.
+
+### 9.14 What's shown, by what's happened: words, lines and faces (HANDOFF_DIRECTOR_TODO §7)
+
+One **condition**, everywhere it's needed, in a choice option's own shape: `if` (flags, `!flag` for not) and a
+counter's `count` with `min` and/or `max`; with neither it always holds.
+
+- **Words:** `game.words` fills `{word}` in anything shown (a line, a thought, an answer, an objective, a note, a cast
+  member's `name`), as `{name}` is the player's: `{"her": [{"count": "remembered", "min": 2, "say": "Natsuki"}, {"say":
+  "Natsu"}]}`, the first option that holds, the last the fallback. A `{word}` that is neither is a STORY warning.
+- **A line left out:** a clip with a condition plays only when it holds on the run (`"if": ["!took_pills"]`: her lines
+  about Ren off his pills); the walk leaves it out where it doesn't. The desk's script shows every line.
+- **Two faces for one character:** a face placement (§3.7) with a condition is worn only when it holds: his version
+  and hers at the same lines, picked by a counter.
+- **An answer offered by what's happened:** a reply's answer (§9.9) or an ask's (§4) with a condition is offered only
+  when it holds (`{"id": "home", "label": "Home"}` always, the others `"if": ["took_pill"]`: off his pills only Home is
+  offered). Leave one without a condition (the check warns when every answer has one); a timed ask whose `default`
+  isn't offered takes the first that is. The walk answers from what's offered.
+- **An ending's title card:** an ending's `text` is what its card says under the title, as long as it needs (an
+  epilogue); the ending's scene before it is the cutscene.
+- A cue or a face on a line that's left out goes with it.
+- **On the desk:** a line's Line tab (*said only if*), an answer in the Reply tab (*offered only if*) and a face row's
+  block (*worn only if*) carry a condition as chips (+ a flag, + a count); the Database's Flags & counters tab keeps the
+  game's **Words** (each word's choices in order, the last the fallback); an ending's inspector has its **words**. The
+  Watch and Play fill and leave out by the run; the desk's script shows every line.

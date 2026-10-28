@@ -18,6 +18,7 @@ const EXTRA = {                                   // settings that reach the res
   shell_game: [{ swaps: 12, speed: 3 }],
   spin_the_cup: [{ reach: 15 }],
   blackjack: [{ dealer_stands: 19 }],
+  shinkei_suijaku: [{ pairs: 3 }, { memory_lies: true, memory: 1 }, { lets_win: true, pairs: 4 }],
 };
 const fail = m => { console.error("BOARD FAIL: " + m); process.exit(1); };
 

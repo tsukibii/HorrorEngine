@@ -507,5 +507,60 @@ print(json.dumps(L.flow_times(json.load(sys.stdin))))`], { input: JSON.stringify
   /chapter needs its title/.test(out) && /chapter time 'noon'/.test(out) && /chapter secs/.test(out) ? ok("a chapter with no title, a time that isn't one, a card held 40 s: found by the story check") : fail("bad chapter: " + out.split("\n").filter(l => /chapter/.test(l)).join(" | "));
 }
 
+// what's shown by what's happened (STORY_FORMAT §9.14, HANDOFF_DIRECTOR_TODO §7): the game's words ({her}), a line, an
+// answer and a face by a condition; the desk (stage.js) and the story check (storylib, the walker) agree
+console.log("what's shown by what's happened (stage.js holds, wordOf; storylib.holds, word_of)");
+{
+  const { holds, wordOf, Stage } = await import("./stage.js");
+  const S0 = story("TestRoom001");
+  S0.game.counters = Object.assign({}, S0.game.counters, { remembered: { label: "times he remembered" } });
+  S0.game.words = { her: [{ count: "remembered", min: 2, say: "Natsuki" }, { if: ["took_pill"], say: "Natsuki" }, { say: "Natsu" }] };
+  const cases = [[[], {}], [["took_pill"], {}], [[], { remembered: 2 }], [[], { remembered: 1 }]];
+  const conds = [{}, { if: ["a"] }, { if: ["!a"] }, { if: ["a", "!b"] }, { count: "n", min: 2 }, { count: "n", max: 1 }, { if: ["a"], count: "n", min: 1, max: 3 }];
+  const states = [[[], {}], [["a"], { n: 2 }], [["a", "b"], { n: 1 }], [["b"], { n: 4 }]];
+  const py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+d = json.load(sys.stdin)
+print(json.dumps({"words": [L.word_of(d["S"], "her", set(f), c) for f, c in d["cases"]], "holds": [[L.holds(x, set(f), c) for f, c in d["states"]] for x in d["conds"]]}))`], { input: JSON.stringify({ S: S0, cases, conds, states }), encoding: "utf8" }));
+  const words = cases.map(([f, c]) => wordOf(S0, "her", new Set(f), c)), hs = conds.map(x => states.map(([f, c]) => holds(x, new Set(f), c)));
+  JSON.stringify(words) === JSON.stringify(["Natsu", "Natsuki", "Natsuki", "Natsu"]) && JSON.stringify(py.words) === JSON.stringify(words) && JSON.stringify(py.holds) === JSON.stringify(hs) && wordOf(S0, "nobody", new Set(), {}) === null
+    ? ok("{her} by a counter, then a flag, the last the fallback; conditions read alike: the desk and the story check agree") : fail(`words ${JSON.stringify(words)} / ${JSON.stringify(py)}`);
+  // a line left out by a flag: a run's timeline skips it, the desk's script (no run) plays every line; an answer by a
+  // condition: what's offered first is the default pick
+  const S = clone(S0), sc = S.scenes.s_hello, rp = sc.clips.find(c => c.reply).reply;
+  sc.clips[0].if = ["took_pill"]; rp.options[0].if = ["!took_pill"];
+  const tl = run => Stage.prototype.timeline.call({ story: S, things: {}, runState: run, resolveMoves: Stage.prototype.resolveMoves }, sc);
+  const ids = t => t.segs.filter(x => x.type === "clip" && !x.answer).map(x => x.clip.id), pick = t => t.segs.find(x => x.type === "reply").picked;
+  const off = tl({ flags: new Set(), counters: {} }), on = tl({ flags: new Set(["took_pill"]), counters: {} }), desk = tl(null);
+  const out = storyCheck("TestRoom001", S).trim().split("\n");
+  !ids(off).includes("c1") && ids(on).includes("c1") && ids(desk).includes("c1") && pick(off) === "good" && pick(on) === "bad" && pick(desk) === "good"
+    && !run(S, thingsOf(S)).some(p => p.sev === "error") && /STORY ok/.test(out.pop())
+    ? ok("a line by a flag: left out of a run without it, kept with it and on the desk; an answer by a flag: the first offered is the default; no problems found") : fail(`by a condition: ${JSON.stringify({ off: ids(off), on: ids(on), desk: ids(desk), picks: [pick(off), pick(on), pick(desk)] })} ${out.slice(-3).join(" | ")}`);
+  // faults: a counter that isn't one (a line, an answer, a face), every answer with a condition, a word that isn't
+  // one, an ending's text that isn't words
+  sc.clips[1].count = "nothing"; sc.clips[1].min = 1; rp.options.forEach(o => { o.if = ["took_pill"]; }); rp.options[1].count = "nowt"; rp.options[1].min = 1;
+  sc.faces[0].count = "zilch"; sc.faces[0].min = 1; sc.clips[2].en = "Hello, {nobody}."; const end = Object.keys(S.flow).find(k => S.flow[k].type === "ending"); S.flow[end].text = 3;
+  const ps = run(S, thingsOf(S)).filter(p => p.sev === "error").map(p => p.text), out2 = storyCheck("TestRoom001", S);
+  ps.some(t => /shown by nothing, which isn't a counter/.test(t)) && ps.some(t => /offered by nowt, which isn't a counter/.test(t)) && ps.some(t => /worn by zilch, which isn't a counter/.test(t))
+    && /count 'nothing' isn't one of game.counters/.test(out2) && /count 'nowt' isn't one of game.counters/.test(out2) && /count 'zilch' isn't one of game.counters/.test(out2)
+    && /every answer has a condition/.test(out2) && /\{nobody\}/.test(out2) && new RegExp(`${end}.*text`).test(out2)
+    ? ok("a counter that isn't one (a line, an answer, a face), every answer with a condition, a word that isn't one, an ending's text not words: found live and by the story check")
+    : fail("conditions' faults: " + ps.join("; ") + " / " + out2.split("\n").filter(l => /count|condition|nobody|text/.test(l)).join(" | "));
+  // a board game's setting by a flag (Concentration: his memory lies off his pills, she lets him win): true or false by
+  // the run's flags; a number can't be one; a rename of the flag moves it
+  const { boardCtx } = await import("./play/boardgames.js"), { renameRef } = await import("./refs.js");
+  const meta = { settings: { pairs: 6, memory_lies: false, lets_win: false } }, set = { memory_lies: "flag:off_pills", lets_win: "!flag:off_pills" };
+  const pillsOff = boardCtx({ flags: new Set(["off_pills"]) }, null, meta, set, "Natsuki").settings, pillsOn = boardCtx({ flags: new Set() }, null, meta, set, "Natsuki").settings;
+  const tableOf = S => Object.values(S.levels).flatMap(l => [...(l.props || []), ...(l.rooms || []).flatMap(r => r.props || [])]).find(p => p.use === "game");
+  const S2 = clone(S0), tbl = tableOf(S2);
+  tbl.settings = Object.assign({}, tbl.settings, { rounds: "flag:met_aoi" }); const out3 = storyCheck("TestRoom001", S2);
+  const S3 = clone(S0), t3 = tableOf(S3); t3.settings = { seed: 3, extra: "!flag:met_aoi" };
+  renameRef(S3, "flag", "met_aoi", "met_her");
+  pillsOff.memory_lies === true && pillsOff.lets_win === false && pillsOn.memory_lies === false && pillsOn.lets_win === true && pillsOff.pairs === 6
+    && new RegExp(`${tbl.game}'s rounds by a flag is true or false`).test(out3) && t3.settings.extra === "!flag:met_her"
+    ? ok("a table's setting by a flag: true or false by the run's flags (and not, with !), a number by a flag refused, the flag's rename moving it")
+    : fail(`settings by a flag: ${JSON.stringify({ pillsOff, pillsOn, extra: t3.settings.extra })} ${out3.split("\n").filter(l => /rounds/.test(l)).join(" | ")}`);
+}
+
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");
 process.exit(fails.length ? 1 : 0);

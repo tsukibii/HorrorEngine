@@ -1,14 +1,14 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels, wordOf, holds } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
-import { chooser, loadTheme, paintLine, docked, besideAt, setName, named } from "./play/hud.js";
+import { chooser, loadTheme, paintLine, docked, besideAt, setName, named, setWords } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction, condRow } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
 const { pack, unpack, pasteClips, copyNodes, pasteNodes } = CLIPBOARD;
 import { triggerText, actionText, ACTION } from "./commands.js";
@@ -810,7 +810,11 @@ function renderInspector() {
     if (ref) (n.type === "scene" ? sceneEditor : stitchEditor)(box, ref, n.ref); else box.append(el("p", { class: "err" }, "no " + n.type + " " + n.ref));
   }
   if (n.type === "choice") choiceEditor(box, n, nodeIds);
-  if (n.type === "ending") box.append(field("title", txt(n, "title", { w: true })), field("kind", sel(n, "kind", ENDS)), field("", chk(n, "short_ok", "short ok (an early death: exempt from the playtime minimum)")));
+  if (n.type === "ending") {
+    const words = el("textarea", { rows: 3, placeholder: "the title card's words under its title, as long as they need (an epilogue); {name} and the game's words filled in", on: { change: e => { if (e.target.value.trim()) n.text = e.target.value; else delete n.text; touch(); } } });
+    words.value = n.text || "";
+    box.append(field("title", txt(n, "title", { w: true })), field("words", words), field("kind", sel(n, "kind", ENDS)), field("", chk(n, "short_ok", "short ok (an early death: exempt from the playtime minimum)")));
+  }
   box.append(el("h2", {}, "Grow the flow"), el("div", { class: "row" }, el("span", { class: "muted" }, "add after this:"), ...["scene", "stitch", "choice", "ending"].map(t => el("button", { on: { click: () => addNode(t) } }, "+ " + t))));
   notesEditor(box, notesHost(SEL), SEL);
 }
@@ -1207,7 +1211,8 @@ function faceRows(sid, ver, pv, tl, total) {
       el("label", { class: "kv", title: "played over and over (a loop card loops by itself)" }, loop, " loop"),
       "· blend in", num("in", "0.25", "0.05", "seconds it fades in over (from rest, or from the one before)"), "out", num("out", "0.3", "0.05", "seconds it fades out over (into rest; one that runs into the next crossfades over the next one's blend in)"),
       "· weight", num("w", "1", "0.05", "how strongly it shows (0 to 2)"), "speed", num("speed", "1", "0.05", "faster or slower than its length"),
-      el("button", { class: "ghost", title: "take it off the row", on: { click: () => { const L = own(); L.splice(i, 1); if (!L.length) delete ver.faces; FACESEL[sid] = null; touch(); CTX.rerender(); } } }, icon("x", 14))));
+      el("button", { class: "ghost", title: "take it off the row", on: { click: () => { const L = own(); L.splice(i, 1); if (!L.length) delete ver.faces; FACESEL[sid] = null; touch(); CTX.rerender(); } } }, icon("x", 14))),
+      condRow(p, CTX, "worn only if", { own: () => own()[i] }));   // his version and hers at the same lines (§9.14)
   }
   return box;
 }
@@ -1506,7 +1511,8 @@ function clipCard(sc, ver, c, i, lvl, sid) {
       c.who === "player" ? chk(c, "think", "a thought (shown, never said)", renderInspector) : null,
       el("span", { class: "lab" }, "length"), txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:64px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s")));
     pane.append(txt(c, "en", { w: true, ph: (S.game || {}).voice === "none" ? "the line (typed on screen)" : "English subtitle", after: renderInspector }),
-      (S.game || {}).voice === "none" && !c.ja ? null : txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
+      (S.game || {}).voice === "none" && !c.ja ? null : txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }),
+      condRow(c, CTX, "said only if"));                // a line left out unless it holds (§9.14)
     if ((S.format || 2) >= 3) pane.append(takeSec(c));
   }
   if (tab === "take") {
@@ -1625,7 +1631,8 @@ function replyEditor(c, ver, ci) {
       oi ? el("button", { class: "small", title: "earlier in the list", on: { click: () => { rp.options.splice(oi - 1, 0, ...rp.options.splice(oi, 1)); redo(); } } }, "↑") : null,
       el("button", { class: "small", title: "take this answer out", on: { click: () => { rp.options.splice(oi, 1); if (rp.timeout === o.id) rp.timeout = null; redo(); } } }, icon("x", 14)));
     const opt = el("div", { class: "ropt" }, head,
-      el("div", { class: "row" }, el("span", { class: "lab" }, "you think"), txt(o, "think", { ph: "the thought behind it, under the act (She's cold, I should let her in)", style: "flex:1", drop: true })));
+      el("div", { class: "row" }, el("span", { class: "lab" }, "you think"), txt(o, "think", { ph: "the thought behind it, under the act (She's cold, I should let her in)", style: "flex:1", drop: true })),
+      condRow(o, CTX, "offered only if"));             // an answer offered by what's happened (§9.14)
     if (!lines.length) opt.append(el("div", { class: "row muted" }, el("span", { class: "lab" }, "she says"), "nothing back"));
     lines.forEach((th, n) => opt.append(
       el("div", { class: "row" }, el("span", { class: "lab" }, n ? "and" : "she says"), sel(th, "who", castIds(), { drop: true, blank: c.who || "she", title: "who says it: the one who asked, unless it's someone else" }),
@@ -1968,6 +1975,7 @@ async function drawBoard() {
 
 /* ---------- the animatic (Watch) ---------- */
 let RUN = null;
+setWords(w => S ? wordOf(S, w, RUN ? RUN.flags : new Set(), RUN ? RUN.counters : {}) : null);   // {her}: the game's words, by the run's flags and counters (§9.14)
 const sleep = ms => new Promise(r => { const t = setTimeout(r, ms); RUN && RUN.timers.push(t); });
 function wclear() { $("#watchBox").querySelectorAll(".wcard,.qte,.warnmark").forEach(e => e.remove()); }
 async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.opacity || 0, t0 = performance.now(), d = Math.max(0.05, secs) * 1000; while (RUN) { const u = Math.min(1, (performance.now() - t0) / d); b.style.opacity = from + (to - from) * u; if (u >= 1) break; await new Promise(r => requestAnimationFrame(r)); } }
@@ -2042,7 +2050,7 @@ function choiceBox(spec, pick, who) {
 function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
-    const secs = +(rp.wait || REPLY_SECS), opts = rp.options || [], t0 = performance.now();
+    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).filter(o => holds(o, RUN.flags, RUN.counters)), t0 = performance.now();   // offered by what's happened (§9.14)
     const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
@@ -2325,6 +2333,7 @@ async function watch(fromNid, snap) {
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
   for (const [id, to] of Object.entries((snap && snap.states) || {})) RUN.lives.set(id, to, 0, "start");   // the little things as the nodes before it leave them (a scene's cue: the TV to static)
   RUN.name = setName(RUN.name || (S.game || {}).player_name, true);   // {name}: the game's until the player types theirs (a `name` action)
+  watchStage.runState = RUN;                            // its flags and counters: the lines and faces it leaves out (§9.14)
   DBG.reset();
   wclock();
   $("#watchOv .black").style.opacity = 1;
@@ -2353,6 +2362,7 @@ async function watch(fromNid, snap) {
       freePointer();
       $("#watchOv .black").style.opacity = death ? 0.8 : 0.6; paintOv("#watchOv", { sub: "", who: "" });
       $("#watchBox").append(el("div", { class: "wcard" + (death ? " death" : "") }, el("div", { class: "muted" }, death ? "YOU DIED" : "ENDING · " + (n.kind || "")), el("div", { class: "big" }, n.title || nid),
+        n.text ? el("div", { class: "etext" }, named(n.text)) : null,   // its title card's words, as long as they need (§9.14)
         el("div", { class: "muted" }, `${(RUN.secs / 60).toFixed(1)} min of story time on this path`), el("div", { class: "muted" }, "karma " + JSON.stringify(RUN.karma) + (Object.keys(RUN.counters).length ? " · " + JSON.stringify(RUN.counters) : "") + (RUN.answers.length ? " · " + RUN.answers.join("; ") : "")),
         el("div", {}, rt ? el("button", { class: "primary", style: "margin:4px", on: { click: () => { const p = progress(); watch(n.retry, (p.visited || {})[n.retry]); } } }, "Return to: " + ((nodeRef(rt) || {}).title || rt.title || n.retry)) : null,
           el("button", { style: "margin:4px", on: { click: () => openBranches(n.retry || nid) } }, "Branch map"))));
@@ -2395,7 +2405,7 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } wclear(); paintOv("#watchOv", {});
+function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; watchStage.runState = null; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } wclear(); paintOv("#watchOv", {});
   if (SYNC_AFTER_WATCH) { const w = SYNC_AFTER_WATCH; SYNC_AFTER_WATCH = null; syncFromDisk(w); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 

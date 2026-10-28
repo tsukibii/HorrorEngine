@@ -14,7 +14,9 @@ export const loadRules = (game, id) => import(`/boardgames/${encodeURIComponent(
 
 // the ctx a rules module plays through (README.md has the whole list)
 export function boardCtx(rt, table, meta, settings, them, on) {
-  const s = Object.assign({}, meta.settings, settings), random = s.seed !== undefined ? rng(+s.seed) : Math.random;
+  const s = Object.assign({}, meta.settings, settings);
+  for (const [k, v] of Object.entries(s)) if (typeof v === "string" && /^!?flag:/.test(v)) s[k] = v[0] === "!" ? !rt.flags.has(v.slice(6)) : rt.flags.has(v.slice(5));   // by a flag: "flag:off_pills" (§2 game)
+  const random = s.seed !== undefined ? rng(+s.seed) : Math.random;
   return Object.assign(helpers(random), {
     settings: s, you: "You", them,
     say: async (text, who) => { const secs = Math.min(4, 1.1 + String(text).length / 16); rt.hud.line(text, who === "them" ? them : "", secs); await rt.wait(secs); },

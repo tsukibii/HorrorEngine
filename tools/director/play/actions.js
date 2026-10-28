@@ -1,7 +1,7 @@
 // Actions: a beat's `do`, one verb each (docs/STORY_FORMAT.md §4). A verb with no part yet shows on the HUD's log as
 // "not in Play yet", so a stitch still runs end to end and the gap is visible.
 import { register, part, verbOf } from "./parts.js";
-import { addKarma } from "../stage.js";
+import { addKarma, holds } from "../stage.js";
 import { autosave } from "./menu.js";
 
 // an action's own result: a promise for one that takes time (a wait, a fade, a question), else nothing
@@ -32,7 +32,7 @@ register("action", "say", { run: (v, a, rt) => rt.hud.line(a.line || v, a.who ? 
 // ({"answered": ask id, "option": its id}). `secs` times it; `default` is taken when time runs out
 register("action", "ask", {
   run: async (v, a, rt) => {
-    const opts = a.options || [], l = a.line && (rt.story.lines || {})[a.line];
+    const opts = (a.options || []).filter(o => holds(o, rt.flags, (rt.run || {}).counters)), l = a.line && (rt.story.lines || {})[a.line];   // offered by what's happened (§9.14)
     const i = await rt.choose({ prompt: l ? l.en || l.ja : a.text, who: a.who || (l && l.who), on: a.on,
       options: opts.map(o => ({ label: o.label || o.id, think: o.think })), secs: a.secs, def: Math.max(0, opts.findIndex(o => o.id === a.default)) });
     const o = opts[i]; if (!o) return;

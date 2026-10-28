@@ -139,10 +139,12 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     for (const [base, v, own] of versions) {
       const cb = own.cues ? base : ["scenes", sid], lb = own.clips ? base : ["scenes", sid];
       (v.cues || []).forEach((cu, i) => actions(cu.do, [...cb, "cues", i, "do"], ctx));
+      (v.faces || []).forEach((f, i) => { if (f.count && !counters[f.count]) add("error", `${f.who}'s face ${f.expr} is worn by ${f.count}, which isn't a counter`, [...(own.faces ? base : ["scenes", sid]), "faces", i], sc); });
       (v.clips || []).forEach((c, i) => {
         const p = [...lb, "clips", i], who = c.who;
         if (who !== "player" && !cast[who]) add("error", `line ${c.id}: ${who ? who + " isn't in the cast" : "choose who says it"}`, p, c);
         if (!c.en) add("error", `line ${c.id}: no English subtitle`, p, c);
+        if (c.count && !counters[c.count]) add("error", `line ${c.id}: shown by ${c.count}, which isn't a counter`, p, c);   // a line by a condition (§9.14)
         if (i && !c.seam) add("error", `line ${c.id}: a cut with no seam to hide it (blink, glance, flicker…)`, p, c);
         else if (i && SEAM_LOOKS.has(c.seam.kind) && !c.seam.look) add("error", `line ${c.id}: its ${c.seam.kind} seam needs something to look at`, p, c);
         if (secs) { const t = secs(c); if (t > max + 0.01) add(c.dur ? "error" : "warn", `line ${c.id}: ${t.toFixed(1)} s${c.dur ? "" : " at speaking pace"}, over the ${max} s a take can be: split it`, p, c); }
@@ -150,6 +152,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
         if (c.event) results(c.event.on, [...p, "event", "on"], ctx);
         ((c.reply || {}).options || []).forEach((o, j) => {
           const op = [...p, "reply", "options", j], g = o.go === undefined ? "next" : o.go, ans = `line ${c.id}: answer ${o.label || o.id}`;
+          if (o.count && !counters[o.count]) add("error", `${ans}: offered by ${o.count}, which isn't a counter`, op, c);
           actions(o.sets, [...op, "sets"], ctx);
           for (const th of Array.isArray(o.then) ? o.then : o.then ? [o.then] : []) if (isObj(th) && th.who && th.who !== "player" && !cast[th.who]) add("error", `${ans}: ${th.who} answers, who isn't in the cast`, op, c);
           if (!(g === "next" || g === "end" || isObj(g) && Object.keys(g).length === 1 && ("clip" in g || "node" in g))) add("error", `${ans}: where it goes is next, end, a later line or a card`, op, c);

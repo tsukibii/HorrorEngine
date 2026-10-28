@@ -335,6 +335,29 @@ def chapter_time(story, n):
     return out
 
 
+def holds(cond, flags, counters):
+    """Whether a shown thing's condition holds (STORY_FORMAT §9.14): `if` (flags; `!` for not) and a counter's `count`
+    with `min`/`max`, as a choice's options have them; with neither it always holds."""
+    for f in (cond or {}).get("if") or []:
+        if (f[1:] in flags) if f.startswith("!") else (f not in flags):
+            return False
+    c = (cond or {}).get("count")
+    if c:
+        v = counters.get(c, 0)
+        if (cond.get("min") is not None and v < cond["min"]) or (cond.get("max") is not None and v > cond["max"]):
+            return False
+    return True
+
+
+def word_of(story, word, flags, counters):
+    """A word filled into what's shown (`{her}`, STORY_FORMAT §9.14): the first of game.words[word] whose condition
+    holds, its `say`; None when the game has no such word."""
+    for o in (story.get("game", {}).get("words") or {}).get(word) or []:
+        if isinstance(o, dict) and holds(o, flags, counters):
+            return o.get("say", "")
+    return None
+
+
 def scene_models(sc):
     """A scene's own model choices (STORY_FORMAT §3.1 `models`): {cast id: variant, or "default"}."""
     m = (sc or {}).get("models")

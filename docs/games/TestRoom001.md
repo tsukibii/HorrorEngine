@@ -24,7 +24,7 @@ hall (metal, dark), a room (carpet) and outside.
 | # | Node | Where | What it tests (the format's words) | Its checklist |
 |---|---|---|---|---|
 | 1 | `n_arrive` | yard, lobby | walking, running (Shift), crouching (C), footsteps by floor (dirt, tile), a door opened by a click, `enter` a room, `fade`, `music`, `objective`, `after` | Open the front door · Walk into the lobby |
-| – | `n_hello` | lobby | a scene: `stage`, `view`, soft camera, a `look` and a `tracker`, seams (`blink`, `glance`), a reply with its thoughts and karma (`sets`) as a conversation card (three answers: Ready's reply two lines and `go` past the line for Not great, Say nothing's `end`; STORY_FORMAT §9.9), a body track (a `behave` cue: from her second line Aoi walks to the bench and sits there till the shot ends; §3.8), the player's thought (`think`), cues on clip edges (a sound, a light flicker, a `state`: the kitchen's TV to static), a face row (`faces`: an expression, then a loop of its held part to the end), `sets` | (watched) |
+| – | `n_hello` | lobby | a scene: her name a word (`{guide}`: "the guide" till the scene sets `met_aoi`, then "Aoi"; `game.words`, STORY_FORMAT §9.14), `stage`, `view`, soft camera, a `look` and a `tracker`, seams (`blink`, `glance`), a reply with its thoughts and karma (`sets`) as a conversation card (three answers: Ready's reply two lines and `go` past the line for Not great, Say nothing's `end`; STORY_FORMAT §9.9), a body track (a `behave` cue: from her second line Aoi walks to the bench and sits there till the shot ends; §3.8), the player's thought (`think`), cues on clip edges (a sound, a light flicker, a `state`: the kitchen's TV to static), a face row (`faces`: an expression, then a loop of its held part to the end), `sets` | (watched) |
 | 2 | `n_front` | lobby | `behave idle` (Aoi outside), the `knock` trick, the peephole (`peeping`), the latch (`locked`), a line said (`say`) | Look through the peephole · Shut the door and lock it |
 | 3 | `n_doors` | keys, closet, store, vault | a sliding door, a door `locked_by` an item (the brass key), `pickup`, a `note` read, a `combo` keypad setting a flag that unlocks a `locked_by: flag:` door, `slam_behind`, `exit` | Find the brass key · Open the closet · Read the vault code · Open the vault · Take the fuse |
 | 4 | `n_power` | power | `power` off (every bulb and lamp dark, the candle burning on, the switch dead), a breaker (`power: on`), a `switch` and its `light`, a candle's life (blow it out), `light` flicker, `all` | Throw the breaker · Switch the light on · Blow out the candle |
@@ -41,12 +41,12 @@ hall (metal, dark), a room (carpet) and outside.
 | 15 | `n_run` | corridor | a timed task (`timer`, its `fail` a death), `music` chase | Get to the atrium |
 | 16 | `n_sneak` | atrium | `behave path` on a route (`pingpong`, waits, poses, a locker it `check`s), `sees` (the meter, `caught`), a safe zone, a task that `fails`, a `jumpscare` led by a sound | Reach the far corner unseen |
 | 17 | `n_sleep` | rest | `sleep` in a bed with an `if` (the chores done), a `chapter` card that changes the time to night, a `state` (the lobby clock stops), `checkpoint` | Sleep in the bed |
-| – | `n_night` | rest | a scene at night (`time`), `enter` dip | (watched) |
+| – | `n_night` | rest | a scene at night (`time`), `enter` dip; by what's happened (§9.14): a line kept by the chores done and one left out, an answer offered by the painting found and one not (the chores), Aoi's face by the painting | (watched) |
 | 18 | `n_annex` | annex | another level, `power` off there, `checkpoint`, `use_on` (the fuse into the fusebox), a note | Put the fuse in · Read the note |
 | – | `n_final` | annex | a choice by act (leave by the door, or sit with Aoi: `e_stay`), a flag choice (the secret's scene, `n_egg`, blending back), a karma choice: Passed (karma 2 or more), Failed (-2 or less), Inconclusive | (the ending) |
 
-Endings: Passed, Inconclusive, Failed (karma), Stayed (an act), She wanted her back (the doll), Found and Too slow
-(deaths with retries). Achievements: one per ending, the secret, the clean feat, a six.
+Endings: Passed (its title card's words, with the name typed: §9.14), Inconclusive, Failed (karma), Stayed (an act), She
+wanted her back (the doll), Found and Too slow (deaths with retries). Achievements: one per ending, the secret, the clean feat, a six.
 
 ## What the desk doesn't do yet (and the room still has)
 

@@ -256,6 +256,18 @@ export function replyGo(o) {
   if (g && typeof g === "object") return g.clip !== undefined ? ["clip", g.clip] : g.node !== undefined ? ["node", g.node] : ["next"];
   return g === "end" ? ["end"] : ["next"];
 }
+// a shown thing's condition (STORY_FORMAT §9.14; storylib.holds): `if` flags (`!` for not), a counter's `count` with
+// `min`/`max`; with neither it holds
+export function holds(c, flags, counters) {
+  for (const f of (c && c.if) || []) if (f.startsWith("!") ? flags.has(f.slice(1)) : !flags.has(f)) return false;
+  if (c && c.count) { const v = (counters || {})[c.count] || 0; if ((c.min != null && v < c.min) || (c.max != null && v > c.max)) return false; }
+  return true;
+}
+// a word filled into what's shown ({her}: game.words, the first option that holds; storylib.word_of), else null
+export function wordOf(story, w, flags, counters) {
+  for (const o of (((story && story.game) || {}).words || {})[w] || []) if (o && holds(o, flags, counters)) return o.say ?? "";
+  return null;
+}
 export function eventSecs(ev, story) { return +ev.secs || (ev.type === "choose" && story && (story.format || 2) >= 3 ? 30 : 3); }
 export function karmaOf(d) { if (d === undefined || d === null) return {}; return typeof d === "number" ? { karma: d } : Object.assign({}, d); }
 export function addKarma(into, d) { for (const [k, v] of Object.entries(karmaOf(d))) into[k] = (into[k] || 0) + +v; return into; }
@@ -522,8 +534,10 @@ export class Stage {
   timeline(sc, picks = {}) {
     const v = version(sc), clips = v.clips || [], segs = [];
     let t = 0, go = null;
+    const run = this.runState;                         // a run's flags and counters: the lines it leaves out (§9.14); the desk's script plays them all
     for (let i = 0; i < clips.length; i++) {          // in order, unless an answer skips ahead, ends it, or leaves for another card (go)
       const c = clips[i];
+      if (run && !holds(c, run.flags, run.counters)) continue;
       if (i && c.seam && SEAM_SECS[c.seam.kind]) { segs.push({ type: "seam", start: t, end: t + SEAM_SECS[c.seam.kind], seam: c.seam, i }); t += SEAM_SECS[c.seam.kind]; }
       const d = clipSecs(c);
       segs.push({ type: "clip", start: t, end: t + d, dur: d, clip: c, i }); t += d;
@@ -531,7 +545,7 @@ export class Stage {
       if (ev) { const es = eventSecs(ev, this.story); segs.push({ type: "event", start: t, end: t + es, event: ev, clip: c, i }); t += es; }
       const rp = c.reply;
       if (rp) {                                       // the hanging line's wait, then her answer to the reply picked
-        const picked = c.id in picks ? picks[c.id] : ((rp.options || [])[0] || {}).id;
+        const picked = c.id in picks ? picks[c.id] : (((run ? (rp.options || []).filter(o => holds(o, run.flags, run.counters)) : rp.options) || [])[0] || {}).id;
         const o = (rp.options || []).find(x => x.id === (picked === null ? rp.timeout : picked));
         const ws = picked === null ? +(rp.wait || REPLY_SECS) : Math.min(+(rp.wait || REPLY_SECS), REPLY_ANSWER);
         segs.push({ type: "reply", start: t, end: t + ws, reply: rp, clip: c, i, picked }); t += ws;
@@ -834,7 +848,8 @@ export class Stage {
     }
     if ((v.faces || []).length && FACES.M) {         // the face rows: MHR's 72 for each face with something on it at T (null: at rest)
       const n = Object.keys(FACES.lib).length;
-      if (!tl.facePlan || tl.faceN !== n) { tl.facePlan = FACE.facePlan(v.faces, at => edgeTime(segs, at), tl.total, FACES.lib); tl.faceN = n; }
+      const run = this.runState, worn = run ? v.faces.filter(p => holds(p, run.flags, run.counters)) : v.faces;   // a face by a condition: worn when it holds (§9.14)
+      if (!tl.facePlan || tl.faceN !== n) { tl.facePlan = FACE.facePlan(worn, at => edgeTime(segs, at), tl.total, FACES.lib); tl.faceN = n; }
       out.faces = {};
       for (const who of Object.keys(tl.facePlan)) { const sc = FACE.faceAt(tl.facePlan, who, T); out.faces[who] = sc ? FACE.toMHR(sc, FACES.M) : null; }
     }

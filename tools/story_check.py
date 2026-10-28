@@ -449,6 +449,13 @@ def check_world(story, things, r):
                 r.err(f"{t.id}: game {g!r} isn't a board game ({', '.join(sorted(BOARDS)) or 'none in Content/Studio/BoardGames'})")
             elif not isinstance(gs, dict) or any(k != "seed" and k not in BOARDS[g].get("settings", {}) for k in gs):
                 r.err(f"{t.id}: {g}'s settings are {', '.join(BOARDS[g].get('settings', {})) or 'none'} (and seed), not {gs!r}")
+            else:
+                for k, v in gs.items():                 # a setting by a flag: "flag:off_pills", true while it's set (§2 game)
+                    if isinstance(v, str) and re.match(r"^!?flag:", v):
+                        if not re.match(r"^!?flag:[a-z0-9_]+$", v):
+                            r.err(f"{t.id}: {g}'s {k} {v!r}: flag:<a flag> or !flag:<a flag>")
+                        elif not isinstance(BOARDS[g].get("settings", {}).get(k), bool):
+                            r.err(f"{t.id}: {g}'s {k} by a flag is true or false, and {k} is {BOARDS[g].get('settings', {}).get(k)!r}")
             if p.get("vs") is not None and p["vs"] not in cast:
                 r.err(f"{t.id}: vs {p['vs']!r} isn't in cast")
             if "shape" not in p and "kit" not in p:
@@ -593,10 +600,13 @@ def check_reply(cw, c, story, things, lvl, stage, cast, clip_max, r, later=()):
         r.err(f"{cw}: reply wait {rp.get('wait')} s: she waits 2 to 15 s, then carries on")
     if rp.get("timeout") is not None and rp["timeout"] not in ids:
         r.err(f"{cw}: reply timeout {rp['timeout']!r}: null (her answer is skipped) or an option id")
+    if opts and all(o.get("if") or o.get("count") for o in opts):
+        r.warn(f"{cw}: every answer has a condition (§9.14): when none holds she asks and nothing is offered; leave one without")
     for o in opts:
         ow = f"{cw} reply {o.get('id')}"
         if not o.get("label"):
             r.err(f"{ow}: needs a label (the English the player picks)")
+        check_cond(ow, o, story, r)                    # an answer offered only when it holds (§9.14)
         if "think" in o and (not isinstance(o["think"], str) or not o["think"].strip()):
             r.err(f"{ow}: think is the player's thought shown with the answer (text)")
         if FORMAT >= 3 and not o.get("ja") and VOICED:
@@ -812,6 +822,7 @@ def check_scene(sid, sc, story, things, r):
                         r.err(f"{cw}: cam {k} {v!r} isn't a thing or someone on stage")
                 else:
                     r.err(f"{cw}: unknown cam field {k!r} (push, zoom, roll, shake, lag, look, focus)")
+            check_cond(cw, c, story, r)                # a line left out unless its condition holds (§9.14)
             if c.get("struggle"):
                 r.err(f"{cw}: `struggle` is an event now: \"event\": {{\"type\": \"struggle\", \"secs\": 4, \"pull\": \"back\", \"need\": 0.6}}")
             if c.get("reply"):
@@ -916,8 +927,23 @@ def check_scene(sid, sc, story, things, r):
         check_action(f"scene {sid} sets", a, story, things, r)
 
 
-FACE_KEYS = {"who", "expr", "at", "secs", "loop", "in", "out", "w", "speed"}
+FACE_KEYS = {"who", "expr", "at", "secs", "loop", "in", "out", "w", "speed", "if", "count", "min", "max"}   # (a condition: §9.14)
 EXPRESSIONS = L.STUDIO / "Expressions"
+
+
+def check_cond(where, x, story, r):
+    """A shown thing's condition (§9.14): `if` flags (a list; `!` for not), a counter's `count` with `min`/`max`."""
+    ifs = x.get("if")
+    if ifs is not None and not (isinstance(ifs, list) and all(isinstance(f, str) and f.strip("!") for f in ifs)):
+        r.err(f"{where}: if {ifs!r}: a list of flags (`!flag` for not)")
+    if x.get("count") is not None:
+        if x["count"] not in (story.get("game", {}).get("counters") or {}):
+            r.err(f"{where}: count {x['count']!r} isn't one of game.counters")
+        if x.get("min") is None and x.get("max") is None:
+            r.err(f"{where}: count {x['count']} needs a min or a max")
+    for k in ("min", "max"):
+        if x.get(k) is not None and (not isinstance(x[k], (int, float)) or isinstance(x[k], bool) or x.get("count") is None):
+            r.err(f"{where}: {k} {x[k]!r}: a number, with a count")
 
 
 def check_faces(where, faces, ids, story, r):
@@ -950,6 +976,7 @@ def check_faces(where, faces, ids, story, r):
                 r.err(f"{fw}: {k} {f[k]!r} ({lo} to {hi})")
         if "loop" in f and not isinstance(f["loop"], bool):
             r.err(f"{fw}: loop is true or false")
+        check_cond(fw, f, story, r)
 
 
 def check_trigger(bid, w, story, things, beats, r):
@@ -1103,9 +1130,12 @@ def check_action(bid, a, story, things, r, stage=None):
         ids = [o.get("id") for o in opts]
         if len(set(ids)) != len(ids) or not all(isinstance(i, str) and i for i in ids):
             r.err(f"{bid}: ask {v!r}: each answer needs its own id")
+        if all(o.get("if") or o.get("count") for o in opts):
+            r.warn(f"{bid}: ask {v!r}: every answer has a condition (§9.14): when none holds nothing is offered; leave one without")
         for o in opts:
             if not o.get("label"):
                 r.err(f"{bid}: ask {v!r} answer {o.get('id')!r} needs a label")
+            check_cond(f"{bid} ask {v} {o.get('id')}", o, story, r)
             for sub in o.get("do") or []:
                 check_action(f"{bid} ask {v} {o.get('id')}", sub, story, things, r, stage)
         if "secs" in a and not (isinstance(a["secs"], (int, float)) and a["secs"] > 0):
@@ -1114,6 +1144,9 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: ask {v!r} is timed: `default` (the answer when time runs out) is one of {', '.join(map(str, ids))}")
         elif "default" in a and a["default"] not in ids:
             r.err(f"{bid}: ask {v!r}: default {a['default']!r} isn't one of its answers")
+        d = next((o for o in opts if o.get("id") == a.get("default")), None)
+        if d and (d.get("if") or d.get("count")):
+            r.warn(f"{bid}: ask {v!r}: its default {d.get('id')!r} has a condition: when it isn't offered, time running out picks the first that is")
         return
     if k == "todo":                                    # a task on the to-do list (STORY_FORMAT §4)
         if not isinstance(v, str) or not re.match(r"^[a-z0-9_]+$", v):
@@ -1554,6 +1587,8 @@ def check_flow(story, things, r):
         elif t == "ending":
             if n.get("kind") not in ENDINGS:
                 r.err(f"flow {nid}: ending kind {n.get('kind')!r}")
+            if "text" in n and not isinstance(n["text"], str):
+                r.err(f"flow {nid}: an ending's text is what its title card says under the title (text)")
             if n.get("kind") == "death":
                 rt = n.get("retry")
                 if rt not in flow or flow.get(rt, {}).get("type") == "ending":
@@ -2025,7 +2060,7 @@ class World:
             elif k == "ask":                              # the walker answers with the default (else the first)
                 q = lines.get(a.get("line")) if a.get("line") else None
                 self.add("dialogue", (L.line_secs(q) if q else max(1.5, len(a.get("text", "")) / 15)) + min(ASK_SECS, float(a.get("secs", ASK_SECS))))
-                opts = [o for o in a.get("options") or [] if isinstance(o, dict)]   # a broken ask is the check's to report
+                opts = [o for o in a.get("options") or [] if isinstance(o, dict) and L.holds(o, self.flags, self.counters)]   # offered (§9.14); a broken ask is the check's to report
                 o = next((o for o in opts if o.get("id") == a.get("default")), opts[0] if opts else None)
                 if o:
                     self.done_events.add(("answered", v, o.get("id")))
@@ -2186,9 +2221,13 @@ class World:
         self.r.err(f"{nid}: the play ran 10000 steps without ending")
         return False
 
+    def offered(self, rp):
+        """A reply's answers offered on this path (an answer's condition, §9.14)."""
+        return [o for o in rp.get("options", []) if L.holds(o, self.flags, self.counters)]
+
     def reply_pick(self, rp):
         """The answer this sweep's player gives at a reply: the kindest, the cruellest, or silence (its timeout's, else none)."""
-        opts = rp.get("options", [])
+        opts = self.offered(rp)
         if self.style == "silent":
             return next((x for x in opts if x.get("id") == rp.get("timeout")), None)
         score = lambda o: sum(sum(L.karma_of(a["karma"]).values()) for a in o.get("sets", []) if "karma" in a)
@@ -2205,7 +2244,7 @@ class World:
                 continue
             mine = self.reply_pick(rp)
             here = reply_route(clips, i, mine)
-            out += [(c.get("id"), o.get("id")) for o in rp.get("options", []) if o is not mine
+            out += [(c.get("id"), o.get("id")) for o in self.offered(rp) if o is not mine
                     and (any(a.get("flag") in self.branch_flags for a in o.get("sets", [])) or reply_route(clips, i, o) != here)]
         return out
 
@@ -2215,10 +2254,13 @@ class World:
         ver = L.scene_version(sc)
         if sc.get("view") and sc["view"] in self.things:
             self.go(sc["view"])
-        clips, i = ver.get("clips", []), -1
+        clips, i, out = ver.get("clips", []), -1, set()
         while i + 1 < len(clips):                       # in order, but an answer may skip ahead, end it, or leave for a card
             i += 1
             c = clips[i]
+            if not L.holds(c, self.flags, self.counters):   # a line left out on this path (its `if` or `count`: §9.14),
+                out.add(c.get("id"))                     # its cues with it
+                continue
             self.add("scenes", L.clip_secs(c))
             if i and c.get("seam"):
                 self.add("scenes", SEAMS.get(c["seam"].get("kind"), (None, 0))[1])
@@ -2256,6 +2298,8 @@ class World:
                     break
         self.add("scenes", float((sc.get("hold") or {}).get("max", 0)) / 2)
         for cue in ver.get("cues", []):
+            if (cue.get("at") or {}).get("clip") in out:
+                continue
             a = cue.get("do", {})
             v = verbs(a)
             if v and v[0] in STATE_VERBS:
@@ -2450,10 +2494,26 @@ def main():
     pn = story.get("game", {}).get("player_name")
     if pn is not None and (not isinstance(pn, str) or not pn.strip()):
         r.err("game.player_name is the player's name until they type one (text)")
-    for where, text in shown_texts(story):            # {name} is the only thing filled into what's shown
+    words = story.get("game", {}).get("words")         # {her}: a word filled in by the run's flags and counters (§9.14)
+    if words is not None:
+        if not isinstance(words, dict):
+            r.err("game.words: {word: [{if or count, say}, ..., {say} (the fallback)]}")
+            words = {}
+        for w, opts in words.items():
+            if not re.match(r"^[a-z][a-z0-9_]*$", str(w)) or w == "name":
+                r.err(f"game.words {w!r}: a word of its own (lowercase; name is the player's)")
+            if not isinstance(opts, list) or not opts or not all(isinstance(o, dict) and isinstance(o.get("say"), str) for o in opts):
+                r.err(f"game.words {w}: a list of {{if or count, say}}, the last one the fallback")
+                continue
+            for o in opts:
+                check_cond(f"game.words {w}", o, story, r)
+            if opts[-1].get("if") or opts[-1].get("count"):
+                r.warn(f"game.words {w}: its last option has a condition: when none holds the word stays {{{w}}} (make the last the fallback)")
+    for where, text in shown_texts(story):            # {name} and the game's words are what's filled into what's shown
         for m in PLACEHOLDER.finditer(text):
-            if m.group(1) != "name":
-                r.warn(f"{where}: {{{m.group(1)}}} isn't filled in: {{name}} (the player's name) is the only one")
+            if m.group(1) != "name" and m.group(1) not in (words or {}):
+                r.warn(f"{where}: {{{m.group(1)}}} isn't filled in: {{name}} (the player's name) and game.words are"
+                       + (f" ({', '.join(words)})" if words else ""))
     for lid, lvl in story.get("levels", {}).items():
         for rm in lvl.get("rooms", []):
             if rm.get("acoustics") and rm["acoustics"] not in L.ACOUSTICS:
