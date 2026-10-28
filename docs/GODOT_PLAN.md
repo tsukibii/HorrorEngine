@@ -92,7 +92,7 @@ plainly named nodes, settings as exported properties in the Inspector (not burie
 the game (the flow, the stitches, the scenes' clips and cues) as something seen and edited in the editor itself (a
 resource per scene, or a dock), and C# where the runner needs it, kept out of the way of what the user edits.
 
-**The first work on the branch is analysis, not building:** the most efficient way to do all of this (one export
+**The analysis is written: docs/GODOT_EXPORT.md** (2026-10-28, night; the chosen way, the project's layout, the open choices for the user, the re-export, the order). It was the first work on the branch, not building: the most efficient way to do all of this (one export
 script from the desk, or a Godot editor plugin that builds the project from the story, or both; what's generated and
 what's the user's; how a re-export merges; the folder layout; how the sequence shows in the editor), written up for
 the user to agree before any of it is built.
@@ -100,8 +100,17 @@ the user to agree before any of it is built.
 ## 6. Everything Unreal never got, built for Godot
 
 When the branch starts, **build out for Godot every shader and effect that was planned or written for Unreal and
-never built or never run there**, not only what's needed for the trial. The list to check against the dev branch
-when it lands (and UNREAL_FLOW.md's to-dos, docs/LATER.md):
+never built or never run there**, not only what's needed for the trial. The list, against UNREAL_FLOW.md's to-dos and
+docs/LATER.md, and **what `dev-002` added that Godot needs** (merged 2026-10-28, night: the flashlight (`torch`), the
+power cut and the breaker box, the peephole, the latch, cleaning (stains, the mop), examining (a thing in the hands),
+footsteps by the room's floor (the sound shelf), the inventory row, the to-do list and requests, nights as chapters
+(sleep, the chapter card), time skipped and thoughts that type themselves out, what's shown by what's happened
+(`{her}`), a cast member's models per scene, body tracks (`behave` cues across lines), the expression library and the
+face rows (ARKit-52 onto MHR's 72 shapes), the Studio's baked colours and the skin light maps (`studioSkin`), hooded
+lids and the nose sculpt, hats, the designer outfits, the sound shelf (240 CC0 effects), the score room's expanded
+orchestra, texture templates for placeholder things (the desk's painted blocks), TestRoom001 (every station a thing to
+pass in Godot too: its reference in `Saved/Story/TestRoom001/reference/`); desk-only, nothing to port: the writers'
+room, the dashboard, the flow board's arrow editing):
 
 - **the look**: UltraVHS (the camcorder to tape: lens, sensor, tape, screen; the night mode; the handheld camera;
   docs/VHS.md: the camera's display, the HUD over the footage, focus, the tape material) and Light Kit (the Day, Dusk
@@ -132,8 +141,6 @@ what a re-export from the desk will and won't touch. Whatever else turns up whil
 
 1. Merge the user's dev branch into `godot-support` (done: `dev-002` through main, 2026-10-28, night); list what it adds that the Godot side needs (§6).
 2. The cloud setup (§3): done 2026-10-28, night.
-3. **The analysis (§5)**: the most efficient way to export, the project's layout, the sequence in the editor, the
-   re-export; written up for the user before anything is built.
-4. The trial (§1, §4): one Pilot room, its light baked, a contact sheet.
-5. Then, as the user agrees: the export, the runner in C#, a PLAYTHROUGH check in Godot, everything in §6, the
-   Character Studio's look (§2), and the guide (§7).
+3. **The analysis (§5)**: written, docs/GODOT_EXPORT.md (2026-10-28, night); its §4 has the choices for the user.
+4. Then GODOT_EXPORT §8's order: the trial (§4 here), the exporter, the runtime (GDPLAY), the look and the
+   characters' shaders (§2), the rest of §6, the guide (§7), the re-export.

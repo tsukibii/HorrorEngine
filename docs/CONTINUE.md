@@ -11,6 +11,17 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. Latest (2026-10-28, night, on `godot-support`): Godot started, the export analysed, waiting on the user
+
+The user said to start the Godot side (DECISIONS 2026-10-28, night; the plan docs/GODOT_PLAN.md): main (`dev-002`)
+merged in, Godot 4.7 set up on the cloud (`tools/godot_setup.sh`, GODOT ok: headless and a picture under xvfb on
+lavapipe), **GDScript** chosen over C#, and the analysis the plan asked for before building: **docs/GODOT_EXPORT.md**
+(a plain-Python exporter writes a Godot project per game as text `.tscn`/`.tres` plus copied assets, zipped; the
+runtime as an add-on; scenes as AnimationPlayer timelines; beats as Inspector resources; the re-export's receipt;
+the order). **Waiting on the user:** GODOT_EXPORT §4's three choices (numbered folders or stable ids; baked
+animations; GDScript only) and a yes to its §8 order. Then its step 1, the trial: the Pilot's hall exported by a
+first cut of the level writer, lit three ways, pictured at three times of day and with the power cut.
+
 ## 0. Latest (2026-10-28, night, on `dev-002`): the director's to-do built, the Studio's eyes, nose and face bake
 
 The user's asks this session, each its own commit:
