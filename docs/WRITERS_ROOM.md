@@ -170,10 +170,12 @@ the session's history, as the page does.
 `answer`} or {} for the rest), `sets`), **`frames`** (`id`, `title`, `x`, `y`, `w`, `h`, `color`), `faces` (the story's
 own post prompts), `feats`, `built`. Format 3 adds what a script holds: a shape's **`steps`**, in order, each `do`
 one of `say` (`who`, `text`, `face`), `you`, `think`, `see`, `cast` (someone does something), `sound`, `light`
-(`set`: on, off, flicker, dim), `music` (`mood`), `fade`, `act` (`verb`, `item`: something you do), `todo` (`text`,
+(`set`: on, off, flicker, dim), `power` (`set`: off or on: the house's power), `music` (`mood`), `fade`, `act` (`verb`, `item`: something you do), `todo` (`text`,
 `who`, `secs`, `hidden`), `name` (you type your name), `wait` (`secs`), `save`, `feat`; a talk's answers' `think`
 (your thought with it) and `then` (her reply); **`items`** (`id`, `name`, `size`: small, medium or large, `kind`: door,
-bed, seat, hideout, switch, note, carry, pickup or inspect, `where`: the place it's first used in); `script` (the
+bed, seat, hideout, switch, note, carry, pickup, stain (a mess to mop: `use: clean`), breaker (the fuse box), peephole (its
+room's door gets one) or inspect, `where`: the place it's first used in; a flashlight is a small pickup whose item has
+`torch`; DECISIONS 2026-10-28); `script` (the
 script it was read from) and `script_chart` (the chart as it was then: changed on the page since, they differ). A
 format 2 chart's lines and to-dos become steps as it's read; the first format (a river of points the old assistant
 drafted) is upgraded too: each act a row, a fork's other ways below it, the secrets above, the endings after a choice.

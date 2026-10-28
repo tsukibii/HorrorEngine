@@ -94,6 +94,10 @@ Ji: (her smile stays but her eyes go still) "...Is something wrong?"
 | `*sleep*` · `*go to bed*` | you lie down in the bed, the view goes dark (a chapter card after it) |
 | `*hide in the closet*` | you get in (and out) |
 | `*turn on the light*` · `*switch off the lamp*` | a switch |
+| `*mop the mud*` · `*wipe up the blood*` · `*scrub the stain*` | a mess on the floor you scrub away by holding the click (a mess word: mud, blood, stain, puddle, mess, dirt, ash, floor...) |
+| `*take the flashlight*` · `*turn on the flashlight*` | a flashlight in your pocket; F switches it |
+| `*flip the breaker*` · `*check the fuse box*` | the breaker box: the power off or back on |
+| `*look through the peephole*` | the eye to the front door's peephole (the room's door gets one) |
 | `*go to the kitchen*` | walking into that place |
 | `*wash the dishes*` · `*turn on the kettle*` · anything else | using that thing (a stand-in until it's built) |
 
@@ -103,6 +107,7 @@ Ji: (her smile stays but her eyes go still) "...Is something wrong?"
 |---|---|
 | `*knock, knock*` · `*phone rings*` · `*glass breaks*` | a sound: the nearest one on the sound shelf |
 | `*lights flicker*` · `*lights go out*` · `*lights come back*` | the room's light |
+| `*the power goes out*` · `*blackout*` · `*the power comes back*` | every light in the house, till the breaker |
 | `*music: dread*` | the music: silence, calm, uneasy, dread, chase |
 | `*fade to black*` | a moment passes |
 | `*Ji sits on the sofa*` · `*she walks in*` | what someone else does (starts with a name, she, he or they) |

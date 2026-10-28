@@ -23,11 +23,12 @@ POINTS = ("scene", "talk", "task", "chapter")            # the story's moments: 
 # a shape's steps, in order (format 3: its script, .claude/skills/chart/script.md): what each one needs
 STEPS = {"say": ("who", "text"), "you": ("text",), "think": ("text",), "see": ("text",), "cast": ("who", "text"), "sound": ("text",),
          "light": ("set",), "music": ("mood",), "fade": (), "act": ("verb",), "todo": ("text",), "name": (), "wait": ("secs",),
-         "save": (), "feat": ("feat",)}
+         "save": (), "feat": ("feat",), "power": ("set",)}
 LIGHT_SETS = ("on", "off", "flicker", "dim")
 MOODS = ("silence", "calm", "uneasy", "dread", "chase")
 SIZES = ("small", "medium", "large")
-THING_KINDS = ("door", "bed", "seat", "hideout", "switch", "note", "carry", "pickup", "inspect")
+# stain: a mess to scrub away (use: clean); breaker: the fuse box (use: breaker); peephole: its door's (DECISIONS 2026-10-28)
+THING_KINDS = ("door", "bed", "seat", "hideout", "switch", "note", "carry", "pickup", "stain", "breaker", "peephole", "inspect")
 TYPES = ("start",) + POINTS + ("choice", "secret", "ending", "note")
 BY = ("player", "karma", "answer")                         # what decides a choice: the player's act, karma, an answer
 TIMES = ("day", "dusk", "night")
@@ -350,6 +351,8 @@ def check_steps(n, where, cast, places, things, feats, E, W):
             E.append(f"{sw}: thing {st['on']!r} isn't one of the story's things")
         if st.get("place") and st["place"] not in places:
             E.append(f"{sw}: place {st['place']!r} isn't a place")
+        if d == "power" and st.get("set") not in ("on", "off"):
+            E.append(f"{sw}: the power {st.get('set')!r} (on, off)")
         if d == "light" and st.get("set") not in LIGHT_SETS:
             E.append(f"{sw}: the lights {st.get('set')!r} ({', '.join(LIGHT_SETS)})")
         if d == "music" and st.get("mood") not in MOODS:

@@ -45,6 +45,13 @@ SIZE_OF = {                             # a thing's size by its last word, when 
 SIZE_OF = {w: s for s, ws in SIZE_OF.items() for w in ws.split()}
 DOORS = {"door", "doors", "gate", "fusuma", "shoji", "doorway", "front door", "back door", "screen door", "sliding door"}
 LIGHTS = {"light", "lights", "lamp", "lamps", "switch", "light switch", "torch", "flashlight", "bulb"}
+# the day's small systems (DECISIONS 2026-10-28): a mess mopped, scrubbed or wiped is a stain (use: clean); the fuse box a
+# breaker; a peephole its door's; a flashlight a small thing you take, F switches it
+MESS = {"mess", "stain", "stains", "blood", "mud", "puddle", "spill", "vomit", "dirt", "ash", "floor", "footprints", "water", "muck"}
+CLEANING = {"mop", "clean", "wipe", "scrub", "sweep", "wash", "tidy"}
+BREAKERS = {"breaker", "breakers", "breaker box", "fuse box", "fusebox", "fuse", "fuses", "circuit breaker", "fuse board", "power box"}
+PEEPHOLES = {"peephole", "peep hole", "spyhole", "spy hole", "door viewer", "eyehole"}
+TORCHES = {"flashlight", "torch", "penlight", "flash light"}
 # the player's verbs: the phrase as written -> what it does (script.md "Things you do")
 VERBS = [
     ("pick up", "take"), ("pick", "take"), ("take", "take"), ("grab", "take"), ("get", "take"), ("collect", "take"), ("fetch", "take"),
@@ -68,7 +75,7 @@ throw toss kick hit smash break burn cut tie untie wind set fold pet stroke comb
 PREPS = (" on ", " in ", " into ", " onto ", " under ", " behind ", " to ", " with ", " at ", " from ", " for ", " through ", " near ", " by ",
          " beside ", " next to ", " inside ", " off ", " out of ", " over ", " across ", " around ", " back on ")
 PARTICLES = {"up", "down", "out", "off", "away", "over", "back", "around", "round", "in", "about"}
-KIND_RANK = ["door", "bed", "seat", "hideout", "switch", "note", "carry", "pickup", "inspect"]   # a thing used two ways keeps the first here
+KIND_RANK = ["door", "bed", "seat", "hideout", "switch", "note", "carry", "pickup", "stain", "breaker", "peephole", "inspect"]   # a thing used two ways keeps the first here
 ID = proto.ID
 
 
@@ -292,6 +299,10 @@ def effect_of(text):
         return {"do": "music", "mood": m.group(1) or m.group(2)}
     if re.match(r"^(fade( out)?( to)? black|black ?out|fade out|cut to black|time passes)$", low):
         return {"do": "fade"}
+    if re.search(r"\b(power|electricity|blackout|power cut|fuses?)\b", low):   # the power: every light in the house (a breaker brings it back)
+        if re.search(r"\b(come|comes|came) (back|on)|\bback\b|\bon\b|\brestored?\b", low):
+            return {"do": "power", "set": "on"}
+        return {"do": "power", "set": "off"}
     if re.search(r"\b(lights?|lamps?|power|bulbs?)\b", low):
         if re.search(r"flicker", low):
             return {"do": "light", "set": "flicker"}
@@ -699,7 +710,8 @@ class Reader:
         fx = effect_of(text)
         if fx:
             self.rep.what(n, {"name": "you type your name", "wait": f"a pause ({fx.get('secs', 0):g} s)", "save": "an autosave",
-                              "music": f"the music: {fx.get('mood')}", "fade": "a moment passes", "light": f"the lights: {fx.get('set')}"}[fx["do"]])
+                              "music": f"the music: {fx.get('mood')}", "fade": "a moment passes", "light": f"the lights: {fx.get('set')}",
+                              "power": f"the power: {fx.get('set')}"}[fx["do"]])
             return [fx]
         who = self.subject_of(text)
         if who:
@@ -781,7 +793,7 @@ class Maker:
             self.edge(a, nid, **extra)
 
     # ---- the things touched, by name
-    def thing(self, name, verb, size, n):
+    def thing(self, name, verb, size, n, said=None):
         if not name:
             return None
         if verb == "go":
@@ -792,6 +804,14 @@ class Maker:
             kind = "door"
         if kind == "switch" and not (name in LIGHTS or head in LIGHTS):
             kind = "inspect"                   # "turn on the kettle": E on it
+        if (said or "").split()[:1] and said.split()[0] in CLEANING and (name in MESS or head in MESS):
+            kind = "stain"                     # "mop the mud": a stain, scrubbed away
+        if name in BREAKERS or head in BREAKERS:
+            kind = "breaker"
+        if name in PEEPHOLES or head in PEEPHOLES:
+            kind = "peephole"
+        if name in TORCHES or head in TORCHES:   # "take the flashlight", "turn on the torch": a small thing you take
+            kind, size = "pickup", "small"
         guess = SIZE_OF.get(head) or SIZE_OF.get(name) or ("large" if kind in ("bed", "seat", "hideout") else "small" if kind in ("note", "switch") else "medium")
         tid = self.item_ids.get(name)
         if not tid:
@@ -912,7 +932,7 @@ class Maker:
             if s["do"] == "say" and s.get("face"):
                 s["face"] = self.face(s["face"], s["who"])
             if s["do"] in ("act", "todo") and s.get("thing"):
-                tid = self.thing(s["thing"], s.get("verb"), s.get("size"), None)
+                tid = self.thing(s["thing"], s.get("verb"), s.get("size"), None, s.get("said"))
                 if tid:
                     s["item"] = tid
                 elif s.get("verb") == "go":
@@ -1243,7 +1263,7 @@ def karma_cond(t):
     return None
 
 
-STEP_SECS = {"say": 4, "you": 4, "think": 4, "see": 3, "cast": 3, "sound": 1, "light": 1, "music": 0, "fade": 2, "act": 25, "todo": 45,
+STEP_SECS = {"say": 4, "you": 4, "think": 4, "see": 3, "cast": 3, "sound": 1, "light": 1, "power": 1, "music": 0, "fade": 2, "act": 25, "todo": 45,
              "name": 8, "save": 0, "feat": 0}
 
 
@@ -1487,6 +1507,8 @@ def step_lines(P, steps):
             lines.append("*save*")
         elif d == "light":
             lines.append({"flicker": "*lights flicker*", "off": "*lights go out*", "on": "*lights come back*", "dim": "*lights dim*"}.get(s.get("set"), "*lights flicker*"))
+        elif d == "power":
+            lines.append("*the power comes back*" if s.get("set") == "on" else "*the power goes out*")
         elif d == "music":
             lines.append(f"*music: {s.get('mood')}*")
         elif d == "fade":

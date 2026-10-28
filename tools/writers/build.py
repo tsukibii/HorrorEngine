@@ -566,13 +566,28 @@ class Builder:
                 self.S["notes"][nid] = {"title": name[:1].upper() + name[1:], "text": self.texts.get(tid) or "…"}
                 self.own(f"{tid}_stand")
                 self.rooms.stand(rid, tid, 0.22, 0.16, 0.02, use="note", note=nid, tag=name)
-            elif kind == "pickup":
-                t["item"] = iid = self.own(f"{tid}_item")
-                self.S["items"][iid] = {"name": name, "shape": "box 0.12 0.12 0.08", "inspect": text}
+            elif kind == "pickup":                     # (its item a story id of its own: the thing stays keyed by the chart's, as steps name it)
+                t["item"] = item = self.own(f"{tid}_item")
+                self.S["items"][item] = {"name": name, "shape": "box 0.12 0.12 0.08", "inspect": text}
+                if name.lower() in chartscript.TORCHES or name.lower().split()[-1:] and name.lower().split()[-1] in chartscript.TORCHES:
+                    self.S["items"][item]["torch"] = True        # a flashlight: F lights the way once it's had
                 self.own(f"{tid}_stand")
-                self.rooms.stand(rid, tid, 0.12, 0.12, 0.08, use="pickup", item=iid, tag=name)
+                self.rooms.stand(rid, tid, 0.12, 0.12, 0.08, use="pickup", item=item, tag=name)
             elif kind == "carry":
                 self.rooms.box(rid, tid, 0.4, 0.35, 0.35, use="carry", tag=name)
+            elif kind == "stain":                      # a mess on the floor by a wall, scrubbed away by holding the click
+                low = name.lower()
+                stain = next((k for k, ws in (("blood", "blood"), ("mud", "mud muck footprints"), ("water", "water puddle spill"), ("ash", "ash"))
+                              if any(w in low.split() for w in ws.split())), "dirt")
+                self.rooms.box(rid, tid, 0.8, 0.6, 0.01, ("s", "n", "e", "w"), use="clean", stain=stain, tag=name)
+            elif kind == "breaker":                    # the fuse box on a wall at chest height
+                self.rooms.box(rid, tid, 0.3, 0.12, 0.4, ("s", "e", "w", "n"), use="breaker", z=1.3, tag="breaker")
+            elif kind == "peephole":                   # the room's door (one onto the outside first) gets one
+                did = self.rooms.door(rid, self.own(f"{tid}_door"))
+                for op in self.rooms.rooms[rid].get("openings", []):
+                    if (op.get("door") or {}).get("id") == did:
+                        op["door"]["peephole"] = True
+                t["prop"], t["door"] = did, did
             elif size == "small":
                 self.own(f"{tid}_stand")
                 self.rooms.stand(rid, tid, 0.2, 0.2, 0.15, use="inspect", text=text, tag=name)
@@ -597,7 +612,11 @@ class Builder:
         if k == "note":
             return {"read": t["note"]}
         if k == "pickup":
+            if st.get("verb") in ("on", "off") and self.S["items"].get(t["item"], {}).get("torch"):
+                return {"torch": st["verb"]}                       # "turn on the flashlight": F
             return {"pickup": t["item"]}
+        if k == "peephole":
+            return {"peeping": t["door"]}
         if k == "carry":
             return {"dropped": t["prop"]} if st.get("verb") == "put" else {"carrying": t["prop"]}
         return {"use": t["prop"]}
@@ -660,6 +679,8 @@ class Builder:
                     notes_.append(f"a sound: {st.get('text', '')} (nothing like it on the shelf yet)")
             elif d == "light":
                 cur["do"].append({"light": self.rooms.lamp(room), "set": st["set"]})
+            elif d == "power":
+                cur["do"].append({"power": st["set"]})
             elif d == "music":
                 cur["do"].append({"music": st["mood"]})
             elif d == "fade":
@@ -754,6 +775,8 @@ class Builder:
                     pend.append(a)
             elif d == "light":
                 pend.append({"light": self.rooms.lamp(room), "set": st["set"]})
+            elif d == "power":
+                pend.append({"power": st["set"]})
             elif d == "music":
                 pend.append({"music": st["mood"]})
             elif d == "fade":
