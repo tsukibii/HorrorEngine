@@ -344,7 +344,7 @@ export class Stage {
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];
         const l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
-        l.userData = { id: p.id, room: p.room, base: l.intensity, flicker: (p.d && p.d.flicker) || 0 };
+        l.userData = { id: p.id, room: p.room, base: l.intensity, flicker: (p.d && p.d.flicker) || 0, kind };   // kind: a candle or a fire burns through a power cut
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
         const cid = (p.tags.find(t => t.startsWith("cast:")) || "").slice(5);

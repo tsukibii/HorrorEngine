@@ -60,9 +60,16 @@ register("interactable", "combo", {                // a code lock: the free curs
   },
 });
 register("interactable", "switch", {
-  settings: { cursor: "use", label: "Switch" },
-  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
-  use: (t, rt) => rt.light(null, t.userData.piece.room, "toggle"),
+  settings: { cursor: "use", label: "Switch", dead: "No power" },
+  prompt: (t, rt, s) => (rt.powered() ? { cursor: s.cursor, label: s.label } : { cursor: "locked", label: s.dead }),   // a power cut: it clicks, nothing more
+  use: (t, rt) => { if (rt.powered()) rt.light(null, t.userData.piece.room, "toggle"); else rt.shelfSound("switch_01", t.userData.id); },
+});
+// the breaker box (use: breaker): a click throws its switch; the level's power goes off or comes back (the lights
+// flickering up), and the story hears its use
+register("interactable", "breaker", {
+  settings: { cursor: "use", on: "Power on", off: "Power off" },
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.powered() ? s.off : s.on }),
+  use: (t, rt) => { rt.shelfSound("switch_02", t.userData.id); rt.power(rt.powered() ? "off" : "on"); },
 });
 register("interactable", "sit", {                 // a chair, a sofa, a bed's edge: a click sits, a click stands (runtime.sit)
   settings: { cursor: "sit", label: "Sit", stand: "Stand up", eye: EYES.sit, secs: 0.6 },

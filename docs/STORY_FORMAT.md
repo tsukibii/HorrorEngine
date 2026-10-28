@@ -182,6 +182,7 @@ class path, `…_C`) is that door's Blueprint, in place of class_map's `door`.
 | `inspect` | `text`, optional `line` |
 | `switch` | `light` |
 | `light` | `kind` (`bulb candle lamp fire`), `lit`, `flicker` 0..1, `lumens`, `radius`, `kelvin` (place with `z` or `on`) |
+| `breaker` | the breaker box (DECISIONS 2026-10-28): a click throws it, the level's power goes off or comes back (the lights flickering up), and `{"use": id}` is heard. While the power's out (the `power` action) every bulb and lamp in the level is dark (each keeps its own on or off for when it's back; candles and fires burn on) and a `switch` only clicks: **No power** |
 | `locker` | (hide inside: a click gets in, a click gets out) `inside` (a spot: where the player stands in it and the way they face; default its middle, facing its `rot`), `see_through` 0..1 (from inside its walls are slats, this much of them gaps; default `game.see_through`, else 0.6). The player's look stays in a cone out of it; `{"hidden": true}` (or the locker's id) holds while they're in |
 | `roll` | a die (`shape: "box 0.3 0.3 0.3"`, six faces): a click throws it from the player's hand, physics rolls it, and when it settles the face on top is heard as `{"rolled": id}` |
 | `sit` | (a chair, a sofa, a bed's edge: a click sits the player down, the eye at sitting height, a click stands them up; a beat's `{"use": id}` hears it) |
@@ -424,6 +425,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `{"arrived": cast}`, `"at": spot` | a cast member got where a `behave` `go` sent her (anywhere, or that spot); holds while she's there (§9.12) |
 | `{"ticked": task}`, `{"ticked": true}` | that task on the to-do list is ticked, or (true) the list is through: nothing on it open (each ticked or failed); holds while it is |
 | `{"failed": task}`, `{"failed": true}` | that task is failed, or (true) any task is; holds while it is |
+| `{"power": "off"}`, `{"power": "on"}` | the level's power is out (a `power` action or the player at a breaker) or on; holds while it is |
 | `{"peeping": door}` | the player's eye is at that door's peephole (`peephole: true`); holds while it is |
 | `{"torch": "on"}`, `{"torch": "off"}` | the player switched the flashlight on or off with **F** (either: `any` of both) |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
@@ -435,6 +437,9 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
   line, a thought, an answer, an objective, a to-do, a note) is that name; before it, `game.player_name` ("Alex" when
   unset). It's kept with the run (a checkpoint has it). The walker counts 8 s for the typing. Not in Unreal yet
 - `light` (`set`: `on off flicker dim`; or `room`), `door` (`set`: `lock unlock open close slam`)
+- `power`: `off` cuts the level's power (every bulb and lamp dark, the switches dead; candles and fires burn on), `on`
+  brings it back, flickering up; `level` names another level than the player's. The check warns at a cut nothing
+  brings back (no breaker, no `power: on`)
 - `torch`: **the player's flashlight** (DECISIONS 2026-10-28): `on`, `off`, `flicker` (a stutter, then on), `dead` (it
   flickers out, and F only clicks until `works`: new batteries). An item with `"torch": true` is a flashlight: picked up
   (`use: pickup`) or given (`give`), it goes in the pocket, not the inventory's row, and **F** switches it (heard as

@@ -26,12 +26,13 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch"}
+           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch",
+           "power"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
@@ -71,7 +72,7 @@ PERSON = re.compile(r"^(A|An) ([A-Za-z-]+ ){0,3}person\b")
 LOOK_WORDS = re.compile(r"\b(at|toward|towards) (the )?(player|viewer|camera|you)\b|\blooks? at (him|her|them)\b", re.I)
 TIER_SECS = {}              # tier -> seconds of motion (the animation budget report)
 SEG_NAMES = {}              # segment name -> where
-STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state"}
+STATE_VERBS = {"flag", "unflag", "give", "take", "show", "hide", "door", "move", "state", "power"}
 TODO_ON = {"done", "failed"}  # a to-do task's `on`: actions when it's ticked, when it's failed
 NAME_SECS = 8.0             # the walker's time to type a name
 PLACEHOLDER = re.compile(r"\{([^{}\s]*)\}")      # {name} in shown text: the player's name; nothing else is filled in
@@ -926,6 +927,9 @@ def check_trigger(bid, w, story, things, beats, r):
         gone = json.dumps(story.get("stitches", {}), ensure_ascii=False)
         if '"as": "go"' not in gone:
             r.err(f"{bid}: arrived {v!r}: nothing sends anyone anywhere (behave as go)")
+    elif k == "power":                                 # the level's power on or off; holds while it is
+        if v not in ("on", "off"):
+            r.err(f"{bid}: power {v!r}: \"on\" or \"off\"")
     elif k == "peeping":                               # the player's eye at that door's peephole; holds while it is
         if v not in things or things[v].kind != "door" or not things[v].d.get("peephole"):
             r.err(f"{bid}: peeping {v!r} isn't a door with a peephole (its door's \"peephole\": true)")
@@ -1075,6 +1079,13 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: light {v!r} isn't a light")
         if a.get("set") not in LIGHT_SET:
             r.err(f"{bid}: light set {a.get('set')!r}")
+    elif k == "power":                                  # the power cut (every electric light dark, the switches dead) or back
+        if v not in ("on", "off"):
+            r.err(f"{bid}: power {v!r}: \"on\" or \"off\"")
+        if "level" in a and a["level"] not in story.get("levels", {}):
+            r.err(f"{bid}: power level {a['level']!r} isn't a level")
+        if v == "off" and not any(t.use == "breaker" for t in things.values()) and '"power": "on"' not in json.dumps(story.get("stitches", {})):
+            r.warn(f"{bid}: power off, and nothing brings it back (no breaker, no power on)")
     elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
         if v not in TORCH_SET:
             r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")
@@ -1562,6 +1573,7 @@ class World:
         self.counters = {}         # game.counters -> value
         self.todo = {}             # the to-do list: task id -> [state (open done failed), its todo action]
         self.arrived = {}          # cast id -> the spot a behave go took her to
+        self.power = {}            # level -> "on" or "off" (the power action; on until it's cut)
         self.style = "kind"        # how this sweep answers timed choices (STYLES)
         self.forced = {}           # (scene node, clip) -> the answer this path gives at that reply
         self.branch_flags = {f.lstrip("!") for n in story.get("flow", {}).values() if n.get("type") == "choice" and n.get("by") == "flag"
@@ -1745,6 +1757,8 @@ class World:
             return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
+        if k == "power":                                  # as the story left it, or the walker flips a breaker it can reach
+            return self.power.get(self.level, "on") == v or any(self.can_reach(t.id) for t in self.things.values() if t.use == "breaker")
         if k == "torch":                                  # the walker switches it once it has a flashlight
             return any(i in self.inv for i in torch_items(self.story))
         if k == "arrived":                                # she walked where a behave go sent her
@@ -1791,6 +1805,8 @@ class World:
                 self.locked.discard(v)
         elif k == "state":
             self.set_state(v, a.get("to"))
+        elif k == "power":
+            self.power[a.get("level") or self.level] = v
 
     def run_actions(self, where, acts):
         """Returns True when a `done` ends the stitch."""

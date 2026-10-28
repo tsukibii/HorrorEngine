@@ -31,6 +31,7 @@ const DROP_AHEAD = 0.55, ICON = 112;               // G sets a thing down this f
 // is seen at, the seconds the suspicion meter takes to fill and to drain, and how long she's calm after a catch
 export const SIGHT = { angle: 90, range: 9, crouched: 0.55, meter: 1.2, drain: 1.5, calm: 3 };
 const UP = new THREE.Vector3(0, 1, 0), DOWN = new THREE.Vector3(0, -1, 0);
+const ELECTRIC = l => !["candle", "fire"].includes(l.userData.kind);   // a power cut darkens these
 const flagsHold = (ifs, flags) => (ifs || []).every(f => f.startsWith("!") ? !flags.has(f.slice(1)) : flags.has(f));
 
 export class PlayRuntime {
@@ -284,6 +285,19 @@ export class PlayRuntime {
     const far = deg => { this.stage.swingDoor(m, deg); m.updateMatrixWorld(); return m.getWorldPosition(new THREE.Vector3()).distanceTo(this.player.pos); };
     const a = far(90), b = far(-90); this.stage.swingDoor(m, 0);
     return a >= b ? 90 : -90;
+  }
+  // the power (the `power` action, a breaker): kept per level; cut, every electric light is dark at render (each keeps
+  // its own on or off for when it comes back: candles and fire burn on) and the switches are dead; back, they flicker up
+  powered(level = this.level) { const k = this.kept && this.kept[level]; return !k || k.power !== false; }
+  power(set, level = this.level) {
+    const k = (this.kept = this.kept || {})[level] = this.kept[level] || { vis: {}, doors: {}, bodies: {} }, on = set !== "off";
+    if (on === (k.power !== false)) return;
+    k.power = on; this.hud.log(on ? "the power is back" : "the power's out");
+    if (on && level === this.level) for (const l of this.stage.lights) if (ELECTRIC(l)) {   // flickering up for a moment, then its own flicker again
+      const u = l.userData; if (u.flicker0 === undefined) u.flicker0 = u.flicker || 0;
+      u.flicker = Math.max(u.flicker0, 0.8); u.surge = this.clock + 0.9;
+    }
+    this.emit({ type: "power", on });
   }
   light(id, room, set) {
     const ls = id ? [this.byId[id]].filter(Boolean) : this.stage.lights.filter(l => l.userData.room === room);
@@ -818,7 +832,8 @@ export class PlayRuntime {
     c.updateMatrixWorld();                               // the cursor's ray (and the hands) from where the eye is now, not the last frame
     const T = this.clock;
     for (const l of this.stage.lights) {
-      const u = l.userData; let k = u.on ? (u.dim || 1) : 0;
+      const u = l.userData; let k = u.on && (this.powered() || !ELECTRIC(l)) ? (u.dim || 1) : 0;
+      if (u.surge && T >= u.surge) { u.flicker = u.flicker0 || 0; delete u.surge; }   // back after the power's flicker-up
       if (u.flicker) k *= 1 - u.flicker * 0.5 * Math.max(0, Math.sin(T * 13.7) * Math.sin(T * 7.3));
       l.intensity = (u.base || 1) * k;
     }

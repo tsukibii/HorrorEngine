@@ -77,6 +77,23 @@ on the to-do list (the asker waits, then carries on into the next shot), 3 no (p
 Not worth it now: the anomaly loop and CCTV monitors (each a game of its own: when a game is built round one), any
 inventory beyond what you carry, stats, combat, more mini-games than the board games we have.
 
+## 3b. More of their small systems (2026-10-28, later)
+
+The user, going away for five hours: "if there are any other simple game systems we are missing for Chilla's Art style
+horror games feel free to add them". With the to-do list, nights as chapters and the request built, and the phone and
+the epilogue declined, four more of the small things their games keep doing, each a part of Play, a word of the story
+format and a step of PLAY:
+
+| What | Where they use it **(known)** | Ours |
+|---|---|---|
+| **A flashlight** | Night Security's patrol, The Kidnap's rainy night, the tunnel and forest games | an item with `torch` in the pocket, F; the story's `torch` (flicker, dead, works) and the `torch` trigger (play/torch.js) |
+| **Chores you do with your hands** | the shift: mopping, wiping tables (The Convenience Store, The Closing Shift) | `use: clean`: a stain scrubbed away by holding the click, with the mop in the hand (play/clean.js, stain.js) |
+| **A peephole** | someone at the door at night, there or not | a door's `peephole`: the eye to the lens, a wide view in a round hole; `peeping` (play/peephole.js) |
+| **A power cut and the breaker** | the lights die, find the fuse box in the dark | the `power` action and trigger, `use: breaker`; candles and fires burn on (runtime's `power`) |
+
+Still not built, and why: the analogue phone (the user: "if ever"), the epilogue card (no: endings are cutscenes),
+CCTV monitors and the anomaly loop (a game of their own each, when one is built round them).
+
 ## 4. Keeping it indie
 
 What makes theirs work is the order of the night more than mechanics: something ordinary to do, the same place made

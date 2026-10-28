@@ -42,6 +42,9 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       { id: "mop1", shape: "box 0.06 0.06 0.5", at: [1.0, 4.0], use: "pickup", item: "mop" });
     S.stitches.t_search.beats.push({ id: "b_clean", when: { use: "hall_stain" }, optional: true, do: [{ flag: "stain_clean" }] });
     S.levels.house.rooms.find(r => r.id === "hall").openings.find(o => o.door && o.door.id === "front_door").door.peephole = true;   // a lens in the front door
+    S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_breaker", shape: "box 0.3 0.1 0.4", at: [3.85, 0.6], z: 1.3, use: "breaker", tag: "breaker" });
+    S.stitches.t_search.beats.push({ id: "b_cut", when: { flag: "cut_power" }, optional: true, do: [{ power: "off" }] },
+      { id: "b_power_back", when: { power: "on" }, if: ["cut_power"], optional: true, do: [{ flag: "power_back" }] });
     S.stitches.t_search.beats.push({ id: "b_peep", when: { peeping: "front_door" }, optional: true, do: [{ flag: "peeped" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "torch1", shape: "cyl 0.025 0.18", at: [1.4, 5.0], use: "pickup", item: "flashlight" });
     S.stitches.t_search.beats.push({ id: "b_torch_on", when: { torch: "on" }, optional: true, do: [{ flag: "torch_on" }] },
@@ -417,6 +420,18 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await press("KeyS"); await gameWait(0.3);
     const b = await s();
     if (b.peeping || b.mask || b.limit || Math.abs(b.fov - before.fov) > 0.5 || Math.sign(b.cz - b.dz) !== Math.sign(before.z - a.dz)) throw new Error("a step back: " + JSON.stringify(b));
+  });
+  await step("the power cut: the hall's lamp goes dark (a power action); the breaker box says Power on, a click brings the lights back flickering up, and it's heard", async () => {
+    const lit = () => page.evaluate(() => window.__dd.play.byId.hall_lamp.intensity);
+    await gameWait(0.2); const before = await lit();
+    await page.evaluate(() => window.__dd.play.setFlag("cut_power")); await gameWait(0.5);
+    const out = await lit(), powered = await page.evaluate(() => window.__dd.play.powered());
+    if (!(before > 0) || out !== 0 || powered) throw new Error(`the cut: the lamp ${before} then ${out}, powered ${powered}`);
+    const r = await goTo("hall_breaker", 0.7), label = await page.evaluate(() => document.querySelector(".ph-prompt").textContent);
+    if (r.cursor !== "use" || !/power on/i.test(label)) throw new Error(`the breaker: cursor ${r.cursor}, ${label}`);
+    await click(); await gameWait(1.4);
+    const back = await lit(), heard = await flag("power_back");
+    if (!(back > 0) || !heard || !(await page.evaluate(() => window.__dd.play.powered()))) throw new Error(`the breaker: the lamp ${back}, heard ${heard}`);
   });
   await step("Shift runs (forward, standing): about twice the walk", async () => {
     const speed = async keys => { await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(0.8, 0, -2.6), 0, 0); });

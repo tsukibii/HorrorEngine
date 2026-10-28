@@ -173,6 +173,9 @@ playback; Generate stays the one button.
 - **Cleaning** (built 2026-10-28, the same ask): a stain (`use: clean`, its `stain` kind) scrubbed away by holding the
   left button on it, with the mop or rag in the hand if it says `with`: a ring fills round the reticle, the blot fades,
   and its `use` ticks the chore (`play/clean.js`, `stain.js`).
+- **The power cut** (built 2026-10-28, the same ask): `power: off` darkens every bulb and lamp in the level (candles and
+  fires burn on) and kills the switches, till the player finds the breaker box (`use: breaker`) and the lights
+  flicker back; `{"power": "on"}` hears it.
 - **The peephole** (built 2026-10-28, the same ask): a door with `peephole` has a lens on both faces; a click puts the
   eye to it (the other side through a wide lens in a round hole, a little room to look about), a click or a step takes
   it back, and `{"peeping": door}` holds meanwhile: the knock, the look, nobody there (`play/peephole.js`).

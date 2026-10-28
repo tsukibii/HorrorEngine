@@ -120,6 +120,7 @@ scene: a camera fade, and control taken and given back softly.
 | sound | at the `at` actor, 2D without it |
 | music | crossfade among `/Game/Studio/Audio/Music/<state>` (two audio components, 2 s) |
 | light | visibility; flicker as intensity × noise; `room` = every light tagged `room:<id>` |
+| power | the level's power: off, every light not tagged `kind:candle` or `kind:fire` dark (its own on or off kept), the switches dead; on, they come back with a 0.9 s flicker |
 | torch | the player's flashlight (below): on, off, flicker (a stutter, then on), dead (flickers out; `IA_Flashlight` only clicks), works |
 | door | a class-mapped door through its interface; a greybox door rotates 95° round its hinge edge; a kit door's leaf has its pivot on its hinges (docs/KIT.md §8), so it turns about its own Z; locked = a rattle and "Locked" |
 | show, hide | hidden in game, and collision |
@@ -152,6 +153,8 @@ scene: a camera fade, and control taken and given back softly.
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - A little thing with a life (`life:*`) is used like one when its state has an act (Content/Studio/Life/lives.json):
   the prompt is the act's label, a click moves it to the act's state, and `use` is heard.
+- **The breaker** (`use: breaker`): `IA_Interact` throws it (the power off or on for its level, `use` heard); a
+  `switch` with the power out only clicks and says No power.
 - **The peephole** (a door's `peephole`, play/peephole.js the reference): a lens on both faces of the leaf at its
   height, with a collider a hand wide for the trace; used, the view blends to a camera just outside the far face
   looking out (a cine camera with a wide lens and a fisheye post-process: barrel distortion, a round black mask with

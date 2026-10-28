@@ -16,7 +16,7 @@ WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
-        "carry", "game", "sleep", "clean"}
+        "carry", "game", "sleep", "clean", "breaker"}
 STAINS = ("dirt", "mud", "blood", "water", "ash")   # a stain's kinds (use: clean; the desk's stain.js draws them)
 PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
 BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/
