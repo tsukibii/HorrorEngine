@@ -162,8 +162,10 @@ playback; Generate stays the one button.
   (a copy of it on its physics kind's spring), put away while seated, hiding, asleep, at a board game or in a scene.
   G sets it down 0.55 m ahead (nearer a wall), facing you, on the floor or a table, and the player no longer has its
   item; set down in another level, a copy of it stays there. A click takes it back. The pause menu shows the controls
-  on its left (each key drawn in outline, after the user's picture; `CONTROLS` in `play/menu.js`, each its Enhanced
-  Input action for Unreal).
+  on its left as the Studio's own symbols (DECISIONS 2026-10-28: each key a frosted tile standing on its lip, W A S D a
+  pad round the dot that is you, the mouse a pebble without a cable, the button or the wheel it means lit; beside each,
+  in the accent, what it does as the HUD shows it: the reticle's ring, the inventory's row, a thing set down, speed
+  lines, your eye coming down; `CONTROLS` in `play/menu.js`, each its Enhanced Input action for Unreal).
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,

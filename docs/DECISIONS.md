@@ -2,6 +2,14 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28 (the controls' symbols, our own)
+
+- **The pause menu's control symbols, more original**: "Modify the controls UI symbols to be a bit more original". The
+  layout stays (the controls on the left, their words beside them); the symbols are the Studio's own: each key a
+  frosted tile standing on its lip, its legend in the middle; W A S D a pad round the dot that is you; the mouse a
+  pebble without a cable, the button or the wheel it means lit; and beside each, in the theme's accent, what it does as
+  the HUD shows it (the reticle's ring, the inventory's row, a thing set down, speed lines, your eye coming down).
+
 ## 2026-10-27, later (your notes any way you like, Claude makes the chart; an inventory; the controls on Esc)
 
 - **Write any way; Claude turns it into the chart** (the syntax was the wrong approach): "I just realised the syntax

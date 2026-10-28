@@ -212,8 +212,9 @@
 .play-hud .ph-menu{position:absolute;inset:0;z-index:10;pointer-events:auto;cursor:default;isolation:isolate;display:grid;grid-template-columns:minmax(220px,26%) minmax(0,640px);
   align-items:center;gap:calc(var(--ph-margin) * 2);padding:calc(var(--ph-margin) * 2) calc(var(--ph-margin) * 3)}
 .play-hud .ph-menu.out{opacity:0;transition:opacity .18s}
-/* paused, before a page opens: the controls on the left, each key drawn in outline (after the user's picture), what it
-   does beside it, no box; then the list. A page (Save game, Settings) takes their place */
+/* paused, before a page opens: the controls on the left, each key (or the mouse) as the Studio's own symbol with what it
+   does drawn beside it in the accent (play/menu.js), the words after them, no box; then the list. A page (Save game,
+   Settings) takes their place */
 .play-hud .ph-menu.root{grid-template-columns:minmax(250px,34%) minmax(200px,1fr)}
 .play-hud .ph-menu.root .ph-page{display:none}
 .play-hud .ph-menu:not(.root) .ph-controls{display:none}
@@ -221,8 +222,24 @@
 .play-hud .ph-ctl{display:grid;grid-template-columns:140px auto;align-items:center;gap:20px;font-family:var(--ph-ui-font,var(--ph-font));font-size:calc(var(--ph-fs-l) + 1px);
   letter-spacing:.01em;text-shadow:var(--ph-text-shadow)}
 .play-hud .ph-ctl-icon{display:flex;justify-content:center}
-.play-hud .ph-ctl-icon svg{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7));font-family:var(--ph-ui-font,var(--ph-font))}
+.play-hud .ph-ctl-icon svg{display:block;overflow:visible;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7));font-family:var(--ph-ui-font,var(--ph-font))}
 .play-hud .ph-ctl-label{color:var(--ph-text)}
+/* the symbols' parts: a key's frosted face (--ph-ctl-frost) and its edge, the lip it stands on, the shine along its top,
+   the legend; the mouse's lines; what it does in the accent (faint: the lesser strokes; dash: where your eye was), what
+   it means lit, a soft glow round that */
+.play-hud .ph-ctl .c-face{fill:currentColor;fill-opacity:var(--ph-ctl-frost,.08);transition:fill-opacity .15s}
+.play-hud .ph-ctl:hover .c-face{fill-opacity:calc(var(--ph-ctl-frost,.08) * 2)}
+.play-hud .ph-ctl .c-edge{stroke:currentColor;stroke-opacity:.72;stroke-width:1.3}
+.play-hud .ph-ctl .c-lip{fill:currentColor;fill-opacity:.05;stroke:currentColor;stroke-opacity:.3;stroke-width:1}
+.play-hud .ph-ctl .c-shine{fill:none;stroke:currentColor;stroke-opacity:.45;stroke-width:1.2;stroke-linecap:round}
+.play-hud .ph-ctl .c-legend{fill:currentColor;font-weight:600;text-anchor:middle;letter-spacing:.02em}
+.play-hud .ph-ctl .c-line{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.1}
+.play-hud .ph-ctl .c-glyph{fill:none;stroke:var(--ph-accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.play-hud .ph-ctl .c-glyph.faint{stroke-opacity:.5}
+.play-hud .ph-ctl .c-glyph.dash{stroke-dasharray:1.5 3;stroke-opacity:.55}
+.play-hud .ph-ctl .c-lit{fill:var(--ph-accent)}
+.play-hud .ph-ctl .c-lit.soft{fill-opacity:.8}
+.play-hud .ph-ctl .c-glow{fill:none;stroke:var(--ph-accent);stroke-opacity:.2;stroke-width:5;stroke-linejoin:round}
 .play-hud .ph-dark{position:absolute;inset:0;z-index:-1;background:var(--ph-dark,rgba(2,3,5,.9));-webkit-backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));
   backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));animation:ph-lights-out .75s linear both}
 @keyframes ph-lights-out{0%{opacity:0}10%{opacity:.75}18%{opacity:.3}30%{opacity:.85}38%{opacity:.6}100%{opacity:1}}   /* a bulb dying */

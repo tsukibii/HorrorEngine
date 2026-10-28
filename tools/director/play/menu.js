@@ -1,10 +1,10 @@
 // The pause menu (Esc in Play; docs/GAMEPLAY_PLAN.md §10): the game holds, the lights go out (the frame flickers down
-// to nearly black) and the menu is drawn over it in the HUD's theme. The controls on the left (each key drawn in
-// outline, after the user's picture: DECISIONS 2026-10-27, later), then Resume, Save game (slots), Settings (Display &
-// Graphics, Audio), Quit (a footer choice, like any other). The reference for Unreal's menu: the same pages and rows,
-// and every setting names what it maps to there (`ue`: a console variable, a scalability group, a sound class; a
-// control its Enhanced Input action). Values step with ‹ › (A/D), never a slider; levels are ten dashes, the HUD's
-// meter cut in steps.
+// to nearly black) and the menu is drawn over it in the HUD's theme. The controls on the left (DECISIONS 2026-10-27,
+// later; each key or the mouse as the Studio's own symbol with what it does drawn beside it, 2026-10-28), then Resume,
+// Save game (slots), Settings (Display & Graphics, Audio), Quit (a footer choice, like any other). The reference for
+// Unreal's menu: the same pages and rows, and every setting names what it maps to there (`ue`: a console variable, a
+// scalability group, a sound class; a control its Enhanced Input action). Values step with ‹ › (A/D), never a slider;
+// levels are ten dashes, the HUD's meter cut in steps.
 import { chooser, paintLine } from "./hud.js";
 const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const key = k => mk("span", "ph-key", k);
@@ -54,49 +54,70 @@ export const SETTINGS = [
 ];
 const ROWS = SETTINGS.flatMap(p => p.groups.flatMap(g => g.rows));
 
-// the controls, as the pause menu shows them on its left: the keys (or the mouse) and what they do; `ue` the Enhanced
-// Input action it is in Unreal
+// the controls, as the pause menu shows them on its left: the keys (or the mouse), what they do drawn beside them
+// (`glyph`, below) and in words; `ue` the Enhanced Input action it is in Unreal
 export const CONTROLS = [
   { keys: ["W", "A", "S", "D"], label: "Movement", ue: "IA_Move" },
-  { mouse: "click", label: "Interact", ue: "IA_Interact" },
-  { keys: ["E"], label: "Inventory", ue: "IA_Inventory" },
-  { mouse: "wheel", label: "Switch item", ue: "IA_InventoryScroll" },
-  { keys: ["G"], label: "Drop", ue: "IA_Drop" },
-  { keys: ["Shift"], label: "Run", ue: "IA_Run" },
-  { keys: ["C"], label: "Crouch", ue: "IA_Crouch" },
+  { mouse: "click", glyph: "ring", label: "Interact", ue: "IA_Interact" },
+  { keys: ["E"], glyph: "row", label: "Inventory", ue: "IA_Inventory" },
+  { mouse: "wheel", glyph: "turn", label: "Switch item", ue: "IA_InventoryScroll" },
+  { keys: ["G"], glyph: "down", label: "Drop", ue: "IA_Drop" },
+  { keys: ["Shift"], glyph: "speed", label: "Run", ue: "IA_Run" },
+  { keys: ["C"], glyph: "crouch", label: "Crouch", ue: "IA_Crouch" },
 ];
-// a key drawn as its cap in outline: the cap's edge, its top face inside it, the legend at the top face's corner
-const CAP = 40, GAP = 5;
-function cap(x, y, label, w = CAP) {
-  const word = label.length > 1;
-  return `<rect x="${x + 1}" y="${y + 1}" width="${w - 2}" height="${CAP - 2}" rx="7" fill="none" stroke="currentColor" stroke-width="1.6"/>` +
-    `<rect x="${x + 4.5}" y="${y + 3.5}" width="${w - 9}" height="${CAP - 12}" rx="5" fill="none" stroke="currentColor" stroke-width="1.1"/>` +
-    `<text x="${x + 9}" y="${y + (word ? 16 : 19)}" font-size="${word ? 11 : 14}" font-weight="500" fill="currentColor">${label}</text>`;
+// the controls' symbols, the Studio's own (DECISIONS 2026-10-28): a key is a frosted tile standing on its lip, the
+// legend in its middle; W A S D a pad round the dot that is you, the ways you can go between them; the mouse a pebble
+// without a cable, the button or the wheel it means lit. Beside each, in the accent, what it does as the HUD shows it
+// (GLYPH). One svg a row, as wide as the column: the key or the mouse round DX, what it does round GX. The colours are
+// the theme's (hud.css: .ph-ctl .c-*)
+const K = 34, LIP = 3, R = 8, DX = 52, GX = 120, SW = 140;
+const svg = (h, body) => `<svg width="${SW}" height="${h}" viewBox="0 0 ${SW} ${h}" aria-hidden="true">${body}</svg>`;
+function keyCap(x, y, label, w = K, h = K) {
+  const b = y + h;
+  return `<path class="c-lip" d="M${x} ${b + LIP - R}a${R} ${R} 0 0 0 ${R} ${R}h${w - 2 * R}a${R} ${R} 0 0 0 ${R} ${-R}v${-LIP}a${R} ${R} 0 0 1 ${-R} ${R}h${2 * R - w}a${R} ${R} 0 0 1 ${-R} ${-R}z"/>` +
+    `<rect class="c-face c-edge" x="${x}" y="${y}" width="${w}" height="${h}" rx="${R}"/><path class="c-shine" d="M${x + R} ${y + 2.6}h${w - 2 * R}"/>` +
+    `<text class="c-legend" x="${x + w / 2}" y="${y + h / 2}" dy=".36em" font-size="${label.length > 1 ? 11.5 : 14}">${label}</text>`;
 }
-function keysSvg(keys) {
-  if (keys.length === 4) {                           // W over S, A S D along the bottom, as on the keyboard
-    const W = 3 * CAP + 2 * GAP, H = 2 * CAP + GAP;
-    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${cap(CAP + GAP, 0, keys[0])}${cap(0, CAP + GAP, keys[1])}${cap(CAP + GAP, CAP + GAP, keys[2])}${cap(2 * (CAP + GAP), CAP + GAP, keys[3])}</svg>`;
+// what each does, round (x, y): the reticle's ring a click uses; the inventory's row, the one in the hand in the middle
+// with its mark under it (E shows it), and turned either way (the wheel); a thing set down on the floor (G); speed lines
+// (Shift); your eye coming down from where it was (C)
+const HELD = (x, y) => `<rect class="c-glyph" x="${x - 5}" y="${y - 6}" width="10" height="10" rx="2.2"/><path class="c-glyph" d="M${x - 3.5} ${y + 8.5}h7"/>`;
+const GLYPH = {
+  ring: (x, y) => `<circle class="c-glyph" cx="${x}" cy="${y}" r="8.5"/><circle class="c-lit" cx="${x}" cy="${y}" r="2.2"/>`,
+  row: (x, y) => `<rect class="c-glyph faint" x="${x - 15}" y="${y - 4.5}" width="7" height="7" rx="1.6"/><rect class="c-glyph faint" x="${x + 8}" y="${y - 4.5}" width="7" height="7" rx="1.6"/>` + HELD(x, y),
+  turn: (x, y) => `<path class="c-glyph faint" d="M${x - 10} ${y - 5}l-4 4 4 4M${x + 10} ${y - 5}l4 4-4 4"/>` + HELD(x, y),
+  down: (x, y) => `<path class="c-glyph" d="M${x} ${y - 12}v7M${x - 3} ${y - 8}l3 3 3-3"/><rect class="c-glyph" x="${x - 4.5}" y="${y - 1}" width="9" height="9" rx="1.6"/><path class="c-glyph faint" d="M${x - 11} ${y + 10}h22"/>`,
+  speed: (x, y) => `<path class="c-glyph faint" d="M${x - 13} ${y - 5}h7M${x - 16} ${y}h10M${x - 13} ${y + 5}h7"/><path class="c-glyph" d="M${x - 2} ${y - 7}l7 7-7 7M${x + 5} ${y - 7}l7 7-7 7"/>`,
+  crouch: (x, y) => `<path class="c-glyph dash" d="M${x - 9} ${y - 11}h18"/><path class="c-glyph faint" d="M${x} ${y - 8}v4.5M${x - 2.5} ${y - 6}l2.5 2.5 2.5-2.5"/>` +
+    `<circle class="c-glyph" cx="${x}" cy="${y + 2}" r="3"/><path class="c-glyph" d="M${x - 7} ${y + 12.5}c0-4.5 3-6.5 7-6.5s7 2 7 6.5"/>`,
+};
+const glyph = (c, y) => GLYPH[c.glyph] ? GLYPH[c.glyph](GX, y) : "";
+function keysSvg(c) {
+  if (c.keys.length === 4) {                         // the pad: W up, S down, A left, D right, the ways out round you
+    const k = 30, s = k + 4, x = DX - s - k / 2, y = 1, cx = DX, cy = y + s + k / 2, [w, a, sk, d] = c.keys;
+    const ways = `M${cx - 3} ${cy - 6}l3-3 3 3M${cx - 3} ${cy + 6}l3 3 3-3M${cx - 6} ${cy - 3}l-3 3 3 3M${cx + 6} ${cy - 3}l3 3-3 3`;
+    return svg(y + 2 * s + k + LIP + 1, keyCap(x + s, y, w, k, k) + keyCap(x, y + s, a, k, k) + keyCap(x + 2 * s, y + s, d, k, k) + keyCap(x + s, y + 2 * s, sk, k, k) +
+      `<path class="c-glyph faint" d="${ways}"/><circle class="c-lit" cx="${cx}" cy="${cy}" r="2.2"/>`);
   }
-  const w = keys[0].length > 1 ? 2 * CAP : CAP;
-  return `<svg width="${w}" height="${CAP}" viewBox="0 0 ${w} ${CAP}" aria-hidden="true">${cap(0, 0, keys[0], w)}</svg>`;
+  const w = c.keys[0].length > 1 ? 58 : K;
+  return svg(1 + K + LIP + 1, keyCap(DX - w / 2, 1, c.keys[0], w) + glyph(c, 1 + K / 2));
 }
-// the mouse in outline, its cable up out of the top: "click" its left button lit and the lines of a click beside it,
-// "wheel" the wheel lit with an arrow up and down
-function mouseSvg(how) {
-  const body = '<rect x="12" y="16" width="30" height="46" rx="15" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
-    '<path d="M27 16v15M12.6 31h28.8" stroke="currentColor" stroke-width="1.2" fill="none"/>' +
-    '<path d="M27 16c0-6 5-6 8-9s2-6 2-6" stroke="currentColor" stroke-width="1.4" fill="none"/>';
-  const lit = how === "click"
-    ? '<path d="M27 17.6A13.4 13.4 0 0 0 13.7 30H27z" fill="currentColor" opacity=".55"/><path d="M9 13L4 8M13 9.5L11.5 3M6.5 18.5L.5 17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
-    : '<rect x="24.5" y="19" width="5" height="9" rx="2.5" fill="currentColor"/><path d="M48 15l3.5-4 3.5 4M48 31l3.5 4 3.5-4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
-  return `<svg width="58" height="64" viewBox="0 0 58 64" aria-hidden="true">${body}${lit}</svg>`;
+function mouseSvg(c) {                               // "click": its left button lit; "wheel": the wheel
+  const x = DX, y = 1, wheel = c.mouse === "wheel";
+  const body = `M${x} ${y}C${x + 10} ${y} ${x + 15} ${y + 7} ${x + 15} ${y + 17}V${y + 29}C${x + 15} ${y + 39} ${x + 9} ${y + 44} ${x} ${y + 44}` +
+    `C${x - 9} ${y + 44} ${x - 15} ${y + 39} ${x - 15} ${y + 29}V${y + 17}C${x - 15} ${y + 7} ${x - 10} ${y} ${x} ${y}Z`;
+  // the left button lit inside its edges, a hair off the outline, the split and the wheel
+  const left = `M${x - 3.6} ${y + 17.2}V${y + 2.5}C${x - 9.5} ${y + 2.8} ${x - 12.8} ${y + 8} ${x - 12.8} ${y + 15.3}Q${x - 8} ${y + 17.3} ${x - 3.6} ${y + 17.2}Z`;
+  const roller = cls => `<rect class="${cls}" x="${x - 2.2}" y="${y + 5}" width="4.4" height="10" rx="2.2"/>`;
+  return svg(y + 44 + 2, `<path class="c-face" d="${body}"/><path class="c-shine" d="M${x - 9.5} ${y + 5}q-2.6 2.6-3.2 6.5"/>` + (wheel ? "" : `<path class="c-lit soft" d="${left}"/>`) +
+    `<path class="c-line" d="M${x - 15} ${y + 17}Q${x} ${y + 21} ${x + 15} ${y + 17}M${x} ${y}v5M${x} ${y + 15}v4"/>` +
+    (wheel ? roller("c-glow") + roller("c-lit") : roller("c-line")) + `<path class="c-edge" fill="none" d="${body}"/>` + glyph(c, y + 22));
 }
 export function controlsPanel() {
   const box = mk("div", "ph-controls");
   for (const c of CONTROLS) {
     const row = mk("div", "ph-ctl"), icon = mk("div", "ph-ctl-icon");
-    icon.innerHTML = c.keys ? keysSvg(c.keys) : mouseSvg(c.mouse);
+    icon.innerHTML = c.keys ? keysSvg(c) : mouseSvg(c);
     row.title = "Unreal: " + c.ue; row.append(icon, mk("span", "ph-ctl-label", c.label)); box.append(row);
   }
   return box;

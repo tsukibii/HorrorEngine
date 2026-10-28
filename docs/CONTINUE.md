@@ -22,9 +22,10 @@ The user's notes-to-chart route went from a syntax they'd write in to **writing 
 - **Play's controls, as the user asked** (GAMEPLAY_PLAN §10): a left click uses everything, E shows or hides **the
   inventory** (`play/inventory.js`: one row at the bottom centre, the one in the hand in the middle and held in view,
   the wheel turns it, at most five shown, frosted glass fading at its ends), G puts the one in the hand down in front of
-  you (no fall), Shift runs; the pause menu shows the controls on its left, each key drawn in outline after the user's
-  picture. PLAY walks all of it (the faked pointer lock from the start, LESSONS). Not in Unreal yet (RUNNER_SPEC says
-  how). The guide's pictures (`guide/help.jpg`) still show the old keys: `guide_shots.mjs` makes them again.
+  you (no fall), Shift runs; the pause menu shows the controls on its left, as the Studio's own symbols since 2026-10-28
+  (frosted keys, a W A S D pad, what each does drawn beside it in the accent). PLAY walks all of it (the faked pointer
+  lock from the start, LESSONS). Not in Unreal yet (RUNNER_SPEC says how). The guide's pictures (`guide/help.jpg`) still
+  show the old keys: `guide_shots.mjs` makes them again.
 - **Sets** (`Content/Studio/Sets/`): the place designed first in the scene builder (its game picker's Sets, `+ new
   set…`), a small story of its own; `room.py build --set <name>` (and the Build dialog's *The place*, `/build-game ...
   set <name>`) builds the chart into its level: each place on its room, the things fitted round its furniture and
