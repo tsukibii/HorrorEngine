@@ -68,12 +68,14 @@ const fail = m => { console.error("PEOPLE FAIL: " + m); process.exit(1); };
       const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, px = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px);
       st.resize(); d.select("n_message");
       const lum = (x, y) => { const i = (Math.round(y * (H - 1)) * W + Math.round(x * (W - 1))) * 4; return 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]; };
-      let white = 0; for (let y = 0.4; y <= 0.6; y += 0.05) for (const x of [0.14, 0.18, 0.22, 0.78, 0.82, 0.86]) white = Math.max(white, lum(x, y));
-      return { mid: lum(0.5, 0.5), white, shader: !!(mat && mat.userData.eyeU && mat.isMeshPhysicalMaterial) };
+      let white = 0, skin = 0, k = 0; for (let y = 0.4; y <= 0.6; y += 0.05) { for (const x of [0.14, 0.18, 0.22, 0.78, 0.82, 0.86]) white = Math.max(white, lum(x, y)); for (const x of [0.02, 0.98]) { skin += lum(x, y); k++; } }
+      return { mid: lum(0.5, 0.5), white, skin: skin / k, shader: !!(mat && mat.userData.eyeU && mat.isMeshPhysicalMaterial) };   // the white's lightest, the lids' mean
     });
     if (!r.shader) throw new Error("the left eye isn't drawn by tools/shared/eye.js");
-    if (!(r.mid < 50 && r.white > 120)) throw new Error(`the eye close up by day: the pupil ${r.mid.toFixed(0)}, the white at most ${r.white.toFixed(0)} (of 255)`);
-    console.log(`       close up by day: the pupil ${r.mid.toFixed(0)}, the white ${r.white.toFixed(0)} (of 255)`);
+    // the white against the lids round it, not a number of its own: how light an eye's white comes out is the character's
+    // (its paint) and the light's; a broken eye is dark there, or no lighter than the skin
+    if (!(r.mid < 50 && r.white > 90 && r.white > r.skin + 12)) throw new Error(`the eye close up by day: the pupil ${r.mid.toFixed(0)}, the white at most ${r.white.toFixed(0)}, the lids beside it ${r.skin.toFixed(0)} (of 255)`);
+    console.log(`       close up by day: the pupil ${r.mid.toFixed(0)}, the white ${r.white.toFixed(0)}, the lids beside it ${r.skin.toFixed(0)} (of 255)`);
   });
   await step("the simple view: every surface a plain colour, no textures (but cut-outs), the eyes their flat paint, one pixel per pixel; off, everything as it was; kept in this browser", async () => {
     const r = await page.evaluate(() => {

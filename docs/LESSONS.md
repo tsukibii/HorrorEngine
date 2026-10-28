@@ -1032,3 +1032,12 @@ kitchen's cigarette, lit from the start, burns seven minutes and keeps what it b
 playthrough reached the kitchen it was out for good and there was nothing to put out. A little thing a station is
 about starts there (unlit, and lit as you come in).
 
+## A number that belonged to one character (2026-10-28)
+
+PEOPLE checked a Studio export's eye on the desk by its white being over 120 of 255. It passed for months on the export
+the last full STUDIO run left behind; once a shorter STUDIO run left a fresh default character's export there, the white
+came out 118 (with the skin light on or off: the eye isn't the skin's), and the check failed on a healthy eye. How light
+a white is belongs to the character's paint and the light; the check now asks what makes an eye an eye: the pupil
+dark, the white's lightest clearly over the lids' mean beside it (118 against 93). A test measuring a picture compares
+parts of the same picture, not a number tuned on one run's leftovers.
+
