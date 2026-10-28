@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/horrorstudio/game.gd" id="game"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.027, 0.039, 0.086, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.48, 0.525, 0.667, 1)
+ambient_light_energy = 0.22
+tonemap_mode = 2
+
+[node name="Game" type="Node" ]
+script = ExtResource("game")
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Env" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Player" type="Node3D" parent="."]
+
+[node name="Camera" type="Camera3D" parent="Player"]
+fov = 58.7
+near = 0.03
+far = 80.0
+
+[node name="Hud" type="CanvasLayer" parent="."]
