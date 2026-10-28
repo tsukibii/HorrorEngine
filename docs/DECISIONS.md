@@ -10,7 +10,8 @@ The user's answers, newest first. They override the plan, the research and the d
   to work on whatever." With three stills: a young East Asian woman's face under a soft key light on dark, her lips in
   close-up (fine lip lines, wet highlights), her eye and nose in close-up (pores, sparkle, a wet tear line).
   Built from it: the flashlight (F), cleaning (a stain scrubbed away by holding the click), the peephole, the power cut (a breaker box); the skin research in
-  docs/research/skin_v2.md (the stills measured, the plan in eight steps: research only, nothing built).
+  docs/research/skin_v2.md (the stills measured, the plan in eight steps), its first step's light as an option in the
+  Character Studio (reference (film)); the rest of v2 unbuilt, the user's call.
 
 ## 2026-10-28 (the controls' symbols, our own)
 

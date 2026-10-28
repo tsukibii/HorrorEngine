@@ -126,7 +126,7 @@ bool inCut(vec2 P[32], vec4 box, vec2 p) {                         // inside an 
   return c;
 }
 uniform sampler2D uPhotoMap, uPhotoMask, uTouchPaint, uTouchMask, uTouchPig, uLayOv, uLayPig, uLaySurf, uLayGlow;
-uniform float uHasLay, uShowSel;
+uniform float uHasLay, uShowSel, uGlowK;
 varying float vSel;
 varying vec3 vObj; varying vec2 vSkinUv;
 uniform float uMouthOn; uniform vec2 uMouthZ; uniform vec2 uMouthP[32]; uniform vec4 uMouthBox;   // the mouth's opening (index.html)
@@ -395,7 +395,7 @@ export function procedural(material) {
   const u = { uProc: { value: 0 }, uPigOn: { value: 0 }, uScale: { value: 1 }, uHasPhoto: { value: 0 }, uTone: { value: new THREE.Color() }, uPhotoTone: { value: new THREE.Color(1, 1, 1) },
               uPhotoMap: { value: null }, uPhotoMask: { value: null },
               uHasTouch: { value: 0 }, uTouchPaint: { value: null }, uTouchMask: { value: null }, uHasPig: { value: 0 }, uTouchPig: { value: null },
-              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
+              uHasLay: { value: 0 }, uShowSel: { value: 0 }, uGlowK: { value: 1 }, uLayOv: { value: null }, uLayPig: { value: null }, uLaySurf: { value: null }, uLayGlow: { value: null },
               uCutOn: { value: 0 }, uCutL: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) }, uCutR: { value: Array.from({ length: 32 }, () => new THREE.Vector2()) },
               uCutZ: { value: new THREE.Vector2() }, uCutBoxL: { value: new THREE.Vector4() }, uCutBoxR: { value: new THREE.Vector4() },
               uLipOn: { value: 0 }, uLipZ: { value: 0 }, uLipAmt: { value: 0.8 }, uLipGrad: { value: 0.5 }, uLipGloss: { value: 0.6 }, uLipSoft: { value: 0.001 }, uLipLines: { value: 0.3 },
@@ -469,11 +469,13 @@ if (uProc > 0.5 || uHasLay > 0.5 || uNailOn > 0.5) {                            
   normal = normalize(abs(det) * normal - sign(det) * (dh.x * r1 + dh.y * r2));
 }`)
       .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
-if (uHasLay > 0.5) totalEmissiveRadiance += texture2D(uLayGlow, vSkinUv).rgb * 0.5 * (0.5 + 0.5 * diffuseColor.r);   // light from within, painted: thin skin, an ear's rim
+// uGlowK: how much of this light from within shows (1; 0 under the reference light, which shows the skin without it:
+// it ignores the lights and glows in the dark, docs/research/skin_v2.md §3, until v2 step 4 makes it light-driven)
+if (uHasLay > 0.5) totalEmissiveRadiance += uGlowK * texture2D(uLayGlow, vSkinUv).rgb * 0.5 * (0.5 + 0.5 * diffuseColor.r);   // light from within, painted: thin skin, an ear's rim
 if (uProc > 0.5) {                                                   // light through the skin: the rims, the ears; less with age
   float rim = pow(1.0 - max(dot(normal, normalize(vViewPosition)), 0.0), 2.5);
   float ears = max(near(vObj, uEarL, 0.03), near(vObj, uEarR, 0.03));
-  totalEmissiveRadiance += vec3(0.55, 0.12, 0.08) * uf_translucency * (1.0 - 0.6 * uf_age) * (0.35 * rim + 0.5 * ears) * diffuseColor.rgb;
+  totalEmissiveRadiance += uGlowK * vec3(0.55, 0.12, 0.08) * uf_translucency * (1.0 - 0.6 * uf_age) * (0.35 * rim + 0.5 * ears) * diffuseColor.rgb;
 }`)
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_CLEARCOAT

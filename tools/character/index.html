@@ -74,7 +74,7 @@
 <main>
   <div id="view">
     <div id="viewHelp">drag or middle-drag: turn · Shift+drag: pan · wheel: zoom · double-click: centre</div>
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option><option value="reference" title="The skin v2 reference: a soft key from the side, a rim, a dark ground and the film curve (docs/research/skin_v2.md)">reference (film)</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -852,6 +852,7 @@ const scene = new THREE.Scene(); scene.background = new THREE.Color(0x202125);
 const camera = new THREE.PerspectiveCamera(26, 1, 0.02, 100);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3530, 1.1), key = new THREE.DirectionalLight(0xffffff, 1.6);
 scene.add(hemi, camera); camera.add(key);
+const rim = new THREE.DirectionalLight(0xffffff, 0); camera.add(rim);   // a rim from behind: the reference light's (the edge, the fuzz, the ears)
 {                                                      // a soft studio around the character, so glossy skin and hair have something to reflect
   const env = new THREE.Scene(), box = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 12), new THREE.MeshBasicMaterial({ color: 0x2c2d33, side: THREE.BackSide }));
   env.add(box);
@@ -869,6 +870,9 @@ const LIGHTS = {   // key: colour, intensity, place (the camera's frame: x right
   lamp:   { key: [0xffb36a, 2.4, [-1.6, 0.6, -0.4]], hemi: [0x5a4030, 0x120c08, 0.18], env: 0.35, torch: 0, bg: 0x120d0a },   // a table lamp to one side
   night:  { key: [0x8ea6ff, 1.4, [1.8, 1.6, -0.6]], hemi: [0x3a4c7a, 0x05060a, 0.32], env: 0.25, torch: 0, bg: 0x07090f },  // moonlight from the side, a little behind: half the face
   torch:  { key: [0xffffff, 0, [0, 0, 0]], hemi: [0x202838, 0x050505, 0.06], env: 0.15, torch: 3, bg: 0x040405 },           // the player's flashlight
+  // the user's reference stills (docs/research/skin_v2.md §1, §4 step 1): a soft key from one side and above, three stops
+  // over the shadow, a cool rim from behind, a dark blue-grey ground; the film curve (AgX) so highlights roll off
+  reference: { key: [0xfff3e8, 2.6, [-1.8, 1.0, 0.4]], hemi: [0x9ea8b8, 0x2a2420, 0.45], env: 0.7, torch: 0, bg: 0x0f1215, rim: [0xdde6ff, 1.6, [1.6, 0.9, -2.6]], film: true },
 };
 const LIGHT = { name: "studio", env: 1 };
 function setLight(name) {
@@ -876,6 +880,9 @@ function setLight(name) {
   key.color.set(L.key[0]); key.intensity = L.key[1]; key.position.set(...L.key[2]);
   hemi.color.set(L.hemi[0]); hemi.groundColor.set(L.hemi[1]); hemi.intensity = L.hemi[2];
   torch.intensity = L.torch; if (!STUDIO.on) scene.background.set(L.bg);
+  rim.intensity = L.rim ? L.rim[1] : 0; if (L.rim) { rim.color.set(L.rim[0]); rim.position.set(...L.rim[2]); }
+  if (!STUDIO.on) { renderer.toneMapping = L.film ? THREE.AgXToneMapping : THREE.NoToneMapping; renderer.toneMappingExposure = L.exposure || 1; }   // the studio view keeps its own
+  SKU.uGlowK.value = L.film ? 0 : 1;                 // the reference shows the skin without the emissive glow (skinshader.js)
   skinLook();
 }
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));

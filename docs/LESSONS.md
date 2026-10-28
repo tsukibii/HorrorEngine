@@ -909,3 +909,13 @@ the last Esc landed after play had resumed: on the software GPU's slow frames it
 after `go()`, so it was a pause, and the next step found the menu up. Nothing in the game was wrong. A test that sends
 keys to get past something must check what its last key did once it's past (`scenesUntilPlay` now closes a pause it
 opened), not only that it got there.
+
+## Two browser suites at once, and a suite cut in half (2026-10-28)
+
+STUDIO failed twice on the Character Studio's reference light, neither time because of it. The first run was cut off
+at 23 of its 38 steps by the timeout I gave it (28 minutes: the whole suite takes nearly an hour on this box's software
+GPU). The rest, run on their own with `ONLY` while PLAY ran beside them, timed out on a click whose element was already
+visible and still: two headless browsers drawing WebGL on four cores starve each other's input. Run alone, the same
+subset failed on the eyes: that step checks a face fitted to pictures, which two earlier steps (the front and side
+pictures) make, and `ONLY` had skipped them. So: one browser suite at a time; a suite's timeout over its whole length
+(STUDIO an hour); and `ONLY` only for steps that stand alone, else the whole suite.

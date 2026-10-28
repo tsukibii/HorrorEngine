@@ -9,7 +9,8 @@ eight steps with the number each must hit (§4), Unreal (§5), what's left to th
 its numbers, algorithms and some eighty links (each number marked as read in code, from memory or an estimate), is
 `skin_v2_sources.md`; the scripts are in `skin_v2/` (`measure.py` the stills, `lut.py` the skin profile's
 pre-integrated lighting and thin-skin transmittance, `calc.py` the colours and lobes). It builds on `skin.md` (v1: the
-layer stack, glass skin, ageing, makeup) and doesn't repeat it. Nothing is built yet: research, as asked.
+layer stack, glass skin, ageing, makeup) and doesn't repeat it. Research, as asked; only step 1's light is built, as an
+option in the Character Studio's light picker (§4).
 
 ## 1. The references, measured
 
@@ -81,7 +82,11 @@ against §1.
    checking albedo), exposure about 1; a **reference light**: a soft key 35-45° to the side and above with a matching
    softbox in the environment (the catchlight), a fill three stops down, a rim from behind, a dark blue-grey
    background; an optional grade (chroma about 0.6, a little cool). *Hits:* lit to shadow 8:1 on the nose; the lit
-   cheek's chroma under about 9; no clipped highlight.
+   cheek's chroma under about 9; no clipped highlight. **Built (the light, not the grade)**: the Character Studio's
+   light picker has **reference (film)**: the soft key from the side, a cool rim, a dark blue-grey ground and AgX, with
+   the old emissive "translucency" off under it (it glows in the dark: skinshader.js `uGlowK`). Measured on a default
+   head at three-quarter: lit to shadow 7.7:1 across the cheek, the lit cheek L\* 62, a\* 3.5, b\* 7.6 (the stills:
+   57-63, 2-6, 7-8). The other lights are as they were.
 2. **Peach fuzz** (hours). three's `sheen` (Charlie, roughness 0.35-0.5, the skin's colour lightened, 0.15-0.3),
    masked to the cheeks, jaw, upper lip, forehead and ears, plus an asperity rim (bright at grazing angles, brighter
    backlit). *Hits:* the cheek's edge visibly velvety against the dark under the rim light.
