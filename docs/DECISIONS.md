@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, later afternoon (a character's models per scene, carried down the flow)
+
+- **No eye swap**: "We dont need eye swap, I can just export the same model twice with diff eyes".
+- **Models per character, overridden per scene and carried on**: "we might in database want to make a group per
+  character so I can add diff models for their diff states and have it always use default, but in scenes be able to
+  override which one to use, however it should be continuous so if in a later scene I say use y, then the rest of the
+  scenes that branch from that use that one, until I go to a later scene and default it back, then the rest after that
+  one go to default". In docs/HANDOFF_DIRECTOR_TODO.md §5, after the way the time of day carries down the flow.
+
 ## 2026-10-28, afternoon (the director's to-do, for after the merge)
 
 - **Not on this branch**: "you dont have to work on this in this branch but I will merge this branch into the other

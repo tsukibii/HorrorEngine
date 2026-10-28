@@ -81,11 +81,34 @@ patrols or looped motions inside a scene (cinematic), not only in tasks.
   stage); the Watch and Play play them; Unreal later.
 - MOTION and DESK checks: a state's spot exists, a patrol's route exists, a motion's file is made or flagged.
 
-## 5. What The Visitor needs on the desk when it's built (from its chart's sticky notes)
+## 5. A character's models, picked per scene and carried down the flow (missing)
+
+**The ask** (DECISIONS 2026-10-28, later afternoon): "in database ... make a group per character so I can add diff
+models for their diff states and have it always use default, but in scenes be able to override which one to use,
+however it should be continuous so if in a later scene I say use y, then the rest of the scenes that branch from that
+use that one, until I go to a later scene and default it back, then the rest after that one go to default".
+
+**Today.** A cast member has one body (`previs_body`, e.g. `people/<name>`: a Character Studio export). The time of
+day already works the way this should: a scene starts at the time of the scene it branched from, and changing it by
+hand carries on down the flow (`flowTimes`, TIMES).
+
+**Build.**
+- In the Database's cast tab, a **group of models per character**: named variants (`default`, `lilac eyes`, `wet`...),
+  each a body (a Studio export or a desk body), one marked default.
+- A scene's **model override** per cast member: a variant, or *default*. Unset, a scene uses whatever the scene it
+  branched from used, so an override carries down every branch after it until a later scene sets another or sets it
+  back to default; computed along the flow as `flowTimes` is (a `flowModels`), shown on the board's cards and in the
+  scene's stage.
+- Where branches with different models meet again, the scene says so in the Problems list (a warning: pick one there).
+- The story format (the cast's `models`, a scene's `models` override), the check (every variant's file exists), the
+  desk, the Watch and Play, the bake for Unreal; a DESK test and a TIMES-like test of the carry.
+
+## 6. What The Visitor needs on the desk when it's built (from its chart's sticky notes)
 
 - A **name variable** in lines and the speaker name (`{her}`: Natsu or Natsuki, by a counter).
-- **Two expression tracks** for one character at chosen lines (his version and hers), picked by a counter; her eyes'
-  colour swapped by the same counter (the Character Studio's eye).
+- **Two expression tracks** for one character at chosen lines (his version and hers), picked by a counter. No eye
+  swap in the engine: her lilac-eyed and brown-eyed looks are two exports of the same character, picked as models
+  (§5).
 - **Lines left out by a flag** (her lines about Ren off his pills).
 - **Memory flickers** (a thought that types out and breaks off) and **thoughts that retype themselves**.
 - **Pill tasks**: a timed to-do (*Take your pills*) three times, done or failed, feeding a `doses` counter (the chart
