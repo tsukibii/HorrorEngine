@@ -221,6 +221,16 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     if (r.run !== "Mika" || !r.think || r.panel || !ph) throw new Error(JSON.stringify(Object.assign(r, { ph })));
   });
   await step("a behaviour: Mari walks her route up and down the hall (path, pingpong, a wait in a pose)", () => onRoute("the search"));
+  await step("her footsteps: walking her route Mari is heard step by step from where she is (placed at her), off the hall's wood, never the same sound twice running", async () => {
+    await page.evaluate(() => { const rt = window.__dd.play, f = rt.shelfSound; window.__castHeard = []; window.__restoreCast = () => { rt.shelfSound = f; };
+      rt.shelfSound = function (n, at, db) { if (/^step_/.test(n) && at === "mari") window.__castHeard.push({ n, db, floor: rt.castStep.floor, y: -rt.stage.cast.mari.group.position.z }); return f.call(this, n, at, db); }; });
+    await gameWait(4);
+    const h = await page.evaluate(() => { window.__restoreCast(); return window.__castHeard; });
+    const twice = h.findIndex((x, i) => i && x.n === h[i - 1].n);
+    if (h.length < 2 || h.some(x => x.floor !== "wood" || !/^step_(wood|creaky)_0\d$/.test(x.n) || x.y < 3.4 || x.y > 6) || twice >= 0)
+      throw new Error(`her steps: ${JSON.stringify(h)}`);
+    console.log(`       ${h.length} steps of hers in 4 s, from y ${h.map(x => x.y.toFixed(1)).join(", ")}`);
+  });
   await step("ask: the question in the footer, its answers right under it at the bottom centre, the focus on Mari; 2 answers, its do runs and answered is heard", async () => {
     await page.evaluate(() => { const rt = window.__dd.play; rt.behave("mari", { as: "idle", at: "hall_mari_spot" }); rt.place(new (rt.player.pos.constructor)(2, 0, -2.6), 90, 0); rt.setFlag("ask_now"); });
     await page.waitForSelector(".ph-dock .ph-opt", { timeout: 60000 }); await page.waitForTimeout(300);
@@ -470,7 +480,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const floors = await page.evaluate(() => { const rt = window.__dd.play, V = rt.player.pos.constructor, out = {};
       for (const [id, x, y] of [["porch", 2, -1.5], ["hall", 2, 3], ["kitchen", 2, 8], ["study", 6, 3], ["cellar_stairs", -1.5, 2]]) { rt.place(new V(x, 0, -y), 90, 0); out[id] = rt.floorUnder(); }
       window.__stepsHeard = []; const f = rt.shelfSound; window.__restoreSteps = () => { rt.shelfSound = f; };
-      rt.shelfSound = function (n, at, db) { if (/^step_/.test(n)) window.__stepsHeard.push({ n, db, floor: rt.lastStep.floor, clock: rt.clock }); return f.call(this, n, at, db); };
+      rt.shelfSound = function (n, at, db) { if (/^step_/.test(n) && !at) window.__stepsHeard.push({ n, db, floor: rt.lastStep.floor, clock: rt.clock }); return f.call(this, n, at, db); };   // the player's own (the cast's are placed at them)
       return out; });
     if (JSON.stringify(floors) !== JSON.stringify({ porch: "wood", hall: "wood", kitchen: "tile", study: "carpet", cellar_stairs: "stone" })) throw new Error(`the floors under the feet: ${JSON.stringify(floors)}`);
     const walkFor = async (secs, crouch) => {

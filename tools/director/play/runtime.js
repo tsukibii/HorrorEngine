@@ -9,7 +9,7 @@ import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
-import "./steps.js";
+import { castSteps } from "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
 import { lensesFor, followLeaf, LENS } from "./peephole.js";
@@ -235,9 +235,10 @@ export class PlayRuntime {
     }
     return best > -Infinity ? best : pos.y;
   }
-  // the floor under the feet, the room's `floor` (wood, stone, carpet, tile, dirt, metal, water): its footsteps (steps.js)
-  floorUnder() {
-    const p = this.player.pos; let best = null, top = -Infinity;
+  // the floor under the feet (the player's, or anyone's), the room's `floor` (wood, stone, carpet, tile, dirt, metal,
+  // water): its footsteps (steps.js)
+  floorUnder(p = this.player.pos) {
+    let best = null, top = -Infinity;
     for (const m of this.stage.solid) {
       if (m.userData.kind !== "floor") continue;
       const e = this.extent(m); if (!e || e.r !== undefined) continue;
@@ -280,7 +281,8 @@ export class PlayRuntime {
   }
   shelfSound(name, at, db = 0) {
     if (!this.active) return;
-    const o = at && (this.byId[at] || (this.stage.cast || {})[at]), pos = o && o.getWorldPosition ? o.getWorldPosition(new THREE.Vector3()) : null;
+    const f = at && (this.stage.cast || {})[at], o = at && (this.byId[at] || (f && f.group));   // a cast member: her figure's group
+    const pos = o && o.getWorldPosition ? o.getWorldPosition(new THREE.Vector3()) : null;
     playShelf(name, pos ? { pos, camera: this.stage.camera, db } : { db });
   }
   setVisible(id, on, restoring) {
@@ -847,6 +849,7 @@ export class PlayRuntime {
     const feet = p.pos.clone();
     if (!this.busy && !this.playing && !p.seat && !p.hiding && !p.sleeping && !p.peeping && !this.moving) for (const a of ABILITIES) this.ability(a, "update", dt);
     p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
+    if (this.active && !this.busy) castSteps(this, dt, this.set("steps"));   // the cast walking about: heard where they are (steps.js)
     this.hud.setStance(p.hiding ? "hidden" : p.crouched ? "crouched" : "");
     for (const [id, d] of Object.entries(this.doors)) if (d.t < 1) {
       d.t = Math.min(1, d.t + dt / d.secs); const k = 1 - (1 - d.t) * (1 - d.t);

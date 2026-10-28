@@ -91,7 +91,7 @@ format (footsteps: the word was there already) and a step of PLAY:
 | **A peephole** | someone at the door at night, there or not | a door's `peephole`: the eye to the lens, a wide view in a round hole; `peeping` (play/peephole.js) |
 | **A power cut and the breaker** | the lights die, find the fuse box in the dark | the `power` action and trigger, `use: breaker`; candles and fires burn on (runtime's `power`) |
 | **Locking up** | the end of a shift: lock the doors (The Closing Shift, Night Security), then something tries the handle | a door's `latch`: a thumb turn inside, a click locks it; `locked` holds (play/latch.js) |
-| **Your own footsteps** | every one: the floor heard under you, an old house's boards creaking | the room's `floor` played under you, a step a stride, softer crouched (play/steps.js) |
+| **Footsteps, yours and theirs** | every one: the floor heard under you, an old house's boards creaking, someone walking upstairs | the room's `floor` played under you, a step a stride, softer crouched; the cast's from where they walk (play/steps.js) |
 
 Still not built, and why: the analogue phone (the user: "if ever"), the epilogue card (no: endings are cutscenes),
 CCTV monitors and the anomaly loop (a game of their own each, when one is built round them).

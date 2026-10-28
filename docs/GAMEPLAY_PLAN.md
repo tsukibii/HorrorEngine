@@ -188,7 +188,9 @@ playback; Generate stays the one button.
   the wooden ones, a creak now and then; stone, tile and metal the hard ones; carpet and dirt the soft ones; water the
   wet ones), a step each 0.7 m of ground really covered (1.05 m running, 0.45 m crouched and 9 dB softer), none
   standing or walking into a wall, never the same sound twice running (`play/steps.js`, the ability `steps`, its
-  settings the game's).
+  settings the game's). And the cast's: whoever walks a route, a patrol or somewhere is heard step by step from where
+  they are (placed in the room, through the walls, fainter across the house), hidden in a locker too: footsteps that
+  stop outside the door.
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,

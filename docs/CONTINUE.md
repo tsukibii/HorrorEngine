@@ -24,7 +24,8 @@ CHECKS passing before each push:
 - **The power cut** (`power` action and trigger, `use: breaker`): every bulb and lamp in the level dark (candles and
   fires burn on), the switches dead, till the breaker box.
 - **Footsteps** (`play/steps.js`): the player's steps by the room's `floor` (the format always said it sets them), a
-  step a stride of ground covered, softer crouched, a creak now and then on wood, never the same sound twice running.
+  step a stride of ground covered, softer crouched, a creak now and then on wood, never the same sound twice running;
+  and the cast's, heard from where they walk (through walls, fainter with distance), hidden in a locker too.
 - **The latch** (a door's `latch`, `play/latch.js`): a thumb turn on the inside face; a click locks the shut door or
   unlocks it; from outside it's Locked; `{"locked": door}` holds while it is (lock up, then the handle turns).
 - **From the user's notes** (`/chart`, `/build-game`): the chart script reads a mess to mop (a stain), the fuse box (a

@@ -927,6 +927,14 @@ three: the first step comes half a stride in, so a short window rounds both rate
 right (0.52 s apart walking, 0.65 s crouched). Measure what's meant (the time between steps, from the game's clock),
 not a count over a window that small.
 
+## The stage's cast are figures, not objects (2026-10-28)
+
+The cast's footsteps heard nothing on their first PLAY run: `stage.cast[id]` is a figure (its body, its head, its
+motion), and the Object3D that moves through the room is its `.group`; the code asked the figure for `visible` and a
+world position and skipped her. The runtime's `shelfSound` had made the same mistake since it was written, so a sound
+placed at a cast member played from nowhere in particular. Anything that wants where someone is asks
+`stage.cast[id].group` (or `headWorld()` for the eyes' height).
+
 ## A new way through a lock must leave the story's locks alone (2026-10-28)
 
 The latch's first PLAY run found the front door's turn saying Unlock before anyone had turned it: the Pilot's arrival

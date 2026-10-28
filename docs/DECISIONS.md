@@ -10,7 +10,7 @@ The user's answers, newest first. They override the plan, the research and the d
   to work on whatever." With three stills: a young East Asian woman's face under a soft key light on dark, her lips in
   close-up (fine lip lines, wet highlights), her eye and nose in close-up (pores, sparkle, a wet tear line).
   Built from it: the flashlight (F), cleaning (a stain scrubbed away by holding the click), the peephole, the power cut (a breaker box),
-  footsteps by the room's floor (the format's `floor` always said it sets them; Play now plays them), a door's latch (lock up
+  footsteps by the room's floor, the player's and the cast's (the format's `floor` always said it sets them; Play now plays them), a door's latch (lock up
   from inside), quick events for each on the desk (a chore, lock up, the power cut, a knock, the flashlight flickering), and the notes route for all of
   them (the chart script and the build know stains, breakers, peepholes, flashlights, the power and locking a door); the skin research in
   docs/research/skin_v2.md (the stills measured, the plan in eight steps), its first step's light as an option in the
