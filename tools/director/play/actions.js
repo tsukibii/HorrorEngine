@@ -45,6 +45,7 @@ register("action", "show", { run: (v, a, rt) => rt.setVisible(v, true) });
 register("action", "hide", { run: (v, a, rt) => rt.setVisible(v, false) });
 register("action", "door", { run: (v, a, rt) => rt.door(v, a.set || "open") });
 register("action", "light", { run: (v, a, rt) => rt.light(v, a.room, a.set || "on") });
+register("action", "torch", { run: (v, a, rt) => rt.torchSet(v) });   // the flashlight: on, off, flicker, dead, works (torch.js)
 register("action", "wait", { run: (v, a, rt) => rt.wait(+v || 0) });
 register("action", "fade", { run: (v, a, rt) => rt.fade(v === "out" ? 1 : 0, +(a.secs ?? 1)) });
 register("action", "lookat", { run: (v, a, rt) => rt.lookAt(v, +(a.secs ?? 1)) });

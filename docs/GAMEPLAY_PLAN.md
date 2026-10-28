@@ -87,7 +87,7 @@ player's hands or a mini-game by adding a file, not by changing the runtime:
 - **actions** (`do`: `objective`, `door`, `behave`, `scene`, `hide`, `trick`...)
 - **behaviours** (`idle`, `sit`, `path`, `patrol`...)
 - **interactables** (`inspect`, `note`, `pickup`, `door`, `hide`, `talk`, `switch`...)
-- **player abilities** (`walk`, `crouch`, `hide`; later `torch`, `hands`)
+- **player abilities** (`walk`, `crouch`, `hide`, `torch`: the flashlight, built 2026-10-28; later `hands`)
 
 The desk's are JS modules (`tools/director/play/<kind>/<name>.js`); Unreal's are C++ classes (or components)
 registered by the same names. One file lists every word, its settings and which side implements it
@@ -166,6 +166,10 @@ playback; Generate stays the one button.
   pad round the dot that is you, the mouse a pebble without a cable, the button or the wheel it means lit; beside each,
   in the accent, what it does as the HUD shows it: the reticle's ring, the inventory's row, a thing set down, speed
   lines, your eye coming down; `CONTROLS` in `play/menu.js`, each its Enhanced Input action for Unreal).
+- **The flashlight** (built 2026-10-28, DECISIONS: "simple game systems we are missing for Chilla's Art style horror
+  games"): an item with `torch` is one; picked up or given it's in the pocket, not the row, and **F** switches it (its
+  beam from the right hand, a moment behind the look, bobbing with the steps); the story's `torch` flickers it, kills
+  it (F only clicks) or brings it back, and hears it switched (`play/torch.js`; RUNNER_SPEC has Unreal's).
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,

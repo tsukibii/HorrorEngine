@@ -894,3 +894,10 @@ PLAY's bed step failed twice at the same place ("not lying down", the eye at 0.7
 1.1 s tween that moves at most 0.05 s a frame, and a software GPU late in the run draws about two frames a second, so
 it needed some 8 s of real time and the step waited 8. Nothing was broken. A test waiting on anything the frame loop
 drives (tweens, fades, cards) gives it the run's slowest frame rate: 60 s, as PLAY's other steps do.
+
+## A step late in a browser test may be in a new run (2026-10-28)
+
+PLAY's pause-menu step expected the flashlight's row (picked up a few steps earlier) and found it missing: by then the
+test had started a second playtest (the one that checks a new run starts from the story's level), and a new run starts
+with nothing in the pocket. The menu was right. Before asserting what a step "already has", check whether a step since
+began a new run; give the step what it needs itself (here `give("flashlight")` before the menu opens).

@@ -14,6 +14,7 @@ export const GROUPS = [
 ];
 export const MUSIC = ["silence", "calm", "uneasy", "dread", "chase"];
 export const LIGHT_SET = ["on", "off", "flicker", "dim"];
+export const TORCH_SET = ["on", "off", "flicker", "dead", "works"];      // the flashlight: dead flickers it out (F only clicks), works is new batteries
 export const DOOR_SET = ["lock", "unlock", "open", "close", "slam"];
 export const BEHAVE_AS = ["idle", "sit", "path", "patrol", "go", "off"];
 // tricks (TRICKS.md §2): each one's own fields
@@ -122,6 +123,9 @@ export const ACTIONS = [
     fields: [{ key: "light", label: "Light", kind: "light", verb: true, opt: true }, { key: "room", label: "or the room", kind: "room", opt: true },
       { key: "set", label: "to", kind: "choice", opts: LIGHT_SET }],
     make: () => ({ light: null, room: "", set: "off" }), text: (a, n) => `${a.room ? "Lights in " + n("thing", a.room) : "Light " + n("thing", a.light)}: ${a.set || "on"}` },
+  { verb: "torch", label: "Flashlight", icon: "torch", group: "world", hint: "the player's flashlight (an item marked Flashlight in the Database): on, off, a flicker, dead (it flickers out and F only clicks) or working again (new batteries)",
+    fields: [{ key: "torch", label: "Flashlight", kind: "choice", verb: true, opts: TORCH_SET }],
+    make: () => ({ torch: "flicker" }), text: a => ({ on: "The flashlight comes on", off: "The flashlight goes off", flicker: "The flashlight flickers", dead: "The flashlight dies", works: "The flashlight works again" })[a.torch] || `Flashlight: ${a.torch || "…"}` },
   { verb: "state", label: "Set a thing's state", icon: "life", group: "world", hint: "a little thing to one of its states: the kettle on, the cigarette lit, the clock stopped, the phone ringing (docs/IMMERSION.md)",
     fields: [{ key: "state", label: "Thing", kind: "life", verb: true }, { key: "to", label: "to", kind: "lifestate" }],
     make: () => ({ state: "", to: "" }), text: (a, n) => `${cap(n("thing", a.state))}: ${a.to || "…"}` },
@@ -229,6 +233,8 @@ export const TRIGGERS = [
   { verb: "rolled", label: "A die is rolled", icon: "dice", fields: [{ key: "rolled", label: "Die", kind: "die", verb: true },
     { key: "face", label: "showing", kind: "number", opt: true }, { key: "at_least", label: "or at least", kind: "number", opt: true }],
     make: () => ({ rolled: "" }), text: (w, n) => `${n("thing", w.rolled)} rolls${w.face ? " a " + w.face : w.at_least ? " " + w.at_least + " or more" : ""}` },
+  { verb: "torch", label: "The player switches the flashlight", icon: "torch", fields: [{ key: "torch", label: "Switched", kind: "choice", verb: true, opts: ["on", "off"] }],
+    make: () => ({ torch: "on" }), text: w => `the player switches the flashlight ${w.torch || "…"}` },
   { verb: "state", label: "A thing is in a state", icon: "life", fields: [{ key: "state", label: "Thing", kind: "life", verb: true },
     { key: "is", label: "is", kind: "lifestate" }], make: () => ({ state: "", is: "" }), text: (w, n) => `${n("thing", w.state)} is ${w.is || "…"}` },
   { verb: "arrived", label: "Someone gets there", icon: "person", fields: [{ key: "arrived", label: "Who", kind: "cast", verb: true }, { key: "at", label: "at", kind: "spot", opt: true }],

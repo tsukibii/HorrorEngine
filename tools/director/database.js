@@ -230,7 +230,8 @@ export class Database {
     return h("div", { class: "frm" },
       this.row("Name", this.f(it, "name", { after: () => this.retitle(it.name || id) })),
       this.row("Shape", kindSel, nums), h("p", { class: "hint tight" }, "metres; asset is a CC0 library mesh at its real size (cc0.py props)"),
-      this.row("Inspect", this.chk(it, "inspect", "turned over in the hand when picked up")));
+      this.row("Inspect", this.chk(it, "inspect", "turned over in the hand when picked up")),
+      this.row("Flashlight", this.chk(it, "torch", "F lights the way once the player has it (it goes in the pocket, not the row)")));
   }
   notesForm(n, id) {
     return h("div", { class: "frm" }, this.row("Title", this.f(n, "title", { after: () => this.retitle(n.title || id) })), this.row("Text", this.f(n, "text", { long: true, rows: 7 })),

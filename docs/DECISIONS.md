@@ -2,6 +2,15 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, later (five hours alone: Chilla's Art's small systems, else skin v2)
+
+- **The brief while away**: "I'm going afk, if there are any other simple game systems we are missing for Chilla's Art
+  style horror games feel free to add them. If you can't think of any can you research aesthetic realistic skin
+  (basically procedural skin v2 but more real like MetaHuman skin and the screenshots provided). Give yourself 5 hours
+  to work on whatever." With three stills: a young East Asian woman's face under a soft key light on dark, her lips in
+  close-up (fine lip lines, wet highlights), her eye and nose in close-up (pores, sparkle, a wet tear line).
+  Built from it: the flashlight (F).
+
 ## 2026-10-28 (the controls' symbols, our own)
 
 - **The pause menu's control symbols, more original**: "Modify the controls UI symbols to be a bit more original". The

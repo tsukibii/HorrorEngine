@@ -51,6 +51,7 @@ export class Hud {
     for (const [k, w] of [["Click", "to play"], ["W A S D", "walk"], ["Shift", "run"], [null, "use"], ["E", "inventory"], ["G", "put down"], ["C", "crouch"], ["Esc", "pause"]]) {
       const p = mk("span", "ph-pair"); p.append(k ? key(k) : mouseKey(), mk("span", "", w)); this.hint.append(p);
     }
+    this.hint.lastChild.dataset.k = "Esc";
     this.invEl = mk("div", "ph-inv"); this.invRow = mk("div", "ph-inv-row"); this.invName = mk("div", "ph-inv-name"); this.invEl.append(this.invRow, this.invName);
     this.stance = mk("div", "ph-stance");
     this.boardEl = mk("div", "ph-board"); this.flashEl = mk("div", "ph-flash");     // a board game's score; a muzzle's flash
@@ -148,6 +149,12 @@ export class Hud {
   }
   setStance(s) { this.stance.textContent = s; this.root.dataset.stance = s; }
   locked(on) { this.hint.classList.toggle("on", !on && !this.panelEl); this.root.classList.toggle("free", !on); }
+  // a key the game adds to the hint (the flashlight's F once the player has one), before Esc; once
+  hintKey(k, w) {
+    if ([...this.hint.children].some(p => p.dataset.k === k)) return;
+    const p = mk("span", "ph-pair"); p.dataset.k = k; p.append(key(k), mk("span", "", w));
+    this.hint.insertBefore(p, [...this.hint.children].find(x => x.dataset.k === "Esc") || null);
+  }
   press() {                                         // the reticle and the key press in when E is used
     for (const e of [this.cursor, this.prompt.querySelector(".ph-key")].filter(Boolean)) { e.classList.add("press"); setTimeout(() => e.classList.remove("press"), 160); }
   }

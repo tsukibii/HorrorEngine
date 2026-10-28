@@ -120,6 +120,7 @@ scene: a camera fade, and control taken and given back softly.
 | sound | at the `at` actor, 2D without it |
 | music | crossfade among `/Game/Studio/Audio/Music/<state>` (two audio components, 2 s) |
 | light | visibility; flicker as intensity × noise; `room` = every light tagged `room:<id>` |
+| torch | the player's flashlight (below): on, off, flicker (a stutter, then on), dead (flickers out; `IA_Flashlight` only clicks), works |
 | door | a class-mapped door through its interface; a greybox door rotates 95° round its hinge edge; a kit door's leaf has its pivot on its hinges (docs/KIT.md §8), so it turns about its own Z; locked = a rattle and "Locked" |
 | show, hide | hidden in game, and collision |
 | move | only while unseen (`WasRecentlyRendered(0.2)` false) |
@@ -139,7 +140,14 @@ scene: a camera fade, and control taken and given back softly.
 **Interaction** (the desk's Play is the reference: GAMEPLAY_PLAN §10, DECISIONS 2026-10-27, later):
 - The controls, as Enhanced Input actions (`CONTROLS` in play/menu.js): `IA_Move` (WASD), `IA_Interact` (the left
   mouse button: every interactable), `IA_Inventory` (E: the row shown or hidden), `IA_InventoryScroll` (the wheel),
-  `IA_Drop` (G), `IA_Run` (Shift, forward, standing), `IA_Crouch` (C), Esc pauses; the pause menu lists them on its left.
+  `IA_Drop` (G), `IA_Run` (Shift, forward, standing), `IA_Crouch` (C), `IA_Flashlight` (F, once the player has a
+  flashlight), Esc pauses; the pause menu lists them on its left (the flashlight's row only once it's had).
+- **The flashlight** (an item with `torch`, play/torch.js the reference): picked up or given, it's held, not in the
+  inventory's row. A spot light on a spring arm off the camera (rotation lag about 0.09 s, the beam starting 0.2 m right
+  and 0.2 m below the eye), a hot cone (26° full, soft edge) over a wide dim spill (62°, a fifth of the strength), 5200 K
+  by default (the item's `torch` settings over it), an IES profile or a light function for the ring a real one has;
+  shadows on (cheap: one light). F's click from the shelf (`flashlight_01`, `_02`); `torch` heard as on or off. Off
+  while a cinematic plays, back on after it if it was.
 - Class-mapped template Blueprints call `NotifyUse` through a small interface (one call each, added through MCP).
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - A little thing with a life (`life:*`) is used like one when its state has an act (Content/Studio/Life/lives.json):

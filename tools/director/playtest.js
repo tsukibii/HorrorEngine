@@ -37,6 +37,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "plush", shape: "box 0.3 0.25 0.35", at: [1.0, 3.0], use: "carry", physics: "plushie" });
     for (let i = 1; i <= 6; i++) S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "inv_" + i, shape: "box 0.08 0.08 0.08", at: [0.5 + 0.3 * ((i - 1) % 3), i <= 3 ? 5.0 : 5.4], use: "pickup", item: "inv_item_" + i });
     S.stitches.t_search.beats.push({ id: "b_inv_put", when: { dropped: "inv_6", in: "hall" }, optional: true, do: [{ flag: "inv_put" }] });
+    S.items = Object.assign(S.items || {}, { flashlight: { name: "Flashlight", torch: true } });      // the flashlight: F, and the story's torch
+    S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "torch1", shape: "cyl 0.025 0.18", at: [1.4, 5.0], use: "pickup", item: "flashlight" });
+    S.stitches.t_search.beats.push({ id: "b_torch_on", when: { torch: "on" }, optional: true, do: [{ flag: "torch_on" }] },
+      { id: "b_torch_dead", when: { flag: "kill_torch" }, optional: true, do: [{ torch: "dead" }] }, { id: "b_torch_works", when: { flag: "fix_torch" }, optional: true, do: [{ torch: "works" }] });
     S.stitches.t_search.beats.push({ id: "b_plush", when: { carrying: "plush" }, optional: true, do: [{ flag: "has_plush" }] });
     S.stitches.t_search.beats.push({ id: "b_put", when: { dropped: "plush", in: "hall" }, optional: true, do: [{ flag: "plush_put" }] });
     S.stitches.t_search.beats.push({ id: "b_put_k", when: { dropped: "plush", in: "kitchen" }, optional: true, do: [{ flag: "plush_kitchen" }] });
@@ -327,6 +331,41 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const r6 = await row(); if (r6.items.length !== 6 || r6.held !== "inv_6" || !(await page.evaluate(() => window.__dd.play.items.has("inv_item_6")))) throw new Error("taken back " + JSON.stringify(r6));
     await page.evaluate(() => { const rt = window.__dd.play; for (let i = 1; i <= 6; i++) { rt.inv.remove("inv_" + i); rt.items.delete("inv_item_" + i); } });   // out of the way of the rest
   });
+  await step("the flashlight: a pickup whose item is a torch goes in the pocket (not the row) and F is on the hint; F lights the way from the hand (the frame brighter, the beam a moment behind a turn) and is heard; the story's torch: dead flickers it out and F only clicks, works brings it back", async () => {
+    const r = await goTo("torch1", 0.8);
+    if (r.cursor !== "take") throw new Error("cursor " + r.cursor);
+    await click(); await gameWait(0.3);
+    const a = await page.evaluate(() => { const rt = window.__dd.play; return { has: rt.items.has("flashlight"), row: document.querySelectorAll(".ph-inv-i").length, light: !!rt.torchLight,
+      on: rt.torchLight && rt.torchLight.on, hint: !!document.querySelector('.ph-hint .ph-pair[data-k="F"]'), vis: rt.byId.torch1.visible }; });
+    if (!a.has || a.row || !a.light || a.on || !a.hint || a.vis) throw new Error("taken: " + JSON.stringify(a));
+    await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(1.0, 0, -2.6), 0, -12); });
+    await gameWait(0.4);
+    const lum = () => page.evaluate(() => {                 // the frame's middle, as drawn
+      const cv = window.__dd.play.stage.renderer.domElement, c = document.createElement("canvas"); c.width = c.height = 48;
+      const x = c.getContext("2d"); x.drawImage(cv, cv.width * 0.35, cv.height * 0.35, cv.width * 0.3, cv.height * 0.3, 0, 0, 48, 48);
+      const d = x.getImageData(0, 0, 48, 48).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; return s / (d.length / 4); });
+    const beam = () => page.evaluate(() => { const rt = window.__dd.play, l = rt.torchLight.hot, c = rt.stage.camera, f = new (c.position.constructor)(0, 0, -1).applyQuaternion(c.quaternion);
+      return { near: l.position.distanceTo(c.position), dot: l.target.position.clone().sub(l.position).normalize().dot(f), k: l.intensity, on: rt.torchLight.on, dead: rt.torchLight.dead }; });
+    const off = await lum();
+    await press("KeyF"); await gameWait(0.4);
+    const lit = await lum(), b1 = await beam(), heard = await flag("torch_on");
+    if (!b1.on || !(b1.k > 0) || !(b1.near < 0.45) || !(b1.dot > 0.99) || !heard) throw new Error(`F: ${JSON.stringify(b1)}, heard ${heard}`);
+    if (!(lit > off * 1.25 + 3)) throw new Error(`the beam should light the frame: ${off.toFixed(1)} off, ${lit.toFixed(1)} on`);
+    const lag = await page.evaluate(async () => {           // a brisk look left: the beam a moment behind, then on the look again
+      const rt = window.__dd.play, l = rt.torchLight.hot, c = rt.stage.camera, frame = () => new Promise(f => requestAnimationFrame(f)), t0 = rt.clock, y0 = rt.player.yaw;
+      let low = 1; while (rt.clock - t0 < 0.9) { const u = Math.min(1, (rt.clock - t0) / 0.3); rt.player.yaw = y0 + 70 * u * u * (3 - 2 * u); await frame();
+        const f = new (c.position.constructor)(0, 0, -1).applyQuaternion(c.quaternion); low = Math.min(low, l.target.position.clone().sub(l.position).normalize().dot(f)); }
+      const f = new (c.position.constructor)(0, 0, -1).applyQuaternion(c.quaternion); return { low, end: l.target.position.clone().sub(l.position).normalize().dot(f) }; });
+    if (!(lag.low < 0.995 && lag.end > 0.995)) throw new Error("the beam on a turn: " + JSON.stringify(lag));
+    await page.evaluate(() => window.__dd.play.setFlag("kill_torch")); await gameWait(1.8);
+    const b2 = await beam(); await press("KeyF"); await gameWait(0.3); const b3 = await beam();
+    if (b2.on || b2.k > 0 || !b2.dead || b3.on || b3.k > 0) throw new Error(`dead: ${JSON.stringify(b2)}, then F ${JSON.stringify(b3)}`);
+    await page.evaluate(() => window.__dd.play.setFlag("fix_torch")); await gameWait(0.2);
+    await press("KeyF"); await gameWait(0.3); const b4 = await beam();
+    await press("KeyF"); await gameWait(0.3); const b5 = await beam();
+    if (!b4.on || !(b4.k > 0) || b4.dead || b5.on || b5.k > 0) throw new Error(`works: F ${JSON.stringify(b4)}, F ${JSON.stringify(b5)}`);
+    console.log(`       the frame's middle ${off.toFixed(0)} dark, ${lit.toFixed(0)} in the beam; on a turn the beam lags to ${(Math.acos(lag.low) * 180 / Math.PI).toFixed(1)}° off the look`);
+  });
   await step("Shift runs (forward, standing): about twice the walk", async () => {
     const speed = async keys => { await page.evaluate(() => { const rt = window.__dd.play; rt.place(new (rt.player.pos.constructor)(0.8, 0, -2.6), 0, 0); });
       const x0 = await page.evaluate(() => window.__dd.play.player.pos.x), c0 = await page.evaluate(() => window.__dd.play.clock);
@@ -547,6 +586,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
       document.exitPointerLock = () => { if (window.__lock) { window.__lock = null; fire(); } };
       box.requestPointerLock = () => { window.__asks++; window.__lock = box; fire(); if (window.__escHeld) setTimeout(() => { window.__lock = null; fire(); }, 30); return Promise.resolve(); };
       box.requestPointerLock(); window.__asks = 0;
+      window.__dd.play.give("flashlight");             // (a new run: the flashlight's row shows once it's had)
     });
     const menus = () => page.evaluate(() => document.querySelectorAll(".ph-menu:not(.out)").length);
     await page.evaluate(() => document.exitPointerLock()); await page.waitForTimeout(500);   // Esc in play: the browser lets the pointer go
@@ -554,7 +594,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const ctl = await page.evaluate(() => { const c = document.querySelector(".ph-menu .ph-controls"), n = document.querySelector(".ph-menu .ph-nav"); if (!c || !n) return null;
       const a = c.getBoundingClientRect(), b = n.getBoundingClientRect();
       return { rows: [...c.querySelectorAll(".ph-ctl-label")].map(r => r.textContent), icons: c.querySelectorAll(".ph-ctl svg").length, left: a.right <= b.left + 1 && a.width > 0 }; });
-    if (!ctl || ctl.rows.join() !== "Movement,Interact,Inventory,Switch item,Drop,Run,Crouch" || ctl.icons !== 7 || !ctl.left) throw new Error("the controls on the pause menu's left: " + JSON.stringify(ctl));
+    if (!ctl || ctl.rows.join() !== "Movement,Interact,Inventory,Switch item,Drop,Run,Crouch,Flashlight" || ctl.icons !== 8 || !ctl.left) throw new Error("the controls on the pause menu's left (the flashlight's once you have it): " + JSON.stringify(ctl));
     await page.evaluate(() => { window.__escHeld = true; }); await page.keyboard.press("Escape"); await page.waitForTimeout(600); await page.evaluate(() => { window.__escHeld = false; });
     const shut = await menus(), asks = await page.evaluate(() => window.__asks);
     await page.keyboard.press("Escape"); await page.waitForTimeout(500); const open2 = await menus();

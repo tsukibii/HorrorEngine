@@ -9,6 +9,7 @@ import { runAll } from "./actions.js";
 import { playShelf, shelfName } from "../sfx.js";
 import { interactableOf } from "./interactables.js";
 import "./abilities.js";
+import { Torch } from "./torch.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
@@ -51,6 +52,7 @@ export class PlayRuntime {
     this.suspicion = 0; this.calm = 0; this.lastCaught = null;
     this.look = { id: null, t: 0, dist: Infinity }; this.target = null; this.busy = false; this.active = false; this.level = null;
     this.inv = new Inventory(this); this.hand = null;  // what the player has picked up (inventory.js); the copy of the one in the hand ({entry, x: its spring})
+    this.torchLight = null;                            // the flashlight (torch.js), made once the player has one
     this.playing = null; this.anims = []; this.boardTitles = {};   // a board game going on (its id); tweens on the game's clock
     fetch(`/api/boardgames/${encodeURIComponent(opts.game || "_")}`).then(r => (r.ok ? r.json() : {})).then(j => { for (const g of j.games || []) this.boardTitles[g.id] = g.title; }).catch(() => { });
     this.listener = null; this.ray = new THREE.Raycaster();
@@ -81,6 +83,7 @@ export class PlayRuntime {
     document.removeEventListener("pointerlockchange", this.on.lock);
     if (this.hand) { this.hand.x.m.removeFromParent(); this.hand = null; }
     if (this.iconR) { this.iconR.dispose(); this.iconR.forceContextLoss(); this.iconR = null; }
+    if (this.torchLight) { this.torchLight.remove(); this.torchLight = null; }
     document.removeEventListener("mousemove", this.on.move);
     window.removeEventListener("keydown", this.on.key); window.removeEventListener("keyup", this.on.key);
     if (document.pointerLockElement === this.box) document.exitPointerLock();
@@ -94,9 +97,10 @@ export class PlayRuntime {
     if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
       e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended
     }
-    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
+    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
     if (this.playing) return;                          // at a board game: its choices take the keys
     this.keys[e.code] = down;
+    this.ability("torch", "key", e, down);             // F: the flashlight, hidden or not
     if (down && !e.repeat && e.code === "KeyE") this.inv.toggle();        // E: the inventory's row, shown or hidden
     if (down && !e.repeat && e.code === "KeyG") this.drop();              // G: the one in the hand put down
     if (!this.player.hiding) for (const a of ABILITIES) this.ability(a, "key", e, down);
@@ -217,6 +221,19 @@ export class PlayRuntime {
   setFlag(f) { if (!f) return; this.flags.add(f); this.emit({ type: "flag", id: f }); if (this.opts.onFlag) this.opts.onFlag(f); }
   give(item) { this.items.add(item); this.hud.log(`got: ${this.itemName(item)}`); }
   itemName(id) { return ((this.story.items || {})[id] || {}).name || String(id).replace(/_/g, " "); }
+  // the flashlight (torch.js): the item with `torch` the player has; F switches it (heard as {type: "torch", on}), the
+  // story's `torch` sets it. Dead, F only clicks
+  isTorch(item) { return !!((this.story.items || {})[item] || {}).torch; }
+  torchItem() { for (const id of this.items) if (this.isTorch(id)) return this.story.items[id]; return null; }
+  torchOf() { if (!this.torchLight) { this.torchLight = new Torch(this); this.hud.hintKey("F", "flashlight"); } return this.torchLight; }
+  torchSwitch() {
+    if (!this.torchItem() || this.player.sleeping || this.inChapter) return;
+    const t = this.torchOf(); this.shelfSound(t.on ? "flashlight_02" : "flashlight_01");
+    if (t.dead) { this.hud.log("the flashlight is dead"); return; }
+    t.on = !t.on; t.flick = 0;
+    this.emit({ type: "torch", on: t.on });
+  }
+  torchSet(v) { if (!this.torchItem() && (v === "on" || v === "flicker")) { this.hud.log(`torch ${v}: the player has no flashlight`); return; } this.torchOf().set(v); }
   nameOf(t) { const p = t.userData.piece || {}, d = p.d || {}; return d.name || (p.tags || []).find(x => x.startsWith("tag:"))?.slice(4).replace(/_/g, " ") || t.userData.id.replace(/_/g, " "); }
   lineText(id) { const l = (this.story.lines || {})[id]; return l ? l.en || l.ja : null; }
   // a story sound: off the Studio's shelf when its file is sfx/<name>, placed at `at` (a thing or a cast member) when
@@ -316,6 +333,10 @@ export class PlayRuntime {
   take(t) {
     const id = t.userData.id, d = (t.userData.piece || {}).d || {}, kept = this.kept[this.level], back = (kept.brought || {})[id];
     if (this.inv.has(id)) return;
+    if (d.item && this.isTorch(d.item)) {             // a flashlight: into the pocket (F), not the row
+      this.setVisible(id, false); delete kept.bodies[id]; this.give(d.item); this.torchOf();
+      this.emit({ type: "pickup", item: d.item }); return;
+    }
     const src = t.clone(); delete src.userData.mid;
     if (back) { delete kept.brought[id]; t.removeFromParent(); const i = this.stage.solid.indexOf(t); if (i >= 0) this.stage.solid.splice(i, 1); delete this.byId[id]; }
     else this.setVisible(id, false);
@@ -682,14 +703,17 @@ export class PlayRuntime {
     if (this.held) return;
     this.held = true; this.busy = true; this.keys = {};
     if (document.pointerLockElement === this.box) document.exitPointerLock();
-    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock });
+    const v = await pauseMenu(this.hud, { game: this.gameTitle(), where: this.stitchTitle, secs: this.run ? this.run.secs + this.clock : this.clock, torch: !!this.torchItem() });
     this.held = false; this.busy = false; this.last = this.resumed = performance.now();
     if (v && v.quit) { if (this.opts.quit) this.opts.quit(v.quit); return; }
     if (v === "escaped") return;                     // closed by Esc: asking for the lock now, the browser would take the same Esc as leaving it
                                                       // and pause again (the menu opening on every Esc); a click on the view takes it
     try { await this.box.requestPointerLock(); } catch (e) { }
   }
-  hold() { this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (this.hand) this.hand.x.m.visible = false; }   // the pointer stays locked: a scene looks round with it
+  hold() {
+    this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (this.hand) this.hand.x.m.visible = false;
+    if (this.torchLight) for (const l of [this.torchLight.hot, this.torchLight.spill]) l.intensity = 0;   // the beam out while a scene plays
+  }   // the pointer stays locked: a scene looks round with it
   go() {
     if (this.stopped) return;
     this.hud.root.style.display = "";
@@ -753,6 +777,7 @@ export class PlayRuntime {
       l.intensity = (u.base || 1) * k;
     }
     this.handTick(dt);
+    if (this.torchLight) { if (!this.torchItem()) this.torchLight.on = false; this.ability("torch", "update", dt); }   // taken away: off
     for (const a of [...this.anims]) { a.t += dt; const k = Math.min(1, a.t / a.secs); a.fn(k); if (k >= 1) { this.anims.splice(this.anims.indexOf(a), 1); a.done(); } }
     this.drawNpcs(dt);
     this.watch(dt);

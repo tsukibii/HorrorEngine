@@ -26,15 +26,17 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
            "give", "take", "wait", "fade", "lookat", "shot", "seq", "anim", "stalker", "trick", "checkpoint", "done",
-           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name"}
+           "karma", "count", "scene", "behave", "ask", "state", "todo", "tick", "fail", "untodo", "chapter", "name", "torch"}
 ASK_SECS = 3.0              # the walker's time to answer an ask
 MUSIC = {"silence", "calm", "uneasy", "dread", "chase"}
 LIGHT_SET = {"on", "off", "flicker", "dim"}
+TORCH_SET = {"on", "off", "flicker", "dead", "works"}   # the flashlight (an item with `torch`): dead flickers out, works is new batteries
+TORCH_KEYS = {"kelvin": (1500, 12000), "cone": (5, 120), "range": (1, 60), "strength": (0.1, 100)}
 DOOR_SET = {"lock", "unlock", "open", "close", "slam"}
 STALKER = {"spawn", "despawn", "patrol", "hunt", "chase"}
 BEHAVE = {"idle": ("at",), "sit": ("at",), "path": ("route",), "patrol": ("routes",), "go": ("to",), "off": ()}   # a cast member in play: what each needs
@@ -211,6 +213,11 @@ def check_library(story, r):
             r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
 
 
+def torch_items(story):
+    """The items that are flashlights (`torch`: true or its settings): the player with one has F."""
+    return [k for k, it in (story.get("items") or {}).items() if isinstance(it, dict) and it.get("torch") not in (None, False)]
+
+
 def check_world(story, things, r):
     check_library(story, r)
     cast, items, notes, lines = (story.get(k, {}) for k in ("cast", "items", "notes", "lines"))
@@ -220,6 +227,10 @@ def check_world(story, things, r):
                 L.parse_shape(it["shape"])
             except ValueError as e:
                 r.err(f"item {k}: {e}")
+        tc = it.get("torch")
+        if tc is not None and tc is not True and tc is not False and not (isinstance(tc, dict) and all(
+                kk in TORCH_KEYS and isinstance(vv, (int, float)) and TORCH_KEYS[kk][0] <= vv <= TORCH_KEYS[kk][1] for kk, vv in tc.items())):
+            r.err(f"item {k}: torch is true (a flashlight: F turns it on) or {{" + ", ".join(f"{kk}: {lo}..{hi}" for kk, (lo, hi) in TORCH_KEYS.items()) + "}")
     for k, ln in lines.items():
         check_spoken(f"line {k}", ln, cast, r)
     for lid, lvl in story.get("levels", {}).items():
@@ -903,6 +914,11 @@ def check_trigger(bid, w, story, things, beats, r):
         gone = json.dumps(story.get("stitches", {}), ensure_ascii=False)
         if '"as": "go"' not in gone:
             r.err(f"{bid}: arrived {v!r}: nothing sends anyone anywhere (behave as go)")
+    elif k == "torch":                                 # the player switched the flashlight (F) on, or off
+        if v not in ("on", "off"):
+            r.err(f"{bid}: torch {v!r}: \"on\" or \"off\" (the player switched it with F)")
+        if not torch_items(story):
+            r.err(f"{bid}: torch: no item is a flashlight (an item's torch: true)")
     elif k in ("ticked", "failed"):                    # a to-do task ticked or failed; true: the list through, any failed
         if v is not True and v not in todos_of(story):
             r.err(f"{bid}: {k} {v!r}: true or a task some stitch puts on the to-do list (`todo`)")
@@ -1044,6 +1060,11 @@ def check_action(bid, a, story, things, r, stage=None):
             r.err(f"{bid}: light {v!r} isn't a light")
         if a.get("set") not in LIGHT_SET:
             r.err(f"{bid}: light set {a.get('set')!r}")
+    elif k == "torch":                                  # the flashlight: on, off, flicker, dead, works
+        if v not in TORCH_SET:
+            r.err(f"{bid}: torch {v!r} (one of {', '.join(sorted(TORCH_SET))})")
+        if not torch_items(story):
+            r.err(f"{bid}: torch: no item is a flashlight (an item's torch: true)")
     elif k == "door":
         if placed(v, "door") and things[v].kind != "door":
             r.err(f"{bid}: door {v!r} isn't a door")
@@ -1707,6 +1728,8 @@ class World:
             return any(e[0] == "answered" and e[1] == v and (w.get("option") is None or e[2] == w["option"]) for e in self.done_events)
         if k == "flag":
             return v in self.flags
+        if k == "torch":                                  # the walker switches it once it has a flashlight
+            return any(i in self.inv for i in torch_items(self.story))
         if k == "arrived":                                # she walked where a behave go sent her
             return v in self.arrived and (w.get("at") is None or self.arrived[v] == w["at"])
         if k == "ticked":                                 # holds: that task ticked, or the list through (nothing open)

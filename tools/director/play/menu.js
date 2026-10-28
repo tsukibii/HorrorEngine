@@ -55,7 +55,7 @@ export const SETTINGS = [
 const ROWS = SETTINGS.flatMap(p => p.groups.flatMap(g => g.rows));
 
 // the controls, as the pause menu shows them on its left: the keys (or the mouse), what they do drawn beside them
-// (`glyph`, below) and in words; `ue` the Enhanced Input action it is in Unreal
+// (`glyph`, below) and in words; `ue` the Enhanced Input action it is in Unreal; `only`: shown while the player has it
 export const CONTROLS = [
   { keys: ["W", "A", "S", "D"], label: "Movement", ue: "IA_Move" },
   { mouse: "click", glyph: "ring", label: "Interact", ue: "IA_Interact" },
@@ -64,6 +64,7 @@ export const CONTROLS = [
   { keys: ["G"], glyph: "down", label: "Drop", ue: "IA_Drop" },
   { keys: ["Shift"], glyph: "speed", label: "Run", ue: "IA_Run" },
   { keys: ["C"], glyph: "crouch", label: "Crouch", ue: "IA_Crouch" },
+  { keys: ["F"], glyph: "beam", label: "Flashlight", ue: "IA_Flashlight", only: "torch" },
 ];
 // the controls' symbols, the Studio's own (DECISIONS 2026-10-28): a key is a frosted tile standing on its lip, the
 // legend in its middle; W A S D a pad round the dot that is you, the ways you can go between them; the mouse a pebble
@@ -80,7 +81,7 @@ function keyCap(x, y, label, w = K, h = K) {
 }
 // what each does, round (x, y): the reticle's ring a click uses; the inventory's row, the one in the hand in the middle
 // with its mark under it (E shows it), and turned either way (the wheel); a thing set down on the floor (G); speed lines
-// (Shift); your eye coming down from where it was (C)
+// (Shift); your eye coming down from where it was (C); the flashlight's beam (F)
 const HELD = (x, y) => `<rect class="c-glyph" x="${x - 5}" y="${y - 6}" width="10" height="10" rx="2.2"/><path class="c-glyph" d="M${x - 3.5} ${y + 8.5}h7"/>`;
 const GLYPH = {
   ring: (x, y) => `<circle class="c-glyph" cx="${x}" cy="${y}" r="8.5"/><circle class="c-lit" cx="${x}" cy="${y}" r="2.2"/>`,
@@ -90,6 +91,8 @@ const GLYPH = {
   speed: (x, y) => `<path class="c-glyph faint" d="M${x - 13} ${y - 5}h7M${x - 16} ${y}h10M${x - 13} ${y + 5}h7"/><path class="c-glyph" d="M${x - 2} ${y - 7}l7 7-7 7M${x + 5} ${y - 7}l7 7-7 7"/>`,
   crouch: (x, y) => `<path class="c-glyph dash" d="M${x - 9} ${y - 11}h18"/><path class="c-glyph faint" d="M${x} ${y - 8}v4.5M${x - 2.5} ${y - 6}l2.5 2.5 2.5-2.5"/>` +
     `<circle class="c-glyph" cx="${x}" cy="${y + 2}" r="3"/><path class="c-glyph" d="M${x - 7} ${y + 12.5}c0-4.5 3-6.5 7-6.5s7 2 7 6.5"/>`,
+  beam: (x, y) => `<rect class="c-glyph" x="${x - 16}" y="${y - 2.5}" width="8" height="5" rx="1.4"/><path class="c-glyph" d="M${x - 8} ${y - 4}h3v8h-3"/>` +
+    `<path class="c-glyph faint" d="M${x - 4} ${y - 4}L${x + 13} ${y - 10}M${x - 4} ${y + 4}L${x + 13} ${y + 10}M${x + 13} ${y - 10}q3.5 10 0 20"/>`,
 };
 const glyph = (c, y) => GLYPH[c.glyph] ? GLYPH[c.glyph](GX, y) : "";
 function keysSvg(c) {
@@ -113,9 +116,9 @@ function mouseSvg(c) {                               // "click": its left button
     `<path class="c-line" d="M${x - 15} ${y + 17}Q${x} ${y + 21} ${x + 15} ${y + 17}M${x} ${y}v5M${x} ${y + 15}v4"/>` +
     (wheel ? roller("c-glow") + roller("c-lit") : roller("c-line")) + `<path class="c-edge" fill="none" d="${body}"/>` + glyph(c, y + 22));
 }
-export function controlsPanel() {
+export function controlsPanel(has = {}) {
   const box = mk("div", "ph-controls");
-  for (const c of CONTROLS) {
+  for (const c of CONTROLS.filter(c => !c.only || has[c.only])) {
     const row = mk("div", "ph-ctl"), icon = mk("div", "ph-ctl-icon");
     icon.innerHTML = c.keys ? keysSvg(c) : mouseSvg(c);
     row.title = "Unreal: " + c.ue; row.append(icon, mk("span", "ph-ctl-label", c.label)); box.append(row);
@@ -145,7 +148,7 @@ export function pauseMenu(hud, ctx) {
   return new Promise(done => {
     const s = loadSettings(), saves = read(saveKey(ctx.game), {});
     const m = mk("div", "ph-menu"), dark = mk("div", "ph-dark"), nav = mk("div", "ph-nav"), page = mk("section", "ph-page"), legend = mk("div", "ph-legend");
-    m.append(dark, controlsPanel(), nav, page, legend);
+    m.append(dark, controlsPanel(ctx), nav, page, legend);
     let at = "root", col = "nav", idx = 0, items = { nav: [], page: [] }, quit = null, confirm = null;
 
     const focus = (c, i) => {
