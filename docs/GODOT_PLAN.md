@@ -53,6 +53,8 @@ Godot has nothing like Lumen's fully dynamic GI (HDDAGI isn't merged; 4.7's Vulk
 For our small static rooms at night: bake each room's light per time of day (Blender Cycles from
 `blender_look.py`'s setups, or Godot's LightmapGI), swap the bake with the scene's `time`, VoxelGI per room for the
 flashlight's bounce, AreaLight3D (new in 4.7) for windows and screens, fog, and UltraVHS ported as a Godot shader.
+What else exists for 4.7 (forks, add-ons, what to try): docs/research/godot_lighting.md. The two add-ons to try
+in the trial: O1S_FauxGI (the flashlight's bounce) and radiance-cascades-lab (real-time GI, a prototype).
 
 ## 5. When it starts
 
