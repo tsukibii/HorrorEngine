@@ -3,12 +3,37 @@
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
 lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
-dashboard and the writers' room) on
+dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, skin v2) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
+## 0. Latest (2026-10-28, on `dev-002`, the user away five hours): four of Chilla's Art's small systems, skin v2
+
+The user's brief (DECISIONS 2026-10-28, later): add the simple systems we're missing for Chilla's Art-style games,
+else research realistic skin (v2, like MetaHuman and their three stills). Both, each step its own commit, PLAY and
+CHECKS passing before each push:
+- **The controls' symbols** on the pause menu redrawn as the Studio's own (frosted keys on their lips, W A S D a pad
+  round you, a mouse without a cable, what each does beside it in the accent).
+- **The flashlight** (`play/torch.js`): an item with `torch` goes in the pocket; F switches it; the story's `torch`
+  flickers it, kills it (F only clicks), brings it back; `{"torch": "on"}` hears F. The pause menu shows F once it's had.
+- **Cleaning** (`use: clean`, `play/clean.js`, `stain.js`): a stain scrubbed away by holding the left button, with the
+  mop in the hand if it says `with`; a ring fills, the blot fades; its `use` ticks the chore.
+- **The peephole** (a door's `peephole`, `play/peephole.js`): the eye to the lens, the other side through a wide lens
+  in a round hole; `{"peeping": door}` holds meanwhile.
+- **The power cut** (`power` action and trigger, `use: breaker`): every bulb and lamp in the level dark (candles and
+  fires burn on), the switches dead, till the breaker box.
+- **Skin v2** (docs/research/skin_v2.md, `skin_v2_sources.md`, `skin_v2/`): the stills measured (a very low-chroma
+  lit cheek, the red where the blood is, sparkle at the pore field's density, lip lines 1 mm, an 8:1 key), our skin
+  against them, the plan in eight steps each with its number. Step 1's light is built as an option: the Character
+  Studio's **reference (film)** light (lit to shadow 7.7:1, the lit cheek L\* 62, a\* 3.5, b\* 7.6 against the stills'
+  57-63, 2-6, 7-8), the old emissive glow off under it. The rest is the user's call (§6 of the note).
+- Not done: a quick task for cleaning (the desk's Quick tasks only reference what exists; a game needs stains first),
+  the writers' room/`/build-game` making stains, breakers and peepholes from notes (Claude places them by hand for now),
+  the guide's pictures (`guide/help.jpg` still shows the old keys: `guide_shots.mjs`), and Unreal for all four
+  (RUNNER_SPEC says how).
+
+## 0b. Before that (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
 
 The user's notes-to-chart route went from a syntax they'd write in to **writing any way, Claude converting it**
 (DECISIONS 2026-10-27, later). Built:

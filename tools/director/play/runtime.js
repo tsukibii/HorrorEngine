@@ -163,6 +163,7 @@ export class PlayRuntime {
   // carry on from where a scene left the eye: no cut back to a spot. Still seated or hidden when the eye is where it
   // was (a scene played from the seat or the locker)
   placeFromCamera(level, cam) {
+    this.unpeep();                                     // a scene played from the peephole (a beat on peeping): the eye comes away with it
     const p = this.player, f = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion), stay = (p.seat || p.hiding) && cam.position.distanceTo(this.eyePos()) < 0.4;
     if (!stay) { p.seat = null; this.leaveHiding(); }
     this.enterLevel(level);

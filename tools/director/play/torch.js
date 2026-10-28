@@ -47,7 +47,8 @@ export class Torch {
     if (!this.dir) this.dir = fwd.clone();
     this.dir.lerp(fwd, Math.min(1, dt / Math.max(0.01, s.lag))).normalize();      // the hand catching up with the look
     const from = cam.localToWorld(new THREE.Vector3(...s.hand)), walk = Math.min(1, (p.speed || 0) / 1.2);
-    from.y += Math.sin((rt.stepPhase || 0) + 0.6) * 0.01 * walk;                    // bobbing with the steps
+    this.phase = ((this.phase || 0) + dt * walk * Math.PI * 2 * 1.8) % (Math.PI * 2);    // about two steps a second at a walk
+    from.y += Math.sin(this.phase) * 0.01 * walk;                                   // bobbing with the steps
     const aim = from.clone().addScaledVector(this.dir, 6);
     let k = this.on && !p.peeping ? 1 : 0;                                          // (not through a peephole)
     if (this.flick > 0) {                                                         // a stutter: hashed on the clock, never steady
