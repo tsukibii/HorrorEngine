@@ -2,6 +2,46 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, evening (a new game, The Visitor: research, an abstract, then the flow; branch `game-research-001`)
+
+- **A branch and a folder for game research**: "Don't use dev-002 branch, but forked off it, make a new branch called
+  game-research-001, and make a new folder to store these game research." The folder is `docs/game_research/`, one
+  folder per game (its README has the three steps).
+- **The game, The Visitor**: "based in japan, an old female friend/crush comes to visit you, things start to go
+  weird"; "mostly based in just 1 apartment (mid sized, 2 bedrooms (1 guest), 1 bathroom, 1 kitchen + living room in
+  same room)".
+- **Three steps**: "Research: find real life scenarios or stories for inspiration. Come up with an abstract. Once I
+  approve the abstract come up with the writer block flow for the game."
+- **The opening**: "inner monologue about cleaning up the apartment, if you dont clean it she will comment on it when
+  she comes in", "a hidden timer of 2min or whatever", "2 achievements for clean/messy"; "start off with inner
+  monologue of whats happening today".
+- **The player answers with acts and thoughts**: "very inner monologue / action rather than dialogue options e.g.
+  [ Greet ] She's proabbly cold I should let her inside ? --- [ Question ] Did she always look like this ?"
+- **The play**: "little tasks and dialogue to discover whats happening", "similar to chillas games where you lift,
+  click itneract", "her dialogue to be heavily using mocapped expressions almost like LA Noire", "I dont want big
+  actionny horror run scenes", "very to do list"; "your dialogue options and analysing their expressiosn helps guide
+  to the end".
+- **Length**: "take at least 1 hour to beat (we dont let peopel skim dialogue as its appears + typewriter effect for
+  her)".
+- **The spins**: "hints at people going missing making the player think shes involved but the twist is it turns out
+  you were the villian (at least for one ending)"; "paranormal stuff and weird behaviour/tells for her"; "a kind of
+  shutter island thing where we are being led to believe one narrative but it might not be the answer"; "maybe we
+  think that she is possessed but it turns out the viewer is schizoprhenic (hinted via medications in the bathroom
+  cupboard etc)".
+- **Three endings**: "the intended ending, the other way it could have gone, and a secret hidden ending".
+- **Secrets as achievements**: "easter eggs and slight branch off flows that come back to main ... good steam
+  achievements", such as "you make her tea, but you can possible add a weird ingredient to the tea and she will comment
+  on it tasting funny".
+- **Names and lines**: "appropriate english/japanese names (japanese names written in their english format)";
+  dialogue "written in a way that makes you think she was a childhood friend, but also simple enough that we can later
+  use claude to translate the locale to Japanese".
+- Claude's proposals, **waiting for the user's yes** (docs/game_research/TheVisitor/02_abstract.md, its five calls at
+  the end): New Year's Eve in a fictional Iwate river town; the visitor is the lost girl's younger sister playing her
+  (Shutter Island's role-play), so "Did she always look like this?" is both the illness and the truth; reading her face
+  is the theme (the narrator's reading bent by paranoia, her face the evidence); three optional doses of his
+  medication that quiet the hallucinations, the same pill able to go into her tea; no smartphones (a landline, a
+  payphone, a postcard), as decided on 2026-10-27; Haruki, Natsumi, Fuyumi and Akiko, the four seasons.
+
 ## 2026-10-28, later (five hours alone: Chilla's Art's small systems, else skin v2)
 
 - **The brief while away**: "I'm going afk, if there are any other simple game systems we are missing for Chilla's Art

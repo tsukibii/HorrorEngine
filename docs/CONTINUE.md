@@ -4,12 +4,33 @@ Written 2026-10-24 (small hours, the user away; brought up to date in the aftern
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
 lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
 dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
-latch, examining, skin v2) on
+latch, examining, skin v2; 2026-10-28, evening, on `game-research-001`: The Visitor's research and abstract) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
+## 0. Latest (2026-10-28, evening, on `game-research-001`, off `dev-002`): The Visitor, steps 1 and 2
+
+The user started a new game (DECISIONS 2026-10-28, evening): The Visitor, set in Japan in one apartment, an old friend
+and crush who comes to visit. Their three steps are research, an abstract, and (once the abstract is approved) the
+writer block flow. On a new branch off `dev-002`, in a new folder:
+- `docs/game_research/README.md`: the folder (one per game, the three steps).
+- `docs/game_research/TheVisitor/01_research.md`: step 1, sourced. Missing people and jōhatsu, the seven-year
+  declaration and the mourning postcard, homes that hide things, impostors, the dead who visit (Tōno, Ishinomaki,
+  *Ghosts of the Tsunami*, itako), New Year's Eve (ōsōji, soba, the 108 bells, raihōshin, marebito, Somin Shōrai, the
+  Fire Horse), folk tells (moshi moshi, salt, Kagome Kagome, the prohibition of looking, fox possession), the mind
+  (Capgras, paranoia and faces, Japan's rename, the props of treatment, care), and the shapes we borrow.
+- `docs/game_research/TheVisitor/02_abstract.md`: step 2, the pitch. New Year's Eve; Haruki, and "Natsumi" (her
+  younger sister Fuyumi playing her); the believability ladder; what really happened; how it plays (tasks, the hidden
+  clean-up, talks read by the face with an unreliable narrator, the pills); six parts, about 75 minutes; three endings
+  (First Light, Kamikakushi, Shiki); about two dozen achievements; the lines, the faces, what we have and what's new,
+  care notes and five questions for the user.
+- **Waiting on the user:** a yes on the abstract (and its five calls). Then step 3: the flow as the writers' room's
+  chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
+  `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in
+  Content/Games.
+
+## 0a. Before that (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
 
 The user's brief (DECISIONS 2026-10-28, later): add the simple systems we're missing for Chilla's Art-style games,
 else research realistic skin (v2, like MetaHuman and their three stills). Both, each step its own commit, PLAY and
