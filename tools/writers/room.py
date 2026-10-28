@@ -415,16 +415,18 @@ def cmd_check(a):
     whens = [b["when"] for st in SL["stitches"].values() for b in st.get("beats", [])]
     usesL = {p.get("use") for lv in SL["levels"].values() for r in lv["rooms"] for p in r.get("props", [])}
     peepL = any((o.get("door") or {}).get("peephole") for lv in SL["levels"].values() for r in lv["rooms"] for o in r.get("openings", []))
+    latchL = [(o.get("door") or {}).get("id") for lv in SL["levels"].values() for r in lv["rooms"] for o in r.get("openings", []) if (o.get("door") or {}).get("latch")]
     torchL = any(v.get("torch") for v in SL["items"].values())
     powerL = [a["power"] for st in SL["stitches"].values() for b in st.get("beats", []) for a in b.get("do", []) if "power" in a]
     rL = build.check_build(L)
-    if repL["problems"] or repL["errors"] or kindsL != {"mud": "stain", "flashlight": "pickup", "breaker": "breaker", "peephole": "peephole"} \
+    if repL["problems"] or repL["errors"] or kindsL != {"mud": "stain", "flashlight": "pickup", "breaker": "breaker", "peephole": "peephole", "front door": "door"} \
             or not all(w in whens for w in ({"use": "mud"}, {"torch": "on"}, {"use": "breaker"})) or not any("pickup" in w for w in whens) \
-            or not any("peeping" in w for w in whens) or not {"clean", "breaker"} <= usesL or not peepL or not torchL or powerL != ["off", "on"] or not rL["ok"]:
-        bad(f"the small systems from notes: {repL['problems'][:2]} {repL['errors'][:2]} {kindsL} {whens} {usesL} peephole {peepL} torch {torchL} {powerL} {rL['message'][:160]}")
+            or not any("peeping" in w for w in whens) or not {"clean", "breaker"} <= usesL or not peepL or not torchL or powerL != ["off", "on"] \
+            or len(latchL) != 1 or {"locked": latchL[0]} not in whens or not rL["ok"]:
+        bad(f"the small systems from notes: {repL['problems'][:2]} {repL['errors'][:2]} {kindsL} {whens} {usesL} peephole {peepL} latch {latchL} torch {torchL} {powerL} {rL['message'][:160]}")
     else:
         ok("the small systems from notes (tools/writers/script_lights_out.txt): the mud a stain to mop, the flashlight taken and switched "
-           "on with F, the power cut and the breaker, the front door's peephole; each step heard as its own; " + rL["message"].split(":")[0])
+           "on with F, the power cut and the breaker, the front door's peephole, locking the front door by its latch; each step heard as its own; " + rL["message"].split(":")[0])
 
     # into a set (a place designed first in the scene builder: here the Pilot's house as one): each place on its room,
     # the things fitted round its furniture and doorways, a door the story opens one of its own; STORY, LEVEL, SHOTS

@@ -28,6 +28,7 @@ register("condition", "look", {                             // looked at for `se
 register("condition", "rolled", {                         // a die settled: any face, `face`, or `at_least`
   test: (v, w, ev) => ev.type === "rolled" && ev.id === v && (w.face === undefined || ev.face === w.face) && (w.at_least === undefined || ev.face >= w.at_least) });
 register("condition", "power", { test: (v, w, ev, rt) => (rt.powered() ? "on" : "off") === v });   // the level's power on or off; holds while it is
+register("condition", "locked", { test: (v, w, ev, rt) => !!rt.doorOf(v).locked });   // that door is locked (its latch, its key not yet used, the story); holds while it is
 register("condition", "peeping", { test: (v, w, ev, rt) => !!rt.player.peeping && rt.player.peeping.door === v });   // the eye at that door's peephole; holds while it is
 register("condition", "torch", { test: (v, w, ev) => ev.type === "torch" && v === (ev.on ? "on" : "off") });   // the player switched the flashlight (F) on, or off
 register("condition", "carrying", { test: (v, w, ev, rt) => !!rt.carried && (v === true || v === rt.carried.id) });   // in the hand (the inventory's one): anything, or that; holds while it is

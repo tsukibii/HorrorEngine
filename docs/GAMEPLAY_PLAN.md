@@ -179,6 +179,11 @@ playback; Generate stays the one button.
 - **The peephole** (built 2026-10-28, the same ask): a door with `peephole` has a lens on both faces; a click puts the
   eye to it (the other side through a wide lens in a round hole, a little room to look about), a click or a step takes
   it back, and `{"peeping": door}` holds meanwhile: the knock, the look, nobody there (`play/peephole.js`).
+- **The latch** (built 2026-10-28, the same ask: a shift ends locking up): a door with `latch` has a thumb turn on the
+  face of the room that holds it; a click locks it shut or unlocks it (its bar across or upright), and from that side a
+  click on the locked door unlocks it; from the other side it's Locked. It undoes only its own lock: the door the story
+  slammed and locked behind you won't turn. `{"locked": door}` holds while it is: lock up before bed, then the handle
+  turns from outside (`play/latch.js`).
 - **Footsteps** (built 2026-10-28, the same ask): the player's own steps off the sound shelf by the room's `floor` (wood
   the wooden ones, a creak now and then; stone, tile and metal the hard ones; carpet and dirt the soft ones; water the
   wet ones), a step each 0.7 m of ground really covered (1.05 m running, 0.45 m crouched and 9 dB softer), none

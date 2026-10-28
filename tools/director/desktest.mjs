@@ -149,6 +149,7 @@ console.log("quick events (templates.js)");
     chase: { seeker: Object.keys(S.cast)[0], exit: door[0], secs: 25 },
     request: { who: Object.keys(S.cast)[0], wait: of(t => t.use === "spot")[0], text: "Put the kettle on", ticks: { enter: room[1] }, after: of(t => t.use === "spot")[1], then: "sit" },
     chore: { stain: "hall_mud", with: "mop", text: "Mop up the mud", thought: "That's better." }, power_cut: { breaker: "hall_breaker" },
+    lock_up: { door: "front_door", text: "Lock the front door", thought: "There." },
     door_knock: { door: "front_door", count: 3, figure: person[0], thought: "Nobody there. Then someone." },
   };
   const made = [];
@@ -166,8 +167,8 @@ console.log("quick events (templates.js)");
   bst.stitch.beats.push(...beats); S.flow.n_qe_beats = { type: "stitch", ref: bst.tid, next: back }; made.push("n_qe_beats");
   ok(`${Q.TASKS.length} tasks and ${Q.BEATS.length} beats built: ${Q.TASKS.map(t => t.id).join(", ")}; ${Q.BEATS.map(t => t.id).join(", ")}`);
   const fd = S.levels.house.rooms.flatMap(r => r.openings || []).find(o => o.door && o.door.id === "front_door").door;
-  hall.props.find(p => p.id === "hall_mud").with === "mop" && fd.peephole === true
-    ? ok("the chore gave its stain the mop it needs, the knock gave the front door its peephole") : fail(`the level hooks: the stain's with ${hall.props.find(p => p.id === "hall_mud").with}, the door's peephole ${fd.peephole}`);
+  hall.props.find(p => p.id === "hall_mud").with === "mop" && fd.peephole === true && fd.latch === true
+    ? ok("the chore gave its stain the mop it needs, the knock gave the front door its peephole, locking up its latch") : fail(`the level hooks: the stain's with ${hall.props.find(p => p.id === "hall_mud").with}, the door's peephole ${fd.peephole}, latch ${fd.latch}`);
   const errs = run(S, th).filter(p => p.sev === "error");
   errs.length ? fail(`the live checks: ${errs.slice(0, 3).map(p => p.text + " (" + p.at.text + ")").join("; ")}`) : ok("the live checks find nothing wrong in them");
   const out = storyCheck("Sample", S), last = out.trim().split("\n").pop();

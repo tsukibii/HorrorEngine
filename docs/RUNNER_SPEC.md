@@ -160,6 +160,11 @@ scene: a camera fade, and control taken and given back softly.
   looking out (a cine camera with a wide lens and a fisheye post-process: barrel distortion, a round black mask with
   the brass rim, chromatic fringe at the edge), the look held to a cone (32° by 22°), the HUD away; `IA_Interact` or any
   move takes it back. `peeping` holds while there.
+- **The latch** (a door's `latch`, play/latch.js the reference): a thumb turn on the leaf's face in the room that holds
+  the door, a hand above the handle, with a collider a hand wide; `IA_Interact` on it locks the shut door or unlocks it
+  (its bar turned across or upright, the shelf's `latch`), and from that side `IA_Interact` on the locked door unlocks
+  it; from the other side it's locked (its `locked_by` key still opens it). It undoes only its own lock (a door the
+  story locked or a `locked_by` door won't turn). `locked` holds while it is, by anything.
 - **Cleaning** (`use: clean`, play/clean.js the reference): a stain is a decal (its kind's blot) on whatever it lies on,
   with a box collider for the trace; `IA_Interact` held on it scrubs (a progress ring on the reticle, the decal's
   opacity falling with an ease, a cloth sound every 0.36 s, the held mop or rag worked to and fro); the progress is kept

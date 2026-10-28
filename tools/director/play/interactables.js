@@ -32,17 +32,19 @@ register("interactable", "pickup", {              // a key, a cup, a letter: int
   use: (t, rt) => rt.take(t),
 });
 register("interactable", "door", {
-  settings: { cursor: "open", label: "Open", close: "Close", locked: "Locked" },
+  settings: { cursor: "open", label: "Open", close: "Close", locked: "Locked", unlock: "Unlock" },
   prompt: (t, rt, s) => {
     const d = rt.doorOf(t.userData.id);
+    if (d.latched && rt.onLatchSide(t.userData.id)) return { cursor: "use", label: s.unlock };   // its latch, turned, is on this side (latch.js)
     if (d.locked && !rt.canUnlock(d)) return { cursor: "locked", label: s.locked };
     return { cursor: s.cursor, label: d.open ? s.close : s.label };
   },
   use: (t, rt, s) => {
     const d = rt.doorOf(t.userData.id);
+    if (d.latched && rt.onLatchSide(t.userData.id)) { rt.latch(t.userData.id, false); return false; }   // the turn turned back: still shut
     if (d.locked) {
       if (!rt.canUnlock(d)) { rt.hud.shake(); rt.hud.line(s.locked + ".", "", 1.2); return; }
-      d.locked = false;
+      d.locked = d.latched = false; rt.turnLatch(t.userData.id);
       if (d.by && !d.by.startsWith("flag:")) rt.hud.log(`used: ${rt.itemName(d.by)}`);
     }
     rt.door(t.userData.id, d.open ? "close" : "open");

@@ -926,3 +926,11 @@ PLAY's footsteps step compared the steps heard in 1.6 s walking and crouched and
 three: the first step comes half a stride in, so a short window rounds both rates to the same count. The steps were
 right (0.52 s apart walking, 0.65 s crouched). Measure what's meant (the time between steps, from the game's clock),
 not a count over a window that small.
+
+## A new way through a lock must leave the story's locks alone (2026-10-28)
+
+The latch's first PLAY run found the front door's turn saying Unlock before anyone had turned it: the Pilot's arrival
+slams the front door and locks it behind you (`door` `lock`), and a thumb turn that undid any lock would have let the
+player walk straight out of the story. The latch now keeps its own lock (`latched`) apart from the door's: it locks and
+unlocks only what it locked, and against the story's lock or a key's it won't turn. Anything new that opens, unlocks or
+moves past something should first ask what else already holds it shut, and leave that alone.

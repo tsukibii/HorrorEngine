@@ -41,7 +41,8 @@ python tools/check_all.py --game <Game>
   each scene is seen from. LEVEL after each room.
 - **The small systems** (DECISIONS 2026-10-28) come built from the notes: a stain to mop (`use: clean`) by a wall,
   a breaker box (`use: breaker`) at chest height, a flashlight's item with `torch`, a door's `peephole`, the `power`
-  steps. Move the stain where the mess is (across a doorway, under the window), the breaker to the hall or a cupboard
+  steps, and a door's `latch` where the notes lock one (the step waits on `{"locked": door}`: put the latch on the door
+  they mean, the front door's inside face for locking up). Move the stain where the mess is (across a doorway, under the window), the breaker to the hall or a cupboard
   (somewhere dark to reach in a power cut), and give a stain `"with": <the mop's item>` when the notes have a mop.
 
 ## 3. Hand it over

@@ -13,6 +13,7 @@ import "./steps.js";
 import { Torch } from "./torch.js";
 import "./clean.js";
 import { lensesFor, followLeaf, LENS } from "./peephole.js";
+import { latchFor, turnBar } from "./latch.js";
 import { behaviourOf } from "./behaviours.js";
 import * as M from "../motion.js";
 import { Hud, besideAt, setName, playerName } from "./hud.js";
@@ -137,6 +138,12 @@ export class PlayRuntime {
       const pk = m.userData && m.userData.kind === "door" && ((m.userData.piece || {}).d || {}).peephole;
       if (!pk || this.lenses.some(x => x.door.userData.id === m.userData.id)) continue;
       for (const l of lensesFor(m, typeof pk === "number" ? pk : LENS.z)) { l.userData.id += l.userData.side > 0 ? ":a" : ":b"; this.stage.world.add(l); this.byId[l.userData.id] = l; this.lenses.push({ l, door: m }); followLeaf(l, m); }
+    }
+    this.latches = [];                                   // a door with a latch: its thumb turn on the face of the room that holds it (latch.js)
+    for (const m of this.stage.world.children) {
+      if (!(m.userData && m.userData.kind === "door" && ((m.userData.piece || {}).d || {}).latch) || this.latches.some(x => x.door.userData.id === m.userData.id)) continue;
+      const l = latchFor(m, this.latchSide(m)); this.stage.world.add(l); this.byId[l.userData.id] = l; this.latches.push({ l, door: m });
+      followLeaf(l, m); turnBar(l, !!this.doors[m.userData.id].latched);
     }
     for (const [id, on] of Object.entries(kept.vis)) this.setVisible(id, on, true);
     if (this.player.hiding) this.stage.seeThrough(this.player.hiding, this.stage.seeThroughOf(this.player.hiding));
@@ -288,13 +295,31 @@ export class PlayRuntime {
   canUnlock(d) { return !d.by ? false : d.by.startsWith("flag:") ? this.flags.has(d.by.slice(5)) : this.items.has(d.by); }
   door(id, set) {
     const d = this.doors[id]; if (!d) { this.hud.log(`no door ${id}`); return; }
-    if (set === "lock") { d.locked = true; return; }
-    if (set === "unlock") { d.locked = false; return; }
+    if (set === "lock" || set === "unlock") { d.locked = set === "lock"; if (!d.locked) d.latched = false; this.turnLatch(id); return; }   // the story's lock isn't the latch's
     const open = set === "open";
     if (open === d.open) return;
     d.open = open; d.from = d.deg; d.t = 0; d.secs = set === "slam" ? SLAM_SECS : DOOR_SECS;
     if (set === "slam") { this.hud.log("♪ slam"); this.shelfSound("door_slam_01", id); }
     d.to = open ? this.awayDeg(d.mesh) : 0;
+  }
+  // the latch (latch.js): which face of the leaf looks into the room that holds the door (+1 or -1 along its thickness),
+  // whether the player stands on that side, the thumb turn turned (locked or not; the bar, the shelf's latch, heard).
+  // It undoes only its own lock (`latched`): a door the story locked, or one its key opens, stays locked
+  latchSide(m) {
+    const floor = this.byId[`${(m.userData.piece || {}).room}__floor`], b = m.userData.base || { pos: m.position, rot: m.rotation.y };
+    return !floor ? 1 : floor.position.clone().sub(b.pos).dot(new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rot)) >= 0 ? 1 : -1;
+  }
+  onLatchSide(id) {
+    const x = (this.latches || []).find(x => x.door.userData.id === id); if (!x) return false;
+    const b = x.door.userData.base || { pos: x.door.position, rot: x.door.rotation.y };
+    return this.player.pos.clone().sub(b.pos).dot(new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rot)) * x.l.userData.side > 0;
+  }
+  turnLatch(id) { const d = this.doors[id]; for (const x of this.latches || []) if (x.door.userData.id === id) turnBar(x.l, !!(d && d.latched)); }
+  latch(id, on) {
+    const d = this.doors[id]; if (!d || d.open || (on ? d.locked : !d.latched)) return;
+    d.locked = d.latched = on; this.turnLatch(id); this.shelfSound("latch", id);
+    this.hud.log(`${on ? "locked" : "unlocked"}: ${id}`);
+    this.emit({ type: "locked", id, on });
   }
   awayDeg(m) {                                          // open away from the player: try both ways, keep the farther
     const far = deg => { this.stage.swingDoor(m, deg); m.updateMatrixWorld(); return m.getWorldPosition(new THREE.Vector3()).distanceTo(this.player.pos); };
@@ -829,6 +854,7 @@ export class PlayRuntime {
       if (d.t >= 1 && !d.open) this.emit({ type: "closed", id });
     }
     for (const x of this.lenses || []) followLeaf(x.l, x.door);
+    for (const x of this.latches || []) followLeaf(x.l, x.door);
     for (const t of this.triggers) {
       const now = this.isIn(t), was = this.inside.has(t.id);
       if (now && !was) { this.inside.add(t.id); this.emit({ type: "enter", id: t.id }); }

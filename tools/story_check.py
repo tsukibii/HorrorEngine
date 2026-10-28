@@ -26,7 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp1252; the script is Japanese
 
 TRIGGERS = {"start", "enter", "exit", "use", "pickup", "read", "look", "after", "flag", "all", "any", "caught", "rolled", "hidden",
-            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power"}
+            "answered", "carrying", "dropped", "played", "state", "ticked", "failed", "arrived", "torch", "peeping", "power", "locked"}
 TRIGGER_EXTRA = {"secs", "within", "face", "at_least", "option", "in", "result", "is", "at"}
 BOARDS = {}                 # the board games this game's tables can have (storylib.board_games), set in main
 ACTIONS = {"say", "think", "sound", "music", "light", "door", "show", "hide", "move", "objective", "flag", "unflag",
@@ -214,6 +214,22 @@ def check_library(story, r):
             r.warn(f"{who}: previs_body {f} isn't in Content/Studio/Bodies on this machine (the director falls back)")
 
 
+def story_locks(story):
+    """The doors some `door` action locks ({"door": id, "set": "lock"}), anywhere in the stitches and scenes."""
+    out = set()
+    def walk(x):
+        if isinstance(x, dict):
+            if x.get("set") == "lock" and isinstance(x.get("door"), str):
+                out.add(x["door"])
+            for y in x.values():
+                walk(y)
+        elif isinstance(x, list):
+            for y in x:
+                walk(y)
+    walk([story.get("stitches", {}), story.get("scenes", {})])
+    return out
+
+
 def torch_items(story):
     """The items that are flashlights (`torch`: true or its settings): the player with one has F."""
     return [k for k, it in (story.get("items") or {}).items() if isinstance(it, dict) and it.get("torch") not in (None, False)]
@@ -298,6 +314,8 @@ def check_world(story, things, r):
                 pk = (op.get("door") or {}).get("peephole")
                 if pk is not None and pk is not True and not (isinstance(pk, (int, float)) and not isinstance(pk, bool) and 1.0 <= pk <= 1.9):
                     r.err(f"door {op['door'].get('id')}: peephole is true (at 1.52 m) or its height on the door, 1.0 to 1.9 m")
+                if op.get("door") and op["door"].get("latch") not in (None, True, False):
+                    r.err(f"door {op['door'].get('id')}: latch is true or false (a thumb turn on the side of the room that holds it)")
                 if op.get("door") and op["door"].get("swing", "in") not in ("in", "out", "slide"):
                     r.err(f"door {op['door'].get('id')}: swing {op['door']['swing']!r} isn't in, out or slide")
                 if op.get("door") and op["door"].get("locked_by"):
@@ -930,6 +948,11 @@ def check_trigger(bid, w, story, things, beats, r):
     elif k == "power":                                 # the level's power on or off; holds while it is
         if v not in ("on", "off"):
             r.err(f"{bid}: power {v!r}: \"on\" or \"off\"")
+    elif k == "locked":                                # that door is locked (its latch, its key not yet used, a door lock); holds while it is
+        if v not in things or things[v].kind != "door":
+            r.err(f"{bid}: locked {v!r} isn't a door")
+        elif not (things[v].d.get("latch") or things[v].d.get("locked_by")) and v not in story_locks(story):
+            r.err(f"{bid}: locked {v!r}: nothing ever locks it (no latch, no locked_by, no door lock)")
     elif k == "peeping":                               # the player's eye at that door's peephole; holds while it is
         if v not in things or things[v].kind != "door" or not things[v].d.get("peephole"):
             r.err(f"{bid}: peeping {v!r} isn't a door with a peephole (its door's \"peephole\": true)")
@@ -1727,6 +1750,9 @@ class World:
             return ("start", self.cur) in self.done_events
         if k in ("enter", "exit", "look", "rolled", "played", "peeping"):   # rolled, played: the walker plays until the face, the result, comes up; peeping: it looks through
             return self.can_reach(v)
+        if k == "locked":                                 # locked already, or the walker turns its latch from the room that holds it
+            t = self.things.get(v)
+            return self.door_locked(v) or bool(t and t.d.get("latch") and t.room in self.reachable_rooms())
         if k == "hidden":                                 # the walker gets into that locker, or the nearest one it can reach
             return any(self.can_reach(t.id) for t in self.things.values() if t.use == "locker" and (v is True or t.id == v))
         if k == "carrying":                               # the walker picks it up (that thing, or any it can reach)

@@ -617,6 +617,12 @@ class Builder:
             return {"pickup": t["item"]}
         if k == "peephole":
             return {"peeping": t["door"]}
+        if k == "door" and (st.get("said") or "").split()[:1] == ["lock"]:   # "lock the front door": its latch, turned from inside
+            for r in self.rooms.rooms.values():
+                for op in r.get("openings", []):
+                    if (op.get("door") or {}).get("id") == t["prop"]:
+                        op["door"]["latch"] = True
+            return {"locked": t["prop"]}
         if k == "carry":
             return {"dropped": t["prop"]} if st.get("verb") == "put" else {"carrying": t["prop"]}
         return {"use": t["prop"]}

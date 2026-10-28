@@ -25,19 +25,22 @@ CHECKS passing before each push:
   fires burn on), the switches dead, till the breaker box.
 - **Footsteps** (`play/steps.js`): the player's steps by the room's `floor` (the format always said it sets them), a
   step a stride of ground covered, softer crouched, a creak now and then on wood, never the same sound twice running.
+- **The latch** (a door's `latch`, `play/latch.js`): a thumb turn on the inside face; a click locks the shut door or
+  unlocks it; from outside it's Locked; `{"locked": door}` holds while it is (lock up, then the handle turns).
 - **From the user's notes** (`/chart`, `/build-game`): the chart script reads a mess to mop (a stain), the fuse box (a
-  breaker), a peephole, a flashlight and the power going and coming back; the build places each.
+  breaker), a peephole, a flashlight, the power going and coming back, and locking a door (its latch); the build places
+  each.
 - **Skin v2** (docs/research/skin_v2.md, `skin_v2_sources.md`, `skin_v2/`): the stills measured (a very low-chroma
   lit cheek, the red where the blood is, sparkle at the pore field's density, lip lines 1 mm, an 8:1 key), our skin
   against them, the plan in eight steps each with its number. Step 1's light is built as an option: the Character
   Studio's **reference (film)** light (lit to shadow 7.7:1, the lit cheek L\* 62, a\* 3.5, b\* 7.6 against the stills'
   57-63, 2-6, 7-8), the old emissive glow off under it. The rest is the user's call (§6 of the note).
 - **Quick events** for them on the desk (`templates.js`): *A chore: clean up a mess* (on the to-do list, its stain
-  given the mop it needs), *The power cut* (find the breaker box), *A knock at the door* (its door given a peephole;
+  given the mop it needs), *A chore: lock the door* (its door given a latch), *The power cut* (find the breaker box), *A knock at the door* (its door given a peephole;
   someone shown while you look, gone after), and the quick beat *The flashlight flickers* (or dies). The pickers know
   stains and breaker boxes; DESK builds each into the Sample.
 - Not done: the guide's pictures (`guide/help.jpg` still shows the old keys: `guide_shots.mjs`), the shelf's own dirt and metal
-  steps (they borrow carpet's and concrete's), and Unreal for all five (RUNNER_SPEC says how).
+  steps (they borrow carpet's and concrete's), and Unreal for all six (RUNNER_SPEC says how).
 
 ## 0b. Before that (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
 

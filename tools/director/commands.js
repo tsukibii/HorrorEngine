@@ -238,6 +238,8 @@ export const TRIGGERS = [
     make: () => ({ rolled: "" }), text: (w, n) => `${n("thing", w.rolled)} rolls${w.face ? " a " + w.face : w.at_least ? " " + w.at_least + " or more" : ""}` },
   { verb: "power", label: "The power is on or off", icon: "light", fields: [{ key: "power", label: "Power", kind: "choice", verb: true, opts: ["off", "on"] }],
     make: () => ({ power: "on" }), text: w => `the power is ${w.power || "…"}` },
+  { verb: "locked", label: "A door is locked", icon: "door", hint: "holds while it's locked: the player turned its latch (a door's latch), its key not yet used, or a door lock",
+    fields: [{ key: "locked", label: "Door", kind: "door", verb: true }], make: () => ({ locked: "" }), text: (w, n) => `${n("thing", w.locked)} is locked` },
   { verb: "peeping", label: "The player looks through a peephole", icon: "eye", fields: [{ key: "peeping", label: "Door", kind: "door", verb: true }],
     make: () => ({ peeping: "" }), text: (w, n) => `the player looks through ${n("thing", w.peeping)}'s peephole` },
   { verb: "torch", label: "The player switches the flashlight", icon: "torch", fields: [{ key: "torch", label: "Switched", kind: "choice", verb: true, opts: ["on", "off"] }],

@@ -81,7 +81,7 @@ inventory beyond what you carry, stats, combat, more mini-games than the board g
 
 The user, going away for five hours: "if there are any other simple game systems we are missing for Chilla's Art style
 horror games feel free to add them". With the to-do list, nights as chapters and the request built, and the phone and
-the epilogue declined, five more of the small things their games keep doing, each a part of Play, a word of the story
+the epilogue declined, six more of the small things their games keep doing, each a part of Play, a word of the story
 format (footsteps: the word was there already) and a step of PLAY:
 
 | What | Where they use it **(known)** | Ours |
@@ -90,6 +90,7 @@ format (footsteps: the word was there already) and a step of PLAY:
 | **Chores you do with your hands** | the shift: mopping, wiping tables (The Convenience Store, The Closing Shift) | `use: clean`: a stain scrubbed away by holding the click, with the mop in the hand (play/clean.js, stain.js) |
 | **A peephole** | someone at the door at night, there or not | a door's `peephole`: the eye to the lens, a wide view in a round hole; `peeping` (play/peephole.js) |
 | **A power cut and the breaker** | the lights die, find the fuse box in the dark | the `power` action and trigger, `use: breaker`; candles and fires burn on (runtime's `power`) |
+| **Locking up** | the end of a shift: lock the doors (The Closing Shift, Night Security), then something tries the handle | a door's `latch`: a thumb turn inside, a click locks it; `locked` holds (play/latch.js) |
 | **Your own footsteps** | every one: the floor heard under you, an old house's boards creaking | the room's `floor` played under you, a step a stride, softer crouched (play/steps.js) |
 
 Still not built, and why: the analogue phone (the user: "if ever"), the epilogue card (no: endings are cutscenes),

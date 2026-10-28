@@ -102,6 +102,12 @@ The **flow** joins scenes and stitches with **choices** and ends at **endings**.
   faces (DECISIONS 2026-10-28). In Play a click on it puts the eye to it: the other side through a wide lens in a round
   hole, a little room to look about; a click or a step takes the eye back. `{"peeping": door}` holds while the eye is
   there (whoever knocked, there or not). The scene builder's door has its box.
+- `latch: true`: a thumb turn on the door's face in the room that holds it (DECISIONS 2026-10-28, later: a shift ends
+  locking up). In Play a click on it locks the shut door or unlocks it, and from that side a click on the locked door
+  unlocks it too; from the other side it's locked (its `locked_by` key, if it has one, still opens it). It undoes only
+  its own lock: a door the story locked (`door` `lock`: it slams and locks behind you) or a `locked_by` door stays
+  locked from both sides till the story or its key opens it. `{"locked": door}` holds while it's locked, by anything.
+  The scene builder's door has its box.
 - An opening on a wall that also serves an upper floor (a stairwell's door onto the landing) has its `sill` at that
   floor's height.
 
@@ -427,6 +433,7 @@ moment that used one becomes a dialogue answer (`choose`, its `default` the sile
 | `{"failed": task}`, `{"failed": true}` | that task is failed, or (true) any task is; holds while it is |
 | `{"power": "off"}`, `{"power": "on"}` | the level's power is out (a `power` action or the player at a breaker) or on; holds while it is |
 | `{"peeping": door}` | the player's eye is at that door's peephole (`peephole: true`); holds while it is |
+| `{"locked": door}` | that door is locked: its `latch` turned, its `locked_by` key not yet used, or a `door` `lock`; holds while it is |
 | `{"torch": "on"}`, `{"torch": "off"}` | the player switched the flashlight on or off with **F** (either: `any` of both) |
 | `{"rolled": die, "face": 6}`, `"at_least": 5` | a die (`use: roll`) settled; no face means any roll. A roll is chance, so a beat that needs a face is `optional` or `secret` (the check warns otherwise): `{"when": {"rolled": "big_die", "face": 6}, "secret": true, "do": [{"flag": "lucky"}]}`, then a flag choice sends `lucky` down a side path that rejoins the main line (§5) |
 

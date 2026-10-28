@@ -41,7 +41,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_stain", shape: "box 0.7 0.5 0.01", at: [3.0, 1.5], use: "clean", stain: "mud", secs: 2, with: "mop" },
       { id: "mop1", shape: "box 0.06 0.06 0.5", at: [1.0, 4.0], use: "pickup", item: "mop" });
     S.stitches.t_search.beats.push({ id: "b_clean", when: { use: "hall_stain" }, optional: true, do: [{ flag: "stain_clean" }] });
-    S.levels.house.rooms.find(r => r.id === "hall").openings.find(o => o.door && o.door.id === "front_door").door.peephole = true;   // a lens in the front door
+    Object.assign(S.levels.house.rooms.find(r => r.id === "hall").openings.find(o => o.door && o.door.id === "front_door").door, { peephole: true, latch: true });   // a lens in the front door, a latch inside
+    S.stitches.t_search.beats.push({ id: "b_locked", when: { all: [{ locked: "front_door" }, { flag: "latch_test" }] }, optional: true, do: [{ flag: "front_locked" }] });
     S.levels.house.rooms.find(r => r.id === "hall").props.push({ id: "hall_breaker", shape: "box 0.3 0.1 0.4", at: [3.85, 0.6], z: 1.3, use: "breaker", tag: "breaker" });
     S.stitches.t_search.beats.push({ id: "b_cut", when: { flag: "cut_power" }, optional: true, do: [{ power: "off" }] },
       { id: "b_power_back", when: { power: "on" }, if: ["cut_power"], optional: true, do: [{ flag: "power_back" }] });
@@ -420,6 +421,29 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await press("KeyS"); await gameWait(0.3);
     const b = await s();
     if (b.peeping || b.mask || b.limit || Math.abs(b.fov - before.fov) > 0.5 || Math.sign(b.cz - b.dz) !== Math.sign(before.z - a.dz)) throw new Error("a step back: " + JSON.stringify(b));
+  });
+  await step("the latch: the front door the story locked behind you won't turn (Locked); unlocked, its thumb turn (on the hall's side, by the handle) says Lock, a click locks it shut (its bar across, locked heard); from the porch the door is Locked; from the hall the door says Unlock and a click unlocks it, still shut", async () => {
+    await page.evaluate(() => window.__dd.play.door("front_door", "close")); await gameWait(1.2);
+    const r0 = await goTo("front_door:latch", 0.6), label0 = await page.evaluate(() => [document.querySelector(".ph-prompt").textContent, window.__dd.play.doorOf("front_door").locked]);
+    if (r0.cursor !== "locked" || !/^locked/i.test(label0[0]) || !label0[1]) throw new Error(`the story's lock: the turn ${r0.cursor}, ${label0}`);
+    await page.evaluate(() => { const rt = window.__dd.play; rt.door("front_door", "unlock"); rt.setFlag("latch_test"); }); await gameWait(0.3);
+    const r = await goTo("front_door:latch", 0.6), label = await page.evaluate(() => document.querySelector(".ph-prompt").textContent);
+    const side = await page.evaluate(() => { const rt = window.__dd.play, l = rt.byId["front_door:latch"].getWorldPosition(new (rt.player.pos.constructor)()); return { y: -l.z, hall: -rt.player.pos.z > 0 }; });
+    if (r.cursor !== "use" || !/^lock/i.test(label) || !(side.y > 0) || !side.hall) throw new Error(`the turn: cursor ${r.cursor}, ${label}, ${JSON.stringify(side)}`);
+    await click(); await gameWait(0.4);
+    const L = await page.evaluate(() => { const rt = window.__dd.play; return { locked: rt.doorOf("front_door").locked, bar: rt.byId["front_door:latch"].userData.bar.rotation.y, heard: window.__dd.run.flags.has("front_locked") }; });
+    if (!L.locked || Math.abs(L.bar - Math.PI / 2) > 0.01 || !L.heard) throw new Error(`locking: ${JSON.stringify(L)}`);
+    const out = await page.evaluate(() => { const rt = window.__dd.play, V = rt.player.pos.constructor, d = rt.byId.front_door, at = d.getWorldPosition(new V());
+      rt.place(new V(at.x, 0, at.z + 0.9), 90, 0); const eye = rt.eyePos(), c = rt.stage.camera; rt.player.pitch = Math.atan2(at.y - eye.y, 0.9) * 180 / Math.PI;
+      c.position.copy(eye); c.rotation.order = "YXZ"; c.rotation.set(rt.player.pitch * Math.PI / 180, 0, 0); c.updateMatrixWorld(); rt.updateCursor(0);
+      return { target: rt.target && rt.target.userData.id, cursor: document.querySelector(".ph-cursor").dataset.cursor, label: document.querySelector(".ph-prompt").textContent }; });
+    if (out.target !== "front_door" || out.cursor !== "locked" || !/locked/i.test(out.label)) throw new Error(`from the porch: ${JSON.stringify(out)}`);
+    const r2 = await goTo("front_door", 0.8), label2 = await page.evaluate(() => document.querySelector(".ph-prompt").textContent);
+    if (r2.cursor !== "use" || !/unlock/i.test(label2)) throw new Error(`the door from the hall: ${r2.cursor}, ${label2}`);
+    await click(); await gameWait(0.4);
+    const U = await page.evaluate(() => { const rt = window.__dd.play; return { locked: rt.doorOf("front_door").locked, open: rt.doorOf("front_door").open, bar: rt.byId["front_door:latch"].userData.bar.rotation.y }; });
+    if (U.locked || U.open || Math.abs(U.bar) > 0.01) throw new Error(`unlocking: ${JSON.stringify(U)}`);
+    await page.evaluate(() => window.__dd.play.door("front_door", "lock"));   // as the story left it
   });
   await step("the power cut: the hall's lamp goes dark (a power action); the breaker box says Power on, a click brings the lights back flickering up, and it's heard", async () => {
     const lit = () => page.evaluate(() => window.__dd.play.byId.hall_lamp.intensity);

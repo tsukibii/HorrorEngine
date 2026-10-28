@@ -521,6 +521,7 @@ function renderProps() {
     box.append(grid);
     if (op.type === "door" || op.type === "slide") box.append(check(op.creak, "creaks", v => { op.creak = v; }));
     if (op.type === "door") box.append(check(!!(op.extra || {}).peephole, "a peephole (look through it in Play)", v => { op.extra = op.extra || {}; if (v) op.extra.peephole = true; else delete op.extra.peephole; }));
+    if (op.type === "door") box.append(check(!!(op.extra || {}).latch, "a latch (locked from this room in Play)", v => { op.extra = op.extra || {}; if (v) op.extra.latch = true; else delete op.extra.latch; }));
     if (op.type === "window") box.append(windowEditor(op));
     if (op.type === "door" || op.type === "slide") box.append(doorEditor(op));
     const del = document.createElement("button"); del.textContent = "Remove"; del.onclick = () => removeSel(); box.append(document.createElement("br"), del);
