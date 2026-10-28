@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { FBXLoader } from "./vendor/FBXLoader.js";
 import * as SkeletonUtils from "./vendor/SkeletonUtils.js";
+import { skinLit, setSkinLit } from "../shared/skinlight.js";
 
 const norm = s => s.toLowerCase().replace(/mixamorig\d*/g, "").replace(/[^a-z0-9]/g, "");
 const SIDED = {   // previs joint (without side) -> candidate names, X = the side ("l"/"left", "r"/"right")
@@ -232,6 +233,10 @@ export class BodyFigure {
     };
     clay.customProgramCacheKey = () => "inkcel-squash";
     this.model.traverse(o => { if (o.isMesh) { if (!opts.keepMaterials) o.material = clay; o.frustumCulled = false; o.castShadow = false; } });
+    if (opts.keepMaterials) this.model.traverse(o => {      // a Studio export's skin, lit as the Studio lights it (its studioSkin; its maps: the relief, the roughness, the thinness)
+      const m = o.isMesh && o.material, sk = m && m.userData && m.userData.studioSkin;
+      if (sk && !m.userData.skinLit) { skinLit(m, { thin: "map" }); setSkinLit(m, sk); }
+    });
     const { map, missing } = mapBones(this.model);
     this.map = map; this.missing = missing;
     this.ok = missing.length <= 2;

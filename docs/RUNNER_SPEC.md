@@ -97,8 +97,8 @@ scene: a camera fade, and control taken and given back softly.
   `warn` seconds of "!" before.
 - The result is stored for the scene node, and the event's `on` actions run.
 - Inputs map to Enhanced Input actions (Interact, mouse delta).
-- **Replies (format 3):** after a clip with `reply`, two prompts at the bottom of the screen, left and right (the
-  Japanese over the English, in the player's language), for `wait` seconds while her face holds (`wait_expr`, then
+- **Replies (format 3):** after a clip with `reply`, two or three prompts at the bottom centre under her line (in the
+  player's language, no Japanese over them: DECISIONS 2026-10-27, notes; each with its `think` under it), for `wait` seconds while her face holds (`wait_expr`, then
   the idle); picking one runs its `sets` and plays its `then` take; on time out the answer is skipped (or the
   `timeout` option's plays), and the next clip follows. Left and right map to the mouse buttons and the pad's
   shoulders.
@@ -120,6 +120,8 @@ scene: a camera fade, and control taken and given back softly.
 | sound | at the `at` actor, 2D without it |
 | music | crossfade among `/Game/Studio/Audio/Music/<state>` (two audio components, 2 s) |
 | light | visibility; flicker as intensity × noise; `room` = every light tagged `room:<id>` |
+| power | the level's power: off, every light not tagged `kind:candle` or `kind:fire` dark (its own on or off kept), the switches dead; on, they come back with a 0.9 s flicker |
+| torch | the player's flashlight (below): on, off, flicker (a stutter, then on), dead (flickers out; `IA_Flashlight` only clicks), works |
 | door | a class-mapped door through its interface; a greybox door rotates 95° round its hinge edge; a kit door's leaf has its pivot on its hinges (docs/KIT.md §8), so it turns about its own Z; locked = a rattle and "Locked" |
 | show, hide | hidden in game, and collision |
 | move | only while unseen (`WasRecentlyRendered(0.2)` false) |
@@ -136,13 +138,57 @@ scene: a camera fade, and control taken and given back softly.
 | state | a little thing's state (docs/IMMERSION.md): its actor (tagged `life:<name>`) told through its life's Blueprint (class_map's `life` table, once made); its timers run on the game's clock, so a kettle switched on boils by itself; `{"state": id, "is": s}` holds while it's in that state |
 | done | ends the stitch |
 
-**Interaction:**
+**Interaction** (the desk's Play is the reference: GAMEPLAY_PLAN §10, DECISIONS 2026-10-27, later):
+- The controls, as Enhanced Input actions (`CONTROLS` in play/menu.js): `IA_Move` (WASD), `IA_Interact` (the left
+  mouse button: every interactable), `IA_Inventory` (E: the row shown or hidden), `IA_InventoryScroll` (the wheel),
+  `IA_Drop` (G), `IA_Run` (Shift, forward, standing), `IA_Crouch` (C), `IA_Flashlight` (F, once the player has a
+  flashlight), Esc pauses; the pause menu lists them on its left (the flashlight's row only once it's had).
+- **The flashlight** (an item with `torch`, play/torch.js the reference): picked up or given, it's held, not in the
+  inventory's row. A spot light on a spring arm off the camera (rotation lag about 0.09 s, the beam starting 0.2 m right
+  and 0.2 m below the eye), a hot cone (26° full, soft edge) over a wide dim spill (62°, a fifth of the strength), 5200 K
+  by default (the item's `torch` settings over it), an IES profile or a light function for the ring a real one has;
+  shadows on (cheap: one light). F's click from the shelf (`flashlight_01`, `_02`); `torch` heard as on or off. Off
+  while a cinematic plays, back on after it if it was.
 - Class-mapped template Blueprints call `NotifyUse` through a small interface (one call each, added through MCP).
 - Greybox `use:*` blocks get the runner's own 2 m interact trace.
 - A little thing with a life (`life:*`) is used like one when its state has an act (Content/Studio/Life/lives.json):
-  the prompt is the act's label, E moves it to the act's state, and `use` is heard.
-- Widgets (UMG, kept plain): subtitles, the objective, the note reader, the keypad, the inventory, the ending card,
-  the debug HUD, the floating prompt and the floating choice (play/ui/hud.css is the layout: four places, one rule each).
+  the prompt is the act's label, a click moves it to the act's state, and `use` is heard.
+- **The breaker** (`use: breaker`): `IA_Interact` throws it (the power off or on for its level, `use` heard); a
+  `switch` with the power out only clicks and says No power.
+- **The peephole** (a door's `peephole`, play/peephole.js the reference): a lens on both faces of the leaf at its
+  height, with a collider a hand wide for the trace; used, the view blends to a camera just outside the far face
+  looking out (a cine camera with a wide lens and a fisheye post-process: barrel distortion, a round black mask with
+  the brass rim, chromatic fringe at the edge), the look held to a cone (32° by 22°), the HUD away; `IA_Interact` or any
+  move takes it back. `peeping` holds while there.
+- **Examining** (`use: inspect` on a thing whose longest side is 0.6 m or less, play/examine.js the reference): the
+  actor's mesh copied onto a component on the camera (0.36 m ahead, its longest side 0.17 m, a thing lying flat tilted
+  to show its top), drawn after the world (custom depth or an overlay pass, so it never sinks into a wall), a small warm
+  light at the right shoulder; the original hidden; a mouse drag turns it about the view's axes, the text widget
+  under it; Esc or E puts it back, and `use` is heard then. Bigger things keep the text widget.
+- **The latch** (a door's `latch`, play/latch.js the reference): a thumb turn on the leaf's face in the room that holds
+  the door, a hand above the handle, with a collider a hand wide; `IA_Interact` on it locks the shut door or unlocks it
+  (its bar turned across or upright, the shelf's `latch`), and from that side `IA_Interact` on the locked door unlocks
+  it; from the other side it's locked (its `locked_by` key still opens it). It undoes only its own lock (a door the
+  story locked or a `locked_by` door won't turn). `locked` holds while it is, by anything.
+- **Cleaning** (`use: clean`, play/clean.js the reference): a stain is a decal (its kind's blot) on whatever it lies on,
+  with a box collider for the trace; `IA_Interact` held on it scrubs (a progress ring on the reticle, the decal's
+  opacity falling with an ease, a cloth sound every 0.36 s, the held mop or rag worked to and fro); the progress is kept
+  per stain (let go, it waits); `with` must be the item in the hand; clean, it's hidden and `use` heard.
+- **Footsteps** (a room's `floor`, play/steps.js the reference): the importer gives each room's floor a physical
+  material by its word (`PM_Wood`, `PM_Stone`, `PM_Carpet`, `PM_Tile`, `PM_Dirt`, `PM_Metal`, `PM_Water`); the player
+  steps every 0.7 m of ground covered (1.05 m running, 0.45 m crouched), a trace down picks the sound by the material
+  (a MetaSound picking at random, never the one just played; on wood a creak about one step in twelve), -8 dB walking,
+  -4 running, -17 crouched; none in a cinematic, seated, hidden or at a lens. The cast's too: a walking cast member's
+  steps every 0.65 m from where they are (an attenuated 3D sound, heard through walls, fainter with distance: the
+  stalker in the next room), whenever the player has the controls (hidden or seated too), not in a cinematic.
+- **The inventory:** a `pickup` or a `carry` thing used goes into one row (its item given), the newest in the hand,
+  held in view; the wheel turns the row, the one in the hand in the middle, at most five shown; Drop sets it down in
+  front of the player on whatever is under that spot (no physics fall), facing them, and `dropped` (with the rooms it's
+  in) is heard; the item is gone with it. Kept with the run (the checkpoint's inventory: the things, their order, the
+  one in the hand).
+- Widgets (UMG, kept plain): subtitles, the objective, the note reader, the keypad, the inventory's row (frosted glass
+  fading at its ends, no border), the ending card, the debug HUD, the floating prompt and the floating choice
+  (play/ui/hud.css is the layout: four places, one rule each).
 
 ## Debug (the console), for Claude as much as for you
 

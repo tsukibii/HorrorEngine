@@ -74,6 +74,8 @@ def check(story, level=None):
         if any(t.startswith("door_part:") for t in a["tags"]):   # a door's frame and handle belong to its doorway
             continue
         for w in ([] if "in_wall" in a["tags"] else walls):
+            if w.get("level") != a.get("level"):           # each level is its own map: another one's walls aren't here
+                continue
             o = overlap(ba, aabb(w))
             if o > TOL:
                 errs.append(f"{a['id']} is {o * 100:.0f} cm into a wall of {w['room']}")

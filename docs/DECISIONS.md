@@ -33,6 +33,551 @@ The user's answers, newest first. They override the plan, the research and the d
 - Claude's calls inside that: only upstream's `HumanShaders/` folder came across, not its demo project or its head
   scans (Digital Emily 2's licence isn't stated; Infinite is CC BY 3.0); its textures are MIT and CC BY 4.0, so a game
   that ships them credits matmadness. Our eye keeps its refracting cornea (HumanShaders' eye only does parallax).
+## 2026-10-28, later night (the long checks on the user's machine)
+
+- **Ask for a local run when I'm here**: "how much faster would the run be locally ? If its significant (I have an
+  rtx3090) then make a note to start asking me to just do the run locally (make a do run .md for claude local) as
+  40min waiting is bizarre if im not afk". It is: one frame of the Character Studio takes about a second here
+  (SwiftShader on four CPU cores) and a few milliseconds on a 3090, so STUDIO's 50 minutes should come down to perhaps
+  5 to 10 (an estimate). When the user is around, the cloud session pushes once the offline checks pass and asks for
+  the browser checks to be run there (docs/RUN_LOCALLY.md, `GPU=1`); when they're away, it runs them itself.
+
+## 2026-10-28, night (the Character Studio: the eyes from the side, the hair's bake, the nose, the face's bake)
+
+- **The eyes from the side**: they vanished in profile; "keep the illusion that its more flat from the side", "it
+  needs to arch around the top and bottom of whatever visible point, not bulge out in the middle", matched to the
+  user's red masks and smoothed ("we dont want an amateur roughly ugly mask"): an invisible arched mask behind each
+  opening.
+- **The hair dull after its bake**: leave it, "I think that will be a shader thing we will do later in unreal maybe".
+- **A small nose** ("even dragging everything low still has a fat nose that sticks out from side profile") and
+  **the face's proportions baked** ("So I can remove the reference image for image to face once Im done"): Nose size,
+  Nose projection; Bake the face.
+
+## 2026-10-28, night (texture templates for the placeholder things)
+
+- **UV templates for Krita**: "for small untextured things that we get physically/proportionally correct could you
+  export a uv map (and a guide layer for the sides) so I can just import it into krita and texture. If its photos
+  though consider that I might want the frame to be pbr so Id only want to export the actual photograph part". In
+  docs/HANDOFF_DIRECTOR_TODO.md §6 (the blocks are made by the director's build, so the template and the block's UVs
+  are built together there): a box as a cross net on one scale, a plane front and back, a photo's print alone (its
+  frame a PBR set); an OpenRaster file per thing with Guide, Paint and Base layers; a painted PNG saved beside it
+  becomes its texture.
+
+## 2026-10-28, evening (placeholder things)
+
+- **Flat boxes and planes for now**: "For items like pills and cards, they should just be flat boxes or planes for now
+  and I will add the textures/models later myself". In docs/HANDOFF_DIRECTOR_TODO.md §3: small things stay plain
+  blocks or planes at their real size, the card game's cards plain planes.
+
+## 2026-10-28, later afternoon (a character's models per scene, carried down the flow)
+
+- **No eye swap**: "We dont need eye swap, I can just export the same model twice with diff eyes".
+- **Models per character, overridden per scene and carried on**: "we might in database want to make a group per
+  character so I can add diff models for their diff states and have it always use default, but in scenes be able to
+  override which one to use, however it should be continuous so if in a later scene I say use y, then the rest of the
+  scenes that branch from that use that one, until I go to a later scene and default it back, then the rest after that
+  one go to default". In docs/HANDOFF_DIRECTOR_TODO.md §5, after the way the time of day carries down the flow.
+
+## 2026-10-28, afternoon (the director's to-do, for after the merge)
+
+- **Not on this branch**: "you dont have to work on this in this branch but I will merge this branch into the other
+  one and you need to give me a to do". docs/HANDOFF_DIRECTOR_TODO.md is it.
+- **Rough outlines, refined on the desk**: "ideally I want the writer block to be just a very rough outline, I will
+  refine the actual stuff by playing through, editing in between, modifying, is there a way for me to slice a flow (to
+  stop it continuing), then re-attach it to another."
+- **Writer to director**: "only move the dialogue, tasks, gameplay element of that shot/scene, no adding animations to
+  the npcs etc, you can just give them an easily changeable starting position and they'll stay still".
+- **State through a shot, patrols**: "if I animate them walking somewhere, once the animation is done, I in the same
+  shot might want them sitting on a chair for the rest of the shot, or in the same shot add patrols (which can be a
+  generic looped walk, stand, or patrol through premade animations that are specific). If this is missing add it as a
+  pass down to next session".
+
+## 2026-10-28, early afternoon (The Visitor: written as amnesia)
+
+- **The writing rethought**: "dialogue like this makes no sense: [ Welcome ] Natsu came back. Tell her --- And breaks
+  the immersion because its too abrupt, the player has no clue whats going on yet, it needs to unfold almost like the
+  player has amnesia".
+- Done: the session `the-visitor` written again in that voice. His thoughts know only what's in front of him and what
+  his body remembers; facts come from outside (the list, her lines, the props, the officer, the phone), once each; his
+  answers are small reactions ending on a question ("Twelve years since what?", "Why do I see trees?"). The abstract
+  gets a How it's written section; LESSONS the rule.
+
+## 2026-10-28, noon (The Visitor: the player never speaks)
+
+- **Only acts and thoughts for the player**: "we shouldnt have dialogue in this style ... Its fine for the npcs to have
+  dialogue like that but players dialogue is always stuff like [ Greet ] She looks cold, welcome her inside ---
+  [ Question ] She looks different. So inner monologue, player can imagine what they said."
+- Done in the session `the-visitor`: his one spoken line at the door is now a choice (`[ Welcome ] Natsu came back.
+  Tell her --- [ Stare ] Twelve years. Is it really her?`), the garden's answer reads as a thought, and a note on the
+  chart says he never speaks. LESSONS has the rule.
+
+## 2026-10-28, late morning (The Visitor's chart as pseudo-code)
+
+- **Less text, Chilla's Art's way**: "its a bit too detailed like a novel, needs to be more chillas art game style and
+  not hyper text heavy"; "opening is just you in the apartment, you spend 1 minute looking around when a to do quest
+  comes up (Clean up the apartment before x arrives)"; "I dont want things like 'shes soaked', since I dont want to make
+  a seperate model, writer block needs to be written almost like a pseudo code format where we only talk about literal
+  things not narrative type of writing since this isnt a book".
+- Claude's calls inside that: the session `the-visitor` written again as terse script (literal actions, short lines,
+  sounds as cues, notes for the director); the cold open and the phone call at the start gone (a minute's free look,
+  then the timed clean-up on the list, its timer hidden); the rain, the towel, her wet shoes and the change of clothes
+  gone; the same structure and endings. docs/LESSONS.md has the rule.
+
+## 2026-10-28, mid-morning (The Visitor's abstract approved; the flow charted)
+
+- **The abstract approved**: "I think this is a strong start (we can always refine later)". Step 3 begun: the flow as
+  the writers' room's chart, `/chart` from `docs/game_research/TheVisitor/02_abstract.md`, session `the-visitor`.
+- Claude's calls inside that (sticky notes on the chart): karma stands for his clarity (a pill +1, a pill left -1,
+  leaning into the romance or lying to Ren -1, everything else 0), so the endings read Stay if `[ Watch her sleep ]`
+  (offered only at karma -5 or less), Okuribi at karma 1+, Thank You for Tonight otherwise; the garden in two versions
+  by karma (hers after a pill, his otherwise); the pill moments as answers to his mother's remembered voice, standing
+  in for the timed to-do the director will make; her name a variable; the soy-sauce tea secret left as a note beside
+  the salt one (the chart can't hold two secrets in a row).
+
+## 2026-10-28, morning (The Visitor: he is the reason she died)
+
+- **The truth rewritten**: "instead of her accidentally dying in your youth the player actually was the reason for her
+  death, he found out she was dating/seeing someone else and they got in a fight in a forest, you pushed her and she
+  slipped and fell in the river and got swept away, you didnt mean to actually kill her but ultimately you were the
+  reason she died (almost like an argument that spirals out), she was your childhood crush but she saw you as a
+  brother".
+- Claude's calls inside that, in the abstract's fifth pass (waiting for the user's yes): they were sixteen (he's 28
+  now, Natsuki 23); the boy was Shun Sakamoto, whom the town suspected for years while his mother's "home by eleven"
+  covered Haruki; the fight on the path through the shrine woods above the river after the fireworks ("you're like my
+  brother"), a shove, her geta slipping, the bank, the river; the echo: Natsuki also calls him brother and also has
+  someone (Ren, who phones at 01:30, his lines about her boyfriend left out off the pills); the endings' pieces
+  rewritten (Okuribi: the Tanabata wish "I wish Haru-kun will always be my big brother" and Shun's word that he
+  followed them; Thank You for Tonight: the guilt and the jealousy in his diary; the dark ending renamed Stay, its last
+  line "This time, she stayed.").
+
+## 2026-10-28, before dawn (The Visitor: no reflections, ending slots, a card game, the garden, a real visit)
+
+- **No reflections**: "I dont like 'the night window and the bathroom mirror, you see her real brown eyes and her real
+  expression.' as it will be harder to program and why would we watch her while shes in the bathroom."
+- **The endings as slots**: "Modify the endings so you just create a generic cutscene slot that I can easily modify
+  for each ending (so just give a rough outline so when we move from writer to director I can customize the whole last
+  part), add an ending title card though after where we will add more info." (This supersedes 2026-10-27's "no ending
+  cards" for this game: the cutscene, then a title card.)
+- **The answers to the three calls**: the other ending is Thank You for Tonight ("Sounds good"); the body in the
+  dark ending is Natsuki's ("yes, dark ending"); he let go at the weir ("Sure, thats okay for now").
+- **A card game**: "For each flow to keep the game interesting we should add maybe a simple card game (using standard
+  cards), but based on what flow your going into is what will determine some of the options and results in the card
+  game."
+- **The garden, not the lanterns**: "rework the lantern part, I dont want to model a lantern, maybe have it more casual
+  like we go to the small garden outside and see her smoking and theres a more intimate discussion."
+- **A real visit**: "sprinkle multiple small moments like making her tea, maybe later she gets hungry and we make her a
+  ramen, things that basically make it feel more real and how a visit would go. Basically the game needs to feel like
+  your there but with amnesia and dont know why but it feels memorable and relatable enough that it convinces you".
+- Claude's calls inside that, in the abstract's fourth pass (waiting for the user's yes): off his pills the truth
+  comes from the world, not the glass (her card, the officer, her mother phoning for "Natsuki", her bag), and her real
+  faces are seen only after a pill or in the dark ending's flashes; the card game is shinkei-suijaku (Concentration,
+  "nervous breakdown"), the loser answering a question, his memory lying and her letting him win off his pills; the
+  small moments (a towel, her shoes stuffed with newspaper, tea, a watermelon chilled and salted, somen, cards, her
+  cigarette in the little garden, a vending-machine can, ramen at midnight, the futon), most with a memory flicker
+  that breaks off; Natsumi's piece in Okuribi is a Tanabata wish on paper.
+
+## 2026-10-28, small hours (The Visitor: the pills decide what you see; three endings, three pieces of the truth)
+
+- **His version of her**: "if he's off his pills we will have different facial expressions for some parts (he will
+  think she likes him, think the new joker joaquin phoenix movie where he is creating a false romance scenario)".
+- **The secret, dark ending**: "the cops show up to say heard a disturbance, they go into the bedroom to find the body
+  lying and tell you to get on your knees (they pull out a gun at you), you have some weird inner monologue and the
+  game ends."
+- **No confession**: "The good ending shouldnt be you confessing, because you as the player dont actually know what
+  happened and are trying to figure it out yourself, maybe whether you take the pills or not determines the name you
+  call her (variable), and if your off the pills you never see her correct you."
+- **The other ending, undecided**: her finding his diary (guilt at living the lie) and picking up a knife as she walks
+  towards him, "or the visit goes normal, you have fun, she never learns the truth and leaves and thanks you the next
+  day."
+- **Little branching**: "Maybe we dont need to care about major branching dialogue (that can be for easter eggs and
+  learning stuff yourself, maybe write the story where we only get a clear picture of what actually happened if we do
+  all 3 endings, so even if she found your diary it wont tell the player the full picture just maybe a page about your
+  guilty feelings etc but not the cause)."
+- Claude's calls inside that, in the abstract's third pass (waiting for the user's yes): his illness rewrites her and
+  only her (her name, eyes, faces, corrections, a few warmer lines), while the card, the officer and every reflection
+  stay true; two expression tracks for a dozen key moments; endings by the pill tasks (two or more: Okuribi, her side
+  of the truth; otherwise Thank You for Tonight, his diary page; never a pill, the romance leaned into and her room
+  entered at two: Don't Let Go, the police, the night itself in flashes); the truth at the weir: he held her wrist and
+  let go; the pill in her cup and the mother's lie as a told story are gone.
+
+## 2026-10-28, late night (The Visitor: an honest sister, names one letter apart, no police, the pills as tasks)
+
+- **The user's answers to the abstract's calls**: the twist, the visitor as the lost girl's sister ("Sure"); the
+  player's name fixed as Haruki ("sure"); the secret ending: "Maybe not taking your pills + something else (we have to
+  do list quest occasionally to take pills)".
+- **The intended ending rethought**: "We need to rethink the intended ending, calling cops would make sense since it
+  happened in childhool." (Read as: the police don't fit, it happened when they were children.)
+- **The door's question**: "the question could be she looks a lot younger than you last remember?"
+- **An honest sister**: "Maybe the sister isnt trying to trick the player but actually the player is too mentally ill
+  to realise its the sister so she reacts confused. Maybe the sisters should have very similar names for this
+  purpose".
+- Claude's calls inside that, in the abstract's second revision (waiting for the user's yes): they were thirteen (a
+  child under 14 can't be charged in Japan), now 25, and the sister is 21; Natsumi and Natsuki, called Natsu and
+  Ko-natsu, so her card, her "it's me, Natsu" and the officer's "Natsuki-chan" all read both ways; off his pills he
+  sees her with Natsumi's lilac eyes and some of her lines retype into her sister's name, while reflections and his
+  pills show her own brown eyes; the intended ending is Okuribi (the truth told, her parents phoned, the sending-off
+  fire lit late, the pills taken, her eyes brown); the secret ending needs every pill task failed, the one-word call
+  answered "moshi moshi" and Natsumi's geta set on the altar, and ends with him taking the pills once she's gone home.
+
+## 2026-10-28, night (The Visitor's abstract revised: a summer day, lilac eyes, clues about yourself)
+
+- **The user's notes on the abstract**: "lets make a summer day rather than new year, instead of a mole let it be a
+  different eye color (Lets say Lilac), today would have been the aniversarry of her disappearence, your mother who
+  protected you also has passed away."
+- **Clues about yourself**: "The dialogue needs to be written where not only are we getting clues from her, but also
+  our dialogue choices and what we can ask/do gives us clues about ourselves."
+- Claude's calls inside that, in the revised abstract (still waiting for the user's yes): 16 August, the last day of
+  Obon, when the dead go back, and the night Natsumi vanished in 2014 during the river festival; she slipped on the
+  weir (her geta's strap snapped, the omen), not through ice; his mother's first Obon; the visitor's lilac is coloured
+  contacts over brown eyes (one lost in the bath: one lilac eye, one brown); a second mystery about him: the answers
+  he's offered, his true answers to her probes, thoughts that rewrite themselves, his scarred palms, his own notes,
+  and the cucumber horse he made for Natsumi, kept as memories that decide how much truth he can tell at the end;
+  lanterns on the river in place of the bells, one floating upstream.
+
+## 2026-10-28, evening (a new game, The Visitor: research, an abstract, then the flow; branch `game-research-001`)
+
+- **A branch and a folder for game research**: "Don't use dev-002 branch, but forked off it, make a new branch called
+  game-research-001, and make a new folder to store these game research." The folder is `docs/game_research/`, one
+  folder per game (its README has the three steps).
+- **The game, The Visitor**: "based in japan, an old female friend/crush comes to visit you, things start to go
+  weird"; "mostly based in just 1 apartment (mid sized, 2 bedrooms (1 guest), 1 bathroom, 1 kitchen + living room in
+  same room)".
+- **Three steps**: "Research: find real life scenarios or stories for inspiration. Come up with an abstract. Once I
+  approve the abstract come up with the writer block flow for the game."
+- **The opening**: "inner monologue about cleaning up the apartment, if you dont clean it she will comment on it when
+  she comes in", "a hidden timer of 2min or whatever", "2 achievements for clean/messy"; "start off with inner
+  monologue of whats happening today".
+- **The player answers with acts and thoughts**: "very inner monologue / action rather than dialogue options e.g.
+  [ Greet ] She's proabbly cold I should let her inside ? --- [ Question ] Did she always look like this ?"
+- **The play**: "little tasks and dialogue to discover whats happening", "similar to chillas games where you lift,
+  click itneract", "her dialogue to be heavily using mocapped expressions almost like LA Noire", "I dont want big
+  actionny horror run scenes", "very to do list"; "your dialogue options and analysing their expressiosn helps guide
+  to the end".
+- **Length**: "take at least 1 hour to beat (we dont let peopel skim dialogue as its appears + typewriter effect for
+  her)".
+- **The spins**: "hints at people going missing making the player think shes involved but the twist is it turns out
+  you were the villian (at least for one ending)"; "paranormal stuff and weird behaviour/tells for her"; "a kind of
+  shutter island thing where we are being led to believe one narrative but it might not be the answer"; "maybe we
+  think that she is possessed but it turns out the viewer is schizoprhenic (hinted via medications in the bathroom
+  cupboard etc)".
+- **Three endings**: "the intended ending, the other way it could have gone, and a secret hidden ending".
+- **Secrets as achievements**: "easter eggs and slight branch off flows that come back to main ... good steam
+  achievements", such as "you make her tea, but you can possible add a weird ingredient to the tea and she will comment
+  on it tasting funny".
+- **Names and lines**: "appropriate english/japanese names (japanese names written in their english format)";
+  dialogue "written in a way that makes you think she was a childhood friend, but also simple enough that we can later
+  use claude to translate the locale to Japanese".
+- Claude's proposals, **waiting for the user's yes** (docs/game_research/TheVisitor/02_abstract.md, its five calls at
+  the end): New Year's Eve in a fictional Iwate river town; the visitor is the lost girl's younger sister playing her
+  (Shutter Island's role-play), so "Did she always look like this?" is both the illness and the truth; reading her face
+  is the theme (the narrator's reading bent by paranoia, her face the evidence); three optional doses of his
+  medication that quiet the hallucinations, the same pill able to go into her tea; no smartphones (a landline, a
+  payphone, a postcard), as decided on 2026-10-27; Haruki, Natsumi, Fuyumi and Akiko, the four seasons.
+
+## 2026-10-28, back (expression loops go; skin like HumanShaders; Unreal next; a test room)
+
+- **Expression loops: go** (task #6, held for the user's word): "expression loops is fine to do".
+- **Skin v2 changes course**: "for skin v2 ignore what you've done; what we want is something like the skin shader in
+  this Godot repo https://github.com/matmadness/HumanShaders, and I should be able to preview/bake it in when I
+  export." So: HumanShaders' skin (its shader code is MIT; its head scans aren't ours and stay out) rebuilt in the
+  Character Studio on our procedural skin, previewed there, and baked into the export so the desk and Unreal can light
+  it the same way. The research note (docs/research/skin_v2.md) stays as background; its plan is set aside; the
+  reference (film) light stays as an option.
+- **Unreal, next local session**: "make a note what we need to do for the next local session I do".
+- **A test room**: "make a testroom001 (diff than pilot) in director and have it test every functionality added so far
+  so we can check if we can re-create it in Unreal Engine accurately."
+
+## 2026-10-28, later (five hours alone: Chilla's Art's small systems, else skin v2)
+
+- **The brief while away**: "I'm going afk, if there are any other simple game systems we are missing for Chilla's Art
+  style horror games feel free to add them. If you can't think of any can you research aesthetic realistic skin
+  (basically procedural skin v2 but more real like MetaHuman skin and the screenshots provided). Give yourself 5 hours
+  to work on whatever." With three stills: a young East Asian woman's face under a soft key light on dark, her lips in
+  close-up (fine lip lines, wet highlights), her eye and nose in close-up (pores, sparkle, a wet tear line).
+  Built from it: the flashlight (F), cleaning (a stain scrubbed away by holding the click), the peephole, the power cut (a breaker box),
+  footsteps by the room's floor, the player's and the cast's (the format's `floor` always said it sets them; Play now plays them),
+  examining (a small thing you look at taken up in your hands and turned), a door's latch (lock up
+  from inside), quick events for each on the desk (a chore, lock up, the power cut, a knock, the flashlight flickering), and the notes route for all of
+  them (the chart script and the build know stains, breakers, peepholes, flashlights, the power and locking a door); the skin research in
+  docs/research/skin_v2.md (the stills measured, the plan in eight steps), its first step's light as an option in the
+  Character Studio (reference (film)); the rest of v2 unbuilt, the user's call.
+
+## 2026-10-28 (the controls' symbols, our own)
+
+- **The pause menu's control symbols, more original**: "Modify the controls UI symbols to be a bit more original". The
+  layout stays (the controls on the left, their words beside them); the symbols are the Studio's own: each key a
+  frosted tile standing on its lip, its legend in the middle; W A S D a pad round the dot that is you; the mouse a
+  pebble without a cable, the button or the wheel it means lit; and beside each, in the theme's accent, what it does as
+  the HUD shows it (the reticle's ring, the inventory's row, a thing set down, speed lines, your eye coming down).
+
+## 2026-10-27, later (your notes any way you like, Claude makes the chart; an inventory; the controls on Esc)
+
+- **Write any way; Claude turns it into the chart** (the syntax was the wrong approach): "I just realised the syntax
+  script to writer is the wrong approach, I should just be able to write the game out anyway I want in notepad (but
+  I'll try be clear with what happens, maybe suggest a couple of symbols), and then we will use Claude to convert it
+  into a writer block game, maybe just make yourself an .md so I can run the command and maybe a claude folder for
+  storing these kind of claude tools, basically I'd just pass you what I wrote and roughly want, you'd make that into
+  the writer block flow chart so I can inspect, if that looks good you convert it into the director tool and that's
+  where I start refining everything, swapping out block objects for real ones". So `/chart` and `/build-game`
+  (`.claude/skills/`), docs/NOTES.md the few marks suggested; the syntax stays as Claude's own script
+  (`.claude/skills/chart/script.md`, what the chart is read from), and the writers' room's Notes tab is gone.
+- **A place designed first**: "maybe I can predesign a studio before you make the game in director so you can use
+  that as a background reference to place objects".
+- **Simple horror-game controls and an inventory**: "game should have G for drop (typical simple horror game
+  mechanics), don't need gravity mechanics, we do want an inventory system, maybe change E to be inventory (if
+  something else is already that) and we have left click for all interactables, inventory should be a very simple one
+  row with each item that's been picked up in it, press E to hide it (current equipped item should always be
+  centered, so basically it kind of scrolls through, we can see all the items on the left and right, if the player
+  somehow picks up too many items the row should almost be like a hidden wheel where some items disappear when they
+  are too far from the centered equipped so we always show a max of 5 items at once) though I will try limit to what
+  can be picked up at any point. Have the items in front of a frosted glass, gradient UI without a border."
+- **Esc shows the controls**: "When we press escape we should see controller options on the left side similar to
+  image 1" (outlined keys: WASD movement, the mouse to interact, the inventory, Shift run, C crouch).
+
+## 2026-10-27, notes (the whole story written on the phone; choices at the bottom centre)
+
+- **The story written in the phone's notes app, imported into the writers' room**: "I want to be able to write out the
+  whole story in notes on my phone and import it into writers app into a fully fledged story as I like writing on my
+  phone ... come up with a syntax system I can use and I write my whole script in notes". Things are names, not assets:
+  "items etc should be treated as variable names which are small/medium block items that will be replaced with the
+  real visual, location etc later"; "basic Chilla's type actions to do with items, open, close".
+- **The player answers with an act and a thought, not a line**: "rather than writing player dialogue for optional
+  answers/responses I like more of a `[ Greet ] She's probably cold, I should let her inside --- [ Question ] She looks
+  different`. So for player it's the action as a response with a bit of internal monologue". Their own example
+  (thoughts in quotes, `*knock, knock*`, `*open door*`, `Hidden Timed Task - Clean up`, `*Enter Name*`, X for the
+  name) is the syntax's base: now Claude's script, `.claude/skills/chart/script.md` (superseded above: the user writes any way).
+- **Choices at the bottom centre**: "We will need to update the UI since we moved away from voice acted lines to
+  multiple choice and player choices to be at the bottom centred of the frame (with padding) so it flows better". Every
+  choice (a reply, an `ask`, a timed choice, a board game's call) sits under its question in the footer, at the bottom
+  centre; the camera's focus still holds on whoever asks.
+- **No Japanese over the English**: "we no longer need the japanese dialogue /text above the english since we will
+  have a system for changing the entire dialogue and no japanese audio". The HUD (Play and the Watch) shows the lines
+  and the answers in English only; the pause menu's "Japanese over the English" and the Watch's "speak the Japanese"
+  are gone; the bake gives Unreal's preview no Japanese. A clip's `ja` stays in the format for the voiced games already
+  written (the desk still edits it there, and hides it in a game with `voice: "none"`); other languages come later
+  from a system that swaps the whole dialogue (EXPRESSIONS_PLAN §3's string tables).
+
+## 2026-10-27, the change of course (the writers' room is yours: a flowchart you draw)
+
+- **The story is written by the user, as a flowchart**: "I want to change the writers room so the entire story gets
+  written by me and flow (using drag and drop things like lucid chart that make it easy for claude to set it up later
+  in director tool). No longer do I want ai to generate the story etc, I will write the jist myself."
+- Claude's calls inside that: no model runs in the writers' room at all (the drafting stages, the assistant and the
+  Claude/local switch are gone: `gen.py`, `llm.py`, `claude_api.py`, `fake.py`); the river map becomes a chart you
+  draw (docs/WRITERS_ROOM.md §2): shapes dragged from a palette (start, scene, talk, task, chapter, choice, secret,
+  ending, note), arrows from their dots, acts as frames, the inspector for the gist and the details; the prototype's
+  format 2 (nodes, edges, frames), the first format upgraded as it's read; **Build stays** (the chart into a rough,
+  working outline, its board laid out as the chart was) with BUILD.md for Claude, and Claude reads the chart with
+  `room.py show`; the faces stay (a MiniMax post prompt picked per line and answer, optional); the example session
+  "Ticket 114" (the old assistant's draft) kept as a chart.
+
+## 2026-10-27, last thing (a dashboard; the writers' room; one-hour relatable games)
+
+- **A dashboard for every tool**: "an easy UI dashboard to launch and stop all of the tools (like the terminal but an
+  actual ui dash ... python dashboard.py and then it handles the rest of the tools ... it should sit in the root
+  folder)". Built: `dashboard.py`.
+- **The writers' room** (docs/WRITERS_ROOM.md): "before we even start working inside the director or character creator
+  I want a new AI/Claude/LocalLLM (toggleable) assistant for writing scripts/flows/storyboard/rough scene setup";
+  sessions loaded or new; the type of game and reference stories ("real life things that happened or stories to use
+  as reference"); Claude works it into a flowchart that Claude can later build in the director: "the workflow turns
+  into a refinement in director whereas this new tool is just prototyping ... director has too much clutter, I just
+  want to be able to see the rough flow chart of the story and what happens and how it ends and follow the
+  rivers/points". "Claude can see what the tool does and is showing."
+- **Three endings by default**: "the intended ending, and two others that I can input or get you to suggest off by the
+  reference stories".
+- **One hour, played again**: "1 hour playthrough with replayability to get the other endings or secret paths"; away
+  from Five Hearts Under One Roof's cut-off branches: "secret parts will just jump you to the next main point (but you
+  got to see an easter egg / unlock a secret achievement) so the game should feel like you're watching a story
+  unfold".
+- **Faces as MiniMax post prompts, 4 seconds**, for the dialogue and cinematics, in this form: "her eyes roll up as she
+  bites her lower lip, she nervously looks down and then back at the viewer"; "I don't really want to have to
+  prompt/generate for more than 4 seconds videos ... compress the expressions into 4 seconds and we manually will
+  extend it in the expression tool ... realistically 8-10 seconds"; a library of generic reusable ones.
+- **Loops and blends in the expression tool**: "in the expression selector I can also see a timeline and create a
+  loopable [part], meaning afterwards we can drag a loopable version of the same expression and it motion tweens a loop
+  of the selected timeline. If I drag multiple expressions I should be able to blend/tween between them so it doesn't
+  instantly jump to default static expression" (EXPRESSIONS_PLAN §2b).
+- **L.A. Noire for the multiple choice**: "you can learn of the story's main intentions via looking at how the
+  character's face reacts to what you say (these scenes should be planned for more intimate close up moments)".
+- **Build**: "when I'm happy with the prototype I click build, and it will build a super rough (non refined) but
+  working outline of the game inside director ... Claude should be able to refine and make it workable in director";
+  how is Claude's call: a working outline and a `BUILD.md` handoff (WRITERS_ROOM §7).
+- **The niche**: "the games need to make it feel relatable ... we mostly will focus on relatable stories like a distant
+  friend invites you over and something isn't quite right ... if it is more bizarre you need to make it flow that we
+  make the person believe this bizarre thing somehow actually managed to happen ... an interactive story that's got
+  light gameplay that matters and affects the story but isn't too confusing, with more niche easter eggs for the
+  players that like to discover and figure things out, which unlock achievements".
+
+## 2026-10-27, late night (the study's five: a to-do list that can fail, nights as chapters, requests; no phones, no ending cards)
+
+The user's answers to docs/research/chillas_art.md §3:
+- **1, the to-do list: build it**, "that can be the quest tracker, we should also have a feature for if you failed a
+  task in the to do list". Built: `todo`, `tick`, `fail`, `untodo`, the `ticked` and `failed` triggers; a task ticks
+  or fails by itself (`ticks`, `fails`, `secs`), a failed one stays struck out in red (STORY_FORMAT §4).
+- **2, nights as chapters: "sounds good"** (sleep in a bed, a title card, the time of day, an autosave).
+- **3, the pocket phone: no**. "I don't like mobile phones; if we do use them we will have more analogue ones" (a
+  landline, a payphone, a pager: never a smartphone in the pocket).
+- **4, a visitor: yes, as an easy request system on the to-do list**: "where something is requested, it waits for it
+  to complete, then it leaves. Leaving doesn't need to be the scene, it could basically be [the] character / NPC, if
+  they are a main one, carries out to the next 'shot', e.g. they asked us to do something in the kitchen while standing
+  waiting for us to do it, we do it, next shot is them walking towards the couch and sitting and we continue the next
+  sequence."
+- **5, the epilogue card: no**. "I don't want ending cards, I will have ending cutscenes."
+
+## 2026-10-27, late (no more quick-time events; keep the game simple)
+
+- **Quick-time events deprecated**: "update the pilot and from the game deprecate for now the spam e or drag etc types
+  of events, they break the immersion"; "realistically the game should be pretty simple, discover things, interact,
+  choose dialogue options, no more quick time events etc, I need to remember I'm an indie dev so I can't implement as
+  much as something like Dark Anthology". `press`, `mash`, `hold`, `breath`, `aim` and `struggle` are deprecated (the
+  story check warns, the desk offers only `choose`); the Pilot's grab and locker are dialogue choices now.
+- **A quick study of Chilla's Art's games** against what we have: docs/research/chillas_art.md (what's missing, each
+  small; the user picks).
+
+## 2026-10-27, night (English text with a blip, an expression library, faces on the timeline, look-at by angle)
+
+- **English, with a system to swap in a country's own lines**: "I will be moving away from Japanese and sticking to
+  English (though keep a system so we can replace dialogue with country specific easily)".
+- **No spoken dialogue: text with a typewriter blip**: "just have the text and maybe add an undertale text
+  sound/typewriter sound where we play a micro audio snippet per sentence (maybe work out sentence length + some formula
+  for how many times to repeat the snippet of vocal effect)".
+- **A library of mocapped expressions instead of talking faces**, placed on the timeline: "in the timeline I can place
+  facial expressions from my library and even blend between multiple ones (like a new timeline row for facial
+  expressions assigned to a character + ability to add more rows for other characters)", "looped expressions or
+  reaction expressions for non cinematics", and **eyes and head that follow the player inside an angle**: "watch the
+  player for that scene if the player is in lets say x radius e.g. 90 degree radius (from front), otherwise they go back
+  to looking at whatever they're pathing or defaulted to".
+- **Importing**: "pass in a video of a face, we process that mocap face expression data and then I can preview it
+  against a default character or an actor we have in our game (or even just manually select a character we have
+  exported), I should be able to name the expressions"; the library on the right of the storyboard planner, thumbnails
+  that play on hover with the name below or names only, dragged onto the timeline; Import: pick a video, wait, a preview,
+  name it, Accept; delete by a red x on the thumbnail with an "are you sure". **The capture tracks the whole face (eyes,
+  mouth...) but not the head** (Kimodo moves the head). The user's test video: a 3 s MiniMax clip.
+- Claude's calls inside that: docs/EXPRESSIONS_PLAN.md (steps 1 to 5); the library built first (step 1), Studio-wide
+  (`Content/Studio/Expressions/`), the curves tracked and the face videos and posters git-ignored like the face page's
+  pictures; the raw scores kept so Neutral (first frame, quietest, none) and Strength stay choices; a removed expression
+  moved to `Saved/Expressions/removed/`, not deleted outright.
+
+## 2026-10-27, evening (the export carries the Studio's colours; branch `dev-002`)
+
+- **A character exported for the desk had no colours** (the user put a Studio character on the Pilot's Mari: "why are
+  the colors for the character missing (no skin, no clothing)"), then **"build it on this branch"** (`dev-002`, the
+  merge of the four branches). The Studio's colours are drawn in shaders (the procedural skin, the tailor's fabric, the
+  hair shader of the brows and lashes) and glTF carries none, so the skin and the clothes came out white and the lashes
+  without a material. Now the export bakes what the shaders draw into textures (`tools/character/albedo.js`,
+  docs/CHARACTER_STUDIO.md §3.1).
+- Claude's calls inside that: the colour **before the light** only (gloss, the dewy glow, the pores' relief and the
+  glow through the skin are left to the renderer, the desk's or Unreal's); the skin at 4096 px on MHR's own UVs; each
+  garment part on its own islands at about 2 mm a pixel with its fabric metres kept as a second UV for a PBR set's
+  other maps; brows and lashes as the salon bakes hair (the atlas in the look's colours, cut out).
+- Earlier the same day, on the salon's retro look ("after I toggle psx dither I see it but once I bake the hair ... it
+  disappears"): the dither is a screen effect; the bake paints it into the strand atlas, where filtering averages it
+  away. Left as it is ("the explanation was fine"); in a game it's a post-process or the hair material's.
+
+## 2026-10-27, later (the designer clothes reviewed as a lead art engineer)
+
+- **"Review the new clothes and improve, some don't look natural"**: every designer outfit on contact sheets, five
+  views and a close one, judged by eye and fixed (docs/TAILOR.md §2b has what read wrong and the rules). What changed:
+  jackets and coats get a built shoulder (`ease.shoulder`) and bridge the body instead of hugging it; the blazers meant
+  to be worn open are cut open (`blazer-open`, the pink oversized one, the coat), their lapels falling open; the
+  turtleneck's collar is soft; the coat's sleeves hang (a turned cuff no longer holds the wrist); the jeans keep their
+  cut at the ankle; the hood lies flat with a rolled rim; the lined lace, the silk and the satin tiles are quiet on a
+  big surface; the knee boots have a boot's shaft, a heel and a top band. The office and school blazers gained the
+  shoulder too (they stay closed).
+
+## 2026-10-27 (the clothes: an edit mode, the designer collection, pictures; branch `clothing-expanded` off main)
+
+- **Editing a garment must be instant** ("clothing is extremely laggy to modify, realistically I can't modify it as it
+  takes 2 minutes to update the change; if we could make a basic non-physics edit mode, which shows the guide lines of
+  the clothing piece, and I can modify that (length, sleeves, fit/tightness etc.), and when I'm done click bake and it
+  creates the new version based off those guidelines"): the Clothes tab's **Edit the cut (no cloth)**: every worn
+  garment as a film on the body with its cut lines (the hem, the neckline, a front opening, the sleeves' ends, the
+  waist, the legs' end; a skirt as its rings), the handles and the Shape sliders (Fit among them) moving a line at once
+  with nothing cut or hung; **Bake** cuts the clothes to the lines and hangs them. The old way stays with the mode off.
+- **New stylish clothes under a Designer tab, one outfit per reference image** ("add some new stylish clothing under a
+  tab called designer maybe and add the clothes/outfits shown in the reference images, try create one for each"):
+  twelve outfits (one for the lace jeogori, four for the street looks, one for the rainy-day coat, two for the modern
+  hanbok, four for the menswear) and the designs they needed, in `Content/Studio/Clothes/`, on their own tab in the
+  outfit picker (Designer, Studio, Underwear).
+- **Pictures instead of names for the outfits** ("instead of just words could we update the presets so there is a
+  thumbnail using the default model with the outfit"): every outfit a picture of the default model (a new character's
+  body, halfway between the bases, 1.70 m) wearing it, hung by gravity, made by `tools/character/tailor/thumbs.mjs`
+  into `Content/Studio/Clothes/thumbs/` (every design alone too) and shown as cards in the Clothes tab.
+- Claude's calls inside that: the guides are the cutter's own lines evaluated on the skin (`tailor/guides.js`), so a
+  slider in the edit mode shows exactly what the tailor will cut, and a film's edge is drawn in the shader so it follows
+  the pose and the zoom; what the references needed in the tailor: a wrap front (`open.shift`, a jeogori's diagonal with
+  its collar band along it), a neckline that climbs the neck (`neck.rise`, the turtleneck), a skirt that never narrows
+  from its top (`straight`, a chima gathered under the bust) and one open down the front (`open.gap`, the long coat's
+  skirts, worn under its top as two garments), a lined lace and a sequin fabric, the knee-high boots cut as a shell
+  (lofted from the foot they cut into the calf); hats as accessories (a beret, a cap, a bucket hat, a beanie, on the
+  head's own outline) brought by the outfit that wears one, sunglasses the same; what the pictures can't show: those
+  hats and sunglasses (they need the face's landmarks), a bag, a scarf.
+
+## 2026-10-26, past midnight (more instruments, swappable strings, sound effects in the flow)
+
+- **Add every CC0 instrument we can find for horror** ("add everything you can"), after the search for open
+  libraries of horror strings and sound effects: 28 more instruments from VSCO-2 CE and VCSL, the same CC0 libraries
+  as Woohill's, fetched by `tools/score/fetch_samples.py` (docs/MUSIC.md §7). No open library records horror string
+  effects (clusters, scrapes, col legno) under CC0, so those stay as the score room's filters (`tone`) and the bowed
+  and scraped metals.
+- **Notes on which sound works best, and the strings easy to swap so the user decides by ear.** The string sets
+  (section, full, low, solo, eerie, glass) each come with a note. The cue says which set it suits, and every
+  instrument has a note on what it's for in the Instruments list.
+- **New instruments only in the expanded scorer.** The original 42 cues keep Woohill's instruments (only the string
+  set changes who plays their strings). The new instruments have their own twelve cues, the Expanded orchestra family.
+- **Sound effects aren't part of the orchestra, but they're in the flow.** They're a shelf of their own,
+  `Content/Studio/SFX` (`tools/sfx.py`, docs/SFX.md): a story sound names one as `sfx/<name>`, the Database picks and
+  plays it, Play and the Watch play it. The score room doesn't touch them.
+- Claude's calls inside that: CC0 or ours only (CC-BY packs like ObsydianX's drones and anything that can't be
+  shared as files, Philharmonia's and Sonniss's, were left out). The Pilot's and the Sample's placeholder sounds now
+  point at the shelf. Sounds that no single file covered were built from parts (three knocks, steps through the
+  ceiling, stings from metal hits) and the answering machine's beep was made from a sine.
+
+## 2026-10-26, later still (easier hair editing in the salon)
+
+- **Every pain point of docs/SALON_REVIEW.md is built, and the flow made easy** ("off of main create a new branch
+  called easier-hair-editing, first make a list of hard points/difficulties for users to make hair given the current
+  system and then list them for me to enhance", then, on the list: "Add all the above and make the flow easy to use"):
+  the nineteen items, on `easier-hair-editing`, in the review's order. The user's own three: **the end of a lock as a
+  vector** ("I select the first line, and then we drag a single vector point to determine the length and orientation
+  and click okay when happy with the look"), **a side view** ("have a side view available, so we can view the points
+  from diff angles and modify") and **the pull kept to a lock, its twin or its group** ("when working on 1 strand, I
+  would like to be able to modify/lock the strand or mirror group so when I use select drag and select a large effect
+  radius, I only effect the hair in that group/mirror rather than every strand we've created").
+- Claude's calls inside that: the pull's **scope** defaults to the lock and its mirror twin (the ring lights only what
+  the scope takes, so a reach never surprises); a **locked** lock or group is left alone by pulls, Gravity and the
+  cover but still drawn, picked and laid over; a lock is committed by its end click as before and stays **in hand**
+  with its arrow until OK or Enter (the fast path keeps its two clicks), Delete removes it; the arrow's drag turns and
+  scales the lock about its root, keeping the shaping done by hand (points that lay on the body lie on it again, the
+  rest keep their distance), instead of redrawing it; the view buttons live in the header (nothing over the view steals a
+  click); Split's right pane starts as the character's left side; picking takes the lock nearest in depth and never one
+  the head hides, a click again cycles; a sheet's root line slides by its middle and stretches by an end; the draft
+  replaces rather than merges (the salon has no second editor); dragging a lock's body swings it about its root (Shift
+  slides), with Blender's R and G as the keyboard way; several picked (Ctrl-click, a box) narrows the pull to them.
+
+## 2026-10-26, last thing (the rest of the lashes: the second reference's five sets)
+
+- **The five lash sets of the user's second reference, made** ("I realised I forgot to make all the eyelashes, earlier I
+  provided a future ref photo in the other session to make more eyelashes, can you make a new branch eyelash-more and
+  create the rest"; the photo, five rendered pairs of eyes, is written up in docs/research/lash_reference.md): lash
+  styles in a group of their own, **sparse, thin (men, older)**, **glam volume**, **fluffy mink**, **doll volume** and
+  **natural medium**, each also a whole look (older man (sparse lashes), glam smoky plum, fluffy mink, doll volume,
+  natural medium), and what they needed: a **lower liner** (the painted liner along the lower lashes' roots too: its
+  amount, thickness and reach), lash looks **brown**, **greying** and **grey**, the makeup presets **smoky plum**, **bold
+  doll liner** and **tinted waterline**, and **Hooded lids** in the sculpt for the reference's old man.
+- Claude's calls inside that: made from the write-up (the photo never came into the repo), judged on renders of the
+  Studio's eyes from the front, three-quarters, close and the side with a violet iris like the reference's; the looks
+  leave the irises as they are (the reference's violet is its render's); the older man's look ages the skin to seventy
+  and over, puts the brows on full and ash, a little red in the whites, no makeup, and the lashes greying (dark hairs
+  with pale tips, about a third grey all along), but leaves the hooded lid to the sculpt (a look never changes the
+  face's shape); Hooded lids never touches the lid's own edge (nothing within 2.8 mm of the line the eye is cut along
+  moves), so the opening, the rim and the lashes' roots stay, and the skin gathers into a fold without turning over;
+  the doll volume's lashes sweep up and out together rather than standing straight up (a fence, on the first render);
+  the plum is a saturated one (a dull plum read grey-brown on skin) and spreads up to the crease (Eyeshadow size: under
+  the glam lashes the lid's own shadow didn't show); the eyeshadow's lower edge and the under-eye wash's are eased (as
+  hard steps they drew straight lines across the skin beside the inner corner once the shadow spread wider: the looks
+  made before change only there); the upper lashes' slider runs to 240 (a fluffy
+  mink set is about 200); a masculine base still starts with the lashes off, as every new character does.
 
 ## 2026-10-26, late night (iris patterns and pupil shapes)
 

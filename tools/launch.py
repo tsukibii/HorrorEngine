@@ -13,6 +13,8 @@ and the same number again stops that page (pages on one server, like the desk an
 them only opens its page). Running pages are kept in Saved/launch.json, so a new launcher can still stop them.
 
     python tools/launch.py --close      stop every page the launcher started, then exit
+
+The same tools as a page: python dashboard.py (the dashboard, in the project folder; it shares Saved/launch.json).
 """
 import json
 import os
@@ -100,6 +102,7 @@ def say(text, kind="note"):
 # {opt:Prompt|--flag} the same, but empty leaves it out (and --flag goes before the answer when there is one).
 # options: url (a page: started in its own window, then opened).
 TOOLS = [
+    ("Pages", "Writers' room (write a game's story as a flowchart: its points, choices, secrets, endings)", "tools/writers/serve.py", {"url": "http://127.0.0.1:8795"}),
     ("Pages", "Director's desk", "tools/director/serve.py", {"url": "http://127.0.0.1:8780"}),
     ("Pages", "Score room (music)", "tools/score/serve.py", {"url": "http://127.0.0.1:8791"}),
     ("Pages", "Scene builder (floor plans)", "tools/director/serve.py", {"url": "http://127.0.0.1:8780/builder.html"}),
@@ -119,11 +122,19 @@ TOOLS = [
     ("Checks", "Shots review (after the editor took them)", "tools/shots_sheet.py --game {game}", {}),
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
+    ("Checks", "Sound shelf check", "tools/sfx.py check", {}),
+    ("Checks", "Texture templates check (the placeholder things' layouts, the .ora, the desk's UVs)", "tools/uv_templates.py check", {}),
+    ("Checks", "Expressions test (the library in the desk, headless browser; the desk running)", "node tools/director/exprtest.mjs", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
     ("Checks", "Play mode test (the Pilot walked, headless browser; the desk running)", "node tools/director/playtest.js", {}),
+    ("Checks", "Test room (TestRoom001 played station by station, headless browser; the desk running; the reference for Unreal)", "node tools/director/testroom.mjs", {}),
     ("Checks", "Board games check (every game's rules played hundreds of times)", "node tools/director/play/boardtest.mjs", {}),
     ("Checks", "Time of day on the desk (the desk running)", "node tools/director/timetest.js", {}),
+    ("Checks", "A cast member's models on the desk (the desk running)", "node tools/director/modelstest.js", {}),
+    ("Checks", "Dashboard test (headless browser, its own dashboard on port 8798)", "node tools/dashboard/dashtest.mjs", {}),
+    ("Checks", "Writers' room check (the chart's format and check, the prompt library, the upgrade, a build through check_all)", "tools/writers/room.py check", {}),
+    ("Checks", "Writers' room page test (the chart drawn in a headless browser, built)", "node tools/writers/pagetest.mjs", {}),
     ("Checks", "Blender look check (Light Kit's times, UltraVHS's camcorder; needs the Blender module)", "tools/blender_look_check.py", {}),
     ("Story", "Kit meshes for Unreal (the importer runs it too)", "tools/kit_build.py --game {game}", {}),
 
@@ -135,8 +146,14 @@ TOOLS = [
     ("Story", "Cast", "tools/story.py --game {game} cast", {}),
     ("Story", "Props still blocks (art to place)", "tools/story.py --game {game} art", {}),
     ("Story", "Plan view picture (needs Pillow)", "tools/plan_view.py --game {game}", {}),
+    ("Story", "Texture templates for Krita (every placeholder thing, or one; into Art/Textures)", "tools/uv_templates.py --game {game} {opt:A thing's id (Enter: every one)}", {}),
+    ("Story", "Texture templates: what's painted, what's stale", "tools/uv_templates.py --game {game} list", {}),
     ("Story", "New game", "tools/story.py new {ask:New game's name}", {}),
 
+    ("Script", "Writers' room: the sessions", "tools/writers/room.py list", {}),
+    ("Script", "Writers' room: what the page shows now", "tools/writers/room.py now", {}),
+    ("Script", "Writers' room: a session's chart as text", "tools/writers/room.py show {ask:Session id}", {}),
+    ("Script", "Writers' room: build a session into the director", "tools/writers/room.py build {ask:Session id}", {}),
     ("Script", "Script generator: outline to story (Ollama)", "tools/scriptgen.py --game {game} new {ask:Outline file}", {}),
     ("Script", "Script generator: review pack", "tools/scriptgen.py --game {game} review", {}),
     ("Script", "Script generator: set up Ollama", "tools/scriptgen.py setup", {}),
@@ -160,8 +177,10 @@ TOOLS = [
     ("Look", "MetaHuman Creator script for a cast member", "tools/metahuman.py --game {game} {ask:Cast id}", {}),
     ("Look", "Glass-skin texture set", "tools/glass_skin.py", {}),
     ("Look", "Clothes: an outfit's contact sheet (Saved/tailor_sheet.png)", "node tools/character/tailor/sheet.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Body (feminine, masculine, average)|--body} --out Saved/tailor_sheet.png", {}),
+    ("Look", "Clothes: pictures of every outfit and design on the default model, for the Studio's picker (Content/Studio/Clothes/thumbs)", "node tools/character/tailor/thumbs.mjs", {}),
     ("Look", "Clothes in motion: an outfit walked, sat and crouched on several bodies (Saved/tailor_motion.png)", "node tools/character/tailor/motion.mjs --outfit {ask:Outfit (e.g. work uniform)} {opt:Bodies (e.g. feminine,full_masculine)|--bodies} --out Saved/tailor_motion.png", {}),
     ("Look", "Face mesh from photos or a video (for Blender)", "tools/face_mesh.py make {ask:Photo, video or folder}", {}),
+    ("Look", "An expression from a video of a face (the desk's Expressions tab does this with Import)", "tools/face_capture.py solve {ask:Video} --out {ask:Folder}", {}),
     ("Look", "Salon reference from a turntable video (frames, key, poses, the face fit)", "tools/gshair.py run {ask:Video} --orbit --to reference --ref {ask:Reference name}", {}),
 
     ("Library", "What the story needs from the CC0 library", "tools/cc0.py needs --game {game}", {}),
@@ -170,6 +189,9 @@ TOOLS = [
     ("Library", "Credits list (ledger)", "tools/cc0.py ledger", {}),
     ("Library", "PBR shelf: scan and list (unpacks new ZIPs)", "tools/pbr.py", {}),
     ("Library", "PBR shelf: five made-up sets to try", "tools/pbr.py demo", {}),
+    ("Library", "Sound shelf: list (filter by a word)", "tools/sfx.py list {ask:Word}", {}),
+    ("Library", "Sound shelf: fetch the CC0 sound effects", "tools/sfx.py fetch", {}),
+    ("Library", "Score room: fetch the added instruments", "tools/score/fetch_samples.py", {}),
 
     ("Ship", "Package a game (dry run)", "tools/package_game.py --game {game} --dry", {}),
     ("Ship", "Package a game", "tools/package_game.py --game {game}", {}),

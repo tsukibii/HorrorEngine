@@ -143,17 +143,34 @@ python tools/director/serve.py        # or the desk on its own (DESK_PORT=8781 f
   <kbd>Ctrl</kbd>+<kbd>D</kbd> work on whatever's picked: cards, a scene's lines, beats, commands. A copy keeps the
   links inside it and gets new ids where they must be unique, and it pastes into another game too.</p>
 <figure class="half"><img src="guide/board-menu.jpg" width="306" height="372" alt="A card's right-click menu" loading="lazy"><figcaption>A card's menu.</figcaption></figure>
+<h3>Cutting the flow and putting it back</h3>
+<p>The arrows are things too, so the order of the game is easy to change while you play it through:</p>
+<ul>
+  <li><b>Click an arrow</b> (or right-click it): <span class="ui">Cut here</span>, or <span class="ui">Insert a scene / conversation / task / choice here</span>
+    (the new card goes in between, the flow carries on after it).</li>
+  <li><b>Drag an arrow by its end</b> onto another card and it goes there instead.</li>
+  <li><b>A cut card keeps a stub</b> (a red dot and a dashed line): drag its dot onto the card that comes next. Until then,
+    the cards after the cut stay on the board, dimmed: nothing reaches them from the start. The Problems list says so as
+    warnings, and the Watch stops there with a card saying the flow's cut.</li>
+  <li><b>Swap two cards:</b> pick both (<kbd>Ctrl</kbd>+click), right-click, <span class="ui">Swap their places in the flow</span>.</li>
+  <li><b>Move a run of cards:</b> pick cards that follow one another, then click the arrow they should go on and
+    <span class="ui">Move the picked cards here</span>. Where they were closes up behind them.</li>
+</ul>
 </section>
 
 <section id="quick">
 <h2><span class="n">3</span>Quick tasks and acts</h2>
 <p>The common shapes of play are one drag: under <span class="ui">Quick tasks</span>, drag <i>A locked door and its
-  key</i>, <i>A note to read</i>, <i>Find it and bring it</i>, <i>Get out before time runs out</i>, <i>Hide and seek</i>
-  or <i>A chase</i> onto the board (or click one). Fill in a few blanks (the key, the door, the room behind it) and the
-  dialog shows what it'll make: a task with its beats, ready to change. A blank left empty shows up in Problems.</p>
+  key</i>, <i>A note to read</i>, <i>Find it and bring it</i>, <i>Get out before time runs out</i>, <i>Hide and seek</i>,
+  <i>A chase</i>, <i>Someone asks for something</i>, or one of a night shift's: <i>A chore: clean up a mess</i> (a
+  stain scrubbed away, on the to-do list), <i>A chore: lock the door</i> (its latch), <i>The power cut</i> (find the breaker box in the dark) and <i>A knock at the
+  door</i> (look through its peephole) onto the board (or click one). Fill in a few blanks (the key, the door, the room
+  behind it) and the dialog shows what it'll make: a task with its beats, ready to change. A blank left empty shows up
+  in Problems.</p>
 <figure class="half"><img src="guide/quick-task.jpg" width="796" height="530" alt="A quick task's dialog" loading="lazy"><figcaption>A locked door and its key: the blanks, and what it makes.</figcaption></figure>
 <p>Inside a task, <span class="ui">Quick beat</span> does the same for one moment: a jump scare on entering, a knock,
-  the lights dying, a door slamming behind, a whisper when looked at, a line on entering, a checkpoint.</p>
+  the lights dying, a door slamming behind, a whisper when looked at, a line on entering, a checkpoint, the flashlight
+  flickering or dying.</p>
 <h3>Acts</h3>
 <p>Pick a few cards and right-click: <span class="ui">Make an act</span> draws a coloured frame behind them with a
   title. Drag the title to move the act with its cards, drop a card in to add it, fold it to a single card to tidy the
@@ -282,7 +299,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
   a phone that rings, a TV of static: the little things that make a room somebody's. Each one has a <b>life</b>: the
   states it goes through (a kettle heats, boils and clicks off by itself), what it shows in each (steam, smoke, an
   ember, a glow, its LEDs), its sound in the room, and what the player can do to it in play
-  (<kbd>E</kbd>: switch it on, drink, put it out).</p>
+  (a click: switch it on, drink, put it out).</p>
 <div class="cols">
   <figure><img src="guide/thing-kettle.jpg" width="820" height="349" alt="A kettle boiling on the stove" loading="lazy"><figcaption>The kettle boiling: its steam.</figcaption></figure>
   <figure><img src="guide/thing-tea.jpg" width="820" height="349" alt="A cup of green tea on the table" loading="lazy"><figcaption>The tea poured from it, a wisp of steam.</figcaption></figure>
@@ -327,8 +344,12 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 <p><span class="ui">Playtest</span> plays the game from the start in the <span class="ui">Watch</span>;
   <span class="ui">▶ Watch from here</span> (on a card, or its right-click menu) starts anywhere. Scenes play as an
   animatic with their takes; with <span class="ui">walk the tasks</span> ticked, you play the tasks yourself:
-  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move, the mouse to look, <kbd>E</kbd> to use, <kbd>C</kbd> to crouch,
-  <kbd>Esc</kbd> to pause.</p>
+  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move (<kbd>Shift</kbd> to run), the mouse to look, a left click to use
+  anything, <kbd>E</kbd> to show or hide the inventory (the wheel turns it), <kbd>G</kbd> to put down what's in your hand,
+  <kbd>C</kbd> to crouch, <kbd>F</kbd> for the flashlight once you have one, <kbd>Esc</kbd> to pause (the controls are on
+  the pause menu's left). Hold the click on a stain to scrub it away; click a door's peephole to look through it; a
+  breaker box brings the power back after a cut; a door's latch (the thumb turn inside) locks it; a small thing you
+  look at is taken up in your hands, a drag turns it, <kbd>Esc</kbd> puts it back.</p>
 <figure class="wide"><img src="guide/watch.jpg" width="1500" height="914" alt="The Watch" loading="lazy"><figcaption>The Watch: a scene from the player's eye, with its subtitles.</figcaption></figure>
 <h3>The debug panel</h3>
 <p><kbd>F9</kbd> (or <span class="ui">Debug</span>) shows every flag, counter, karma and item, live while it plays,
@@ -345,7 +366,7 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
 <p>The desk checks the story as you edit. The <span class="ui">Problems</span> button counts what's wrong (a line by
   someone not in the cast, a beat that waits for a flag nothing sets, a door locked by an item that doesn't exist);
   click one to go straight there. Cards and lines with a problem show a badge.</p>
-<figure class="half"><img src="guide/problems.jpg" width="456" height="659" alt="The problems panel" loading="lazy"><figcaption>Problems, found as you edit.</figcaption></figure>
+<figure class="half"><img src="guide/problems.jpg" width="456" height="856" alt="The problems panel" loading="lazy"><figcaption>Problems, found as you edit.</figcaption></figure>
 <p><span class="ui">Check</span> runs the full story and level checks on the saved story (it saves first).</p>
 </section>
 
@@ -417,8 +438,10 @@ Mari: 来てくれたんだ。 / You came.         Japanese (what's recorded) an
   <tr><td>Free cam</td><td>drag to orbit, wheel to zoom; drag the orange marker to move the player</td></tr>
   <tr class="h"><td colspan="2">The Watch</td></tr>
   <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · mouse</td><td>move · look (click the view to lock the mouse)</td></tr>
-  <tr><td><kbd>E</kbd> · hold <kbd>E</kbd></td><td>use · pick up or put down</td></tr>
-  <tr><td><kbd>C</kbd> · <kbd>Esc</kbd></td><td>crouch · pause</td></tr>
+  <tr><td>left click · <kbd>Shift</kbd></td><td>use (open, take, read, sit, hide...) · run</td></tr>
+  <tr><td><kbd>E</kbd> · wheel · <kbd>G</kbd></td><td>the inventory, shown or hidden · turn it · put down the one in your hand</td></tr>
+  <tr><td><kbd>C</kbd> · <kbd>F</kbd> · <kbd>Esc</kbd></td><td>crouch · the flashlight (once you have one) · pause</td></tr>
+  <tr><td>hold the left button</td><td>scrub a stain away</td></tr>
   <tr><td><kbd>F9</kbd></td><td>the debug panel</td></tr>
 </table>
 <figure class="half"><img src="guide/help.jpg" width="796" height="776" alt="Keys and help in the desk" loading="lazy"><figcaption>The same, in the desk.</figcaption></figure>

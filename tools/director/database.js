@@ -3,9 +3,10 @@
 // on the right, with every place the story uses it (refs.js): click one to go there. A new entry gets its id once,
 // checked against the whole file; a rename moves every use with it. Nothing is typed as JSON.
 //   new Database(host, D).render(): D is the desk (app.js): the story, touch() after an edit, the pickers' lists.
-import { h, modal, triggerPill, sortable, grip } from "./ui.js";
+import { h, modal, triggerPill, sortable, grip, condRow } from "./ui.js";
 import { icon } from "./icons.js";
 import { KINDS, usesOf, flagsOf, renameRef, allIds, ID_RE, placeOf, tableOf } from "./refs.js";
+import { shelf, shelfName, pickShelf, preview } from "./sfx.js";
 
 const TABS = [
   { id: "game", label: "Game", icon: "gear", hint: "The game's own settings: its length, the player's lens, the language of the takes, where it starts." },
@@ -16,7 +17,7 @@ const TABS = [
   { id: "notes", label: "Notes", icon: "note", kind: "note", noun: "note", name: "title",
     hint: "Letters, diary pages, signs: what the player reads. A level places one with use: note." },
   { id: "sounds", label: "Sounds", icon: "sound", kind: "sound", noun: "sound",
-    hint: "Sound effects by name; the file itself lives in the game's Audio folder in Unreal." },
+    hint: "Sound effects by name: one off the Studio's CC0 sound shelf (sfx/<name>, heard in Play and the Watch), or the game's own file in its Audio folder in Unreal." },
   { id: "lines", label: "Lines", icon: "say", kind: "line", noun: "line", name: "en", nameLabel: "English",
     hint: "Voice outside the scenes: barks in play, a whisper, a line a command says. Each is one take, named by its id." },
   { id: "motions", label: "Motions", icon: "motion", kind: "motion", noun: "motion",
@@ -60,7 +61,7 @@ export class Database {
   count(tab) {
     const S = this.S, t = TAB[tab];
     if (tab === "game") return null;
-    if (tab === "state") return Object.keys(flagsOf(S)).length + Object.keys(S.game.counters || {}).length + Object.keys(this.axes()).length;
+    if (tab === "state") return Object.keys(flagsOf(S)).length + Object.keys(S.game.counters || {}).length + Object.keys(this.axes()).length + Object.keys(S.game.words || {}).length;
     if (tab === "interrupts") return (S.interrupts || []).length;
     return Object.keys(tableOf(S, t.kind) || {}).length;
   }
@@ -82,7 +83,8 @@ export class Database {
         const fl = flagsOf(S), ax = this.axes();
         return [{ group: "Flags" }, ...Object.keys(fl).sort().map(f => ({ id: "flag:" + f, label: f, sub: `${fl[f]} use${fl[f] > 1 ? "s" : ""}`, ic: "flag" })),
           { group: "Counters" }, ...Object.entries(S.game.counters || {}).map(([id, c]) => ({ id: "counter:" + id, label: c.label || id, sub: id, ic: "count" })),
-          { group: "Karma axes" }, ...Object.entries(ax).map(([id, a]) => ({ id: "axis:" + id, label: a.label || id, sub: `${id} · ${a.min ?? -10}..${a.max ?? 10}${(S.game.karma || {}).axes ? "" : " (the default)"}`, ic: "heart" }))];
+          { group: "Karma axes" }, ...Object.entries(ax).map(([id, a]) => ({ id: "axis:" + id, label: a.label || id, sub: `${id} · ${a.min ?? -10}..${a.max ?? 10}${(S.game.karma || {}).axes ? "" : " (the default)"}`, ic: "heart" })),
+          { group: "Words" }, ...Object.entries(S.game.words || {}).map(([id, w]) => ({ id: "word:" + id, label: `{${id}}`, sub: (Array.isArray(w) ? w : []).map(o => o.say || "…").join(" / "), ic: "say" }))];
       }
     }
     return [];
@@ -105,7 +107,8 @@ export class Database {
     if (!all.some(x => !x.group)) items.append(h("div", { class: "db-none" }, `No ${t.label.toLowerCase()} yet.`));
     if (this.tab === "interrupts" && this.S.interrupts) sortable(items, this.S.interrupts, "interrupt", { changed: () => this.D.touch(), rerender: () => this.renderList() }, ".db-item");
     const add = this.tab === "state"
-      ? h("div", { class: "db-adds" }, h("button", { on: { click: () => this.newCounter() } }, icon("plus", 13), " Counter"), h("button", { on: { click: () => this.newAxis() } }, icon("plus", 13), " Karma axis"))
+      ? h("div", { class: "db-adds" }, h("button", { on: { click: () => this.newCounter() } }, icon("plus", 13), " Counter"), h("button", { on: { click: () => this.newAxis() } }, icon("plus", 13), " Karma axis"),
+        h("button", { title: "a word filled into what's shown by what's happened: {her}", on: { click: () => this.newWord() } }, icon("plus", 13), " Word"))
       : h("button", { class: "db-new", on: { click: () => this.newEntry() } }, icon("plus", 14), ` New ${t.noun}`);
     box.append(search, items, add);
   }
@@ -197,6 +200,28 @@ export class Database {
       h("p", { class: "hint tight" }, D.bodies().length > 1 ? "Content/Studio/Bodies holds: " + D.bodies().slice(1).map(b => Array.isArray(b) ? b[1] : b).join(", ") + ". A Character Studio character's Export for desk / Unreal shows here too, for a cast member." : "Drop a rigged human (.fbx or .glb) into Content/Studio/Bodies, or export a character from the Character Studio, and reload."));
   }
 
+  // a cast member's other looks (STORY_FORMAT §2 `models`): named variants, each a body, the body above the default; a
+  // scene picks one (its Models picker in Setting the scene) and every scene after it wears it until one picks another
+  modelsEditor(c, id) {
+    const D = this.D, ms = c.models || {}, box = h("span", { class: "db-models" });
+    const picks = fn => { for (const sc of Object.values(this.S.scenes || {})) if (sc.models && id in sc.models) fn(sc); };
+    for (const k of Object.keys(ms)) {
+      const name = h("input", { value: k, style: "width:110px", title: "its name, as scenes pick it", on: { change: e => {
+        const v = e.target.value.trim(); if (!v || v === "default" || (v !== k && v in ms)) { e.target.value = k; return; }
+        c.models = Object.fromEntries(Object.entries(ms).map(([x, f]) => [x === k ? v : x, f])); picks(sc => { if (sc.models[id] === k) sc.models[id] = v; });   // the scenes that pick it follow
+        this.changed(); this.renderForm(); } } });
+      box.append(h("span", { class: "db-model" }, name, this.sel(ms, k, D.bodies(), { blank: false, after: () => D.afterBody() }),
+        h("button", { class: "ghost", title: "take it out (the scenes that pick it carry on as the flow brings them)", on: { click: e => { e.preventDefault();
+          delete ms[k]; if (!Object.keys(ms).length) delete c.models; picks(sc => { if (sc.models[id] === k) { delete sc.models[id]; if (!Object.keys(sc.models).length) delete sc.models; } });
+          this.changed(); this.renderForm(); D.afterBody(); } } }, icon("x", 13))));
+    }
+    box.append(h("button", { class: "small", title: "another look of theirs (lilac eyes, wet, hurt...): a body each, picked per scene", on: { click: e => { e.preventDefault();
+      let n = 1; while (("look " + n) in ms) n++;
+      (c.models = c.models || {})["look " + n] = c.previs_body || D.bodies().map(b => (Array.isArray(b) ? b[0] : b)).find(f => f !== "capsules") || "capsules";
+      this.changed(); this.renderForm(); D.afterBody(); } } }, icon("plus", 13), " Add a model"));
+    return box;
+  }
+
   /* ---- each table's form ---- */
   castForm(c, id) {
     const D = this.D, m = c.measures;
@@ -206,6 +231,7 @@ export class Database {
       (this.S.format || 2) >= 3 ? this.row("Subject", this.sel(c, "subject", [["she", "she"], ["he", "he"]], { blank: "—" }), h("span", { class: "muted" }, "for the MiniMax prompts")) : null,
       this.row("Height", this.f(c, "height", { num: true, step: "0.01", world: true }), "m"),
       this.row("Body in the desk", this.sel(c, "previs_body", D.bodies(), { blank: "the game's default", after: () => D.afterBody() })),
+      this.row("Models", this.modelsEditor(c, id)),
       this.row("Skin", h("input", { type: "color", value: c.skin || "#c8a089", on: { change: e => { c.skin = e.target.value; this.changed(); } } }),
         c.skin ? h("button", { class: "ghost", title: "no skin tone", on: { click: () => { delete c.skin; this.changed(); this.renderForm(); } } }, icon("x", 13)) : h("span", { class: "muted" }, "not set")),
       this.row("Shape", h("span", { class: "muted" }, c.shape ? `${c.shape.length} identity numbers` + (m ? ` · ${m.height || "?"} cm, waist ${m.waist || "?"}, hips ${m.hips || "?"}` : "") : "the average body"),
@@ -229,13 +255,22 @@ export class Database {
     return h("div", { class: "frm" },
       this.row("Name", this.f(it, "name", { after: () => this.retitle(it.name || id) })),
       this.row("Shape", kindSel, nums), h("p", { class: "hint tight" }, "metres; asset is a CC0 library mesh at its real size (cc0.py props)"),
-      this.row("Inspect", this.chk(it, "inspect", "turned over in the hand when picked up")));
+      this.row("Inspect", this.chk(it, "inspect", "turned over in the hand when picked up")),
+      this.row("Flashlight", this.chk(it, "torch", "F lights the way once the player has it (it goes in the pocket, not the row)")));
   }
   notesForm(n, id) {
     return h("div", { class: "frm" }, this.row("Title", this.f(n, "title", { after: () => this.retitle(n.title || id) })), this.row("Text", this.f(n, "text", { long: true, rows: 7 })),
       h("div", { class: "paper" }, h("div", { class: "pt" }, n.title || ""), h("div", {}, n.text || "")));
   }
-  soundsForm(s) { return h("div", { class: "frm" }, this.row("File", this.f(s, "file", { ph: "SFX/door_slam", after: () => this.renderList() })), h("p", { class: "hint tight" }, "under the game's Audio folder in Unreal (/Game/Games/<Game>/Audio)")); }
+  soundsForm(s) {
+    const name = shelfName(s.file), info = h("span", { class: "muted" });
+    if (name) shelf().then(all => { const x = all[name]; info.textContent = x ? `${x.category} · ${x.secs.toFixed(1)} s${x.loop ? " · loop" : ""} · ${x.tags.join(", ")}` : "not on the shelf"; });
+    return h("div", { class: "frm" },
+      this.row("File", this.f(s, "file", { ph: "sfx/door_slam_01", after: () => { this.renderList(); this.renderForm(); } }),
+        name ? h("button", { title: "hear it", on: { click: e => { e.preventDefault(); preview(name); } } }, icon("play", 13)) : null),
+      this.row("Shelf", h("button", { on: { click: async e => { e.preventDefault(); const n = await pickShelf(name); if (n) { s.file = "sfx/" + n; this.changed(); this.renderForm(); } } } }, icon("sound", 14), " From the shelf…"), info),
+      h("p", { class: "hint tight" }, "sfx/<name> plays a CC0 sound off the Studio's shelf (Content/Studio/SFX; python tools/sfx.py list) in Play and the Watch. Anything else is the game's own file under its Audio folder in Unreal (/Game/Games/<Game>/Audio)."));
+  }
   linesForm(ln, id) {
     const S = this.S, D = this.D, subs = (S.game.subtitles || ["en"]).filter(x => x !== "en"), t = D.takes()[id], v3 = (S.format || 2) >= 3;
     const who = [["player", "the player"], ...Object.entries(S.cast || {}).map(([k, c]) => [k, c.name || k])];
@@ -321,6 +356,17 @@ export class Database {
         h("div", { class: "frm" }, this.row("Label", this.f(c, "label", { ph: "times she found you", after: () => this.retitle(c.label || id) }))),
         h("p", { class: "hint" }, "A command changes it (+1, or set to a number); a flow choice by count branches on it."), this.uses("counter", id));
     }
+    if (kind === "word") {                            // a word filled in by what's happened (STORY_FORMAT §9.14): its choices in order
+      const w = (S.game.words || {})[id]; if (!Array.isArray(w)) return h("div", { class: "db-empty" }, "gone");
+      const ctx = Object.assign({}, this.D.ctx, { changed: () => { this.changed(); this.renderList(); }, rerender: () => this.renderForm() }), used = JSON.stringify(S).split(`{${id}}`).length - 1;
+      return h("div", {}, this.head(TAB.state, id, w, { kind: "word", ic: "say", label: `{${id}}`, dup: false, rename: false }),
+        h("p", { class: "hint" }, `{${id}} in anything shown (a line, a thought, an answer, an objective, a note, a cast member's name) says the first of these whose condition holds; the last, with none, is the fallback. It's in ${used} place${used === 1 ? "" : "s"}.`),
+        h("div", { class: "frm" }, ...w.map((o, j) => h("div", { class: "rowi db-word" },
+          h("input", { value: o.say ?? "", placeholder: "what it says", style: "width:140px", on: { change: e => { o.say = e.target.value; this.changed(); this.renderList(); } } }),
+          condRow(o, ctx, j === w.length - 1 && !(o.if || []).length && !o.count ? "otherwise" : "when"),
+          h("button", { class: "ghost", title: "take this one out", on: { click: () => { w.splice(j, 1); if (!w.length) w.push({ say: "" }); this.changed(); this.render(); } } }, icon("x", 13)))),
+          h("button", { title: "another choice, before the fallback", on: { click: () => { w.splice(Math.max(0, w.length - 1), 0, { say: "" }); this.changed(); this.render(); } } }, icon("plus", 13), " Another")));
+    }
     const ax = this.axes(), a = ax[id]; if (!a) return h("div", { class: "db-empty" }, "gone");
     const own = () => { if (!(S.game.karma && S.game.karma.axes)) S.game.karma = Object.assign(S.game.karma || {}, { axes: { karma: { min: -10, max: 10 } } }); return S.game.karma.axes[id]; };
     const edit = (key, o) => this.f(a, key, Object.assign({ into: own, after: () => this.retitle(own().label || id) }, o));
@@ -374,6 +420,12 @@ export class Database {
     if (quiet) { this.D.touch(); return d.id; }
     this.changed(); this.render(); return d.id;
   }
+  async newWord() {
+    const d = await this.askId("New word: {word} in what's shown, by what's happened"); if (!d) return;
+    if (d.id === "name") { await modal({ title: "{name} is the player's", body: h("p", {}, "The name they type (a name command): choose another word."), cancel: null }); return; }
+    const S = this.S; S.game.words = Object.assign(S.game.words || {}, { [d.id]: [{ say: "" }] });
+    this.pick.state = "word:" + d.id; this.changed(); this.render();
+  }
   async newAxis() {
     const d = await this.askId("New karma axis", { name: "", nameLabel: "Label" }); if (!d) return;
     const S = this.S; S.game.karma = S.game.karma || {}; S.game.karma.axes = S.game.karma.axes || { karma: { min: -10, max: 10 } };
@@ -398,9 +450,10 @@ export class Database {
     this.pick[this.tab] = nu; this.changed(true); this.render();
   }
   async remove(kind, id) {
-    const S = this.S, n = usesOf(S, kind, id).length;
+    const S = this.S, n = kind === "word" ? JSON.stringify(S).split(`{${id}}`).length - 1 : usesOf(S, kind, id).length;
     if (!await modal({ title: `Delete ${id}?`, body: h("p", {}, n ? `It's used in ${n} place${n > 1 ? "s" : ""} (listed under the form). Those uses stay and the checks will point at them.` : "Nothing uses it."), ok: "Delete" })) return;
-    if (kind === "counter") { delete S.game.counters[id]; if (!Object.keys(S.game.counters).length) delete S.game.counters; }
+    if (kind === "word") { delete S.game.words[id]; if (!Object.keys(S.game.words).length) delete S.game.words; }
+    else if (kind === "counter") { delete S.game.counters[id]; if (!Object.keys(S.game.counters).length) delete S.game.counters; }
     else if (kind === "axis") delete S.game.karma.axes[id];
     else delete tableOf(S, kind)[id];
     this.pick[this.tab] = null; this.changed(true); this.render();

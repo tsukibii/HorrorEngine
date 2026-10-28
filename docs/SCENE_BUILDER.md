@@ -12,6 +12,13 @@ rooms that can change between chapters. The panel under the 3D view counts what 
 
 ## 1. Using it
 
+- **A set** (DECISIONS 2026-10-27, later: "predesign a studio before you make the game in director so you can use that
+  as a background reference to place objects"): the place designed before its game exists. The game picker's **Sets**
+  group lists them, and **+ new set…** makes one (a name like `studio_apartment`; `python tools/story.py new-set
+  <name>` does the same); it opens like a game, with one room to start from or a reference layout, and Save keeps it
+  in `Content/Studio/Sets/<name>/story.json` (a small story of its own; `--game set:<name>` for story.py's views).
+  `/build-game` builds the writers' room's chart into it (`room.py build --set <name>`: each place on its room, the
+  story's things fitted round its furniture), and any game can take a set's level as a start (*layout*: **From a set**).
 - **Open:** pick the game and the level, or a **reference layout** (§3). A layout is added as a new level
   (`home_<layout>`); anything it shares with the story's other ids is renamed (`genkan_2`, `<level>_start`), because
   ids are unique across the whole file.

@@ -1,6 +1,7 @@
 // The director's stage: a scene's level in greybox (the same plan the Unreal importer builds), the cast as previs
 // figures, and the player's eye. Plays a scene's clips on its elastic timeline with blends, seams and camera moves;
 // renders storyboard frames; finds which body parts the player can see; exports the blocking as glTF for Unreal.
+import { typedSecs } from "./play/typing.js";
 import * as THREE from "three";
 import * as M from "./motion.js";
 import * as K3 from "./kit3.js";
@@ -8,7 +9,12 @@ import * as KIT from "./kit.js";
 import { BodyFigure } from "./bodies.js";
 import { LifeFX } from "./lifefx.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
-import { wearEye } from "../shared/eye.js";      // tools/shared (served at /shared: the page sits at the root)
+import { wearEye } from "../shared/eye.js";
+import { stainMaterial } from "./stain.js";
+import * as FACE from "../shared/face.js";      // tools/shared (served at /shared: the page sits at the root)
+import { layUVs } from "./painted.js";
+import { behaviourOf } from "./play/behaviours.js";   // a scene's behave cues play Play's own behaviours (a body track)
+import { settingsOf } from "./play/parts.js";
 const Y_UP = new THREE.Vector3(0, 1, 0);
 // the simple view (the toolbar's Simple, for when the desk lags): every lit surface a plain Lambert of its own colour, no
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
@@ -45,6 +51,20 @@ export async function loadAssetLibrary() {
   } catch (e) { /* no library: blocks */ }
   try { LIBRARY.kit = (await (await fetch("/api/kit")).json()).presets || {}; } catch (e) { /* no kit presets */ }
   return LIBRARY;
+}
+// the placeholder things painted on their templates (tools/uv_templates.py, docs/ASSETS.md §7): {prop id: its layout
+// (each face's island, which way u and v run) and its picture}; a block that has one wears it, its UVs laid from it
+export const PAINTED = { game: null, things: {} };
+export async function loadPainted(game) {
+  PAINTED.game = game; PAINTED.things = {};
+  try { PAINTED.things = (await (await fetch("/api/painted/" + encodeURIComponent(game))).json()).things || {}; } catch (e) { /* nothing painted */ }
+  return PAINTED;
+}
+const paintCache = {};
+function paintedMaterial(lay) {
+  const key = lay.png + "|" + lay.t;
+  if (!paintCache[key]) { const tex = new THREE.TextureLoader().load(`${lay.png}?t=${lay.t}`); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; paintCache[key] = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }); }
+  return paintCache[key];
 }
 const meshCache = {}, matCache = {};
 function libMesh(ref) {
@@ -130,6 +150,57 @@ export function flowOuts(story, nid) {
     if (st.timer && st.timer.fail) out.push(st.timer.fail);
     for (const it of story.interrupts || []) { const during = it.during || "all"; if (it.to && (during === "all" || during.includes(n.ref))) out.push(it.to); }
   }
+  if (n.type === "scene") out.push(...answerJumps((story.scenes || {})[n.ref]));
+  return out;
+}
+// the cards a scene's answers send the flow to (§9.9 go {node}), from any of its versions (storylib.answer_jumps)
+export function answerJumps(sc) {
+  const out = [];
+  for (const v of [sc || {}, ...Object.values((sc && sc.variants) || {})]) for (const c of v.clips || []) for (const o of (c.reply && c.reply.options) || []) {
+    const [g, to] = replyGo(o); if (g === "node" && to && !out.includes(to)) out.push(to);
+  }
+  return out;
+}
+// each cast member's model through the flow (STORY_FORMAT §2 a cast member's `models`, §3.1 a scene's; storylib.
+// flow_models): a scene's choice carries down every way after it until a later scene picks another or sets it back to
+// default, as the time carries. {nid: {before, models, own: {cast id: variant}, mixed: [cast ids whose model depends on
+// the way you came, the scene not saying], meets: {cast id: [models]} where ways bringing different ones meet}}; a cast
+// member not in it wears the default
+export const sceneModels = sc => (sc && sc.models && typeof sc.models === "object" && !Array.isArray(sc.models) ? sc.models : {});
+export const wearModels = (m, own) => { const out = Object.assign({}, m); for (const [cid, v] of Object.entries(own || {})) { if (!v || v === "default") delete out[cid]; else out[cid] = v; } return out; };
+export function flowModels(story) {
+  const flow = story.flow || {}, scenes = story.scenes || {}, came = {};
+  const ownOf = n => (n.type === "scene" ? sceneModels(scenes[n.ref]) : {});
+  const key = m => JSON.stringify(Object.keys(m).sort().map(k => [k, m[k]]));
+  const todo = [[(story.game || {}).start, {}]];
+  for (let i = 0; i < todo.length; i++) {   // breadth first, as flowTimes
+    const [nid, m] = todo[i]; if (!flow[nid]) continue;
+    const seen = came[nid] || (came[nid] = new Map()), k = key(m); if (seen.has(k)) continue; seen.set(k, m);
+    const after = wearModels(m, ownOf(flow[nid]));
+    for (const to of flowOuts(story, nid)) todo.push([to, after]);
+  }
+  const preds = {}, afters = {}, out = {};
+  for (const k of Object.keys(came)) { afters[k] = [...came[k].values()].map(st => wearModels(st, ownOf(flow[k]))); for (const to of flowOuts(story, k)) (preds[to] = preds[to] || new Set()).add(k); }
+  for (const [nid, seen] of Object.entries(came)) {
+    const states = [...seen.values()], own = ownOf(flow[nid]), cids = [...new Set(states.flatMap(st => Object.keys(st)))].sort();
+    const vals = Object.fromEntries(cids.map(c => [c, [...new Set(states.map(st => st[c] || "default"))].sort()])), meets = {};
+    for (const c of cids) if (vals[c].length > 1 && [...(preds[nid] || [])].every(p => new Set((afters[p] || []).map(st => st[c] || "default")).size <= 1)) meets[c] = vals[c];   // where the ways meet
+    out[nid] = { before: states[0], models: wearModels(states[0], own), own, mixed: cids.filter(c => !(c in own) && vals[c].length > 1), meets };
+  }
+  return out;
+}
+// the body file a cast member wears in a variant, else their default (previs_body, the game's; storylib.model_file)
+export function modelFile(story, cid, variant) {
+  const c = ((story && story.cast) || {})[cid] || {};
+  return (variant && variant !== "default" && (c.models || {})[variant]) || c.previs_body || ((story && story.game) || {}).previs_body || null;
+}
+// the time of day a task's chapters leave it at (its last `chapter` with a `time`; storylib.chapter_time), or null
+export function chapterTime(story, n) {
+  if (!n || n.type !== "stitch") return null;
+  let out = null;
+  const walk = l => { for (const a of l || []) { if (!a || typeof a !== "object") continue; if (a.chapter !== undefined && TIMES.includes(a.time)) out = a.time;
+    for (const o of a.options || []) walk(o.do); if (a.todo !== undefined && a.on) for (const x of Object.values(a.on)) walk(x); } };
+  for (const b of ((story.stitches || {})[n.ref] || {}).beats || []) walk(b.do);
   return out;
 }
 export function flowTimes(story) {        // {nid: {time, from (the scene node that set it, or "game"), own, paths}}
@@ -139,8 +210,8 @@ export function flowTimes(story) {        // {nid: {time, from (the scene node t
   for (let i = 0; i < todo.length; i++) {   // breadth first: the nearest scene before a node wins
     const [nid, t, src] = todo[i]; if (!flow[nid]) continue;
     const seen = came[nid] || (came[nid] = new Map()); if (seen.has(t)) continue; seen.set(t, src);
-    const own = ownOf(flow[nid]);
-    for (const to of flowOuts(story, nid)) todo.push([to, own || t, own ? nid : src]);
+    const on = ownOf(flow[nid]) || chapterTime(story, flow[nid]);   // a scene's own time, or the one a task's chapter leaves (a night's sleep)
+    for (const to of flowOuts(story, nid)) todo.push([to, on || t, on ? nid : src]);
   }
   const out = {};
   for (const [nid, seen] of Object.entries(came)) {
@@ -169,11 +240,34 @@ export function jaSecs(t) {
 export const PLAYS = { hide: ["hidden", "found"], run: ["escaped", "caught"], collect: ["done", "failed"], sneak: ["made_it", "spotted"],
   hold: ["held", "broke"], search: ["found", "out_of_time"], escape: ["out", "caught"] };   // storylib.PLAYS
 export const REPLY_SECS = 6, REPLY_ANSWER = 2.5;   // storylib's: she waits this long; a player answers in about this
-export function thenClip(c, o) {                     // her answer to a reply, as a clip of its own (its take: <take id>_<option>)
+// her answer to a reply, its lines as clips of their own (their takes: <take id>_<option>, then _2, _3...): `then` is
+// one line, or a list of them (a conversation card's answer, STORY_FORMAT §9.9)
+export const thenList = o => (Array.isArray(o.then) ? o.then.filter(x => x && typeof x === "object") : o.then && typeof o.then === "object" ? [o.then] : []);
+export const thenId = (c, o, n = 0) => `${c.id}_${o.id}${n ? "_" + (n + 1) : ""}`;
+export function thenClips(c, o) {
   if (!c._then) Object.defineProperty(c, "_then", { value: {}, enumerable: false, writable: true });
-  const key = JSON.stringify(o.then) + c.who, hit = c._then[o.id];        // the same object while it's unchanged
-  if (hit && hit.key === key) return hit.clip;
-  return (c._then[o.id] = { key, clip: Object.assign({ who: c.who }, o.then, { id: `${c.id}_${o.id}` }) }).clip;
+  const key = JSON.stringify(o.then) + c.who, hit = c._then[o.id];        // the same objects while it's unchanged
+  if (hit && hit.key === key) return hit.clips;
+  return (c._then[o.id] = { key, clips: thenList(o).map((th, n) => Object.assign({ who: c.who }, th, { id: thenId(c, o, n) })) }).clips;
+}
+export const thenClip = (c, o) => thenClips(c, o)[0];
+// where an answer leaves the conversation: ["next"], ["clip", id] (a later line), ["end"], or ["node", id] (another card)
+export function replyGo(o) {
+  const g = (o && o.go) || "next";
+  if (g && typeof g === "object") return g.clip !== undefined ? ["clip", g.clip] : g.node !== undefined ? ["node", g.node] : ["next"];
+  return g === "end" ? ["end"] : ["next"];
+}
+// a shown thing's condition (STORY_FORMAT §9.14; storylib.holds): `if` flags (`!` for not), a counter's `count` with
+// `min`/`max`; with neither it holds
+export function holds(c, flags, counters) {
+  for (const f of (c && c.if) || []) if (f.startsWith("!") ? flags.has(f.slice(1)) : !flags.has(f)) return false;
+  if (c && c.count) { const v = (counters || {})[c.count] || 0; if ((c.min != null && v < c.min) || (c.max != null && v > c.max)) return false; }
+  return true;
+}
+// a word filled into what's shown ({her}: game.words, the first option that holds; storylib.word_of), else null
+export function wordOf(story, w, flags, counters) {
+  for (const o of (((story && story.game) || {}).words || {})[w] || []) if (o && holds(o, flags, counters)) return o.say ?? "";
+  return null;
 }
 export function eventSecs(ev, story) { return +ev.secs || (ev.type === "choose" && story && (story.format || 2) >= 3 ? 30 : 3); }
 export function karmaOf(d) { if (d === undefined || d === null) return {}; return typeof d === "number" ? { karma: d } : Object.assign({}, d); }
@@ -184,6 +278,7 @@ export function karmaPick(n, karma, story) {             // a flow choice by kar
   return (n.options || [])[n.options.length - 1];
 }
 export function clipSecs(c) {
+  if (c.think && (c.retype || c.breaks)) return Math.max(1.5, typedSecs(c.en || "", c) + (c.breaks ? 0.4 : 1.0));   // typing itself out (§9.15; storylib.clip_secs)
   if (c.dur) { const tr = c.trim || {}; return Math.max(0.1, +c.dur - +(tr.in || 0) - +(tr.out || 0)); }
   if (c.dur_tts) return +c.dur_tts;
   if (c.ja && /[\u3000-\u9fff]/.test(c.ja)) return Math.max(1.5, jaSecs(c.ja));
@@ -199,6 +294,29 @@ export function minimaxPrompt(c, cast) {
   return out;
 }
 export const VOICES = ["says", "whispers", "says angrily", "screams", "murmurs", "sobs", "says softly", "says coldly", "says flatly", "pleads", "laughs", "giggles", "says in a trembling voice", "hisses", "gasps", "sings softly", "hums"];
+// the expression library as scenes use it (their face rows: STORY_FORMAT §3.7), fetched once a page: each expression
+// a scene places, ARKit's map onto MHR's 72 shapes and MHR's face for Studio exports (tools/shared/face.js)
+export const FACES = { lib: {}, wait: {}, M: null, F: null };
+export function loadFaces(faces) {
+  const list = faces || [], jobs = [];
+  for (const id of new Set(list.map(p => p.expr).filter(Boolean))) {
+    if (FACES.lib[id]) continue;
+    jobs.push(FACES.wait[id] = FACES.wait[id] || fetch(`/api/expressions/${encodeURIComponent(id)}`).then(r => r.ok ? r.json() : null).then(e => { if (e) FACES.lib[id] = e; else delete FACES.wait[id]; }).catch(() => { delete FACES.wait[id]; }));
+  }
+  if (list.length && !FACES.M) jobs.push(FACE.loadMap().then(m => { FACES.M = m; }).catch(() => null));
+  if (list.length && !FACES.F) jobs.push(FACE.loadMHRFace().then(f => { FACES.F = f; }).catch(() => null));
+  return Promise.all(jobs);
+}
+export function forgetFace(id) { if (id) { delete FACES.lib[id]; delete FACES.wait[id]; } else { FACES.lib = {}; FACES.wait = {}; } }   // the library changed
+// a clip edge's time on a timeline (a face's or a cue's `at`), or undefined when the clip isn't in it
+export function edgeTime(segs, at) {
+  const s = segs.find(x => x.type === "clip" && !x.answer && x.clip.id === (at || {}).clip);
+  return s ? (at.edge === "end" ? s.end : s.start) + (+at.offset || 0) : undefined;
+}
+
+// a scene version's face rows laid on its timeline (face.js facePlan), with the expressions loaded so far
+export function facePlanOf(v, tl) { return FACE.facePlan(v.faces, at => edgeTime(tl.segs, at), tl.total, FACES.lib); }
+
 export function version(sc) { const v = sc && sc.variants && sc.pick && sc.variants[sc.pick]; return v ? Object.assign({}, sc, v) : (sc || {}); }
 
 // ---- the figure -------------------------------------------------------------------------------------------------
@@ -285,6 +403,7 @@ export class Stage {
   setWorld(plan, story, level) {
     this.story = story; this.plan = plan; this.level = level;
     this.things = plan.things;
+    this.uncull(); this._rooms = null;                // what Play left out of sight comes back first (cull)
     this.world.clear(); this.lights = []; this.solid = []; this.cast = {}; this.pending = []; this._through = new Set();
     const mats = {
       wall: new THREE.MeshStandardMaterial({ color: 0x55524d, roughness: 0.95 }),
@@ -311,10 +430,13 @@ export class Stage {
         let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
+        const painted = p.kind === "mesh" && p.shape === "box" && PAINTED.things[p.id];   // painted on its template: its UVs from the layout, at the block's own size
+        if (painted) { mat = paintedMaterial(painted); layUVs(geo.attributes.position, geo.attributes.normal, geo.attributes.uv, Object.assign({}, painted, { size: [w, d, h] })); }
         const m = new THREE.Mesh(geo, mat);
         m.position.copy(s2t(...p.pos));
         m.rotation.y = p.yaw * Math.PI / 180;
         m.userData = { id: p.id, kind: p.kind, art: artRef || null, use: (p.tags.find(t => t.startsWith("use:")) || "").slice(4) || null, piece: p };
+        if (m.userData.use === "clean") m.material = stainMaterial((p.d || {}).stain, p.id);   // a stain: a blot on what it lies on
         m.visible = !hidden;
         m.userData.doorPart = (p.tags.find(t => t.startsWith("door_part:")) || "").slice(10) || null;
         m.userData.attach = (p.tags.find(t => t.startsWith("attach:")) || "").slice(7) || null;
@@ -325,7 +447,7 @@ export class Stage {
                                  handleZ: f.handle_z, handleIn: f.handle_in };
           } catch (e) { }
         }
-        this.world.add(m); if (!p.tags.includes("hollow") && !hidden) this.solid.push(m);     // a door frame: you see and walk through it
+        this.world.add(m); if (!p.tags.includes("hollow") && !hidden && m.userData.use !== "clean") this.solid.push(m);     // a door frame: you see and walk through it; a stain: you walk over it
         if (p.tags.some(t => t.startsWith("kit:")) && p.d && p.d.kit !== undefined) this.kitIn(m, p.d.kit, h);
         else if (artRef && LIBRARY.meshes.has(artRef)) this.pending.push(this.dress(m, artRef, [w, h, d], p.tags.includes("real")));
       } else if (p.kind === "light") {
@@ -333,7 +455,7 @@ export class Stage {
         const [col, inten, dist] = { bulb: [0xffc98a, 2.2, 7], candle: [0xffa84a, 1.0, 3.5], lamp: [0xffd2a0, 1.6, 5], fire: [0xff8a3a, 3, 9] }[kind] || [0xffc98a, 2, 7];
         const l = new THREE.PointLight(col, (p.d && p.d.lit === false) ? 0 : inten, dist, 1.6);
         l.position.copy(s2t(...p.pos));
-        l.userData = { id: p.id, room: p.room, base: l.intensity, flicker: (p.d && p.d.flicker) || 0 };
+        l.userData = { id: p.id, room: p.room, base: l.intensity, flicker: (p.d && p.d.flicker) || 0, kind };   // kind: a candle or a fire burns through a power cut
         this.world.add(l); this.lights.push(l);
       } else if (p.kind === "person") {
         const cid = (p.tags.find(t => t.startsWith("cast:")) || "").slice(5);
@@ -346,7 +468,7 @@ export class Stage {
       }
     }
     for (const [cid, c] of Object.entries(story.cast || {})) {
-      const f = this.makeFigure(c);
+      const f = this.makeFigure(this.dressed(cid, c));
       f.group.visible = false;
       this.world.add(f.group); this.cast[cid] = f;
     }
@@ -374,28 +496,50 @@ export class Stage {
     for (const l of this.windows) { l.color.set(L.win[0]); l.intensity = L.win[1] * l.userData.area; l.distance = L.win[2]; }
   }
 
+  fileFor(c) { return (c && c.previs_body) || (this.story && this.story.game && this.story.game.previs_body) || this.defaultBody; }
   bodyFor(c) {
-    const file = (c && c.previs_body) || (this.story && this.story.game && this.story.game.previs_body) || this.defaultBody;
+    const file = this.fileFor(c);
     return file && file !== "capsules" ? this.bodies[file] : null;
   }
   makeFigure(c, color) {
     const h = +(c.height || 1.7), tpl = this.bodyFor(c);
+    let f = null;
     if (tpl) {
       const studio = !!(tpl.userData && tpl.userData.studio);   // a Character Studio character: its own look and its eyes (tools/shared/eye.js), its own shape
-      const f = new BodyFigure(this.lib, h, tpl, { color, shape: studio ? null : c.shape, keepMaterials: studio });
+      f = new BodyFigure(this.lib, h, tpl, { color, shape: studio ? null : c.shape, keepMaterials: studio });
       if (f.ok && studio) f.model.traverse(o => { if (o.isMesh) wearEye(o); });
-      if (f.ok) return f;
-      console.warn("body file: bones not found:", f.missing.join(", "));
+      if (!f.ok) { console.warn("body file: bones not found:", f.missing.join(", ")); f = null; }
     }
-    return new Figure(this.lib, h, color);
+    f = f || new Figure(this.lib, h, color);
+    f.file = tpl ? this.fileFor(c) : null;             // the body it wears (a model switched: made again, setModels)
+    return f;
+  }
+  // a cast member as this scene dresses them: their model (STORY_FORMAT §2 `models`), as setModels says
+  dressed(cid, c) { const file = (this.models || {})[cid]; return file ? Object.assign({}, c, { previs_body: file }) : c; }
+  // which model each cast member wears now: {cast id: body file} (flowModels, or the Watch's own run); a figure whose
+  // body changes is made again where the old one stood
+  setModels(map = {}) {
+    this.models = map;
+    for (const [cid, c] of Object.entries((this.story && this.story.cast) || {})) {
+      const old = this.cast[cid]; if (!old) continue;
+      const d = this.dressed(cid, c), file = this.bodyFor(d) ? this.fileFor(d) : null;
+      if ((old.file || null) === file) continue;
+      const f = this.makeFigure(d);
+      f.group.position.copy(old.group.position); f.group.quaternion.copy(old.group.quaternion); f.group.visible = old.group.visible;
+      (old.group.parent || this.world).add(f.group); if (old.group.parent) old.group.parent.remove(old.group);
+      this.cast[cid] = f;
+    }
   }
 
   // ---- a scene's timeline (elastic: every length comes from its clip) ----------------------------------------
   // picks: {clip id: reply option id, or null for silence}; without a pick a reply shows its first option's answer
   timeline(sc, picks = {}) {
     const v = version(sc), clips = v.clips || [], segs = [];
-    let t = 0;
-    clips.forEach((c, i) => {
+    let t = 0, go = null;
+    const run = this.runState;                         // a run's flags and counters: the lines it leaves out (§9.14); the desk's script plays them all
+    for (let i = 0; i < clips.length; i++) {          // in order, unless an answer skips ahead, ends it, or leaves for another card (go)
+      const c = clips[i];
+      if (run && !holds(c, run.flags, run.counters)) continue;
       if (i && c.seam && SEAM_SECS[c.seam.kind]) { segs.push({ type: "seam", start: t, end: t + SEAM_SECS[c.seam.kind], seam: c.seam, i }); t += SEAM_SECS[c.seam.kind]; }
       const d = clipSecs(c);
       segs.push({ type: "clip", start: t, end: t + d, dur: d, clip: c, i }); t += d;
@@ -403,16 +547,16 @@ export class Stage {
       if (ev) { const es = eventSecs(ev, this.story); segs.push({ type: "event", start: t, end: t + es, event: ev, clip: c, i }); t += es; }
       const rp = c.reply;
       if (rp) {                                       // the hanging line's wait, then her answer to the reply picked
-        const picked = c.id in picks ? picks[c.id] : ((rp.options || [])[0] || {}).id;
+        const picked = c.id in picks ? picks[c.id] : (((run ? (rp.options || []).filter(o => holds(o, run.flags, run.counters)) : rp.options) || [])[0] || {}).id;
         const o = (rp.options || []).find(x => x.id === (picked === null ? rp.timeout : picked));
         const ws = picked === null ? +(rp.wait || REPLY_SECS) : Math.min(+(rp.wait || REPLY_SECS), REPLY_ANSWER);
         segs.push({ type: "reply", start: t, end: t + ws, reply: rp, clip: c, i, picked }); t += ws;
-        if (o && o.then) {
-          const th = thenClip(c, o), td = clipSecs(th);
-          segs.push({ type: "clip", start: t, end: t + td, dur: td, clip: th, i, answer: o.id }); t += td;
-        }
+        if (o) for (const th of thenClips(c, o)) { const td = clipSecs(th); segs.push({ type: "clip", start: t, end: t + td, dur: td, clip: th, i, answer: o.id }); t += td; }
+        const [g, to] = replyGo(o);
+        if (g === "clip") { const j = clips.findIndex(x => x.id === to); if (j > i) i = j - 1; }   // on from that line
+        else if (g === "end" || g === "node") { go = g === "node" ? { node: to, from: c.id, answer: o.id } : null; break; }
       }
-    });
+    }
     const hold = (v.hold && +v.hold.max) ? +v.hold.max / 2 : 0;
     if (hold) { segs.push({ type: "hold", start: t, end: t + hold }); t += hold; }
     const last = {};                                  // each actor starts a clip where their previous clip left them
@@ -422,7 +566,7 @@ export class Stage {
       const moved = ((c.body && c.body.block) || []).filter(k => k.moveVec);
       if (moved.length) last[c.who] = moved[moved.length - 1].moveVec.clone();
     }
-    return { segs, total: t, v };
+    return { segs, total: t, v, go };                 // go: the card an answer sends the flow to, after the scene
   }
   resolveMoves(v, c) {             // blocking keys that `move` to a spot: the travel in the actor's own frame
     const keys = c.body && c.body.block; if (!keys) return;
@@ -585,6 +729,74 @@ export class Stage {
   }
 
   // everything at scene time T: who stands where in what pose, the camera, the cover (black), the subtitle
+  // ---- a body track (STORY_FORMAT §3.8, HANDOFF_DIRECTOR_TODO §4): a scene's cues doing `behave` (idle, sit, go,
+  // path, patrol, off: Play's own behaviours, play/behaviours.js) drive their cast member from the cue's clip edge
+  // until the next one or the shot's end: a state that outlives a clip's motion (after the walk, sit on the chair till
+  // the shot ends), a patrol round and round. Replayed at a fixed step from the cue (kept while time moves on, so a
+  // scrub back plays it again), starting where the last one left her, else at her mark as her clip had her then
+  behaveCues(tl) {                              // {who: [{t, a}]}, in time
+    if (tl._bcues) return tl._bcues;
+    const out = {};
+    for (const cu of tl.v.cues || []) {
+      const a = cu.do; if (!a || typeof a.behave !== "string") continue;
+      const t = edgeTime(tl.segs, cu.at); if (t === undefined) continue;
+      (out[a.behave] = out[a.behave] || []).push({ t, a });
+    }
+    for (const l of Object.values(out)) l.sort((x, y) => x.t - y.t);
+    return tl._bcues = out;
+  }
+  behaveRt() {                                  // what a behaviour needs of a runtime, from the stage
+    if (this._brt && this._brt.things === this.things) return this._brt;
+    const st = this, byId = {};
+    this.world.traverse(o => { if (o.userData && o.userData.id && !byId[o.userData.id]) byId[o.userData.id] = o; });
+    return this._brt = { things: this.things, plan: { things: this.things }, story: this.story, hud: { log() {} }, byId, npcs: {}, emit() {}, caught() {},
+      player: { get pos() { return st.camera.position.clone().setY(st.camera.position.y - 1.6); }, hiding: null },
+      route(ref) {                               // runtime.route: a level's route or a list of spots, as points
+        let r = null, level = null;
+        if (Array.isArray(ref)) r = { points: ref };
+        else for (const [lid, lv] of Object.entries(st.story.levels || {})) if ((lv.routes || {})[ref]) { r = lv.routes[ref]; level = lid; }
+        if (!r) return null;
+        const points = [];
+        for (const p of r.points || []) { const q = typeof p === "string" ? { at: p } : p, t = st.things[q.at]; if (!t) continue; level = level || t.level; points.push({ pos: s2t(t.pos[0], t.pos[1], t.pos[2] || 0), yaw: t.yaw || 0, wait: +(q.wait || 0), pose: q.pose || null, check: q.check || null }); }
+        return points.length ? { level, mode: r.mode || "loop", points } : null;
+      } };
+  }
+  behaveAt(tl, who, cues, k, T, files) {        // the behaviour's npc at T (its pos in three's space, yaw in story degrees, pose, walking)
+    const memo = this._bmemo || (this._bmemo = new Map()), key = who + "|" + JSON.stringify(cues.slice(0, k + 1).map(c => [c.t, c.a])) + "|" + JSON.stringify((tl.v.stage || {})[who] || null) + "|" + this.level;
+    const cue = cues[k], b = behaviourOf(cue.a.as || "idle"), rt = this.behaveRt();
+    let m = memo.get(key);
+    if (!m || m.t > T + 1e-6) {
+      const from = k > 0 ? this.behaveAt(tl, who, cues, k - 1, cue.t, files) : this.markOf(tl, who, cue.t, files);
+      const npc = { cid: who, as: cue.a.as || "idle", s: settingsOf(b || { settings: {} }, cue.a), st: {}, pos: from && from.pos ? from.pos.clone() : null, yaw: from ? from.yaw || 0 : 0,
+                    level: (from && from.level) || this.level, pose: (from && from.pose) || "idle", walking: false, t0: cue.t };
+      if (b && npc.as !== "off") b.start(npc, rt, npc.s);
+      m = { t: cue.t, npc }; memo.set(key, m);
+      if (memo.size > 400) memo.delete(memo.keys().next().value);
+    }
+    const DT = 1 / 30;
+    if (b && b.update && m.npc.as !== "off") while (m.t + DT <= T + 1e-9) { b.update(m.npc, rt, DT, m.npc.s); m.t += DT; }
+    return m.npc;
+  }
+  markOf(tl, who, t, files) {                   // where she is when her track takes over: her mark, moved as far as her clip had moved her
+    const spot = this.things[(tl.v.stage || {})[who]]; if (!spot) return null;
+    const pos = s2t(spot.pos[0], spot.pos[1], spot.pos[2] || 0), yaw = spot.yaw || 0;
+    const mine = tl.segs.filter(s => s.type === "clip" && s.clip.who === who), cur = [...mine].reverse().find(s => s.start <= t);
+    if (cur) {                                    // the clip's own travel (a Kimodo walk, blocking that moves): its hips, from the mark
+      const bd = cur.clip.body || {}, bs = +bd.secs || cur.dur, lt = Math.min(bs, Math.max(0, t - cur.start - (+bd.delay || 0)));
+      const p = this.clipPose(cur.clip, lt, bs, files, this.startOf(tl, cur, files)), hip = p && (p.pelvis || p["soma:Hips"]);
+      if (hip) pos.add(new THREE.Vector3(hip.x, 0, hip.z).applyAxisAngle(new THREE.Vector3(0, 1, 0), yawToThree(yaw)));
+    }
+    return { pos, yaw, level: spot.level || this.level };
+  }
+  behavePose(npc, who, T, files) {              // as Play draws her (runtime.drawNpcs): her motion, else the pose (walking: the walk over it)
+    const lib = this.lib, h = +((this.story.cast || {})[who] || {}).height || 1.7;
+    const m = npc.s.motion && (this.story.motions || {})[npc.s.motion], walks = npc.as === "path" || npc.as === "patrol" || npc.as === "go";
+    const mp = m && (npc.walking || !walks) ? M.tableMotionPose(lib, m, m.name && files && files[m.name + ".json"], T - (npc.t0 || 0), h, walks) : null;
+    if (mp) return mp;
+    let p = M.clonePose(lib.poses[npc.pose] || lib.poses.idle);
+    if (npc.walking) p = M.walkOverlay(lib, p, T);
+    return M.fk(lib, p, h).pos;
+  }
   stateAt(tl, T, files, look = { yaw: 0, pitch: 0 }) {
     const v = tl.v, segs = tl.segs;
     let seg = segs.find(s => T >= s.start && T < s.end) || segs[segs.length - 1];
@@ -592,8 +804,22 @@ export class Stage {
     const out = { seg, clipSeg, black: 0, sub: null, ja: null, who: null, poses: {}, reach: {}, cam: {} };
     if (!clipSeg) return out;
     const c = clipSeg.clip, local = Math.min(clipSeg.dur, T - clipSeg.start);
+    // a body track: a behave cue (STORY_FORMAT §3.8) drives its cast member from its time on, Play's behaviour replayed
+    out.place = {};
+    const bhv = this.behaveCues(tl);
+    for (const [who, cues] of Object.entries(bhv)) {
+      let k = -1; for (let i = 0; i < cues.length; i++) if (cues[i].t <= T + 1e-9) k = i;
+      if (k < 0 || !this.cast[who]) continue;
+      const npc = this.behaveAt(tl, who, cues, k, T, files);
+      out.place[who] = { pos: npc.pos ? npc.pos.clone() : null, yaw: npc.yaw || 0, level: npc.level, hidden: npc.as === "off" || !npc.pos };
+      if (out.place[who].hidden) continue;
+      let pos = this.idleLayer(this.behavePose(npc, who, T, files), who, T, npc.walking ? 0.3 : 1, v.mood);
+      const spec = (v.look || {})[who]; if (spec) pos = this.lookLayer(pos, who, spec, tl, T, v);   // the scene's look still turns her head
+      out.poses[who] = pos;
+    }
     // poses: the speaking clip drives its actor; others idle; blends at clip starts
     for (const who of Object.keys(v.stage || {})) {
+      if (out.place[who]) continue;                    // (its body track has her)
       const mine = segs.filter(s => s.type === "clip" && s.clip.who === who);
       const cur = [...mine].reverse().find(s => s.start <= T) || mine[0];
       let pos;
@@ -622,9 +848,17 @@ export class Stage {
         if (tg && w > 0) out.reach[who] = { hand: r.hand || "right", target: tg, w, offset: r.offset };
       }
     }
+    if ((v.faces || []).length && FACES.M) {         // the face rows: MHR's 72 for each face with something on it at T (null: at rest)
+      const n = Object.keys(FACES.lib).length;
+      const run = this.runState, worn = run ? v.faces.filter(p => holds(p, run.flags, run.counters)) : v.faces;   // a face by a condition: worn when it holds (§9.14)
+      if (!tl.facePlan || tl.faceN !== n) { tl.facePlan = FACE.facePlan(worn, at => edgeTime(segs, at), tl.total, FACES.lib); tl.faceN = n; }
+      out.faces = {};
+      for (const who of Object.keys(tl.facePlan)) { const sc = FACE.faceAt(tl.facePlan, who, T); out.faces[who] = sc ? FACE.toMHR(sc, FACES.M) : null; }
+    }
     out.trackers = {};
     for (const id of Object.keys(v.trackers || {})) { const p = this.trackerAt(tl, id, T); if (p) out.trackers[id] = p; }
-    if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; }
+    if (seg.type === "clip") { out.sub = c.en; out.ja = c.ja; out.who = c.who; out.think = !!c.think;
+      if (c.think && (c.retype || c.breaks)) out.typing = { text: c.en || "", retype: c.retype, breaks: !!c.breaks, t: T - seg.start }; }   // drawn as it types (typing.js)
     if (seg.type === "seam") {
       const k = seg.seam.kind, u = (T - seg.start) / (seg.end - seg.start);
       if (k === "blink") out.black = Math.sin(u * Math.PI);
@@ -748,6 +982,11 @@ export class Stage {
     return null;
   }
 
+  faceOn(f, w72) {               // a figure's face: MHR's 72 shapes on its morphs, or a Studio export's skin (face.js)
+    if (!f.model) return;
+    if (!f._faceT || f._faceF !== FACES.F) { f._faceT = FACE.faceOf(f.model, FACES.F); f._faceF = FACES.F; }   // (a Studio export's needs MHR's face loaded)
+    FACE.setFace(f._faceT, w72); f._faceOn = !!w72;
+  }
   apply(tl, state, T) {          // pose the figures, aim the camera, set the lights
     const v = tl.v;
     const through = new Set((v.camera || {}).through || []);           // the props the scene's eye is inside
@@ -760,11 +999,17 @@ export class Stage {
       this._trk[id].position.copy(p); this._trk[id].visible = Stage.showTrackers;
     }
     for (const [cid, f] of Object.entries(this.cast)) {
-      const spot = this.things[(v.stage || {})[cid]];
-      f.group.visible = !!spot;
-      if (!spot) continue;
-      f.group.position.copy(s2t(spot.pos[0], spot.pos[1], spot.pos[2]));
-      f.group.rotation.y = yawToThree(spot.yaw);
+      const spot = this.things[(v.stage || {})[cid]], pl = (state.place || {})[cid];
+      if (pl) {                                    // her body track: where the behaviour has her
+        f.group.visible = !pl.hidden && (!pl.level || pl.level === this.level);
+        if (!f.group.visible) continue;
+        f.group.position.copy(pl.pos); f.group.rotation.y = yawToThree(pl.yaw);
+      } else {
+        f.group.visible = !!spot;
+        if (!spot) continue;
+        f.group.position.copy(s2t(spot.pos[0], spot.pos[1], spot.pos[2]));
+        f.group.rotation.y = yawToThree(spot.yaw);
+      }
       f.group.updateMatrixWorld(true);
       f.reach = {};
       const rc = (state.reach || {})[cid];
@@ -778,6 +1023,8 @@ export class Stage {
         }
       }
       if (state.poses[cid]) f.update(state.poses[cid]);
+      const w72 = (state.faces || {})[cid] || null;
+      if (w72 || f._faceOn) this.faceOn(f, w72);
     }
     const eye = this.eyeOf(v), view = this.things[v.view];
     const fwd = view ? new THREE.Vector3(Math.cos(view.yaw * Math.PI / 180), 0, -Math.sin(view.yaw * Math.PI / 180)) : new THREE.Vector3(0, 0, -1);
@@ -810,6 +1057,58 @@ export class Stage {
     }
   }
   render() { this.simplify(); this.renderer.render(this.scene, this.camera); }
+  // the simple view also leaves out what Play's eye can't see (cull): the rooms the eye is in, and the rooms seen from
+  // them through an opening in view (an archway, a window, an open door or one still swinging), three deep. A room out of
+  // sight keeps its walls and doors (a wall belongs to one of the two rooms it parts) and loses its props, floor, ceiling
+  // and lights to a layer the camera doesn't draw; every ray still finds them (the game's rules don't change). Its lights
+  // out, the light that came through a wall from it goes too: the simple view's look, not the game's
+  cull(camera, isOpen) {
+    const R = this._rooms || (this._rooms = this.roomsForCull());
+    const c = camera.position, x = c.x, y = -c.z, z = c.y, m = 0.35;
+    const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const seen = new Map();
+    for (const r of R.list) if (x >= r.x0 - m && x <= r.x1 + m && y >= r.y0 - m && y <= r.y1 + m && z >= r.z0 - 0.2 && z <= r.z1 + 0.2) seen.set(r.id, 0);
+    const q = [...seen.keys()];
+    while (q.length) {
+      const id = q.shift(), d = seen.get(id); if (d >= 3) continue;
+      for (const p of R.portals[id] || []) if (!seen.has(p.to) && (!p.door || isOpen(p.door)) && fr.intersectsBox(p.box)) { seen.set(p.to, d + 1); q.push(p.to); }
+    }
+    if (!seen.size) return this.uncull();             // the eye in no room (outside the level): draw it all
+    for (const r of R.list) {
+      const out = !seen.has(r.id); if (out === !!R.out[r.id]) continue;
+      R.out[r.id] = out;
+      for (const o of R.objs[r.id] || []) o.traverse(k => k.layers.set(out ? 1 : 0));
+    }
+  }
+  uncull() {
+    const R = this._rooms; if (!R) return;
+    for (const id of Object.keys(R.out)) if (R.out[id]) { R.out[id] = false; for (const o of R.objs[id] || []) o.traverse(k => k.layers.set(0)); }
+  }
+  roomsForCull() {                // the level's rooms (story metres), the openings between them, and what goes with each
+    const rooms = ((this.story.levels || {})[this.level] || {}).rooms || [], R = { list: [], portals: {}, objs: {}, out: {} };
+    for (const r of rooms) { const [x0, y0, z0] = r.at, [w, d, h] = r.size; R.list.push({ id: r.id, x0, y0, z0, x1: x0 + w, y1: y0 + d, z1: z0 + h }); }
+    const within = (x, y, z) => R.list.find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1 && z >= r.z0 && z <= r.z1);
+    for (const r of rooms) for (const op of r.openings || []) {
+      const [x0, y0, z0] = r.at, [w, d] = r.size, along = op.wall === "n" || op.wall === "s";
+      const [lx, ly] = { n: [op.at, d], s: [op.at, 0], e: [w, op.at], w: [0, op.at] }[op.wall] || [0, 0];
+      const [nx, ny] = { n: [0, 1], s: [0, -1], e: [1, 0], w: [-1, 0] }[op.wall] || [0, 0];
+      const bot = z0 + (op.sill || 0), top = bot + op.h, cx = x0 + lx, cy = y0 + ly;
+      const other = within(cx + nx * 0.25, cy + ny * 0.25, (bot + top) / 2); if (!other || other.id === r.id) continue;
+      const hx = along ? op.w / 2 : 0.1, hy = along ? 0.1 : op.w / 2;
+      const box = new THREE.Box3(new THREE.Vector3(cx - hx, bot, -(cy + hy)), new THREE.Vector3(cx + hx, top, -(cy - hy)));
+      const door = op.door ? op.door.id : null;
+      (R.portals[r.id] = R.portals[r.id] || []).push({ to: other.id, door, box });
+      (R.portals[other.id] = R.portals[other.id] || []).push({ to: r.id, door, box });
+    }
+    for (const o of this.world.children) {            // props, floors, ceilings, trim; never walls, doors, their parts, what's set in a wall, or what's picked up and carried
+      const p = o.userData && o.userData.piece; if (!p || !p.room || !["mesh", "floor", "ceiling"].includes(p.kind)) continue;
+      if ((p.tags || []).some(t => t.startsWith("door_part:") || t === "in_wall") || ["carry", "pickup"].includes(o.userData.use)) continue;
+      (R.objs[p.room] = R.objs[p.room] || []).push(o);
+    }
+    for (const l of this.lights) if (l.userData.room) (R.objs[l.userData.room] = R.objs[l.userData.room] || []).push(l);
+    for (const l of this.windows || []) (R.objs[l.userData.window] = R.objs[l.userData.window] || []).push(l);
+    return R;
+  }
   simplify() {                   // the simple view on (or off again) for whatever the scene holds now
     const on = Stage.simple;
     if (!on && !this._simple) return;

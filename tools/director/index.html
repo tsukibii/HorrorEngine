@@ -32,12 +32,16 @@ main{display:flex;flex:1;min-height:0}
 #scrub{flex:1;min-width:120px}
 .ov{position:absolute;inset:0;pointer-events:none}
 .ov .who{position:absolute;top:8px;left:10px;color:#9a9;font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 0 4px #000}
-.ov .ja{position:absolute;bottom:58px;width:100%;text-align:center;color:#999;font-size:13px;text-shadow:0 0 4px #000}
 .ov .sub{position:absolute;bottom:22px;width:100%;text-align:center;font-size:18px;text-shadow:0 0 6px #000,0 0 2px #000}
 .ov .black{position:absolute;inset:0;background:#000;opacity:0}
 #watchOv .ja,#watchOv .sub{display:none}   /* the Watch shows them in the game's footer (play/hud.js) */
 .ov .tag{position:absolute;top:8px;right:10px;color:var(--accent);font-size:11px;text-shadow:0 0 4px #000}
-#inspector{width:680px;max-width:58%;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:10px 12px}
+#rightcol{width:680px;max-width:58%;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#rtabs{display:flex;gap:2px;padding:6px 10px 0;border-bottom:1px solid var(--line)}
+#rtabs button{border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;background:none;color:var(--dim);padding:5px 12px;display:flex;gap:6px;align-items:center}
+#rtabs button.on{background:var(--panel2);color:var(--text);border-color:var(--line)}
+#inspector,#exprPanel{flex:1;overflow:auto;padding:10px 12px;min-height:0}
+#inspector[hidden],#exprPanel[hidden]{display:none}
 .card{position:absolute;width:176px;min-height:54px;border:1px solid var(--line);border-left:5px solid;border-radius:6px;background:var(--panel2);padding:5px 8px;cursor:pointer;user-select:none}
 .card.sel{outline:2px solid var(--accent)}.card .t{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
 .card .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.card .m{font-size:11px;color:var(--dim)}
@@ -66,6 +70,16 @@ td input,td select{width:100%;padding:2px 4px}
 .seam{position:absolute;top:18px;width:3px;height:34px;background:var(--accent)}.cue{position:absolute;top:3px;width:2px;height:16px;background:var(--cue)}
 .cue span{position:absolute;top:-1px;left:4px;font-size:10px;color:var(--cue);white-space:nowrap}
 .playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.7}
+.facerows{margin:0 0 4px}.facerows .fadd{font-size:11px;margin-top:2px}
+.ftrack{position:relative;height:22px;background:#131316;border:1px dashed #2c2c33;border-radius:4px;margin:2px 0}
+.ftrack.over{border-color:var(--accent);background:#1b1b22}
+.ftrack .fwho{position:absolute;left:4px;top:3px;font-size:10px;opacity:.6;pointer-events:none}
+.fblk{position:absolute;top:2px;height:16px;min-width:6px;border-radius:3px;font-size:10px;line-height:16px;overflow:hidden;white-space:nowrap;cursor:grab;background:#24433f;border:1px solid #4fa89a;color:#dff4ef;box-sizing:border-box;z-index:1}
+.fblk.loop{background:repeating-linear-gradient(90deg,#24433f,#24433f 12px,#1f3a37 12px,#1f3a37 24px)}
+.fblk.sel{outline:2px solid #fff;z-index:2}.fblk.gone{border-color:var(--bad);background:#4a2525}
+.fblk i{position:absolute;top:0;bottom:0;pointer-events:none}.fblk .fin{left:0;background:linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,0))}.fblk .fout{right:0;background:linear-gradient(270deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
+.fblk span{position:relative;padding:0 4px}
+.fform{flex-wrap:wrap;gap:4px;margin:4px 0}
 .note{border:1px solid var(--line);border-radius:5px;padding:6px 8px;margin:5px 0;background:var(--panel2)}.note.done{opacity:.5}
 .note .by{font-size:11px;color:var(--accent)}.note .by.claude{color:#8fb7ff}
 pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-radius:4px;border:1px solid var(--line)}
@@ -80,7 +94,11 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
 #watchBar{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
 .wcard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:rgba(0,0,0,.72);pointer-events:auto}
 .wcard.round{justify-content:flex-end;padding-bottom:22px;background:linear-gradient(rgba(0,0,0,0) 35%,rgba(0,0,0,.82) 70%)}
-.wcard .big{font-size:24px}.wcard .timer{font-size:30px;color:var(--warn);font-variant-numeric:tabular-nums}
+.wachs{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;pointer-events:none;z-index:6}
+.wach{background:rgba(10,10,14,.82);border:1px solid var(--warn);border-radius:8px;padding:8px 12px;max-width:260px;font-size:12px;animation:wachIn .4s ease-out}
+.wach b{display:block;font-size:14px;margin:2px 0}.wach .muted:first-child{color:var(--warn);letter-spacing:.18em;font-size:10px}
+@keyframes wachIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.wcard .big{font-size:24px}.wcard .etext{max-width:34em;font-size:15px;line-height:1.55;white-space:pre-line;color:var(--text)}.wcard .timer{font-size:30px;color:var(--warn);font-variant-numeric:tabular-nums}
 .reply .rbar{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);width:200px}
 .rbar{height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}.rbar div{height:100%;background:var(--accent);width:100%}
 .barksub{position:absolute;left:50%;top:18%;transform:translateX(-50%);color:var(--dim);font-style:italic;font-size:16px;pointer-events:none}
@@ -140,7 +158,7 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
       <div id="boardRow"><aside id="flowSide"></aside><div id="board"></div></div>
       <div id="split" title="drag to give the board or the stage more room"></div>
       <div id="stagePanel">
-        <div id="stageBox"><div class="ov" id="stageOv"><div class="black"></div><div class="who"></div><div class="tag"></div><div class="ja"></div><div class="sub"></div></div></div>
+        <div id="stageBox"><div class="ov" id="stageOv"><div class="black"></div><div class="who"></div><div class="tag"></div><div class="sub"></div></div></div>
         <div id="stageBar">
           <button id="sPlay">▶ scene</button><button id="sStop">■</button>
           <input type="range" id="scrub" min="0" max="10" step="0.01" value="0" title="scrub through the selected scene"><span id="sTime" class="muted">0.0 s</span>
@@ -150,20 +168,24 @@ pre{white-space:pre-wrap;font-size:12px;background:#151518;padding:8px;border-ra
         </div>
       </div>
     </div>
-    <aside id="inspector"></aside>
+    <div id="rightcol">
+      <div id="rtabs"><button data-r="inspector" class="on" title="what's picked on the board: its settings, its script, its timeline">Inspector</button>
+        <button data-r="exprPanel" title="the expression library: faces captured from videos, dragged onto a scene's timeline (docs/EXPRESSIONS_PLAN.md)">Expressions</button></div>
+      <aside id="inspector"></aside>
+      <aside id="exprPanel" hidden></aside>
+    </div>
   </section>
   <section id="boardView" class="view page"></section>
   <section id="watchView" class="view">
-    <div id="watchBox"><div class="ov" id="watchOv"><div class="black"></div><div class="who"></div><div class="tag"></div><div class="ja"></div><div class="sub"></div></div></div>
+    <div id="watchBox"><div class="ov" id="watchOv"><div class="black"></div><div class="who"></div><div class="tag"></div><div class="sub"></div></div></div>
     <div id="watchBar">
       <button id="wStart" class="primary">▶ Play from the start</button>
       <button id="wStop">■ Stop</button>
       <button id="wDebug" title="the debug panel (F9): flags, counters, karma and items, seen and changed live; the beats as they fire; a start from any node with a state">Debug</button>
       <label title="the takes' video in the corner; off keeps their audio only"><input type="checkbox" id="wVideo" checked> take video</label>
-      <label><input type="checkbox" id="wSpeak"> speak the Japanese</label>
       <label title="the little things' sounds (a kettle's rumble, a clock's tick, a tap running), made in the browser and placed in the room"><input type="checkbox" id="wThings" checked> things' sounds</label>
       <label><input type="checkbox" id="wSecrets"> finds the secrets</label>
-      <label title="Play mode: the player's tasks are walked (WASD, mouse, E to use, C to crouch), not cards"><input type="checkbox" id="wPlay" checked> walk the tasks</label>
+      <label title="Play mode: the player's tasks are walked (WASD, the mouse: a click uses, the wheel and E the inventory, G puts down, Shift runs, C crouches), not cards"><input type="checkbox" id="wPlay" checked> walk the tasks</label>
       <label title="the HUD's theme (play/ui/themes): the game's own (game.ui_theme), or try another">theme <select id="wTheme"><option value="">the game's</option><option>glass</option><option>glass-rose</option><option>neumorph</option><option>plain</option></select></label>
       <label title="crouch: press C once, or hold it">crouch <select id="wCrouch"><option value="toggle">toggle</option><option value="hold">hold</option></select></label>
       <label><input type="checkbox" id="wFast" checked> tasks auto-finish after 2 s</label>

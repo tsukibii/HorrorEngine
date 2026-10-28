@@ -92,7 +92,7 @@ for (const r of [0.5, 0.75, 0.95]) for (const ph of [0.4, 2.2, 4.4]) {          
 
 await step("M_StudioEye's HLSL, run as GLSL: the iris read where the view lands on its plane after the cornea bends it, the white where the point is; Handed and FlipV undo a flipped frame or picture", async () => {
   const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const page = await browser.newPage();
   const r = await page.evaluate(([color, iris, names, cases]) => {
     const gl = document.createElement("canvas").getContext("webgl2");

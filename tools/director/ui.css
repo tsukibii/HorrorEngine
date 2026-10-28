@@ -83,6 +83,11 @@ select.secret{max-width:170px}
 /* ---- the flow board (board.js) and its side: the palette, the outline ---- */
 .bworld{position:absolute;left:0;top:0;transform-origin:0 0}
 .bworld svg#edges{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.bworld svg#edges .ehit{pointer-events:stroke;cursor:pointer}
+.bworld svg#edges .ehit:hover{stroke:rgba(217,164,65,.28)}
+#board .card.loose{opacity:.5}
+#board .card.loose:hover,#board .card.loose.sel{opacity:.85}
+#board .card.cut .port{border-color:#c0473f;background:#3a1714}
 #board .card{transition:box-shadow .12s,outline-color .12s;box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer}
 #board .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.5)}
 #board .card.lifting{box-shadow:0 12px 28px rgba(0,0,0,.6);z-index:5;cursor:grabbing;opacity:.95}
@@ -398,3 +403,36 @@ canvas.wave{display:block;width:100%;height:84px;border:1px solid var(--line);bo
 .hist-ch{margin:4px 0;padding-left:18px;font-size:12.5px;line-height:1.6}
 .helpguide{display:flex;align-items:center;gap:8px;grid-column:1/-1;margin:0 0 6px;padding:8px 12px;border:1px solid var(--accent);border-radius:9px;background:rgba(217,164,65,.07)}
 .helpguide a{color:var(--accent);font-weight:600}
+/* the sound shelf's picker (sfx.js) */
+.sfx-pick .sfx-q{width:100%;margin:4px 0 6px}
+.sfx-cats{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}.sfx-cats .sfx-chip{padding:2px 9px;border-radius:12px;font-size:12px}.sfx-cats .sfx-chip.on{border-color:var(--accent);color:var(--accent)}
+.sfx-list{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.sfx-row{display:grid;grid-template-columns:18px 170px 1fr auto;gap:8px;align-items:center;padding:4px 8px;cursor:pointer;border-bottom:1px solid var(--line);font-size:12.5px}
+.sfx-row:hover{background:var(--panel2,rgba(255,255,255,.04))}.sfx-row.on{background:rgba(120,160,255,.14)}
+.sfx-row b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sfx-t{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sfx-s{color:var(--dim);font-variant-numeric:tabular-nums}
+/* the expression library (expressions.js): cards of the character wearing each (played through on hover), names only, the import preview */
+.xp-pic canvas{position:absolute;inset:0;width:100%;height:100%}.xp-on{flex:1}
+.xp-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}.xp-find{flex:1;min-width:80px}.xp-tog{white-space:nowrap;color:var(--dim);font-size:12px}
+.xp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.xp-grid.names{grid-template-columns:1fr;gap:3px}
+.xp-card{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;user-select:none}
+.xp-card:hover{border-color:var(--accent)}
+.xp-pic{position:relative;aspect-ratio:1;background:#0d0d10;display:flex;align-items:center;justify-content:center}
+.xp-pic img,.xp-pic video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.xp-name{padding:5px 7px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xp-grid.names .xp-name{padding:6px 30px 6px 9px}
+.xp-x{position:absolute;top:4px;right:4px;width:22px;height:22px;padding:0;border-radius:11px;border:none;background:#c0392b;color:#fff;font-size:15px;line-height:20px;font-weight:700;opacity:.88;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.xp-x:hover{opacity:1;background:#e04a3a}
+.xp-grid.names .xp-x{top:3px}
+.xp-empty{padding:18px 4px}
+.xp-wait{display:flex;gap:14px;align-items:center}.xp-spin{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:xp-spin .8s linear infinite;flex:none}
+@keyframes xp-spin{to{transform:rotate(360deg)}}
+.xp-panes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+.xp-video,.xp-canvas{width:100%;aspect-ratio:1;border-radius:8px;background:#0d0d10;display:block;object-fit:cover}
+.xp-video.muted{display:flex;align-items:center;justify-content:center}
+.xp-prev .frm-r{margin:6px 0}.xp-note{color:var(--warn);min-height:0}
+.xp-loopbox{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}.xp-loopbox .row{flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.xp-strip{width:100%;height:44px;border-radius:6px;cursor:col-resize;display:block}.xp-loop{color:#6fb3d9}
+.xp-pickl{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;margin-top:6px}.xp-pickl button{text-align:left}
+.db-models{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.db-model{display:inline-flex;gap:4px;align-items:center}
+.fblk.bblk{background:#2f2a46;border-color:#5a4f86;color:#d8d0f4}.btrack .fwho{opacity:.75}

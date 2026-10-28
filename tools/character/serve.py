@@ -15,6 +15,7 @@ import datetime
 import hashlib
 import json
 import os
+import struct
 import subprocess
 import sys
 import urllib.parse
@@ -65,7 +66,7 @@ def ref_status(name):
 
 # what a character is made from (and its live bakes): it travels inside an export (the GLB's extras, and a .studio.json
 # beside it) so the character comes back into the Studio as it was, every setting editable (docs/CHARACTER_STUDIO.md §2)
-RECIPE_FILES = ("character.json", "layers.json", "skin.png", "skin_mask.png", "skin_paint.png", "skin_touch.png", "skin_pigment.png", "body.bin", "drape.bin")
+RECIPE_FILES = ("character.json", "layers.json", "skin.png", "skin_mask.png", "skin_paint.png", "skin_touch.png", "skin_pigment.png", "body.bin", "drape.bin", "face.bin")
 RECIPE_DIRS = {"pictures": PICTURES, "salon": {".json", ".glb"}}
 
 
@@ -111,6 +112,19 @@ def drape_ok(data):
     return all(4 + n + g["at"] + g["points"] * 12 <= len(data) for g in h.get("garments", []))
 
 
+def face_ok(data):
+    """face.bin, the face's fit baked (tools/character/index.html, Bake the face): a uint32 header length, the header
+    (JSON: its points, when, from what), the points' indices (uint32, each one of MHR's) and their offsets (float32 xyz)"""
+    if len(data) < 8: return False
+    n = int.from_bytes(data[:4], "little")
+    if n > len(data) - 4 or n > 1 << 20: return False
+    try: k = int(json.loads(data[4:4 + n])["points"])
+    except (ValueError, KeyError, TypeError): return False
+    if k < 0 or 4 + n + k * 16 != len(data): return False
+    m = body_bytes() // 12
+    return all(i < m for i in struct.unpack_from(f"<{k}I", data, 4 + n))
+
+
 def pictures(name):
     """{slot: path} of a character's pictures"""
     d = PEOPLE / name / "pictures"
@@ -152,6 +166,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": f"a body is {body_bytes()} bytes"})
         elif fname == "drape.bin" and not drape_ok(data):
             return self.send(400, {"error": "a drape: a header's length, the header (JSON), the points"})
+        elif fname == "face.bin" and not data:                             # an empty one: the face unbaked
+            (d / fname).unlink(missing_ok=True)
+            return self.send(200, {"ok": True})
+        elif fname == "face.bin" and not face_ok(data):
+            return self.send(400, {"error": "a baked face: a header's length, the header (JSON), the points' indices and offsets"})
         d.mkdir(parents=True, exist_ok=True)
         (d / fname).write_bytes(data)
         return self.send(200, {"ok": True, "path": str((d / fname).relative_to(ROOT))})
@@ -188,7 +207,7 @@ class Handler(BaseHTTPRequestHandler):
         if parts[:2] == ["api", "people"] and len(parts) == 3 and clean(parts[2]):
             f = PEOPLE / clean(parts[2]) / "character.json"
             return self.send(200, json.loads(f.read_text(encoding="utf-8")) if f.exists() else {})
-        if parts[:2] == ["api", "people"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("body.bin", "drape.bin"):   # the body as the studio shows it; its clothes' drape
+        if parts[:2] == ["api", "people"] and len(parts) == 4 and clean(parts[2]) and parts[3] in ("body.bin", "drape.bin", "face.bin"):   # the body as the studio shows it; its clothes' drape; its face baked
             f = PEOPLE / clean(parts[2]) / parts[3]
             return self.send(200, f.read_bytes(), TYPES[".bin"]) if f.exists() else self.send(404, {"error": "not saved from the Character Studio yet"})
         if parts[:2] == ["api", "people"] and len(parts) == 5 and clean(parts[2]) and parts[3] == "salon" and parts[4] in SALON_FILES:
@@ -196,6 +215,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, f.read_bytes(), TYPES[f.suffix]) if f.exists() else self.send(404, {"error": "no salon hair yet"})
         if parts[:2] == ["api", "clothes"] and len(parts) == 3 and parts[2] in ("designs.json", "outfits.json"):   # the tailor's designs and outfits
             return self.send(200, (CLOTHES / parts[2]).read_bytes(), TYPES[".json"])
+        if parts[:3] == ["api", "clothes", "thumbs"] and len(parts) == 4 and clean(parts[3]) and parts[3].endswith((".jpg", ".png")):   # an outfit's or a design's picture (tailor/thumbs.mjs)
+            f = CLOTHES / "thumbs" / clean(parts[3])
+            return self.send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/png") if f.is_file() else self.send(404, {"error": "no picture yet: node tools/character/tailor/thumbs.mjs"})
         if parts[:2] == ["api", "pbr"]:                    # the shelf (assets/pbr), scanned: {root, sets: {ref: {maps: {albedo: file...},
             sets = PBR.scan()                                 # tile_m, normal, orm, files, by_hand...}}} for PBR fills, clothes, pbr.html
             for ref, m in sets.items():
@@ -342,7 +364,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*WORKER.call(req))
         if parts[:2] == ["api", "hair"] and len(parts) == 4 and name and parts[3] in HAIR_FILES:   # a hairstyle saved by the salon
             return self.keep(HAIR / name, parts[3])
-        if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] in ("body.bin", "drape.bin"):   # the body, with its face, no expression; the clothes' drape
+        if parts[:2] == ["api", "people"] and len(parts) == 4 and name and parts[3] in ("body.bin", "drape.bin", "face.bin"):   # the body, with its face, no expression; the clothes' drape; the face baked
             return self.keep(PEOPLE / name, parts[3])
         if parts[:2] == ["api", "people"] and len(parts) == 5 and name and parts[3] == "salon" and parts[4] in SALON_FILES:
             if not (PEOPLE / name).is_dir(): return self.send(404, {"error": f"no character {name}"})

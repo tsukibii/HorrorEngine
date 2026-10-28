@@ -3,12 +3,13 @@
    player learns them once:
    - ON THE THING: the reticle at the centre (a dot that opens into a ring over something usable, red when locked)
      and the prompt floating where you'd put your hand (a door's handle on your side, a pickup's middle): a mark on
-     the point, the key, the verb, the thing's name under it; and a choice's options in one panel, floating beside
-     whoever asks (their shoulder, on the side with more room) or at the thing it's about. Every interaction is here.
+     the point, the key, the verb, the thing's name under it. Every interaction with the world is here.
    - THE CORNERS: the game talking, small and boxless: the objective top-left, the timer and the log top-right, the
      stance bottom-left.
-   - THE FOOTER: people talking, out of the world: the speaker above the line, the Japanese small over the words (a
-     choice's question too), on one soft scrim that's there only while someone talks.
+   - THE FOOTER: people talking, out of the world: the speaker above the line (a choice's question too; English only,
+     no Japanese over it), and a choice's answers in one panel right under the question, at the bottom centre
+     (DECISIONS 2026-10-27, notes), on one soft scrim that's there only while someone talks or asks; the camera's
+     focus holds on whoever asks meanwhile.
    - THE MIDDLE: a card held up to read or work (a note, a code lock), the world veiled behind it.
    Two voices: --ph-font for what people say and write (lines, choices, notes), --ph-ui-font for the game's own words
    (prompts, objective, log, keys, labels). One type scale (--ph-fs-xs .. -l), one key chip, one meter (a thin line). */
@@ -24,11 +25,16 @@
 .play-hud .ph-cursor:not([data-cursor="none"]){width:var(--ph-ring);height:var(--ph-ring);margin:calc(var(--ph-ring) / -2) 0 0 calc(var(--ph-ring) / -2);
   background:var(--ph-ring-fill,transparent);border-color:var(--ph-cursor)}
 .play-hud .ph-cursor[data-cursor="locked"]{border-color:var(--ph-bad)}
+/* the eye at a peephole: the view through a round hole, its brass rim catching a little light, black round it; the
+   rest of the HUD steps away */
+.play-hud.peep::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(circle closest-side at 50% 50%,transparent 0 80%,rgba(150,128,90,.22) 84%,rgba(0,0,0,.75) 88%,#000 95%)}
+.play-hud.peep :is(.ph-cursor,.ph-prompt,.ph-inv,.ph-tl,.ph-hint,.ph-stance){opacity:0 !important}
+/* a held use (scrubbing a stain): the ring fills round as it's done (--ph-progress, 0..1) */
+.play-hud .ph-cursor.progress{border-color:color-mix(in srgb,var(--ph-cursor) 35%,transparent);
+  background:conic-gradient(var(--ph-accent) calc(var(--ph-progress,0) * 1turn),transparent 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px))}
 .play-hud .ph-cursor.press{scale:.75}
-.play-hud .ph-cursor::after{content:"";position:absolute;inset:-6px;border-radius:50%;opacity:0;transition:opacity .12s;pointer-events:none;  /* E held: a ring filling */
-  background:conic-gradient(var(--ph-accent,var(--ph-cursor)) calc(var(--ph-hold,0) * 360deg),transparent 0);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
-.play-hud.holding .ph-cursor::after{opacity:1}
 .play-hud.free .ph-cursor{opacity:0}
 .play-hud .ph-prompt{position:absolute;left:50%;top:calc(50% + var(--ph-ring));translate:-50% 0;display:flex;gap:8px;align-items:center;white-space:nowrap;
   font-size:var(--ph-fs);text-shadow:var(--ph-text-shadow);opacity:0;transition:opacity .14s;isolation:isolate;
@@ -50,6 +56,8 @@
   font-family:var(--ph-ui-font,var(--ph-font));font-size:var(--ph-fs-xs);font-weight:600;letter-spacing:.04em;text-shadow:none;
   color:var(--ph-key-text,var(--ph-accent));background:var(--ph-key-bg,var(--ph-surface));border:var(--ph-key-border,0);box-shadow:var(--ph-key-shadow,var(--ph-pop));transition:scale .1s}
 .play-hud .ph-key.press{scale:.85}
+.play-hud .ph-mouse{padding:0 5px}                                    /* the left mouse button: a click uses it */
+.play-hud .ph-mouse svg{display:block}
 .play-hud .ph-seen{position:absolute;left:50%;top:calc(50% + var(--ph-ring) / 2 + 10px);width:72px;margin-left:-36px;opacity:0}
 .play-hud .ph-seen.on{opacity:1}
 .play-hud .ph-seen>div{background:var(--ph-bad);width:0}
@@ -68,14 +76,33 @@
 .play-hud[data-focus="centre"] .ph-focus{opacity:1;transition-duration:.25s;   /* a choice about nothing in particular: the middle stays sharp */
   -webkit-mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%);mask-image:radial-gradient(ellipse 34% 40% at 50% 40%,transparent 40%,#000 100%)}
 .play-hud:has(> .ph-panel) .ph-focus{opacity:1;transition-duration:.25s;-webkit-mask-image:none;mask-image:none}   /* a card: all of it */
+.play-hud:has(> .ph-exam) .ph-focus{opacity:1;transition-duration:.25s;   /* a thing in the hands: it sharp, the room soft behind it */
+  -webkit-mask-image:radial-gradient(ellipse 20% 28% at 50% 42%,transparent 60%,#000 100%);mask-image:radial-gradient(ellipse 20% 28% at 50% 42%,transparent 60%,#000 100%)}
 /* a floating prompt sharpens as the reticle nears its point (--ph-clear, 1 on it) */
 .play-hud .ph-prompt.at > *{opacity:calc(.6 + .4 * var(--ph-clear, 1));filter:blur(calc((1 - var(--ph-clear, 1)) * 1px));transition:opacity .12s,filter .12s}
 
 /* ---- the corners ---- */
-.play-hud .ph-objective,.play-hud .ph-timer,.play-hud .ph-log,.play-hud .ph-stance,.play-hud .ph-board{position:absolute;text-shadow:var(--ph-text-shadow);isolation:isolate;
+.play-hud .ph-tl>.ph-objective,.play-hud .ph-timer,.play-hud .ph-log,.play-hud .ph-stance,.play-hud .ph-board{position:absolute;text-shadow:var(--ph-text-shadow);isolation:isolate;
   background:var(--ph-corner-bg,none);padding:var(--ph-corner-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-corner-shadow,none)}
 .play-hud .ph-log{background:none;padding:0;box-shadow:none}
-.play-hud .ph-objective{left:var(--ph-margin);top:var(--ph-margin);max-width:34%;font-size:var(--ph-fs);line-height:1.35;opacity:0;transition:opacity .5s}
+.play-hud .ph-tl{position:absolute;left:var(--ph-margin);top:var(--ph-margin);max-width:34%;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.play-hud .ph-tl>.ph-objective{position:relative;font-size:var(--ph-fs);line-height:1.35;opacity:0;transition:opacity .5s}
+/* the to-do list: one task a row, a box to tick; done dims, failed is struck in the bad colour */
+.play-hud .ph-todo{position:relative;isolation:isolate;display:none;flex-direction:column;gap:4px;font-size:var(--ph-fs-s);line-height:1.35;text-shadow:var(--ph-text-shadow);
+  opacity:var(--ph-rest,.72);transition:opacity .5s;background:var(--ph-corner-bg,none);padding:var(--ph-corner-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-corner-shadow,none)}
+.play-hud .ph-todo.on{display:flex}
+.play-hud .ph-todo.fresh{opacity:1}
+.play-hud .ph-todo::before{content:"To do";font-family:var(--ph-ui-font,var(--ph-font));font-size:var(--ph-fs-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--ph-muted);margin-bottom:2px;transition:color .5s}
+.play-hud .ph-todo.fresh::before{color:var(--ph-accent)}
+.play-hud .ph-task{display:flex;align-items:baseline;gap:8px;transition:opacity .4s,color .4s}
+.play-hud .ph-box{flex:none;width:.95em;height:.95em;border:1px solid currentColor;border-radius:2px;display:inline-grid;place-items:center;font-size:.85em;line-height:1;translate:0 .1em}
+.play-hud .ph-task[data-state=done]{opacity:.5}
+.play-hud .ph-task[data-state=done] .ph-task-text{text-decoration:line-through}
+.play-hud .ph-task[data-state=failed]{color:var(--ph-bad)}
+.play-hud .ph-task[data-state=failed] .ph-task-text{text-decoration:line-through}
+.play-hud .ph-task-who{color:var(--ph-muted);font-size:.88em}
+.play-hud .ph-task-who::before{content:"· ";}
+.play-hud .ph-task-left{margin-left:auto;padding-left:10px;font-variant-numeric:tabular-nums;color:var(--ph-bad)}
 .play-hud .ph-objective.on{opacity:var(--ph-rest,.72)}
 .play-hud .ph-objective.on.fresh{opacity:1}
 .play-hud .ph-objective::before{content:"Objective";display:block;margin-bottom:3px;transition:color .5s}
@@ -97,9 +124,34 @@
 .play-hud .ph-hint.on{opacity:1}
 .play-hud .ph-pair{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 /* the theme's halo (--ph-halo, a blur; --ph-halo-bg): a soft, edgeless patch behind boxless text, never a shape */
-.play-hud :is(.ph-objective,.ph-timer,.ph-log>div,.ph-stance,.ph-board,.ph-prompt,.ph-hint)::after{content:"";position:absolute;inset:-10px -22px;z-index:-1;pointer-events:none;
+.play-hud :is(.ph-objective,.ph-todo,.ph-timer,.ph-log>div,.ph-stance,.ph-board,.ph-prompt,.ph-hint)::after{content:"";position:absolute;inset:-10px -22px;z-index:-1;pointer-events:none;
   -webkit-backdrop-filter:var(--ph-halo,none);backdrop-filter:var(--ph-halo,none);background:var(--ph-halo-bg,none);
   -webkit-mask-image:radial-gradient(closest-side,#000 45%,transparent);mask-image:radial-gradient(closest-side,#000 45%,transparent)}
+
+/* ---- what you carry: the inventory (play/inventory.js) ----
+   one row at the bottom centre: the thing in your hand in the middle (a line under it, its name below), the rest
+   either side round a wheel, the farther ones smaller and fainter, at most five; in front of frosted glass that fades
+   out towards its ends, with no border. E hides it and shows it again (hidden, it peeks when something changes); it
+   steps aside while someone talks or asks (the footer is theirs) and behind a card */
+.play-hud .ph-inv{position:absolute;left:50%;bottom:calc(var(--ph-margin) * .8);width:min(500px,66%);height:104px;translate:-50% 0;pointer-events:none;
+  opacity:0;transition:opacity .3s ease-out}
+.play-hud .ph-inv:is(.on,.peek){opacity:1}
+.play-hud .ph-inv::before{content:"";position:absolute;left:0;right:0;top:2px;height:80px;border-radius:var(--ph-radius-l);
+  background:var(--ph-inv-glass,linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 70%,rgba(255,255,255,.02)));
+  -webkit-backdrop-filter:var(--ph-inv-blur,blur(14px) saturate(1.25));backdrop-filter:var(--ph-inv-blur,blur(14px) saturate(1.25));
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 26%,#000 74%,transparent);mask-image:linear-gradient(90deg,transparent,#000 26%,#000 74%,transparent)}
+.play-hud .ph-inv-row{position:absolute;left:50%;top:10px;width:0;height:64px}
+.play-hud .ph-inv-i{position:absolute;left:-32px;top:0;width:64px;height:64px;display:grid;place-items:center;
+  transform:translateX(calc(var(--d,0) * 88px)) scale(calc(1 - var(--ad,0) * .17));opacity:calc(1 - var(--ad,0) * .3);
+  transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .26s}
+.play-hud .ph-inv-i.far{opacity:0}
+.play-hud .ph-inv-i.jump{transition:none}
+.play-hud .ph-inv-i img{max-width:100%;max-height:100%;filter:drop-shadow(0 3px 6px rgba(0,0,0,.55))}
+.play-hud .ph-inv-i img.none{width:34px;height:34px;border-radius:6px;background:rgba(255,255,255,.18)}   /* no picture: a block */
+.play-hud .ph-inv-i.held::after{content:"";position:absolute;left:22%;right:22%;bottom:-7px;height:2px;border-radius:2px;background:var(--ph-accent);opacity:.85}
+.play-hud .ph-inv-name{position:absolute;left:0;right:0;top:84px;text-align:center;font-size:var(--ph-fs-s);letter-spacing:.03em;color:var(--ph-text);text-shadow:var(--ph-text-shadow);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-hud:has(.ph-footer .ph-line.on,.ph-footer .ph-dock) .ph-inv,.play-hud.modal .ph-inv{opacity:0}
 
 /* ---- the footer ---- */
 .play-hud .ph-footer{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:calc(var(--ph-gap) + 4px);
@@ -112,19 +164,17 @@
   opacity:0;transition:opacity .25s;background:var(--ph-line-bg,none);padding:var(--ph-line-pad,0);border-radius:var(--ph-radius);box-shadow:var(--ph-line-shadow,none)}
 .play-hud .ph-line:empty{display:none}
 .play-hud .ph-line.on{opacity:1}
+.play-hud .ph-line.think>span:last-child{font-style:italic;opacity:.92}
+.play-hud .ph-line .ph-glitch{color:var(--ph-bad);text-shadow:1px 0 rgba(255,40,40,.55),-1px 0 rgba(40,200,255,.55)}   /* a memory flicker breaking up */
+.play-hud .ph-line.think>span:last-child::before{content:"("}.play-hud .ph-line.think>span:last-child::after{content:")"}
 .play-hud .ph-who{display:block;margin-bottom:2px;font-size:var(--ph-fs);font-weight:700;letter-spacing:.03em;color:var(--ph-who,var(--ph-accent))}
-.play-hud .ph-ja{display:block;margin-bottom:2px;font-size:var(--ph-fs-s);color:var(--ph-muted)}
-/* a choice floating in the world (hud.js floating): the mark on the point (a shoulder, a thing), the panel beside it,
-   outward; smaller than the footer's type so it sits with the thing, not over it */
-.play-hud .ph-float{position:absolute;display:flex;align-items:center;gap:10px;translate:-5px -50%;pointer-events:none;z-index:2}
-.play-hud .ph-float.flip{flex-direction:row-reverse;translate:calc(-100% + 5px) -50%}
-.play-hud .ph-float.centre{translate:-50% -50%}
-.play-hud .ph-float>.ph-mark{display:block;flex:none}
-.play-hud .ph-float.centre>.ph-mark{display:none}
-.play-hud .ph-float .ph-choice{min-width:0;max-width:none;padding:var(--ph-float-pad,4px 6px 8px)}
-.play-hud .ph-float .ph-opt{font-size:calc(var(--ph-fs) + 2px);padding:8px 16px}
-.play-hud .ph-float .ph-dash{width:var(--ph-float-dash,26px)}
-.play-hud .ph-float .ph-meter{margin:0 12px 2px}
+/* a choice docked at the bottom centre (hud.js docked): in the footer, right under the question's line, the footer's
+   padding below it; the panel no wider than it needs */
+.play-hud .ph-dock{display:flex;justify-content:center;max-width:100%;z-index:2}
+.play-hud .ph-dock .ph-choice{min-width:0;max-width:min(920px,100%);padding:var(--ph-dock-pad,6px 8px 10px)}
+.play-hud .ph-dock .ph-opt{font-size:calc(var(--ph-fs) + 3px);padding:10px 22px}
+.play-hud .ph-dock .ph-dash{width:var(--ph-dock-dash,32px)}
+.play-hud .ph-dock .ph-meter{margin:0 14px 2px}
 /* a choice: one panel, options in equal columns with a dash between each pair, so the dashes stay centred */
 .play-hud .ph-choice{pointer-events:auto;cursor:default;box-sizing:border-box;min-width:min(520px,100%);max-width:min(860px,100%);display:flex;flex-direction:column;gap:8px;
   padding:var(--ph-choice-pad,var(--ph-pad));border-radius:var(--ph-radius-l);background:var(--ph-surface);box-shadow:var(--ph-pop-l);font-family:var(--ph-font);
@@ -137,6 +187,9 @@
 .play-hud .ph-choice.lit .ph-opt.on{opacity:1;color:var(--ph-lit,var(--ph-accent));text-shadow:var(--ph-opt-glow,none)}
 .play-hud .ph-opt:active{scale:.97}
 .play-hud .ph-opt:focus{outline:0}
+.play-hud .ph-opt.thought{white-space:normal;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.play-hud .ph-opt .ph-think{font-size:calc(var(--ph-fs) - 1px);font-style:italic;line-height:1.35;color:var(--ph-muted);font-weight:400}
+.play-hud .ph-choice.lit .ph-opt.on .ph-think{color:var(--ph-text)}
 .play-hud .ph-dash{width:var(--ph-dash,40px);height:0;border-top:var(--ph-dash-line,1px dashed var(--ph-muted))}
 /* every meter is one thin line: a choice's time, the suspicion under the reticle */
 .play-hud .ph-meter{height:2px;border-radius:2px;background:var(--ph-meter-bg,rgba(255,255,255,.14));overflow:hidden;transition:opacity .2s}
@@ -144,11 +197,18 @@
 .play-hud .ph-choice .ph-meter{margin:0 14px 2px}
 
 /* ---- the middle ---- */
+/* a thing taken up in the hands (play/examine.js): the view stays, its words at the bottom, dragged anywhere to turn it */
+.play-hud .ph-exam{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-bottom:calc(var(--ph-margin) * 2);pointer-events:auto;cursor:grab;user-select:none;-webkit-user-select:none}
+.play-hud .ph-exam.turning{cursor:grabbing}
+.play-hud .ph-exam .ph-card{cursor:default;min-width:280px;display:flex;flex-direction:column;gap:8px}
+.play-hud .ph-exam-hint{font-size:calc(var(--ph-fs) * .8);color:var(--ph-text);opacity:.6;text-shadow:0 1px 3px #000a}
 .play-hud .ph-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ph-veil);pointer-events:auto;cursor:default}
 .play-hud .ph-card{min-width:300px;max-width:min(520px,80%);padding:calc(var(--ph-margin) + 4px) calc(var(--ph-margin) + 8px);border-radius:var(--ph-radius-l);background:var(--ph-surface);
   box-shadow:var(--ph-pop-l);-webkit-backdrop-filter:var(--ph-blur,none);backdrop-filter:var(--ph-blur,none);display:flex;flex-direction:column;gap:calc(var(--ph-gap) + 4px);align-items:stretch;
   animation:ph-rise .22s ease-out both}
 .play-hud .ph-text{font-family:var(--ph-font);font-size:calc(var(--ph-fs) + 2px);line-height:1.6;white-space:pre-wrap;max-width:60ch}
+.play-hud .ph-name{font:inherit;font-size:24px;text-align:center;padding:10px 14px;border:0;border-radius:var(--ph-radius);box-shadow:var(--ph-inset);background:none;color:var(--ph-text);width:100%;box-sizing:border-box}
+.play-hud .ph-name:focus{outline:1px solid var(--ph-accent)}
 .play-hud .ph-code{font-size:30px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums;padding:10px;border-radius:var(--ph-radius);box-shadow:var(--ph-inset)}
 .play-hud .ph-pad{display:grid;grid-template-columns:repeat(3,64px);gap:12px;justify-content:center}
 .play-hud .ph-btn{font:inherit;font-size:var(--ph-fs);color:var(--ph-text);border:0;border-radius:var(--ph-radius);background:var(--ph-surface);box-shadow:var(--ph-pop);height:48px;cursor:pointer;
@@ -161,7 +221,7 @@
 @keyframes ph-shake{20%{margin-left:-6px}40%{margin-left:6px}60%{margin-left:-4px}80%{margin-left:3px}}
 /* the player's settings (play/menu.js applySettings): subtitles off (a choice's question stays), their size, no Japanese */
 .play-hud .ph-footer .ph-line{font-size:calc(var(--ph-fs-l) * var(--ph-sub-scale, 1))}
-.play-hud.no-subs .ph-footer:not(:has(.ph-choice)) .ph-line,.play-hud.no-ja .ph-ja{display:none}
+.play-hud.no-subs .ph-footer:not(:has(.ph-choice)) .ph-line{display:none}
 
 /* ---- the pause menu (play/menu.js): the lights go out, the menu over the dark ----
    left: where you are (Paused, Settings), the list, the mark beside the one you're on (the reticle's ring); right: the
@@ -169,6 +229,34 @@
 .play-hud .ph-menu{position:absolute;inset:0;z-index:10;pointer-events:auto;cursor:default;isolation:isolate;display:grid;grid-template-columns:minmax(220px,26%) minmax(0,640px);
   align-items:center;gap:calc(var(--ph-margin) * 2);padding:calc(var(--ph-margin) * 2) calc(var(--ph-margin) * 3)}
 .play-hud .ph-menu.out{opacity:0;transition:opacity .18s}
+/* paused, before a page opens: the controls on the left, each key (or the mouse) as the Studio's own symbol with what it
+   does drawn beside it in the accent (play/menu.js), the words after them, no box; then the list. A page (Save game,
+   Settings) takes their place */
+.play-hud .ph-menu.root{grid-template-columns:minmax(250px,34%) minmax(200px,1fr)}
+.play-hud .ph-menu.root .ph-page{display:none}
+.play-hud .ph-menu:not(.root) .ph-controls{display:none}
+.play-hud .ph-controls{display:flex;flex-direction:column;align-items:stretch;gap:14px;color:var(--ph-text);animation:ph-rise .3s .2s ease-out both}
+.play-hud .ph-ctl{display:grid;grid-template-columns:140px auto;align-items:center;gap:20px;font-family:var(--ph-ui-font,var(--ph-font));font-size:calc(var(--ph-fs-l) + 1px);
+  letter-spacing:.01em;text-shadow:var(--ph-text-shadow)}
+.play-hud .ph-ctl-icon{display:flex;justify-content:center}
+.play-hud .ph-ctl-icon svg{display:block;overflow:visible;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7));font-family:var(--ph-ui-font,var(--ph-font))}
+.play-hud .ph-ctl-label{color:var(--ph-text)}
+/* the symbols' parts: a key's frosted face (--ph-ctl-frost) and its edge, the lip it stands on, the shine along its top,
+   the legend; the mouse's lines; what it does in the accent (faint: the lesser strokes; dash: where your eye was), what
+   it means lit, a soft glow round that */
+.play-hud .ph-ctl .c-face{fill:currentColor;fill-opacity:var(--ph-ctl-frost,.08);transition:fill-opacity .15s}
+.play-hud .ph-ctl:hover .c-face{fill-opacity:calc(var(--ph-ctl-frost,.08) * 2)}
+.play-hud .ph-ctl .c-edge{stroke:currentColor;stroke-opacity:.72;stroke-width:1.3}
+.play-hud .ph-ctl .c-lip{fill:currentColor;fill-opacity:.05;stroke:currentColor;stroke-opacity:.3;stroke-width:1}
+.play-hud .ph-ctl .c-shine{fill:none;stroke:currentColor;stroke-opacity:.45;stroke-width:1.2;stroke-linecap:round}
+.play-hud .ph-ctl .c-legend{fill:currentColor;font-weight:600;text-anchor:middle;letter-spacing:.02em}
+.play-hud .ph-ctl .c-line{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.1}
+.play-hud .ph-ctl .c-glyph{fill:none;stroke:var(--ph-accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.play-hud .ph-ctl .c-glyph.faint{stroke-opacity:.5}
+.play-hud .ph-ctl .c-glyph.dash{stroke-dasharray:1.5 3;stroke-opacity:.55}
+.play-hud .ph-ctl .c-lit{fill:var(--ph-accent)}
+.play-hud .ph-ctl .c-lit.soft{fill-opacity:.8}
+.play-hud .ph-ctl .c-glow{fill:none;stroke:var(--ph-accent);stroke-opacity:.2;stroke-width:5;stroke-linejoin:round}
 .play-hud .ph-dark{position:absolute;inset:0;z-index:-1;background:var(--ph-dark,rgba(2,3,5,.9));-webkit-backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));
   backdrop-filter:var(--ph-dark-filter,grayscale(.7) blur(2px));animation:ph-lights-out .75s linear both}
 @keyframes ph-lights-out{0%{opacity:0}10%{opacity:.75}18%{opacity:.3}30%{opacity:.85}38%{opacity:.6}100%{opacity:1}}   /* a bulb dying */
@@ -212,3 +300,10 @@
 .play-hud.paused > :not(.ph-menu){visibility:hidden}
 /* a card or a choice is up: the world's marks step back (last, so it wins over their own states) */
 .play-hud.modal :is(.ph-cursor,.ph-prompt,.ph-seen){opacity:0}
+/* ---- a chapter's title card: in the middle over the dark, the title large and spaced, its sub (a time) small under it ---- */
+.play-hud .ph-chapter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;
+  opacity:0;transition:opacity .7s ease;color:var(--ph-text,#eee);text-shadow:var(--ph-text-shadow);z-index:5}
+.play-hud .ph-chapter.on{opacity:1}
+.play-hud.chapter > :not(.ph-chapter){opacity:0 !important;transition:opacity .5s}
+.play-hud .ph-chapter-t{font-family:var(--ph-ui-font,var(--ph-font));font-size:calc(var(--ph-fs-l) * 2);letter-spacing:.32em;text-transform:uppercase;font-weight:300;padding-left:.32em}
+.play-hud .ph-chapter-s{font-family:var(--ph-ui-font,var(--ph-font));font-size:var(--ph-fs);letter-spacing:.2em;color:var(--ph-muted);font-variant-numeric:tabular-nums}

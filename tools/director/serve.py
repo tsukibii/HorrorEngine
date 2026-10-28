@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -46,12 +47,50 @@ MEDIA = {".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", 
 HEADS = L.STUDIO / "Heads"           # the face page's pictures and heads (git-ignored: real people's faces)
 FACE_FILES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
 FACE = {"proc": None}
+EXPRESSIONS = L.STUDIO / "Expressions"   # the expression library (docs/EXPRESSIONS_PLAN.md §1): <id>/expression.json, clip.mp4
+EXPR_SAVED = ROOT / "Saved" / "Expressions"    # pending/<token>: an import waiting for Accept; removed/: what the red x took away
+EXPR_FILES = {"clip.mp4"}
+
+
+def expr_list():
+    """the library, newest first: each expression's id, name, length, stamp and whether it has its clip"""
+    out = []
+    for d in sorted(EXPRESSIONS.iterdir()) if EXPRESSIONS.is_dir() else []:
+        f = d / "expression.json"
+        if d.name.startswith(".") or not f.is_file():
+            continue
+        e = json.loads(f.read_text(encoding="utf-8"))
+        stamp = int(f.stat().st_mtime)
+        of = (e.get("of") or {}).get("id")              # a loop cut from another: its clip is the other's
+        out.append({"id": d.name, "name": e.get("name", d.name), "secs": e.get("secs"), "made": e.get("made", ""), "stamp": stamp,
+                    "clip": (d / "clip.mp4").is_file() or bool(of and (EXPRESSIONS / of / "clip.mp4").is_file()),
+                    "loop": bool(e.get("loop")), "of": e.get("of")})
+    return sorted(out, key=lambda x: x["made"], reverse=True)
+
+
+def expr_id(name):
+    """an expression's folder from its name: lower case, letters, digits and _, unique in the library"""
+    base = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[:40] or "expression"
+    i, out = 1, base
+    while (EXPRESSIONS / out).exists():
+        i += 1; out = f"{base}_{i}"
+    return out
+
+
+def mhr_face_names():
+    """MHR's 72 face shapes by Meta's names, in the order of the bodies' shape_c_45..116 (MHR_lod1.bin's header)"""
+    import struct
+    with open(L.STUDIO / "Bodies" / "MHR_lod1.bin", "rb") as fh:
+        n = struct.unpack("<I", fh.read(4))[0]
+        return json.loads(fh.read(n))["expr_names"]
+
+
 PORT = int(os.environ.get("DESK_PORT", 8780))     # a second desk (a test beside the open one): DESK_PORT=8781
 KEEP = 50
 
 
 def history_dir(game):
-    d = ROOT / "Saved" / "Story" / game / "history"
+    d = ROOT / "Saved" / "Story" / game.replace(":", "-") / "history"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -107,8 +146,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def game_path(self, name):
+        name = urllib.parse.unquote(name or "")         # a set's name comes as set%3A<name>
         if not name or "/" in name or "\\" in name or name.startswith("."):
             return None
+        if name.startswith("set:"):                    # a set (Content/Studio/Sets): the scene builder designs it like a game's level
+            return L.SETS / name[4:] / "story.json" if L.SET_NAME.match(name[4:]) else None
         return L.GAMES / name / "story.json"
 
     def do_GET(self):
@@ -127,6 +169,21 @@ class Handler(BaseHTTPRequestHandler):
                 if (d / parts[2]).is_file() and d.resolve() in (d / parts[2]).resolve().parents:
                     return self.send(200, (d / parts[2]).read_bytes(), "text/javascript")
             return self.send(404, {"error": f"no board game {parts[2]}"})
+        if parts[:2] == ["api", "painted"] and len(parts) == 3 and self.game_path(parts[2]):     # the things painted on their templates
+            out, base = {}, L.GAMES / parts[2] / "Art" / "Textures"                         # (tools/uv_templates.py): each one's layout and picture
+            for j in (base.glob("*/*.json") if base.is_dir() else []):
+                png = j.with_suffix(".png")
+                if j.stem == j.parent.name and png.is_file():
+                    try:
+                        out[j.stem] = dict(json.loads(j.read_text(encoding="utf-8")), png=f"/painted/{parts[2]}/{j.stem}/{png.name}", t=int(png.stat().st_mtime))
+                    except ValueError:
+                        pass
+            return self.send(200, {"things": out})
+        if parts[0] == "painted" and len(parts) == 4 and self.game_path(parts[1]) and ".." not in parts and parts[3].endswith(".png"):
+            f = L.GAMES / parts[1] / "Art" / "Textures" / parts[2] / parts[3]
+            if f.is_file() and (L.GAMES / parts[1]).resolve() in f.resolve().parents:
+                return self.send(200, f.read_bytes(), "image/png")
+            return self.send(404, {"error": "no such painting"})
         if parts[:2] == ["api", "boardgames"] and len(parts) == 3 and self.game_path(parts[2]):   # the games a table can have
             return self.send(200, {"games": [dict(m, id=k) for k, m in L.board_games(parts[2]).items()]})
         if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):
@@ -136,7 +193,6 @@ class Handler(BaseHTTPRequestHandler):
             files = sorted(f.name for f in BODIES.glob("*") if f.suffix.lower() in (".glb", ".gltf", ".fbx")) if BODIES.exists() else []
             return self.send(200, {"bodies": files + people_bodies()})
         if parts[:2] == ["bodies", "people"] and len(parts) == 3:    # a Character Studio character, as exported for the desk (rigged, its eyes)
-            import urllib.parse
             name = urllib.parse.unquote(parts[2])
             gf = PEOPLE / name / "export" / f"{name}.glb" if name and "/" not in name and "\\" not in name and not name.startswith(".") else None
             if gf and gf.is_file():
@@ -164,7 +220,6 @@ class Handler(BaseHTTPRequestHandler):
                 m["base"], m["unreal"] = "/" + ref, "/".join(PBR.unreal_path(ref))
             return self.send(200, {"root": str(PBR.ROOT), "sets": sets})
         if parts[0] == "pbr" and len(parts) >= 3:
-            import urllib.parse
             rel = [urllib.parse.unquote(p) for p in parts[1:]]
             pf = PBR.set_dir("pbr/" + "/".join(rel[:-1])) / rel[-1] if ".." not in rel and all(rel) else None   # assets/pbr, or the old place
             if pf and pf.is_file() and pf.suffix.lower() in BODY:
@@ -175,6 +230,14 @@ class Handler(BaseHTTPRequestHandler):
             if lf.is_file() and lf.suffix.lower() in BODY and LIB.LIB.resolve() in lf.resolve().parents:
                 return self.send(200, lf.read_bytes(), BODY[lf.suffix.lower()])
             return self.send(404, {"error": "not in the library"})
+        if parts[:2] == ["api", "sfx"]:              # the sound-effect shelf (Content/Studio/SFX, tools/sfx.py)
+            f = L.STUDIO / "SFX" / "index.json"
+            return self.send(200, f.read_bytes() if f.is_file() else {"format": "horrorstudio-sfx", "sounds": {}}, "application/json")
+        if parts[0] == "sfx" and len(parts) == 3 and ".." not in parts and parts[2].endswith(".ogg"):
+            sf = L.STUDIO / "SFX" / parts[1] / parts[2]
+            if sf.is_file():
+                return self.send(200, sf.read_bytes(), "audio/ogg", cache=True)
+            return self.send(404, {"error": "not on the sound shelf"})
         if parts[:2] == ["api", "lives"]:            # the little things' lives (Content/Studio/Life/lives.json, life.js)
             return self.send(200, LIFE.data())
         if parts[:2] == ["api", "soma"]:             # Kimodo's 77-joint skeleton, for retargeting its motions, and its twin of each previs joint
@@ -219,13 +282,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, KIT.presets_file())
         if parts[:2] == ["api", "games"]:
             return self.send(200, {"games": L.games()})
+        if parts[:2] == ["api", "sets"]:              # the places designed before their games (the scene builder)
+            return self.send(200, {"sets": L.sets()})
         if parts[:2] == ["api", "story"] and len(parts) == 3:
             p = self.game_path(parts[2])
             if not p or not p.exists():
                 return self.send(404, {"error": "no such game"})
             return self.send(200, {"story": json.loads(p.read_text(encoding="utf-8")), "mtime": p.stat().st_mtime})
         if parts[:2] == ["api", "history"] and len(parts) in (3, 4) and self.game_path(parts[2]):   # the saves kept, newest first; one of them
-            hist = ROOT / "Saved" / "Story" / parts[2] / "history"
+            hist = ROOT / "Saved" / "Story" / urllib.parse.unquote(parts[2]).replace(":", "-") / "history"
             if len(parts) == 3:
                 files = sorted(hist.glob("*.json"), reverse=True) if hist.is_dir() else []
                 return self.send(200, {"saves": [{"name": f.stem, "at": f.stat().st_mtime, "size": f.stat().st_size} for f in files]})
@@ -233,9 +298,117 @@ class Handler(BaseHTTPRequestHandler):
             if not re.fullmatch(r"\d{8}-\d{6}", parts[3]) or not f.is_file():
                 return self.send(404, {"error": "no such save"})
             return self.send(200, {"name": parts[3], "story": json.loads(f.read_text(encoding="utf-8"))})
+        if parts[:2] == ["api", "expressions"]:          # the expression library (docs/EXPRESSIONS_PLAN.md §1)
+            if len(parts) == 2:
+                return self.send(200, {"expressions": expr_list()})
+            if parts[2] == "map" and len(parts) == 3:     # ARKit's 52 onto MHR's 72, and MHR's order on the bodies
+                amap = json.loads((ROOT / "tools" / "character" / "arkit_mhr.json").read_text(encoding="utf-8"))
+                return self.send(200, {"map": amap["map"], "presets": amap.get("presets", {}), "mhr": mhr_face_names()})
+            d = (EXPR_SAVED / "pending" / parts[3]) if parts[2] == "pending" and len(parts) == 4 else (EXPRESSIONS / parts[2]) if len(parts) == 3 else None
+            if d is not None and face_name(d.name) and (d / "expression.json").is_file():
+                return self.send(200, (d / "expression.json").read_bytes())
+            return self.send(404, {"error": "no such expression"})
+        if parts[0] == "expressions" and len(parts) in (3, 4) and parts[-1] in EXPR_FILES:   # an expression's clip
+            d = (EXPR_SAVED / "pending" / parts[2]) if parts[1] == "pending" and len(parts) == 4 else (EXPRESSIONS / parts[1]) if len(parts) == 3 else None
+            f = d / parts[-1] if d is not None and face_name(d.name) else None
+            if f and f.is_file():
+                return self.send_media(f)
+            return self.send(404, {"error": "no such file"})
         if parts[:2] == ["api", "mtime"] and len(parts) == 3:
             p = self.game_path(parts[2])
             return self.send(200, {"mtime": p.stat().st_mtime if p and p.exists() else 0})
+        return self.send(404, {"error": "not found"})
+
+    def expressions_post(self, parts, query):
+        import shutil
+        import uuid
+        if parts == ["import"]:                         # a video: solved into pending/<token>, then previewed in the desk
+            src = Path((query.get("file") or ["face.mp4"])[0]).name
+            if Path(src).suffix.lower() not in {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}:
+                return self.send(400, {"error": "a video: .mp4 .mov .mkv .webm .avi .m4v"})
+            token = uuid.uuid4().hex[:12]
+            d = EXPR_SAVED / "pending" / token
+            d.mkdir(parents=True, exist_ok=True)
+            video = d / ("source" + Path(src).suffix.lower())
+            video.write_bytes(self.body())
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "face_capture.py"), "solve", str(video), "--out", str(d)],
+                               capture_output=True, text=True, timeout=900, cwd=str(ROOT))
+            if r.returncode or not (d / "expression.json").is_file():
+                shutil.rmtree(d, ignore_errors=True)
+                said = [x for x in (r.stderr + r.stdout).splitlines() if x.strip() and not x.startswith(("W0000", "I0000", "INFO", "WARNING"))]
+                return self.send(400, {"error": (said[-1] if said else "the capture failed")[:300]})
+            e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
+            e["source"]["file"] = src
+            (d / "expression.json").write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
+            return self.send(200, {"token": token, "expression": e})
+        req = json.loads(self.body().decode("utf-8") or "{}")
+        if parts == ["accept"]:                         # pending/<token> into the library under its name
+            d = EXPR_SAVED / "pending" / str(req.get("token", ""))
+            name = str(req.get("name", "")).strip()
+            if not face_name(d.name) or not (d / "expression.json").is_file():
+                return self.send(404, {"error": "nothing waiting under that token"})
+            if not name:
+                return self.send(400, {"error": "name it first"})
+            eid = expr_id(name)
+            e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
+            e.update(name=name, made=time.strftime("%Y-%m-%dT%H:%M:%S"), neutral=req.get("neutral", e.get("neutral", "first")), strength=float(req.get("strength", e.get("strength", 1))))
+            if float(req.get("length") or 0) > 0:     # the seconds it plays in, when not as filmed
+                e["length"] = round(float(req["length"]), 3)
+            EXPRESSIONS.mkdir(parents=True, exist_ok=True)
+            out = EXPRESSIONS / eid
+            out.mkdir()
+            for f in EXPR_FILES:
+                if (d / f).is_file():
+                    shutil.move(str(d / f), str(out / f))
+            (out / "expression.json").write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
+            shutil.rmtree(d, ignore_errors=True)
+            return self.send(200, {"id": eid, "name": name})
+        if parts == ["discard"]:
+            d = EXPR_SAVED / "pending" / str(req.get("token", ""))
+            if face_name(d.name):
+                shutil.rmtree(d, ignore_errors=True)
+            return self.send(200, {"ok": True})
+        if len(parts) == 2 and face_name(parts[0]) and (EXPRESSIONS / parts[0] / "expression.json").is_file():
+            d = EXPRESSIONS / parts[0]
+            if parts[1] == "set":                       # its name, neutral, strength (the folder keeps its id)
+                f = d / "expression.json"
+                e = json.loads(f.read_text(encoding="utf-8"))
+                if str(req.get("name", "")).strip():
+                    e["name"] = str(req["name"]).strip()
+                for k in ("neutral", "strength", "length"):
+                    if k in req:
+                        e[k] = req[k]
+                if e.get("loop") and "blend" in req:     # a loop's wrap
+                    e["loop"] = dict(e["loop"], blend=round(max(0.0, min(5.0, float(req["blend"]))), 3))
+                f.write_text(json.dumps(e, separators=(",", ":")), encoding="utf-8")
+                return self.send(200, {"ok": True})
+            if parts[1] == "loop":                      # a loop cut from a range of it: a card of its own (EXPRESSIONS_PLAN §2b)
+                e = json.loads((d / "expression.json").read_text(encoding="utf-8"))
+                n = int(e.get("frames") or 0)
+                a, b = (max(0, min(n - 1, int(req.get(k, v)))) for k, v in (("from", 0), ("to", n - 1)))
+                if b - a < 4:
+                    return self.send(400, {"error": "a loop needs at least 5 frames"})
+                name = str(req.get("name", "")).strip() or f"{e.get('name', d.name)} · loop"
+                curves = e.get("curves", {})
+                rest = e.get("rest") or {"first": {k: sum(v[:3]) / len(v[:3]) for k, v in curves.items() if v},   # the face at rest as the whole capture has it (face.js zeroOf; a loop's own, kept)
+                                         "quiet": {k: sorted(v)[min(len(v) - 1, int(0.05 * len(v)))] for k, v in curves.items() if v}}
+                of = e.get("of") or {}                  # where it came from: the capture with the clip (a loop of a loop: the first)
+                out = {k: e[k] for k in ("about", "version", "fps", "source", "neutral", "strength") if k in e}
+                out.update(name=name, made=time.strftime("%Y-%m-%dT%H:%M:%S"), frames=b - a + 1, secs=round((b - a + 1) / float(e.get("fps") or 30), 3),
+                           curves={k: v[a:b + 1] for k, v in curves.items()}, rest=rest,
+                           of={"id": of["id"], "from": of.get("from", 0) + a, "to": of.get("from", 0) + b} if of.get("id") else {"id": d.name, "from": a, "to": b},
+                           loop={"blend": round(max(0.0, min(5.0, float(req.get("blend", 0.4)))), 3)})
+                if e.get("length"):                     # stretched as its whole capture is
+                    out["length"] = round(float(e["length"]) * (b - a + 1) / n, 3)
+                eid = expr_id(name)
+                (EXPRESSIONS / eid).mkdir()
+                (EXPRESSIONS / eid / "expression.json").write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+                return self.send(200, {"id": eid, "name": name})
+            if parts[1] == "remove":                    # the red x: kept in Saved/Expressions/removed, out of the library
+                gone = EXPR_SAVED / "removed" / f"{d.name}-{time.strftime('%Y%m%d-%H%M%S')}"
+                gone.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(d), str(gone))
+                return self.send(200, {"ok": True, "kept": str(gone.relative_to(ROOT))})
         return self.send(404, {"error": "not found"})
 
     def do_PUT(self):
@@ -266,7 +439,7 @@ class Handler(BaseHTTPRequestHandler):
         if body.get("mtime") and abs(body["mtime"] - p.stat().st_mtime) > 0.001 and not body.get("force"):
             return self.send(409, {"error": "the file changed on disk since you loaded it (Claude edited it?): reload, "
                                             "or save anyway to overwrite", "mtime": p.stat().st_mtime})
-        hist = history_dir(parts[2])
+        hist = history_dir(urllib.parse.unquote(parts[2]))
         (hist / f"{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
         for old in sorted(hist.glob("*.json"))[:-KEEP]:
             old.unlink()
@@ -278,7 +451,11 @@ class Handler(BaseHTTPRequestHandler):
         return self.rfile.read(n) if n else b""
 
     def do_POST(self):
-        parts = self.path.strip("/").split("/")
+        import urllib.parse
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        parts = self.path.split("?")[0].strip("/").split("/")
+        if parts[:2] == ["api", "expressions"] and len(parts) >= 3:    # the expression library: import, accept, discard, rename, remove
+            return self.expressions_post(parts[2:], query)
         if parts[:2] == ["api", "take"] and len(parts) == 4 and self.game_path(parts[2]):   # a take dropped on its clip in the desk
             name = parts[3]
             if not re.fullmatch(r"[A-Za-z0-9_]+\.[A-Za-z0-9]+", name) or Path(name).suffix.lower() not in MEDIA:
@@ -371,6 +548,12 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:  # noqa: BLE001 - a half-built world: say why
                 return self.send(200, {"errors": [f"the world doesn't plan yet: {e}"], "warnings": []})
             return self.send(200, {"errors": r.errors, "warnings": r.warnings})
+        if parts[:2] == ["api", "sets"] and len(parts) == 3:   # a new set: story.py new-set
+            if not L.SET_NAME.match(parts[2]) or (L.SETS / parts[2]).exists():
+                return self.send(400, {"error": "a new set needs a fresh name of lower-case letters, digits and _"})
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "story.py"), "new-set", parts[2]], capture_output=True,
+                               text=True, encoding="utf-8")
+            return self.send(200 if r.returncode == 0 else 500, {"output": r.stdout + r.stderr, "sets": L.sets()})
         if parts[:2] == ["api", "new"] and len(parts) == 3:
             name = parts[2]
             if not name.replace("_", "").isalnum() or (L.GAMES / name).exists():

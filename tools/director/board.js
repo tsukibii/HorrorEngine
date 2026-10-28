@@ -2,6 +2,9 @@
 // auto-layout until you move one; pan (drag the background, or with the middle button) and zoom (the wheel, around
 // the pointer; Fit shows everything); drag a node to move it; drag from its port (the dot on its right) to another
 // node to connect them, or into empty space for a new node there; drop a node type from the palette to add one.
+// An arrow is a thing too (HANDOFF_DIRECTOR_TODO §2): a click or right-click on it asks (cut it, put a card on it, move
+// the picked run onto it), dragging it by its end onto a card re-points it; a cut card keeps a stub (its dot, dragged
+// onto a card, joins it again) and the cards nothing reaches from the start are dimmed, a loose chain till it's joined.
 // Acts (the story's `frames`) are coloured frames behind groups of cards: dragged by their title (the cards come
 // along), folded into one card. Shift-drag on the background picks the cards in a box; the minimap shows the whole.
 // app.js says what's on a card and what each change does to the story (the callbacks), so this stays the map's own.
@@ -18,7 +21,8 @@ export class Board {
   //     outs(id) -> [{to, label, kind}], moved({id: [x, y]}) (every node's place, once any is moved), connect(from, to),
   //     create(type, [x, y], from|null), remove(), context(id | null, clientX, clientY, [x, y]) (the right-click),
   //     quick(templateId, [x, y]), pickMany(ids) (a box drawn), frameMenu(frameId, clientX, clientY),
-  //     join(frameId, nodeId) (a card dropped inside an act it isn't in)
+  //     join(frameId, nodeId) (a card dropped inside an act it isn't in), arrow(from, at, clientX, clientY, [x, y]) (an
+  //     arrow clicked: `at` where it lives, flowedit.js), repoint(from, at, to) (an arrow dragged by its end onto a card)
   constructor(host, cb) {
     this.host = host; this.cb = cb; this.view = { x: 0, y: 0, z: 1 }; this.pos = {}; this.hide = {}; this.foldPos = {};
     host.innerHTML = ""; host.tabIndex = 0;
@@ -104,12 +108,14 @@ export class Board {
         el("div", { class: "bframe-h", title: "drag to move the act with its cards · right-click for its menu" },
           el("button", { class: "bframe-fold", title: "fold it into one card" }, icon("down", 12)), el("span", { class: "bframe-t" }, f.title || f.id), el("span", { class: "bframe-n" }, ids.length))), this.svg);
     }
+    const reach = this.reached();
     for (const [id, n] of Object.entries(S.flow)) {
       if (this.hide[id]) continue;
       const p = this.pos[id], c = this.cb.card(id, n), sel = this.cb.selected() === id, multi = this.cb.multi ? this.cb.multi() : null;
-      const many = multi && multi.size > 1 && multi.has(id);
-      const card = el("div", { class: `card ${n.type}${sel ? " sel" : ""}${many ? " multi" : ""}${c.cls ? " " + c.cls : ""}`, "data-id": id, title: c.title || "", style: `left:${p.x}px;top:${p.y}px` }, ...c.kids);
-      if (n.type !== "ending") card.append(el("span", { class: "port", title: "drag to another node to connect (or into empty space for a new one)" }));
+      const many = multi && multi.size > 1 && multi.has(id), cut = (n.type === "scene" || n.type === "stitch") && !n.next, loose = !reach.has(id);
+      const card = el("div", { class: `card ${n.type}${sel ? " sel" : ""}${many ? " multi" : ""}${cut ? " cut" : ""}${loose ? " loose" : ""}${c.cls ? " " + c.cls : ""}`, "data-id": id,
+        title: (c.title || "") + (loose ? (c.title ? "\n" : "") + "nothing leads here from the start: a loose chain till it's joined" : ""), style: `left:${p.x}px;top:${p.y}px` }, ...c.kids);
+      if (n.type !== "ending") card.append(el("span", { class: "port", title: cut ? "the flow's cut here: drag this onto the card that comes next" : "drag to another node to connect (or into empty space for a new one)" }));
       this.world.append(card);
     }
     this.edges();
@@ -129,12 +135,24 @@ export class Board {
         const x1 = a.x + CARD_W, y1 = a.y + CARD_H / 2, x2 = t.x, y2 = t.y + CARD_H / 2, back = x2 < x1 - 10;
         const dx = Math.max(40, Math.abs(x2 - x1) / 2);
         const d = back ? `M${x1},${y1} C${x1 + 70},${y1} ${x2 - 70},${y2} ${x2},${y2}` : `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
-        const col = o.kind === "interrupt" ? "#b04a42" : o.kind === "timer" ? "#b0862a" : "#66666f";
+        const col = o.kind === "interrupt" ? "#b04a42" : o.kind === "timer" ? "#b0862a" : o.kind === "answer" ? "#6f8fd0" : "#66666f";
         paths += `<path d="${d}" stroke="${col}" fill="none" stroke-width="1.7" ${o.kind ? 'stroke-dasharray="5 4"' : ""} marker-end="url(#ar)" opacity=".9"/>`;
+        if (o.at && !this.hide[id]) paths += `<path class="ehit" d="${d}" stroke="transparent" fill="none" stroke-width="12" data-from="${esc(id)}" data-at="${esc(JSON.stringify(o.at))}"><title>click: cut it, put a card on it · drag it by its end onto another card</title></path>`;
         if (o.label && !this.hide[id]) { const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - 5; paths += `<text x="${mx}" y="${my}" text-anchor="middle" fill="${o.kind ? col : "#d39a45"}" font-size="10.5" paint-order="stroke" stroke="#121214" stroke-width="3">${esc(o.label).slice(0, 26)}</text>`; }
       }
     }
+    for (const [id, n] of Object.entries(S.flow)) {          // a cut card's stub: its way on, waiting for a card
+      const a = this.at(id); if (!a || this.hide[id] || !(n.type === "scene" || n.type === "stitch") || n.next) continue;
+      const x1 = a.x + CARD_W, y1 = a.y + CARD_H / 2;
+      paths += `<path d="M${x1 + 6},${y1} L${x1 + 34},${y1}" stroke="#c0473f" stroke-width="2" stroke-dasharray="4 3" fill="none"/><circle cx="${x1 + 38}" cy="${y1}" r="4" fill="none" stroke="#c0473f" stroke-width="2"/>`;
+    }
     this.svg.innerHTML = paths + extra;
+  }
+  reached() {                                    // the cards the flow reaches from the start (the rest: a loose chain)
+    const S = this.cb.story(), seen = new Set(), todo = [S.game && S.game.start];
+    while (todo.length) { const id = todo.pop(); if (!id || seen.has(id) || !S.flow[id]) continue; seen.add(id); for (const o of this.cb.outs(id)) todo.push(o.to); }
+    for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !S.flow[id]) continue; seen.add(id); for (const o of this.cb.outs(id)) st.push(o.to); } }
+    return seen;
   }
   // ---- the minimap: every card (an act folded as one), the acts, and the part the board shows ----
   toggleMini() { const on = this.mini.style.display === "none"; this.mini.style.display = on ? "" : "none"; try { localStorage.setItem("dd.board.mini", on ? "1" : "0"); } catch (e) { } this.drawMini(); }
@@ -195,6 +213,8 @@ export class Board {
       if (e.button === 0 && e.target.closest(".bframe-fold")) { e.preventDefault(); return this.fold(e.target.closest(".bframe").dataset.frame, true); }
       if (e.button === 0 && head) return this.dragGroup(e, this.members(this.frames().find(f => f.id === head.parentNode.dataset.frame)));
       if (e.button === 0 && card && card.classList.contains("folded")) return this.dragGroup(e, this.members(this.frames().find(f => f.id === card.dataset.frame)));
+      const hit = e.target.closest && e.target.closest(".ehit");
+      if (e.button === 0 && hit && this.cb.arrow) return this.arrowDrag(e, hit.dataset.from, JSON.parse(hit.dataset.at));
       if (e.button === 0 && e.shiftKey && !card && !e.target.closest(".btools,.bmenu,.bhint")) return this.boxPick(e);
       if (e.button === 1 || (e.button === 0 && !card && !e.target.closest(".btools,.bmenu"))) return this.pan(e);
       if (e.button !== 0) return;
@@ -207,12 +227,14 @@ export class Board {
       e.preventDefault();
       const fr = e.target.closest(".bframe-h,.card.folded");
       if (fr && this.cb.frameMenu) return this.cb.frameMenu(fr.closest("[data-frame]").dataset.frame, e.clientX, e.clientY);
+      const hit = e.target.closest(".ehit");
+      if (hit && this.cb.arrow) return this.cb.arrow(hit.dataset.from, JSON.parse(hit.dataset.at), e.clientX, e.clientY, this.toWorld(e.clientX, e.clientY));
       const card = e.target.closest(".card");
       if (this.cb.context) this.cb.context(card ? card.dataset.id : null, e.clientX, e.clientY, this.toWorld(e.clientX, e.clientY));
     });
     host.addEventListener("dblclick", e => {
       const folded = e.target.closest(".card.folded"); if (folded) return this.fold(folded.dataset.frame, false);
-      if (!e.target.closest(".card,.btools,.bframe-h") && e.target !== this.mini) { const [x, y] = this.toWorld(e.clientX, e.clientY); this.menu(e.clientX, e.clientY, type => this.cb.create(type, [x, y], null)); }
+      if (!e.target.closest(".card,.btools,.bframe-h,.ehit") && e.target !== this.mini) { const [x, y] = this.toWorld(e.clientX, e.clientY); this.menu(e.clientX, e.clientY, type => this.cb.create(type, [x, y], null)); }
     });
     host.addEventListener("dragover", e => { const t = [...e.dataTransfer.types]; if (t.includes("text/x-node") || t.includes("text/x-quick")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
     host.addEventListener("drop", e => {
@@ -304,6 +326,26 @@ export class Board {
       const over = document.elementFromPoint(ev.clientX, ev.clientY), c = over && over.closest(".card");
       if (c && c.dataset.id && c.dataset.id !== from) return this.cb.connect(from, c.dataset.id);
       if (over && this.host.contains(over)) { const [x, y] = this.toWorld(ev.clientX, ev.clientY); this.menu(ev.clientX, ev.clientY, type => this.cb.create(type, [x, y - CARD_H / 2], from)); }
+    };
+    window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+  }
+  arrowDrag(e, from, at) {                     // an arrow: a click asks what to do with it; dragged by its end onto a card, it goes there
+    e.preventDefault(); e.stopPropagation();
+    const a = this.pos[from], sx = e.clientX, sy = e.clientY, x1 = a.x + CARD_W, y1 = a.y + CARD_H / 2; let moved = false;
+    const mv = ev => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+      moved = true; const [x, y] = this.toWorld(ev.clientX, ev.clientY);
+      this.edges(`<path d="M${x1},${y1} C${x1 + 60},${y1} ${x - 60},${y} ${x},${y}" stroke="var(--accent)" stroke-width="2" fill="none" stroke-dasharray="6 4"/><circle cx="${x}" cy="${y}" r="5" fill="var(--accent)"/>`);
+      this.world.querySelectorAll(".card.target").forEach(c => c.classList.remove("target"));
+      const over = document.elementFromPoint(ev.clientX, ev.clientY), c = over && over.closest(".card"); if (c && c.dataset.id && c.dataset.id !== from) c.classList.add("target");
+    };
+    const up = ev => {
+      window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up);
+      this.world.querySelectorAll(".card.target").forEach(c => c.classList.remove("target"));
+      if (!moved) return this.cb.arrow(from, at, ev.clientX, ev.clientY, this.toWorld(ev.clientX, ev.clientY));
+      this.edges();
+      const over = document.elementFromPoint(ev.clientX, ev.clientY), c = over && over.closest(".card");
+      if (c && c.dataset.id && c.dataset.id !== from && this.cb.repoint) this.cb.repoint(from, at, c.dataset.id);
     };
     window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
   }

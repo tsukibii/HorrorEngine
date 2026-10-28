@@ -2,7 +2,8 @@
 // and level checks; the player walks (and a wall stops them); a room and a door are added; the finish, wall items,
 // a reference cut-out and the kit (furniture, fittings, floors, a ceiling step, window frames, curtains) pass and
 // read back; a layout saves into a scratch game (made and removed here) and reads back the same; the desk reloads,
-// another game's level is borrowed, the desk's deep link shows its marks. Ends "BUILDER ok".
+// another game's level is borrowed, a set (a place designed before its game) is made from the picker, laid out, saved
+// into Content/Studio/Sets and taken by a game as its start, the desk's deep link shows its marks. Ends "BUILDER ok".
 //
 //   python tools/director/serve.py          (in another shell)
 //   node tools/director/buildertest.js [shots dir]
@@ -12,7 +13,7 @@ const fs = require("fs"), path = require("path");
 const { chromium } = require(process.env.PLAYWRIGHT || "playwright");
 const URL = process.env.DESK_URL || "http://127.0.0.1:8780/";
 const ROOT = path.resolve(__dirname, "../..");
-const SCRATCH = "Zz_builder_test";
+const SCRATCH = "Zz_builder_test", SETNAME = "zz_builder_set";     // a scratch game and a scratch set, removed after
 const png = rgb => {                    // a 4x4 PNG of one colour (a scratch map for the shelf)
   const W = 4, raw = Buffer.alloc((W * 3 + 1) * W);
   for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) rgb.forEach((v, k) => { raw[y * (W * 3 + 1) + 1 + x * 3 + k] = v; });
@@ -23,11 +24,12 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
 };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } }), page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/favicon|WebGL|GPU stall/i.test(m.text())) errors.push(m.text()); });
+  page.on("response", r => { if (r.status() >= 400 && r.status() !== 409) console.log(`  (${r.status()} ${r.request().method()} ${r.url().replace(URL, "/")})`); });
   const fail = msg => { console.log("FAIL " + msg); process.exitCode = 1; };
   page.on("dialog", d => d.accept());
   const shots = process.argv[2];
@@ -264,6 +266,31 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
     console.log("borrowed", bor.target, bor.rooms, "rooms");
     if (!bor.rooms || bor.chk.errors.length) fail("borrowed level: " + JSON.stringify(bor).slice(0, 300));
 
+    // a set (DECISIONS 2026-10-27, later: "predesign a studio"): + new set… in the game picker, a layout laid out in it and
+    // saved into Content/Studio/Sets/<name>, read back; then a game takes its level as a start (layout: From a set)
+    page.removeAllListeners("dialog"); page.on("dialog", d => d.type() === "prompt" ? d.accept(SETNAME) : d.accept());
+    await page.selectOption("#game", "__newset");
+    await page.waitForFunction(n => window.B && window.B.game === "set:" + n && window.B.plan, SETNAME, { timeout: 30000 })
+      .catch(async () => { throw new Error("the new set didn't open: " + JSON.stringify(await page.evaluate(() => ({ game: window.B.game, status: document.querySelector("#status").textContent })))); });
+    page.removeAllListeners("dialog"); page.on("dialog", d => d.accept());
+    await page.evaluate(() => { window.B.dirty = false; window.builder.openPreset("1ldk"); });
+    await page.waitForTimeout(600);
+    await page.evaluate(() => window.builder.save(false));
+    await page.waitForTimeout(800);
+    const setFile = path.join(ROOT, "Content/Studio/Sets", SETNAME, "story.json");
+    const setSaved = fs.existsSync(setFile) ? JSON.parse(fs.readFileSync(setFile, "utf8")) : null;
+    const setLevel = setSaved && Object.keys(setSaved.levels).find(k => k.startsWith("home_1ldk"));
+    console.log("set", SETNAME, setSaved ? Object.keys(setSaved.levels).join(",") : "not saved");
+    if (!setLevel || setSaved.levels[setLevel].rooms.length < 4) fail("the set wasn't saved with its layout: " + (setSaved ? Object.keys(setSaved.levels) : "no file"));
+    await page.selectOption("#game", SCRATCH);
+    await page.waitForFunction(g => window.B.game === g && window.B.story && window.B.story.game.id === g && window.B.plan, SCRATCH, { timeout: 30000 });   // the game's own story in, not the set's
+    await page.waitForFunction(n => [...document.querySelectorAll("#preset option")].some(o => o.value.startsWith("oset:" + n + ":")), SETNAME, { timeout: 30000 });
+    await page.evaluate(([n, l]) => { window.B.dirty = false; const s = document.querySelector("#preset"); s.value = `oset:${n}:${l}`; s.onchange(); }, [SETNAME, setLevel]);
+    await page.waitForTimeout(600);
+    const fromSet = await page.evaluate(async () => ({ target: window.B.target, rooms: window.B.model.rooms.length, chk: await window.builder.runChecks() }));
+    console.log("from the set", fromSet.target, fromSet.rooms, "rooms");
+    if (fromSet.rooms < 4 || fromSet.chk.errors.length) fail("a game's start from the set: " + JSON.stringify(fromSet).slice(0, 300));
+
     // a deep link from the desk: Sample's house with a node's marks, and the script panel
     const node = Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, "Content/Games/Sample/story.json"), "utf8")).flow).find(([, n]) => n.type === "scene")[0];
     await page.goto(URL + `builder.html?game=Sample&level=house&node=${node}`);
@@ -355,6 +382,8 @@ const png = rgb => {                    // a 4x4 PNG of one colour (a scratch ma
       fail("the PBR buttons: " + JSON.stringify({ back, worn, kback }));
   } finally {
     if (setDir) fs.rmSync(setDir, { recursive: true, force: true });
+    fs.rmSync(path.join(ROOT, "Content/Studio/Sets", SETNAME), { recursive: true, force: true });
+    fs.rmSync(path.join(ROOT, "Saved/Story", "set-" + SETNAME), { recursive: true, force: true });
     for (const f of fs.existsSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) ? fs.readdirSync(path.join(ROOT, "Content/Studio/Library/meshes/local")) : [])
       if (f.startsWith("hinge_test_hinge_")) fs.rmSync(path.join(ROOT, "Content/Studio/Library/meshes/local", f));
     const li = path.join(ROOT, "Content/Studio/Library/index/local.json");

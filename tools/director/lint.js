@@ -6,17 +6,20 @@
 //   things: the plan's placed things (id -> {kind, use, level}); poses: the pose names; secs(clip): a clip's length
 import { ACTION, TRIGGER, verbOfAction, verbOfTrigger, fieldsOf } from "./commands.js";
 import { placeOf } from "./refs.js";
+import { arrows, cutsOf } from "./flowedit.js";
 
 const IS = {                                       // what a placed thing must be for a field of each kind
   thing: t => t.kind !== "room", spot: t => t.use === "spot", door: t => t.kind === "door", light: t => t.use === "light",
   room: t => t.kind === "room", zone: t => t.kind === "room" || t.use === "trigger", locker: t => t.use === "locker",
   carry: t => t.use === "carry", die: t => t.use === "roll", table: t => t.use === "game", life: t => !!t.life,
+  stain: t => t.use === "clean", breaker: t => t.use === "breaker",
 };
 const NOUN = { thing: "placed thing", spot: "spot", door: "door", light: "light", room: "room", zone: "room or trigger", locker: "hiding place",
   carry: "thing you carry", die: "die", table: "game table", line: "line", sound: "sound", item: "item", note: "note", counter: "counter",
   axis: "karma axis", scene: "scene", cast: "cast member", motion: "motion", secret: "secret", route: "route", beat: "beat in this task",
-  ask: "question", pose: "pose", life: "thing with a life" };
+  ask: "question", pose: "pose", life: "thing with a life", todo: "task on the to-do list", stain: "stain", breaker: "breaker box" };
 const TABLE = { line: "lines", sound: "sounds", item: "items", note: "notes", scene: "scenes", cast: "cast", motion: "motions", secret: "secrets" };
+const ANY = { anyone: "cast", anylocker: "locker", anycarry: "carry", anytodo: "todo" };   // true (any, all) or one of a kind
 const BUILT_IN_POSES = new Set(["idle", "tpose"]);
 const MUST = new Set([...Object.keys(NOUN), "flag", "routes", "lifestate"]);      // a field of these kinds can't be left empty (unless it's optional)
 const SEAM_LOOKS = new Set(["glance", "cutaway"]);                   // seams that need something to look at
@@ -30,6 +33,8 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
   const routes = new Set(Object.values(S.levels || {}).flatMap(l => Object.keys(l.routes || {})));
   const asks = {};
   for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (a.ask) asks[a.ask] = a; });
+  const todos = {}, ticks = new Set();
+  for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walkActs(b.do, a => { if (typeof a.todo === "string") todos[a.todo] = a; if (a.tick) ticks.add(a.tick); });
   const counters = game.counters || {}, axes = (game.karma || {}).axes || { karma: {} };
   const has = (kind, v, ctx) => {                  // does v name something of this kind?
     if (IS[kind]) { const t = things[v]; return t ? IS[kind](t) || kind === "thing" : kind === "thing" && !!cast[v]; }
@@ -39,6 +44,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (kind === "route") return routes.has(v);
     if (kind === "beat") return !!(ctx.beats || []).find(b => b.id === v);
     if (kind === "ask") return !!asks[v];
+    if (kind === "todo") return !!todos[v];
     if (kind === "pose") return !poses || poses.includes(v) || BUILT_IN_POSES.has(v);
     return true;
   };
@@ -49,7 +55,8 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
       if (empty(v)) { if (!f.opt && (MUST.has(f.kind) || (f.kind === "choice" && (f.verb || f.key === "set")))) add("error", `${what}: choose the ${f.label.toLowerCase()}`, path, x); continue; }
       if (f.kind === "choice" && f.opts && !f.opts.includes(v)) add("error", `${what}: ${f.label.toLowerCase()} ${v} isn't one of ${f.opts.join(", ")}`, p, x);
       else if (f.kind === "karma") { for (const k of typeof v === "number" ? [] : Object.keys(v || {})) if (!axes[k]) add("error", `${what}: karma axis ${k} isn't in the game's karma axes`, p, x); if (typeof v === "number" && !axes.karma) add("error", `${what}: a plain number counts on the karma axis, which this game hasn't got`, p, x); }
-      else if (f.kind === "anyone" || f.kind === "anylocker" || f.kind === "anycarry") { if (v !== true && !has({ anyone: "cast", anylocker: "locker", anycarry: "carry" }[f.kind], v, ctx)) add("error", `${what}: ${v} isn't ${an(NOUN[{ anyone: "cast", anylocker: "locker", anycarry: "carry" }[f.kind]])}`, p, x); }
+      else if (ANY[f.kind]) { if (v !== true && !has(ANY[f.kind], v, ctx)) add("error", `${what}: ${v} isn't ${an(NOUN[ANY[f.kind]])}`, p, x); }
+      else if (f.kind === "trigger") trigger(v, p, ctx);
       else if (f.kind === "facing") { if (v !== "player" && !cast[v] && !things[v]) add("error", `${what}: facing ${v}, which isn't the player, a cast member or a placed thing`, p, x); }
       else if (f.kind === "routes") { for (const r of v) if (!routes.has(r)) add("error", `${what}: route ${r} isn't a route on any level`, p, x); }
       else if (f.kind === "answer") { if (!(x.options || []).some(o => o.id === v)) add("error", `${what}: ${v} isn't one of its answers`, p, x); }
@@ -64,6 +71,12 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (!d) { add("error", `an unknown command: ${verb}`, path, a); return; }
     fields(d, a, path, ctx, d.label);
     if (verb === "light" && empty(a.light) && empty(a.room)) add("error", "Light: choose a light or a room", path, a);
+    if (verb === "todo") {
+      if (typeof a.todo !== "string" || !/^[a-z0-9_]+$/.test(a.todo)) add("error", "To do: its id is a word (lower case, digits, _), for Tick, Fail and “a task is ticked”", path, a);
+      if (!a.text) add("error", `To do ${a.todo}: what the list says is empty`, path, a);
+      if (!a.ticks && !ticks.has(a.todo)) add("warn", `To do ${a.todo}: nothing ticks it: give it a “ticked when”, or Tick it in a beat`, path, a);
+      for (const [r, l] of Object.entries(a.on || {})) actions(l, [...path, "on", r], ctx);
+    }
     if (verb === "ask") {
       if ("line" in a && "text" in a && a.text) add("error", `Ask ${a.ask}: the question is a thought or a spoken line, not both`, path, a);
       else if (!("line" in a) && !("text" in a)) add("error", `Ask ${a.ask}: the question needs its words (a thought or a spoken line)`, path, a);
@@ -113,6 +126,10 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     const ctx = { beats: [] };
     actions(sc.sets, ["scenes", sid, "sets"], ctx);
     if (sc.level && !(S.levels || {})[sc.level]) add("error", `it's set in level ${sc.level}, which doesn't exist`, ["scenes", sid], sc);
+    if (isObj(sc.models)) for (const [cid, m] of Object.entries(sc.models)) {   // the models it picks (§3.1): a cast member's own, or default
+      if (!cast[cid]) add("error", `its models: ${cid} isn't in the cast`, ["scenes", sid, "models"], sc);
+      else if (m !== "default" && !((cast[cid].models || {})[m])) add("error", `its models: ${cast[cid].name || cid} has no model “${m}”`, ["scenes", sid, "models"], sc);
+    }
     if (sc.view && !things[sc.view]) add("error", `the player stands at ${sc.view}, which isn't placed`, ["scenes", sid], sc);
     for (const v of [sc, ...Object.values(sc.variants || {})]) for (const [cid, at] of Object.entries(v.stage || {})) {
       if (!cast[cid]) add("error", `its stage names ${cid}, who isn't in the cast`, ["scenes", sid, "stage"], sc);
@@ -122,16 +139,26 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     for (const [base, v, own] of versions) {
       const cb = own.cues ? base : ["scenes", sid], lb = own.clips ? base : ["scenes", sid];
       (v.cues || []).forEach((cu, i) => actions(cu.do, [...cb, "cues", i, "do"], ctx));
+      (v.faces || []).forEach((f, i) => { if (f.count && !counters[f.count]) add("error", `${f.who}'s face ${f.expr} is worn by ${f.count}, which isn't a counter`, [...(own.faces ? base : ["scenes", sid]), "faces", i], sc); });
       (v.clips || []).forEach((c, i) => {
         const p = [...lb, "clips", i], who = c.who;
         if (who !== "player" && !cast[who]) add("error", `line ${c.id}: ${who ? who + " isn't in the cast" : "choose who says it"}`, p, c);
         if (!c.en) add("error", `line ${c.id}: no English subtitle`, p, c);
+        if (c.count && !counters[c.count]) add("error", `line ${c.id}: shown by ${c.count}, which isn't a counter`, p, c);   // a line by a condition (§9.14)
         if (i && !c.seam) add("error", `line ${c.id}: a cut with no seam to hide it (blink, glance, flicker…)`, p, c);
         else if (i && SEAM_LOOKS.has(c.seam.kind) && !c.seam.look) add("error", `line ${c.id}: its ${c.seam.kind} seam needs something to look at`, p, c);
         if (secs) { const t = secs(c); if (t > max + 0.01) add(c.dur ? "error" : "warn", `line ${c.id}: ${t.toFixed(1)} s${c.dur ? "" : " at speaking pace"}, over the ${max} s a take can be: split it`, p, c); }
         for (const e of ["start", "end"]) { const m = (c.body || {})[e]; if (m && !(S.motions || {})[m] && !BUILT_IN_POSES.has(m)) add("warn", `line ${c.id}: its body ${e}s from ${m}, which isn't a motion`, [...p, "body"], c); }
         if (c.event) results(c.event.on, [...p, "event", "on"], ctx);
-        ((c.reply || {}).options || []).forEach((o, j) => actions(o.sets, [...p, "reply", "options", j, "sets"], ctx));
+        ((c.reply || {}).options || []).forEach((o, j) => {
+          const op = [...p, "reply", "options", j], g = o.go === undefined ? "next" : o.go, ans = `line ${c.id}: answer ${o.label || o.id}`;
+          if (o.count && !counters[o.count]) add("error", `${ans}: offered by ${o.count}, which isn't a counter`, op, c);
+          actions(o.sets, [...op, "sets"], ctx);
+          for (const th of Array.isArray(o.then) ? o.then : o.then ? [o.then] : []) if (isObj(th) && th.who && th.who !== "player" && !cast[th.who]) add("error", `${ans}: ${th.who} answers, who isn't in the cast`, op, c);
+          if (!(g === "next" || g === "end" || isObj(g) && Object.keys(g).length === 1 && ("clip" in g || "node" in g))) add("error", `${ans}: where it goes is next, end, a later line or a card`, op, c);
+          else if (isObj(g) && "clip" in g && !(v.clips || []).slice(i + 1).some(x => x.id === g.clip)) add("error", `${ans}: it skips to ${g.clip}, which isn't a later line`, op, c);
+          else if (isObj(g) && "node" in g && !flow[g.node]) add("error", `${ans}: it goes to ${g.node}, which isn't on the board`, op, c);
+        });
       });
     }
   }
@@ -146,18 +173,19 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
     if (n.type === "choice") {
       if (!(n.options || []).length) add("error", "a choice with no options", p, n);
       (n.options || []).forEach((o, i) => {
-        if (!o.to) add("error", `option ${o.label || i + 1} goes nowhere: choose where`, [...p, "options", i], n);
+        if (!o.to) add("warn", `option ${o.label || i + 1} goes nowhere: the flow's cut here (choose where)`, [...p, "options", i], n);
         else if (!flow[o.to]) add("error", `option ${o.label || i + 1} goes to ${o.to}, which doesn't exist`, [...p, "options", i], n);
         if (n.by === "act" && o.when) trigger(o.when, [...p, "options", i, "when"], { beats: [] });
         if (n.by === "count" && o.count && !counters[o.count]) add("error", `option ${i + 1} counts ${o.count}, which isn't a counter`, [...p, "options", i], n);
       });
-    } else if (n.type !== "ending" && !n.next) add("error", "it goes nowhere: connect it to the next node", p, n);
+    } else if (n.type !== "ending" && !n.next) add("warn", "the flow's cut here: drag its stub onto the card that comes next", p, n);   // sliced on the board (§2)
   }
   const seen = new Set(), todo = [game.start];
-  const outs = n => [n.next, ...(n.options || []).map(o => o.to), n.type === "stitch" && ((S.stitches || {})[n.ref] || {}).timer ? S.stitches[n.ref].timer.fail : null];
-  while (todo.length) { const id = todo.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); todo.push(...outs(flow[id])); }
-  for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); st.push(...outs(flow[id])); } }
-  for (const [nid, n] of Object.entries(flow)) if (!seen.has(nid) && flow[game.start]) add(n.type === "ending" ? "error" : "warn", n.type === "ending" ? "no path reaches this ending" : "nothing leads here", ["flow", nid], n);
+  const outs = id => arrows(S, id).map(a => a.to);   // its next, its ways, its timer's, an answer's card (§9.9)
+  while (todo.length) { const id = todo.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); todo.push(...outs(id)); }
+  for (const it of S.interrupts || []) if (it.to && seen.size) { const st = [it.to]; while (st.length) { const id = st.pop(); if (!id || seen.has(id) || !flow[id]) continue; seen.add(id); st.push(...outs(id)); } }
+  const sliced = cutsOf(S).length > 0;               // cut on the board: what the cut leaves out is a warning till it's joined (§2)
+  for (const [nid, n] of Object.entries(flow)) if (!seen.has(nid) && flow[game.start]) add(n.type === "ending" && !sliced ? "error" : "warn", n.type === "ending" ? "no path reaches this ending" + (sliced ? " (the flow's cut)" : "") : "nothing leads here" + (sliced ? " (the flow's cut)" : ""), ["flow", nid], n);
 
   // ---- the board's acts
   const inAct = {};
@@ -213,7 +241,7 @@ export function lint(S, { things = {}, poses = null, secs = null, lives = null }
   for (const [f, path, x] of read) if (f && !set.has(f) && !warned.has(f + path.join("/"))) { warned.add(f + path.join("/")); add("warn", `flag ${f} is waited for, but nothing sets it`, path, x); }
   return out;
 }
-function walkActs(list, fn) { for (const a of list || []) { if (!isObj(a)) continue; fn(a); for (const o of a.options || []) walkActs(o.do, fn); } }
+function walkActs(list, fn) { for (const a of list || []) { if (!isObj(a)) continue; fn(a); for (const o of a.options || []) walkActs(o.do, fn); if (a.todo !== undefined && isObj(a.on)) for (const l of Object.values(a.on)) walkActs(l, fn); } }
 
 // the problems of one place: a flow node, a beat (by its object), a clip (by its object)
 export function byNode(problems) { const m = {}; for (const p of problems) { const n = p.at && p.at.node; if (n) (m[n] = m[n] || []).push(p); } return m; }

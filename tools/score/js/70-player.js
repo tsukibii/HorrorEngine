@@ -14,7 +14,7 @@ function chainTakes(items) {
     const tk = it.take, s = it.at !== undefined ? it.at : Math.max(0, at + (it.gap || 0));
     out.parts.push({ cue: tk.cue, at: s, secs: tk.secs });
     const under = (tk.gain ?? 0) - top;
-    for (const e of tk.ev) out.ev.push(Object.assign({}, e, { t: e.t + s, db: (e.db || 0) + under }));
+    for (const e of tk.ev) out.ev.push(Object.assign({}, e, { t: e.t + s, db: (e.db || 0) + under }, e.strings || tk.strings ? { strings: e.strings || tk.strings } : {}));
     for (const m of tk.marks) out.marks.push({ t: m.t + s, text: m.text });
     for (const h of tk.hits) out.hits.push({ t: h.t + s, label: h.label });
     out.marks.push({ t: s, text: "cue: " + tk.cue });
@@ -27,21 +27,28 @@ function chainTakes(items) {
 
 const Engine = {
   ctx: null, mixer: null, lib: null, index: null, players: {}, playing: null, space: "room", onProgress: null,
+  strings: "section",                                   // the string set a take plays with unless it names its own (32-strings.js)
 
-  async init(base = "samples/") {
-    if (this.ctx) return this;
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
-    this.index = await (await fetch(base + "instruments.json")).json();
-    const root = base.replace(/samples\/$/, "");
-    this.lib = new Library(this.index, async path => { const r = await fetch(root + path); if (!r.ok) throw new Error(path + " " + r.status); return r.arrayBuffer(); });
-    this.mixer = new Mixer(this.ctx);
-    this.mixer.setSpace(this.space, 0, 0);
-    return this;
+  // once: the context, the instruments' index, the mixer (callers at the same time share the one promise)
+  init(base = "samples/") {
+    if (this._init) return this._init;
+    this._init = (async () => {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+      this.index = await (await fetch(base + "instruments.json")).json();
+      const root = base.replace(/samples\/$/, "");
+      this.lib = new Library(this.index, async path => { const r = await fetch(root + path); if (!r.ok) throw new Error(path + " " + r.status); return r.arrayBuffer(); });
+      this.mixer = new Mixer(this.ctx);
+      this.mixer.setSpace(this.space, 0, 0);
+      return this;
+    })();
+    return this._init;
   },
 
+  // the string set an event plays with: its own (a part of a sequence), its take's (a favourite's), or the page's
+  setOf(take, e) { return e.strings || take.strings || this.strings; },
   // the instruments a take needs, loaded (each once; the sampler plays whatever has arrived while the rest load)
   async load(take) {
-    const keys = takeInstruments(take).filter(k => this.index[k]);
+    const keys = uniq(take.ev.filter(e => e.inst !== "fx").flatMap(e => stringInsts(e.inst, this.setOf(take, e)))).filter(k => this.index[k]);
     await Promise.all(keys.map(k => this.lib.load(k, this.ctx, this.onProgress)));
     return keys;
   },
@@ -53,7 +60,7 @@ const Engine = {
     for (const k of keys) {
       if (out[k]) continue;
       const def = this.index[k];
-      out[k] = def.kind === "kit" ? new Kit(def, this.lib.buffers, mixer) : new Sampler(k, def, this.lib.buffers, mixer);
+      out[k] = def.kind === "kit" ? new Kit(def, this.lib.buffers, mixer, k) : new Sampler(k, def, this.lib.buffers, mixer);
     }
     return out;
   },
@@ -65,10 +72,12 @@ const Engine = {
       if (e.t < from - 0.001) continue;
       const when = t0 + e.t - from;
       if (e.inst === "fx") { if (e.fx === "tapestop") stops.push([when, e.dur]); continue; }
-      const pl = players[e.inst];
-      if (!pl) continue;
-      if (e.inst === "drums") pl.play(e.piece, e.vel, when, { pan: e.pan, db: e.db, cents: e.cents, record });
-      else pl.play(e.midi, e.vel, when, e.dur, { pan: e.pan, db: e.db, cents: e.cents, bend: e.bend, attack: e.attack, release: e.release, reverse: e.reverse, tone: e.tone, record });
+      if (e.piece != null) { const pl = players[e.inst]; if (pl) pl.play(e.piece, e.vel, when, { pan: e.pan, db: e.db, cents: e.cents, record }); continue; }
+      // a string part plays on the set's instruments (a stack: each member that holds the note)
+      stringMembers(e.inst, e.midi, this.setOf(take, e), this.index).forEach(([k, db], i) => {
+        const pl = players[k];
+        if (pl) pl.play(e.midi, e.vel, when, e.dur, { pan: e.pan, db: (e.db || 0) + db, cents: e.cents, bend: e.bend, attack: e.attack, release: e.release, reverse: e.reverse, tone: e.tone, record: record && !i });
+      });
     }
     // tape stops last: they act on every voice already scheduled to be sounding then
     for (const [when, dur] of stops) for (const pl of Object.values(players)) if (pl.tapeStop) pl.tapeStop(when, dur);
@@ -103,7 +112,7 @@ const Engine = {
     if (!this.ctx) return;
     for (const pl of Object.values(this.players)) if (pl.stopAll) pl.stopAll(this.ctx.currentTime, 0.15);
     // a kit's sources aren't tracked: a fresh kit next time (the old one's last hits ring out under a second)
-    delete this.players.drums;
+    for (const k of Object.keys(this.players)) if (this.players[k] instanceof Kit) delete this.players[k];
     this.playing = null;
   },
 
@@ -125,9 +134,9 @@ const Engine = {
   // A take as a Standard MIDI File: one track per instrument (GM programs), the kit on channel 10, its tempo and
   // the cue's marks and hit points as markers (they line up in a DAW).
   midi(take, name) {
-    const kit = this.index && this.index.drums;
-    const notes = take.ev.filter(e => e.inst !== "fx").map(e => e.inst === "drums"
-      ? { inst: "drums", midi: (kit && kit.pieces[e.piece] && kit.pieces[e.piece].gm) || 38, vel: e.vel, t: e.t, dur: 0.25 }
+    const kitOf = e => this.index && this.index[e.inst];
+    const notes = take.ev.filter(e => e.inst !== "fx").map(e => e.piece != null
+      ? { inst: "drums", midi: (kitOf(e) && kitOf(e).pieces[e.piece] && kitOf(e).pieces[e.piece].gm) || 38, vel: e.vel, t: e.t, dur: 0.25 }
       : { inst: e.inst, midi: e.midi, vel: e.vel, t: e.t, dur: e.dur != null ? e.dur : 2.5 });
     const marks = take.marks.map(m => ({ t: m.t, text: m.text }));
     return MIDI.write({ notes, tempos: [{ t: 0, bpm: take.tempo || 90, meter: take.meter || [4, 4] }], marks, name: name || "HorrorStudio score: " + take.cue });
@@ -179,6 +188,7 @@ function sceneTake(actions, favourites) {
     // the action lands on the cue's first hit, unless the cue starts on its action (a sneak, a waltz, a countdown:
     // their hits are on the way or at the end) or the hit is far in
     const take = writeCue(r.cue, r.params, r.seed), h0 = take.hits[0];
+    if (r.fav && r.fav.strings) take.strings = r.fav.strings;                 // a favourite keeps the strings it was kept with
     const hit = h0 && CUES[r.cue].align !== "start" && h0.t <= 6 ? h0 : null;
     parts.push({ a, r, take, start: Math.max(0, a.t - (hit ? hit.t : 0)), hit });
   }
@@ -189,8 +199,8 @@ function sceneTake(actions, favourites) {
     for (const e of p.take.ev) {
       const t = e.t + p.start;
       if (t >= until - 0.01 && p.a.end !== "ring") continue;
-      const ne = Object.assign({}, e, { t, db: (e.db || 0) + under });
-      if (p.a.end === "cut" && until < Infinity && ne.inst !== "drums" && ne.inst !== "fx") ne.dur = Math.max(0.05, Math.min(ne.dur ?? 3, until - t)), ne.release = Math.min(ne.release ?? 0.3, 0.25);
+      const ne = Object.assign({}, e, { t, db: (e.db || 0) + under }, p.take.strings ? { strings: p.take.strings } : {});
+      if (p.a.end === "cut" && until < Infinity && ne.piece == null && ne.inst !== "fx") ne.dur = Math.max(0.05, Math.min(ne.dur ?? 3, until - t)), ne.release = Math.min(ne.release ?? 0.3, 0.25);
       out.ev.push(ne);
     }
     if (p.a.end === "scratch" && until < Infinity) out.ev.push({ inst: "fx", fx: "tapestop", t: until - 0.02, dur: 0.22, vel: 1 });

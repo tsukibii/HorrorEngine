@@ -6,7 +6,10 @@
 // gravity (tops, trousers, skirts, pleats, a tucked shirt, buttoned fronts, a coverall) on the feminine body, one on
 // the masculine and the full one: every garment settles, stretches little, stays out of the body, its hem no more
 // than a hand under where it was cut; a bake of it comes back the same without falling again; a skin-tight fit clings.
-// The frame's wrist and elbow (where sleeves end) within 3.5 cm of MHR's own joints (its rig) on every body.
+// The frame's wrist and elbow (where sleeves end) within 3.5 cm of MHR's own joints (its rig) on every body. The guides
+// (tailor/guides.js, the Studio's edit mode): a garment's lines found on the body alone reach where its cut does (its
+// film's or rings' top and bottom within 2 cm of the cut's) and its handles sit within 3 cm of the cut's own (8 at a
+// trouser hem, where the relaxed cloth bridges the ankle's hollow; 5 for a skirt's flare, found on a waved or pleated hem).
 // Ends "TAILOR ok".
 //
 //   node tools/character/tailor/check.mjs
@@ -15,8 +18,10 @@ import { join } from "path";
 import { loadMhr, namedBody, bodyWeights, ROOT } from "./node.mjs";
 import * as PO from "../pose.js";
 import * as TAILOR from "../tailor.js";
-import { height } from "./frame.js";
+import { height, frame } from "./frame.js";
 import { bust, sleeveEnd } from "./pieces.js";
+import { normals } from "./mesh.js";
+import { guide } from "./guides.js";
 
 const CLOTHES = join(ROOT, "Content", "Studio", "Clothes");
 const { designs } = JSON.parse(readFileSync(join(CLOTHES, "designs.json")));
@@ -44,20 +49,23 @@ const look = (label, B, g, hung = false) => {
     for (let i = 0; i < q.UV.length; i++) if (!Number.isFinite(q.UV[i]) || Math.abs(q.UV[i]) > 5) { errs.push(`${label}: ${q.name} has fabric coordinates off its panels`); break; }
     for (let i = 0; i < n; i += 7) if (Math.abs(Math.hypot(q.N[i * 3], q.N[i * 3 + 1], q.N[i * 3 + 2]) - 1) > 0.01) { errs.push(`${label}: ${q.name} has a normal that isn't one long`); break; }
   }
-  // the outside never under the skin: every 5th point of the cloth's outside, against the body
-  const o = g.outer[0], hit = {}; let under = 0, n = 0;
+  // the outside never under the skin: every 5th point of the cloth's outside, against the body (a skirt's rings pass
+  // where the arms hang beside it in MHR's own pose: the drape pushes the cloth off them, so those points aren't counted)
+  const o = g.outer[0], hit = {}, p = g.design.piece, F = B.F; let under = 0, n = 0, loBody = 1e9;
   for (let i = 0; i < o.P.length; i += 15) {
-    lo = Math.min(lo, o.P[i + 1]); hi = Math.max(hi, o.P[i + 1]);
-    const r = B.surf.closest(o.P[i], o.P[i + 1], o.P[i + 2], 0.05, hit); n++;
+    const x = o.P[i], y = o.P[i + 1], z = o.P[i + 2], arm = F.arm(x, y, z);
+    lo = Math.min(lo, y); hi = Math.max(hi, y); if (!arm) loBody = Math.min(loBody, y);
+    if (p.kind === "skirt" && arm) continue;
+    const r = B.surf.closest(x, y, z, 0.05, hit); n++;
     if (r && r.d < -0.0005) under++;
   }
   if (under / n > 0.002) errs.push(`${label}: ${(100 * under / n).toFixed(2)}% of its outside is under the skin`);
-  // it reaches what its design names
-  const p = g.design.piece, F = B.F, want = [];
+  // it reaches what its design names (a hem or a leg measured off the arms: a cropped top's sleeves hang lower than its hem)
+  const want = [];
   if (p.kind === "skirt") want.push(["waist", height(F, p.waist?.at ?? "waist-0.04"), hi], ["hem", height(F, p.length ?? "knee+0.06"), lo]);
-  if (p.legs) want.push(["legs", height(F, p.legs.to), lo]);
-  if (p.hem) want.push(["hem", height(F, p.hem.at) - Math.max(p.hem.front || 0, p.hem.back || 0) * F.s, lo]);   // its tails lowest
-  if (p.neck) want.push(["neck", F.neckBaseY + 0.02 * F.s, hi]);                  // the back of the neckline rises (its tilt)
+  if (p.legs) want.push(["legs", height(F, p.legs.to), loBody]);
+  if (p.hem) want.push(["hem", height(F, p.hem.at) - Math.max(p.hem.front || 0, p.hem.back || 0) * F.s, loBody]);   // its tails lowest
+  if (p.neck) want.push(["neck", F.neckBaseY + (0.02 + (p.neck.rise || 0)) * F.s, hi]);   // the back of the neckline rises (its tilt); a turtleneck's by its rise
   if (p.bra) {                                                                     // a bra: its band under the bust, its straps over the shoulders
     want.push(["band", bust(F).under + (p.bra.drop ?? 0) * F.s - (p.bra.band ?? 0.02) * F.s, lo]);
     if (p.bra.style !== "bandeau") want.push(["straps", F.neckBaseY, hi]);
@@ -148,6 +156,27 @@ for (const [bname, h, names] of HUNG) {
   if (g.drape) errs.push("t-shirt at fit 0: draped (skin tight has nothing to hang)");
   if (far / n > 0.05) errs.push(`t-shirt at fit 0: ${(100 * far / n).toFixed(0)}% of it over 8 mm off the skin`);
   else console.log(`  t-shirt at fit 0: ${(100 * (1 - far / n)).toFixed(0)}% of it within 8 mm of the skin`);
+}
+{                                                                                  // the guides against the cuts, on the feminine body
+  const b = namedBody(m, "feminine", 1.62), B = TAILOR.body(b.P, b.T), F = frame(b.P, b.T), N = normals(b.P, b.T);
+  const names = ["t-shirt", "pants", "skirt", "pleated-skirt", "blazer", "work-boots", "tights", "triangle-bralette", "jeogori-lace", "turtleneck", "chima", "sequin-dress", "cargo-pants"];
+  let t = Date.now();
+  for (const name of names) {
+    const g = guide(F, b.P, N, b.T, designs[name]), made = TAILOR.make(B, name, designs[name]);
+    let lo = 1e9, hi = -1e9, clo = 1e9, chi = -1e9;
+    if (g.kind === "film") { for (let i = 0; i < g.V.length; i++) if (g.V[i] >= 0) { lo = Math.min(lo, b.P[i * 3 + 1]); hi = Math.max(hi, b.P[i * 3 + 1]); } }
+    else for (let i = 1; i < g.rings.pts.length; i += 3) { lo = Math.min(lo, g.rings.pts[i]); hi = Math.max(hi, g.rings.pts[i]); }
+    const O = made.outer[0].P; for (let i = 1; i < O.length; i += 3) { clo = Math.min(clo, O[i]); chi = Math.max(chi, O[i]); }
+    if (Math.abs(lo - clo) > 0.02 || Math.abs(hi - chi) > 0.02) errs.push(`guides: ${name} reaches ${lo.toFixed(3)}..${hi.toFixed(3)} m, its cut ${clo.toFixed(3)}..${chi.toFixed(3)}`);
+    for (const h of made.handles) {
+      const q = g.handles.find(x => x.key === h.key);
+      if (!q) { errs.push(`guides: ${name} has no ${h.key} handle`); continue; }
+      const d = Math.hypot(q.at[0] - h.at[0], q.at[1] - h.at[1], q.at[2] - h.at[2]);
+      if (d > (h.key === "legs" ? 0.08 : h.key === "flare" ? 0.05 : 0.03)) errs.push(`guides: ${name}'s ${h.key} handle ${(d * 100).toFixed(1)} cm from the cut's`);   // (at the ankle the relaxed cloth bridges the hollow in front of it: its hem sits forward of the skin's)
+      if (q.value !== h.value || q.kind !== h.kind) errs.push(`guides: ${name}'s ${h.key} handle reads ${q.value}, the cut's ${h.value}`);
+    }
+  }
+  console.log(`  guides: ${names.length} designs' lines and handles on the body alone, as their cuts' (${Date.now() - t} ms)`);
 }
 if (errs.length) { console.error(errs.map(e => "TAILOR FAIL: " + e).join("\n")); process.exit(1); }
 console.log(`TAILOR ok (${Object.keys(designs).length} designs on ${BODIES.length} bodies, ${Object.keys(outfits).length} outfits, ${HUNG.reduce((a, [, , o]) => a + o.length, 0)} hung, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);

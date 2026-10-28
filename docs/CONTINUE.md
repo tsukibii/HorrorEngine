@@ -1,11 +1,271 @@
 # Continue: the next session
 
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
-2026-10-25, and on 2026-10-26, last at night on `better-eyelashes`) on `claude/experiments-afk`. Read this
+2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
+lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
+dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
+latch, examining, skin v2; then TestRoom001, the Unreal note, the skin after HumanShaders and expression loops; and
+on `game-research-001`: The Visitor's research, abstract and chart, the director's to-do; merged into `dev-002` and
+the to-do built there, with the Studio's eyes from the side, a small nose and the face's bake) on
+`claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
+## 0. Latest (2026-10-28, night, on `dev-002`): the director's to-do built, the Studio's eyes, nose and face bake
+
+The user's asks this session, each its own commit:
+- **Merged `game-research-001`** (44773fe: The Visitor's research, abstract and chart, docs/HANDOFF_DIRECTOR_TODO.md)
+  and built its to-do: §1 to §6 and most of §7. The handoff's top lists the commits and what's still open: the
+  answering machine, the fireworks, the Obon kit pieces, the second tea secret, Build carrying a talk's answers' `go`.
+- **The Character Studio**, from the user's report and asks:
+  - the eyes vanished seen from the side: each eye its own stencil, the opening walled and arched into a smooth mask
+    after the user's red masks, the white's paint fading side on (1d595ff; LESSONS 2026-10-28);
+  - the hair's dullness after the bake: the user said leave it (a shader matter for Unreal later, maybe);
+  - a small nose: **Nose size** and **Nose projection** in the sculpt (aa7188c);
+  - **Bake the face**: the fit kept in `face.bin`, so the reference pictures can go (d5fa64b).
+- **Waiting on the user:** a look at the eyes from the side, the nose sliders and the bake; The Visitor's
+  `/build-game` once they say its chart looks right (below).
+
+## 0v. Before that (2026-10-28, evening, on `game-research-001`, off `dev-002`): The Visitor, steps 1 and 2
+
+The user started a new game (DECISIONS 2026-10-28, evening): The Visitor, set in Japan in one apartment, an old friend
+and crush who comes to visit. Their three steps are research, an abstract, and (once the abstract is approved) the
+writer block flow. On a new branch off `dev-002`, in a new folder:
+- `docs/game_research/README.md`: the folder (one per game, the three steps).
+- `docs/game_research/TheVisitor/01_research.md`: step 1, sourced. Missing people and jōhatsu, the seven-year
+  declaration and the mourning postcard, homes that hide things, impostors, the dead who visit (Tōno, Ishinomaki,
+  *Ghosts of the Tsunami*, itako), New Year's Eve (ōsōji, soba, the 108 bells, raihōshin, marebito, Somin Shōrai, the
+  Fire Horse), folk tells (moshi moshi, salt, Kagome Kagome, the prohibition of looking, fox possession), the mind
+  (Capgras, paranoia and faces, Japan's rename, the props of treatment, care), and the shapes we borrow.
+- `docs/game_research/TheVisitor/02_abstract.md`: step 2, the pitch. New Year's Eve; Haruki, and "Natsumi" (her
+  younger sister Fuyumi playing her); the believability ladder; what really happened; how it plays (tasks, the hidden
+  clean-up, talks read by the face with an unreliable narrator, the pills); six parts, about 75 minutes; three endings
+  (First Light, Kamikakushi, Shiki); about two dozen achievements; the lines, the faces, what we have and what's new,
+  care notes and five questions for the user.
+- **Revised the same night** after the user's notes (DECISIONS 2026-10-28, night): a summer day (16 August, the last
+  day of Obon, the anniversary), lilac eyes (her lenses) instead of the mole, his mother's first Obon, and a second
+  mystery about Haruki himself, told by his own answers, thoughts and hands; research §5b for the summer.
+- **Revised again** (DECISIONS 2026-10-28, late night): the sister, Natsuki, is honest and he's too ill to see her
+  (the names one letter apart), they were thirteen so no police ending (Okuribi now), the pills as to-do tasks, the
+  secret ending (Mō ii yo) off the pills with the call and the geta.
+- **Third pass** (DECISIONS 2026-10-28, small hours): the pills decide what you see (his romance or her real faces,
+  her name, her eyes, her corrections; reflections always true); no confession; three endings, three pieces of the
+  truth (Okuribi, Thank You for Tonight, Don't Let Go with the police); the branches are secrets. Three questions at
+  the end of the abstract.
+- **Fourth pass** (DECISIONS 2026-10-28, before dawn): no reflections; the endings as cutscene slots with rough
+  outlines and a title card each; shinkei-suijaku as the card game, its settings by the pills; her cigarette in the
+  building's little garden instead of the lanterns; the small moments of a visit, with memory flickers.
+- **Fifth pass** (DECISIONS 2026-10-28, morning): he is the reason she died (a fight in the shrine woods at sixteen
+  over the boy she was seeing, a shove, the river); Shun, the boy the town blamed; Ren, Natsuki's boyfriend, the echo;
+  the dark ending is Stay.
+- **Approved** ("a strong start"), and **step 3 charted** (DECISIONS 2026-10-28, mid-morning): the writers' room
+  session `the-visitor` (59 shapes, 0 problems, 23 sticky notes), made by `/chart` from the abstract.
+- **Rewritten as pseudo-code** (DECISIONS 2026-10-28, late morning): 52 shapes, 0 problems; literal lines only.
+- **The director's to-do for after the merge**: docs/HANDOFF_DIRECTOR_TODO.md (a conversation card with Next, Skip,
+  End and Go to per answer; cutting and re-attaching the flow on the wire; Build moving only dialogue, tasks and
+  gameplay; a body track per cast member through a shot with states and patrols; what The Visitor needs). Not built
+  here: the user merges this branch and asks the next session.
+- **Waiting on the user:** a look at the chart in the writers' room; `/build-game the-visitor TheVisitor` once they say
+  it looks right. Then step 3: the flow as the writers' room's
+  chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
+  `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in
+  Content/Games.
+
+## 0'. In parallel (2026-10-28, back, on `dev-002`): TestRoom001, the Unreal note, skin like HumanShaders, expression loops
+
+The user's four asks (DECISIONS 2026-10-28, back), each its own commit:
+- **TestRoom001** (docs/games/TestRoom001.md): a lab of stations, a feature of the format each, its to-do list the
+  checklist; `node tools/director/testroom.mjs [--from n_station]` (TESTROOM) plays it start to end in the simple view
+  and writes the desk's reference for Unreal (`Saved/Story/TestRoom001/reference/`). Building it found and fixed in
+  Play: `use_on`, `swap`, `jumpscare`, `take` leaving the row, a switch's own light, a beat's instant actions run
+  together, beats hearing an event before the to-do list, the reticle through a kit door's frame, a checkpoint keeping
+  the pocket and the little things (a retry used to empty them), a skipped scene's state cues; the simple view drawing
+  only the rooms in sight (Play was a frame a second on its 23 rooms); the checks for a second level; and the story
+  check's new warning for a task that would end its station before its own beat (LESSONS: the last tick).
+- **The Unreal note** (docs/UNREAL_NEXT.md): what the next local session does, top to bottom: S5, TestRoom001 into
+  Unreal, the preview (faces now too), the StoryRunner built to Play's parts with TestRoom001 as its acceptance test
+  station by station, the skin, what's built but untested in the editor.
+- **Skin like HumanShaders** (`tools/shared/skinlight.js`, `tools/character/thin.js`): the Studio's skin lit per
+  colour through smoothed normals and wrapped, light through the thin parts, two highlights (Skin, Light on the skin);
+  the export bakes the colour, a normal map and one map of roughness and thinness with the light's numbers; the desk
+  lights a Studio export the same way; `storykit.people` makes M_StudioSkin for Unreal (untested in the editor).
+- **Expression loops**: a loop cut from a range in the preview (↻ cards, the wrap blended), and **face rows** on a
+  scene's timeline (`faces`, STORY_FORMAT §3.7): dropped or double-clicked on, crossfading, a loop until the next; the
+  stage, the Watch and Play's scenes wear them; the bake carries them for Unreal. TestRoom001's lobby scene has one.
+
+## 0''. Before both (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
+
+The user's brief (DECISIONS 2026-10-28, later): add the simple systems we're missing for Chilla's Art-style games,
+else research realistic skin (v2, like MetaHuman and their three stills). Both, each step its own commit, PLAY and
+CHECKS passing before each push:
+- **The controls' symbols** on the pause menu redrawn as the Studio's own (frosted keys on their lips, W A S D a pad
+  round you, a mouse without a cable, what each does beside it in the accent).
+- **The flashlight** (`play/torch.js`): an item with `torch` goes in the pocket; F switches it; the story's `torch`
+  flickers it, kills it (F only clicks), brings it back; `{"torch": "on"}` hears F. The pause menu shows F once it's had.
+- **Cleaning** (`use: clean`, `play/clean.js`, `stain.js`): a stain scrubbed away by holding the left button, with the
+  mop in the hand if it says `with`; a ring fills, the blot fades; its `use` ticks the chore.
+- **The peephole** (a door's `peephole`, `play/peephole.js`): the eye to the lens, the other side through a wide lens
+  in a round hole; `{"peeping": door}` holds meanwhile.
+- **The power cut** (`power` action and trigger, `use: breaker`): every bulb and lamp in the level dark (candles and
+  fires burn on), the switches dead, till the breaker box.
+- **Footsteps** (`play/steps.js`): the player's steps by the room's `floor` (the format always said it sets them), a
+  step a stride of ground covered, softer crouched, a creak now and then on wood, never the same sound twice running;
+  and the cast's, heard from where they walk (through walls, fainter with distance), hidden in a locker too.
+- **Examining** (`play/examine.js`): a small `inspect` thing (0.6 m or less) is taken up in the hands, the thing
+  itself in front of the eye; a drag turns it (the Pilot's photo turned over), its words under it, Esc puts it back.
+- **The latch** (a door's `latch`, `play/latch.js`): a thumb turn on the inside face; a click locks the shut door or
+  unlocks it; from outside it's Locked; it undoes only its own lock (the Pilot's front door, slammed and locked
+  behind you by the story, won't turn); `{"locked": door}` holds while it is (lock up, then the handle turns).
+- **From the user's notes** (`/chart`, `/build-game`): the chart script reads a mess to mop (a stain), the fuse box (a
+  breaker), a peephole, a flashlight, the power going and coming back, and locking a door (its latch); the build places
+  each.
+- **Skin v2** (docs/research/skin_v2.md, `skin_v2_sources.md`, `skin_v2/`): the stills measured (a very low-chroma
+  lit cheek, the red where the blood is, sparkle at the pore field's density, lip lines 1 mm, an 8:1 key), our skin
+  against them, the plan in eight steps each with its number. Step 1's light is built as an option: the Character
+  Studio's **reference (film)** light (lit to shadow 7.7:1, the lit cheek L\* 62, a\* 3.5, b\* 7.6 against the stills'
+  57-63, 2-6, 7-8), the old emissive glow off under it. The rest is the user's call (§6 of the note).
+- **Quick events** for them on the desk (`templates.js`): *A chore: clean up a mess* (on the to-do list, its stain
+  given the mop it needs), *A chore: lock the door* (its door given a latch), *The power cut* (find the breaker box), *A knock at the door* (its door given a peephole;
+  someone shown while you look, gone after), and the quick beat *The flashlight flickers* (or dies). The pickers know
+  stains and breaker boxes; DESK builds each into the Sample.
+- **Fixed on the way:** a scene played from the peephole left the eye at the lens; the Esc that closed a card (a note,
+  an inspect card) or put a thing back also paused the game; a story sound placed at a cast member played from
+  nowhere in particular (the stage's cast are figures: `.group` is where she is); and the desk's **saves kept** list
+  (the toolbar's clock), broken since 2026-10-26 by an import inside the server's GET handler. LESSONS has each.
+- **The guide's pictures** made again (`guide_shots.mjs`, GUIDE ok): the ten that had changed kept (the board with the
+  new quick tasks, the command palette with today's commands, the problems panel, a task's beats, the script, the
+  toolbar, typing, the pose picker, a round, the Watch), the others left as they were (render noise only).
+- Not done: the shelf's own dirt and metal steps (they borrow carpet's and concrete's), and Unreal for all seven
+  (RUNNER_SPEC says how).
+- **The user's to decide:** skin v2 (docs/research/skin_v2.md §6: build the rest, in that order? the grade in the
+  Studio's view or the game's? Unreal's Adaptive GBuffer for fuzz and glints?); the expression loops (task #6) still
+  wait for their go-ahead; whether examining's 0.6 m (what's small enough to pick up) is right.
+
+## 0b. Before that (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
+
+The user's notes-to-chart route went from a syntax they'd write in to **writing any way, Claude converting it**
+(DECISIONS 2026-10-27, later). Built:
+- **`/chart`** and **`/build-game`**, Claude Code skills in `.claude/skills/`: their notes (any notepad, docs/NOTES.md
+  the few marks suggested) → Claude's script (`.claude/skills/chart/script.md`, the former syntax, read by
+  `storykit/chartscript.py`) → `room.py import` → the writers' room's chart to inspect (format 3: each shape's script
+  as `steps`, the things as `items` sized small, medium, large) → Build → the director, blocks to swap for real things.
+- the writers' room page: the Notes tab is gone; a shape's script shows in the inspector; a session changed on disk is
+  taken in by an open page (Ctrl+Z goes back), a stale save refused with the newer one shown.
+- **English only** on the HUD (no Japanese over the lines) and every choice at the bottom centre: committed before.
+- **Play's controls, as the user asked** (GAMEPLAY_PLAN §10): a left click uses everything, E shows or hides **the
+  inventory** (`play/inventory.js`: one row at the bottom centre, the one in the hand in the middle and held in view,
+  the wheel turns it, at most five shown, frosted glass fading at its ends), G puts the one in the hand down in front of
+  you (no fall), Shift runs; the pause menu shows the controls on its left, as the Studio's own symbols since 2026-10-28
+  (frosted keys, a W A S D pad, what each does drawn beside it in the accent). PLAY walks all of it (the faked pointer
+  lock from the start, LESSONS). Not in Unreal yet (RUNNER_SPEC says how). The guide's pictures (`guide/help.jpg`) still
+  show the old keys: `guide_shots.mjs` makes them again.
+- **Sets** (`Content/Studio/Sets/`): the place designed first in the scene builder (its game picker's Sets, `+ new
+  set…`), a small story of its own; `room.py build --set <name>` (and the Build dialog's *The place*, `/build-game ...
+  set <name>`) builds the chart into its level: each place on its room, the things fitted round its furniture and
+  doorways, a door the story opens one of its own; then Claude moves each block where the notes say (BUILD.md's first
+  box). WRITERS builds the example and the fixture into the Pilot's house as a set; BUILDER makes, saves and borrows one.
+Open: the expression loops and blends (EXPRESSIONS_PLAN §2b), waiting for the user's go-ahead.
+
+## 0x. Before that (2026-10-27, on `dev-002`): the dashboard and the writers' room
+
+Asked for two things: a dashboard to start and stop every tool, and a writers' room to prototype a game's story
+before the director. Built, checked and pushed:
+- **the dashboard**: `python dashboard.py` (root), http://127.0.0.1:8790: every launcher tool by section, the pages
+  started, opened and stopped, everything else a job with its output (DASH).
+- **the writers' room**, first with a local model drafting the story, then **changed course** (DECISIONS 2026-10-27,
+  the change of course): the user writes the whole story themselves, no AI anywhere in it. `python
+  tools/writers/serve.py` (port 8795) is a Lucidchart-like chart: shapes dragged from a palette (start, scene, talk:
+  the L.A. Noire close-up with 2 or 3 answers, task, chapter, choice by the player, karma or an earlier answer,
+  secret, ending, note), arrows from the dots, acts as frames; About (the brief, the feats), Cast & places, Faces
+  (MiniMax post prompts from `Content/Studio/Expressions/prompts.json`). **Build** writes a rough working outline into
+  `Content/Games/<G>/` (`game.draft`, `voice: "none"`, the board laid out as the chart, acts as `frames`) with
+  `BUILD.md`, the handoff for Claude, and `faces.md`. docs/WRITERS_ROOM.md; WRITERS and WRITERSPAGE.
+- the story format grew for it (STORY_FORMAT §9.1, §9.9, §9.13): `game.draft` (timing as warnings), `voice: "none"`,
+  replies of two or three answers (the check forks on an answer a choice reads), and **achievements** (a secret, an
+  ending or a flag; the desk's Watch toasts them).
+- the example session `ticket-114` (the old model draft, upgraded to the chart) builds and passes STORY, LEVEL and
+  SHOTS.
+
+PLAY's bed step waited 8 s for a tween a software GPU takes about that long to finish; it waits 60 s now (LESSONS).
+Open from the request: **loops and blends in the expressions** (a timeline range made loopable, the loop's seam
+tweened; blending between several expressions dragged on): EXPRESSIONS_PLAN §2b, not started; ask first.
+
+## 0y. Before that (2026-10-27, late night, on `dev-002`): simpler games, after Chilla's Art
+
+The user deprecated quick-time events (the Pilot's grab and locker are dialogue choices now) and asked for a study of
+Chilla's Art's games (docs/research/chillas_art.md). From its five suggestions they picked three (DECISIONS 2026-10-27,
+late night), all built:
+- **the to-do list** with tasks that can fail (`todo`, `tick`, `fail`, `untodo`; `ticked`, `failed`): the HUD's list
+  under the objective; the Pilot's search lists the letter and the key;
+- **nights as chapters**: a bed (`use: sleep`, gated by its `if` flags) and `chapter` (a title card, the time of day
+  carried on after the task, an autosave); the Pilot's study has a bed for a nap ("Later · 02:13");
+- **requests**: a task with a `who`; the asker waits, then walks off and sits (`behave` `go`, the `arrived` trigger);
+  the quick task "Someone asks for something" (STORY_FORMAT §9.12). PLAY tests one on the Pilot's kettle.
+No pocket phone (only analogue phones, if ever) and no ending cards (endings are cutscenes). Not yet in Unreal: the
+list, the chapter card and `go` are desk-only (bake.js doesn't carry them). Next: ask what the user's doing; the
+expression plan's steps 2 to 5 are still open.
+
+## 0z. Before that (2026-10-27, night, on `dev-002`): the expression library
+
+The user switched direction (DECISIONS 2026-10-27 night): English text with a typewriter blip instead of voices, and
+a library of captured expressions placed on the timeline per character, with loops, reactions and look-at by angle in
+play. docs/EXPRESSIONS_PLAN.md has the plan (steps 1 to 5). **Step 1 is built:** the desk's Expressions tab beside the
+Inspector (import a video of a face, preview it on the default MHR, a cast member or a Studio export, name it,
+Accept; cards are the character wearing the expression, played on hover, as the user asked; names only; the red ×
+asks first); `tools/face_capture.py` (MediaPipe's 52 scores a frame, the head left out); Studio exports carry their
+corners' MHR points so the desk plays expressions on them. The user's test video is in the library as
+`pout_and_glance` (its curves; the clip stays on this machine). Open: a blink on a photo-fitted export closes only
+part of the way (EXPRESSIONS_PLAN §1). Next: ask which of steps 2 (timeline), 3 (text and blips), 4 (play), 5 (Unreal).
+
+## 0a. Before that (2026-10-27, evening, on `dev-002`)
+
+`dev-002` is `main` with the four branches merged (`claude/inspiring-curie-fntkfv`, `easier-hair-editing`,
+`eyelash-more`, `clothing-expanded`; only the docs conflicted, both sides kept), PR #4. Then the user put a Studio
+character on the Pilot's Mari and it stood white: the export didn't carry the Studio's colours, which its shaders draw.
+Built: **the export bakes them** (`tools/character/albedo.js`, DECISIONS 2026-10-27 evening, docs/CHARACTER_STUDIO.md
+§3.1): the skin's every layer at 4096 px on MHR's UVs, each garment part's fabric on its own islands (the metres kept as
+`uv1` for a PBR set's other maps), brows and lashes as their strands in their colours. STUDIO has a step for it.
+
+Then two Play fixes the user found on the desk: a second playtest kept the first one's world (a door it opened stood
+open, though the new run had it shut and locked: the stage's level wasn't rebuilt when a run first entered it; now it
+is), and Esc in the pause menu reopened it (closing it asked for the pointer lock back and the browser took that same
+Esc as leaving the lock, which pauses; closed by Esc it no longer asks). PLAY has a step for each.
+
+Open: PEOPLE's eye close-up measures the white at 120 against its > 120 in the cloud container, the same on `main`
+(likely the software renderer): run it on the 3090. The bake is the colour before the light; a roughness or normal
+bake (the oily T-zone, the pores, the weave) would be the next step if Unreal's look needs it.
+
+## 0b. Before that (2026-10-26, past midnight, on `claude/inspiring-curie-fntkfv`)
+
+Asked: search for open horror sound libraries, then "add everything you can", make the strings swappable with notes,
+put new instruments in the expanded scorer, and keep sound effects in the flow, not the orchestra (DECISIONS
+2026-10-26, past midnight). Built, checked and pushed:
+
+- **28 more CC0 instruments** in the score room from VSCO-2 CE and VCSL (`tools/score/fetch_samples.py`; docs/MUSIC.md §7).
+- **String sets** (`js/32-strings.js`): Woohill's section, full, low, solo, eerie, glass. Pick one in the header or per
+  favourite. Each has a note, and the cue says which set it suits.
+- **The Expanded orchestra**: twelve cues for the new instruments (`js/66-expanded.js`), and the Instruments list.
+- **The sound shelf** (`Content/Studio/SFX`, `tools/sfx.py`, docs/SFX.md): 240 CC0 sound effects. A story sound names
+  one as `sfx/<name>`. The Database picks and plays it, Play and the Watch play it, and the Pilot's and Sample's sounds
+  use it. SFX joins check_all.
+
+Open: the levels between the added instruments are matched by loudness, not by ear; the user may want some louder or
+softer (`adjust` in fetch_samples.py). The shelf sounds were picked by name and tags, not heard; swap any that miss in
+the Database. Unreal doesn't import sounds yet (docs/SFX.md §4). Most sound sites (Freesound, OpenGameArt, itch.io)
+can't be reached from a cloud session: `tools/sfx.py add` takes files the user downloads.
+
 ## 1. Where we are
+
+**Last (2026-10-27, branch `clothing-expanded` off main; DECISIONS of that day): the clothes.** The Clothes tab's
+**edit mode** (`cutedit.js`, `tailor/guides.js`: every worn garment as a film on the body with its cut lines, a skirt
+as its rings, the handles and the sliders moving them at once, Bake cutting and hanging: a change took minutes before),
+the **designer collection** (twelve outfits after the user's five reference images: a lace jeogori and a pleated mini,
+four Korean street looks, a long coat over a turtleneck and wide jeans, two modern hanbok dresses, four menswear looks;
+25 new designs, `open.shift`, `neck.rise`, a skirt's `straight` and `open.gap`, lined lace and sequin fabrics), the
+outfits as **pictures** on cards in groups (`tailor/thumbs.mjs`, `Content/Studio/Clothes/thumbs/`), **hats** as
+accessories. TAILOR checks the guides against the cuts; STUDIO has an edit-mode step and a beret. Then the designer
+clothes were **reviewed by eye and fixed** (TAILOR.md §2b: a built shoulder for jackets, `ease.shoulder`; blazers and
+the coat cut open, `open.closed: false`; quiet fabric tiles; a soft turtleneck; jeans that keep their cut).
 
 The user left a list before going AFK (DECISIONS 2026-10-24, small hours); all of it is built, checked and pushed:
 
@@ -102,7 +362,9 @@ and a bake (DECISIONS 2026-10-26):
 | `6aea007` | **Clothes tailored after the references:** tops cut close and following the waist (tension about halved, a third less ease, the drape's fullness only for soft folds), a **blouse** and one with its sleeves rolled, the pleated skirt high, mid-thigh and full, the pencil skirt high and close, a **fitted blazer** for women, the men's suit closer; outfits `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts` (a fit of 1.5 carried by the outfit), `t-shirt tucked in`; TAILOR hangs them. |
 | `6c65afd` | **Lashes over the lid's rim** (DECISIONS 2026-10-26, evening): MHR's lid line is the rim's back edge, so lashes rooted there and sent straight out ran under the rim's skin for 3 mm and a band of bare skin showed between the eye and the lashes. `rimOf` (`index.html`) finds the rim's front edge from each point of the line (the skin's most forward point a little out from it, at most 3 mm, fading at the corners) and the way over the rim's rounded skin by rays; the lashes lie along it and lift from the front edge, the lash line is a strip along it, and the way fades as the eye shuts (shut, they're rooted on the line as before). STUDIO measures the way over the rim: 2.0 mm on average open, 0.2 shut |
 | (this) | **The T-pose's neck upright** (DECISIONS 2026-10-26, evening): MHR's rest pose carries the head 6 to 7.5 cm ahead of the shoulders, the neck leaning far forward; `pose.js` moves everything under the head forward, level (the neck's joints part of the way by their height), until the head's joint is `NECK_AHEAD` (0.12 of the neck's height, about 2.2 cm) ahead of the shoulders': the ear over the shoulder's top, the neck's front under the jaw leaning about 14° in the side view (29° in MHR's pose, about 8° in the user's reference). The head stays put to the last bit; the salon's baked hair below it goes with the body (`shiftAt`, `poseHair`). POSE and STUDIO judge the head by its own bones now (by height, the skin under the jaw counted as head) and check the stand |
+| `easier-hair-editing` | **Easier hair editing in the salon** (DECISIONS 2026-10-26, later still; docs/SALON_REVIEW.md, docs/SALON.md): the user asked for a list of what's hard about making hair, then "Add all the above and make the flow easy to use". Measured first (`tools/character/salon_audit.js`: a lock placed from the front hung through the head seen from the side, the end re-read on a turn, 37 cm at most before zooming out, a 20 cm reach taking 52 of 54 locks, picking through the head), then nineteen items built in seven commits, each with a SALON step: the pull's **scope** and **locked** locks and groups; the **placing arrow** (a placed lock stays in hand, its arrowhead dragged for length and direction from any view, OK or Enter; the wheel bows every type; Length and Sag sliders; the hint per stage); the **view buttons** with Blender's keys, the crown from above, **Ortho** (the cursor's ray from the camera's own projection); **Split** (two panes with their own orbits, every tool in the pane under the pointer, the view bar moved into the header); **roots that slide**, picking that takes the nearest in depth, never through the head, cycling on a click again, a **dot** where a root would go; **Let it fall**, the Locks list (group picker, rename, solo, fold, delete, lengths), **new locks like the last one**, a **draft** in localStorage offered back; a lock **swung by its body** (Shift: slide; R, G), **several picked** (Ctrl-click, a box), the view panning at a drag's edge, zoom stops (Home). Lessons: a test's root point above the crown's top misses from a level view (the radial field overestimates at the pole); UI over the view steals clicks. |
 | `better-eyelashes` | **Anime lashes and the pink eye makeup after the user's references** (DECISIONS 2026-10-26, night): three lash sliders (Spiky clumps: each clump's roots gathered with a gap to the next; Long and short: every other spike shorter; Lower lashes down: the lower lashes down the skin) and three anime styles (an anime lash set, drawn wisps, an anime doll) in a grouped Style picker, a style setting every slider (`styleOf`); the makeup's eye layers (the liner's thickness and its point past the inner corner, the eyeshadow's placement, an under-eye wash, the inner corner, the waterline), the **anime pink** makeup preset and the **anime pink** look (the preset with the anime lashes on; a look can name lashes and brows). The painted liner now runs between the lashes' roots and a line a liner's width up the lid, both found on the skin (`rimOf`'s fourth point), so it shows over the lashes in any pose (before, it ran along the lid line under the lashes and the cut: invisible). STUDIO's two new steps. Then, the user finding the spikes nowhere near the photo: **every lash one fine hair** (`lashAtlas`, one strand to a cell; thin crossed cards, hundreds an eye) in clusters drawn to points, long, medium and short in turn, a short fringe under them (Under-lashes), clusters crossing (Criss-cross), the outer ones swept up and out; every style retuned on it. Then the user's two asks: **no skin between the roots** (the lash line its own mesh with a dense fringe atlas, `lineAtlas`, over the whole rim and up the lid) and **lashes that turn with a blink** (each hair's frame set on the open lid and turned with the lid about the eyeball's middle, with the margin's droop: shut, they point at the viewer, 15° down, still on their rim, on the upper lid's own edge; the painted liner's lines from the same swung lid, so no patch on a shut lid). Then the lower lashes (the user: too angular, fading into the skin): one hair each rooted at the margin's front edge (the waterline showing), leaving along the skin and easing into their direction (no L), at most 57° down; the lash atlas a solid core, black to the tip (crisper upper lashes too). Then the corners (the user: skin showing at the corners of the upper lid, the lower roots off their line): the rim runs to the corners instead of fading to nothing (`rimOf` searches square to the lid's line, drops far picks, fills a corner from its neighbour), no lashes on the innermost 7%, the lower roots one smooth line along the margin. Then **the three eye shapes the user drew, as lashes only** (the opening stays the scan's): styles fox almond, half-lidded and round doll with Sweep, Inner length and Lift below zero added, and a whole look each with its drawn liner (`fox liner`, `half-lidded liner`, `doll pink`). |
+| `eyelash-more` | **The second reference's five lash sets** (DECISIONS 2026-10-26, last thing): lash styles sparse (men, older), glam volume, fluffy mink, doll volume and natural medium, each a whole look; a **lower liner** (the painted liner along the lower lashes' roots: amount, thickness, reach), **Eyeshadow size** (a smoky eye up to the crease and out past the corner), lash looks brown, greying and grey, makeup presets smoky plum, bold doll liner and tinted waterline, and **Hooded lids** in the sculpt (the old man's fold; the opening and the lashes' roots kept, no skin turned over). STUDIO measures the sets, the lower band and the fold. |
 
 ## 2. Where things are
 
@@ -137,7 +399,7 @@ and a bake (DECISIONS 2026-10-26):
 - `node tools/director/playtest.js`: PLAY ok (it adds, in memory only, a plushie in the hall and chō-han on the hall
   table). `node tools/character/studiotest.js`: STUDIO ok (it exports `_studiotest` and imports it back as
   `_studiotest_back`, left in `People/`, git-ignored; about 45 minutes here: `ONLY=jewellery` runs just the steps
-  whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (40 designs on seven
+  whose words match, after the new character). `node tools/character/tailor/check.mjs`: TAILOR ok (68 designs on seven
   bodies, seven outfits hung by gravity on three bodies; about 7 minutes here). TIMES ok, BLENDERLOOK ok.
   `node tools/character/ueeye.mjs`: UEEYE ok (DXC isn't here: its HLSL ran as GLSL only).
   `node tools/director/peopletest.js`: PEOPLE ok (a Character Studio export as Mari's body, the simple view; it needs
@@ -153,6 +415,22 @@ and a bake (DECISIONS 2026-10-26):
 
 ## 4. What's next (ask which)
 
+0000000g. **Write a story in the writers' room** (`python tools/writers/serve.py`, then http://127.0.0.1:8795, or the
+   dashboard's tile): drag shapes from the palette, join them by their dots, type titles and labels on the chart,
+   Shift-drag a box round a part for an act, About for the brief; the Problems bar says what's missing. Build it and
+   say what to change: the shapes, what a talk asks for, how the outline lands on the desk (`BUILD.md`). Then
+   "build <G> from its BUILD.md" when it's time to turn it into the game.
+
+0000000f. **Try the salon's easier editing** (the branch `easier-hair-editing`, off main, 2026-10-26; docs/SALON.md has
+   how it's used, docs/SALON_REVIEW.md what was hard and what each item became): place a strand (root, end), drag its
+   **arrowhead** for its length and direction, turn the view and drag it again, OK; **Split** for a side pane and drag
+   a handle there; Pull's **Scope** and the padlocks; the view buttons (1, 3, 7, Shift for the opposite, 5 ortho);
+   drag a lock's **green root** to slide it, its **body** to swing it (Shift: slide; R and G); Ctrl-click or a box
+   to pick several; **Let it fall** in Selected; the Locks list (rename, solo, fold, delete, the Group picker); New
+   locks like the last one; close the page with an edit and open it again (the draft). Say what's still awkward:
+   the arrowhead's size and where OK sits, the default scope (the lock and its twin), whether a click on the
+   selected lock's body should swing or pick, the edge pan's speed. Next from SALON_PLAN if wanted: the brushes
+   (comb, grow, puff, smooth), the galleries, tracing the outline over the reference; or the salon in the T-pose.
 0000000e. **Eyes like MetaHuman's** (DECISIONS 2026-10-26, night; docs/research/eyes.md §4): built on
    `claude/bold-ride-mcg3gt`, merged with the lash work (`better-eyelashes`) into `better-eyes-and-eyelashes`. The Studio's eyes are `tools/shared/eye.js` (the iris behind a refracting cornea, the
    cornea reflecting the lights, the iris lit as a bowl; STUDIO traces the refraction by Snell's law). The export is
@@ -176,9 +454,13 @@ and a bake (DECISIONS 2026-10-26):
    Criss-cross), the lower lashes' angle and length (Lower lashes down, Lower length),
    the pinks' strength and hues (Eyeshadow, Under-eye shadow, Inner corner, Waterline and their colours), the liner's
    thickness and wing, and whether the look should set the brows too (a look can: `brow` in `looks.js`).
-0000000. **Five more lash styles, for later** (the user's second reference, docs/research/lash_reference.md): thin sparse
-   lashes for men and older faces, glam volume, fluffy mink, doll volume, natural medium; with a lower-lid liner and
-   grey and brown lash looks. Not made yet; the user said "for later".
+0000000. **Look at the second reference's five lash sets** (DECISIONS 2026-10-26, last thing; built on `eyelash-more`;
+   docs/research/lash_reference.md's last section): Face, Look: older man (sparse lashes), glam smoky plum, fluffy
+   mink, doll volume, natural medium; or Face, Lashes, Style, the "Lash sets, after the second reference" group. Made
+   from the write-up, not the photo: compare them with it and say what to change (the hairs' count, length, lift and
+   crossing; the lower lashes; the greying look's grey share; the lower liner's thickness and reach, Skin, Makeup;
+   Eyeshadow size for the smoky plum; Hooded lids in Body, the sculpt, for the old man's fold). Men still start with
+   the lashes off like everyone: whether a masculine base should start on the sparse set is the user's call.
 00000. **Look at the new bodies and the tailored clothes** (Feminine or Masculine, then the outfits named after the
    references: `school uniform (summer)`, `office (pencil skirt)`, `skirt suit`, `shirt and shorts`, `t-shirt tucked
    in`); characters made before have the new bodies too. Say what to change: how loose each design hangs (its Fit, its Hang: fullness, stiffness, weight; the designs' own

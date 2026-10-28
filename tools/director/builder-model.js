@@ -537,7 +537,13 @@ function switchFor(model, r) {
 // a room renamed: its wall items follow it (their ids carry the room's, so a level reads them back)
 export function renameItems(model, from, to) {
   for (const it of model.items || []) if (it.room === from) { it.room = to; it.id = it.id.replace(new RegExp(`^${from}_(wi|wf)_`), `${to}_$1_`); }
-  for (const k of model.kits || []) if (k.room === from) { k.room = to; k.id = k.id.replace(new RegExp(`^${from}_kt_`), `${to}_kt_`); }
+  const moved = {};
+  for (const k of model.kits || []) if (k.room === from) { const was = k.id; k.room = to; k.id = k.id.replace(new RegExp(`^${from}_kt_`), `${to}_kt_`); moved[was] = k.id; }
+  for (const k of model.kits || []) if (k.extra && moved[k.extra.on]) k.extra.on = moved[k.extra.on];     // a cushion on its sofa still
+  // the room's own built pieces kept as props (its floor, built-ins, window frames: <room>_fx_*, and the like) go with
+  // its name, so the export knows them as the room's again and makes them anew (kept, they'd be the old room's ids twice)
+  const r = (model.rooms || []).find(o => o.id === to);
+  if (r && r.extra && r.extra.props) for (const p of r.extra.props) p.id = p.id.replace(new RegExp(`^${from}_(fx|wi|wf|kt)_`), `${to}_$1_`);
 }
 
 // A level taken from another game's script, as a start: its rooms, doors, built-ins, trim and wall items, and its

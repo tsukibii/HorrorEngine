@@ -35,9 +35,9 @@ def all_clips(story, game):
         for k, ver in ([(None, sc)] if not vs else list(vs.items())):
             for c in ver.get("clips", []):
                 yield f"{game}_{sid}_{k or 'main'}_{c['id']}", c
-                for oid, _ in L.reply_clips(c):           # her answers to a reply: their own takes, measured onto the option's `then`
-                    o = next(x for x in c["reply"]["options"] if x["id"] == oid)
-                    yield f"{game}_{sid}_{k or 'main'}_{c['id']}_{oid}", o["then"]
+                for o in (c.get("reply") or {}).get("options", []):   # her answers to a reply: their own takes, measured onto each line of the option's `then`
+                    for n, th in enumerate(L.then_list(o)):
+                        yield f"{game}_{sid}_{k or 'main'}_{L.then_id(c, o, n)}", th
 
 
 def wav_secs(f):

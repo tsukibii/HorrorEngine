@@ -86,16 +86,61 @@ closest), that point is moved by the lattice, and projected back with the frame'
 the space under a handle moves exactly with it, smoothly between (Blender's Bezier lattice moves it by a fraction; here
 a pulled face's middle drags the picture's middle the whole way). The cube is saved with the fit (`fit.cube`).
 
+## The view (2026-10-26)
+
+Buttons over the view, with Blender's keys: **Front** (1), **¾**, **Side L** (3: the character's left) and **Side R**
+(Shift+3), **Back** (Shift+1), **Top** (7; from below, Shift+7): the free orbit turned there, the distance, zoom and pan
+kept (with the reference locked, the nearest frame). The orbit's pitch reaches 89° either way (it stopped at 69°), so
+the crown is seen from straight above. **Ortho** (5) draws without perspective, so what's at different depths lines up
+(the head the size it has at its distance; picking and the pan the same as in perspective; the reference's frames are
+perspective and stay so).
+
+**Split** (the user's ask: a side view beside the front) puts two panes side by side, each turned on its own (the right
+one starts as the character's left side, at the working view's distance): the pane the pointer touches is the one the
+buttons, keys and wheel move and every tool works in (placing, the arrow, the handles and the pull's ring, the root
+line, picking), by that pane's own camera; a handle dragged in the side pane moves in depth as the front pane sees it.
+The gold line along a pane's top marks the active one; drag the line between the panes for their widths, double-click
+it to even them; Split again for one view. With the reference locked, each pane snaps to its own nearest frame.
+
 ## The locks
 
 | Tool | Key | How | The wheel while placing |
 |---|---|---|---|
-| Strand | S | click a root on the scalp (tinted blue while a tool is armed), click the end | the sag (how far it bows out) |
-| Sheet | L | drag a root line along the scalp, let go, click where it ends | the spread of the end |
-| Bundle | B | click a root, click the tip | the root's width |
-| Bundle line | D | drag a line along the scalp (its width), let go, click the tip | its height (an oval) |
-| Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it | the pull's reach (down grows it) |
+| Strand | S | click a root on the scalp (tinted blue while a tool is armed), click the end | the sag (how far it bows out); Shift: its width |
+| Sheet | L | drag a root line along the scalp, let go, click where it ends | the sag; Shift: the spread of the end |
+| Bundle | B | click a root, click the tip | the sag; Shift: the root's width |
+| Bundle line | D | drag a line along the scalp (its width), let go, click the tip | the sag; Shift: its height (an oval) |
+| Select | V | click a lock; drag a handle (Alt: towards or away from you); the handles in its ring go with it; drag its arrowhead | the pull's reach (down grows it); the sag while the arrow is dragged |
 | Fit ref | F | drag the reference picture; the wheel scales it | |
+
+**The lock's vector** (2026-10-26, the user's ask): a placed lock stays **in hand**: an arrow from its root's middle to
+its end, an **OK** button at the arrowhead. Drag the arrowhead to set the lock's length and direction from whatever view
+(turn the view and drag again: the end is a point in space, kept); Alt-drag takes it towards or away from you; the
+wheel while dragging bows it. The lock turns and scales about its root (`salonlib.js`'s `setVector`), keeping the
+shaping done by hand: points that lay on the body lie on it again, the rest keep their distance, the end goes where the
+cursor is; a twin's arrow moves its original. **OK** or Enter lets go (the lock stays), Delete removes it, and the next
+root click starts the next lock. The arrow shows on the selected lock in any tool but Fit; Selected has **Length** (cm
+along the lock, the root fixed, grown along its last direction) and **Sag** (the bow) as sliders. The hint under the
+view says what to do at each stage (the root placed: click the end, the wheel's sag and Shift+wheel's number; in hand:
+the arrow, OK). The wheel bows every type while placing (a sheet got no bow before), Shift+wheel sets the type's own
+number (a strand's width, a sheet's spread, a bundle's root width, a bundle line's height).
+
+**A whole lock moved** (2026-10-26): with Select, drag the selected lock's body (not a handle) to **swing** it about its
+root, its length kept; Shift-drag slides it along the scalp with its root; **R** and **G** do the same with the mouse
+alone (Blender's keys: move the mouse, a click or Enter keeps it, Esc puts it back). **Several picked**: Ctrl-click
+locks (in the view or in Locks), or Shift-drag a box on empty space; the pull then moves only the picked (and their
+twins), and Selected's Delete, Lock, Let them fall, Onto the scalp, Group, Physics and Mirror once act on all of them
+(the sliders on the one selected); Esc picks none. **The view pans** while a handle, arrow, root or body drag reaches
+the pane's edge, so a long lock is shaped without zooming out; **Home** (or Zoom in the view bar) steps three zoom
+stops: the head, the bust, the whole body.
+
+**Roots slide** (2026-10-26): a lock's green root handle dragged slides the whole lock along the scalp (a sheet's root
+line has three: its middle slides the line whole, an end stretches it, the far end staying), the shaping kept as the
+arrow keeps it (`slideRoot`); Shift lets a root off the scalp. **Picking** takes the lock nearest in depth under the
+cursor and never one the head hides (a lock on the back of the head isn't picked through the face); a click again on
+the same spot picks the next lock under it. While a placing tool is armed, a **dot** under the cursor shows where a root
+would go: green on the scalp, red off it (the ear, the face); the hint reads a root line's length as it's drawn, and
+the dot says when the line has run off the scalp.
 
 **Hair lies on the scalp** (2026-10-22): a new lock is combed onto the head: every point within 3 cm of it is laid on
 the skin, 2.5 mm off it (the head's surface is measured from its triangles, 2.5 degrees a bin, 0.3 mm off the real
@@ -110,9 +155,14 @@ where the handle was, and the handles it takes are lit, brighter the more they m
 before you pull). The wheel **while dragging** grows (down) or shrinks (up) the reach by a tenth a notch, a hundredth
 with Shift, as Blender's does, and the pull is weighed again from where the handles started; Page Up and Page Down too.
 **O** turns it off (then only the handle moves). **Falloff**: Smooth (the default), Sphere, Root, Inverse square,
-Sharp, Linear, Constant: Blender's curves of d = (reach - distance) / reach, from `calculatePropRatio`. **This lock
-only** keeps it to the lock you pull. A twin's handles pull their original's (mirrored), so both sides move; roots
-never move. The reach starts at 8 cm (a long strand's handles are about 6 cm apart).
+Sharp, Linear, Constant: Blender's curves of d = (reach - distance) / reach, from `calculatePropRatio`. **Scope**
+(2026-10-26) is what a pull may move however wide the reach: *This lock*, *This lock and its twin* (the default), *This
+group* or *All the hair shown*; the ring lights only what the scope takes, so you see it before pulling. **Locked**
+locks and groups (the padlock on each row in Locks, Lock in Selected; a twin follows its original) never move under a
+pull, Gravity (they stay as the layer the rest falls onto) or the cover, and All onto the scalp leaves them; they're
+still drawn, picked and laid over; `locked` is saved with the lock and the group. A twin's handles pull their
+original's (mirrored), so both sides move; roots never move. The reach starts at 8 cm (a long strand's handles are
+about 6 cm apart).
 
 **Roots** (2026-10-22): hair comes out of the head. Every guide leaves the scalp **Lift** degrees off it (40 to start;
 0 lies flat from the root), the way the hair goes, and bends over into the rest of the lock within **Bend** (2 cm), a
@@ -159,7 +209,17 @@ lock; Ctrl+Z and Ctrl+Shift+Z undo and redo.
   diameter); a lock pulled out from the head (poking), a sheet's edge lifted off the cheek or hair hanging below the
   head doesn't count, so hair rooted higher passes under a poke instead of being lifted along it (it was lifted 11 cm).
   Any change re-lays them all. The bake takes the layered hair.
-- **Groups**: new locks go into the group in gold; the eyes show and hide a group or a lock.
+- **Groups** (2026-10-26): new locks go into the group in gold; the eyes show and hide a group or a lock (Alt-click a
+  group's eye: only that group, again: all); a group row folds (▸), is renamed by a double-click on its name, counts
+  its locks, has the padlock, and is deleted (✕: its locks go to the group above); a lock's row says its kind and
+  length; Selected has a **Group** picker (the twin goes with it); the selected row is kept in view.
+- **Let it fall** (Selected; 2026-10-26): this lock and its twin, or its whole group, falls under gravity onto the
+  rest of the hair, which stays (the Gravity step opens to keep the moment); the big switch drops everything unlocked.
+- **New locks like the last one** (Locks; 2026-10-26): a new lock takes the last lock's width, taper, drawn as,
+  strands, thickness, physics and colour (the last placed, or the last changed in Selected); off, the defaults.
+- **A draft kept in the browser** (2026-10-26): a second after each edit the whole hair goes to localStorage under the
+  character's (or the hairstyle's) name; Save forgets it; opening the same hair with a draft whose locks differ offers
+  it back on the status line ("bring it back", Undo takes it away again; "forget it").
 
 ## The cover: the finishing helper (2026-10-22)
 

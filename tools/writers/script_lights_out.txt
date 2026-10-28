@@ -1,0 +1,47 @@
+Title: Lights Out
+Starts: night
+Name: Alex
+Player: you, alone in your aunt's old house for the night
+Kind: horror, one night, short
+@ Hall: the hall by the front door
+@ Kitchen: the kitchen at the back
+
+( The Mess )
+
+"Someone tracked mud across the hall."
+
+*mop the mud*
+
+"That's better."
+
+*take the flashlight*
+
+( Lights Out )
+
+@ Kitchen
+
+*the power goes out*
+
+"Of course."
+
+*turn on the flashlight*
+
+*flip the breaker*
+
+*the power comes back*
+
+( The Knock )
+
+@ Hall
+
+*knock, knock*
+
+*look through the peephole*
+
+*lock the front door*
+
+"Nobody."
+
+( Ending: Morning )
+
+"The sun's up. Whoever it was, they're gone."

@@ -1,0 +1,166 @@
+Title: Come Over
+Starts: night
+Name: Alex
+Player: you, living alone in the city; Ji was your best friend until her family moved away ten years ago
+Kind: horror romance, one night, about an hour
+Ji (she): my oldest friend, back after ten years. Something about her is off.
+@ Apartment: my one-room flat, small and too warm
+
+( Opening )
+
+Internal monologue
+"Ji should be arriving soon, I should probably clean up the apartment"
+
+Hidden Timed Task (2 min) - Clean up
+
+*knock, knock*
+
+"That must be her"
+
+*open door*
+
+She is standing, she smiles and leans in for a hug, she pulls back
+
+*Enter Name*
+
+Ji: "X! It's been so long, I barely recognise you."
+
+[ Greet +1 ] She's probably cold, I should let her inside --- [ Question ] Is this what she looked like.
+
+[ Greet ]
+Ji: (her face softens, she looks down and smiles) "You haven't changed at all."
+
+[ Question ]
+Ji: (her smile stays but her eyes go still) "...Is something wrong?"
+"Her voice is right. Her face is almost right."
+
+( Tea )
+
+*Ji sits on the sofa*
+
+Ji: "Can I have some tea? My hands are frozen."
+
+Request from Ji - Make tea
+
+*turn on the kettle*
+
+"Her coat is still on. It's warm in here."
+
+*give the cup to Ji*
+
+Ji: (she wraps both hands round the cup and doesn't drink) "Thank you. You always made it too strong."
+
+Achievement: Good Host - Make her tea before she asks twice
+
+( The Photo )
+
+Ji: "Do you still have that photo of us? From the summer festival?"
+
+Task - Find the photo album (large)
+
+*look in the photo album*
+
+Two girls in yukata. One of them has her face scratched out.
+
+"I don't remember doing that."
+
+Ji: (she leans in close behind you) "That's us. Isn't it?"
+
+[ Lie +1 ] It's just old. Paper gets scratched --- [ Truth -1 ] Someone did this on purpose --- [ Say nothing ] I can feel her breath on my neck
+
+[ Truth ]
+Ji: (her face goes blank, then she laughs too late) "You always did have an imagination."
+*lights flicker*
+
+[ Either way ]
+
+"I need a minute."
+
+( Secret: The Second Photo )
+
+Find: *look behind the mirror*
+
+Achievement: Turned Away - Some photos hide a second one
+
+A photo of Ji's family. Her mother is holding a funeral portrait. It's Ji.
+
+( The Bathroom )
+
+@ Bathroom
+
+*go to the bathroom*
+
+*wash your face*
+
+*lights go out*
+
+*wait 3s*
+
+*lights come back*
+
+"There's water on the floor. Footprints. Small ones."
+
+Note: the footprints should lead to the closet, but only if you look down
+
+*music: dread*
+
+( The Closet ) if [ Truth ]
+
+@ Apartment
+
+*phone rings*
+
+[ *hide in the closet* ] She can't know I saw it --- [ *answer the phone* ] Maybe it's someone who can help
+
+[ hide in the closet ]
+"I can hear her walking. She's humming the festival song."
+*wait 5s*
+*Ji walks to the closet*
+Ji: "X? Are you playing hide and seek again?"
+
+[ answer the phone ]
+"It's my mother's number. She died two years ago."
+
+( The Closet ) if [ Truth ]
+
+*save*
+
+( Late ) otherwise
+
+Ji: "It's late. Can I stay the night?"
+
+[ Of course +1 ] I can't send her back out there --- [ I'm tired -1 ] I need her gone
+
+( Chapter: Night 2 · 03:12 )
+
+*sleep*
+
+"Someone is sitting at the end of my bed."
+
+You: "Ji?"
+
+Ji: (she tilts her head too far, then smiles) "Go back to sleep."
+
+( True ending: Morning ) if karma 2+
+
+The sun comes up. Ji is gone. The cup is still full, still warm.
+
+"She never drank it. She was never here."
+
+Achievement: Morning Comes - Be kind every time
+
+( Ending: Stay ) if karma -1 or less
+
+Ji: "You didn't want me here. Not then, not now."
+
+*fade to black*
+
+Achievement: Left Out - Push her away
+
+( Ending: The Door ) otherwise
+
+*knock, knock*
+
+"It's Ji's voice. From outside. But Ji is in my bed."
+
+Achievement: Who's There - Don't answer the door

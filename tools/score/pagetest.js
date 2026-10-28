@@ -65,6 +65,44 @@ const URL = process.env.SCORE_URL || "http://127.0.0.1:8791/";
   if (wav.mthd !== "MThd" || wav.midLen < 200) fail("midi " + JSON.stringify(wav));
   console.log("wav", wav.len, "bytes, peak", wav.peak, "| midi", wav.midLen, "bytes");
 
+  // the string sets: the same notes on every set, each renders with sound in it and loads its own instruments; the
+  // header's choice is what a kept favourite remembers
+  const sets = await page.evaluate(async () => {
+    const out = {};
+    for (const id of Object.keys(STRING_SETS)) {
+      const take = writeCue("dread_drone", { len: 6 }, 2); take.strings = id;
+      const bytes = await Engine.renderWav(take, "room");
+      const dv = new DataView(bytes.buffer); let peak = 0;
+      for (let o = 44; o < bytes.length; o += 2) peak = Math.max(peak, Math.abs(dv.getInt16(o, true)));
+      out[id] = { peak, insts: (await Engine.load(take)).join(",") };
+    }
+    setStrings("low"); selectCue("music_box"); UI.palette.favourites = []; keep("music_box", UI.params, 5);
+    const kept = UI.palette.favourites[0].strings, note = document.getElementById("strnote").textContent;
+    setStrings("section");
+    return { out, kept, note };
+  });
+  for (const [id, r] of Object.entries(sets.out)) if (r.peak < 300) fail("strings " + id + " silent " + JSON.stringify(r));
+  if (!/viola_sus/.test(sets.out.full.insts) || !/vln_solo/.test(sets.out.solo.insts)) fail("strings sets load " + JSON.stringify(sets.out));
+  if (sets.kept !== "low" || !/Suits this cue/.test(sets.note)) fail("strings kept " + sets.kept + " note " + sets.note);
+  console.log("string sets", Object.entries(sets.out).map(([k, r]) => k + " " + r.peak).join(", "));
+
+  // the expanded orchestra: every cue renders with sound in it; the Instruments list has every instrument with its
+  // note, and each one's phrase alone has sound in it
+  const exp = await page.evaluate(async () => {
+    const peakOf = bytes => { const dv = new DataView(bytes.buffer); let pk = 0; for (let o = 44; o < bytes.length; o += 2) pk = Math.max(pk, Math.abs(dv.getInt16(o, true))); return pk; };
+    const cues = {};
+    for (const c of Object.values(CUES).filter(c => c.family === "expanded")) cues[c.id] = peakOf(await Engine.renderWav(writeCue(c.id, c.params.len ? { len: c.params.len.min } : {}, 3), "room"));
+    renderInstruments();
+    const rows = document.querySelectorAll("#instlist .inst").length, notes = [...document.querySelectorAll("#instlist .inst small")].filter(x => x.textContent.length > 20).length;
+    const insts = {};
+    for (const k of Object.keys(Engine.index)) { const tk = instrumentTake(k); tk.secs = Math.min(tk.secs, 6); tk.ev = tk.ev.filter(e => e.t < 5); insts[k] = peakOf(await Engine.renderWav(tk, "room")); }
+    return { cues, rows, notes, total: Object.keys(Engine.index).length, insts };
+  });
+  for (const [id, pk] of Object.entries(exp.cues)) if (pk < 200) fail("expanded cue " + id + " silent (" + pk + ")");
+  for (const [k, pk] of Object.entries(exp.insts)) if (pk < 200 || pk >= 32767) fail("instrument " + k + " peak " + pk);
+  if (exp.rows !== exp.total || exp.notes !== exp.total) fail("instruments list " + JSON.stringify({ rows: exp.rows, notes: exp.notes, total: exp.total }));
+  console.log("expanded cues", Object.keys(exp.cues).length, "| instruments", exp.rows, "peaks", Object.entries(exp.insts).map(([k, v]) => k + " " + v).join(", "));
+
   // live playback starts and reports a position
   const pos = await page.evaluate(async () => { await playTake(writeCue("sting", {}, 1), null, null); await new Promise(r => setTimeout(r, 400)); const p = Engine.position(); stopAll(); return p; });
   if (!(pos > 0)) fail("playback position " + pos);

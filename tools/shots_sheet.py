@@ -53,7 +53,7 @@ def review(shots, pieces, with_images):
     from PIL import Image
     for s in shots:
         fails, flags = [], []
-        inside = eye_inside(s["eye"], pieces, s.get("through") or ())
+        inside = eye_inside(s["eye"], [p for p in pieces if p.get("level") == s.get("level")], s.get("through") or ())   # its own level's map
         if inside:
             fails.append(f"rule 1: the camera is inside or within 15 cm of {inside}")
         if s["in_frame"] < 0.7:

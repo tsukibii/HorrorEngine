@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Writers' Room</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<header>
+  <div class="brand">THE WRITERS' ROOM</div>
+  <input id="title" placeholder="Untitled" title="the game's working title" spellcheck="false">
+  <span id="saved" class="muted"></span>
+  <nav id="tabs">
+    <button data-tab="flow">Flow</button>
+    <button data-tab="about">About</button>
+    <button data-tab="people">Cast &amp; places</button>
+    <button data-tab="faces">Faces</button>
+  </nav>
+  <div class="spacer"></div>
+  <button id="undo" class="ghost" title="undo (Ctrl+Z)">↶</button>
+  <button id="redo" class="ghost" title="redo (Ctrl+Shift+Z)">↷</button>
+  <button id="sessionsBtn">Sessions</button>
+  <button id="buildBtn" class="go" title="build a rough, working outline of the game in the director">Build</button>
+</header>
+<main>
+  <section id="flow" class="tab">
+    <div class="flowrow">
+      <aside id="palette"></aside>
+      <div id="chartBox">
+        <div id="chart"></div>
+        <div id="hint" class="empty hidden"><b>An empty chart</b><span>Drag a Scene from the left onto it, then drag from the Start's dot to the scene.</span></div>
+        <div id="problems" class="hidden"></div>
+      </div>
+      <aside id="inspector"></aside>
+    </div>
+    <div class="bar" id="bar"></div>
+  </section>
+  <section id="about" class="tab hidden"></section>
+  <section id="people" class="tab hidden"></section>
+  <section id="faces" class="tab hidden"></section>
+</main>
+<div id="modal"></div>
+<div id="toast"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

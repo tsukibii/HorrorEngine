@@ -41,6 +41,8 @@
   .slot .label.bad { color: var(--bad); } .slot .x { position: absolute; right: 4px; top: 4px; padding: 0 6px; line-height: 16px; background: #000a; }
   details { margin: 2px 0; } summary { cursor: pointer; color: var(--dim); margin: 4px 0; }
   .note { color: var(--dim); line-height: 1.45; margin: 4px 0; }
+  .bakerow { display: flex; gap: 6px; margin: 8px 0 2px; } .bakerow button { flex: 1; }
+  #faceRows .row.baked { opacity: .45; }
   #status { color: var(--dim); margin-left: auto; } #status.bad { color: var(--bad); } #status.ok { color: var(--ok); }
   #tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 8px; }   /* the stages, across the top */
   #tabs button { padding: 4px 10px; } #tabs button.on { border-color: var(--gold); color: var(--gold); }
@@ -51,6 +53,11 @@
   .hairlib { display: grid; grid-template-columns: repeat(3, 96px); gap: 4px; max-height: 270px; overflow-y: auto; margin: 6px 0; }
   .hairlib div { width: 96px; height: 60px; border-radius: 4px; cursor: pointer; outline: 1px solid #333; background-repeat: no-repeat; }
   .hairlib div.on { outline: 2px solid var(--accent, #e0b060); }
+  #outfitGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; margin: 6px 0; }   /* the outfits as pictures (tailor/thumbs.mjs) */
+  #outfitGrid .card { padding: 0; overflow: hidden; text-align: center; display: flex; flex-direction: column; background: #151619; }
+  #outfitGrid .card img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; background: #2a2d34; }
+  #outfitGrid .card span { display: block; font-size: 10.5px; padding: 3px 4px; line-height: 1.25; color: var(--ink); }
+  #outfitGrid .card.on { border-color: var(--gold); } #outfitGrid .card.on span { color: var(--gold); }
 </style></head>
 <body>
 <header>
@@ -69,7 +76,7 @@
 <main>
   <div id="view">
     <div id="viewHelp">drag or middle-drag: turn · Shift+drag: pan · wheel: zoom · double-click: centre</div>
-    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option></select></div>
+    <div id="views"><button data-v="body">Body</button><button data-v="head">Head</button><button data-yaw="0">Front</button><button data-yaw="35">¾</button><button data-yaw="90">Side</button><button id="splitBtn" title="Two views side by side, front and side, each its own camera (the pane you touch is the one the buttons and the wheel move); drag the line between them, double-click it to even them; Split again for one view">Split</button><button data-v="pov" title="The player's eye: 1.65 m up, the game's 90° lens, at the shot's distance">POV</button><select id="povShot" title="How far the face is from the player's eye (docs/DIRECTING.md)"><option value="0.7">MCU 0.7 m</option><option value="1.2" selected>MS 1.2 m</option><option value="2.2">FS 2.2 m</option></select><select id="poseSel" title="The pose the body is shown in: a T-pose (arms level, legs straight, like a modeller's reference) or MHR's own A-pose. Only the view: the character is shaped, dressed, saved and exported in MHR's pose"><option value="t">T-pose</option><option value="rest">A-pose</option></select><select id="lightSel" title="The light: the studio, or the game's kinds of light"><option value="studio">studio</option><option value="lamp">warm lamp</option><option value="night">cold night</option><option value="torch">flashlight</option><option value="reference" title="The skin v2 reference: a soft key from the side, a rim, a dark ground and the film curve (docs/research/skin_v2.md)">reference (film)</option></select></div>
     <div id="hud"></div>
   </div>
   <aside>
@@ -93,6 +100,8 @@
       <h3>Pictures</h3>
       <div id="slots"></div>
       <p class="note">Optional. A front picture shapes the face; a side picture (or a three-quarter one: MediaPipe needs to find the face, so up to about 70°) gives its depth. With none, the base and the head sliders make the face.</p>
+      <div class="bakerow"><button id="bakeFace" title="Keep the face as its pictures give it now (People/&lt;name&gt;/face.bin): then the pictures can be removed">Bake the face</button><button id="unbakeFace" hidden title="Fit the face to its pictures again (with none left, back to the base and the sliders)">Unbake</button></div>
+      <p class="note" id="bakeNote"></p>
       <h3>Fit</h3>
       <div id="faceRows"></div>
       <h3>Brows and lashes</h3>
@@ -122,6 +131,8 @@
     <section data-tab="skin" hidden>
       <h3>Tone</h3>
       <div id="skinRows"></div>
+      <h3>Light on the skin</h3>
+      <div id="litRows"></div>
       <h3>Photo skin</h3>
       <div id="photoSkin"></div>
       <h3>Procedural skin</h3>
@@ -161,7 +172,9 @@
 // (tools/face_mesh.py's body op, through serve.py) and laid on top. docs/METAHUMAN_LOOKS.md §1.3.
 import * as THREE from "three";
 import * as BL from "./browlash.js";
-import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture } from "./hairshader.js";
+import { hairUniforms, applyLook, lightHair, hairMaterial, atlasTexture, albedoTexture } from "./hairshader.js";
+import { albedo as hairAlbedo } from "./hairtex.js";
+import * as ALB from "./albedo.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import * as SKINSH from "./skinshader.js";
 import { TouchUp, BRUSHES, hit as touchHit } from "./touchup.js";
@@ -177,9 +190,13 @@ import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import * as LOOK from "./tailor/look.js";
 import * as WEIGHTS from "./tailor/weights.js";
 import { DRAPE } from "./tailor/drape.js";
+import { edited as editedDesign } from "./tailor.js";
+import { CutEditor } from "./cutedit.js";
 import * as PO from "./pose.js";
 import { SURFACES, PATTERNS } from "./tailor/fabric.js";
 import { StudioView } from "/shared/studioview.js";
+import { skinLit, setSkinLit, SKIN_LIT, recordOf as skinLitRecord } from "/shared/skinlight.js";
+import { thinness } from "./thin.js";
 const $ = s => document.querySelector(s);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const api = async (u, body) => {
@@ -229,7 +246,7 @@ const FACE = [   // face_mesh.py's settings (its DEFAULTS), plus how much of the
 ];
 const st = { base: 0, height: 1.7, shape: new Array(H.shapes).fill(0), face: Object.fromEntries(FACE.map(f => [f[0], f[5]])),
              expr: new Float32Array(ENAMES.length), exprAmt: 1, sculpt: {} };   // sculpt: the named controls' values (sculpt.js)
-let WHO = null, DELTA = null, PICS = [], REPORT = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
+let WHO = null, DELTA = null, PICS = [], REPORT = null, FACEBAKE = null, LAY = null, WEAR = null, NAILAT = null;   // LAY: the paint layers (layersui.js); WEAR: the accessories (accessories.js); NAILAT: the fingernails' places (nails.js)
 
 const fmt = (v, step) => (+v).toFixed(step < 0.01 ? 3 : step < 1 ? 2 : 0);
 function slider(box, key, label, lo, hi, step, val, help, onInput, title) {
@@ -342,6 +359,7 @@ function skinLook() {
   material.color.set(material.map || proc ? 0xffffff : st.skin.tone);
   material.roughness = st.skin.rough; material.clearcoat = proc || SKU.uHasLay.value > 0 || st.lips?.on || (NAILAT && st.nails?.on) ? 1 : 0; material.envMapIntensity = 0.55 * LIGHT.env; material.needsUpdate = true;
   SKU.uHasPhoto.value = photo && SKINMASK ? 1 : 0; SKU.uPhotoMap.value = SKIN; SKU.uPhotoMask.value = SKINMASK;
+  setSkinLit(material, st.skin.lit); if (st.skin.lit?.on) SKU.uGlowK.value = 0;   // the light through the skin is the lighting's now, not the emissive glow's
   if (st.skin.proc) SKINSH.update(SKU, st.skin.proc, st.skin.tone, LMK ? lmk : null, SCALE, BL_READY ? lidFront : null);
   nailLook();
 }
@@ -353,19 +371,22 @@ function skinLook() {
 // A blink: the lines come from the lid as it is open (OPENLID, browLash's cache), swung with the margin round the
 // eyeball's middle the way the lashes are (browlash.js's lidFrame), so the liner stays along the lashes' roots on a shut
 // lid instead of being found by rays on its bulge; the top a share of the open rim's fourth point (RIM_UP mm up the lid)
-function lidFront(side, pts, ws) {
-  const { pts: o, c } = outline(side, 1), upper = o.slice(16).concat([o[0]]);   // inner corner to outer, as browLash takes it
-  const O = OPENLID[side], wAt = i => ws[Math.min(8, Math.round((16 - i) / 2))];
-  if (O && O.upper.length === upper.length && O.upperRim) {
-    const fr = BL.lidFrame(upper, O.upper, O.upperRim, O.eye), at = (i, j) => { const r = fr[i].rim[j] || [0, 0, 0]; return [upper[i][0] + r[0], upper[i][1] + r[1], upper[i][2] + r[2]]; };
+// which "lower": the lower lid's front edge, where the lower lashes grow, and the skin `ws` mm down from it (the lower
+// liner's band), its line the outline's lower half (outer corner to inner, as browLash takes it and the ring runs)
+function lidFront(side, pts, ws, which = "upper") {
+  const { pts: o, c } = outline(side, 1), lower = which === "lower", line = lower ? o.slice(0, 17) : o.slice(16).concat([o[0]]);   // the upper inner corner to outer, as browLash takes it
+  const ring = j => lower ? 2 * j : 16 - 2 * j, wAt = i => ws[Math.min(8, Math.round(lower ? i / 2 : (16 - i) / 2))];   // the ring's point j (outer corner to inner) on the line, and the line's point i's width
+  const O = OPENLID[side], L0 = O && O[which], R0 = O && O[which + "Rim"];
+  if (L0 && L0.length === line.length && R0 && R0[0].length >= 12) {
+    const fr = BL.lidFrame(line, L0, R0, O.eye), at = (i, j) => { const r = fr[i].rim[j] || [0, 0, 0]; return [line[i][0] + r[0], line[i][1] + r[1], line[i][2] + r[2]]; };
     const top = i => { const f = at(i, 2), t = at(i, 3), k = wAt(i) / BL.RIM_UP; return [f[0] + (t[0] - f[0]) * k, f[1] + (t[1] - f[1]) * k, f[2] + (t[2] - f[2]) * k]; };
-    return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 2)), top: [...Array(9)].map((_, j) => top(16 - 2 * j)) };
+    return { front: [...Array(9)].map((_, j) => at(ring(j), 2)), top: [...Array(9)].map((_, j) => top(ring(j))) };
   }
   const v = i => new THREE.Vector3(...lmk(i)), X = v(454).sub(v(234)).normalize(), U = v(10).sub(v(152));   // (before the lashes have seen the eye open: the lid as it is now)
   U.sub(X.clone().multiplyScalar(U.dot(X))).normalize(); const F = new THREE.Vector3().crossVectors(X, U);
-  const rows = rimOf(upper, c, F, 2.2, side, upper.map((_, i) => wAt(i)));
-  const at = (i, a) => [upper[i][0] + rows[i][a], upper[i][1] + rows[i][a + 1], upper[i][2] + rows[i][a + 2]];
-  return { front: [...Array(9)].map((_, j) => at(16 - 2 * j, 6)), top: [...Array(9)].map((_, j) => at(16 - 2 * j, 9)) };
+  const rows = rimOf(line, c, F, lower ? 1.2 : 2.2, side, line.map((_, i) => wAt(i)));
+  const at = (i, a) => [line[i][0] + rows[i][a], line[i][1] + rows[i][a + 1], line[i][2] + rows[i][a + 2]];
+  return { front: [...Array(9)].map((_, j) => at(ring(j), 6)), top: [...Array(9)].map((_, j) => at(ring(j), 9)) };
 }
 function nailLook() {                                  // the fingernails into the skin's shader (nails.js; skinshader.js paints them)
   const n = st.nails || NAILS.NAIL_DEFAULTS, on = !!NAILAT && !!n.on;
@@ -397,6 +418,24 @@ async function loadSkin() {
   await TOUCH.load(`api/skin/${encodeURIComponent(WHO)}?paint=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?touch=1&v=${Date.now()}`, `api/skin/${encodeURIComponent(WHO)}?pigment=1&v=${Date.now()}`);
   touchState(); skinLook();
 }
+// the light on the skin (/shared/skinlight.js, after HumanShaders): on or off to compare, and its numbers; saved with
+// the character, and carried by the export for the desk and Unreal
+st.skin.lit = { ...SKIN_LIT };
+const litSet = {};
+{
+  const box = $("#litRows"), on = el("input", { type: "checkbox", checked: !!st.skin.lit.on });
+  box.append(el("label", { className: "tog" }, on, el("span", {}, "Skin light", el("small", { textContent: "Each colour of the light through a softer normal (red the softest: it travels furthest under the skin), wrapped past the shadow's edge; light through the thin parts (ears, nostrils, fingers); two highlights. Off: three's plain physical light." }))));
+  on.onchange = () => { st.skin.lit.on = on.checked ? 1 : 0; litGlow(); skinLook(); };
+  const rows = [["smooth", "Smoothness", 0, 10, 0.1, "How far each colour's light is smoothed under the skin (the pores and fine relief fade from the diffuse; they stay in the highlights)."],
+    ["fall", "Falloff", 0.7, 2, 0.01, "How soft the light's edge is: higher, a longer, warmer fall into shadow."],
+    ["wrap", "Wrap", 0, 1, 0.01, "How far the light reaches past the terminator."],
+    ["spec", "Specular", 0, 1, 0.01, "The skin's own shine (f0 = 0.04 × this²): 0.5 is skin's."],
+    ["double", "Second highlight", 0, 1, 1, "A broader highlight under the sharp one (the skin's fine roughness under the oil)."],
+    ["trans", "Translucency", 0, 2, 0.01, "Light coming through the thin parts toward you: an ear's rim red against a lamp behind it."]];
+  for (const [k, label, lo, hi, step, help] of rows) litSet[k] = slider(box, "lit_" + k, label, lo, hi, step, st.skin.lit[k], help, v => { st.skin.lit[k] = v; skinLook(); });
+  litSet.all = () => { on.checked = !!st.skin.lit.on; for (const [k] of rows) litSet[k](st.skin.lit[k]); };
+}
+function litGlow() { SKU.uGlowK.value = st.skin.lit?.on || (LIGHTS[LIGHT.name] || {}).film ? 0 : 1; }   // the emissive glow only without the skin light (and not under the reference light)
 // the procedural skin's controls: a toggle, every feature its own slider, two colours
 st.skin.proc = { ...SKINSH.DEFAULTS };
 const procSet = {};
@@ -462,28 +501,69 @@ let BAKES = {}, DRAPING = { stage: "none" };           // the drape's points by 
 const GARMENTS = new THREE.Group(); GARMENTS.name = "clothes";
 let DESIGNS = {}, OUTFITS = {}, SHELF = {}, TAILOR_JOB = 0, FITTED = "", fitTimer = 0;   // SHELF: the PBR shelf's sets (Content/Studio/PBR)
 const TAILOR_W = new Worker("./tailor/worker.js", { type: "module" });
-const designSel = el("select"), addBtn = el("button", { textContent: "Wear it" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
-const outfitSel = el("select"), outfitBtn = el("button", { textContent: "Wear the outfit" });
+const designSel = el("select", { id: "designSel" }), addBtn = el("button", { textContent: "Wear it" }), gColor = el("input", { type: "color", value: "#3b4a6b" });
+// the outfits as cards with pictures (Content/Studio/Clothes/thumbs, tailor/thumbs.mjs: the default model wearing each), in
+// groups: the designer collection after the user's references (outfits.json meta), the studio's own, underwear
+const outfitTabs = el("div", { id: "outfitTabs", className: "chips" }), outfitGrid = el("div", { id: "outfitGrid" });
+let OUTFIT_META = {}, OUTFIT_GROUP = "designer", WORN_OUTFIT = null;
+const OUTFIT_GROUPS = [["designer", "Designer"], ["studio", "Studio"], ["underwear", "Underwear"]];
+const outfitGroup = name => OUTFIT_META[name]?.group || (/^(lingerie|underwear):/.test(name) ? "underwear" : "studio");
+const slugOf = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+function drawOutfits() {
+  outfitTabs.replaceChildren(...OUTFIT_GROUPS.map(([g, label]) => { const b = el("button", { textContent: label, className: g === OUTFIT_GROUP ? "on" : "" }); b.dataset.group = g; b.onclick = () => { OUTFIT_GROUP = g; drawOutfits(); }; return b; }));
+  outfitGrid.replaceChildren(...Object.keys(OUTFITS).filter(n => outfitGroup(n) === OUTFIT_GROUP).map(n => {
+    const img = el("img", { src: `api/clothes/thumbs/${slugOf(n)}.jpg`, alt: "", loading: "lazy" }); img.onerror = () => img.remove();   // no picture yet: the name alone
+    const m = OUTFIT_META[n] || {}, b = el("button", { className: "card" + (n === WORN_OUTFIT ? " on" : ""), title: m.after ? `${n}\nafter ${m.after}` : n }, img, el("span", { textContent: n }));
+    b.dataset.outfit = n; b.onclick = () => wearOutfit(n); return b;
+  }));
+}
 const clothesExp = el("button", { textContent: "Export clothes OBJ", title: "every garment worn, one object per part (metres, Y up, facing +Z): People/<name>/<name>_clothes.obj" });
-$("#clothesRows").append(el("h4", { textContent: "Outfits" }), el("div", { className: "row" }, el("span", { textContent: "Outfit" }), outfitSel, el("output")), outfitBtn,
+$("#clothesRows").append(el("h4", { textContent: "Outfits" }), outfitTabs, outfitGrid,
   el("h4", { textContent: "A garment" }), el("div", { className: "row" }, el("span", { textContent: "Design" }), designSel, el("output")),
   el("div", { className: "row" }, el("span", { textContent: "Colour" }), gColor, el("output")), addBtn, el("h4", { textContent: "Worn (under to over)" }));
 $("#worn").after(clothesExp);
 { const t = el("input", { type: "checkbox", checked: true }); t.onchange = () => { GH.userData.on = t.checked; showGarmentHandles(); };
   clothesExp.before(el("label", { className: "tog", title: "Drag a garment by its hem, neckline, sleeve, waist, legs or a skirt's length and flare" }, t, el("span", { textContent: "Handles in the view" }))); }
 const drapeTog = el("input", { type: "checkbox", checked: true });
-drapeTog.onchange = () => { st.drape = drapeTog.checked; dress(); };
+drapeTog.onchange = () => { st.drape = drapeTog.checked; if (EDITING) EDIT_DIRTY = true; else dress(); };
 clothesExp.before(el("label", { className: "tog", title: "Each garment falls by gravity onto the body and the clothes under it (a cloth simulation) and is baked as it hangs: kept with the character, taken as it is next time. Off: the clothes as cut, floating round the body" }, drapeTog, el("span", { textContent: "Hang by gravity (cloth simulation)" })));
+// ---- the edit mode (cutedit.js): the cut lines on the body, moved at once; Bake cuts and hangs the cloth ------------
+// (DECISIONS 2026-10-27: a change took minutes with the whole outfit cut and hung again each time)
+let EDITING = false, EDIT_DIRTY = false, CUTED = null, dragAt = 0;
+const editTog = el("input", { type: "checkbox" }), bakeBtn = el("button", { textContent: "Bake", hidden: true, title: "Cut the clothes to these lines and hang them by gravity; the edit mode ends and the clothes come back as cut" });
+editTog.onchange = () => setEditing(editTog.checked);
+bakeBtn.onclick = () => setEditing(false, true);
+$("#worn").before(el("div", { className: "row", style: "grid-template-columns: 1fr auto; align-items: start" },
+  el("label", { className: "tog", style: "margin: 2px 0" }, editTog, el("span", {}, "Edit the cut (no cloth)", el("small", { textContent: "Each garment as a film on the body with its cut lines (the hem, the neckline, the sleeves, the waist, the legs; a skirt's rings): the handles and the Shape sliders move them at once, nothing is cut or hung until Bake." }))), bakeBtn));
+function setEditing(on, bake = false) {
+  if (on === EDITING && !bake) return;
+  EDITING = on; editTog.checked = on; bakeBtn.hidden = !on;
+  if (!CUTED) CUTED = new CutEditor({ rig, position: sgeo.attributes.position, T: TRIS, RIG });
+  GARMENTS.visible = !on; CUTED.show(on);
+  if (on) { clearTimeout(fitTimer); clearTimeout(shapeTimer); redrawGuides(); status("edit mode: the cut lines on the body; drag a handle or move a Shape slider, then Bake"); return; }
+  CUTED.clear(); SHAPE.clear(); drawGarmentHandles();
+  if (bake || EDIT_DIRTY) dress(); else status("");
+  EDIT_DIRTY = false;
+}
+function redrawGuides(opts = {}) {                      // the guides of everything worn, as edited now (only what changed is made again)
+  if (!EDITING || !Object.keys(DESIGNS).length) return;
+  const list = st.clothes.filter(c => DESIGNS[c.design]).map(c => ({ design: c.design, slot: DESIGNS[c.design].slot, D: editedDesign(DESIGNS[c.design], c.edit) }));
+  CUTED.set(list, neutralBody(), bodyKey());
+  CUT_SKIN = CUTED.skin;
+  if (opts.handles !== false) { SHAPE.clear(); for (const g of CUTED.garments) SHAPE.set(g.design, g.handles); drawGarmentHandles(); }
+  GARMENTS.userData.posedFor = null; poseGarments();
+}
+const refresh = () => (EDITING ? redrawGuides() : dress());   // what's worn changed: the guides, or the clothes cut again
 Promise.all([api("api/clothes/designs.json"), api("api/clothes/outfits.json"), api("api/pbr").catch(() => ({}))]).then(([d, o, p]) => {
-  DESIGNS = d.designs || {}; OUTFITS = o.outfits || {}; SHELF = p.sets || {};
+  DESIGNS = d.designs || {}; OUTFITS = o.outfits || {}; OUTFIT_META = o.meta || {}; SHELF = p.sets || {};
   const SLOTS = [["under", "Underwear"], ["top", "Tops"], ["bottom", "Bottoms"], ["full", "One piece"], ["legs", "Legwear"], ["feet", "Footwear and socks"], ["jacket", "Jackets"]];   // the designs by what they are
   const opt = ([k, v]) => el("option", { value: k, textContent: v.label || k }), all = Object.entries(DESIGNS);
   designSel.replaceChildren(...SLOTS.map(([sl, label]) => el("optgroup", { label }, ...all.filter(([, v]) => v.slot === sl).map(opt))).filter(g => g.children.length),
                             ...all.filter(([, v]) => !SLOTS.some(([sl]) => sl === v.slot)).map(opt));
   designSel.value = all.find(([, v]) => v.slot !== "under")?.[0] ?? "";   // a garment first, not underwear
-  outfitSel.replaceChildren(...Object.keys(OUTFITS).map(n => el("option", { value: n, textContent: n })));
+  drawOutfits();
   designSel.onchange = () => { gColor.value = DESIGNS[designSel.value]?.color || gColor.value; }; designSel.onchange();
-  drawWorn(); if (st.clothes.length) dress();
+  drawWorn(); if (st.clothes.length) refresh();
 }).catch(e => status("no designs: " + e.message, "bad"));
 const bodyKey = () => JSON.stringify([weights().map(v => +v.toFixed(4)), st.height, DELTA ? DELTA.idx.length : 0, st.face?.strength, st.sculpt]);   // (the sculpt too: neutralBody carries it)
 function dress() {                                     // the worker makes every garment worn, on the body as it is now
@@ -520,6 +600,7 @@ const hung = () => new Promise(done => { const t0 = Date.now(), wait = () => (!/
 const CUT_ON = new Map();                              // a job's body, until its clothes come back
 let CUT_SKIN = null;                                   // the skin the worn clothes were cut on (tailor/weights.js skinOf)
 function poseGarments() {
+  if (EDITING && CUTED) CUTED.pose(POSED, shownNormals());   // the guides' films follow the shown body; the rings and handles its pose
   const key = POSED ? Array.from(POSED.J2, v => v.toFixed(5)).join() : "rest";   // the bones as they are: an expression's change leaves the clothes be
   if (GARMENTS.userData.posedFor === key) return;
   GARMENTS.userData.posedFor = key;
@@ -551,9 +632,13 @@ TAILOR_W.onmessage = e => {
   for (const g of garments) for (const q of g.parts) GARMENTS.add(LOOK.mesh(q, g.name, g.look));   // tailor/look.js: the fabric, the pattern, the print, the edges' shade
   if (!GARMENTS.parent) rig.add(GARMENTS);
   const on = CUT_ON.get(id); for (const k of [...CUT_ON.keys()]) if (k < id || (k === id && stage !== "cut")) CUT_ON.delete(k);   // (the cut's body stays for its hung clothes)
-  CUT_SKIN = on && RIG ? WEIGHTS.skinOf(on, RIG.BI, RIG.BW) : null; GARMENTS.userData.posedFor = null;   // new clothes: posed afresh
-  SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
-  drawGarmentHandles(); poseGarments();
+  GARMENTS.userData.posedFor = null;                   // new clothes: posed afresh
+  if (!EDITING) {                                      // (in the edit mode the guides keep their handles and the skin they're on)
+    CUT_SKIN = on && RIG ? WEIGHTS.skinOf(on, RIG.BI, RIG.BW) : null;
+    SHAPE.clear(); for (const g of garments) SHAPE.set(g.name, g.handles || []);
+    drawGarmentHandles();
+  }
+  poseGarments();
   if (!$("#worn").contains(document.activeElement) || document.activeElement.type !== "range") drawWorn();   // the handles' sliders (not under a held slider)
   const ms = garments.reduce((a, g) => a + g.stats.ms, 0), was = DRAPING.stage;
   DRAPING = { id, stage };                             // "cut" (the drape follows), "hung", or "done" (no drape)
@@ -568,7 +653,9 @@ TAILOR_W.onmessage = e => {
 };
 function refit() {                                     // after the body changes, once it holds still for a moment
   if (!st.clothes.length || !FITTED || bodyKey() === FITTED) return;
-  clearTimeout(fitTimer); fitTimer = setTimeout(dress, 700);
+  clearTimeout(fitTimer);
+  if (EDITING) { EDIT_DIRTY = true; fitTimer = setTimeout(redrawGuides, 250); return; }   // the guides measured again on the new body
+  fitTimer = setTimeout(dress, 700);
 }
 // a garment's look: its design's fabric, pattern and trim, then what was chosen for it here
 const lookOf = c => { const D = DESIGNS[c.design] || {}; return { color: c.color, surface: c.surface ?? D.surface, trim: D.trimSurface, pattern: c.pattern ?? D.pattern, denier: c.denier ?? D.denier, print: c.print, pbr: pbrOf(c) }; };
@@ -699,17 +786,22 @@ function dragGarment(e) {                              // along the handle's own
   GDRAG.m.position.copy(GDRAG.local).addScaledVector(new THREE.Vector3(...ax), GDRAG.d);
   const v = h.value + GDRAG.d / h.rate;
   status(`${DESIGNS[GDRAG.m.userData.design]?.label || GDRAG.m.userData.design}: ${h.label.toLowerCase()} ${h.kind === "height" ? `${h.anchor}${v >= 0 ? "+" : "-"}${Math.abs(v).toFixed(3)}` : v.toFixed(3)}`);
+  if (EDITING && Date.now() - dragAt > 60) {            // the line follows the handle as it's dragged (the handles themselves stay put until it's let go)
+    const c = st.clothes.find(x => x.design === GDRAG.m.userData.design); if (!c) return;
+    setEdit(c, h, v); EDIT_DIRTY = true; redrawGuides({ handles: false }); dragAt = Date.now();
+  }
 }
-function dropGarment() {                               // let go: the new value, and the clothes cut again
+function dropGarment() {                               // let go: the new value, and the clothes cut again (or the guides drawn again)
   const { m, d } = GDRAG; GDRAG = null;
   if (Math.abs(d) < 0.002) { m.position.set(...m.userData.h.at); return; }
   const c = st.clothes.find(x => x.design === m.userData.design); if (!c) return;
   setEdit(c, m.userData.h, m.userData.h.value + d / m.userData.h.rate);
-  drawWorn(); dress();
+  if (EDITING) EDIT_DIRTY = true;
+  drawWorn(); refresh();
 }
 function shapeRows(c) {                                // the same lines as sliders, and how loose it sits
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Shape" })), c.design + ":shape"), p = pieceOf(c);
-  const later = () => { clearTimeout(shapeTimer); shapeTimer = setTimeout(dress, 450); };
+  const later = () => { clearTimeout(shapeTimer); if (EDITING) { EDIT_DIRTY = true; shapeTimer = setTimeout(redrawGuides, 30); } else shapeTimer = setTimeout(dress, 450); };
   if (p.kind !== "shoe") slider(box, "fit", "Fit", 0, 2, 0.05, p.fit ?? 1, "0 skin tight (on the skin, into every hollow), 1 as designed, 2 loose (more ease, more cloth to hang).", v => { c.edit = { ...(c.edit || {}), fit: v }; later(); });
   for (const h of SHAPE.get(c.design) || []) {
     const [lo, hi, step] = h.kind === "height" ? [+(h.value - 0.4).toFixed(2), +(h.value + 0.4).toFixed(2), 0.005] : h.key === "neck" ? [0, 0.2, 0.002] : h.key === "sleeve" ? [0.06, 0.7, 0.005] : [0, 0.8, 0.01];
@@ -724,13 +816,13 @@ function shapeRows(c) {                                // the same lines as slid
     if (p.legs) { ease("leg", "Ease, legs (m)", 0.008); ease("flare", "Flare to hem (m)", 0); }
     slider(box, "tension", "Hang", 2, 70, 1, p.tension ?? 16, "Fewer rounds cling to the body; more hang loose and bridge the hollows.", v => { c.edit = { ...(c.edit || {}), tension: v }; later(); });
   }
-  const reset = el("button", { textContent: "As designed" }); reset.onclick = () => { delete c.edit; drawWorn(); dress(); };
+  const reset = el("button", { textContent: "As designed" }); reset.onclick = () => { delete c.edit; if (EDITING) EDIT_DIRTY = true; drawWorn(); refresh(); };
   box.append(reset);
   return box;
 }
 function hangRows(c) {                                 // how it hangs (tailor/drape.js): on or off, its fullness, stiffness, weight
   const box = keepOpen(el("details", {}, el("summary", { textContent: "Hang" })), c.design + ":hang"), d = { ...DRAPE, ...(pieceOf(c).drape || {}) };
-  const put = (k, v) => { c.edit = c.edit || {}; c.edit.drape = { ...(c.edit.drape || {}), [k]: v }; clearTimeout(shapeTimer); shapeTimer = setTimeout(dress, 450); };
+  const put = (k, v) => { c.edit = c.edit || {}; c.edit.drape = { ...(c.edit.drape || {}), [k]: v }; clearTimeout(shapeTimer); if (EDITING) EDIT_DIRTY = true; else shapeTimer = setTimeout(dress, 450); };
   const t = el("input", { type: "checkbox", checked: d.on !== false }); t.onchange = () => put("on", t.checked);
   box.append(el("label", { className: "tog", title: "Off: this garment stays as cut (the others still hang). Hang by gravity above turns all of them" }, t, el("span", { textContent: "Hang it by gravity" })));
   slider(box, "slack", "Fullness", 0, 0.5, 0.01, d.slack, "Cloth round the body beyond its cut (0.2: a fifth more): it falls into folds.", v => put("slack", v));
@@ -742,7 +834,7 @@ function drawWorn() {
   $("#worn").replaceChildren(...st.clothes.map((c, i) => {
     const col = el("input", { type: "color", value: c.color }), x = el("button", { textContent: "×", title: "take it off" });
     col.oninput = () => { c.color = col.value; restyle(c); };
-    x.onclick = () => { st.clothes.splice(i, 1); drawWorn(); dress(); };
+    x.onclick = () => { st.clothes.splice(i, 1); if (EDITING) EDIT_DIRTY = true; drawWorn(); refresh(); };
     return el("div", {}, el("div", { className: "row" }, el("span", { textContent: DESIGNS[c.design]?.label || c.design }), col, x), shapeRows(c),
               ...(DESIGNS[c.design]?.piece?.drape ? [hangRows(c)] : []), lookRows(c));
   }));
@@ -750,14 +842,24 @@ function drawWorn() {
 addBtn.onclick = () => {
   const design = designSel.value; if (!design) return;
   st.clothes = st.clothes.filter(c => c.design !== design).concat([{ design, color: gColor.value }]);
-  drawWorn(); dress();
+  if (EDITING) EDIT_DIRTY = true;
+  drawWorn(); refresh();
 };
-outfitBtn.onclick = () => {
-  st.clothes = (OUTFITS[outfitSel.value] || []).map(([design, color, look, edit]) => ({ design, color: color || DESIGNS[design]?.color || "#888888", ...(look || {}), ...(edit ? { edit: { ...edit } } : {}) }));   // an outfit's own edit (a fit)
+function wearOutfit(name) {                           // the outfit's garments in its order, and the accessories it brings (a hat, sunglasses) in place of the kinds it brings
+  st.clothes = (OUTFITS[name] || []).map(([design, color, look, edit]) => ({ design, color: color || DESIGNS[design]?.color || "#888888", ...(look || {}), ...(edit ? { edit: { ...edit } } : {}) }));   // an outfit's own edit (a fit)
   for (const c of st.clothes) if (c.print && c.print.across === undefined) { c.print.across = c.print.part === "back" ? (c.print.u ?? 2) - 2 : c.print.u ?? 0; c.print.at = Math.abs(c.print.v ?? 1.2); }
-  drawWorn(); dress();
-};
+  const acc = (OUTFIT_META[name]?.accessories || []).filter(a => ACCS.KINDS[a.kind]);
+  if (acc.length && WEAR) {
+    st.accessories = st.accessories.filter(x => !acc.some(a => a.kind === x.kind));
+    for (const a of acc) st.accessories.push({ ...ACCS.fresh(a.kind, a.style), ...a });
+    WEAR.set(st.accessories); drawAcc(); UNSAVED = true;
+  }
+  WORN_OUTFIT = name; drawOutfits();
+  if (EDITING) EDIT_DIRTY = true;
+  drawWorn(); refresh();
+}
 clothesExp.onclick = async () => {
+  if (EDITING) setEditing(false);                      // written as cut and hung, never as lines
   if (!WHO || !GARMENTS.children.length) return status("make a character and dress it first", "bad");
   if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }
   const text = await inRest(() => LOOK.objText(GARMENTS.children, `${WHO}'s clothes from the tailor (tools/character/tailor.js): metres, Y up, facing +Z, the body's frame, MHR's own pose`));
@@ -777,6 +879,7 @@ const scene = new THREE.Scene(); scene.background = new THREE.Color(0x202125);
 const camera = new THREE.PerspectiveCamera(26, 1, 0.02, 100);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3530, 1.1), key = new THREE.DirectionalLight(0xffffff, 1.6);
 scene.add(hemi, camera); camera.add(key);
+const rim = new THREE.DirectionalLight(0xffffff, 0); camera.add(rim);   // a rim from behind: the reference light's (the edge, the fuzz, the ears)
 {                                                      // a soft studio around the character, so glossy skin and hair have something to reflect
   const env = new THREE.Scene(), box = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 12), new THREE.MeshBasicMaterial({ color: 0x2c2d33, side: THREE.BackSide }));
   env.add(box);
@@ -794,6 +897,9 @@ const LIGHTS = {   // key: colour, intensity, place (the camera's frame: x right
   lamp:   { key: [0xffb36a, 2.4, [-1.6, 0.6, -0.4]], hemi: [0x5a4030, 0x120c08, 0.18], env: 0.35, torch: 0, bg: 0x120d0a },   // a table lamp to one side
   night:  { key: [0x8ea6ff, 1.4, [1.8, 1.6, -0.6]], hemi: [0x3a4c7a, 0x05060a, 0.32], env: 0.25, torch: 0, bg: 0x07090f },  // moonlight from the side, a little behind: half the face
   torch:  { key: [0xffffff, 0, [0, 0, 0]], hemi: [0x202838, 0x050505, 0.06], env: 0.15, torch: 3, bg: 0x040405 },           // the player's flashlight
+  // the user's reference stills (docs/research/skin_v2.md §1, §4 step 1): a soft key from one side and above, three stops
+  // over the shadow, a cool rim from behind, a dark blue-grey ground; the film curve (AgX) so highlights roll off
+  reference: { key: [0xfff3e8, 2.6, [-1.8, 1.0, 0.4]], hemi: [0x9ea8b8, 0x2a2420, 0.45], env: 0.7, torch: 0, bg: 0x0f1215, rim: [0xdde6ff, 1.6, [1.6, 0.9, -2.6]], film: true },
 };
 const LIGHT = { name: "studio", env: 1 };
 function setLight(name) {
@@ -801,6 +907,9 @@ function setLight(name) {
   key.color.set(L.key[0]); key.intensity = L.key[1]; key.position.set(...L.key[2]);
   hemi.color.set(L.hemi[0]); hemi.groundColor.set(L.hemi[1]); hemi.intensity = L.hemi[2];
   torch.intensity = L.torch; if (!STUDIO.on) scene.background.set(L.bg);
+  rim.intensity = L.rim ? L.rim[1] : 0; if (L.rim) { rim.color.set(L.rim[0]); rim.position.set(...L.rim[2]); }
+  if (!STUDIO.on) { renderer.toneMapping = L.film ? THREE.AgXToneMapping : THREE.NoToneMapping; renderer.toneMappingExposure = L.exposure || 1; }   // the studio view keeps its own
+  SKU.uGlowK.value = L.film ? 0 : 1;                 // the reference shows the skin without the emissive glow (skinshader.js)
   skinLook();
 }
 const floor = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: 0x2a2b30, roughness: 1 }));
@@ -819,6 +928,8 @@ dgeo.setAttribute("objPos", new THREE.BufferAttribute(new Float32Array(C * 3), 3
 if (H.uv_at) dgeo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, H.uv_at, C * 2), 2));
 if (H.uv_at) dgeo.setAttribute("skinUv", dgeo.attributes.uv);
 const SKU = SKINSH.procedural(material);             // the procedural skin's uniforms (skinshader.js)
+dgeo.setAttribute("skinThin", new THREE.BufferAttribute(new Float32Array(C), 1));   // how thin the body is at each corner (thin.js): the light through ears and fingers
+skinLit(material, { thin: "attr" });                   // lit as HumanShaders lights skin (/shared/skinlight.js), over the procedural skin
 const mesh = new THREE.Mesh(dgeo, material);
 const rig = new THREE.Group(); rig.matrixAutoUpdate = false; scene.add(rig); rig.add(mesh);
 const STUDIO = new StudioView({ renderer, scene, hide: [floor], floorY: 0 });   // tools/shared/studioview.js: a white studio, an HDR, a key light with shadows   // the body and all it wears: the head motion moves it
@@ -915,6 +1026,16 @@ function compose() {                                   // POS: RAW + the face, s
   WEAR?.update();                                       // the accessories on the face as it is now
   if (typeof refit === "function") refit();           // the clothes cut again once the body holds still
   poseGarments();                                       // and shown in the body's pose meanwhile
+  thinLater();
+}
+// how thin the body is at each point (thin.js), once it holds still for a moment: the skin's translucency reads it
+let THIN_T = 0, THIN = null;
+function thinLater() { clearTimeout(THIN_T); THIN_T = setTimeout(computeThin, 700); }
+function computeThin() {
+  if (!geo.attributes.normal) geo.computeVertexNormals();   // (before the first compose)
+  THIN = thinness(POS, TRIS, geo.attributes.normal.array, { smooth: 1 });
+  const a = dgeo.attributes.skinThin.array; for (let c = 0; c < C; c++) a[c] = THIN[TRIS[c]];
+  dgeo.attributes.skinThin.needsUpdate = true;
 }
 // SHOW: the body in the view's pose (pose.js: MHR's skinning, its joints refitted to the body as it is); only the arms
 // and the legs turn, and the body under the head moves forward to stand the neck up, so the head and everything on it
@@ -961,9 +1082,9 @@ async function inRest(fn) {
 
 // ---- eyes: MHR's closed shell cut out (in the skin's shader) inside MediaPipe's lid outline, an eyeball behind each opening
 const LMK = await api("api/face/landmarks", {}).catch(() => null);   // {tri, bary}: the 468 points on MHR's body
-// the sculpt (sculpt.js): named shape controls, each an offset field built once on MHR's base body
-const SCULPT = LMK ? SC.buildSculpt({ P: BASEP, T: TRIS, lm: i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0];
-  for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * BASEP[v + a]; } return o; } }) : null;
+// the sculpt (sculpt.js): named shape controls, each an offset field built once on MHR's base body (below, with the
+// model's own lid line: Hooded lids keeps clear of it)
+let SCULPT = null;
 const LIDS = { L: [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466],   // the character's left (+x)
                R: [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] };
 function lmk(i) {                                       // a landmark's place on the body as it is now
@@ -1092,12 +1213,18 @@ const EYES = { L: new THREE.Mesh(EYEPAINT.eyeGeometry(EYEPAINT.eyeShape(EYEPAINT
 // the openings: each lid outline smoothed (Catmull-Rom through MediaPipe's 16 points, 32 round), cut out of the skin in
 // its shader (MHR's coarse triangles would leave teeth), and filled by a fan in the eye corner's pink that marks the
 // stencil; the eyeballs are drawn only there and over whatever is inside: an opening is always full, in any pose, and a
-// bigger eyeball grows inside the head and never shows outside it
+// bigger eyeball grows inside the head and never shows outside it. Each eye has its own stencil value (the left 1,
+// the right 3; the mouth's is 2): seen from the side the two eyes line up, and with one value the far eyeball, drawn
+// over whatever is inside, painted itself through the near eye's opening and the near eye was gone (the eyes vanished
+// in profile: the user's report, 2026-10-28). Seen from the side, what shows through an opening is its eyeball's
+// flank under the lids: the eye's paint and the lids' shadow fade to the white there (below). The fan is arched over
+// the middle and walled back to the cut (openings()), so in profile the eye fills to a round front between the lids
 const holeGeo = new THREE.BufferGeometry();
-const HOLES = new THREE.Mesh(holeGeo, new THREE.MeshBasicMaterial({ depthWrite: false, side: THREE.DoubleSide,
-  stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
+const EYEREF = { L: 1, R: 3 };
+const HOLES = new THREE.Mesh(holeGeo, ["L", "R"].map(side => new THREE.MeshBasicMaterial({ side: THREE.DoubleSide,
+  stencilWrite: true, stencilRef: EYEREF[side], stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp })));
 HOLES.renderOrder = 1; HOLES.frustumCulled = false;
-for (const m of Object.values(eyeMats)) Object.assign(m, { stencilWrite: true, stencilWriteMask: 0, stencilRef: 1, stencilFunc: THREE.EqualStencilFunc, depthTest: false });
+for (const [side, m] of Object.entries(eyeMats)) Object.assign(m, { stencilWrite: true, stencilWriteMask: 0, stencilRef: EYEREF[side], stencilFunc: THREE.EqualStencilFunc, depthTest: false });
 for (const e of Object.values(EYES)) e.renderOrder = 2;
 // the lids' shadow on the eyeball: darker just under the upper lid's line and a little over the lower's, in the head's
 // space (the lid lines from the outline: 0..16 the lower lid, outer corner to inner; 16..32 the upper, back out)
@@ -1127,6 +1254,7 @@ float lidY(vec2 P[17], float x) {                                  // a lid's he
   float wUp = 0.0032 * (1.0 + 2.0 * uOcc), wLo = 0.0014 * (1.0 + 3.5 * uOcc);   // the eye occlusion: wider all round, into the corners
   float cn = max(1.0 - smoothstep(0.0, 0.0065, length(vRig.xy - uLo[0])), 1.0 - smoothstep(0.0, 0.0055, length(vRig.xy - uLo[16])));
   float sh = (0.6 + 0.3 * uOcc) * (1.0 - smoothstep(0.0, wUp, up)) + (0.25 + 0.5 * uOcc) * (1.0 - smoothstep(0.0, wLo, lo)) + 0.7 * uOcc * cn * cn;
+  sh *= smoothstep(0.25, 0.6, dot(normalize(vViewPosition), normalize(vEyeF)));   // seen from the side (past ~55° off the eye's own axis), what shows through the opening is the white under the lids: the lids' shadow, painted for a view from the front, fades out (it made the eye a dark, pink hole in profile: 2026-10-28)
   diffuseColor.rgb *= 1.0 - min(0.95, uLidShade * sh); }`);
   };
 }
@@ -1302,10 +1430,19 @@ function lidView() {
 }
 const AREA0 = {};                                      // each opening's area on the neutral face (placeEyes)
 const area = pts => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] + pts[i][0]) * (pts[j][1] - pts[i][1]); return Math.abs(a) / 2; };
+const EYEINV = new THREE.Matrix4(), EO = new THREE.Vector3(), ED = new THREE.Vector3();
+function eyeFrontZ(side, x, y) {                       // the eyeball's front at (x, y) in the head's space, its z (or -Infinity), as it looks now
+  const m = EYES[side], sh = eyeShapeOf(side); m.updateMatrix(); EYEINV.copy(m.matrix).invert();
+  EO.set(x, y, m.position.z + 2 * m.scale.x).applyMatrix4(EYEINV); ED.set(0, 0, -1).transformDirection(EYEINV);
+  const hit = (cz, r) => { const oz = EO.z - cz, b = EO.x * ED.x + EO.y * ED.y + oz * ED.z, q = b * b - (EO.x * EO.x + EO.y * EO.y + oz * oz - r * r); return q < 0 ? Infinity : -b - Math.sqrt(q); };
+  let t = hit(0, 1);                                     // the white's sphere (eye units), then the cornea's dome over the limbus
+  const tc = hit(sh.zc, sh.rc); if (tc < t && EO.z + tc * ED.z >= sh.zl) t = tc;
+  return isFinite(t) ? m.position.z + (2 - t) * m.scale.x : -Infinity;
+}
 function openings() {
   const on = !!LMK && st.eyes.on; SKU.uCutOn.value = on ? 1 : 0;
-  if (!on) { holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3)); TEAR.L.visible = TEAR.R.visible = false; return; }
-  const P = [];
+  if (!on) { holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(0), 3)); holeGeo.clearGroups(); TEAR.L.visible = TEAR.R.visible = false; return; }
+  const P = []; let PL = 0;
   ["L", "R"].forEach((side, s) => {
     const { pts, c } = outline(side), U = SKU[`uCut${side}`].value;
     const raw = area(outline(side, 1, false).pts), f = raw / (AREA0[side] || raw), t = Math.min(1, Math.max(0, (f - 0.25) / 0.2)), shut = t * t * (3 - 2 * t);   // a blink: the opening shrinks to nothing as the lids meet (MHR's shut lids still leave 15 to 20%)
@@ -1322,10 +1459,47 @@ function openings() {
     E.uCatch.value.set(ec.x + st.eyes.catchX * ir, ec.y + st.eyes.catchY * ir, ec.x - st.eyes.catchX * ir * 0.7, ec.y - st.eyes.catchY * ir * 0.8);
     const painted = st.eyes.real === false ? 1 : 0;   // a refracting cornea reflects the lights themselves: no painted catchlights
     E.uCatchA.value.set(st.eyes.catch1 * painted, st.eyes.catch2 * painted); E.uCatchR.value = Math.max(1e-4, st.eyes.catchSize * ir);
-    for (let i = 0; i < pts.length; i++) P.push(...mid, ...pts[i], ...pts[(i + 1) % pts.length]);
+    // the fan arched over the middle, an invisible shape whose outline from any side is where the eye shows (the
+    // user's red masks, 2026-10-28: a smooth mask, not a rough one): seen from the side the eye fills forward to one
+    // round front between the lids, reaching as far as the pupil. Its rim is the lid line through a spline, three
+    // points to each of the line's; along each spoke a quarter ellipse from the lid line up to just behind the
+    // eyeball's front at the opening's middle (the cornea's top), so it meets the lids round, never at a corner; held
+    // softly just inside the eyeball's surface so the eyeball always covers it (followed exactly, the cornea made a
+    // bump between notches); all the way to the lids above and below, toward the corners only over the middle (the
+    // eyeball came out of the lids there)
+    const ss = (a0, a1, v) => { const u = Math.min(1, Math.max(0, (v - a0) / (a1 - a0))); return u * u * (3 - 2 * u); };
+    const smin = (a, b, k) => { const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (b - a) / k)); return b + (a - b) * h - k * h * (1 - h); };
+    const nP = pts.length, RIM = [];
+    for (let i = 0; i < nP; i++) {                         // Catmull-Rom through the lid line: 3 points to each of its
+      const p0 = pts[(i - 1 + nP) % nP], p1 = pts[i], p2 = pts[(i + 1) % nP], p3 = pts[(i + 2) % nP];
+      for (const u of [0, 1 / 3, 2 / 3]) RIM.push([0, 1, 2].map(k => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * u + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * u * u + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * u * u * u)));
+    }
+    const apex = eyeFrontZ(side, c[0], c[1]) - 0.0002 * SCALE, soft = 0.0004 * SCALE;
+    const ring = (i, t) => {                               // spoke i (to rim point i), t from the middle (0) to the rim (1)
+      const q = RIM[i % RIM.length], x = c[0] + t * (q[0] - c[0]), y = c[1] + t * (q[1] - c[1]), flat = mid[2] + t * (q[2] - mid[2]);
+      if (!(apex > -Infinity) || t >= 1) return [x, y, t >= 1 ? q[2] : flat];
+      const up = Math.abs(q[1] - c[1]) / (Math.hypot(q[0] - c[0], q[1] - c[1]) || 1);   // the spoke toward a lid (1) or a corner (0)
+      const w = shut * Math.max(1 - ss(0.3, 0.65, t), ss(0.25, 0.8, up));
+      let z = q[2] + (apex - q[2]) * Math.sqrt(Math.max(0, 1 - t * t));                 // the quarter ellipse
+      const sz = eyeFrontZ(side, x, y); if (sz > -Infinity) z = smin(z, sz - 0.0002 * SCALE, soft);
+      return [x, y, flat + w * Math.max(0, z - flat)];
+    };
+    const TS = [0, 0.15, 0.3, 0.42, 0.53, 0.63, 0.72, 0.8, 0.86, 0.91, 0.945, 0.97, 0.988, 1], RG = TS.map(t => RIM.map((_, i) => ring(i, t)));
+    for (let k = 0; k < TS.length - 1; k++) for (let i = 0; i < RIM.length; i++) {
+      const j = (i + 1) % RIM.length, a = RG[k][i], b = RG[k][j], d = RG[k + 1][i], e = RG[k + 1][j];
+      if (k === 0) P.push(...a, ...d, ...e); else P.push(...a, ...d, ...e, ...a, ...e, ...b);   // the middle's ring is one point
+    }
+    // and a wall from the lid line back to where the skin is cut to: a ray through the opening that slips past the fan
+    // (seen from the side, the cut runs deeper than the lid line) crosses the wall, and its eyeball is drawn there; the
+    // fan and the wall write depth, so the other eye's, inside the head behind them, can't be seen through this opening
+    const back = Math.min(...pts.map(p => p[2])) - 0.006;
+    for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length];
+      P.push(...a, a[0], a[1], back, ...b, ...b, a[0], a[1], back, b[0], b[1], back); }
+    if (side === "L") PL = P.length;
   });
   holeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P), 3)); holeGeo.computeBoundingSphere();
-  HOLES.material.color.set(st.eyes.corner).multiplyScalar(0.55);   // what shows where the eyeball doesn't: the corner's pink, darker
+  holeGeo.clearGroups(); holeGeo.addGroup(0, PL / 3, 0); holeGeo.addGroup(PL / 3, (P.length - PL) / 3, 1);   // each eye's fan with its own stencil value
+  for (const m of HOLES.material) m.color.set(st.eyes.corner).multiplyScalar(0.55);   // what shows where the eyeball doesn't: the corner's pink, darker
   lidView();
 }
 const EYEFIT = { size: 1, depth: 0, opening: 1, lidShade: 0.6, occlusion: 0.5, tearline: 0.5 };   // the eyeball's size (grown back from the pupil), how far back, the opening's size
@@ -1617,6 +1791,12 @@ addEventListener("beforeunload", e => {
 });
 // ---- the sculpt's sliders (Body, Sculpt) and its handles on the body: a circle on each feature (its twin across the
 // middle), dragged; the sliders it moves follow the pointer as closely as their own motions there allow, and light up
+if (LMK) {
+  findLids();
+  const lid = MESHLID.L && MESHLID.L.map(([a, b, f]) => [0, 1, 2].map(k => BASEP[a * 3 + k] * (1 - f) + BASEP[b * 3 + k] * f));   // the left eye's own lid line on the base
+  SCULPT = SC.buildSculpt({ P: BASEP, T: TRIS, lid, lm: i => { const t = LMK.tri[i] * 3, b = LMK.bary[i], o = [0, 0, 0];
+    for (let k = 0; k < 3; k++) { const v = TRIS[t + k] * 3; for (let a = 0; a < 3; a++) o[a] += b[k] * BASEP[v + a]; } return o; } });
+}
 const sculptSet = {}, sculptRow = {};
 if (SCULPT) for (const g of SC.GROUPS) {
   const d = el("details", { open: g === "Forehead" }, el("summary", { textContent: g }));
@@ -1884,12 +2064,14 @@ const ACC_FIELDS = {
   patch: [["spot", "Where", "spot"], ["colour", "Colour", "color"], ["size", "Size", 0.7, 1.4, 0.01], ["turn", "Turn (°)", -45, 45, 1], ["strap", "Strap", "check"]],
   neck: [["length", "Length (cm)", 28, 90, 0.5], ["ease", "Looser (cm)", 0, 8, 0.1], ["pendant", "Pendant", "charm"], ["material", "Metal", "material"], ["colour", "Colour", "color"], ["shine", "Shine", 0, 1, 0.05],
          ["gem", "Gem", "color"], ["size", "Thickness", 0.5, 2.5, 0.05]],
+  hat: [["colour", "Colour", "color"], ["size", "Size", 0.8, 1.3, 0.01], ["tilt", "Slouch (°)", -40, 40, 1], ["turn", "Turn (°)", -180, 180, 5], ["height", "Height (mm)", -30, 30, 1], ["shine", "Shine", 0, 1, 0.05]],
 };
 // which fields an accessory shows, by what it is now (a field for a part it hasn't got stays out of the way)
 function accShows(a, k) {
   const pbr = (a.material || "").startsWith("pbr/"), metalParts = a.kind !== "neck" || a.style === "chain" || a.style === "beads" || (a.pendant && a.pendant !== "none");
   switch (k) {
-    case "material": return metalParts;
+    case "material": return metalParts && a.kind !== "hat";
+    case "tilt": return a.style === "beret" || a.style === "beanie";
     case "colour": return a.kind === "glasses" ? !a.material : a.kind === "neck" ? ["cord", "choker", "beads"].includes(a.style) || a.material === "colour"
                         : a.kind === "piercing" || a.kind === "earring" ? a.material === "colour" : true;
     case "metal": return !a.material;               // glasses: their colour, plastic to metal
@@ -2101,6 +2283,9 @@ var BL_READY = false, BLNOW = null, BLLIDS = null, OPENLID = {};      // var: co
 const BLU = { lash: hairUniforms(atlasTexture(BL.LASH_ATLAS), BL.LOOKS[st.lash.look]), line: hairUniforms(atlasTexture(BL.LINE_ATLAS), BL.LOOKS[st.lash.look]), brow: hairUniforms(atlasTexture(BL.ATLAS), BL.LOOKS[st.brow.look]) };   // the lashes' atlas: one fine strand to a cell; the lash line's: a dense fringe
 for (const U of Object.values(BLU)) { U.alphaCut.value = 0.3; U.ambientC.value.setRGB(0.35, 0.33, 0.32); }
 const BLM = { lash: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.lash)), line: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.line)), brow: new THREE.Mesh(new THREE.BufferGeometry(), hairMaterial(BLU.brow)) };
+BLM.lash.material.userData.file = () => ({ atlas: BL.LASH_ATLAS, look: BL.LOOKS[st.lash.look] });   // the strands' atlas and colours: what the export bakes them from (fileLook)
+BLM.line.material.userData.file = () => ({ atlas: BL.LINE_ATLAS, look: BL.LOOKS[st.lash.look] });
+BLM.brow.material.userData.file = () => ({ atlas: BL.ATLAS, look: BL.LOOKS[st.brow.look] });
 BLM.fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 0.9, side: THREE.DoubleSide }));   // the brows' fill, see-through
 for (const m of Object.values(BLM)) { m.renderOrder = 3; m.frustumCulled = false; m.visible = false; rig.add(m); }   // after the eyeballs, which draw over what's in the openings
 const fillColour = () => BLM.fill.material.color.set(BL.LOOKS[st.brow.look].tip);
@@ -2114,7 +2299,7 @@ function browLash() {
   for (const side of ["L", "R"]) {
     const { pts, c } = outline(side, 1), raw = area(outline(side, 1, false).pts), open = Math.min(1, raw / (AREA0[side] || raw));
     const upper = pts.slice(16).concat([pts[0]]), lower = pts.slice(0, 17);
-    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: rimOf(lower, c, F, 1.2, side), centre: c, eye: EYES[side].position.toArray() };   // (the upper rim's fourth point: the skin RIM_UP mm up the lid, for the lash line's and the liner's tops; the eyeball's middle: what the lids swing round)
+    const now = { upper, lower, upperRim: rimOf(upper, c, F, 2.2, side, BL.RIM_UP), lowerRim: rimOf(lower, c, F, 1.2, side, BL.RIM_UP), centre: c, eye: EYES[side].position.toArray() };   // (the rims' fourth points: the skin RIM_UP mm up the lid (down, under the lower), for the lash line's and the liners' other edges; the eyeball's middle: what the lids swing round)
     if (open >= 0.97 || !OPENLID[side]) OPENLID[side] = now;              // the lids as they are open: the lashes' frame, turned with the lid as it shuts (browlash.js)
     lids[side] = { ...now, open, open0: OPENLID[side] };
     brows[side] = { upper: BROWROWS[side].upper.map(lmk), lower: BROWROWS[side].lower.map(lmk) };
@@ -2294,6 +2479,7 @@ function changed(what) {
   if (what === "body" || what === "face") { clearTimeout(faceTimer); faceTimer = setTimeout(refitFace, what === "body" ? 350 : 150); }
 }
 async function fitFace() {
+  if (FACEBAKE) { hud(); return; }                     // baked: the face stays as it was fitted, pictures or none
   if (!WHO || !PICS.length) { if (DELTA) { DELTA = null; compose(); } hud(); return; }
   const mine = ++seq; status("fitting the face…");
   const side = PICS.filter(p => p.name.startsWith("side.")).map(p => p.name);
@@ -2305,9 +2491,49 @@ async function fitFace() {
 }
 function hud() {
   const lines = [`${H.lod} · ${N} points · ${st.height.toFixed(2)} m`];
-  if (REPORT) lines.push(`face from ${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}`);
+  if (FACEBAKE) lines.push(`face baked (from ${FACEBAKE.from})`);
+  else if (REPORT) lines.push(`face from ${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}`);
+  bakeUI();
   $("#hud").replaceChildren(...lines.map(t => el("div", { textContent: t })), ...(REPORT?.warnings || []).map(w => el("div", { className: "warn", textContent: w })));
 }
+
+// ---- the face baked: the fit kept as it is in the character's face.bin (a header saying when and from what, then the
+// points' indices and their offsets, before Face strength), so its pictures can go; the fit's own settings wait while
+// it's baked (Face strength still works). Unbake: fitted to its pictures again, or with none left, the base's face
+function bakeUI() {
+  $("#bakeFace").disabled = !WHO || !DELTA || !!FACEBAKE; $("#unbakeFace").hidden = !FACEBAKE;
+  $("#bakeNote").textContent = FACEBAKE ? `Baked ${FACEBAKE.at.slice(0, 10)}, from ${FACEBAKE.from}: the face stays as it is, its pictures can go. The fit (new pictures, its settings) waits until it's unbaked; Face strength still works.`
+    : DELTA ? "Happy with the face? Bake it: it stays as the pictures give it now, and they can go." : "";
+  [...$("#faceRows").children].forEach((row, i) => { const off = !!FACEBAKE && FACE[i][0] !== "strength"; row.classList.toggle("baked", off); row.querySelector("input").disabled = off; });
+  $("#relative").disabled = !!FACEBAKE;
+}
+function faceBin(head, D) {                            // the bake's file: a uint32 header length, the header (JSON), the indices, the offsets
+  const hb = new TextEncoder().encode(JSON.stringify(head)), pad = (4 - hb.length % 4) % 4, k = D.idx.length, buf = new Uint8Array(4 + hb.length + pad + k * 16);
+  new DataView(buf.buffer).setUint32(0, hb.length + pad, true); buf.set(hb, 4); buf.fill(32, 4 + hb.length, 4 + hb.length + pad);
+  const o = 4 + hb.length + pad; new Uint32Array(buf.buffer, o, k).set(D.idx); new Float32Array(buf.buffer, o + k * 4, k * 3).set(D.d);
+  return buf;
+}
+async function loadFaceBake(who) {
+  const r = await fetch(`api/people/${encodeURIComponent(who)}/face.bin`).catch(() => null); if (!r || !r.ok) return null;
+  const b = await r.arrayBuffer(), n = new DataView(b).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(b, 4, n))), k = head.points;
+  return { head, delta: { idx: new Uint32Array(b.slice(4 + n, 4 + n + k * 4)), d: new Float32Array(b.slice(4 + n + k * 4, 4 + n + k * 16)) } };
+}
+$("#bakeFace").onclick = async () => {
+  if (faceTimer) { clearTimeout(faceTimer); refitFace(); }   // a setting just moved: the face fitted to it first
+  await FACEFIT?.catch(() => null);
+  if (!WHO || !DELTA || FACEBAKE) return;
+  const from = REPORT ? `${REPORT.used} front picture${REPORT.used === 1 ? "" : "s"}${REPORT.sides ? " and a side one" : ""}` : "its pictures";
+  const head = { about: "the Character Studio's face fitted to its pictures (tools/face_mesh.py's body op), baked: MHR's points by index and their offsets in metres, before Face strength (tools/character/index.html)",
+    version: 1, at: new Date().toISOString(), from, pictures: PICS.map(p => p.name), settings: { ...st.face, relative: $("#relative").checked }, weights: weights(), points: DELTA.idx.length };
+  try { await api(`api/people/${encodeURIComponent(WHO)}/face.bin`, new Blob([faceBin(head, DELTA)])); } catch (e) { return status(e.message, "bad"); }
+  ++seq; FACEBAKE = head; hud(); status(`the face is baked (${WHO}/face.bin): its pictures can go`, "ok");
+};
+$("#unbakeFace").onclick = async () => {
+  if (!WHO || !FACEBAKE) return;
+  if (!PICS.length && !confirm("No pictures are left to fit the face to: unbaked, it goes back to the base and the sliders. Unbake it?")) return;
+  try { await api(`api/people/${encodeURIComponent(WHO)}/face.bin`, ""); } catch (e) { return status(e.message, "bad"); }   // an empty one: gone
+  FACEBAKE = null; await fitFace(); status(PICS.length ? "unbaked: the face fits its pictures again" : "unbaked: the base's face", "ok");
+};
 
 // ---- the pictures ---------------------------------------------------------------------------------------------------
 const SLOT_TEXT = { front: "Front picture\nclick or drop", side: "Side picture\n(optional)" };
@@ -2366,6 +2592,9 @@ async function open(name) {
   WHO = name || null; PICS = []; DELTA = null; REPORT = null; drawSlots();
   const c = WHO ? await api(`api/people/${encodeURIComponent(WHO)}`) : {};
   if (me !== OPENING) return;                          // another character was picked meanwhile: its own open() sets everything
+  FACEBAKE = null; const baked = WHO ? await loadFaceBake(WHO) : null;
+  if (me !== OPENING) return;
+  if (baked) { FACEBAKE = baked.head; DELTA = baked.delta; }   // its face baked: kept, its pictures not needed
   st.base = c.base ?? 0; st.height = c.height ?? 1.7;
   st.shape = (c.shape || []).concat(new Array(H.shapes).fill(0)).slice(0, H.shapes).map(Number);
   Object.assign(st.face, Object.fromEntries(FACE.map(f => [f[0], f[5]])), c.face || {});
@@ -2376,6 +2605,7 @@ async function open(name) {
   st.sculpt = { ...(c.sculpt || {}) }; sculptAll();
   Object.assign(st.skin, { tone: "#c9b3a2", rough: 0.62, photo: false, size: 2048 }, c.skin || {});
   st.skin.proc = { ...SKINSH.DEFAULTS, ...(c.skin?.proc || {}) }; procSet.all();
+  st.skin.lit = { ...SKIN_LIT, ...(c.skin?.lit || {}) }; litSet.all();
   toneIn.value = st.skin.tone; set.rough(st.skin.rough); sizeSel.value = st.skin.size; usePhoto.checked = st.skin.photo;
   SKIN = null; await loadSkin(); await LAY.load();
   if (me !== OPENING) return;
@@ -2405,7 +2635,7 @@ $("#make").onclick = async () => {
   const n = $("#newName").value.trim();
   if (!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(n)) return status("a name is letters, digits, _ - .", "bad");
   const exists = [...$("#who").options].some(o => o.value === n);
-  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures stay)`)) return;
+  if (exists && !confirm(`${n} exists: start it again from the defaults? (its pictures and a baked face stay)`)) return;
   await api(`api/people/${encodeURIComponent(n)}`, {}); $("#newName").value = "";   // a fresh character: the defaults
   await people(n); await open(n); useLook(LOOKS.NEW_LOOK);   // a new character starts from the studio's look
   await api(`api/people/${encodeURIComponent(n)}`, character()); UNSAVED = false;
@@ -2444,6 +2674,71 @@ for (const [btn, head] of [["#expBody", false], ["#expHead", true]]) $(btn).oncl
 // Unreal has its own), the eyeballs, teeth, brows and lashes, the salon's hair, the clothes and the accessories; the
 // scene's extras hold the recipe (server: api/recipe): character.json, the layers, the touch-up, the pictures, the
 // salon's hair, each file's sha1. <name>.studio.json beside it carries the same; export.made.json is the receipt.
+// the skin in the file: everything the skin's shader paints (the procedural skin, the photo through its mask, the
+// makeup, the lips, the nails, the touch-up, the layers) baked flat on MHR's UVs (albedo.js); what the light does (the
+// coat, the relief, the glow through the skin) is left to whatever draws the file
+const SKIN_BAKE = 4096;
+function skinFileMaterial() {
+  const rough = st.skin.rough ?? 0.62;
+  if (!dgeo.attributes.uv) return new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: rough });
+  const sel = SKU.uShowSel.value; SKU.uShowSel.value = 0;            // the layers' selection isn't the skin
+  try {
+    const uv = dgeo.attributes.uv.array, map = ALB.bake(renderer, dgeo, material, uv, { size: SKIN_BAKE }).texture;
+    clearTimeout(THIN_T); computeThin();                // the thinness of the body as it is now
+    const { normal, orm } = ALB.bakeSkinMaps(renderer, dgeo, material, uv, { size: SKIN_BAKE / 2 });   // the relief, the roughness and the thinness (one map: R 1, G rough, B thin)
+    const m = new THREE.MeshStandardMaterial({ name: `${WHO}_skin`, map, normalMap: normal, roughnessMap: orm, metalnessMap: orm, roughness: 1, metalness: 0 });
+    m.userData.studioSkin = skinLitRecord(st.skin.lit);  // the light on the skin, for whatever draws the file (the desk: skinlight.js; Unreal: M_StudioSkin)
+    return m;
+  }
+  finally { SKU.uShowSel.value = sel; }
+}
+// a worn part's material as a file can carry it: a garment's fabric (tailor/look.js) baked onto islands of its own,
+// the fabric's metres kept as a second UV for a PBR set's other maps; brows and lashes (the hair shader, which glTF
+// can't carry) as their strands' atlas in their look's colours, cut out as the salon's bake is; the rest as it is
+function fileLook(x, g) {
+  const L = x.material, U = L && L.userData.uniforms;
+  if (U && U.uColor) {
+    const fab = g.attributes.uvm || g.attributes.uv, part = g.attributes.part, see = !!(L.transparent || U.uPbrAlphaOn.value > 0.5);
+    const { uv, size } = ALB.pack(fab.array, part ? part.array : null), B = ALB.bake(renderer, g, L, uv, { size, alpha: see });
+    g.setAttribute("uv1", new THREE.BufferAttribute(Float32Array.from(fab.array), 2)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.deleteAttribute("uvm");
+    const m = new THREE.MeshStandardMaterial({ name: x.name, map: B.texture, vertexColors: L.vertexColors, side: L.side, roughness: L.roughness * (1 - 0.75 * U.uGloss.value),
+      metalness: L.metalness, transparent: L.transparent, alphaTest: U.uPbrAlphaOn.value > 0.5 ? 0.5 : L.alphaTest, depthWrite: L.depthWrite });
+    for (const k of ["normalMap", "roughnessMap", "metalnessMap", "aoMap"]) if (L[k]) { m[k] = L[k].clone(); m[k].channel = 1; }
+    m.normalScale.copy(L.normalScale); m.aoMapIntensity = L.aoMapIntensity;
+    return m;
+  }
+  if (L && L.isShaderMaterial && L.userData.file) {
+    const { atlas, look } = L.userData.file();
+    return new THREE.MeshStandardMaterial({ name: x.name || "hair", map: albedoTexture(atlas, hairAlbedo(atlas, look)), alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.6 });
+  }
+  return L;
+}
+// brows and lashes in the file ride the face's 72 shapes where the desk plays them (tools/shared/face.js), with the
+// nearest MHR point the shapes move (_MHRP, _MHRW, as the skin's corners carry theirs). A brow hair lies on the skin:
+// each of its points takes its own nearest point's move. A lash is one piece (`lash`: the lashes and the lash line): every
+// card follows the point nearest its root (uv v = 0, on the lid) and swings about its eyeball's middle as that root
+// moves (_MHRR the root, _MHRE the eye), as the Studio turns a lash with the lid, so a blink takes it down whole and a
+// lash never stretches between its root and its tip
+function faceRide(g, lash = false) {
+  const P = g.attributes.position, n = P.count, I = new Float32Array(n * 3), W = new Float32Array(n * 3);
+  const nearest = (x, y, z) => { let best = Infinity, at = 0; for (let k = 0; k < EIDX.length; k++) { const p = EIDX[k] * 3, d = (POS[p] - x) ** 2 + (POS[p + 1] - y) ** 2 + (POS[p + 2] - z) ** 2; if (d < best) { best = d; at = EIDX[k]; } } return at; };
+  if (!lash) {
+    for (let v = 0; v < n; v++) { I[v * 3] = I[v * 3 + 1] = I[v * 3 + 2] = nearest(P.getX(v), P.getY(v), P.getZ(v)); W[v * 3] = 1; }
+  } else {
+    const up = new Int32Array(n).map((_, i) => i), find = i => { while (up[i] !== i) i = up[i] = up[up[i]]; return i; };
+    const ix = g.index ? g.index.array : null; if (ix) for (let t = 0; t < ix.length; t += 3) { const a = find(ix[t]); up[find(ix[t + 1])] = a; up[find(ix[t + 2])] = a; }
+    const UV = g.attributes.uv, cards = new Map();
+    for (let v = 0; v < n; v++) { const c = find(v); let k = cards.get(c); if (!k) cards.set(c, k = { lo: Infinity, root: [0, 0, 0], m: 0, verts: [] }); k.verts.push(v);
+      const t = UV ? UV.getY(v) : 0; if (t < k.lo - 1e-6) { k.lo = t; k.root = [0, 0, 0]; k.m = 0; } if (Math.abs(t - k.lo) <= 1e-6) { k.root[0] += P.getX(v); k.root[1] += P.getY(v); k.root[2] += P.getZ(v); k.m++; } }
+    const R = new Float32Array(n * 3), E = new Float32Array(n * 3), eyes = ["L", "R"].map(s => EYES[s].position);
+    for (const k of cards.values()) {
+      const r = k.root.map(x => x / k.m), at = nearest(...r), e = eyes.reduce((a, b) => (a.distanceToSquared(new THREE.Vector3(...r)) <= b.distanceToSquared(new THREE.Vector3(...r)) ? a : b));
+      for (const v of k.verts) { I.fill(at, v * 3, v * 3 + 3); W[v * 3] = 1; R.set(r, v * 3); E.set([e.x, e.y, e.z], v * 3); }
+    }
+    g.setAttribute("mhrr", new THREE.BufferAttribute(R, 3)); g.setAttribute("mhre", new THREE.BufferAttribute(E, 3));
+  }
+  g.setAttribute("mhrp", new THREE.BufferAttribute(I, 3)); g.setAttribute("mhrw", new THREE.BufferAttribute(W, 3));
+}
 function exportSkin() {
   const DP = dgeo.attributes.position.array, DN = dgeo.attributes.normal.array, UV = dgeo.attributes.uv.array, pos = [], nrm = [], uv = [], srcI = [], srcW = [];
   const poly = P => P.map(v => [v.x, v.y]), L = poly(SKU.uCutL.value), R = poly(SKU.uCutR.value), z = SKU.uCutZ.value, on = SKU.uCutOn.value > 0.5;
@@ -2490,8 +2785,9 @@ function exportSkin() {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: material.map || null, color: material.color.clone(), roughness: st.skin.rough ?? 0.62 }));
+  const m = new THREE.Mesh(g, skinFileMaterial());
   m.name = `${WHO}_skin`; m.userData.srcI = srcI; m.userData.srcW = srcW;   // each corner's three MHR points and their shares (its weights)
+  g.setAttribute("mhrp", new THREE.Float32BufferAttribute(srcI, 3)); g.setAttribute("mhrw", new THREE.Float32BufferAttribute(srcW, 3));   // the same in the file (_MHRP, _MHRW): the desk plays MHR's face shapes through them (tools/shared/face.js)
   if (on) m.userData.openings = Object.fromEntries(["L", "R"].map(side => {   // each opening's outline as cut, on the lids as they rest (the file's extras: a reader can follow the lid line)
     const f = eyeFront(side); return [side, outline(side).pts.map(p => { const e = f && f(p[0], p[1]); return [p[0], p[1], e === null || !f ? p[2] : Math.max(p[2], e + LIDGAP)].map(v => +v.toFixed(5)); })];
   }));
@@ -2584,7 +2880,8 @@ function exportRig(root, parts) {
       } else g.applyMatrix4(M);
       for (const k of ["skinIndex", "skinWeight"]) g.deleteAttribute(k);
       const bone = how.bone !== undefined ? R.byName.get(how.bone) : undefined;
-      wear(g, x.material, x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
+      if (Object.values(BLM).includes(o)) faceRide(g, o === BLM.lash || o === BLM.line);   // brows and lashes ride the face's shapes in the desk
+      wear(g, fileLook(x, g), x.name || o.name, bone !== undefined ? rigid(P.count, bone) : WEIGHTS.transfer(K, P.array));
     }
   }
   return skel;
@@ -2601,6 +2898,7 @@ function exportEye(side) {
 }
 async function exportPackage() {
   if (!WHO) return status("make a character first", "bad");
+  if (EDITING) setEditing(false);                      // the clothes as cut and hung, never as lines
   if (/^(cutting|cut|hanging)$/.test(DRAPING.stage)) { status("waiting for the clothes to hang…"); await hung(); }   // exported as they hang
   status("exporting for the desk and Unreal…");
   await api(`api/people/${encodeURIComponent(WHO)}`, character()); await LAY.save();
@@ -2613,7 +2911,11 @@ async function exportPackage() {
   for (const o of rig.children) if (!skip.has(o) && o.visible)
     parts.push([o === EYES.L ? exportEye("L") : o === EYES.R ? exportEye("R") : RIG ? o : o.clone(true),
                 o === EYES.L ? { bone: "l_eye" } : o === EYES.R ? { bone: "r_eye" } : o === MOUTH.upper ? { bone: "c_head" } : o === MOUTH.jaw ? { bone: "c_jaw" } : {}]);
-  if (RIG) exportRig(root, parts); else for (const [o] of parts) { delete o.userData.srcI; delete o.userData.srcW; root.add(o); }   // without MHR's rig (its file missing), as it's drawn
+  if (RIG) exportRig(root, parts);
+  else for (const [o] of parts) {                      // without MHR's rig (its file missing), as it's drawn
+    delete o.userData.srcI; delete o.userData.srcW; root.add(o);
+    o.traverse(x => { if (x.isMesh && x !== parts[0][0]) { x.geometry = x.geometry.clone(); x.material = fileLook(x, x.geometry); } });
+  }
   let glb;
   try { glb = await new Promise((ok, bad) => new GLTFExporter().parse(root, ok, bad, { binary: true, onlyVisible: true })); }
   finally { st.expr.set(was); POSE = pose; compose(); }
@@ -2655,7 +2957,7 @@ $("#poseSel").onchange = () => { POSE = $("#poseSel").value; try { localStorage.
 $("#povShot").onchange = () => { orbit.focus = "pov"; repose(); document.querySelectorAll("#views button[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === "pov")); };
 
 try { const t = localStorage.getItem("studio:tab"); if (t && t !== "body" && t !== "hair") tab(t); } catch (e) { }   // the salon waits for a character
-window.__body = { EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
+window.__body = { EYEPAINT, eyeShapeOf, exportEye, exportSkin, inside, get THIN() { return THIN; }, computeThin, setSkinLit, litSet, get LIDREST() { return LIDREST; }, get lids() { return BLLIDS; }, get drapeState() { return DRAPING; }, get bakes() { return BAKES; }, saveDrape, loadDrape, hung, RIG, SHOW, PO, skinLook, get POSED() { return POSED; }, get pose() { return POSE; }, setPose: p => { POSE = p; $("#poseSel").value = p; compose(); }, inRest, get WEAR() { return WEAR; }, ACCS, drawAcc, NAILS, get nails() { return NAILAT; }, lookAtNails, nailSet, nailLook, exportPackage, importPackage, recipeOf, character, useLook, LIPGUIDE, lipstick, THREE, renderer, paired, CURL, TEAR, eyeMats, EYESH, MOUTH, BAG, get mouthRing() { return MOUTHRING; }, JAW, MEMBRANE, SCULPT, HANDLES, sculptSet, sculptRow, BASEP, SPLIT, usePane, MESHLID, lidRing, get LAY() { return LAY; }, compose, paintEyes, HOLES, outline, LIDVIEW, lidDefault, get orbit() { return orbit; }, st, loadSalon, get salonHair() { return SALONH; }, neutralBody, fromArkit, ENAMES, EYES, GARMENTS, GH, dress, wearOutfit, get editing() { return EDITING; }, setEditing, redrawGuides, get cutEditor() { return CUTED; }, get shape() { return SHAPE; }, get skin() { return SKIN; }, get skinMask() { return SKINMASK; }, SKU, material, get who() { return WHO; }, get report() { return REPORT; }, get delta() { return DELTA; }, get pics() { return PICS; }, get browlash() { return BLNOW; }, browLash, BLM, enterSalon, lmk, TRIS, get scale() { return SCALE; }, rig, POS, N, TOUCH, camera,
   garmentHandleOnScreen(n) { const h = GH.getObjectByName(n), v = h.getWorldPosition(new THREE.Vector3()).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);
     return [r.left + V.x + (v.x + 1) / 2 * V.w, r.bottom - V.y - (v.y + 1) / 2 * V.h]; },
   onScreen(i) { const v = new THREE.Vector3(...lmk(i)).applyMatrix4(rig.matrixWorld).project(camera), r = renderer.domElement.getBoundingClientRect(), V = viewRect(r.width, r.height);

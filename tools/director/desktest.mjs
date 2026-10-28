@@ -63,6 +63,150 @@ for (const g of games) {
     (p, c) => p.sev === "error" && p.at.clip === c.id && /no seam/.test(p.text));
   expect("a flag waited for that nothing sets", S => { S.stitches.t_search.beats.push({ id: "b_ghost", when: { flag: "ghost_flag" }, optional: true, do: [] }); },
     p => p.sev === "warn" && /ghost_flag/.test(p.text) && p.at.beat === "b_ghost");
+
+  // a conversation card (STORY_FORMAT §9.9): an answer's reply a few lines, one skipping ahead, one ending the talk, one
+  // leaving for a card nothing else leads to; four answers. Nothing wrong with it, as the story check says; then faults
+  const talk = S => {
+    const c = S.scenes.s_message.clips.find(x => x.reply), os = c.reply.options, later = S.scenes.s_message.clips.slice(S.scenes.s_message.clips.indexOf(c) + 2);
+    os[0].then = [Object.assign({ en: "Mm." }, os[0].then || {}), { en: "Then stay a while.", ja: "じゃあ、少しいて。" }];
+    os[1].go = { clip: later[later.length - 1].id };
+    os.push({ id: "bye", label: "Leave", think: "Not tonight.", then: { en: "Oh. Goodnight, then.", ja: "そう。おやすみ。" }, go: "end" },
+      { id: "away", label: "Look away", go: { node: "n_detour" } });
+    S.scenes.s_detour = clone(S.scenes.s_game); S.flow.n_detour = { type: "scene", ref: "s_detour", next: S.flow.n_game.next };
+    for (const x of S.scenes.s_detour.clips || []) for (const g of (x.body || {}).segments || []) g.reuse = true;   // the same motions as the scene it's copied from
+    return c;
+  };
+  {
+    const S = clone(S0); talk(S); const ps = run(S, th), errs = ps.filter(p => p.sev === "error"), lost = ps.filter(p => p.at.node === "n_detour" && /nothing leads/.test(p.text));
+    const out = storyCheck("Sample", S), okd = /STORY ok/.test(out) && !/n_detour: no path reaches/.test(out);
+    errs.length || lost.length ? fail(`a conversation card: ${[...errs, ...lost].map(p => p.text).join("; ")}`) : !okd ? fail(`a conversation card: the story check says ${out.trim().split("\n").slice(-3).join(" / ")}`)
+      : ok(`a conversation card (a reply of two lines, a skip, the end, a card only an answer leads to, four answers): no errors, the story check passes (${out.trim().split("\n").pop()})`);
+  }
+  expect("an answer that skips back", S => { const c = talk(S); c.reply.options[1].go = { clip: S.scenes.s_message.clips[0].id }; return c; },
+    (p, c) => p.sev === "error" && p.at.clip === c.id && /isn't a later line/.test(p.text));
+  expect("an answer leaving for a card that's gone", S => { const c = talk(S); c.reply.options[3].go = { node: "n_gone" }; return c; },
+    (p, c) => p.sev === "error" && p.at.clip === c.id && /isn't on the board/.test(p.text));
+  expect("an answer going somewhere the format hasn't a word for", S => { const c = talk(S); c.reply.options[2].go = "sideways"; return c; },
+    (p, c) => p.sev === "error" && p.at.clip === c.id && /next, end, a later line or a card/.test(p.text));
+  {
+    const S = clone(S0), c = talk(S); c.reply.options[1].go = { clip: S.scenes.s_message.clips[0].id }; c.reply.options[3].go = { node: "n_gone" };
+    const out = storyCheck("Sample", S), want = [/a later line of this scene/, /n_gone.*not on the board/];
+    want.every(r => r.test(out)) ? ok("… and the story check says both (a skip back, a card that isn't there)") : fail(`the story check on the bad answers: ${out.trim().split("\n").slice(-4).join(" / ")}`);
+  }
+}
+
+// ---- the flow cut and joined again on the board (flowedit.js, HANDOFF_DIRECTOR_TODO §2)
+console.log("the flow cut and joined again (flowedit.js)");
+{
+  const F = await import("./flowedit.js");
+  const S0 = story("Sample"), th = thingsOf(S0);
+  const chain = (S, k = 7) => { const out = []; for (let id = S.game.start; id && out.length < k; id = (S.flow[id] || {}).next) out.push(id); return out.join(" › "); };
+  const errsOf = S => run(S, th).filter(p => p.sev === "error");
+  const checkOk = S => { const out = storyCheck("Sample", S); return /STORY ok/.test(out) ? true : out.trim().split("\n").slice(-3).join(" / "); };
+  {  // cut: warnings, not errors; the cards after it loose; joined again, the story as it was
+    const S = clone(S0); F.setArrow(S, "n_message", ["next"], null);
+    const ps = run(S, th), cut = ps.find(p => p.at.node === "n_message" && /cut here/.test(p.text)), errs = ps.filter(p => p.sev === "error"), loose = ps.filter(p => /\(the flow's cut\)/.test(p.text)).length;
+    const c = checkOk(S), cuts = F.cutsOf(S);
+    F.setArrow(S, "n_message", ["next"], S0.flow.n_message.next);
+    const back = JSON.stringify(S.flow) === JSON.stringify(S0.flow);
+    cut && cut.sev === "warn" && !errs.length && c === true && cuts.length === 1 && loose > 3 && back
+      ? ok(`cut after “Mari in the hall”: a stub (${cut.text}), ${loose} cards loose as warnings, no errors, the story check passes; joined again, the flow as it was`)
+      : fail(`a cut: ${cut ? cut.sev : "not said"}, errors ${errs.map(p => p.text).join("; ")}, story check ${c}, cuts ${cuts.length}, loose ${loose}, back ${back}`);
+  }
+  {  // a choice's way cut
+    const S = clone(S0), ch = Object.keys(S.flow).find(k => S.flow[k].type === "choice" && S.flow[k].by === "act");
+    F.setArrow(S, ch, ["option", 0], null);
+    const p = run(S, th).find(x => x.at.node === ch && /goes nowhere/.test(x.text)), c = checkOk(S);
+    p && p.sev === "warn" && c === true ? ok(`a choice's way cut (${ch}): ${p.text}, a warning; the story check passes`) : fail(`a choice's way cut: ${p ? p.sev : "not said"}, story check ${c}`);
+  }
+  {  // a card put on an arrow
+    const S = clone(S0); S.scenes.s_inserted = clone(S.scenes.s_game); for (const x of S.scenes.s_inserted.clips || []) for (const g of (x.body || {}).segments || []) g.reuse = true;
+    F.insertOn(S, "n_arrive", ["next"], "n_inserted", { type: "scene", ref: "s_inserted" });
+    const c = checkOk(S), want = "n_arrive › n_inserted › n_message › n_game";
+    chain(S).startsWith(want) && !errsOf(S).length && c === true ? ok(`a card put on an arrow: ${chain(S, 4)}; no errors, the story check passes`) : fail(`insert: ${chain(S)}, story check ${c}`);
+  }
+  {  // two cards swapped, and back
+    const S = clone(S0); S.frames = [{ id: "f_a", title: "A", nodes: ["n_message"] }, { id: "f_b", title: "B", nodes: ["n_game"] }];
+    const xy = [S.flow.n_message.xy, S.flow.n_game.xy] = [[10, 20], [30, 40]];
+    F.swapNodes(S, "n_message", "n_game");
+    const one = chain(S, 4), acts = S.frames.map(f => f.nodes[0]).join(), at = JSON.stringify([S.flow.n_message.xy, S.flow.n_game.xy]), c = checkOk(S);
+    F.swapNodes(S, "n_message", "n_game");
+    const back = chain(S, 4) === chain(S0, 4);
+    one === "n_arrive › n_game › n_message › n_hide1" && acts === "n_game,n_message" && at === JSON.stringify([xy[1], xy[0]]) && c === true && back
+      ? ok(`two cards swapped: ${one} (their places on the board and their acts too); the story check passes; swapped back, as it was`)
+      : fail(`swap: ${one}, acts ${acts}, places ${at}, story check ${c}, back ${back}`);
+    const T = clone(S0); F.swapNodes(T, "n_arrive", "n_game");
+    T.game.start === "n_game" && chain(T, 4) === "n_game › n_message › n_arrive › n_hide1" ? ok(`… the start too: ${chain(T, 4)}`) : fail(`swap with the start: ${T.game.start} ${chain(T, 4)}`);
+  }
+  {  // a run of cards moved onto another arrow
+    const S = clone(S0), run2 = F.runOf(S, ["n_game", "n_message"]), no = F.runOf(S, ["n_arrive", "n_game"]);
+    const moved = F.moveRun(S, ["n_game", "n_message"], "n_hide1", ["next"]), onItself = F.moveRun(clone(S0), ["n_game", "n_message"], "n_game", ["next"]);
+    const want = "n_arrive › n_hide1 › n_message › n_game › n_hide1_r";
+    String(run2) === "n_message,n_game" && no === null && moved && !onItself && chain(S, 5) === want && !errsOf(S).length
+      ? ok(`a run of two cards (picked in any order) moved after the first round: ${chain(S, 5)}; not onto its own arrow; no errors`)
+      : fail(`move a run: run ${run2}, not a run ${no}, moved ${moved}, onto itself ${onItself}, ${chain(S, 5)}, errors ${errsOf(S).map(p => p.text).join("; ")}`);
+  }
+  {  // an answer's jump is an arrow of its own: cut, it goes back to the next line
+    const S = clone(S0), c = S.scenes.s_message.clips.find(x => x.reply); c.reply.options[1].go = { node: "n_game" };
+    const a = F.arrows(S, "n_message").find(x => x.kind === "answer");
+    F.setArrow(S, "n_message", a.at, null);
+    a && a.to === "n_game" && !("go" in c.reply.options[1]) ? ok(`an answer's jump is an arrow of its own (${JSON.stringify(a.at)}); cut, the answer goes on to the next line`) : fail(`an answer's arrow: ${JSON.stringify(a)}`);
+  }
+}
+
+// ---- a cast member's models, picked per scene and carried down the flow (HANDOFF_DIRECTOR_TODO §5)
+console.log("a cast member's models (stage.js flowModels, storylib.flow_models)");
+{
+  const { flowModels, modelFile } = await import("./stage.js"), { renameRef } = await import("./refs.js");
+  const S0 = story("Sample"), th = thingsOf(S0);
+  const dress = S => { S.cast.mari.models = { wet: "MHR_lod1.fbx" }; S.scenes[S.flow.n_r1_cute.ref].models = { mari: "wet" }; return S; };
+  const py = S => JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+print(json.dumps(L.flow_models(json.load(sys.stdin))))`], { input: JSON.stringify(S), encoding: "utf8" }));
+  {  // the carry: a pick down every way after it; the desk and the story check agree
+    const S = dress(clone(S0)), js = flowModels(S), p = py(S);
+    const same = Object.keys(js).length === Object.keys(p).length && Object.entries(js).every(([k, v]) => JSON.stringify(v.models) === JSON.stringify((p[k] || {}).models) && JSON.stringify(v.mixed) === JSON.stringify((p[k] || {}).mixed));
+    const after = js.n_hide2 || {}, before = js.n_hide1 || {};
+    same && (js.n_r1_cute.models.mari === "wet") && !before.models.mari && after.mixed.includes("mari") && modelFile(S, "mari", "wet") === "MHR_lod1.fbx" && modelFile(S, "mari") === S.cast.mari.previs_body
+      ? ok(`Mari's wet model picked by “${S.scenes[S.flow.n_r1_cute.ref].title}”: worn there and after it, not before; round 2 reached both ways mixes (${after.mixed}); the desk and storylib agree on all ${Object.keys(js).length} nodes`)
+      : fail(`the carry: same ${same}, at the pick ${JSON.stringify(js.n_r1_cute)}, before ${JSON.stringify(before)}, after ${JSON.stringify(after)}`);
+  }
+  {  // where the ways meet with different models on someone in a scene: a warning, gone once the scene picks one
+    const S = dress(clone(S0)), out = storyCheck("Sample", S), w = out.split("\n").filter(l => /the ways meeting here bring mari in different models/.test(l));
+    const at = w.map(l => l.split(" ")[2].replace(":", "")), named = w.length ? (w[0].match(/mari is in (.*) after it/) || [])[1] || "" : "";
+    const T = dress(clone(S0)), firsts = named.replace(" …", "").split(", ").filter(Boolean);
+    let left = true, out2 = "";
+    for (let k = 0; k < 6 && left; k++) {             // pick in the scenes it names, as the user would, until it's quiet
+      out2 = storyCheck("Sample", T); const w2 = out2.split("\n").find(l => /the ways meeting here bring mari/.test(l)); left = !!w2;
+      if (w2) for (const nid of ((w2.match(/mari is in (.*) after it/) || [])[1] || "").replace(" …", "").split(", ")) T.scenes[T.flow[nid].ref].models = { mari: "default" };
+    }
+    w.length === 1 && at[0] === "n_hide2" && firsts.length && /STORY ok/.test(out) && !left && /STORY ok/.test(out2)
+      ? ok(`the ways meet with different models on Mari: one warning, at ${at[0]} where they meet, naming ${named}; picked in the scenes it names, it's gone; the story check passes`)
+      : fail(`the meeting warning: ${w.length} (${at.join(",")}) naming ${named}; after picking: ${left ? "still there" : "gone"}; ${out.trim().split("\n").pop()} / ${out2.trim().split("\n").pop()}`);
+  }
+  {  // a pick naming no model, or no cast member: errors, live and in the story check
+    const S = dress(clone(S0)); S.scenes[S.flow.n_message.ref].models = { mari: "dry", ghost: "default" };
+    const ps = run(S, th).filter(p => p.sev === "error" && /its models/.test(p.text)), out = storyCheck("Sample", S);
+    ps.length === 2 && /has no model 'dry'/.test(out) && /'ghost' isn't in the cast/.test(out) ? ok(`a pick of a model she hasn't and of someone not in the cast: errors (${ps.map(p => p.text).join("; ")}), and the story check's`)
+      : fail(`bad picks: live ${ps.map(p => p.text).join("; ") || "none"}; story check ${/has no model/.test(out)} ${/isn't in the cast/.test(out)}`);
+  }
+  {  // a cast member renamed: the scenes' picks follow
+    const S = dress(clone(S0)); renameRef(S, "cast", "mari", "mari2");
+    const sc = S.scenes[S.flow.n_r1_cute.ref];
+    sc.models && sc.models.mari2 === "wet" && !("mari" in sc.models) ? ok("Mari renamed: the scene's pick moves with her") : fail(`a rename: ${JSON.stringify(sc.models)}`);
+  }
+}
+
+// ---- a body track (STORY_FORMAT §3.8, HANDOFF_DIRECTOR_TODO §4): a scene's behave cues, checked as Play's behaviours are
+console.log("a body track (a scene's behave cues)");
+{
+  const S0 = story("TestRoom001"), th = thingsOf(S0), sc0 = S0.scenes.s_hello, has = (sc0.cues || []).some(c => c.do && c.do.behave);
+  const S = clone(S0), cue = S.scenes.s_hello.cues.find(c => c.do && c.do.behave);
+  cue.do.to = "no_spot"; S.scenes.s_hello.cues.push({ at: { clip: "c4", edge: "start" }, do: { behave: "aoi", as: "path", route: "r_nope" } });
+  const ps = run(S, th).filter(p => p.sev === "error" && p.at.node === "n_hello" && /no_spot|r_nope/.test(p.text)), out = storyCheck("TestRoom001", S);
+  has && ps.length === 2 && /no_spot/.test(out) && /r_nope/.test(out)
+    ? ok(`TestRoom001's lobby has one (Aoi walks to the bench and sits); a spot and a route that aren't there: found at the scene's cue (${ps.map(p => p.text).join("; ")}), and by the story check`)
+    : fail(`a body track: TestRoom001's lobby has one ${has}; live ${ps.map(p => p.text).join("; ") || "none"}; story check ${/no_spot/.test(out)} ${/r_nope/.test(out)}`);
 }
 
 // ---- the merge: the desk's edits and Claude's on disk, from the version both started from
@@ -135,7 +279,13 @@ console.log("copy and paste (clipboard.js)");
 console.log("quick events (templates.js)");
 {
   const Q = await import("./templates.js");
-  const S = story("Sample"), th = thingsOf(S), of = f => Object.keys(th).filter(k => f(th[k]));
+  const S = story("Sample"), hall = S.levels.house.rooms.find(r => r.id === "hall");   // the day's small systems need a stain, a breaker, a mop and a flashlight
+  hall.props.push({ id: "hall_mud", shape: "box 0.7 0.5 0.01", at: [3.0, 1.5], use: "clean", stain: "mud" }, { id: "hall_breaker", shape: "box 0.3 0.1 0.4", at: [3.85, 0.6], z: 1.3, use: "breaker" },
+    { id: "hall_mop", shape: "box 0.1 0.1 1.2", at: [0.3, 2.0], use: "pickup", item: "mop" }, { id: "hall_torch", shape: "cyl 0.025 0.18", at: [0.5, 1.0], use: "pickup", item: "flashlight" },
+    { id: "hall_pills", shape: "box 0.05 0.05 0.09", at: [3.6, 2.2], z: 0.9 });
+  S.game.counters = Object.assign({}, S.game.counters, { doses: { label: "pills taken" } });
+  Object.assign(S.items, { mop: { name: "Mop" }, flashlight: { name: "Flashlight", torch: true } });
+  const th = thingsOf(S), of = f => Object.keys(th).filter(k => f(th[k]));
   const room = of(t => t.kind === "room"), door = of(t => t.kind === "door"), locker = of(t => t.use === "locker"), person = of(t => /^person/.test(t.shape || ""));
   const ending = Object.keys(S.flow).find(k => S.flow[k].type === "ending"), back = S.game.start;
   const values = {
@@ -143,6 +293,11 @@ console.log("quick events (templates.js)");
     read_note: { note: Object.keys(S.notes)[0], thought: "Shaky." }, fetch: { item: Object.keys(S.items)[1], place: room[1] },
     timed_escape: { exit: room[0], secs: 30, fail: ending }, hide_round: { seeker: Object.keys(S.cast)[0], places: locker.slice(0, 2), secs: 40 },
     chase: { seeker: Object.keys(S.cast)[0], exit: door[0], secs: 25 },
+    request: { who: Object.keys(S.cast)[0], wait: of(t => t.use === "spot")[0], text: "Put the kettle on", ticks: { enter: room[1] }, after: of(t => t.use === "spot")[1], then: "sit" },
+    chore: { stain: "hall_mud", with: "mop", text: "Mop up the mud", thought: "That's better." }, power_cut: { breaker: "hall_breaker" },
+    lock_up: { door: "front_door", text: "Lock the front door", thought: "There." },
+    door_knock: { door: "front_door", count: 3, figure: person[0], thought: "Nobody there. Then someone." },
+    pills: { thing: "hall_pills", text: "Take your pills", secs: 60, count: "doses", taken: "Bitter.", missed: "Later." },
   };
   const made = [];
   for (const tpl of Q.TASKS) {
@@ -154,10 +309,13 @@ console.log("quick events (templates.js)");
   const bv = { jumpscare: { zone: room[0], figure: person[0], sound: Object.keys(S.sounds)[0] }, knock: { zone: room[0], at: door[0], count: 3 }, lights_die: { room: room[0], secs: 1 },
     slam: { zone: room[0], door: door[0] }, whisper: { look: door[0], line: Object.keys(S.lines)[0], at: door[0] }, speaks: { zone: room[0], line: Object.keys(S.lines)[0] }, checkpoint: { zone: room[0] },
     kettle_on: { zone: "kitchen", kettle: "kitchen_kettle" }, still_burning: { zone: "hall", cigarette: "hall_ash" }, phone_rings: { zone: "study", phone: "study_phone" },
-    tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." } };
+    tv_on: { zone: "study", tv: "study_tv" }, clock_stops: { clock: "kitchen_clock", thought: "2:47. It's stopped." }, torch_flickers: { zone: room[0], how: "dead" } };
   const bst = Q.buildTask(S, Q.TASK.read_note, values.read_note), beats = Q.BEATS.map(t => Object.assign(Q.buildBeat(S, t, bv[t.id] || {}), { optional: true }));
   bst.stitch.beats.push(...beats); S.flow.n_qe_beats = { type: "stitch", ref: bst.tid, next: back }; made.push("n_qe_beats");
   ok(`${Q.TASKS.length} tasks and ${Q.BEATS.length} beats built: ${Q.TASKS.map(t => t.id).join(", ")}; ${Q.BEATS.map(t => t.id).join(", ")}`);
+  const fd = S.levels.house.rooms.flatMap(r => r.openings || []).find(o => o.door && o.door.id === "front_door").door;
+  hall.props.find(p => p.id === "hall_mud").with === "mop" && fd.peephole === true && fd.latch === true
+    ? ok("the chore gave its stain the mop it needs, the knock gave the front door its peephole, locking up its latch") : fail(`the level hooks: the stain's with ${hall.props.find(p => p.id === "hall_mud").with}, the door's peephole ${fd.peephole}, latch ${fd.latch}`);
   const errs = run(S, th).filter(p => p.sev === "error");
   errs.length ? fail(`the live checks: ${errs.slice(0, 3).map(p => p.text + " (" + p.at.text + ")").join("; ")}`) : ok("the live checks find nothing wrong in them");
   const out = storyCheck("Sample", S), last = out.trim().split("\n").pop();
@@ -241,6 +399,9 @@ a line with no speaker`, o);
   const parts = L.filter(l => l.split);
   parts.length >= 2 && parts.every(l => clipSecs(l) <= o.clipMax) ? ok(`a line longer than a take: split at its sentences into ${parts.length} clips, each ${o.clipMax} s or less`) : fail("the split: " + JSON.stringify(parts.map(l => [l.ja, clipSecs(l)])));
   r.warns.some(w => /Kenji isn't in the cast/.test(w)) && r.warns.some(w => /no speaker/.test(w)) ? ok("someone not in the cast, and a line with no speaker: warnings, not lines lost silently") : fail("warns: " + r.warns.join(" · "));
+  { const t = SP.parse(`"She came back."\nMari: You came.`, o).lines, back = SP.parse(SP.toText(t, S.cast), o).lines;
+    t[0].who === "player" && t[0].think === true && t[0].en === "She came back." && !t[1].think && back[0].think === true && back[0].en === "She came back."
+      ? ok("a whole line in quotes is the player's thought (think), and comes back as one") : fail("a thought: " + JSON.stringify(t) + " / " + JSON.stringify(back)); }
   const sc = S.scenes.s_message, before = JSON.parse(JSON.stringify(sc.clips));
   const back = SP.parse(SP.toText(sc.clips, S.cast), o).lines;
   back.length === sc.clips.length && back.every((l, i) => l.who === sc.clips[i].who && (l.en || "") === (sc.clips[i].en || "") && (l.ja || "") === (sc.clips[i].ja || "")) ? ok(`a scene as text and back: the same ${back.length} lines`) : fail("the round trip");
@@ -314,6 +475,134 @@ print(json.dumps([LF.life_of({"kit": n}) for n in json.load(sys.stdin)]))`], { i
   const ps2 = run(S, th).filter(p => p.sev === "error").map(p => p.text), out2 = storyCheck("Sample", S);
   ps2.some(t => /boiling isn't one of t_hob's states/.test(t)) && ps2.some(t => /spilled isn't one of t_cup's states/.test(t)) && /t_hob to 'boiling'/.test(out2) && /t_cup is 'spilled'/.test(out2)
     ? ok("a state a thing hasn't got: found live and by the story check, at the beat") : fail("bad states: " + ps2.join("; "));
+}
+
+// the to-do list (STORY_FORMAT §4): a task that fails and one that's ticked play through; a tick of a task no stitch lists,
+// a trigger inside a task naming nothing, and a ticked trigger of an unknown task are found live and by the story check
+{
+  const S = story("Pilot"), th = thingsOf(S), st = S.stitches.t_search;
+  st.beats.unshift({ id: "b_t_list", when: { start: true }, do: [{ todo: "t_mop", text: "Mop the floor", secs: 30, on: { failed: [{ flag: "t_mop_failed" }] } }, { fail: "t_mop" }] },
+    { id: "b_t_after", when: { failed: "t_mop" }, do: [{ think: "Too late." }, { todo: "t_tea", text: "Make the tea", ticks: { enter: "kitchen" } }] },
+    { id: "b_t_tea", when: { ticked: "t_tea" }, if: ["t_mop_failed"], do: [{ think: "At least the tea." }] });
+  const ps = run(S, th).filter(p => p.sev === "error"), out = storyCheck("Pilot", S).trim().split("\n").pop();
+  !ps.length && /STORY ok/.test(out) ? ok(`a task failed (its failed runs, the failed trigger heard), another ticked by its own trigger: no live problems, the walker plays it through (${out})`) : fail("todo story: " + ps.map(p => p.text).join("; ") + " / " + out);
+  st.beats[0].do[1] = { tick: "t_nothing" }; st.beats[1].do[1].ticks = { enter: "nowhere" }; st.beats[2].when = { ticked: "t_unknown" };
+  const ps2 = run(S, th).filter(p => p.sev === "error").map(p => p.text), out2 = storyCheck("Pilot", S);
+  ps2.some(t => /t_nothing isn't a task on the to-do list/.test(t)) && ps2.some(t => /nowhere isn't a room or trigger/.test(t)) && ps2.some(t => /t_unknown isn't a task/.test(t))
+    && /tick 't_nothing'/.test(out2) && /enter 'nowhere'/.test(out2) && /ticked 't_unknown'/.test(out2)
+    ? ok("a tick of no task, a task's trigger naming nothing, a ticked trigger of no task: found live and by the story check") : fail("bad todos: " + ps2.join("; ") + " / " + out2.split("\n").filter(l => /todo|tick|nowhere/.test(l)).join(" | "));
+}
+
+// nights as chapters: a task's chapter with a time carries that time on to the nodes after it, the same on the desk
+// (stage.js flowTimes) and in the story check (storylib.flow_times); a chapter's fields are checked
+{
+  const { flowTimes } = await import("./stage.js");
+  const S = story("Pilot"), st = S.stitches.t_search;
+  st.beats.push({ id: "b_t_night2", when: { use: "study_bed" }, optional: true, do: [{ chapter: "Morning", sub: "07:10", time: "day" }] });
+  const js = flowTimes(S), py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+print(json.dumps(L.flow_times(json.load(sys.stdin))))`], { input: JSON.stringify(S), encoding: "utf8" }));
+  const same = Object.keys(js).every(n => js[n].time === (py[n] || {}).time);
+  js.n_search.time === "night" && js.n_knock.time === "day" && js.n_knock.from === "n_search" && same && /STORY ok/.test(storyCheck("Pilot", S))
+    ? ok("a chapter's time carries on after its task (day after the search's night), the desk and the story check agree") : fail(`chapter times: ${JSON.stringify({ search: js.n_search, knock: js.n_knock, same })}`);
+  st.beats[st.beats.length - 1].do[0] = { chapter: "", time: "noon", secs: 40 };
+  const out = storyCheck("Pilot", S);
+  /chapter needs its title/.test(out) && /chapter time 'noon'/.test(out) && /chapter secs/.test(out) ? ok("a chapter with no title, a time that isn't one, a card held 40 s: found by the story check") : fail("bad chapter: " + out.split("\n").filter(l => /chapter/.test(l)).join(" | "));
+}
+
+// what's shown by what's happened (STORY_FORMAT §9.14, HANDOFF_DIRECTOR_TODO §7): the game's words ({her}), a line, an
+// answer and a face by a condition; the desk (stage.js) and the story check (storylib, the walker) agree
+console.log("what's shown by what's happened (stage.js holds, wordOf; storylib.holds, word_of)");
+{
+  const { holds, wordOf, Stage } = await import("./stage.js");
+  const S0 = story("TestRoom001");
+  S0.game.counters = Object.assign({}, S0.game.counters, { remembered: { label: "times he remembered" } });
+  S0.game.words = { her: [{ count: "remembered", min: 2, say: "Natsuki" }, { if: ["took_pill"], say: "Natsuki" }, { say: "Natsu" }] };
+  const cases = [[[], {}], [["took_pill"], {}], [[], { remembered: 2 }], [[], { remembered: 1 }]];
+  const conds = [{}, { if: ["a"] }, { if: ["!a"] }, { if: ["a", "!b"] }, { count: "n", min: 2 }, { count: "n", max: 1 }, { if: ["a"], count: "n", min: 1, max: 3 }];
+  const states = [[[], {}], [["a"], { n: 2 }], [["a", "b"], { n: 1 }], [["b"], { n: 4 }]];
+  const py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+d = json.load(sys.stdin)
+print(json.dumps({"words": [L.word_of(d["S"], "her", set(f), c) for f, c in d["cases"]], "holds": [[L.holds(x, set(f), c) for f, c in d["states"]] for x in d["conds"]]}))`], { input: JSON.stringify({ S: S0, cases, conds, states }), encoding: "utf8" }));
+  const words = cases.map(([f, c]) => wordOf(S0, "her", new Set(f), c)), hs = conds.map(x => states.map(([f, c]) => holds(x, new Set(f), c)));
+  JSON.stringify(words) === JSON.stringify(["Natsu", "Natsuki", "Natsuki", "Natsu"]) && JSON.stringify(py.words) === JSON.stringify(words) && JSON.stringify(py.holds) === JSON.stringify(hs) && wordOf(S0, "nobody", new Set(), {}) === null
+    ? ok("{her} by a counter, then a flag, the last the fallback; conditions read alike: the desk and the story check agree") : fail(`words ${JSON.stringify(words)} / ${JSON.stringify(py)}`);
+  // a line left out by a flag: a run's timeline skips it, the desk's script (no run) plays every line; an answer by a
+  // condition: what's offered first is the default pick
+  const S = clone(S0), sc = S.scenes.s_hello, rp = sc.clips.find(c => c.reply).reply;
+  sc.clips[0].if = ["took_pill"]; rp.options[0].if = ["!took_pill"];
+  const tl = run => Stage.prototype.timeline.call({ story: S, things: {}, runState: run, resolveMoves: Stage.prototype.resolveMoves }, sc);
+  const ids = t => t.segs.filter(x => x.type === "clip" && !x.answer).map(x => x.clip.id), pick = t => t.segs.find(x => x.type === "reply").picked;
+  const off = tl({ flags: new Set(), counters: {} }), on = tl({ flags: new Set(["took_pill"]), counters: {} }), desk = tl(null);
+  const out = storyCheck("TestRoom001", S).trim().split("\n");
+  !ids(off).includes("c1") && ids(on).includes("c1") && ids(desk).includes("c1") && pick(off) === "good" && pick(on) === "bad" && pick(desk) === "good"
+    && !run(S, thingsOf(S)).some(p => p.sev === "error") && /STORY ok/.test(out.pop())
+    ? ok("a line by a flag: left out of a run without it, kept with it and on the desk; an answer by a flag: the first offered is the default; no problems found") : fail(`by a condition: ${JSON.stringify({ off: ids(off), on: ids(on), desk: ids(desk), picks: [pick(off), pick(on), pick(desk)] })} ${out.slice(-3).join(" | ")}`);
+  // faults: a counter that isn't one (a line, an answer, a face), every answer with a condition, a word that isn't
+  // one, an ending's text that isn't words
+  sc.clips[1].count = "nothing"; sc.clips[1].min = 1; rp.options.forEach(o => { o.if = ["took_pill"]; }); rp.options[1].count = "nowt"; rp.options[1].min = 1;
+  sc.faces[0].count = "zilch"; sc.faces[0].min = 1; sc.clips[2].en = "Hello, {nobody}."; const end = Object.keys(S.flow).find(k => S.flow[k].type === "ending"); S.flow[end].text = 3;
+  const ps = run(S, thingsOf(S)).filter(p => p.sev === "error").map(p => p.text), out2 = storyCheck("TestRoom001", S);
+  ps.some(t => /shown by nothing, which isn't a counter/.test(t)) && ps.some(t => /offered by nowt, which isn't a counter/.test(t)) && ps.some(t => /worn by zilch, which isn't a counter/.test(t))
+    && /count 'nothing' isn't one of game.counters/.test(out2) && /count 'nowt' isn't one of game.counters/.test(out2) && /count 'zilch' isn't one of game.counters/.test(out2)
+    && /every answer has a condition/.test(out2) && /\{nobody\}/.test(out2) && new RegExp(`${end}.*text`).test(out2)
+    ? ok("a counter that isn't one (a line, an answer, a face), every answer with a condition, a word that isn't one, an ending's text not words: found live and by the story check")
+    : fail("conditions' faults: " + ps.join("; ") + " / " + out2.split("\n").filter(l => /count|condition|nobody|text/.test(l)).join(" | "));
+  // a board game's setting by a flag (Concentration: his memory lies off his pills, she lets him win): true or false by
+  // the run's flags; a number can't be one; a rename of the flag moves it
+  const { boardCtx } = await import("./play/boardgames.js"), { renameRef } = await import("./refs.js");
+  const meta = { settings: { pairs: 6, memory_lies: false, lets_win: false } }, set = { memory_lies: "flag:off_pills", lets_win: "!flag:off_pills" };
+  const pillsOff = boardCtx({ flags: new Set(["off_pills"]) }, null, meta, set, "Natsuki").settings, pillsOn = boardCtx({ flags: new Set() }, null, meta, set, "Natsuki").settings;
+  const tableOf = S => Object.values(S.levels).flatMap(l => [...(l.props || []), ...(l.rooms || []).flatMap(r => r.props || [])]).find(p => p.use === "game");
+  const S2 = clone(S0), tbl = tableOf(S2);
+  tbl.settings = Object.assign({}, tbl.settings, { rounds: "flag:met_aoi" }); const out3 = storyCheck("TestRoom001", S2);
+  const S3 = clone(S0), t3 = tableOf(S3); t3.settings = { seed: 3, extra: "!flag:met_aoi" };
+  renameRef(S3, "flag", "met_aoi", "met_her");
+  pillsOff.memory_lies === true && pillsOff.lets_win === false && pillsOn.memory_lies === false && pillsOn.lets_win === true && pillsOff.pairs === 6
+    && new RegExp(`${tbl.game}'s rounds by a flag is true or false`).test(out3) && t3.settings.extra === "!flag:met_her"
+    ? ok("a table's setting by a flag: true or false by the run's flags (and not, with !), a number by a flag refused, the flag's rename moving it")
+    : fail(`settings by a flag: ${JSON.stringify({ pillsOff, pillsOn, extra: t3.settings.extra })} ${out3.split("\n").filter(l => /rounds/.test(l)).join(" | ")}`);
+}
+
+// time skipped and thoughts that type themselves out (STORY_FORMAT `skip`, §9.15; HANDOFF_DIRECTOR_TODO §7): the little
+// things live through a skip at once, a thought types, holds, is erased back and retyped, or breaks off; the desk and the
+// story check count the same time
+console.log("time skipped, thoughts typed (life.js States.skip, play/typing.js; storylib.typed_secs)");
+{
+  const { States } = await import("./life.js"), Y = await import("./play/typing.js"), { clipSecs } = await import("./stage.js");
+  const st = new States(LIVES, { k: { life: "kettle", d: {} }, run: { life: "clock", d: {} }, still: { life: "clock", d: { state: "stopped" } } }).start(0);
+  st.set("k", "heating", 10);
+  st.skip(20, 5400);
+  const k = st.at("k", 20), c = st.at("run", 20), c2 = st.at("still", 20), later = st.at("run", 30);
+  k.state === "off" && Math.abs(c.spent.running - 5420) < 1e-6 && !(c2.spent.running > 0) && Math.abs(later.spent.running - 5430) < 1e-6
+    && st.changes.filter(x => x.id === "k").map(x => x.to).join() === "heating,boiling,boiled,off"
+    ? ok("an hour and a half skipped: a kettle heating boils, boiled and cools off on the way; a running clock jumps on 5400 s and runs on; a stopped one doesn't")
+    : fail(`skip: ${JSON.stringify({ k: k.state, run: c.spent, still: c2.spent, later: later.spent, ch: st.changes })}`);
+  const at = (t, o, u) => Y.typedAt(t, o, u).shown, R = { retype: "Natsu." }, t1 = Y.typeSecs("Natsuki.");
+  const seq = [at("Natsuki.", R, 0), at("Natsuki.", R, t1 / 2), at("Natsuki.", R, t1 + 0.3), at("Natsuki.", R, t1 + 0.6 + 0.02), at("Natsuki.", R, Y.typedSecs("Natsuki.", R) + 0.01)];
+  const b = Y.typedAt("Her hands on my—", { breaks: true }, Y.typeSecs("Her hands on my—") + 0.2), gone = Y.typedAt("Her hands on my—", { breaks: true }, Y.typedSecs("Her hands on my—", { breaks: true }) + 0.01);
+  const whole = Y.typedAt("Just a thought.", {}, 0);
+  const texts = [["Natsuki.", "Natsu.", false], ["Her hands on my—", null, true], ["One thing a room. Easy.", "One thing a room. Fine.", false], ["Wait, what? No.", "Wait. No.", true]];
+  const py = JSON.parse(execFileSync("python3", ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(ROOT, "Content", "Python"))})
+from storykit import storylib as L
+d = json.load(sys.stdin)
+print(json.dumps({"typed": [L.typed_secs(t, r, b) for t, r, b in d["texts"]], "clips": [L.clip_secs({"who": "player", "think": True, "en": t, **({"retype": r} if r else {}), **({"breaks": True} if b else {})}) for t, r, b in d["texts"]]}))`], { input: JSON.stringify({ texts }), encoding: "utf8" }));
+  const js = texts.map(([t, r, br]) => Y.typedSecs(t, { retype: r, breaks: br })), jc = texts.map(([t, r, br]) => clipSecs(Object.assign({ who: "player", think: true, en: t }, r ? { retype: r } : {}, br ? { breaks: true } : {})));
+  const near = (a, b) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) < 1e-9);
+  seq[0] === "" && seq[1].length > 0 && seq[1].length < 8 && "Natsuki.".startsWith(seq[1]) && seq[2] === "Natsuki." && seq[3].startsWith("Natsu") && seq[3].length < 8 && seq[4] === "Natsu."
+    && b.glitch > 0 && b.shown === "Her hands on my—" && Y.glitched(b.shown, b.glitch, 3) !== b.shown && gone.shown === "" && gone.done && whole.shown === "Just a thought." && whole.done
+    && near(js, py.typed) && near(jc, py.clips)
+    ? ok(`a thought typed, held, erased back to “Natsu” and retyped; one breaking up and gone; a plain one whole; the desk and the story check count the same (${js.map(x => x.toFixed(2)).join(", ")} s)`)
+    : fail(`typing: ${JSON.stringify({ seq, b, gone, js, py, jc })}`);
+  // the faults: a skip that isn't seconds, a typed line that isn't a thought, breaks that isn't true or false
+  const S = clone(story("TestRoom001")), hello = S.scenes.s_hello.clips;
+  S.stitches.t_annex.beats[0].do.push({ skip: "1:30" }, { think: "Now.", breaks: "yes" });
+  hello[0].retype = "Hi.";
+  const out = storyCheck("TestRoom001", S);
+  /skip '1:30': the seconds skipped/.test(out) && /breaks is true or false/.test(out) && /clip c1: retype is a thought's/.test(out)
+    ? ok("a skip that isn't seconds, breaks that isn't true or false, a spoken line retyped: found by the story check")
+    : fail("typed faults: " + out.split("\n").filter(l => /skip|breaks|retype/.test(l)).join(" | "));
 }
 
 console.log(fails.length ? `DESK FAILED (${fails.length})` : "DESK ok");

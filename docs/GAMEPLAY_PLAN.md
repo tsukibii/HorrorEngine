@@ -67,12 +67,12 @@ last one repeated. A line can instead start a scene, an interactive cinematic or
   the thing highlights, with a prompt (`E Open`, `E Hide`, `E Talk`). Hold-to-use for some things. Styled by the UI
   theme (§10).
 - **Doors**: open and close on their hinges or slides (the kit has them), locked by an item, the tricks (slam).
-- **Inventory**: pickups and keys, notes you read; examining an item comes later.
+- **Inventory**: pickups and keys, notes you read; examining a small thing: built 2026-10-28 (below).
 - **Objectives** on screen, set by beats (the format has `objective`).
 - **Checkpoints, death and retry**: the format has them; Play mode keeps the branch map's progress as the Watch does.
-- **The HUD**: subtitles (Japanese over English), the prompt, a hidden or seen cue (a vignette, a quiet heartbeat), the
+- **The HUD**: subtitles (English only: DECISIONS 2026-10-27, notes), the prompt, a hidden or seen cue (a vignette, a quiet heartbeat), the
   objective, the timer for timed tasks. A pause menu with the branch map.
-- **Sound hooks**: footsteps (quieter crouched), her barks, music states (calm, uneasy, chase) from the score room's
+- **Sound hooks**: footsteps (quieter crouched: built 2026-10-28, `play/steps.js`), her barks, music states (calm, uneasy, chase) from the score room's
   palette later.
 - **Settings**: mouse sensitivity, crouch toggle or hold, subtitle size.
 - **For a romance game, the same parts**: conversations are interactive cinematics with timed choices, affection is
@@ -87,7 +87,7 @@ player's hands or a mini-game by adding a file, not by changing the runtime:
 - **actions** (`do`: `objective`, `door`, `behave`, `scene`, `hide`, `trick`...)
 - **behaviours** (`idle`, `sit`, `path`, `patrol`...)
 - **interactables** (`inspect`, `note`, `pickup`, `door`, `hide`, `talk`, `switch`...)
-- **player abilities** (`walk`, `crouch`, `hide`; later `torch`, `hands`)
+- **player abilities** (`walk`, `crouch`, `hide`, `torch`: the flashlight, built 2026-10-28; `steps`: footsteps, the same day; later `hands`)
 
 The desk's are JS modules (`tools/director/play/<kind>/<name>.js`); Unreal's are C++ classes (or components)
 registered by the same names. One file lists every word, its settings and which side implements it
@@ -142,13 +142,59 @@ playback; Generate stays the one button.
   or a **side path that rejoins the main line** (a flow branch whose last node's `next` is back on the spine). The
   desk needs a physics engine beside three.js (vendored, like three.js). Doors and drawers open and close with E,
   never dragged (the user dropped Amnesia's dragging, 2026-10-21).
-- **Things you carry** (**built 2026-10-24**, DECISIONS 2026-10-24: `use: carry`, hold E to pick up and hold E to put
-  down, a tap still uses a door; the `carrying` and `dropped` (`in`) triggers): how a thing moves is a **physics kind**,
-  a part (`register("physics", name, ...)` in `play/physics.js`): `rigid` follows the hands stiffly, `plushie` lags,
-  swings past, squashes and stretches with the hands' acceleration, bobs with the steps and flops its top behind a turn
-  (a vertex bend by height, so any imported mesh goes soft), and lands soft (`jiggle` 0..2). A new kind (glass that
-  breaks, a liquid that slops) is a new part and a word in `storylib.PHYSICS`. Put down, a thing falls and stays where
-  it settles (kept per level, like the die).
+- **Things you carry** (**built 2026-10-24**, DECISIONS 2026-10-24; into the inventory since 2026-10-27, later: `use:
+  carry`, the `carrying` and `dropped` (`in`) triggers): how a thing follows the hand is a **physics kind**, a part
+  (`register("physics", name, ...)` in `play/physics.js`, `inHand` and `follow` its spring): `rigid` follows stiffly,
+  `plushie` lags, swings past, squashes and stretches with the hand's acceleration, bobs with the steps and flops its
+  top behind a turn (a vertex bend by height, so any imported mesh goes soft; `jiggle` 0..2). A new kind (glass that
+  breaks, a liquid that slops) is a new part and a word in `storylib.PHYSICS`. Put down with G it doesn't fall: it's
+  set on whatever is under the spot (kept per level, like the die).
+- **The controls and the inventory** (**built 2026-10-27, later**, DECISIONS 2026-10-27, later: "typical simple horror
+  game mechanics"): **a left click uses** whatever is under the reticle (every interactable: a door, a pickup, a thing
+  to carry, a note, a seat, a bed, a hiding place, a switch, a board game, a die, a little thing's act; the prompt's key
+  chip is the mouse's button), **WASD** walks, **Shift** runs (forward, standing: `walk.run`, 2.8 m/s), **C** crouches,
+  **E** shows or hides **the inventory**, the **mouse wheel** turns it, **G** puts the one in the hand down, **Esc**
+  pauses. The inventory (`play/inventory.js`): every thing picked up (a pickup's item, a thing to carry) goes into one
+  row at the bottom centre, the newest in the hand; the one in the hand always in the middle, the rest either side
+  round a wheel, at most five shown, the farther ones smaller and fading out; a picture of each (rendered from the
+  thing itself); in front of frosted glass that fades out at its ends, no border; its name under it. Hidden, it peeks
+  for a moment when something changes; it steps aside while someone talks or asks. The one in the hand is held in view
+  (a copy of it on its physics kind's spring), put away while seated, hiding, asleep, at a board game or in a scene.
+  G sets it down 0.55 m ahead (nearer a wall), facing you, on the floor or a table, and the player no longer has its
+  item; set down in another level, a copy of it stays there. A click takes it back. The pause menu shows the controls
+  on its left as the Studio's own symbols (DECISIONS 2026-10-28: each key a frosted tile standing on its lip, W A S D a
+  pad round the dot that is you, the mouse a pebble without a cable, the button or the wheel it means lit; beside each,
+  in the accent, what it does as the HUD shows it: the reticle's ring, the inventory's row, a thing set down, speed
+  lines, your eye coming down; `CONTROLS` in `play/menu.js`, each its Enhanced Input action for Unreal).
+- **The flashlight** (built 2026-10-28, DECISIONS: "simple game systems we are missing for Chilla's Art style horror
+  games"): an item with `torch` is one; picked up or given it's in the pocket, not the row, and **F** switches it (its
+  beam from the right hand, a moment behind the look, bobbing with the steps); the story's `torch` flickers it, kills
+  it (F only clicks) or brings it back, and hears it switched (`play/torch.js`; RUNNER_SPEC has Unreal's).
+- **Cleaning** (built 2026-10-28, the same ask): a stain (`use: clean`, its `stain` kind) scrubbed away by holding the
+  left button on it, with the mop or rag in the hand if it says `with`: a ring fills round the reticle, the blot fades,
+  and its `use` ticks the chore (`play/clean.js`, `stain.js`).
+- **The power cut** (built 2026-10-28, the same ask): `power: off` darkens every bulb and lamp in the level (candles and
+  fires burn on) and kills the switches, till the player finds the breaker box (`use: breaker`) and the lights
+  flicker back; `{"power": "on"}` hears it.
+- **The peephole** (built 2026-10-28, the same ask): a door with `peephole` has a lens on both faces; a click puts the
+  eye to it (the other side through a wide lens in a round hole, a little room to look about), a click or a step takes
+  it back, and `{"peeping": door}` holds meanwhile: the knock, the look, nobody there (`play/peephole.js`).
+- **Examining** (built 2026-10-28, the same ask): a small thing you look at (`use: inspect`, its longest side 0.6 m or
+  less) is taken up in your hands: the thing itself in front of the eye, drawn over the room, lit from your shoulder;
+  a drag turns it (the photo turned over to read its back), its words under it, Esc or E puts it back where it was; a
+  bigger thing keeps the card (`play/examine.js`).
+- **The latch** (built 2026-10-28, the same ask: a shift ends locking up): a door with `latch` has a thumb turn on the
+  face of the room that holds it; a click locks it shut or unlocks it (its bar across or upright), and from that side a
+  click on the locked door unlocks it; from the other side it's Locked. It undoes only its own lock: the door the story
+  slammed and locked behind you won't turn. `{"locked": door}` holds while it is: lock up before bed, then the handle
+  turns from outside (`play/latch.js`).
+- **Footsteps** (built 2026-10-28, the same ask): the player's own steps off the sound shelf by the room's `floor` (wood
+  the wooden ones, a creak now and then; stone, tile and metal the hard ones; carpet and dirt the soft ones; water the
+  wet ones), a step each 0.7 m of ground really covered (1.05 m running, 0.45 m crouched and 9 dB softer), none
+  standing or walking into a wall, never the same sound twice running (`play/steps.js`, the ability `steps`, its
+  settings the game's). And the cast's: whoever walks a route, a patrol or somewhere is heard step by step from where
+  they are (placed in the room, through the walls, fainter across the house), hidden in a locker too: footsteps that
+  stop outside the door.
 - **Board games** (**built 2026-10-24**: `use: game`, the `played` trigger with `result`): the rules are plain
   JavaScript modules in `Content/Studio/BoardGames/` (a game's own in its `BoardGames/`), one file each with a one-line
   JSON `meta` (title, results, settings) and `play(ctx)`, which decides everything and says so through `ctx`: lines,
@@ -157,7 +203,7 @@ playback; Generate stays the one button.
   high card, blackjack. `boardtest.mjs` (BOARD) plays each hundreds of times offline. Not in Unreal yet.
 - **The UI is CSS, in themes**: `tools/director/play/ui/` holds the HUD as HTML (cursor, prompt, subtitles,
   objective, choices, notes, pause), and every colour, radius and shadow comes from a theme file
-  (`themes/<name>.css`: `glass` is the default now, `glass-rose` its warm romance colours, `neumorph` and `plain` stay; the layout's four places, on the thing, the corners, the footer and the middle, are at the top of `hud.css`; Esc opens the pause menu, `play/menu.js`, whose `SETTINGS` name their Unreal console variables); `game.ui_theme` picks one. The
+  (`themes/<name>.css`: `glass` is the default now, `glass-rose` its warm romance colours, `neumorph` and `plain` stay; the layout's four places, on the thing, the corners, the footer and the middle, are at the top of `hud.css`; Esc opens the pause menu and Esc closes it (closed by Esc it doesn't ask for the pointer lock back: the browser would take that same Esc as leaving the lock and pause again; a click takes it, Resume with Enter takes it at once), `play/menu.js`, whose `SETTINGS` name their Unreal console variables); `game.ui_theme` picks one. The
   neumorphic buttons pop out of the surface and press in when used. Text keeps enough contrast to read over a dark
   frame (neumorphism's weak point). Mini-games are small HTML panels in the same theme.
 - **In Unreal later**: either the same HTML through a web widget (CSS stays the truth) or UMG rebuilt from the theme's

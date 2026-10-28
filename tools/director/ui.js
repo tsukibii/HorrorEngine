@@ -183,8 +183,18 @@ export function fieldInput(f, obj, ctx, redraw) {
       s.addEventListener("change", upd); n.addEventListener("input", upd);
       return h("span", { class: "rowi" }, s, n);
     }
-    case "anyone": case "anylocker": case "anycarry": {
-      const any = { anyone: "anyone", anylocker: "any hiding place", anycarry: "anything" }[f.kind], kind = { anyone: "cast", anylocker: "locker", anycarry: "carry" }[f.kind];
+    case "trigger": {                            // a trigger inside a command (a task's `ticks`, `fails`): its pill, or none
+      const box = h("span", { class: "rowi" });
+      const draw = () => {
+        const again = () => { draw(); if (redraw) redraw(); };
+        box.replaceChildren(obj[k] ? triggerPill({ get: () => obj[k], set: v => { obj[k] = v; } }, Object.assign({}, ctx, { changed() { } }), { prefix: "", after: again }) :
+          h("button", { type: "button", on: { click: async () => { const v = await editTrigger({ start: true }, ctx); if (v) { obj[k] = v; again(); } } } }, icon("plus", 14), " when…"),
+        obj[k] ? h("button", { type: "button", class: "ghost", title: "none", on: { click: () => { delete obj[k]; again(); } } }, icon("x", 14)) : "");
+      };
+      draw(); return box;
+    }
+    case "anyone": case "anylocker": case "anycarry": case "anytodo": {
+      const any = { anyone: "anyone", anylocker: "any hiding place", anycarry: "anything", anytodo: f.all || "all of them" }[f.kind], kind = { anyone: "cast", anylocker: "locker", anycarry: "carry", anytodo: "todo" }[f.kind];
       const s = h("select", { on: { change: e => { obj[k] = e.target.value === "*" ? true : e.target.value; } } });
       s.append(h("option", { value: "*", selected: cur === true || cur === undefined }, `(${any})`));
       options(s, ctx.refs(kind), cur === true ? undefined : cur, false);
@@ -400,6 +410,10 @@ export function actionList(arr, ctx, { empty = "Nothing yet.", depth = 0 } = {})
         h("button", { class: "ghost", title: "duplicate", on: { click: dup } }, icon("copy", 14)),
         h("button", { class: "ghost", title: "delete", on: { click: () => { arr.splice(i, 1); ctx.changed(); ctx.rerender(); } } }, icon("x", 14))));
     box.append(row);
+    if (d && d.outcomes) for (const [res, label] of d.outcomes) {   // a task's “when it's ticked” and “when it's failed”, as branches
+      const sub = (a.on || {})[res] || [], cx = Object.assign({}, ctx, { changed() { a.on = a.on || {}; if (sub.length) a.on[res] = sub; else delete a.on[res]; if (!Object.keys(a.on).length) delete a.on; ctx.changed(); } });
+      box.append(h("div", { class: "branch" }, h("div", { class: "br-h" }, icon("chevron", 12), " " + label), actionList(sub, cx, { empty: "nothing happens", depth: depth + 1 })));
+    }
     if (d && d.branches) for (const o of a[d.branches] || []) {      // an ask's answers, each with its commands, as branches
       const sub = o.do || [], cx = Object.assign({}, ctx, { changed() { if (sub.length) o.do = sub; else delete o.do; ctx.changed(); } });
       box.append(h("div", { class: "branch" }, h("div", { class: "br-h" }, icon("chevron", 12), ` When “${o.label || o.id}”`), actionList(sub, cx, { empty: "nothing happens", depth: depth + 1 })));
@@ -458,6 +472,26 @@ export function beatCard(b, i, beats, ctx, { secrets = [] } = {}) {
   card.append(
     ifRow, actionList(b.do, ctx, { empty: "No commands: add what happens." }));
   return card;
+}
+// ---- a shown thing's condition (STORY_FORMAT §9.14): a line, an answer, a face, a word's choice. Its flags as chips (`if`,
+// "not" for `!`), a counter's range as one chip (`count`, `min`, `max`), + a flag or a count; `own` gives the object to
+// change when it isn't x itself (a scene's face copied into its version on the first change)
+export function condRow(x, ctx, label = "only if", { own = () => x } = {}) {
+  const changed = () => { ctx.changed(); ctx.rerender(); }, flags = x.if || [];
+  const range = x.min != null && x.max != null ? `${x.min} to ${x.max}` : x.min != null ? `at least ${x.min}` : `at most ${x.max}`;
+  return h("div", { class: "beat-if cond" }, h("span", { class: "lab" }, label),
+    flags.map((f, j) => h("span", { class: "chip" + (f.startsWith("!") ? " neg" : ""), title: f.startsWith("!") ? "this flag must NOT be set" : "this flag must be set" },
+      (f.startsWith("!") ? "not " : "") + f.replace(/^!/, ""), h("button", { class: "x", on: { click: () => { const o = own(); o.if.splice(j, 1); if (!o.if.length) delete o.if; changed(); } } }, "×"))),
+    x.count ? h("span", { class: "chip", title: "this counter must be in the range" }, `${x.count} ${range}`,
+      h("button", { class: "x", on: { click: () => { const o = own(); delete o.count; delete o.min; delete o.max; changed(); } } }, "×")) : null,
+    h("button", { class: "ghost small", title: "only while a flag is set (or isn't)", on: { click: async () => {
+      const draft = { flag: "", not: false }, body = h("div", {}, form([{ key: "flag", label: "Flag", kind: "flag" }, { key: "not", label: "must NOT be set", kind: "bool" }], draft, ctx));
+      if (await modal({ title: "Only if a flag…", body }) && draft.flag) { const o = own(); (o.if = o.if || []).push((draft.not ? "!" : "") + draft.flag); changed(); }
+    } } }, icon("plus", 12), " a flag"),
+    x.count ? null : h("button", { class: "ghost small", title: "only while a counter is in a range", on: { click: async () => {
+      const draft = {}, body = h("div", {}, form([{ key: "count", label: "Counter", kind: "counter" }, { key: "min", label: "at least", kind: "number" }, { key: "max", label: "at most", kind: "number" }], draft, ctx));
+      if (await modal({ title: "Only if a counter…", body }) && draft.count && (draft.min !== undefined || draft.max !== undefined)) { Object.assign(own(), draft); changed(); }
+    } } }, icon("plus", 12), " a count"));
 }
 export function nextId(list, base = "b_") {
   const stem = String(base).replace(/_?\d+$/, "") || "b";

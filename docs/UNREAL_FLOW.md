@@ -103,6 +103,19 @@ eye from the front, from above and from the side, beside the same views in the S
 Both switches are on the parent material, never on a character's instance, so one fix serves every character. Write
 what you find in `people.py` and here.
 
+**M_StudioSkin** (2026-10-28, back; written blind as the eye was): the export's skin carries its colour, its relief
+(a normal map in glTF's convention), one map of R 1, G the roughness and B how thin the skin is (its metalness 0), and
+the skin light's numbers (`extras.studioSkin`: the Studio lights its skin after HumanShaders, `tools/shared/skinlight.js`,
+CHARACTER_STUDIO.md §3.1). `people.wear_skin` imports the three maps (the relief's green flipped to Unreal's
+convention, the ORM linear, as masks) and puts an instance of M_StudioSkin on the skin's slot: Subsurface Profile
+(`SP_StudioSkin`, the engine's skin defaults), the colour, the relief, the roughness and the occlusion from the maps,
+Specular from the skin's, the scattering's amount (Opacity) more where the skin is thin. Unreal scatters light under
+the skin itself, so the numbers are translated (`skin_params`), not copied. **The first run:** a close-up of the face
+under one side light and with a lamp behind the head, beside the Studio's: the shadow's edge soft and warm, the ear's
+rim red; if the relief looks inverted (pores raised where they should sink, the light coming from below), the
+`flip_green_channel` line in `wear_skin` is the one to change. An export made before this has no skin maps: export
+it again.
+
 Not yet: the iris lit as a bowl (the caustic: it needs the project's Clear Coat Enable Second Normal and a
 ClearCoatBottomNormal output), an eye occlusion and a tear line (the Studio's are drawn in its shader), the lids
 following the gaze when an eye bone turns (the export is neutral and has no face shapes yet), the hair as grooms.
@@ -137,8 +150,11 @@ following the gaze when an eye bone turns (the export is neutral and has no face
 
 ## 4b. Replies, gameplay, deaths and sound (format 3, 0.4)
 
-- **Replies:** the runner's two prompts, left and right (the Japanese over the English), while her face holds; her
-  answer's take plays after, or nothing on time out (RUNNER_SPEC.md). **To do, local.**
+- **Replies:** the runner's prompts at the bottom centre under her line (two or more; English only, each answer's
+  thought under it; the bake writes no `ja` now, so AStoryPreview's Japanese line stays empty until it's taken out), while her face holds; her
+  answer's takes play after (`then`: one line or a few, `<take>_<option>`, `_2`, `_3`), or nothing on time out; then the
+  conversation goes where the answer says (`go`: the next line, a later one, the scene's end, or another flow node;
+  STORY_FORMAT §9.9, RUNNER_SPEC.md). **To do, local.**
 - **Gameplay:** one template Blueprint per `play` type in `/Game/Studio/Horror/Play/` (`BP_Play_hide` and so on),
   started with the stitch's `secs`, `rule`, `warn` and `spots`, ending with a result; built with the engine's own
   tools and fleshed out with Claude through UnrealClaude. **To do, local.**

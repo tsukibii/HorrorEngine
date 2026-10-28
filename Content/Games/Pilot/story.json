@@ -85,34 +85,34 @@
  },
  "sounds": {
   "door_slam": {
-   "file": "SFX/door_slam"
+   "file": "sfx/door_slam_01"
   },
   "knock3": {
-   "file": "SFX/knock_three"
+   "file": "sfx/knock_three"
   },
   "sting": {
-   "file": "SFX/sting_short"
+   "file": "sfx/sting_short"
   },
   "hum_cut": {
-   "file": "SFX/power_hum_cut"
+   "file": "sfx/power_hum_cut"
   },
   "machine_beep": {
-   "file": "SFX/answering_machine_beep"
+   "file": "sfx/machine_beep"
   },
   "creak": {
-   "file": "SFX/floorboard_creak"
+   "file": "sfx/floorboard_creak"
   },
   "steps": {
-   "file": "SFX/steps_upstairs"
+   "file": "sfx/steps_upstairs"
   },
   "grab": {
-   "file": "SFX/grab_sting"
+   "file": "sfx/grab_sting"
   },
   "sting_big": {
-   "file": "SFX/sting_big"
+   "file": "sfx/sting_big"
   },
   "breath": {
-   "file": "SFX/breath_close"
+   "file": "sfx/breath_close"
   }
  },
  "levels": {
@@ -588,6 +588,20 @@
         1.5
        ],
        "tag": "shelf"
+      },
+      {
+       "id": "study_bed",
+       "kit": "bed_single",
+       "at": [
+        2.0,
+        0.56
+       ],
+       "rot": 90,
+       "use": "sleep",
+       "if": [
+        "!drawer_open"
+       ],
+       "not_yet": "Not now. The key."
       }
      ]
     },
@@ -999,7 +1013,7 @@
      "who": "mari",
      "ja": "一緒にいて。",
      "en": "Stay with me.",
-     "act": "lunges, grabs the player's collar, pulls",
+     "act": "lunges, grabs the player's collar and holds on, waiting for an answer",
      "body": {
       "prompt": "lunges forward two quick steps and grabs at chest height with the right hand, then pulls back hard",
       "start": "mari_idle",
@@ -1036,12 +1050,20 @@
       "shake": 0.4
      },
      "event": {
-      "type": "struggle",
-      "secs": 4,
-      "pull": "back",
-      "need": 0.6,
-      "prompt": "Pull free!",
-      "warn": 0.6,
+      "type": "choose",
+      "secs": 8,
+      "prompt": "",
+      "options": [
+       {
+        "id": "escape",
+        "label": "Let go of me."
+       },
+       {
+        "id": "caught",
+        "label": "...I'll stay."
+       }
+      ],
+      "default": "caught",
       "on": {
        "escape": [
         {
@@ -1114,10 +1136,20 @@
       ]
      },
      "event": {
-      "type": "breath",
-      "secs": 5,
-      "prompt": "Keep still",
-      "warn": 0.8
+      "type": "choose",
+      "secs": 6,
+      "prompt": "",
+      "options": [
+       {
+        "id": "success",
+        "label": "(Stay silent.)"
+       },
+       {
+        "id": "fail",
+        "label": "I'm here."
+       }
+      ],
+      "default": "success"
      }
     }
    ],
@@ -1260,6 +1292,28 @@
    "target_min": 6,
    "beats": [
     {
+     "id": "b_search_list",
+     "when": {
+      "start": true
+     },
+     "do": [
+      {
+       "todo": "read_letter",
+       "text": "Read Mari's letter",
+       "ticks": {
+        "read": "letter_mari"
+       }
+      },
+      {
+       "todo": "find_key",
+       "text": "Find the cellar key",
+       "ticks": {
+        "pickup": "cellar_key"
+       }
+      }
+     ]
+    },
+    {
      "id": "b_letter",
      "when": {
       "read": "letter_mari"
@@ -1310,6 +1364,23 @@
      ]
     },
     {
+     "id": "b_nap",
+     "when": {
+      "use": "study_bed"
+     },
+     "optional": true,
+     "do": [
+      {
+       "chapter": "Later",
+       "sub": "02:13",
+       "secs": 2.5
+      },
+      {
+       "think": "I must have dozed off."
+      }
+     ]
+    },
+    {
      "id": "b_drawer",
      "when": {
       "flag": "drawer_open"
@@ -1348,6 +1419,9 @@
       },
       {
        "objective": null
+      },
+      {
+       "untodo": true
       },
       {
        "done": true

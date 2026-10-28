@@ -5,6 +5,7 @@ Story space: metres, x east, y north, z up; yaw (rot) in degrees counter-clockwi
 Unreal space: centimetres, X = x, Y = -y, Z = z, yaw = -rot (see to_ue in importer.py).
 """
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]          # the project folder (Content/Python/storykit/ -> up 3)
@@ -15,7 +16,8 @@ WALL_T = 0.1          # wall thickness, centred on the room's edge
 EYE = 1.65            # the player's eye height
 SHAPE_ARGS = {"box": 3, "cyl": 2, "sphere": 1, "plane": 2, "stairs": 3}
 USES = {"door", "pickup", "note", "inspect", "switch", "light", "locker", "combo", "use_on", "trigger", "spot", "sit", "roll",
-        "carry", "game"}
+        "carry", "game", "sleep", "clean", "breaker"}
+STAINS = ("dirt", "mud", "blood", "water", "ash")   # a stain's kinds (use: clean; the desk's stain.js draws them)
 PHYSICS = ("rigid", "plushie")   # how a thing you carry moves: the desk's physics kinds (tools/director/play/physics.js)
 BOARD_GAMES = STUDIO / "BoardGames"   # board games' rules, one JS module each (its README.md); a game may add its own BoardGames/
 
@@ -45,12 +47,30 @@ def games():
     return sorted(d.name for d in GAMES.iterdir() if (d / "story.json").exists()) if GAMES.exists() else []
 
 
+# a set: a place designed in the scene builder before its game exists (DECISIONS 2026-10-27, later: "predesign a
+# studio before you make the game in director"), kept as a small story of its own in Content/Studio/Sets/<name>/, its
+# level what a game is built into (`room.py build --set`); called `set:<name>` wherever a game's name goes
+SETS = ROOT / "Content" / "Studio" / "Sets"
+SET_NAME = re.compile(r"^[a-z][a-z0-9_]{0,40}$")
+
+
+def sets():
+    return sorted(d.name for d in SETS.iterdir() if (d / "story.json").exists()) if SETS.exists() else []
+
+
 def story_path(game=None):
-    """A game name, a path to a story.json, or nothing: the HORROR_GAME environment variable, else the only game."""
+    """A game name (or `set:<name>`), a path to a story.json, or nothing: the HORROR_GAME environment variable, else
+    the only game."""
     import os
     game = game or os.environ.get("HORROR_GAME")
     if game and str(game).endswith(".json"):
         return Path(game)
+    if game and str(game).startswith("set:"):
+        name = str(game)[4:]
+        p = SETS / name / "story.json"
+        if not SET_NAME.match(name) or not p.exists():
+            raise SystemExit(f"no set {name!r} (sets: {', '.join(sets()) or 'none'}; make one: python tools/story.py new-set <name>)")
+        return p
     if not game:
         found = games()
         if len(found) != 1:
@@ -276,7 +296,127 @@ def flow_outs(story, nid):
             during = it.get("during", "all")
             if it.get("to") and (during == "all" or n.get("ref") in (during or [])):
                 out.append(it["to"])
+    if n.get("type") == "scene":
+        out += answer_jumps(story.get("scenes", {}).get(n.get("ref")))
     return out
+
+
+def answer_jumps(sc):
+    """The cards a scene's answers send the flow to (§9.9 `go` {"node": id}), from any of its versions."""
+    out = []
+    for v in [sc or {}, *((sc or {}).get("variants") or {}).values()]:
+        for c in (v or {}).get("clips", []):
+            for o in (c.get("reply") or {}).get("options", []):
+                g, to = reply_go(o)
+                if g == "node" and to and to not in out:
+                    out.append(to)
+    return out
+
+
+def chapter_time(story, n):
+    """The time of day a stitch's chapters leave it at (its last `chapter` with a `time`), or None."""
+    if n.get("type") != "stitch":
+        return None
+    out = None
+
+    def walk(acts):
+        nonlocal out
+        for a in acts or []:
+            if not isinstance(a, dict):
+                continue
+            if "chapter" in a and a.get("time") in TIMES:
+                out = a["time"]
+            for o in a.get("options") or []:
+                walk(o.get("do") if isinstance(o, dict) else None)
+            for x in (a.get("on") or {}).values() if a.get("todo") is not None and isinstance(a.get("on"), dict) else []:
+                walk(x)
+    for b in (story.get("stitches", {}).get(n.get("ref")) or {}).get("beats", []):
+        walk(b.get("do"))
+    return out
+
+
+def holds(cond, flags, counters):
+    """Whether a shown thing's condition holds (STORY_FORMAT §9.14): `if` (flags; `!` for not) and a counter's `count`
+    with `min`/`max`, as a choice's options have them; with neither it always holds."""
+    for f in (cond or {}).get("if") or []:
+        if (f[1:] in flags) if f.startswith("!") else (f not in flags):
+            return False
+    c = (cond or {}).get("count")
+    if c:
+        v = counters.get(c, 0)
+        if (cond.get("min") is not None and v < cond["min"]) or (cond.get("max") is not None and v > cond["max"]):
+            return False
+    return True
+
+
+def word_of(story, word, flags, counters):
+    """A word filled into what's shown (`{her}`, STORY_FORMAT §9.14): the first of game.words[word] whose condition
+    holds, its `say`; None when the game has no such word."""
+    for o in (story.get("game", {}).get("words") or {}).get(word) or []:
+        if isinstance(o, dict) and holds(o, flags, counters):
+            return o.get("say", "")
+    return None
+
+
+def scene_models(sc):
+    """A scene's own model choices (STORY_FORMAT §3.1 `models`): {cast id: variant, or "default"}."""
+    m = (sc or {}).get("models")
+    return m if isinstance(m, dict) else {}
+
+
+def flow_models(story):
+    """Each cast member's model through the flow (STORY_FORMAT §2 a cast member's `models`, §3.1 a scene's): a scene's
+    choice carries down every way after it until a later scene sets another or sets it back to default, as the time of
+    day carries (flow_times). {nid: {"before": {cast id: variant} (as the flow brings it, the first way found),
+    "models": (after the node's own), "own": (the scene's own choices), "mixed": [cast ids whose model depends on the
+    way you came, the scene not saying], "meets": {cast id: [the models]} where ways bringing different ones meet (each
+    way in alone brings one)}}; a cast member not in it wears the default."""
+    flow, scenes = story.get("flow", {}), story.get("scenes", {})
+    own_of = lambda n: scene_models(scenes.get(n.get("ref"))) if n.get("type") == "scene" else {}
+
+    def wear(m, own):
+        out = dict(m)
+        for cid, v in own.items():
+            if not v or v == "default":
+                out.pop(cid, None)
+            else:
+                out[cid] = v
+        return out
+    came, todo, i = {}, [(story.get("game", {}).get("start"), {})], 0
+    while i < len(todo):                                # breadth first, as flow_times
+        nid, m = todo[i]
+        i += 1
+        key = json.dumps(sorted(m.items()))
+        if nid not in flow or key in came.setdefault(nid, {}):
+            continue
+        came[nid][key] = m
+        after = wear(m, own_of(flow[nid]))
+        for to in flow_outs(story, nid):
+            todo.append((to, after))
+    preds = {}
+    for k in came:
+        for to in flow_outs(story, k):
+            preds.setdefault(to, set()).add(k)
+    afters = {k: [wear(st, own_of(flow[k])) for st in seen.values()] for k, seen in came.items()}
+    out = {}
+    for nid, seen in came.items():
+        states, own = list(seen.values()), own_of(flow[nid])
+        if not states:
+            continue
+        cids = sorted({c for st in states for c in st})
+        vals = {c: sorted({st.get(c, "default") for st in states}) for c in cids}
+        mixed = [c for c in cids if c not in own and len(vals[c]) > 1]
+        meets = {c: vals[c] for c in cids if len(vals[c]) > 1
+                 and all(len({st.get(c, "default") for st in afters.get(p, [])}) <= 1 for p in preds.get(nid, ()))}
+        out[nid] = {"before": states[0], "models": wear(states[0], own), "own": own, "mixed": mixed, "meets": meets}
+    return out
+
+
+def model_file(story, cid, variant=None):
+    """The body file a cast member wears in a variant (STORY_FORMAT §2 `models`), else their default (previs_body, the
+    game's)."""
+    c = story.get("cast", {}).get(cid) or {}
+    return ((c.get("models") or {}).get(variant) if variant and variant != "default" else None) or c.get("previs_body") or story.get("game", {}).get("previs_body")
 
 
 def flow_times(story):
@@ -296,8 +436,9 @@ def flow_times(story):
         came[nid][t] = src
         n = flow[nid]
         own = (scenes.get(n.get("ref")) or {}).get("time") if n.get("type") == "scene" else None
+        on = own or chapter_time(story, n)              # a scene's own time, or the one a task's chapter leaves (a night's sleep)
         for to in flow_outs(story, nid):
-            todo.append((to, own or t, nid if own else src))
+            todo.append((to, on or t, nid if on else src))
     out = {}
     for nid, seen in came.items():
         n = flow[nid]
@@ -348,18 +489,77 @@ def ja_secs(text):
     return morae / JA_MORAE + pause + 0.5
 
 
+def then_list(option):
+    """A reply option's answer back as a list of lines: `then` is one clip, or a list of them (a conversation card's
+    answer, §9.9)."""
+    th = option.get("then")
+    return [th] if isinstance(th, dict) else [x for x in th if isinstance(x, dict)] if isinstance(th, list) else []
+
+
+def then_id(clip, option, n=0):
+    """The clip id of an answer's nth line: <clip>_<option>, then <clip>_<option>_2, _3... (their takes after them)."""
+    return f"{clip.get('id')}_{option.get('id')}" + (f"_{n + 1}" if n else "")
+
+
+REPLY_GO = ("next", "end")
+
+
+def reply_go(option):
+    """Where an answer leaves the conversation: ("next", None), ("clip", id) a later line of the scene, ("end", None) the
+    scene's end, or ("node", id) a card on the board instead of the scene's next."""
+    g = option.get("go", "next")
+    if isinstance(g, dict):
+        if "clip" in g:
+            return "clip", g["clip"]
+        if "node" in g:
+            return "node", g["node"]
+    return ("end", None) if g == "end" else ("next", None)
+
+
 def reply_secs(clip):
     """What a reply adds after its clip: the player's answer, then her answer back (the first option's), typically."""
     rp = clip.get("reply")
     if not rp:
         return 0.0
-    then = next((o.get("then") for o in rp.get("options", []) if o.get("then")), None)
-    return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (clip_secs(then) if then else 0.0)
+    first = next((o for o in rp.get("options", []) if then_list(o)), None)
+    return min(float(rp.get("wait", REPLY_SECS)), REPLY_ANSWER) + (sum(clip_secs(t) for t in then_list(first)) if first else 0.0)
+
+
+TYPE_CPS, ERASE_CPS, TYPE_HOLD, TYPE_GLITCH = 28.0, 70.0, 0.6, 0.45   # as tools/director/play/typing.js
+
+
+def type_secs(s):
+    """The time to type s letter by letter, a pause after punctuation (none after the last): play/typing.js typeSecs."""
+    a, t = list(s or ""), 0.0
+    for i, ch in enumerate(a):
+        t += 1 / TYPE_CPS
+        if i < len(a) - 1:
+            t += 0.12 if ch in ",;" else 0.3 if ch in ".!?" else 0.35 if ch in "…—" else 0.0
+    return t
+
+
+def typed_secs(text, retype=None, breaks=False):
+    """A thought that types itself out (STORY_FORMAT §9.15): typed, then erased back to where `retype` parts from it and
+    typed again, or broken up at its end (`breaks`); 0 for a thought with neither (it shows whole). typing.js typedSecs."""
+    if not retype and not breaks:
+        return 0.0
+    a, t = list(text or ""), type_secs(text)
+    if retype:
+        b, k = list(retype), 0
+        while k < len(a) and k < len(b) and a[k] == b[k]:
+            k += 1
+        t += TYPE_HOLD + (len(a) - k) / ERASE_CPS + type_secs("".join(b[k:]))
+    if breaks:
+        t += TYPE_GLITCH
+    return t
 
 
 def clip_secs(clip, line_fallback=12.0):
     """A clip's length: its measured `dur` (from the take, after its trim), else the placeholder voice's `dur_tts`,
-    else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath."""
+    else an estimate from the Japanese (ja_secs), else from the English at 12 characters a second plus a breath; a
+    thought that types itself out (§9.15) at least its typing and a moment to read (none after it breaks off)."""
+    if clip.get("think") and (clip.get("retype") or clip.get("breaks")):
+        return max(1.5, typed_secs(clip.get("en", ""), clip.get("retype"), clip.get("breaks")) + (0.4 if clip.get("breaks") else 1.0))
     if clip.get("dur"):
         tr = clip.get("trim") or {}
         return max(0.1, float(clip["dur"]) - float(tr.get("in", 0)) - float(tr.get("out", 0)))
@@ -468,10 +668,11 @@ def minimax_prompt(clip, cast=None):
 
 
 def reply_clips(clip):
-    """A clip's reply answers as clips of their own: (option id, clip); their takes are <take id>_<option id>."""
+    """A clip's reply answers as clips of their own: (option id, clip), each line of an answer its own (then_id); their
+    takes are <take id>_<option id>[_n]."""
     for o in (clip.get("reply") or {}).get("options", []):
-        if o.get("then"):
-            yield o["id"], dict({"who": clip.get("who")}, **o["then"], id=f"{clip.get('id')}_{o['id']}")
+        for n, th in enumerate(then_list(o)):
+            yield o["id"], dict({"who": clip.get("who")}, **th, id=then_id(clip, o, n))
 
 
 def karma_of(delta, axis="karma"):

@@ -22,7 +22,7 @@ h2:first-child{margin-top:0}
 .cue:hover{background:var(--panel2)}.cue.on{background:var(--panel2);border-left-color:var(--accent)}
 .cue small{display:block;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cue .n{float:right;color:var(--accent);font-size:11px}
-.fam-horror{color:var(--horror)}.fam-kdrama{color:var(--kdrama)}.fam-crossover{color:var(--crossover)}
+.fam-horror{color:var(--horror)}.fam-kdrama{color:var(--kdrama)}.fam-crossover{color:var(--crossover)}.fam-expanded{color:#5ab0c0}
 #cuehead h3{margin:0 0 2px;font-size:17px}
 #cuehead .desc{margin:2px 0 4px}
 #cuehead .refs,#cuehead .uses{color:var(--dim);font-size:12px}
@@ -59,3 +59,9 @@ h2:first-child{margin-top:0}
 kbd{border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px;background:var(--panel2)}
 #scene{font-family:ui-monospace,Consolas,monospace;min-height:96px}
 #scenelist div{padding:1px 0}#scenelist b{color:var(--text);font-weight:normal}#scenelist .miss{color:var(--bad)}
+.strnote{font-size:12px;color:var(--dim);margin:6px 0 0;padding:5px 8px;border-left:3px solid var(--accent);background:var(--panel)}
+.strnote b{color:var(--text);font-weight:600}.strnote .advice{margin-top:3px}.strnote .advice.ok{color:var(--good)}
+.strnote button{padding:0 6px;font-size:12px;margin-left:4px}
+.inst{padding:4px 6px;border-radius:4px;border-left:3px solid transparent}.inst.playing{border-left-color:var(--accent);background:var(--panel2)}
+.inst button{padding:0 6px;font-size:11px;margin-right:4px}.inst i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.inst b{font-weight:normal}.inst .new{color:#5ab0c0;font-size:11px}.inst small{display:block;color:var(--dim);font-size:11px;line-height:1.35;margin-top:1px}
