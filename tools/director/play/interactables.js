@@ -62,10 +62,29 @@ register("interactable", "combo", {                // a code lock: the free curs
     else if (got !== null) { rt.hud.shake(); rt.hud.line("Wrong.", "", 1); }
   },
 });
+// use_on (a fuse into the fusebox): a click with the thing it `needs` in the inventory uses it (gone from the row
+// unless `consume: false`) and sets `then`, and the story hears the use; without it, it says what's needed and nothing
+// is heard; once it's done, nothing more to do
+register("interactable", "use_on", {
+  settings: { cursor: "use", label: "Use", need: "Needs", thought: "I need the {item}." },
+  prompt: (t, rt, s) => { const d = t.userData.piece.d || {};
+    if (d.then && rt.flags.has(d.then)) return { cursor: "none", label: "" };
+    return rt.items.has(d.needs) ? { cursor: s.cursor, label: `${s.label}: ${rt.itemName(d.needs)}` } : { cursor: "locked", label: `${s.need}: ${rt.itemName(d.needs)}` }; },
+  use: (t, rt, s) => {
+    const d = t.userData.piece.d || {};
+    if (d.then && rt.flags.has(d.then)) return false;
+    if (!rt.items.has(d.needs)) { rt.hud.shake(); rt.hud.line(s.thought.replace("{item}", rt.itemName(d.needs).toLowerCase()), "", 1.6); return false; }
+    if (d.consume !== false) rt.takeItem(d.needs);
+    rt.hud.log(`used: ${rt.itemName(d.needs)}`); rt.setFlag(d.then);
+  },
+});
 register("interactable", "switch", {
   settings: { cursor: "use", label: "Switch", dead: "No power" },
   prompt: (t, rt, s) => (rt.powered() ? { cursor: s.cursor, label: s.label } : { cursor: "locked", label: s.dead }),   // a power cut: it clicks, nothing more
-  use: (t, rt) => { if (rt.powered()) rt.light(null, t.userData.piece.room, "toggle"); else rt.shelfSound("switch_01", t.userData.id); },
+  use: (t, rt) => {                                // its own `light`, else every light in its room
+    const l = (t.userData.piece.d || {}).light;
+    if (rt.powered()) rt.light(l || null, l ? null : t.userData.piece.room, "toggle"); else rt.shelfSound("switch_01", t.userData.id);
+  },
 });
 // the breaker box (use: breaker): a click throws its switch; the level's power goes off or comes back (the lights
 // flickering up), and the story hears its use

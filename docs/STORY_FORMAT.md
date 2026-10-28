@@ -439,6 +439,15 @@ a clip of this version, the numbers in range.
  "do": [{"trick": "knock", "at": "cellar_door", "count": 3}, {"done": true}]}
 ```
 
+A beat's actions run in order. The ones that take no time (a flag, a task, the power, a door, a line shown...) run
+together, before another beat that hears the same event is looked at; one that takes time (`wait`, `fade`, an `ask`,
+a `name`, a `chapter`, a triggered `scene`, a timed trick) holds the rest of its beat until it's over, and other beats
+go on meanwhile. So a list that a `{"ticked": true}` beat waits on should be whole from the start: a task added after a
+`wait` can come too late, when everything before it was already ticked and the stitch has ended. And the stitch ends
+the moment its last task ticks: a beat started by the same event is cut off there (its scene, its `name`, its trick's
+end never come). A task whose beat does something after it ticks with `{"tick": "<id>"}` at the end of that beat, not
+by its own trigger.
+
 **Triggers (`when`):**
 
 | Trigger | Fires when |
@@ -628,6 +637,9 @@ If the stitch isn't `done` in time, the flow jumps to `fail`. The checks:
 - shot sizes, cameras, events, blocking (poses exist, eases, modifiers, fits), moods, transitions, timers, interrupts
 - times of day: `game.time` and each scene's `time` are `day`, `dusk` or `night`; a scene without one that different
   paths bring at different times is a warning
+- a task that would end its stitch before its own beat is done (its `ticks` the trigger that starts a beat that takes
+  time, in a stitch that ends when its list is through): a warning, unless that beat opens the way to another task (§4)
+- faces: `who` in the cast, `expr` in the expression library, `at` a clip of the version, the numbers in range (§3.7)
 - `--route` writes the main path's steps for the playthrough bot
 
 `level_check.py`: overlaps, props in walls, blocked doorways, standing room at interactables.

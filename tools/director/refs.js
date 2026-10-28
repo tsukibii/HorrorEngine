@@ -18,12 +18,12 @@ export const KINDS = {
 };
 // the key's string, or each string in its list, names an entry of the kind
 const VALUE = {
-  cast: ["who", "behave", "seeker", "vs", "caught", "face", "look", "lookat", "at"],
-  item: ["item", "pickup", "give", "take", "needs", "locked_by"],
+  cast: ["who", "behave", "seeker", "vs", "caught", "face", "look", "lookat", "at", "arrived"],
+  item: ["item", "pickup", "give", "take", "needs", "locked_by", "with"],   // `with`: what a stain needs in the hand
   note: ["note", "read"],
   sound: ["sound"],
   line: ["say", "line"],
-  motion: ["start", "end"],                     // a body's first and last pose
+  motion: ["start", "end", "motion"],           // a body's first and last pose; what a behaviour plays
   secret: ["secret"],
   counter: ["count"],
   axis: ["axis"],
@@ -48,7 +48,7 @@ export function allRefs(S) {
     const top = path.length === 1 && path[0] === "game";   // game.note is free text; game.karma holds the axes' table
     for (const [k, v] of Object.entries(x)) {
       const p = [...path, k];
-      if (!(FREE.has(k) && top)) {
+      if (!(FREE.has(k) && top) && !(k === "then" && "behave" in x)) {   // a behave go's `then` is idle or sit, not a flag
         for (const kind in VALUE) if (VALUE[kind].includes(k)) {
           if (k === "locked_by" && typeof v === "string" && v.startsWith("flag:")) out.push({ kind: "flag", id: v.slice(5), holder: x, key: k, path: p, token: "flag:" });
           else strings(x, k, v, kind, p, out);
@@ -58,6 +58,7 @@ export function allRefs(S) {
       for (const kind in KEYED) if (KEYED[kind].includes(k) && isObj(v) && !top) for (const dk of Object.keys(v)) out.push({ kind, id: dk, holder: x, key: k, path: [...p, dk], dictKey: true });
       if (k === "clip" && "anim" in x && typeof v === "string") out.push({ kind: "motion", id: v, holder: x, key: k, path: p });
       if (k === "if" && Array.isArray(v)) v.forEach((f, i) => { if (typeof f === "string") out.push({ kind: "flag", id: f.replace(/^!/, ""), holder: v, key: i, path: [...p, i], token: f.startsWith("!") ? "!" : "" }); });
+      if (k === "if" && typeof v === "string") out.push({ kind: "flag", id: v.replace(/^!/, ""), holder: x, key: k, path: p, token: v.startsWith("!") ? "!" : "" });   // a bed's one flag
       if (k === "shape" && typeof v === "string" && /^person\s+\S+/.test(v)) out.push({ kind: "cast", id: v.split(/\s+/)[1], holder: x, key: k, path: p, token: "person" });
       if (v && typeof v === "object") walk(v, p);
     }

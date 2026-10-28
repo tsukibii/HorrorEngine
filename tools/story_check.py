@@ -1268,6 +1268,7 @@ def check_stitch(tid, st, story, things, r):
                        f"first): lead the eye to where the reveal is")
             if "lookat" in act and "trick" not in act and float(act.get("secs", 1)) > MAX_HOLD:
                 r.warn(f"{b['id']}: lookat holds {act['secs']} s without control (max {MAX_HOLD})")
+    check_last_tick(tid, st, things, r)
     pl = st.get("play")
     if pl:
         if pl.get("type") not in L.PLAYS:
@@ -1306,6 +1307,40 @@ def check_stitch(tid, st, story, things, r):
                 check_action(f"stitch {tid} play on {res}", a, story, things, r)
     elif not has_done:
         r.err(f"stitch {tid}: no beat ends it ({{\"done\": true}})")
+
+
+# actions that take time in Play (a beat waits for them before its next action), and the tricks that do
+TIMED = {"wait", "fade", "ask", "name", "chapter", "scene", "lookat"}
+TIMED_TRICKS = {"knock", "glimpse", "lights_die", "swap", "jumpscare"}
+
+
+def check_last_tick(tid, st, things, r):
+    """A stitch that ends when its list is through ends the moment its last task ticks: a beat started by the same
+    event as a task's own `ticks` is cut off there if it takes time (its scene, its name box, its chapter card...).
+    Such a task ticks at the end of its beat ({"tick": id}) instead (STORY_FORMAT §4). Not when the beat itself opens
+    the way to another task (shows what it needs, sets its flag): then that task can't be the last."""
+    beats = st.get("beats", [])
+    if not any(b.get("when", {}).get("ticked") is True and any(verbs(a)[:1] == ["done"] for a in b.get("do", [])) for b in beats):
+        return
+    tasks = [a for b in beats for a in b.get("do", []) if "todo" in a and a.get("ticks")]
+    leaves = lambda x: [v for y in x.values() for v in leaves(y)] if isinstance(x, dict) else [v for y in x for v in leaves(y)] if isinstance(x, list) else [x]
+    for t in tasks:
+        for b in beats:
+            if b.get("when") != t["ticks"]:
+                continue
+            opens = set()                               # what this beat makes possible: a thing shown (and its item), a flag
+            for a in b.get("do", []):
+                if a.get("show"):
+                    opens |= {a["show"], (getattr(things.get(a["show"]), "d", {}) or {}).get("item")}
+                if a.get("flag"):
+                    opens.add(a["flag"])
+            if any(set(leaves(u.get("ticks"))) & opens for u in tasks if u is not t):
+                continue
+            slow = [verbs(a)[0] for a in b.get("do", []) if verbs(a) and (verbs(a)[0] in TIMED or a.get("trick") in TIMED_TRICKS)]
+            if slow:
+                r.warn(f"stitch {tid}: task {t['todo']} ticks on the same event that starts beat {b['id']}, which takes time "
+                       f"({slow[0]}): ticked last, it ends the stitch before {b['id']} is done; tick it at {b['id']}'s end "
+                       f"({{\"tick\": \"{t['todo']}\"}}) instead")
 
 
 SFX_INDEX = L.STUDIO / "SFX" / "index.json"

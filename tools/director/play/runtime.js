@@ -257,6 +257,15 @@ export class PlayRuntime {
   emit(ev) { if (this.todo) this.todo.event(ev); if (this.listener) this.listener(ev); }
   setFlag(f) { if (!f) return; this.flags.add(f); this.emit({ type: "flag", id: f }); if (this.opts.onFlag) this.opts.onFlag(f); }
   give(item) { this.items.add(item); this.hud.log(`got: ${this.itemName(item)}`); }
+  takeItem(item) {                                   // the story's take, or used up (use_on): out of the pocket and the row
+    this.items.delete(item);
+    for (const e of this.inv.list.filter(e => e.item === item)) this.inv.remove(e.id);
+  }
+  inView(o) {                                         // any of it inside the camera's frustum (walls don't hide it)
+    const c = this.stage.camera; c.updateMatrixWorld();
+    const f = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse));
+    return f.intersectsObject(o);
+  }
   itemName(id) { return ((this.story.items || {})[id] || {}).name || String(id).replace(/_/g, " "); }
   // the flashlight (torch.js): the item with `torch` the player has; F switches it (heard as {type: "torch", on}), the
   // story's `torch` sets it. Dead, F only clicks
@@ -701,7 +710,9 @@ export class PlayRuntime {
 
   // ---- the player's use and the cursor ---------------------------------------------------------------------------
   eyePos() { return this.player.pos.clone().add(new THREE.Vector3(0, this.player.eye, 0)); }
-  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible), false)[0] || null; }
+  // what the reticle is on: the first visible thing along the ray, never a hollow piece (a kit door's frame: its block
+  // spans the doorway, its drawn parts only the edges; you walk and click through it)
+  aim() { return this.ray.intersectObjects(this.stage.world.children.filter(o => o.isMesh && o.visible && !((o.userData.piece || {}).tags || []).includes("hollow")), false)[0] || null; }
   async use(press) {
     if (this.player.sleeping || this.inChapter) return;
     if (this.player.peeping) { this.hud.press(); this.unpeep(); return; }   // a click takes the eye from the peephole

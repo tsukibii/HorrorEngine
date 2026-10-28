@@ -1594,7 +1594,7 @@ function layersEditor(c, b) {
 function stitchEditor(box, st, tid) {
   box.append(el("h2", {}, "Stitch (player task)"), field("title", txt(st, "title", { w: true })), field("goal", txt(st, "goal", { w: true, ph: "what the player is doing" })),
     field("level", sel(st, "level", Object.keys(S.levels || {}), { after: showStage })), field("target", txt(st, "target_min", { num: true }), " min of play (typical)"),
-    field("template", sel(st, "template", ["fetch", "code", "power", "hide", "escape", "explore", "loop", "ritual", "run", "collect", "sneak", "hold", "search"], { drop: true })));
+    field("template", sel(st, "template", ["fetch", "code", "power", "chore", "peephole", "hide", "escape", "explore", "loop", "ritual", "run", "collect", "sneak", "hold", "search"], { drop: true })));
   const hasT = !!st.timer;
   box.append(field("timer", el("label", { class: "kv" }, el("input", { type: "checkbox", checked: hasT, on: { change: e => { if (e.target.checked) st.timer = { secs: 30, label: "", fail: S.game.start }; else delete st.timer; touch(); renderInspector(); } } }), " timed"),
     hasT ? txt(st.timer, "secs", { num: true }) : null, hasT ? "s, on timeout go to" : null, hasT ? sel(st.timer, "fail", Object.keys(S.flow), { blank: false }) : null, hasT ? txt(st.timer, "label", { ph: "on-screen label" }) : null));
@@ -1971,6 +1971,7 @@ async function watchScene(sc, nid, sid, k) {
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
+  if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
   stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
@@ -2181,6 +2182,7 @@ async function watch(fromNid, snap) {
   RUN.lives = new States(LIVES, lifeThings()).start(0);   // the little things: their states through the whole run
   watchStage.soundOn = $("#wThings").checked;
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
+  for (const [id, to] of Object.entries((snap && snap.states) || {})) RUN.lives.set(id, to, 0, "start");   // the little things as the nodes before it leave them (a scene's cue: the TV to static)
   RUN.name = setName(RUN.name || (S.game || {}).player_name, true);   // {name}: the game's until the player types theirs (a `name` action)
   DBG.reset();
   wclock();

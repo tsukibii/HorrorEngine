@@ -4,12 +4,18 @@ import { register, part, verbOf } from "./parts.js";
 import { addKarma } from "../stage.js";
 import { autosave } from "./menu.js";
 
-export async function run(act, rt) {
+// an action's own result: a promise for one that takes time (a wait, a fade, a question), else nothing
+export function run(act, rt) {
   const v = verbOf("action", act);
   if (!v) { rt.hud.log(`not in Play yet: ${Object.keys(act)[0]}`); return; }
-  await part("action", v).run(act[v], act, rt);
+  return part("action", v).run(act[v], act, rt);
 }
-export async function runAll(acts, rt) { for (const a of acts || []) { if (!rt.active) return; await run(a, rt); } }
+// a beat's actions in order: those that take no time all at once, so another beat that hears the same event (the list
+// through: done) finds what this one set (its tasks added, the power cut) already done; only one that takes time is
+// waited for
+export async function runAll(acts, rt) {
+  for (const a of acts || []) { if (!rt.active) return; const r = run(a, rt); if (r && typeof r.then === "function") await r; }
+}
 
 const lineSecs = t => Math.min(6, 1.2 + String(t || "").length / 14);
 register("action", "objective", { run: (v, a, rt) => rt.hud.objective(v) });
@@ -37,7 +43,7 @@ register("action", "ask", {
 register("action", "flag", { run: (v, a, rt) => rt.setFlag(v) });
 register("action", "unflag", { run: (v, a, rt) => rt.flags.delete(v) });
 register("action", "give", { run: (v, a, rt) => rt.give(v) });
-register("action", "take", { run: (v, a, rt) => rt.items.delete(v) });
+register("action", "take", { run: (v, a, rt) => rt.takeItem(v) });            // out of the pocket and the inventory's row
 register("action", "karma", { run: (v, a, rt) => rt.run && addKarma(rt.run.karma, v) });
 register("action", "count", { run: (v, a, rt) => { if (!rt.run) return; const c = rt.run.counters; c[v] = a.set !== undefined ? +a.set : (c[v] || 0) + +(a.add ?? 1); } });
 register("action", "state", { run: (v, a, rt) => rt.setState(v, a.to) });      // a little thing to a state: {"state": "kettle", "to": "heating"}
@@ -65,5 +71,13 @@ const TRICKS = {
   whisper: (a, rt) => rt.hud.line(rt.lineText(a.line) || "(a whisper)", "", 2.5),
   glimpse: async (a, rt) => { rt.setVisible(a.figure, true); await rt.wait(+(a.secs ?? 0.6)); rt.setVisible(a.figure, false); },
   lights_die: async (a, rt) => { rt.light(null, a.room, "off"); await rt.wait(+(a.secs ?? 1)); rt.light(null, a.room, "on"); },
+  // the look-away swap (TRICKS §3): once neither thing is in view (or after `secs`, 8 at most) one goes, the other comes
+  swap: async (a, rt) => {
+    const seen = id => { const o = rt.byId[id]; return !!(o && o.visible && rt.inView(o)); }, until = rt.clock + +(a.secs ?? 8);
+    while (rt.active && (seen(a.hide) || seen(a.show)) && rt.clock < until) await rt.wait(0.1);
+    rt.setVisible(a.hide, false); rt.setVisible(a.show, true);
+  },
+  // a jumpscare: the figure there all at once with a sting, a moment, gone (a stand-in for the real one: a scene's cut)
+  jumpscare: async (a, rt) => { rt.setVisible(a.figure, true); rt.shelfSound("sting_big", a.figure); rt.hud.log(`jumpscare: ${a.figure}`); await rt.wait(+(a.secs ?? 0.8)); rt.setVisible(a.figure, false); },
 };
 register("action", "trick", { run: (v, a, rt) => (TRICKS[v] ? TRICKS[v](a, rt) : rt.hud.log(`trick not in Play yet: ${v}`)) });
