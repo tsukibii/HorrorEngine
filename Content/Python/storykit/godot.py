@@ -23,6 +23,7 @@ import shutil
 import zipfile
 from pathlib import Path
 
+from . import life as LIFE
 from . import plan as P
 from . import storylib as L
 
@@ -370,6 +371,14 @@ def export(game, out=None, make_zip=False):
     (out / "game" / "story.json").write_text(json.dumps(story, ensure_ascii=False, indent=0), encoding="utf-8")
     if LIVES.exists():
         shutil.copy(LIVES, out / "game" / "lives.json")
+    lt = {}                                            # the little things with a life: {id: {life, d}} (app.js lifeThings)
+    for lv in story.get("levels", {}).values():
+        for r in lv.get("rooms", []):
+            for p in r.get("props", []):
+                lf = LIFE.life_of(p)
+                if lf:
+                    lt[p["id"]] = {"life": lf, "d": p}
+    (out / "game" / "life_things.json").write_text(json.dumps(lt, ensure_ascii=False), encoding="utf-8")
     times = L.flow_times(story)
     levels = []
     for lid in story.get("levels", {}):

@@ -25,4 +25,3 @@ fov = 58.7
 near = 0.03
 far = 80.0
 
-[node name="Hud" type="CanvasLayer" parent="."]

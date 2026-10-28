@@ -28,7 +28,7 @@ var motions: Dictionary = {}
 var interrupts: Array = []
 
 
-static func load_file(path: String):
+static func load_file(path: String) -> Variant:
 	var s = load("res://addons/horrorstudio/story.gd").new()
 	var txt := FileAccess.get_file_as_string(path)
 	var parsed = JSON.parse_string(txt)
@@ -343,7 +343,7 @@ func flow_outs(nid) -> Array:
 			out.append(st["timer"]["fail"])
 		for it in interrupts:
 			var during = it.get("during", "all")
-			if it.get("to") and (during == "all" or (during is Array and during.has(n.get("ref")))):
+			if it.get("to") and ((during is String and during == "all") or (during is Array and during.has(n.get("ref")))):
 				out.append(it["to"])
 	if n.get("type") == "scene":
 		var sc: Dictionary = scenes.get(n.get("ref", ""), {})
@@ -368,3 +368,11 @@ func cast_name(cid) -> String:
 func line_text(id) -> String:
 	var l: Dictionary = lines.get(str(id), {})
 	return l.get("en", l.get("ja", ""))
+
+
+## a word filled into what's shown ({her}: game.words, the first option that holds; storylib.word_of), else null
+func word_of(w: String, flags: Dictionary, counters: Dictionary) -> Variant:
+	for o in game.get("words", {}).get(w, []):
+		if o is Dictionary and holds(o, flags, counters):
+			return o.get("say", "")
+	return null

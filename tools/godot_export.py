@@ -68,6 +68,7 @@ def main():
     ap.add_argument("--zip", action="store_true")
     ap.add_argument("--check", action="store_true", help="GDEXPORT: export every game (or --game) and open it headless")
     ap.add_argument("--shot", help="a picture from the start, under xvfb")
+    ap.add_argument("--play", action="store_true", help="GDPLAY: the Pilot played headless to its good ending (needs --game Pilot)")
     a = ap.parse_args()
     games = [a.game] if a.game else L.games()
     ok = True
@@ -84,6 +85,11 @@ def main():
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/shot.gd", ["--", f"--shot={shot}"], xvfb=True)
             print("\n".join("  " + ln for ln in out.splitlines()[-4:]))
             if code != 0 or not shot.exists():
+                ok = False
+        if a.play:
+            code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/gdplay.gd", ["--fixed-fps", "60"], timeout=1200)
+            print("\n".join("  " + ln for ln in out.splitlines()[-40:]))
+            if code != 0 or "GDPLAY ok" not in out:
                 ok = False
     if a.check:
         print("GDEXPORT ok" if ok else "GDEXPORT FAIL")
