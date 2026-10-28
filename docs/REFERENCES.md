@@ -1,5 +1,8 @@
 # References: the shapes our games borrow
 
+> The one-hour games prototyped in the writers' room follow docs/WRITERS_ROOM.md §2 where it differs; their talks borrow L.A.
+> Noire's interviews (the face answers before the words; DECISIONS 2026-10-27, last thing).
+
 What the script generator's bible and cards draw on, and what Claude reviews a draft against. These are structures
 and techniques described in our own words from general knowledge of the games and forms named, not their content.
 Use them as shapes, never as material.

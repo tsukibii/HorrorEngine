@@ -29,14 +29,15 @@ const TEST = "_salontest", shot = process.argv[2];
 const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
 
 (async () => {
-  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || undefined, args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--disable-background-networking", "--disable-component-update"] });
+  const browser = await require("../browser.cjs").launch(chromium, { executablePath: process.env.PW_CHROME || undefined, args: ["--disable-background-networking", "--disable-component-update"] });
   const page = await (await browser.newContext({ viewport: { width: 1100, height: 744 } })).newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on("dialog", d => d.accept());                                 // the Character Studio's "start it again?"
-  const step = async (what, fn) => { try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}`); } };
-  const ev = (fn, arg) => page.evaluate(fn, arg);
+  const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY, "i") : null;   // ONLY=scope: just the steps whose words match (after the load; a step that needs an earlier one's hair fails on its own)
+  const step = async (what, fn) => { if (ONLY && !ONLY.test(what) && !/^the salon loads/.test(what)) return; try { await fn(); console.log("  ok  " + what); } catch (e) { await page.screenshot({ path: shot || "salontest_fail.png" }); fail(`${what}: ${e.message}${errors.length ? "\n  page errors: " + errors.join(" | ") : ""}`); } };
+  const ev = async (fn, arg) => { try { return await page.evaluate(fn, arg); } catch (e) { e.message += "\n  in the page: " + fn.toString().replace(/\s+/g, " ").slice(0, 200); throw e; } };
   const view = async (yaw, pitch = 0.1, dist = 1.3) => { await ev(([y, p, d]) => { const s = window.__salon; Object.assign(s.orbit, { yaw: y, pitch: p, dist: d, zoom: 1, pan: [0, 0] }); s.draw(); }, [yaw, pitch, dist]); await page.waitForTimeout(250); };
   const scr = p => ev(p => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(); const q = s.screenOf(p); return [r.left + q[0], r.top + q[1]]; }, p);
   const surf = p => ev(p => window.__salon.COL.surface(p), p);
@@ -249,7 +250,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     // two strands hanging behind the head, 2.5 cm apart; the first's fifth handle pulled sideways
     const ids = await ev(() => { const s = window.__salon, SL = s.SL, C = s.COL, m = s.st.mirror.on; s.st.mirror.on = false;
       const a = s.addLock(SL.makeStrand(C.surface([0, 0.05, -0.1]), [0, -0.2, -0.24], C)), b = s.addLock(SL.makeStrand(C.surface([0.025, 0.05, -0.1]), [0.025, -0.2, -0.24], C));
-      s.st.mirror.on = m; s.select(a.id); Object.assign(s.PULL, { on: true, falloff: "smooth", size: 0.08, only: false }); s.pullPanel(); return [a.id, b.id]; });
+      s.st.mirror.on = m; s.select(a.id); Object.assign(s.PULL, { on: true, falloff: "smooth", size: 0.08, scope: "all" }); s.pullPanel(); return [a.id, b.id]; });
     await view(Math.PI, 0.05, 1.1); await page.keyboard.press("v");
     const pts = () => ev(ids => { const s = window.__salon; return ids.map(id => s.SL.handles(s.st.locks.find(l => l.id === id)).map(h => h.p)); }, ids);
     const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -296,7 +297,7 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     const sa = await scr(await surf([-0.025, 0.14, -0.07])), sb = await scr(await surf([0.025, 0.14, -0.07]));
     const [A, B] = await ev(q => q.map(([x, y]) => window.__salon.COL.surface(window.__salon.headAt(x, y))), [sa, sb]);   // where the clicks land
     await page.mouse.move(...sa); await page.mouse.down(); await page.mouse.move((sa[0] + sb[0]) / 2, (sa[1] + sb[1]) / 2); await page.mouse.move(...sb); await page.mouse.up();
-    for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 100);      // down: flatter, a tenth a notch
+    await page.keyboard.down("Shift"); for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 100); await page.keyboard.up("Shift");   // Shift+wheel down: flatter, a tenth a notch (the plain wheel bows it)
     const tip = await scr([0.0, -0.06, -0.2]); await page.mouse.move(...tip); await page.mouse.click(...tip);
     const ring = () => ev(() => { const s = window.__salon, SL = s.SL, l = s.st.locks.find(x => x.id === s.selected); s.render(); const G = s.EVAL[l.id], c = l.spine[0];
       const e = j => SL.len(SL.sub(G[j].pts[0], c)), twin = s.st.locks.find(x => x.mirror_of === l.id);
@@ -647,6 +648,295 @@ const fail = m => { console.error("SALON FAIL: " + m); process.exit(1); };
     await ev(() => { const s = window.__salon; delete s.st.look.custom.soft; s.restyle(); });
     if (u !== 1 || !(changed > 0.003)) throw new Error(`soft edges: uSoft ${u}, ${(changed * 100).toFixed(2)}% of the picture changed`);
     console.log(`       Soft edges 0 -> 1: ${(changed * 100).toFixed(1)}% of the picture changes, along the strands' edges`);
+  });
+  await step("the pull's scope: a 50 cm reach moves one lock, it and its twin, its group, or all; a locked group never moves under a pull or Gravity", async () => {
+    const before = await count();
+    const r = await ev(() => {
+      const s = window.__salon, P = s.presets.list.find(p => p.who === "women"); s.presets.apply(P.id);
+      const L = s.st.locks, orig = L.find(l => !l.mirror_of && l.group === "sides"), twin = L.find(l => l.mirror_of === orig.id);
+      const H = s.SL.handles(orig).filter(h => !h.root), g = H[Math.min(2, H.length - 1)], to = s.SL.add(g.p, [0.03, -0.02, 0.03]), start = s.SL.pullStart(L);
+      const trial = scope => { s.PULL.scope = scope; const ids = s.pullIds(orig.id), moved = s.SL.pull(L, start, { id: orig.id, path: g.path }, to, Object.assign(s.pullOpts(orig.id), { size: 0.5 }));
+        for (const l of L) if (!l.mirror_of) for (const h of start[l.id]) if (!h.root) s.SL.setHandle(l, h.path, h.p.slice());   // back where they were
+        return { ids: ids.length, moved: moved.length, groups: [...new Set(moved.map(id => L.find(l => l.id === id).group))] }; };
+      const out = { n: L.length, twin: !!twin, inGroup: L.filter(l => l.group === orig.group).length, one: trial("lock"), two: trial("twin"), group: trial("group"), all: trial("all") };
+      s.st.groups.find(g => g.id === "back").locked = true; s.locksPanel();
+      out.lockedIds = s.pullIds(orig.id).filter(id => L.find(l => l.id === id).group === "back").length; out.locked = trial("all");
+      s.PULL.scope = "twin"; s.pullPanel();
+      return out;
+    });
+    if (!r.twin || r.one.ids !== 1 || r.one.moved !== 1) throw new Error("this lock: " + JSON.stringify(r.one));
+    if (r.two.ids !== 2 || r.two.moved !== 1) throw new Error("this lock and its twin: " + JSON.stringify(r.two));
+    if (r.group.ids !== r.inGroup || r.group.groups.join() !== "sides" || !(r.group.moved > 1)) throw new Error("this group: " + JSON.stringify(r.group));
+    if (r.all.ids !== r.n || !(r.all.moved > r.group.moved)) throw new Error("all: " + JSON.stringify(r.all));
+    if (r.lockedIds !== 0 || r.locked.groups.includes("back") || !(r.locked.moved < r.all.moved)) throw new Error("a locked group under a pull: " + JSON.stringify(r.locked));
+    await openSteps(); if (!(await page.isVisible("#locks .pad.on"))) throw new Error("no padlock shown on the locked group");
+    const d = await ev(async () => {
+      const s = window.__salon, L = s.st.locks, snap = l => JSON.stringify(l.edges);
+      const back = L.filter(l => l.group === "back" && !l.mirror_of), rest = L.filter(l => l.group === "sides" && !l.mirror_of), b0 = back.map(snap), r0 = rest.map(snap);
+      s.drop.start(); const st0 = s.drop.state, only = st0 && st0.only ? st0.only.length : null, what = st0 && st0.what;
+      await new Promise(ok => setTimeout(ok, 1500)); s.drop.keep();
+      return { only, what, unlocked: L.filter(l => !s.isLocked(l)).length, backMoved: back.filter((l, i) => snap(l) !== b0[i]).length, restMoved: rest.filter((l, i) => snap(l) !== r0[i]).length, back: back.length, rest: rest.length };
+    });
+    if (d.only !== d.unlocked || d.what !== "locked" || d.backMoved !== 0 || !(d.restMoved > d.rest / 2)) throw new Error("Gravity with a locked group: " + JSON.stringify(d));
+    await ev(() => { const s = window.__salon; s.undo(); s.undo(); });   // the kept fall, then the preset
+    if (await count() !== before) throw new Error(`${await count()} locks after undo, ${before} before`);
+    console.log(`       ${r.n} locks: a 50 cm pull moves ${r.one.moved} (this lock), ${r.two.moved} of ${r.two.ids} (it and its twin), ${r.group.moved} of ${r.group.ids} (its group), ${r.all.moved} (all); Back locked: ${r.locked.moved}, and ${d.backMoved} of its ${d.back} locks moved in a fall that moved ${d.restMoved} of ${d.rest} Sides locks`);
+  });
+  await step("the placing arrow: a placed lock stays in hand with an arrow to its end and OK; the arrowhead dragged sets its length and direction from the front and from the side, the root fixed; Enter lets go; Length and Sag; a sheet bows while placing", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; });   // the free camera: level, so the planes below are exact
+    await view(0, 0, 0.85); await page.keyboard.press("s");
+    const root = await surf([0.03, 0.1, 0.06]);                       // on the front of the crown, where a level view sees the skin
+    await page.mouse.click(...await scr(root)); const e1 = await scr([0.1, -0.1, 0]); await page.mouse.move(...e1); await page.mouse.click(...e1); await page.waitForTimeout(150);
+    const a0 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.render(); return { id: l.id, inHand: s.inHand === l.id && s.selected === l.id, ok: s.okButton.style.display, len: s.SL.lockLength(l), root: s.SL.vectorOf(l)[0], end: s.SL.vectorOf(l)[1], tip: s.arrowTip(l), hint: document.querySelector("#hint").textContent }; });
+    if (!a0.inHand || a0.ok !== "block" || !/arrowhead/.test(a0.hint)) throw new Error("not in hand with OK and the hint: " + JSON.stringify(a0));
+    // from the front: the arrowhead dragged down and out; the end lands under the cursor (kept off the body), the lock longer, the root where it was
+    const want = [0.14, -0.16, a0.end[2]], f = await scr(a0.tip), t = await scr(want);
+    await page.mouse.move(...f); await page.mouse.down(); await page.mouse.move(t[0], t[1], { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a1 = await ev(([id, want]) => { const s = window.__salon, l = s.st.locks.find(l => l.id === id), q = s.COL.push(want, s.SL.GAP)[0], v = s.SL.vectorOf(l); return { len: s.SL.lockLength(l), end: v[1], root: v[0], off: Math.hypot(...v[1].map((x, i) => x - q[i])), inside: s.SL.handles(l).some(h => s.COL.inside(h.p)), inHand: s.inHand === id }; }, [a0.id, want]);
+    if (a1.off > 0.006 || !(a1.len > a0.len * 1.3) || a1.inside || !a1.inHand || Math.hypot(...a1.root.map((x, i) => x - a0.root[i])) > 1e-9) throw new Error(`after the drag from the front: the end ${(a1.off * 1000).toFixed(1)} mm off the cursor's point, ${(a1.len * 100).toFixed(1)} cm long (was ${(a0.len * 100).toFixed(1)}), inside ${a1.inside}, in hand ${a1.inHand}, root moved ${Math.hypot(...a1.root.map((x, i) => x - a0.root[i]))}`);
+    // from the side: dragged 60 px towards the back; the end moves in depth, its sideways place kept
+    await view(Math.PI / 2, 0, 0.85);
+    const tip2 = await ev(id => window.__salon.arrowTip(window.__salon.st.locks.find(l => l.id === id)), a0.id), f2 = await scr(tip2);
+    await page.mouse.move(...f2); await page.mouse.down(); await page.mouse.move(f2[0] + 60, f2[1], { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a2 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { end: s.SL.vectorOf(l)[1] }; }, a0.id);
+    const dz = a2.end[2] - a1.end[2], dx = Math.abs(a2.end[0] - a1.end[0]);
+    if (!(dz < -0.025) || dx > 0.003) throw new Error(`from the side: the end moved ${(dz * 100).toFixed(1)} cm in depth and ${(dx * 1000).toFixed(1)} mm sideways`);
+    await page.keyboard.press("Enter"); await page.waitForTimeout(80);
+    const a3 = await ev(() => { const s = window.__salon; s.render(); return { inHand: s.inHand, selected: s.selected, ok: s.okButton.style.display }; });
+    if (a3.inHand || a3.selected || a3.ok !== "none") throw new Error("Enter didn't let go: " + JSON.stringify(a3));
+    // Length and Sag as numbers (the sliders in Selected)
+    const n = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); s.select(id);
+      s.SL.setLength(l, 0.5, s.COL); const len = s.SL.lockLength(l);
+      const L = s.SL.len(s.SL.sub(l.pts[5], l.pts[0])), p0 = l.pts.map(p => p.slice()); s.SL.setSag(l, 0.6, s.COL);   // the bow: the middle points out along the head's normal by 0.6 x the chord x sin, the end still
+      const out = l.pts.map((p, i) => s.SL.dot(s.SL.sub(p, p0[i]), s.COL.normal(p0[i]))), want = l.pts.map((_, i) => 0.6 * L * Math.sin(Math.PI * i / 5) * 0.5);
+      s.selPanel(); const rows = [...document.querySelectorAll("#selbox .row span:first-child")].map(x => x.textContent);
+      return { len, out, want, sag: l.sag, inside: s.SL.handles(l).some(h => s.COL.inside(h.p)), rows }; }, a0.id);
+    const sagOff = Math.max(...n.out.map((o, i) => Math.abs(o - n.want[i])));
+    if (Math.abs(n.len - 0.5) > 0.008 || sagOff > 0.002 || n.sag !== 0.6 || n.inside || !n.rows.includes("Length") || !n.rows.includes("Sag")) throw new Error(`Length and Sag: ${JSON.stringify(n)} (the bow ${(sagOff * 1000).toFixed(1)} mm off drape's profile)`);
+    // a sheet bows while placing: the wheel (no Shift) before the end click
+    await view(0, 0.3, 0.9); await page.keyboard.press("l");
+    const pts = []; for (const p of [[-0.03, 0.13, -0.02], [0, 0.135, -0.02], [0.03, 0.13, -0.02]]) pts.push(await scr(await surf(p)));
+    await drag(pts); for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
+    const e2 = await scr([0, 0.06, 0.16]); await page.mouse.move(...e2); await page.mouse.click(...e2); await page.waitForTimeout(100);
+    const sh = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1], E = l.edges[1], L = s.SL.len(s.SL.sub(E[E.length - 1], E[0]));
+      return { type: l.type, sag: l.sag, L, depths: E.map(p => +s.COL.depth(p).toFixed(4)), bow: l.sag * L * Math.sin(Math.PI * 2 / (E.length - 1)) * 0.5, end: E[E.length - 1], stage: s.place.stage, n: s.st.locks.length }; });
+    // the two middle points stand off the head by at least half the bow drape gives them (the rest lies on it, GAP off)
+    if (sh.type !== "sheet" || Math.abs(sh.sag - 0.2 * 0.7) > 1e-9 || !(sh.depths[2] + sh.depths[3] > 2 * (0.0025 + sh.bow / 2))) throw new Error("the sheet's bow: " + JSON.stringify(sh));
+    await ev(id => { const s = window.__salon; s.deleteLock(s.st.locks[s.st.locks.length - 1].id); s.deleteLock(id); s.setTool("select"); s.st.reference.lock = true; }, a0.id);
+    console.log(`       placed ${(a0.len * 100).toFixed(1)} cm, the arrow dragged to ${(a1.len * 100).toFixed(1)} cm (the end ${(a1.off * 1000).toFixed(1)} mm off the cursor's point), then ${(-dz * 100).toFixed(1)} cm back from the side (${(dx * 1000).toFixed(1)} mm sideways); Length 50 cm -> ${(n.len * 100).toFixed(1)}, Sag 0.6 bows the middle out ${(n.out[3] * 100).toFixed(1)} cm (drape's profile within ${(sagOff * 1000).toFixed(1)} mm); a sheet bowed by the wheel: sag ${sh.sag.toFixed(2)}, its middle ${(sh.depths[3] * 100).toFixed(1)} cm off the head`);
+  });
+  await step("the view's buttons and keys: Front, ¾, Side, Back and Top (the crown from straight above), and Ortho, whose picking and pan match the perspective's", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.reference.lock = false; Object.assign(s.orbit, { dist: 0.85, zoom: 1, pan: [0, 0] }); });
+    const at = () => ev(() => [window.__salon.orbit.yaw, window.__salon.orbit.pitch]);
+    await page.click("#views [data-v=left]"); let o = await at(); if (Math.abs(o[0] - Math.PI / 2) > 1e-9 || o[1] !== 0) throw new Error("Side L: " + o);
+    await page.keyboard.press("1"); o = await at(); if (o[0] !== 0 || o[1] !== 0) throw new Error("1: " + o);
+    await page.keyboard.press("Shift+1"); o = await at(); if (Math.abs(o[0] - Math.PI) > 1e-9) throw new Error("Shift+1: " + o);
+    await page.keyboard.press("Shift+3"); o = await at(); if (Math.abs(o[0] + Math.PI / 2) > 1e-9) throw new Error("Shift+3: " + o);
+    await page.click("#views [data-v=three]"); o = await at(); if (Math.abs(o[0] - 0.6) > 1e-9) throw new Error("¾: " + o);
+    await page.keyboard.press("7"); o = await at(); if (Math.abs(o[1] - 1.55) > 1e-9) throw new Error("7: " + o);
+    const top = await ev(() => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(), t = s.screenOf([0, 0.125, 0]), c = s.screenOf([0, s.COL.chin, 0.06]); return { crown: [t[0] / r.width, t[1] / r.height], chinBehind: c[2] > t[2] }; });
+    if (Math.abs(top.crown[0] - 0.5) > 0.05 || Math.abs(top.crown[1] - 0.5) > 0.05 || !top.chinBehind) throw new Error("the top view: " + JSON.stringify(top));
+    // the orbit drag reaches the top too (the pitch was stopped at 69 degrees)
+    await page.keyboard.press("1"); const c0 = await scr([0, 0.01, 0]); await page.mouse.move(...c0); await page.mouse.down(); await page.mouse.move(c0[0], c0[1] + 400, { steps: 10 }); await page.mouse.up();
+    o = await at(); if (!(o[1] > 1.5)) throw new Error("the drag stops at " + o[1]);
+    // Ortho: two points at one sideways place but different depths land on one column (perspective spreads them); a point picked lands on itself; the pan moves the picture by the same pixels
+    await page.keyboard.press("1"); await ev(() => { window.__salon.orbit.pan = [50, 30]; });
+    const persp = await ev(() => { const s = window.__salon; s.render(); return { c: s.screenOf([0, 0.01, 0]), a: s.screenOf([0.05, 0, 0.1]), b: s.screenOf([0.05, 0, -0.1]) }; });
+    await page.keyboard.press("5");
+    const orth = await ev(() => { const s = window.__salon; s.render(); const r = s.canvas.getBoundingClientRect(), p = s.COL.surface([0.04, 0.1, 0.05]), q = s.screenOf(p), hit = s.headAt(r.left + q[0], r.top + q[1]), back = hit ? s.screenOf(hit) : null;
+      return { on: s.ortho, c: s.screenOf([0, 0.01, 0]), a: s.screenOf([0.05, 0, 0.1]), b: s.screenOf([0.05, 0, -0.1]), pickPx: back ? Math.hypot(back[0] - q[0], back[1] - q[1]) : null, button: document.querySelector("#views [data-v=ortho]").classList.contains("on") }; });
+    if (!orth.on || !orth.button || Math.abs(orth.a[0] - orth.b[0]) > 0.5 || Math.abs(persp.a[0] - persp.b[0]) < 5 || Math.hypot(orth.c[0] - persp.c[0], orth.c[1] - persp.c[1]) > 1 || orth.pickPx == null || orth.pickPx > 1.5) throw new Error(`ortho: ${JSON.stringify({ persp, orth })}`);
+    await page.keyboard.press("5"); const off = await ev(() => { const s = window.__salon; s.orbit.pan = [0, 0]; s.st.reference.lock = true; s.render(); return s.ortho; }); if (off) throw new Error("5 again didn't switch ortho off");
+    console.log(`       the crown seen from above at ${top.crown.map(x => (x * 100).toFixed(0)).join(",")}% of the view; ortho: depths ${(persp.a[0] - persp.b[0]).toFixed(1)} px apart in perspective, ${Math.abs(orth.a[0] - orth.b[0]).toFixed(2)} px in ortho, a pick ${orth.pickPx.toFixed(2)} px off, the pan ${Math.hypot(orth.c[0] - persp.c[0], orth.c[1] - persp.c[1]).toFixed(2)} px off`);
+  });
+  await step("Split: a side pane beside the working view, each turned on its own; a lock placed in the left pane and its handle dragged in the right moves in depth as the left sees it; the divider dragged and evened; one view again", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.reference.lock = false; s.split.set(true); s.split.use(0); Object.assign(s.orbit, { yaw: 0, pitch: 0, dist: 0.85, zoom: 1, pan: [0, 0] }); s.split.use(1); Object.assign(s.orbit, { yaw: Math.PI / 2, pitch: 0, dist: 0.85, zoom: 1, pan: [0, 0] }); s.split.use(0); s.render(); });
+    const P = await ev(() => window.__salon.split.panes().map(p => [p.x, p.w]));
+    if (P.length !== 2 || P[0][1] < 300 || P[1][0] !== P[0][1]) throw new Error("panes: " + JSON.stringify(P));
+    const cL = await scr([0, 0.01, 0]); await ev(() => window.__salon.split.use(1)); const cR = await scr([0, 0.01, 0]); await ev(() => window.__salon.split.use(0));
+    const r = await ev(() => { const q = window.__salon.canvas.getBoundingClientRect(); return [q.left, q.width]; });
+    if (!(cL[0] - r[0] < r[1] * 0.5) || !(cR[0] - r[0] > r[1] * 0.5)) throw new Error(`the head at ${cL[0] - r[0]} (left pane) and ${cR[0] - r[0]} (right) of ${r[1]}`);
+    // a strand placed in the left pane (the pointer there makes it the active pane)
+    const n0 = await count(); await page.keyboard.press("s");
+    await page.mouse.click(...await scr(await surf([0.03, 0.1, 0.06]))); const e1 = await scr([0.1, -0.1, 0]); await page.mouse.move(...e1); await page.mouse.click(...e1); await page.waitForTimeout(150);   // a root on the front of the crown, where a level view sees the skin
+    if (await count() !== n0 + 1) throw new Error("no strand placed in the left pane");
+    const id = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.finishLock(); s.setTool("select"); s.select(l.id); return l.id; });
+    // its end handle (in the air beside the jaw) dragged 40 px to the right in the right pane: it moves towards the back (depth, as the left pane sees it), not sideways
+    await ev(() => window.__salon.split.use(1)); const h0 = await ev(id => window.__salon.st.locks.find(l => l.id === id).pts[5].slice(), id); const hs = await scr(h0);
+    await page.mouse.move(...hs); await page.mouse.down(); await page.mouse.move(hs[0] + 40, hs[1], { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const h1 = await ev(id => window.__salon.st.locks.find(l => l.id === id).pts[5].slice(), id), active = await ev(() => window.__salon.split.active);
+    if (active !== 1 || !(h0[2] - h1[2] > 0.015) || Math.abs(h1[0] - h0[0]) > 0.003) throw new Error(`the right pane's drag: active ${active}, depth ${((h0[2] - h1[2]) * 100).toFixed(1)} cm, sideways ${((h1[0] - h0[0]) * 1000).toFixed(1)} mm`);
+    // the divider dragged, then evened by a double-click
+    const bar = await page.$("#splitBar"), bb = await bar.boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + 200); await page.mouse.down(); await page.mouse.move(bb.x + bb.width / 2 + 80, bb.y + 200, { steps: 5 }); await page.mouse.up();
+    const at1 = await ev(() => window.__salon.split.at); if (!(at1 > 0.55)) throw new Error("the divider didn't move: " + at1);
+    await bar.dblclick(); const at2 = await ev(() => window.__salon.split.at); if (at2 !== 0.5) throw new Error("the double-click didn't even the panes: " + at2);
+    await page.click("#views [data-v=split]"); const one = await ev(() => { const s = window.__salon; s.render(); return [s.split.on, s.split.panes().length, s.split.active]; });
+    if (one[0] || one[1] !== 1 || one[2] !== 0) throw new Error("Split again didn't give one view: " + one);
+    await ev(id => { const s = window.__salon; s.deleteLock(id); s.st.reference.lock = true; }, id);
+    console.log(`       panes ${P[0][1]} and ${r[1] - P[0][1]} px wide; the handle dragged in the side pane moved ${((h0[2] - h1[2]) * 100).toFixed(1)} cm in depth, ${(Math.abs(h1[0] - h0[0]) * 1000).toFixed(1)} mm sideways; the divider to ${(at1 * 100).toFixed(0)}%, evened to ${at2 * 100}%`);
+  });
+  await step("roots slide and picking respects the head: a strand's root dragged along the scalp takes the lock; a sheet's root line slides by its middle, stretches by an end; a click never picks a lock the head hides, and again picks the next under the cursor; the dot green on the scalp, red off it; the root line's length in the hint", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; });
+    await view(0.5, 0.2, 0.85);
+    // a strand, its root dragged 30 px to the right
+    const a = await ev(() => { const s = window.__salon, C = s.COL, l = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.06, -0.12, 0.08], C)); s.finishLock(); s.setTool("select"); s.select(l.id); return { id: l.id, pts: l.pts.map(p => p.slice()) }; });
+    const r0 = await scr(a.pts[0]); await page.mouse.move(...r0); await page.mouse.down(); await page.mouse.move(r0[0] + 30, r0[1] + 10, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a1 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id), r = l.pts[0], d = s.SL.sub(r, s.COL.C); return { pts: l.pts, onScalp: s.SL.onScalp(r, s.COL.C), off: s.SL.len(d) - s.COL.radius(d), inside: l.pts.some(p => s.COL.inside(p)) }; }, a.id);
+    const dr = Math.hypot(...a1.pts[0].map((x, i) => x - a.pts[0][i])), de = Math.hypot(...a1.pts[5].map((x, i) => x - a.pts[5][i]));
+    if (!(dr > 0.012) || !a1.onScalp || Math.abs(a1.off - 0.0015) > 0.001 || !(de > dr * 0.5) || a1.inside) throw new Error(`the root drag: the root moved ${(dr * 100).toFixed(1)} cm (on the scalp ${a1.onScalp}, ${(a1.off * 1000).toFixed(1)} mm off), the end ${(de * 100).toFixed(1)} cm, inside ${a1.inside}`);
+    // a sheet: its root line slid by its middle, then stretched by an end
+    const b = await ev(() => { const s = window.__salon, C = s.COL, l = s.addLock(s.SL.makeSheet([C.surface([-0.03, 0.1, 0.07]), C.surface([0, 0.105, 0.075]), C.surface([0.03, 0.1, 0.07])], [0, -0.1, 0.1], 0.06, C)); s.finishLock(); s.setTool("select"); s.select(l.id); return { id: l.id, root: l.root.map(p => p.slice()), handles: s.SL.handles(l).filter(h => h.root).map(h => h.path) }; });
+    if (b.handles.length !== 3) throw new Error("a sheet's root handles: " + JSON.stringify(b.handles));
+    const m0 = await scr(b.root[1]); await page.mouse.move(...m0); await page.mouse.down(); await page.mouse.move(m0[0] - 25, m0[1] + 12, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const b1 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { root: l.root.map(p => p.slice()), e0: l.edges[0][0], onScalp: l.root.every(p => s.SL.onScalp(p, s.COL.C)) }; }, b.id);
+    const dm = b1.root.map((p, i) => Math.hypot(...p.map((x, k) => x - b.root[i][k])));
+    if (!(Math.min(...dm) > 0.01) || Math.max(...dm) - Math.min(...dm) > 0.008 || !b1.onScalp || Math.hypot(...b1.e0.map((x, k) => x - b1.root[0][k])) > 1e-9) throw new Error(`the root line slid: ${dm.map(x => (x * 100).toFixed(1))} cm, on the scalp ${b1.onScalp}`);
+    const end0 = await scr(b1.root[0]); await page.mouse.move(...end0); await page.mouse.down(); await page.mouse.move(end0[0] - 20, end0[1], { steps: 5 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const b2 = await ev(id => window.__salon.st.locks.find(l => l.id === id).root.map(p => p.slice()), b.id);
+    const d0 = Math.hypot(...b2[0].map((x, k) => x - b1.root[0][k])), d2 = Math.hypot(...b2[2].map((x, k) => x - b1.root[2][k]));
+    if (!(d0 > 0.008) || d2 > 1e-9) throw new Error(`the root line's end: moved ${(d0 * 100).toFixed(1)} cm, the far end ${(d2 * 100).toFixed(1)} cm`);
+    // picking: a strand behind the head isn't picked through it from the front; two strands over each other in front are picked in turn (ortho, so they share a pixel)
+    await ev(ids => ids.forEach(id => window.__salon.deleteLock(id)), [a.id, b.id]);
+    await view(0, 0, 0.85);
+    const hidden = await ev(() => { const s = window.__salon, out = []; for (const l of s.st.locks) if (l.visible) { l.visible = false; out.push(l.id); } return out; });   // the earlier steps' hair out of the way
+    const c = await ev(() => { const s = window.__salon, C = s.COL; s.select(null);
+      const back = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.08, -0.1]), [0.02, -0.15, -0.12], C)); s.finishLock();
+      const f1 = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.04, -0.2, 0.2], C)), f2 = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.04, -0.2, 0.12], C)); s.finishLock(); s.setTool("select"); s.render();
+      const r = s.canvas.getBoundingClientRect(); let spot = null;
+      for (const G of s.EVAL[back.id]) for (let k = 2; k < 12 && !spot; k++) { const q = s.screenOf(G.pts[k]); if (s.headAt(r.left + q[0], r.top + q[1])) spot = [r.left + q[0], r.top + q[1]]; }
+      return { back: back.id, f1: f1.id, f2: f2.id, spot }; });
+    if (!c.spot) throw new Error("no point of the back strand hidden by the head in view");
+    await page.mouse.click(...c.spot); await page.waitForTimeout(80); const picked = await ev(() => window.__salon.selected);
+    if (picked === c.back) throw new Error("a strand hidden by the head was picked through it");
+    await page.keyboard.press("5");
+    const sp = await ev(c => { const s = window.__salon; s.select(null); s.render(); const r = s.canvas.getBoundingClientRect(), A = s.EVAL[c.f1][0].pts, B = s.EVAL[c.f2][0].pts, H = s.st.locks.filter(l => l.visible).flatMap(l => s.SL.handles(l)).map(h => s.screenOf(h.p));   // clear of every handle: a handle under the cursor wins
+      for (let k = 4; k < 22; k++) { const q = s.screenOf(B[k]); const near = Math.min(...A.map(p => { const a = s.screenOf(p); return Math.hypot(a[0] - q[0], a[1] - q[1]); })), handle = Math.min(...H.map(h => Math.hypot(h[0] - q[0], h[1] - q[1])));
+        if (near < 6 && handle > 16) return [r.left + q[0], r.top + q[1]]; } return null; }, c);
+    if (!sp) throw new Error("no spot where the two front strands overlap away from their handles");
+    const picks = []; for (let i = 0; i < 3; i++) { await page.mouse.click(...sp); await page.waitForTimeout(60); picks.push(await ev(() => window.__salon.selected)); }
+    await page.keyboard.press("5");
+    const both = [c.f1, c.f2];                                       // the nearer of the two first (whichever is nearer where they cross), then the other, then round again
+    if (!both.includes(picks[0]) || !both.includes(picks[1]) || picks[0] === picks[1] || picks[2] !== picks[0]) throw new Error(`clicks in turn picked ${picks.map(id => id === c.f1 ? "the front one" : id === c.f2 ? "the one behind" : id).join(", ")}`);
+    // the dot: green on the scalp, red on the cheek, none in the air; the root line's length in the hint while it's drawn
+    await ev(() => { const s = window.__salon; s.select(null); s.setTool("strand"); });
+    const onScalp = await scr(await surf([0.0, 0.1, 0.07])); await page.mouse.move(...onScalp); await page.waitForTimeout(80);
+    const dotA = await ev(() => { const s = window.__salon; s.render(); return s.dot(); });
+    const onCheek = await scr(await surf([0.05, -0.02, 0.09])); await page.mouse.move(...onCheek); await page.waitForTimeout(80);
+    const dotB = await ev(() => { const s = window.__salon; s.render(); return s.dot(); });
+    await page.mouse.move(onScalp[0] + 300, onScalp[1] - 150); await page.waitForTimeout(80);
+    const dotC = await ev(() => { const s = window.__salon; s.render(); return s.dot(); });
+    if (!dotA || dotA.colour !== "green" || !dotB || dotB.colour !== "red" || dotC) throw new Error(`the dot: ${JSON.stringify([dotA, dotB, dotC])}`);
+    await page.keyboard.press("l"); const p1 = await scr(await surf([-0.03, 0.1, 0.07])), p2 = await scr(await surf([0.03, 0.1, 0.07]));
+    await page.mouse.move(...p1); await page.mouse.down(); await page.mouse.move(p2[0], p2[1], { steps: 6 }); const hintMid = await ev(() => document.querySelector("#hint").textContent); await page.mouse.up(); await page.keyboard.press("Escape");
+    if (!/root line [\d.]+ cm/.test(hintMid)) throw new Error("the root line's length isn't in the hint: " + hintMid);
+    await ev(([ids, hidden]) => { const s = window.__salon; for (const id of ids) s.deleteLock(id); for (const id of hidden) { const l = s.st.locks.find(l => l.id === id); if (l) l.visible = true; } s.locksPanel(); s.setTool("select"); s.st.reference.lock = true; }, [[c.back, c.f1, c.f2], hidden]);
+    console.log(`       the root slid ${(dr * 100).toFixed(1)} cm (${(a1.off * 1000).toFixed(1)} mm off the skin), the end with it ${(de * 100).toFixed(1)} cm; the root line slid ${(Math.min(...dm) * 100).toFixed(1)} to ${(Math.max(...dm) * 100).toFixed(1)} cm, its end stretched ${(d0 * 100).toFixed(1)} cm alone; the hidden strand not picked, two in front picked in turn; the dot and the hint "${hintMid.slice(0, 22)}"`);
+  });
+  await step("Let it fall, the Locks list, new locks like the last one, the draft: one lock falls onto the rest, which stays; a lock moved to another group, the group renamed, soloed, folded and deleted, lengths on the rows; a new strand takes the last one's width and taper, or not; a draft kept in the browser and offered back", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false;
+      window.__keepHair = JSON.stringify({ locks: s.st.locks, groups: s.st.groups, layering: s.st.layering }); s.presets.apply("bald"); });   // the earlier steps' hair, put back after the last of these steps
+    const ids = await ev(() => { const s = window.__salon, C = s.COL, a = s.addLock(s.SL.makeStrand(C.surface([0.02, 0.1, 0.07]), [0.03, 0.1, 0.25], C)), b = s.addLock(s.SL.makeStrand(C.surface([-0.02, 0.1, 0.07]), [-0.03, 0.1, 0.25], C)); s.finishLock(); return [a.id, b.id]; });
+    const fall = await ev(async ids => { const s = window.__salon, snap = id => JSON.stringify(s.st.locks.find(l => l.id === id).pts), a0 = snap(ids[0]), b0 = snap(ids[1]);
+      s.letFall([ids[0]]); const st0 = s.drop.state, open = document.querySelector('details.step[data-step="gravity"]').open;
+      await new Promise(ok => setTimeout(ok, 1200)); s.drop.keep();
+      return { only: st0 && st0.only, what: st0 && st0.what, open, aMoved: snap(ids[0]) !== a0, bMoved: snap(ids[1]) !== b0 }; }, ids);
+    if (!fall.only || fall.only.length !== 1 || fall.what !== "some" || !fall.open || !fall.aMoved || fall.bMoved) throw new Error("Let it fall: " + JSON.stringify(fall));
+    // the Locks list: the second strand moved to a new group by Selected's Group picker; the group renamed, soloed, folded, deleted
+    await openSteps();
+    const grp = await ev(ids => { const s = window.__salon; s.st.groups.push({ id: "g_test", name: "Test", visible: true }); s.locksPanel(); s.select(ids[1]); s.selPanel();
+      const sel = [...document.querySelectorAll("#selbox .row")].find(r => r.querySelector("span").textContent === "Group").querySelector("select"); sel.value = "g_test"; sel.dispatchEvent(new Event("change"));
+      const nodes = [...document.querySelector("#locks").children], i = nodes.findIndex(n => n.dataset && n.dataset.group === "g_test"), under = nodes[i + 1] && nodes[i + 1].classList.contains("lock") ? nodes[i + 1].textContent : null;
+      return { group: s.st.locks.find(l => l.id === ids[1]).group, under }; }, ids);
+    if (grp.group !== "g_test" || !grp.under || !/\d+ cm/.test(grp.under)) throw new Error("the Group picker and the rows: " + JSON.stringify(grp));
+    const ren = await ev(() => { const s = window.__salon, b = [...document.querySelectorAll("#locks .grp b")].find(b => b.textContent === "Test"); b.dispatchEvent(new MouseEvent("dblclick")); const inp = document.querySelector("#locks .grp input"); if (!inp) return { noInput: true }; inp.value = "Fringe"; inp.blur();
+      return { name: s.st.groups.find(g => g.id === "g_test").name, rowNames: [...document.querySelectorAll("#locks .grp b")].map(b => b.textContent) }; });
+    if (ren.name !== "Fringe" || !ren.rowNames.includes("Fringe")) throw new Error("rename: " + JSON.stringify(ren));
+    const solo = await ev(() => { const s = window.__salon, row = () => document.querySelector('#locks .grp[data-group="g_test"]'), eyes = () => row().querySelectorAll(".eye");
+      eyes()[1].dispatchEvent(new MouseEvent("click", { altKey: true })); const v1 = s.st.groups.map(g => g.visible);
+      eyes()[1].dispatchEvent(new MouseEvent("click", { altKey: true })); const v2 = s.st.groups.map(g => g.visible);
+      eyes()[0].dispatchEvent(new MouseEvent("click")); const folded = s.st.groups.find(g => g.id === "g_test").folded, rowsFolded = document.querySelectorAll("#locks .lock").length;
+      [...eyes()].find(x => x.textContent === "✕").dispatchEvent(new MouseEvent("click"));
+      return { v1, v2, folded, rowsFolded, groups: s.st.groups.length, group: s.st.locks.map(l => l.group) }; });
+    if (JSON.stringify(solo.v1) !== "[false,true]" || JSON.stringify(solo.v2) !== "[true,true]" || !solo.folded || solo.rowsFolded !== 1 || solo.groups !== 1 || solo.group.some(g => g !== "g1")) throw new Error("solo, fold, delete: " + JSON.stringify(solo));
+    // new locks like the last one: the first strand's width and taper changed in Selected, a strand placed takes them; the tick off, the next takes the defaults
+    const like = await ev(ids => { const s = window.__salon; s.select(ids[0]); s.selPanel(); const set = (label, v) => { const row = [...document.querySelectorAll("#selbox .row")].find(r => r.querySelector("span").textContent === label), i = row.querySelector("input"); i.value = v; i.dispatchEvent(new Event("input")); };
+      set("Width", 0.012); set("Taper", 0.3); s.setLikeLast(true); return s.last; }, ids);
+    if (Math.abs(like.width - 0.012) > 1e-9 || Math.abs(like.taper - 0.3) > 1e-9) throw new Error("the last lock's settings: " + JSON.stringify(like));
+    await view(0, 0, 0.85); await page.keyboard.press("s");
+    await page.mouse.click(...await scr(await surf([0.05, 0.1, 0.06]))); let e = await scr([0.12, -0.08, 0]); await page.mouse.move(...e); await page.mouse.click(...e); await page.waitForTimeout(100);
+    const n1 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.setLikeLast(false); return { width: l.width, taper: l.taper }; });
+    await page.keyboard.press("Enter");
+    await page.mouse.click(...await scr(await surf([-0.05, 0.1, 0.06]))); e = await scr([-0.12, -0.08, 0]); await page.mouse.move(...e); await page.mouse.click(...e); await page.waitForTimeout(100);
+    const n2 = await ev(() => { const s = window.__salon, l = s.st.locks[s.st.locks.length - 1]; s.setLikeLast(true); s.finishLock(); s.setTool("select"); return { width: l.width, taper: l.taper }; });
+    if (Math.abs(n1.width - 0.012) > 1e-9 || Math.abs(n1.taper - 0.3) > 1e-9 || n2.width !== 0.006 || n2.taper !== 0.6) throw new Error(`like the last: ${JSON.stringify([n1, n2])}`);
+    // the draft: an edit is kept in the browser a second later; with the hair gone (as if the disk had none), it's offered back; Undo takes it away
+    const dr = await ev(async () => { const s = window.__salon; document.querySelector("#hairName").value = "_draft_test"; const key = s.draftKey(); s.dropDraft();
+      const C = s.COL; s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.0, -0.1, 0.2], C)); s.finishLock();
+      await new Promise(ok => setTimeout(ok, 1300)); const kept = JSON.parse(localStorage.getItem(key) || "null"), n = s.st.locks.length;
+      s.st.locks = []; s.dirtyAll(); s.select(null); s.locksPanel();
+      const offered = s.offerDraft(), btn = [...document.querySelectorAll("#status button")].find(b => b.textContent === "bring it back");
+      if (btn) { btn.click(); for (let i = 0; i < 60 && !document.querySelector("#status").textContent.startsWith("the draft is back"); i++) await new Promise(ok => setTimeout(ok, 100)); }
+      const back = s.st.locks.length; s.undo(); const undone = s.st.locks.length; s.dropDraft(); document.querySelector("#hairName").value = "my_hair";
+      return { kept: kept && kept.st.locks.length, n, offered, back, undone }; });
+    if (!dr.kept || dr.kept !== dr.n || !dr.offered || dr.back !== dr.n || dr.undone !== 0) throw new Error("the draft: " + JSON.stringify(dr));
+    await ev(() => { const s = window.__salon; s.redo(); s.st.reference.lock = true; });   // the hair back
+    console.log(`       one of two strands fell (${fall.only.length} let fall); the Group picker, rename, solo, fold and delete; a strand like the last (${n1.width * 1000} mm, taper ${n1.taper}) and one not (${n2.width * 1000} mm); the draft kept ${dr.kept} locks and brought them back`);
+  });
+  await step("a whole lock swung by its body (Shift: slid along the scalp), R and G with the mouse alone; several picked by Ctrl-click and a box (the pull moves only them, Delete takes them all); a drag at the pane's edge pans the view; three zoom stops", async () => {
+    await ev(() => { const s = window.__salon; s.setTool("select"); s.select(null); s.st.mirror.on = false; s.st.reference.lock = false; s.presets.apply("bald"); });
+    await view(0, 0, 0.85);
+    // a strand hanging before the face; its body dragged right: it swings about its root, as long as before, the root where it was
+    const a = await ev(() => { const s = window.__salon, C = s.COL, l = s.addLock(s.SL.makeStrand(C.surface([0.0, 0.1, 0.07]), [0.0, -0.12, 0.22], C)); s.finishLock(); s.setTool("select"); s.select(l.id); s.render(); return { id: l.id, pts: l.pts.map(p => p.slice()), len: s.SL.lockLength(l), grab: s.EVAL[l.id][0].pts[14] }; });
+    const g0 = await scr(a.grab); await page.mouse.move(...g0); await page.mouse.down(); await page.mouse.move(g0[0] + 50, g0[1], { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(100);
+    const a1 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { pts: l.pts.map(p => p.slice()), len: s.SL.lockLength(l), inside: l.pts.some(p => s.COL.inside(p)) }; }, a.id);
+    const endMoved = a1.pts[5][0] - a.pts[5][0], rootMoved = Math.hypot(...a1.pts[0].map((x, i) => x - a.pts[0][i]));
+    if (!(endMoved > 0.02) || rootMoved > 1e-9 || Math.abs(a1.len - a.len) > a.len * 0.08 || a1.inside) throw new Error(`the swing: the end moved ${(endMoved * 100).toFixed(1)} cm sideways, the root ${rootMoved}, ${(a.len * 100).toFixed(1)} -> ${(a1.len * 100).toFixed(1)} cm long, inside ${a1.inside}`);
+    // Shift-drag on its body: the root slides along the scalp
+    const g1 = await ev(id => window.__salon.EVAL[id][0].pts[14], a.id), s1 = await scr(g1);
+    await page.keyboard.down("Shift"); await page.mouse.move(...s1); await page.mouse.down(); await page.mouse.move(s1[0] - 40, s1[1], { steps: 6 }); await page.mouse.up(); await page.keyboard.up("Shift"); await page.waitForTimeout(100);
+    const a2 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { root: l.pts[0].slice(), end: l.pts[5].slice(), onScalp: s.SL.onScalp(l.pts[0], s.COL.C) }; }, a.id);
+    const slid = Math.hypot(...a2.root.map((x, i) => x - a1.pts[0][i]));
+    if (!(slid > 0.015) || !a2.onScalp) throw new Error(`Shift-drag: the root slid ${(slid * 100).toFixed(1)} cm, on the scalp ${a2.onScalp}`);
+    // R: the mouse alone swings it until a click keeps it; G slides it, Esc puts it back
+    const g2 = await ev(id => window.__salon.EVAL[id][0].pts[14], a.id), s2 = await scr(g2); await page.mouse.move(...s2);
+    await page.keyboard.press("r"); await page.mouse.move(s2[0] + 40, s2[1] + 10, { steps: 5 }); await page.waitForTimeout(60);
+    const m1 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { modal: s.modal, end: l.pts[5].slice() }; }, a.id);
+    await page.mouse.click(s2[0] + 40, s2[1] + 10); await page.waitForTimeout(60);
+    const m2 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { modal: s.modal, end: l.pts[5].slice(), root: l.pts[0].slice() }; }, a.id);
+    if (m1.modal !== "swing" || m2.modal || Math.hypot(...m1.end.map((x, i) => x - a2.end[i])) < 0.01 || Math.hypot(...m2.end.map((x, i) => x - m1.end[i])) > 1e-9 || Math.hypot(...m2.root.map((x, i) => x - a2.root[i])) > 1e-9) throw new Error("R and a click: " + JSON.stringify({ m1, m2, a2 }));
+    await page.keyboard.press("g"); await page.mouse.move(s2[0] + 70, s2[1] + 10, { steps: 5 }); await page.waitForTimeout(60);
+    const m3 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { modal: s.modal, root: l.pts[0].slice() }; }, a.id);
+    await page.keyboard.press("Escape"); await page.waitForTimeout(60);
+    const m4 = await ev(id => { const s = window.__salon, l = s.st.locks.find(l => l.id === id); return { modal: s.modal, root: l.pts[0].slice() }; }, a.id);
+    if (m3.modal !== "slide" || Math.hypot(...m3.root.map((x, i) => x - m2.root[i])) < 0.01 || m4.modal || Math.hypot(...m4.root.map((x, i) => x - m2.root[i])) > 1e-9) throw new Error("G and Esc: " + JSON.stringify({ m2, m3, m4 }));
+    // several picked: two more strands; Ctrl-click one (the pull then takes just the picked), a box round the end of the other; Delete takes all the picked
+    const ids = await ev(() => { const s = window.__salon, C = s.COL, b = s.addLock(s.SL.makeStrand(C.surface([0.04, 0.1, 0.06]), [0.09, -0.15, 0.18], C)), c = s.addLock(s.SL.makeStrand(C.surface([-0.04, 0.1, 0.06]), [-0.09, -0.15, 0.18], C)); s.finishLock(); s.setTool("select"); s.render(); return { b: b.id, c: c.id, bMid: s.EVAL[b.id][0].pts[14], cEnd: s.SL.vectorOf(c)[1] }; });
+    await ev(id => window.__salon.select(id), a.id);
+    const pb = await scr(ids.bMid); await page.keyboard.down("Control"); await page.mouse.click(...pb); await page.keyboard.up("Control"); await page.waitForTimeout(60);
+    const pk1 = await ev(id => { const s = window.__salon; return { sel: s.selected, picked: s.picked, ids: s.pullIds(id).sort(), rows: document.querySelectorAll("#locks .lock.picked").length }; }, a.id);
+    if (pk1.sel !== a.id || pk1.picked.join() !== ids.b || pk1.ids.join() !== [a.id, ids.b].sort().join() || pk1.rows !== 1) throw new Error("Ctrl-click: " + JSON.stringify(pk1));
+    const pc = await scr(ids.cEnd); await page.keyboard.down("Shift"); await page.mouse.move(pc[0] - 30, pc[1] - 30); await page.mouse.down(); await page.mouse.move(pc[0] + 30, pc[1] + 30, { steps: 5 }); await page.mouse.up(); await page.keyboard.up("Shift"); await page.waitForTimeout(60);
+    const pk2 = await ev(() => { const s = window.__salon; return { sel: s.selected, picked: s.picked, box: document.querySelector("#boxSel").style.display }; });
+    if (pk2.sel !== ids.c || pk2.picked.length || pk2.box !== "none") throw new Error("the box: " + JSON.stringify(pk2));
+    await page.keyboard.down("Control"); await page.mouse.click(...(await scr(ids.bMid))); await page.keyboard.up("Control"); await page.waitForTimeout(60);
+    await page.keyboard.press("Delete"); await page.waitForTimeout(60);
+    const left = await ev(() => window.__salon.st.locks.map(l => l.id));
+    if (left.includes(ids.b) || left.includes(ids.c) || !left.includes(a.id)) throw new Error("Delete on the picked: " + JSON.stringify(left));
+    // a handle dragged to the pane's right edge pans the view that way, and stops when the drag ends
+    await ev(id => { const s = window.__salon; s.select(id); s.orbit.pan = [0, 0]; }, a.id);
+    const h = await ev(id => window.__salon.st.locks.find(l => l.id === id).pts[4], a.id), hs = await scr(h), rect = await ev(() => { const r = window.__salon.canvas.getBoundingClientRect(); return [r.left, r.right]; });
+    await page.mouse.move(...hs); await page.mouse.down(); await page.mouse.move(rect[1] - 10, hs[1], { steps: 8 }); await page.waitForTimeout(500); const pan = await ev(() => window.__salon.orbit.pan.slice()); await page.mouse.up(); await page.waitForTimeout(50);
+    const edgeOff = await ev(() => window.__salon.edge);
+    if (!(pan[0] < -6) || edgeOff) throw new Error(`the edge pan: pan ${pan}, still panning ${edgeOff}`);
+    await ev(() => { window.__salon.orbit.pan = [0, 0]; });
+    // the zoom stops: Home steps the head, the bust, the body; the button too
+    await page.keyboard.press("Home"); const z1 = await ev(() => window.__salon.orbit.dist); await page.keyboard.press("Home"); const z2 = await ev(() => window.__salon.orbit.dist);
+    await page.click("#views [data-v=zoom]"); const z3 = await ev(() => [window.__salon.orbit.dist, document.querySelector("#views [data-v=zoom]").textContent]);
+    if (z1 !== 1.4 || z2 !== 2.4 || z3[0] !== 0.85 || !/head/.test(z3[1])) throw new Error(`the zoom stops: ${z1}, ${z2}, ${z3}`);
+    await ev(id => { const s = window.__salon; s.deleteLock(id); s.st.reference.lock = true;
+      if (window.__keepHair) { const k = JSON.parse(window.__keepHair); s.st.locks = k.locks; s.st.groups = k.groups; s.st.layering = k.layering; s.dirtyAll(); s.select(null); s.locksPanel(); s.render(); } }, a.id);   // the earlier hair back for the steps after
+    console.log(`       swung: the end ${(endMoved * 100).toFixed(1)} cm over, ${(a.len * 100).toFixed(1)} -> ${(a1.len * 100).toFixed(1)} cm; slid ${(slid * 100).toFixed(1)} cm; R moved the end ${(Math.hypot(...m1.end.map((x, i) => x - a2.end[i])) * 100).toFixed(1)} cm, G the root ${(Math.hypot(...m3.root.map((x, i) => x - m2.root[i])) * 100).toFixed(1)} cm and Esc put it back; Ctrl-click and a box picked, Delete took both; the edge pan ${pan[0]} px; the zoom stops ${z1}, ${z2}, ${z3[0]} m`);
   });
   await step("leaving: the hair's changes are marked unsaved (Save clears it); the mouse's back button, right-click's menu and Backspace don't leave the page", async () => {
     const g = await ev(() => {

@@ -1,5 +1,6 @@
-// accessories.js: what a character wears on the face and the neck (Character Studio, Accessories tab): glasses,
-// piercings, earrings, stickers, an eyepatch, necklaces. Made in code, no models: glasses from the eyes and the face's
+// accessories.js: what a character wears on the face, the head and the neck (Character Studio, Accessories tab): glasses,
+// piercings, earrings, stickers, an eyepatch, necklaces, hats (a beret, a cap, a bucket hat, a beanie: made on the head's
+// own outline, DECISIONS 2026-10-27, after the user's street-wear references). Made in code, no models: glasses from the eyes and the face's
 // own points, a piercing, an earring or a sticker held to the skin where it sits (a triangle of MHR's mesh and a place
 // in it), so it follows every shape and expression; earrings in pairs, hanging as gravity has them; a necklace dropped
 // round the neck by gravity onto the body as it is (jewellery.js, which also makes the metals, gems, pearls and charms).
@@ -16,6 +17,7 @@ export const KINDS = {
   sticker: { label: "Sticker", styles: ["heart", "star", "bandage", "tear", "sparkle", "moon", "flower", "beauty mark", "gem"] },
   patch: { label: "Eyepatch", styles: ["eyepatch"] },
   neck: { label: "Necklace", styles: ["chain", "pearls", "beads", "cord", "choker"] },
+  hat: { label: "Hat", styles: ["beret", "cap", "bucket", "beanie"] },
 };
 // where a piercing or a sticker goes without clicking: a MediaPipe point on the face, or (the ears, which MediaPipe
 // hasn't got) a point on MHR's own base mesh, found once as the nearest place on it
@@ -38,6 +40,7 @@ export const DEFAULTS = {
   sticker: { style: "heart", spot: "under the left eye", colour: "#ff5c8a", size: 1, turn: 0, shine: 0.3 },
   patch: { style: "eyepatch", spot: "right eye", colour: "#141414", size: 1, turn: 0, shine: 0.1, strap: true },
   neck: { style: "chain", material: "gold", colour: "#151515", shine: 0.8, length: 45, ease: 0, size: 1, pendant: "none", gem: "#d4245a" },
+  hat: { style: "beret", colour: "#141416", size: 1, tilt: 18, turn: 0, height: 0, shine: 0.1 },
 };
 const LENS = { round: [1, 0.84, 2.2], square: [1.04, 0.74, 5], "cat-eye": [1.06, 0.72, 3], aviator: [1.08, 0.9, 2.4], rimless: [1, 0.74, 3.5], sunglasses: [1.12, 0.82, 3], heart: [1.06, 0.98, 2] };
 
@@ -53,6 +56,9 @@ export function fresh(kind, style) {
   if (kind === "neck" && style === "choker") Object.assign(a, { length: 0, colour: "#151515" });   // 0: as long as the neck is round, snug (worked out when it's first drawn)
   if (kind === "neck" && style === "pearls") a.length = 48;
   if (kind === "neck" && style === "cord") Object.assign(a, { colour: "#2a1d16", pendant: "coin", length: 50 });
+  if (kind === "hat" && style !== "beret") a.tilt = 0;
+  if (kind === "hat" && style === "bucket") a.colour = "#3a3528";
+  if (kind === "hat" && style === "beanie") Object.assign(a, { colour: "#4a3a3a", shine: 0 });
   return a;
 }
 // a saved accessory with today's fields (an older file's choker had a height, its piercings a colour only)
@@ -329,6 +335,50 @@ export class Accessories {
     }
     m.strap = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false), 96, 1.1 * mm, 6, false), new THREE.MeshStandardMaterial({ color: a.colour, roughness: 0.8 }));
     m.obj.add(m.strap);
+  }
+  // ---- hats: on the head's own outline (headMap), from a band above the brows up over the crown --------------------
+  // a beret (a soft disc slouched to one side by `tilt`), a cap (a dome on the head and a visor), a bucket hat (a flat
+  // crown and a brim all round, sloping down), a beanie (a dome with a folded cuff, slouching above the crown)
+  draw_hat(a, m) {
+    this.clear(m);
+    const { right, up, fwd, L } = this.faceFrame(), mm = 0.001 * this.c.scale(), P = this.c.POS, k = a.size;
+    let top = -1e9; for (let i = 1; i < P.length; i += 3) top = Math.max(top, P[i]);   // the crown: the head is the body's highest point
+    const brow = L(9).y, y0 = brow + (a.style === "beanie" ? 18 : a.style === "cap" ? 30 : 24) * mm + a.height * mm;   // the band, above the brows
+    const H = this.headMap(y0 - 12 * mm, top + 4 * mm, 0.13, 0.18), rise = Math.max(30 * mm, top - y0);
+    const turn = (a.turn || 0) * Math.PI / 180, tilt = (a.tilt || 0) * Math.PI / 180;
+    const mat = new THREE.MeshStandardMaterial({ color: a.colour, roughness: 0.92 - 0.6 * (a.shine ?? 0), metalness: 0, side: THREE.DoubleSide });
+    const at = (phi, y, r, dx = 0, dz = 0) => H.c.clone().setY(y).addScaledVector(fwd, Math.cos(phi) * r + dz).addScaledVector(right, Math.sin(phi) * r + dx);
+    const NA = 72, rings = [];
+    // the rings, bottom up: each a height, a radius over the head's own at that height (or over the band's), a sideways slide
+    const ring = (y, extra, slide = 0, atY = y, k2 = 1) => { const pts = []; for (let i = 0; i < NA; i++) { const phi = (i / NA) * 2 * Math.PI + turn; pts.push(at(phi, y, H.r(phi, Math.min(atY, top)) * k2 + extra, Math.sin(tilt) * slide, 0)); } rings.push(pts); };
+    if (a.style === "beret") {                        // a snug band, then a soft disc that spreads out and over, slouched sideways
+      const prof = [[0, 3, 0], [0.12, 4, 12], [0.3, 38, 32], [0.5, 50, 48], [0.72, 46, 62], [0.88, 26, 70], [0.97, 8, 74], [1, 0, 75]];   // t, out (mm), up (mm)
+      for (const [t, out, h] of prof) ring(y0 + h * mm * k, out * mm * k, h * mm * k * 1.2, y0 + 8 * mm, t <= 0.12 ? 1 : (1 - t) * 1.0 + t * 0.001);
+    } else if (a.style === "cap") {                   // a dome on the head, a button on top, a visor out over the brow
+      const yD = top - 26 * mm, yT = top + 10 * mm, J = 16;         // the head's own outline up to under the crown, then a round top over it
+      for (let j = 0; j <= J; j++) { const t = j / J, y = y0 + (yT - y0) * t, u = Math.max(0, Math.min(1, (y - yD) / (yT - yD))), dome = Math.sqrt(Math.max(0.0004, 1 - u * u)); ring(y, 6 * mm, 0, Math.min(y, yD), t < 1 ? dome : 0.02); }
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(7 * mm, 12, 8), mat); dome.position.copy(at(0, top + 10 * mm, 0)); m.obj.add(dome);
+      const seg = [], U = 7, V = 18, span = 0.9, len = 72 * mm * k;   // the visor: a plate from the band's front, out and down, tapering to nothing at the temples
+      for (let i = 0; i <= V; i++) { const phi = -span + 2 * span * i / V + turn, r0 = H.r(phi, y0) + 3 * mm, taper = Math.max(0, 1 - ((phi - turn) / span) ** 2) ** 0.6; for (let j = 0; j <= U; j++) { const u = j / U, p = at(phi, y0 + 1 * mm - (10 * mm * u + 16 * mm * u * u) * taper, r0 + len * taper * u); seg.push(p); } }
+      const vg = new THREE.BufferGeometry(), pos = [], idx = []; for (const q of seg) pos.push(q.x, q.y, q.z);
+      for (let i = 0; i < V; i++) for (let j = 0; j < U; j++) { const a0 = i * (U + 1) + j, b0 = a0 + U + 1; idx.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0); }
+      vg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); vg.setIndex(idx); vg.computeVertexNormals();
+      const visor = new THREE.Mesh(vg, mat); m.obj.add(visor);
+    } else if (a.style === "bucket") {                // a flat-topped crown and a brim sloping down all round
+      const J = 8, yT = top + 16 * mm; for (let j = 0; j <= J; j++) { const t = j / J, y = y0 + (yT - y0) * t; ring(y, 7 * mm, 0, y0 + 5 * mm, t < 1 ? 1 : 0.02); }
+      rings.push(rings[rings.length - 1]); rings.length = J + 1;
+      const brim = []; for (let i = 0; i < NA; i++) { const phi = (i / NA) * 2 * Math.PI + turn; brim.push(at(phi, y0 - 2 * mm, H.r(phi, y0) + 7 * mm)); } rings.unshift(brim);
+      const edge = []; for (let i = 0; i < NA; i++) { const phi = (i / NA) * 2 * Math.PI + turn; edge.push(at(phi, y0 - 30 * mm, H.r(phi, y0) + 7 * mm + 58 * mm * k)); } rings.unshift(edge);
+    } else {                                          // a beanie: a dome over the head with a folded cuff, slouching past the crown
+      const cuff = 32 * mm; ring(y0 - 4 * mm, 9 * mm, 0, y0 + 4 * mm); ring(y0 + cuff, 9 * mm, 0, y0 + cuff); ring(y0 + cuff + 3 * mm, 6 * mm, 0, y0 + cuff);
+      const yD = top - 28 * mm, yT = top + 24 * mm, J = 12;         // the dome: the head's own outline up to a little under the crown, then a round top past it, slouching sideways
+      for (let j = 1; j <= J; j++) { const t = j / J, y = y0 + cuff + 3 * mm + (yT - (y0 + cuff + 3 * mm)) * t, u = Math.max(0, Math.min(1, (y - yD) / (yT - yD))), dome = Math.sqrt(Math.max(0.0004, 1 - u * u)); ring(y, 6 * mm, 12 * mm * u * u, Math.min(y, yD), t < 1 ? dome : 0.02); }
+    }
+    const g = new THREE.BufferGeometry(), pos = [], idx = [];
+    for (const r of rings) for (const q of r) pos.push(q.x, q.y, q.z);
+    for (let r = 0; r + 1 < rings.length; r++) for (let i = 0; i < NA; i++) { const a0 = r * NA + i, b0 = r * NA + (i + 1) % NA, c0 = a0 + NA, d0 = b0 + NA; idx.push(a0, c0, b0, b0, c0, d0); }
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const hat = new THREE.Mesh(g, mat); hat.castShadow = true; m.obj.add(hat);
   }
   // the head's (or the neck's) outline between two heights: the outermost skin by angle round its own middle, in
   // slabs. From the triangles cut by each slab's plane, not the points (MHR's back of the head has few points, far

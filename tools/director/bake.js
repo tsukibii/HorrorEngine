@@ -7,8 +7,13 @@
 // A cast member with a real body (MHR, shaped) goes across as that body: bodyGlb() exports it shaped and in its bind
 // pose, and every frame records each bone's skinning matrix (bind mesh space -> world, `skin`), so Unreal deforms
 // the same mesh the same way. Unreal measures its own import axes from the bones' bind positions (`bind`).
+// The faces (a scene's face rows, STORY_FORMAT §3.7) go as each frame's 72 weights of MHR's face shapes per cast member
+// with an expression on (`face`; their names in order: `face_shapes`), to be set on the body's morph targets.
+// A cast member's models (STORY_FORMAT §2 `models`, a scene's picks carried down the flow): each scene is recorded on
+// the bodies its cast wear there (its `models`: {cast id: the model's name}), and each model's body is exported too
+// (`bodies[who].models[name]`), so Unreal wears the mesh the recording was made on.
 import * as THREE from "three";
-import { version, eventSecs, PLAYS, RADIUS, flowTimes, TIME_DEFAULT } from "./stage.js";
+import { version, eventSecs, PLAYS, RADIUS, flowTimes, TIME_DEFAULT, FACES, loadFaces, flowModels, modelFile } from "./stage.js";
 
 const skinnedOf = fig => { let m = null; if (fig && fig.model) fig.model.traverse(o => { if (!m && o.isSkinnedMesh) m = o; }); return m; };
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -89,7 +94,7 @@ const OUTCOMES = { press: ["success", "fail"], mash: ["success", "fail"], hold: 
 
 function eventOf(ev, story) {
   const out = { type: ev.type, prompt: ev.prompt || "", secs: eventSecs(ev, story) };
-  out.options = ev.type === "choose" ? (ev.options || []).map(o => ({ id: o.id, label: o.label || o.id, ja: o.ja || "" }))
+  out.options = ev.type === "choose" ? (ev.options || []).map(o => ({ id: o.id, label: o.label || o.id, ja: "" }))   // English only (DECISIONS 2026-10-27, notes)
                                      : (OUTCOMES[ev.type] || ["success", "fail"]).map(r => ({ id: r, label: r }));
   if (ev.default) out.default = ev.default;
   return out;
@@ -117,6 +122,7 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
       fr.bodies[who] = joints.map(j => { const p = fig.jointWorld(j); return p ? ue(p) : null; });
       if (skinned[who]) { fig.group.updateMatrixWorld(true); (fr.skin = fr.skin || {})[who] = skinMatrices(skinned[who]); }
     }
+    for (const [who, w] of Object.entries(st.faces || {})) if (w && fr.bodies[who]) (fr.face = fr.face || {})[who] = Array.from(w, x => Math.round(x * 1000) / 1000);
     for (const l of stage.lights) {
       const k = l.userData.base ? l.intensity / l.userData.base : 1;
       if (Math.abs(k - 1) > 0.01 || lights[l.userData.id]) (lights[l.userData.id] = lights[l.userData.id] || new Array(f).fill(1)).push(+k.toFixed(3));
@@ -124,7 +130,7 @@ export function bakeScene(stage, story, plan, sc, files, fps) {
     for (const id of Object.keys(lights)) if (lights[id].length < f + 1) lights[id].push(1);
     frames.push(fr);
     const key = st.sub ? `${st.who}|${st.sub}` : null;            // a subtitle: one entry per stretch it's up
-    if (key !== (sub && sub.key)) { if (sub) sub.t1 = T; sub = key ? { key, t0: T, t1: tl.total, en: st.sub, ja: st.ja || "", who: st.who || "" } : null; if (sub) subs.push(sub); }
+    if (key !== (sub && sub.key)) { if (sub) sub.t1 = T; sub = key ? { key, t0: T, t1: tl.total, en: st.sub, ja: "", who: st.who || "" } : null; if (sub) subs.push(sub); }
   }
   for (const s of tl.segs) if (s.type === "event") events.push(Object.assign(eventOf(s.event, story), { t: +s.start.toFixed(3), end: +s.end.toFixed(3) }));
   subs.forEach(s => { delete s.key; s.t0 = +s.t0.toFixed(3); s.t1 = +s.t1.toFixed(3); });
@@ -155,11 +161,18 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
                 times: Object.fromEntries(Object.entries(flowTimes(story)).map(([nid, t]) => [nid, t.time])) };
   for (const [id, c] of Object.entries(story.cast || {})) out.cast[id] = { name: c.name || id, height: +(c.height || 1.7) };
   const ids = Object.keys(story.scenes || {});
+  await loadFaces(Object.values(story.scenes || {}).flatMap(sc => [sc, ...Object.values(sc.variants || {})].flatMap(v => v.faces || [])));   // the expressions the face rows place
+  if (FACES.M) out.face_shapes = FACES.M.mhr;
+  const fm = flowModels(story), nodeOf = sid => Object.keys(story.flow).find(k => story.flow[k].type === "scene" && story.flow[k].ref === sid);
+  const filesOf = m => Object.fromEntries(Object.entries(m || {}).map(([c, v]) => [c, modelFile(story, c, v)]).filter(([, f]) => f));
   for (let i = 0; i < ids.length; i++) {
     onProgress(i, ids.length, ids[i]);
     await new Promise(r => setTimeout(r, 0));                     // let the page draw its progress
-    out.scenes[ids[i]] = bakeScene(stage, story, plan, story.scenes[ids[i]], files, fps);
+    const models = (fm[nodeOf(ids[i])] || {}).models || {};
+    stage.models = filesOf(models);                               // its cast in the models they wear there (setWorld dresses them)
+    out.scenes[ids[i]] = Object.assign(bakeScene(stage, story, plan, story.scenes[ids[i]], files, fps), { models });
   }
+  stage.models = {};
   out.bodies = {};                                 // each cast member's body, exported once (any scene's figure will do)
   if (GLTFExporter && saveBody) {
     stage.setWorld(plan, story, Object.keys(story.levels)[0]);
@@ -168,6 +181,15 @@ export async function bakePreview(stage, story, plan, files, fps = 30, onProgres
       await saveBody(who, b.glb);
       out.bodies[who] = { file: `Body_${who}.glb`, bones: b.bones, bind: b.bind, skin_lin: SKIN_LIN };
     }
+    for (const [who, c] of Object.entries(story.cast || {})) for (const name of Object.keys(c.models || {})) {   // each model's body
+      if (!out.bodies[who]) continue;
+      stage.models = { [who]: modelFile(story, who, name) }; stage.setWorld(plan, story, Object.keys(story.levels)[0]);
+      const b = await bodyGlb(stage.cast[who], GLTFExporter); if (!b) continue;
+      const tag = name.replace(/[^A-Za-z0-9]+/g, "_");
+      await saveBody(`${who}__${tag}`, b.glb);
+      (out.bodies[who].models = out.bodies[who].models || {})[name] = { file: `Body_${who}__${tag}.glb`, bones: b.bones, bind: b.bind };
+    }
+    stage.models = {};
   }
   for (const [nid, n] of Object.entries(story.flow)) if (n.type === "stitch" && story.stitches[n.ref]) out.stitches[n.ref] = stitchOf(story.stitches[n.ref], n, story);
   return out;

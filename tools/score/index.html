@@ -12,6 +12,7 @@
   <label>palette</label><select id="scope" title="Where the favourites live: the studio's palette, or a game's own"></select>
   <label title="The game's theme: the tune the theme-quoting cues play (0: each cue's own tune)">theme</label><input id="motif" type="number" min="0" max="9999" step="1" style="width:64px"><button id="motifdice" title="another theme">&#127922;</button><button id="motifplay" title="hear the theme alone">&#9654;</button>
   <label>played in</label><select id="space" title="The room the music is heard in (the hall the reverb traces)"></select>
+  <label title="Which samples play the cues' strings, tremolo and pizzicato: the notes stay the same, the players change">strings</label><select id="strset"></select>
   <button id="exportPal" title="Download the palette as JSON">Export</button>
   <button id="importPal" title="Merge a palette JSON file into this one">Import</button>
   <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -22,9 +23,12 @@
   <section id="lib" class="col">
     <input id="filter" placeholder="filter: chase, cute, her room..." autocomplete="off">
     <div id="cuelist"></div>
+    <h2 id="insthead" title="Every instrument, what it's best for, and ▶ to hear it alone">Instruments</h2>
+    <div id="instlist"></div>
   </section>
   <section id="work" class="col">
     <div id="cuehead"></div>
+    <div id="strnote" class="strnote"></div>
     <div id="params"></div>
     <div class="bar">
       <button id="play" class="primary" title="Play these settings (Space)">&#9654; Play</button>
@@ -82,11 +86,13 @@
 <script src="js/10-theory.js"></script>
 <script src="js/20-audio.js"></script>
 <script src="js/30-sampler.js"></script>
+<script src="js/32-strings.js"></script>
 <script src="js/40-midi.js"></script>
 <script src="js/50-kit.js"></script>
 <script src="js/60-horror.js"></script>
 <script src="js/62-kdrama.js"></script>
 <script src="js/64-crossover.js"></script>
+<script src="js/66-expanded.js"></script>
 <script src="js/70-player.js"></script>
 <script src="js/90-ui.js"></script>
 </body>

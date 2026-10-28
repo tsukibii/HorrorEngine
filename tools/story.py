@@ -14,6 +14,8 @@
     python tools/story.py durations <folder>    reads <take id>.wav lengths into each clip's (and line's) "dur"
     python tools/story.py notes [--all]         open notes from the director's desk (on nodes and the board): read them first
     python tools/story.py new <Name>            a new game folder with a minimal story that passes the checks
+    python tools/story.py new-set <name>        a new set (Content/Studio/Sets/<name>): a place designed in the scene
+                                                builder before its game exists (--game set:<name> for the views)
 
 A take id is <Game>_<scene>_<variant or main>_<clip>; the user's files come back named by it (.wav, .mp4).
 """
@@ -154,6 +156,23 @@ def main():
         print(__doc__)
         return
     cmd, args = args[0], args[1:]
+    if cmd == "new-set":                               # a set: its one level named after it, one room to start from
+        name = args[0]
+        if not L.SET_NAME.match(name):
+            sys.exit("a set's name is lower-case letters, digits and _, starting with a letter")
+        d = L.SETS / name
+        if (d / "story.json").exists():
+            sys.exit(f"{d} already has a set")
+        d.mkdir(parents=True, exist_ok=True)
+        s = json.loads(json.dumps(NEW))
+        s["game"].update(id=name, title=name, built_with={"engine": L.engine_version(), "format": 3})
+        s["levels"] = {name: s["levels"].pop("main")}
+        for t in ("scenes", "stitches"):
+            for x in s[t].values():
+                x["level"] = name
+        (d / "story.json").write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"made {d / 'story.json'}: design it in the scene builder (its game picker, Sets: {name})")
+        return
     if cmd == "new":
         name = args[0]
         d = L.GAMES / name

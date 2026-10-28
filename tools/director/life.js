@@ -113,6 +113,17 @@ export class States {
     return false;
   }
   set(id, to, t = this.now, by = "story") { this.advance(t); return this.enter(id, to, t, by); }
+  // time skipped at t (missing time, the story's `skip`): everything lives through `secs` at once, as if each had been
+  // that much longer in its state (its timers running out on the way, a clock's hands jumping on, the smoke long gone),
+  // and goes on from t
+  skip(t, secs) {
+    this.advance(t);
+    if (!(secs > 0)) return;
+    for (const e of Object.values(this.e)) e.since -= secs;
+    for (const c of this.changes) c.t -= secs;
+    for (const f of Object.values(this.first || {})) f.t -= secs;
+    this.advance(t);
+  }
   at(id, t = this.now) {
     this.advance(t);
     const e = this.e[id]; if (!e) return null;

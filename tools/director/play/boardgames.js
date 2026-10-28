@@ -1,5 +1,5 @@
 // Board games in Play (Content/Studio/BoardGames/README.md): a table's game (use: game) is a rules module that decides
-// everything and says so through `ctx`: lines, choices floating at the table, and the pieces on it (dice, cards, cups,
+// everything and says so through `ctx`: lines, choices (at the bottom centre, the focus on the table), and the pieces on it (dice, cards, cups,
 // a ball, a revolver), small meshes made here and moved on the game's clock (runtime.anim), so the pause menu holds
 // them too. The rules never touch three.js: the same module plays in node's BOARD test on a table that only pretends.
 import * as THREE from "three";
@@ -14,7 +14,9 @@ export const loadRules = (game, id) => import(`/boardgames/${encodeURIComponent(
 
 // the ctx a rules module plays through (README.md has the whole list)
 export function boardCtx(rt, table, meta, settings, them, on) {
-  const s = Object.assign({}, meta.settings, settings), random = s.seed !== undefined ? rng(+s.seed) : Math.random;
+  const s = Object.assign({}, meta.settings, settings);
+  for (const [k, v] of Object.entries(s)) if (typeof v === "string" && /^!?flag:/.test(v)) s[k] = v[0] === "!" ? !rt.flags.has(v.slice(6)) : rt.flags.has(v.slice(5));   // by a flag: "flag:off_pills" (§2 game)
+  const random = s.seed !== undefined ? rng(+s.seed) : Math.random;
   return Object.assign(helpers(random), {
     settings: s, you: "You", them,
     say: async (text, who) => { const secs = Math.min(4, 1.1 + String(text).length / 16); rt.hud.line(text, who === "them" ? them : "", secs); await rt.wait(secs); },

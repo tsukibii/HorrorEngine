@@ -184,34 +184,34 @@
  },
  "sounds": {
   "door_slam": {
-   "file": "SFX/door_slam"
+   "file": "sfx/door_slam_01"
   },
   "knock3": {
-   "file": "SFX/knock_three"
+   "file": "sfx/knock_three"
   },
   "sting": {
-   "file": "SFX/sting_short"
+   "file": "sfx/sting_short"
   },
   "hum_cut": {
-   "file": "SFX/power_hum_cut"
+   "file": "sfx/power_hum_cut"
   },
   "machine_beep": {
-   "file": "SFX/answering_machine_beep"
+   "file": "sfx/machine_beep"
   },
   "creak": {
-   "file": "SFX/floorboard_creak"
+   "file": "sfx/floorboard_creak"
   },
   "steps": {
-   "file": "SFX/steps_upstairs"
+   "file": "sfx/steps_upstairs"
   },
   "grab": {
-   "file": "SFX/grab_sting"
+   "file": "sfx/grab_sting"
   },
   "sting_big": {
-   "file": "SFX/sting_big"
+   "file": "sfx/sting_big"
   },
   "breath": {
-   "file": "SFX/breath_close"
+   "file": "sfx/breath_close"
   }
  },
  "levels": {

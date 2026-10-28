@@ -113,6 +113,11 @@ the shot review measure the clip's closest moment and say what it really frames 
 
 ## 4. Quick-time events (scene clip `event`)
 
+> **Deprecated (DECISIONS 2026-10-27):** mashing, holding, aiming and struggling break the immersion, and an indie
+> game doesn't need them. A moment that used one is a **dialogue choice** (`choose`, silence a choice too: the grab's
+> "Let go of me." / "...I'll stay."; the locker's "(Stay silent.)" / "I'm here.") or a plain scene. The story check warns
+> on the old types; the desk offers only `choose`. What follows stays as the record of how they worked.
+
 The Dark Pictures games are the model. Their QTEs have warning signs, consequences that branch the story
 (including death) instead of retries, timed dialogue where silence is a choice, and "Keep Calm": pressing in rhythm
 with the character's heartbeat to stay hidden.

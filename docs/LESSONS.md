@@ -17,6 +17,15 @@ the fix.
   turn and meter. `gameWait`/`hold` in playtest.js wait for `rt.clock` (and stop when play ends: a walk that answers
   a choice ends play). Upper bounds can be generous; they only cost time when something is broken. PLAY failed at
   step 4 for a whole session before this was found.
+- **A click in a headless test lands where the mouse last was:** Playwright's `page.click(selector)` moves the mouse
+  to that element, so a mouse parked over the view before the Watch's Start button was clicked was over the button,
+  and the game never saw the click (PLAY's first try of a left click to use). Park it again right before pressing, with
+  the faked pointer lock let go for that moment: a locked mouse that moves turns the view (`click()` in playtest.js).
+  And a check of someone walking measures the game's clock too (`onRoute`: Mari moved 0.18 m in 4 wall seconds).
+- **A renamed room takes its built pieces' names with it:** the scene builder renames a borrowed level's rooms that clash
+  (`genkan` → `genkan_2`), but the pieces it keeps as props (`genkan_fx_floor`, its built-ins, a cushion `on` its sofa)
+  kept the old names, so a level taken twice into one game (a set borrowed where its layout already was) had every
+  fixture twice and wouldn't plan. `renameItems` renames them and the `on`s; BUILDER borrows a set into such a game.
 - **A test's search must not touch the story:** `goTo` tried 16 spots and ticked the game at each, so a spot on the
   cellar stairs fired `enter` and answered a choice. Aim-test a candidate without a tick, and skip spots inside a
   trigger the player isn't already in.
@@ -181,6 +190,20 @@ points to the nearest skin point piled several onto the same spot on a heavy bod
 blew Blender's cloth apart (seams a metre apart). Laying them round the body's cross-section at that height (each at
 its own angle from the middle, at its own height) keeps their order and spacing, and the pants stay on. And don't
 flatten a scooped neckline to one height: it hitches the whole top up.
+
+## A chart is pseudo-code, not prose (2026-10-28)
+
+- **Write the writers' room's script as literal things:** who does what with which thing, short lines, sounds as cues,
+  a `Note:` for anything the director must know. No narrative description ("she's soaked", "cicadas outside"): every
+  described thing is a model, a state or a shot someone has to make. Chilla's Art's density: few words, a to-do list.
+- **The player never speaks a line** (no `You: "..."`): his answers are an act and a thought, `[ Greet ] She looks
+  cold, welcome her inside --- [ Question ] She looks different`, and the player imagines what he said. Only the cast
+  talk in quotes. A talk needs a line from someone in the cast before the answers.
+- **His thoughts know only what's in front of him:** never a thought that states what the player hasn't been shown
+  ("Natsu came back. Tell her", "Twelve years. Is it really her?" before anyone said twelve years). Facts come from
+  outside (the list, her lines, the props, the phone), and his answers react to them; the player has amnesia with him.
+- The first chart of The Visitor read like a novel (scene-setting lines, a wet arrival needing its own model, a cold
+  open); the user asked for pseudo-code. Rewritten terse, the same structure held.
 
 ## Tops: no cuff bands, sleeves at the arms' angle (2026-10-22)
 
@@ -793,3 +816,278 @@ load the page once after an edit.
   cornea's coat off it still read a bright pixel in the iris, the frame most likely drawn before the shader that lost
   its coat had recompiled. It now waits for rendered frames and measures the eyeballs alone. Run the whole check once
   before calling a new step done.
+
+## A test's root above the crown's top misses from a level view (2026-10-26)
+
+The salon's radial field overestimates the head's radius at its pole (the top bins are filled from their neighbours),
+so `COL.surface([0.03, 0.14, 0])` sits a centimetre above the skin. A camera from below (the reference's frames) looks
+up through it into the head and the click lands; a level front view's ray passes over the crown and nothing is hit.
+Three steps "failed" on it. Put a test's root where the view sees skin (the front of the crown from the front), and
+when a click lands nowhere, check the ray against the mesh before the tool.
+
+## Buttons over the view steal clicks (2026-10-26)
+
+The salon's view buttons sat over the top of the view; a test's end click on the forehead, seen from below, landed on
+"Side L" and turned the head instead of placing the sheet. Anything that floats over a canvas takes the clicks under
+it: keep bars in the header or the panel, and keep only what must be in the view (the tools' column, OK by the arrow).
+
+## The second reference's lash sets (2026-10-26)
+
+- **A sculpt near an opening measures from the opening's own line, never from MediaPipe's ring:** on MHR's face the
+  upper ring sits 2 mm below the line the eye is cut along, so Hooded lids, kept still for an eighth of the way up from
+  the ring, still moved the opening's own vertices 0.3 mm and the lashes' rim with them. The sculpt is built now with
+  the model's lid line (`buildSculpt({ lid })`) and nothing within 2.8 mm of it moves.
+- **A height over a line is only as smooth as the line:** measured straight up from the lid's line, a point's height
+  changed fast sideways where the line falls into the corners, and the fold turned twelve triangles over just above
+  the outer corner. Measure from an envelope that can't fall faster than a set slope (its gradient bounded), fade a
+  field out where it stops (no hard cut by depth or by the brow's gap) and count the triangles turned over.
+- **Makeup under long lashes doesn't show:** the smoky plum looked grey-brown on the first render because its whole
+  spread sat inside the 6.5 mm the glam lashes cover; sample the pixels where the colour should be before blaming the
+  colour, and give a look the reach it needs (Eyeshadow size).
+- **Measure the thing the style changes:** neighbouring hairs' lean differences barely told a criss-cross mink from a
+  combed natural set (1.4×: the hairs in one cluster share a lean, so most neighbours agree); neighbouring clusters'
+  mean leans did (2.6×).
+- **A hard step in a makeup mask draws a line wherever the layer is still strong at it:** the eyeshadow's "above the
+  lid's middle" and the wash's "nearer the lower lid" were steps; once the shadow spread wider they showed as straight
+  lines across the skin beside the inner corner (found by sampling a column of pixels: a 20-level jump in one row).
+  Ease every mask a layer can reach past.
+
+## The clothes' edit mode and the designer collection (2026-10-27)
+
+- **Radii carried round a middle that moved sink:** a shoe's heel cup took a forward section's radii as they were and
+  blended the middles; on a tall boot the forward section's middle was 20 cm higher, so its radii round the heel's
+  lower middle reached under the floor. Carry an outline as points and measure it again round the new middle.
+- **A cropped top with long sleeves hangs lower than its hem:** the check measured a hem by the cloth's lowest point,
+  and the sleeves' cuffs were lower. Measure a hem off the arms.
+- **A shaft lofted from the foot cuts the calf:** the shoe loft's sections are planes along the foot, so above the
+  ankle they wall off whatever lies behind the heel; a boot to the knee is cut as a shell with the shoe's line instead.
+- **Lace with empty holes reads as see-through:** the reference's lace top was lined. An over-skin fabric needs an
+  opaque twin (`laced`) for anything that isn't meant to show the skin.
+- **A film on the body is the cheap preview of a cut:** the cutter's value on every skin point, drawn with its zero as
+  the line, is a few milliseconds a garment and shows exactly what the tailor will cut; the cloth itself (relaxed,
+  hung) is only for the bake.
+- **A cut that hugs the body reads as knitwear, whatever the fabric says:** every structured garment looked like a
+  cardigan until the cut bridged the hollows (more tension), the shoulders were built (a pad at each joint) and the
+  drape kept the cut (memory, stiff bend, little slack). Fabric tiles can't make a membrane look tailored.
+- **Judge a tile on the garment, not the swatch:** lace flowers at 7 cm were polka dots on a blouse, silk streaks were
+  creases down a skirt, a satin sheen band tiled into blocks. Render the outfit before calling a fabric done.
+- **"Loose" is not "open":** a blazer loosened by its fit still closed down the front and read as a long cardigan; the
+  reference wore it open. Cut what's worn open open, and let the drape leave it so.
+
+## What a shader draws never reaches a file (2026-10-27)
+
+The Studio's skin, clothes and lashes looked right in the Studio and came out white on the desk: their colours were
+drawn in shaders (`onBeforeCompile` uniforms, a `ShaderMaterial`), and glTF carries only a material's colour and maps
+(GLTFExporter drops a ShaderMaterial without a word in the file). Check an export by reading it back and measuring what
+a plain viewer would draw (STUDIO's export colours step), never by the Studio's own view. Anything new drawn in a
+shader needs its bake (`albedo.js`) before it ships.
+
+## A close-up says its size, and the check plays every answer that matters (2026-10-27)
+
+The writers' room's first builds passed the story check and failed SHOTS: the plan's shot review frames a clip's whole
+body unless the clip says its size, and an actor on a mark 0.65 m from the eye shows only a quarter of a standing body.
+A first-person close-up names its shot (`mcu` at 0.55 to 0.9 m, `cu` closer) so the review frames the head and
+shoulders, and its mark stands straight ahead of the eye (a mark offset sideways put the face 0.97 m away, an MS). And
+the walker answered every reply by its sweep (the kindest, the cruellest, silence), so an ending decided by a middle
+answer was never reached: a reply whose answer sets a flag a flag choice reads now plays each such answer on its own
+path. Build a generated game through all of check_all (STORY, LEVEL, SHOTS) and the desk's own suites, not only STORY.
+
+## A redraw on the first click eats the double-click (2026-10-27)
+
+The writers' room's chart picked a shape or an arrow on mousedown and redrew it, so the element the first click landed
+on was gone by the second: the browser's dblclick never came (an arrow couldn't be labelled, a shape retitled). Read a
+double-click from the second mousedown (`e.detail >= 2`). And an autosave that redraws mustn't run over a title being
+typed on the chart (the redraw replaced the element being typed in: `editing` holds it off); a blur that follows an
+Enter must not finish the same edit twice. Test an editor through the gestures a person uses (a double-click, typing
+after a drop, a box dragged with Shift held) in the view as it is after the steps before (a step that centres the view
+moves what the next one aims at), not only by calling its functions.
+
+## A wait in a browser test is counted in the slowest frames (2026-10-27)
+
+PLAY's bed step failed twice at the same place ("not lying down", the eye at 0.71 of a 0.69 target): the lie-down is a
+1.1 s tween that moves at most 0.05 s a frame, and a software GPU late in the run draws about two frames a second, so
+it needed some 8 s of real time and the step waited 8. Nothing was broken. A test waiting on anything the frame loop
+drives (tweens, fades, cards) gives it the run's slowest frame rate: 60 s, as PLAY's other steps do.
+
+## A step late in a browser test may be in a new run (2026-10-28)
+
+PLAY's pause-menu step expected the flashlight's row (picked up a few steps earlier) and found it missing: by then the
+test had started a second playtest (the one that checks a new run starts from the story's level), and a new run starts
+with nothing in the pocket. The menu was right. Before asserting what a step "already has", check whether a step since
+began a new run; give the step what it needs itself (here `give("flashlight")` before the menu opens).
+
+## An Esc sent to skip a scene can pause the play after it (2026-10-28)
+
+PLAY skips the Watch's scenes by pressing Esc until play is back. Once (third run of the day, the step had passed twice)
+the last Esc landed after play had resumed: on the software GPU's slow frames it arrived more than the runtime's 400 ms
+after `go()`, so it was a pause, and the next step found the menu up. Nothing in the game was wrong. A test that sends
+keys to get past something must check what its last key did once it's past (`scenesUntilPlay` now closes a pause it
+opened), not only that it got there.
+
+## Two browser suites at once, and a suite cut in half (2026-10-28)
+
+STUDIO failed twice on the Character Studio's reference light, neither time because of it. The first run was cut off
+at 23 of its 38 steps by the timeout I gave it (28 minutes: the whole suite takes nearly an hour on this box's software
+GPU). The rest, run on their own with `ONLY` while PLAY ran beside them, timed out on a click whose element was already
+visible and still: two headless browsers drawing WebGL on four cores starve each other's input. Run alone, the same
+subset failed on the eyes: that step checks a face fitted to pictures, which two earlier steps (the front and side
+pictures) make, and `ONLY` had skipped them. So: one browser suite at a time; a suite's timeout over its whole length
+(STUDIO an hour); and `ONLY` only for steps that stand alone, else the whole suite.
+
+## A count over a short window isn't a rate (2026-10-28)
+
+PLAY's footsteps step compared the steps heard in 1.6 s walking and crouched and wanted fewer crouched. Both were
+three: the first step comes half a stride in, so a short window rounds both rates to the same count. The steps were
+right (0.52 s apart walking, 0.65 s crouched). Measure what's meant (the time between steps, from the game's clock),
+not a count over a window that small.
+
+## The stage's cast are figures, not objects (2026-10-28)
+
+The cast's footsteps heard nothing on their first PLAY run: `stage.cast[id]` is a figure (its body, its head, its
+motion), and the Object3D that moves through the room is its `.group`; the code asked the figure for `visible` and a
+world position and skipped her. The runtime's `shelfSound` had made the same mistake since it was written, so a sound
+placed at a cast member played from nowhere in particular. Anything that wants where someone is asks
+`stage.cast[id].group` (or `headWorld()` for the eyes' height).
+
+## A new way through a lock must leave the story's locks alone (2026-10-28)
+
+The latch's first PLAY run found the front door's turn saying Unlock before anyone had turned it: the Pilot's arrival
+slams the front door and locks it behind you (`door` `lock`), and a thumb turn that undid any lock would have let the
+player walk straight out of the story. The latch now keeps its own lock (`latched`) apart from the door's: it locks and
+unlocks only what it locked, and against the story's lock or a key's it won't turn. Anything new that opens, unlocks or
+moves past something should first ask what else already holds it shut, and leave that alone.
+
+## The key that closes a card keeps going (2026-10-28)
+
+Putting the examined photo back with Esc paused the game straight after. The HUD's Esc handler (a capture listener,
+first to run) closed the card and resolved its promise; the runtime's `modal` then set `busy` back to false in a
+microtask, which runs between listeners, so by the time the same keydown reached the runtime's own handler the game
+was no longer busy and Esc meant pause. Text cards closed with Esc did the same; the tests had always closed them
+with the button. The runtime's guard for "an Esc meant for the scene that just ended" (`since`, 400 ms) now starts
+when a card closes too. A key that ends one thing must be checked against everything else listening for it.
+
+## A test that touches the story's things can change its ending (2026-10-28)
+
+PLAY's new examining step looked at the Pilot's kitchen photo, and twenty steps later the walk out onto the porch
+ended in "Mother's day" instead of the good ending: looking at that photo is the Pilot's secret (`found_photo`). The
+step itself was fine. Before a test step uses one of a game's things, check what the story hears from it (`story.py
+flow`, a grep for its id); use one nothing listens to (the answering machine), or give the step a thing of its own.
+
+## An import inside a function hides the module's name everywhere in it (2026-10-28)
+
+The desk's "saves kept" list (the toolbar's clock) had failed since 2026-10-26 without anyone seeing it: two branches
+of the server's `do_GET` had their own `import urllib.parse`, which makes `urllib` a local name for the whole
+function, so the history branch (on paths those lines never run) found it unbound, raised, and the server dropped the
+connection. GUIDE's history step was the first to notice. The module imports it once at the top; a function never
+imports again what the module already has.
+
+## A second level at the same coordinates found the checks comparing across maps (2026-10-28)
+
+TestRoom001 is the first game with two levels, and its annex sits at the lab's own coordinates (each level is its
+own map, in Unreal and on the desk's stage). The level check then put the lab's cornices "3 cm into a wall of
+annex_hall", and the shot review found an annex camera "inside corridor__wall_e4": both compared every piece with
+every wall, whatever its level. Whatever compares two pieces compares them on one level; a new kind of story (two
+levels, a set, a second floor) is worth one run of every check before trusting what they say about it.
+
+## The reticle reaches a door from either side, so a test must say which side (2026-10-28)
+
+TESTROOM's walk through the front door went the wrong way: the helper that stands the player where the cursor lands on
+a thing tried the side north of the door first, and a door is in its wall's plane, so the reticle found it from the
+lobby too. Walked "through" from there, the player went out into the yard. Through a door, a test stands on the side
+away from the room it wants and faces it (`walkThrough(door, into)`), never where a search happened to stop.
+
+## A station's last tick clears its list at once (2026-10-28)
+
+The latch locked the front door, its task ticked, and the test waiting to see it ticked on the HUD never did: the
+station's own `done` (`untodo` then `done`) had cleared the list in the same moment. A test hears what the story hears
+(the runtime's events: `{type: "todo", id, state}`), not what's left on the screen afterwards.
+
+## The software GPU and a big level: draw only what can be seen (2026-10-28)
+
+Play in TestRoom001's lab ran at one frame a second in the headless browser (24 lights over 565 meshes, half a second
+a frame with every light lit per pixel; the Pilot runs at three), and the game's clock moves at most 0.05 s a frame, so
+a 40 s station took ten minutes. A smaller window or the simple view alone barely helped. What did: the simple view
+leaves out the rooms the eye can't see through any opening in view (their props, floors, lights; never walls or
+doors), thirty frames a second, the pictures the same to the pixel. Measure where the time goes (a render read back,
+then with lights off, then far things off) before reaching for a fix.
+
+## A list that's through before it's whole (2026-10-28)
+
+TestRoom001's power station ended the moment you walked in: walking in ticked its first task ("Go into the power
+room") and fired the beat that cut the power and put the other three tasks on the list, but Play ran a beat's actions
+one awaited step at a time, so the station's `{"ticked": true}` beat heard the same event first, found a list of one
+ticked task, and ended it. The story check never saw it (its walker runs a beat whole). Play now runs a beat's
+instant actions together before the next beat looks (STORY_FORMAT §4), and the test room puts each station's whole
+list on at its start, its later tasks ticking only once their moment has come (`all` with a flag). A `{"ticked": true}`
+station needs its list whole before any of it can be ticked.
+
+## The last tick cut its own beat off (2026-10-28)
+
+TestRoom001's sofa and locker: "Sit on the sofa" ticked on `use: rest_sofa`, the same event that started the sofa's
+beat (a scene, then the name box); the tick was the station's last, so the station ended there and the name was never
+asked. The locker's "Hide in the locker" did the same to the look-away swap, and the run went on through the next scene
+and the round's card while the test was still waiting in the locker. A station ends when its list is through, so the
+task that closes it ticks at the end of the beat it's about (`{"tick": id}`), never on the trigger that starts it
+(STORY_FORMAT §4); the story check now warns about it. The bed did it too, and so did the fuse, whose beat only slams
+a door: there Play was wrong, the to-do list heard the pickup before the beats did, so the list ended the station
+before the slam. Beats hear an event first now. The same day: a kit door's frame is a block spanning the doorway,
+drawn only at its edges, and it caught the reticle, so a kit door couldn't be opened from its middle; Play's aim now
+passes through hollow pieces.
+
+## A retry with empty pockets (2026-10-28)
+
+The full TestRoom001 run failed at the annex's fusebox ("Needs: Fuse") though every station alone passed: the death
+in the round and its retry ("Return to") restarted the run from the round's checkpoint, and a checkpoint kept flags,
+karma and counters but not the items or the little things' states, so the fuse from the vault was gone. A start
+`--from` a station is given what the stations before it leave (LEAVES), so it never showed. A checkpoint keeps the
+pocket and the little things now, and the test checks them after the retry. Run the whole room from the start before
+calling it done: what one station leaves the next is only tested there. The full run's clock showed one more: the
+kitchen's cigarette, lit from the start, burns seven minutes and keeps what it burnt (`keep`), so by the time a whole
+playthrough reached the kitchen it was out for good and there was nothing to put out. A little thing a station is
+about starts there (unlit, and lit as you come in).
+
+## A number that belonged to one character (2026-10-28)
+
+PEOPLE checked a Studio export's eye on the desk by its white being over 120 of 255. It passed for months on the export
+the last full STUDIO run left behind; once a shorter STUDIO run left a fresh default character's export there, the white
+came out 118 (with the skin light on or off: the eye isn't the skin's), and the check failed on a healthy eye. How light
+a white is belongs to the character's paint and the light; the check now asks what makes an eye an eye: the pupil
+dark, the white's lightest clearly over the lids' mean beside it (118 against 93). A test measuring a picture compares
+parts of the same picture, not a number tuned on one run's leftovers.
+
+## One budget for six walks (2026-10-28)
+
+The story check walks a game six times (the kind, the cruel and the silent player, each missing every secret and then
+finding them all), and all six shared one cap of 4096 paths. A conversation card whose answers go different ways (the
+end, another card) multiplies the paths after it; in the Sample with one four-answer talk the first five walks took
+759 each and the last, the silent player who finds the secrets, was cut at 301, silently: what it would have found
+past that went unchecked, and an ending only it reaches would have read as unreachable. Each walk has its own cap now,
+a walk cut short says so, and an ending no walk reached is an error only when nothing was cut. An answer is walked on
+a path of its own only when its way differs from the sweep's (another card, or replies and events it skips); a skip
+over plain lines is only time.
+
+## Look at what fills a hole before reshaping it (2026-10-28)
+
+The Studio's eyes vanished seen from the side. The eyeball is drawn only where a fan over its opening marks the
+stencil, over whatever is inside the head (no depth test), and from the side that fan is nearly edge-on, so the first
+two fixes widened where the eyeball may show: drawn again as a solid inside the opening's outline, then a fan domed
+over the cornea. Each made the eye bulge out of the lids, which the user didn't want, and neither touched the cause.
+Rendering the opening with its eyeball hidden and the fan coloured green showed it: from 75° the opening was full of
+an eyeball all the same, the other one. Both eyes wrote the same stencil value, and seen from the side they line up,
+so the far eyeball, drawn after the near one with no depth test, painted itself through the near opening; and where
+the skin is cut deeper than the fan, a grazing ray slipped past the fan into the head and onto the other eye's. Each
+eye has its own stencil value now, its fan is walled back to the cut and writes depth. Only then was the shape worth
+working on: the user drew the mask they wanted (red, over our renders), and the fan became that mask made smooth, an
+arch from lid to lid. When something drawn looks wrong, take parts away one at a time (colour the mask, hide the
+object) and see what's left, before changing the shape of anything.
+
+
+## A browser check in the cloud wants the machine to itself (2026-10-28)
+
+The full STUDIO run failed 30 steps in: a click on the Head view's button timed out after 30 seconds. Nothing was
+wrong with the page; the picture the failure left shows the button right there. CHECKS, DESK, CMDS and REFS were
+running beside it on the cloud's four cores. SwiftShader already spends about a second on a frame there, and
+Playwright's click waits for the button to hold still over two frames, so with the cores shared the wait ran out. The
+same steps passed when the run had the machine to itself. In the cloud, run nothing heavy beside a browser check, not
+even the offline ones. On the user's machine, with `GPU=1` (docs/RUN_LOCALLY.md), a frame is milliseconds and this
+doesn't arise.

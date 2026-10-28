@@ -1,7 +1,9 @@
-// Interactables: what a prop's `use` does when the player uses it (docs/STORY_FORMAT.md §2). Each gives the cursor
-// its look and the prompt's label, and every use sends a `use` event (beats and act choices hear it) before its own.
+// Interactables: what a prop's `use` does when the player uses it, a left click on it (docs/STORY_FORMAT.md §2;
+// DECISIONS 2026-10-27, later). Each gives the cursor its look and the prompt's label, and every use sends a `use`
+// event (beats and act choices hear it) before its own.
 // `cursor` is a name the HUD's theme draws (play/ui/themes/*.css).
 import { register, part } from "./parts.js";
+import { small } from "./examine.js";
 import { EYES } from "../stage.js";
 
 export function interactableOf(thing, rt) {
@@ -11,10 +13,10 @@ export function interactableOf(thing, rt) {
 }
 
 const panelText = (title, text) => ({ title, text });
-register("interactable", "inspect", {
+register("interactable", "inspect", {                 // a small thing is taken up and turned in the hands (examine.js), a big one read on a card
   settings: { cursor: "look", label: "Look" },
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
-  use: (t, rt) => rt.panel(panelText(rt.nameOf(t), (t.userData.piece.d || {}).text || "")),
+  use: (t, rt) => small(t) ? rt.examine(t, rt.nameOf(t), (t.userData.piece.d || {}).text || "") : rt.panel(panelText(rt.nameOf(t), (t.userData.piece.d || {}).text || "")),
 });
 register("interactable", "note", {
   settings: { cursor: "read", label: "Read" },
@@ -25,27 +27,25 @@ register("interactable", "note", {
     await rt.panel(panelText(n.title || id, n.text || ""));
   },
 });
-register("interactable", "pickup", {
+register("interactable", "pickup", {              // a key, a cup, a letter: into the inventory, in the hand (runtime.take); G puts it down
   settings: { cursor: "take", label: "Take" },
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
-  use: (t, rt) => {
-    const item = (t.userData.piece.d || {}).item;
-    rt.setVisible(t.userData.id, false);
-    if (item) { rt.give(item); rt.emit({ type: "pickup", item }); }
-  },
+  use: (t, rt) => rt.take(t),
 });
 register("interactable", "door", {
-  settings: { cursor: "open", label: "Open", close: "Close", locked: "Locked" },
+  settings: { cursor: "open", label: "Open", close: "Close", locked: "Locked", unlock: "Unlock" },
   prompt: (t, rt, s) => {
     const d = rt.doorOf(t.userData.id);
+    if (d.latched && rt.onLatchSide(t.userData.id)) return { cursor: "use", label: s.unlock };   // its latch, turned, is on this side (latch.js)
     if (d.locked && !rt.canUnlock(d)) return { cursor: "locked", label: s.locked };
     return { cursor: s.cursor, label: d.open ? s.close : s.label };
   },
   use: (t, rt, s) => {
     const d = rt.doorOf(t.userData.id);
+    if (d.latched && rt.onLatchSide(t.userData.id)) { rt.latch(t.userData.id, false); return false; }   // the turn turned back: still shut
     if (d.locked) {
       if (!rt.canUnlock(d)) { rt.hud.shake(); rt.hud.line(s.locked + ".", "", 1.2); return; }
-      d.locked = false;
+      d.locked = d.latched = false; rt.turnLatch(t.userData.id);
       if (d.by && !d.by.startsWith("flag:")) rt.hud.log(`used: ${rt.itemName(d.by)}`);
     }
     rt.door(t.userData.id, d.open ? "close" : "open");
@@ -62,38 +62,72 @@ register("interactable", "combo", {                // a code lock: the free curs
     else if (got !== null) { rt.hud.shake(); rt.hud.line("Wrong.", "", 1); }
   },
 });
-register("interactable", "switch", {
-  settings: { cursor: "use", label: "Switch" },
-  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
-  use: (t, rt) => rt.light(null, t.userData.piece.room, "toggle"),
+// use_on (a fuse into the fusebox): a click with the thing it `needs` in the inventory uses it (gone from the row
+// unless `consume: false`) and sets `then`, and the story hears the use; without it, it says what's needed and nothing
+// is heard; once it's done, nothing more to do
+register("interactable", "use_on", {
+  settings: { cursor: "use", label: "Use", need: "Needs", thought: "I need the {item}." },
+  prompt: (t, rt, s) => { const d = t.userData.piece.d || {};
+    if (d.then && rt.flags.has(d.then)) return { cursor: "none", label: "" };
+    return rt.items.has(d.needs) ? { cursor: s.cursor, label: `${s.label}: ${rt.itemName(d.needs)}` } : { cursor: "locked", label: `${s.need}: ${rt.itemName(d.needs)}` }; },
+  use: (t, rt, s) => {
+    const d = t.userData.piece.d || {};
+    if (d.then && rt.flags.has(d.then)) return false;
+    if (!rt.items.has(d.needs)) { rt.hud.shake(); rt.hud.line(s.thought.replace("{item}", rt.itemName(d.needs).toLowerCase()), "", 1.6); return false; }
+    if (d.consume !== false) rt.takeItem(d.needs);
+    rt.hud.log(`used: ${rt.itemName(d.needs)}`); rt.setFlag(d.then);
+  },
 });
-register("interactable", "sit", {                 // a chair, a sofa, a bed's edge: E sits, E stands (runtime.sit)
+register("interactable", "switch", {
+  settings: { cursor: "use", label: "Switch", dead: "No power" },
+  prompt: (t, rt, s) => (rt.powered() ? { cursor: s.cursor, label: s.label } : { cursor: "locked", label: s.dead }),   // a power cut: it clicks, nothing more
+  use: (t, rt) => {                                // its own `light`, else every light in its room
+    const l = (t.userData.piece.d || {}).light;
+    if (rt.powered()) rt.light(l || null, l ? null : t.userData.piece.room, "toggle"); else rt.shelfSound("switch_01", t.userData.id);
+  },
+});
+// the breaker box (use: breaker): a click throws its switch; the level's power goes off or comes back (the lights
+// flickering up), and the story hears its use
+register("interactable", "breaker", {
+  settings: { cursor: "use", on: "Power on", off: "Power off" },
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.powered() ? s.off : s.on }),
+  use: (t, rt) => { rt.shelfSound("switch_02", t.userData.id); rt.power(rt.powered() ? "off" : "on"); },
+});
+register("interactable", "sit", {                 // a chair, a sofa, a bed's edge: a click sits, a click stands (runtime.sit)
   settings: { cursor: "sit", label: "Sit", stand: "Stand up", eye: EYES.sit, secs: 0.6 },
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.seat === t ? s.stand : s.label }),
   use: (t, rt, s) => (rt.player.seat === t ? rt.stand(s) : rt.sit(t, s)),
 });
-register("interactable", "roll", {                // a die: E throws it from your hand; its face is read when it settles
+register("interactable", "sleep", {               // a bed: a click lies the player down on it and the view goes dark (runtime.sleep); the story's beat on its use plays the next chapter
+  settings: { cursor: "sit", label: "Sleep", notYet: "Not tired yet", thought: "I'm not tired yet.", eye: 0.14, mattress: 0.55, pitch: 55, secs: 1.1, dark: 1.4, wake: 1.0 },   // eye: over the mattress (at most `mattress` m up); pitch: looking up
+  prompt: (t, rt, s) => (rt.ready(t) ? { cursor: s.cursor, label: s.label } : { cursor: "locked", label: s.notYet }),
+  use: (t, rt, s) => {                             // not ready (its `if` flags): a thought, and the story hears nothing
+    if (!rt.ready(t)) { rt.hud.shake(); rt.hud.line((t.userData.piece.d || {}).not_yet || s.thought, "", 1.6); return false; }
+    return rt.sleep(t, s);
+  },
+});
+register("interactable", "roll", {                // a die: a click throws it from your hand; its face is read when it settles
   settings: { cursor: "take", label: "Roll", speed: 2.6, lift: 1.2, spin: 14 },  // m/s along the look, m/s up, rad/s
   prompt: (t, rt, s) => (rt.physics && rt.physics.rolling(t) ? { cursor: "none", label: "" } : { cursor: "roll", label: s.label }),
   use: (t, rt, s) => { if (!(rt.physics && rt.physics.rolling(t))) rt.roll(t, s); },
 });
-register("interactable", "carry", {               // a plushie, a box: hold E to pick it up (runtime.pickUp), hold E again to put it down
-  settings: { cursor: "take", label: "Pick up", drop: "Put down", hold: 0.45 },   // hold: the seconds E is held, both ways
-  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label, hold: true }),
-  use: () => {},                                   // a tap does nothing: it takes a hold
+register("interactable", "carry", {               // a plushie, a box: into the inventory too, carried in both hands (its physics kind's spring); G puts it down
+  settings: { cursor: "take", label: "Pick up" },
+  prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
+  use: (t, rt) => rt.take(t),
 });
-register("interactable", "game", {                // a table with a board game: E sits you down to play it (runtime.boardGame; the rules in Content/Studio/BoardGames/)
+register("interactable", "game", {                // a table with a board game: a click sits you down to play it (runtime.boardGame; the rules in Content/Studio/BoardGames/)
   settings: { cursor: "use", label: "Play", eye: EYES.sit, secs: 0.7, back: 0.22, house: "The dealer" },   // back: the eye from the table's edge, leaning in
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: s.label }),
   use: (t, rt, s) => rt.boardGame(t, s),
 });
-register("interactable", "hide", {                // a locker, a wardrobe: E gets in (runtime.hide), E gets out
+register("interactable", "hide", {                // a locker, a wardrobe: a click gets in (runtime.hide), a click gets out
   settings: { cursor: "hide", label: "Hide", leave: "Get out", eye: EYES.hide, secs: 0.7, look: [70, 35] },   // look: yaw, pitch cone (deg)
   prompt: (t, rt, s) => ({ cursor: s.cursor, label: rt.player.hiding === t.userData.id ? s.leave : s.label }),
   use: (t, rt, s) => (rt.player.hiding === t.userData.id ? rt.unhide(s) : rt.hide(t, s)),
 });
 register("interactable", "locker", Object.assign({}, part("interactable", "hide")));     // the format's word for it
-register("interactable", "life", {                // a little thing (docs/IMMERSION.md): E does what its state offers (switch the kettle on, put the cigarette out, pour)
+register("interactable", "life", {                // a little thing (docs/IMMERSION.md): a click does what its state offers (switch the kettle on, put the cigarette out, pour)
   settings: { cursor: "use" },
   prompt: (t, rt, s) => { const a = rt.lifeActs(t.userData.id)[0]; return { cursor: s.cursor, label: a ? a.label : "" }; },
   use: (t, rt) => { const a = rt.lifeActs(t.userData.id)[0]; if (a) rt.setState(t.userData.id, a.to, "player"); },

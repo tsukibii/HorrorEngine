@@ -14,7 +14,7 @@ const shot = process.argv[2];
 const fail = m => { console.error("FACEPAGE FAIL: " + m); process.exit(1); };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 800 } })).newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));

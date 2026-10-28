@@ -86,4 +86,23 @@ function next(npc, rt, s) {
   if (npc.st.r && !npc.pos) { npc.pos = npc.st.r.points[0].pos.clone(); npc.level = npc.st.r.level; }
 }
 
+// go: walk to a spot (by `via`, spots on the way: through a door, round a table), then stay there: stand facing its
+// rot (`then: "idle"`, or `face` a thing, a cast member or the player) or sit (`then: "sit"`). Arrived, it's heard
+// ({"arrived": cid, "at": spot}) and holds: a request's asker going back to the sofa, and the story carrying on there
+register("behaviour", "go", {
+  settings: { to: null, via: [], then: "idle", speed: 1.1, pose: "idle", sit: "sit", face: null, motion: null },
+  start: (npc, rt, s) => {
+    const r = npc.st.r = rt.route([...(s.via || []), s.to]); if (!r) return;
+    npc.st.i = 0; npc.st.dir = 1; npc.st.wait = 0;
+    if (!npc.pos) { npc.pos = r.points[0].pos.clone(); npc.yaw = r.points[0].yaw; npc.level = r.level; }
+  },
+  update: (npc, rt, dt, s) => {
+    if (npc.st.arrived) { if (s.then !== "sit") faceThing(npc, rt, s, dt); return; }
+    if (npc.st.r) walkRoute(npc, rt, dt, Object.assign({}, s, { mode: "once" }), npc.st.r, () => {
+      at(npc, rt, { at: s.to }); npc.pose = s.then === "sit" ? s.sit : s.pose;
+      npc.st.arrived = s.to; rt.emit({ type: "arrived", id: npc.cid, at: s.to });
+    });
+  },
+});
+
 export const behaviourOf = name => part("behaviour", name);

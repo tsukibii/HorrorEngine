@@ -31,6 +31,8 @@ export const SURFACES = {
   sheer: ["Sheer (pantyhose)", 0.03, 0.4, 0, true],
   fishnet: ["Fishnet", 0.028, 0.2, 0.4, true],
   lace: ["Lace", 0.07, 0.1, 0.3, true],
+  laced: ["Lace, lined", 0.036, 0.15, 0.3, false],
+  sequin: ["Sequins", 0.03, 0.9, 0.4, false],
 };
 
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -94,9 +96,9 @@ export function surfaceTile(kind) {
   } else if (kind === "rib") {                                        // ribs down the piece (cuffs, socks, a sweater's hem)
     for (let xx = 0; xx < n; xx += 4) { x.fillStyle = "rgba(255,255,255,0.12)"; x.fillRect(xx, 0, 2, n); x.fillStyle = "rgba(0,0,0,0.14)"; x.fillRect(xx + 2.5, 0, 1.2, n); }
     for (let yy = 0; yy < n; yy += 3) { x.fillStyle = "rgba(0,0,0,0.05)"; x.fillRect(0, yy, n, 0.6); }
-  } else if (kind === "silk" || kind === "satin") {
-    wrap(() => { for (let i = 0; i < 14; i++) { x.fillStyle = `rgba(255,255,255,${0.03 + rnd() * 0.04})`; x.save(); x.translate(rnd() * n, 0); x.rotate(0.5); x.fillRect(0, -n, 3 + rnd() * 10, n * 3); x.restore(); } });
-    if (kind === "satin") sheen(30, 3, (u, v) => u + v * 0.3);
+  } else if (kind === "silk" || kind === "satin") {                  // a faint slub along the weave, not streaks (they read as creases on a long skirt)
+    wrap(() => { for (let i = 0; i < 18; i++) { x.fillStyle = `rgba(255,255,255,${0.012 + rnd() * 0.02})`; x.save(); x.translate(rnd() * n, 0); x.rotate(0.08); x.fillRect(0, -n, 1.5 + rnd() * 4, n * 3); x.restore(); } });
+    if (kind === "satin") sheen(16, 2, (u, v) => u + v * 0.3);     // a gentle band of light (a strong one tiles into blocks on a long skirt)
   } else if (kind === "spandex") {
     for (let yy = 0; yy < n; yy += 4) { x.fillStyle = yy % 8 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.045)"; x.fillRect(0, yy, n, 1); }
     sheen(26, 3, (u, v) => u + v * 0.6);
@@ -112,6 +114,14 @@ export function surfaceTile(kind) {
   } else if (kind === "velvet") {
     wrap(() => { for (let i = 0; i < 18; i++) dot(rnd() * n, rnd() * n, 10 + rnd() * 16, rnd() < 0.5 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)"); });
     for (let i = 0; i < 1800; i++) { x.strokeStyle = rnd() < 0.5 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"; x.lineWidth = 0.8; const px = rnd() * n, py = rnd() * n; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 0.3, py + 2.2); x.stroke(); }
+  } else if (kind === "sequin") {                                    // discs in staggered rows, each catching the light its own way
+    const P = 7, rows = Math.ceil(n / (P * 0.87)) + 2, cols = Math.ceil(n / P) + 2;
+    wrap(() => { for (let row = -1; row < rows; row++) for (let col = -1; col < cols; col++) {
+      const cx = col * P + (row % 2 ? P / 2 : 0), cy = row * P * 0.87, b = rnd();
+      dot(cx, cy, P * 0.6, b < 0.35 ? `rgba(0,0,0,${0.25 + rnd() * 0.3})` : b < 0.7 ? `rgba(255,255,255,${0.08 + rnd() * 0.15})` : `rgba(255,255,255,${0.35 + rnd() * 0.4})`);
+      x.strokeStyle = "rgba(0,0,0,0.35)"; x.lineWidth = 0.6; x.beginPath(); x.arc(cx, cy, P * 0.6, 0, TAU); x.stroke();
+      dot(cx - 1.2, cy - 1.2, 1.1, "rgba(255,255,255,0.55)");
+    } });
   } else if (kind === "quilted") {
     const P = n / 2;
     for (let row = -1; row <= 2; row++) for (let col = -1; col <= 2; col++) { const cx = col * P + (row % 2 ? P / 2 : 0) + P / 2, cy = row * P / 2; const gr = x.createRadialGradient(cx, cy, 2, cx, cy, P * 0.55); gr.addColorStop(0, "rgba(255,255,255,0.14)"); gr.addColorStop(1, "rgba(0,0,0,0.12)"); x.fillStyle = gr; x.fillRect(cx - P / 2, cy - P / 2, P, P); }
@@ -132,16 +142,17 @@ export function surfaceTile(kind) {
     const P = n / 2;
     wrap(() => { for (let k = -2; k <= 4; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); } });
     for (let k = 0; k < 4; k++) for (let j = 0; j < 4; j++) dot(k * P + (j % 2 ? P / 2 : 0), j * P / 2, 2.2, "#9a9a9a");
-  } else if (kind === "lace") {
-    const P = n / 4; x.strokeStyle = "#8a8a8a"; x.lineCap = "round";
+  } else if (kind === "lace" || kind === "laced") {              // lined: the same net and flowers raised on an opaque ground
+    const P = n / 4, lined = kind === "laced"; x.strokeStyle = lined ? "rgba(255,255,255,0.26)" : "#8a8a8a"; x.lineCap = "round";   // lined: a fine raised net, half the size, never dots
+    if (lined) { x.fillStyle = "rgba(0,0,0,0.05)"; x.fillRect(0, 0, n, n); }
     wrap(() => {
       x.lineWidth = 0.9; x.globalAlpha = 0.6;
       for (let k = -1; k <= 5; k++) { x.beginPath(); x.moveTo(k * P - P, 0); x.lineTo(k * P, P); x.lineTo(k * P - P, 2 * P); x.stroke(); x.beginPath(); x.moveTo(k * P + P, 0); x.lineTo(k * P, P); x.lineTo(k * P + P, 2 * P); x.stroke(); }
-      x.globalAlpha = 1; x.lineWidth = 2.2;
+      x.globalAlpha = 1; x.lineWidth = lined ? 1.3 : 2.2;
       for (let row = 0; row < 2; row++) for (let col = 0; col < 2; col++) {
-        const cx = col * n / 2 + (row ? n / 4 : 0) + n / 8, cy = row * n / 2 + n / 8;
-        x.beginPath(); x.arc(cx, cy, 7, 0, TAU); x.stroke();
-        for (let i = 0; i < 6; i++) { const a = i * TAU / 6; x.beginPath(); x.arc(cx + Math.cos(a) * 13, cy + Math.sin(a) * 13, 4.5, 0, TAU); x.stroke(); }
+        const cx = col * n / 2 + (row ? n / 4 : 0) + n / 8, cy = row * n / 2 + n / 8, r0 = lined ? 5 : 7, r1 = lined ? 3.2 : 4.5, d = lined ? 10 : 13;
+        x.beginPath(); x.arc(cx, cy, r0, 0, TAU); x.stroke();
+        for (let i = 0; i < 6; i++) { const a = i * TAU / 6; x.beginPath(); x.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, r1, 0, TAU); x.stroke(); }
       }
     });
   }

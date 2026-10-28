@@ -1,14 +1,15 @@
 // The director's desk: plot a game, block its scenes with bodies and camera, watch it as a storyboard and an animatic,
 // leave notes for each other. Reads and writes Content/Games/<Game>/story.json through serve.py.
+import { typedAt, glitched } from "./play/typing.js";
 import * as M from "./motion.js";
-import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes } from "./stage.js";
+import { Stage, LIBRARY, SHOTS, SEAM_SECS, clipSecs, version, loadAssetLibrary, LEAN, PITCH, minimaxPrompt, VOICES, eventSecs, karmaOf, addKarma, karmaPick, PLAYS, REPLY_SECS, thenClip, TIMES, TIME_DEFAULT, flowTimes, chapterTime, FACES, loadFaces, forgetFace, edgeTime, facePlanOf, thenClips, thenList, thenId, replyGo, loadPainted, flowModels, modelFile, wearModels, sceneModels, wordOf, holds } from "./stage.js";
 import { GLTFExporter } from "./vendor/GLTFExporter.js";
 import { bakePreview } from "./bake.js";
 import { loadBody, BodyFigure } from "./bodies.js";
 import { PlayRuntime } from "./play/runtime.js";
-import { chooser, loadTheme, paintLine, floating, besideAt } from "./play/hud.js";
+import { chooser, loadTheme, paintLine, docked, besideAt, setName, named, setWords } from "./play/hud.js";
 import { applySettings } from "./play/menu.js";
-import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction } from "./ui.js";
+import { beatsEditor, actionList, triggerPill, modal, form, sortable, grip, toast, contextMenu, pick, pickAll, picked, unpick, focusOf, setFocus, CLIP, copyPicks, pasteAtPicks, copyNow, deletePicks, picPick, pickGrid, pickVerb, editAction, condRow } from "./ui.js";
 import * as CLIPBOARD from "./clipboard.js";
 const { pack, unpack, pasteClips, copyNodes, pasteNodes } = CLIPBOARD;
 import { triggerText, actionText, ACTION } from "./commands.js";
@@ -27,12 +28,15 @@ import { lint, byObject } from "./lint.js";
 import { merge3, setAt, changedPaths, indexPath } from "./merge.js";
 import { placeOf } from "./refs.js";
 import { States } from "./life.js";
+import { arrows, arrowAt, canCut, setArrow, insertOn, swapNodes, runOf, moveRun } from "./flowedit.js";
+import { playShelf, shelfName } from "./sfx.js";
+import { ExpressionsPanel, DRAG_TYPE } from "./expressions.js";
 
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
 const SEAMS = ["blink", "glance", "flicker", "occlude", "cutaway", "turn", "stumble", "dip", "jcut", "heartbeat", "none"];
 const CAMS = ["free", "soft", "hard", "held"], PULLS = ["back", "left", "right", "down", "any"], ENDS = ["good", "bad", "secret", "other"];
-const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], TRANS = ["blend", "fade", "cut", "blink", "dip"];
+const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], QTE = EVENTS.filter(t => t !== "choose"), TRANS = ["blend", "fade", "cut", "blink", "dip"];
 const MOODS = {
   intimate: { text: "Close and slow: they come into your space (CU: under 0.55 m) and stay there, the player leans in a little (push 0.1 to 0.2 m), eye contact into the lens, little or no shake, warm practical light, breath under the line, long clips, seams on turns and blinks.", cone: [20, 12], shot: "cu", push: 0.15 },
   dread: { text: "Far and still: the figure over 3 m away (WS), negative space where something could be, a held look, low hum; make the player wait. Coming closer is the scare.", cone: [30, 18], shot: "ws", push: 0 },
@@ -132,7 +136,8 @@ async function load() {
   try { localStorage.setItem("dd.game", GAME); } catch (e) { }
   SEL = SEL && S.flow[SEL] ? SEL : S.game.start;
   try { const nl = M.loadLibrary(await api("/api/poses")); LIB.poses = nl.poses; LIB.names = nl.names; } catch (e) { }   // poses saved since (the demo's pose window, poses.html)
-  await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadTakes(); renderAll(); showStage();
+  await replan(); await loadMade(); await loadFiles(); await loadBodies(); await loadAssetLibrary(); await loadPainted(GAME); await loadTakes(); renderAll(); showStage();
+  if (!$("#exprPanel").hidden) XP.refresh();             // the expression cards wear this game's bodies
   CHECK.list = []; CHECK.key = null; scheduleCheck(1500);
   offerDraft();
 }
@@ -154,7 +159,7 @@ function allClips() {                            // every take: the clips, and t
   const out = [];
   for (const [sid, sc] of Object.entries(S.scenes || {})) for (const [k, ver] of (sc.variants ? Object.entries(sc.variants) : [[null, sc]])) for (const c of ver.clips || []) {
     out.push({ sid, k, c, id: takeId(sid, k, c.id) });
-    for (const o of (c.reply && c.reply.options) || []) if (o.then) out.push({ sid, k, c: o.then, id: takeId(sid, k, `${c.id}_${o.id}`), answer: true });
+    for (const o of (c.reply && c.reply.options) || []) thenList(o).forEach((th, n) => out.push({ sid, k, c: th, id: takeId(sid, k, thenId(c, o, n)), answer: true }));
   }
   for (const [lid, ln] of Object.entries(S.lines || {})) out.push({ sid: null, k: null, c: ln, id: lid, line: true });   // barks and one-off lines
   return out;
@@ -201,7 +206,6 @@ function playTake(box, sid, k, c, showVideo) {
 function playLine(lid) {                         // a line outside the scenes (a bark): its take if loaded, else the browser's voice
   const ln = (S.lines || {})[lid], t = TAKES[lid]; if (!ln) return;
   if (t) { const v = takePip("#watchBox"); if (v.dataset.src !== t.url) { v.src = t.url; v.dataset.src = t.url; } v.style.display = "none"; v.currentTime = 0; v.play().catch(() => { }); }
-  else speak(ln.ja);
   const sub = el("div", { class: "barksub" }, `${ln.en || ""}`); $("#watchBox").append(sub); setTimeout(() => sub.remove(), 2600);
 }
 const pickOne = a => a && a.length ? a[Math.floor(Math.random() * a.length)] : null;
@@ -245,7 +249,7 @@ async function loadFiles() {
 async function loadBodies() {
   try { BODIES = (await api("/api/bodies")).bodies; } catch (e) { BODIES = []; }
   if (!BodyFigure.soma) try { BodyFigure.soma = await api("/api/soma"); } catch (e) { }
-  const want = new Set([S.game.previs_body, ...Object.values(S.cast || {}).map(c => c.previs_body)].filter(f => f && f !== "capsules"));
+  const want = new Set([S.game.previs_body, ...Object.values(S.cast || {}).flatMap(c => [c.previs_body, ...Object.values(c.models || {})])].filter(f => f && f !== "capsules"));   // every model too (§5)
   const def = BODIES.find(f => /^default\./i.test(f)) || BODIES.find(f => !/_hi\./i.test(f) && !f.startsWith("people/")) || null;   // MHR_hi is for exports; a Studio character only when chosen
   if (def) want.add(def);
   for (const f of want) {
@@ -447,7 +451,7 @@ const placed = lvl => Object.entries(things()).filter(([k, v]) => v.kind !== "ro
 const castIds = () => Object.keys(S.cast || {});
 const poseNames = () => (LIB ? LIB.names : ["idle"]);
 function sceneSecs(sc) { const v = version(sc); let t = 0; (v.clips || []).forEach((c, i) => { t += clipSecs(c) + (i && c.seam ? SEAM_SECS[c.seam.kind] || 0 : 0) + (c.event ? eventSecs(c.event, S) : 0) + replySecs(c); }); return t; }
-function replySecs(c) { const rp = c.reply; if (!rp) return 0; const o = (rp.options || []).find(x => x.then); return Math.min(+(rp.wait || REPLY_SECS), 2.5) + (o ? clipSecs(o.then) : 0); }
+function replySecs(c) { const rp = c.reply; if (!rp) return 0; const o = (rp.options || []).find(x => thenList(x).length); return Math.min(+(rp.wait || REPLY_SECS), 2.5) + (o ? thenList(o).reduce((s, th) => s + clipSecs(th), 0) : 0); }
 function nodeRef(n) { return n.type === "scene" ? S.scenes[n.ref] : n.type === "stitch" ? S.stitches[n.ref] : null; }
 function notesHost(nid) { const n = S.flow[nid]; return nodeRef(n) || n; }
 function openNotes(obj) { return (obj && obj.notes || []).filter(x => !x.done).length; }
@@ -483,6 +487,7 @@ function storyFlags() {
   };
   walk(S); return [...out].sort();
 }
+function todosOf() { const out = {}; const walk = l => { for (const a of l || []) { if (!a) continue; if (typeof a.todo === "string") { out[a.todo] = a; for (const x of Object.values(a.on || {})) walk(x); } for (const o of a.options || []) walk(o.do); } }; for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) walk(b.do); return out; }
 function asksOf() { const out = {}; for (const st of Object.values(S.stitches || {})) for (const b of st.beats || []) for (const a of b.do || []) if (a.ask) out[a.ask] = a; return out; }
 const CTX = {
   refs(kind) {
@@ -506,6 +511,8 @@ const CTX = {
       case "room": return T(t => t.kind === "room");
       case "zone": return T(t => t.kind === "room" || t.use === "trigger");
       case "locker": return T(t => t.use === "locker");
+      case "stain": return T(t => t.use === "clean");
+      case "breaker": return T(t => t.use === "breaker");
       case "carry": return T(t => t.use === "carry");
       case "die": return T(t => t.use === "roll");
       case "table": return T(t => t.use === "game");
@@ -513,6 +520,7 @@ const CTX = {
       case "route": return Object.entries(S.levels || {}).filter(([l]) => !lv || l === lv).flatMap(([, v]) => Object.keys(v.routes || {}).map(r => [r, r]));
       case "beat": return CTX_BEATS.map(b => [b.id, `${b.id}: ${triggerText(b.when, CTX.name)}`]);
       case "ask": return Object.entries(asksOf()).map(([k, a]) => [k, a.text ? `${k} · ${a.text}` : k]);
+      case "todo": return Object.entries(todosOf()).map(([k, a]) => [k, a.text ? `${a.text} (${k})` : k]);
       case "pose": return poseNames().map(p => [p, p]);
       case "motion": return Object.keys(S.motions || {}).map(k => [k, k]);
       case "flag": return storyFlags().map(f => [f, f]);
@@ -530,6 +538,7 @@ const CTX = {
     if (kind === "scene") return `“${((S.scenes || {})[v] || {}).title || v}”`;
     if (kind === "cast") return ((S.cast || {})[v] || {}).name || v;
     if (kind === "counter") return ((S.game.counters || {})[v] || {}).label || v;
+    if (kind === "todo") { const t = todosOf()[v]; return t && t.text ? `“${t.text}”` : v; }
     return String(v);
   },
   changed() { touch(); },
@@ -554,21 +563,24 @@ const advanced = (...kids) => el("details", { class: "advanced" }, el("summary",
 
 /* ---------- the flow board ---------- */
 function karmaLabel(o) { const a = o.axis && o.axis !== "karma" ? o.axis + " " : ""; return o.min !== undefined && o.max !== undefined ? `${a}${o.min}..${o.max}` : o.min !== undefined ? `${a}≥ ${o.min}` : o.max !== undefined ? `${a}≤ ${o.max}` : "else"; }
-function outs(id) {
+function outs(id) {              // the arrows out of a card, labelled (flowedit.arrows: each with where it lives, `at`)
   const n = S.flow[id]; if (!n) return [];
-  const o = n.options ? n.options.map(o => ({ to: o.to, label: o.label || o.result || (o.if ? o.if.join("&") : n.by === "karma" ? karmaLabel(o) : n.by === "count" ? (o.count ? o.count + " " : "") + karmaLabel(o) : "else") })) : n.next ? [{ to: n.next, label: "" }] : [];
-  if (n.type === "stitch" && S.stitches[n.ref]) {
-    const st = S.stitches[n.ref];
-    if (st.timer && st.timer.fail) o.push({ to: st.timer.fail, label: "⏱ " + (st.timer.secs || "") + " s", kind: "timer" });
-    for (const it of S.interrupts || []) if (it.during === "all" || (it.during || []).includes(n.ref)) o.push({ to: it.to, label: "☠ " + (it.label || it.id), kind: "interrupt" });
-  }
-  return o;
+  const label = a => {
+    const [k, i] = a.at;
+    if (k === "option") { const o = n.options[i]; return o.label || o.result || (o.if ? o.if.join("&") : n.by === "karma" ? karmaLabel(o) : n.by === "count" ? (o.count ? o.count + " " : "") + karmaLabel(o) : "else"); }
+    if (k === "timer") return "⏱ " + (S.stitches[n.ref].timer.secs || "") + " s";
+    if (k === "interrupt") return "☠ " + (S.interrupts[i].label || S.interrupts[i].id);
+    if (k === "answer") return "↪ " + (a.option.label || a.option.id);   // an answer that leaves for another card (§9.9 go)
+    return "";
+  };
+  return arrows(S, id).filter((a, i, all) => a.to && (a.kind !== "answer" || all.findIndex(b => b.kind === "answer" && b.to === a.to) === i)).map(a => Object.assign(a, { label: label(a) }));
 }
 // the board (board.js): what's on a card, and what moving, connecting and adding do to the story
 let BOARD = null;
 function cardOf(id, n) {
   const ref = nodeRef(n), times = flowTimes(S); let meta = "";
-  if (n.type === "scene" && ref) { const v = version(ref), ft = times[id]; meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : ""); }
+  if (n.type === "scene" && ref) { const v = version(ref), ft = times[id], om = Object.entries(sceneModels(ref)); meta = `${(v.clips || []).length} clips · ${Math.round(sceneSecs(ref))} s` + (ref.mood ? " · " + ref.mood : "") + (ref.variants ? ` · ${Object.keys(ref.variants).length} var` : "") + (ft ? " · " + TIME_MARK[ft.time] + (ft.own ? " " + ft.time : "") : "")
+    + (om.length ? " · " + om.map(([c, m]) => `${((S.cast || {})[c] || {}).name || c}: ${m}`).join(", ") : ""); }   // the models it picks (§5)
   if (n.type === "stitch" && ref) meta = (ref.play ? `${ref.play.type} round` : `${(ref.beats || []).length} beats`) + ` · ~${ref.target_min || "?"} min` + (ref.timer ? ` · ⏱${ref.timer.secs}s` : "");
   if (n.type === "choice") meta = "by " + n.by; if (n.type === "ending") meta = n.kind;
   const probs = problems(id), nn = openNotes(notesHost(id)), worst = probs.some(p => p.sev === "error") ? "var(--bad)" : "var(--warn)";
@@ -582,6 +594,8 @@ function cardOf(id, n) {
     el("div", { class: "m" }, id + (meta ? " · " + meta : "")),
     probs.length ? el("span", { class: "badge", style: `background:${worst};color:${worst === "var(--bad)" ? "#fff" : "#000"}` }, "!" + probs.length) : nn ? el("span", { class: "badge" }, "✎" + nn) : null] };
 }
+// {cast id: body file} for the models a node's cast wear ({cast id: variant}, flowModels); everyone else their default
+function modelFiles(models) { const out = {}; for (const [cid, v] of Object.entries(models || {})) { const f = modelFile(S, cid, v); if (f) out[cid] = f; } return out; }
 function nodeTitle(id, n) { const ref = nodeRef(n); return (ref && ref.title) || n.title || n.prompt || (n.type === "choice" ? `choice by ${n.by}${n.of ? " of " + n.of : ""}` : id); }
 let SELS = new Set();                              // the cards picked together (Ctrl or Shift click, a box): copied, moved, deleted together
 function selectNode(id, { add = false } = {}) {
@@ -641,6 +655,8 @@ function cardMenu(id, x, y, at) {
     n.type === "scene" || n.type === "stitch" ? { label: "Watch from here", icon: "play", on: () => { openView("watchView"); watch(id); } } : null,
     n.type !== "ending" ? { label: "Watch from here with a state…", icon: "gear", hint: "the debug panel: the flags, counters, karma and items to start with", on: () => { openView("watchView"); DBG.node = id; DBG.toggle(true); } } : null,
     { label: "Make it the start", icon: "flag", disabled: S.game.start === id, on: () => { S.game.start = id; touch(); renderInspector(); } },
+    ids.length === 2 && ids.every(k => ["scene", "stitch"].includes((S.flow[k] || {}).type)) ? { label: "Swap their places in the flow", icon: "flow", hint: "what led to each leads to the other, each goes on where the other went", on: () => { freezeLayout(); if (swapNodes(S, ids[0], ids[1])) { status(`${ids[0]} ⇄ ${ids[1]}`); touch(); renderInspector(); } } } : null,
+    !many && (n.type === "scene" || n.type === "stitch") && n.next ? { label: "Cut what comes after", icon: "x", hint: "its next goes: a stub to drag onto a card later", on: () => { setArrow(S, id, ["next"], null); touch(); renderInspector(); } } : null,
     "-",
     { label: many ? `Copy ${ids.length} cards` : "Copy", icon: "copy", kbd: "Ctrl+C", on: () => copyCards(ids) },
     { label: "Paste here", icon: "plus", kbd: "Ctrl+V", disabled: !CLIP.has("nodes"), on: () => pasteCards(CLIP.get(), at) },
@@ -655,6 +671,30 @@ function freezeLayout() {                          // the first node moved: ever
   if (!BOARD || Object.values(S.flow).every(n => Array.isArray(n.xy))) return;
   for (const [id, p] of Object.entries(BOARD.layout())) if (S.flow[id] && !Array.isArray(S.flow[id].xy)) S.flow[id].xy = [Math.round(p.x), Math.round(p.y)];
 }
+// an arrow on the board, clicked or right-clicked (HANDOFF_DIRECTOR_TODO §2): cut it (its card keeps a stub to drag
+// onto a card later, what came after stays on the board as a loose chain), put a new card on it, or move the picked
+// run of cards onto it; dragging an arrow by its end onto another card re-points it (Board's repoint)
+function arrowMenu(from, at, x, y, xy) {
+  const a = arrowAt(S, from, at); if (!a) return;
+  const ids = pickedCards(), run = ids.length && !ids.includes(from) && !ids.includes(a.to) ? runOf(S, ids) : null;
+  const ins = (t, l, ic) => ({ label: `Insert a ${l} here`, icon: ic, on: () => insertCard(from, at, t, xy) });
+  contextMenu(x, y, [
+    canCut(at) ? { label: "Cut here", icon: "x", hint: "its card keeps a stub to drag onto a card when it's ready; what came after stays on the board", on: () => { setArrow(S, from, at, null); status(`${from}: cut (drag its stub onto a card to join it again)`); touch(); renderInspector(); } } : null,
+    { label: "Point it at another card…", icon: "link", hint: "or drag the arrow by its end onto the card", on: () => toast("Drag the arrow by its end (near the arrowhead) onto the card it should go to") },
+    "-", ins("scene", "scene", "scene"), ins("talk", "conversation", "ask"), ins("stitch", "task", "task"), ins("choice", "choice", "choice"),
+    run ? "-" : null,
+    run ? { label: run.length > 1 ? `Move the ${run.length} picked cards here` : `Move “${nodeTitle(run[0], S.flow[run[0]])}” here`, icon: "move", hint: "out of where they are (what led into them goes on to what came after them) and onto this arrow", on: () => {
+      freezeLayout(); if (moveRun(S, run, from, at)) { status(`${run.join(" › ")} moved after ${from}`); touch(); renderInspector(); } else toast("Can't move them there") } } : null,
+  ], `${nodeTitle(from, S.flow[from])} → ${a.to ? nodeTitle(a.to, S.flow[a.to]) : "…"}`);
+}
+function insertCard(from, at, type, xy) {          // a new card put on an arrow, where the arrow was clicked
+  const f = S.flow[from], cur = nodeRef(f || {}), lvl = (cur && cur.level) || Object.keys(S.levels)[0];
+  freezeLayout();
+  const nid = newId("n_", S.flow), node = newNodeOf(type, lvl, null);
+  if (xy) node.xy = [Math.round((xy[0] - CARD_W / 2) / 8) * 8, Math.round((xy[1] - CARD_H / 2) / 8) * 8];
+  if (!insertOn(S, from, at, nid, node)) return;
+  SEL = nid; SELS = new Set([nid]); touch(); renderInspector(); showStage();
+}
 function connectNodes(from, to) {
   const n = S.flow[from]; if (!n || from === to) return;
   if (n.type === "ending") return;
@@ -663,6 +703,12 @@ function connectNodes(from, to) {
   touch(); renderInspector();
 }
 function newNodeOf(type, lvl, next) {
+  if (type === "talk") {                           // a conversation: a scene whose line is a hanging line with two answers (§9.9)
+    const node = newNodeOf("scene", lvl, next), sc = S.scenes[node.ref], c = sc.clips[0];
+    sc.title = "New conversation"; c.shot = "mcu";
+    c.reply = { wait: 6, timeout: null, options: [{ id: "yes", label: "", then: { ja: "", en: "" } }, { id: "no", label: "", then: { ja: "", en: "" } }] };
+    return node;
+  }
   if (type === "scene") { const sid = newId("s_", S.scenes); S.scenes[sid] = { title: "New scene", level: lvl, mood: "dread", stage: {}, camera: { mode: "soft", look: castIds()[0] || null, cone: [30, 18] }, clips: [{ id: "c1", who: castIds()[0] || "", ja: "", en: "", act: "", shot: "ms", body: { block: [{ at: 0, pose: "idle" }] } }] }; return { type, ref: sid, next }; }
   if (type === "stitch") { const tid = newId("t_", S.stitches); S.stitches[tid] = { title: "New task", level: lvl, goal: "", target_min: 5, beats: [{ id: "b_" + tid.slice(2) + "_start", when: { start: true }, do: [{ objective: "…" }, { done: true }] }] }; return { type, ref: tid, next }; }
   if (type === "choice") return { type, by: "act", prompt: "", options: next ? [{ label: "A", when: { use: "" }, to: next }, { label: "B", when: { use: "" }, to: next }] : [] };
@@ -690,6 +736,7 @@ function renderBoard() {
   if (!BOARD) BOARD = new Board($("#board"), { story: () => S, game: () => GAME, selected: () => SEL, select: selectNode, card: cardOf, outs, multi: () => SELS,
     moved: all => { for (const [id, xy] of Object.entries(all)) if (S.flow[id]) S.flow[id].xy = xy; touch(); },
     connect: connectNodes, create: createNode, remove: () => removeCards(pickedCards()), context: cardMenu, quick: (id, at) => quickTask(id, at),
+    arrow: arrowMenu, repoint: (from, at, to) => { if (setArrow(S, from, at, to)) { status(`${from} → ${to}`); touch(); renderInspector(); } },
     pickMany: ids => { SELS = new Set(ids); SEL = ids[0]; setFocus("cards"); renderBoard(); renderInspector(); showStage(); },
     frameMenu, join: (fid, id) => { for (const f of S.frames || []) f.nodes = (f.nodes || []).filter(x => x !== id); const f = (S.frames || []).find(x => x.id === fid); if (f) { f.nodes.push(id); toast(`${nodeTitle(id, S.flow[id])} is in “${f.title}” now`, { ms: 3000 }); } } });
   BOARD.render(); renderOutline();
@@ -764,7 +811,11 @@ function renderInspector() {
     if (ref) (n.type === "scene" ? sceneEditor : stitchEditor)(box, ref, n.ref); else box.append(el("p", { class: "err" }, "no " + n.type + " " + n.ref));
   }
   if (n.type === "choice") choiceEditor(box, n, nodeIds);
-  if (n.type === "ending") box.append(field("title", txt(n, "title", { w: true })), field("kind", sel(n, "kind", ENDS)), field("", chk(n, "short_ok", "short ok (an early death: exempt from the playtime minimum)")));
+  if (n.type === "ending") {
+    const words = el("textarea", { rows: 3, placeholder: "the title card's words under its title, as long as they need (an epilogue); {name} and the game's words filled in", on: { change: e => { if (e.target.value.trim()) n.text = e.target.value; else delete n.text; touch(); } } });
+    words.value = n.text || "";
+    box.append(field("title", txt(n, "title", { w: true })), field("words", words), field("kind", sel(n, "kind", ENDS)), field("", chk(n, "short_ok", "short ok (an early death: exempt from the playtime minimum)")));
+  }
   box.append(el("h2", {}, "Grow the flow"), el("div", { class: "row" }, el("span", { class: "muted" }, "add after this:"), ...["scene", "stitch", "choice", "ending"].map(t => el("button", { on: { click: () => addNode(t) } }, "+ " + t))));
   notesEditor(box, notesHost(SEL), SEL);
 }
@@ -818,6 +869,7 @@ function renameNode(old) {
   for (const m of Object.values(S.flow)) { if (m.next === old) m.next = nid; for (const o of m.options || []) if (o.to === old) o.to = nid; if (m.of === old) m.of = nid; }
   for (const st of Object.values(S.stitches || {})) if (st.timer && st.timer.fail === old) st.timer.fail = nid;
   for (const it of S.interrupts || []) if (it.to === old) it.to = nid;
+  for (const sc of Object.values(S.scenes || {})) for (const v of [sc, ...Object.values(sc.variants || {})]) for (const c of v.clips || []) for (const o of (c.reply && c.reply.options) || []) if (o.go && o.go.node === old) o.go.node = nid;   // answers that leave for it (§9.9)
   for (const f of S.frames || []) f.nodes = (f.nodes || []).map(n => (n === old ? nid : n));
   if (S.game.start === old) S.game.start = nid; SEL = nid; touch(); renderInspector();
 }
@@ -845,6 +897,14 @@ function sceneEditor(box, sc, sid) {
   // the time of day: the scene's own, or the time it was (the scene it branched from, back to the game's start)
   const ft = flowTimes(S)[SEL], was = ft && !ft.own ? ft : null, from = was && was.from !== "game" ? nodeRef(S.flow[was.from]) : null;
   const before = was ? `as before: ${was.paths.join(" or ")} (${was.from === "game" ? "the game's start" : "from " + ((from && from.title) || was.from)})` : "as before (the scene it branched from)";
+  // each cast member's model: the scene's own pick, else as the flow brings it, down every branch after it (§3.1 models)
+  const fm = flowModels(S)[SEL] || { before: {}, mixed: [] }, dressed = castIds().filter(cid => Object.keys((S.cast[cid] || {}).models || {}).length);
+  if (dressed.length) setting.append(field("models", ...dressed.flatMap(cid => {
+    const c = S.cast[cid], hold = { v: sceneModels(sc)[cid] || "" }, mixed = fm.mixed.includes(cid);
+    return [el("span", { class: "kv" }, (c.name || cid) + " "), sel(hold, "v", [["default", "default"], ...Object.keys(c.models).map(k => [k, k])], {
+      blank: mixed ? "as before: depends on the way you came (pick one)" : `as before: ${fm.before[cid] || "default"}`, title: "the model from this scene on; left as before, the one the scene it branched from gave",
+      after: () => { if (hold.v) (sc.models = sc.models || {})[cid] = hold.v; else if (sc.models) { delete sc.models[cid]; if (!Object.keys(sc.models).length) delete sc.models; } touch(); renderInspector(); showStage(); } })];
+  })));
   setting.append(field("time", sel(sc, "time", TIMES.map(t => [t, TIME_MARK[t] + " " + t]), { blank: before, drop: true, title: "day, dusk or night from this scene on; left as before, it keeps the time of the scene it branched from", after: () => { renderBoard(); renderInspector(); showStage(); } })));
   sc.camera = sc.camera || { mode: "free" };
   setting.append(field("camera", sel(sc.camera, "mode", CAMS, { blank: false }), " look ", sel(sc.camera, "look", [...castIds(), ...placed(lvl)], { nullable: true, after: showStage }),
@@ -896,7 +956,7 @@ function sceneEditor(box, sc, sid) {
     });
   bar.append(el("div", { class: "playhead", id: "playhead", style: "left:0%" }));
   wireTimeline(bar, tl, ver, total);
-  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip"));
+  box.append(el("h2", {}, `Clips · ${total.toFixed(1)} s`), bar, faceRows(sid, ver, pv, tl, total), bodyRows(sid, ver, pv, tl, total), el("div", { class: "kv" }, "click or drag on it to scrub · drag a cue along it: it rides the clip edge it's nearest (snapped onto it when close; Shift for none) · double-click to add a cue there · striped = estimated length · red = an event · light wedge = a blend in from the actor's last clip · under it a face row per character: drag an expression from the Expressions tab onto one"));
   const script = el("div", { class: "script" });
   ver.clips.forEach((c, i) => script.append(clipCard(sc, ver, c, i, lvl, sid)));
   sortable(script, ver.clips, "clip", CTX, ".clip");
@@ -968,16 +1028,24 @@ function throughEditor(sc, lvl) {
 // the scene's timeline by mouse: a click or a drag scrubs the stage; a cue dragged along it rides the clip edge it's
 // dropped nearest (snapped onto the edge when close, else an offset from it: never a time of its own); a double-click
 // adds a cue there (what it does from the palette)
-function wireTimeline(bar, tl, ver, total) {
+// a timeline's clip edges and the nearest one to a moment (a start before an end at the same moment): what a cue or a
+// face placed by mouse rides, snapped onto it within 8 pixels of the box it's on (Shift: never), else an offset from it
+function edgeFinder(tl, total) {
   const edges = []; for (const s of tl.segs) if (s.type === "clip" && !s.answer) edges.push({ t: s.start, clip: s.clip.id, edge: "start" }, { t: s.end, clip: s.clip.id, edge: "end" });
-  if (!edges.length) return;
-  const tAt = x => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(total, (x - r.left) / r.width * total)); };
-  const near = (T, free) => {                      // the nearest clip edge (a start before an end at the same moment)
+  if (!edges.length) return null;
+  const near = (T, free, px) => {
     let best = edges[0]; for (const e of edges) { const d = Math.abs(T - e.t) - Math.abs(T - best.t); if (d < -1e-6 || (Math.abs(d) <= 1e-6 && e.edge === "start" && best.edge === "end")) best = e; }
-    const tol = free ? 0 : 8 / bar.getBoundingClientRect().width * total, off = Math.abs(T - best.t) < tol ? 0 : +(T - best.t).toFixed(1);
+    const tol = free ? 0 : 8 / Math.max(1, px) * total, off = Math.abs(T - best.t) < tol ? 0 : +(T - best.t).toFixed(1);
     return { clip: best.clip, edge: best.edge, offset: off, t: best.t + off };
   };
-  const label = at => `the ${at.edge} of ${at.clip}${at.offset ? ` ${at.offset > 0 ? "+" : "−"} ${Math.abs(at.offset)} s` : ""}`;
+  return { edges, near,
+    tAt: (box, x) => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(total, (x - r.left) / r.width * total)); },
+    label: at => `the ${at.edge || "start"} of ${at.clip}${+at.offset ? ` ${at.offset > 0 ? "+" : "−"} ${Math.abs(at.offset)} s` : ""}`,
+    atOf: at => Object.assign({ clip: at.clip, edge: at.edge }, at.offset ? { offset: at.offset } : {}) };
+}
+function wireTimeline(bar, tl, ver, total) {
+  const E = edgeFinder(tl, total); if (!E) return;
+  const tAt = x => E.tAt(bar, x), near = (T, free) => E.near(T, free, bar.getBoundingClientRect().width), label = E.label;
   bar.addEventListener("mousedown", e => {
     if (e.button !== 0) return;
     const cue = e.target.closest(".cue");
@@ -1000,6 +1068,154 @@ function wireTimeline(bar, tl, ver, total) {
     const d = ACTION[verb], a = d.make(), v = d.fields.length ? await editAction(a, CTX, { isNew: true }) : a; if (!v) return;
     (ver.cues = ver.cues || []).push({ at: Object.assign({ clip: at.clip, edge: at.edge }, at.offset ? { offset: at.offset } : {}), do: v }); touch(); CTX.rerender();
   });
+}
+// a scene's body tracks (STORY_FORMAT §3.8, HANDOFF_DIRECTOR_TODO §4): a row per character, each of their behave cues a
+// block from its clip edge to the next one or the shot's end: what Play's behaviour has them do from there (stand at a
+// spot, sit, walk to a spot and stay, a route round and round, off), over whatever their clips' bodies did. Dragged
+// along, a block rides the nearest clip edge; a click opens it; a double-click adds one there
+const BODYROWS = {};
+function behaveWords(a) {
+  const m = a.motion ? ` ↻ ${a.motion}` : "", as = a.as || "idle";
+  return (as === "idle" ? `stand${a.at ? " at " + a.at : ""}${a.pose && a.pose !== "idle" ? ", " + a.pose : ""}` : as === "sit" ? `sit${a.at ? " at " + a.at : ""}` :
+    as === "go" ? `→ ${a.to || "…"}${(a.via || []).length ? " via " + a.via.join(", ") : ""}${a.then === "sit" ? ", sits" : ""}` : as === "path" ? `route ${Array.isArray(a.route) ? a.route.join(" › ") : a.route || "…"}${a.mode ? " (" + a.mode + ")" : ""}` :
+    as === "patrol" ? `patrol ${(a.routes || []).join(", ")}` : as === "off" ? "off the stage" : as) + m;
+}
+function bodyRows(sid, ver, pv, tl, total) {
+  const box = el("div", { class: "facerows bodyrows" }), E = edgeFinder(tl, total); if (!E || !S.cast) return box;
+  const cues = ver.cues || [], name = w => (S.cast[w] || {}).name || w;
+  const mine = w => cues.map((cu, i) => ({ cu, i, t: edgeTime(tl.segs, cu.at) })).filter(x => x.cu.do && x.cu.do.behave === w && x.t !== undefined).sort((x, y) => x.t - y.t);
+  const rows = [...new Set([...Object.keys(pv.stage || {}), ...cues.filter(cu => cu.do && typeof cu.do.behave === "string").map(cu => cu.do.behave), ...(BODYROWS[sid] || [])])].filter(w => S.cast[w]);
+  for (const w of rows) {
+    const track = el("div", { class: "ftrack btrack", "data-who": w, title: `${name(w)}'s body: double-click where she starts something (standing at a spot, sitting, walking to a spot, a route); her clips' bodies play till then` },
+      el("span", { class: "fwho", style: `color:${whoColor(w)}` }, name(w) + " · body"));
+    const list = mine(w);
+    list.forEach((x, k) => {
+      const t1 = k + 1 < list.length ? list[k + 1].t : total, wd = Math.max(1e-3, t1 - x.t);
+      track.append(el("div", { class: "fblk bblk", "data-i": x.i, title: `${actionText(x.cu.do, CTX.name)}\nfrom ${E.label(x.cu.at || {})} till ${k + 1 < list.length ? "the next" : "the shot's end"} · click: open · drag: along the clips`,
+        style: `left:${x.t / total * 100}%;width:${wd / total * 100}%` }, el("span", {}, behaveWords(x.cu.do))));
+    });
+    track.addEventListener("dblclick", async e => {
+      if (e.target.closest(".fblk")) return;
+      const at = E.near(E.tAt(track, e.clientX), e.shiftKey, track.getBoundingClientRect().width);
+      const a = { behave: w, as: "idle" }; if ((pv.stage || {})[w]) a.at = pv.stage[w];
+      const v = await editAction(a, CTX, { isNew: true }); if (!v) return;
+      (ver.cues = ver.cues || []).push({ at: E.atOf(at), do: v }); touch(); CTX.rerender();
+    });
+    track.addEventListener("mousedown", e => {        // a block dragged along the clips (it rides the edge it's dropped nearest), or clicked open
+      const b = e.target.closest(".bblk"); if (!b || e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      const cu = cues[+b.dataset.i]; if (!cu) return;
+      const x0 = e.clientX, grab = E.tAt(track, x0) - (edgeTime(tl.segs, cu.at) || 0), tip = el("div", { class: "cuetip" }); let at = null;
+      const move = ev => {
+        if (!at && Math.abs(ev.clientX - x0) < 4) return;
+        at = E.near(Math.max(0, E.tAt(track, ev.clientX) - grab), ev.shiftKey, track.getBoundingClientRect().width);
+        b.style.left = tip.style.left = (at.t / total * 100) + "%"; tip.textContent = E.label(at); if (!tip.isConnected) track.append(tip);
+      };
+      const up = async () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); tip.remove();
+        if (at) { cu.at = E.atOf(at); touch(); CTX.rerender(); return; }
+        const v = await editAction(cu.do, CTX); if (v) { cu.do = v; touch(); CTX.rerender(); } };
+      window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    });
+    box.append(track);
+  }
+  const others = castIds().filter(c => !rows.includes(c));
+  if (others.length) box.append(el("select", { class: "fadd", title: "a body row for someone not on this scene's stage (she can walk in)", on: { change: e => { if (!e.target.value) return; (BODYROWS[sid] = BODYROWS[sid] || []).push(e.target.value); CTX.rerender(); } } },
+    el("option", { value: "" }, "+ a body row for…"), others.map(c => el("option", { value: c }, name(c)))));
+  return box;
+}
+// a scene's face rows (EXPRESSIONS_PLAN §2, STORY_FORMAT §3.7): a row per character on its stage, under the clips. An
+// expression dragged from the Expressions tab lands where it's dropped, riding the nearest clip edge as a cue does
+// (never a time of its own); a block dragged along moves it; a click opens its settings under the rows. A block is
+// what plays: its own length (or stretched to its secs), a loop until the next one takes over, its fades in and out
+// (the darker ends); where nothing is placed the face is at rest
+let EXLIST = null, EXBY = null;                        // the library's cards (names, lengths, loops), fetched again when it changes
+const FACETRIED = new Set(), FACEROWS = {}, FACESEL = {};   // expressions asked for once; per scene, rows added by hand and the placement open
+function exprList() { return EXLIST || (EXLIST = api("/api/expressions").then(r => r.expressions || []).catch(() => []).then(l => { EXBY = Object.fromEntries(l.map(x => [x.id, x])); return l; })); }
+function libraryChanged() { EXLIST = EXBY = null; FACETRIED.clear(); forgetFace(); }
+async function pickExpr(title) {                       // an expression from the library, by name (loops marked)
+  const list = await exprList();
+  if (!list.length) { toast("No expressions yet: Import a video of a face in the Expressions tab."); return null; }
+  let close = null;
+  const find = el("input", { type: "search", placeholder: "find…", on: { input: () => { const q = find.value.trim().toLowerCase(); for (const b of box.children) b.hidden = !!q && !b.textContent.toLowerCase().includes(q); } } });
+  const box = el("div", { class: "xp-pickl" }, list.map(x => el("button", { class: "ghost", "data-id": x.id, title: `${(+x.secs || 0).toFixed(1)} s${x.loop ? ", a loop" : ""}`, on: { click: () => close(x.id) } }, (x.loop ? "↻ " : "") + x.name)));
+  const r = await modal({ title, body: el("div", {}, find, box), ok: null, ready: c => { close = c; } });
+  return typeof r === "string" ? r : null;
+}
+function faceRows(sid, ver, pv, tl, total) {
+  const box = el("div", { class: "facerows" }), E = edgeFinder(tl, total); if (!E || !S.cast) return box;
+  const shown = pv.faces || [], own = () => (ver.faces = ver.faces || JSON.parse(JSON.stringify(shown)));   // a variant's own list: the scene's copied in on its first change
+  if (!EXBY) exprList().then(() => CTX.rerender());
+  const want = shown.map(p => p.expr).filter(id => id && !FACES.lib[id] && !FACETRIED.has(id));
+  if (want.length) { want.forEach(id => FACETRIED.add(id)); loadFaces(shown).then(() => { CTX.rerender(); if (!PLAY) scrubTo(+$("#scrub").value || 0); }); }
+  const rows = [...new Set([...Object.keys(pv.stage || {}), ...shown.map(f => f.who), ...(FACEROWS[sid] || [])])].filter(w => S.cast[w]);
+  const plan = facePlanOf(pv, tl), ends = new Map(); for (const l of Object.values(plan)) for (const it of l) ends.set(it.p, it);
+  const name = w => (S.cast[w] || {}).name || w;
+  for (const w of rows) {
+    const track = el("div", { class: "ftrack", "data-who": w, title: `${name(w)}'s face: drop an expression from the Expressions tab here` }, el("span", { class: "fwho", style: `color:${whoColor(w)}` }, name(w)));
+    shown.forEach((p, i) => {
+      if (p.who !== w) return;
+      const s0 = edgeTime(tl.segs, p.at); if (s0 === undefined) return;
+      const it = ends.get(p), x = (EXBY || {})[p.expr] || {}, loop = !!(p.loop ?? x.loop);
+      const e0 = Math.min(total, it ? it.E : s0 + (+p.secs || +x.secs || 2)), wd = Math.max(1e-3, e0 - s0);
+      const fin = it ? it.fin : +(p.in ?? 0.25), fout = it ? it.fout : +(p.out ?? 0.3), gone = EXBY && !x.id;
+      track.append(el("div", { class: "fblk" + (loop ? " loop" : "") + (FACESEL[sid] === i ? " sel" : "") + (gone ? " gone" : ""), "data-i": i, "data-expr": p.expr,
+        title: `${x.name || p.expr}${loop ? " (a loop)" : ""}${gone ? ": not in the library" : ""}\nfrom ${E.label(p.at || {})} · ${wd.toFixed(1)} s\nclick: its settings · drag: along the clips`,
+        style: `left:${s0 / total * 100}%;width:${wd / total * 100}%` },
+        el("i", { class: "fin", style: `width:${Math.min(100, fin / wd * 100)}%` }), el("i", { class: "fout", style: `width:${Math.min(100, fout / wd * 100)}%` }),
+        el("span", {}, (x.name || p.expr) + (loop ? " ↻" : ""))));
+    });
+    track.addEventListener("dblclick", async e => {     // or picked from a list, placed where it's double-clicked
+      if (e.target.closest(".fblk")) return;
+      const at = E.near(E.tAt(track, e.clientX), e.shiftKey, track.getBoundingClientRect().width), id = await pickExpr(`${name(w)}'s face from ${E.label(at)}`); if (!id) return;
+      const L = own(); L.push({ who: w, expr: id, at: E.atOf(at) }); FACESEL[sid] = L.length - 1; touch(); CTX.rerender();
+    });
+    track.addEventListener("dragover", e => { if (![...e.dataTransfer.types].includes(DRAG_TYPE)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; track.classList.add("over"); });
+    track.addEventListener("dragleave", () => track.classList.remove("over"));
+    track.addEventListener("drop", e => {
+      track.classList.remove("over"); const id = e.dataTransfer.getData(DRAG_TYPE); if (!id) return; e.preventDefault();
+      const at = E.near(E.tAt(track, e.clientX), e.shiftKey, track.getBoundingClientRect().width), L = own();
+      L.push({ who: w, expr: id, at: E.atOf(at) }); FACESEL[sid] = L.length - 1; touch(); CTX.rerender();
+    });
+    track.addEventListener("mousedown", e => {        // a block dragged along the clips (it rides the edge it's dropped nearest), or clicked open
+      const b = e.target.closest(".fblk"); if (!b || e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      const i = +b.dataset.i, x0 = e.clientX, grab = E.tAt(track, x0) - (edgeTime(tl.segs, shown[i].at) || 0), tip = el("div", { class: "cuetip" }); let at = null;
+      const move = ev => {
+        if (!at && Math.abs(ev.clientX - x0) < 4) return;
+        at = E.near(Math.max(0, E.tAt(track, ev.clientX) - grab), ev.shiftKey, track.getBoundingClientRect().width);
+        b.style.left = tip.style.left = (at.t / total * 100) + "%"; tip.textContent = E.label(at); if (!tip.isConnected) track.append(tip);
+      };
+      const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); tip.remove();
+        if (at) { own()[i].at = E.atOf(at); FACESEL[sid] = i; touch(); } else FACESEL[sid] = FACESEL[sid] === i ? null : i;
+        CTX.rerender(); };
+      window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    });
+    box.append(track);
+  }
+  const others = castIds().filter(c => !rows.includes(c));
+  if (others.length) box.append(el("select", { class: "fadd", title: "a face row for someone not on this scene's stage", on: { change: e => { if (!e.target.value) return; (FACEROWS[sid] = FACEROWS[sid] || []).push(e.target.value); CTX.rerender(); } } },
+    el("option", { value: "" }, "+ a face row for…"), others.map(c => el("option", { value: c }, name(c)))));
+  const i = FACESEL[sid], p = shown[i];
+  if (p) {                                             // the open placement's settings
+    const at = p.at || {}, x = (EXBY || {})[p.expr] || {};
+    const set = (k, v) => { const q = own()[i]; if (v === "" || v === null || v === undefined || Number.isNaN(v)) delete q[k]; else q[k] = v; touch(); CTX.rerender(); };
+    const setAt = (k, v) => { const q = own()[i]; q.at = Object.assign({}, q.at, { [k]: v }); if (!q.at.offset) delete q.at.offset; touch(); CTX.rerender(); };
+    const num = (k, ph, step, title) => el("input", { type: "number", step, min: "0", value: p[k] ?? "", placeholder: ph, title, style: "width:58px", on: { change: e => set(k, e.target.value === "" ? "" : +e.target.value) } });
+    const pick = el("select", { on: { change: e => set("expr", e.target.value) } }, (EXBY && !EXBY[p.expr] ? [el("option", { value: p.expr, selected: true }, p.expr + " (not in the library)")] : []),
+      Object.values(EXBY || {}).map(y => el("option", { value: y.id, selected: y.id === p.expr }, y.name + (y.loop ? " ↻" : ""))));
+    const loop = el("input", { type: "checkbox", checked: !!(p.loop ?? x.loop), on: { change: e => set("loop", e.target.checked === !!x.loop ? undefined : e.target.checked) } });
+    box.append(el("div", { class: "cuerow fform" }, el("b", { style: `color:${whoColor(p.who)}` }, name(p.who)), "wears", pick, "from the",
+      el("select", { on: { change: e => setAt("edge", e.target.value) } }, ["start", "end"].map(v => el("option", { value: v, selected: (at.edge || "start") === v }, v))), "of",
+      el("select", { on: { change: e => setAt("clip", e.target.value) } }, (pv.clips || []).map(c => el("option", { value: c.id, selected: at.clip === c.id }, `${c.id}: ${(c.en || c.ja || "").slice(0, 24)}`))),
+      el("input", { type: "number", step: "0.1", value: at.offset ?? "", placeholder: "0", title: "seconds after it (or before, negative)", style: "width:58px", on: { change: e => setAt("offset", +e.target.value || 0) } }), "s ·",
+      "length", num("secs", "its own", "0.1", "seconds on the row: a stretched expression, or how long a loop runs (blank: its own length; a loop until the next one)"), "s",
+      el("label", { class: "kv", title: "played over and over (a loop card loops by itself)" }, loop, " loop"),
+      "· blend in", num("in", "0.25", "0.05", "seconds it fades in over (from rest, or from the one before)"), "out", num("out", "0.3", "0.05", "seconds it fades out over (into rest; one that runs into the next crossfades over the next one's blend in)"),
+      "· weight", num("w", "1", "0.05", "how strongly it shows (0 to 2)"), "speed", num("speed", "1", "0.05", "faster or slower than its length"),
+      el("button", { class: "ghost", title: "take it off the row", on: { click: () => { const L = own(); L.splice(i, 1); if (!L.length) delete ver.faces; FACESEL[sid] = null; touch(); CTX.rerender(); } } }, icon("x", 14))),
+      condRow(p, CTX, "worn only if", { own: () => own()[i] }));   // his version and hers at the same lines (§9.14)
+  }
+  return box;
 }
 function cuesEditor(ver) {
   const box = el("div", {}), cues = ver.cues || [], ids = (ver.clips || []).map(c => [c.id, `${c.id}: ${(c.en || c.ja || "").slice(0, 28)}`]);
@@ -1292,9 +1508,14 @@ function clipCard(sc, ver, c, i, lvl, sid) {
   if (tab === "line") {
     const oldTake = takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id);
     pane.append(el("div", { class: "row" }, el("span", { class: "lab" }, "id"), txt(c, "id", { style: "width:62px", title: "the clip's id: its take is found by it (game_scene_version_id)", after: () => { if (TAKES[oldTake]) alert(`The take ${TAKES[oldTake].name} was found by the old id: rename the file to ${takeId(sid, sc.variants ? VTAB[sid] || sc.pick : null, c.id)} too, or it won't match.`); OPEN[sid].id = c.id; renderInspector(); } }),
-      el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: renderInspector }),
+      el("span", { class: "lab" }, "who"), sel(c, "who", [...castIds(), "player"], { blank: false, title: "who speaks or acts in this clip", after: () => { if (c.who !== "player") delete c.think; renderInspector(); } }),
+      c.who === "player" ? chk(c, "think", "a thought (shown, never said)", renderInspector) : null,
+      c.think ? chk(c, "breaks", "breaks off (a memory flicker)", renderInspector) : null,
       el("span", { class: "lab" }, "length"), txt(c, "dur", { num: true, ph: clipSecs(c).toFixed(1), style: "width:64px", title: "the take's length (seconds); empty = estimated", after: renderInspector }), el("span", { class: over ? "err" : "kv" }, over ? `> ${max} s: split it` : "s")));
-    pane.append(txt(c, "en", { w: true, ph: "English subtitle", after: renderInspector }), txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }));
+    pane.append(txt(c, "en", { w: true, ph: (S.game || {}).voice === "none" ? "the line (typed on screen)" : "English subtitle", after: renderInspector }),
+      (S.game || {}).voice === "none" && !c.ja ? null : txt(c, "ja", { w: true, ph: "日本語 (what gets recorded)", after: renderInspector }), txt(c, "act", { w: true, ph: "acting note for the take" }),
+      c.think ? txt(c, "retype", { w: true, drop: true, ph: "then erased and retyped as… (its words become these: Natsuki. → Natsu.)", after: renderInspector }) : null,
+      condRow(c, CTX, "said only if"));                // a line left out unless it holds (§9.14)
     if ((S.format || 2) >= 3) pane.append(takeSec(c));
   }
   if (tab === "take") {
@@ -1327,7 +1548,9 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     // event (QTE)
     const evs = el("div", { class: "sec row" }, el("span", { class: "lab" }, "event"));
     const evHolder = { type: c.event ? c.event.type : "" };
-    evs.append(sel(evHolder, "type", EVENTS, { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
+    const evList = ["choose", ...QTE.filter(t => t === evHolder.type).map(t => [t, t + " (deprecated)"])];   // quick-time events are deprecated (DECISIONS 2026-10-27): only a clip that has one shows it
+    evs.append(sel(evHolder, "type", evList.map(t => (t === "choose" ? ["choose", "choose (a dialogue answer)"] : t)), { blank: "none", after: () => { if (!evHolder.type) delete c.event; else c.event = Object.assign({ secs: 3, prompt: "" }, c.event || {}, { type: evHolder.type }); if (evHolder.type === "choose" && !c.event.options) { c.event.options = [{ id: "a", label: "Say something" }, { id: "b", label: "Say nothing" }]; c.event.default = "b"; } touch(); renderInspector(); } }));
+    if (c.event && QTE.includes(c.event.type)) pane.append(el("p", { class: "kv warn" }, `A ${c.event.type} is a quick-time event: deprecated, they break the immersion. Make it a choose (a dialogue answer), or take the event off.`));
     if (c.event) {
       const e = c.event;
       evs.append("secs", txt(e, "secs", { num: true, style: "width:48px" }), "warn", txt(e, "warn", { num: true, step: "0.1", style: "width:48px", title: "seconds of warning sign before it (Little Hope's indicator)" }), txt(e, "prompt", { ph: "on-screen prompt" }));
@@ -1353,7 +1576,7 @@ function clipCard(sc, ver, c, i, lvl, sid) {
     } else pane.append(evs);
 
   }
-  if (tab === "reply") pane.append(c.event ? el("p", { class: "kv" }, "This clip has an event: a clip has a reply or an event, not both (put the reply on the clip before).") : replyEditor(c));
+  if (tab === "reply") pane.append(c.event ? el("p", { class: "kv" }, "This clip has an event: a clip has a reply or an event, not both (put the reply on the clip before).") : replyEditor(c, ver, i));
   if (tab === "body") {
     // body
     c.body = c.body || {};
@@ -1387,25 +1610,60 @@ function clipCard(sc, ver, c, i, lvl, sid) {
 }
 const WHO_COLORS = ["#e07aa8", "#6fb3d9", "#d9a441", "#3fb3a2", "#9b7be0", "#e0805a"];
 function whoColor(who) { if (who === "player") return "#a8a59c"; const i = castIds().indexOf(who); return WHO_COLORS[(i < 0 ? 0 : i) % WHO_COLORS.length]; }
-// a hanging line (STORY_FORMAT §9.9): she asks and waits; the player answers left or right; each answer gets her line back
-function replyEditor(c) {
-  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player answers left or right, and each answer gets her own line back (its own take, named after this clip's and the answer's)."),
-    el("button", { on: { click: () => { c.reply = { wait: 6, timeout: null, options: [{ id: "yes", label: "", ja: "", then: { ja: "", en: "" } }, { id: "no", label: "", ja: "", then: { ja: "", en: "" } }] }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make this a hanging line"));
-  const rp = c.reply, box = el("div", { class: "reply" });
+// a hanging line (STORY_FORMAT §9.9): she asks and waits; the player answers (two answers, or three); each gets her line back
+// a conversation card's choice row (STORY_FORMAT §9.9): she waits, the player picks an act with the thought behind it,
+// and each answer has her reply (a line or a few) and where the talk goes then: on, a later line, its end, a card
+function replyEditor(c, ver, ci) {
+  const fresh = id => ({ id, label: "", then: { ja: "", en: "" } });
+  if (!c.reply) return el("div", {}, el("p", { class: "kv" }, "A reply makes this a hanging line: she asks, then waits while the player picks what to do (an act, and the thought behind it). Each answer gets her reply back, a line or a few (their own takes, named after this clip's and the answer's), and says where the talk goes then: on to the next line, a later one, its end, or another card."),
+    el("button", { on: { click: () => { c.reply = { wait: 6, timeout: null, options: [fresh("yes"), fresh("no")] }; touch(); CTX.rerender(); } } }, icon("plus", 14), " Make this a hanging line"));
+  const rp = c.reply, box = el("div", { class: "reply" }), clips = (ver && ver.clips) || [];
   rp.options = rp.options || [];
   box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "she waits"), txt(rp, "wait", { num: true, ph: "6", style: "width:58px", title: "2 to 15 s" }), "s, then",
-    sel({ t: rp.timeout || "" }, "t", rp.options.map(o => [o.id, `answers your silence with “${o.label || o.id}”'s line`]), { blank: "carries on (no answer)", after: function () { } })));
+    sel({ t: rp.timeout || "" }, "t", rp.options.map(o => [o.id, `answers your silence with “${o.label || o.id}”'s reply`]), { blank: "carries on (no answer)", after: function () { } })));
   box.lastChild.querySelector("select").addEventListener("change", e => { rp.timeout = e.target.value || null; touch(); });
   box.append(el("div", { class: "row" }, el("span", { class: "lab" }, "her face"), txt(c, "wait_expr", { w: true, ph: "the face she holds while she waits (MiniMax): a hopeful, expectant expression", drop: true })));
+  const redo = () => { touch(); renderInspector(); };
   rp.options.forEach((o, oi) => {
-    o.then = o.then || {};
-    box.append(el("div", { class: "ropt" },
-      el("div", { class: "row" }, el("b", { class: "side" }, oi === 0 ? "Left" : oi === 1 ? "Right" : `Answer ${oi + 1}`), txt(o, "label", { ph: "what the player says (English)", style: "flex:1", after: renderInspector }), txt(o, "ja", { ph: "日本語", style: "width:150px", drop: true }), txt(o, "id", { style: "width:72px", title: "its id: her answer's take is this clip's take id + _ + this" })),
-      el("div", { class: "row" }, el("span", { class: "lab" }, "she says"), txt(o.then, "ja", { ph: "日本語", style: "flex:1" }), txt(o.then, "en", { ph: "English", style: "flex:1" })),
-      el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(o.then, "expr", { ph: "her expression", style: "flex:1", drop: true }), sel(o.then, "voice", VOICES, { drop: true, blank: "voice…" })),
-      el("div", {}, el("span", { class: "lab" }, "picking it also does"), actionList(...slot(o, "sets"), { empty: "nothing (most replies set nothing: they're there so it feels like you)" }))));
+    const lines = thenList(o), setLines = arr => { if (arr.length) o.then = arr.length === 1 ? arr[0] : arr; else delete o.then; redo(); };
+    const id = el("input", { value: o.id || "", style: "width:72px", title: "its id: her reply's takes are this clip's take id + _ + this (then _2, _3)", on: { change: e => {
+      const v = e.target.value.trim(); if (!v || rp.options.some(x => x !== o && x.id === v)) { e.target.value = o.id; return; }
+      if (rp.timeout === o.id) rp.timeout = v; o.id = v; redo(); } } });
+    const head = el("div", { class: "row" }, el("b", { class: "side", title: "the key that picks it" }, rp.options.length <= 2 ? (oi ? "Right" : "Left") : String(oi + 1)),
+      txt(o, "label", { ph: "the act: what you do (Greet, Lie, Stay quiet)", style: "flex:1", after: renderInspector }), id,
+      oi ? el("button", { class: "small", title: "earlier in the list", on: { click: () => { rp.options.splice(oi - 1, 0, ...rp.options.splice(oi, 1)); redo(); } } }, "↑") : null,
+      el("button", { class: "small", title: "take this answer out", on: { click: () => { rp.options.splice(oi, 1); if (rp.timeout === o.id) rp.timeout = null; redo(); } } }, icon("x", 14)));
+    const opt = el("div", { class: "ropt" }, head,
+      el("div", { class: "row" }, el("span", { class: "lab" }, "you think"), txt(o, "think", { ph: "the thought behind it, under the act (She's cold, I should let her in)", style: "flex:1", drop: true })),
+      condRow(o, CTX, "offered only if"));             // an answer offered by what's happened (§9.14)
+    if (!lines.length) opt.append(el("div", { class: "row muted" }, el("span", { class: "lab" }, "she says"), "nothing back"));
+    lines.forEach((th, n) => opt.append(
+      el("div", { class: "row" }, el("span", { class: "lab" }, n ? "and" : "she says"), sel(th, "who", castIds(), { drop: true, blank: c.who || "she", title: "who says it: the one who asked, unless it's someone else" }),
+        txt(th, "ja", { ph: "日本語", style: "flex:1" }), txt(th, "en", { ph: "English", style: "flex:1" }),
+        el("button", { class: "small", title: "take this line out of her reply", on: { click: () => setLines(lines.filter(x => x !== th)) } }, icon("x", 14))),
+      el("div", { class: "row" }, el("span", { class: "lab" }, "MiniMax"), txt(th, "expr", { ph: "her expression", style: "flex:1", drop: true }), sel(th, "voice", VOICES, { drop: true, blank: "voice…" }))));
+    // where the talk goes after her reply: on (the default), skip ahead to a later line, end it, or leave for a card
+    const [g, to] = replyGo(o), cur = g === "clip" || g === "node" ? `${g}:${to}` : g;
+    const later = clips.slice(ci + 2).filter(x => x.id), go = el("select", { title: "where the conversation goes after her reply", on: { change: e => {
+      const v = e.target.value; if (v === "next") delete o.go; else if (v === "end") o.go = "end"; else { const k = v.indexOf(":"); o.go = { [v.slice(0, k)]: v.slice(k + 1) }; } redo(); } } });
+    go.append(el("option", { value: "next", selected: cur === "next" }, "Next: on to the next line"), el("option", { value: "end", selected: cur === "end" }, "End the conversation"));
+    const sk = el("optgroup", { label: "Skip to a later line" }), gn = el("optgroup", { label: "Go to a card on the board" });
+    const words = x => `Skip to ${x.id}: ${x.who || ""} “${(x.en || x.ja || "").slice(0, 32)}”`;
+    for (const x of later) sk.append(el("option", { value: "clip:" + x.id, selected: cur === "clip:" + x.id }, words(x)));
+    if (g === "clip" && !later.some(x => x.id === to)) sk.append(el("option", { value: cur, selected: true }, `${to} (not a later line)`));
+    for (const [nid, n] of Object.entries(S.flow)) gn.append(el("option", { value: "node:" + nid, selected: cur === "node:" + nid }, `Go to ${nodeTitle(nid, n)} (${nid})`));
+    if (g === "node" && !S.flow[to]) gn.append(el("option", { value: cur, selected: true }, `${to} (not on the board)`));
+    if (sk.children.length) go.append(sk); go.append(gn);
+    opt.append(el("div", { class: "row" }, el("span", { class: "lab" }, "then"), go, el("span", { class: "grow" }),
+      el("button", { class: "small", title: "another line in her reply (its own take)", on: { click: () => setLines([...lines, { ja: "", en: "" }]) } }, icon("plus", 14), " a line")),
+      el("div", {}, el("span", { class: "lab" }, "picking it also does"), actionList(...slot(o, "sets"), { empty: "nothing (most replies set nothing: they're there so it feels like you)" })));
+    box.append(opt);
   });
-  box.append(el("div", { class: "row" }, el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Take the reply off this clip?")) { delete c.reply; delete c.wait_expr; touch(); CTX.rerender(); } } } }, "No reply")));
+  const add = () => { const ids = new Set(rp.options.map(o => o.id)); let n = rp.options.length + 1; while (ids.has("opt" + n)) n++; rp.options.push(fresh("opt" + n)); redo(); };
+  box.append(el("div", { class: "row" },
+    el("button", { class: "small", title: "as many as the moment needs: an L.A. Noire close-up has three (warm, probing, evasive...)", on: { click: add } }, icon("plus", 14), " Add answer"),
+    rp.options.length > 3 ? el("span", { class: "muted" }, `${rp.options.length} answers: a close-up reads best with two or three`) : null,
+    el("span", { class: "grow" }), el("button", { class: "danger small", on: { click: () => { if (confirm("Take the reply off this clip?")) { delete c.reply; delete c.wait_expr; touch(); CTX.rerender(); } } } }, "No reply")));
   return box;
 }
 // ---- a clip's Kimodo segments (STORY_FORMAT §9.5): one behaviour each, made in Kimodo's demo from the shot list and
@@ -1478,7 +1736,7 @@ function layersEditor(c, b) {
 function stitchEditor(box, st, tid) {
   box.append(el("h2", {}, "Stitch (player task)"), field("title", txt(st, "title", { w: true })), field("goal", txt(st, "goal", { w: true, ph: "what the player is doing" })),
     field("level", sel(st, "level", Object.keys(S.levels || {}), { after: showStage })), field("target", txt(st, "target_min", { num: true }), " min of play (typical)"),
-    field("template", sel(st, "template", ["fetch", "code", "power", "hide", "escape", "explore", "loop", "ritual", "run", "collect", "sneak", "hold", "search"], { drop: true })));
+    field("template", sel(st, "template", ["fetch", "code", "power", "chore", "peephole", "hide", "escape", "explore", "loop", "ritual", "run", "collect", "sneak", "hold", "search"], { drop: true })));
   const hasT = !!st.timer;
   box.append(field("timer", el("label", { class: "kv" }, el("input", { type: "checkbox", checked: hasT, on: { change: e => { if (e.target.checked) st.timer = { secs: 30, label: "", fail: S.game.start }; else delete st.timer; touch(); renderInspector(); } } }), " timed"),
     hasT ? txt(st.timer, "secs", { num: true }) : null, hasT ? "s, on timeout go to" : null, hasT ? sel(st.timer, "fail", Object.keys(S.flow), { blank: false }) : null, hasT ? txt(st.timer, "label", { ph: "on-screen label" }) : null));
@@ -1554,8 +1812,10 @@ function showStage() {
   const lvl = (ref && ref.level) || Object.keys(S.levels)[0];
   flowStage.setWorld(PLAN, S, lvl);
   flowStage.setTime((flowTimes(S)[SEL] || {}).time || S.game.time || TIME_DEFAULT);
+  flowStage.setModels(modelFiles((flowModels(S)[SEL] || {}).models));   // each cast member's model as the flow brings it here
   const sc = currentScene();
-  if (sc) { const tl = flowStage.timeline(sc); $("#scrub").max = tl.total.toFixed(2); scrubTo(+$("#scrub").value || 0); }
+  if (sc) { const tl = flowStage.timeline(sc); $("#scrub").max = tl.total.toFixed(2); scrubTo(+$("#scrub").value || 0);
+    const fs = version(sc).faces; if ((fs || []).some(p => p.expr && !FACES.lib[p.expr]) || (fs && fs.length && !FACES.M)) loadFaces(fs).then(() => { if (currentScene() === sc && !PLAY) scrubTo(+$("#scrub").value || 0); }); }   // its faces, once the expressions are in
   else { // a stitch or choice: the level from its start spot
     const start = things()[S.levels[lvl].start]; const fake = { view: S.levels[lvl].start, camera: { mode: "free" }, clips: [{ id: "x", who: "", en: "" }], stage: {} };
     if (start) { flowStage.frame(fake, 0, FILES); paintOv("#stageOv", { sub: null, who: (ref && ref.title) || SEL, black: 0, tag: n ? n.type : "" }); }
@@ -1570,11 +1830,11 @@ function scrubTo(T) {
   const tl = flowStage.timeline(sc);
   $("#sTime").textContent = `${T.toFixed(1)} / ${tl.total.toFixed(1)} s`;
   const ph = $("#playhead"); if (ph) ph.style.left = (T / tl.total * 100) + "%";
-  paintOv("#stageOv", { sub: st.sub, ja: st.ja, who: st.clipSeg ? `${st.clipSeg.clip.id} · ${st.clipSeg.clip.shot || "free"} · ${st.who || ""}` : "", black: st.black, tag: st.seg ? (st.seg.type === "seam" ? "seam: " + st.seg.seam.kind : st.seg.type === "event" ? "⚡ " + st.seg.event.type : "") : "" });
+  paintOv("#stageOv", { sub: st.sub, who: st.clipSeg ? `${st.clipSeg.clip.id} · ${st.clipSeg.clip.shot || "free"} · ${st.who || ""}` : "", black: st.black, tag: st.seg ? (st.seg.type === "seam" ? "seam: " + st.seg.seam.kind : st.seg.type === "event" ? "⚡ " + st.seg.event.type : "") : "" });
 }
 function paintOv(sel, o) {
-  const ov = $(sel); ov.querySelector(".sub").textContent = o.sub || ""; ov.querySelector(".ja").textContent = o.ja || ""; ov.querySelector(".who").textContent = o.who || "";
-  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || o.speaker, o.ja);   // the Watch's subtitles are the game's footer
+  const ov = $(sel); ov.querySelector(".sub").textContent = named(o.sub) || ""; ov.querySelector(".who").textContent = o.who || "";
+  if (sel === "#watchOv") paintLine(watchHud().line, o.sub, !o.think && o.speaker && (((S && S.cast) || {})[o.speaker] || {}).name || (o.think ? "" : o.speaker), o.think, o.glitch);   // the Watch's subtitles are the game's footer (a thought: the player's own, set apart)
   ov.querySelector(".black").style.opacity = o.black || 0; ov.querySelector(".tag").textContent = o.tag || "";
 }
 function playScene(sc, ver, fromClip) {
@@ -1718,12 +1978,25 @@ async function drawBoard() {
 
 /* ---------- the animatic (Watch) ---------- */
 let RUN = null;
+setWords(w => S ? wordOf(S, w, RUN ? RUN.flags : new Set(), RUN ? RUN.counters : {}) : null);   // {her}: the game's words, by the run's flags and counters (§9.14)
 const sleep = ms => new Promise(r => { const t = setTimeout(r, ms); RUN && RUN.timers.push(t); });
 function wclear() { $("#watchBox").querySelectorAll(".wcard,.qte,.warnmark").forEach(e => e.remove()); }
 async function fade(to, secs) { const b = $("#watchOv .black"), from = +b.style.opacity || 0, t0 = performance.now(), d = Math.max(0.05, secs) * 1000; while (RUN) { const u = Math.min(1, (performance.now() - t0) / d); b.style.opacity = from + (to - from) * u; if (u >= 1) break; await new Promise(r => requestAnimationFrame(r)); } }
-function speak(text) { if (!$("#wSpeak").checked || !window.speechSynthesis || !text) return; const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; speechSynthesis.cancel(); speechSynthesis.speak(u); }
 function wclock() { if (RUN) { $("#wClock").textContent = `story time ${Math.floor(RUN.secs / 60)}:${String(Math.round(RUN.secs % 60)).padStart(2, "0")}`; $("#wKarma").textContent = " · karma " + (Object.entries(RUN.karma).map(([k, v]) => (k === "karma" ? "" : k + " ") + (v > 0 ? "+" : "") + v).join(" ") || "0"); } }
-function karmaAct(acts, t) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, t ?? RUN.secs); } wclock(); }
+// achievements (STORY_FORMAT §9.13): a secret found, an ending reached or a flag set unlocks one, said in the corner
+function achieved(nid) {
+  if (!RUN || !S.achievements) return;
+  RUN.achieved = RUN.achieved || new Set();
+  for (const [id, a] of Object.entries(S.achievements)) {
+    const f = a.for || {}, sec = f.secret && (S.secrets || {})[f.secret];
+    if (RUN.achieved.has(id) || !(f.ending ? f.ending === nid : sec ? RUN.flags.has(sec.flag) : f.flag ? RUN.flags.has(f.flag) : false)) continue;
+    RUN.achieved.add(id);
+    let box = $("#watchBox .wachs"); if (!box) { box = el("div", { class: "wachs" }); $("#watchBox").append(box); }
+    const card = el("div", { class: "wach" }, el("div", { class: "muted" }, "ACHIEVEMENT"), el("b", {}, a.title || id), a.text ? el("div", { class: "muted" }, a.text) : null);
+    box.append(card); setTimeout(() => card.remove(), 6000);
+  }
+}
+function karmaAct(acts, t) { for (const a of acts || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined) addKarma(RUN.karma, a.karma); if (a.count) RUN.counters[a.count] = a.set !== undefined ? +a.set : (RUN.counters[a.count] || 0) + +(a.add ?? 1); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, t ?? RUN.secs); if (a.skip && RUN.lives) RUN.lives.skip(t ?? RUN.secs, +a.skip); } wclock(); }
 // the little things with a life (docs/IMMERSION.md): {id: {life, d}}, their dicts from the story, their lives from the plan
 function lifeThings() {
   const out = {}, th = things();
@@ -1736,9 +2009,25 @@ function lifeTick(stage, T) { if (stage.life && RUN && RUN.lives) stage.life.upd
 function stateCues(tl, ver) {
   const out = [];
   for (const cu of ver.cues || []) {
-    if (!cu.do || !cu.do.state) continue;
+    if (!cu.do || !(cu.do.state || cu.do.skip)) continue;
     const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
-    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), id: cu.do.state, to: cu.do.to });
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), id: cu.do.state, to: cu.do.to, skip: +cu.do.skip || 0 });
+  }
+  return out.sort((x, y) => x.t - y.t);
+}
+// a sound cue in the Watch: off the shelf, placed at the cast member or thing it names (else where you are)
+function watchSound(c) {
+  const n = shelfName(((S.sounds || {})[c.sound] || {}).file); if (!n) return;
+  const o = c.at && ((watchStage.cast || {})[c.at] || (watchStage.byId || {})[c.at]), pos = o && o.getWorldPosition ? o.getWorldPosition(o.position.clone()) : null;     // (a spare vector)
+  playShelf(n, pos ? { pos, camera: watchStage.camera } : {});
+}
+// a scene's sound cues, at their times on its timeline: the ones off the sound shelf play in the Watch (sfx.js)
+function soundCues(tl, ver) {
+  const out = [];
+  for (const cu of ver.cues || []) {
+    if (!cu.do || !cu.do.sound) continue;
+    const a = cu.at || {}, sg = tl.segs.find(s => s.type === "clip" && s.clip.id === a.clip && !s.answer);
+    if (sg) out.push({ t: (a.edge === "end" ? sg.end : sg.start) + (+a.offset || 0), sound: cu.do.sound, at: cu.do.at });
   }
   return out.sort((x, y) => x.t - y.t);
 }
@@ -1754,18 +2043,18 @@ function watchHud() {
   if (WHUD.theme !== th) { loadTheme(th); WHUD.root.dataset.theme = WHUD.theme = th; }
   return WHUD;
 }
-// a choice in the Watch floats beside whoever asks (or under the middle of the view), as in Play
+// a choice in the Watch sits at the bottom centre under the line, the camera's focus on whoever asks, as in Play
 function choiceBox(spec, pick, who) {
   const c = chooser(spec, pick), root = watchHud().root, f = who && watchStage.cast[who];
-  const fl = floating(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
+  const fl = docked(root, c, f ? () => besideAt(watchStage.camera, f, root.clientWidth, root.clientHeight) : null);
   return { box: { remove: fl.remove }, c };
 }
-// a reply: left and right, the Japanese over the English; she waits (her idle keeps going), then carries on
+// a reply: two or three answers (each with its thought under it, if it has one); she waits (her idle keeps going), then carries on
 function runReply(rp, frame, who) {
   freePointer();
   return new Promise(resolve => {
-    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).slice(0, 2), t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id), who);
+    const secs = +(rp.wait || REPLY_SECS), opts = (rp.options || []).filter(o => holds(o, RUN.flags, RUN.counters)), t0 = performance.now();   // offered by what's happened (§9.14)
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id), who);
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); resolve(id); };
     window.addEventListener("keydown", c.keys, true);
@@ -1784,6 +2073,7 @@ function wireLook() {
 const BLEND = { kind: "blend", secs: 0.8 };        // a scene's enter and exit when it names none (STORY_FORMAT §3.1)
 async function watchScene(sc, nid, sid, k) {
   const lvl = sc.level || Object.keys(S.levels)[0];
+  if ((sc.faces || []).length) await loadFaces(sc.faces);   // the expressions its face rows place
   if (watchStage.level !== lvl) watchStage.setWorld(PLAN, S, lvl);   // a scene on the level you're in keeps it as play left it
   const picks = {}, replied = new Set();
   let tl = watchStage.timeline(sc, picks);
@@ -1794,11 +2084,13 @@ async function watchScene(sc, nid, sid, k) {
   else { watchStage.render(); if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0; }
   let T = 0, last = performance.now(), spoken = null, warned = null;
   const cues = stateCues(tl, sc), t0 = RUN ? RUN.secs : 0;   // the little things set by its cues, at their clip edges
+  const sounds = soundCues(tl, sc);                         // and its sounds, off the shelf
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
     const now = performance.now(); T += (now - last) / 1000; last = now;
-    while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); RUN.lives.set(c.id, c.to, t0 + c.t); }
+    while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }
+    while (sounds.length && sounds[0].t <= T) { const c = sounds.shift(); if (T - c.t < 0.5) watchSound(c); }
     const st = watchStage.stateAt(tl, T, FILES, LOOK);
     if (st.seg && st.seg.type === "event" && !RUN.done.has(st.seg)) { RUN.done.add(st.seg); const ev = st.seg.event, res = await runEvent(ev); RUN.results[nid] = res; karmaAct((ev.on || {})[res]);
       if (ev.type === "choose") { const o = (ev.options || []).find(x => x.id === res); if (o && o.karma !== undefined) { addKarma(RUN.karma, o.karma); RUN.answers.push(`${o.label} (${JSON.stringify(o.karma)})`); } }
@@ -1807,7 +2099,7 @@ async function watchScene(sc, nid, sid, k) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
       const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
-        paintOv("#watchOv", { sub: c.en, ja: c.ja, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
+        paintOv("#watchOv", { sub: c.en, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
       if (o) karmaAct(o.sets);
@@ -1818,17 +2110,21 @@ async function watchScene(sc, nid, sid, k) {
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
     watchStage.apply(tl, st, T); lifeTick(watchStage, t0 + T); watchStage.render();
-    paintOv("#watchOv", { sub: st.sub, ja: st.ja, speaker: st.clipSeg ? st.who : "", who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
-    if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; if (!playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked)) speak(st.clipSeg.clip.ja); }
+    let sub = st.sub, glitch = 0;
+    if (st.typing) { const y = st.typing, s = typedAt(named(y.text), { retype: y.retype && named(y.retype), breaks: y.breaks }, y.t); glitch = s.glitch; sub = glitch ? glitched(s.shown, glitch, Math.floor(y.t * 20)) : s.shown; }   // a thought typing itself out (§9.15)
+    paintOv("#watchOv", { sub, glitch, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
+    if (st.clipSeg && spoken !== st.clipSeg) { spoken = st.clipSeg; playTake("#watchBox", sid, k, st.clipSeg.clip, $("#wVideo").checked); }
     if (st.seg && st.seg.type !== "clip") stopTakes();
     if (RUN.skip) { RUN.skip = false; const ne = tl.segs.find(s => (s.type === "event" && s.start > T && !RUN.done.has(s)) || (s.type === "reply" && s.start > T && !replied.has(s.clip.id))); if (ne) { T = ne.start; continue; } break; }   // dev skip: to the next event or reply, else the scene's end
   }
+  if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
   stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
   karmaAct(sc.sets);
   const ex = sc.exit || BLEND;
   if (ex.kind !== "blend") await fade(1, ex.kind === "cut" ? 0.05 : ex.secs || 0.6);   // a blend: what follows carries on from this view
+  return tl.go ? tl.go.node : null;                     // the card an answer sent the flow to, if one did
 }
 // the view eases from where the eye was (the player walking, or the last scene) into the scene's first framing; the
 // figures hold their first pose meanwhile; any black lifts with it
@@ -1849,7 +2145,7 @@ function runChoose(ev) {              // a timed choice: the default is taken wh
   freePointer();
   return new Promise(resolve => {
     const secs = eventSecs(ev, S), opts = ev.options || [], t0 = performance.now();
-    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, sub: o.ja })), timed: true }, i => finish(opts[i].id));
+    const { box, c } = choiceBox({ options: opts.map(o => ({ label: o.label || o.id, think: o.think })), timed: true }, i => finish(opts[i].id));
     paintLine(watchHud().line, ev.prompt);                                          // the question is the footer's line
     let done = false;
     const finish = id => { if (done) return; done = true; window.removeEventListener("keydown", c.keys, true); box.remove(); paintLine(watchHud().line, ""); resolve(id); };
@@ -1923,7 +2219,7 @@ async function watchStitch(st, nid, n) {
   watchStage.frame({ view: S.levels[lvl].start, camera: { mode: "free" }, clips: [{ id: "x", who: "", en: "" }], stage: {} }, 0, FILES);
   await fade(0.25, 0.5);
   const mins = +(st.target_min || 3);
-  for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, RUN.secs); }
+  for (const b of st.beats || []) if (!b.secret || $("#wSecrets").checked) for (const a of b.do || []) { if (a.flag) RUN.flags.add(a.flag); if (a.karma !== undefined && !b.optional) addKarma(RUN.karma, a.karma); if (a.state && RUN.lives) RUN.lives.set(a.state, a.to, RUN.secs); if (a.skip && RUN.lives) RUN.lives.skip(RUN.secs, +a.skip); }
   const its = (S.interrupts || []).filter(it => it.during === "all" || (it.during || []).includes(n.ref));
   if (st.play) {                                   // a round of gameplay: did it go your way?
     const pl = st.play, results = PLAYS[pl.type] || ["success", "fail"], seek = roundSeeker(pl, lvl);
@@ -1973,8 +2269,8 @@ async function watchStitch(st, nid, n) {
 // opened stay; after a scene you carry on from where it left your eye (no cut back to a spot)
 function playRt() {
   if (!RUN.play) {
-    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } }, files: FILES,
-      onBeat: (st, b, secs) => DBG.fired(st, b, secs) });
+    RUN.play = new PlayRuntime(watchStage, S, PLAN, $("#watchBox"), { run: RUN, game: GAME, fade, setTime: t => { RUN.time = t; watchStage.setTime(t); }, playScene: sid => playTriggered(sid), quit: () => stopWatch(), theme: $("#wTheme").value || null, settings: { crouch: { mode: $("#wCrouch").value } }, files: FILES,
+      onBeat: (st, b, secs) => DBG.fired(st, b, secs), onFlag: () => achieved() });
     for (const i of RUN.items || []) RUN.play.items.add(i);   // what a start from the debug panel holds
   }
   return RUN.play;
@@ -1987,7 +2283,9 @@ function playPlace(rt, lvl) {
 }
 async function playTriggered(sid) {                 // a beat's `scene`: blended in from the player, then back to play
   const sc0 = S.scenes[sid]; if (!sc0 || !RUN) return;
+  watchStage.setModels(modelFiles(wearModels(RUN.models || {}, sceneModels(sc0))));   // its own models while it plays (not carried: it isn't on the board)
   await watchScene(version(sc0), sid, sid, sc0.variants ? sc0.pick : null);
+  if (RUN) watchStage.setModels(modelFiles(RUN.models));
   return { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera };
 }
 async function playStitch(st, n, lvl) {
@@ -2019,7 +2317,12 @@ function watchChoice(n) {
 const PKEY = () => `dd.progress.${GAME}`;
 function progress() { try { return JSON.parse(localStorage.getItem(PKEY()) || "{}"); } catch (e) { return {}; } }
 function saveProgress(p) { try { localStorage.setItem(PKEY(), JSON.stringify(p)); } catch (e) { } }
-function snapOf(R) { return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail }; }
+function snapOf(R) {                                 // a checkpoint: the run as it is, the pocket and the little things too (a retry after a death keeps them)
+  const rt = R.play, T = rt ? rt.now() : R.secs;
+  return { secs: R.secs, flags: [...R.flags], results: R.results, karma: R.karma, counters: R.counters, answers: R.answers, trail: R.trail, todo: R.todo || [], name: R.name, models: R.models || {},
+    items: [...((rt && rt.items) || R.items || [])],
+    states: R.lives ? Object.fromEntries(Object.keys(R.lives.things).map(id => [id, (R.lives.at(id, T) || {}).state]).filter(([, st]) => st)) : {} };
+}
 function reach(nid) {                              // the first arrival's state is the checkpoint
   const p = progress(); p.visited = p.visited || {};
   if (!p.visited[nid]) p.visited[nid] = snapOf(RUN);
@@ -2033,19 +2336,25 @@ async function watch(fromNid, snap) {
   RUN.lives = new States(LIVES, lifeThings()).start(0);   // the little things: their states through the whole run
   watchStage.soundOn = $("#wThings").checked;
   if (snap) Object.assign(RUN, JSON.parse(JSON.stringify(snap)), { flags: new Set(snap.flags || []), timers: [], done: new Set(), trail: [...(snap.trail || [])], items: new Set(snap.items || []) });
+  for (const [id, to] of Object.entries((snap && snap.states) || {})) RUN.lives.set(id, to, 0, "start");   // the little things as the nodes before it leave them (a scene's cue: the TV to static)
+  RUN.name = setName(RUN.name || (S.game || {}).player_name, true);   // {name}: the game's until the player types theirs (a `name` action)
+  watchStage.runState = RUN;                            // its flags and counters: the lines and faces it leaves out (§9.14)
   DBG.reset();
   wclock();
   $("#watchOv .black").style.opacity = 1;
   let nid = fromNid || S.game.start, guard = 0;
   RUN.time = (flowTimes(S)[nid] || {}).time || S.game.time || TIME_DEFAULT; watchStage.setTime(RUN.time);   // from any node: its time
+  if (!(snap && snap.models)) RUN.models = Object.assign({}, (flowModels(S)[nid] || {}).before);   // and the models the flow brings there (a checkpoint keeps its own)
   while (RUN && nid && S.flow[nid] && guard++ < 300) {
-    const n = S.flow[nid]; reach(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
+    const n = S.flow[nid]; reach(nid); achieved(nid); RUN.trail.push(nid); $("#wTrail").textContent = RUN.trail.join(" › ");
     if (n.type === "scene" && (S.scenes[n.ref] || {}).time) { RUN.time = S.scenes[n.ref].time; watchStage.setTime(RUN.time); }   // a scene's own time, from here on
+    if (n.type === "scene") RUN.models = wearModels(RUN.models || {}, sceneModels(S.scenes[n.ref]));   // a scene's models, from here on
+    watchStage.setModels(modelFiles(RUN.models));
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
-      await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = n.next;
+      const to = await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = (to && S.flow[to]) ? to : n.next;   // an answer may send the flow to another card (§9.9 go)
       if (RUN) RUN.afterScene = { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera.clone() }; }
-    else if (n.type === "stitch") nid = await watchStitch(S.stitches[n.ref] || {}, nid, n);
+    else if (n.type === "stitch") { const ct = chapterTime(S, n); nid = await watchStitch(S.stitches[n.ref] || {}, nid, n); if (RUN && ct) { RUN.time = ct; watchStage.setTime(ct); } }   // a chapter's time from here on
     else if (n.type === "choice") {
       if (n.by === "act" && $("#wPlay").checked) nid = (await playChoice(n)).to;
       else if (n.by === "act") { paintOv("#watchOv", { black: +$("#watchOv .black").style.opacity || 0 }); await fade(0.3, 0.3); nid = (await watchChoice(n)).to; }
@@ -2058,11 +2367,20 @@ async function watch(fromNid, snap) {
       freePointer();
       $("#watchOv .black").style.opacity = death ? 0.8 : 0.6; paintOv("#watchOv", { sub: "", who: "" });
       $("#watchBox").append(el("div", { class: "wcard" + (death ? " death" : "") }, el("div", { class: "muted" }, death ? "YOU DIED" : "ENDING · " + (n.kind || "")), el("div", { class: "big" }, n.title || nid),
+        n.text ? el("div", { class: "etext" }, named(n.text)) : null,   // its title card's words, as long as they need (§9.14)
         el("div", { class: "muted" }, `${(RUN.secs / 60).toFixed(1)} min of story time on this path`), el("div", { class: "muted" }, "karma " + JSON.stringify(RUN.karma) + (Object.keys(RUN.counters).length ? " · " + JSON.stringify(RUN.counters) : "") + (RUN.answers.length ? " · " + RUN.answers.join("; ") : "")),
         el("div", {}, rt ? el("button", { class: "primary", style: "margin:4px", on: { click: () => { const p = progress(); watch(n.retry, (p.visited || {})[n.retry]); } } }, "Return to: " + ((nodeRef(rt) || {}).title || rt.title || n.retry)) : null,
           el("button", { style: "margin:4px", on: { click: () => openBranches(n.retry || nid) } }, "Branch map"))));
       window.__watchEnd = n.title || nid; break;
     }
+  }
+  if (RUN && !nid && RUN.trail.length) {           // the flow's cut here (sliced on the board, §2): said, not a silent stop
+    const last = RUN.trail[RUN.trail.length - 1];
+    freePointer(); $("#watchOv .black").style.opacity = 0.6; paintOv("#watchOv", { sub: "", who: "" });
+    $("#watchBox").append(el("div", { class: "wcard" }, el("div", { class: "muted" }, "THE FLOW'S CUT HERE"), el("div", { class: "big" }, nodeTitle(last, S.flow[last] || {})),
+      el("div", { class: "muted" }, "nothing comes after this card yet: drag its stub onto the card that does"),
+      el("div", {}, el("button", { class: "primary", style: "margin:4px", on: { click: () => { stopWatch(); openView("flowView"); selectNode(last); if (BOARD) BOARD.center(last); } } }, "Show it on the board"))));
+    window.__watchEnd = "cut:" + last;
   }
 }
 function openBranches(hl) { document.querySelector('nav button[data-v="branchView"]').click(); renderBranches(hl); }
@@ -2092,7 +2410,7 @@ function renderBranches(hl) {
   v.append(wrap);
   window.__branchDone = true;
 }
-function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } window.speechSynthesis && speechSynthesis.cancel(); wclear(); paintOv("#watchOv", {});
+function stopWatch() { stopTakes(); if (watchStage) { watchStage.soundOn = false; watchStage.runState = null; if (watchStage.life && watchStage.life.sound) watchStage.life.sound.stop(); } if (RUN) { RUN.timers.forEach(clearTimeout); if (RUN.play) RUN.play.stop(); RUN = null; } wclear(); paintOv("#watchOv", {});
   if (SYNC_AFTER_WATCH) { const w = SYNC_AFTER_WATCH; SYNC_AFTER_WATCH = null; syncFromDisk(w); } }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && RUN && $("#wSkip").checked && !(RUN.play && RUN.play.active)) RUN.skip = true; });   // in Play, Esc pauses
 
@@ -2104,7 +2422,7 @@ function renderClips() {
   const tb = el("table", {}, el("tr", {}, ...["take id", "scene", "ver", "clip", "who", "ja", "en", "act", "shot", "event", "secs", "seam in", ...(v3 ? ["MiniMax prompt", ""] : [])].map(h => el("th", {}, h))));
   for (const [sid, sc] of Object.entries(S.scenes || {})) {
     const vers = sc.variants ? Object.entries(sc.variants) : [[null, sc]];
-    for (const [k, ver] of vers) (ver.clips || []).flatMap(c => [c, ...((c.reply && c.reply.options) || []).filter(o => o.then).map(o => { const t = thenClip(c, o); ANS.add(t); return t; })]).forEach((c, i) => {
+    for (const [k, ver] of vers) (ver.clips || []).flatMap(c => [c, ...((c.reply && c.reply.options) || []).flatMap(o => thenClips(c, o)).map(t => { ANS.add(t); return t; })]).forEach((c, i) => {
       all++; if (c.dur) rec++;
       tb.append(el("tr", { style: clipSecs(c) > max ? "background:#4a1f1c" : "" }, el("td", {}, `${GAME}_${sid}_${k || "main"}_${c.id}`), el("td", {}, sid), el("td", {}, (k || "main") + (k && k === sc.pick ? " ★" : "")), el("td", {}, c.id), el("td", {}, c.who || ""),
         el("td", {}, c.ja || ""), el("td", {}, c.en || ""), el("td", { class: "muted" }, c.act || ""), el("td", {}, c.shot || ""), el("td", {}, c.event ? c.event.type : ""),
@@ -2278,7 +2596,7 @@ $("#keysHelp").onclick = () => {
     sec("A task's beats", [["When … pill", "click to choose when the beat happens"], ["+ Add a command", "the palette: type to search, Enter picks"], ["grip ⋮⋮", "drag a command or a beat to move it, into another beat too"], ["double-click", "a command: edit it"], ["+ New…", "in a picker: make the line, item or sound there and then"], ["Quick beat", "a jump scare, a knock, the lights dying… from a few blanks"]]),
     sec("A scene", [["a row", "one line: click it for its tabs (Line, Take, Camera, Body, Event, Reply)"], ["grip ⋮⋮", "drag lines to reorder them"], ["drop a file", "a take's video or audio on its line: stored, measured, trimmed"]]),
     sec("The Database", [["tabs", "the game's settings, cast, items, notes, sounds, lines, motions, flags and counters, secrets, trigger cutscenes"], ["Used in …", "every place an entry is used: click one to go there"], ["Rename", "a new id, changed everywhere it's used"]]),
-    sec("The Watch", [["WASD · arrows", "move"], ["mouse", "look (click the view to lock it)"], ["E · hold E", "use · pick up or put down"], ["C", "crouch (toggle or hold: the Watch bar)"], ["Esc", "pause (dev: skips a scene, when ticked)"], ["F9 · Debug", "every flag, counter and item live, the beats as they fire; before it plays, the state to start from"]]),
+    sec("The Watch", [["WASD · arrows", "move"], ["mouse", "look (click the view to lock it)"], ["left click · Shift", "use anything · run"], ["E · wheel · G", "the inventory shown or hidden · turn it · put down the one in your hand"], ["C", "crouch (toggle or hold: the Watch bar)"], ["F", "the flashlight, once you have one"], ["hold the left button", "scrub a stain away"], ["Esc", "pause (dev: skips a scene, when ticked)"], ["F9 · Debug", "every flag, counter and item live, the beats as they fire; before it plays, the state to start from"]]),
     sec("The stage", [["drag someone", "across the floor onto a spot (the rings; let go near one) or a new mark there, facing the player"], ["right-click", "the floor: put someone here, the player stands here, a new mark; someone: the camera follows them, off the stage"],
       ["Free cam", "drag to orbit, wheel to zoom; the player is the orange marker: drag it to where the scene is seen from"]])) });
 };
@@ -2392,5 +2710,24 @@ const DB = new Database($("#dbView"), {
   goNode: nid => { openView("flowView"); selectNode(nid); if (BOARD) BOARD.center(nid); },
   goLevel: lid => openBuilder(lid),
 });
-window.__dd = { get S() { return S; }, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); } };
+// the right side's tabs: the Inspector, and the expression library (expressions.js, docs/EXPRESSIONS_PLAN.md)
+async function ensureBody(f) {                         // a body loaded into the stages' templates on demand (a Studio export no one wears yet)
+  if (!f || f === "capsules" || flowStage.bodies[f]) return;
+  const tpl = await loadBody("/bodies/" + f.split("/").map(encodeURIComponent).join("/"));
+  if (f.startsWith("people/")) tpl.userData = { studio: f.slice(7) };
+  flowStage.bodies[f] = tpl; watchStage.bodies[f] = tpl;
+}
+const XP = new ExpressionsPanel($("#exprPanel"), { stage: () => flowStage, story: () => S, ensureBody, M, bodies: async () => (await api("/api/bodies")).bodies,
+  changed: () => { libraryChanged(); if (currentScene()) renderInspector(); } });   // the library changed (an import, a loop, a rename): the face rows read it again
+function rightTab(r, draw = true) {
+  for (const b of document.querySelectorAll("#rtabs button")) b.classList.toggle("on", b.dataset.r === r);
+  $("#inspector").hidden = r !== "inspector"; $("#exprPanel").hidden = r !== "exprPanel";
+  try { localStorage.setItem("dd.rtab", r); } catch (e) { }
+  if (r === "exprPanel" && draw && S) XP.refresh();
+}
+for (const b of document.querySelectorAll("#rtabs button")) b.onclick = () => rightTab(b.dataset.r);
+{ const ib = $('#rtabs button[data-r="inspector"]'), ours = e => [...e.dataTransfer.types].includes(DRAG_TYPE);   // an expression card dragged over the Inspector's tab opens it: dropped on a face row there
+  ib.addEventListener("dragenter", e => { if (ours(e)) rightTab("inspector"); }); ib.addEventListener("dragover", e => { if (ours(e)) e.preventDefault(); }); }
+try { if (localStorage.getItem("dd.rtab") === "exprPanel") rightTab("exprPanel", false); } catch (e) { }   // drawn once a game has loaded (load())
+window.__dd = { get S() { return S; }, XP, rightTab, get board() { return BOARD; }, get PLAN() { return PLAN; }, get FILES() { return FILES; }, get DIRTY() { return DIRTY; }, replan, get play() { return RUN && RUN.play; }, get run() { return RUN; }, openBuilder, get flowStage() { return flowStage; }, get watchStage() { return watchStage; }, watch: (nid, snap) => watch(nid, snap), stopWatch: () => stopWatch(), renderInspector: () => renderInspector(), checkBodies, loadBodies: () => loadBodies(), setSimple: on => setSimple(on), exportGLTF, drawBoard, DB, openDb, touch: w => touch(w), problems: () => allProblems(), select: id => { SEL = id; renderBoard(); renderInspector(); showStage(); }, models: () => flowModels(S) };
 boot();

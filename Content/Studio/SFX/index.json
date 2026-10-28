@@ -1,0 +1,3504 @@
+{
+ "format": "horrorstudio-sfx",
+ "version": 1,
+ "sounds": {
+  "ambient_01": {
+   "file": "ambience/ambient_01.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "drone",
+    "dark",
+    "loop"
+   ],
+   "secs": 8.23,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/ambient_01.ogg"
+  },
+  "ambient_02": {
+   "file": "ambience/ambient_02.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "drone",
+    "dark",
+    "loop"
+   ],
+   "secs": 3.17,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/ambient_02.ogg"
+  },
+  "ambient_03": {
+   "file": "ambience/ambient_03.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "drone",
+    "dark",
+    "loop"
+   ],
+   "secs": 7.04,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/ambient_03.ogg"
+  },
+  "ambient_wind_01": {
+   "file": "ambience/ambient_wind_01.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "wind",
+    "outside",
+    "loop"
+   ],
+   "secs": 10.09,
+   "loop": true,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_loop_ambient_01.ogg"
+  },
+  "ambient_wind_02": {
+   "file": "ambience/ambient_wind_02.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "wind",
+    "outside",
+    "loop"
+   ],
+   "secs": 3.0,
+   "loop": true,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_loop_ambient_02.ogg"
+  },
+  "ambient_wind_03": {
+   "file": "ambience/ambient_wind_03.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "wind",
+    "outside",
+    "loop"
+   ],
+   "secs": 3.51,
+   "loop": true,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_loop_ambient_03.ogg"
+  },
+  "ambient_wind_04": {
+   "file": "ambience/ambient_wind_04.ogg",
+   "category": "ambience",
+   "tags": [
+    "ambience",
+    "wind",
+    "outside",
+    "loop"
+   ],
+   "secs": 10.12,
+   "loop": true,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_loop_ambient_04.ogg"
+  },
+  "attack_01": {
+   "file": "monsters/attack_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "attack",
+    "lunge",
+    "scare"
+   ],
+   "secs": 0.19,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/attack_01.ogg"
+  },
+  "attack_02": {
+   "file": "monsters/attack_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "attack",
+    "lunge",
+    "scare"
+   ],
+   "secs": 0.66,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/attack_02.ogg"
+  },
+  "attack_03": {
+   "file": "monsters/attack_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "attack",
+    "lunge",
+    "scare"
+   ],
+   "secs": 0.51,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/attack_03.ogg"
+  },
+  "book_close": {
+   "file": "paper/book_close.ogg",
+   "category": "paper",
+   "tags": [
+    "book",
+    "close"
+   ],
+   "secs": 0.23,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/bookClose.ogg"
+  },
+  "book_open": {
+   "file": "paper/book_open.ogg",
+   "category": "paper",
+   "tags": [
+    "book",
+    "open"
+   ],
+   "secs": 0.15,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/bookOpen.ogg"
+  },
+  "breath": {
+   "file": "voices/breath.ogg",
+   "category": "voices",
+   "tags": [
+    "breath",
+    "breathing",
+    "close",
+    "behind you"
+   ],
+   "secs": 0.57,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/breath.ogg"
+  },
+  "breath_02": {
+   "file": "voices/breath_02.ogg",
+   "category": "voices",
+   "tags": [
+    "breath",
+    "breathing",
+    "heavy"
+   ],
+   "secs": 0.35,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/breath_02.ogg"
+  },
+  "breath_close": {
+   "file": "voices/breath_close.ogg",
+   "category": "voices",
+   "tags": [
+    "breath",
+    "close",
+    "behind you",
+    "ear"
+   ],
+   "secs": 0.57,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/breath.ogg"
+  },
+  "bug_01": {
+   "file": "monsters/bug_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "insects",
+    "bugs",
+    "crawling",
+    "skitter"
+   ],
+   "secs": 0.33,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/bug_05.ogg"
+  },
+  "bug_02": {
+   "file": "monsters/bug_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "insects",
+    "bugs",
+    "crawling",
+    "skitter"
+   ],
+   "secs": 0.41,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/bug_07.ogg"
+  },
+  "bug_03": {
+   "file": "monsters/bug_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "insects",
+    "bugs",
+    "crawling",
+    "skitter"
+   ],
+   "secs": 0.3,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/bug_09.ogg"
+  },
+  "chain_grind": {
+   "file": "house/chain_grind.ogg",
+   "category": "house",
+   "tags": [
+    "chain",
+    "metal",
+    "drag",
+    "dungeon"
+   ],
+   "secs": 0.99,
+   "loop": false,
+   "credit": "VSCO-2 CE by Versilian Studios (github.com/sgossner/VSCO-2-CE)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VSCO-2-CE@4403009 Miscellania Raw/Misc 1/chain_grind.wav"
+  },
+  "chain_loop": {
+   "file": "house/chain_loop.ogg",
+   "category": "house",
+   "tags": [
+    "chain",
+    "metal",
+    "rattle",
+    "loop"
+   ],
+   "secs": 2.26,
+   "loop": true,
+   "credit": "VSCO-2 CE by Versilian Studios (github.com/sgossner/VSCO-2-CE)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VSCO-2-CE@4403009 Miscellania Raw/Misc 1/chain_loop.wav"
+  },
+  "cloth_01": {
+   "file": "paper/cloth_01.ogg",
+   "category": "paper",
+   "tags": [
+    "cloth",
+    "clothes",
+    "rustle",
+    "grab"
+   ],
+   "secs": 0.63,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/cloth1.ogg"
+  },
+  "cloth_02": {
+   "file": "paper/cloth_02.ogg",
+   "category": "paper",
+   "tags": [
+    "cloth",
+    "clothes",
+    "rustle",
+    "grab"
+   ],
+   "secs": 0.38,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/cloth2.ogg"
+  },
+  "cloth_03": {
+   "file": "paper/cloth_03.ogg",
+   "category": "paper",
+   "tags": [
+    "cloth",
+    "clothes",
+    "rustle",
+    "grab"
+   ],
+   "secs": 0.48,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/cloth3.ogg"
+  },
+  "cloth_04": {
+   "file": "paper/cloth_04.ogg",
+   "category": "paper",
+   "tags": [
+    "cloth",
+    "clothes",
+    "rustle",
+    "grab"
+   ],
+   "secs": 0.38,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/cloth4.ogg"
+  },
+  "cough_01": {
+   "file": "voices/cough_01.ogg",
+   "category": "voices",
+   "tags": [
+    "cough",
+    "someone's there"
+   ],
+   "secs": 0.39,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/cough_01.ogg"
+  },
+  "cough_02": {
+   "file": "voices/cough_02.ogg",
+   "category": "voices",
+   "tags": [
+    "cough",
+    "someone's there"
+   ],
+   "secs": 0.35,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/cough_02.ogg"
+  },
+  "creature_01": {
+   "file": "monsters/creature_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.48,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_08.ogg"
+  },
+  "creature_02": {
+   "file": "monsters/creature_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.46,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_10.ogg"
+  },
+  "creature_03": {
+   "file": "monsters/creature_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.6,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_12.ogg"
+  },
+  "creature_04": {
+   "file": "monsters/creature_04.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.48,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_14.ogg"
+  },
+  "creature_05": {
+   "file": "monsters/creature_05.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.63,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_16.ogg"
+  },
+  "creature_06": {
+   "file": "monsters/creature_06.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.67,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_18.ogg"
+  },
+  "creature_07": {
+   "file": "monsters/creature_07.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 1.26,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/monster_20.ogg"
+  },
+  "cymbal_scrape": {
+   "file": "stings/cymbal_scrape.ogg",
+   "category": "stings",
+   "tags": [
+    "scrape",
+    "cymbal",
+    "metal",
+    "screech"
+   ],
+   "secs": 6.0,
+   "loop": false,
+   "credit": "VCSL by Versilian Studios (github.com/sgossner/VCSL)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Suspended Cymbal 1/susCymb1_scrape_1.wav"
+  },
+  "die_01": {
+   "file": "voices/die_01.ogg",
+   "category": "voices",
+   "tags": [
+    "death",
+    "die",
+    "last breath"
+   ],
+   "secs": 0.43,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/die_01.ogg"
+  },
+  "die_02": {
+   "file": "voices/die_02.ogg",
+   "category": "voices",
+   "tags": [
+    "death",
+    "die",
+    "last breath"
+   ],
+   "secs": 0.62,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/die_02.ogg"
+  },
+  "dishes_01": {
+   "file": "glass/dishes_01.ogg",
+   "category": "glass",
+   "tags": [
+    "dishes",
+    "kitchen",
+    "plates"
+   ],
+   "secs": 0.77,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/dishes_01.ogg"
+  },
+  "dishes_02": {
+   "file": "glass/dishes_02.ogg",
+   "category": "glass",
+   "tags": [
+    "dishes",
+    "kitchen",
+    "plates"
+   ],
+   "secs": 0.5,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/dishes_02.ogg"
+  },
+  "door_01": {
+   "file": "doors/door_01.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "handle",
+    "open"
+   ],
+   "secs": 0.41,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_door_01.ogg"
+  },
+  "door_02": {
+   "file": "doors/door_02.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "handle",
+    "open"
+   ],
+   "secs": 0.29,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_door_02.ogg"
+  },
+  "door_03": {
+   "file": "doors/door_03.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "handle",
+    "open"
+   ],
+   "secs": 0.73,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_door_03.ogg"
+  },
+  "door_04": {
+   "file": "doors/door_04.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "handle",
+    "open"
+   ],
+   "secs": 0.2,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_door_04.ogg"
+  },
+  "door_05": {
+   "file": "doors/door_05.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "handle",
+    "open"
+   ],
+   "secs": 0.3,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_door_05.ogg"
+  },
+  "door_close_01": {
+   "file": "doors/door_close_01.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "close",
+    "shut"
+   ],
+   "secs": 0.45,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/door_close_01.ogg"
+  },
+  "door_close_02": {
+   "file": "doors/door_close_02.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "close",
+    "shut"
+   ],
+   "secs": 0.81,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/door_close_02.ogg"
+  },
+  "door_close_03": {
+   "file": "doors/door_close_03.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "close",
+    "shut"
+   ],
+   "secs": 0.42,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/door_close_03.ogg"
+  },
+  "door_close_04": {
+   "file": "doors/door_close_04.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "close",
+    "shut"
+   ],
+   "secs": 0.38,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/door_close_04.ogg"
+  },
+  "door_creak_01": {
+   "file": "doors/door_creak_01.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "door",
+    "hinge",
+    "slow"
+   ],
+   "secs": 0.61,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/creak1.ogg"
+  },
+  "door_creak_02": {
+   "file": "doors/door_creak_02.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "door",
+    "hinge",
+    "slow"
+   ],
+   "secs": 0.82,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/creak2.ogg"
+  },
+  "door_creak_03": {
+   "file": "doors/door_creak_03.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "door",
+    "hinge",
+    "slow"
+   ],
+   "secs": 0.34,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/creak3.ogg"
+  },
+  "door_open": {
+   "file": "doors/door_open.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "open"
+   ],
+   "secs": 0.41,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/door_open.ogg"
+  },
+  "door_slam_01": {
+   "file": "doors/door_slam_01.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "slam",
+    "bang",
+    "scare"
+   ],
+   "secs": 0.27,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_slam_01.ogg"
+  },
+  "door_slam_02": {
+   "file": "doors/door_slam_02.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "slam",
+    "bang",
+    "scare"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_slam_02.ogg"
+  },
+  "door_slam_03": {
+   "file": "doors/door_slam_03.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "slam",
+    "bang",
+    "scare"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_slam_03.ogg"
+  },
+  "door_slam_04": {
+   "file": "doors/door_slam_04.ogg",
+   "category": "doors",
+   "tags": [
+    "door",
+    "slam",
+    "bang",
+    "scare"
+   ],
+   "secs": 0.39,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_slam_04.ogg"
+  },
+  "drawer_01": {
+   "file": "doors/drawer_01.ogg",
+   "category": "doors",
+   "tags": [
+    "drawer",
+    "open",
+    "close",
+    "furniture"
+   ],
+   "secs": 2.3,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Close Drawer 1.wav"
+  },
+  "drawer_02": {
+   "file": "doors/drawer_02.ogg",
+   "category": "doors",
+   "tags": [
+    "drawer",
+    "open",
+    "close",
+    "furniture"
+   ],
+   "secs": 0.97,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Close Drawer 2.wav"
+  },
+  "drawer_03": {
+   "file": "doors/drawer_03.ogg",
+   "category": "doors",
+   "tags": [
+    "drawer",
+    "open",
+    "close",
+    "furniture"
+   ],
+   "secs": 2.1,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Drawer Move.wav"
+  },
+  "electric_hum_01": {
+   "file": "ambience/electric_hum_01.ogg",
+   "category": "ambience",
+   "tags": [
+    "electric",
+    "hum",
+    "buzz",
+    "lights",
+    "loop"
+   ],
+   "secs": 13.98,
+   "loop": true,
+   "credit": "Electromagnetic Sounds micro pack by NazdyNate",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - NazdyNate - Electromagnetic Sounds/NazdyNate - EM Room Noise 1.wav"
+  },
+  "electric_hum_02": {
+   "file": "ambience/electric_hum_02.ogg",
+   "category": "ambience",
+   "tags": [
+    "electric",
+    "hum",
+    "buzz",
+    "lights",
+    "loop"
+   ],
+   "secs": 16.82,
+   "loop": true,
+   "credit": "Electromagnetic Sounds micro pack by NazdyNate",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - NazdyNate - Electromagnetic Sounds/NazdyNate - EM Room Noise 2.wav"
+  },
+  "electric_hum_03": {
+   "file": "ambience/electric_hum_03.ogg",
+   "category": "ambience",
+   "tags": [
+    "electric",
+    "hum",
+    "buzz",
+    "lights",
+    "loop"
+   ],
+   "secs": 9.62,
+   "loop": true,
+   "credit": "Electromagnetic Sounds micro pack by NazdyNate",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - NazdyNate - Electromagnetic Sounds/NazdyNate - Computer Monitor 1.wav"
+  },
+  "fall_01": {
+   "file": "knocks/fall_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "drop",
+    "crash"
+   ],
+   "secs": 0.91,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_falling_01.ogg"
+  },
+  "fall_02": {
+   "file": "knocks/fall_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "drop",
+    "crash"
+   ],
+   "secs": 0.96,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_falling_02.ogg"
+  },
+  "fall_03": {
+   "file": "knocks/fall_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "drop",
+    "crash"
+   ],
+   "secs": 0.64,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_falling_03.ogg"
+  },
+  "flashlight_01": {
+   "file": "house/flashlight_01.ogg",
+   "category": "house",
+   "tags": [
+    "flashlight",
+    "torch",
+    "click"
+   ],
+   "secs": 1.28,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Flashlight Clicky 1.wav"
+  },
+  "flashlight_02": {
+   "file": "house/flashlight_02.ogg",
+   "category": "house",
+   "tags": [
+    "flashlight",
+    "torch",
+    "click"
+   ],
+   "secs": 1.37,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Flashlight Clicky 2.wav"
+  },
+  "floorboard_creak": {
+   "file": "house/floorboard_creak.ogg",
+   "category": "house",
+   "tags": [
+    "creak",
+    "floor",
+    "floorboard",
+    "someone's there"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_squeak_01.ogg, lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_cracking_02.ogg"
+  },
+  "glass_break_01": {
+   "file": "glass/glass_break_01.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "break",
+    "shatter",
+    "window"
+   ],
+   "secs": 0.55,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_glass_breaking_01.ogg"
+  },
+  "glass_break_02": {
+   "file": "glass/glass_break_02.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "break",
+    "shatter",
+    "window"
+   ],
+   "secs": 0.39,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_glass_breaking_02.ogg"
+  },
+  "glass_break_03": {
+   "file": "glass/glass_break_03.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "break",
+    "shatter",
+    "window"
+   ],
+   "secs": 0.69,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_glass_breaking_03.ogg"
+  },
+  "glass_break_04": {
+   "file": "glass/glass_break_04.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "break",
+    "shatter",
+    "window"
+   ],
+   "secs": 0.69,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_glass_breaking_04.ogg"
+  },
+  "glass_clink_01": {
+   "file": "glass/glass_clink_01.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "cup",
+    "clink"
+   ],
+   "secs": 0.39,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/glass_01.ogg"
+  },
+  "glass_clink_02": {
+   "file": "glass/glass_clink_02.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "cup",
+    "clink"
+   ],
+   "secs": 0.37,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/glass_02.ogg"
+  },
+  "glass_clink_03": {
+   "file": "glass/glass_clink_03.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "cup",
+    "clink"
+   ],
+   "secs": 0.41,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/glass_03.ogg"
+  },
+  "glass_shatter_01": {
+   "file": "glass/glass_shatter_01.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "shatter",
+    "break"
+   ],
+   "secs": 0.6,
+   "loop": false,
+   "credit": "VSCO-2 CE by Versilian Studios (github.com/sgossner/VSCO-2-CE)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VSCO-2-CE@4403009 Miscellania Raw/Misc 1/glass_break.wav"
+  },
+  "glass_shatter_02": {
+   "file": "glass/glass_shatter_02.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "shatter",
+    "break"
+   ],
+   "secs": 0.42,
+   "loop": false,
+   "credit": "VSCO-2 CE by Versilian Studios (github.com/sgossner/VSCO-2-CE)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VSCO-2-CE@4403009 Miscellania Raw/Misc 1/glass_break3.wav"
+  },
+  "glass_shatter_03": {
+   "file": "glass/glass_shatter_03.ogg",
+   "category": "glass",
+   "tags": [
+    "glass",
+    "shatter",
+    "break"
+   ],
+   "secs": 0.83,
+   "loop": false,
+   "credit": "VSCO-2 CE by Versilian Studios (github.com/sgossner/VSCO-2-CE)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VSCO-2-CE@4403009 Miscellania Raw/Misc 1/glass_break5.wav"
+  },
+  "gong_hit": {
+   "file": "stings/gong_hit.ogg",
+   "category": "stings",
+   "tags": [
+    "gong",
+    "hit",
+    "boom",
+    "shrine"
+   ],
+   "secs": 8.0,
+   "loop": false,
+   "credit": "VCSL by Versilian Studios (github.com/sgossner/VCSL)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Gong 1/gong_fff.wav"
+  },
+  "gong_scrape": {
+   "file": "stings/gong_scrape.ogg",
+   "category": "stings",
+   "tags": [
+    "gong",
+    "scrape",
+    "dread"
+   ],
+   "secs": 8.0,
+   "loop": false,
+   "credit": "VCSL by Versilian Studios (github.com/sgossner/VCSL)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Gong 1/gong_scrape_mf.wav"
+  },
+  "grab_sting": {
+   "file": "stings/grab_sting.ogg",
+   "category": "stings",
+   "tags": [
+    "grab",
+    "sting",
+    "caught",
+    "scare"
+   ],
+   "secs": 0.78,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl); VCSL by Versilian Studios (github.com/sgossner/VCSL); 80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/cloth4.ogg, sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Brake Drum/BrakeDrum1_Hammer_v3_rr1_Mid.wav, lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/attack_02.ogg"
+  },
+  "growl_01": {
+   "file": "monsters/growl_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "growl",
+    "grunt",
+    "low"
+   ],
+   "secs": 0.77,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/grunt_01.ogg"
+  },
+  "growl_02": {
+   "file": "monsters/growl_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "growl",
+    "grunt",
+    "low"
+   ],
+   "secs": 0.52,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/grunt_02.ogg"
+  },
+  "growl_03": {
+   "file": "monsters/growl_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "growl",
+    "grunt",
+    "low"
+   ],
+   "secs": 0.57,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/grunt_03.ogg"
+  },
+  "hinge_metal_01": {
+   "file": "doors/hinge_metal_01.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "hinge",
+    "metal",
+    "gate"
+   ],
+   "secs": 4.85,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Metal Hinge 1.wav"
+  },
+  "hinge_metal_02": {
+   "file": "doors/hinge_metal_02.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "hinge",
+    "metal",
+    "gate"
+   ],
+   "secs": 2.42,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Metal Hinge 2.wav"
+  },
+  "howl_01": {
+   "file": "monsters/howl_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "howl",
+    "wolf",
+    "far off"
+   ],
+   "secs": 0.59,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/howl.ogg"
+  },
+  "human_01": {
+   "file": "voices/human_01.ogg",
+   "category": "voices",
+   "tags": [
+    "human",
+    "voice",
+    "grunt",
+    "gasp"
+   ],
+   "secs": 0.58,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/human_01.ogg"
+  },
+  "human_02": {
+   "file": "voices/human_02.ogg",
+   "category": "voices",
+   "tags": [
+    "human",
+    "voice",
+    "grunt",
+    "gasp"
+   ],
+   "secs": 0.66,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/human_02.ogg"
+  },
+  "human_03": {
+   "file": "voices/human_03.ogg",
+   "category": "voices",
+   "tags": [
+    "human",
+    "voice",
+    "grunt",
+    "gasp"
+   ],
+   "secs": 0.66,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/human_03.ogg"
+  },
+  "human_04": {
+   "file": "voices/human_04.ogg",
+   "category": "voices",
+   "tags": [
+    "human",
+    "voice",
+    "grunt",
+    "gasp"
+   ],
+   "secs": 0.62,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/human_04.ogg"
+  },
+  "human_05": {
+   "file": "voices/human_05.ogg",
+   "category": "voices",
+   "tags": [
+    "human",
+    "voice",
+    "grunt",
+    "gasp"
+   ],
+   "secs": 0.59,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/human_05.ogg"
+  },
+  "human_06": {
+   "file": "voices/human_06.ogg",
+   "category": "voices",
+   "tags": [
+    "human",
+    "voice",
+    "grunt",
+    "gasp"
+   ],
+   "secs": 0.65,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/human_06.ogg"
+  },
+  "hurt_01": {
+   "file": "voices/hurt_01.ogg",
+   "category": "voices",
+   "tags": [
+    "hurt",
+    "pain",
+    "grunt"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/hurt_01.ogg"
+  },
+  "hurt_02": {
+   "file": "voices/hurt_02.ogg",
+   "category": "voices",
+   "tags": [
+    "hurt",
+    "pain",
+    "grunt"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/hurt_02.ogg"
+  },
+  "hurt_03": {
+   "file": "voices/hurt_03.ogg",
+   "category": "voices",
+   "tags": [
+    "hurt",
+    "pain",
+    "grunt"
+   ],
+   "secs": 0.4,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/hurt_03.ogg"
+  },
+  "key_turn_01": {
+   "file": "doors/key_turn_01.ogg",
+   "category": "doors",
+   "tags": [
+    "key",
+    "lock"
+   ],
+   "secs": 0.4,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/key_open_01.ogg"
+  },
+  "key_turn_02": {
+   "file": "doors/key_turn_02.ogg",
+   "category": "doors",
+   "tags": [
+    "key",
+    "lock"
+   ],
+   "secs": 0.34,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/key_open_02.ogg"
+  },
+  "keys_01": {
+   "file": "house/keys_01.ogg",
+   "category": "house",
+   "tags": [
+    "keys",
+    "jingle",
+    "pocket"
+   ],
+   "secs": 0.35,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/keys_01.ogg"
+  },
+  "keys_02": {
+   "file": "house/keys_02.ogg",
+   "category": "house",
+   "tags": [
+    "keys",
+    "jingle",
+    "pocket"
+   ],
+   "secs": 0.47,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/keys_03.ogg"
+  },
+  "keys_03": {
+   "file": "house/keys_03.ogg",
+   "category": "house",
+   "tags": [
+    "keys",
+    "jingle",
+    "pocket"
+   ],
+   "secs": 0.51,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/keys_05.ogg"
+  },
+  "knock_frantic": {
+   "file": "knocks/knock_frantic.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "bang",
+    "door",
+    "frantic",
+    "let me in"
+   ],
+   "secs": 2.07,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from 12 parts of lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264"
+  },
+  "knock_slow": {
+   "file": "knocks/knock_slow.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "door",
+    "slow",
+    "patient"
+   ],
+   "secs": 4.16,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from 4 parts of lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264"
+  },
+  "knock_three": {
+   "file": "knocks/knock_three.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "door",
+    "three",
+    "someone's there"
+   ],
+   "secs": 1.18,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_03.ogg, lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_03.ogg, lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_03.ogg"
+  },
+  "knock_wood_01": {
+   "file": "knocks/knock_wood_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "wood",
+    "tap"
+   ],
+   "secs": 0.27,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_01.ogg"
+  },
+  "knock_wood_02": {
+   "file": "knocks/knock_wood_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "wood",
+    "tap"
+   ],
+   "secs": 0.34,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_03.ogg"
+  },
+  "knock_wood_03": {
+   "file": "knocks/knock_wood_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "wood",
+    "tap"
+   ],
+   "secs": 0.19,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_05.ogg"
+  },
+  "knock_wood_04": {
+   "file": "knocks/knock_wood_04.ogg",
+   "category": "knocks",
+   "tags": [
+    "knock",
+    "wood",
+    "tap"
+   ],
+   "secs": 0.29,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_hit_07.ogg"
+  },
+  "latch": {
+   "file": "doors/latch.ogg",
+   "category": "doors",
+   "tags": [
+    "latch",
+    "metal",
+    "lock"
+   ],
+   "secs": 0.25,
+   "loop": false,
+   "credit": "RPG Audio by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_rpgaudio/Audio/metalLatch.ogg"
+  },
+  "lock_open": {
+   "file": "doors/lock_open.ogg",
+   "category": "doors",
+   "tags": [
+    "lock",
+    "key",
+    "unlock"
+   ],
+   "secs": 0.71,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/lock_open_01.ogg"
+  },
+  "lock_open_02": {
+   "file": "doors/lock_open_02.ogg",
+   "category": "doors",
+   "tags": [
+    "lock",
+    "key",
+    "unlock"
+   ],
+   "secs": 0.56,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_lock_open_01.ogg"
+  },
+  "machine_beep": {
+   "file": "house/machine_beep.ogg",
+   "category": "house",
+   "tags": [
+    "beep",
+    "answering machine",
+    "phone",
+    "electronic"
+   ],
+   "secs": 0.55,
+   "loop": false,
+   "credit": "HorrorStudio (made by tools/sfx.py)",
+   "license": "ours",
+   "source": "made"
+  },
+  "metal_falls_01": {
+   "file": "knocks/metal_falls_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "metal",
+    "drop",
+    "crash"
+   ],
+   "secs": 0.88,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_metal_falling_01.ogg"
+  },
+  "metal_falls_02": {
+   "file": "knocks/metal_falls_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "metal",
+    "drop",
+    "crash"
+   ],
+   "secs": 0.7,
+   "loop": false,
+   "credit": "75 CC0 breaking, falling and hit SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 75-cc0-breaking-falling-hit-sfx/bfh1_metal_falling_02.ogg"
+  },
+  "metal_hit_01": {
+   "file": "knocks/metal_hit_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "hit",
+    "clang"
+   ],
+   "secs": 0.22,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/metal_hit_01.ogg"
+  },
+  "metal_hit_02": {
+   "file": "knocks/metal_hit_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "hit",
+    "clang"
+   ],
+   "secs": 0.35,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/metal_hit_02.ogg"
+  },
+  "metal_hit_03": {
+   "file": "knocks/metal_hit_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "hit",
+    "clang"
+   ],
+   "secs": 0.38,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/metal_hit_03.ogg"
+  },
+  "metal_hit_04": {
+   "file": "knocks/metal_hit_04.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "hit",
+    "clang"
+   ],
+   "secs": 0.34,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/metal_hit_04.ogg"
+  },
+  "metal_hit_05": {
+   "file": "knocks/metal_hit_05.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "hit",
+    "clang"
+   ],
+   "secs": 0.29,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/metal_hit_05.ogg"
+  },
+  "metal_screech": {
+   "file": "stings/metal_screech.ogg",
+   "category": "stings",
+   "tags": [
+    "screech",
+    "bowed metal",
+    "j-horror",
+    "scare",
+    "sting"
+   ],
+   "secs": 6.0,
+   "loop": false,
+   "credit": "VCSL by Versilian Studios (github.com/sgossner/VCSL)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Brake Drum/BrakeDrum1_Bowed_rr2_Mid.wav"
+  },
+  "monster_01": {
+   "file": "monsters/monster_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.77,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_01.ogg"
+  },
+  "monster_02": {
+   "file": "monsters/monster_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.51,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_02.ogg"
+  },
+  "monster_03": {
+   "file": "monsters/monster_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.47,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_03.ogg"
+  },
+  "monster_04": {
+   "file": "monsters/monster_04.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 1.11,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_04.ogg"
+  },
+  "monster_05": {
+   "file": "monsters/monster_05.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.42,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_05.ogg"
+  },
+  "monster_06": {
+   "file": "monsters/monster_06.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.7,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_06.ogg"
+  },
+  "monster_07": {
+   "file": "monsters/monster_07.ogg",
+   "category": "monsters",
+   "tags": [
+    "monster",
+    "creature",
+    "growl"
+   ],
+   "secs": 0.85,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/monster_07.ogg"
+  },
+  "needle_01": {
+   "file": "weird/needle_01.ogg",
+   "category": "weird",
+   "tags": [
+    "record",
+    "gramophone",
+    "needle",
+    "old"
+   ],
+   "secs": 12.0,
+   "loop": false,
+   "credit": "Record Fuzzies micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Record Fuzzies/Needle Drop.wav"
+  },
+  "needle_02": {
+   "file": "weird/needle_02.ogg",
+   "category": "weird",
+   "tags": [
+    "record",
+    "gramophone",
+    "needle",
+    "old"
+   ],
+   "secs": 12.0,
+   "loop": false,
+   "credit": "Record Fuzzies micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Record Fuzzies/Record Skipping 1.wav"
+  },
+  "needle_03": {
+   "file": "weird/needle_03.ogg",
+   "category": "weird",
+   "tags": [
+    "record",
+    "gramophone",
+    "needle",
+    "old"
+   ],
+   "secs": 12.0,
+   "loop": false,
+   "credit": "Record Fuzzies micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Record Fuzzies/Record Skipping 2.wav"
+  },
+  "noise_01": {
+   "file": "ambience/noise_01.ogg",
+   "category": "ambience",
+   "tags": [
+    "noise",
+    "static",
+    "tv",
+    "loop"
+   ],
+   "secs": 7.23,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/noise_01.ogg"
+  },
+  "noise_02": {
+   "file": "ambience/noise_02.ogg",
+   "category": "ambience",
+   "tags": [
+    "noise",
+    "static",
+    "tv",
+    "loop"
+   ],
+   "secs": 3.86,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/noise_02.ogg"
+  },
+  "page_turn_01": {
+   "file": "paper/page_turn_01.ogg",
+   "category": "paper",
+   "tags": [
+    "page",
+    "book",
+    "note",
+    "paper"
+   ],
+   "secs": 3.44,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Page Turn 1.wav"
+  },
+  "page_turn_02": {
+   "file": "paper/page_turn_02.ogg",
+   "category": "paper",
+   "tags": [
+    "page",
+    "book",
+    "note",
+    "paper"
+   ],
+   "secs": 3.28,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Page Turn 2.wav"
+  },
+  "page_turn_03": {
+   "file": "paper/page_turn_03.ogg",
+   "category": "paper",
+   "tags": [
+    "page",
+    "book",
+    "note",
+    "paper"
+   ],
+   "secs": 2.94,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Page Turn 3.wav"
+  },
+  "phone_static_01": {
+   "file": "ambience/phone_static_01.ogg",
+   "category": "ambience",
+   "tags": [
+    "phone",
+    "static",
+    "interference",
+    "signal"
+   ],
+   "secs": 12.0,
+   "loop": false,
+   "credit": "Electromagnetic Sounds micro pack by NazdyNate",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - NazdyNate - Electromagnetic Sounds/NazdyNate -Cell Reception 1.wav"
+  },
+  "phone_static_02": {
+   "file": "ambience/phone_static_02.ogg",
+   "category": "ambience",
+   "tags": [
+    "phone",
+    "static",
+    "interference",
+    "signal"
+   ],
+   "secs": 10.33,
+   "loop": false,
+   "credit": "Electromagnetic Sounds micro pack by NazdyNate",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - NazdyNate - Electromagnetic Sounds/NazdyNate - Cell Phone 1.wav"
+  },
+  "pipe_clang_01": {
+   "file": "knocks/pipe_clang_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "pipe",
+    "clang",
+    "basement"
+   ],
+   "secs": 0.16,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactMetal_heavy_000.ogg"
+  },
+  "pipe_clang_02": {
+   "file": "knocks/pipe_clang_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "pipe",
+    "clang",
+    "basement"
+   ],
+   "secs": 0.36,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactMetal_heavy_001.ogg"
+  },
+  "pipe_clang_03": {
+   "file": "knocks/pipe_clang_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "metal",
+    "pipe",
+    "clang",
+    "basement"
+   ],
+   "secs": 0.11,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactMetal_heavy_002.ogg"
+  },
+  "power_hum_cut": {
+   "file": "house/power_hum_cut.ogg",
+   "category": "house",
+   "tags": [
+    "power",
+    "hum",
+    "cut",
+    "lights out",
+    "blackout"
+   ],
+   "secs": 2.49,
+   "loop": false,
+   "credit": "Electromagnetic Sounds micro pack by NazdyNate; 100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "built from lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - NazdyNate - Electromagnetic Sounds/NazdyNate - EM Room Noise 1.wav, lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/switch_02.ogg"
+  },
+  "rain": {
+   "file": "ambience/rain.ogg",
+   "category": "ambience",
+   "tags": [
+    "rain",
+    "weather",
+    "loop",
+    "outside"
+   ],
+   "secs": 3.99,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/rain.ogg"
+  },
+  "record_crackle": {
+   "file": "ambience/record_crackle.ogg",
+   "category": "ambience",
+   "tags": [
+    "record",
+    "crackle",
+    "gramophone",
+    "loop"
+   ],
+   "secs": 20.0,
+   "loop": true,
+   "credit": "Record Fuzzies micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Record Fuzzies/Classic Record Fuzz.wav"
+  },
+  "riffle_01": {
+   "file": "paper/riffle_01.ogg",
+   "category": "paper",
+   "tags": [
+    "book",
+    "pages",
+    "riffle"
+   ],
+   "secs": 7.52,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Riffle Pages 1.wav"
+  },
+  "riffle_02": {
+   "file": "paper/riffle_02.ogg",
+   "category": "paper",
+   "tags": [
+    "book",
+    "pages",
+    "riffle"
+   ],
+   "secs": 1.71,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Riffle Pages 2.wav"
+  },
+  "roar_01": {
+   "file": "monsters/roar_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "roar",
+    "monster",
+    "scare"
+   ],
+   "secs": 0.35,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/roar_01.ogg"
+  },
+  "roar_02": {
+   "file": "monsters/roar_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "roar",
+    "monster",
+    "scare"
+   ],
+   "secs": 0.82,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/roar_02.ogg"
+  },
+  "roar_03": {
+   "file": "monsters/roar_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "roar",
+    "monster",
+    "scare"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/roar_03.ogg"
+  },
+  "room_tone_01": {
+   "file": "ambience/room_tone_01.ogg",
+   "category": "ambience",
+   "tags": [
+    "room tone",
+    "hum",
+    "loop",
+    "quiet"
+   ],
+   "secs": 30.0,
+   "loop": true,
+   "credit": "Fans and Drones by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Fans and Drones (Jul 2021)/Air Vent.wav"
+  },
+  "room_tone_02": {
+   "file": "ambience/room_tone_02.ogg",
+   "category": "ambience",
+   "tags": [
+    "room tone",
+    "hum",
+    "loop",
+    "quiet"
+   ],
+   "secs": 30.0,
+   "loop": true,
+   "credit": "Fans and Drones by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Fans and Drones (Jul 2021)/Refridgerator.wav"
+  },
+  "room_tone_03": {
+   "file": "ambience/room_tone_03.ogg",
+   "category": "ambience",
+   "tags": [
+    "room tone",
+    "hum",
+    "loop",
+    "quiet"
+   ],
+   "secs": 30.0,
+   "loop": true,
+   "credit": "Fans and Drones by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Fans and Drones (Jul 2021)/Furnace Fan.wav"
+  },
+  "room_tone_04": {
+   "file": "ambience/room_tone_04.ogg",
+   "category": "ambience",
+   "tags": [
+    "room tone",
+    "hum",
+    "loop",
+    "quiet"
+   ],
+   "secs": 30.0,
+   "loop": true,
+   "credit": "Fans and Drones by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Fans and Drones (Jul 2021)/Bathroom Fan.wav"
+  },
+  "room_tone_05": {
+   "file": "ambience/room_tone_05.ogg",
+   "category": "ambience",
+   "tags": [
+    "room tone",
+    "hum",
+    "loop",
+    "quiet"
+   ],
+   "secs": 30.0,
+   "loop": true,
+   "credit": "Fans and Drones by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Fans and Drones (Jul 2021)/Dehumidifier.wav"
+  },
+  "room_tone_06": {
+   "file": "ambience/room_tone_06.ogg",
+   "category": "ambience",
+   "tags": [
+    "room tone",
+    "hum",
+    "loop",
+    "quiet"
+   ],
+   "secs": 30.0,
+   "loop": true,
+   "credit": "Fans and Drones by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Fans and Drones (Jul 2021)/Large Fan.wav"
+  },
+  "rummage_01": {
+   "file": "house/rummage_01.ogg",
+   "category": "house",
+   "tags": [
+    "search",
+    "rummage",
+    "box"
+   ],
+   "secs": 6.31,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Rummage 1.wav"
+  },
+  "rummage_02": {
+   "file": "house/rummage_02.ogg",
+   "category": "house",
+   "tags": [
+    "search",
+    "rummage",
+    "box"
+   ],
+   "secs": 6.61,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Rummage 2.wav"
+  },
+  "scrape_knife_01": {
+   "file": "house/scrape_knife_01.ogg",
+   "category": "house",
+   "tags": [
+    "scrape",
+    "knife",
+    "blade",
+    "metal"
+   ],
+   "secs": 1.53,
+   "loop": false,
+   "credit": "Kitchen Knives micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Kitchen Knives/Unpleasant Scraping 1.wav"
+  },
+  "scrape_knife_02": {
+   "file": "house/scrape_knife_02.ogg",
+   "category": "house",
+   "tags": [
+    "scrape",
+    "knife",
+    "blade",
+    "metal"
+   ],
+   "secs": 3.97,
+   "loop": false,
+   "credit": "Kitchen Knives micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Kitchen Knives/Unpleasant Scraping 2.wav"
+  },
+  "scrape_knife_03": {
+   "file": "house/scrape_knife_03.ogg",
+   "category": "house",
+   "tags": [
+    "scrape",
+    "knife",
+    "blade",
+    "metal"
+   ],
+   "secs": 2.09,
+   "loop": false,
+   "credit": "Kitchen Knives micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Kitchen Knives/Big Knife - Scrape 3.wav"
+  },
+  "scrape_stone": {
+   "file": "house/scrape_stone.ogg",
+   "category": "house",
+   "tags": [
+    "scrape",
+    "stone",
+    "drag"
+   ],
+   "secs": 1.14,
+   "loop": false,
+   "credit": "VSCO-2 CE by Versilian Studios (github.com/sgossner/VSCO-2-CE)",
+   "license": "CC0-1.0",
+   "source": "sgossner/VSCO-2-CE@4403009 Miscellania Raw/Misc 1/brick_scrape.wav"
+  },
+  "scream_01": {
+   "file": "voices/scream_01.ogg",
+   "category": "voices",
+   "tags": [
+    "scream",
+    "shriek",
+    "scare"
+   ],
+   "secs": 0.91,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/scream_01.ogg"
+  },
+  "scream_02": {
+   "file": "voices/scream_02.ogg",
+   "category": "voices",
+   "tags": [
+    "scream",
+    "shriek",
+    "scare"
+   ],
+   "secs": 0.95,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/scream_02.ogg"
+  },
+  "slam_01": {
+   "file": "doors/slam_01.ogg",
+   "category": "doors",
+   "tags": [
+    "slam",
+    "bang",
+    "heavy"
+   ],
+   "secs": 0.47,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/slam_01.ogg"
+  },
+  "slam_02": {
+   "file": "doors/slam_02.ogg",
+   "category": "doors",
+   "tags": [
+    "slam",
+    "bang",
+    "heavy"
+   ],
+   "secs": 0.58,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/slam_02.ogg"
+  },
+  "slam_03": {
+   "file": "doors/slam_03.ogg",
+   "category": "doors",
+   "tags": [
+    "slam",
+    "bang",
+    "heavy"
+   ],
+   "secs": 0.56,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/slam_03.ogg"
+  },
+  "slam_04": {
+   "file": "doors/slam_04.ogg",
+   "category": "doors",
+   "tags": [
+    "slam",
+    "bang",
+    "heavy"
+   ],
+   "secs": 0.3,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/slam_04.ogg"
+  },
+  "slime_01": {
+   "file": "monsters/slime_01.ogg",
+   "category": "monsters",
+   "tags": [
+    "slime",
+    "wet",
+    "flesh",
+    "squelch"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/slime_01.ogg"
+  },
+  "slime_02": {
+   "file": "monsters/slime_02.ogg",
+   "category": "monsters",
+   "tags": [
+    "slime",
+    "wet",
+    "flesh",
+    "squelch"
+   ],
+   "secs": 0.48,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/slime_02.ogg"
+  },
+  "slime_03": {
+   "file": "monsters/slime_03.ogg",
+   "category": "monsters",
+   "tags": [
+    "slime",
+    "wet",
+    "flesh",
+    "squelch"
+   ],
+   "secs": 0.36,
+   "loop": false,
+   "credit": "80 CC0 creature SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-sfx-2/slime_03.ogg"
+  },
+  "snore": {
+   "file": "voices/snore.ogg",
+   "category": "voices",
+   "tags": [
+    "snore",
+    "sleep",
+    "someone's there"
+   ],
+   "secs": 0.42,
+   "loop": false,
+   "credit": "80 CC0 creature SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 80-CC0-creature-SFX/snore.ogg"
+  },
+  "squeak_01": {
+   "file": "doors/squeak_01.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "squeak",
+    "wood",
+    "hinge"
+   ],
+   "secs": 0.44,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_squeak_01.ogg"
+  },
+  "squeak_02": {
+   "file": "doors/squeak_02.ogg",
+   "category": "doors",
+   "tags": [
+    "creak",
+    "squeak",
+    "wood",
+    "hinge"
+   ],
+   "secs": 0.35,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_squeak_02.ogg"
+  },
+  "step_carpet_01": {
+   "file": "steps/step_carpet_01.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "carpet",
+    "soft",
+    "steps"
+   ],
+   "secs": 0.15,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_carpet_000.ogg"
+  },
+  "step_carpet_02": {
+   "file": "steps/step_carpet_02.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "carpet",
+    "soft",
+    "steps"
+   ],
+   "secs": 0.14,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_carpet_001.ogg"
+  },
+  "step_carpet_03": {
+   "file": "steps/step_carpet_03.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "carpet",
+    "soft",
+    "steps"
+   ],
+   "secs": 0.14,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_carpet_002.ogg"
+  },
+  "step_carpet_04": {
+   "file": "steps/step_carpet_04.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "carpet",
+    "soft",
+    "steps"
+   ],
+   "secs": 0.14,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_carpet_003.ogg"
+  },
+  "step_carpet_05": {
+   "file": "steps/step_carpet_05.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "carpet",
+    "soft",
+    "steps"
+   ],
+   "secs": 0.14,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_carpet_004.ogg"
+  },
+  "step_concrete_01": {
+   "file": "steps/step_concrete_01.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "concrete",
+    "stone",
+    "steps"
+   ],
+   "secs": 0.1,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_concrete_000.ogg"
+  },
+  "step_concrete_02": {
+   "file": "steps/step_concrete_02.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "concrete",
+    "stone",
+    "steps"
+   ],
+   "secs": 0.1,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_concrete_001.ogg"
+  },
+  "step_concrete_03": {
+   "file": "steps/step_concrete_03.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "concrete",
+    "stone",
+    "steps"
+   ],
+   "secs": 0.11,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_concrete_002.ogg"
+  },
+  "step_concrete_04": {
+   "file": "steps/step_concrete_04.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "concrete",
+    "stone",
+    "steps"
+   ],
+   "secs": 0.11,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_concrete_003.ogg"
+  },
+  "step_concrete_05": {
+   "file": "steps/step_concrete_05.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "concrete",
+    "stone",
+    "steps"
+   ],
+   "secs": 0.11,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_concrete_004.ogg"
+  },
+  "step_creaky_01": {
+   "file": "steps/step_creaky_01.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "creaky",
+    "old house"
+   ],
+   "secs": 0.27,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wood_01.ogg"
+  },
+  "step_creaky_02": {
+   "file": "steps/step_creaky_02.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "creaky",
+    "old house"
+   ],
+   "secs": 0.24,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wood_02.ogg"
+  },
+  "step_creaky_03": {
+   "file": "steps/step_creaky_03.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "creaky",
+    "old house"
+   ],
+   "secs": 0.18,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wood_03.ogg"
+  },
+  "step_creaky_04": {
+   "file": "steps/step_creaky_04.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "creaky",
+    "old house"
+   ],
+   "secs": 0.3,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wood_04.ogg"
+  },
+  "step_wet_01": {
+   "file": "steps/step_wet_01.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wet",
+    "water",
+    "bathroom"
+   ],
+   "secs": 0.28,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wet_01.ogg"
+  },
+  "step_wet_02": {
+   "file": "steps/step_wet_02.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wet",
+    "water",
+    "bathroom"
+   ],
+   "secs": 0.4,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wet_02.ogg"
+  },
+  "step_wet_03": {
+   "file": "steps/step_wet_03.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wet",
+    "water",
+    "bathroom"
+   ],
+   "secs": 0.38,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_footstep_wet_03.ogg"
+  },
+  "step_wood_01": {
+   "file": "steps/step_wood_01.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "floor",
+    "steps"
+   ],
+   "secs": 0.27,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_wood_000.ogg"
+  },
+  "step_wood_02": {
+   "file": "steps/step_wood_02.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "floor",
+    "steps"
+   ],
+   "secs": 0.25,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_wood_001.ogg"
+  },
+  "step_wood_03": {
+   "file": "steps/step_wood_03.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "floor",
+    "steps"
+   ],
+   "secs": 0.25,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_wood_002.ogg"
+  },
+  "step_wood_04": {
+   "file": "steps/step_wood_04.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "floor",
+    "steps"
+   ],
+   "secs": 0.25,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_wood_003.ogg"
+  },
+  "step_wood_05": {
+   "file": "steps/step_wood_05.ogg",
+   "category": "steps",
+   "tags": [
+    "footstep",
+    "wood",
+    "floor",
+    "steps"
+   ],
+   "secs": 0.25,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/footstep_wood_004.ogg"
+  },
+  "steps_approach": {
+   "file": "steps/steps_approach.ogg",
+   "category": "steps",
+   "tags": [
+    "footsteps",
+    "approaching",
+    "closer",
+    "wood"
+   ],
+   "secs": 4.31,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "built from 8 parts of lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264"
+  },
+  "steps_upstairs": {
+   "file": "steps/steps_upstairs.ogg",
+   "category": "steps",
+   "tags": [
+    "footsteps",
+    "above",
+    "upstairs",
+    "ceiling",
+    "someone's there"
+   ],
+   "secs": 3.85,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "built from 7 parts of lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264"
+  },
+  "sting_big": {
+   "file": "stings/sting_big.ogg",
+   "category": "stings",
+   "tags": [
+    "sting",
+    "scare",
+    "big",
+    "boom",
+    "jump scare"
+   ],
+   "secs": 7.0,
+   "loop": false,
+   "credit": "VCSL by Versilian Studios (github.com/sgossner/VCSL); Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "built from 4 parts of lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264, sgossner/VCSL@c1ea7bc"
+  },
+  "sting_short": {
+   "file": "stings/sting_short.ogg",
+   "category": "stings",
+   "tags": [
+    "sting",
+    "scare",
+    "short",
+    "hit"
+   ],
+   "secs": 4.0,
+   "loop": false,
+   "credit": "VCSL by Versilian Studios (github.com/sgossner/VCSL)",
+   "license": "CC0-1.0",
+   "source": "built from sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Brake Drum/BrakeDrum1_Hammer_v3_rr1_Mid.wav, sgossner/VCSL@c1ea7bc Idiophones/Struck Idiophones/Suspended Cymbal 1/susCymb1_hit_fff1.wav"
+  },
+  "switch_01": {
+   "file": "house/switch_01.ogg",
+   "category": "house",
+   "tags": [
+    "switch",
+    "light",
+    "click"
+   ],
+   "secs": 0.19,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/switch_01.ogg"
+  },
+  "switch_02": {
+   "file": "house/switch_02.ogg",
+   "category": "house",
+   "tags": [
+    "switch",
+    "light",
+    "click"
+   ],
+   "secs": 0.28,
+   "loop": false,
+   "credit": "100 CC0 SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-SFX/switch_02.ogg"
+  },
+  "thing_falls_01": {
+   "file": "knocks/thing_falls_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "wood",
+    "drop"
+   ],
+   "secs": 0.59,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_falling_01.ogg"
+  },
+  "thing_falls_02": {
+   "file": "knocks/thing_falls_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "wood",
+    "drop"
+   ],
+   "secs": 0.43,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_falling_02.ogg"
+  },
+  "thing_falls_03": {
+   "file": "knocks/thing_falls_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "fall",
+    "wood",
+    "drop"
+   ],
+   "secs": 0.45,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_falling_03.ogg"
+  },
+  "thud_soft_01": {
+   "file": "knocks/thud_soft_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "thud",
+    "body",
+    "soft",
+    "fall"
+   ],
+   "secs": 0.53,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactSoft_heavy_000.ogg"
+  },
+  "thud_soft_02": {
+   "file": "knocks/thud_soft_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "thud",
+    "body",
+    "soft",
+    "fall"
+   ],
+   "secs": 0.57,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactSoft_heavy_001.ogg"
+  },
+  "thud_soft_03": {
+   "file": "knocks/thud_soft_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "thud",
+    "body",
+    "soft",
+    "fall"
+   ],
+   "secs": 0.57,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactSoft_heavy_002.ogg"
+  },
+  "thud_wood_01": {
+   "file": "knocks/thud_wood_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "thud",
+    "wood",
+    "impact",
+    "heavy"
+   ],
+   "secs": 0.31,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactWood_heavy_000.ogg"
+  },
+  "thud_wood_02": {
+   "file": "knocks/thud_wood_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "thud",
+    "wood",
+    "impact",
+    "heavy"
+   ],
+   "secs": 0.31,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactWood_heavy_001.ogg"
+  },
+  "thud_wood_03": {
+   "file": "knocks/thud_wood_03.ogg",
+   "category": "knocks",
+   "tags": [
+    "thud",
+    "wood",
+    "impact",
+    "heavy"
+   ],
+   "secs": 0.31,
+   "loop": false,
+   "credit": "Impact Sounds by Kenney (kenney.nl)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 kenney_impactsounds/Audio/impactWood_heavy_002.ogg"
+  },
+  "thump_01": {
+   "file": "knocks/thump_01.ogg",
+   "category": "knocks",
+   "tags": [
+    "thump",
+    "wall",
+    "heavy"
+   ],
+   "secs": 1.29,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Big Thump.wav"
+  },
+  "thump_02": {
+   "file": "knocks/thump_02.ogg",
+   "category": "knocks",
+   "tags": [
+    "thump",
+    "wall",
+    "heavy"
+   ],
+   "secs": 0.66,
+   "loop": false,
+   "credit": "Toolbox Rummaging by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Toolbox Rummaging (Sept 2021)/Good Thunk.wav"
+  },
+  "thunder": {
+   "file": "ambience/thunder.ogg",
+   "category": "ambience",
+   "tags": [
+    "thunder",
+    "storm",
+    "weather"
+   ],
+   "secs": 4.55,
+   "loop": false,
+   "credit": "100 CC0 SFX #2 by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-cc0-sfx-2/sfx100v2_thunder_01.ogg"
+  },
+  "unsheath_01": {
+   "file": "house/unsheath_01.ogg",
+   "category": "house",
+   "tags": [
+    "knife",
+    "blade",
+    "draw"
+   ],
+   "secs": 1.92,
+   "loop": false,
+   "credit": "Kitchen Knives micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Kitchen Knives/Big Knife - Unsheath 1.wav"
+  },
+  "unsheath_02": {
+   "file": "house/unsheath_02.ogg",
+   "category": "house",
+   "tags": [
+    "knife",
+    "blade",
+    "draw"
+   ],
+   "secs": 0.88,
+   "loop": false,
+   "credit": "Kitchen Knives micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Kitchen Knives/Small Knife - Unsheath 1.wav"
+  },
+  "water_running": {
+   "file": "ambience/water_running.ogg",
+   "category": "ambience",
+   "tags": [
+    "water",
+    "tap",
+    "running",
+    "bathroom",
+    "loop"
+   ],
+   "secs": 1.88,
+   "loop": true,
+   "credit": "30 CC0 SFX loops by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-sfx-loops/water_flowing.ogg"
+  },
+  "weird_01": {
+   "file": "weird/weird_01.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.51,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_01.ogg"
+  },
+  "weird_02": {
+   "file": "weird/weird_02.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.71,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_03.ogg"
+  },
+  "weird_03": {
+   "file": "weird/weird_03.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.48,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_05.ogg"
+  },
+  "weird_04": {
+   "file": "weird/weird_04.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.67,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_07.ogg"
+  },
+  "weird_05": {
+   "file": "weird/weird_05.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.53,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_09.ogg"
+  },
+  "weird_06": {
+   "file": "weird/weird_06.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.46,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_11.ogg"
+  },
+  "weird_07": {
+   "file": "weird/weird_07.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.28,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_13.ogg"
+  },
+  "weird_08": {
+   "file": "weird/weird_08.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.76,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_15.ogg"
+  },
+  "weird_09": {
+   "file": "weird/weird_09.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.43,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_17.ogg"
+  },
+  "weird_10": {
+   "file": "weird/weird_10.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.56,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_19.ogg"
+  },
+  "weird_11": {
+   "file": "weird/weird_11.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.39,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_21.ogg"
+  },
+  "weird_12": {
+   "file": "weird/weird_12.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.3,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_23.ogg"
+  },
+  "weird_13": {
+   "file": "weird/weird_13.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.41,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_25.ogg"
+  },
+  "weird_14": {
+   "file": "weird/weird_14.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.42,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_27.ogg"
+  },
+  "weird_15": {
+   "file": "weird/weird_15.ogg",
+   "category": "weird",
+   "tags": [
+    "weird",
+    "uncanny",
+    "sting",
+    "texture"
+   ],
+   "secs": 0.43,
+   "loop": false,
+   "credit": "30 CC0 weird SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 30-cc0-weird-sfx/weird_29.ogg"
+  },
+  "whoosh_01": {
+   "file": "paper/whoosh_01.ogg",
+   "category": "paper",
+   "tags": [
+    "whoosh",
+    "swish",
+    "fast"
+   ],
+   "secs": 0.36,
+   "loop": false,
+   "credit": "Organic Wooshes micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Organic Wooshes/Swish 1.wav"
+  },
+  "whoosh_02": {
+   "file": "paper/whoosh_02.ogg",
+   "category": "paper",
+   "tags": [
+    "whoosh",
+    "swish",
+    "fast"
+   ],
+   "secs": 0.64,
+   "loop": false,
+   "credit": "Organic Wooshes micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Organic Wooshes/Swish 3.wav"
+  },
+  "whoosh_03": {
+   "file": "paper/whoosh_03.ogg",
+   "category": "paper",
+   "tags": [
+    "whoosh",
+    "swish",
+    "fast"
+   ],
+   "secs": 0.49,
+   "loop": false,
+   "credit": "Organic Wooshes micro pack by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 Micro Pack - Organic Wooshes/Gentle Swish.wav"
+  },
+  "wood_break_01": {
+   "file": "house/wood_break_01.ogg",
+   "category": "house",
+   "tags": [
+    "break",
+    "wood",
+    "splinter"
+   ],
+   "secs": 0.48,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_breaking_01.ogg"
+  },
+  "wood_break_02": {
+   "file": "house/wood_break_02.ogg",
+   "category": "house",
+   "tags": [
+    "break",
+    "wood",
+    "splinter"
+   ],
+   "secs": 0.56,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_breaking_02.ogg"
+  },
+  "wood_crack_01": {
+   "file": "house/wood_crack_01.ogg",
+   "category": "house",
+   "tags": [
+    "crack",
+    "wood",
+    "creak",
+    "settling"
+   ],
+   "secs": 0.17,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_cracking_01.ogg"
+  },
+  "wood_crack_02": {
+   "file": "house/wood_crack_02.ogg",
+   "category": "house",
+   "tags": [
+    "crack",
+    "wood",
+    "creak",
+    "settling"
+   ],
+   "secs": 0.24,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_cracking_02.ogg"
+  },
+  "wood_crack_03": {
+   "file": "house/wood_crack_03.ogg",
+   "category": "house",
+   "tags": [
+    "crack",
+    "wood",
+    "creak",
+    "settling"
+   ],
+   "secs": 0.23,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_cracking_03.ogg"
+  },
+  "wood_crack_04": {
+   "file": "house/wood_crack_04.ogg",
+   "category": "house",
+   "tags": [
+    "crack",
+    "wood",
+    "creak",
+    "settling"
+   ],
+   "secs": 0.24,
+   "loop": false,
+   "credit": "100 CC0 wood and metal SFX by rubberduck (OpenGameArt)",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 100-CC0-wood-metal-SFX/wood_cracking_04.ogg"
+  },
+  "writing_01": {
+   "file": "paper/writing_01.ogg",
+   "category": "paper",
+   "tags": [
+    "writing",
+    "pen",
+    "diary"
+   ],
+   "secs": 9.1,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Pen Writing 1.wav"
+  },
+  "writing_02": {
+   "file": "paper/writing_02.ogg",
+   "category": "paper",
+   "tags": [
+    "writing",
+    "pen",
+    "diary"
+   ],
+   "secs": 4.28,
+   "loop": false,
+   "credit": "Books, Paper, Writing by Ben Burnes",
+   "license": "CC0-1.0",
+   "source": "lavenderdotpet/CC0-Public-Domain-Sounds@f2b6264 bb - Books, Paper, Writing (Jan 2021)/Pen Writing 2.wav"
+  }
+ }
+}

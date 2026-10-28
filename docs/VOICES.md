@@ -81,6 +81,21 @@ then add it.
 | teasing | a small smirk that fades |
 | the uncanny | a sweet smile that doesn't reach her eyes |
 
+## 5. Silent expression videos (4 s post prompts)
+
+Since the switch to text with a blip (EXPRESSIONS_PLAN), faces are captured from short **silent** MiniMax videos, not
+from voiced takes: the expression library solves them, the expression tool stretches them (Length) and loops their
+held part. The prompt is a **post prompt**: appended after your own prompt for the character and the framing, written
+as what the face visibly does in about 4 seconds (DECISIONS 2026-10-27, last thing):
+
+> her eyes roll up as she bites her lower lip, she nervously looks down and then back at the viewer.
+
+- Present tense, third person, lower case; two or three moves in order, the last one held.
+- Movement, not feelings (§1 still holds): "her smile falters, her gaze drops", not "she feels guilty".
+- No speech and no talking mouth; no camera moves or lighting.
+- `Content/Studio/Expressions/prompts.json` keeps the reusable ones (listening faces to loop, the L.A. Noire tells,
+  warm, unsettling, sad, afraid); the writers' room uses them and writes new ones only when a moment needs it.
+
 ## 4. The log (what's been tried)
 
 | Date | Take | Voice | Expression | Result |

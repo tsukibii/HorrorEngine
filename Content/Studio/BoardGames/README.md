@@ -1,6 +1,6 @@
 # Board games: the rules
 
-A table in a level can hold a board game (`use: "game"`, docs/STORY_FORMAT.md §2): the player uses it (E), sits down
+A table in a level can hold a board game (`use: "game"`, docs/STORY_FORMAT.md §2): the player uses it (a click), sits down
 at its long side (the half they came from), leaning in over the top, and the game's rules play it out; then they stand up again and the story
 hears `{"played": table, "result": ...}`. Each game is **one file here**, its rules in plain JavaScript: the rules
 decide everything (whose turn, what the dice say, who won) and say so through `ctx`. They never touch three.js: the
@@ -22,6 +22,7 @@ name). Files starting `_` are helpers, not games (`_lib.js`: a deck of cards, th
 | `shell_game` | find the ball under one of three swapped cups | `win`, `lose` | `swaps` 6, `speed` 1 |
 | `high_card` | a card each, the higher wins (ace high) | `win`, `lose` | none |
 | `blackjack` | against the dealer: hit or stand, nearer 21 | `win`, `lose`, `push` | `dealer_stands` 17 |
+| `shinkei_suijaku` | 神経衰弱 (Concentration): pairs face down, turn two over, a pair is yours and you go again; more pairs wins (The Visitor's) | `win`, `lose`, `draw` | `pairs` 6, `memory` 0.6 (how much of what's turned she keeps), `memory_lies` false (a card you've seen slides off and another takes its place), `lets_win` false (she misses the pairs she knows) |
 
 Every game also takes `seed` (a number): the same seed plays the same game, for a scripted moment or a test.
 
@@ -42,7 +43,8 @@ export default async function play(ctx) {
 
 - `meta` is **one line of JSON** (the story check reads it without running JavaScript): `id` (the file's name),
   `title`, `players`, `results` (every way it can end; the story's `played` triggers name them), `settings` (each with
-  its default; a table's `settings` overrides them, and the check refuses any other name).
+  its default; a table's `settings` overrides them, and the check refuses any other name). A table's setting can be
+  `"flag:<flag>"` (true while the flag is set) or `"!flag:<flag>"` (while it isn't): the rules see true or false.
 - `play(ctx)` is async and returns one of the results. Make sure it always ends: BOARD fails a game that runs on.
 - Then `node tools/director/play/boardtest.mjs`: every result has to come up in its plays (if one only comes with a
   setting, add that setting to the test's `EXTRA` list).

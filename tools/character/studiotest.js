@@ -14,7 +14,9 @@
 // the Hair tab is the salon on this character (its body saved for it), brows and lashes switch in the Face tab; the anime
 // lash styles gather the lashes into spikes and the natural one spreads them; the anime pink makeup paints the liner from
 // the lashes' roots and pink under the eye, and its look turns the lashes on; the three drawn eye shapes are lash styles
-// (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each;
+// (the fox's sweep, the half-lidded's lashes down over the eye, the doll's spikes) with a liner each; the second
+// reference's five lash sets (sparse to fluffy mink) against the natural style, each look with its makeup; the lower
+// liner's band under the eye; Hooded lids folds the skin over the lid without turning any over or moving the opening;
 // accessories are held to the skin; the head OBJ exports; the export for the desk and Unreal carries the character's
 // recipe and Import brings it back with every file and setting the same; the pictures clear and the face goes.
 // Ends "STUDIO ok".
@@ -41,7 +43,7 @@ const png = rgb => {
 };
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  const browser = await require("../browser.cjs").launch(chromium);
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 820 } })).newPage();
   // a click here never navigates: don't wait for one after it (with a heavy shader in software GL the page can be too
   // busy to answer that wait, and a click that was done timed out)
@@ -82,8 +84,8 @@ const png = rgb => {
     if (!/: \w/.test(label)) throw new Error(`no label: ${label}`);
   });
   await step("a new character", async () => {
-    // a run that stopped early leaves its pictures behind (the last step clears them): clear them first
-    await page.evaluate(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" }))), NAME);
+    // a run that stopped early leaves its pictures and a baked face behind (the last steps clear them): clear them first
+    await page.evaluate(n => Promise.all(["front", "side"].map(s => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" })).concat(fetch(`api/people/${n}/face.bin`, { method: "POST", body: "" }))), NAME);
     await page.fill("#newName", NAME); await page.click("#make");
     await page.waitForFunction(n => window.__body.who === n, NAME);
     // it starts from the studio's look (soft cinematic), applied and saved once it's open: the steps below were written for MHR's plain one
@@ -145,6 +147,24 @@ const png = rgb => {
     console.log(`       Belly -1 takes the stomach back ${(r.flat * 1000).toFixed(0)} mm (a flat line from the pubic bone to the ribs)`);
     console.log(`       ${r.controls} controls, ${r.handles} circles; Forehead height 1 raises the head's top ${(r.topUp * 1000).toFixed(0)} mm and nothing under the chest; every control mirrored (within ${r.worst.toExponential(0)} m where the base is: all but ${r.unmatched} of ${r.moved} points); the forehead's circle dragged 60 px up: Forehead height ${after.v} (its row green while held), saved`);
   });
+  await step("the nose: Nose size −1 the whole nose smaller (narrower, standing less far out of the face), Nose projection −1 a flatter profile at its width; the lids, the eyes' corners and the lips stay; no skin turned over", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, M = b.MESHLID, T = b.TRIS, keep = [33, 133, 159, 145, 263, 362, 386, 374, 0, 17, 13, 14, 61, 291];
+      const now = () => ({ tip: b.lmk(4)[2], wide: Math.abs(b.lmk(278)[0] - b.lmk(48)[0]), keep: keep.map(i => b.lmk(i)), P: Float32Array.from(b.POS),
+        lid: ["L", "R"].flatMap(s => (M[s] || []).map(([a, c, f]) => [0, 1, 2].map(k => b.POS[a * 3 + k] * (1 - f) + b.POS[c * 3 + k] * f))) });
+      const was = { ...b.st.sculpt }, at = s => { b.st.sculpt = s; b.compose(); return now(); };
+      const o = at({}), small = at({ nose_size: -1 }), flat = at({ nose_projection: -1 }), both = at({ nose_size: -1, nose_projection: -1 }), big = at({ nose_size: 1, nose_projection: 1 });
+      b.st.sculpt = was; b.compose();
+      const far = (A, B) => Math.max(0, ...A.map((p, i) => Math.hypot(p[0] - B[i][0], p[1] - B[i][1], p[2] - B[i][2])));
+      const n = (P, t) => { const a = T[t] * 3, c = T[t + 1] * 3, d = T[t + 2] * 3, u = [0, 1, 2].map(k => P[c + k] - P[a + k]), v = [0, 1, 2].map(k => P[d + k] - P[a + k]); return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; };
+      const flips = X => { let k = 0; for (let t = 0; t < T.length; t += 3) { const p = n(o.P, t), q = n(X.P, t); if (p[0] * q[0] + p[1] * q[1] + p[2] * q[2] < 0) k++; } return k; };
+      const all = [small, flat, both, big];
+      return { scale: b.scale, back: o.tip - small.tip, narrower: 1 - small.wide / o.wide, flatBack: o.tip - flat.tip, flatWide: Math.abs(flat.wide - o.wide), keep: Math.max(...all.map(x => far(x.keep, o.keep))),
+        lids: o.lid.length, lid: Math.max(...all.map(x => far(x.lid, o.lid))), flips: [both, big].map(flips), handles: b.HANDLES.list.filter(H => /^nose_(side|dorsum)$/.test(H.h.id)).length };
+    });
+    if (!(r.back > 0.004 * r.scale) || !(r.narrower > 0.18) || !(r.flatBack > 0.006 * r.scale) || r.flatWide > 1e-5 || r.keep > 1e-6 || !(r.lids >= 32) || r.lid > 1e-6 || r.flips.some(k => k) || r.handles !== 3) throw new Error("the nose: " + JSON.stringify(r));
+    console.log(`       Nose size −1: the tip ${(r.back * 1000 / r.scale).toFixed(1)} mm back, the alae ${(r.narrower * 100).toFixed(0)}% narrower; Nose projection −1: the tip ${(r.flatBack * 1000 / r.scale).toFixed(1)} mm back at the same width; the ${r.lids} points of the lids' lines, the eyes' corners and the lips still (${r.keep.toExponential(0)} m), no skin turned over`);
+  });
   await step("the view's pose: a T-pose to shape in (the arms level from the shoulders, the legs straight, the neck stood up under a head untouched to the last bit); the A-pose is MHR's own, and what's written stays in it", async () => {
     const r = await page.evaluate(async () => {
       const b = window.__body, R = b.RIG, X = b.POSED, J = n => { const i = R.byName.get(n); return [X.J2[i * 3], X.J2[i * 3 + 1], X.J2[i * 3 + 2]]; };
@@ -174,6 +194,37 @@ const png = rgb => {
   await step("a side picture gives the depth", async () => {
     await page.setInputFiles("#slots .slot:nth-child(2) input", { name: "side.png", mimeType: "image/png", buffer: side });
     await page.waitForFunction(() => window.__body.report && window.__body.report.sides === 1, null, { timeout: 90000 });
+  });
+  await step("the face baked: kept as its pictures gave it with them gone, the character opened again, Face strength still working and the fit's settings waiting; a broken file refused; unbaked, fitted to its pictures again", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    const face = () => page.evaluate(() => Array.from(window.__body.POS));
+    const off = (A, B) => { let m = 0; for (let i = 0; i < A.length; i++) m = Math.max(m, Math.abs(A[i] - B[i])); return m; };
+    const fitted = await face();
+    await page.click("#bakeFace");
+    await page.waitForFunction(() => /is baked/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
+    const bad = await page.evaluate(async n => (await fetch(`api/people/${n}/face.bin`, { method: "POST", body: new Uint8Array([9, 0, 0, 0, 1, 2, 3]) })).status, NAME);
+    for (const s of ["front", "side"]) await page.evaluate(([n, s]) => fetch(`api/picture/${n}/${s}/png`, { method: "POST", body: "" }), [NAME, s]);
+    await saveNow(); await page.reload(); await page.waitForFunction(() => window.__body && window.__body.N > 10000, null, { timeout: 90000 });
+    await page.selectOption("#who", NAME); await page.waitForFunction(n => window.__body.who === n && window.__body.delta, NAME, { timeout: 90000 });
+    await page.waitForFunction(() => window.__body.pics.length === 0 && /face baked/.test(document.querySelector("#hud").textContent), null, { timeout: 60000 });
+    await page.click('#tabs button[data-tab="face"]');
+    const kept = await face();
+    const ui = await page.evaluate(() => { const rows = [...document.querySelectorAll("#faceRows .row")]; return { off: rows.filter(r => r.querySelector("input").disabled).length, rows: rows.length, strength: rows[0].querySelector("input").disabled, relative: document.querySelector("#relative").disabled, unbake: !document.querySelector("#unbakeFace").hidden, note: document.querySelector("#bakeNote").textContent }; });
+    await page.$$eval("#faceRows input", ins => { ins[0].value = 0.5; ins[0].dispatchEvent(new Event("input")); });
+    const half = await face();
+    await page.$$eval("#faceRows input", ins => { ins[0].value = 1; ins[0].dispatchEvent(new Event("input")); });
+    if (bad !== 400 || off(kept, fitted) > 1e-6 || !(off(half, fitted) > 1e-4) || ui.off !== ui.rows - 1 || ui.strength || !ui.relative || !ui.unbake || !/its pictures can go/.test(ui.note)) throw new Error("baked: " + JSON.stringify({ bad, kept: off(kept, fitted), half: off(half, fitted), ui }));
+    // the pictures back: still the baked face (nothing refitted); unbaked, the face fits them again, as before
+    await page.setInputFiles("#slots .slot:nth-child(1) input", { name: "front.png", mimeType: "image/png", buffer: front });
+    await page.waitForFunction(() => window.__body.pics.length === 1, null, { timeout: 90000 });
+    await page.setInputFiles("#slots .slot:nth-child(2) input", { name: "side.png", mimeType: "image/png", buffer: side });
+    await page.waitForFunction(() => window.__body.pics.length === 2, null, { timeout: 90000 }); await page.waitForTimeout(500);
+    const still = await face();
+    await page.click("#unbakeFace");
+    await page.waitForFunction(() => window.__body.report && window.__body.report.sides === 1 && !/face baked/.test(document.querySelector("#hud").textContent), null, { timeout: 90000 });
+    const refit = await face(), gone = await page.evaluate(async n => (await fetch(`api/people/${n}/face.bin`)).status, NAME);
+    if (off(still, fitted) > 1e-6 || off(refit, fitted) > 1e-4 || gone !== 404) throw new Error("unbaked: " + JSON.stringify({ still: off(still, fitted), refit: off(refit, fitted), gone }));
+    console.log(`       baked, the pictures gone and the character opened again: the face the same to ${off(kept, fitted).toExponential(0)} m; unbaked, refitted to its pictures within ${(off(refit, fitted) * 1000).toFixed(3)} mm`);
   });
   await step("expressions: a preset moves the face only; the map sends a blink to eyesClosed", async () => {
     await page.click('#tabs button[data-tab="expr"]');
@@ -356,10 +407,10 @@ const png = rgb => {
   const HANG = "label:has-text('Hang by gravity (cloth simulation)') input";
   await step("clothes: the work uniform cut from this body and worn, in denim with a print, its hem dragged up; a taller or a sculpted body refits it", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.waitForFunction(() => document.querySelectorAll("#clothesRows select option").length > 2);
+    await page.waitForFunction(() => document.querySelectorAll("#designSel option").length > 2 && document.querySelectorAll("#outfitGrid .card").length > 2);
     if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone here: the drape has its own step
-    await page.selectOption("#clothesRows select >> nth=0", "work uniform");
-    await page.click("#clothesRows >> text=Wear the outfit");
+    await page.click("#outfitTabs button[data-group='studio']");             // the outfits are cards with pictures, in groups (the designer ones first)
+    await page.click("#outfitGrid .card[data-outfit='work uniform']");
     await page.waitForFunction(() => window.__body.GARMENTS.children.length > 3, null, { timeout: 120000 });
     // its look: denim and a print on the shirt, the materials only (nothing refits). The outfit is socks and boots
     // first: the shirt's row is found by its name
@@ -400,8 +451,8 @@ const png = rgb => {
   });
   await step("clothes hang by gravity: a t-shirt and a skirt fall from the cut, are baked with the character and taken back as baked; a fit of 0 clings", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.selectOption("#clothesRows select >> nth=0", "t-shirt and skirt");
-    await page.click("#clothesRows >> text=Wear the outfit");
+    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
     await page.waitForFunction(() => window.__body.drapeState.stage === "done" && window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
     // where a garment's cloth is in MHR's own pose (the view turns it to the T-pose): its lowest point, how far out from the body's middle
     const shape = n => page.evaluate(n => { const m = window.__body.GARMENTS.children.find(g => g.name === n); if (!m) return null;
@@ -435,9 +486,49 @@ const png = rgb => {
     await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
     await page.click('#tabs button[data-tab="body"]');
   });
+  await step("the edit mode: the clothes as films with their cut lines on the body, a slider and a handle move a line at once with nothing cut, Bake cuts them to it; the outfits as pictures in groups, the designer ones first", async () => {
+    await page.click('#tabs button[data-tab="clothes"]');
+    if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone: the drape is the step before
+    const groups = {};
+    for (const g of ["designer", "studio", "underwear"]) { await page.click(`#outfitTabs button[data-group='${g}']`); groups[g] = await page.$$eval("#outfitGrid .card", cs => cs.map(c => c.dataset.outfit)); }
+    if (!groups.designer.includes("street: cargo pants and crop tee") || !groups.studio.includes("work uniform") || !groups.underwear.includes("lingerie: red")) throw new Error(`the outfits aren't on their tabs: ${JSON.stringify(groups)}`);
+    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "skirt") && window.__body.drapeState.stage === "done", null, { timeout: 120000 });
+    if (await page.$eval("#outfitGrid .card.on", c => c.dataset.outfit) !== "t-shirt and skirt") throw new Error("the worn outfit's card isn't marked");
+    await page.click("label:has-text('Edit the cut') input");                 // on: the garments hidden, a film a shell garment, rings for the skirt, the handles from the guides
+    await page.waitForFunction(() => window.__body.editing && window.__body.cutEditor?.group.children.length === 3, null, { timeout: 20000 });
+    const info = await page.evaluate(() => { const B = window.__body, E = B.cutEditor; return { visible: B.GARMENTS.visible, guides: E.group.children.map(o => o.name + ":" + o.children.map(c => c.type).join("/")), handles: B.GH.children.length }; });
+    if (info.visible) throw new Error("the garments still show in the edit mode");
+    if (!info.guides.some(g => /t-shirt:Mesh/.test(g)) || !info.guides.some(g => /skirt:LineSegments/.test(g))) throw new Error("no film for the t-shirt or no rings for the skirt: " + info.guides.join(" "));
+    if (info.handles < 5) throw new Error(`the guides' handles aren't drawn (${info.handles})`);
+    // the t-shirt's hem slider: its film's lower edge rises at once, no tailor job runs
+    const TEE = "#worn > div:has(.row span:text-is('T-shirt'))", HEM = `${TEE} details:has(summary:text-is('Shape')) .row:has(span:text-is('Hem (m)')) input`;
+    await page.$eval(`${TEE} details:has(summary:text-is('Shape'))`, d => { d.open = true; });
+    const filmLow = () => page.evaluate(() => { const m = [...window.__body.cutEditor.made.values()].find(m => m.design === "t-shirt"); let lo = 1e9; const V = m.G.V, P = window.__body.neutralBody(); for (let i = 0; i < V.length; i++) if (V[i] >= 0) lo = Math.min(lo, P[i * 3 + 1]); return lo; });
+    const low0 = await filmLow(), job0 = await page.evaluate(() => window.__body.drapeState.id), v0 = +(await page.$eval(HEM, i => i.value));
+    await page.$eval(HEM, (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); }, v0 + 0.1);
+    await page.waitForFunction(async lo => { const m = [...window.__body.cutEditor.made.values()].find(m => m.design === "t-shirt"); if (!m) return false; let l = 1e9; const V = m.G.V, P = window.__body.neutralBody(); for (let i = 0; i < V.length; i++) if (V[i] >= 0) l = Math.min(l, P[i * 3 + 1]); return l > lo + 0.07; }, low0, { timeout: 5000 });
+    if (await page.evaluate(() => window.__body.drapeState.id) !== job0) throw new Error("a tailor job ran in the edit mode");
+    if (!/^crotch\+/.test(await page.evaluate(() => window.__body.st.clothes.find(c => c.design === "t-shirt").edit?.hem?.at || ""))) throw new Error("the hem isn't kept as the garment's own edit");
+    // the skirt's length handle dragged up: its rings shorten
+    await page.click('#views button[data-v="body"]'); await page.click('#views button[data-yaw="0"]'); await page.waitForTimeout(400);
+    const rows = () => page.evaluate(() => [...window.__body.cutEditor.made.values()].find(m => m.design === "skirt").G.rings.rows), rows0 = await rows();
+    const [hx, hy] = await page.evaluate(() => window.__body.garmentHandleOnScreen("skirt:length"));
+    await page.mouse.move(hx, hy); await page.mouse.down(); await page.mouse.move(hx, hy - 20, { steps: 4 }); await page.mouse.move(hx, hy - 40, { steps: 4 }); await page.mouse.up();
+    await page.waitForFunction(r => [...window.__body.cutEditor.made.values()].find(m => m.design === "skirt").G.rings.rows < r, rows0, { timeout: 5000 });
+    // Bake: the clothes cut again to the lines, the edit mode off
+    await page.click("button:text-is('Bake')");
+    await page.waitForFunction(() => !window.__body.editing && window.__body.GARMENTS.visible && window.__body.drapeState.stage === "done", null, { timeout: 120000 });
+    const low1 = await page.evaluate(() => { const m = window.__body.GARMENTS.children.find(g => g.name === "t-shirt"); let lo = 1e9; const P = m.userData.rest ? m.userData.rest.P : m.geometry.attributes.position.array; for (let i = 1; i < P.length; i += 3) lo = Math.min(lo, P[i]); return lo; });
+    if (!(low1 > low0 + 0.07)) throw new Error(`the bake didn't cut the t-shirt to the edited hem (${low0.toFixed(3)} -> ${low1.toFixed(3)})`);
+    while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
+    await page.click('#tabs button[data-tab="body"]');
+  });
   await step("a PBR set from files on a garment: Unreal's names (albedo, normal-dx, roughness) onto the shelf, the pants wearing it", async () => {
     await page.click('#tabs button[data-tab="clothes"]');
-    await page.selectOption("#clothesRows select >> nth=1", "pants");
+    await page.selectOption("#designSel", "pants");
     await page.click("#clothesRows button:text-is('Wear it')");
     await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "pants"), null, { timeout: 120000 });
     const PANTS = "#worn > div:has(.row span:text-is('Pants'))", LOOKS = `${PANTS} details:has(summary:text-is('Fabric, pattern, print'))`;
@@ -583,6 +674,97 @@ const png = rgb => {
     await page.click('#tabs button[data-tab="body"]');
     console.log(`       under the eye, red over green ${plain.toFixed(1)} plain and ${pink.toFixed(1)} with the preset; the liner's band ${u.band.toFixed(2)} mm wide in the lid's middle, from the lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line`);
   });
+  await step("the five lash sets of the user's second reference (docs/research/lash_reference.md): sparse (men, older) the fewest and shortest, glam volume long and dense in soft spikes, fluffy mink the fullest with neighbours crossing, doll volume swept up highest with the longest lower lashes, natural medium separated; a look each with its makeup (the lower liner, a tinted waterline) and, for the old man, greying lashes and ash brows", async () => {
+    await page.click('#tabs button[data-tab="face"]');
+    const groups = await page.$$eval("#browRows select optgroup", gs => gs.map(g => [g.label, g.children.length]));
+    if (!groups.some(([g, n]) => /second reference/.test(g) && n === 5)) throw new Error("the style picker's groups: " + JSON.stringify(groups));
+    const r = await page.evaluate(async () => {
+      const b = window.__body, BL = await import("./browlash.js"), keep = structuredClone({ eyes: b.st.eyes, lips: b.st.lips, teeth: b.st.teeth, proc: b.st.skin.proc, rough: b.st.skin.rough, lash: b.st.lash, brow: b.st.brow });
+      const at = k => { Object.assign(b.st.lash, BL.styleOf(k), { on: true }); b.browLash(); const c = b.browlash;   // per eye
+        return { hairs: c.hairs / 2, lower: c.lowerHairs / 2, length: c.length, lowerLength: c.lowerLength, lift: c.lift, spike: c.spike, crossing: c.crossing }; };
+      const s = { sparse: at("sparse"), glam: at("glam"), mink: at("mink"), doll: at("dollVolume"), medium: at("naturalMedium"), natural: at("natural") };
+      const looks = {};
+      for (const [name, style] of [["older man (sparse lashes)", "sparse"], ["glam smoky plum", "glam"], ["fluffy mink", "mink"], ["doll volume", "dollVolume"], ["natural medium", "naturalMedium"]]) {
+        b.useLook(name); const p = b.st.skin.proc, want = BL.styleOf(style);
+        looks[name] = { style: b.st.lash.on && Object.keys(want).every(k => b.st.lash[k] === want[k]), look: b.st.lash.look, liner: p.liner, lower: p.lowerLiner, water: p.waterline, waterColor: p.waterColor, brow: b.st.brow.on ? b.st.brow.look : null, age: p.age };
+      }
+      const grey = BL.LOOKS.lash_greying;
+      for (const k of ["eyes", "lips", "teeth", "lash", "brow"]) Object.assign(b.st[k], keep[k]); Object.assign(b.st.skin.proc, keep.proc); b.st.skin.rough = keep.rough;   // as the step found it
+      b.useLook("MHR plain"); b.st.lash.on = false; b.st.brow.on = false; b.paintEyes(); b.skinLook(); b.compose();
+      return { ...s, looks, grey: { inner: grey.inner, amount: grey.innerAmount } };
+    });
+    const n = r.natural, fmt = x => JSON.stringify(x);
+    if (!(r.sparse.hairs < 0.6 * n.hairs && r.sparse.length < n.length - 1.5 && r.sparse.lower <= 15 && r.sparse.lift < n.lift)) throw new Error("sparse: " + fmt({ sparse: r.sparse, natural: n }));
+    if (!(r.glam.hairs > 1.6 * n.hairs && r.glam.length > 8.5 && r.glam.spike > 2 && r.glam.lower >= 35)) throw new Error("glam volume: " + fmt(r.glam));
+    if (!(["sparse", "glam", "doll", "medium", "natural"].every(k => r.mink.hairs > r[k].hairs) && r.mink.crossing > 1.5 * r.medium.crossing && r.mink.lower >= 45 && r.mink.lowerLength > 4)) throw new Error("fluffy mink: " + fmt({ mink: r.mink, medium: r.medium }));
+    if (!(r.doll.lift > n.lift + 8 && r.doll.length > 10 && ["sparse", "glam", "mink", "medium", "natural"].every(k => r.doll.lowerLength > r[k].lowerLength))) throw new Error("doll volume: " + fmt({ doll: r.doll, natural: n }));
+    if (!(r.medium.spike < 1.5 && r.medium.length > 5.5 && r.medium.length < 8 && r.medium.lower >= 20 && r.medium.lower <= 30)) throw new Error("natural medium: " + fmt(r.medium));
+    const L = r.looks, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    for (const [k, v] of Object.entries(L)) if (!v.style) throw new Error(`the look ${k} doesn't set its lash set: ${fmt(v)}`);
+    const old = L["older man (sparse lashes)"], w = hex(L["natural medium"].waterColor);
+    if (!(old.look === "lash_greying" && old.brow === "brow_ash" && old.age > 0.8 && !old.liner) || !(r.grey.amount > 0.2)) throw new Error("the older man: " + fmt({ old, grey: r.grey }));
+    if (!(L["glam smoky plum"].lower > 0.5 && L["doll volume"].lower > 0.9 && !L["fluffy mink"].liner && !L["fluffy mink"].lower)) throw new Error("the looks' liners: " + fmt(L));
+    if (!(L["natural medium"].water > 0.5 && w[0] > w[1] && w[1] > w[2] && !L["natural medium"].liner)) throw new Error("natural medium's waterline: " + fmt(L["natural medium"]));
+    await page.click('#tabs button[data-tab="body"]');
+    const one = k => `${r[k].hairs} upper ${r[k].length.toFixed(1)} mm`;
+    console.log(`       an eye's lashes: sparse ${one("sparse")} (natural ${one("natural")}), ${r.sparse.lift.toFixed(0)}° up; glam ${one("glam")}, spikes ${r.glam.spike.toFixed(1)}×; mink ${one("mink")}, neighbours crossing ${r.mink.crossing.toFixed(2)} (natural medium ${r.medium.crossing.toFixed(2)}), ${r.mink.lower} lower; doll volume ${r.doll.lift.toFixed(0)}° up (natural ${n.lift.toFixed(0)}°), lower ${r.doll.lowerLength.toFixed(1)} mm; natural medium spikes ${r.medium.spike.toFixed(1)}×`);
+  });
+  await step("the lower liner: a band from the lower lashes' roots (the lower lid's front edge, found on the skin) its width down the skin, from the outer corner as far as its reach; the picture darker under the eye with it", async () => {
+    await page.click('#tabs button[data-tab="skin"]');
+    const eyeShot = async () => {                                         // the head view zoomed onto the left eye: the canvas's picture
+      await page.evaluate(() => { const b = window.__body; document.querySelector('#views button[data-v="head"]').click(); const O = b.orbit; O.yaw = 0; O.pitch = 0.02;
+        const e = b.EYES.L.position, ty = b.st.height - 0.12 * b.st.height / 1.7; O.pan.set(e.x, e.y - ty, e.z); O.zoom = 0.14; });
+      await page.evaluate(() => new Promise(r => { let k = 0; const f = () => (++k >= 6 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
+      await page.waitForTimeout(500);
+      const clip = await page.evaluate(() => { const r = document.querySelector("#view canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      return page.screenshot({ clip, timeout: 120000 });
+    };
+    const under = png => page.evaluate(async ([b64]) => {                  // the mean brightness of a strip just under the left eye's lower lid, its outer half
+      const b = window.__body, img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+      const r = document.querySelector("#view canvas").getBoundingClientRect(), p = b.onScreen(374), q = b.onScreen(263), c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0); const x0 = Math.round(Math.min(p[0], q[0]) - r.left), x1 = Math.round(Math.max(p[0], q[0]) - r.left), y = Math.round(p[1] - r.top);
+      const d = g.getImageData(x0, y + 1, Math.max(4, x1 - x0), 9).data; let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      return s / (d.length / 4);
+    }, [png.toString("base64")]);
+    await page.selectOption("#procRows select >> nth=1", "bold doll liner"); await page.waitForTimeout(300);
+    const u = await page.evaluate(() => { const b = window.__body, U = b.SKU, lid = U.uLidLL.value[4], front = U.uLowFL.value[4], bottom = U.uLowBL.value[4], top = U.uLidTL.value[4];
+      return { lower: U.uf_lowerLiner.value, reach: U.uf_lowerReach.value, ahead: (front.z - lid.z) * 1000, band: bottom.w * 1000, down: (front.y - bottom.y) * 1000, upper: top.w * 1000 }; });
+    if (!(u.lower > 0.9 && u.reach > 0.9) || !(u.band > 0.6 && u.band < 3) || !(u.down > 0.4) || !(u.ahead > -0.5 && u.ahead < 2.5)) throw new Error("the lower liner's band: " + JSON.stringify(u));
+    const lined = await under(await eyeShot());
+    await page.evaluate(() => { const b = window.__body; b.st.skin.proc.lowerLiner = 0; b.skinLook(); });
+    const bare = await under(await eyeShot());
+    await page.selectOption("#procRows select >> nth=1", "none"); await page.waitForTimeout(300);
+    if (!(lined < bare - 12)) throw new Error(`under the eye: ${lined.toFixed(0)} with the lower liner, ${bare.toFixed(0)} without (of 255)`);
+    await page.click('#views button[data-v="head"]'); await page.click('#views button[data-yaw="0"]');
+    await page.click('#tabs button[data-tab="body"]');
+    console.log(`       the bold doll liner's lower band ${u.band.toFixed(2)} mm down the skin in the lid's middle (the upper ${u.upper.toFixed(2)} mm), from the lower lashes' roots ${u.ahead.toFixed(1)} mm ahead of the lid line; under the eye ${lined.toFixed(0)} with it, ${bare.toFixed(0)} without (of 255)`);
+  });
+  await step("hooded lids (the sculpt, after the reference's old man): the skin under the brow comes down over the upper lid in a fold, most at the outer corner, never folding over itself (no triangle turned over, at 1 or -1); the opening and the lashes' roots stay; a circle on the lid", async () => {
+    const r = await page.evaluate(async () => {
+      const b = window.__body, c = b.SCULPT.controls.find(c => c.id === "hooded_lids"); if (!c) return { err: "no Hooded lids control" };
+      const B = b.BASEP, T = b.TRIS, q = new Map(); for (let k = 0; k < c.idx.length; k++) q.set(c.idx[k], k);
+      const P = (i, k) => { const j = q.get(i), o = j === undefined ? [0, 0, 0] : [c.d[j * 3], c.d[j * 3 + 1], c.d[j * 3 + 2]]; return [B[i * 3] + k * o[0], B[i * 3 + 1] + k * o[1], B[i * 3 + 2] + k * o[2]]; };
+      const nrm = (a, e, f) => { const u = [e[0] - a[0], e[1] - a[1], e[2] - a[2]], v = [f[0] - a[0], f[1] - a[1], f[2] - a[2]]; return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; };
+      const flips = k => { let n = 0, seen = 0;   // the triangles it moves turned over (a fold over itself)
+        for (let t = 0; t < T.length; t += 3) { if (!q.has(T[t]) && !q.has(T[t + 1]) && !q.has(T[t + 2])) continue; seen++;
+          const a = nrm(P(T[t], 0), P(T[t + 1], 0), P(T[t + 2], 0)), e = nrm(P(T[t], k), P(T[t + 1], k), P(T[t + 2], k)); if (a[0] * e[0] + a[1] * e[1] + a[2] * e[2] < 0) n++; }
+        return { n, seen }; };
+      const xi = b.lmk(362)[0], xo = b.lmk(263)[0]; let outer = 0, inner = 0;   // the most it drops (mm) over the eye's outer and inner halves (the left eye)
+      for (let k = 0; k < c.idx.length; k++) { const i = c.idx[k], x = B[i * 3]; if (x <= 0) continue; const ex = (x - xi) / (xo - xi), down = -c.d[k * 3 + 1] * 1000;
+        if (ex > 0.5 && ex < 1.3) outer = Math.max(outer, down); else if (ex > -0.1 && ex <= 0.5) inner = Math.max(inner, down); }
+      b.st.sculpt = {}; Object.assign(b.st.lash, { on: true }); b.compose(); const o0 = b.outline("L").pts.map(p => [...p]), rim0 = b.browlash.rim, lift0 = b.browlash.lift;
+      b.st.sculpt = { hooded_lids: 1 }; b.compose(); const o1 = b.outline("L").pts, rim1 = b.browlash.rim, lift1 = b.browlash.lift;
+      const moved = Math.max(...o0.map((p, i) => Math.hypot(p[0] - o1[i][0], p[1] - o1[i][1], p[2] - o1[i][2]))) * 1000;
+      b.st.sculpt = {}; b.st.lash.on = false; b.compose();
+      return { one: flips(1), minus: flips(-1), outer, inner, moved, rim0, rim1, lift0, lift1, circle: !!b.HANDLES.list.find(x => x.h.id === "lid_fold"), label: c.label };
+    });
+    if (r.err) throw new Error(r.err);
+    if (r.one.n || r.minus.n || !r.one.seen) throw new Error(`folds over itself: ${r.one.n} of ${r.one.seen} triangles turned over at 1, ${r.minus.n} at -1`);
+    if (!(r.outer > 2 && r.outer > r.inner)) throw new Error(`the fold's drop: ${r.outer.toFixed(1)} mm over the outer half, ${r.inner.toFixed(1)} over the inner`);
+    if (!(r.moved < 0.05) || !(Math.abs(r.rim1 - r.rim0) < 0.3) || !(Math.abs(r.lift1 - r.lift0) < 5) || !r.circle) throw new Error("the opening and the lashes: " + JSON.stringify(r));
+    console.log(`       ${r.label} 1: the fold drops ${r.outer.toFixed(1)} mm over the outer half of the eye (${r.inner.toFixed(1)} over the inner), no triangle turned over (${r.one.seen} moved); the opening moved ${r.moved.toFixed(3)} mm, the lashes' rim ${r.rim0.toFixed(2)} → ${r.rim1.toFixed(2)} mm`);
+  });
   await step("the eyes: cut out of the skin along the model's own lid line (the strip its blink squeezes, found on MHR's own face; moved by hand), on a face fitted to pictures too (its blink still meets), filled in every pose (the eyeball through a stencil, over what's inside); a bigger eyeball grows back from its pupil; a blink closes the opening; Pupil size", async () => {
     const r = await page.evaluate(() => {
       const b = window.__body, L = b.EYES.L, front = () => L.position.z + L.scale.x, i = n => b.ENAMES.indexOf(n);
@@ -614,6 +796,33 @@ const png = rgb => {
     console.log(`       the eyelid line's lower points 1.5 mm down: the opening ${(r.at0 * 1e6).toFixed(0)} -> ${(r.at15 * 1e6).toFixed(0)} mm²`);
     console.log(`       on the face fitted to the pictures: the lid line ${r.fit.width.toFixed(2)} times MediaPipe's width, in order; a blink leaves ${(r.fit.meet * 100).toFixed(0)}% of the lids' opening`);
     console.log(`       openings ${(r.open * 1e6).toFixed(0)} mm² open, ${(r.shut * 1e6).toFixed(1)} shut; the eyeball fitted at ${(r.r1 * 1000).toFixed(1)} mm (12 mm: ${(r.r0 * 1000).toFixed(1)}), size 2: ${(r.r2 * 1000).toFixed(1)} mm, its front where it was`);
+  });
+  await step("the eyes from the side (the user's report, 2026-10-28: they vanished in profile): each eye through its own opening only (the far eyeball no longer paints itself through the near one, the opening walled back to the cut), filled to a round front by the arched fan, its white white, not a dark red hole", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, T = b.THREE, R = b.renderer, E = b.EYES.L;
+      b.st.expr.fill(0); b.st.eyes.size = 1; b.paintEyes(); b.compose();
+      let scene = b.rig; while (scene.parent) scene = scene.parent; scene.updateMatrixWorld(true);
+      const W = 200, rt = new T.WebGLRenderTarget(W, W, { stencilBuffer: true }), cam = new T.PerspectiveCamera(14, 1, 0.01, 10), cc = R.getClearColor(new T.Color()), ca = R.getClearAlpha();
+      const fans = b.HOLES.material.map(m => m.color.clone()), refs = [b.HOLES.material.map(m => m.stencilRef), b.eyeMats.L.stencilRef, b.eyeMats.R.stencilRef];
+      const c = E.getWorldPosition(new T.Vector3()), fwd = new T.Vector3(0, 0, 1).transformDirection(b.rig.matrixWorld).normalize(), right = new T.Vector3(1, 0, 0).transformDirection(b.rig.matrixWorld).normalize();
+      const px = () => { R.setRenderTarget(rt); R.setClearColor(0xffffff, 1); R.clear(); R.render(scene, cam); const A = new Uint8Array(W * W * 4); R.readRenderTargetPixels(rt, 0, 0, W, W, A); return A; };
+      const at = yaw => {                                   // turned toward the left eye's outer side: the opening as its fan shows (green) with the eyeball hidden, then the eyeball there
+        const a = yaw * Math.PI / 180; cam.position.copy(c).addScaledVector(fwd.clone().multiplyScalar(Math.cos(a)).addScaledVector(right, Math.sin(a)), 0.2); cam.up.set(0, 1, 0); cam.lookAt(c); cam.updateMatrixWorld();
+        b.HOLES.material.forEach(m => m.color.set(0x00ff00)); E.visible = false; const hole = px(); E.visible = true; const eye = px(); b.HOLES.material.forEach((m, k) => m.color.copy(fans[k]));
+        let n = 0, left = 0, white = 0, red = 0;
+        for (let i = 0; i < hole.length; i += 4) if (hole[i + 1] > 200 && hole[i] < 60 && hole[i + 2] < 60) {
+          n++; const l = (eye[i] + eye[i + 1] + eye[i + 2]) / 3;
+          if (eye[i + 1] > 200 && eye[i] < 60 && eye[i + 2] < 60) left++; else if (l > 120 && eye[i] - eye[i + 2] < 40) white++; else if (eye[i] - eye[i + 2] > 30 && l > 40) red++;
+        }
+        return { yaw, opening: n, uncovered: left, white: +(white / Math.max(1, n)).toFixed(2), red: +(red / Math.max(1, n)).toFixed(2) };
+      };
+      const out = { refs, views: [0, 60, 75, 85].map(at) };
+      R.setRenderTarget(null); R.setClearColor(cc, ca); rt.dispose(); return out;
+    });
+    const [front, , ...side] = r.views;
+    if (r.refs[0][0] !== r.refs[1] || r.refs[0][1] !== r.refs[2] || r.refs[1] === r.refs[2] || [r.refs[1], r.refs[2]].includes(2)) throw new Error("each eye's own stencil value: " + JSON.stringify(r.refs));
+    if (side.some(v => v.opening < 100 || v.uncovered > 0.05 * v.opening || !(v.white > 0.4) || !(v.red < 0.05)) || front.uncovered > 0.02 * front.opening) throw new Error(JSON.stringify(r.views));
+    console.log("       the left opening seen from " + r.views.map(v => `${v.yaw}°: ${v.opening} px, ${v.uncovered} not covered by its eyeball, ${Math.round(v.white * 100)}% white, ${Math.round(v.red * 100)}% red`).join("; "));
   });
   await step("the eyes softened: the iris melts into the white (Iris edge softness), the eye occlusion shades the white at the lids and corners, a tear line along each lower lid (only when set)", async () => {
     const r = await page.evaluate(() => {
@@ -808,7 +1017,14 @@ const png = rgb => {
   });
   await step("accessories: glasses round the eyes, a sticker and a piercing held to the skin (a smile carries the sticker), a choker round the neck, one put where you click; saved with the character and back on reopening", async () => {
     await page.click('#tabs button[data-tab="acc"]');
-    for (const v of ["glasses:round", "sticker:heart", "piercing:ring", "neck:choker"]) { await page.selectOption("#accAdd select", v); await page.click("#accAdd button"); }
+    for (const v of ["glasses:round", "sticker:heart", "piercing:ring", "neck:choker", "hat:beret"]) { await page.selectOption("#accAdd select", v); await page.click("#accAdd button"); }
+    {                                                                       // the beret: made on the head's outline, its top above the crown, its band round the forehead
+      const h = await page.evaluate(() => { const b = window.__body, a = b.st.accessories.find(x => x.kind === "hat"), o = b.WEAR.made.get(a.id).obj; let top = -1e9, lo = 1e9, tris = 0;
+        o.traverse(x => { if (!x.isMesh) return; tris += x.geometry.index.count / 3; const g = x.geometry.attributes.position; for (let i = 0; i < g.count; i++) { top = Math.max(top, g.getY(i)); lo = Math.min(lo, g.getY(i)); } });
+        let crown = -1e9; for (let i = 1; i < b.POS.length; i += 3) crown = Math.max(crown, b.POS[i]); return { tris, over: top - crown, under: crown - lo }; });
+      if (!(h.tris > 500) || !(h.over > 0.005) || !(h.under > 0.04) || !(h.under < 0.2)) throw new Error(`the beret: ${JSON.stringify(h)}`);   // its top a little over the crown, its band a few centimetres under it
+      await page.evaluate(() => { const b = window.__body; b.st.accessories = b.st.accessories.filter(x => x.kind !== "hat"); b.WEAR.set(b.st.accessories); b.drawAcc(); });
+    }
     const r = await page.evaluate(() => {
       const b = window.__body, W = b.WEAR, A = b.st.accessories, mm = 0.001 * b.scale, made = A.map(a => W.made.get(a.id).obj.children.length);
       const lensAt = side => { const g = W.made.get(A[0].id).obj.children.filter(o => o.renderOrder === 6)[side === "L" ? 0 : 1].geometry.attributes.position; return new b.THREE.Vector3(g.getX(0), g.getY(0), g.getZ(0)); };
@@ -962,6 +1178,55 @@ const png = rgb => {
     if (!(Math.abs(o1.yaw - o0.yaw) > 0.3) || pan1 > 1e-9 || Math.abs(o2.yaw - o1.yaw) > 1e-9 || !(pan2 > 0.01) || !g.back || !g.forward || !g.menu || !g.paste || !g.backspace || !g.altLeft || g.typing) throw new Error("the view's controls: " + JSON.stringify({ o0, o1, o2, g }));
     console.log(`       middle-drag turned the view ${((o1.yaw - o0.yaw) * 180 / Math.PI).toFixed(0)} degrees (no pan), Shift+middle-drag panned ${(pan2 * 100).toFixed(1)} cm (no turn); back and forward buttons, right-click's menu, middle-click's paste, Backspace and Alt+Left stopped; Backspace in a text box types`);
   });
+  await step("the skin light (after HumanShaders, /shared/skinlight.js): on by default; the thin parts found (the ears' rims and the fingers thin, the torso thick); under one side light its shadow's edge softer and warmer than three's plain light; a lamp behind the head shines red through the ear's rim, not through the cheek", async () => {
+    const r = await page.evaluate(() => {
+      const b = window.__body, T = b.THREE, R = b.renderer, M = b.material, scene = b.rig.parent;
+      b.computeThin();
+      const th = b.THIN, P = b.POS, n = th.length, q = (a, f) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(f * (s.length - 1))] : NaN; };
+      let top = -1e9, wide = 0; for (let i = 0; i < n; i++) { top = Math.max(top, P[i * 3 + 1]); wide = Math.max(wide, Math.abs(P[i * 3])); }
+      const head = [...Array(n).keys()].filter(i => P[i * 3 + 1] > top - 0.2 && P[i * 3 + 1] < top - 0.07);
+      const hx = head.map(i => Math.abs(P[i * 3])).sort((a, c) => c - a), cut = hx[Math.floor(hx.length * 0.04)];
+      const ears = head.filter(i => Math.abs(P[i * 3]) >= cut), cheeks = head.filter(i => Math.abs(P[i * 3]) < cut * 0.7 && Math.abs(P[i * 3]) > cut * 0.45 && P[i * 3 + 2] > 0.02);
+      const fingers = [...Array(n).keys()].filter(i => Math.abs(P[i * 3]) > wide * 0.93), torso = [...Array(n).keys()].filter(i => Math.abs(P[i * 3]) < 0.12 && P[i * 3 + 1] > top * 0.55 && P[i * 3 + 1] < top * 0.8);
+      const thin = { ears: q(ears.map(i => th[i]), 0.9), fingers: q(fingers.map(i => th[i]), 0.5), torso: q(torso.map(i => th[i]), 0.9), cheeks: q(cheeks.map(i => th[i]), 0.9) };
+      // the face lit by one light in the dark, drawn off screen; everything put back after
+      const kept = []; scene.traverse(o => { if (o.isLight) { kept.push([o, o.intensity]); o.intensity = 0; } });
+      const env = scene.environment, bg = scene.background, tm = R.toneMapping; scene.environment = null; scene.background = new T.Color(0); R.toneMapping = T.NoToneMapping;
+      const sun = new T.DirectionalLight(0xffffff, 2.5); scene.add(sun, sun.target);
+      const W = 256, rt = new T.WebGLRenderTarget(W, W), cam = new T.PerspectiveCamera(30, 1, 0.01, 10), px = new Uint8Array(W * W * 4);
+      const world = i => new T.Vector3(...b.lmk(i)).applyMatrix4(b.rig.matrixWorld);
+      const nose = world(1), side = world(454);           // the nose's tip, the face's side by the ear
+      const draw = () => { R.setRenderTarget(rt); R.setClearColor(0, 1); R.clear(); R.render(scene, cam); R.readRenderTargetPixels(rt, 0, 0, W, W, px); R.setRenderTarget(null); return px.slice(); };
+      const lum = (d, i) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      // 1: a side light, the face from the front: the toe of the light, where it fades into the dark (2 to 12% of the
+      // brightest): the skin's wrap reaches past the shadow's edge and fades in slowly (an S-curve), three's stops at it
+      cam.position.set(nose.x, nose.y, nose.z + 0.55); cam.lookAt(nose.x, nose.y, nose.z - 0.05); cam.updateMatrixWorld();
+      sun.position.set(nose.x + 2, nose.y + 0.3, nose.z + 0.3); sun.target.position.copy(nose); sun.target.updateMatrixWorld();
+      const band = on => { b.setSkinLit(M, { on }); const d = draw(); let hi = 0; for (let i = 0; i < d.length; i += 4) hi = Math.max(hi, lum(d, i));
+        let k = 0, warm = 0; for (let i = 0; i < d.length; i += 4) { const l = lum(d, i) / hi; if (l > 0.02 && l < 0.12) { k++; warm += (d[i] - d[i + 2]) / Math.max(1, lum(d, i)); } }
+        return { px: k, warm: warm / Math.max(1, k) }; };
+      const plain = band(0), lit = band(1);
+      // 2: a lamp behind the head, the ear seen from its side: the rim red with translucency, the cheek not
+      cam.position.set(side.x + 0.45, side.y, side.z + 0.1); cam.lookAt(side); cam.updateMatrixWorld();
+      sun.position.set(side.x - 2, side.y + 0.2, side.z - 0.4); sun.target.position.copy(side); sun.target.updateMatrixWorld();
+      const at = ids => ids.filter(i => P[i * 3] > 0).map(i => new T.Vector3(...[...b.SHOW.slice(i * 3, i * 3 + 3)]).applyMatrix4(b.rig.matrixWorld).project(cam)).filter(v => Math.abs(v.x) < 1 && Math.abs(v.y) < 1)
+        .map(v => Math.floor((v.y + 1) / 2 * W) * W + Math.floor((v.x + 1) / 2 * W));
+      const earPx = at(ears.filter(i => th[i] > 0.4)), cheekPx = at(cheeks);
+      const glow = trans => { b.setSkinLit(M, { on: 1, trans }); const d = draw(), red = ids => ids.reduce((s, j) => s + d[j * 4], 0) / Math.max(1, ids.length); return { ear: red(earPx), cheek: red(cheekPx) }; };
+      const dark = glow(0), through = glow(2);
+      b.setSkinLit(M, b.st.skin.lit);
+      scene.remove(sun, sun.target); sun.dispose(); rt.dispose();
+      for (const [o, v] of kept) o.intensity = v;
+      scene.environment = env; scene.background = bg; R.toneMapping = tm; b.skinLook();
+      return { def: b.st.skin.lit.on, thin, n: { ears: ears.length, fingers: fingers.length, torso: torso.length, earPx: earPx.length, cheekPx: cheekPx.length }, plain, lit, dark, through };
+    });
+    const f = v => JSON.stringify(v);
+    if (r.def !== 1) throw new Error("the skin light isn't on by default");
+    if (!(r.thin.ears > 0.35 && r.thin.fingers > 0.3 && r.thin.torso < 0.05 && r.thin.cheeks < 0.2)) throw new Error(`the thin parts: ${f(r.thin)} (${f(r.n)})`);
+    if (!(r.lit.px > r.plain.px * 1.2 && r.lit.warm > r.plain.warm + 0.03)) throw new Error(`the light's edge (skin light against three's): ${f(r.lit)} against ${f(r.plain)}`);
+    if (!(r.n.earPx > 10 && r.through.ear > r.dark.ear + 12 && r.through.cheek - r.dark.cheek < (r.through.ear - r.dark.ear) / 3)) throw new Error(`the light through the ear: ${f(r.through)} against ${f(r.dark)} (${f(r.n)})`);
+    console.log(`       thin: the ears' rims ${r.thin.ears.toFixed(2)}, the fingers ${r.thin.fingers.toFixed(2)}, the cheeks ${r.thin.cheeks.toFixed(2)}, the torso ${r.thin.torso.toFixed(2)}; the shadow's edge ${r.lit.px} px wide and warm ${r.lit.warm.toFixed(2)} (three's ${r.plain.px}, ${r.plain.warm.toFixed(2)}); a lamp behind: the ear's rim red ${r.dark.ear.toFixed(0)} to ${r.through.ear.toFixed(0)}, the cheek ${r.dark.cheek.toFixed(0)} to ${r.through.cheek.toFixed(0)}`);
+  });
   await step("the head OBJ exports", async () => {
     await page.click("#expHead");
     await page.waitForFunction(() => /wrote .*_studiotest_head\.obj/.test(document.querySelector("#status").textContent), null, { timeout: 30000 });
@@ -1028,9 +1293,11 @@ const png = rgb => {
       const [s0, s1] = await Promise.all([n, n + "_back"].map(async x => (await (await fetch(`api/recipe/${x}`)).json()).sha1));
       return { meshes: json.meshes.length, skin: acc ? acc.count : 0, corners: b.TRIS.length, h: acc ? acc.max[1] - acc.min[1] : 0, foot: acc ? acc.min[1] : 1, height: b.st.height,
                files: Object.keys(rec.files), receipt: !!(made.sources && made.sources["character.json"]), back, who: b.who, same: JSON.stringify(s0) === JSON.stringify(s1),
-               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST } };
+               settings: JSON.stringify(b.character()) === before, mb: buf.byteLength / 1048576, eyes, rig, through, lids: { ...b.LIDREST },
+               face: !!(prim && prim.attributes._MHRP && prim.attributes._MHRW && json.accessors[prim.attributes._MHRP].count === acc.count) };
     }, NAME);
     if (r.meshes < 6 || !r.skin) throw new Error(`the GLB has ${r.meshes} meshes, the skin ${r.skin} corners`);
+    if (!r.face) throw new Error("the skin doesn't carry its corners' MHR points (_MHRP, _MHRW): the desk can't play an expression on it");
     if (!r.eyes.every(Boolean)) throw new Error(`the eyeballs don't carry the eye (a baked paint, extras.studioEye, _EYELOCAL, uv, tangents): ${JSON.stringify(r.eyes)}`);
     if (!(r.rig.joints === 127 && r.rig.root === "body_world" && r.rig.all && r.rig.eyes[0] === "l_eye" && r.rig.eyes[1] === "r_eye" && Math.abs(r.rig.turned - 0.6) < 0.05 && r.rig.feet < 1e-4))
       throw new Error(`the export's rig: ${JSON.stringify(r.rig)}`);
@@ -1049,6 +1316,50 @@ const png = rgb => {
     console.log(`       the GLB ${r.mb.toFixed(1)} MB: ${r.meshes} meshes, the skin ${r.skin} of ${r.corners} corners (the eyes' openings out), ${r.h.toFixed(2)} m tall; its recipe ${r.files.length} files; back as ${r.back}, every file and setting the same`);
     console.log(`       the eyes in a file (depth only): the lids rest on them (${r.lids.L} and ${r.lids.R} of MHR's points forward, at most ${(r.lids.most * 1000).toFixed(1)} mm); from the front, above, below and 20° to either side, at most ${(100 * worst).toFixed(2)}% of an eyeball outside its opening`);
     console.log(`       rigged: MHR's ${r.rig.joints} bones from ${r.rig.root}, every part skinned on them; the head turned 0.60 rad takes the eyes ${r.rig.turned.toFixed(2)} round it (each on ${r.rig.eyes.join(" and ")}), the feet stay (${(r.rig.feet * 1000).toFixed(2)} mm)`);
+  });
+  await step("the export carries what the shaders draw (albedo.js): the skin's every layer baked on MHR's UVs, each garment's fabric on islands of its own (its metres a second UV), the brows' and lashes' strands in their look's colours", async () => {
+    await page.evaluate(() => window.__body.useLook("anime pink"));      // the lashes on, makeup round the eyes and on the lips
+    await page.click('#tabs button[data-tab="clothes"]');
+    const HANG = "label:has-text('Hang by gravity (cloth simulation)') input";
+    if (await page.isChecked(HANG)) await page.click(HANG);                  // the cut alone: the drape has its own steps
+    await page.click("#outfitTabs button[data-group='studio']");
+    await page.click("#outfitGrid .card[data-outfit='t-shirt and skirt']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.some(m => m.name === "skirt"), null, { timeout: 120000 });
+    await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
+    await page.click("#expPack");
+    await page.waitForFunction(n => new RegExp(`wrote People/${n}/export/${n}\\.glb`).test(document.querySelector("#status").textContent), NAME, { timeout: 300000 });
+    const r = await page.evaluate(async n => {
+      const b = window.__body, T = b.THREE, buf = await (await fetch(`api/package/${n}/${n}.glb`)).arrayBuffer();
+      const { GLTFLoader } = await import("./vendor/GLTFLoader.js"), g = await new GLTFLoader().parseAsync(buf, "");
+      const pixels = img => { const c = document.createElement("canvas"), W = Math.min(256, img.width), H = Math.min(256, img.height); c.width = W; c.height = H; const x = c.getContext("2d"); x.drawImage(img, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
+      const mean = d => { const s = [0, 0, 0]; let k = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 10) { s[0] += d[i]; s[1] += d[i + 1]; s[2] += d[i + 2]; k++; } return s.map(v => v / Math.max(1, k)); };
+      const live = new Map(); b.GARMENTS.traverse(o => { const U = o.isMesh && o.material.userData.uniforms; if (U) live.set(o.name, { c: U.uColor.value.clone().convertLinearToSRGB().toArray().map(v => v * 255), plain: !U.uPatternOn.value && !U.uPbrOn.value && !U.uPrintOn.value }); });
+      const out = { skin: null, clothes: [], hair: [] };
+      g.scene.traverse(o => {
+        if (!o.isMesh) return; const m = o.material, map = m.map;
+        if (/_skin$/.test(o.name)) { const d = pixels(map.image), mu = mean(d); let red = 0; for (let i = 0; i < d.length; i += 4) red = Math.max(red, d[i] - d[i + 1]); out.skin = { size: map.image.width, mean: mu, red, redMean: mu[0] - mu[1] };
+          const nm = m.normalMap && pixels(m.normalMap.image), orm = m.roughnessMap && pixels(m.roughnessMap.image);   // the relief, and the roughness and thinness (the skin light's maps)
+          let dev = 0, thinPx = 0; if (nm) for (let i = 0; i < nm.length; i += 4) dev = Math.max(dev, Math.abs(nm[i] - 128) + Math.abs(nm[i + 1] - 128));
+          if (orm) for (let i = 0; i < orm.length; i += 4) if (orm[i + 2] > 100) thinPx++;
+          out.maps = { normal: nm ? mean(nm) : null, dev, orm: orm ? mean(orm) : null, thinPx, same: m.roughnessMap === m.metalnessMap, metal: m.metalness, lit: m.userData.studioSkin || null }; }
+        else if (live.has(o.name)) out.clothes.push({ name: o.name, want: live.get(o.name), got: map ? mean(pixels(map.image)) : null, uv1: !!o.geometry.attributes.uv1 });
+        else if (map && m.alphaTest === 0.3) out.hair.push({ name: o.name, mean: mean(pixels(map.image)) });
+      });
+      return out;
+    }, NAME);
+    const fmt = v => JSON.stringify(v);
+    if (!r.skin || r.skin.size < 2048 || !(Math.max(...r.skin.mean) < 240) || !(r.skin.red > r.skin.redMean + 30)) throw new Error(`the skin's bake (a texture, the skin's colour, the makeup in it): ${fmt(r.skin)}`);
+    const sm = r.maps;                                     // the skin light's maps: a relief that bends the normal, the roughness near the skin's, thin pixels, the light's numbers in extras
+    if (!sm || !sm.normal || Math.abs(sm.normal[0] - 128) > 12 || Math.abs(sm.normal[1] - 128) > 12 || sm.normal[2] < 200 || sm.dev < 8 || !sm.orm || !sm.same || sm.metal !== 0 || sm.thinPx < 20
+        || !(sm.orm[1] / 255 > 0.1 && sm.orm[1] / 255 < 0.9) || !sm.lit || sm.lit.version !== 1 || !("trans" in sm.lit)) throw new Error(`the skin's maps for the skin light: ${fmt(sm)}`);   // (the look's own roughness: a dewy one low)
+    const off = r.clothes.filter(c => !c.got || !c.uv1 || (c.want.plain && c.got.some((v, i) => Math.abs(v - c.want.c[i]) > Math.max(14, 0.15 * c.want.c[i]))));
+    if (r.clothes.length < 3 || off.length) throw new Error(`the clothes' bake: ${r.clothes.length} parts, off ${fmt(off)}`);
+    if (r.hair.length < 2 || r.hair.some(h => Math.max(...h.mean) > 90)) throw new Error(`the lashes' bake (dark strands, cut out): ${fmt(r.hair)}`);
+    console.log(`       the skin's relief ${sm.normal.map(v => v.toFixed(0)).join("/")} (bent up to ${sm.dev}), its roughness ${(sm.orm[1] / 255).toFixed(2)}, ${sm.thinPx} thin pixels in 256²; the light ${JSON.stringify(sm.lit)}`);
+    console.log(`       the skin ${r.skin.size} px, its mean ${r.skin.mean.map(v => v.toFixed(0)).join(", ")} with the makeup in it (red over green up to ${r.skin.red}); ${r.clothes.length} garment parts each its own colour (${r.clothes.filter(c => c.want.plain).map(c => `${c.name} ${c.got.map(v => v.toFixed(0)).join("/")} for ${c.want.c.map(v => v.toFixed(0)).join("/")}`).slice(0, 3).join("; ")}); ${r.hair.length} lash and brow meshes as strands`);
+    while (await page.$("#worn button[title='take it off']")) await page.click("#worn button[title='take it off']");
+    await page.waitForFunction(() => window.__body.GARMENTS.children.length === 0, null, { timeout: 120000 });
+    await page.click('#tabs button[data-tab="body"]');
   });
   if (shot) await page.screenshot({ path: shot });
   await step("cleared pictures take the face away", async () => {

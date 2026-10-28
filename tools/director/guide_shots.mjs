@@ -30,7 +30,7 @@ function wav() {
   return b;
 }
 
-const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+const browser = await createRequire(import.meta.url)("../browser.cjs").launch(chromium);
 const ctx = await browser.newContext({ viewport: { width: 1500, height: 950 }, deviceScaleFactor: 1 });
 const p = await ctx.newPage();
 const errors = [];

@@ -55,6 +55,68 @@ export const TASKS = [
       { key: "rule", label: "The rule, in one line", kind: "text", ph: "Reach the front door before she reaches you" }],
     build: v => ({ title: T(v.title) || "Run", template: "run", target_min: 1, beats: [],
       play: { type: "run", secs: +v.secs || 30, rule: T(v.rule) || "Reach the door before she reaches you", seeker: v.seeker || undefined, spots: v.exit ? [v.exit] : [], on: {} } }) },
+  // a request (DECISIONS 2026-10-27, late night): she asks for something and waits for it; when it's done she goes on
+  // to where the story carries on (the sofa), and the task ends as she gets there
+  { id: "request", label: "Someone asks for something", icon: "person", template: "request",
+    hint: "she asks, it goes on the to-do list, she waits; when it's done she walks off to sit (or stand) somewhere and the story goes on from there",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Tea for Mari" }, { key: "who", label: "Who asks", kind: "cast" },
+      { key: "wait", label: "Where she waits", kind: "spot" }, { key: "line", label: "What she says", kind: "line", opt: true },
+      { key: "text", label: "On the list", kind: "text", ph: "Put the kettle on" }, { key: "ticks", label: "Done when", kind: "trigger" },
+      { key: "after", label: "Then she goes to", kind: "spot" }, { key: "then", label: "and there she", kind: "choice", opts: ["sit", "idle"], labels: { sit: "sits", idle: "stands" } }],
+    build: (v, S, id) => { const task = id("req_" + (T(v.text).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 20) || "task")), who = v.who || ""; return { title: T(v.title) || T(v.text) || "A request", template: "request", target_min: 3, beats: [
+      { id: id("b_req_ask"), when: { start: true }, do: [{ behave: who, as: "idle", at: v.wait || "", face: "player" }, ...(v.line ? [{ say: v.line }] : []),
+        { todo: task, text: T(v.text) || "…", who, ...(v.ticks ? { ticks: v.ticks } : {}), on: { done: [{ behave: who, as: "go", to: v.after || "", then: v.then || "sit" }] } }] },
+      { id: id("b_req_done"), when: { arrived: who, at: v.after || "" }, do: [{ untodo: task }, { done: true }] }] }; } },
+  // the small systems of a Chilla's Art night (DECISIONS 2026-10-28, later): a chore of the shift, the power cut, a knock
+  { id: "chore", label: "A chore: clean up a mess", icon: "hand", template: "chore",
+    hint: "a job on the to-do list: the player scrubs a stain away by holding the click, with the mop or rag in the hand if you name one; ticked, the task is done",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Mop the floor" }, { key: "stain", label: "The mess (a stain)", kind: "stain" },
+      { key: "with", label: "Cleaned with (in the hand)", kind: "item", opt: true }, { key: "text", label: "On the list", kind: "text", ph: "Mop up the mud" },
+      { key: "thought", label: "Clean, what they think", kind: "text", ph: "That's better.", opt: true }],
+    build: (v, S, id) => { const text = T(v.text) || `Clean up the ${named(S, "thing", v.stain)}`, task = id("chore_" + slug(text)); return { title: T(v.title) || text, template: "chore", target_min: 2, beats: [
+      { id: id("b_chore_start"), when: { start: true }, do: [{ todo: task, text, ticks: { use: v.stain || "" } }] },
+      { id: id("b_chore_done"), when: { ticked: task }, do: [...(T(v.thought) ? [{ think: T(v.thought) }] : []), { done: true }] }] }; },
+    level: (v, S) => setOn(S, v.stain, "with", v.with, x => x.use === "clean") },
+  { id: "lock_up", label: "A chore: lock the door", icon: "door", template: "chore",
+    hint: "a job on the to-do list: the player turns the door's latch from inside (the door gets one); locked, the task is done",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Lock up" }, { key: "door", label: "The door", kind: "door" },
+      { key: "text", label: "On the list", kind: "text", ph: "Lock the front door" }, { key: "thought", label: "Locked, what they think", kind: "text", ph: "There. Nobody's getting in.", opt: true }],
+    build: (v, S, id) => { const text = T(v.text) || `Lock the ${named(S, "thing", v.door)}`, task = id("chore_" + slug(text)); return { title: T(v.title) || text, template: "chore", target_min: 1, beats: [
+      { id: id("b_lock_start"), when: { start: true }, do: [{ todo: task, text, ticks: { locked: v.door || "" } }] },
+      { id: id("b_lock_done"), when: { ticked: task }, do: [...(T(v.thought) ? [{ think: T(v.thought) }] : []), { done: true }] }] }; },
+    level: (v, S) => setOn(S, v.door, "latch", true, (x, k) => k === "door" || isDoor(x)) },
+  { id: "pills", label: "A timed chore: take your pills", icon: "clock", template: "chore",
+    hint: "a job on the to-do list with its time counting down: the player takes the thing up (the pills) in time and a counter goes up; out of time it's struck out, failed. Put one in each night for a count of doses taken",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Pill 1" }, { key: "thing", label: "What's taken (the pills)", kind: "thing" },
+      { key: "text", label: "On the list", kind: "text", ph: "Take your pills" }, { key: "secs", label: "Seconds to do it in", kind: "number", ph: "60" },
+      { key: "count", label: "Counted on (a counter)", kind: "counter", opt: true },
+      { key: "taken", label: "Taken, what they think", kind: "text", ph: "Bitter. Like always.", opt: true },
+      { key: "missed", label: "Out of time, what they think", kind: "text", ph: "Later. I'll take them later.", opt: true }],
+    build: (v, S, id) => { const text = T(v.text) || "Take your pills", task = id("chore_" + slug(text));
+      const done = [...(v.count ? [{ count: v.count }] : []), ...(T(v.taken) ? [{ think: T(v.taken) }] : [])], failed = T(v.missed) ? [{ think: T(v.missed) }] : [];
+      return { title: T(v.title) || text, template: "chore", target_min: 1, beats: [
+        { id: id("b_pills_start"), when: { start: true }, do: [{ todo: task, text, secs: +v.secs > 0 ? +v.secs : 60, ticks: { use: v.thing || "" }, ...(done.length || failed.length ? { on: Object.assign(done.length ? { done } : {}, failed.length ? { failed } : {}) } : {}) }] },
+        { id: id("b_pills_done"), when: { ticked: task }, do: [{ done: true }] },
+        { id: id("b_pills_missed"), when: { failed: task }, do: [{ done: true }] }] }; },
+    level: (v, S) => { setOn(S, v.thing, "use", "inspect", x => !x.use); setOn(S, v.thing, "text", "Two, with water.", x => x.use === "inspect" && !x.text); } },
+  { id: "power_cut", label: "The power cut", icon: "light", template: "power",
+    hint: "every bulb and lamp in the level dies (candles and fire burn on) and the switches with it; the player finds the breaker box in the dark and throws it",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "The power cut" }, { key: "breaker", label: "The breaker box", kind: "breaker" },
+      { key: "thought", label: "What it makes them think", kind: "text", ph: "The power's gone. The breaker box is in the hall." },
+      { key: "find", label: "What the player is told", kind: "text", ph: "Find the breaker box" }],
+    build: (v, S, id) => ({ title: T(v.title) || "The power cut", template: "power", target_min: 3, beats: [
+      { id: id("b_power_cut"), when: { start: true }, do: [{ power: "off" }, { think: T(v.thought) || "The power's gone." }, { objective: T(v.find) || "Find the breaker box" }] },
+      { id: id("b_power_back"), when: { use: v.breaker || "" }, do: [{ objective: "" }, { done: true }] }] }) },
+  { id: "door_knock", label: "A knock at the door (the peephole)", icon: "door", template: "peephole",
+    hint: "someone knocks; the player goes to the door and puts their eye to its peephole: nobody there, or someone you name, shown while they look and gone after",
+    blanks: [{ key: "title", label: "The task", kind: "text", ph: "Who's there?" }, { key: "door", label: "The door", kind: "door" },
+      { key: "count", label: "Knocks", kind: "number", ph: "3" }, { key: "figure", label: "Who's out there (or nobody)", kind: "thing", opt: true },
+      { key: "thought", label: "What they think, looking", kind: "text", ph: "Nobody there." }],
+    build: (v, S, id) => ({ title: T(v.title) || "Who's there?", template: "peephole", target_min: 2, beats: [
+      { id: id("b_knock_knock"), when: { start: true }, do: [{ trick: "knock", at: v.door || "", count: +v.count || 3 }, { objective: "See who's at the door" }] },
+      { id: id("b_knock_look"), when: { peeping: v.door || "" }, do: [...(v.figure ? [{ show: v.figure }] : []), { wait: 1.5 }, { think: T(v.thought) || "Nobody there." },
+        ...(v.figure ? [{ hide: v.figure }] : []), { objective: "" }, { done: true }] }] }),
+    level: (v, S) => setOn(S, v.door, "peephole", true, (x, k) => k === "door" || isDoor(x)) },
 ];
 export const BEATS = [
   { id: "jumpscare", label: "A jump scare on entering", icon: "trick", hint: "a sound to lead the eye, then the figure",
@@ -92,6 +154,9 @@ export const BEATS = [
   { id: "tv_on", label: "The TV comes on by itself", icon: "life", hint: "static on the screen as the player comes in",
     blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "tv", label: "The TV", kind: "life" }],
     build: (v, S, id) => ({ id: id("b_tv"), when: { enter: v.zone || "" }, do: [{ state: v.tv || "", to: "static" }] }) },
+  { id: "torch_flickers", label: "The flashlight flickers", icon: "torch", hint: "as the player comes in, their flashlight stutters, or dies (F only clicks till something says it works)",
+    blanks: [{ key: "zone", label: "When the player enters", kind: "zone" }, { key: "how", label: "It", kind: "choice", opts: ["flicker", "dead"], labels: { flicker: "flickers", dead: "dies" } }],
+    build: (v, S, id) => ({ id: id("b_torch"), when: { enter: v.zone || "" }, do: [{ torch: v.how || "flicker" }] }) },
   { id: "clock_stops", label: "The clock stops", icon: "life", hint: "looked at for a moment, the clock stops (its tick too)",
     blanks: [{ key: "clock", label: "The clock", kind: "life" }, { key: "thought", label: "What it makes them think", kind: "text", ph: "It's stopped." }],
     build: (v, S, id) => ({ id: id("b_clock"), when: { look: v.clock || "", secs: 2 }, optional: true, do: [{ state: v.clock || "", to: "stopped" }, { think: T(v.thought) || "It's stopped." }] }) },
@@ -102,11 +167,15 @@ function ider(S) {                                 // ids unique in the file, an
   const taken = allIds(S);
   return stem => { let v = stem, n = 2; while (taken.has(v)) v = `${stem}_${n++}`; taken.add(v); return v; };
 }
-function lockDoor(S, door, item) {                 // the level's door gets the key that opens it
-  if (!door || !item) return false;
-  const walk = x => { if (Array.isArray(x)) return x.some(walk); if (!x || typeof x !== "object") return false; if (x.id === door && ("swing" in x || "locked_by" in x || "creak" in x || x.kind === "door")) { x.locked_by = item; return true; } return Object.values(x).some(walk); };
-  return walk(S.levels || {});
+const slug = s => T(s).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 20) || "task";
+const isDoor = x => "swing" in x || "locked_by" in x || "creak" in x || x.kind === "door";
+function setOn(S, id, key, value, where) {        // the level's thing with this id (a prop, an opening's door) gets a field
+  if (!id || value === undefined || value === null || value === "") return false;
+  const walk = (x, k) => { if (Array.isArray(x)) return x.some(y => walk(y, k)); if (!x || typeof x !== "object") return false;
+    if (x.id === id && where(x, k)) { x[key] = value; return true; } return Object.entries(x).some(([kk, y]) => walk(y, kk)); };
+  return walk(S.levels || {}, null);
 }
+const lockDoor = (S, door, item) => setOn(S, door, "locked_by", item, isDoor);   // the level's door gets the key that opens it
 export function buildTask(S, tpl, values, { level = null } = {}) {
   const id = ider(S), st = tpl.build(values, S, id), tid = id("t_" + tpl.id);
   st.level = level || Object.keys(S.levels || {})[0];

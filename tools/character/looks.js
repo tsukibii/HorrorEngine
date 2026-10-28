@@ -1,5 +1,5 @@
 // looks.js: whole looks for a character (Character Studio, Face, Look): the eyes, the lips, the teeth and the skin set
-// together (and, where a look names them, the lashes and the brows), each a starting point to tune. "Soft cinematic" is after the user's reference (docs/research/look_reference.md:
+// together (and, where a look names them, the lashes and the brows: a style or shape, `set` over it, a look), each a starting point to tune. "Soft cinematic" is after the user's reference (docs/research/look_reference.md:
 // the iris melting into the white, wet eyes, gradient coral lips, bright wet teeth, dewy porcelain skin with a blush
 // under the eyes) and new characters start from it. Only the settings named are changed; the face, the body, the
 // clothes and the hair are the character's own.
@@ -46,6 +46,41 @@ export const LOOKS = {
     eyes: { irisSize: 37, pupil: 0.42, cornerPink: 0.55 }, lips: { on: true, colour: "#e06a86", amount: 0.6, gradient: 0.7, soft: 0.55, gloss: 0.8, lines: 0.2 }, teeth: { shade: 0.2 },
     skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.5 }, makeup: "doll pink" },
     lash: { style: "roundDoll", look: "lash_black" },
+  },
+  // the five lash sets of the user's second reference (docs/research/lash_reference.md: five rendered pairs of eyes, one
+  // a row): each its lash set (browlash.js) with the rest of the eye as that row shows it; the irises stay the
+  // character's own (the reference's are all violet)
+  "older man (sparse lashes)": {
+    about: "After the user's second reference, its first row (an old man): short, sparse, thin and nearly straight lashes going grey, a few lower ones; full, bushy ash brows; no makeup; red veins in the whites, the skin seventy and over. The reference's hooded upper lid is the sculpt's Hooded lids (Body).",
+    eyes: { veins: 0.55, scleraShade: 0.55, sclera: "#ebe3d6", cornerPink: 0.55, limbalSoft: 0.4, occlusion: 0.55, tearline: 0.35, lidShade: 0.7 },
+    lips: { on: false }, teeth: { shade: 0.45 },
+    skin: { preset: "70 and over", makeup: "none" },
+    lash: { style: "sparse", look: "lash_greying" },
+    brow: { shape: "full", set: { length: 8.5, soft: 0.3 }, look: "brow_ash" },
+  },
+  "glam smoky plum": {
+    about: "After the user's second reference, its second row: a glam volume lash set (long, dense, fanned into soft wispy spikes, dense long lower lashes); a thick black winged liner top and bottom in a dark plum smoke all round the eye, the inner corner lit; mauve lips.",
+    eyes: { irisSize: 33, pupil: 0.36 }, lips: { on: true, colour: "#a85a6a", amount: 0.7, gradient: 0.3, soft: 0.45, gloss: 0.75, lines: 0.25 }, teeth: { shade: 0.2 },
+    skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.45 }, makeup: "smoky plum" },
+    lash: { style: "glam", look: "lash_black" },
+  },
+  "fluffy mink": {
+    about: "After the user's second reference, its third row: a fluffy mink lash set, the fullest (long, soft, criss-crossing), with long fluffy lower lashes, on bare skin: no makeup, a clean eye.",
+    eyes: { irisSize: 33, pupil: 0.36 }, lips: { on: true, colour: "#c8727c", amount: 0.35, gradient: 0.5, soft: 0.6, gloss: 0.45, lines: 0.3 }, teeth: { shade: 0.2 },
+    skin: { preset: "natural young", makeup: "none" },
+    lash: { style: "mink", look: "lash_black" },
+  },
+  "doll volume": {
+    about: "After the user's second reference, its fourth row: a doll volume lash set, very long and dense, swept up together in one long sweep, long lower lashes on a bold lower liner; a bold black liner above and below, the lids dark, the waterline lined.",
+    eyes: { irisSize: 35, pupil: 0.38 }, lips: { on: true, colour: "#c06a76", amount: 0.6, gradient: 0.5, soft: 0.5, gloss: 0.7, lines: 0.25 }, teeth: { shade: 0.2 },
+    skin: { preset: "young glass", tweak: { pores: 0.04, grain: 0.06, dewy: 0.5 }, makeup: "bold doll liner" },
+    lash: { style: "dollVolume", look: "lash_black" },
+  },
+  "natural medium": {
+    about: "After the user's second reference, its fifth row: natural medium lashes (dark, lightly curled, separated, the lower ones thin and short); a thin red-brown tint along the lower waterline on bare skin.",
+    eyes: { irisSize: 33, pupil: 0.36 }, lips: { on: true, colour: "#c87a80", amount: 0.3, gradient: 0.5, soft: 0.6, gloss: 0.4, lines: 0.3 }, teeth: { shade: 0.2 },
+    skin: { preset: "natural young", makeup: "tinted waterline" },
+    lash: { style: "naturalMedium", look: "lash_brown_black" },
   },
   "MHR plain": {
     about: "MHR's own look: crisp eyes, no lipstick, the procedural skin off (the photo skin, if any, as it is).",

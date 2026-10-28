@@ -34,8 +34,9 @@ class Take {
     this.secs = Math.max(this.secs, t + (dur || 1.5));
     return e;
   }
-  // a drum piece (the kit: bass_drum, timp_roll, crash, triangle, tamb, snare, log_lo, anvil...)
-  hit(piece, t, vel, o = {}) { if (t < 0) return; this.ev.push(Object.assign({ inst: "drums", piece, t, vel: clamp(Math.round(vel), 1, 127), dur: 0.5 }, o)); this.secs = Math.max(this.secs, t + 1); }
+  // a drum piece (the kit: bass_drum, timp_roll, crash, triangle, tamb, snare, log_lo, anvil...); o.kit plays another
+  // kit's piece (the eerie "metals": brake_bow, gong_scrape, flexatone...)
+  hit(piece, t, vel, o = {}) { if (t < 0) return; const { kit, ...rest } = o; this.ev.push(Object.assign({ inst: kit || "drums", piece, t, vel: clamp(Math.round(vel), 1, 127), dur: 0.5 }, rest)); this.secs = Math.max(this.secs, t + 1); }
   // several notes at once, rolled upward by `roll` seconds a note, each nudged a few ms (human hands)
   chord(inst, notes, t, dur, vel, o = {}) { const roll = o.roll || 0; notes.forEach((m, i) => this.n(inst, m, t + i * roll + this.human(), dur, vel - (o.taper || 0) * i, Object.assign({}, o, { roll: undefined, taper: undefined }))); }
   human(sd = 0.006) { return this.rng.gauss(0, sd); }
@@ -158,7 +159,7 @@ function writeCue(cueId, params, seed) {
 // 0.2 a note slipped flat a phrase and a slight drift; 0.4 a tritone drone under it and the tempo sagging; 0.6 notes
 // dropped (missing teeth); 0.8 and over the sustained notes bend apart at their ends.
 function corruptTake(t, w, rng) {
-  const secs = Math.max(1, t.secs), pitched = t.ev.filter(e => e.inst !== "drums" && e.inst !== "fx");
+  const secs = Math.max(1, t.secs), pitched = t.ev.filter(e => e.piece == null && e.inst !== "fx");
   const sag = 0.12 * Math.max(0, w - 0.3);                       // the late notes come later: a spring running down
   for (const e of t.ev) e.t = e.t * (1 + sag * e.t / secs);
   for (const p of t.hits) p.t = p.t * (1 + sag * p.t / secs);
@@ -170,7 +171,7 @@ function corruptTake(t, w, rng) {
     if (w > 0.75 && e.dur != null && e.dur > 1.2 && !e.bend && rng.chance(0.4)) e.bend = { semis: rng.pick([-1, -0.5, 0.5]), at: e.dur * 0.6, dur: e.dur * 0.4 };
   }
   const drop = Math.max(0, w - 0.45) * 0.3;
-  if (drop > 0) t.ev = t.ev.filter(e => e.inst === "drums" || e.inst === "fx" || !rng.chance(drop));
+  if (drop > 0) t.ev = t.ev.filter(e => e.piece != null || e.inst === "fx" || !rng.chance(drop));
   if (w >= 0.35) {
     const tonic = t.key ? t.key.tonic : 9, low = 36 + mod(tonic + 6, 12), end = t.secs;
     for (let s = 0; s < end - 1; s += 8) t.n("strings", low, s, Math.min(9, end - s), 18 + 30 * w, { attack: Math.min(3, (end - s) / 3), raw: true });
@@ -214,6 +215,6 @@ const takeInstruments = take => uniq(take.ev.filter(e => e.inst !== "fx").map(e 
 function takePrint(take) {
   let h = 0x811c9dc5;
   const mix = x => { h ^= x & 0xffff; h = Math.imul(h, 0x01000193) >>> 0; };
-  for (const e of take.ev) { mix(Math.round(e.t * 100)); mix(e.inst === "drums" ? e.piece.length * 31 + e.piece.charCodeAt(0) : e.inst === "fx" ? 999 : e.midi); mix(e.vel); mix(e.inst.charCodeAt(0) * 7 + e.inst.length); }
+  for (const e of take.ev) { mix(Math.round(e.t * 100)); mix(e.piece != null ? e.piece.length * 31 + e.piece.charCodeAt(0) : e.inst === "fx" ? 999 : e.midi); mix(e.vel); mix(e.inst.charCodeAt(0) * 7 + e.inst.length); }
   return h.toString(16).padStart(8, "0");
 }

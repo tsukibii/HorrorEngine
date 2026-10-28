@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horror Studio</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<header>
+  <div class="brand"><b>HORROR</b> STUDIO <span id="whisper"></span></div>
+  <label class="game">game <select id="game"></select></label>
+  <input id="filter" type="search" placeholder="Filter tools ( / )" autocomplete="off">
+  <span id="running" class="running"></span>
+  <button id="stopAll" class="danger" title="stop every page server and every job">Stop all</button>
+</header>
+<main>
+  <section id="tools">
+    <div id="start"></div>
+    <div id="list"></div>
+  </section>
+  <aside id="side">
+    <div class="side-h">Running and recent</div>
+    <div id="activity"></div>
+    <div class="side-h out-h"><span id="outTitle">Output</span><span id="outTools"></span></div>
+    <pre id="out" class="out"><span class="muted">Run a tool, or click one on the list above: its output shows here.</span></pre>
+  </aside>
+</main>
+<div id="toast"></div>
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>
