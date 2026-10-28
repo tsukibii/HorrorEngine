@@ -1361,6 +1361,18 @@ def check_last_tick(tid, st, things, r):
 SFX_INDEX = L.STUDIO / "SFX" / "index.json"
 
 
+def check_painted(story, r):
+    """A placeholder thing painted on its template (tools/uv_templates.py, docs/ASSETS.md §7) whose size has changed since:
+    the painting no longer fits its block (a warning: make its template again and move the paint over)."""
+    if not GAME_DIR or not (GAME_DIR / "Art" / "Textures").is_dir():
+        return
+    import uv_templates as UV  # noqa: PLC0415 - tools/
+    for tid, t in UV.things(story).items():
+        st = UV.stale(GAME_DIR.name, tid, t)
+        if st:
+            r.warn(f"{tid}: {st}")
+
+
 def check_sounds(story, r):
     """A sound's file: sfx/<name> names the Studio's sound shelf (tools/sfx.py), and must be on it; any other file is
     the game's own, under its Audio folder in Unreal."""
@@ -2416,6 +2428,7 @@ def main():
         check_flow(story, things, r)
         check_motions(story, r)
         check_sounds(story, r)
+        check_painted(story, r)
         check_achievements(story, r)
     paths = []
     if not r.errors:

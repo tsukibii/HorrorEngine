@@ -11,6 +11,7 @@ import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { wearEye } from "../shared/eye.js";
 import { stainMaterial } from "./stain.js";
 import * as FACE from "../shared/face.js";      // tools/shared (served at /shared: the page sits at the root)
+import { layUVs } from "./painted.js";
 const Y_UP = new THREE.Vector3(0, 1, 0);
 // the simple view (the toolbar's Simple, for when the desk lags): every lit surface a plain Lambert of its own colour, no
 // textures (but where a texture cuts a shape out, as a hair card's does), no physical shading, the eyes plain, the
@@ -47,6 +48,20 @@ export async function loadAssetLibrary() {
   } catch (e) { /* no library: blocks */ }
   try { LIBRARY.kit = (await (await fetch("/api/kit")).json()).presets || {}; } catch (e) { /* no kit presets */ }
   return LIBRARY;
+}
+// the placeholder things painted on their templates (tools/uv_templates.py, docs/ASSETS.md §7): {prop id: its layout
+// (each face's island, which way u and v run) and its picture}; a block that has one wears it, its UVs laid from it
+export const PAINTED = { game: null, things: {} };
+export async function loadPainted(game) {
+  PAINTED.game = game; PAINTED.things = {};
+  try { PAINTED.things = (await (await fetch("/api/painted/" + encodeURIComponent(game))).json()).things || {}; } catch (e) { /* nothing painted */ }
+  return PAINTED;
+}
+const paintCache = {};
+function paintedMaterial(lay) {
+  const key = lay.png + "|" + lay.t;
+  if (!paintCache[key]) { const tex = new THREE.TextureLoader().load(`${lay.png}?t=${lay.t}`); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; paintCache[key] = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }); }
+  return paintCache[key];
 }
 const meshCache = {}, matCache = {};
 function libMesh(ref) {
@@ -366,6 +381,8 @@ export class Stage {
         let mat = p.kind === "mesh" ? (p.tags.some(t => t.startsWith("trim:")) ? mats.trim : tagged ? mats[tagged] : p.tags.some(t => t.startsWith("use:")) ? mats.use : mats.prop) : mats[p.kind];
         const matRef = (p.tags.find(t => t.startsWith("mat:")) || "").slice(4), artRef = (p.tags.find(t => t.startsWith("art:")) || "").slice(4);
         if (matRef && LIBRARY.textures[matRef] && p.shape === "box") { mat = libMaterial(matRef); tileUVs(geo, w, h, d, mat.userData.tile); }
+        const painted = p.kind === "mesh" && p.shape === "box" && PAINTED.things[p.id];   // painted on its template: its UVs from the layout, at the block's own size
+        if (painted) { mat = paintedMaterial(painted); layUVs(geo.attributes.position, geo.attributes.normal, geo.attributes.uv, Object.assign({}, painted, { size: [w, d, h] })); }
         const m = new THREE.Mesh(geo, mat);
         m.position.copy(s2t(...p.pos));
         m.rotation.y = p.yaw * Math.PI / 180;

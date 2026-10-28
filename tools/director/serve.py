@@ -169,6 +169,21 @@ class Handler(BaseHTTPRequestHandler):
                 if (d / parts[2]).is_file() and d.resolve() in (d / parts[2]).resolve().parents:
                     return self.send(200, (d / parts[2]).read_bytes(), "text/javascript")
             return self.send(404, {"error": f"no board game {parts[2]}"})
+        if parts[:2] == ["api", "painted"] and len(parts) == 3 and self.game_path(parts[2]):     # the things painted on their templates
+            out, base = {}, L.GAMES / parts[2] / "Art" / "Textures"                         # (tools/uv_templates.py): each one's layout and picture
+            for j in (base.glob("*/*.json") if base.is_dir() else []):
+                png = j.with_suffix(".png")
+                if j.stem == j.parent.name and png.is_file():
+                    try:
+                        out[j.stem] = dict(json.loads(j.read_text(encoding="utf-8")), png=f"/painted/{parts[2]}/{j.stem}/{png.name}", t=int(png.stat().st_mtime))
+                    except ValueError:
+                        pass
+            return self.send(200, {"things": out})
+        if parts[0] == "painted" and len(parts) == 4 and self.game_path(parts[1]) and ".." not in parts and parts[3].endswith(".png"):
+            f = L.GAMES / parts[1] / "Art" / "Textures" / parts[2] / parts[3]
+            if f.is_file() and (L.GAMES / parts[1]).resolve() in f.resolve().parents:
+                return self.send(200, f.read_bytes(), "image/png")
+            return self.send(404, {"error": "no such painting"})
         if parts[:2] == ["api", "boardgames"] and len(parts) == 3 and self.game_path(parts[2]):   # the games a table can have
             return self.send(200, {"games": [dict(m, id=k) for k, m in L.board_games(parts[2]).items()]})
         if parts[:3] == ["api", "unreal", "status"] and len(parts) == 4 and self.game_path(parts[3]):

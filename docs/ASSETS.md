@@ -166,3 +166,24 @@ The shelf used to be `Content/Studio/PBR/`: sets still there are read too (a set
 `python tools/pbr.py demo` puts five made-up sets on the shelf (planks, brick, plaster, tiles, concrete, 1k, in
 Poly Haven's format as ZIPs) to try all this on; `python tools/pbr.py check` (PBR ok; `check_all` runs it) tests the
 names, the ZIPs, the meta and the refs on a temporary shelf.
+
+## 7. Painting the placeholder things (`tools/uv_templates.py`, HANDOFF_DIRECTOR_TODO §6)
+
+The small things a game places as blocks at their real size (Build's things, a game's `box` props: not kit things,
+library meshes or stains) can be painted in Krita before they're modelled:
+
+- `python tools/uv_templates.py --game G [thing ...]` writes `Content/Games/<G>/Art/Textures/<thing>/<thing>.ora`
+  (layers Guide, locked; Paint, yours; Base, a flat grey), `<thing>_guide.png` and `<thing>.json` (the layout).
+  `--game G list` shows each thing, its layout and what's been painted.
+- A **box** is a cross net (front in the middle, top above, bottom below, left and right beside it, back at the far
+  end), one scale for every face, 8 px of bleed round each island, the fold lines dashed. A **plane** (paper, a card, a
+  mat) is its front and its back side by side. A **photo** (photo, polaroid, picture or print in its id or tag) is its
+  print alone; its frame is a part of its own with a PBR set off the shelf.
+- Paint on Paint, hide Guide, and export the picture beside it as `<thing>.png`: the desk wears it on the block on its
+  next load (`painted.js` lays the block's UVs from the layout), and Unreal will (UNREAL_NEXT §5).
+- A thing whose size changed: run it again. A painted .ora is never overwritten (`<thing>_new.ora` beside it), and the
+  story check warns while a painting's proportions don't match its thing.
+- `python tools/uv_templates.py check` (UVTEMPLATES ok; check_all runs it): every layout's islands at one scale with
+  their bleed, each face's corners on its island and the net's folds meeting, a photo's template its print alone, the
+  .ora as Krita reads it, the desk's UVs and the templates agreeing at every corner, and no painting gone stale.
+

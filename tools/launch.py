@@ -123,6 +123,7 @@ TOOLS = [
     ("Checks", "Score check (music cues and palettes)", "node tools/score/check.js", {}),
     ("Checks", "PBR shelf check", "tools/pbr.py check", {}),
     ("Checks", "Sound shelf check", "tools/sfx.py check", {}),
+    ("Checks", "Texture templates check (the placeholder things' layouts, the .ora, the desk's UVs)", "tools/uv_templates.py check", {}),
     ("Checks", "Expressions test (the library in the desk, headless browser; the desk running)", "node tools/director/exprtest.mjs", {}),
     ("Checks", "Kit check (presets and kit props)", "node tools/kit/check.mjs", {}),
     ("Checks", "Tailor check (every clothing design on seven bodies)", "node tools/character/tailor/check.mjs", {}),
@@ -144,6 +145,8 @@ TOOLS = [
     ("Story", "Cast", "tools/story.py --game {game} cast", {}),
     ("Story", "Props still blocks (art to place)", "tools/story.py --game {game} art", {}),
     ("Story", "Plan view picture (needs Pillow)", "tools/plan_view.py --game {game}", {}),
+    ("Story", "Texture templates for Krita (every placeholder thing, or one; into Art/Textures)", "tools/uv_templates.py --game {game} {opt:A thing's id (Enter: every one)}", {}),
+    ("Story", "Texture templates: what's painted, what's stale", "tools/uv_templates.py --game {game} list", {}),
     ("Story", "New game", "tools/story.py new {ask:New game's name}", {}),
 
     ("Script", "Writers' room: the sessions", "tools/writers/room.py list", {}),
