@@ -28,7 +28,10 @@ writer block flow. On a new branch off `dev-002`, in a new folder:
 - **Revised the same night** after the user's notes (DECISIONS 2026-10-28, night): a summer day (16 August, the last
   day of Obon, the anniversary), lilac eyes (her lenses) instead of the mole, his mother's first Obon, and a second
   mystery about Haruki himself, told by his own answers, thoughts and hands; research §5b for the summer.
-- **Waiting on the user:** a yes on the abstract (and its four calls). Then step 3: the flow as the writers' room's
+- **Revised again** (DECISIONS 2026-10-28, late night): the sister, Natsuki, is honest and he's too ill to see her
+  (the names one letter apart), they were thirteen so no police ending (Okuribi now), the pills as to-do tasks, the
+  secret ending (Mō ii yo) off the pills with the call and the geta.
+- **Waiting on the user:** a yes on the abstract. Then step 3: the flow as the writers' room's
   chart through `/chart` (the chart's script written from the abstract, `room.py import`, shown to the user), and
   `/build-game` only once they say the chart looks right. Nothing is built yet, and there's no game folder in
   Content/Games.

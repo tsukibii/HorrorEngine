@@ -229,6 +229,12 @@ from under ten in 2009 to about 300 by 2013.
 - **What we take:** Natsumi's rare lilac eyes, and Fuyumi's lilac lenses: nearly right, too even, one lost in the
   bath.
 
+### 5b.5 A child can't be charged
+Japan's Penal Code, art. 41: an act of a person under 14 is not punishable; a child under the age goes to a child
+guidance centre, not a court.
+- **What we take:** Haruki and Natsumi were thirteen, so the intended ending can't be a confession to the police.
+  What his silence owes is owed to her family.
+
 ## 6. Folk tells we can use
 
 ### 6.1 "Moshi moshi" and the single call
@@ -274,7 +280,10 @@ The Capgras delusion is the conviction that someone close has been replaced by a
 psychiatric illness, schizophrenia among them, and more often in neurological conditions. The leading account: the
 face is recognised but the feeling of familiarity is gone (patients show no skin-conductance response to familiar
 faces).
-- **Why it fits:** "Did she always look like this?" (the user's own line) is the Capgras question.
+- **Why it fits:** "Did she always look like this?" (the user's own line) is the Capgras question. Capgras is one of
+  the *delusional misidentification* syndromes; in the revised abstract Haruki's is the other way round (he sees the
+  sister as the girl he lost), which is closer to that family's Frégoli pattern, where someone is taken for a familiar
+  person. We show it, never name it.
 
 ### 7.2 Paranoia reads anger into neutral faces
 People with schizophrenia have a large deficit in recognising emotion in faces, worst for negative emotions (Kohler et
@@ -408,6 +417,9 @@ significant factor.
 [(tkgje: hanao)](https://www.tkgje.jp/entries/15000/15379_hanao.html);
 [coloured contacts as medical devices (MHLW, PDF)](https://www.mhlw.go.jp/topics/bukyoku/iyaku/colorcontact/dl/colorcontact01.pdf),
 [(Osaka prefecture, PDF)](https://www.pref.osaka.lg.jp/documents/4087/20140522kokusenkarakonn.pdf).
+
+**§5b.5.** [art. 41 (MOFA)](https://www.mofa.go.jp/policy/human/child/report2/definition.html),
+[(Japan Times)](https://www.japantimes.co.jp/news/2010/01/05/reference/minors-in-own-category-but-never-above-the-law).
 
 **§6 Folk tells.** [moshi moshi (Factmyth)](https://factmyth.com/factoids/saying-moshi-moshi-proves-you-arent-a-ghost),
 [(Uncanny Japan)](https://uncannyjapan.com/podcast/moshi-moshi-meet-some-demons/),

@@ -2,6 +2,25 @@
 
 The user's answers, newest first. They override the plan, the research and the docs.
 
+## 2026-10-28, late night (The Visitor: an honest sister, names one letter apart, no police, the pills as tasks)
+
+- **The user's answers to the abstract's calls**: the twist, the visitor as the lost girl's sister ("Sure"); the
+  player's name fixed as Haruki ("sure"); the secret ending: "Maybe not taking your pills + something else (we have to
+  do list quest occasionally to take pills)".
+- **The intended ending rethought**: "We need to rethink the intended ending, calling cops would make sense since it
+  happened in childhool." (Read as: the police don't fit, it happened when they were children.)
+- **The door's question**: "the question could be she looks a lot younger than you last remember?"
+- **An honest sister**: "Maybe the sister isnt trying to trick the player but actually the player is too mentally ill
+  to realise its the sister so she reacts confused. Maybe the sisters should have very similar names for this
+  purpose".
+- Claude's calls inside that, in the abstract's second revision (waiting for the user's yes): they were thirteen (a
+  child under 14 can't be charged in Japan), now 25, and the sister is 21; Natsumi and Natsuki, called Natsu and
+  Ko-natsu, so her card, her "it's me, Natsu" and the officer's "Natsuki-chan" all read both ways; off his pills he
+  sees her with Natsumi's lilac eyes and some of her lines retype into her sister's name, while reflections and his
+  pills show her own brown eyes; the intended ending is Okuribi (the truth told, her parents phoned, the sending-off
+  fire lit late, the pills taken, her eyes brown); the secret ending needs every pill task failed, the one-word call
+  answered "moshi moshi" and Natsumi's geta set on the altar, and ends with him taking the pills once she's gone home.
+
 ## 2026-10-28, night (The Visitor's abstract revised: a summer day, lilac eyes, clues about yourself)
 
 - **The user's notes on the abstract**: "lets make a summer day rather than new year, instead of a mole let it be a

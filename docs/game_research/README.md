@@ -13,4 +13,4 @@ Nothing in a game's folder is a decision until the user says so; their answers g
 
 | Game | Where it is |
 |---|---|
-| [The Visitor](TheVisitor/) | step 2: research and abstract written; the abstract waits for the user's yes |
+| [The Visitor](TheVisitor/) | step 2: research and abstract written, revised twice after the user's notes; the abstract waits for the user's yes |
