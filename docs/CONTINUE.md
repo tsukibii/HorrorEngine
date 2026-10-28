@@ -3,12 +3,13 @@
 Written 2026-10-24 (small hours, the user away; brought up to date in the afternoon and the evening, twice on
 2026-10-25, on 2026-10-26 (`easier-hair-editing`, the salon's editing; `eyelash-more`, the second reference's five
 lash sets), on 2026-10-27 on `clothing-expanded`, and last on `dev-002`: the four merged, the export's colours, the
-dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, skin v2) on
+dashboard and the writers' room; 2026-10-28 the flashlight, cleaning, the peephole, the power cut, footsteps, the
+latch, examining, skin v2) on
 `claude/experiments-afk`. Read this
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-28, on `dev-002`, the user away five hours): five of Chilla's Art's small systems, skin v2
+## 0. Latest (2026-10-28, on `dev-002`, the user away five hours): seven of Chilla's Art's small systems, skin v2
 
 The user's brief (DECISIONS 2026-10-28, later): add the simple systems we're missing for Chilla's Art-style games,
 else research realistic skin (v2, like MetaHuman and their three stills). Both, each step its own commit, PLAY and
@@ -29,7 +30,8 @@ CHECKS passing before each push:
 - **Examining** (`play/examine.js`): a small `inspect` thing (0.6 m or less) is taken up in the hands, the thing
   itself in front of the eye; a drag turns it (the Pilot's photo turned over), its words under it, Esc puts it back.
 - **The latch** (a door's `latch`, `play/latch.js`): a thumb turn on the inside face; a click locks the shut door or
-  unlocks it; from outside it's Locked; `{"locked": door}` holds while it is (lock up, then the handle turns).
+  unlocks it; from outside it's Locked; it undoes only its own lock (the Pilot's front door, slammed and locked
+  behind you by the story, won't turn); `{"locked": door}` holds while it is (lock up, then the handle turns).
 - **From the user's notes** (`/chart`, `/build-game`): the chart script reads a mess to mop (a stain), the fuse box (a
   breaker), a peephole, a flashlight, the power going and coming back, and locking a door (its latch); the build places
   each.
@@ -42,8 +44,18 @@ CHECKS passing before each push:
   given the mop it needs), *A chore: lock the door* (its door given a latch), *The power cut* (find the breaker box), *A knock at the door* (its door given a peephole;
   someone shown while you look, gone after), and the quick beat *The flashlight flickers* (or dies). The pickers know
   stains and breaker boxes; DESK builds each into the Sample.
-- Not done: the guide's pictures (`guide/help.jpg` still shows the old keys: `guide_shots.mjs`), the shelf's own dirt and metal
-  steps (they borrow carpet's and concrete's), and Unreal for all seven (RUNNER_SPEC says how).
+- **Fixed on the way:** a scene played from the peephole left the eye at the lens; the Esc that closed a card (a note,
+  an inspect card) or put a thing back also paused the game; a story sound placed at a cast member played from
+  nowhere in particular (the stage's cast are figures: `.group` is where she is); and the desk's **saves kept** list
+  (the toolbar's clock), broken since 2026-10-26 by an import inside the server's GET handler. LESSONS has each.
+- **The guide's pictures** made again (`guide_shots.mjs`, GUIDE ok): the ten that had changed kept (the board with the
+  new quick tasks, the command palette with today's commands, the problems panel, a task's beats, the script, the
+  toolbar, typing, the pose picker, a round, the Watch), the others left as they were (render noise only).
+- Not done: the shelf's own dirt and metal steps (they borrow carpet's and concrete's), and Unreal for all seven
+  (RUNNER_SPEC says how).
+- **The user's to decide:** skin v2 (docs/research/skin_v2.md §6: build the rest, in that order? the grade in the
+  Studio's view or the game's? Unreal's Adaptive GBuffer for fuzz and glints?); the expression loops (task #6) still
+  wait for their go-ahead; whether examining's 0.6 m (what's small enough to pick up) is right.
 
 ## 0b. Before that (2026-10-27, later, on `dev-002`): the story from your notes, through Claude
 
