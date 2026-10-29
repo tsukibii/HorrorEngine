@@ -227,7 +227,7 @@ export class Hud {
         const kd = e => { if (e.key === "Enter") { e.preventDefault(); finish(inp.value.trim() || spec.name); } else if (e.key === "Escape") { e.preventDefault(); finish(spec.name); } else e.stopPropagation(); };
         finish = v => { window.removeEventListener("keydown", kd, true); p.remove(); this.modal(null); done(v); };
         window.addEventListener("keydown", kd, true);
-        this.modal(p); this.root.append(p); setTimeout(() => inp.focus(), 30);
+        this.modal(p); this.root.append(p); inp.focus(); setTimeout(() => inp.focus(), 30);   // at once (a fast machine types before a timer), and again once the pointer's release has settled
         return;
       }
       if (spec.code) {

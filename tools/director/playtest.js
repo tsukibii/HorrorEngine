@@ -107,7 +107,8 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   };
   // stand `d` metres from a thing, facing it, on a side where nothing's in the way and the cursor lands on it
   // (after any look the story is turning you through, or a move, has finished: they'd turn the aim away)
-  const goTo = (id, d = 0.9) => page.waitForFunction(() => { const rt = window.__dd.play; return !rt.lookTween && !rt.moving; }, null, { timeout: 60000 }).then(() => page.evaluate(([id, d]) => {
+  const goTo = (id, d = 0.9) => page.waitForFunction(() => { const rt = window.__dd.play, settled = Math.abs(rt.player.eye - (window.__eyePrev ?? -1)) < 0.001; window.__eyePrev = rt.player.eye;   // the eye still rising from a crouch would carry the aim off the thing (the card's frames are quick)
+    return !rt.lookTween && !rt.moving && settled; }, null, { timeout: 60000 }).then(() => page.evaluate(([id, d]) => {
     const rt = window.__dd.play, THREE_V = rt.player.pos.constructor, o = rt.byId[id];
     if (!o) throw new Error("no " + id);
     const at = o.getWorldPosition(new THREE_V());
@@ -216,6 +217,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     await page.evaluate(() => window.__dd.play.setFlag("name_now"));
     await page.waitForSelector(".ph-panel .ph-name", { timeout: 60000 });
     const ph = await page.getAttribute(".ph-panel .ph-name", "placeholder");
+    await page.waitForFunction(() => (document.activeElement || {}).classList?.contains("ph-name"), null, { timeout: 10000 });   // the box has the keys (on a card the typing came before its focus)
     await page.keyboard.type("Mika"); await page.keyboard.press("Enter");
     await page.waitForFunction(() => /Mika, keep it together\./.test(window.__dd.play.hud.lineEl.textContent), null, { timeout: 60000 });
     const r = await page.evaluate(() => ({ run: window.__dd.run.name, think: window.__dd.play.hud.lineEl.classList.contains("think"), panel: !!document.querySelector(".ph-panel") }));
@@ -623,8 +625,10 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
   });
   await step("the kitchen's glimpse fires on entering", async () => {
     await page.evaluate(() => { const h = window.__dd.play.hud, line = h.line.bind(h); window.__lines = []; h.line = (t, w, secs) => { window.__lines.push(t); return line(t, w, secs); }; });
-    await walkIn(2, 5.4, 90, 1300); await gameWait(0.5);          // every line Play showed on the way in (a short one may be gone already)
-    const lines = await page.evaluate(() => window.__lines); if (!lines.some(t => /Mari\?/.test(t))) throw new Error("lines " + JSON.stringify(lines));
+    const before = await page.evaluate(() => { const rt = window.__dd.play; return { inside: [...rt.inside], crouched: rt.player.crouched, eye: rt.player.eye, clock: rt.clock }; });
+    await walkIn(2, 5.4, 90, 1300); await gameWait(1.0);          // every line Play showed on the way in (a short one may be gone already); the beat's creak, 0.8 s and the 0.6 s glimpse come before the thought: 1.4 s after the kitchen's edge, 0.43 s in
+    const lines = await page.evaluate(() => window.__lines);
+    if (!lines.some(t => /Mari\?/.test(t))) throw new Error("lines " + JSON.stringify(lines) + " " + JSON.stringify(await page.evaluate(b => { const rt = window.__dd.play; return { before: b, inside: [...rt.inside], pos: [rt.player.pos.x, -rt.player.pos.z], clock: rt.clock, busy: rt.busy, line: rt.hud.lineEl.textContent, fired: rt.fired ? [...rt.fired].slice(-6) : null }; }, before)));
   });
   await step("a little thing: the kettle says Switch on, a click switches it on, it boils by itself (steam from its spout) and the story hears it (state)", async () => {
     await goTo("pilot_kettle", 0.8);

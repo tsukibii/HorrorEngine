@@ -83,7 +83,8 @@ const snapFor = nid => {                               // the run's state on rea
   // stand d metres from a thing, facing it, where nothing's in the way and the cursor lands on it (playtest.js's goTo);
   // aimed at its middle, else anywhere across its top, as a player clicks whatever part shows (a hob beside its pot);
   // look: only looked at (a painting: the reticle on it, nothing to click)
-  const goTo = (id, d = 0.9, look = false) => page.waitForFunction(() => { const rt = window.__dd.play; return rt && !rt.lookTween && !rt.moving; }, null, { timeout: 60000 }).then(() => page.evaluate(([id, d, look]) => {
+  const goTo = (id, d = 0.9, look = false) => page.waitForFunction(() => { const rt = window.__dd.play, settled = rt && Math.abs(rt.player.eye - (window.__eyePrev ?? -1)) < 0.001; if (rt) window.__eyePrev = rt.player.eye;   // the eye settled after a crouch
+    return rt && !rt.lookTween && !rt.moving && settled; }, null, { timeout: 60000 }).then(() => page.evaluate(([id, d, look]) => {
     const rt = window.__dd.play, V = rt.player.pos.constructor, o = rt.byId[id];
     if (!o) throw new Error("no " + id);
     const at = new V(); o.getWorldPosition(at);
@@ -403,6 +404,7 @@ const snapFor = nid => {                               // the run's state on rea
       await use("rest_sofa", 0.9);
       await playing(false, 60000); await scene();
       await page.waitForSelector(".ph-panel .ph-name", { timeout: 60000 });
+      await page.waitForFunction(() => (document.activeElement || {}).classList?.contains("ph-name"), null, { timeout: 10000 });   // the box has the keys before they're typed
       await page.keyboard.type("Riko"); await page.keyboard.press("Enter");
       await until(() => /Riko\. She'll write that/.test(window.__dd.play.hud.lineEl.textContent), null, "the name said");
       if ((await page.evaluate(() => window.__dd.run.name)) !== "Riko") throw new Error("the name isn't kept");
