@@ -11,7 +11,36 @@ the to-do built there, with the Studio's eyes from the side, a small nose and th
 after CLAUDE.md's start list (DECISIONS, notes, SETUP), then **ask the user what they're doing now**; §4 is the menu,
 not an order. Overwrite this file at the end of the next session.
 
-## 0. Latest (2026-10-29, on `godot-support`): the test demo plays in Godot, with its look, effects, sounds, menu and guide
+## 0. Next: the local session on the 3090 (left 2026-10-29, late evening, on `godot-support`)
+
+The user paused the cloud session because the Godot and browser checks crawl here (software Vulkan, SwiftShader:
+LOOKPLUGIN eight minutes, TESTROOM over thirty, a lookshot three). **Everything is pushed** (`4ca3dec` the five Light
+Kit pieces, then this). The local session does, in this order, with `GPU=1` and the real Godot (docs/RUN_LOCALLY.md):
+
+1. **Run what was left running here, and fix forward:**
+   - `python tools/godot/plugin_check.py` (LOOKPLUGIN). Its last run here had one red row: the demo's headlight
+     sweep measure (`sweep_passing` 0: the pass was over before the shot at the cloud's frame rate). The fix is in
+     (`demo.gd`'s sweep stage holds the car mid-pass with a 100000 s pass and aims it 5 m in) but unverified.
+   - `node tools/director/testroom.mjs` (TESTROOM, the desk's server running). It failed twice here on the lobby
+     scene's typed-thought check (a partial "One th…" never sampled): LESSONS says that check needs the machine to
+     itself, but the second time nothing else ran, so it may be real. Look at the desk's Watch of `s_hello` and
+     whether the thought types out; the suspects are stage.js's new per-frame work (the sweeps' tick, `flickerK` on
+     every light, the bath's pattern spot as one more three.js light) slowing SwiftShader's frame past the typing.
+   - `python tools/godot_export.py --game TestRoom001 --testroom` (GDTESTROOM: passed here), then open the export
+     in Godot and **look**: the dying power lamp and the corridor's fluorescent, the caustics on the bath's ceiling,
+     the lobby's shafts by day (the story's time, or the lookshot's `--time=day`) and the car passing its first
+     window every half minute (or a `{"sweep": "lobby"}` beat), the iris closing against a lamp and sitting a stop
+     under at night. The cloud's pictures: `docs/godot_sheets/2026-10-29_lightkit.jpg`.
+2. **Then the open items from the user's runs**: the square light patch under a distant counter (GODOT_LOOK §7);
+   whether the shafts want more or less (`strength`; the window light's `light_volumetric_fog_energy`, 4); whether
+   the splashes' glints read at a real frame rate (sparse by design: `docs/godot_sheets/2026-10-29_splashes.jpg`).
+3. **What the desk doesn't draw yet** of the five: the pattern itself (a spot aimed at its target stands in), the
+   shaft, the sweep's shadows; and a `sweep` quick beat in templates.js if a game wants one from the desk.
+
+Each is one commit, pushed to `godot-support`; CHECKS, GDTESTROOM, GDEXPORT, GDPLAY, LOOKPLUGIN, DESK, CMDS, PLAY
+and TESTROOM before each push.
+
+## 0b. Latest (2026-10-29, on `godot-support`): the test demo plays in Godot, with its look, effects, sounds, menu and guide
 
 The user said keep going till the test demo is 1:1 in Godot (DECISIONS 2026-10-28, late night), and mid-way asked
 for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built, each its own commit (the log from
