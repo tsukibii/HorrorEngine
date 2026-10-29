@@ -1,15 +1,16 @@
 // A mirror (HSMirror, docs/GODOT_LOOK.md): the reflection a second camera rendered into a SubViewport from behind the
 // glass, read back at the texel that camera gave this point of the glass (its view-projection, passed in), so the
 // parity, the angle and the frame all come out right whatever the mirror's shape. Unshaded: the reflection carries
-// its own light. `tint` the glass's colour, `gain` what the second tone-mapping takes back, `dust` a faint film.
+// its own light, rendered through a linear tone map so the main pass maps it once. `tint` the glass's colour, `gain`
+// a lift, `dust` a faint film.
 shader_type spatial;
 render_mode unshaded, cull_back;
 
 uniform sampler2D mirror_tex : source_color, filter_linear, repeat_disable;
 uniform mat4 mirror_vp;
 uniform vec4 tint : source_color = vec4(0.93, 0.95, 0.97, 1.0);
-uniform float gain = 1.25;
-uniform float dust : hint_range(0.0, 1.0) = 0.03;
+uniform float gain = 1.0;
+uniform float dust : hint_range(0.0, 1.0) = 0.012;
 uniform float flip_v = 1.0;
 uniform float active = 1.0;
 
@@ -27,7 +28,7 @@ void fragment() {
 	if (flip_v > 0.5) uv.y = 1.0 - uv.y;
 	vec3 seen = texture(mirror_tex, clamp(uv, 0.0, 1.0)).rgb * gain;
 	if (active < 0.5 || c.w <= 0.0) seen = vec3(0.04, 0.045, 0.05);
-	float film = (hs_hash12(floor(UV * 90.0)) * 0.35 + hs_hash12(floor(UV * 11.0)) * 0.65) * dust;
+	float film = (hs_hash12(floor(UV * 160.0)) * 0.5 + hs_hash12(floor(UV * 23.0)) * 0.5) * dust;
 	ALBEDO = mix(seen * tint.rgb, vec3(0.5, 0.5, 0.52), film);
 	ALPHA = 1.0;
 }

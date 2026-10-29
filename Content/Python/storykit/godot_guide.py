@@ -225,6 +225,7 @@ HumanShaders' skin shader with a wetness layer (a sweat film, beads, drips, oil)
 shader's uniforms; to check it, the plugin's demo (<code>demo/demo.gd</code>) pictures and measures each part.</p>
 {fig(pictures, 'look_yard_rain.png', 'The yard in the rain: the streaks, the floor wet with pools carrying the sky.')}
 {fig(pictures, 'look_chores_blood.png', 'A blood stain: a glossy pool with flung drops, scrubbed away by the chore.')}
+{fig(pictures, 'look_bath_mirror.png', 'The bath\'s mirror: the room behind the player reflected for real, by a second camera.')}
 """))
     body.append(section("hud", 11, "The HUD, its theme, the pause menu", f"""
 <p>The HUD is built by <code>hud.gd</code> (the objective and the to-do list top left, the line and the choices at the bottom, the cursor's dot and prompt,

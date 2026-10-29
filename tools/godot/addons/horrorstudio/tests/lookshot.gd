@@ -103,5 +103,12 @@ func _process(_d: float) -> bool:
 		var img := root.get_texture().get_image()
 		img.save_png(o["shot"])
 		print("LOOKSHOT %s %dx%d" % [o["shot"], img.get_width(), img.get_height()])
+		var k := 0
+		for hm in rt.mirrors:                              # each mirror's own picture (what its camera sees) beside the shot, and its reckoning
+			var vi: Image = hm.view.get_texture().get_image() if hm.view != null else null
+			if vi != null:
+				vi.save_png(o["shot"].get_basename() + "_mirror%d.png" % k)
+			print("MIRROR %d active %s frames %d eye %s near %.2f last %s" % [k, hm.active, hm.frames, hm.mcam.global_position, hm.mcam.near, JSON.stringify(hm.last)])
+			k += 1
 		quit()
 	return false
