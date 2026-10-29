@@ -76,6 +76,19 @@ trial, not yet agreed: one flat lit three ways (VoxelGI only, baked only, baked 
 and with the power cut, as one contact sheet. To verify there: whether a lightmap and VoxelGI layer cleanly on one
 surface, and whether two bakes can blend (a shader) or only swap.
 
+**The trial, first pass (2026-10-29, on the cloud's software Vulkan; `tools/godot/sheet.py`, `tests/lookshot.gd`;
+`Saved/Story/TestRoom001/godot_reference/gi_sheet*.png`):** TestRoom001's corridor at night, the ambient off so a
+GI's bounce shows for itself. Direct lights only, SDFGI and one VoxelGI over the whole level came out the same to
+three decimals: the greybox's walls are 10 cm and the cells of SDFGI (20 cm at its finest) and of a level-wide VoxelGI
+(37 cm) miss them. A **VoxelGI per room** (its box plus a metre, 64 cells: about 8 cm) baked at run time gives a
+bounce, small on these plain grey walls (the floor's median 0.145 to 0.153), and SSAO on top adds the corners
+(0.173). The probe room (`tools/godot/smoke/gi_probe.gd`: a closed 6 m room, one lamp, no ambient) shows the renderer
+does GI: the shadowed floor 0.40 direct, 0.44 SDFGI, 0.51 VoxelGI. So for our rooms: **VoxelGI per room, baked once
+when the level loads (or at export, cached), SSAO and SSIL on, the flat ambient down to a fill**; SDFGI only for a big
+open level. A lightmap bake (LightmapGI) needs the editor and stays the user's step (the guide tells how). Still to
+look at on the 3090: the cost per frame of nineteen VoxelGIs (only the rooms in view need to be on), and whether the
+PBR shelf's surfaces (not plain grey) make the bounce worth more.
+
 ## 5. Export: a Godot project per game, as a .zip
 
 Not Unreal's way (one project for every game, docs/STUDIO.md): Godot is light enough that **each game is its own

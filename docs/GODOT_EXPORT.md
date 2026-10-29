@@ -203,8 +203,16 @@ loads, every verb in the games has a part).
    the noise's cap, the story's new word `game.vhs` (STORY_FORMAT §9.1, the check). No persistence yet (ghosting
    needs the last frame: a SubViewport later). **GODOTLOOK** renders the plugin's chart through it and measures it
    beside the numpy reference: edge rise 5.0 / 5.0, halo 0.119 / 0.111, chroma 2.2 / 2.4, black 0.046 / 0.049.
-   Pictures: `Saved/Story/TestRoom001/godot_reference/kitchen_vhs_*.png`. Next: Light Kit's times of day as a sun,
-   sky, haze and grade; then the lighting trial (SDFGI, VoxelGI baked at run time, SSAO/SSIL) as a contact sheet.
+   Pictures: `Saved/Story/TestRoom001/godot_reference/kitchen_vhs_*.png`.
+   **Light Kit's times of day** (2026-10-29): `game.gd`'s `set_time` is the sky rig as nodes, the numbers of
+   BLENDER_LOOK §2's table: the sun or the moon (a DirectionalLight3D: 50° up from 135° by day, 6° at dusk, the
+   moon at night, their colours), a procedural sky (zenith and horizon per time; night a navy, never black), the
+   ambient (the desk's), the windows' fill (W/m² and colour), the haze (fog toward a colour at dusk and night) and
+   the grade (saturation 0.8 at night). `tests/lookshot.gd` pictures the game at a spot, a time, a GI, the power and
+   the tape; `tools/godot/sheet.py` makes a contact sheet of them: `godot_reference/times_sheet.png` (the lobby's open
+   door at day, dusk and night, the power cut, SDFGI, VoxelGI), `gi_sheet.png` (the lighting trial of GODOT_PLAN §4
+   in the corridor at night: direct lights only, SDFGI, VoxelGI baked at run time, each with SSAO and SSIL, the
+   power cut).
 5. **The rest of §6**: the lives' effects, hiding, reverb, the HUD themes, the pause menu, the little things.
 6. **The guide** (GODOT_PLAN §7), grown with each step above (each step adds its page), its pictures by driving Godot.
 7. **The re-export** (§5), once there's a project someone has edited.

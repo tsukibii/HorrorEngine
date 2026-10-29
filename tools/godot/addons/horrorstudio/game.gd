@@ -11,10 +11,20 @@ const HudC := preload("res://addons/horrorstudio/hud.gd")
 const LifeC := preload("res://addons/horrorstudio/life.gd")
 const ScenePlayerC := preload("res://addons/horrorstudio/scene_player.gd")
 
+## The time of day (Light Kit's sky rig as Godot nodes; the numbers of docs/BLENDER_LOOK.md §2): the sun or the moon
+## (a DirectionalLight3D: its height, where from, strength, colour), the sky (a procedural sky: zenith and horizon), the
+## ambient (the desk's TIME_LOOK), the windows' fill (W/m² of glass and its colour), the haze (fog toward a colour) and
+## the grade (saturation: eyes lose colour at night). Night is a navy sky, never black.
 const TIME_LOOK := {
-	"day": {"sky": Color(0.718, 0.776, 0.839), "amb": [Color(0.839, 0.855, 0.886), 0.65], "win": [Color(0.933, 0.953, 1.0), 20.0, 8.0]},
-	"dusk": {"sky": Color(0.18, 0.125, 0.188), "amb": [Color(0.627, 0.549, 0.533), 0.32], "win": [Color(1.0, 0.698, 0.478), 6.0, 6.0]},
-	"night": {"sky": Color(0.027, 0.039, 0.086), "amb": [Color(0.478, 0.525, 0.667), 0.22], "win": [Color(0.561, 0.659, 1.0), 1.2, 5.0]},
+	"day": {"sky": Color(0.718, 0.776, 0.839), "amb": [Color(0.839, 0.855, 0.886), 0.65], "win": [Color(0.8, 0.88, 1.0), 20.0, 8.0],
+		"sun": {"elev": 50.0, "az": 135.0, "energy": 1.6, "color": Color(1.0, 0.95, 0.88), "angle": 1.0},
+		"zenith": Color(0.33, 0.5, 0.82), "horizon": Color(0.72, 0.78, 0.84), "sky_energy": 1.0, "haze": [Color(0.3, 0.15, 0.1), 0.0], "sat": 1.0},
+	"dusk": {"sky": Color(0.18, 0.125, 0.188), "amb": [Color(0.627, 0.549, 0.533), 0.32], "win": [Color(1.0, 0.72, 0.58), 5.0, 6.0],
+		"sun": {"elev": 6.0, "az": 250.0, "energy": 1.0, "color": Color(1.0, 0.6, 0.34), "angle": 1.5},
+		"zenith": Color(0.12, 0.1, 0.2), "horizon": Color(0.85, 0.45, 0.25), "sky_energy": 0.8, "haze": [Color(0.3, 0.15, 0.1), 0.012], "sat": 1.05},
+	"night": {"sky": Color(0.027, 0.039, 0.086), "amb": [Color(0.478, 0.525, 0.667), 0.22], "win": [Color(0.35, 0.5, 1.0), 1.0, 5.0],
+		"sun": {"elev": 35.0, "az": 200.0, "energy": 0.12, "color": Color(0.55, 0.7, 1.0), "angle": 1.0},
+		"zenith": Color(0.008, 0.016, 0.05), "horizon": Color(0.04, 0.07, 0.16), "sky_energy": 1.0, "haze": [Color(0.01, 0.02, 0.05), 0.02], "sat": 0.8},
 }
 
 @export var autostart: bool = true
@@ -132,8 +142,44 @@ func set_time(t: String) -> void:
 		vhsn.set_night(1.0 if time_of_day == "night" else 0.0)   # the tape's black turns blue at night (UltraVHS's night mode)
 	var e: Environment = env.environment
 	e.background_color = L["sky"]
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_color = L["amb"][0]
 	e.ambient_light_energy = L["amb"][1]
+	# the sky: a procedural one (the zenith and the horizon of the table), the background
+	var skymat: ProceduralSkyMaterial = e.sky.sky_material if (e.sky != null and e.sky.sky_material is ProceduralSkyMaterial) else ProceduralSkyMaterial.new()
+	if e.sky == null:
+		e.sky = Sky.new()
+	skymat.sky_top_color = L["zenith"]
+	skymat.sky_horizon_color = L["horizon"]
+	skymat.ground_bottom_color = L["horizon"] * 0.5
+	skymat.ground_horizon_color = L["horizon"]
+	skymat.sky_energy_multiplier = float(L["sky_energy"])
+	skymat.sun_angle_max = float(L["sun"]["angle"]) * 4.0
+	e.sky.sky_material = skymat
+	e.background_mode = Environment.BG_SKY
+	# the sun or the moon
+	var sun: DirectionalLight3D = get_node_or_null("Sun")
+	if sun == null:
+		sun = DirectionalLight3D.new()
+		sun.name = "Sun"
+		sun.shadow_enabled = true
+		add_child(sun)
+	var S: Dictionary = L["sun"]
+	var el: float = deg_to_rad(float(S["elev"]))
+	var az: float = deg_to_rad(float(S["az"]))
+	var from := Vector3(sin(az) * cos(el), sin(el), -cos(az) * cos(el)) * 50.0   # the compass from north, clockwise; north is -z
+	sun.global_transform = Transform3D(Basis(), from).looking_at(Vector3.ZERO, Vector3.UP)
+	sun.light_energy = float(S["energy"])
+	sun.light_color = S["color"]
+	sun.light_angular_distance = float(S["angle"])
+	# the haze and the grade
+	var haze: Array = L["haze"]
+	e.fog_enabled = float(haze[1]) > 0.0
+	e.fog_light_color = haze[0]
+	e.fog_density = float(haze[1])
+	e.fog_sky_affect = 0.0
+	e.adjustment_enabled = true
+	e.adjustment_saturation = float(L["sat"])
 	if level == null:
 		return
 	for n in level.get_children():
