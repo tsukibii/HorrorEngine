@@ -32,6 +32,10 @@ The user's answers, newest first. They override the plan, the research and the d
 - **"The shadows feel a bit rough even with anti-aliasing and TAA: hard edges on the front door at the top."** The
   shadow maps' filter was Godot's default (soft low) over a 4096 atlas shared by twenty lights: soft high over 8192
   now, the lights with a size and a blur, the menu's Shadows row wired (GODOT_LOOK §1).
+- **"You can see the rain diffractions on the puddle, I really like that, but the circle stylised rain droplets
+  break the immersion: we are aiming for realism, not stylisation."** The splashes draw no ring now: a landing glint,
+  a wet sheen and a few thrown droplets, and the wet floor's own ripple rings bend the reflection per pixel
+  (GODOT_LOOK §4).
 
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the

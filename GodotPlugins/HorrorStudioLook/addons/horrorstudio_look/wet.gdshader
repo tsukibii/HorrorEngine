@@ -52,14 +52,14 @@ vec2 rings(vec2 p, float t) {
 			vec2 centre = c + 0.2 + 0.6 * hash22(c + 7.0);
 			vec2 d = q - centre;
 			float r = length(d);
-			float ring = age * 0.9;                      // the ring's radius grows
-			float w = 0.08;
-			float fade = exp(-age * 1.8) * step(0.0, age);
+			float ring = age * 1.1;                      // the ring's radius grows (about 18 cm a second)
+			float w = 0.07;
+			float fade = exp(-age * 2.4) * step(0.0, age);   // gone within a second, as a real drop's ring is
 			float s = sin((r - ring) / w) * exp(-((r - ring) * (r - ring)) / (w * w * 2.0)) * fade;
 			g += (r > 1e-4 ? d / r : vec2(0.0)) * s;
 		}
 	}
-	return g * 0.25;
+	return g * 0.2;
 }
 
 void vertex() {
@@ -82,8 +82,8 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = clamp(rough, 0.0, 1.0);
 	SPECULAR = mix(0.5, 0.9, max(water, 0.5 * damp * wet));
-	if (ripples > 0.0 && water > 0.0) {
-		vec2 g = rings(wpos.xz, TIME) * ripples * water;
+	if (ripples > 0.0 && water > 0.0) {       // the rings bend the water's normal per pixel: the reflection wobbles where drops land
+		vec2 g = rings(wpos.xz, TIME) * ripples * water;   // (per vertex it did nothing on a floor of eight vertices: 2026-10-29)
 		NORMAL = normalize(NORMAL + TANGENT * g.x + BINORMAL * g.y);
 	}
 }

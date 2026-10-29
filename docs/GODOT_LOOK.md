@@ -108,8 +108,12 @@ lamp's cone over the yard shows the fall, the dark between them hardly any, the 
 `follow` a node to keep the rain round the player outside.
 **Splashes** (`splash.gdshader`, the rain's "Splashes" child, 2026-10-29): where the streaks land, on the box's floor,
 a third as many seats as streaks, each a quad laid flat that every cycle (about two landings a second, each at its
-own pace) flashes a point, widens a thin ring that fades as it grows (6 cm at its widest) and throws a few spikes up
-round it; additive and unshaded, so on the wet floor they read as glints, on a dry one as a faint stipple. The demo
+own pace) shows what a real drop does under a lamp and nothing drawn: a glint the instant it lands, a faint wet sheen
+a tenth of a second, and five tiny droplets thrown their own ways, out and gone within a third of a second (the first
+version widened a thin ring and threw spikes, and the user's run read it as a cartoon: "we are aiming for realism not
+stylization", 2026-10-29). The ripple itself is the wet floor's: `wet.gdshader` bends the water's normal in rings
+per pixel (it had done so per vertex, which on a floor of eight vertices was nothing), so the lamp's reflection
+wobbles where the drops land. Nothing beyond a few metres, where a splash is smaller than a pixel. The demo
 shoots the floor with and without them and measures what they add (`splash_glow`, LOOKPLUGIN). `set_splashes(off)`
 for a cheaper rain. In a game the shelf's rain is heard at the open room's middle from indoors and rides with the
 player once they're in it (`rain_follow` in play.gd), and every step taken in that room is a wet one (`step_wet`,
