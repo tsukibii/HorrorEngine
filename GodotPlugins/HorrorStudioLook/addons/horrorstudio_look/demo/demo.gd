@@ -61,8 +61,7 @@ func _initialize() -> void:
 	cam = Camera3D.new()
 	cam.fov = 75
 	world.add_child(cam)
-	cam.position = Vector3(0, 1.5, 3.0)
-	cam.look_at(Vector3(0, 0.55, -1.0))
+	cam.look_at_from_position(Vector3(0, 1.5, 3.0), Vector3(0, 0.55, -1.0))   # not in the tree yet: look_at alone errors
 	# the room
 	floor_mi = box(Vector3(8, 0.1, 8), Vector3(0, -0.05, 0), Color(0.36, 0.31, 0.27), 0.92)
 	box(Vector3(8, 3, 0.1), Vector3(0, 1.5, -3.05), Color(0.5, 0.48, 0.44), 0.9)
@@ -225,19 +224,25 @@ func _process(_d: float) -> bool:
 		if n < 29:
 			return false
 	if STAGES[stage] == "pattern" and n == 70:
-		pat_prev = root.get_texture().get_image()  # frames before the shot: the caustics have moved by it (the loop drawn by then)
+		pat_prev = root.get_texture().get_image()  # before the shot: the caustics have moved by it (the loop drawn by then; its clock run on two seconds)
+		pat_prev.save_png(out_dir.path_join("pattern_before.png"))
+		var hp0 = pat_spot.get_node_or_null("Pattern")
+		if hp0 != null:
+			hp0.clock += 2.0
 	if STAGES[stage] == "pattern" and n < 90:
 		return false
 	if STAGES[stage] == "shaft" and n == 40 and shaft_fv != null:
 		shaft_off = root.get_texture().get_image()   # the haze settled without the beam; then the beam, and frames for it to settle
+		shaft_off.save_png(out_dir.path_join("shaft_off.png"))
 		shaft_fv.visible = true
 	if STAGES[stage] == "shaft" and n < 90:
 		return false
-	if STAGES[stage] == "sweep" and n == 30 and sweep_n != null:
+	if STAGES[stage] == "sweep" and n == 60 and sweep_n != null:          # late enough for the shaft stage's fog to have faded
 		sweep_before = root.get_texture().get_image()
-		sweep_n.fire()                                     # the car, held mid-pass for the shot (the pass made very long: the frames here are slow)
-		sweep_n.started = sweep_n.clock - 0.5 * sweep_n.secs
-	if STAGES[stage] == "sweep" and n < 60:
+		sweep_before.save_png(out_dir.path_join("sweep_before.png"))
+		sweep_n.fire()                                     # the car, then its clock run on to mid-pass and held there for the shot (the pass made very long)
+		sweep_n.clock += 0.5 * sweep_n.secs
+	if STAGES[stage] == "sweep" and n < 90:
 		return false
 	if STAGES[stage] == "iris":
 		if n == 60:
@@ -311,13 +316,15 @@ func _process(_d: float) -> bool:
 			report["iris"] = iris_means
 		"sweep":
 			var img := shot("sweep")
-			var box := Rect2i(300, 40, 700, 260)                          # the ceiling and the back wall the headlights cross
+			var box := Rect2i(0, 0, 1280, 360)                            # the upper half: the left wall and the ceiling the headlights land on
 			var with_ := measure(img, box.position.x, box.position.y, box.end.x, box.end.y)
 			var before := measure(sweep_before, box.position.x, box.position.y, box.end.x, box.end.y) if sweep_before != null else with_
 			report["sweep_on"] = with_
 			report["sweep_before"] = before
 			report["sweep_gain"] = with_["mean"] - before["mean"]
 			report["sweep_passing"] = 1 if sweep_n != null and sweep_n.passing() else 0
+			if sweep_n != null:
+				print("SWEEP lamp at ", sweep_n.lamp.global_position, " energy ", sweep_n.lamp.light_energy, " visible ", sweep_n.lamp.visible, " passing ", sweep_n.passing(), " clock ", sweep_n.clock, " started ", sweep_n.started, " aimed ", -sweep_n.lamp.global_transform.basis.z)
 		"shaft":
 			var img := shot("shaft")
 			var box := Rect2i(360, 150, 420, 200)                        # the air the beam crosses, against the dark back of the room
@@ -391,8 +398,7 @@ func setup(name: String) -> void:
 		"soften_off":
 			for sp in spheres:
 				sp.visible = false
-			cam.position = Vector3(0, 1.2, 2.5)
-			cam.look_at(Vector3(0, 1.2, -5.0))
+			cam.look_at_from_position(Vector3(0, 1.2, 2.5), Vector3(0, 1.2, -5.0))
 			near_q = checker_quad(0.5, 32, Vector3(-0.45, 1.05, 1.8))          # 0.7 m from the eye
 			far_q = checker_quad(3.0, 32, Vector3(0.8, 1.4, -2.9))            # 5.4 m
 			glow_q = MeshInstance3D.new()                                      # a glow drawn in the transparent pass (an LED, a digit, steam)
@@ -412,8 +418,7 @@ func setup(name: String) -> void:
 		"iris":
 			if sweep_n != null:
 				sweep_n.visible = false
-			cam.position = Vector3(0, 1.3, 2.4)
-			cam.look_at(Vector3(0, 1.2, -2.0))
+			cam.look_at_from_position(Vector3(0, 1.3, 2.4), Vector3(0, 1.2, -2.0))
 			iris_lamp = OmniLight3D.new()
 			iris_lamp.light_energy = 0.0
 			iris_lamp.omni_range = 8.0
@@ -426,15 +431,13 @@ func setup(name: String) -> void:
 			for c in world.get_children():
 				if c is SpotLight3D and c.light_volumetric_fog_energy >= 4.0:
 					c.visible = false                                          # the shaft stage's window light
-			cam.position = Vector3(1.5, 1.3, 2.4)
-			cam.look_at(Vector3(-1.5, 1.6, -1.5))
-			sweep_n = HSSweep.make(Vector3(-3.9, 1.5, -0.6), Vector3(-1, 0, 0), Vector3(0, 0, 1), {"every": 0, "secs": 100000.0, "out": -1.0, "span": 2.5, "energy": 20.0, "aim": 5.0})   # inside the demo's closed room: "outside" is a metre in, the beam on across the room
+			cam.look_at_from_position(Vector3(1.5, 1.3, 2.4), Vector3(-1.5, 1.6, -1.5))
+			sweep_n = HSSweep.make(Vector3(3.9, 1.5, -1.0), Vector3(1, 0, 0), Vector3(0, 0, 1), {"every": 0, "secs": 100000.0, "out": -1.0, "span": 2.5, "energy": 20.0, "aim": 5.0})   # a "window" on the right wall, inside the demo's closed room ("outside" is a metre in): the headlights cross the room onto the left wall the camera sees
 			world.add_child(sweep_n)
 		"shaft":
 			if pat_spot != null:
 				pat_spot.visible = false
-			cam.position = Vector3(1.5, 1.3, 2.4)
-			cam.look_at(Vector3(-1.5, 1.2, -1.5))
+			cam.look_at_from_position(Vector3(1.5, 1.3, 2.4), Vector3(-1.5, 1.2, -1.5))
 			var win := SpotLight3D.new()                                       # a window-sized light on the left wall, into the room and a little down
 			win.light_color = Color(0.8, 0.88, 1.0)
 			win.light_energy = 5.0
@@ -454,8 +457,7 @@ func setup(name: String) -> void:
 				near_q.visible = false
 				far_q.visible = false
 				glow_q.visible = false
-			cam.position = Vector3(0, 1.3, 2.0)
-			cam.look_at(Vector3(0, 1.4, -3.0))
+			cam.look_at_from_position(Vector3(0, 1.3, 2.0), Vector3(0, 1.4, -3.0))
 			pat_spot = SpotLight3D.new()                                       # a lamp low by the back wall, its light through water onto it
 			pat_spot.light_color = Color(0.75, 0.9, 1.0)
 			pat_spot.light_energy = 6.0
@@ -467,8 +469,7 @@ func setup(name: String) -> void:
 			pat_spot.look_at(Vector3(0.0, 1.6, -3.0))
 			HSPattern.attach(pat_spot, {"pattern": "caustics", "scale": 0.5, "speed": 0.8, "open": 0.3}, 2.8)
 		"skin":
-			cam.position = Vector3(0, 1.0, 1.2)
-			cam.look_at(Vector3(0, 1.0, -0.8))
+			cam.look_at_from_position(Vector3(0, 1.0, 1.2), Vector3(0, 1.0, -0.8))
 			if rain != null:
 				rain.visible = false
 			var tone := Color(0.78, 0.56, 0.47)

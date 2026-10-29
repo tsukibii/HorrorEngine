@@ -40,6 +40,9 @@ def import_project(project, timeout=300):
     return r.returncode
 
 
+FELL_BACK = "switching to OpenGL 3"   # Godot's warning when Vulkan can't start
+
+
 def run_godot(project, script, extra=(), xvfb=False, timeout=240):
     g = godot_bin()
     if not g:
@@ -49,8 +52,11 @@ def run_godot(project, script, extra=(), xvfb=False, timeout=240):
     cmd = [g, "--path", str(project), "-s", script, *extra]
     env = dict(os.environ)
     if xvfb:
-        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
-        cmd = ["xvfb-run", "-a", g, "--path", str(project), "--rendering-driver", "vulkan", "-s", script, *extra] if not os.environ.get("DISPLAY") else cmd
+        if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):      # the cloud's lavapipe; a card is found by the loader itself
+            env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+        cmd = [g, "--path", str(project), "--rendering-driver", "vulkan", "-s", script, *extra]
+        if shutil.which("xvfb-run"):                                    # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
+            cmd = ["xvfb-run", "-a"] + cmd
     else:
         cmd.insert(1, "--headless")
     try:
@@ -59,6 +65,8 @@ def run_godot(project, script, extra=(), xvfb=False, timeout=240):
         return 124, "timed out"
     noise = ("ALSA", "ERR_CANT_OPEN", "snd_", "leaked at exit", "Pages in use", "still in use at exit", "RID allocations")
     lines = [ln for ln in (r.stdout + r.stderr).splitlines() if ln.strip() and not any(x in ln for x in noise)]
+    if xvfb and FELL_BACK in (r.stdout + r.stderr):                        # Godot took OpenGL: no SSR, fog, compositor or auto exposure; nothing measured would mean anything
+        return 1, "GODOT FAIL: Vulkan failed and Godot fell back to OpenGL (the ICD? VK_ICD_FILENAMES=" + env.get("VK_ICD_FILENAMES", "") + ")\n" + "\n".join(lines)
     return r.returncode, "\n".join(lines)
 
 

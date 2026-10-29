@@ -25,9 +25,10 @@ def godot_bin():
 
 def shot(project, args, out, timeout=1200):
     env = dict(os.environ)
-    env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):          # the cloud's lavapipe; on a machine with a card the loader finds it itself
+        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     cmd = [godot_bin(), "--path", str(project), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio/tests/lookshot.gd", "--"] + args + [f"--shot={out}"]
-    if not os.environ.get("DISPLAY"):
+    if shutil.which("xvfb-run"):                                          # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
     lines = [ln for ln in (r.stdout + r.stderr).splitlines() if "LOOKSHOT" in ln or "VOXELGI" in ln or "SCRIPT ERROR" in ln]
@@ -53,7 +54,7 @@ def main():
     pics = []
     for i, cell in enumerate(a.cells):
         label, _, kv = cell.partition("|")
-        args = [f"--node={a.node}", f"--at={a.at}"] + [f"--{p.strip()}" for p in kv.split(",") if p.strip()]
+        args = [f"--node={a.node}", f"--at={a.at}"] + [f"--{p.strip().replace(';', ',')}" for p in kv.split(",") if p.strip()]   # a cell's own at=x;y;yaw;pitch, ; for its commas
         out = tmp / f"cell{i}.png"
         if out.exists():
             out.unlink()

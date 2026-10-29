@@ -27,7 +27,9 @@ the VHS layer in `main.tscn`, `puff.gdshader` from lifefx.gd). A change here rea
 
 ## Checking it
 
-- `python tools/godot/plugin_check.py` (LOOKPLUGIN): the demo in a project of its own under xvfb, each part pictured
+- `python tools/godot/plugin_check.py` (LOOKPLUGIN): the demo in a project of its own under Xvfb (on the card too:
+  Vulkan draws there, and no window manager resizes the window; the check prints the renderer and fails if Godot
+  fell back to OpenGL; `--fixed-fps 60`, so a stage's frames are the same seconds everywhere), each part pictured
   into `Saved/Story/_look/godot_plugin/` and measured: the lamp's reflection in the wet floor brighter than in the
   dry, the rain moving between frames, the splashes' glow on the floor, the mirror's glint, the blood's red, the
   sweat's glint and the oil's glint over dry skin. `--only=<stage>` runs one stage alone for a quick look. Look at

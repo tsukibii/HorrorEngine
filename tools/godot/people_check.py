@@ -31,6 +31,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/resizable=false
 
 [rendering]
 
@@ -67,15 +68,20 @@ def main():
     shutil.copytree(HUMAN, OUT / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     shutil.copy(glb, OUT / "people" / glb.name)
     env = dict(os.environ)
-    env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):          # the cloud's lavapipe; on a machine with a card the loader finds it itself
+        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     subprocess.run([g, "--headless", "--path", str(OUT), "--import"], capture_output=True, text=True, timeout=900)
     keep = Path(a.keep)
     keep.mkdir(parents=True, exist_ok=True)
     cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "-s", "res://addons/horrorstudio_look/demo/people.gd", "--", f"--glb=res://people/{glb.name}", f"--out={keep}"]
-    if not os.environ.get("DISPLAY"):
+    if shutil.which("xvfb-run"):                                          # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=1200, env=env)
     text = "\n".join(l for l in (r.stdout + r.stderr).splitlines() if l and "ALSA" not in l and "snd_" not in l and "ERR_CANT_OPEN" not in l)
+    if "switching to OpenGL 3" in text:
+        print(text[:1200])
+        print("GDPEOPLE FAIL: Vulkan failed and Godot fell back to OpenGL (VK_ICD_FILENAMES=" + env.get("VK_ICD_FILENAMES", "") + ")")
+        return 1
     bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "SHADER ERROR" in l or "PEOPLE FAIL" in l]
     if bad or "PEOPLE {" not in text:
         print(text[-3000:])
@@ -102,8 +108,16 @@ def main():
         def pupil(f):
             im = np.asarray(Image.open(keep / f).convert("L")).astype(float) / 255.0
             h, w = im.shape
-            c = im[h // 2 - h // 4:h // 2 + h // 4, w // 2 - w // 4:w // 2 + w // 4]   # the middle of the frame: the eye
-            ys, xs = np.nonzero(c < 0.06)
+            r = int(rep.get("eye_radius_px", h / 4))                       # the eyeball's radius on the picture (its centre is the frame's: the camera looks at it)
+            c = im[h // 2 - r:h // 2 + r, w // 2 - r:w // 2 + r]
+            dark = c < 0.06
+            solid = dark.copy()                                           # a solid blot: a dark pixel whose 5 × 5 neighbourhood is dark too (lashes and hair strands are thin and fall out)
+            for dy in range(-2, 3):
+                for dx in range(-2, 3):
+                    solid[2:-2, 2:-2] &= dark[2 + dy:c.shape[0] - 2 + dy, 2 + dx:c.shape[1] - 2 + dx]
+            yy, xx = np.mgrid[0:c.shape[0], 0:c.shape[1]]
+            solid &= (xx - r) ** 2 + (yy - r) ** 2 < (0.9 * r) ** 2       # inside the eyeball: hair over the brow is outside it
+            ys, xs = np.nonzero(solid)
             return (float(xs.mean()), float(ys.mean()), int(xs.size)) if xs.size else None
         eyes_on = bool(rep.get("eyes"))
         print(("  ok  " if eyes_on else "  BAD ") + "the eyes on the Studio's eye shader: " + ", ".join(rep.get("eyes", [])))

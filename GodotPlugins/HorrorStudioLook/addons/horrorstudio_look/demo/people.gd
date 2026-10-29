@@ -19,6 +19,7 @@ var report := {}
 const STAGES := ["flat", "lit", "wet", "oil", "eye_front", "eye_slant", "eye_slant_flat"]
 var eyes: Dictionary = {}
 var eye_centre := Vector3.ZERO
+var eye_radius := 0.012
 
 
 func _initialize() -> void:
@@ -61,7 +62,9 @@ func _initialize() -> void:
 		if mi.name.ends_with("_eye_L") and mi.mesh != null:
 			var a: AABB = mi.global_transform * mi.get_aabb()
 			eye_centre = a.get_center()
+			eye_radius = max(a.size.x, a.size.y) * 0.5
 	report["eye_centre"] = [eye_centre.x, eye_centre.y, eye_centre.z]
+	report["eye_radius_px"] = eye_radius / (0.6 * tan(deg_to_rad(3.0))) * 360.0   # the eyeball's radius on the eye pictures (fov 6, 0.6 m, 720 high): the check looks for the pupil inside it
 	var tex = mats[0].get_shader_parameter("texture_albedo") if mats.size() else null
 	report["paint"] = tex_mean(tex) if tex is Texture2D else null
 	# the head: the top of the skin mesh's bounds
@@ -166,6 +169,9 @@ func _process(_d: float) -> bool:
 		"eye_front":                                   # the left eye close, straight on: the iris behind its glass
 			for m in mats:
 				HSSkin.set_wet(m, {"oil": 0.0})
+			for mi in who.find_children("*", "MeshInstance3D", true, false):
+				if mi.name.begins_with("hair"):        # the salon's bake off for the eye pictures: a fringe over the eye reads as black as the pupil
+					mi.visible = false
 			cam.fov = 6.0
 			cam.position = eye_centre + Vector3(0, 0, 0.6)
 			cam.look_at(eye_centre)

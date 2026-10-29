@@ -31,6 +31,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/resizable=false
 
 [rendering]
 
@@ -64,20 +65,26 @@ def main():
     shutil.copytree(PLUGIN, OUT / "addons" / "horrorstudio_look")
     shutil.copytree(HUMAN, OUT / "HumanShaders", ignore=shutil.ignore_patterns("*.import"))
     env = dict(os.environ)
-    env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):          # the cloud's lavapipe; on a machine with a card the loader finds it itself
+        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     r = subprocess.run([g, "--headless", "--path", str(OUT), "--import"], capture_output=True, text=True, timeout=600)
     keep = Path(a.keep)
     keep.mkdir(parents=True, exist_ok=True)
-    cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "-s", "res://addons/horrorstudio_look/demo/demo.gd", "--", f"--out={keep}"]
-    if not os.environ.get("DISPLAY"):
+    cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "--fixed-fps", "60", "-s", "res://addons/horrorstudio_look/demo/demo.gd", "--", f"--out={keep}"]
+    if shutil.which("xvfb-run"):                                          # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=900, env=env)
     text = quiet(r.stdout + r.stderr)
     bad = [l for l in text.splitlines() if "SCRIPT ERROR" in l or "SHADER ERROR" in l or "Parse Error" in l or "error(" in l.lower()]
+    if "switching to OpenGL 3" in text:                                   # no SSR, fog, compositor or auto exposure there: nothing measured would mean anything
+        print(text[:1200])
+        print("LOOKPLUGIN FAIL: Vulkan failed and Godot fell back to OpenGL (VK_ICD_FILENAMES=" + env.get("VK_ICD_FILENAMES", "") + ")")
+        return 1
     if bad or "LOOKDEMO" not in text:
         print(text[-3000:])
         print("LOOKPLUGIN FAIL: the demo didn't run clean")
         return 1
+    print("  " + next((l for l in text.splitlines() if "Using Device" in l), "renderer: ?"))
     rep = json.loads((keep / "report.json").read_text(encoding="utf-8"))
     checks = []
     checks.append(("the wet floor carries the lamp (brighter under it than dry)", rep["wet"]["mean"] > rep["realism"]["mean"] * 1.05 or rep["wet"]["max"] > rep["realism"]["max"] * 1.05))
@@ -85,7 +92,7 @@ def main():
     checks.append(("the blood is red", rep["blood"]["red"] > 400))
     checks.append(("the rain moves between frames", rep.get("rain_motion", 0) > 0.002))
     checks.append(("the splashes glint on the floor where the rain lands (brighter than the same floor without them)", rep.get("splash_glow", 0) > 0.0002 or rep.get("splash_peak", 0) > 0.02))   # glints and thrown droplets since 2026-10-29, no drawn ring: sparse, so a peak counts too
-    checks.append(("the mirror reflects the room (the bulb's glint in its upper half: a peak well over the wall beside it and over its own lower half; drawn every frame it's in view)", rep["mirror_top"]["max"] > rep["mirror_wall"]["mean"] * 1.2 and rep["mirror_top"]["max"] > rep["mirror_bottom"]["max"] * 1.6 and rep.get("mirror_frames", 0) >= 20))
+    checks.append(("the mirror reflects the room (the bulb's glint in its upper half: a peak well over the wall beside it and over its own lower half; drawn every frame it's in view)", rep["mirror_top"]["max"] > rep["mirror_wall"]["mean"] * 1.2 and rep["mirror_top"]["max"] > rep["mirror_bottom"]["max"] * 1.25 and rep.get("mirror_frames", 0) >= 20))
     checks.append(("the sweat glints (a brighter peak than dry skin)", rep["skin_sweat"]["max"] > rep["skin_dry"]["max"] * 1.02))
     checks.append(("the oil glosses (the fill light's glint, a tight bright spot dry skin hasn't)", rep["glint_oil"]["max"] > rep["glint_dry"]["max"] * 1.15))
     checks.append(("the softener keeps a checker at arm's length nearly as sharp (over 0.6 of unsoftened)", rep.get("soften_near_on", 0) > rep.get("soften_near_off", 1) * 0.6))

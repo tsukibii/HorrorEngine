@@ -93,7 +93,7 @@ def main():
     OUT.mkdir(parents=True)
     subprocess.run([sys.executable, str(TOOLS / "preview.py"), "--chart", str(OUT / "chart.png")], check=True, capture_output=True)
     subprocess.run([sys.executable, str(TOOLS / "preview.py"), str(OUT / "chart.png"), str(OUT / "chart_numpy.png"), "--preset", "camcorder"], check=True, capture_output=True)
-    (OUT / "project.godot").write_text('config_version=5\n\n[application]\n\nconfig/name="HorrorStudio look check"\nconfig/features=PackedStringArray("4.7", "Forward Plus")\n\n[display]\n\nwindow/size/viewport_width=1920\nwindow/size/viewport_height=1080\n\n[rendering]\n\nrenderer/rendering_method="forward_plus"\n', encoding="utf-8")
+    (OUT / "project.godot").write_text('config_version=5\n\n[application]\n\nconfig/name="HorrorStudio look check"\nconfig/features=PackedStringArray("4.7", "Forward Plus")\n\n[display]\n\nwindow/size/viewport_width=1920\nwindow/size/viewport_height=1080\nwindow/size/resizable=false\n\n[rendering]\n\nrenderer/rendering_method="forward_plus"\n', encoding="utf-8")
     shutil.copy(ADDON / "vhs.gd", OUT / "vhs.gd")
     shutil.copy(ADDON / "vhs.gdshader", OUT / "vhs.gdshader")
     shutil.copy(ADDON / "vhs_hold.gdshader", OUT / "vhs_hold.gdshader")
@@ -104,12 +104,17 @@ def main():
     shutil.copy(ADDON / "vhs_hold.gdshader", OUT / "addons" / "horrorstudio_look" / "vhs_hold.gdshader")
     shutil.copy(ADDON / "soften.gd", OUT / "addons" / "horrorstudio_look" / "soften.gd")           # vhs.gd preloads the softener
     env = dict(os.environ)
-    env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
+    if os.path.exists("/usr/share/vulkan/icd.d/lvp_icd.json"):          # the cloud's lavapipe; on a machine with a card the loader finds it itself
+        env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "-s", "res://look.gd"]
-    if not os.environ.get("DISPLAY"):
+    if shutil.which("xvfb-run"):                                          # Xvfb when it's there (the card still draws through Vulkan): a fixed-size window no window manager resizes
         cmd = ["xvfb-run", "-a"] + cmd
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=900, env=env)
     out = "\n".join(ln for ln in (r.stdout + r.stderr).splitlines() if "ALSA" not in ln and "snd_" not in ln)
+    if "switching to OpenGL 3" in out:
+        print(out[:1200])
+        print("GODOTLOOK FAIL: Vulkan failed and Godot fell back to OpenGL (VK_ICD_FILENAMES=" + env.get("VK_ICD_FILENAMES", "") + ")")
+        return 1
     if "LOOKSHOT ok" not in out or not (OUT / "out.png").exists():
         print(out[-2000:])
         print("GODOTLOOK FAIL: no picture from Godot")
