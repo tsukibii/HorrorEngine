@@ -305,9 +305,11 @@ them off at Low (dull glass) and halves them at Medium (`set_quality`). Not yet:
 
 ## 7. What's left
 
-- The characters: the Studio's paint and eye measured beside the Studio's own render (the three.js side), not only
-  against the baked texture and by the pupil's shift; the skin's own light (studioSkin: the Unreal side's
-  M_StudioSkin numbers) onto HSSkin's sliders.
+- The characters: ~~the Studio's paint and eye measured beside the Studio's own render~~ (GDSTUDIO, 2026-10-29,
+  night: `tools/godot/studio_compare.py` pictures the character from the Studio's own view under its studio and
+  reference lights and beside Godot's lit, flat and eye pictures, and measures the face's skin colour as ratios in
+  both: for `lol`, red over green 1.27 in the Studio and 1.23 in Godot, blue over green 0.85 and 0.86); still open:
+  the skin's own light (studioSkin's numbers) onto HSSkin's sliders, and the eye's colour measured close in both.
 - Wet walls under a leak; a mirror seen in a mirror.
 - Seen by the user (2026-10-29): a square patch of light under a distant counter that goes when you come close.
   Most likely a VoxelGI cell at its coarse distance (the per-room probes meet at the counter), else the SSIL at a

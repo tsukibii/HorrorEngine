@@ -69,6 +69,7 @@ pixel measure went wrong, LESSONS 2026-10-29); a check prints the renderer it go
 |---|---|---|
 | LOOKPLUGIN | `python3 tools/godot/plugin_check.py` | the pictures in `Saved/Story/_look/godot_plugin/`: the wet floor, the blood, the lit rain and its splashes, the mirror, the skin spheres |
 | GDPEOPLE | `python3 tools/godot/people_check.py` | `Saved/Story/_look/godot_people/`: a Studio export's skin and eye |
+| GDSTUDIO | `python3 tools/godot/studio_compare.py --person NAME` | `Saved/Story/_look/godot_studio/compare.jpg`: the Studio's own render beside Godot's (the Studio's server on 8793 running) |
 | GDTESTROOM | `python3 tools/godot_export.py --game TestRoom001 --testroom` | headless: the stations; then the game itself |
 | the game | `godot-mono --path Saved/Godot/TestRoom001` | the yard in the rain (the splashes, the wet floor, the lit streaks), the bath's mirror and wet floor, Aoi sweating in the kitchen, the pause menu's Graphics rows (Reflections Low: the mirror off) |
 | the guide | `python3 tools/godot_export.py --game TestRoom001 --zip --pictures` | `Saved/Godot/TestRoom001/guide/index.html` with its pictures made by Godot (the desk's Godot button does the same) |
