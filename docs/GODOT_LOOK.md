@@ -37,6 +37,13 @@ screen-space effects that a big scene can't afford are cheap here, and they're t
 LightmapGI stays out: its `bake()` is editor-only in 4.7 (no such method from a script; measured 2026-10-29 with a probe
 under xvfb), so an export's light can't be baked headless where the checks run. The VoxelGI per room is the baked GI.
 
+**In the editor** (2026-10-29, the user's return: "how do I apply the look for the test scene"): a game applies its
+look at start (`game.gd`, from `game.look`), so a level scene opened in Godot's editor shows none of it. The plugin,
+enabled in Project Settings → Plugins, registers **HSLookEnvironment** (`look_env.gd`): a WorldEnvironment with a
+`preset` that wears it in the editor's viewport and frees itself in a running game (one WorldEnvironment per scene
+tree). Drop one into the level scene to edit under the look; the tape (UltraVHS) is a CanvasLayer of the game's
+main scene and shows only in play, when `game.vhs` names a preset (TestRoom001 names none: off).
+
 `plain` is everything off (Filmic, no AA, no effects): a look at the geometry. The pause menu's Graphics rows pare
 the preset back on a slower machine (`HSLook.quality`: Reflections Low no SSR, Medium half its steps; Post-processing
 Low no glow, SSAO or SSIL, Medium no SSIL; Effects Low no haze; Global illumination Low no SSIL), never add to it.

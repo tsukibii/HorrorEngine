@@ -22,8 +22,13 @@ LOOKPLUGIN). The pieces, the numbers behind them and what was measured: **docs/G
 
 Copy `addons/horrorstudio_look/` into the project's `addons/` (keep the name: the scripts load their shaders by
 `res://addons/horrorstudio_look/...`). The skin needs `HumanShaders/` at the project's root too (its lightwarp, noise
-and micro-detail textures: `../HumanShaders`, copy it beside). Enabling the plugin in Project Settings is optional:
-there's nothing to register, every piece is a class (`HSLook`, `HSWet`, `HSBlood`, `HSRain`, `HSSkin`) or a shader.
+and micro-detail textures: `../HumanShaders`, copy it beside). Every piece is a class (`HSLook`, `HSWet`, `HSBlood`,
+`HSRain`, `HSMirror`, `HSSkin`) or a shader, usable without enabling the plugin. Enabling it (Project Settings →
+Plugins → HorrorStudio Look) registers one node for the editor: **HSLookEnvironment** (`look_env.gd`), a
+WorldEnvironment that wears a preset (`realism` or `plain`) in the editor's viewport, so a scene looks in the editor
+as it will in the game; in a running game it frees itself (`editor_only`), leaving the game's own environment the
+only one. In a studio export the game applies `game.look` from story.json at start (`game.gd`), so the node is for
+editing only: drop one into a level scene to see the look while you work on it.
 
 The demo: `godot --path PROJECT -s res://addons/horrorstudio_look/demo/demo.gd -- --out=DIR` pictures a room with
 each piece and writes `report.json` with the measures; `demo/people.gd -- --glb=res://people/NAME.glb --out=DIR` a

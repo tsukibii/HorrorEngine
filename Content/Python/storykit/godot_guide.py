@@ -220,7 +220,9 @@ hob's glow, flames, the cup filling, the pour, drips, the clock's hands, screens
 <p>The look comes from the studio's own plugin, <code>addons/horrorstudio_look/</code> (its README says how to use each part in any Godot project):
 <b>game.look</b> in story.json names the preset <code>HSLook</code> applies at the start, <b>{e(g.get('look', 'realism'))}</b> here: <code>realism</code> is screen-space
 reflections, ambient occlusion and indirect light, a little glow, a thin haze, AgX and temporal anti-aliasing (TAA alone: MSAA switches the reflections off in 4.7);
-<code>plain</code> turns it all off. The pause menu's Anti-aliasing row picks Off, FXAA, TAA or TSR over it.</p>
+<code>plain</code> turns it all off. The pause menu's Anti-aliasing row picks Off, FXAA, TAA or TSR over it. <b>In the editor</b> a level scene shows none of
+this (the game applies it at start): enable the plugin (Project → Project Settings → Plugins → HorrorStudio Look) and add an <code>HSLookEnvironment</code> node to the
+level scene to edit under the look; it steps aside when the game runs. The tape (<code>game.vhs</code>: camcorder, worn, nightmare) shows only in play.</p>
 <p><b>game.weather</b> <code>rain</code> (this game: <b>{e(g.get('weather', 'clear'))}</b>) puts rain in every room with no <code>ceiling</code> (<code>HSRain</code>, a box of
 streaks moved by the vertex shader, splashes where they land) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.
 Every kit <code>mirror</code> reflects the room for real (<code>HSMirror</code>: the camera reflected through the glass into a viewport of its own while the mirror is in view).
