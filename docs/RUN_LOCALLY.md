@@ -50,3 +50,22 @@ One line, for the user to give Claude on their machine, for example:
 
 The offline checks (CHECKS, DESK, CMDS, REFS, KIT, TAILOR, POSE, SCORE, WRITERS...) need no card and stay in the
 cloud.
+
+## The Godot checks (2026-10-29)
+
+Godot's pictures are drawn on lavapipe in the cloud (a software Vulkan: a frame of the look plugin's demo takes a
+second or more, the plugin check about five minutes, a mirror's second render as much again); on the card they're
+seconds. `godot-mono` is the user's binary (DECISIONS 2026-10-18): the scripts take `$GODOT`, else `godot`, else
+`godot-mono`. No `GPU=` here: Godot finds the card itself; `--rendering-driver vulkan` is what the checks pass.
+
+| Check | Command | What to look at |
+|---|---|---|
+| LOOKPLUGIN | `python3 tools/godot/plugin_check.py` | the pictures in `Saved/Story/_look/godot_plugin/`: the wet floor, the blood, the lit rain and its splashes, the mirror, the skin spheres |
+| GDPEOPLE | `python3 tools/godot/people_check.py` | `Saved/Story/_look/godot_people/`: a Studio export's skin and eye |
+| GDTESTROOM | `python3 tools/godot_export.py --game TestRoom001 --testroom` | headless: the stations; then the game itself |
+| the game | `godot-mono --path Saved/Godot/TestRoom001` | the yard in the rain (the splashes, the wet floor, the lit streaks), the bath's mirror and wet floor, Aoi sweating in the kitchen, the pause menu's Graphics rows (Reflections Low: the mirror off) |
+| the guide | `python3 tools/godot_export.py --game TestRoom001 --zip --pictures` | `Saved/Godot/TestRoom001/guide/index.html` with its pictures made by Godot (the desk's Godot button does the same) |
+
+The report: each check's last line and how long it took, and a word on the pictures: whether the wet floor, the
+blood, the rain on the glass, the sweat and the mirror read as meant (the cloud session can measure them, not
+judge them).
