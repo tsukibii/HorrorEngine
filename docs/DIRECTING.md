@@ -13,6 +13,13 @@ reset. The seams that moved it, `glance` and `cutaway`, are deprecated (TRICKS �
 flicker, an occlusion or a dip. If a moment needs the eye somewhere, lead it (a sound, a light, her line), don't
 move it.
 
+**A scene the player watches is `live`** (`camera.mode: live`, STORY_FORMAT §3; the user, 2026-10-29: the recorded
+shots "feel too choppy, we can tell we are cutting to a new shot; I want one fluid scene"): the eye stays the
+player's own, where they stood or sat when it began, with no cut and no shot size; she acts in the room on her
+marks and the player watches, looking round, walking if they're standing; seated (a chair, a sofa) they look 90°
+either side of the way the seat faces, never behind. Shots, pushes and seams are for `soft` and `hard` scenes,
+which are the exception now: a scene that must be framed (her face held close, a thing the player has to see).
+
 - **The cutscene stays in the player's head.** Resident Evil 7 and Village keep their cutscenes in first person:
   characters talk into the camera, and the player is never shown from outside. Village even returns to first person
   for cutscenes after adding a third-person mode. We do the same, so there's no cinematic camera to stage and every

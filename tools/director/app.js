@@ -35,7 +35,7 @@ import { ExpressionsPanel, DRAG_TYPE } from "./expressions.js";
 const $ = s => document.querySelector(s);
 const el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, v] of Object.entries(a)) { if (n === "on") for (const [ev, f] of Object.entries(v)) e.addEventListener(ev, f); else if (n === "style") e.style.cssText = v; else if (v !== undefined && v !== null && v !== false) e.setAttribute(n, v === true ? "" : v); } for (const c of k.flat()) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
 const SEAMS = ["blink", "glance", "flicker", "occlude", "cutaway", "turn", "stumble", "dip", "jcut", "heartbeat", "none"];
-const CAMS = ["free", "soft", "hard", "held"], PULLS = ["back", "left", "right", "down", "any"], ENDS = ["good", "bad", "secret", "other"];
+const CAMS = ["live", "free", "soft", "hard", "held"], PULLS = ["back", "left", "right", "down", "any"], ENDS = ["good", "bad", "secret", "other"];
 const EVENTS = ["struggle", "press", "mash", "hold", "breath", "aim", "choose"], QTE = EVENTS.filter(t => t !== "choose"), TRANS = ["blend", "fade", "cut", "blink", "dip"];
 const MOODS = {
   intimate: { text: "Close and slow: they come into your space (CU: under 0.55 m) and stay there, the player leans in a little (push 0.1 to 0.2 m), eye contact into the lens, little or no shake, warm practical light, breath under the line, long clips, seams on turns and blinks.", cone: [20, 12], shot: "cu", push: 0.15 },
@@ -2089,9 +2089,12 @@ async function watchScene(sc, nid, sid, k) {
   const picks = {}, replied = new Set();
   let tl = watchStage.timeline(sc, picks);
   const en = sc.enter || BLEND, cam = watchStage.camera;
+  const live = (sc.camera || {}).mode === "live", lrt = live && RUN.play;   // live: the eye stays the player's (play's runtime keeps the look and the walk)
   const from = { p: cam.position.clone(), q: cam.quaternion.clone(), fov: cam.fov, black: +$("#watchOv .black").style.opacity || 0 };
-  watchStage.apply(tl, watchStage.stateAt(tl, 0, FILES), 0);
-  if (en.kind === "blend") await blendIn(tl, from, +(en.secs || 0.8));
+  watchStage.apply(tl, watchStage.stateAt(tl, 0, FILES), 0, { noCamera: live });
+  if (lrt) lrt.liveStart();
+  if (live) { if (from.black > 0.01) await fade(0, en.kind === "cut" ? 0.05 : (en.secs || 0.6)); else $("#watchOv .black").style.opacity = 0; }
+  else if (en.kind === "blend") await blendIn(tl, from, +(en.secs || 0.8));
   else { watchStage.render(); if (en.kind !== "cut") await fade(0, en.secs || 0.6); else $("#watchOv .black").style.opacity = 0; }
   let T = 0, last = performance.now(), spoken = null, warned = null;
   const cues = stateCues(tl, sc), t0 = RUN ? RUN.secs : 0;   // the little things set by its cues, at their clip edges
@@ -2100,7 +2103,7 @@ async function watchScene(sc, nid, sid, k) {
   while (RUN && T < tl.total) {
     await new Promise(r => requestAnimationFrame(r));
     if (!RUN) break;                                       // stopped while it waited for the frame
-    const now = performance.now(); T += (now - last) / 1000; last = now;
+    const now = performance.now(), dtf = (now - last) / 1000; T += dtf; last = now;
     while (cues.length && cues[0].t <= T && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }
     while (sounds.length && sounds[0].t <= T) { const c = sounds.shift(); if (T - c.t < 0.5) watchSound(c); }
     while (skins.length && skins[0].t <= T) watchSkin(skins.shift());
@@ -2111,7 +2114,7 @@ async function watchScene(sc, nid, sid, k) {
     if (st.seg && st.seg.type === "reply" && !replied.has(st.seg.clip.id)) {
       const c = st.seg.clip, T0 = st.seg.start; replied.add(c.id); stopTakes();
       const tw = watchStage.timeline(sc, Object.assign({}, picks, { [c.id]: null }));     // waiting: the whole wait, her idle running
-      const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt); watchStage.render();
+      const id = await runReply(c.reply, u => { const tt = T0 + u, s2 = watchStage.stateAt(tw, tt, FILES, LOOK); watchStage.apply(tw, s2, tt, { noCamera: live }); if (lrt) lrt.liveTick(0.016); watchStage.render();
         paintOv("#watchOv", { sub: c.en, speaker: c.who, who: `${sc.title || ""} · ${c.who || ""}` }); }, c.who);    // the question stays up, the options under it, while she waits
       picks[c.id] = id;
       const o = (c.reply.options || []).find(x => x.id === (id === null ? c.reply.timeout : id));
@@ -2122,7 +2125,7 @@ async function watchScene(sc, nid, sid, k) {
     }
     const nextEv = tl.segs.find(s => s.type === "event" && s.start > T && s.event.warn && s.start - T < +s.event.warn);
     if (nextEv && warned !== nextEv) { warned = nextEv; const w = el("div", { class: "warnmark" }, "!"); $("#watchBox").append(w); setTimeout(() => w.remove(), +nextEv.event.warn * 1000); }
-    watchStage.apply(tl, st, T); lifeTick(watchStage, t0 + T); watchStage.render();
+    watchStage.apply(tl, st, T, { noCamera: live }); if (lrt) lrt.liveTick(Math.min(0.05, dtf)); lifeTick(watchStage, t0 + T); watchStage.render();
     let sub = st.sub, glitch = 0;
     if (st.typing) { const y = st.typing, s = typedAt(named(y.text), { retype: y.retype && named(y.retype), breaks: y.breaks }, y.t); glitch = s.glitch; sub = glitch ? glitched(s.shown, glitch, Math.floor(y.t * 20)) : s.shown; }   // a thought typing itself out (§9.15)
     paintOv("#watchOv", { sub, glitch, speaker: st.clipSeg ? st.who : "", think: st.think, who: st.clipSeg ? `${sc.title || ""} · ${st.who || ""}` : "", black: st.black, tag: st.seg && st.seg.type === "seam" ? "" : "" });
@@ -2132,6 +2135,7 @@ async function watchScene(sc, nid, sid, k) {
   }
   if (RUN) while (cues.length && RUN.lives) { const c = cues.shift(); if (c.skip) RUN.lives.skip(t0 + c.t, c.skip); else RUN.lives.set(c.id, c.to, t0 + c.t); }   // skipped to its end: its states still change
   if (RUN) while (skins.length) watchSkin(skins.shift());
+  if (lrt) lrt.liveEnd();
   stopTakes(); paintLine(watchHud().line, "");          // the scene's last line goes with it (play may follow straight on)
   if (!RUN) return;
   RUN.secs += tl.total; wclock();
@@ -2368,7 +2372,7 @@ async function watch(fromNid, snap) {
     if (n.type === "scene") { let sc0 = S.scenes[n.ref] || {};
       if (sc0.pick_by === "found_at" && RUN.foundAt && (sc0.variants || {})[RUN.foundAt]) sc0 = Object.assign({}, sc0, { pick: RUN.foundAt });   // the death where she caught you
       const to = await watchScene(version(sc0), nid, n.ref, sc0.variants ? sc0.pick : null); nid = (to && S.flow[to]) ? to : n.next;   // an answer may send the flow to another card (§9.9 go)
-      if (RUN) RUN.afterScene = { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera.clone() }; }
+      if (RUN) RUN.afterScene = (version(sc0).camera || {}).mode === "live" ? null : { level: version(sc0).level || Object.keys(S.levels)[0], cam: watchStage.camera.clone() }; }   // a live scene left the eye where it is
     else if (n.type === "stitch") { const ct = chapterTime(S, n); nid = await watchStitch(S.stitches[n.ref] || {}, nid, n); if (RUN && ct) { RUN.time = ct; watchStage.setTime(ct); } }   // a chapter's time from here on
     else if (n.type === "choice") {
       if (n.by === "act" && $("#wPlay").checked) nid = (await playChoice(n)).to;

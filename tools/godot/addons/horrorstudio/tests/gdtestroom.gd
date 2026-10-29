@@ -990,7 +990,7 @@ func _initialize() -> void:
 			var click := InputEventMouseButton.new()           # a left click puts the card away, like Esc
 			click.button_index = MOUSE_BUTTON_LEFT
 			click.pressed = true
-			rt._unhandled_input(click)
+			rt._input(click)                                          # (the card is a Control under the pointer: play takes the click in _input)
 			if not await until(func(): return g.hud.panel_el == null, 3000):
 				return "a click didn't close the card"
 			if not g.hud.cursor_el.visible:

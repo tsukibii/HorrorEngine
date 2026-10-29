@@ -425,7 +425,7 @@ func watch(from_nid = null, snap = null) -> void:
 			if run == null:
 				break
 			nid = to if (to != null and story.flow.has(to)) else n.get("next")
-			run["after_scene"] = {"level": story.level_of(StoryC.version(sc0)), "cam": camera.global_transform}
+			run["after_scene"] = null if scene_player.live else {"level": story.level_of(StoryC.version(sc0)), "cam": camera.global_transform}   # a live scene left the eye where it is
 		elif n.get("type") == "stitch":
 			var st: Dictionary = story.stitches.get(n.get("ref"), {})
 			var ct: String = story.chapter_time(n)

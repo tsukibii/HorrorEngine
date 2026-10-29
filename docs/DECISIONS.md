@@ -4,6 +4,16 @@ The user's answers, newest first. They override the plan, the research and the d
 
 ## 2026-10-29, the user's first Godot run (the test room on their machine)
 
+- **"The intro cutscene feels too choppy: we can tell we are cutting to a new shot, I want one fluid scene. The
+  player's location should remain the same as when it started, the player can still look around; standing, look
+  around and walk (stop hard-locking them); sitting, not behind the sitting direction, but a 180° look."** So the
+  new camera mode `live` (STORY_FORMAT §3, DIRECTING §1): the eye stays the player's own, no cuts, no shots, the
+  cast acting in the room; the test room's lobby scene is live. `soft` and `hard` stay for scenes that must be framed.
+- **"A way to unequip an item from our slot so we don't see it as if we are carrying it."** Q lowers the thing in
+  the hand out of view (it stays in the row, its slot dim) and raises it; the wheel raises it too.
+- **"Left clicking doesn't close anything."** The card is a Control under the pointer and ate the click before the
+  runtime saw it; taken in `_input` now.
+
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the
   player's eye is never moved for them after an interaction; a scene hands the eye back exactly where its camera

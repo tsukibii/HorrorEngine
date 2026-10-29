@@ -58,6 +58,14 @@ for a search on realistic smoke and steam (docs/research/godot_smoke.md). Built,
   indoors (Aoi at the front door). The checks that morning: STORY, DESK, CMDS, REFS, KIT, DASH, LOOKPLUGIN,
   GDPEOPLE, GODOTLOOK, GDEXPORT, GDPLAY, GDTESTROOM, TESTROOM, all ok before each push. The morning's pictures:
   `docs/godot_sheets/2026-10-29_morning.jpg`.
+**The user's first run in Godot (2026-10-29, midday)**, and what it changed (DECISIONS that day, their words): the
+desk's Godot button writes a plain project and no windows; `HSLookEnvironment` for the look in the editor; the
+seams that turn the eye (`glance`, `cutaway`) deprecated and the games' glances blinks; **live scenes**
+(`camera.mode: live`, DIRECTING §1: the eye stays the player's, no cuts, look and walk, a 180° look seated; the
+lobby scene is live); a card closed by a click (Godot: taken in `_input`), the thing looked at staying put, no dot
+over a card; **Q lowers the thing in the hand**. Open from that run: the square light patch under a distant counter
+(GODOT_LOOK §7).
+
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
 game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain
 and the wet floors there; `tools/godot/plugin_check.py` and `people_check.py` for the plugin's pictures), a look at

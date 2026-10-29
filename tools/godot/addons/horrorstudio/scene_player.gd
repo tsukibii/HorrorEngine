@@ -22,10 +22,11 @@ var bmap: Dictionary = {}          # this run's timeline segs -> the bake's, by 
 var look_off: Vector2 = Vector2.ZERO
 var look_cone: Array = [0, 0]
 var bake_stats: Dictionary = {}    # the last baked scene measured: frames, head_err, cam_path, mismatch
+var live := false                  # the scene playing is live (camera.mode live): the eye stays the player's, no cuts (STORY_FORMAT §3)
 
 
 func _unhandled_input(ev: InputEvent) -> void:
-	if playing and bk != null and ev is InputEventMouseMotion:   # the player looks round the recorded view, within the scene's cone
+	if playing and bk != null and not live and ev is InputEventMouseMotion:   # the player looks round the recorded view, within the scene's cone (a live scene: play's own look)
 		look_off.x = clamp(look_off.x - ev.relative.x * 0.08, -float(look_cone[0]), float(look_cone[0]))
 		look_off.y = clamp(look_off.y - ev.relative.y * 0.08, -float(look_cone[1]), float(look_cone[1]))
 
@@ -211,6 +212,9 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 	var from_black: float = game.fade_alpha()
 	title = str(sc.get("title", ""))
 	playing = true
+	live = str((v.get("camera", {}) as Dictionary).get("mode", "free")) == "live"
+	if live:
+		rt.live_start()
 	# the cast on their marks, the eye at the view
 	for cid in v.get("stage", {}):
 		var sp = game.things.get(v["stage"][cid])
@@ -251,7 +255,12 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 		var c0: Dictionary = bk.camera_of(0)
 		to_t = c0["xf"]
 		to_fov = StoryC.vfov(c0["hfov"], (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
-	if en.get("kind", "blend") == "blend":
+	if live:                                        # the eye stays the player's: no move, only any black lifted
+		if from_black > 0.01:
+			await game.fade(0.0, 0.05 if en.get("kind") == "cut" else float(en.get("secs", 0.6)))
+		else:
+			game.hud.set_fade(0.0)
+	elif en.get("kind", "blend") == "blend":
 		var secs: float = max(0.05, float(en.get("secs", 0.8)))
 		var t := 0.0
 		while t < secs and game.run != null:
@@ -290,8 +299,9 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 				var fi: int = bk.frame_of(bt)
 				if bk.show(fi, rt):
 					bake_measure()
-				bake_camera(fi, cam)
-				game.hud.set_fade(bk.black_of(fi))
+				if not live:                             # a live scene: the bodies act, the camera and the seams' black are the recording's alone
+					bake_camera(fi, cam)
+					game.hud.set_fade(bk.black_of(fi))
 			else:
 				bake_stats["held"] = int(bake_stats.get("held", 0)) + 1
 		while cues.size() and float(cues[0]["t"]) <= T:
@@ -351,7 +361,7 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 			game.hud.line(c.get("en", ""), who, float(seg["dur"]) + 0.3, bool(c.get("think", false)), {"retype": c.get("retype"), "breaks": c.get("breaks", false)} if c.get("think", false) else null)
 		elif seg != null and seg["type"] == "seam" and spoken != seg:
 			spoken = seg
-			if bk == null and ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):
+			if bk == null and not live and ["blink", "dip", "flicker"].has(seg["seam"].get("kind")):
 				_blink(float(seg["end"]) - float(seg["start"]))
 	if bk != null:
 		rt.baked_cast.clear()
@@ -360,6 +370,8 @@ func play(sc: Dictionary, nid: String, sid: String) -> Variant:
 				rt.cast_nodes[cid].visible = true
 		bk.close(rt)
 		bk = null
+	if live:
+		rt.live_end()
 	if game.run == null:
 		playing = false
 		return null

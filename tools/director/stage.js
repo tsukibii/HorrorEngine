@@ -1020,7 +1020,7 @@ export class Stage {
     if (!f._faceT || f._faceF !== FACES.F) { f._faceT = FACE.faceOf(f.model, FACES.F); f._faceF = FACES.F; }   // (a Studio export's needs MHR's face loaded)
     FACE.setFace(f._faceT, w72); f._faceOn = !!w72;
   }
-  apply(tl, state, T) {          // pose the figures, aim the camera, set the lights
+  apply(tl, state, T, opts = {}) {          // pose the figures, aim the camera (not with opts.noCamera: a live scene, the eye the player's), set the lights
     const v = tl.v;
     const through = new Set((v.camera || {}).through || []);           // the props the scene's eye is inside
     for (const id of [...(this._through || [])]) if (!through.has(id)) this.seeThrough(id, 0);
@@ -1066,8 +1066,9 @@ export class Stage {
     if (state.glance && this.targetPos(state.glance.target)) target = target.clone().lerp(this.targetPos(state.glance.target), state.glance.w);
     const c = this.camera;
     this._floorY = view ? view.pos[2] : 0;
-    this.playerMark(this.free && view ? { eye, target, floor: s2t(view.pos[0], view.pos[1], view.pos[2] + 0.012) } : null);
-    if (this.free) { this.applyFree(); }
+    this.playerMark(this.free && view && !opts.noCamera ? { eye, target, floor: s2t(view.pos[0], view.pos[1], view.pos[2] + 0.012) } : null);
+    if (opts.noCamera) { }
+    else if (this.free) { this.applyFree(); }
     else {
       c.position.copy(eye);
       c.lookAt(target);

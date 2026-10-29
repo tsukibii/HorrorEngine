@@ -50,6 +50,7 @@ const CONTROLS := [
 	{"keys": ["E"], "label": "Inventory", "ue": "IA_Inventory"},
 	{"mouse": "wheel", "label": "Switch item", "ue": "IA_InventoryScroll"},
 	{"keys": ["G"], "label": "Drop", "ue": "IA_Drop"},
+	{"keys": ["Q"], "label": "Lower / raise", "ue": "IA_Lower"},
 	{"keys": ["Shift"], "label": "Run", "ue": "IA_Run"},
 	{"keys": ["C"], "label": "Crouch", "ue": "IA_Crouch"},
 	{"keys": ["F"], "label": "Flashlight", "ue": "IA_Flashlight", "only": "torch"},

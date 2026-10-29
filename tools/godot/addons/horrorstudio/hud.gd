@@ -409,7 +409,7 @@ var inv_models: Dictionary = {}       # id -> the icon's model (a copy of the th
 var inv_turn: Array = []              # the pivots to turn (the middle slot's)
 
 
-func inventory(list: Array, at: int, shown: bool, peek: bool) -> void:
+func inventory(list: Array, at: int, shown: bool, peek: bool, lowered: bool = false) -> void:
 	for c in inv_box.get_children():
 		var m = c.get_meta("model") if c.has_meta("model") else null
 		if m != null and is_instance_valid(m) and m.get_parent() != null:
@@ -437,8 +437,11 @@ func inventory(list: Array, at: int, shown: bool, peek: bool) -> void:
 		row.append([d, list[i]])
 	row.sort_custom(func(a, b): return a[0] < b[0])
 	for r in row:
-		inv_box.add_child(inv_slot(r[1], r[0]))
-	inv_name.text = named(list[at]["name"]) if (at >= 0 and at < n) else ""
+		var sl := inv_slot(r[1], r[0])
+		if r[0] == 0 and lowered:                       # the thing in the hand lowered (Q): its slot dim, its name says so
+			sl.modulate = Color(1, 1, 1, 0.4)
+		inv_box.add_child(sl)
+	inv_name.text = (named(list[at]["name"]) + ("  (lowered: Q or the wheel)" if lowered else "")) if (at >= 0 and at < n) else ""
 	inv_box.visible = n > 0 and shown
 	inv_name.visible = inv_box.visible
 	hint_el.position.y = -30 - (SLOT + 56 if inv_box.visible else 0)   # the hints lifted over the row

@@ -749,7 +749,7 @@ const fail = m => { console.error("PLAY FAIL: " + m); process.exit(1); };
     const ctl = await page.evaluate(() => { const c = document.querySelector(".ph-menu .ph-controls"), n = document.querySelector(".ph-menu .ph-nav"); if (!c || !n) return null;
       const a = c.getBoundingClientRect(), b = n.getBoundingClientRect();
       return { rows: [...c.querySelectorAll(".ph-ctl-label")].map(r => r.textContent), icons: c.querySelectorAll(".ph-ctl svg").length, left: a.right <= b.left + 1 && a.width > 0 }; });
-    if (!ctl || ctl.rows.join() !== "Movement,Interact,Inventory,Switch item,Drop,Run,Crouch,Flashlight" || ctl.icons !== 8 || !ctl.left) throw new Error("the controls on the pause menu's left (the flashlight's once you have it): " + JSON.stringify(ctl));
+    if (!ctl || ctl.rows.join() !== "Movement,Interact,Inventory,Switch item,Drop,Lower / raise,Run,Crouch,Flashlight" || ctl.icons !== 9 || !ctl.left) throw new Error("the controls on the pause menu's left (the flashlight's once you have it): " + JSON.stringify(ctl));
     await page.evaluate(() => { window.__escHeld = true; }); await page.keyboard.press("Escape"); await page.waitForTimeout(600); await page.evaluate(() => { window.__escHeld = false; });
     const shut = await menus(), asks = await page.evaluate(() => window.__asks);
     await page.keyboard.press("Escape"); await page.waitForTimeout(500); const open2 = await menus();

@@ -84,7 +84,7 @@ from <code>Content/Games/{e(game)}/story.json</code>; the desk's checks played t
 (from a terminal: <code>godot --path . -- --node=n_kitchen</code>; in the editor: Project → Project Settings → Editor → Run → Main Run Args: <code>-- --node=n_kitchen</code>).
 The flags and items the stations before it leave are not set then: a scene that needs them plays as if they weren't.</p>
 <p><b>The controls:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk, <kbd>Shift</kbd> run, <kbd>C</kbd> crouch, the mouse looks, a click uses what the dot is on,
-<kbd>E</kbd> the inventory row, the wheel turns it, <kbd>G</kbd> puts the thing in the hand down, <kbd>F</kbd> the flashlight once you have it, <kbd>Esc</kbd> the pause menu.
+<kbd>E</kbd> the inventory row, the wheel turns it, <kbd>G</kbd> puts the thing in the hand down, <kbd>Q</kbd> lowers it out of view and raises it, <kbd>F</kbd> the flashlight once you have it, <kbd>Esc</kbd> the pause menu.
 In a scene the mouse looks round within the scene's cone; <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> or <kbd>A</kbd>/<kbd>D</kbd> and <kbd>Enter</kbd> answer a choice.</p>
 {fig(pictures, 'start_day.png', 'The start, by day (made by Godot at the export: --pictures).')}
 {fig(pictures, 'scene_first.png', 'The first scene, three seconds in, played from the desk\'s recording.')}
@@ -169,7 +169,9 @@ story's thing. A scene's <code>stage</code> says who stands on which, its <code>
 story.json (the thing's <code>at</code> in its room, metres from the room's corner, and its <code>rot</code>) and export again, or move the Marker3D in the editor for a
 try (the runtime reads the node's position: the scene's stand-ins and the player's eye follow it).</p>
 <p><b>The camera</b> in a recorded scene is the recording's: the desk's camera modes (hard, soft, free: how far the player may look round) are kept as the
-scene's <code>look</code> cone. To change a shot, change it on the desk (the Camera tab of the clip) and record again.</p>
+scene's <code>look</code> cone. To change a shot, change it on the desk (the Camera tab of the clip) and record again. A <b>live</b> scene
+(<code>camera.mode: live</code>) has no camera of its own: the eye stays the player's where they stood or sat, they look round (seated, 90° either
+side of the seat), standing they walk, and the cast act in the room from the recording.</p>
 <p><b>Behaviours</b> (a cast member walks to the sofa and sits, patrols, hides and seeks) are the story's <code>behave</code> cues and tasks; the runtime's
 <code>behaviours.gd</code> plays them on the stand-ins between scenes. <b>The stand-ins are the cast's bodies</b>: a Character Studio export
 (<code>game/people/&lt;name&gt;.glb</code>, with its skin and eyes) or the bake's shaped body (<code>game/previs/Body_&lt;cast&gt;.glb</code>) on the skin shader, read at

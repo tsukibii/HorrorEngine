@@ -2607,12 +2607,8 @@
    },
    "view": "lobby_view_spot",
    "camera": {
-    "mode": "soft",
-    "look": "aoi",
-    "cone": [
-     30,
-     18
-    ]
+    "mode": "live",
+    "look": "aoi"
    },
    "mood": "calm",
    "time": "day",

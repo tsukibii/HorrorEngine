@@ -54,7 +54,7 @@ SEAMS = {  # kind: (fields it needs, seconds it adds)
     "occlude": (set(), 0.8), "cutaway": ({"look"}, 1.5), "turn": (set(), 0.0), "stumble": (set(), 1.0),
     "dip": (set(), 2.0), "jcut": (set(), 0.0), "heartbeat": (set(), 0.6),
 }
-CAMERA = {"free", "soft", "hard", "held"}
+CAMERA = {"free", "soft", "hard", "held", "live"}   # live (2026-10-29): the eye stays the player's, no cuts, look and walk
 PULLS = {"back", "left", "right", "down", "any"}
 EVENTS = {"struggle", "press", "mash", "hold", "breath", "aim", "choose"}
 QTE = {"struggle", "press", "mash", "hold", "breath", "aim"}   # deprecated (DECISIONS 2026-10-27): they break the immersion
@@ -775,7 +775,7 @@ def check_scene(sid, sc, story, things, r):
                 r.err(f"{where}: stage spot {spot!r} isn't a spot in level {lvl}")
         vcam = ver.get("camera", cam)
         look = vcam.get("look")
-        if look and look not in things and look not in stage and vcam.get("mode") != "free":
+        if look and look not in things and look not in stage and vcam.get("mode") not in ("free", "live"):
             if look in cast:
                 r.warn(f"{where}: the camera looks at {look}, who isn't on stage in this version")
             else:
@@ -799,9 +799,11 @@ def check_scene(sid, sc, story, things, r):
             check_typed(cw, c, c.get("think") is True, r)
             seam = c.get("seam")
             if i > 0:
-                if not seam:
-                    r.err(f"{cw}: a cut from {clips[i - 1].get('id')} with no seam: pick one (blink, glance, flicker, "
-                          f"occlude, cutaway, turn, stumble, dip, jcut, heartbeat; none only for the same take)")
+                if not seam and cam.get("mode") == "live":
+                    pass                                   # a live scene never cuts: the eye is the player's own
+                elif not seam:
+                    r.err(f"{cw}: a cut from {clips[i - 1].get('id')} with no seam: pick one (blink, flicker, "
+                          f"occlude, turn, stumble, dip, jcut, heartbeat; none only for the same take)")
                 elif seam.get("kind") not in SEAMS:
                     r.err(f"{cw}: seam {seam.get('kind')!r} isn't a seam")
                 else:

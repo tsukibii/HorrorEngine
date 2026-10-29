@@ -62,6 +62,7 @@ export const CONTROLS = [
   { keys: ["E"], glyph: "row", label: "Inventory", ue: "IA_Inventory" },
   { mouse: "wheel", glyph: "turn", label: "Switch item", ue: "IA_InventoryScroll" },
   { keys: ["G"], glyph: "down", label: "Drop", ue: "IA_Drop" },
+  { keys: ["Q"], glyph: "down", label: "Lower / raise", ue: "IA_Lower" },
   { keys: ["Shift"], glyph: "speed", label: "Run", ue: "IA_Run" },
   { keys: ["C"], glyph: "crouch", label: "Crouch", ue: "IA_Crouch" },
   { keys: ["F"], glyph: "beam", label: "Flashlight", ue: "IA_Flashlight", only: "torch" },

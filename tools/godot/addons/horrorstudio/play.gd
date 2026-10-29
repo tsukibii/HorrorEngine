@@ -182,13 +182,29 @@ func carried() -> Variant:
 
 
 # ---- input ---------------------------------------------------------------------------------------------------
+## a left click while a card of words is up puts it away, like Esc: taken here, before the HUD's own controls get it
+## (the card is a Control under the pointer, so it never reached _unhandled_input: the user's note, 2026-10-29)
+func _input(ev: InputEvent) -> void:
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and hud != null and hud.panel_el != null:
+		if hud.panel_click():
+			get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(ev: InputEvent) -> void:
-	if ev is InputEventMouseMotion and mouse_captured and active and not busy:
+	if ev is InputEventMouseMotion and mouse_captured and (active or live_scene) and not busy:
 		ability_look(ev.relative.x, ev.relative.y)
+	elif live_scene and ev is InputEventKey:                   # a live scene: only the walk's keys
+		var code := OS.get_keycode_string(ev.physical_keycode)
+		if ["W", "A", "S", "D", "Up", "Down", "Left", "Right", "Shift", "C"].has(code):
+			keys[code] = ev.pressed
+			if code == "C" and player.seat == null:
+				var cs := setting("crouch")
+				if cs["mode"] == "hold":
+					player.crouched = ev.pressed
+				elif ev.pressed and not ev.echo:
+					player.crouched = not player.crouched
 	elif ev is InputEventMouseButton and ev.pressed:
 		if ev.button_index == MOUSE_BUTTON_LEFT:
-			if hud.panel_el != null and hud.panel_click():      # a card of words (a note, a thing looked at): a click puts it away, like Esc
-				return
 			if not mouse_captured and active and not busy:
 				capture_mouse(true)
 			elif active and not busy and playing == null:
@@ -245,6 +261,8 @@ func key_event(code: String, down: bool, repeat: bool = false) -> void:
 		inv_toggle()
 	if down and not repeat and code == "G":
 		drop()
+	if down and not repeat and code == "Q":
+		hand_lower(not hand_down)
 	if player.hiding == null and down and not repeat:
 		var cs := setting("crouch")
 		if code == cs["key"]:
@@ -1096,9 +1114,24 @@ func inv_remove(id) -> void:
 
 func inv_scroll(d: int) -> void:
 	var n := inv.size()
+	if hand_down and n > 0:                        # the wheel brings the thing back up before turning the row
+		hand_lower(false)
+		return
 	if n < 2 or d == 0:
 		return
 	inv_at = posmod(inv_at + sign(d), n)
+	inv_draw(true)
+
+
+## Q: the thing in the hand lowered out of view (it stays in the row, in the hand's slot, dimmed), or raised again;
+## the wheel raises it too (the user's ask, 2026-10-29: not to see what you carry when you don't want to)
+var hand_down := false
+func hand_lower(down: bool) -> void:
+	if carried() == null:
+		down = false
+	hand_down = down
+	if physics != null and physics.hand != null and physics.hand.get("node") != null and is_instance_valid(physics.hand["node"]):
+		physics.hand["node"].visible = not down
 	inv_draw(true)
 
 
@@ -1111,7 +1144,7 @@ func inv_draw(peek: bool) -> void:
 	var lst: Array = []
 	for e in inv:
 		lst.append({"id": e["id"], "name": e["name"], "model": e.get("icon")})
-	hud.inventory(lst, inv_at, inv_shown, peek)
+	hud.inventory(lst, inv_at, inv_shown, peek, hand_down)
 
 
 ## G: the one in the hand set down on whatever is under a spot just in front of you, facing you
@@ -1231,6 +1264,7 @@ func sit(t: Dictionary, s: Dictionary) -> void:
 	var at: Vector3 = t["node"].global_position
 	player.seat = t["id"]
 	player.stood = {"pos": player.pos, "eye": player.eye}
+	player["seat_yaw"] = float(player.yaw) + 180.0      # the way the seat faces: a live scene's look is 90° either side of it
 	await tween({"pos": Vector3(at.x, player.pos.y, at.z), "eye": s["eye"], "yaw": float(player.yaw) + 180.0, "pitch": 0.0, "secs": s["secs"]})
 
 
@@ -2202,9 +2236,51 @@ func cast_steps(dt: float) -> void:
 
 # ---- the frame -----------------------------------------------------------------------------------------------------
 func _process(delta: float) -> void:
-	if not active or held:
+	if held:
+		return
+	if live_scene:
+		live_tick(min(0.05, delta))
+		return
+	if not active:
 		return
 	tick(min(0.05, delta))
+
+
+## a live scene (STORY_FORMAT §3 `camera.mode: live`): play is held (no beats, no use, no HUD) but the eye stays the
+## player's: they look round and, standing, walk; seated, the look stays within 90° either side of the seat's facing
+var live_scene := false
+var live_limit = null
+func live_start() -> void:
+	live_scene = true
+	keys = {}
+	live_limit = player.limit
+	if player.seat != null:
+		player.limit = {"yaw": float(player.get("seat_yaw", player.yaw)), "dy": 90.0, "dp": 60.0}
+	live_tick(0.0)
+
+
+func live_end() -> void:
+	live_scene = false
+	player.limit = live_limit
+	live_limit = null
+	keys = {}
+
+
+func live_tick(dt: float) -> void:
+	var p := player
+	var feet: Vector3 = p.pos
+	if dt > 0.0 and not busy and p.seat == null and p.hiding == null and p.sleeping == null and p.peeping == null and moving == null:
+		ability_walk(dt)
+		ability_crouch(dt)
+		ability_steps(dt)
+	p.speed = p.pos.distance_to(feet) / dt if dt > 0 else 0.0
+	var cam: Camera3D = game.camera
+	cam.global_position = eye_pos()
+	cam.rotation_degrees = Vector3(float(p.pitch), float(p.yaw) - 90.0, 0.0)
+	var vp := get_viewport().get_visible_rect().size
+	cam.fov = StoryC.vfov(float(story.game.get("fov", StoryC.FOV_H)), (vp.x / vp.y) if vp.y > 0 else 16.0 / 9.0)
+	if not rain_sounds.is_empty():
+		rain_follow()
 
 
 ## the rain's sound rides with the player while they stand in its room (it's all round them there), else sits at

@@ -137,8 +137,9 @@ export class Hud {
   // rest either side round the wheel (inventory.slot), at most SHOWN, the farther ones smaller and fainter; its name
   // under it. `shown`: E's choice; `peek`: hidden, it shows for a moment because something changed. Each thing keeps
   // its element, so the row slides as the wheel turns (one coming round the back of the wheel doesn't slide across)
-  inventory(list, at, shown, peek) {
+  inventory(list, at, shown, peek, lowered = false) {
     const n = list.length, had = new Map([...this.invRow.children].map(c => [c.dataset.id, c]));
+    this.invRow.classList.toggle("lowered", !!lowered);         // the one in the hand lowered (Q): its slot dim
     list.forEach((t, i) => {
       let c = had.get(t.id); had.delete(t.id);
       const d = slot(i, at, n), was = c ? +c.dataset.d : null;

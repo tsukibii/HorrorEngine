@@ -73,7 +73,7 @@ export class PlayRuntime {
         if (this.wasLocked && !on && this.active && !this.busy && performance.now() - (this.resumed || 0) > 500) this.pause();   // (not the lock a resume just asked for, lost again)
         this.wasLocked = on; this.hud.locked(on);
       },
-      move: e => { if (this.active && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
+      move: e => { if ((this.active || this.liveScene) && !this.busy && document.pointerLockElement === box) this.ability("look", "mouse", e.movementX, e.movementY); },
       key: e => this.keyEvent(e, e.type === "keydown"),
     };
     box.addEventListener("click", this.on.click); box.addEventListener("mousedown", this.on.down); box.addEventListener("wheel", this.on.wheel, { passive: false });
@@ -102,17 +102,22 @@ export class PlayRuntime {
   get carried() { return this.inv.held; }            // the thing in the hand (the `carrying` condition)
   ability(name, fn, ...args) { const p = part("ability", name); if (p && p[fn]) p[fn](this, ...args, this.set(name)); }
   keyEvent(e, down) {
+    if (this.liveScene && !this.busy) {               // a live scene: only the walk's keys (the stitch's own keys wait)
+      if (["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "KeyC"].includes(e.code)) { e.preventDefault(); this.keys[e.code] = down; if (!this.player.seat) for (const a of ABILITIES) this.ability(a, "key", e, down); }
+      return;
+    }
     if (!this.active || this.busy) return;
     if (down && e.code === "Escape") {               // Esc without the lock (the desk) pauses too, but not an Esc meant
       e.preventDefault(); if (performance.now() - this.since > 400) this.pause(); return;   // for the scene that just ended, or the card
     }
-    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
+    if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyG", "KeyQ", "KeyC", "KeyF", "Space", "ShiftLeft", "ShiftRight"].includes(e.code)) e.preventDefault();
     if (down && this.player.peeping && ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) { this.unpeep(); return; }   // a step: the eye back
     if (this.playing) return;                          // at a board game: its choices take the keys
     this.keys[e.code] = down;
     this.ability("torch", "key", e, down);             // F: the flashlight, hidden or not
     if (down && !e.repeat && e.code === "KeyE") this.inv.toggle();        // E: the inventory's row, shown or hidden
     if (down && !e.repeat && e.code === "KeyG") this.drop();              // G: the one in the hand put down
+    if (down && !e.repeat && e.code === "KeyQ") this.inv.lower(!this.inv.lowered);   // Q: lowered out of view, or raised
     if (!this.player.hiding) for (const a of ABILITIES) this.ability(a, "key", e, down);
   }
 
@@ -443,7 +448,7 @@ export class PlayRuntime {
     if (this.hand && this.hand.entry !== e) { this.hand.x.m.removeFromParent(); this.hand = null; }
     if (!e) return;
     if (!this.hand) { this.stage.scene.add(e.mesh); this.hand = { entry: e, x: inHand(e.mesh, e.physics) }; }
-    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || !!p.peeping || this.busy;
+    const m = this.hand.x.m, away = !this.active || !!this.playing || !!p.seat || !!p.hiding || !!p.sleeping || !!p.peeping || this.busy || this.inv.lowered;
     m.visible = !away; if (away) return;
     const cam = this.stage.camera, walk = Math.min(1, (p.speed || 0) / 1.2), hand = new THREE.Vector3(...this.hand.x.s.hand);
     hand.y -= Math.cos((this.stepAt ?? 0.5) * Math.PI * 2) * 0.012 * walk;      // dipping with each footstep (steps.js)
@@ -557,7 +562,7 @@ export class PlayRuntime {
   // back to where they stood
   sit(t, s) {
     const p = this.player, at = t.getWorldPosition(new THREE.Vector3());
-    p.seat = t; p.stood = { pos: p.pos.clone(), eye: p.eye };
+    p.seat = t; p.stood = { pos: p.pos.clone(), eye: p.eye }; p.seatYaw = p.yaw + 180;   // the way the seat faces: a live scene's look is 90° either side of it
     return this.tween({ pos: new THREE.Vector3(at.x, p.pos.y, at.z), eye: s.eye, yaw: p.yaw + 180, pitch: 0, secs: s.secs });
   }
   stand(s) {
@@ -842,6 +847,22 @@ export class PlayRuntime {
     if (v === "escaped") return;                     // closed by Esc: asking for the lock now, the browser would take the same Esc as leaving it
                                                       // and pause again (the menu opening on every Esc); a click on the view takes it
     try { await this.box.requestPointerLock(); } catch (e) { }
+  }
+  // a live scene (STORY_FORMAT §3 `camera.mode: live`): play is held (no beats, no use, no HUD) but the eye stays the
+  // player's: they look round and, standing, walk; seated, the look stays within 90° either side of the seat's facing
+  liveStart() {
+    const p = this.player; this.liveScene = true; this.keys = {}; this.liveLimit = p.limit;
+    if (p.seat) p.limit = { yaw: p.seatYaw ?? p.yaw, dy: 90, dp: 60 };
+    this.liveTick(0);
+  }
+  liveEnd() { this.liveScene = false; this.player.limit = this.liveLimit || null; this.keys = {}; }
+  liveTick(dt) {
+    const p = this.player, feet = p.pos.clone();
+    if (dt > 0 && !this.busy && !p.seat && !p.hiding && !p.sleeping && !p.peeping && !this.moving) for (const a of ["walk", "crouch", "steps"]) this.ability(a, "update", dt);
+    p.speed = dt ? p.pos.distanceTo(feet) / dt : 0;
+    const c = this.stage.camera; c.position.copy(this.eyePos()); c.rotation.order = "YXZ";
+    c.rotation.set(p.pitch * Math.PI / 180, (p.yaw - 90) * Math.PI / 180, 0);
+    c.fov = vfov(+((this.story.game || {}).fov || FOV_H), c.aspect || 16 / 9); c.updateProjectionMatrix(); c.updateMatrixWorld();
   }
   hold() {
     this.active = false; this.keys = {}; this.hud.root.style.display = "none"; if (this.hand) this.hand.x.m.visible = false;
