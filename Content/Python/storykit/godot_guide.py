@@ -57,6 +57,7 @@ def write_guide(out, game, story, info, pictures_from=None):
     out = Path(out)
     gd = out / "guide"
     (gd / "pictures").mkdir(parents=True, exist_ok=True)
+    (gd / ".gdignore").write_text("", encoding="utf-8")        # the guide is for a browser: Godot neither imports its pictures nor lists it
     pictures = set()
     if pictures_from and Path(pictures_from).is_dir():
         for p in sorted(Path(pictures_from).glob("*.png")):

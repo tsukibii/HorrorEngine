@@ -10,6 +10,7 @@ Plain Python, no installs. Listens on 127.0.0.1 only.
 import json
 import re
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -594,8 +595,9 @@ class Handler(BaseHTTPRequestHandler):
             out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
             return self.send(200, {"ok": True, "path": str(out.relative_to(ROOT)), "kb": round(out.stat().st_size / 1024)})
         if parts[:3] == ["api", "godot", "export"] and len(parts) == 4 and self.game_path(parts[3]):   # the game as a Godot project (.zip) with its guide
-            r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip"],
-                               capture_output=True, text=True, encoding="utf-8", timeout=1800, cwd=str(ROOT))
+            pics = ["--pictures"] if any(shutil.which(c) for c in [os.environ.get("GODOT") or "", "godot", "godot-mono"] if c) else []   # the guide's pictures when Godot is on the machine
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "godot_export.py"), "--game", parts[3], "--zip", *pics],
+                               capture_output=True, text=True, encoding="utf-8", timeout=2400, cwd=str(ROOT))
             out = ROOT / "Saved" / "Godot" / parts[3]
             z = out.with_suffix(".zip")
             kept = []                                       # a re-export: the files changed by hand it kept (the receipt, GODOT_EXPORT §5)

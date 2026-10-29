@@ -147,9 +147,11 @@ def main():
             print("\n".join("  " + ln for ln in out.splitlines()[-12:]))
             if code != 0 or "GDEXPORT ok" not in out:
                 ok = False
-        if a.pictures:
+        if a.pictures:                                      # the guide's pictures, then the zip again with them in it
             if not make_pictures(game, r):
                 ok = False
+            if a.zip and r.get("zip"):
+                G.zip_project(r["dir"], game)
         if a.shot:
             shot = Path(a.shot).resolve()
             code, out = run_godot(r["dir"], "res://addons/horrorstudio/tests/shot.gd", ["--", f"--shot={shot}"], xvfb=True)

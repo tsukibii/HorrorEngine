@@ -208,7 +208,8 @@ loads, every verb in the games has a part).
    Unreal) records the scenes, runs the export with `--zip` (`/api/godot/export/<G>`) and links the guide; `--pictures`
    (the launcher's row) has Godot make the guide's own pictures first (the start by day and by night, the first scene
    three seconds in from the bake: `Saved/Story/<G>/godot_reference/`, where the checks' pictures go too) and writes
-   the guide again with them (2026-10-29)
+   the guide again with them, and zips again so they're in the zip; the desk's button passes `--pictures` whenever
+   Godot is on the machine (2026-10-29)
    (`/godot/<G>/guide/index.html`); the launcher has the export and the checks under Godot. GDEXPORT checks the guide.
 4. **The look** (GODOT_PLAN §6): UltraVHS and Light Kit as shaders and nodes, measured; M_StudioSurface; the
    characters' shaders on HumanShaders (§2 of the plan) with the Studio's colours and patterns checked side by side.

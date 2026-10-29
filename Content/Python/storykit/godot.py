@@ -783,11 +783,16 @@ def export(game, out=None, make_zip=False, do_import=True):
     write_manifest(out)
     if (arts or surfaced) and do_import:
         import_project(out)
-    z = None
-    if make_zip:
-        z = out.parent / f"{game}.zip"
-        with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
-            for fp in sorted(out.rglob("*")):
-                if fp.is_file() and ".godot" not in fp.parts:
-                    zf.write(fp, Path(game) / fp.relative_to(out))
+    z = zip_project(out, game) if make_zip else None
     return {"dir": str(out), "zip": str(z) if z else None, "levels": levels, "pieces": len(pieces), "arts": arts, "kept": kept}
+
+
+def zip_project(out, game):
+    """The project as <game>.zip beside it (Godot's .godot/ left out): the file the desk's button hands over."""
+    out = Path(out)
+    z = out.parent / f"{game}.zip"
+    with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
+        for fp in sorted(out.rglob("*")):
+            if fp.is_file() and ".godot" not in fp.parts:
+                zf.write(fp, Path(game) / fp.relative_to(out))
+    return z
