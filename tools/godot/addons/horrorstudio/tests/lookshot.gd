@@ -75,7 +75,7 @@ func _process(_d: float) -> bool:
 			vg.name = "VoxelGI"
 			var lo := Vector3(INF, INF, INF)
 			var hi := Vector3(-INF, -INF, -INF)
-			for ch in g.level.get_children():
+			for ch in g.pieces():
 				if ch is Node3D and ch.has_meta("piece"):
 					lo = lo.min(ch.global_position)
 					hi = hi.max(ch.global_position)

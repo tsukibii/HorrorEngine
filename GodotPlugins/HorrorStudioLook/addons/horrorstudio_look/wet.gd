@@ -118,7 +118,7 @@ static func dry(mi: MeshInstance3D) -> void:
 ## named (all when the list is empty); returns how many
 static func wet_floors(level: Node, rooms: Array = [], settings: Dictionary = {}) -> int:
 	var n := 0
-	for ch in level.get_children():
+	for ch in level.find_children("*", "", true, false):   # (the export groups a level's nodes in folders by kind)
 		if not ch.has_meta("piece"):
 			continue
 		var p = JSON.parse_string(ch.get_meta("piece"))

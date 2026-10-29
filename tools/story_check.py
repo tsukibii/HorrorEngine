@@ -1523,8 +1523,8 @@ def check_flow(story, things, r):
     if st is not None and not (isinstance(st, (int, float)) and 0 <= st <= 1):
         r.err(f"game.see_through {st!r}: a number 0..1")
     vhs = story["game"].get("vhs")                     # the camcorder look (docs/VHS.md): UltraVHS's preset, in Godot's export and Unreal
-    if vhs is not None and vhs not in ("off", "camcorder", "worn", "nightmare"):
-        r.err(f"game.vhs {vhs!r}: off, camcorder, worn or nightmare")
+    if vhs is not None and vhs not in ("off", "camcorder", "camhybrid", "worn", "nightmare"):
+        r.err(f"game.vhs {vhs!r}: off, camcorder, camhybrid, worn or nightmare")
     look = story["game"].get("look")                   # the look (HorrorStudioLook's HSLook presets, docs/GODOT_LOOK.md)
     if look is not None and look not in ("realism", "plain"):
         r.err(f"game.look {look!r}: realism or plain")

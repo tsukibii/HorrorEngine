@@ -109,6 +109,7 @@ class Tscn:
     def __init__(self, root_name, root_type="Node3D"):
         self.subs, self.nodes, self.n = [], [], 0
         self.ext = []
+        self.groups = set()
         self.node(root_name, root_type, None)
 
     def sub(self, rtype, props):
@@ -122,8 +123,15 @@ class Tscn:
         self.ext.append((rid, path, rtype))
         return f'ExtResource("{rid}")'
 
+    GROUPS = ("Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI")   # the level's folders (the user, 2026-10-29: "sub categories, so it's easier to find what we're looking for")
+
     def node(self, name, ntype, parent, props=None, meta=None, instance=None):
-        """ntype a node type, or instance an ExtResource(...) PackedScene instanced here (ntype then ignored)."""
+        """ntype a node type, or instance an ExtResource(...) PackedScene instanced here (ntype then ignored). A parent
+        named in GROUPS is a plain Node3D folder at the level's root, made the first time something goes in it; the
+        node's path is returned (children name it as their parent)."""
+        if parent in self.GROUPS and parent not in self.groups:
+            self.nodes.append((parent, "Node3D", ".", {}))
+            self.groups.add(parent)
         p = dict(props or {})
         for k, v in (meta or {}).items():
             p[f"metadata/{k}"] = gstr(json.dumps(v, ensure_ascii=False, separators=(",", ":")))
@@ -313,7 +321,7 @@ class LevelWriter:
         meta = {"piece": self.piece_meta(p)}
         if p["kind"] == "door":
             meta["piece"]["swing"] = self.swing(p)
-        self.t.node(name, "StaticBody3D", ".", props, meta)
+        path = self.t.node(name, "StaticBody3D", {"floor": "Ground", "wall": "Walls", "ceiling": "Ceilings", "door": "Doors", "mesh": "Things"}.get(p["kind"], "Things"), props, meta)
         if p["shape"] == "cyl":
             mesh = self.t.sub("CylinderMesh", {"top_radius": f(w / 2), "bottom_radius": f(w / 2), "height": f(h)})
             shape = self.t.sub("CylinderShape3D", {"radius": f(w / 2), "height": f(h)})
@@ -334,16 +342,16 @@ class LevelWriter:
         ext = self.art_of(art) if art else None
         if ext:                                       # the mesh in its block; the block stays, unseen, for the cursor and the walls
             mprops["visible"] = "false"
-        self.t.node("mesh", "MeshInstance3D", name, mprops)
+        self.t.node("mesh", "MeshInstance3D", path, mprops)
         if ext:
             xf, k = self.art_transform(p, art)
-            self.t.node("art", None, name, {"transform": xf}, instance=ext)
+            self.t.node("art", None, path, {"transform": xf}, instance=ext)
             self.art_count += 1
         if not hollow and use != "clean":
             sprops = {"shape": shape}
             if hidden:
                 sprops["disabled"] = "true"
-            self.t.node("shape", "CollisionShape3D", name, sprops)
+            self.t.node("shape", "CollisionShape3D", path, sprops)
 
     def swing(self, p):
         """Where a door turns (stage.js swingDoor): a kit door on its hinges, a plain one on its left edge; a sliding
@@ -370,7 +378,7 @@ class LevelWriter:
         c, inten, dist = LIGHTS.get(kind, LIGHTS["bulb"])
         lit = d.get("lit") is not False
         name = self.uname(p["id"])
-        self.t.node(name, "OmniLight3D", ".", {
+        self.t.node(name, "OmniLight3D", "Lights", {
             "transform": xform(s2g(p["pos"])), "light_color": col(c), "light_energy": f(inten if lit else 0.0),
             "omni_range": f(dist), "omni_attenuation": "1.6", "shadow_enabled": "true"},
             {"piece": self.piece_meta(p), "light": {"kind": kind, "room": p.get("room"), "flicker": float(d.get("flicker") or 0), "base": inten, "on": lit}})
@@ -380,15 +388,15 @@ class LevelWriter:
         x, y, z = p["pos"]
         rv = next((t[12:] for t in p["tags"] if t.startswith("room_volume:")), None)
         name = self.uname(p["id"])
-        self.t.node(name, "Area3D", ".", {"transform": xform(s2g(p["pos"])), "monitoring": "false", "monitorable": "false"},
+        path = self.t.node(name, "Area3D", "Triggers", {"transform": xform(s2g(p["pos"])), "monitoring": "false", "monitorable": "false"},
                     {"piece": self.piece_meta(p), "trigger": {"id": rv or p["id"], "safe": bool((p.get("d") or {}).get("safe")),
                                                               "min": [round(x - w / 2, 4), round(y - d / 2, 4), round(z - h / 2, 4)],
                                                               "max": [round(x + w / 2, 4), round(y + d / 2, 4), round(z + h / 2, 4)]}})
-        self.t.node("shape", "CollisionShape3D", name, {"shape": self.t.sub("BoxShape3D", {"size": v3(w, h, d)})})
+        self.t.node("shape", "CollisionShape3D", path, {"shape": self.t.sub("BoxShape3D", {"size": v3(w, h, d)})})
 
     def spot(self, p, name=None):
         name = self.uname(name or p["id"])
-        self.t.node(name, "Marker3D", ".", {"transform": xform(s2g(p["pos"]), p.get("yaw") or 0)}, {"piece": self.piece_meta(p)})
+        self.t.node(name, "Marker3D", "Spots", {"transform": xform(s2g(p["pos"]), p.get("yaw") or 0)}, {"piece": self.piece_meta(p)})
 
     def person(self, p, cast_id=None, height=None):
         w, d, h = p["size"] if not height else (0.5, 0.3, height)
@@ -398,11 +406,11 @@ class LevelWriter:
         if hidden:
             props["visible"] = "false"
         meta = {"piece": self.piece_meta(p)}
-        self.t.node(name, "Node3D", ".", props, meta)
+        path = self.t.node(name, "Node3D", "People", props, meta)
         body = self.t.sub("CapsuleMesh", {"radius": f(0.2), "height": f(max(0.5, h - 0.25))})
-        self.t.node("body", "MeshInstance3D", name, {"transform": xform((0, h / 2 - 0.1, 0)), "mesh": body, "material_override": self.mat("cast" if cast_id else "person")})
+        self.t.node("body", "MeshInstance3D", path, {"transform": xform((0, h / 2 - 0.1, 0)), "mesh": body, "material_override": self.mat("cast" if cast_id else "person")})
         head = self.t.sub("SphereMesh", {"radius": f(0.1), "height": f(0.2)})
-        self.t.node("head", "MeshInstance3D", name, {"transform": xform((0, h - 0.1, 0)), "mesh": head, "material_override": self.mat("cast" if cast_id else "person")})
+        self.t.node("head", "MeshInstance3D", path, {"transform": xform((0, h - 0.1, 0)), "mesh": head, "material_override": self.mat("cast" if cast_id else "person")})
 
     def windows(self):
         """A soft light just inside every window, into the room (stage.js: Light Kit Window's sky fill), by the time."""
@@ -426,14 +434,14 @@ class LevelWriter:
                 # a spot light looks down its -Z: aim it from a at b
                 dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
                 yaw = math.degrees(math.atan2(-dz, dx)) - 90   # the desk's yaw convention (character +Z faces rot+90)
-                self.t.node(name, "SpotLight3D", ".", {
+                self.t.node(name, "SpotLight3D", "Lights", {
                     "transform": xform(a, yaw + 180), "light_color": col(wc), "light_energy": f(wk * area), "spot_range": f(wd),
                     "spot_angle": "63", "spot_attenuation": "1.5"}, {"window": {"room": room["id"], "area": area, "energy": wk * area}})
                 if op.get("window"):                      # the pane: a quad of glass in the opening (HSGlass; the runtime rains on it)
                     pane = self.uname(f"__pane_{room['id']}_{i}")
                     quad = self.t.sub("QuadMesh", {"size": f"Vector2({f(op['w'])}, {f(op['h'])})"})
                     glass = self.mat("glass", {"transparency": "1", "albedo_color": "Color(0.85, 0.9, 0.95, 0.12)", "roughness": "0.05", "cull_mode": "2"})
-                    self.t.node(pane, "MeshInstance3D", ".", {"transform": xform(s2g(at(0)), 0 if axis == "y" else 90), "mesh": quad, "material_override": glass},
+                    self.t.node(pane, "MeshInstance3D", "Glass", {"transform": xform(s2g(at(0)), 0 if axis == "y" else 90), "mesh": quad, "material_override": glass},
                                 {"pane": {"room": room["id"], "w": op["w"], "h": op["h"]}})
 
     def gi(self):
@@ -444,7 +452,7 @@ class LevelWriter:
             x0, y0, z0 = room["at"]
             w, d, h = room["size"]
             c = s2g((x0 + w / 2, y0 + d / 2, z0 + h / 2))
-            self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", ".", {"transform": xform(c), "size": v3(w + 1.0, h + 1.0, d + 1.0), "subdiv": "0"},
+            self.t.node(self.uname(f"__gi_{room['id']}"), "VoxelGI", "GI", {"transform": xform(c), "size": v3(w + 1.0, h + 1.0, d + 1.0), "subdiv": "0"},
                         {"gi": {"room": room["id"]}})
 
     def write(self):
@@ -644,7 +652,7 @@ def merge_export(new, final, old_manifest):
         src = new / rel
         dst = final / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel]:
+        if dst.exists() and rel in old_manifest and sha1_of(dst) != old_manifest[rel] and sha1_of(dst) != sha1_of(src):   # changed by hand, and not into what the export writes now
             beside = final / desk_name(rel)
             shutil.copy(src, beside)
             kept.append(rel)

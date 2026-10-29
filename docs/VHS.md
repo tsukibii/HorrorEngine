@@ -105,7 +105,15 @@ The settings menu's Film grain row (play/menu.js, `grain`) becomes the player's 
 
 **In the Godot export** (2026-10-29): `addons/horrorstudio_look/vhs.gdshader` (GodotPlugins/HorrorStudioLook) is this filter, the plugin's three passes in
 one canvas shader under the HUD (so the HUD stays sharp, §4), with the plugin's presets and night mode; `game.vhs`
-names the preset (STORY_FORMAT §9.1); GODOTLOOK measures it against the plugin's own reference.
+names the preset (STORY_FORMAT §9.1); GODOTLOOK measures it against the plugin's own reference. **`camhybrid`** (the
+user, after playing: "I love the camcorder effect but it's a tad too much: the fisheye a tiny bit too strong, the
+blurring too much on objects that are closer; close to something it should be almost sharp, still some softening"):
+the camcorder with half the barrel (0.045), the tape's own luma blur a third (0.5 px) and the chroma blur lighter,
+and **the softener** (`soften.gd`, `HSSoften`: a full-screen quad under the camera reading the depth, the blur growing
+from a quarter pixel at 0.9 m to 1.6 px at 7 m), so what the eye is on stays readable and the far room melts into
+the tape. The softener sits under the tape and the HUD, on layer 20 so a mirror's camera skips it. Measured at the kitchen's wall
+(`docs/godot_sheets/2026-10-29_camhybrid.jpg`, the two tapes side by side): the cup at arm's length eight times sharper
+than under the camcorder, the wall at 2.5 m as soft as before, the far corner the same.
 
 ## 6. The camera's display in Unreal
 

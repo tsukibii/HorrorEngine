@@ -102,6 +102,8 @@ def main():
     (OUT / "addons" / "horrorstudio_look").mkdir(parents=True)
     shutil.copy(ADDON / "vhs.gdshader", OUT / "addons" / "horrorstudio_look" / "vhs.gdshader")
     shutil.copy(ADDON / "vhs_hold.gdshader", OUT / "addons" / "horrorstudio_look" / "vhs_hold.gdshader")
+    shutil.copy(ADDON / "soften.gd", OUT / "addons" / "horrorstudio_look" / "soften.gd")           # vhs.gd preloads the softener
+    shutil.copy(ADDON / "soften.gdshader", OUT / "addons" / "horrorstudio_look" / "soften.gdshader")
     env = dict(os.environ)
     env.setdefault("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/lvp_icd.json")
     cmd = [g, "--path", str(OUT), "--rendering-driver", "vulkan", "-s", "res://look.gd"]

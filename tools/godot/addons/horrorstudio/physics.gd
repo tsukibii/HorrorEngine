@@ -85,7 +85,7 @@ func hand_tick(dt: float) -> void:
 		hand = {"entry": e, "node": node, "s": e["physics"], "st": {"pos": Vector3.ZERO, "vel": Vector3.ZERO, "quat": Quaternion.IDENTITY, "sq": 0.0, "sv": 0.0,
 			"bend": Vector3.ZERO, "bv": Vector3.ZERO, "hand": null, "h": e["h"]}}
 	var p = rt.player
-	var away: bool = not rt.active or rt.playing != null or p.seat != null or p.hiding != null or p.sleeping != null or p.peeping != null or rt.busy
+	var away: bool = not rt.active or rt.playing != null or p.seat != null or p.hiding != null or p.sleeping != null or p.peeping != null or rt.busy or rt.hand_down   # lowered (Q): out of view
 	var node: Node3D = hand["node"]
 	node.visible = not away
 	if away:

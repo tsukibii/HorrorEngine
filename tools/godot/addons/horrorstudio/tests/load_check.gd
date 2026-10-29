@@ -30,7 +30,7 @@ func _initialize() -> void:
 		var bad := 0
 		var arts := 0                    # the kit's and the library's meshes instanced in their blocks, with geometry
 		var empty := 0
-		for ch in n.get_children():
+		for ch in n.find_children("*", "", true, false):   # the level's folders by kind (Ground, Walls, Things...)
 			if ch.has_meta("piece"):
 				var p = JSON.parse_string(ch.get_meta("piece"))
 				if p == null:

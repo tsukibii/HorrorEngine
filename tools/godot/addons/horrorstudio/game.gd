@@ -128,7 +128,7 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 	world.add_child(level)
 	level_id = lid
 	things.clear()
-	for n in level.get_children():
+	for n in pieces():
 		if n.has_meta("piece"):
 			var p = JSON.parse_string(n.get_meta("piece"))
 			if p is Dictionary:
@@ -137,13 +137,28 @@ func enter_level(lid: String, fresh: bool = false) -> void:
 	bake_gi(lid)
 
 
+const FOLDERS := ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI"]   # the export's folders in a level, by kind
+## every node of the level, the folders opened (the export groups them by kind) and themselves left out
+func pieces(lvl: Node = null) -> Array:
+	var root_: Node = lvl if lvl != null else level
+	if root_ == null:
+		return []
+	var out: Array = []
+	for n in root_.get_children():
+		if FOLDERS.has(str(n.name)) and not n.has_meta("piece"):
+			out.append_array(n.get_children())
+		else:
+			out.append(n)
+	return out
+
+
 ## the rooms' VoxelGIs (the export writes one a room, unbaked): baked once here and kept in user://, so the bounce is
 ## there from the first run and the next start loads it. Not headless (the dummy renderer can't bake).
 func bake_gi(lid: String) -> void:
 	if DisplayServer.get_name() == "headless" or level == null:
 		return
 	var gis: Array = []
-	for n in level.get_children():
+	for n in pieces():
 		if n is VoxelGI:
 			gis.append(n)
 	if gis.is_empty():
@@ -214,7 +229,7 @@ func set_time(t: String) -> void:
 	e.adjustment_saturation = float(L["sat"])
 	if level == null:
 		return
-	for n in level.get_children():
+	for n in pieces():
 		if n is SpotLight3D and n.has_meta("window"):
 			var w = JSON.parse_string(n.get_meta("window"))
 			n.light_color = L["win"][0]

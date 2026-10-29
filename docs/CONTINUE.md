@@ -63,8 +63,12 @@ desk's Godot button writes a plain project and no windows; `HSLookEnvironment` f
 seams that turn the eye (`glance`, `cutaway`) deprecated and the games' glances blinks; **live scenes**
 (`camera.mode: live`, DIRECTING §1: the eye stays the player's, no cuts, look and walk, a 180° look seated; the
 lobby scene is live); a card closed by a click (Godot: taken in `_input`), the thing looked at staying put, no dot
-over a card; **Q lowers the thing in the hand**. Open from that run: the square light patch under a distant counter
-(GODOT_LOOK §7).
+over a card; **Q lowers the thing in the hand**. **Their second run** (the afternoon): the lowered hand hidden in
+Godot too (its copy was shown again every frame); **the exported level in folders by kind** (Ground, Walls,
+Ceilings, Doors, Things, Lights, Glass, Triggers, Spots, People, GI; `game.pieces()` reads through them); **the
+`camhybrid` tape** (VHS.md §5: the camcorder with half the fisheye and its blur only with distance, `HSSoften` a
+depth-aware softener on the camera; `docs/godot_sheets/2026-10-29_camhybrid.jpg`). Open from those runs: the
+square light patch under a distant counter (GODOT_LOOK §7).
 
 **Open, for the user:** a run on the 3090 (`python tools/godot_export.py --game TestRoom001 --testroom`, then the
 game itself: `godot --path Saved/Godot/TestRoom001`; the cost of the realism preset with nineteen VoxelGIs, the rain

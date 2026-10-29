@@ -24,6 +24,9 @@ var states: Dictionary = {}
 var ticked_all: Array = []
 
 
+const FOLDERS_OF := ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Glass", "Triggers", "Spots", "People", "GI"]
+
+
 func snap_for(nid: String) -> Dictionary:
 	var s := {"flags": [], "items": [], "karma": {"karma": 0.0}, "counters": {}, "states": {}, "trail": []}
 	for n in ORDER.slice(0, ORDER.find(nid)):
@@ -365,7 +368,7 @@ func _initialize() -> void:
 			if rain == null or not (rain is HSRain) or rain.multimesh == null or rain.multimesh.instance_count < 200:
 				return "no rain in the yard: " + str(rain)
 			var yard_floor = null
-			for ch in g.level.get_children():
+			for ch in g.pieces():
 				if ch.has_meta("piece") and str(ch.get_meta("piece")).contains("\"yard__floor\""):
 					yard_floor = ch.get_node_or_null("mesh")
 			if yard_floor == null or not (yard_floor.material_override is ShaderMaterial) or yard_floor.material_override.shader != HSWet.shader():
@@ -434,6 +437,24 @@ func _initialize() -> void:
 			await frames(3)
 			if rt.held or g.hud.menu.up:
 				return "didn't resume (held %s, up %s)" % [rt.held, g.hud.menu.up]
+			return "")
+		await step("the level in folders (Ground, Walls, Things, Lights...), and the camhybrid tape's softener on the camera (off takes it away)", func():
+			for f in ["Ground", "Walls", "Ceilings", "Doors", "Things", "Lights", "Triggers", "Spots"]:
+				var fold = g.level.get_node_or_null(f)
+				if fold == null or fold.get_child_count() == 0:
+					return "the level has no %s folder with children in it" % f
+			if g.pieces().size() < 20 or g.pieces().any(func(n): return FOLDERS_OF.has(str(n.name)) and not n.has_meta("piece")):
+				return "pieces() should read through the folders: %d" % g.pieces().size()
+			var vhsn = g.get_node("VHS")
+			vhsn.preset("camhybrid")
+			await frames(2)
+			var sft = g.camera.get_node_or_null("Soften")
+			if sft == null or not (sft is HSSoften) or float(sft.mat.get_shader_parameter("far_m")) != 7.0 or float(vhsn.mat.get_shader_parameter("distortion")) != 0.045:
+				return "camhybrid: softener %s, distortion %s" % [sft, vhsn.mat.get_shader_parameter("distortion")]
+			vhsn.preset("off")
+			await frames(2)
+			if is_instance_valid(sft) and not sft.is_queued_for_deletion():
+				return "off should free the softener"
 			return "")
 		await step("the front door: a click opens it (the task ticks), through it into the lobby (it ticks), and the station ends", func():
 			place(1.5, -5.9, 90)
@@ -707,6 +728,14 @@ func _initialize() -> void:
 			var hd = rt.physics.hand                            # the plushie in the hand: its copy sprung after the hand, soft
 			if hd == null or hd["s"]["name"] != "plushie" or not hd["node"].visible or hd["node"].get_child_count() == 0:
 				return "the plushie in the hand: " + JSON.stringify({"hand": hd != null, "kind": hd["s"]["name"] if hd != null else null})
+			await press("Q")                                       # lowered (Q): the copy in the hand goes out of view too, not only the row's slot
+			await frames(3)
+			if not rt.hand_down or hd["node"].visible:
+				return "lowered, the plushie still shows in the hand: down %s, visible %s" % [rt.hand_down, hd["node"].visible]
+			await press("Q")
+			await frames(3)
+			if rt.hand_down or not hd["node"].visible:
+				return "raised, the plushie should show again: down %s, visible %s" % [rt.hand_down, hd["node"].visible]
 			return ""))
 
 	await station("n_kitchen", func():
@@ -1017,7 +1046,7 @@ func _initialize() -> void:
 			if r != "":
 				return r
 			var bath_floor = null                                      # the bath's own `wet` 0.8: its floor on the wet shader, no rain's rings, wet steps
-			for ch in g.level.get_children():
+			for ch in g.pieces():
 				if ch.has_meta("piece") and str(ch.get_meta("piece")).contains("\"bath__floor\""):
 					bath_floor = ch.get_node_or_null("mesh")
 			if bath_floor == null or not (bath_floor.material_override is ShaderMaterial) or bath_floor.material_override.shader != HSWet.shader() or float(bath_floor.material_override.get_shader_parameter("ripples")) != 0.0 or not rt.wet_rooms.has("bath"):

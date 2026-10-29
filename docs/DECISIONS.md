@@ -13,6 +13,15 @@ The user's answers, newest first. They override the plan, the research and the d
   the hand out of view (it stays in the row, its slot dim) and raises it; the wheel raises it too.
 - **"Left clicking doesn't close anything."** The card is a Control under the pointer and ate the click before the
   runtime saw it; taken in `_input` now.
+- **"Even unequipping still shows the item held"**: Godot's hand copy was shown again every frame; it hides while
+  lowered now.
+- **"The Godot export should be a bit more organised in the level: sub categories e.g. walls, furniture, ground."**
+  Every level's nodes sit in folders by kind: Ground, Walls, Ceilings, Doors, Things, Lights, Glass, Triggers,
+  Spots, People, GI (the runtime reads through them: `game.pieces()`).
+- **"I love the camcorder VHS effect but it's a tad too much: the fisheye a tiny bit too strong, the blurring too
+  much on objects that are closer; close to something it should be almost sharp, still some softening: call it
+  `camhybrid`."** The new preset: half the fisheye, the tape's own blur a third, and the softener (`HSSoften`, a
+  depth-aware post-process on the camera): sharp to 0.9 m but for a quarter pixel, fully soft from 7 m.
 
 - **"Let's remove the forced turn away (look up) after we interact with the person; in general let's make a note to
   avoid that effect, as upon testing it breaks immersion."** The rule, for every runtime and every stitch: the

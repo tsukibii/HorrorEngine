@@ -41,7 +41,7 @@ draws it. A re-export overwrites only what the user hasn't touched, and reports 
     game.tres                   StoryGame: title, start, fov, time, theme, karma axes, player_name, clip_max, see_through
     flow.tres                   StoryFlow: the nodes (type, ref, next, choices and their conditions), endings, interrupts
     data/                       items, notes, sounds, lines, secrets, achievements, motions (names), lives: .tres each
-    levels/house/house.tscn     rooms as Node3D groups: walls/floors/ceilings (BoxMesh + collision, UV2 on, a material from
+    levels/house/house.tscn     (written as game/levels/<level>.tscn, its nodes in folders by kind since 2026-10-29: Ground, Walls, Ceilings, Doors, Things, Lights, Glass, Triggers, Spots, People, GI; the runtime reads through them with game.pieces()) rooms as Node3D groups: walls/floors/ceilings (BoxMesh + collision, UV2 on, a material from
                                 its `look`), kit things and props (glb instances), doors (Door scene: frame, leaf on its
                                 hinge, handle; locked_by, swing, creak, peephole, latch as exported properties), lights
                                 (Omni/Spot + flicker script), spots (Marker3D), triggers (Area3D), windows (AreaLight3D)

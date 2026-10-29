@@ -105,7 +105,8 @@ In a scene the mouse looks round within the scene's cone; <kbd>1</kbd> <kbd>2</k
     story.json               THE GAME: world, cast, scenes, tasks, flow, endings. Text is the truth: change it and play
     lives.json, life_things.json   the little things' lives (a kettle boils, a cigarette burns) and which things have one
     levels/&lt;level&gt;.tscn      a level: every wall, floor, door, light, spot and trigger a node carrying its piece
-                             (metadata/piece: the story's own numbers); the things' meshes instanced under their blocks
+                             (metadata/piece: the story's own numbers), in folders by kind (Ground, Walls, Ceilings,
+                             Doors, Things, Lights, Glass, Triggers, Spots, People, GI); the things' meshes instanced under their blocks
     meshes/kit/, meshes/basemesh/   the kit's things (built from numbers) and the CC0 library's meshes (glb)
     kit.json                 each kit mesh's sockets (where its steam, LED, flame... come from) and slots
     previs/                  THE DESK'S RECORDING of every scene: index.json, scenes/&lt;scene&gt;.json (the camera, every bone,
@@ -224,7 +225,8 @@ hob's glow, flames, the cup filling, the pour, drips, the clock's hands, screens
 reflections, ambient occlusion and indirect light, a little glow, a thin haze, AgX and temporal anti-aliasing (TAA alone: MSAA switches the reflections off in 4.7);
 <code>plain</code> turns it all off. The pause menu's Anti-aliasing row picks Off, FXAA, TAA or TSR over it. <b>In the editor</b> a level scene shows none of
 this (the game applies it at start): enable the plugin (Project → Project Settings → Plugins → HorrorStudio Look) and add an <code>HSLookEnvironment</code> node to the
-level scene to edit under the look; it steps aside when the game runs. The tape (<code>game.vhs</code>: camcorder, worn, nightmare) shows only in play.</p>
+level scene to edit under the look; it steps aside when the game runs. The tape (<code>game.vhs</code>: camcorder, camhybrid, worn, nightmare) shows only in play; <code>camhybrid</code> is the camcorder with half the fisheye
+and its blur only with distance (what's close stays almost sharp).</p>
 <p><b>game.weather</b> <code>rain</code> (this game: <b>{e(g.get('weather', 'clear'))}</b>) puts rain in every room with no <code>ceiling</code> (<code>HSRain</code>, a box of
 streaks moved by the vertex shader, splashes where they land) and wets its floor (<code>HSWet</code>: the damp, pools that carry the lights, the rain's rings on them), with the shelf's rain heard there.
 Every kit <code>mirror</code> reflects the room for real (<code>HSMirror</code>: the camera reflected through the glass into a viewport of its own while the mirror is in view).

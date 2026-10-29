@@ -328,7 +328,7 @@ func enter_level(lid: String) -> void:
 	if not kept.has(lid):
 		kept[lid] = {"vis": {}, "doors": {}, "bodies": {}}
 	var k: Dictionary = kept[lid]
-	for n in game.level.get_children():
+	for n in game.pieces():
 		if n.has_meta("piece"):
 			var p = JSON.parse_string(n.get_meta("piece"))
 			if not (p is Dictionary):
@@ -1726,7 +1726,7 @@ func weather_attach() -> void:
 			wet_rooms.append(id)
 	rain_rooms = ids
 	HSWet.wet_floors(game.level, ids, {"wetness": 0.9, "puddles": 0.6, "puddle_scale": 1.2, "ripples": 1.0})
-	for n in game.level.get_children():                 # the rain on every window's pane
+	for n in game.pieces():                             # the rain on every window's pane
 		if n is MeshInstance3D and n.has_meta("pane"):
 			var pm = JSON.parse_string(n.get_meta("pane"))
 			var w: float = float(pm.get("w", 1.2)) if pm is Dictionary else 1.2
